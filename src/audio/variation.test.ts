@@ -21,6 +21,16 @@ void test('every variation can come up', (): void => {
   assert.deepEqual([...seen].toSorted((a: number, b: number): number => a - b), [0, 2, 3]);
 });
 
+void test('with no previous pick every variation can come first, the last one included', (): void => {
+  for (let count: number = 2; count <= 6; count += 1) {
+    const seen: Set<number> = new Set<number>();
+    for (let step: number = 0; step < 100; step += 1) seen.add(pickVariant(count, -1, (): number => step / 100));
+    assert.equal(seen.size, count);
+    assert.equal(pickVariant(count, -1, (): number => 0.999999), count - 1);
+    assert.equal(pickVariant(count, -1, (): number => 1), count - 1);
+  }
+});
+
 void test('pitch and volume stay inside their spread and are centred on one', (): void => {
   assert.equal(pitchRate((): number => 0.5), 1);
   assert.equal(volumeScale((): number => 0.5), 1);

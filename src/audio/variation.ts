@@ -6,8 +6,9 @@ export const VARIATION = {
 
 export function pickVariant(count: number, previous: number, random: () => number): number {
   if (count <= 1) return 0;
+  if (previous < 0 || previous >= count) return Math.min(count - 1, Math.floor(random() * count));
   const next: number = Math.floor(random() * (count - 1));
-  return next >= previous && previous >= 0 ? next + 1 : next;
+  return next >= previous ? next + 1 : next;
 }
 
 export function pitchRate(random: () => number): number {

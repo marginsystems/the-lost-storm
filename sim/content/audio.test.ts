@@ -120,6 +120,18 @@ void test('stingers need a sensible delay window', (): void => {
   }), /volume/);
 });
 
+void test('a stinger must say how soon and how late it can come', (): void => {
+  const stingerWith = (fields: Record<string, unknown>): unknown =>
+    variant((draft): void => {
+      draft['ambience'] = { [content.arena.id]: { loops: [], stingers: [{ sound: 'a', ...fields }] } };
+    });
+  reject(stingerWith({}), /minDelay/);
+  reject(stingerWith({ minDelay: 5 }), /maxDelay/);
+  reject(stingerWith({ maxDelay: 5 }), /minDelay/);
+  reject(stingerWith({ minDelay: 0, maxDelay: 5 }), /minDelay/);
+  assert.equal(parseAudio(stingerWith({ minDelay: 5, maxDelay: 5 }), known).ambience.get(content.arena.id)?.stingers.length, 1);
+});
+
 void test('the fixed id lists are not empty and have no repeats', (): void => {
   assert.equal(new Set(UI_ACTIONS).size, UI_ACTIONS.length);
   assert.equal(new Set(WORLD_SOUND_EVENTS).size, WORLD_SOUND_EVENTS.length);

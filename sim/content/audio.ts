@@ -97,6 +97,12 @@ function ranged(source: Fields, key: string, fallback: number, min: number, max:
   return value;
 }
 
+function required(source: Fields, key: string, min: number, max: number, where: string): number {
+  const value: number = numeric(source, key, where);
+  if (value < min || value > max) throw new ContentError(`${where}.${key}`, `expected ${min} to ${max}`);
+  return value;
+}
+
 function cue(value: unknown, defaults: CueDefaults, where: string): CueDef {
   const source: Fields = fields(value, where);
   const maxVoices: number = ranged(source, 'maxVoices', defaults.maxVoices, 1, LIMITS.voicesMax, where);
@@ -147,8 +153,8 @@ function zone(value: unknown, where: string): ZoneAmbience {
     }),
     stingers: each(source['stingers'], `${where}.stingers`, (entry: unknown, entryWhere: string): AmbienceStinger => {
       const stinger: Fields = fields(entry, entryWhere);
-      const minDelay: number = ranged(stinger, 'minDelay', 0, 1, LIMITS.delayMax, entryWhere);
-      const maxDelay: number = ranged(stinger, 'maxDelay', 0, 1, LIMITS.delayMax, entryWhere);
+      const minDelay: number = required(stinger, 'minDelay', 1, LIMITS.delayMax, entryWhere);
+      const maxDelay: number = required(stinger, 'maxDelay', 1, LIMITS.delayMax, entryWhere);
       if (maxDelay < minDelay) throw new ContentError(entryWhere, 'maxDelay is below minDelay');
       return { sound: soundId(stinger, 'sound', entryWhere), volume: ranged(stinger, 'volume', 1, 0.01, LIMITS.volumeMax, entryWhere), minDelay, maxDelay };
     }),
