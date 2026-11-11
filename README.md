@@ -37,12 +37,13 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 
 | Path | What it holds |
 |---|---|
-| `data/` | All content as JSON: skills, monsters, items, the skill tree, rigs, props, the arena and the player |
+| `data/` | All content as JSON: skills, monsters, items, the skill tree, rigs, props, the arena, the player and which sound id plays for which event (`audio.json`) |
 | `sim/` | The game itself in plain TypeScript: stats, combat, skills, monster behaviour, pathfinding, loot, progression, saving. No Three.js and no DOM, so it runs and is tested in Node |
 | `sim/content/` | The content schema (`types.ts`) and the readers that check every JSON file at start-up |
 | `sim/world/` | World state, the commands the player can send and the events each step returns (`types.ts`), and `stepWorld` (`step.ts`) |
 | `src/render/` | Three.js: stage and lighting, the isometric camera, character loading, the arena, effects, weather, world-anchored overlays |
-| `src/hud/` | DOM HUD: globes, skill bar, inventory, skill tree, tooltips |
+| `src/hud/` | DOM HUD: globes, skill bar, inventory, skill tree, volume panel, tooltips |
+| `src/audio/` | Web Audio: loads sounds from the asset server, plays them with variation, distance and panning, keeps volumes |
 | `src/input.ts` | Mouse and keyboard to commands |
 | `src/main.ts` | Loads everything and runs the frame loop |
 | `public/models/` | GLB models. Every file is listed in [ASSETS.md](ASSETS.md) |
@@ -60,6 +61,7 @@ Content is data. None of these need a code change:
 - **A monster**: add an entry to `data/monsters.json` with its `rig`, stats, `behaviour` (`chaser` or `ranged`), `skill` and `loot`, then add it to a pack in `data/arena.json`.
 - **An item**: add a base, an affix or a rarity to `data/items.json`. A weapon base's `visual` names the rig attachment to show in the hero's hand.
 - **A skill-tree node**: add an entry to `data/skill-tree.json` with its grid position, what it `requires`, and its `statMods` and `skillMods`.
+- **A sound**: `data/audio.json` maps game events to sound ids: by skill id (`skillStart`, `skillImpact`, `skillHit`, `projectileSpawn`, `projectileExpire`), by monster id or `player` (`hit`, `critHit`, `death`, `aggro`), by rarity or `gold` (`drop`, `pickup`), `notice`, `world` (`hero_step`, `level_up`, `surge`, `monster_spawn` and others), `ui` actions, and `ambience` per arena. Each entry can set `volume`, `maxVoices` (copies of that sound at once) and `cooldown`. The sound files themselves are not in this repository (see Sound below).
 - **The arena**: `data/arena.json` holds the tile map (4-unit cells), wall and floor models, prop placements, the player start and the monster packs.
 
 If something cannot be expressed in the data, extend the schema in `sim/content/` in a general way first. See [AGENTS.md](AGENTS.md).
@@ -104,6 +106,18 @@ A character is a rig entry in `data/rigs.json`. The loader (`src/render/characte
 Held gear is an entry in `data/attachments.json`: an id, a model file and the socket it mounts on. An item base's `visual`, the player's `gear` and a monster's `gear` name attachment ids, so a new weapon model is one GLB and one line of data. Weapon models are authored with the grip at the origin and the blade along +Y. `tint` on the player and on each monster recolours the body, so one body file makes several characters. `color` tints that character's effects and its body's emissive map (glowing eyes, runes) when the body has one; a body without an emissive map does not glow.
 
 To use a different rig, add its rig entry with its own bone names in `sockets`, and point `data/player.json` (`rig`) or a monster at it. Mixamo characters work this way (export FBX, convert to GLB, set `scale` to 0.01 and `rootMotionBone` to `mixamorigHips`), but Mixamo files may not be redistributed, so they go in `public/models/local/`, which is git-ignored, and never in this repository.
+
+## Sound
+
+The game has sound, but this repository holds no sound file. The sound effects are licensed for use inside the game and may not be handed out as files, so they live in a private repository and are served by a separate server.
+
+- The client reads `VITE_ASSET_BASE`. When it is not set, the game makes no request and plays nothing. **A fresh clone of this repository runs silent**; nothing is missing or broken.
+- When it is set, for example `VITE_ASSET_BASE=http://localhost:5210/`, the game fetches `manifest.json` from that base after you press Enter (browsers only start audio after a click) and then the sounds it needs, one at a time as they are first used. The manifest maps sound ids to files: `{ "sfx": { "<sound id>": ["path.ogg", ...] }, "voice": { "<line id>": "path.mp3" } }`. A sound id that is not in the manifest, or a file that fails to load or decode, plays nothing and throws nothing.
+- `data/audio.json` only names sound ids; it never contains a path.
+- The owner starts the asset server from the private assets checkout with `npm run serve` (port 5210, CORS for `http://localhost:*`). To hear the game locally, put `VITE_ASSET_BASE=http://localhost:5210/` in `.env.local` (git-ignored) and restart `npm run dev`.
+- The speaker button next to the menu buttons opens master, effects, voice and ambience sliders and a mute switch. They are kept in `localStorage`.
+- `playVoice(lineId)` on the audio system (`window.storm.audio` in a dev build) plays a spoken line, lowers the effects while it plays and resolves when the line ends, or at once if there is no such line.
+- In a dev build `window.storm.sounds` lists the most recent sound ids as they are triggered (with their distance gain and pan), whether or not a base is set, so the mapping can be checked without hearing anything.
 
 ## Assets and licence
 

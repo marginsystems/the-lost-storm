@@ -119,6 +119,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'surge':
           case 'surge_cleared':
           case 'notice':
+          case 'hero_step':
             break;
         }
       }

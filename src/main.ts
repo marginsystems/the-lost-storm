@@ -1,13 +1,27 @@
 import type { Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { cuesForEvent, cuesForUi, uiActionForCommand } from '../sim/audio.ts';
+import type { SoundCue } from '../sim/audio.ts';
+import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
+import { loadAudio } from '../sim/content/audio.ts';
 import { loadContent } from '../sim/content/content.ts';
 import type { Content } from '../sim/content/types.ts';
 import { baseOf } from '../sim/items.ts';
+import type { Vec2 } from '../sim/math.ts';
 import type { SaveData } from '../sim/save.ts';
 import { parseSaveText, toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../sim/world/types.ts';
+import type { Listener } from './audio/listener.ts';
+import { createListener } from './audio/listener.ts';
+import { readAssetBase } from './audio/manifest.ts';
+import type { Placement } from './audio/mix.ts';
+import { CENTRE } from './audio/mix.ts';
+import type { AudioControls } from './audio/settings.ts';
+import { browserSettingsStorage, createSettingsStore } from './audio/settings.ts';
+import type { AudioSystem, Trigger } from './audio/system.ts';
+import { createAudioSystem } from './audio/system.ts';
 import { createHud } from './hud/hud.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
@@ -39,6 +53,8 @@ import { clearSave, readSaveText, writeSave } from './storage.ts';
 const GAME = {
   maxFrame: 0.1,
   saveEvery: 2,
+  soundLogLength: 300,
+  millisecondsPerSecond: 1000,
 } as const;
 
 const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['type']>(['character_changed', 'level_up', 'pickup', 'surge', 'xp']);
@@ -46,6 +62,8 @@ const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['type']>
 export interface DebugHandle {
   readonly world: World;
   readonly scene: Scene;
+  readonly audio: AudioSystem;
+  readonly sounds: readonly Trigger[];
   send(command: Command): void;
 }
 
@@ -80,9 +98,35 @@ async function start(): Promise<void> {
   const thumbnails: ItemThumbnails = createItemThumbnails(library);
 
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
+  const audioDef: AudioDef = loadAudio(content);
+  const controls: AudioControls = createSettingsStore(browserSettingsStorage());
+  const audio: AudioSystem = createAudioSystem({
+    base: readAssetBase(import.meta.env['VITE_ASSET_BASE']),
+    controls,
+    random: Math.random,
+    clock: (): number => performance.now() / GAME.millisecondsPerSecond,
+  });
+  const listener: Listener = createListener(camera, canvas, (): Vec2 => world.player.pos);
+  const playCues = (cues: readonly SoundCue[]): void => {
+    for (const cue of cues) {
+      const place: Placement | null = cue.position === null ? CENTRE : listener(cue.position);
+      if (place !== null) audio.play(cue, place);
+    }
+  };
+  const playUi = (action: UiAction): void => playCues(cuesForUi(audioDef, action));
+  const zone: ZoneAmbience | undefined = audioDef.ambience.get(content.arena.id);
+  const sounds: Trigger[] = [];
+  if (import.meta.env.DEV) {
+    audio.onTrigger((trigger: Trigger): void => {
+      sounds.push(trigger);
+      if (sounds.length > GAME.soundLogLength) sounds.shift();
+    });
+  }
   const queue: Command[] = [];
   const send = (command: Command): void => {
     queue.push(command);
+    const action: UiAction | null = uiActionForCommand(command);
+    if (action !== null) playUi(action);
   };
   const particles: ParticleSystem = createParticles(stage.scene);
   const weather: Weather = createWeather();
@@ -92,13 +136,13 @@ async function start(): Promise<void> {
     const visual: string | null = baseOf(content, item)?.visual ?? null;
     return visual === null ? null : (thumbnails.get(visual) ?? null);
   };
-  const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send, itemImage });
+  const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send, itemImage, audio: controls, playUi });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, (id: number): number => actors.heightOf(id), (groundId: number): void => send({ type: 'pickup', groundId }));
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),
     clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile),
   });
-  if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, send };
+  if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send };
 
   let playing: boolean = false;
   let hitStop: number = 0;
@@ -133,6 +177,8 @@ async function start(): Promise<void> {
     effects.handle(events, world);
     overlays.handle(events, world);
     hud.handleEvents(events);
+    for (const event of events) playCues(cuesForEvent(audioDef, world, event));
+    audio.update(dt);
     hitStop = Math.max(hitStop, effects.takeHitStop());
     if (events.some((event: WorldEvent): boolean => SAVE_EVENTS.has(event.type))) dirty = true;
 
@@ -171,6 +217,8 @@ async function start(): Promise<void> {
   enter.addEventListener('click', (): void => {
     title.classList.add('gone');
     playing = true;
+    audio.unlock();
+    if (zone !== undefined) audio.startAmbience(zone);
   });
   reset.addEventListener('click', (): void => {
     dirty = false;

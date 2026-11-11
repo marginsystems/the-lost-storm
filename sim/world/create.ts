@@ -51,6 +51,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     repathTimer: 0,
     queued: null,
     respawnTimer: 0,
+    strideTravel: 0,
     kills: save?.kills ?? 0,
   };
 }

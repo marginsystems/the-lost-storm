@@ -20,13 +20,16 @@ import type { Notices, WorldStatus, XpBar } from './status.ts';
 import { createTooltip } from './tooltip.ts';
 import type { Tooltip } from './tooltip.ts';
 import { createTreePanel } from './tree-panel.ts';
+import volumeCss from './volume.css?inline';
+import { createVolumeControl } from './volume-panel.ts';
+import type { VolumeControl } from './volume-panel.ts';
 
 const PANEL_IDS: readonly HudPanel[] = ['inventory', 'tree'];
 
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -58,6 +61,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const buttons: Record<HudPanel, MenuButton | null> = { inventory: null, tree: null };
 
   const setOpen = (panel: HudPanel, next: boolean): void => {
+    if (open[panel] !== next) api.playUi(next ? 'panel_open' : 'panel_close');
     open[panel] = next;
     const view: PanelView = panels[panel];
     view.element.classList.toggle('open', next);
@@ -79,6 +83,13 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   buttons.inventory = createMenuButton(row, 'Inventory', 'I', (): void => toggle('inventory'), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
   buttons.tree = createMenuButton(row, 'Skills', 'T', (): void => toggle('tree'), track);
+  const volume: VolumeControl = createVolumeControl(row, api.audio, track, (opened: boolean): void => api.playUi(opened ? 'panel_open' : 'panel_close'));
+  root.addEventListener('click', (event: MouseEvent): void => {
+    const target: EventTarget | null = event.target;
+    if (!(target instanceof Element)) return;
+    const button: Element | null = target.closest('button');
+    if (button !== null && !button.classList.contains('hud-menu-btn')) api.playUi('click');
+  });
 
   const refreshOpen = (panel: HudPanel): void => {
     if (open[panel]) panels[panel].refresh();
@@ -133,6 +144,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'xp':
           case 'surge_cleared':
           case 'player_respawn':
+          case 'hero_step':
             break;
         }
       }
@@ -144,7 +156,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       toggle(panel);
     },
     closePanels(): boolean {
-      let anyOpen: boolean = false;
+      let anyOpen: boolean = volume.close();
       for (const panel of PANEL_IDS) {
         if (open[panel]) {
           anyOpen = true;

@@ -145,6 +145,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, heightOf: (
           case 'player_respawn':
           case 'notice':
           case 'character_changed':
+          case 'hero_step':
             break;
         }
       }
