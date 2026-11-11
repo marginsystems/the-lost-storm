@@ -80,7 +80,7 @@ async function start(): Promise<void> {
     queue.push(command);
   };
   const particles: ParticleSystem = createParticles(stage.scene);
-  const weather: Weather = createWeather(stage.scene);
+  const weather: Weather = createWeather();
   const effects: Effects = createEffects(stage.scene, particles, camera, arena.torches, (power: number): void => weather.strike(power));
   const actors: Actors = createActors(stage.scene, library, world);
   const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send });
@@ -130,9 +130,9 @@ async function start(): Promise<void> {
     actors.sync(simDt, world, input.hoveredId);
     loot.sync(world);
     camera.update(dt, world.player.pos.x, world.player.pos.z);
-    effects.update(dt, world, world.player.pos.x, world.player.pos.z);
+    effects.update(dt, world);
     particles.update(dt);
-    weather.update(dt, world.player.pos.x, world.player.pos.z);
+    weather.update(dt);
     arena.update(now / 1000);
     stage.follow(world.player.pos.x, world.player.pos.z);
     stage.setFlash(weather.flash);
