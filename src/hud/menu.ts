@@ -10,7 +10,7 @@ export function createMenuButton(parent: HTMLElement, name: string, key: string,
   button.type = 'button';
   track(button);
   label('menu-name', name, button);
-  label('menu-key', `[${key}]`, button);
+  label('menu-key', key, button);
   const badge: HTMLSpanElement = el('span', 'menu-badge', button);
   const badgeText: HTMLSpanElement = el('span', 'badge-pulse', badge);
   button.addEventListener('click', onClick);
