@@ -1,6 +1,6 @@
 import type { Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { cuesForEvent, cuesForUi, uiActionForCommand } from '../sim/audio.ts';
+import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
@@ -106,6 +106,7 @@ async function start(): Promise<void> {
     random: Math.random,
     clock: (): number => performance.now() / GAME.millisecondsPerSecond,
   });
+  audio.warm(warmSoundIds(audioDef));
   const listener: Listener = createListener(camera, canvas, (): Vec2 => world.player.pos);
   const playCues = (cues: readonly SoundCue[]): void => {
     for (const cue of cues) {

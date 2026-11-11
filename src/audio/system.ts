@@ -2,17 +2,20 @@ import type { SoundCue } from '../../sim/audio.ts';
 import type { AmbienceLoop, AmbienceStinger, ZoneAmbience } from '../../sim/content/audio.ts';
 import type { BufferCache } from './cache.ts';
 import { createBufferCache } from './cache.ts';
+import { assetUrl } from './manifest.ts';
+import { createManifestLoader } from './manifest-loader.ts';
+import type { ManifestLoader } from './manifest-loader.ts';
 import type { AssetManifest } from './manifest.ts';
-import { assetUrl, parseManifest } from './manifest.ts';
 import type { Placement } from './mix.ts';
 import { CENTRE } from './mix.ts';
 import type { AudioControls, AudioSettings } from './settings.ts';
 import { pickVariant, pitchRate, delayBetween, volumeScale } from './variation.ts';
 import type { VoiceLimiter } from './voices.ts';
 import { createVoiceLimiter } from './voices.ts';
+import { warmPaths } from './warm.ts';
 
 const SYSTEM = {
-  cacheBytes: 48 * 1024 * 1024,
+  cacheBytes: 64 * 1024 * 1024,
   bytesPerSample: 4,
   latePlaySeconds: 0.6,
   failedRetrySeconds: 30,
@@ -22,7 +25,9 @@ const SYSTEM = {
   settingsSmoothing: 0.03,
   ambienceFade: 3,
   stingerPan: 0.6,
-  manifestName: 'manifest.json',
+  manifestRetrySeconds: 10,
+  warmLanes: 2,
+  warmFill: 0.75,
 } as const;
 
 export interface Trigger {
@@ -39,6 +44,7 @@ export interface AudioSystem {
   unlock(): void;
   play(cue: SoundCue, place: Placement): void;
   playVoice(lineId: string): Promise<void>;
+  warm(ids: readonly string[]): void;
   startAmbience(zone: ZoneAmbience): void;
   stopAmbience(): void;
   update(dt: number): void;
@@ -80,10 +86,23 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   const listeners: ((trigger: Trigger) => void)[] = [];
   const loops: Running[] = [];
   let timers: StingerTimer[] = [];
+  const loader: ManifestLoader = createManifestLoader({
+    base,
+    clock,
+    retrySeconds: SYSTEM.manifestRetrySeconds,
+    fetchJson: async (url: string): Promise<unknown> => {
+      const response: Response = await fetch(url);
+      if (!response.ok) throw new Error(`${response.status}`);
+      const data: unknown = await response.json();
+      return data;
+    },
+  });
   let graph: Graph | null = null;
-  let manifest: AssetManifest | null = null;
   let voicesPlaying: number = 0;
-  let manifestLoad: Promise<void> = Promise.resolve();
+  let activeZone: ZoneAmbience | null = null;
+  let ambienceDeferred: boolean = false;
+  let warmIds: readonly string[] = [];
+  let warming: boolean = false;
 
   const report = (cue: SoundCue, place: Placement): void => {
     const trigger: Trigger = { sound: cue.sound, time: clock(), volume: cue.volume, gain: place.gain, pan: place.pan };
@@ -147,9 +166,9 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   };
 
   const playOn = async (bus: 'effects' | 'ambience', cue: SoundCue, place: Placement): Promise<void> => {
-    if (manifest === null) await manifestLoad;
+    if (loader.current() === null) await loader.ready();
     const current: Graph | null = graph;
-    const paths: readonly string[] | undefined = manifest?.sfx.get(cue.sound);
+    const paths: readonly string[] | undefined = loader.current()?.sfx.get(cue.sound);
     if (current === null || paths === undefined) {
       limiter.end(cue.sound);
       return;
@@ -171,6 +190,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   };
 
   const trigger = (bus: 'effects' | 'ambience', cue: SoundCue, place: Placement): void => {
+    ensureManifest();
     if (!limiter.tryStart(cue.sound, cue.maxVoices, cue.cooldown)) return;
     report(cue, place);
     playOn(bus, cue, place).catch((): void => limiter.end(cue.sound));
@@ -182,10 +202,16 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   };
 
   const startLoop = async (loop: AmbienceLoop): Promise<void> => {
-    await manifestLoad;
+    await loader.ready();
     const current: Graph | null = graph;
-    const path: string | undefined = manifest?.sfx.get(loop.sound)?.[0];
-    if (current === null || path === undefined) return;
+    const manifest: AssetManifest | null = loader.current();
+    if (current === null) return;
+    if (manifest === null) {
+      ambienceDeferred = true;
+      return;
+    }
+    const path: string | undefined = manifest.sfx.get(loop.sound)?.[0];
+    if (path === undefined) return;
     const buffer: AudioBuffer | null = await load(path);
     if (buffer === null) return;
     const source: AudioBufferSourceNode = current.context.createBufferSource();
@@ -200,17 +226,37 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     loops.push({ source, gain });
   };
 
-  const loadManifest = async (): Promise<void> => {
-    const url: string | null = base === null ? null : assetUrl(base, SYSTEM.manifestName);
-    if (url === null) return;
-    try {
-      const response: Response = await fetch(url);
-      if (!response.ok) return;
-      manifest = parseManifest(await response.json());
-    } catch {
-      manifest = null;
-    }
+  const startLoops = (zone: ZoneAmbience): void => {
+    for (const loop of zone.loops) startLoop(loop).catch((): void => undefined);
   };
+
+  const ensureManifest = (): void => {
+    if (graph !== null) loader.ensure();
+  };
+
+  const startWarm = (): void => {
+    const manifest: AssetManifest | null = loader.current();
+    if (manifest === null || graph === null || warming) return;
+    const queue: readonly string[] = warmPaths(warmIds, manifest);
+    if (queue.length === 0) return;
+    warming = true;
+    let next: number = 0;
+    const lane = (): Promise<void> => {
+      if (next >= queue.length || cache.bytes >= SYSTEM.cacheBytes * SYSTEM.warmFill) return Promise.resolve();
+      const path: string | undefined = queue[next];
+      next += 1;
+      return path === undefined ? lane() : load(path).then(lane);
+    };
+    Promise.all(Array.from({ length: SYSTEM.warmLanes }, lane)).catch((): void => undefined);
+  };
+
+  loader.onLoaded((): void => {
+    if (ambienceDeferred && activeZone !== null) {
+      ambienceDeferred = false;
+      startLoops(activeZone);
+    }
+    startWarm();
+  });
 
   return {
     controls,
@@ -232,7 +278,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
           const action: Promise<void> = document.hidden ? context.suspend() : context.resume();
           action.catch((): void => undefined);
         });
-        manifestLoad = loadManifest();
+        loader.ensure();
       } catch {
         graph = null;
       }
@@ -241,9 +287,10 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       trigger('effects', cue, place);
     },
     async playVoice(lineId: string): Promise<void> {
-      await manifestLoad;
+      ensureManifest();
+      await loader.ready();
       const current: Graph | null = graph;
-      const path: string | undefined = manifest?.voice.get(lineId);
+      const path: string | undefined = loader.current()?.voice.get(lineId);
       if (current === null || path === undefined) return;
       const buffer: AudioBuffer | null = await load(path);
       if (buffer === null) return;
@@ -258,13 +305,20 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
         source.start();
       });
     },
+    warm(ids: readonly string[]): void {
+      warmIds = ids;
+      startWarm();
+    },
     startAmbience(zone: ZoneAmbience): void {
       this.stopAmbience();
-      for (const loop of zone.loops) startLoop(loop).catch((): void => undefined);
+      activeZone = zone;
+      startLoops(zone);
       timers = zone.stingers.map((stinger: AmbienceStinger): StingerTimer => ({ stinger, left: delayBetween(stinger.minDelay, stinger.maxDelay, random) }));
     },
     stopAmbience(): void {
       timers = [];
+      activeZone = null;
+      ambienceDeferred = false;
       for (const running of loops.splice(0, loops.length)) {
         try {
           running.source.stop();
@@ -276,6 +330,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       }
     },
     update(dt: number): void {
+      ensureManifest();
       for (const timer of timers) {
         timer.left -= dt;
         if (timer.left > 0) continue;
