@@ -107,4 +107,8 @@ To use a different rig, add its rig entry with its own bone names in `sockets`, 
 
 ## Assets and licence
 
-Every shipped asset is listed with its source and licence in [ASSETS.md](ASSETS.md). They are CC0, CC BY 4.0 with credit, or made for this project. Licence texts are in `licenses/`.
+The code, and the models made for this project, are under the MIT licence: see [LICENSE](LICENSE). Third-party assets keep their own licences; every shipped asset is listed with its source and licence in [ASSETS.md](ASSETS.md), and the licence texts are in `licenses/`.
+
+Sounds are not in this repository, because their licence does not allow redistributing the files. The game runs silent from a clone.
+
+The name "The Lost Storm" and its logo are not covered by the licence.

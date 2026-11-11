@@ -35,10 +35,10 @@ node tools/build-characters.ts <skeleton.glb> <character-with-clips.glb> public/
 
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `public/models/weapons/greatsword.glb` | Built by `blender/build_weapons.py` | Made for this project | Repository licence |
-| `public/models/weapons/hex_staff.glb` | Built by `blender/build_weapons.py` | Made for this project | Repository licence |
-| `public/models/weapons/rusted_blade.glb` | Built by `blender/build_weapons.py` | Made for this project | Repository licence |
-| `public/models/weapons/sword_1h.glb` | Built by `blender/build_weapons.py` | Made for this project | Repository licence |
+| `public/models/weapons/greatsword.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
+| `public/models/weapons/hex_staff.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
+| `public/models/weapons/rusted_blade.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
+| `public/models/weapons/sword_1h.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 
 Rebuild with:
 
@@ -85,7 +85,7 @@ Unmodified downloads, renamed to lower case.
 
 ## Everything else
 
-Effects (slashes, bolts, shockwaves, rain, lightning, particles), the HUD and its icons are drawn in code or CSS in this repository and are covered by the repository licence. The game ships no audio and no fonts.
+Effects (slashes, bolts, shockwaves, rain, lightning, particles), the HUD and its icons are drawn in code or CSS in this repository and are covered by the MIT licence in [LICENSE](LICENSE). The game ships no audio and no fonts.
 
 ## Assets that must not be committed
 
@@ -98,7 +98,6 @@ Put such files in `public/models/local/` or `public/audio/local/`, which are git
 
 Before adding any asset: confirm the licence on the author's own page, download it from the author's own distribution, add its row here and keep its licence text in `licenses/`. A CC BY asset needs the author, title, source link, licence and a note of changes, here and on the title screen.
 
-## Before this repository goes public
+## Audit before publishing
 
-- `skeleton.glb` and `humanoid.glb` were taken from the private Movement Lab repository's processed copies. Their inputs are CC BY 4.0 and CC0, so they may be redistributed with the credit above.
-- Pick the repository licence and name it here.
+Checked on 2026-11-11, across the tracked files and the full git history: the only binary assets are the models listed above, plus three KayKit character models (CC0) that an early commit carried. There are no Mixamo or Splice files, no secrets and no personal data. `skeleton.glb` and `humanoid.glb` came through the private Movement Lab repository's processed copies; their inputs are CC BY 4.0 and CC0, so they may be redistributed with the credit above.

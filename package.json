@@ -1,6 +1,7 @@
 {
   "name": "the-lost-storm",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "The Lost Storm: a single-player isometric action RPG on Three.js, in TypeScript.",
   "scripts": {
