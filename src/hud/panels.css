@@ -1,10 +1,10 @@
 .hud-panel {
   position: absolute;
-  top: 16px;
-  max-height: calc(100% - 210px);
+  top: 32px;
+  max-height: calc(100% - 226px);
   width: max-content;
   box-sizing: border-box;
-  padding: 16px;
+  padding: 12px;
   overflow: auto;
   pointer-events: auto;
   border-radius: 8px;
@@ -40,24 +40,27 @@
 }
 
 .panel-title {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   font-family: var(--serif);
-  font-size: 20px;
-  letter-spacing: 0.06em;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   color: var(--ember);
 }
 
 .panel-subtitle {
-  margin: 16px 0 6px;
+  margin: 10px 0 5px;
   font-family: var(--serif);
-  font-size: 15px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   color: var(--storm);
 }
 
 .equip-row {
   display: flex;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 9px;
 }
 
 .equip {
@@ -179,7 +182,7 @@
 .sheet-row {
   display: flex;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
 }
 
 .sheet-name {

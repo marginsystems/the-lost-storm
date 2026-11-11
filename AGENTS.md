@@ -70,7 +70,7 @@ Input must answer on the same frame. A hit that lands shows it: flash, knockback
 
 ## HUD motion and style
 
-Every user-visible change in the HUD animates with spring motion: panels opening, text that changes, bars, buttons. Nothing may jump from one frame to the next. Use the `--spring-*` easings and durations in `src/hud/hud.css`; do not write ad-hoc timings or cubic-bezier curves.
+Every user-visible change in the HUD animates with spring motion: panels opening, text that changes, bars, buttons. Nothing may jump from one frame to the next. Use the `--spring-*` easings and durations in `src/hud/hud.css`; do not write ad-hoc timings or cubic-bezier curves. The one exception is a continuous ambient loop that is not a state change, such as the liquid drifting in the globes: it uses the `--drift-ease` and `--drift-ms` tokens defined beside the springs, never a bare timing.
 
 No thick or bright borders, outlines or focus rings, no pill-shaped radii, and small corner radii. Panels are clean, dark and translucent.
 
