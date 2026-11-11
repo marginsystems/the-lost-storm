@@ -45,6 +45,7 @@
       "id": "rusted_blade",
       "name": "Rusted Blade",
       "slot": "weapon",
+      "material": null,
       "icon": "sword",
       "dropWeight": 10,
       "minLevel": 1,
@@ -60,6 +61,11 @@
           "stat": "damageMax",
           "op": "add",
           "value": 6
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.03
         }
       ]
     },
@@ -67,6 +73,7 @@
       "id": "stormsteel_sword",
       "name": "Stormsteel Sword",
       "slot": "weapon",
+      "material": null,
       "icon": "sword",
       "dropWeight": 8,
       "minLevel": 2,
@@ -87,6 +94,44 @@
           "stat": "attackSpeed",
           "op": "add",
           "value": 0.1
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.03
+        }
+      ]
+    },
+    {
+      "id": "hexwood_staff",
+      "name": "Hexwood Staff",
+      "slot": "weapon",
+      "material": null,
+      "icon": "staff",
+      "dropWeight": 6,
+      "minLevel": 2,
+      "visual": "hex_staff",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 4
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 8
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 16
+        },
+        {
+          "stat": "manaRegen",
+          "op": "add",
+          "value": 1.2
         }
       ]
     },
@@ -94,99 +139,57 @@
       "id": "tempest_greatsword",
       "name": "Tempest Greatsword",
       "slot": "weapon",
+      "material": null,
       "icon": "greatsword",
       "dropWeight": 6,
-      "minLevel": 2,
+      "minLevel": 3,
       "visual": "greatsword",
       "wear": [],
       "implicit": [
         {
           "stat": "damageMin",
           "op": "add",
-          "value": 9
+          "value": 10
         },
         {
           "stat": "damageMax",
           "op": "add",
-          "value": 16
+          "value": 18
         },
         {
           "stat": "attackSpeed",
           "op": "add",
-          "value": -0.15
+          "value": -0.18
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.3
         }
       ]
     },
     {
-      "id": "saltworn_shirt",
-      "name": "Saltworn Shirt",
-      "slot": "chest",
-      "icon": "armour",
-      "dropWeight": 8,
+      "id": "penitent_cowl",
+      "name": "Penitent's Cowl",
+      "slot": "head",
+      "material": "cloth",
+      "icon": "helm",
+      "dropWeight": 7,
       "minLevel": 1,
       "visual": null,
       "wear": [
-        "linen_shirt",
-        "linen_sleeves"
+        "sackcloth_cowl"
       ],
       "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 2
+        },
         {
           "stat": "maxMana",
           "op": "add",
-          "value": 10
-        },
-        {
-          "stat": "armour",
-          "op": "add",
-          "value": 3
-        }
-      ]
-    },
-    {
-      "id": "drowned_leathers",
-      "name": "Drowned Leathers",
-      "slot": "chest",
-      "icon": "armour",
-      "dropWeight": 7,
-      "minLevel": 2,
-      "visual": null,
-      "wear": [
-        "leather_vest",
-        "leather_sleeves",
-        "leather_pauldron"
-      ],
-      "implicit": [
-        {
-          "stat": "maxLife",
-          "op": "add",
-          "value": 14
-        },
-        {
-          "stat": "armour",
-          "op": "add",
-          "value": 10
-        }
-      ]
-    },
-    {
-      "id": "squall_plate",
-      "name": "Squall Plate",
-      "slot": "chest",
-      "icon": "armour",
-      "dropWeight": 5,
-      "minLevel": 3,
-      "visual": null,
-      "wear": [],
-      "implicit": [
-        {
-          "stat": "maxLife",
-          "op": "add",
-          "value": 24
-        },
-        {
-          "stat": "armour",
-          "op": "add",
-          "value": 26
+          "value": 12
         }
       ]
     },
@@ -194,9 +197,10 @@
       "id": "wayfarer_hood",
       "name": "Wayfarer's Hood",
       "slot": "head",
+      "material": "leather",
       "icon": "helm",
-      "dropWeight": 7,
-      "minLevel": 1,
+      "dropWeight": 6,
+      "minLevel": 2,
       "visual": null,
       "wear": [
         "leather_hood"
@@ -208,9 +212,178 @@
           "value": 6
         },
         {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.02
+        }
+      ]
+    },
+    {
+      "id": "saltworn_shirt",
+      "name": "Saltworn Shirt",
+      "slot": "chest",
+      "material": "cloth",
+      "icon": "armour",
+      "dropWeight": 8,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "linen_shirt",
+        "linen_sleeves"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 4
+        },
+        {
           "stat": "maxMana",
           "op": "add",
-          "value": 8
+          "value": 10
+        }
+      ]
+    },
+    {
+      "id": "penitent_robe",
+      "name": "Penitent's Robe",
+      "slot": "chest",
+      "material": "cloth",
+      "icon": "armour",
+      "dropWeight": 6,
+      "minLevel": 3,
+      "visual": null,
+      "wear": [
+        "sackcloth_robe"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 6
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 22
+        },
+        {
+          "stat": "manaRegen",
+          "op": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "drowned_leathers",
+      "name": "Drowned Leathers",
+      "slot": "chest",
+      "material": "leather",
+      "icon": "armour",
+      "dropWeight": 7,
+      "minLevel": 2,
+      "visual": null,
+      "wear": [
+        "leather_vest",
+        "leather_sleeves",
+        "leather_pauldron"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 12
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 14
+        }
+      ]
+    },
+    {
+      "id": "ringmail_hauberk",
+      "name": "Ringmail Hauberk",
+      "slot": "chest",
+      "material": "mail",
+      "icon": "armour",
+      "dropWeight": 5,
+      "minLevel": 4,
+      "visual": null,
+      "wear": [
+        "ringmail_hauberk"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 22
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 20
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.03
+        }
+      ]
+    },
+    {
+      "id": "squall_plate",
+      "name": "Squall Plate",
+      "slot": "chest",
+      "material": "plate",
+      "icon": "armour",
+      "dropWeight": 4,
+      "minLevel": 6,
+      "visual": null,
+      "wear": [
+        "squall_hauberk",
+        "leather_pauldron"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 34
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 28
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.06
+        }
+      ]
+    },
+    {
+      "id": "tanner_gloves",
+      "name": "Tanner's Gloves",
+      "slot": "hands",
+      "material": "leather",
+      "icon": "gloves",
+      "dropWeight": 7,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "tanned_gloves"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 4
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.03
         }
       ]
     },
@@ -218,9 +391,10 @@
       "id": "strapped_bracers",
       "name": "Strapped Bracers",
       "slot": "hands",
+      "material": "leather",
       "icon": "gloves",
       "dropWeight": 6,
-      "minLevel": 2,
+      "minLevel": 3,
       "visual": null,
       "wear": [
         "leather_bracers"
@@ -229,12 +403,12 @@
         {
           "stat": "armour",
           "op": "add",
-          "value": 5
+          "value": 6
         },
         {
           "stat": "attackSpeed",
           "op": "add",
-          "value": 0.04
+          "value": 0.05
         }
       ]
     },
@@ -242,6 +416,7 @@
       "id": "marsh_breeches",
       "name": "Marsh Breeches",
       "slot": "legs",
+      "material": "cloth",
       "icon": "legs",
       "dropWeight": 8,
       "minLevel": 1,
@@ -251,14 +426,39 @@
       ],
       "implicit": [
         {
-          "stat": "maxLife",
-          "op": "add",
-          "value": 8
-        },
-        {
           "stat": "armour",
           "op": "add",
           "value": 3
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "id": "gravedigger_breeches",
+      "name": "Gravedigger's Breeches",
+      "slot": "legs",
+      "material": "leather",
+      "icon": "legs",
+      "dropWeight": 7,
+      "minLevel": 2,
+      "visual": null,
+      "wear": [
+        "rough_breeches"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 7
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 8
         }
       ]
     },
@@ -266,23 +466,29 @@
       "id": "stalker_leggings",
       "name": "Stalker's Leggings",
       "slot": "legs",
+      "material": "leather",
       "icon": "legs",
       "dropWeight": 6,
-      "minLevel": 2,
+      "minLevel": 3,
       "visual": null,
       "wear": [
         "leather_leggings"
       ],
       "implicit": [
         {
+          "stat": "armour",
+          "op": "add",
+          "value": 9
+        },
+        {
           "stat": "maxLife",
           "op": "add",
           "value": 10
         },
         {
-          "stat": "armour",
-          "op": "add",
-          "value": 8
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.02
         }
       ]
     },
@@ -290,6 +496,7 @@
       "id": "mudcaked_boots",
       "name": "Mudcaked Boots",
       "slot": "feet",
+      "material": "cloth",
       "icon": "boots",
       "dropWeight": 8,
       "minLevel": 1,
@@ -304,6 +511,11 @@
           "value": 2
         },
         {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 4
+        },
+        {
           "stat": "moveSpeed",
           "op": "percent",
           "value": 0.03
@@ -314,6 +526,7 @@
       "id": "strider_boots",
       "name": "Strider's Boots",
       "slot": "feet",
+      "material": "leather",
       "icon": "boots",
       "dropWeight": 6,
       "minLevel": 2,
@@ -330,7 +543,7 @@
         {
           "stat": "moveSpeed",
           "op": "percent",
-          "value": 0.05
+          "value": 0.06
         }
       ]
     },
@@ -338,6 +551,7 @@
       "id": "gale_charm",
       "name": "Gale Charm",
       "slot": "charm",
+      "material": null,
       "icon": "charm",
       "dropWeight": 7,
       "minLevel": 1,
@@ -360,6 +574,7 @@
       "id": "ember_charm",
       "name": "Ember Charm",
       "slot": "charm",
+      "material": null,
       "icon": "charm",
       "dropWeight": 5,
       "minLevel": 2,

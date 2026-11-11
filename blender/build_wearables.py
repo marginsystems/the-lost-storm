@@ -10,9 +10,13 @@ from mathutils import Matrix, Vector
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from wearable_fit import SKELETONS, SourceSkeleton, Span, inflate, refit, simplify, trim_faces
+from wearable_makehuman import Garment
+from wearable_makehuman import load as load_makehuman
+from wearable_makehuman import skeleton as makehuman_skeleton
 from wearable_textures import retexture, source_images
 
 WEBP_QUALITY: int = 88
+MAKEHUMAN: str = "makehuman"
 
 
 @dataclass(frozen=True)
@@ -32,6 +36,8 @@ class Part:
     decimate: float
     texture_size: int
     inflate: float
+    girth: float | None
+    shift: tuple[float, float, float]
 
 
 def read_span(raw: object) -> Span | None:
@@ -56,6 +62,8 @@ def read_part(raw: dict[str, object]) -> Part:
         decimate=float(raw.get("decimate", 1.0)),
         texture_size=int(raw.get("textureSize", 512)),
         inflate=float(raw.get("inflate", 0.0)),
+        girth=None if raw.get("girth") is None else float(raw["girth"]),
+        shift=tuple(float(value) for value in raw.get("shift", (0.0, 0.0, 0.0))),
     )
 
 
@@ -138,7 +146,43 @@ def export(obj: Object, rig: Object, path: Path) -> None:
     )
 
 
-def build_part(part: Part, source_root: Path, skeleton: SourceSkeleton, rig_path: Path, out: Path, scratch: Path) -> None:
+@dataclass(frozen=True)
+class Pack:
+    root: Path
+    skeleton: str
+    rig_root: Path | None
+    girth: float
+
+
+@dataclass
+class Source:
+    obj: Object
+    heads: dict[str, Vector]
+    images: dict[str, Image]
+    skeleton: SourceSkeleton
+    leftovers: list[str]
+
+
+def load_rigged(part: Part, pack: Pack) -> Source:
+    imported: list[Object] = import_model(pack.root / part.file)
+    names: list[str] = [entry.name for entry in imported]
+    armature: Object = only_armature(imported, part.id)
+    picked: list[tuple[Object, Span | None]] = pick_meshes(imported, armature, part)
+    for mesh_object, clip in picked:
+        trim_faces(mesh_object, part.id, part.drop_materials, clip)
+    obj: Object = join_meshes([mesh_object for mesh_object, _ in picked])
+    return Source(obj, joint_heads(armature), source_images(obj, part.drop_materials), SKELETONS[pack.skeleton], names)
+
+
+def load_garment(part: Part, pack: Pack) -> Source:
+    if pack.rig_root is None:
+        raise RuntimeError(f"{part.id}: pack {part.pack} names no rig pack, or that pack has no folder on the command line")
+    garment: Garment = load_makehuman(part.id, pack.root / part.file, pack.rig_root)
+    trim_faces(garment.obj, part.id, (), part.keep_abs_x)
+    return Source(garment.obj, garment.heads, garment.images, makehuman_skeleton(), [])
+
+
+def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path) -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     rig_objects: list[Object] = import_model(rig_path)
     rig: Object = only_armature(rig_objects, "rig")
@@ -146,20 +190,15 @@ def build_part(part: Part, source_root: Path, skeleton: SourceSkeleton, rig_path
         if extra != rig:
             bpy.data.objects.remove(extra)
     target: dict[str, Vector] = joint_heads(rig)
-    imported: list[Object] = import_model(source_root / part.file)
-    imported_names: list[str] = [entry.name for entry in imported]
-    armature: Object = only_armature(imported, part.id)
-    picked: list[tuple[Object, Span | None]] = pick_meshes(imported, armature, part)
-    for mesh_object, clip in picked:
-        trim_faces(mesh_object, part.id, part.drop_materials, clip)
-    obj: Object = join_meshes([mesh_object for mesh_object, _ in picked])
-    images: dict[str, Image] = source_images(obj, part.drop_materials)
-    refit(obj, skeleton, joint_heads(armature), target)
+    source: Source = load_garment(part, pack) if pack.skeleton == MAKEHUMAN else load_rigged(part, pack)
+    obj: Object = source.obj
+    refit(obj, source.skeleton, source.heads, target, pack.girth if part.girth is None else part.girth)
+    obj.data.transform(Matrix.Translation(part.shift))
     inflate(obj, part.inflate)
     simplify(obj, part.decimate)
-    retexture(obj, part.id, part.texture_size, images, scratch)
+    retexture(obj, part.id, part.texture_size, source.images, scratch)
     bind(obj, rig, part.id)
-    for name in imported_names:
+    for name in source.leftovers:
         leftover: Object | None = bpy.data.objects.get(name)
         if leftover is not None and leftover != obj:
             bpy.data.objects.remove(leftover)
@@ -201,8 +240,9 @@ def build(arguments: list[str]) -> None:
     if not buildable:
         raise SystemExit("nothing to build: give a <pack>=<dir> argument for a pack in the manifest")
     for part in buildable:
-        skeleton: SourceSkeleton = SKELETONS[str(manifest["packs"][part.pack]["skeleton"])]
-        build_part(part, roots[part.pack], skeleton, rig_path, out, scratch)
+        described = manifest["packs"][part.pack]
+        pack: Pack = Pack(roots[part.pack], str(described["skeleton"]), roots.get(str(described.get("rig", ""))), float(described.get("girth", 1.0)))
+        build_part(part, pack, rig_path, out, scratch)
 
 
 build(sys.argv[sys.argv.index("--") + 1 :])

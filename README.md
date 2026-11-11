@@ -120,7 +120,9 @@ Clothing and armour are wearables: skinned meshes in `public/models/wear/` that 
 - `tint` multiplies the piece's colour, so one model gives a clean shirt, a dirty one and a monster's rags.
 - `hides` lists the wearer's `bodyParts` that are not drawn under it, so bone does not poke through a boot.
 
-New pieces come from outfit packs through `blender/build_wearables.py`, which refits a part from the pack's rig to ours and writes one GLB per part. [ASSETS.md](ASSETS.md) has the command.
+New pieces come from outfit packs through `blender/build_wearables.py`, which refits a part to our rig and writes one GLB per part. It reads rigged glTF parts (the Quaternius outfits) and MakeHuman garments. [ASSETS.md](ASSETS.md) has the command.
+
+An armour base also names its `material`: `cloth`, `leather`, `mail` or `plate`. Within a slot a heavier material gives more armour, turns up later and less often, and mail and plate slow the wearer; `sim/items.test.ts` holds the data to that.
 
 To use a different rig, add its rig entry with its own bone names in `sockets`, and point `data/player.json` (`rig`) or a monster at it. Mixamo characters work this way (export FBX, convert to GLB, set `scale` to 0.01 and `rootMotionBone` to `mixamorigHips`), but Mixamo files may not be redistributed, so they go in `public/models/local/`, which is git-ignored, and never in this repository.
 

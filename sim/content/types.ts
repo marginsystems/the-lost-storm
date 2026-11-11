@@ -162,10 +162,14 @@ export interface RarityDef {
   readonly statScale: number;
 }
 
+export const ARMOUR_MATERIALS = ['cloth', 'leather', 'mail', 'plate'] as const;
+export type ArmourMaterial = (typeof ARMOUR_MATERIALS)[number];
+
 export interface ItemBaseDef {
   readonly id: string;
   readonly name: string;
   readonly slot: ItemSlot;
+  readonly material: ArmourMaterial | null;
   readonly icon: string;
   readonly dropWeight: number;
   readonly minLevel: number;

@@ -73,6 +73,7 @@ const extraBase = {
   id: 'obsidian_blade',
   name: 'Obsidian Blade',
   slot: 'weapon',
+  material: null,
   icon: 'sword',
   dropWeight: 5,
   minLevel: 1,
@@ -200,8 +201,15 @@ void test('worn gear is data: unknown wearables, doubled regions and unknown bod
   const hidesNothing: Content = parseContent({ ...shipped, wearables: [...wearables, { ...extraWearable, hides: ['tail'] }] });
   assert.ok(contentProblems(hidesNothing).some((found: string): boolean => found.includes('wearable ash_shroud') && found.includes('no body part tail')));
 
-  const badItem: Content = parseContent({ ...shipped, items: { ...items, bases: [...items.bases, { ...extraBase, id: 'ghost_coat', slot: 'chest', visual: null, wear: ['no_such_coat'] }] } });
+  const badItem: Content = parseContent({ ...shipped, items: { ...items, bases: [...items.bases, { ...extraBase, id: 'ghost_coat', slot: 'chest', material: 'cloth', visual: null, wear: ['no_such_coat'] }] } });
   assert.ok(contentProblems(badItem).some((found: string): boolean => found.includes('item ghost_coat wears unknown wearable no_such_coat')));
+
+  const bareCoat: Content = parseContent({ ...shipped, items: { ...items, bases: [...items.bases, { ...extraBase, id: 'bare_coat', slot: 'chest', visual: null }] } });
+  assert.ok(contentProblems(bareCoat).some((found: string): boolean => found.includes('item bare_coat in slot chest needs a material')));
+  const plateSword: Content = parseContent({ ...shipped, items: { ...items, bases: [...items.bases, { ...extraBase, material: 'plate' }] } });
+  assert.ok(contentProblems(plateSword).some((found: string): boolean => found.includes('item obsidian_blade in slot weapon cannot have a material')));
+  const oddCloth: RawContent = { ...shipped, items: { ...items, bases: [...items.bases, { ...extraBase, material: 'silk' }] } };
+  assert.throws((): Content => parseContent(oddCloth), (error: unknown): boolean => problem(error, 'material'));
 });
 
 void test('a zone parses with its kind, level, exits, checkpoints, surge rules and ambience', (): void => {

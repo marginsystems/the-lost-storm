@@ -87,7 +87,7 @@ def trim_faces(obj: Object, label: str, drop_materials: tuple[str, ...], clip: S
     mesh = bmesh.new()
     mesh.from_mesh(obj.data)
     slots: list[str] = [made.name.split(".")[0] if made is not None else "" for made in obj.data.materials]
-    doomed = [face for face in mesh.faces if slots[face.material_index] in drop_materials]
+    doomed = [face for face in mesh.faces if face.material_index < len(slots) and slots[face.material_index] in drop_materials]
     bmesh.ops.delete(mesh, geom=doomed, context="FACES")
     if clip is not None:
         near, far = clip
@@ -106,7 +106,7 @@ def trim_faces(obj: Object, label: str, drop_materials: tuple[str, ...], clip: S
         raise RuntimeError(f"{label}: nothing left after trimming")
 
 
-def bone_matrix(skeleton: SourceSkeleton, joint: str, source: dict[str, Vector], target: dict[str, Vector]) -> Matrix:
+def bone_matrix(skeleton: SourceSkeleton, joint: str, source: dict[str, Vector], target: dict[str, Vector], girth: float) -> Matrix:
     name: str = skeleton.rides.get(joint, joint)
     mapped: str = skeleton.joints[name]
     from_head: Vector = source[name]
@@ -114,12 +114,12 @@ def bone_matrix(skeleton: SourceSkeleton, joint: str, source: dict[str, Vector],
     source_child: str | None = skeleton.child.get(name)
     target_child: str | None = TARGET_CHILD.get(mapped)
     if source_child is None or target_child is None or source_child not in source or skeleton.joints.get(source_child) != target_child:
-        return Matrix.Translation(to_head - from_head)
+        return Matrix.Translation(to_head) @ Matrix.Scale(girth, 4) @ Matrix.Translation(-from_head)
     from_axis: Vector = source[source_child] - from_head
     to_axis: Vector = target[target_child] - to_head
     unit: Vector = from_axis.normalized()
     stretch: float = to_axis.length / from_axis.length
-    along: Matrix = Matrix.Identity(3) + (stretch - 1.0) * Matrix([[unit[row] * unit[column] for column in range(3)] for row in range(3)])
+    along: Matrix = girth * Matrix.Identity(3) + (stretch - girth) * Matrix([[unit[row] * unit[column] for column in range(3)] for row in range(3)])
     turn: Matrix = from_axis.rotation_difference(to_axis).to_matrix()
     return Matrix.Translation(to_head) @ (turn @ along).to_4x4() @ Matrix.Translation(-from_head)
 
@@ -128,7 +128,7 @@ def lowered(names: dict[str, Vector]) -> dict[str, Vector]:
     return {name.lower(): head for name, head in names.items()}
 
 
-def refit(obj: Object, skeleton: SourceSkeleton, source: dict[str, Vector], target: dict[str, Vector]) -> None:
+def refit(obj: Object, skeleton: SourceSkeleton, source: dict[str, Vector], target: dict[str, Vector], girth: float) -> None:
     mesh = obj.data
     count: int = len(mesh.vertices)
     joints: list[str] = sorted(set(skeleton.joints.values()))
@@ -143,7 +143,7 @@ def refit(obj: Object, skeleton: SourceSkeleton, source: dict[str, Vector], targ
         key: str = group.name.lower()
         if key in skeleton.joints and key in heads:
             names[group.index] = key
-            matrices[group.index] = np.array(bone_matrix(skeleton, key, heads, target))
+            matrices[group.index] = np.array(bone_matrix(skeleton, key, heads, target, girth))
     points = np.empty(count * 3, dtype=np.float64)
     mesh.vertices.foreach_get("co", points)
     points = np.concatenate([points.reshape(count, 3), np.ones((count, 1))], axis=1)

@@ -11,6 +11,7 @@ PADDING_SHARE: float = 1.0 / 128.0
 MIN_ISLAND_PIXELS: float = 2.0
 PACK_STEPS: int = 28
 FLAT_NORMAL: tuple[float, float, float, float] = (0.5, 0.5, 1.0, 1.0)
+PLAIN_ROUGHNESS: float = 0.88
 
 
 @dataclass
@@ -201,6 +202,9 @@ def retexture(obj: Object, name: str, side: int, images: dict[str, Image], scrat
         links.new(orm.outputs["Color"], split.inputs["Color"])
         links.new(split.outputs["Green"], shader.inputs["Roughness"])
         links.new(split.outputs["Blue"], shader.inputs["Metallic"])
+    else:
+        shader.inputs["Roughness"].default_value = PLAIN_ROUGHNESS
+        shader.inputs["Metallic"].default_value = 0.0
     if "normal" in images:
         normal = nodes.new("ShaderNodeTexImage")
         normal.image = new_image(f"{name}_normal", repacked(images["normal"], islands, scale, side, padding, FLAT_NORMAL), "Non-Color", scratch)

@@ -1,4 +1,4 @@
-import type { Content, ItemBaseDef, ItemSlot, RarityDef } from '../../sim/content/types.ts';
+import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, RarityDef } from '../../sim/content/types.ts';
 import type { ItemLine } from '../../sim/items.ts';
 import { baseOf, itemLines, itemName, rarityOf, slotOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
@@ -14,6 +14,13 @@ const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = {
   legs: 'Leggings',
   feet: 'Boots',
   charm: 'Charm',
+};
+
+const MATERIAL_NAMES: Readonly<Record<ArmourMaterial, string>> = {
+  cloth: 'Cloth',
+  leather: 'Leather',
+  mail: 'Mail',
+  plate: 'Plate',
 };
 
 function appendLines(parent: HTMLElement, content: Content, item: ItemInstance): void {
@@ -34,7 +41,9 @@ export function itemTooltip(api: HudApi, item: ItemInstance, equipped: ItemInsta
   const heading: HTMLDivElement = el('div', 'tip-heading', head);
   const title: HTMLDivElement = label('tip-title', itemName(content, item), heading);
   title.style.color = rarity.color;
-  label('tip-sub', slot === null ? rarity.name : `${rarity.name} ${SLOT_NAMES[slot]}`, heading);
+  const material: ArmourMaterial | null = base?.material ?? null;
+  const kind: string = slot === null ? '' : material === null ? SLOT_NAMES[slot] : `${MATERIAL_NAMES[material]} ${SLOT_NAMES[slot]}`;
+  label('tip-sub', slot === null ? rarity.name : `${rarity.name} ${kind}`, heading);
   label('tip-sub', `Item level ${item.level}`, heading);
   el('div', 'tip-sep', root);
   appendLines(root, content, item);

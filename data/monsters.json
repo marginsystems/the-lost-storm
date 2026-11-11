@@ -28,7 +28,7 @@
     ],
     "wear": [
       "rag_shirt",
-      "rag_trousers"
+      "thrall_breeches"
     ]
   },
   {
@@ -61,7 +61,8 @@
       "hex_staff"
     ],
     "wear": [
-      "hex_hood"
+      "hex_robe",
+      "hex_cowl"
     ]
   }
 ]

@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
-import type { AffixDef, Content, ItemBaseDef, ItemSlot, RarityDef } from './content/types.ts';
-import { ITEM_SLOTS } from './content/types.ts';
+import type { AffixDef, ArmourMaterial, Content, ItemBaseDef, ItemSlot, RarityDef, StatId, StatMod } from './content/types.ts';
+import { ARMOUR_MATERIALS, ITEM_SLOTS } from './content/types.ts';
 import { baseOf, emptyEquipment, generateItem, itemLines, itemMods, itemName, rarityOf, slotOf } from './items.ts';
 import type { ItemLine } from './items.ts';
 import { createRng } from './rng.ts';
@@ -48,7 +48,7 @@ void test('bases respect their minimum level', (): void => {
   const low: Set<string> = new Set<string>(rolls(4, 1).map((item: ItemInstance): string => item.base));
   for (const id of low) assert.equal(must(content.itemBases.get(id), id).minLevel, 1);
   assert.ok(!low.has('squall_plate'));
-  const high: Set<string> = new Set<string>(rolls(4, 5).map((item: ItemInstance): string => item.base));
+  const high: Set<string> = new Set<string>(rolls(4, 6).map((item: ItemInstance): string => item.base));
   assert.equal(high.size, content.itemBases.size);
 });
 
@@ -76,8 +76,8 @@ void test('affix values stay within their scaled range', (): void => {
 void test('item level and rarity scale the implicit modifiers', (): void => {
   const common: ItemInstance = must(generateItem(content, createRng(1), 1, 1, 'rusted_blade', 'common'), 'common');
   const levelled: ItemInstance = must(generateItem(content, createRng(1), 1, 3, 'rusted_blade', 'common'), 'levelled');
-  assert.deepEqual(itemMods(content, common).map((mod) => mod.value), [3, 6]);
-  assert.deepEqual(itemMods(content, levelled).map((mod) => mod.value), [4, 8]);
+  assert.deepEqual(itemMods(content, common).map((mod) => mod.value), [3, 6, 0.03]);
+  assert.deepEqual(itemMods(content, levelled).map((mod) => mod.value), [4, 8, 0.04]);
   assert.equal(baseOf(content, common)?.slot, 'weapon');
   assert.equal(baseOf(content, { ...common, base: 'gone' }), null);
   assert.equal(rarityOf(content, { ...common, rarity: 'gone' }).id, 'unknown');
@@ -98,11 +98,11 @@ void test('item lines merge the weapon damage range and list affixes separately'
   const lines: ItemLine[] = itemLines(content, item);
   assert.deepEqual(
     lines.map((line: ItemLine): string => line.text),
-    ['5–9 Damage', '+10% Attack Speed', '+5% Critical Strike Chance'],
+    ['5–9 Damage', '+10% Attack Speed', '+3% Critical Strike Chance', '+5% Critical Strike Chance'],
   );
   assert.deepEqual(
     lines.map((line: ItemLine): string => line.source),
-    ['implicit', 'implicit', 'affix'],
+    ['implicit', 'implicit', 'implicit', 'affix'],
   );
 });
 
@@ -122,5 +122,96 @@ void test('a held weapon shows a model and never wears clothes, and armour is th
     const found: ItemBaseDef = base;
     if (found.slot === 'weapon') assert.deepEqual(found.wear, [], found.id);
     else assert.equal(found.visual, null, found.id);
+  }
+});
+
+function implicitOf(base: ItemBaseDef, stat: StatId): number {
+  return base.implicit.filter((mod: StatMod): boolean => mod.stat === stat).reduce((sum: number, mod: StatMod): number => sum + mod.value, 0);
+}
+
+function armourBases(slot: ItemSlot, material: ArmourMaterial): ItemBaseDef[] {
+  return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === slot && base.material === material);
+}
+
+function tiers(slot: ItemSlot): [ItemBaseDef[], ItemBaseDef[]][] {
+  const pairs: [ItemBaseDef[], ItemBaseDef[]][] = [];
+  ARMOUR_MATERIALS.forEach((lighter: ArmourMaterial, index: number): void => {
+    for (const heavier of ARMOUR_MATERIALS.slice(index + 1)) {
+      const light: ItemBaseDef[] = armourBases(slot, lighter);
+      const heavy: ItemBaseDef[] = armourBases(slot, heavier);
+      if (light.length > 0 && heavy.length > 0) pairs.push([light, heavy]);
+    }
+  });
+  return pairs;
+}
+
+void test('in every slot a heavier material gives more armour than a lighter one', (): void => {
+  let compared: number = 0;
+  for (const slot of ITEM_SLOTS) {
+    for (const [light, heavy] of tiers(slot)) {
+      const most: number = Math.max(...light.map((base: ItemBaseDef): number => implicitOf(base, 'armour')));
+      const least: number = Math.min(...heavy.map((base: ItemBaseDef): number => implicitOf(base, 'armour')));
+      assert.ok(least > most, `${slot}: ${heavy[0]?.material ?? ''} ${least} against ${light[0]?.material ?? ''} ${most}`);
+      compared += 1;
+    }
+  }
+  assert.ok(compared >= 6);
+  const chest: ArmourMaterial[] = ARMOUR_MATERIALS.filter((material: ArmourMaterial): boolean => armourBases('chest', material).length > 0);
+  assert.deepEqual(chest, [...ARMOUR_MATERIALS]);
+});
+
+void test('heavier materials turn up later and less often', (): void => {
+  for (const slot of ITEM_SLOTS) {
+    for (const [light, heavy] of tiers(slot)) {
+      const firstLight: number = Math.min(...light.map((base: ItemBaseDef): number => base.minLevel));
+      const firstHeavy: number = Math.min(...heavy.map((base: ItemBaseDef): number => base.minLevel));
+      assert.ok(firstHeavy > firstLight, `${slot} level`);
+      const commonLight: number = Math.max(...light.map((base: ItemBaseDef): number => base.dropWeight));
+      const commonHeavy: number = Math.max(...heavy.map((base: ItemBaseDef): number => base.dropWeight));
+      assert.ok(commonHeavy < commonLight, `${slot} weight`);
+    }
+  }
+});
+
+void test('each material has its own trade-off', (): void => {
+  for (const base of content.itemBases.values()) {
+    const slows: boolean = implicitOf(base, 'moveSpeed') < 0 || implicitOf(base, 'attackSpeed') < 0;
+    switch (base.material) {
+      case 'cloth':
+        assert.ok(implicitOf(base, 'maxMana') > 0, `${base.id} gives mana`);
+        assert.ok(!slows, base.id);
+        break;
+      case 'leather':
+        assert.ok(!slows, base.id);
+        break;
+      case 'mail':
+      case 'plate':
+        assert.ok(slows, `${base.id} slows its wearer`);
+        assert.ok(implicitOf(base, 'maxLife') > 0, `${base.id} gives life`);
+        break;
+      case null:
+        assert.ok(base.slot === 'weapon' || base.slot === 'charm', base.id);
+        break;
+    }
+  }
+});
+
+function bonusStats(base: ItemBaseDef): string {
+  return base.implicit
+    .filter((mod: StatMod): boolean => mod.stat !== 'damageMin' && mod.stat !== 'damageMax')
+    .map((mod: StatMod): string => mod.stat)
+    .toSorted()
+    .join('+');
+}
+
+void test('no two weapons hit the same way', (): void => {
+  const weapons: ItemBaseDef[] = [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === 'weapon');
+  assert.ok(weapons.length >= 4);
+  assert.equal(new Set<string>(weapons.map(bonusStats)).size, weapons.length);
+  const hits: number[] = weapons.map((base: ItemBaseDef): number => (implicitOf(base, 'damageMin') + implicitOf(base, 'damageMax')) / 2);
+  assert.equal(new Set<number>(hits).size, weapons.length);
+  for (const base of weapons) {
+    assert.ok(implicitOf(base, 'damageMax') > implicitOf(base, 'damageMin'), base.id);
+    assert.ok(bonusStats(base).length > 0, `${base.id} has a bonus besides damage`);
   }
 });

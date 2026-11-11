@@ -7,6 +7,7 @@ import type {
   Content,
   Delivery,
   ItemBaseDef,
+  ItemSlot,
   MonsterBehaviour,
   MonsterDef,
   PackMember,
@@ -36,7 +37,7 @@ import type {
   ZonePoint,
   ZoneProp,
 } from './types.ts';
-import { ACTION_ANIMATIONS, AFFIX_POSITIONS, ANIMATION_KEYS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES, WEAR_REGIONS, ZONE_KINDS } from './types.ts';
+import { ACTION_ANIMATIONS, AFFIX_POSITIONS, ANIMATION_KEYS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES, WEAR_REGIONS, ZONE_KINDS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -160,6 +161,7 @@ function itemBase(value: unknown, where: string): ItemBaseDef {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
     slot: choice(source, 'slot', ITEM_SLOTS, where),
+    material: source['material'] === null || source['material'] === undefined ? null : choice(source, 'material', ARMOUR_MATERIALS, where),
     icon: text(source, 'icon', where),
     dropWeight: numeric(source, 'dropWeight', where),
     minLevel: numeric(source, 'minLevel', where),
@@ -462,6 +464,8 @@ export function parseContent(raw: RawContent): Content {
   };
 }
 
+const WORN_SLOTS: ReadonlySet<ItemSlot> = new Set<ItemSlot>(['head', 'chest', 'hands', 'legs', 'feet']);
+
 export function contentProblems(content: Content): string[] {
   const problems: string[] = [];
   const need = (ok: boolean, problem: string): void => {
@@ -499,6 +503,7 @@ export function contentProblems(content: Content): string[] {
   for (const base of content.itemBases.values()) {
     if (base.visual !== null) fits(`item ${base.id}`, content.player.rig, base.visual);
     wears(`item ${base.id}`, content.player.rig, base.wear);
+    need(WORN_SLOTS.has(base.slot) === (base.material !== null), `item ${base.id} in slot ${base.slot} ${base.material === null ? 'needs a material' : 'cannot have a material'}`);
   }
   for (const worn of content.wearables.values()) wears(`wearable ${worn.id}`, content.player.rig, [worn.id]);
   for (const binding of content.player.skillBar) need(content.skills.has(binding.skill), `skill bar uses unknown skill ${binding.skill}`);

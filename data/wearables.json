@@ -35,13 +35,6 @@
     "hides": []
   },
   {
-    "id": "hex_hood",
-    "model": "models/wear/ranger_hood.glb",
-    "region": "head",
-    "tint": "#a48fd0",
-    "hides": []
-  },
-  {
     "id": "linen_shirt",
     "model": "models/wear/peasant_shirt.glb",
     "region": "chest",
@@ -123,5 +116,78 @@
     "hides": [
       "feet"
     ]
+  },
+  {
+    "id": "sackcloth_robe",
+    "model": "models/wear/monk_robe.glb",
+    "region": "chest",
+    "tint": "#ffffff",
+    "hides": [
+      "torso"
+    ]
+  },
+  {
+    "id": "sackcloth_cowl",
+    "model": "models/wear/monk_hood.glb",
+    "region": "head",
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "hex_robe",
+    "model": "models/wear/monk_robe.glb",
+    "region": "chest",
+    "tint": "#b79be0",
+    "hides": [
+      "torso"
+    ]
+  },
+  {
+    "id": "hex_cowl",
+    "model": "models/wear/monk_hood.glb",
+    "region": "head",
+    "tint": "#b79be0",
+    "hides": []
+  },
+  {
+    "id": "ringmail_hauberk",
+    "model": "models/wear/mail_tunic.glb",
+    "region": "chest",
+    "tint": "#ffffff",
+    "hides": [
+      "torso"
+    ]
+  },
+  {
+    "id": "squall_hauberk",
+    "model": "models/wear/mail_tunic.glb",
+    "region": "chest",
+    "tint": "#cfe0f2",
+    "hides": [
+      "torso"
+    ]
+  },
+  {
+    "id": "rough_breeches",
+    "model": "models/wear/viking_breeches.glb",
+    "region": "legs",
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "tanned_gloves",
+    "model": "models/wear/leather_gloves.glb",
+    "region": "hands",
+    "tint": "#ffffff",
+    "hides": [
+      "hands"
+    ]
+  },
+  {
+    "id": "thrall_breeches",
+    "model": "models/wear/viking_breeches.glb",
+    "region": "legs",
+    "tint": "#8f8a80",
+    "hides": []
   }
 ]

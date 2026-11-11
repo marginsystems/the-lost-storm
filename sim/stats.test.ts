@@ -114,11 +114,14 @@ void test('every equipment slot adds its item to the stats', (): void => {
     feet: item('strider_boots'),
   };
   const after: StatBlock = computeStats(content, 1, dressed, []);
-  assert.equal(after.armour, before.armour + 6 + 10 + 5 + 8 + 6);
+  assert.equal(after.armour, before.armour + 6 + 12 + 6 + 9 + 6);
   assert.equal(after.maxLife, before.maxLife + 14 + 10);
-  assert.equal(after.maxMana, before.maxMana + 8);
-  assert.ok(Math.abs(after.attackSpeed - (before.attackSpeed + 0.04)) < 1e-9);
-  assert.ok(Math.abs(after.moveSpeed - before.moveSpeed * 1.05) < 1e-9);
+  assert.ok(Math.abs(after.critChance - (before.critChance + 0.02)) < 1e-9);
+  assert.ok(Math.abs(after.attackSpeed - (before.attackSpeed + 0.05)) < 1e-9);
+  assert.ok(Math.abs(after.moveSpeed - before.moveSpeed * 1.08) < 1e-9);
+  const heavy: StatBlock = computeStats(content, 1, { ...bare, chest: item('squall_plate') }, []);
+  assert.ok(heavy.moveSpeed < before.moveSpeed);
+  assert.ok(heavy.armour > after.armour - 6 - 6 - 9 - 6);
   for (const slot of ITEM_SLOTS) {
     if (dressed[slot] === null) continue;
     const without: StatBlock = computeStats(content, 1, { ...dressed, [slot]: null }, []);

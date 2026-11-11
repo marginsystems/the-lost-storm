@@ -1,0 +1,48 @@
+MakeHuman community garments
+http://www.makehumancommunity.org/clothes.html
+Asset packs: http://files2.makehumancommunity.org/asset_packs/ (suits02_cc0.zip, gloves01_cc0.zip)
+
+License: Creative Commons Zero (CC0 1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+MakeHuman assets have no pack-wide licence file. Each garment states its own licence in the header of
+its .mhclo file, and only garments whose header says CC0 are used here. The header lines are quoted
+below as they appear in the files.
+
+public/models/wear/monk_robe.glb
+  suits02_cc0.zip, clothes/donitz_monk_robe/donitz_monk_robe.mhclo ("Monks Robe")
+    # author: Donitz
+    # license: CC0
+
+public/models/wear/monk_hood.glb
+  suits02_cc0.zip, clothes/donitz_monk_robe_hood/donitz_monk_robe_hood.mhclo ("Monks Hood")
+    # author: Donitz
+    # license: CC0
+
+public/models/wear/mail_tunic.glb
+  suits02_cc0.zip, clothes/rehmanpolanski_viking_tunic/rehmanpolanski_viking_tunic.mhclo ("TunicViking")
+    # author Rehman Polanski
+    # license CC0
+
+public/models/wear/viking_breeches.glb
+  suits02_cc0.zip, clothes/rehmanpolanski_viking_pants/rehmanpolanski_viking_pants.mhclo ("PantsViking")
+    # author Rehman Polanski
+    # license CC0
+
+public/models/wear/leather_gloves.glb
+  gloves01_cc0.zip, clothes/toigo_gloves_medium/toigo_gloves_medium.mhclo ("Gloves_Medium")
+    # author MRT
+    # license CC0
+
+Left out of the same packs because their headers do not say CC0: culturalibre_hero-heroine_gloves_1
+(AGPL3).
+
+Build inputs that are read but not shipped, all released as CC0 by the MakeHuman project
+(Data Collection AB, Joel Palmius, Jonas Hauquier):
+  base.obj                the MakeHuman base mesh, makehuman/data/3dobjs/base.obj
+  default.mhskel          "license": "CC0", makehuman/data/rigs/default.mhskel
+  default_weights.mhw     "license": "CC0", makehuman/data/rigs/default_weights.mhw
+from https://github.com/makehumancommunity/makehuman
+
+Credit is not required; we credit the authors anyway. The garments were refitted to this game's rig,
+decimated, and had their textures repacked and resized by blender/build_wearables.py.

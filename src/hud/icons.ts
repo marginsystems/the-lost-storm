@@ -14,6 +14,7 @@ const GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
   ['helm', '<path d="M5 13a7 7 0 0 1 14 0v6h-4.5v-4h-5v4H5z"/><path d="M12 6v7" opacity="0.6"/>'],
   ['gloves', '<path d="M7 20v-5l-2-5 1.6-.8L8.5 12V5.2a1.2 1.2 0 0 1 2.4 0V10M10.9 10V4.2a1.2 1.2 0 0 1 2.4 0V10M13.3 10V5.2a1.2 1.2 0 0 1 2.4 0V11M15.7 11V7.4a1.2 1.2 0 0 1 2.3 0V15l-1 5z"/><path d="M7 17h10" opacity="0.6"/>'],
   ['legs', '<path d="M6.5 3h11l1 18h-5L12 9l-1.5 12h-5z"/><path d="M6.5 6.5h11" opacity="0.6"/>'],
+  ['staff', '<path d="M6 21 16.5 6.5"/><circle cx="17.6" cy="5" r="2.6" fill="currentColor"/><path d="M13.4 8.4l3.2 2.2" opacity="0.6"/>'],
   ['boots', '<path d="M8 3h6v10l5 3.2V20H8z"/><path d="M8 17h11" opacity="0.6"/><path d="M8 7h6" opacity="0.6"/>'],
   ['charm', '<path d="M8 3c0 6 2 8 4 8s4-2 4-8"/><circle cx="12" cy="16" r="5"/><path d="M12 13l2 3-2 3-2-3z" fill="currentColor"/>'],
   ['life', '<path d="M12 21C5 16 3 11.5 3 8.5a4.5 4.5 0 0 1 9-1.5 4.5 4.5 0 0 1 9 1.5c0 3-2 7.5-9 12.5z"/>'],

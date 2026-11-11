@@ -11,6 +11,7 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 | Free Pack - Human Skeleton | PolyOne Studio | https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
 | Universal Animation Library (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library.txt](licenses/Quaternius-Universal-Animation-Library.txt) |
 | Modular Character Outfits - Fantasy (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/modularcharacteroutfitsfantasy.html | CC0 1.0 | [licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt](licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt) |
+| MakeHuman community garments (suits02, gloves01) | Donitz, Rehman Polanski, MRT (makehumancommunity.org) | http://www.makehumancommunity.org/clothes.html | CC0 1.0 | [licenses/MakeHuman-community-assets.txt](licenses/MakeHuman-community-assets.txt) |
 | KayKit Dungeon Remastered 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0 | CC0 1.0 | [licenses/KayKit-Dungeon-Remastered-LICENSE.txt](licenses/KayKit-Dungeon-Remastered-LICENSE.txt) |
 
 ## Credit required by CC BY 4.0
@@ -49,7 +50,7 @@ Rebuild with:
 
 ## Clothing and armour
 
-Skinned pieces made once and worn by every character on the shared rig. They are parts of "Modular Character Outfits - Fantasy" (Standard) by Quaternius, paths below relative to `Exports/glTF (Godot-Unreal)/` in the pack. `data/wearables.json` turns each file into one or more wearables with a tint.
+Skinned pieces made once and worn by every character on the shared rig. The first table is parts of "Modular Character Outfits - Fantasy" (Standard) by Quaternius, paths relative to `Exports/glTF (Godot-Unreal)/` in the pack. `data/wearables.json` turns each file into one or more wearables with a tint.
 
 The pack's rig has 65 joints with Unreal names (`pelvis`, `spine_01`, `hand_r`) and slightly different proportions, so `blender/build_wearables.py` changes every part: it drops the bare-skin faces that ship with arm parts, moves each vertex from the pack's rest pose to ours joint by joint, renames and merges the vertex groups to our 53 `DEF-*` joints, and repacks the UV islands the part uses into its own 256 to 1024 pixel WebP textures. `blender/wearables.json` lists the parts; the refit is in `blender/wearable_fit.py` and the texture repack in `blender/wearable_textures.py`.
 
@@ -67,13 +68,23 @@ The pack's rig has 65 joints with Unreal names (`pelvis`, `spine_01`, `hand_r`) 
 | `public/models/wear/ranger_trousers.glb` | Trousers | `Modular Parts/Male_Ranger_Legs.gltf` | CC0 1.0 |
 | `public/models/wear/ranger_boots.glb` | Boots | `Modular Parts/Male_Ranger_Feet_Boots.gltf`, decimated to 40% | CC0 1.0 |
 
-Rebuild with the pack unpacked somewhere outside this repository:
+MakeHuman community garments come as a mesh fitted to the MakeHuman base body, with no skin of their own. `blender/wearable_makehuman.py` places each vertex from the garment's bindings to that body, takes its skin weights from the MakeHuman default rig through the same bindings, and maps MakeHuman's 163 bones onto our joints. Only garments whose own `.mhclo` header says CC0 are used; the header lines are quoted in the licence text.
+
+| File | What it is | Original | Licence |
+|---|---|---|---|
+| `public/models/wear/monk_robe.glb` | Hooded robe with rope belt | "Monks Robe" by Donitz, `suits02_cc0.zip`, decimated to 50% | CC0 1.0 |
+| `public/models/wear/monk_hood.glb` | Hood for the robe | "Monks Hood" by Donitz, `suits02_cc0.zip`, decimated to 50%, widened to fit the skull | CC0 1.0 |
+| `public/models/wear/mail_tunic.glb` | Ring mail over a padded tunic | "TunicViking" by Rehman Polanski, `suits02_cc0.zip`, decimated to 60% | CC0 1.0 |
+| `public/models/wear/viking_breeches.glb` | Breeches | "PantsViking" by Rehman Polanski, `suits02_cc0.zip` | CC0 1.0 |
+| `public/models/wear/leather_gloves.glb` | Gloves | "Gloves_Medium" by MRT, `gloves01_cc0.zip`, decimated to 50% | CC0 1.0 |
+
+Rebuild with the packs unpacked somewhere outside this repository:
 
 ```bash
-/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_wearables.py -- blender/wearables.json public/models/characters/skeleton.glb public/models/wear <scratch-dir> "quaternius_outfits_fantasy=<path to>/Modular Character Outfits - Fantasy[Standard]"
+/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_wearables.py -- blender/wearables.json public/models/characters/skeleton.glb public/models/wear <scratch-dir> "quaternius_outfits_fantasy=<path to>/Modular Character Outfits - Fantasy[Standard]" makehuman_suits02=<path to suits02_cc0> makehuman_gloves01=<path to gloves01_cc0> makehuman_rig=<folder with base.obj, default.mhskel and default_weights.mhw>
 ```
 
-The arguments are the manifest, the body whose rig the parts are fitted to, the output folder, a scratch folder for the repacked PNG textures, and one `<pack>=<folder>` per source pack. Add `only=<id>,<id>` to rebuild some parts.
+The arguments are the manifest, the body whose rig the parts are fitted to, the output folder, a scratch folder for the repacked PNG textures, and one `<pack>=<folder>` per source pack. Parts of a pack with no folder are left as they are. Add `only=<id>,<id>` to rebuild some parts. The build stops with an error when it would build nothing.
 
 ## Arena
 
