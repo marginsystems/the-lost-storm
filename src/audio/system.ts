@@ -1,7 +1,7 @@
 import type { SoundCue } from '../../sim/audio.ts';
 import type { AmbienceLoop, AmbienceStinger, ZoneAmbience } from '../../sim/content/audio.ts';
-import type { AmbienceBatch, AmbienceTracker } from './ambience.ts';
-import { createAmbienceTracker } from './ambience.ts';
+import type { AmbienceTracker } from './ambience.ts';
+import { createAmbienceTracker, runBatch } from './ambience.ts';
 import type { BufferLoader, LoadOptions } from './buffers.ts';
 import { createBufferLoader, LOOP_LOAD, PLAY_LOAD, WARM_LOAD } from './buffers.ts';
 import type { BufferCache } from './cache.ts';
@@ -229,12 +229,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   };
 
   const attemptLoops = (): void => {
-    const batch: AmbienceBatch<AmbienceLoop> | null = zoneLoops.take();
-    if (batch === null) return;
-    const settle = (retry: readonly AmbienceLoop[]): void => zoneLoops.settle(batch, retry);
-    Promise.all(batch.loops.map(async (loop: AmbienceLoop): Promise<AmbienceLoop | null> => ((await startLoop(loop, batch.generation)) ? null : loop)))
-      .then((results: (AmbienceLoop | null)[]): void => settle(results.filter((loop: AmbienceLoop | null): loop is AmbienceLoop => loop !== null)))
-      .catch((): void => settle(batch.loops));
+    runBatch(zoneLoops, startLoop).catch((): void => undefined);
   };
 
   const ensureManifest = (): void => {

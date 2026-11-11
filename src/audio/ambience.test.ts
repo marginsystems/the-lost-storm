@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must } from '../../test/support.ts';
 import type { AmbienceBatch, AmbienceTracker } from './ambience.ts';
-import { createAmbienceTracker } from './ambience.ts';
+import { createAmbienceTracker, runBatch } from './ambience.ts';
 
 function batchOf(tracker: AmbienceTracker<string>): AmbienceBatch<string> {
   return must(tracker.take(), 'batch');
@@ -63,4 +63,90 @@ void test('starting a zone over another without a stop also drops the earlier ba
   tracker.start(['fort']);
   assert.equal(tracker.current(old.generation), false);
   assert.deepEqual(batchOf(tracker).loops, ['fort']);
+});
+
+void test('a batch starts every loop and leaves nothing wanted when all start', async (): Promise<void> => {
+  const tracker: AmbienceTracker<string> = createAmbienceTracker<string>();
+  const started: string[] = [];
+  tracker.start(['wind', 'fire']);
+  await runBatch(tracker, (loop: string): Promise<boolean> => {
+    started.push(loop);
+    return Promise.resolve(true);
+  });
+  assert.deepEqual(started, ['wind', 'fire']);
+  assert.equal(tracker.take(), null);
+});
+
+void test('a loop that did not start is retried on the next batch and the ones that started are not', async (): Promise<void> => {
+  const tracker: AmbienceTracker<string> = createAmbienceTracker<string>();
+  tracker.start(['wind', 'fire', 'drip']);
+  await runBatch(tracker, (loop: string): Promise<boolean> => Promise.resolve(loop !== 'fire'));
+  const second: string[] = [];
+  await runBatch(tracker, (loop: string): Promise<boolean> => {
+    second.push(loop);
+    return Promise.resolve(true);
+  });
+  assert.deepEqual(second, ['fire']);
+});
+
+void test('a loop that throws is retried alone, and its throw does not end the others', async (): Promise<void> => {
+  const tracker: AmbienceTracker<string> = createAmbienceTracker<string>();
+  const started: string[] = [];
+  tracker.start(['wind', 'fire', 'drip']);
+  await runBatch(tracker, (loop: string): Promise<boolean> => {
+    if (loop === 'fire') return Promise.reject(new Error('no source'));
+    started.push(loop);
+    return Promise.resolve(true);
+  });
+  assert.deepEqual(started, ['wind', 'drip']);
+  const again: string[] = [];
+  await runBatch(tracker, (loop: string): Promise<boolean> => {
+    again.push(loop);
+    return Promise.resolve(true);
+  });
+  assert.deepEqual(again, ['fire']);
+});
+
+void test('a loop that throws at once, before it returns a promise, is handled the same way', async (): Promise<void> => {
+  const tracker: AmbienceTracker<string> = createAmbienceTracker<string>();
+  tracker.start(['wind', 'fire']);
+  await runBatch(tracker, (loop: string): Promise<boolean> => {
+    if (loop === 'wind') throw new Error('sync');
+    return Promise.resolve(true);
+  });
+  const again: string[] = [];
+  await runBatch(tracker, (loop: string): Promise<boolean> => {
+    again.push(loop);
+    return Promise.resolve(true);
+  });
+  assert.deepEqual(again, ['wind']);
+});
+
+void test('a batch that is stale when it settles re-queues nothing and does not run while another is in flight', async (): Promise<void> => {
+  const tracker: AmbienceTracker<string> = createAmbienceTracker<string>();
+  const releases: (() => void)[] = [];
+  tracker.start(['wind']);
+  const running: Promise<void> = runBatch(
+    tracker,
+    (): Promise<boolean> =>
+      new Promise<boolean>((resolve: (value: boolean) => void): void => {
+        releases.push((): void => resolve(false));
+      }),
+  );
+  let ran: boolean = false;
+  await runBatch(tracker, (): Promise<boolean> => {
+    ran = true;
+    return Promise.resolve(true);
+  });
+  assert.equal(ran, false);
+  tracker.stop();
+  tracker.start(['wind']);
+  releases[0]?.();
+  await running;
+  const next: string[] = [];
+  await runBatch(tracker, (loop: string): Promise<boolean> => {
+    next.push(loop);
+    return Promise.resolve(true);
+  });
+  assert.deepEqual(next, ['wind']);
 });

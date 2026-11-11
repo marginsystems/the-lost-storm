@@ -43,3 +43,21 @@ export function createAmbienceTracker<L>(): AmbienceTracker<L> {
     },
   };
 }
+
+export async function runBatch<L>(tracker: AmbienceTracker<L>, start: (loop: L, generation: number) => Promise<boolean>): Promise<void> {
+  const batch: AmbienceBatch<L> | null = tracker.take();
+  if (batch === null) return;
+  const retry: L[] = [];
+  await Promise.all(
+    batch.loops.map(async (loop: L): Promise<void> => {
+      let started: boolean = false;
+      try {
+        started = await start(loop, batch.generation);
+      } catch {
+        started = false;
+      }
+      if (!started) retry.push(loop);
+    }),
+  );
+  tracker.settle(batch, retry);
+}
