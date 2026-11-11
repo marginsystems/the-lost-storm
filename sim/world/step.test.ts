@@ -127,6 +127,45 @@ void test('a stop command halts a walking player', (): void => {
   assert.ok(Math.hypot(world.player.pos.x - at.x, world.player.pos.z - at.z) < 0.01);
 });
 
+void test('a move next to the player is a stop: he neither moves nor turns', (): void => {
+  const world: World = fresh();
+  const facing: number = world.player.facing;
+  advance(world, 0.3, [{ type: 'move', dest: { x: START.x + 0.4, z: START.z + 0.3 } }]);
+  assert.deepEqual(world.player.pos, START);
+  assert.equal(world.player.facing, facing);
+  assert.equal(world.player.moving, false);
+  assert.equal(world.player.intent.type, 'idle');
+});
+
+void test('held moves that flip from side to side of the player never turn him', (): void => {
+  const world: World = fresh();
+  const facing: number = world.player.facing;
+  for (let tick: number = 0; tick < 40; tick += 1) {
+    const side: number = tick % 2 === 0 ? 1 : -1;
+    advance(world, 0.09, [{ type: 'move', dest: { x: world.player.pos.x + 0.5 * side, z: world.player.pos.z + 0.2 * side } }]);
+    assert.equal(world.player.facing, facing);
+  }
+  assert.deepEqual(world.player.pos, START);
+});
+
+void test('a move inside the dead zone stops a walking player', (): void => {
+  const world: World = fresh();
+  advance(world, 0.4, [{ type: 'move', dest: { x: START.x, z: START.z - 8 } }]);
+  assert.equal(world.player.moving, true);
+  const stopped: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  advance(world, 0.3, [{ type: 'move', dest: { x: stopped.x + 0.3, z: stopped.z } }]);
+  assert.equal(world.player.moving, false);
+  assert.ok(Math.hypot(world.player.pos.x - stopped.x, world.player.pos.z - stopped.z) < 0.2);
+});
+
+void test('a move just outside the dead zone still walks there', (): void => {
+  const world: World = fresh();
+  const dest: Vec2 = { x: START.x + 1, z: START.z };
+  advance(world, 0.6, [{ type: 'move', dest }]);
+  assert.ok(Math.hypot(world.player.pos.x - dest.x, world.player.pos.z - dest.z) < 0.05);
+  assert.ok(Math.abs(world.player.facing - Math.PI / 2) < 1e-6);
+});
+
 void test('a skill command with a target walks into range, hits, knocks back and emits damage', (): void => {
   const world: World = fresh();
   const thrall: MonsterState = must(monstersOf(world, 'bone_thrall')[0], 'thrall');

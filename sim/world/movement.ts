@@ -8,6 +8,7 @@ const MOVEMENT = {
   knockFriction: 9,
   knockRest: 0.08,
   arrive: 1e-4,
+  turnStep: 0.05,
   separationPasses: 2,
 } as const;
 
@@ -37,7 +38,7 @@ export function followPath(actor: ActorState, path: Vec2[], travel: number): voi
     const next: Vec2 | undefined = path[0];
     if (next === undefined) return;
     const gap: number = distance(actor.pos, next);
-    if (gap > MOVEMENT.arrive) actor.facing = facingOf({ x: next.x - actor.pos.x, z: next.z - actor.pos.z });
+    if (gap > MOVEMENT.turnStep) actor.facing = facingOf({ x: next.x - actor.pos.x, z: next.z - actor.pos.z });
     if (gap <= remaining) {
       actor.pos.x = next.x;
       actor.pos.z = next.z;

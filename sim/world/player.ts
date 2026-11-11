@@ -10,6 +10,7 @@ import { blockedReason, clearProjectiles, startSkill, stepAction } from './skill
 import type { Actor, Command, GroundItem, NoticeReason, PlayerState, SkillCommand, World } from './types.ts';
 
 const PLAYER = {
+  moveDeadZone: 0.7,
   repathInterval: 0.2,
   goldDelay: 0.45,
 } as const;
@@ -62,6 +63,11 @@ function act(world: World, command: Command): void {
   const player: PlayerState = world.player;
   switch (command.type) {
     case 'move':
+      if (distance(player.pos, command.dest) < PLAYER.moveDeadZone) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        return;
+      }
       player.intent = { type: 'move', dest: command.dest };
       setDestination(world, command.dest);
       return;
