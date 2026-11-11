@@ -12,7 +12,7 @@ export interface AccountPart {
 
 export interface AccountRoot {
   readonly dataset: Record<string, string | undefined>;
-  readonly classList: { add(name: string): void; remove(name: string): void };
+  readonly classList: { add(...names: string[]): void; remove(...names: string[]): void };
 }
 
 export interface TitleAccountParts {
@@ -47,7 +47,9 @@ export function createTitleAccount(parts: TitleAccountParts, timers: Timers): Ti
     parts.note.textContent = note;
     parts.note.toggleAttribute('hidden', note === '');
     parts.root.dataset['state'] = view.kind;
-    if (view.kind !== 'hidden' || note !== '') parts.root.classList.add('shown');
+    const used: boolean = view.kind !== 'hidden' || note !== '';
+    if (used) parts.root.classList.add('reserved', 'shown');
+    else parts.root.classList.remove('reserved');
   };
 
   return {

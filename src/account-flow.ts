@@ -6,6 +6,7 @@ export interface AccountFlowOptions {
   readonly view: TitleAccount;
   readonly showButton: (clientId: string, nonce: string, onCredential: (credential: string) => void) => Promise<boolean>;
   readonly reload: () => void;
+  readonly setBusy: (busy: boolean) => void;
 }
 
 export interface AccountFlow {
@@ -25,9 +26,14 @@ function viewOf(state: AccountState): AccountView {
 }
 
 export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
-  const { account, view, showButton, reload } = options;
+  const { account, view, showButton, reload, setBusy } = options;
   let current: AccountState = { kind: 'hidden' };
   let busy: boolean = false;
+
+  const hold = (next: boolean): void => {
+    busy = next;
+    setBusy(next);
+  };
 
   const present = async (state: AccountState, note: string): Promise<void> => {
     current = state;
@@ -46,13 +52,13 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
 
   const exchange = async (credential: string): Promise<void> => {
     if (busy) return;
-    busy = true;
+    hold(true);
     const result: SignInResult = await account.signIn(credential);
-    busy = false;
     if (result.kind === 'reload') {
       reload();
       return;
     }
+    hold(false);
     await present(result.state, ACCOUNT_NOTES.failed);
   };
 
@@ -66,13 +72,13 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
     },
     async signOut(): Promise<void> {
       if (busy || current.kind !== 'signed-in') return;
-      busy = true;
+      hold(true);
       const result: SignOutResult = await account.signOut();
-      busy = false;
       if (result === 'reload') {
         reload();
         return;
       }
+      hold(false);
       view.show(viewOf(current), ACCOUNT_NOTES.unsynced);
     },
   };

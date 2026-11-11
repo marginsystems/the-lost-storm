@@ -94,7 +94,7 @@ function element<T extends HTMLElement>(id: string, type: new () => T): T {
   return found;
 }
 
-function startTitleAccount(account: AccountService): void {
+function startTitleAccount(account: AccountService, setBusy: (busy: boolean) => void): void {
   const mount: HTMLDivElement = element('title-google', HTMLDivElement);
   const view: TitleAccount = createTitleAccount(
     {
@@ -109,6 +109,7 @@ function startTitleAccount(account: AccountService): void {
   const flow: AccountFlow = createAccountFlow({
     account,
     view,
+    setBusy,
     reload: (): void => {
       window.location.reload();
     },
@@ -138,7 +139,6 @@ async function start(): Promise<void> {
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
-  if (account !== null) element('title-account', HTMLDivElement).classList.add('reserved');
   const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
   const loadingSave: Promise<SaveData | null> = backend.load();
   const stage: Stage = createStage(canvas);
@@ -356,7 +356,12 @@ async function start(): Promise<void> {
   element('title-loader', HTMLDivElement).classList.add('done');
   showSync(backend.state());
   backend.subscribe(showSync);
-  if (account !== null) startTitleAccount(account);
+  if (account !== null) {
+    startTitleAccount(account, (busy: boolean): void => {
+      enter.disabled = busy;
+      reset.disabled = busy;
+    });
+  }
   enter.disabled = false;
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = save === null;

@@ -35,7 +35,7 @@ function timeout(): AbortSignal {
 
 export function recordAfterSignIn(held: SyncRecord, session: Session): SyncRecord {
   if (session.accountId === held.accountId) return { ...held, token: session.token };
-  return { serverUrl: held.serverUrl, accountId: session.accountId, token: session.token, revision: 0, updatedAt: null, savedAt: null, pending: false, overwriteCloud: false };
+  return { serverUrl: held.serverUrl, accountId: session.accountId, token: session.token, revision: 0, updatedAt: null, savedAt: held.pending ? held.savedAt : null, pending: held.pending, overwriteCloud: false };
 }
 
 export function createAccountService(options: AccountOptions): AccountService {
@@ -58,17 +58,20 @@ export function createAccountService(options: AccountOptions): AccountService {
   return {
     load,
     async signIn(credential: string): Promise<SignInResult> {
-      const record: SyncRecord | null = held();
-      if (record === null) return { kind: 'failed', state: HIDDEN };
-      const result: SessionResult = await api.googleSignIn(record.token, credential, timeout());
-      if (result.kind === 'ok' && store.write(SYNC_KEY, serializeSyncRecord(recordAfterSignIn(record, result.session)))) return { kind: 'reload' };
+      const asked: SyncRecord | null = held();
+      if (asked === null) return { kind: 'failed', state: HIDDEN };
+      const result: SessionResult = await api.googleSignIn(asked.token, credential, timeout());
+      const current: SyncRecord | null = held();
+      if (result.kind === 'ok' && current?.token === asked.token && store.write(SYNC_KEY, serializeSyncRecord(recordAfterSignIn(current, result.session)))) return { kind: 'reload' };
       return { kind: 'failed', state: await load() };
     },
     async signOut(): Promise<SignOutResult> {
-      const record: SyncRecord | null = held();
-      if (record === null) return 'reload';
-      if (record.pending || record.overwriteCloud) return 'unsynced';
-      await api.signOut(record.token, timeout());
+      const asked: SyncRecord | null = held();
+      if (asked === null) return 'reload';
+      if (asked.pending || asked.overwriteCloud) return 'unsynced';
+      await api.signOut(asked.token, timeout());
+      const current: SyncRecord | null = held();
+      if (current !== null && (current.pending || current.overwriteCloud)) return 'unsynced';
       store.remove(SYNC_KEY);
       store.remove(SAVE_KEY);
       return 'reload';

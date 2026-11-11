@@ -22,7 +22,8 @@ export const GOOGLE_IDENTITY: { readonly script: string; readonly loadMs: number
 
 function fieldOf(source: unknown, key: string): unknown {
   if ((typeof source !== 'object' && typeof source !== 'function') || source === null) return undefined;
-  return Object.entries(source).find(([name]: [string, unknown]): boolean => name === key)?.[1];
+  const value: unknown = Reflect.get(source, key);
+  return value;
 }
 
 function isIdentityApi(value: unknown): value is IdentityApi {

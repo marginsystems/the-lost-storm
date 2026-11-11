@@ -23,6 +23,7 @@ interface Stage {
   readonly credentials: string[];
   readonly reloads: () => number;
   readonly signOuts: () => number;
+  readonly busy: boolean[];
 }
 
 interface Script {
@@ -44,6 +45,7 @@ function stage(script: Script): Stage {
   const shown: Shown[] = [];
   const buttons: Button[] = [];
   const credentials: string[] = [];
+  const busy: boolean[] = [];
   let reloads: number = 0;
   let signOuts: number = 0;
   const account: AccountService = {
@@ -67,13 +69,16 @@ function stage(script: Script): Stage {
     reload: (): void => {
       reloads += 1;
     },
+    setBusy: (next: boolean): void => {
+      busy.push(next);
+    },
     showButton: (clientId: string, nonce: string, press: (credential: string) => void): Promise<boolean> => {
       if (script.scriptLoads === false) return Promise.resolve(false);
       buttons.push({ clientId, nonce, press });
       return Promise.resolve(true);
     },
   });
-  return { flow, shown, buttons, credentials, reloads: (): number => reloads, signOuts: (): number => signOuts };
+  return { flow, shown, buttons, credentials, reloads: (): number => reloads, signOuts: (): number => signOuts, busy };
 }
 
 void test('a guest gets a button made with the client id and the nonce from the server', async (): Promise<void> => {
@@ -142,4 +147,24 @@ void test('sign-out does nothing for a guest', async (): Promise<void> => {
   await flow.signOut();
   assert.equal(signOuts(), 0);
   assert.equal(reloads(), 0);
+});
+
+void test('the title is held while a sign-in or a sign-out is in flight, and released only when the page stays', async (): Promise<void> => {
+  const reloading: Stage = stage({ initial: GUEST });
+  await reloading.flow.start();
+  assert.deepEqual(reloading.busy, []);
+  reloading.buttons[0]?.press('the-credential');
+  await settle();
+  assert.deepEqual(reloading.busy, [true]);
+
+  const refused: Stage = stage({ initial: GUEST, signIn: { kind: 'failed', state: GUEST } });
+  await refused.flow.start();
+  refused.buttons[0]?.press('bad');
+  await settle();
+  assert.deepEqual(refused.busy, [true, false]);
+
+  const unsynced: Stage = stage({ initial: { kind: 'signed-in', name: 'Ada' }, signOut: 'unsynced' });
+  await unsynced.flow.start();
+  await unsynced.flow.signOut();
+  assert.deepEqual(unsynced.busy, [true, false]);
 });

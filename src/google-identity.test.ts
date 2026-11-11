@@ -21,3 +21,14 @@ void test('the sign-in script counts as loaded only when it exposes both calls t
     assert.equal(readIdentityApi(globals), null);
   }
 });
+
+void test('looking for the script reads only the property it needs', (): void => {
+  const globals: object = { google: { accounts: { id: { initialize, renderButton } } } };
+  Object.defineProperty(globals, 'localStorage', {
+    enumerable: true,
+    get: (): never => {
+      throw new Error('storage is blocked');
+    },
+  });
+  assert.notEqual(readIdentityApi(globals), null);
+});

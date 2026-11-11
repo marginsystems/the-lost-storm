@@ -42,11 +42,11 @@ function screen(): Screen {
     root: {
       dataset,
       classList: {
-        add: (value: string): void => {
-          classes.add(value);
+        add: (...values: string[]): void => {
+          for (const value of values) classes.add(value);
         },
-        remove: (value: string): void => {
-          classes.delete(value);
+        remove: (...values: string[]): void => {
+          for (const value of values) classes.delete(value);
         },
       },
     },
@@ -140,4 +140,16 @@ void test('going from visible to hidden fades out and stays out', async (): Prom
   await ui.timers.advance(TITLE_ACCOUNT.swapMs);
   assert.ok(!ui.classes.has('shown'));
   assert.equal(visible(ui.button), false);
+});
+
+void test('space for the control is taken only while there is something to show', async (): Promise<void> => {
+  const off: Screen = screen();
+  off.view.show({ kind: 'hidden' }, '');
+  assert.ok(!off.classes.has('reserved'));
+  const on: Screen = screen();
+  on.view.show({ kind: 'guest' }, '');
+  assert.ok(on.classes.has('reserved'));
+  on.view.show({ kind: 'hidden' }, '');
+  await on.timers.advance(TITLE_ACCOUNT.swapMs);
+  assert.ok(!on.classes.has('reserved'));
 });
