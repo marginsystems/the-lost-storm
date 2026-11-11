@@ -6,7 +6,7 @@ import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { loadContent } from './content.ts';
 import { contentProblems } from './parse.ts';
-import type { Content, SkillTreeNodeDef } from './types.ts';
+import type { Content, ItemBaseDef, SkillTreeNodeDef } from './types.ts';
 import { ANIMATION_KEYS } from './types.ts';
 
 const content: Content = loadContent();
@@ -26,6 +26,15 @@ void test('every monster has its skill and rig, and every rig has every animatio
   assert.ok(content.rigs.has(content.player.rig));
   for (const rig of content.rigs.values()) {
     for (const key of ANIMATION_KEYS) assert.ok(rig.clips[key].clip.length > 0, `${rig.id} ${key}`);
+  }
+});
+
+void test('every weapon base shows a model that exists in the attachments', (): void => {
+  const weapons: ItemBaseDef[] = [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === 'weapon');
+  assert.ok(weapons.length >= 3);
+  for (const base of weapons) {
+    assert.ok(base.visual !== null, `${base.id} has no visual`);
+    assert.ok(content.attachments.has(base.visual), `${base.id} visual ${base.visual} is not in attachments`);
   }
 });
 

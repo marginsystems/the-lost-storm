@@ -3,7 +3,7 @@ import { Color, Mesh, MeshBasicMaterial, PointLight, SphereGeometry } from 'thre
 import type { SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
-import { discMesh, disposeObject, glow, lightningBolt, pillarMesh, projectileMesh, ringMesh, slashMesh, telegraphMesh } from './effect-shapes.ts';
+import { disposeObject, glow, groundArcs, markerMesh, pillarMesh, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphMesh } from './effect-shapes.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import type { BurstOptions, ParticleSystem } from './particles.ts';
 
@@ -12,10 +12,21 @@ export const EFFECTS = {
   slashHeight: 1.15,
   slashTilt: 0.22,
   ringTime: 0.42,
+  waveTime: 0.55,
+  waveSize: 1.2,
+  waveTrail: 0.36,
+  ringTrail: 0.5,
+  markerSize: 0.95,
+  scorchTime: 1.6,
+  scorchSize: 0.8,
   boltTime: 0.22,
+  arcTime: 0.26,
   markerTime: 0.4,
   levelTime: 1.1,
   flashLights: 3,
+  warmFrames: 3,
+  warmDepth: -30,
+  warmScale: 0.001,
   flashDecay: 9,
   hurtDecay: 2.6,
   projectileHeight: 1.25,
@@ -26,8 +37,6 @@ export const EFFECTS = {
   deathShake: 0.6,
   punch: 0.16,
   emberEvery: 0.07,
-  splashEvery: 0.016,
-  splashRange: 26,
   flameSize: 0.17,
 } as const;
 
@@ -46,7 +55,7 @@ interface ProjectileView {
 
 export interface Effects {
   handle(events: readonly WorldEvent[], world: World): void;
-  update(dt: number, world: World, focusX: number, focusZ: number): void;
+  update(dt: number, world: World): void;
   clickMarker(x: number, z: number, hostile: boolean): void;
   takeHitStop(): number;
   readonly hurt: number;
@@ -56,9 +65,9 @@ const BONE: Color = new Color(0xe9e2cf);
 const BLOOD: Color = new Color(0xff3b2a);
 const GOLD: Color = new Color(0xffc94d);
 const EMBER: Color = new Color(0xff8a2e);
-const RAIN: Color = new Color(0x6d87a8);
-const MOVE_MARK: Color = new Color(0x9fdcff);
-const ATTACK_MARK: Color = new Color(0xff6a4a);
+const DUST: Color = new Color(0x2a3442);
+const MOVE_MARK: Color = new Color(0xb9c6d6);
+const ATTACK_MARK: Color = new Color(0xd9705a);
 const TELEGRAPH: Color = new Color(0xff3a2a);
 const WHITE: Color = new Color(0xffffff);
 
@@ -75,7 +84,6 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   let hitStop: number = 0;
   let hurt: number = 0;
   let emberTimer: number = 0;
-  let splashTimer: number = 0;
 
   for (let index: number = 0; index < EFFECTS.flashLights; index += 1) {
     const light: PointLight = new PointLight(0xffffff, 0, 16, 1.6);
@@ -89,6 +97,15 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     scene.add(flame);
     return flame;
   });
+
+  const keepers: Mesh[] = [shockwaveMesh(WHITE, EFFECTS.waveTrail, 1).mesh, scorchMesh(WHITE).mesh, markerMesh(WHITE).mesh, slashMesh(1, 1, WHITE).mesh];
+  let warmFrames: number = EFFECTS.warmFrames;
+  for (const keeper of keepers) {
+    keeper.position.set(0, EFFECTS.warmDepth, 0);
+    keeper.scale.setScalar(EFFECTS.warmScale);
+    keeper.frustumCulled = false;
+    scene.add(keeper);
+  }
 
   const colorOf = (hex: string): Color => {
     const cached: Color | undefined = colors.get(hex);
@@ -137,35 +154,44 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     );
   };
 
-  const ring = (x: number, z: number, radius: number, color: Color, duration: number, inner: number): void => {
-    const mesh = ringMesh(glow(color, 2.6), inner);
-    mesh.position.set(x, 0.12, z);
+  const ring = (x: number, z: number, radius: number, color: Color, duration: number): void => {
+    const wave = shockwaveMesh(glow(color, 0.9), EFFECTS.ringTrail, 0);
+    wave.mesh.position.set(x, 0.12, z);
+    wave.mesh.scale.setScalar(radius * EFFECTS.waveSize);
     add(
-      mesh,
+      wave.mesh,
       duration,
       (t: number): void => {
-        mesh.scale.setScalar(Math.max(0.01, radius * easeOut(t)));
-        mesh.material.opacity = 1 - t;
+        wave.material.uniforms['uProgress'] = { value: t };
       },
       null,
     );
   };
 
   const shockwave = (x: number, z: number, radius: number, color: Color): void => {
-    ring(x, z, radius, color, EFFECTS.ringTime, 0.84);
-    ring(x, z, radius * 0.7, WHITE, EFFECTS.ringTime * 0.7, 0.9);
-    const disc = discMesh(glow(color, 1.4));
-    disc.position.set(x, 0.1, z);
+    const wave = shockwaveMesh(glow(color, 1.25), EFFECTS.waveTrail, 1);
+    wave.mesh.position.set(x, 0.13, z);
+    wave.mesh.scale.setScalar(radius * EFFECTS.waveSize);
     add(
-      disc,
-      EFFECTS.ringTime * 0.6,
+      wave.mesh,
+      EFFECTS.waveTime,
       (t: number): void => {
-        disc.scale.setScalar(radius * (0.4 + 0.6 * easeOut(t)));
-        disc.material.opacity = 0.42 * (1 - t) * (1 - t);
+        wave.material.uniforms['uProgress'] = { value: t };
       },
       null,
     );
-    const bolt: Group = lightningBolt(color);
+    const scorch = scorchMesh(color);
+    scorch.mesh.position.set(x, 0.1, z);
+    scorch.mesh.scale.setScalar(radius * EFFECTS.scorchSize);
+    add(
+      scorch.mesh,
+      EFFECTS.scorchTime,
+      (t: number): void => {
+        scorch.material.uniforms['uFade'] = { value: 1 - t * t };
+      },
+      null,
+    );
+    const bolt = skyBolt(color);
     bolt.position.set(x, 0, z);
     add(
       bolt,
@@ -175,13 +201,27 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       },
       null,
     );
-    for (let step: number = 0; step < 28; step += 1) {
-      const angle: number = (step / 28) * Math.PI * 2;
-      spray(x + Math.sin(angle) * 0.8, 0.3, z + Math.cos(angle) * 0.8, color, 2, { dirX: Math.sin(angle), dirZ: Math.cos(angle), spread: 0.3, speed: { min: radius * 2, max: radius * 3.4 }, lift: { min: 0.5, max: 3.5 }, life: { min: 0.3, max: 0.55 }, size: { min: 0.3, max: 0.75 }, drag: 4 });
+    const arcs = groundArcs(color, radius);
+    arcs.position.set(x, 0.16, z);
+    add(
+      arcs,
+      EFFECTS.arcTime,
+      (t: number): void => {
+        arcs.visible = t < 0.3 || (t > 0.45 && t < 0.7) || t > 0.85;
+        arcs.material.opacity = 1 - t * t;
+      },
+      null,
+    );
+    for (let step: number = 0; step < 20; step += 1) {
+      const angle: number = (step / 20) * Math.PI * 2 + Math.random() * 0.3;
+      const dirX: number = Math.sin(angle);
+      const dirZ: number = Math.cos(angle);
+      spray(x + dirX * 0.7, 0.25, z + dirZ * 0.7, color, 2, { dirX, dirZ, spread: 0.35, speed: { min: radius * 2.4, max: radius * 4.2 }, lift: { min: 0.3, max: 2.6 }, life: { min: 0.22, max: 0.5 }, size: { min: 0.22, max: 0.5 }, drag: 4.5 });
+      spray(x + dirX * 1.1, 0.2, z + dirZ * 1.1, DUST, 2, { dirX, dirZ, spread: 0.6, speed: { min: radius * 0.9, max: radius * 1.7 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.5, max: 1.1 }, size: { min: 1.6, max: 3.2 }, gravity: 0.4, drag: 2.6, jitter: 0.6 });
     }
-    spray(x, 0.4, z, WHITE, 26, { speed: { min: 1, max: 5 }, lift: { min: 4, max: 13 }, life: { min: 0.3, max: 0.7 }, size: { min: 0.2, max: 0.5 } });
-    flashLight(x, 3, z, color, 150);
-    onFlash(0.75);
+    spray(x, 0.4, z, color, 20, { speed: { min: 1, max: 5 }, lift: { min: 4, max: 12 }, life: { min: 0.25, max: 0.6 }, size: { min: 0.16, max: 0.36 } });
+    flashLight(x, 3, z, color, 70);
+    onFlash(0.5);
   };
 
   const telegraph = (owner: number, x: number, z: number, direction: { readonly x: number; readonly z: number }, skill: SkillDef, duration: number): void => {
@@ -213,7 +253,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       },
       null,
     );
-    ring(x, z, 6, GOLD, 0.7, 0.9);
+    ring(x, z, 6, GOLD, 0.7);
     spray(x, 0.3, z, GOLD, 60, { speed: { min: 0.5, max: 3.5 }, lift: { min: 4, max: 14 }, life: { min: 0.6, max: 1.3 }, size: { min: 0.25, max: 0.6 }, gravity: 3, drag: 1.2, jitter: 1.4 });
     flashLight(x, 3, z, GOLD, 110);
     onFlash(0.5);
@@ -275,7 +315,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const tint: Color = monster === undefined ? BONE : colorOf(monster.def.color);
     spray(event.pos.x, 1.1, event.pos.z, BONE, 26, { dirX: event.direction.x, dirZ: event.direction.z, spread: 2.4, speed: { min: 3, max: 12 }, lift: { min: 2, max: 9 }, life: { min: 0.4, max: 0.95 }, size: { min: 0.3, max: 0.7 } });
     spray(event.pos.x, 1.4, event.pos.z, tint, 18, { speed: { min: 0.5, max: 3 }, lift: { min: 2, max: 7 }, life: { min: 0.5, max: 1.1 }, gravity: -2, size: { min: 0.35, max: 0.9 } });
-    ring(event.pos.x, event.pos.z, 2.2, tint, 0.3, 0.8);
+    ring(event.pos.x, event.pos.z, 2.2, tint, 0.3);
   };
 
   const onProjectileEnd = (event: Extract<WorldEvent, { type: 'projectile_end' }>): void => {
@@ -287,7 +327,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const color: Color = colorOf(event.skill.vfx.color);
     spray(event.pos.x, EFFECTS.projectileHeight, event.pos.z, color, event.hit ? 20 : 8, { speed: { min: 2, max: 9 }, lift: { min: -1, max: 5 }, life: { min: 0.2, max: 0.5 }, size: { min: 0.3, max: 0.8 } });
     if (event.hit) {
-      ring(event.pos.x, event.pos.z, 1.6, color, 0.24, 0.75);
+      ring(event.pos.x, event.pos.z, 1.6, color, 0.24);
       flashLight(event.pos.x, 1.6, event.pos.z, color, 55);
     }
   };
@@ -314,17 +354,18 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       return pending;
     },
     clickMarker(x: number, z: number, hostile: boolean): void {
-      const mesh = ringMesh(glow(hostile ? ATTACK_MARK : MOVE_MARK, 1.5), 0.78);
-      mesh.position.set(x, 0.1, z);
+      const marker = markerMesh(hostile ? ATTACK_MARK : MOVE_MARK);
+      marker.mesh.position.set(x, 0.11, z);
+      marker.mesh.scale.setScalar(EFFECTS.markerSize);
       add(
-        mesh,
+        marker.mesh,
         EFFECTS.markerTime,
         (t: number): void => {
-          mesh.scale.setScalar(0.25 + 0.6 * easeOut(t));
-          mesh.material.opacity = 0.85 * (1 - t);
+          marker.material.uniforms['uProgress'] = { value: t };
         },
         null,
       );
+      if (!hostile) spray(x, 0.12, z, DUST, 5, { speed: { min: 0.3, max: 1.2 }, lift: { min: 0.3, max: 1.1 }, life: { min: 0.3, max: 0.6 }, size: { min: 0.5, max: 1.1 }, gravity: 1.5, drag: 3 });
     },
     handle(events: readonly WorldEvent[], world: World): void {
       for (const event of events) {
@@ -366,7 +407,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             camera.addTrauma(0.35);
             break;
           case 'player_respawn':
-            ring(world.player.pos.x, world.player.pos.z, 5, MOVE_MARK, 0.6, 0.88);
+            ring(world.player.pos.x, world.player.pos.z, 5, MOVE_MARK, 0.6);
             break;
           case 'monster_remove':
           case 'aggro':
@@ -379,7 +420,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         }
       }
     },
-    update(dt: number, world: World, focusX: number, focusZ: number): void {
+    update(dt: number, world: World): void {
       for (const transient of transients) {
         transient.age += dt;
         if (transient.age < transient.duration) transient.tick(transient.age / transient.duration);
@@ -395,6 +436,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         view.mesh.rotation.z += dt * 14;
         spray(projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z, view.color, 2, { speed: { min: 0, max: 1.2 }, lift: { min: -0.6, max: 0.8 }, life: { min: 0.12, max: 0.32 }, size: { min: 0.3, max: 0.7 }, gravity: 0, jitter: 0.25 });
       }
+      if (warmFrames > 0) {
+        warmFrames -= 1;
+        if (warmFrames === 0) for (const keeper of keepers) keeper.visible = false;
+      }
       for (const light of lights) light.intensity *= Math.exp(-EFFECTS.flashDecay * dt);
       hurt = Math.max(0, hurt - EFFECTS.hurtDecay * dt);
       emberTimer -= dt;
@@ -406,11 +451,6 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       flames.forEach((flame: Mesh, index: number): void => {
         flame.scale.setScalar(0.85 + 0.25 * Math.sin(world.time * 17 + index * 2.1) + 0.12 * Math.sin(world.time * 41 + index));
       });
-      splashTimer -= dt;
-      while (splashTimer <= 0) {
-        splashTimer += EFFECTS.splashEvery;
-        spray(focusX + (Math.random() - 0.5) * EFFECTS.splashRange * 2, 0.08, focusZ + (Math.random() - 0.5) * EFFECTS.splashRange * 2, RAIN, 1, { speed: { min: 0.2, max: 1 }, lift: { min: 0.6, max: 1.6 }, life: { min: 0.12, max: 0.26 }, size: { min: 0.14, max: 0.26 }, gravity: 9, jitter: 0 });
-      }
     },
   };
 }
