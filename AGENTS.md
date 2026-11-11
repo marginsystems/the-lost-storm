@@ -60,6 +60,7 @@ Game balance lives in `data/`. Every other tuning number (camera, effects, timin
 This repository is meant to become public, so every file in it must be redistributable.
 
 - Every humanoid shares one rig, so bodies, clips and gear are interchangeable. Do not add a character on a different skeleton without retargeting it to that rig, and never bake a weapon into a character file: held gear is an attachment in `data/attachments.json`.
+- Clothing and armour are wearables: skinned pieces in `public/models/wear/`, listed in `data/wearables.json` and bound to the wearer's skeleton by joint name, so one piece fits every character. Never model clothes into a character file. Convert a new piece to the rig with `blender/build_wearables.py` and look at it on the skeleton in the browser, in every animation, before it ships.
 - Ship only CC0 assets, or CC BY with full attribution. Every file under `public/models` has a row in [ASSETS.md](ASSETS.md) with its source and licence, and the pack's licence text is in `licenses/`. `test/rules.test.ts` fails on a model with no row.
 - Never commit Mixamo files, Splice samples, Sketchfab downloads without a redistributable licence, or anything ripped from another game. Local-only assets go in `public/models/local/` and `public/audio/local/`, which are git-ignored.
 - Do not copy another game's name, characters, art, music, levels or interface. The Lost Storm is its own world.

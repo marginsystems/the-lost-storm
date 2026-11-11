@@ -37,7 +37,7 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 
 | Path | What it holds |
 |---|---|
-| `data/` | All content as JSON: skills, monsters, items, the skill tree, rigs, props, the arena, the player and which sound id plays for which event (`audio.json`) |
+| `data/` | All content as JSON: skills, monsters, items, the skill tree, rigs, held gear, clothing and armour, props, the arena, the player and which sound id plays for which event (`audio.json`) |
 | `sim/` | The game itself in plain TypeScript: stats, combat, skills, monster behaviour, pathfinding, loot, progression, saving. No Three.js and no DOM, so it runs and is tested in Node |
 | `sim/content/` | The content schema (`types.ts`) and the readers that check every JSON file at start-up |
 | `sim/world/` | World state, the commands the player can send and the events each step returns (`types.ts`), and `stepWorld` (`step.ts`) |
@@ -47,7 +47,7 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 | `src/input.ts` | Mouse and keyboard to commands |
 | `src/main.ts` | Loads everything and runs the frame loop |
 | `public/models/` | GLB models. Every file is listed in [ASSETS.md](ASSETS.md) |
-| `blender/` | Blender scripts that build models (weapons) |
+| `blender/` | Blender scripts that build models: weapons, and clothing and armour converted from outfit packs to the shared rig |
 | `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file |
 | `test/rules.test.ts` | Repository rules: no comments, no type escape hatches, `sim/` stays free of rendering code, every model is credited |
 
@@ -59,7 +59,8 @@ Content is data. None of these need a code change:
 
 - **A skill**: add an entry to `data/skills.json`. `delivery` picks how it hits: `arc` (melee sweep), `nova` (ring around the user) or `projectile`. `windup`, `recovery`, `cooldown` and `manaCost` set its timing and cost; `knockback`, `stagger`, `shake`, `hitStop` and `vfx` set how it feels. Put it on the bar in `data/player.json` (`skillBar`, with key bindings) or give it to a monster.
 - **A monster**: add an entry to `data/monsters.json` with its `rig`, stats, `behaviour` (`chaser` or `ranged`), `skill` and `loot`, then add it to a pack in `data/arena.json`.
-- **An item**: add a base, an affix or a rarity to `data/items.json`. A weapon base's `visual` names the rig attachment to show in the hero's hand.
+- **An item**: add a base, an affix or a rarity to `data/items.json`. Its `slot` is one of `weapon`, `head`, `chest`, `hands`, `legs`, `feet` and `charm`. A weapon base's `visual` names the rig attachment to show in the hero's hand; an armour base's `wear` lists the wearables it puts on the body.
+- **Clothing or armour**: add an entry to `data/wearables.json` (see below) and name it in an item base's `wear`, or in the `wear` list of the player or a monster to dress them with nothing equipped.
 - **A skill-tree node**: add an entry to `data/skill-tree.json` with its grid position, what it `requires`, and its `statMods` and `skillMods`.
 - **A sound**: `data/audio.json` maps game events to sound ids: by skill id (`skillStart`, `skillImpact`, `skillHit`, `projectileSpawn`, `projectileExpire`), by monster id or `player` (`hit`, `critHit`, `death`, `aggro`), by rarity or `gold` (`drop`, `pickup`), `notice`, `world` (`hero_step`, `level_up`, `surge`, `monster_spawn` and others), `ui` actions, and `ambience` per arena. Each entry can set `volume`, `maxVoices` (copies of that sound at once) and `cooldown`. The sound files themselves are not in this repository (see Sound below).
 - **The arena**: `data/arena.json` holds the tile map (4-unit cells), wall and floor models, prop placements, the player start and the monster packs.
@@ -93,7 +94,10 @@ A character is a rig entry in `data/rigs.json`. The loader (`src/render/characte
   "sockets": {
     "hand_r": { "bone": "DEF-hand.R", "position": [-0.03, 0.085, 0], "rotationDegrees": [90, 90, 0], "scale": 1 }
   },
-  "hiddenNodes": []
+  "hiddenNodes": [],
+  "bodyParts": {
+    "feet": ["DEF-foot.L", "DEF-toe.L", "DEF-foot.R", "DEF-toe.R"]
+  }
 }
 ```
 
@@ -102,8 +106,21 @@ A character is a rig entry in `data/rigs.json`. The loader (`src/render/characte
 - `rootMotionBone` pins that bone's horizontal movement so a clip with root motion plays in place.
 - `sockets` are named mounting points: a bone plus an offset, rotation and scale.
 - `hiddenNodes` are nodes in the body file that are never shown.
+- `bodyParts` names groups of joints. The body's triangles skinned mostly to a group can be left undrawn while a wearable covers them.
 
 Held gear is an entry in `data/attachments.json`: an id, a model file and the socket it mounts on. An item base's `visual`, the player's `gear` and a monster's `gear` name attachment ids, so a new weapon model is one GLB and one line of data. Weapon models are authored with the grip at the origin and the blade along +Y. `tint` on the player and on each monster recolours the body, so one body file makes several characters. `color` tints that character's effects and its body's emissive map (glowing eyes, runes) when the body has one; a body without an emissive map does not glow.
+
+Clothing and armour are wearables: skinned meshes in `public/models/wear/` that are bound to the wearer's own skeleton by joint name, so each piece is made once, fits every character on the rig and bends with every clip. An entry in `data/wearables.json` has:
+
+```json
+{ "id": "leather_boots", "model": "models/wear/ranger_boots.glb", "region": "feet", "tint": "#f0e8d8", "hides": ["feet"] }
+```
+
+- `region` is the part of the body it covers: `head`, `shoulders`, `chest`, `arms`, `hands`, `legs` or `feet`. A character shows one piece per region. Its own clothes (`wear` on the player or a monster) come first, and each equipped item's pieces replace whatever covers the same region (`sim/wear.ts`).
+- `tint` multiplies the piece's colour, so one model gives a clean shirt, a dirty one and a monster's rags.
+- `hides` lists the wearer's `bodyParts` that are not drawn under it, so bone does not poke through a boot.
+
+New pieces come from outfit packs through `blender/build_wearables.py`, which refits a part from the pack's rig to ours and writes one GLB per part. [ASSETS.md](ASSETS.md) has the command.
 
 To use a different rig, add its rig entry with its own bone names in `sockets`, and point `data/player.json` (`rig`) or a monster at it. Mixamo characters work this way (export FBX, convert to GLB, set `scale` to 0.01 and `rootMotionBone` to `mixamorigHips`), but Mixamo files may not be redistributed, so they go in `public/models/local/`, which is git-ignored, and never in this repository.
 

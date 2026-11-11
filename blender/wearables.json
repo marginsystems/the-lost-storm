@@ -1,0 +1,18 @@
+{
+  "packs": {
+    "quaternius_outfits_fantasy": { "skeleton": "unreal" }
+  },
+  "parts": [
+    { "id": "peasant_shirt", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Peasant_Body.gltf", "textureSize": 512 },
+    { "id": "peasant_sleeves", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Peasant_Arms.gltf", "dropMaterials": ["MI_Regular_Male"], "textureSize": 256 },
+    { "id": "peasant_trousers", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Peasant_Legs.gltf", "textureSize": 512 },
+    { "id": "peasant_boots", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Peasant_Feet.gltf", "textureSize": 512 },
+    { "id": "ranger_hood", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Ranger_Head_Hood.gltf", "textureSize": 512 },
+    { "id": "ranger_vest", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Ranger_Body.gltf", "textureSize": 1024 },
+    { "id": "ranger_pauldron", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Ranger_Acc_Pauldron.gltf", "textureSize": 256 },
+    { "id": "ranger_sleeves", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Ranger_Arms.gltf", "dropMaterials": ["MI_Regular_Male"], "keepAbsX": [0, 0.67], "textureSize": 256 },
+    { "id": "ranger_bracers", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Outfits/Male_Ranger.gltf", "objects": [{ "name": "Male_Ranger_Arms", "keepAbsX": [0.67, 10] }, "Male_Ranger_Arms_Bracer"], "dropMaterials": ["MI_Regular_Male"], "textureSize": 512 },
+    { "id": "ranger_trousers", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Ranger_Legs.gltf", "textureSize": 512 },
+    { "id": "ranger_boots", "pack": "quaternius_outfits_fantasy", "file": "Exports/glTF (Godot-Unreal)/Modular Parts/Male_Ranger_Feet_Boots.gltf", "decimate": 0.4, "textureSize": 512 }
+  ]
+}

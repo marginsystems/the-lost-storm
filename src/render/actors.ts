@@ -1,10 +1,11 @@
 import type { Scene } from 'three';
 import { Color } from 'three';
 import type { Content } from '../../sim/content/types.ts';
-import type { MonsterState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
+import { hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
+import type { Equipment, MonsterState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { ActorView } from './actor-view.ts';
 import { createActorView } from './actor-view.ts';
-import type { CharacterLibrary, LoadedRig } from './character-loader.ts';
+import type { CharacterLibrary, LoadedRig, RigInstance } from './character-loader.ts';
 import { instantiateRig } from './character-loader.ts';
 
 export const ACTORS = {
@@ -33,12 +34,18 @@ function playerGear(content: Content, player: PlayerState): string[] {
   return held === null ? [...content.player.gear] : [...content.player.gear, held];
 }
 
+function dress(content: Content, rig: RigInstance, clothes: readonly string[], equipped: Equipment | null): void {
+  const worn: string[] = wornWearables(content, clothes, equipped);
+  rig.setWear(worn, hiddenBodyParts(content, worn));
+}
+
 export function createActors(scene: Scene, library: CharacterLibrary, world: World): Actors {
   const content: Content = world.content;
   const playerRig: LoadedRig | undefined = library.rigs.get(content.player.rig);
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
   const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color }), 1, world.player.facing);
   playerView.rig.setGear(playerGear(content, world.player));
+  dress(content, playerView.rig, content.player.wear, world.player.equipped);
   scene.add(playerView.rig.root);
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
 
@@ -49,6 +56,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     if (rig === undefined) return null;
     const view: ActorView = createActorView(instantiateRig(rig, library, { tint: monster.def.tint, glow: monster.def.color }), monster.def.scale, monster.facing);
     view.rig.setGear(monster.def.gear);
+    dress(content, view.rig, monster.def.wear, null);
     scene.add(view.rig.root);
     const entry: MonsterEntry = { view, spawnTime: Math.max(monster.spawnTime, 1e-3) };
     monsters.set(monster.id, entry);
@@ -98,6 +106,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             break;
           case 'character_changed':
             playerView.rig.setGear(playerGear(content, current.player));
+            dress(content, playerView.rig, content.player.wear, current.player.equipped);
             break;
           case 'monster_remove': {
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);

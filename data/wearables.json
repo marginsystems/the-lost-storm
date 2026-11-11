@@ -1,0 +1,127 @@
+[
+  {
+    "id": "dirty_shirt",
+    "model": "models/wear/peasant_shirt.glb",
+    "region": "chest",
+    "tint": "#c2b89e",
+    "hides": []
+  },
+  {
+    "id": "dirty_sleeves",
+    "model": "models/wear/peasant_sleeves.glb",
+    "region": "arms",
+    "tint": "#c2b89e",
+    "hides": []
+  },
+  {
+    "id": "dirty_trousers",
+    "model": "models/wear/peasant_trousers.glb",
+    "region": "legs",
+    "tint": "#c9c2b0",
+    "hides": []
+  },
+  {
+    "id": "rag_shirt",
+    "model": "models/wear/peasant_shirt.glb",
+    "region": "chest",
+    "tint": "#8f8a78",
+    "hides": []
+  },
+  {
+    "id": "rag_trousers",
+    "model": "models/wear/peasant_trousers.glb",
+    "region": "legs",
+    "tint": "#9a958a",
+    "hides": []
+  },
+  {
+    "id": "hex_hood",
+    "model": "models/wear/ranger_hood.glb",
+    "region": "head",
+    "tint": "#a48fd0",
+    "hides": []
+  },
+  {
+    "id": "linen_shirt",
+    "model": "models/wear/peasant_shirt.glb",
+    "region": "chest",
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "linen_sleeves",
+    "model": "models/wear/peasant_sleeves.glb",
+    "region": "arms",
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "wool_trousers",
+    "model": "models/wear/peasant_trousers.glb",
+    "region": "legs",
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "worn_boots",
+    "model": "models/wear/peasant_boots.glb",
+    "region": "feet",
+    "tint": "#ffffff",
+    "hides": [
+      "feet"
+    ]
+  },
+  {
+    "id": "leather_hood",
+    "model": "models/wear/ranger_hood.glb",
+    "region": "head",
+    "tint": "#e0d6c0",
+    "hides": []
+  },
+  {
+    "id": "leather_vest",
+    "model": "models/wear/ranger_vest.glb",
+    "region": "chest",
+    "tint": "#e0d6c0",
+    "hides": [
+      "torso"
+    ]
+  },
+  {
+    "id": "leather_pauldron",
+    "model": "models/wear/ranger_pauldron.glb",
+    "region": "shoulders",
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "leather_sleeves",
+    "model": "models/wear/ranger_sleeves.glb",
+    "region": "arms",
+    "tint": "#e0d6c0",
+    "hides": []
+  },
+  {
+    "id": "leather_bracers",
+    "model": "models/wear/ranger_bracers.glb",
+    "region": "hands",
+    "tint": "#f0e8d8",
+    "hides": []
+  },
+  {
+    "id": "leather_leggings",
+    "model": "models/wear/ranger_trousers.glb",
+    "region": "legs",
+    "tint": "#e0d6c0",
+    "hides": []
+  },
+  {
+    "id": "leather_boots",
+    "model": "models/wear/ranger_boots.glb",
+    "region": "feet",
+    "tint": "#f0e8d8",
+    "hides": [
+      "feet"
+    ]
+  }
+]

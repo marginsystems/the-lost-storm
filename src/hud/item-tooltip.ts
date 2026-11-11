@@ -8,7 +8,11 @@ import { setPicture } from './item-picture.ts';
 
 const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = {
   weapon: 'Weapon',
-  armour: 'Armour',
+  head: 'Headgear',
+  chest: 'Body Armour',
+  hands: 'Gloves',
+  legs: 'Leggings',
+  feet: 'Boots',
   charm: 'Charm',
 };
 

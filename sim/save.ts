@@ -1,11 +1,12 @@
 import type { Fields } from './content/read.ts';
 import { isFields } from './content/read.ts';
 import type { Content, ItemSlot } from './content/types.ts';
-import { ITEM_SLOTS } from './content/types.ts';
+import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
-import type { Equipment, ItemInstance, RolledAffix, World } from './world/types.ts';
+import type { Equipment, GroundItem, ItemInstance, RolledAffix, World } from './world/types.ts';
 
-export const SAVE_VERSION: number = 1;
+export const SAVE_VERSION: number = 2;
+const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, SAVE_VERSION]);
 
 export interface SaveData {
   readonly version: number;
@@ -17,8 +18,14 @@ export interface SaveData {
   readonly allocated: readonly string[];
   readonly inventory: readonly (ItemInstance | null)[];
   readonly equipped: Equipment;
+  readonly spilled: readonly ItemInstance[];
   readonly surge: number;
   readonly nextItemUid: number;
+}
+
+interface Worn {
+  readonly equipped: Equipment;
+  readonly spilled: ItemInstance[];
 }
 
 export function toSave(world: World): SaveData {
@@ -33,6 +40,7 @@ export function toSave(world: World): SaveData {
     allocated: [...player.allocated],
     inventory: [...player.inventory],
     equipped: { ...player.equipped },
+    spilled: world.ground.flatMap((ground: GroundItem): ItemInstance[] => (ground.kept && ground.content.kind === 'item' ? [ground.content.item] : [])),
     surge: world.surge,
     nextItemUid: world.nextItemUid,
   };
@@ -66,19 +74,30 @@ function readItem(content: Content, value: unknown): ItemInstance | null {
   return { uid, base, rarity, level, affixes: rolled };
 }
 
-function readEquipped(content: Content, value: unknown): Equipment {
-  const equipped: Equipment = { weapon: null, armour: null, charm: null };
-  if (!isFields(value)) return equipped;
-  for (const slot of ITEM_SLOTS) {
-    const item: ItemInstance | null = readItem(content, value[slot]);
-    const itemSlot: ItemSlot | undefined = item === null ? undefined : content.itemBases.get(item.base)?.slot;
-    if (item !== null && itemSlot === slot) equipped[slot] = item;
+function readEquipped(content: Content, value: unknown, inventory: (ItemInstance | null)[]): Worn {
+  const equipped: Equipment = emptyEquipment();
+  const spilled: ItemInstance[] = [];
+  if (!isFields(value)) return { equipped, spilled };
+  const strays: ItemInstance[] = [];
+  for (const key of Object.keys(value)) {
+    const item: ItemInstance | null = readItem(content, value[key]);
+    if (item === null) continue;
+    const slot: ItemSlot | null = slotOf(content, item);
+    if (slot !== null && slot === key && equipped[slot] === null) equipped[slot] = item;
+    else strays.push(item);
   }
-  return equipped;
+  for (const item of strays) {
+    const slot: ItemSlot | null = slotOf(content, item);
+    const free: number = inventory.indexOf(null);
+    if (slot !== null && equipped[slot] === null) equipped[slot] = item;
+    else if (free >= 0) inventory[free] = item;
+    else spilled.push(item);
+  }
+  return { equipped, spilled };
 }
 
 export function readSave(content: Content, value: unknown): SaveData | null {
-  if (!isFields(value) || value['version'] !== SAVE_VERSION) return null;
+  if (!isFields(value) || !READABLE_VERSIONS.has(value['version'])) return null;
   const level: number | null = count(value, 'level', 1);
   const xp: number | null = count(value, 'xp', 0);
   const gold: number | null = count(value, 'gold', 0);
@@ -94,6 +113,10 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const inventoryList: readonly unknown[] = inventory;
   const size: number = content.player.inventorySize;
   const slots: (ItemInstance | null)[] = Array.from({ length: size }, (_: unknown, index: number): ItemInstance | null => readItem(content, inventoryList[index]));
+  const worn: Worn = readEquipped(content, value['equipped'], slots);
+  const spilled: unknown = value['spilled'];
+  const spilledList: readonly unknown[] = Array.isArray(spilled) ? spilled : [];
+  const kept: ItemInstance[] = spilledList.map((entry: unknown): ItemInstance | null => readItem(content, entry)).filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
   return {
     version: SAVE_VERSION,
     level: Math.min(Math.floor(level), content.player.xp.maxLevel),
@@ -103,7 +126,8 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     skillPoints: Math.floor(skillPoints),
     allocated: allocatedList.filter((node: unknown): node is string => typeof node === 'string' && findNode(content, node) !== null),
     inventory: slots,
-    equipped: readEquipped(content, value['equipped']),
+    equipped: worn.equipped,
+    spilled: [...kept, ...worn.spilled],
     surge: Math.floor(surge),
     nextItemUid: Math.floor(nextItemUid),
   };

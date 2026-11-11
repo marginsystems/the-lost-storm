@@ -16,7 +16,11 @@ const INVENTORY = {
 
 const SLOT_TITLES: Readonly<Record<ItemSlot, string>> = {
   weapon: 'Weapon',
-  armour: 'Armour',
+  head: 'Head',
+  chest: 'Chest',
+  hands: 'Hands',
+  legs: 'Legs',
+  feet: 'Feet',
   charm: 'Charm',
 };
 
@@ -101,6 +105,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
   const equipCells: Map<ItemSlot, CellView> = new Map<ItemSlot, CellView>();
   for (const slot of ITEM_SLOTS) {
     const holder: HTMLDivElement = el('div', 'equip', equipRow);
+    holder.style.gridArea = slot;
     const view: CellView = buildCell(holder, 'cell big');
     label('equip-name', SLOT_TITLES[slot], holder);
     equipCells.set(slot, view);

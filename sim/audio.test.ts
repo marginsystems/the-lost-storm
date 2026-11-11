@@ -36,7 +36,7 @@ function sounds(cues: readonly SoundCue[]): string[] {
 }
 
 function ground(payload: GroundItem['content']): GroundItem {
-  return { id: 1, pos: { x: 5, z: 6 }, from: { x: 4, z: 6 }, content: payload, age: 0 };
+  return { id: 1, pos: { x: 5, z: 6 }, from: { x: 4, z: 6 }, content: payload, age: 0, kept: false };
 }
 
 void test('a skill starting plays its start sound where the actor stands', (): void => {

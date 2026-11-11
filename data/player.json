@@ -77,5 +77,10 @@
   "respawnDelay": 3,
   "tint": "#f4eedd",
   "color": "#8fdcff",
-  "gear": []
+  "gear": [],
+  "wear": [
+    "dirty_shirt",
+    "dirty_sleeves",
+    "dirty_trousers"
+  ]
 }

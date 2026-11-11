@@ -1,7 +1,7 @@
-import type { Object3D, WebGLRenderTarget } from 'three';
-import { ACESFilmicToneMapping, Box3, DirectionalLight, Group, OrthographicCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from 'three';
+import type { Material, Object3D, WebGLRenderTarget } from 'three';
+import { ACESFilmicToneMapping, Box3, Color, DirectionalLight, Group, Mesh, MeshStandardMaterial, OrthographicCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import type { CharacterLibrary } from './character-loader.ts';
+import type { CharacterLibrary, LoadedWearable } from './character-loader.ts';
 
 export const THUMBNAIL = {
   size: 128,
@@ -22,9 +22,16 @@ export const THUMBNAIL = {
   fillX: 4,
   fillY: -1.5,
   fillZ: 3,
+  wornTurn: -0.5,
+  wornTilt: 0.12,
+  wideFrom: 2,
 } as const;
 
 export type ItemThumbnails = ReadonlyMap<string, string>;
+
+export function wornImageKey(wearableId: string): string {
+  return `worn:${wearableId}`;
+}
 
 function pose(template: Object3D): Group {
   const model: Object3D = template.clone(true);
@@ -37,7 +44,37 @@ function pose(template: Object3D): Group {
   return diagonal;
 }
 
-export function createItemThumbnails(library: CharacterLibrary): ItemThumbnails {
+function dressed(wearable: LoadedWearable, made: Material[]): Group {
+  const turned: Group = new Group();
+  turned.rotation.set(THUMBNAIL.wornTilt, THUMBNAIL.wornTurn, 0);
+  for (const piece of wearable.pieces) {
+    if (!(piece.material instanceof MeshStandardMaterial)) continue;
+    const material: MeshStandardMaterial = piece.material.clone();
+    material.color.multiply(new Color(wearable.def.tint));
+    made.push(material);
+    turned.add(new Mesh(piece.geometry, material));
+  }
+  const upright: Group = new Group();
+  upright.add(turned);
+  return upright;
+}
+
+function boundsOf(posed: Group): Box3 {
+  posed.updateMatrixWorld(true);
+  return new Box3().setFromObject(posed, true);
+}
+
+function oneSleeve(posed: Group): Box3 {
+  const whole: Box3 = boundsOf(posed);
+  const size: Vector3 = whole.getSize(new Vector3());
+  if (size.x < size.y * THUMBNAIL.wideFrom) return whole;
+  const half: Box3 = new Box3(new Vector3(whole.getCenter(new Vector3()).x, whole.min.y, whole.min.z), whole.max.clone());
+  posed.rotation.z = -THUMBNAIL.diagonal;
+  posed.updateMatrixWorld(true);
+  return half.applyMatrix4(posed.matrixWorld);
+}
+
+export function createItemThumbnails(library: CharacterLibrary, wearableIds: readonly string[]): ItemThumbnails {
   const renderer: WebGLRenderer = new WebGLRenderer({ alpha: true, antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(THUMBNAIL.size, THUMBNAIL.size, false);
@@ -62,11 +99,9 @@ export function createItemThumbnails(library: CharacterLibrary): ItemThumbnails 
   camera.position.set(0, 0, THUMBNAIL.distance);
 
   const images: Map<string, string> = new Map<string, string>();
-  for (const attachment of library.attachments.values()) {
-    const posed: Group = pose(attachment.template);
+  const shoot = (name: string, posed: Group, frame: (model: Group) => Box3): void => {
     scene.add(posed);
-    posed.updateMatrixWorld(true);
-    const bounds: Box3 = new Box3().setFromObject(posed, true);
+    const bounds: Box3 = frame(posed);
     posed.position.sub(bounds.getCenter(new Vector3()));
     const size: Vector3 = bounds.getSize(new Vector3());
     const half: number = (Math.max(size.x, size.y) / 2) * (1 + THUMBNAIL.padding);
@@ -76,9 +111,16 @@ export function createItemThumbnails(library: CharacterLibrary): ItemThumbnails 
     camera.bottom = -half;
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);
-    images.set(attachment.def.id, renderer.domElement.toDataURL('image/png'));
+    images.set(name, renderer.domElement.toDataURL('image/png'));
     posed.removeFromParent();
+  };
+  for (const attachment of library.attachments.values()) shoot(attachment.def.id, pose(attachment.template), boundsOf);
+  const made: Material[] = [];
+  for (const id of wearableIds) {
+    const wearable: LoadedWearable | undefined = library.wearables.get(id);
+    if (wearable !== undefined) shoot(wornImageKey(id), dressed(wearable, made), oneSleeve);
   }
+  for (const material of made) material.dispose();
 
   reflections.dispose();
   room.dispose();

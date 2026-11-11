@@ -10,6 +10,7 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 |---|---|---|---|---|
 | Free Pack - Human Skeleton | PolyOne Studio | https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
 | Universal Animation Library (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library.txt](licenses/Quaternius-Universal-Animation-Library.txt) |
+| Modular Character Outfits - Fantasy (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/modularcharacteroutfitsfantasy.html | CC0 1.0 | [licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt](licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt) |
 | KayKit Dungeon Remastered 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0 | CC0 1.0 | [licenses/KayKit-Dungeon-Remastered-LICENSE.txt](licenses/KayKit-Dungeon-Remastered-LICENSE.txt) |
 
 ## Credit required by CC BY 4.0
@@ -45,6 +46,34 @@ Rebuild with:
 ```bash
 /Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_weapons.py -- "$PWD/public/models/weapons"
 ```
+
+## Clothing and armour
+
+Skinned pieces made once and worn by every character on the shared rig. They are parts of "Modular Character Outfits - Fantasy" (Standard) by Quaternius, paths below relative to `Exports/glTF (Godot-Unreal)/` in the pack. `data/wearables.json` turns each file into one or more wearables with a tint.
+
+The pack's rig has 65 joints with Unreal names (`pelvis`, `spine_01`, `hand_r`) and slightly different proportions, so `blender/build_wearables.py` changes every part: it drops the bare-skin faces that ship with arm parts, moves each vertex from the pack's rest pose to ours joint by joint, renames and merges the vertex groups to our 53 `DEF-*` joints, and repacks the UV islands the part uses into its own 256 to 1024 pixel WebP textures. `blender/wearables.json` lists the parts; the refit is in `blender/wearable_fit.py` and the texture repack in `blender/wearable_textures.py`.
+
+| File | What it is | Original | Licence |
+|---|---|---|---|
+| `public/models/wear/peasant_shirt.glb` | Shirt with belt | `Modular Parts/Male_Peasant_Body.gltf` | CC0 1.0 |
+| `public/models/wear/peasant_sleeves.glb` | Under-sleeves | `Modular Parts/Male_Peasant_Arms.gltf`, without the bare hands | CC0 1.0 |
+| `public/models/wear/peasant_trousers.glb` | Trousers | `Modular Parts/Male_Peasant_Legs.gltf` | CC0 1.0 |
+| `public/models/wear/peasant_boots.glb` | Boots | `Modular Parts/Male_Peasant_Feet.gltf` | CC0 1.0 |
+| `public/models/wear/ranger_hood.glb` | Hood | `Modular Parts/Male_Ranger_Head_Hood.gltf` | CC0 1.0 |
+| `public/models/wear/ranger_vest.glb` | Vest, skirt and two belts | `Modular Parts/Male_Ranger_Body.gltf` | CC0 1.0 |
+| `public/models/wear/ranger_pauldron.glb` | Shoulder plate | `Modular Parts/Male_Ranger_Acc_Pauldron.gltf` | CC0 1.0 |
+| `public/models/wear/ranger_sleeves.glb` | Sleeves, shoulder to wrist | `Modular Parts/Male_Ranger_Arms.gltf`, cut at the wrist, without the bare fingers | CC0 1.0 |
+| `public/models/wear/ranger_bracers.glb` | Bracers and fingerless gloves | `Outfits/Male_Ranger.gltf`: `Male_Ranger_Arms_Bracer` and the gloves of `Male_Ranger_Arms` | CC0 1.0 |
+| `public/models/wear/ranger_trousers.glb` | Trousers | `Modular Parts/Male_Ranger_Legs.gltf` | CC0 1.0 |
+| `public/models/wear/ranger_boots.glb` | Boots | `Modular Parts/Male_Ranger_Feet_Boots.gltf`, decimated to 40% | CC0 1.0 |
+
+Rebuild with the pack unpacked somewhere outside this repository:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_wearables.py -- blender/wearables.json public/models/characters/skeleton.glb public/models/wear <scratch-dir> "quaternius_outfits_fantasy=<path to>/Modular Character Outfits - Fantasy[Standard]"
+```
+
+The arguments are the manifest, the body whose rig the parts are fitted to, the output folder, a scratch folder for the repacked PNG textures, and one `<pack>=<folder>` per source pack. Add `only=<id>,<id>` to rebuild some parts.
 
 ## Arena
 

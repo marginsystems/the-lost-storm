@@ -3,13 +3,14 @@ import { test } from 'node:test';
 import { must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillDef, StatBlock } from './content/types.ts';
-import { generateItem } from './items.ts';
+import { ITEM_SLOTS } from './content/types.ts';
+import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import { applyMods, armourReduction, averageHit, computeStats, damagePerSecond, resolveSkill, resolveSkillBar } from './stats.ts';
 import type { Equipment, ItemInstance } from './world/types.ts';
 
 const content: Content = loadContent();
-const bare: Equipment = { weapon: null, armour: null, charm: null };
+const bare: Equipment = emptyEquipment();
 
 function skillOf(id: string): SkillDef {
   return must(content.skills.get(id), id);
@@ -100,4 +101,27 @@ void test('armour and damage helpers behave sensibly', (): void => {
   assert.ok(averageHit(stats) > (stats.damageMin + stats.damageMax) / 2);
   assert.ok(damagePerSecond(stats, skillOf('cleave')) > 0);
   assert.ok(damagePerSecond({ ...stats, attackSpeed: 2 }, skillOf('cleave')) > damagePerSecond(stats, skillOf('cleave')));
+});
+
+void test('every equipment slot adds its item to the stats', (): void => {
+  const before: StatBlock = computeStats(content, 1, bare, []);
+  const dressed: Equipment = {
+    ...bare,
+    head: item('wayfarer_hood'),
+    chest: item('drowned_leathers'),
+    hands: item('strapped_bracers'),
+    legs: item('stalker_leggings'),
+    feet: item('strider_boots'),
+  };
+  const after: StatBlock = computeStats(content, 1, dressed, []);
+  assert.equal(after.armour, before.armour + 6 + 10 + 5 + 8 + 6);
+  assert.equal(after.maxLife, before.maxLife + 14 + 10);
+  assert.equal(after.maxMana, before.maxMana + 8);
+  assert.ok(Math.abs(after.attackSpeed - (before.attackSpeed + 0.04)) < 1e-9);
+  assert.ok(Math.abs(after.moveSpeed - before.moveSpeed * 1.05) < 1e-9);
+  for (const slot of ITEM_SLOTS) {
+    if (dressed[slot] === null) continue;
+    const without: StatBlock = computeStats(content, 1, { ...dressed, [slot]: null }, []);
+    assert.notDeepEqual(without, after, slot);
+  }
 });

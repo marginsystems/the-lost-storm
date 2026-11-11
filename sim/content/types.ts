@@ -135,10 +135,22 @@ export interface MonsterDef {
   readonly color: string;
   readonly tint: string;
   readonly gear: readonly string[];
+  readonly wear: readonly string[];
 }
 
-export const ITEM_SLOTS = ['weapon', 'armour', 'charm'] as const;
+export const ITEM_SLOTS = ['weapon', 'head', 'chest', 'hands', 'legs', 'feet', 'charm'] as const;
 export type ItemSlot = (typeof ITEM_SLOTS)[number];
+
+export const WEAR_REGIONS = ['head', 'shoulders', 'chest', 'arms', 'hands', 'legs', 'feet'] as const;
+export type WearRegion = (typeof WEAR_REGIONS)[number];
+
+export interface WearableDef {
+  readonly id: string;
+  readonly model: string;
+  readonly region: WearRegion;
+  readonly tint: string;
+  readonly hides: readonly string[];
+}
 
 export interface RarityDef {
   readonly id: string;
@@ -159,6 +171,7 @@ export interface ItemBaseDef {
   readonly minLevel: number;
   readonly implicit: readonly StatMod[];
   readonly visual: string | null;
+  readonly wear: readonly string[];
 }
 
 export const AFFIX_POSITIONS = ['prefix', 'suffix'] as const;
@@ -227,6 +240,7 @@ export interface RigDef {
   readonly clips: Readonly<Record<AnimationKey, RigClip>>;
   readonly sockets: Readonly<Record<string, RigSocket>>;
   readonly hiddenNodes: readonly string[];
+  readonly bodyParts: Readonly<Record<string, readonly string[]>>;
 }
 
 export interface PropLight {
@@ -322,6 +336,7 @@ export interface PlayerDef {
   readonly tint: string;
   readonly color: string;
   readonly gear: readonly string[];
+  readonly wear: readonly string[];
   readonly inventorySize: number;
   readonly pickupRadius: number;
   readonly goldMagnetRadius: number;
@@ -338,6 +353,7 @@ export interface Content {
   readonly skillTree: readonly SkillTreeNodeDef[];
   readonly rigs: ReadonlyMap<string, RigDef>;
   readonly attachments: ReadonlyMap<string, AttachmentDef>;
+  readonly wearables: ReadonlyMap<string, WearableDef>;
   readonly props: ReadonlyMap<string, PropDef>;
   readonly arena: ArenaDef;
   readonly player: PlayerDef;

@@ -9,6 +9,7 @@ import props from '../../data/props.json' with { type: 'json' };
 import rigs from '../../data/rigs.json' with { type: 'json' };
 import skillTree from '../../data/skill-tree.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
+import wearables from '../../data/wearables.json' with { type: 'json' };
 import { must } from '../../test/support.ts';
 import { generateItem } from '../items.ts';
 import { createRng } from '../rng.ts';
@@ -19,7 +20,7 @@ import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content, MonsterDef } from './types.ts';
 
-const shipped: RawContent = { skills, monsters, items, skillTree, rigs, attachments, props, arena, player };
+const shipped: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, arena, player };
 
 const extraSkill = {
   id: 'ember_lash',
@@ -60,7 +61,10 @@ const extraMonster = {
   color: '#ff8844',
   tint: '#553322',
   gear: ['ash_brand'],
+  wear: ['ash_shroud'],
 };
+
+const extraWearable = { id: 'ash_shroud', model: 'models/wear/peasant_shirt.glb', region: 'chest', tint: '#33302c', hides: [] };
 
 const extraAttachment = { id: 'ash_brand', model: 'models/weapons/rusted_blade.glb', socket: 'hand_l' };
 
@@ -72,6 +76,7 @@ const extraBase = {
   dropWeight: 5,
   minLevel: 1,
   visual: 'sword_1h',
+  wear: [],
   implicit: [
     { stat: 'damageMin', op: 'add', value: 7 },
     { stat: 'damageMax', op: 'add', value: 11 },
@@ -97,6 +102,7 @@ function extended(): RawContent {
     skills: [...skills, extraSkill],
     monsters: [...monsters, extraMonster],
     attachments: [...attachments, extraAttachment],
+    wearables: [...wearables, extraWearable],
     items: { ...items, bases: [...items.bases, extraBase] },
     skillTree: [...skillTree, extraNode],
     arena: { ...arena, packs: [...arena.packs, { x: 28, z: 22, members: [{ monster: 'ash_wraith', count: 3 }] }] },
@@ -123,12 +129,12 @@ void test('a missing field throws a ContentError naming the field', (): void => 
 void test('an unknown enum value and a duplicate id are rejected', (): void => {
   const badBehaviour: RawContent = { ...shipped, monsters: [{ ...extraMonster, behaviour: { type: 'dancer' } }] };
   assert.throws((): Content => parseContent(badBehaviour), (error: unknown): boolean => problem(error, 'behaviour.type'));
-  const duplicate: RawContent = { ...shipped, attachments: [...attachments, extraAttachment], monsters: [extraMonster, extraMonster] };
+  const duplicate: RawContent = { ...shipped, attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], monsters: [extraMonster, extraMonster] };
   assert.throws((): Content => parseContent(duplicate), (error: unknown): boolean => problem(error, 'duplicate id ash_wraith'));
 });
 
 void test('contentProblems reports dangling references', (): void => {
-  const content: Content = parseContent({ ...shipped, attachments: [...attachments, extraAttachment], monsters: [...monsters, { ...extraMonster, skill: 'no_such_skill', rig: 'no_such_rig' }] });
+  const content: Content = parseContent({ ...shipped, attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], monsters: [...monsters, { ...extraMonster, skill: 'no_such_skill', rig: 'no_such_rig' }] });
   const problems: string[] = contentProblems(content);
   assert.ok(problems.some((line: string): boolean => line.includes('ash_wraith') && line.includes('no_such_skill')));
   assert.ok(problems.some((line: string): boolean => line.includes('ash_wraith') && line.includes('no_such_rig')));
@@ -155,7 +161,7 @@ void test('a new skill, monster, item base and tree node are data only', (): voi
 });
 
 void test('held gear is data: a missing attachment or socket is reported', (): void => {
-  const geared: RawContent = { ...shipped, skills: [...skills, extraSkill], attachments: [...attachments, extraAttachment], monsters: [...monsters, extraMonster] };
+  const geared: RawContent = { ...shipped, skills: [...skills, extraSkill], attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], monsters: [...monsters, extraMonster] };
   const withGear: Content = parseContent(geared);
   assert.deepEqual(contentProblems(withGear), []);
   assert.deepEqual(must(withGear.monsters.get('ash_wraith'), 'ash_wraith').gear, ['ash_brand']);
@@ -168,4 +174,27 @@ void test('held gear is data: a missing attachment or socket is reported', (): v
 
   const badVisual: Content = parseContent({ ...shipped, items: { ...items, bases: [...items.bases, { ...items.bases[0], id: 'ghost_blade', visual: 'no_such_model' }] } });
   assert.ok(contentProblems(badVisual).some((found: string): boolean => found.includes('item ghost_blade uses unknown attachment no_such_model')));
+});
+
+void test('worn gear is data: unknown wearables, doubled regions and unknown body parts are reported', (): void => {
+  const dressed: RawContent = { ...shipped, skills: [...skills, extraSkill], attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], monsters: [...monsters, extraMonster] };
+  const withWear: Content = parseContent(dressed);
+  assert.deepEqual(contentProblems(withWear), []);
+  assert.deepEqual(must(withWear.monsters.get('ash_wraith'), 'ash_wraith').wear, ['ash_shroud']);
+  assert.equal(must(withWear.wearables.get('ash_shroud'), 'ash_shroud').region, 'chest');
+
+  const unknownWearable: Content = parseContent({ ...dressed, wearables });
+  assert.ok(contentProblems(unknownWearable).some((found: string): boolean => found.includes('monster ash_wraith wears unknown wearable ash_shroud')));
+
+  const badRegion: RawContent = { ...shipped, wearables: [...wearables, { ...extraWearable, region: 'tail' }] };
+  assert.throws((): Content => parseContent(badRegion), (error: unknown): boolean => problem(error, 'region'));
+
+  const doubled: Content = parseContent({ ...shipped, wearables: [...wearables, extraWearable], player: { ...player, wear: ['dirty_shirt', 'ash_shroud'] } });
+  assert.ok(contentProblems(doubled).some((found: string): boolean => found.includes('player wears two pieces on its chest')));
+
+  const hidesNothing: Content = parseContent({ ...shipped, wearables: [...wearables, { ...extraWearable, hides: ['tail'] }] });
+  assert.ok(contentProblems(hidesNothing).some((found: string): boolean => found.includes('wearable ash_shroud') && found.includes('no body part tail')));
+
+  const badItem: Content = parseContent({ ...shipped, items: { ...items, bases: [...items.bases, { ...extraBase, id: 'ghost_coat', slot: 'chest', visual: null, wear: ['no_such_coat'] }] } });
+  assert.ok(contentProblems(badItem).some((found: string): boolean => found.includes('item ghost_coat wears unknown wearable no_such_coat')));
 });
