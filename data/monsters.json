@@ -64,5 +64,180 @@
       "hex_robe",
       "hex_cowl"
     ]
+  },
+  {
+    "id": "one_before",
+    "name": "The One Before",
+    "rig": "skeleton_hero",
+    "scale": 1.22,
+    "radius": 0.5,
+    "life": 420,
+    "damageMin": 8,
+    "damageMax": 13,
+    "moveSpeed": 5.6,
+    "xp": 140,
+    "aggroRadius": 12,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "before_sweep",
+    "loot": {
+      "goldChance": 0,
+      "goldMin": 0,
+      "goldMax": 0,
+      "itemChance": 0
+    },
+    "color": "#8fdcff",
+    "tint": "#d8d2c4",
+    "gear": [
+      "sword_1h"
+    ],
+    "wear": [
+      "leather_hood",
+      "leather_vest",
+      "leather_sleeves",
+      "leather_leggings",
+      "leather_boots"
+    ],
+    "boss": {
+      "title": "Keeper of the Empty Frame",
+      "phases": [
+        {
+          "below": 1,
+          "skills": [
+            {
+              "skill": "before_sweep",
+              "weight": 3
+            },
+            {
+              "skill": "before_bolts",
+              "weight": 2
+            }
+          ],
+          "barks": []
+        },
+        {
+          "below": 0.5,
+          "skills": [
+            {
+              "skill": "before_sweep",
+              "weight": 2
+            },
+            {
+              "skill": "before_bolts",
+              "weight": 2
+            },
+            {
+              "skill": "before_ring",
+              "weight": 3
+            }
+          ],
+          "barks": [
+            "one_before_half_1"
+          ]
+        }
+      ],
+      "poise": {
+        "knockback": 0.2
+      },
+      "drop": {
+        "items": 1,
+        "rarity": "rare",
+        "goldMin": 30,
+        "goldMax": 50
+      },
+      "barks": {
+        "aggro": [
+          "one_before_sight_1",
+          "one_before_sight_2"
+        ],
+        "death": [
+          "one_before_death_1"
+        ]
+      }
+    }
+  },
+  {
+    "id": "mason",
+    "name": "The Mason",
+    "rig": "skeleton_thrall",
+    "scale": 1.75,
+    "radius": 0.5,
+    "life": 600,
+    "damageMin": 11,
+    "damageMax": 17,
+    "moveSpeed": 3.7,
+    "xp": 150,
+    "aggroRadius": 12,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "mason_hammer",
+    "loot": {
+      "goldChance": 0,
+      "goldMin": 0,
+      "goldMax": 0,
+      "itemChance": 0
+    },
+    "color": "#e0a060",
+    "tint": "#9a9288",
+    "gear": [
+      "greatsword"
+    ],
+    "wear": [
+      "leather_vest",
+      "leather_leggings",
+      "leather_boots"
+    ],
+    "boss": {
+      "title": "It builds",
+      "phases": [
+        {
+          "below": 1,
+          "skills": [
+            {
+              "skill": "mason_hammer",
+              "weight": 3
+            },
+            {
+              "skill": "mason_stone",
+              "weight": 2
+            }
+          ],
+          "barks": []
+        },
+        {
+          "below": 0.5,
+          "skills": [
+            {
+              "skill": "mason_hammer",
+              "weight": 2
+            },
+            {
+              "skill": "mason_stone",
+              "weight": 2
+            },
+            {
+              "skill": "mason_slam",
+              "weight": 3
+            }
+          ],
+          "barks": []
+        }
+      ],
+      "poise": {
+        "knockback": 0.1
+      },
+      "drop": {
+        "items": 1,
+        "rarity": "rare",
+        "goldMin": 30,
+        "goldMax": 50
+      },
+      "barks": {
+        "aggro": [],
+        "death": []
+      }
+    }
   }
 ]

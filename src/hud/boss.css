@@ -1,0 +1,116 @@
+.hud-boss {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  width: min(560px, 62vw);
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, -22px) scale(0.96);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.hud-boss.visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.boss-name {
+  font-family: var(--serif);
+  font-size: 19px;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  color: var(--text);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+}
+
+.boss-title {
+  margin-top: 1px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--text-dim);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+.boss-track {
+  position: relative;
+  height: 11px;
+  margin-top: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(8, 10, 16, 0.78);
+  border: 1px solid var(--panel-edge);
+}
+
+.boss-fill,
+.boss-chip {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+}
+
+.boss-fill {
+  background: linear-gradient(180deg, #d0524a, #8e2622);
+  transition: transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.boss-chip {
+  background: rgba(255, 226, 190, 0.7);
+  transition: transform var(--spring-smooth-ms) var(--spring-smooth) 180ms;
+}
+
+.boss-marks {
+  position: absolute;
+  inset: 0;
+}
+
+.boss-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(8, 10, 16, 0.75);
+}
+
+.hud-bark {
+  position: absolute;
+  left: 50%;
+  bottom: 124px;
+  width: min(640px, 86vw);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.hud-bark.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.bark-name {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  letter-spacing: 0.12em;
+  color: var(--ember);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.95);
+}
+
+.bark-text {
+  margin-top: 2px;
+  font-size: 19px;
+  line-height: 1.4;
+  color: var(--text);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(0, 0, 0, 0.85);
+}
+
+.bark-text.line {
+  animation: dialogue-line var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.hud-dialogue.open ~ .hud-bark {
+  bottom: 252px;
+}

@@ -81,3 +81,15 @@ export function byId<T extends { readonly id: string }>(defs: readonly T[], wher
   }
   return map;
 }
+
+export function positive(source: Fields, key: string, where: string): number {
+  const value: number = numeric(source, key, where);
+  if (value <= 0) throw new ContentError(`${where}.${key}`, 'expected a number above zero');
+  return value;
+}
+
+export function fraction(source: Fields, key: string, where: string): number {
+  const value: number = numeric(source, key, where);
+  if (value <= 0 || value > 1) throw new ContentError(`${where}.${key}`, 'expected a number above 0 and at most 1');
+  return value;
+}

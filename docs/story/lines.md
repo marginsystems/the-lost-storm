@@ -71,10 +71,10 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 
 | Id | Line | When |
 |---|---|---|
-| `before_sight_1` | You know this road. I can see it on you. | Bark, when the boss first notices the hero. |
-| `before_sight_2` | The door stood here. It called for me. For me. | Bark, straight after. |
-| `before_half_1` | What name did it call you? Say it. ... You can't hear it either. | Bark, when the boss falls below half life. |
-| `before_death_1` | Then who was it calling? | Bark, when the boss dies. |
+| `one_before_sight_1` | You know this road. I can see it on you. | Bark, when the boss first notices the hero. |
+| `one_before_sight_2` | The door stood here. It called for me. For me. | Bark, straight after. |
+| `one_before_half_1` | What name did it call you? Say it. ... You can't hear it either. | Bark, when the boss falls below half life. |
+| `one_before_death_1` | Then who was it calling? | Bark, when the boss dies. |
 
 ## The Welcome (`welcome`)
 
@@ -95,5 +95,5 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 - **Maren**: low, dry, level. She never raises her voice. `maren_wake_5` is flat on purpose; she is hiding something. `maren_end_3` is the only line where she sounds moved, and only slightly.
 - **Hale**: warm, slow, a smile in it. `hale_gate_3` is shy. `hale_still_2` is a long breath out; `hale_still_3` is him picking himself up.
 - **Pell**: quick and bright. `pell_first_6` drops for a moment. `pell_first_7`: the first "Ha!" is real, the second is not.
-- **The One Before**: hoarse, close to the microphone, exhausted rather than loud. `before_death_1` is a real question.
+- **The One Before**: hoarse, close to the microphone, exhausted rather than loud. `one_before_death_1` is a real question.
 - **The Welcome**: soft, kind, unhurried. Never a threat in the voice, least of all in `welcome_fight_1`.

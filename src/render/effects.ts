@@ -3,7 +3,8 @@ import { Color, Mesh, MeshBasicMaterial, PointLight, SphereGeometry } from 'thre
 import type { SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
-import { disposeObject, glow, groundArcs, markerMesh, pillarMesh, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphMesh } from './effect-shapes.ts';
+import { disposeObject, glow, groundArcs, markerMesh, pillarMesh, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
+import type { Telegraph } from './effect-shapes.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import type { BurstOptions, ParticleSystem } from './particles.ts';
 
@@ -38,6 +39,14 @@ export const EFFECTS = {
   punch: 0.16,
   emberEvery: 0.07,
   flameSize: 0.17,
+  telegraphHeight: 0.09,
+  telegraphStart: 0.45,
+  telegraphFaint: 0.07,
+  telegraphStrong: 0.34,
+  telegraphEdge: 0.5,
+  telegraphEdgeIn: 6,
+  phaseRing: 9,
+  phaseShake: 0.5,
 } as const;
 
 interface Transient {
@@ -224,16 +233,20 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   };
 
   const telegraph = (owner: number, x: number, z: number, direction: { readonly x: number; readonly z: number }, skill: SkillDef, duration: number): void => {
-    if (skill.delivery.type !== 'arc') return;
-    const mesh = telegraphMesh(skill.delivery.arcDegrees * DEGREES_TO_RADIANS, skill.delivery.reach, TELEGRAPH);
-    mesh.position.set(x, 0.09, z);
-    mesh.rotation.y = facingOf(direction);
+    const shape: Telegraph = telegraphFor(skill.delivery, TELEGRAPH);
+    shape.object.position.set(x, EFFECTS.telegraphHeight, z);
+    shape.object.rotation.y = facingOf(direction);
     add(
-      mesh,
+      shape.object,
       duration,
       (t: number): void => {
-        mesh.material.opacity = 0.08 + 0.34 * t * t;
-        mesh.scale.setScalar(0.55 + 0.45 * easeOut(t));
+        const grown: number = EFFECTS.telegraphStart + (1 - EFFECTS.telegraphStart) * easeOut(t);
+        for (const fill of shape.fills) {
+          fill.material.opacity = EFFECTS.telegraphFaint + EFFECTS.telegraphStrong * t * t;
+          if (shape.lanes) fill.scale.set(1, 1, grown);
+          else fill.scale.setScalar(grown);
+        }
+        for (const edge of shape.edges) edge.material.opacity = EFFECTS.telegraphEdge * Math.min(1, t * EFFECTS.telegraphEdgeIn);
       },
       owner,
     );
@@ -412,6 +425,15 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             ring(event.pos.x, event.pos.z, 4, EMBER, 0.7);
             spray(event.pos.x, 0.3, event.pos.z, EMBER, 26, { speed: { min: 0.5, max: 2.6 }, lift: { min: 2, max: 7 }, life: { min: 0.5, max: 1.1 }, gravity: 2, jitter: 0.6 });
             break;
+          case 'boss_phase': {
+            const boss: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.monsterId);
+            if (boss === undefined) break;
+            ring(boss.pos.x, boss.pos.z, EFFECTS.phaseRing, colorOf(boss.def.color), EFFECTS.waveTime);
+            spray(boss.pos.x, 1.4, boss.pos.z, colorOf(boss.def.color), 40, { speed: { min: 2, max: 9 }, lift: { min: 1, max: 8 }, life: { min: 0.4, max: 1.1 }, gravity: 3, jitter: 0.8 });
+            camera.addTrauma(EFFECTS.phaseShake);
+            break;
+          }
+          case 'bark':
           case 'monster_remove':
           case 'aggro':
           case 'drop':

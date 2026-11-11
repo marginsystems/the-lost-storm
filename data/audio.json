@@ -5,13 +5,24 @@
     "thunderclap": [{ "sound": "electric_crackle", "volume": 0.8, "maxVoices": 2 }],
     "storm_bolt": [{ "sound": "bolt_zap", "volume": 0.85, "maxVoices": 3 }],
     "thrall_claw": [{ "sound": "sword_swing_heavy", "volume": 0.5, "maxVoices": 3 }],
-    "hex_bolt": [{ "sound": "hex_charge", "volume": 0.75, "maxVoices": 2 }]
+    "hex_bolt": [{ "sound": "hex_charge", "volume": 0.75, "maxVoices": 2 }],
+    "before_sweep": [{ "sound": "sword_swing_heavy", "volume": 0.8, "maxVoices": 2 }],
+    "before_bolts": [{ "sound": "bolt_zap", "volume": 0.8, "maxVoices": 2 }],
+    "before_ring": [{ "sound": "electric_crackle", "volume": 0.9, "maxVoices": 1 }],
+    "mason_hammer": [{ "sound": "sword_swing_heavy", "volume": 1, "maxVoices": 2 }],
+    "mason_stone": [{ "sound": "sword_swing_heavy", "volume": 0.7, "maxVoices": 2 }],
+    "mason_slam": [{ "sound": "sword_swing_heavy", "volume": 1, "maxVoices": 1 }]
   },
   "skillImpact": {
     "thunderclap": [
       { "sound": "ground_boom", "volume": 1, "maxVoices": 2 },
       { "sound": "thunder_crack", "volume": 0.75, "maxVoices": 2 }
-    ]
+    ],
+    "before_ring": [
+      { "sound": "ground_boom", "volume": 0.9, "maxVoices": 1 },
+      { "sound": "thunder_crack", "volume": 0.6, "maxVoices": 1 }
+    ],
+    "mason_slam": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 1 }]
   },
   "projectileSpawn": {
     "storm_bolt": [{ "sound": "bolt_whoosh", "volume": 0.6, "maxVoices": 3 }],

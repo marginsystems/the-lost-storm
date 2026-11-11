@@ -130,7 +130,7 @@ void test('towns are safe and wild zones have something to fight', (): void => {
   }
 });
 
-void test('every line has a known speaker, belongs to exactly one conversation of that speaker, and says something', (): void => {
+void test('every line has a known speaker, is spoken in exactly one conversation or boss bark of that speaker, and says something', (): void => {
   const used: Map<string, string> = new Map<string, string>();
   for (const npc of content.npcs.values()) {
     for (const talk of npc.talks) {
@@ -142,8 +142,17 @@ void test('every line has a known speaker, belongs to exactly one conversation o
       }
     }
   }
+  for (const monster of content.monsters.values()) {
+    if (monster.boss === null) continue;
+    for (const lineId of [...monster.boss.barks.aggro, ...monster.boss.barks.death, ...monster.boss.phases.flatMap((phase): readonly string[] => phase.barks)]) {
+      const line = must(content.lines.get(lineId), `line ${lineId}`);
+      assert.equal(line.speaker, monster.id, `${lineId} speaker`);
+      assert.equal(used.get(lineId), undefined, `${lineId} is used twice`);
+      used.set(lineId, monster.id);
+    }
+  }
   for (const line of content.lines.values()) {
-    assert.ok(content.npcs.has(line.speaker), `${line.id} speaker ${line.speaker}`);
+    assert.ok(content.npcs.has(line.speaker) || content.monsters.has(line.speaker), `${line.id} speaker ${line.speaker}`);
     assert.ok(used.has(line.id), `${line.id} is never spoken`);
     assert.ok(line.text.trim().length > 0, `${line.id} is empty`);
     assert.ok(line.id.startsWith(`${line.speaker}_`), `${line.id} does not start with its speaker`);

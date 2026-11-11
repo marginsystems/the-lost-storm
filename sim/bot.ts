@@ -1,8 +1,10 @@
 import type { ObjectiveDef, QuestDef, SkillDef, ZoneDef, ZoneExit } from './content/types.ts';
-import type { Vec2 } from './math.ts';
-import { distance } from './math.ts';
+import type { ReadonlyVec2, Vec2 } from './math.ts';
+import { DEGREES_TO_RADIANS, distance, dot, normalize, rotate } from './math.ts';
+import { isWalkable, lineWalkable } from './nav/grid.ts';
 import { allHold, questState } from './world/conditions.ts';
 import { currentObjective } from './world/quests.ts';
+import { SKILLS } from './world/skills.ts';
 import { stepWorld } from './world/step.ts';
 import type { Command, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
 
@@ -19,6 +21,9 @@ export const BOT = {
   boltGap: 5,
   idleRepeat: 0.4,
   maxLines: 60,
+  dodgeMargin: 0.6,
+  dodgeAngles: 16,
+  dodgeReach: [2.5, 4, 6, 8, 11],
 } as const;
 
 export interface BotReport {
@@ -31,11 +36,12 @@ export interface BotReport {
 export interface Bot {
   readonly world: World;
   readonly events: WorldEvent[];
+  readonly dodges: boolean;
   deaths: number;
 }
 
-export function createBot(world: World): Bot {
-  return { world, events: [], deaths: 0 };
+export function createBot(world: World, dodges: boolean = true): Bot {
+  return { world, events: [], dodges, deaths: 0 };
 }
 
 function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
@@ -82,12 +88,65 @@ function attack(world: World, target: MonsterState, crowd: readonly MonsterState
   return { type: 'skill', slot: 0, aim: target.pos, targetId: target.id };
 }
 
+function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2): boolean {
+  const action = monster.action;
+  if (!monster.alive || action === null || action.phase !== 'windup') return false;
+  const reach: number = world.player.radius + BOT.dodgeMargin;
+  const offset: Vec2 = { x: pos.x - monster.pos.x, z: pos.z - monster.pos.z };
+  const gap: number = Math.hypot(offset.x, offset.z);
+  const delivery = action.skill.delivery;
+  let inside: boolean;
+  switch (delivery.type) {
+    case 'nova':
+      inside = gap <= delivery.radius + reach;
+      break;
+    case 'arc': {
+      const spread: number = Math.cos(Math.min(Math.PI, (delivery.arcDegrees / 2) * DEGREES_TO_RADIANS + BOT.dodgeMargin / Math.max(1, gap)));
+      inside = gap <= delivery.reach + reach && (gap <= reach || dot(normalize(offset, action.direction), action.direction) >= spread);
+      break;
+    }
+    case 'projectile': {
+      const count: number = Math.max(1, Math.round(delivery.count));
+      inside = false;
+      for (let index: number = 0; index < count; index += 1) {
+        const lane: Vec2 = rotate(action.direction, count === 1 ? 0 : (index - (count - 1) / 2) * delivery.spreadDegrees * DEGREES_TO_RADIANS);
+        const along: number = dot(offset, lane);
+        const across: number = Math.abs(offset.x * lane.z - offset.z * lane.x);
+        if (along >= 0 && along <= delivery.range + SKILLS.projectileOrigin + delivery.radius + reach && across <= delivery.radius + reach) inside = true;
+      }
+      break;
+    }
+  }
+  return inside;
+}
+
+export function botInDanger(world: World, pos: ReadonlyVec2): boolean {
+  return world.monsters.some((monster: MonsterState): boolean => threatened(world, monster, pos));
+}
+
+function refuge(world: World): Vec2 | null {
+  const from: Vec2 = world.player.pos;
+  for (const reach of BOT.dodgeReach) {
+    for (let step: number = 0; step < BOT.dodgeAngles; step += 1) {
+      const angle: number = (step / BOT.dodgeAngles) * Math.PI * 2;
+      const spot: Vec2 = { x: from.x + Math.cos(angle) * reach, z: from.z + Math.sin(angle) * reach };
+      if (isWalkable(world.grid, spot.x, spot.z) && lineWalkable(world.grid, from, spot) && !botInDanger(world, spot)) return spot;
+    }
+  }
+  return null;
+}
+
 function fightStep(bot: Bot, prefer: string | null): boolean {
   const world: World = bot.world;
   const hostile: MonsterState[] = threats(world);
   const wanted: MonsterState[] = prefer === null ? [] : world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.def.id === prefer);
   const target: MonsterState | null = nearest(world, hostile.length > 0 ? hostile : wanted);
   if (target === null) return false;
+  if (bot.dodges && world.player.alive && botInDanger(world, world.player.pos)) {
+    const spot: Vec2 | null = world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest) ? null : refuge(world);
+    tick(bot, free(world) && spot !== null ? [{ type: 'move', dest: spot }] : []);
+    return true;
+  }
   tick(bot, free(world) ? [attack(world, target, hostile)] : []);
   return true;
 }

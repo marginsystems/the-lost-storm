@@ -1,5 +1,7 @@
-import type { Color, Group, IUniform, Material } from 'three';
-import { AdditiveBlending, BufferAttribute, BufferGeometry, CylinderGeometry, DoubleSide, IcosahedronGeometry, Mesh, MeshBasicMaterial, NormalBlending, PlaneGeometry, ShaderMaterial, Vector3 } from 'three';
+import type { Color, IUniform, Material } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, CylinderGeometry, DoubleSide, Group, IcosahedronGeometry, Mesh, MeshBasicMaterial, NormalBlending, PlaneGeometry, ShaderMaterial, Vector3 } from 'three';
+import type { Delivery } from '../../sim/content/types.ts';
+import { SKILLS } from '../../sim/world/skills.ts';
 
 export const SHAPES = {
   sectorSegments: 28,
@@ -12,6 +14,11 @@ export const SHAPES = {
   arcSegments: 6,
   arcJitter: 0.9,
   arcWidth: 0.09,
+  telegraphInner: 0.35,
+  telegraphEdge: 0.965,
+  telegraphFill: 0.1,
+  telegraphLine: 0.42,
+  laneStart: 0.7,
 } as const;
 
 const ARC_VERTEX: string = `
@@ -182,10 +189,56 @@ export function flat(color: Color, opacity: number): MeshBasicMaterial {
   return new MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: DoubleSide });
 }
 
-export function telegraphMesh(arc: number, reach: number, color: Color): Mesh<BufferGeometry, MeshBasicMaterial> {
-  const mesh: Mesh<BufferGeometry, MeshBasicMaterial> = new Mesh(sectorGeometry(arc, 0.35, reach), flat(color, 0.1));
-  mesh.renderOrder = 5;
+export type TelegraphPart = Mesh<BufferGeometry, MeshBasicMaterial>;
+
+export interface Telegraph {
+  readonly object: Group;
+  readonly fills: readonly TelegraphPart[];
+  readonly edges: readonly TelegraphPart[];
+  readonly lanes: boolean;
+}
+
+function telegraphPart(geometry: BufferGeometry, color: Color, opacity: number, order: number): TelegraphPart {
+  const mesh: TelegraphPart = new Mesh(geometry, flat(color, opacity));
+  mesh.renderOrder = order;
   return mesh;
+}
+
+function laneGeometry(halfWidth: number, length: number): BufferGeometry {
+  const geometry: BufferGeometry = new BufferGeometry();
+  const near: number = SHAPES.laneStart;
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array([-halfWidth, 0, near, halfWidth, 0, near, -halfWidth, 0, length, halfWidth, 0, length]), 3));
+  geometry.setIndex([0, 1, 2, 1, 3, 2]);
+  return geometry;
+}
+
+export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
+  const object: Group = new Group();
+  const fills: TelegraphPart[] = [];
+  const edges: TelegraphPart[] = [];
+  switch (delivery.type) {
+    case 'arc': {
+      const arc: number = (delivery.arcDegrees * Math.PI) / 180;
+      fills.push(telegraphPart(sectorGeometry(arc, SHAPES.telegraphInner, delivery.reach), color, SHAPES.telegraphFill, 5));
+      edges.push(telegraphPart(sectorGeometry(arc, delivery.reach * SHAPES.telegraphEdge, delivery.reach), color, SHAPES.telegraphLine, 6));
+      break;
+    }
+    case 'nova':
+      fills.push(telegraphPart(sectorGeometry(Math.PI * 2, 0, delivery.radius), color, SHAPES.telegraphFill, 5));
+      edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.radius * SHAPES.telegraphEdge, delivery.radius), color, SHAPES.telegraphLine, 6));
+      break;
+    case 'projectile': {
+      const count: number = Math.max(1, Math.round(delivery.count));
+      for (let index: number = 0; index < count; index += 1) {
+        const lane: TelegraphPart = telegraphPart(laneGeometry(delivery.radius, delivery.range + SKILLS.projectileOrigin + delivery.radius), color, SHAPES.telegraphFill, 5);
+        lane.rotation.y = count === 1 ? 0 : ((index - (count - 1) / 2) * delivery.spreadDegrees * Math.PI) / 180;
+        fills.push(lane);
+      }
+      break;
+    }
+  }
+  for (const part of [...fills, ...edges]) object.add(part);
+  return { object, fills, edges, lanes: delivery.type === 'projectile' };
 }
 
 export function pillarMesh(color: Color, radius: number, height: number): Mesh<CylinderGeometry, MeshBasicMaterial> {

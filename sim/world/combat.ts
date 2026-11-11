@@ -96,10 +96,11 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const mitigation: number = target.kind === 'player' ? 1 - armourReduction(target.stats.armour) : 1;
   const amount: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation));
   target.life -= amount;
-  target.knock.x += direction.x * skill.knockback;
-  target.knock.z += direction.z * skill.knockback;
+  const poise: number = target.kind === 'monster' && target.def.boss !== null ? target.def.boss.poise.knockback : 1;
+  target.knock.x += direction.x * skill.knockback * poise;
+  target.knock.z += direction.z * skill.knockback * poise;
   if (target.kind === 'monster') {
-    if (skill.stagger > 0) {
+    if (skill.stagger > 0 && target.def.boss === null) {
       target.stagger = Math.max(target.stagger, skill.stagger);
       if (target.action?.phase === 'windup') {
         target.action = null;

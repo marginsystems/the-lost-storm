@@ -22,7 +22,7 @@ import { canAllocate } from '../progression.ts';
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
-import type { Content, MonsterDef, NpcDef, QuestDef, ZoneDef } from './types.ts';
+import type { BossDef, Content, MonsterDef, NpcDef, QuestDef, ZoneDef } from './types.ts';
 
 const shipped: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, zones: [stillhold, bastion], world, npcs, lines, quests, player };
 
@@ -400,4 +400,57 @@ void test('contentProblems reports dangling quest references', (): void => {
   assert.ok(has(gated([{ type: 'objective', quest: 'fallen_in', objective: 'dance', is: 'done' }]), 'zone stillhold exit bastion_stair names unknown objective fallen_in.dance'));
   assert.ok(has({ ...shipped, world: { ...world, map: [world.map[0]] } }, 'zone drowned_bastion has no place on the world map'));
   assert.ok(has({ ...shipped, world: { ...world, map: [...world.map, { zone: 'atlantis', x: 4, y: 4 }] } }, 'world map places unknown zone atlantis'));
+});
+
+function bossy(change: (block: Record<string, unknown>) => Record<string, unknown>): RawContent {
+  const source = must(monsters.find((entry): boolean => entry.id === 'mason'), 'mason');
+  const changed: unknown = { ...source, boss: change({ ...must(source.boss, 'boss block') }) };
+  return { ...shipped, monsters: monsters.map((entry): unknown => (entry === source ? changed : entry)) };
+}
+
+void test('a boss block parses with its phases, poise, drop and barks, and a pack takes a condition', (): void => {
+  const content: Content = parseContent(shipped);
+  const boss: BossDef = must(must(content.monsters.get('one_before'), 'boss').boss, 'boss block');
+  assert.equal(boss.title.length > 0, true);
+  assert.deepEqual(boss.phases.map((phase): number => phase.below), [1, 0.5]);
+  assert.deepEqual(must(boss.phases[0], 'phase').skills, [
+    { skill: 'before_sweep', weight: 3 },
+    { skill: 'before_bolts', weight: 2 },
+  ]);
+  assert.deepEqual(must(boss.phases[1], 'phase').barks, ['one_before_half_1']);
+  assert.deepEqual(boss.poise, { knockback: 0.2 });
+  assert.deepEqual(boss.drop, { items: 1, rarity: 'rare', goldMin: 30, goldMax: 50 });
+  assert.deepEqual(boss.barks, { aggro: ['one_before_sight_1', 'one_before_sight_2'], death: ['one_before_death_1'] });
+  assert.equal(must(content.monsters.get('bone_thrall'), 'thrall').boss, null);
+  const during = [{ type: 'quest', quest: 'fallen_in', is: 'done' }];
+  const gated: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, packs: [{ ...bastion.packs[0], when: during }] }] });
+  assert.deepEqual(must(must(gated.zones.get('drowned_bastion'), 'arena').packs[0], 'pack').when, [{ type: 'quest', quest: 'fallen_in', is: 'done' }]);
+  assert.deepEqual(must(must(content.zones.get('drowned_bastion'), 'arena').packs[0], 'pack').when, []);
+});
+
+void test('a malformed boss block is rejected', (): void => {
+  const rejects = (change: (block: Record<string, unknown>) => Record<string, unknown>, text: string): void => {
+    assert.throws((): Content => parseContent(bossy(change)), (error: unknown): boolean => problem(error, text), text);
+  };
+  const phase = { below: 1, skills: [{ skill: 'mason_hammer', weight: 1 }], barks: [] };
+  rejects((block) => ({ ...block, phases: [{ ...phase, below: 0.8 }] }), 'the first phase must start at full life');
+  rejects((block) => ({ ...block, phases: [phase, { ...phase, below: 0.5 }, { ...phase, below: 0.5 }] }), 'each phase must begin at a lower life fraction');
+  rejects((block) => ({ ...block, phases: [{ ...phase, skills: [] }] }), 'a phase needs at least one skill');
+  rejects((block) => ({ ...block, phases: [{ ...phase, skills: [{ skill: 'mason_hammer', weight: 0 }] }] }), 'skills[0].weight');
+  rejects((block) => ({ ...block, phases: [phase, { ...phase, below: 0 }] }), 'phases[1].below');
+  rejects((block) => ({ ...block, poise: { knockback: 1.5 } }), 'poise.knockback');
+  rejects((block) => ({ ...block, drop: { items: -1, rarity: 'rare', goldMin: 1, goldMax: 2 } }), 'drop.items');
+  rejects((block) => ({ ...block, drop: { items: 1.5, rarity: 'rare', goldMin: 1, goldMax: 2 } }), 'drop.items');
+  rejects((block) => ({ ...block, drop: { items: 1, rarity: 'rare', goldMin: -4, goldMax: 2 } }), 'drop.goldMin');
+  rejects((block) => ({ ...block, drop: { items: 1, rarity: 'rare', goldMin: 50, goldMax: 30 } }), 'drop.goldMax');
+  rejects((block) => ({ ...block, barks: { aggro: [] } }), 'barks.death');
+  assert.equal(must(parseContent(bossy((block) => ({ ...block, drop: { items: 0, rarity: 'rare', goldMin: 0, goldMax: 0 } }))).monsters.get('mason'), 'mason').boss?.drop.items, 0);
+});
+
+void test('contentProblems reports a boss that names an unknown skill, rarity or line, or a line that is not its own', (): void => {
+  assert.ok(has(bossy((block) => ({ ...block, phases: [{ below: 1, skills: [{ skill: 'no_such_skill', weight: 1 }], barks: [] }] })), 'boss mason uses unknown skill no_such_skill'));
+  assert.ok(has(bossy((block) => ({ ...block, drop: { items: 1, rarity: 'mythic', goldMin: 0, goldMax: 0 } })), 'boss mason drops unknown rarity mythic'));
+  assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['no_such_line'], death: [] } })), 'boss mason barks unknown line no_such_line'));
+  assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['one_before_sight_1'], death: [] } })), 'boss mason barks line one_before_sight_1, which is spoken by one_before'));
+  assert.ok(has({ ...shipped, lines: [...lines, { id: 'ghost_1', speaker: 'ghost', text: 'Boo.' }] }, 'line ghost_1 has unknown speaker ghost'));
 });

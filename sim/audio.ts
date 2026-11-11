@@ -114,6 +114,8 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'quest_completed':
     case 'waypoint_unlocked':
     case 'exit_locked':
+    case 'boss_phase':
+    case 'bark':
       break;
   }
   return found;

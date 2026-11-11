@@ -3,7 +3,9 @@ import type { Vec2 } from '../math.ts';
 import { distance, facingOf, normalize, rotate } from '../math.ts';
 import { lineOfSight, lineWalkable, moveWithCollision, nearestWalkable } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
+import { lifePhase, pickBossSkill } from './boss.ts';
 import { aggroPack } from './combat.ts';
+import { allHold } from './conditions.ts';
 import { stepKnock, stepTimers } from './movement.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
 import type { MonsterState, PlayerState, World } from './types.ts';
@@ -50,7 +52,15 @@ function approach(world: World, monster: MonsterState, target: Vec2, dt: number)
 function attack(world: World, monster: MonsterState, skill: SkillDef, player: PlayerState): boolean {
   if (blockedReason(monster, skill) !== null) return false;
   startSkill(world, monster, skill, { x: player.pos.x - monster.pos.x, z: player.pos.z - monster.pos.z });
+  monster.nextSkill = null;
   return true;
+}
+
+function chosenSkill(world: World, monster: MonsterState): SkillDef | null {
+  if (monster.def.boss === null) return world.content.skills.get(monster.def.skill) ?? null;
+  if (lifePhase(monster, monster.def.boss) > monster.phase) monster.nextSkill = null;
+  monster.nextSkill ??= pickBossSkill(world, monster, monster.def.boss);
+  return monster.nextSkill;
 }
 
 function chase(world: World, monster: MonsterState, skill: SkillDef, player: PlayerState, dt: number): void {
@@ -108,8 +118,8 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
     wake(world, monster, player);
     return;
   }
-  const skill: SkillDef | undefined = world.content.skills.get(monster.def.skill);
-  if (skill === undefined) return;
+  const skill: SkillDef | null = chosenSkill(world, monster);
+  if (skill === null) return;
   const behaviour = monster.def.behaviour;
   switch (behaviour.type) {
     case 'chaser':
@@ -169,6 +179,8 @@ function spawnMonster(world: World, def: MonsterDef, packId: number, center: Vec
     path: [],
     repathTimer: 0,
     spawnTime: MONSTERS.spawnTime,
+    phase: 0,
+    nextSkill: null,
   };
   world.nextId += 1;
   world.monsters.push(monster);
@@ -179,6 +191,7 @@ export function spawnPacks(world: World): void {
   const rules: SurgeRules | null = world.zone.surge;
   const extra: number = rules === null ? 0 : Math.min(rules.maxExtraMonsters, Math.floor((world.surge - 1) / Math.max(1, rules.surgesPerExtraMonster)));
   for (const pack of world.zone.packs) {
+    if (!allHold(world, pack.when)) continue;
     const packId: number = world.nextPackId;
     world.nextPackId += 1;
     pack.members.forEach((member, index: number): void => {

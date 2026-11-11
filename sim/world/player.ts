@@ -297,6 +297,8 @@ function respawn(world: World): void {
     monster.action = null;
     monster.path = [];
     monster.stagger = 0;
+    monster.phase = 0;
+    monster.nextSkill = null;
   }
   world.events.push({ type: 'player_respawn' });
 }

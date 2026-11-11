@@ -1,6 +1,11 @@
 import type { WorldEvent } from '../../sim/world/types.ts';
 import { onWaypoint } from '../../sim/world/waypoints.ts';
 import { createBanners } from './banners.ts';
+import { createBarkStrip } from './bark-strip.ts';
+import type { BarkStrip } from './bark-strip.ts';
+import { createBossBar } from './boss-bar.ts';
+import type { BossBar } from './boss-bar.ts';
+import bossCss from './boss.css?inline';
 import type { Banners } from './banners.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { createDialogueBox } from './dialogue-box.ts';
@@ -38,7 +43,7 @@ const PANEL_IDS: readonly HudPanel[] = ['inventory', 'tree', 'map'];
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -60,6 +65,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
 
   const dialogue: DialogueBox = createDialogueBox(root, context);
   track(dialogue.element);
+  const barks: BarkStrip = createBarkStrip(root, context);
+  const bossBar: BossBar = createBossBar(root);
 
   const bottom: HTMLDivElement = el('div', 'hud-bottom', root);
   const notices: Notices = createNotices(bottom);
@@ -126,6 +133,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       surge.update(world);
       death.update(world);
       quests.update(world);
+      bossBar.update(world);
       buttons.tree?.setBadge(world.player.skillPoints);
       if (open.map) map.update();
       if (mapWanted && onWaypoint(world)) {
@@ -150,6 +158,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'zone_changed':
             banners.show(api.world.zone.name, null, 'zone');
             mapWanted = false;
+            barks.clear();
             break;
           case 'checkpoint':
             banners.show('Checkpoint', null, 'checkpoint');
@@ -175,6 +184,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'exit_locked':
             notices.say(event.hint);
+            break;
+          case 'bark':
+            barks.say(event.speaker, event.line);
             break;
           case 'level_up':
             banners.show(`LEVEL ${event.level}`, 'Skill point gained', 'level');
@@ -203,6 +215,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'surge_cleared':
           case 'player_respawn':
           case 'hero_step':
+          case 'boss_phase':
             break;
         }
       }

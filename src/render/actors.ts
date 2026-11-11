@@ -158,6 +158,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'quest_completed':
           case 'waypoint_unlocked':
           case 'exit_locked':
+          case 'boss_phase':
+          case 'bark':
           case 'projectile_spawn':
           case 'projectile_end':
           case 'monster_spawn':

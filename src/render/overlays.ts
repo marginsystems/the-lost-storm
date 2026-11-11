@@ -253,6 +253,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'quest_completed':
           case 'waypoint_unlocked':
           case 'exit_locked':
+          case 'boss_phase':
+          case 'bark':
             break;
         }
       }

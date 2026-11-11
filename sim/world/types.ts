@@ -111,6 +111,8 @@ export interface MonsterState extends ActorState {
   path: Vec2[];
   repathTimer: number;
   spawnTime: number;
+  phase: number;
+  nextSkill: SkillDef | null;
 }
 
 export type Actor = PlayerState | MonsterState;
@@ -282,6 +284,8 @@ export type WorldEvent =
   | { readonly type: 'quest_completed'; readonly quest: string }
   | { readonly type: 'waypoint_unlocked'; readonly zone: string }
   | { readonly type: 'exit_locked'; readonly exit: string; readonly hint: string }
+  | { readonly type: 'boss_phase'; readonly monsterId: number; readonly phase: number }
+  | { readonly type: 'bark'; readonly speaker: string; readonly line: LineDef }
   | { readonly type: 'notice'; readonly reason: NoticeReason }
   | { readonly type: 'character_changed' };
 

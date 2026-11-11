@@ -12,5 +12,9 @@
   {"id": "hale_first_3", "speaker": "hale", "text": "Whoever set all this out sits in the Still, past the Gate. Ask there. They'll know where they put your door."},
   {"id": "hale_first_4", "speaker": "hale", "text": "The Gate only opens when both great lamps burn. North Lamp, East Lamp. Both dark, and my knees won't do the roads."},
   {"id": "hale_first_5", "speaker": "hale", "text": "Something out there took the wicks. Fetch them back and light the lamps. The Gate will know you."},
-  {"id": "hale_idle_1", "speaker": "hale", "text": "Forty years I've trimmed these lamps. Never once seen who I'm trimming them for. Doesn't mean they're not looking."}
+  {"id": "hale_idle_1", "speaker": "hale", "text": "Forty years I've trimmed these lamps. Never once seen who I'm trimming them for. Doesn't mean they're not looking."},
+  {"id": "one_before_sight_1", "speaker": "one_before", "text": "You know this road. I can see it on you."},
+  {"id": "one_before_sight_2", "speaker": "one_before", "text": "The door stood here. It called for me. For me."},
+  {"id": "one_before_half_1", "speaker": "one_before", "text": "What name did it call you? Say it. ... You can't hear it either."},
+  {"id": "one_before_death_1", "speaker": "one_before", "text": "Then who was it calling?"}
 ]

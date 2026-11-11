@@ -6,7 +6,7 @@ import type { Offence } from './combat.ts';
 import { applyHit, offenceOf, targetsOf, teamOf } from './combat.ts';
 import type { Actor, NoticeReason, ProjectileState, World } from './types.ts';
 
-const SKILLS = {
+export const SKILLS = {
   projectileOrigin: 0.9,
   projectileStep: 0.3,
 } as const;

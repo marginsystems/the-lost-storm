@@ -117,6 +117,41 @@ export interface MonsterLoot {
   readonly itemChance: number;
 }
 
+export interface BossSkill {
+  readonly skill: string;
+  readonly weight: number;
+}
+
+export interface BossPhase {
+  readonly below: number;
+  readonly skills: readonly BossSkill[];
+  readonly barks: readonly string[];
+}
+
+export interface BossPoise {
+  readonly knockback: number;
+}
+
+export interface BossDrop {
+  readonly items: number;
+  readonly rarity: string;
+  readonly goldMin: number;
+  readonly goldMax: number;
+}
+
+export interface BossBarks {
+  readonly aggro: readonly string[];
+  readonly death: readonly string[];
+}
+
+export interface BossDef {
+  readonly title: string;
+  readonly phases: readonly BossPhase[];
+  readonly poise: BossPoise;
+  readonly drop: BossDrop;
+  readonly barks: BossBarks;
+}
+
 export interface MonsterDef {
   readonly id: string;
   readonly name: string;
@@ -136,6 +171,7 @@ export interface MonsterDef {
   readonly tint: string;
   readonly gear: readonly string[];
   readonly wear: readonly string[];
+  readonly boss: BossDef | null;
 }
 
 export const ITEM_SLOTS = ['weapon', 'head', 'chest', 'hands', 'legs', 'feet', 'charm'] as const;
@@ -284,6 +320,7 @@ export interface ZonePack {
   readonly x: number;
   readonly z: number;
   readonly members: readonly PackMember[];
+  readonly when: readonly Condition[];
 }
 
 export interface SurgeRules {
