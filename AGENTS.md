@@ -50,6 +50,7 @@ A change to how damage is rolled, how a skill hits, how a monster decides, what 
 - Nothing from the network is trusted unchecked: a response is read with `readSave` before it is used, and a token is only ever sent to the server address that issued it.
 - Console output goes through `src/backend/console-log.ts`, the one file in `src/` exempt from `no-console` (as `tools/` is).
 - Nothing about a particular server belongs in this repository beyond the protocol types in `src/backend/api.ts` and the `VITE_SERVER_URL` entry in the README.
+- Signing in is `src/backend/account.ts` (the decisions, tested with the fake server), `src/account-flow.ts` and `src/title-account.ts` (the title-screen control) and `src/google-identity.ts` (the only file that touches Google's script). The Google client id comes from the server at run time, never from this repository, and no Google asset is committed. After a sign-in or a sign-out the page reloads, so the save backend never runs with a stale token.
 - The decisions (which copy wins on load and on a conflict) are pure functions in `src/backend/merge.ts`. Test them there, and test the sync behaviour in `src/backend/remote.test.ts` with the fake server in `test/backend-support.ts`.
 
 ## Content is data

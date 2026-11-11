@@ -144,7 +144,7 @@ function fightStep(bot: Bot, prefer: string | null): boolean {
   if (target === null) return false;
   if (bot.dodges && world.player.alive && botInDanger(world, world.player.pos)) {
     const spot: Vec2 | null = world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest) ? null : refuge(world);
-    tick(bot, free(world) && spot !== null ? [{ type: 'move', dest: spot }] : []);
+    tick(bot, free(world) && spot !== null ? [{ type: 'move', held: false, dest: spot }] : []);
     return true;
   }
   tick(bot, free(world) ? [attack(world, target, hostile)] : []);

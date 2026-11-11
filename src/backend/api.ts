@@ -30,6 +30,33 @@ export type Failure =
   | { readonly kind: 'refused'; readonly status: number }
   | { readonly kind: 'retry'; readonly afterMs: number | null };
 
+export type AccountKind = 'guest' | 'google';
+
+export interface Providers {
+  readonly googleClientId: string | null;
+}
+
+export interface Profile {
+  readonly accountId: string;
+  readonly kind: AccountKind;
+  readonly name: string | null;
+}
+
+export type SignInOutcome = 'linked' | 'existing';
+
+export interface Session {
+  readonly accountId: string;
+  readonly token: string;
+  readonly outcome: SignInOutcome;
+  readonly name: string | null;
+}
+
+export type ProvidersResult = { readonly kind: 'ok'; readonly providers: Providers } | Failure;
+export type ProfileResult = { readonly kind: 'ok'; readonly profile: Profile } | Failure;
+export type NonceResult = { readonly kind: 'ok'; readonly nonce: string } | Failure;
+export type SessionResult = { readonly kind: 'ok'; readonly session: Session } | Failure;
+export type SignOutResult = { readonly kind: 'ok' } | Failure;
+
 export type GuestResult = { readonly kind: 'ok'; readonly account: GuestAccount } | Failure;
 export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | Failure;
 export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy } | { readonly kind: 'conflict'; readonly current: CloudState } | Failure;
@@ -38,6 +65,11 @@ export interface Api {
   createGuest(signal: AbortSignal): Promise<GuestResult>;
   readSave(token: string, signal: AbortSignal): Promise<ReadResult>;
   writeSave(token: string, save: SaveData, baseRevision: number, signal: AbortSignal): Promise<WriteResult>;
+  providers(signal: AbortSignal): Promise<ProvidersResult>;
+  profile(token: string, signal: AbortSignal): Promise<ProfileResult>;
+  googleNonce(token: string, signal: AbortSignal): Promise<NonceResult>;
+  googleSignIn(token: string, credential: string, signal: AbortSignal): Promise<SessionResult>;
+  signOut(token: string, signal: AbortSignal): Promise<SignOutResult>;
 }
 
 interface Answer {
@@ -78,6 +110,45 @@ function readGuest(value: unknown): GuestAccount | null {
   const accountId: unknown = value['accountId'];
   const token: unknown = value['token'];
   return typeof accountId === 'string' && typeof token === 'string' && accountId !== '' && token !== '' ? { accountId, token } : null;
+}
+
+function textOf(source: Fields, key: string): string | null {
+  const value: unknown = source[key];
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
+function nameOf(source: Fields): string | null | undefined {
+  const value: unknown = source['name'];
+  if (value === null || value === undefined) return null;
+  return typeof value === 'string' ? value : undefined;
+}
+
+export function readProviders(value: unknown): Providers | null {
+  if (!isFields(value)) return null;
+  const google: unknown = value['google'];
+  if (google === null) return { googleClientId: null };
+  if (!isFields(google)) return null;
+  const clientId: string | null = textOf(google, 'clientId');
+  return clientId === null ? null : { googleClientId: clientId };
+}
+
+export function readProfile(value: unknown): Profile | null {
+  if (!isFields(value)) return null;
+  const accountId: string | null = textOf(value, 'accountId');
+  const kind: unknown = value['kind'];
+  const name: string | null | undefined = nameOf(value);
+  if (accountId === null || name === undefined || (kind !== 'guest' && kind !== 'google')) return null;
+  return { accountId, kind, name };
+}
+
+export function readSession(value: unknown): Session | null {
+  if (!isFields(value)) return null;
+  const accountId: string | null = textOf(value, 'accountId');
+  const token: string | null = textOf(value, 'token');
+  const outcome: unknown = value['outcome'];
+  const name: string | null | undefined = nameOf(value);
+  if (accountId === null || token === null || name === undefined || (outcome !== 'linked' && outcome !== 'existing')) return null;
+  return { accountId, token, outcome, name };
 }
 
 async function exchange(fetchFn: FetchFn, url: string, init: RequestInit): Promise<Answer | null> {
@@ -136,6 +207,34 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
       if (!succeeded(answer)) return failureOf(answer);
       const state: CloudState | null = readCloudState(content, answer.body);
       return state === null || state.save === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', copy: state };
+    },
+    async providers(signal: AbortSignal): Promise<ProvidersResult> {
+      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/auth/providers`, { method: 'GET', signal });
+      if (!succeeded(answer)) return failureOf(answer);
+      const providers: Providers | null = readProviders(answer.body);
+      return providers === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', providers };
+    },
+    async profile(token: string, signal: AbortSignal): Promise<ProfileResult> {
+      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/me`, { method: 'GET', headers: headers(token), signal });
+      if (!succeeded(answer)) return failureOf(answer);
+      const profile: Profile | null = readProfile(answer.body);
+      return profile === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', profile };
+    },
+    async googleNonce(token: string, signal: AbortSignal): Promise<NonceResult> {
+      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/auth/google/nonce`, { method: 'POST', headers: headers(token), signal });
+      if (!succeeded(answer)) return failureOf(answer);
+      const nonce: string | null = isFields(answer.body) ? textOf(answer.body, 'nonce') : null;
+      return nonce === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', nonce };
+    },
+    async googleSignIn(token: string, credential: string, signal: AbortSignal): Promise<SessionResult> {
+      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/auth/google`, { method: 'POST', headers: headers(token), body: JSON.stringify({ credential }), signal });
+      if (!succeeded(answer)) return failureOf(answer);
+      const session: Session | null = readSession(answer.body);
+      return session === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', session };
+    },
+    async signOut(token: string, signal: AbortSignal): Promise<SignOutResult> {
+      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/signout`, { method: 'POST', headers: headers(token), signal });
+      return succeeded(answer) ? { kind: 'ok' } : failureOf(answer);
     },
   };
 }

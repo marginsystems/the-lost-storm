@@ -105,6 +105,11 @@ export interface ServerAccount {
   save: SaveData | null;
   revision: number;
   updatedAt: string | null;
+  readonly sessions: string[];
+  guestRetired: boolean;
+  google: string | null;
+  name: string | null;
+  nonce: string | null;
 }
 
 interface Planned {
@@ -122,6 +127,7 @@ export interface FakeServer {
   plan(status: number, headers?: Readonly<Record<string, string>>, method?: string): void;
   holdNext(): () => void;
   plant(account: ServerAccount, save: SaveData): void;
+  offerGoogle(clientId: string | null): void;
   count(method: string, path: string): number;
 }
 
@@ -135,7 +141,27 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   const planned: Planned[] = [];
   const gates: Promise<void>[] = [];
   let created: number = 0;
+  let issued: number = 0;
   let down: boolean = false;
+  let googleClientId: string | null = null;
+  const signIn = (owner: ServerAccount, credential: unknown): Response => {
+    const [scheme, subject, nonce, name]: readonly string[] = typeof credential === 'string' ? credential.split('|') : [];
+    const expected: string | null = owner.nonce;
+    owner.nonce = null;
+    if (scheme !== 'google' || subject === undefined || subject === '' || expected === null || nonce !== expected) return json(401, { error: { code: 'invalid_google_token', message: 'no' } });
+    const known: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => account.google === subject);
+    if (known === undefined && owner.google !== null) return json(409, { error: { code: 'already_signed_in', message: 'no' } });
+    const target: ServerAccount = known ?? owner;
+    issued += 1;
+    const token: string = `session-${issued}`;
+    target.sessions.push(token);
+    target.name = name ?? null;
+    if (known === undefined) {
+      owner.google = subject;
+      owner.guestRetired = true;
+    }
+    return json(200, { accountId: target.accountId, token, outcome: known === undefined ? 'linked' : 'existing', name: target.name });
+  };
   const stamp = (): string => new Date(clock.now).toISOString();
   const handle = (url: string, init: RequestInit): Response => {
     const method: string = init.method ?? 'GET';
@@ -150,12 +176,26 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     if (plan !== undefined) return json(plan.status, { error: { code: 'planned', message: 'planned' } }, plan.headers);
     if (method === 'POST' && path === '/v1/guest') {
       created += 1;
-      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null };
+      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, name: null, nonce: null };
       accounts.push(account);
       return json(201, { accountId: account.accountId, token: account.token });
     }
-    const owner: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => account.token === token);
+    if (method === 'GET' && path === '/v1/auth/providers') return json(200, { google: googleClientId === null ? null : { clientId: googleClientId } });
+    const owner: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => token !== null && ((account.token === token && !account.guestRetired) || account.sessions.includes(token)));
     if (owner === undefined) return json(401, { error: { code: 'unauthorized', message: 'no' } });
+    if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.google === null ? 'guest' : 'google', name: owner.name, createdAt: stamp() });
+    if (path.startsWith('/v1/auth/google') && googleClientId === null) return json(503, { error: { code: 'sign_in_unavailable', message: 'no' } });
+    if (method === 'POST' && path === '/v1/auth/google/nonce') {
+      issued += 1;
+      owner.nonce = `nonce-${issued}`;
+      return json(200, { nonce: owner.nonce });
+    }
+    if (method === 'POST' && path === '/v1/auth/google') return signIn(owner, isFields(body) ? body['credential'] : null);
+    if (method === 'POST' && path === '/v1/signout') {
+      const index: number = token === null ? -1 : owner.sessions.indexOf(token);
+      if (index >= 0) owner.sessions.splice(index, 1);
+      return json(200, { signedOut: index >= 0 });
+    }
     const view = (): unknown => ({ save: owner.save, revision: owner.revision, updatedAt: owner.updatedAt });
     if (method === 'GET' && path === '/v1/save') return json(200, view());
     if (method === 'PUT' && path === '/v1/save' && isFields(body)) {
@@ -203,6 +243,9 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       account.revision += 1;
       account.updatedAt = stamp();
     },
+    offerGoogle: (clientId: string | null): void => {
+      googleClientId = clientId;
+    },
     count: (method: string, path: string): number => requests.filter((request: RecordedRequest): boolean => request.method === method && request.path === path).length,
   };
 }
@@ -218,11 +261,15 @@ export interface Harness {
   open(url?: string): Backend;
 }
 
-export function createHarness(): Harness {
-  const clock: FakeClock = createFakeClock();
-  const server: FakeServer = createFakeServer(clock);
+export function createSecondBrowser(first: Harness): Harness {
+  return createHarness(first);
+}
+
+export function createHarness(sharing: Harness | null = null): Harness {
+  const clock: FakeClock = sharing?.clock ?? createFakeClock();
+  const server: FakeServer = sharing?.server ?? createFakeServer(clock);
   const store = createMemoryStore();
-  const timers: FakeTimers = createFakeTimers(clock);
+  const timers: FakeTimers = sharing?.timers ?? createFakeTimers(clock);
   const logs: string[] = [];
   const infos: string[] = [];
   const warns: string[] = [];

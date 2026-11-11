@@ -1,0 +1,51 @@
+.title-account {
+  margin: 0;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.title-account.reserved {
+  margin: 12px 0 0;
+  min-height: 60px;
+}
+
+.title-account.shown {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.title-google {
+  display: flex;
+  justify-content: center;
+  min-height: 32px;
+}
+
+.title-google[hidden],
+.title-account-line[hidden],
+.title-account-note[hidden] {
+  display: none;
+}
+
+.title-account-line {
+  margin: 0;
+  min-height: 32px;
+  font-size: 13px;
+  line-height: 32px;
+  letter-spacing: 0.02em;
+  color: rgba(239, 230, 214, 0.72);
+}
+
+.title-card .title-account-line button.title-quiet {
+  display: inline-block;
+  margin: 0 0 0 6px;
+}
+
+.title-account-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: rgba(255, 196, 160, 0.78);
+}

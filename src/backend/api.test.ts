@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { content, makeSave } from '../../test/backend-support.ts';
 import { must } from '../../test/support.ts';
-import { createApi, readCloudState } from './api.ts';
+import { createApi, readCloudState, readProfile, readProviders, readSession } from './api.ts';
 import type { Api, FetchFn } from './api.ts';
 
 const SIGNAL: AbortSignal = new AbortController().signal;
@@ -145,4 +145,67 @@ void test('a success the client cannot understand is refused, never trusted', as
 void test('a copy is read through readSave, so the game rules repair what they repair', (): void => {
   const repaired = readCloudState(content, { save: { ...SAVE, level: 100000 }, revision: 2, updatedAt: 'x' });
   assert.equal(repaired?.save?.level, content.player.xp.maxLevel);
+});
+
+void test('the providers call needs no token and reads the Google client id or its absence', async (): Promise<void> => {
+  const offered = api((): Response => reply(200, { google: { clientId: 'c.apps.googleusercontent.com' } }));
+  assert.deepEqual(await offered.client.providers(SIGNAL), { kind: 'ok', providers: { googleClientId: 'c.apps.googleusercontent.com' } });
+  assert.equal(sent(offered.seen).url, 'http://localhost:8787/v1/auth/providers');
+  assert.equal(new Headers(sent(offered.seen).init.headers).get('authorization'), null);
+  const none = api((): Response => reply(200, { google: null }));
+  assert.deepEqual(await none.client.providers(SIGNAL), { kind: 'ok', providers: { googleClientId: null } });
+  for (const body of [{}, { google: {} }, { google: { clientId: 7 } }, { google: 'yes' }, 'text']) {
+    assert.deepEqual(readProviders(body), null);
+  }
+});
+
+void test('the profile call sends the token and accepts only a known kind', async (): Promise<void> => {
+  const signedIn = api((): Response => reply(200, { accountId: 'a', kind: 'google', name: 'Ada', createdAt: 'x' }));
+  assert.deepEqual(await signedIn.client.profile('tok', SIGNAL), { kind: 'ok', profile: { accountId: 'a', kind: 'google', name: 'Ada' } });
+  assert.equal(sent(signedIn.seen).url, 'http://localhost:8787/v1/me');
+  assert.equal(new Headers(sent(signedIn.seen).init.headers).get('authorization'), 'Bearer tok');
+  assert.deepEqual(readProfile({ accountId: 'a', kind: 'guest' }), { accountId: 'a', kind: 'guest', name: null });
+  for (const body of [{ accountId: 'a', kind: 'admin', name: null }, { kind: 'guest', name: null }, { accountId: 'a', kind: 'guest', name: 5 }, null]) {
+    assert.deepEqual(readProfile(body), null);
+  }
+  const gone = api((): Response => reply(401, {}));
+  assert.deepEqual(await gone.client.profile('tok', SIGNAL), { kind: 'unauthorized' });
+});
+
+void test('the nonce call is a POST with the token and refuses an answer without a nonce', async (): Promise<void> => {
+  const issued = api((): Response => reply(200, { nonce: 'n-1' }));
+  assert.deepEqual(await issued.client.googleNonce('tok', SIGNAL), { kind: 'ok', nonce: 'n-1' });
+  assert.equal(sent(issued.seen).url, 'http://localhost:8787/v1/auth/google/nonce');
+  assert.equal(sent(issued.seen).init.method, 'POST');
+  assert.equal(new Headers(sent(issued.seen).init.headers).get('authorization'), 'Bearer tok');
+  const empty = api((): Response => reply(200, { nonce: '' }));
+  assert.deepEqual(await empty.client.googleNonce('tok', SIGNAL), { kind: 'refused', status: 200 });
+  const off = api((): Response => reply(503, {}));
+  assert.deepEqual(await off.client.googleNonce('tok', SIGNAL), { kind: 'retry', afterMs: null });
+});
+
+void test('the sign-in call posts the credential with the stored token and reads the session', async (): Promise<void> => {
+  const ok = api((): Response => reply(200, { accountId: 'a', token: 's', outcome: 'linked', name: null }));
+  assert.deepEqual(await ok.client.googleSignIn('tok', 'cred', SIGNAL), { kind: 'ok', session: { accountId: 'a', token: 's', outcome: 'linked', name: null } });
+  assert.equal(sent(ok.seen).url, 'http://localhost:8787/v1/auth/google');
+  assert.equal(sent(ok.seen).init.method, 'POST');
+  assert.equal(new Headers(sent(ok.seen).init.headers).get('authorization'), 'Bearer tok');
+  assert.deepEqual(bodyOf(sent(ok.seen).init), { credential: 'cred' });
+  for (const body of [{ accountId: 'a', token: 's', outcome: 'merged', name: null }, { accountId: 'a', outcome: 'linked' }, { token: 's', outcome: 'existing' }, { accountId: 'a', token: '', outcome: 'linked' }]) {
+    assert.deepEqual(readSession(body), null);
+  }
+  const refused = api((): Response => reply(401, { error: { code: 'invalid_google_token' } }));
+  assert.deepEqual(await refused.client.googleSignIn('tok', 'cred', SIGNAL), { kind: 'unauthorized' });
+  const conflict = api((): Response => reply(409, {}));
+  assert.deepEqual(await conflict.client.googleSignIn('tok', 'cred', SIGNAL), { kind: 'refused', status: 409 });
+});
+
+void test('the sign-out call is a POST with the token and a network failure is a retry', async (): Promise<void> => {
+  const ok = api((): Response => reply(200, { signedOut: true }));
+  assert.deepEqual(await ok.client.signOut('tok', SIGNAL), { kind: 'ok' });
+  assert.equal(sent(ok.seen).url, 'http://localhost:8787/v1/signout');
+  assert.equal(sent(ok.seen).init.method, 'POST');
+  assert.equal(new Headers(sent(ok.seen).init.headers).get('authorization'), 'Bearer tok');
+  const down = api((): Error => new TypeError('offline'));
+  assert.deepEqual(await down.client.signOut('tok', SIGNAL), { kind: 'retry', afterMs: null });
 });

@@ -22,8 +22,9 @@ import type { AudioControls } from './audio/settings.ts';
 import { browserSettingsStorage, createSettingsStore } from './audio/settings.ts';
 import type { AudioSystem, Trigger } from './audio/system.ts';
 import { createAudioSystem } from './audio/system.ts';
+import type { AccountService } from './backend/account.ts';
 import type { Backend, BackendState } from './backend/backend.ts';
-import { createBrowserBackend } from './backend/browser.ts';
+import { createBrowserAccount, createBrowserBackend } from './backend/browser.ts';
 import { createHud } from './hud/hud.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
@@ -53,6 +54,12 @@ import { createZoneMarkers } from './render/zone-markers.ts';
 import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones } from './render/zone-view.ts';
 import { createBrowserTimers } from './browser-timers.ts';
+import { createAccountFlow } from './account-flow.ts';
+import type { AccountFlow } from './account-flow.ts';
+import { loadGoogleIdentity } from './google-identity.ts';
+import type { GoogleIdentity } from './google-identity.ts';
+import { createTitleAccount } from './title-account.ts';
+import type { TitleAccount } from './title-account.ts';
 import { createTitleSync } from './title-sync.ts';
 import type { ZoneTransition } from './transition.ts';
 import type { VoicePlayer } from './voice.ts';
@@ -87,6 +94,37 @@ function element<T extends HTMLElement>(id: string, type: new () => T): T {
   return found;
 }
 
+function startTitleAccount(account: AccountService): void {
+  const mount: HTMLDivElement = element('title-google', HTMLDivElement);
+  const view: TitleAccount = createTitleAccount(
+    {
+      root: element('title-account', HTMLDivElement),
+      button: mount,
+      line: element('title-account-line', HTMLParagraphElement),
+      name: element('title-account-name', HTMLSpanElement),
+      note: element('title-account-note', HTMLParagraphElement),
+    },
+    createBrowserTimers(),
+  );
+  const flow: AccountFlow = createAccountFlow({
+    account,
+    view,
+    reload: (): void => {
+      window.location.reload();
+    },
+    showButton: async (clientId: string, nonce: string, onCredential: (credential: string) => void): Promise<boolean> => {
+      const identity: GoogleIdentity | null = await loadGoogleIdentity();
+      if (identity === null) return false;
+      identity.start({ clientId, nonce, onCredential }, mount);
+      return true;
+    },
+  });
+  element('title-signout', HTMLButtonElement).addEventListener('click', (): void => {
+    void flow.signOut();
+  });
+  void flow.start();
+}
+
 async function start(): Promise<void> {
   const canvas: HTMLCanvasElement = element('scene', HTMLCanvasElement);
   const title: HTMLDivElement = element('title', HTMLDivElement);
@@ -99,6 +137,8 @@ async function start(): Promise<void> {
   status.textContent = 'Reading the rules…';
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
+  const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
+  if (account !== null) element('title-account', HTMLDivElement).classList.add('reserved');
   const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
   const loadingSave: Promise<SaveData | null> = backend.load();
   const stage: Stage = createStage(canvas);
@@ -316,6 +356,7 @@ async function start(): Promise<void> {
   element('title-loader', HTMLDivElement).classList.add('done');
   showSync(backend.state());
   backend.subscribe(showSync);
+  if (account !== null) startTitleAccount(account);
   enter.disabled = false;
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = save === null;
