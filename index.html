@@ -18,7 +18,7 @@
         }
         window.addEventListener('error', function (event) {
           var target = event.target;
-          if (target instanceof HTMLScriptElement || target instanceof HTMLLinkElement) fail();
+          if (target instanceof HTMLScriptElement || target === window) fail();
         }, true);
         window.addEventListener('unhandledrejection', fail);
       })();
