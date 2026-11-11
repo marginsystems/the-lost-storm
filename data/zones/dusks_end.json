@@ -1,0 +1,75 @@
+{
+  "id": "dusks_end",
+  "name": "Dusk's End",
+  "kind": "wild",
+  "level": 2,
+  "cellSize": 4,
+  "floorHeight": 0.07,
+  "tiles": [
+    "       ..:.. ",
+    "       ..:.. ",
+    "       ..:.. ",
+    "         :   ",
+    "         :   ",
+    " .....   :   ",
+    " ........:   ",
+    " .....  .:.  ",
+    " .....  .:.  ",
+    "        .:.  ",
+    "       ..:.. ",
+    "       ..:.. ",
+    "        .:.  ",
+    "        .:.  "
+  ],
+  "floors": {
+    ".": ["floor_dirt_yard"],
+    ":": ["floor_dirt_large", "floor_dirt_large_rocky"]
+  },
+  "walls": {"tall": ["fence", "fence", "fence_broken", "fence"], "low": "fence", "corner": "fence_pillar", "halfThickness": 0.5},
+  "playerStart": {"x": 38, "z": 49.4},
+  "props": [
+    {"prop": "plinth", "x": 38, "z": 5, "y": 0, "rotationDegrees": 0},
+    {"prop": "great_lamp", "x": 38, "z": 5, "y": 2.0, "rotationDegrees": 0, "when": [{"type": "objective", "quest": "north_lamp", "objective": "light", "is": "done", "not": true}]},
+    {"prop": "great_lamp_lit", "x": 38, "z": 5, "y": 2.0, "rotationDegrees": 0, "when": [{"type": "objective", "quest": "north_lamp", "objective": "light", "is": "done"}]},
+    {"prop": "wall_doorway", "x": 12, "z": 22.2, "y": 0, "rotationDegrees": 0},
+    {"prop": "bench", "x": 12, "z": 33.4, "y": 0, "rotationDegrees": 180},
+    {"prop": "shrine_candles", "x": 17.6, "z": 23.2, "y": 0, "rotationDegrees": 200},
+    {"prop": "tree_dead_large", "x": 6.2, "z": 33.6, "y": 0, "rotationDegrees": 80},
+    {"prop": "tree_dead_medium", "x": 21.6, "z": 21.8, "y": 0, "rotationDegrees": 10},
+    {"prop": "post_lantern", "x": 33.4, "z": 52, "y": 0, "rotationDegrees": 90},
+    {"prop": "post_lantern", "x": 42.6, "z": 52, "y": 0, "rotationDegrees": -90},
+    {"prop": "post_lantern", "x": 35.6, "z": 16, "y": 0, "rotationDegrees": 90},
+    {"prop": "post_lantern", "x": 40.4, "z": 16, "y": 0, "rotationDegrees": -90},
+    {"prop": "tree_dead_small", "x": 30.4, "z": 42.6, "y": 0, "rotationDegrees": 0},
+    {"prop": "tree_dead_large", "x": 45.6, "z": 44.8, "y": 0, "rotationDegrees": 190},
+    {"prop": "gravestone", "x": 30.2, "z": 9.6, "y": 0, "rotationDegrees": 20},
+    {"prop": "gravemarker_A", "x": 45.6, "z": 9.4, "y": 0, "rotationDegrees": -10},
+    {"prop": "tree_dead_medium", "x": 45.8, "z": 2.6, "y": 0, "rotationDegrees": 120}
+  ],
+  "packs": [
+    {"x": 26, "z": 26, "members": [{"monster": "roadbound", "count": 4}, {"monster": "lamenter", "count": 2}]},
+    {"x": 38, "z": 18, "members": [{"monster": "roadbound", "count": 3}, {"monster": "lamenter", "count": 3}]},
+    {"x": 44.5, "z": 5.5, "members": [{"monster": "roadbound", "count": 4}, {"monster": "lamenter", "count": 1}]},
+    {"x": 12, "z": 28, "members": [{"monster": "one_before", "count": 1}], "when": [{"type": "objective", "quest": "north_lamp", "objective": "before", "is": "current"}]}
+  ],
+  "surge": null,
+  "exits": [
+    {"id": "south", "x": 38, "z": 53.6, "radius": 1.6, "to": "duskway", "toExit": "north", "arrival": {"x": 38, "z": 49.4}}
+  ],
+  "checkpoints": [
+    {"id": "fork", "x": 38, "z": 34, "radius": 2.2}
+  ],
+  "waypoint": {"x": 31.5, "z": 5.5, "radius": 1.8},
+  "npcs": [],
+  "ambience": {
+    "background": "#0f1526",
+    "abyss": "#0a0d16",
+    "fogNear": 30,
+    "fogFar": 80,
+    "skyColor": "#4f62a0",
+    "groundColor": "#1a1410",
+    "skyIntensity": 0.78,
+    "keyColor": "#ff9a62",
+    "keyIntensity": 0.95
+  }
+}

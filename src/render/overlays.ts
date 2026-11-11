@@ -15,6 +15,7 @@ export const OVERLAYS = {
   numberHeight: 0.75,
   exitLift: 2.6,
   npcLift: 0.5,
+  npcLeave: 0.52,
   waypointId: 'waypoint',
   waypointName: 'Waypoint',
 } as const;
@@ -47,12 +48,21 @@ interface ExitLabel {
   readonly x: number;
   readonly z: number;
   readonly open: (world: World) => boolean;
+  readonly secret: boolean;
 }
 
 interface NpcLabel {
   readonly element: HTMLDivElement;
   readonly npc: NpcState;
   news: boolean | null;
+}
+
+interface LeavingLabel {
+  readonly element: HTMLDivElement;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  left: number;
 }
 
 export interface OverlayHooks {
@@ -82,6 +92,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   let aimed: string | null = null;
   let people: NpcLabel[] = [];
   let peopleOf: readonly NpcState[] | null = null;
+  let peopleZone: ZoneDef | null = null;
+  let leaving: LeavingLabel[] = [];
   const point: Vector2 = new Vector2();
   const barLayer: HTMLDivElement = document.createElement('div');
   const labelLayer: HTMLDivElement = document.createElement('div');
@@ -158,7 +170,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         if (event.button === 0) hooks.onTravel(exit.id);
       });
       labelLayer.append(element);
-      return { element, id: exit.id, x: exit.x, z: exit.z, open: (current: World): boolean => allHold(current, exit.requires) };
+      return { element, id: exit.id, x: exit.x, z: exit.z, open: (current: World): boolean => allHold(current, exit.requires), secret: exit.hiddenWhenLocked };
     });
     const waypoint = world.zone.waypoint;
     if (waypoint === null) return;
@@ -173,13 +185,30 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       if (event.button === 0) hooks.onWaypoint();
     });
     labelLayer.append(element);
-    exits.push({ element, id: OVERLAYS.waypointId, x: waypoint.x, z: waypoint.z, open: (current: World): boolean => current.waypoints.includes(current.zone.id) });
+    exits.push({ element, id: OVERLAYS.waypointId, x: waypoint.x, z: waypoint.z, open: (current: World): boolean => current.waypoints.includes(current.zone.id), secret: false });
   };
 
   const showPeople = (world: World): void => {
-    for (const label of people) label.element.remove();
+    const sameZone: boolean = peopleZone === world.zone;
+    if (!sameZone) {
+      for (const label of leaving) label.element.remove();
+      leaving = [];
+    }
+    for (const label of people) {
+      if (world.npcs.includes(label.npc)) continue;
+      if (!sameZone) {
+        label.element.remove();
+        continue;
+      }
+      label.element.classList.add('leaving');
+      leaving.push({ element: label.element, x: label.npc.pos.x, y: hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, z: label.npc.pos.z, left: OVERLAYS.npcLeave });
+    }
+    const staying: NpcLabel[] = people.filter((label: NpcLabel): boolean => world.npcs.includes(label.npc));
     peopleOf = world.npcs;
+    peopleZone = world.zone;
     people = world.npcs.map((npc: NpcState): NpcLabel => {
+      const kept: NpcLabel | undefined = staying.find((label: NpcLabel): boolean => label.npc === npc);
+      if (kept !== undefined) return kept;
       const element: HTMLDivElement = document.createElement('div');
       element.className = 'npc-label';
       const inner: HTMLSpanElement = document.createElement('span');
@@ -262,7 +291,9 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     update(dt: number, world: World, hoveredId: number | null): void {
       if (exitsOf !== world.zone) showExits(world);
       for (const label of exits) {
-        label.element.classList.toggle('locked', !label.open(world));
+        const open: boolean = label.open(world);
+        label.element.classList.toggle('locked', !open);
+        label.element.classList.toggle('secret', !open && label.secret);
         camera.project(label.x, OVERLAYS.exitLift, label.z, point);
         place(label.element, point);
       }
@@ -277,6 +308,16 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         camera.project(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z, point);
         place(label.element, point);
       }
+      for (const label of leaving) {
+        label.left -= dt;
+        if (label.left <= 0) {
+          label.element.remove();
+          continue;
+        }
+        camera.project(label.x, label.y, label.z, point);
+        place(label.element, point);
+      }
+      if (leaving.some((label: LeavingLabel): boolean => label.left <= 0)) leaving = leaving.filter((label: LeavingLabel): boolean => label.left > 0);
 
       for (let index: number = numbers.length - 1; index >= 0; index -= 1) {
         const number: FloatingNumber | undefined = numbers[index];

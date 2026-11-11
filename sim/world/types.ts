@@ -1,4 +1,4 @@
-import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc } from '../content/types.ts';
+import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
@@ -299,6 +299,7 @@ export interface World {
   time: number;
   readonly player: PlayerState;
   monsters: MonsterState[];
+  spawnedPacks: ZonePack[];
   npcs: NpcState[];
   dialogue: DialogueState | null;
   heard: string[];

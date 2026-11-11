@@ -7,8 +7,6 @@ import monsters from '../../data/monsters.json' with { type: 'json' };
 import npcs from '../../data/npcs.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
 import quests from '../../data/quests.json' with { type: 'json' };
-import props from '../../data/props.json' with { type: 'json' };
-import rigs from '../../data/rigs.json' with { type: 'json' };
 import skillTree from '../../data/skill-tree.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
@@ -19,12 +17,19 @@ import { must, worldIn } from '../../test/support.ts';
 import { generateItem } from '../items.ts';
 import { createRng } from '../rng.ts';
 import { canAllocate } from '../progression.ts';
+import { RAW_CONTENT } from './content.ts';
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { BossDef, Content, MonsterDef, NpcDef, QuestDef, ZoneDef } from './types.ts';
 
-const shipped: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, zones: [stillhold, bastion], world, npcs, lines, quests, player };
+const others: readonly unknown[] = RAW_CONTENT.zones.filter((zone: unknown): boolean => zone !== stillhold && zone !== bastion);
+
+function zones(...mine: readonly unknown[]): unknown[] {
+  return [...mine, ...others];
+}
+
+const shipped: RawContent = RAW_CONTENT;
 
 const extraSkill = {
   id: 'ember_lash',
@@ -110,7 +115,7 @@ function extended(): RawContent {
     wearables: [...wearables, extraWearable],
     items: { ...items, bases: [...items.bases, extraBase] },
     skillTree: [...skillTree, extraNode],
-    zones: [stillhold, { ...bastion, packs: [...bastion.packs, { x: 28, z: 22, members: [{ monster: 'ash_wraith', count: 3 }] }] }],
+    zones: zones(stillhold, { ...bastion, packs: [...bastion.packs, { x: 28, z: 22, members: [{ monster: 'ash_wraith', count: 3 }] }] }),
   };
 }
 
@@ -126,8 +131,12 @@ function addedQuest(quest: unknown): RawContent {
   return { ...shipped, quests: [...quests, quest] };
 }
 
+function townWithStair(change: Readonly<Record<string, unknown>>): unknown {
+  return { ...stillhold, exits: stillhold.exits.map((exit): unknown => (exit.id === 'bastion_stair' ? { ...exit, ...change } : exit)) };
+}
+
 function withZone(zone: unknown): RawContent {
-  return { ...shipped, zones: [stillhold, zone] };
+  return { ...shipped, zones: zones(stillhold, zone) };
 }
 
 function problem(error: unknown, text: string): boolean {
@@ -228,7 +237,7 @@ void test('worn gear is data: unknown wearables, doubled regions and unknown bod
 });
 
 void test('a zone parses with its kind, level, exits, checkpoints, surge rules and ambience', (): void => {
-  const content: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, checkpoints: [{ id: 'grate', x: 28, z: 22, radius: 2 }] }] });
+  const content: Content = parseContent({ ...shipped, zones: zones(stillhold, { ...bastion, checkpoints: [{ id: 'grate', x: 28, z: 22, radius: 2 }] }) });
   const town: ZoneDef = must(content.zones.get('stillhold'), 'town');
   const arena: ZoneDef = must(content.zones.get('drowned_bastion'), 'arena');
   assert.equal(town.kind, 'town');
@@ -237,10 +246,14 @@ void test('a zone parses with its kind, level, exits, checkpoints, surge rules a
   assert.equal(arena.level, 1);
   assert.deepEqual(arena.surge, { delay: 5, surgesPerExtraMonster: 2, maxExtraMonsters: 3 });
   assert.deepEqual(arena.checkpoints, [{ id: 'grate', x: 28, z: 22, radius: 2 }]);
-  assert.deepEqual(arena.exits, [{ id: 'stair', x: 28, z: 41.6, radius: 1.5, to: 'stillhold', toExit: 'bastion_stair', arrival: { x: 28, z: 37 }, requires: [], lockedHint: '' }]);
+  assert.deepEqual(arena.exits, [{ id: 'stair', x: 28, z: 41.6, radius: 1.5, to: 'stillhold', toExit: 'bastion_stair', arrival: { x: 28, z: 37 }, requires: [], lockedHint: '', hiddenWhenLocked: false }]);
   assert.deepEqual(arena.waypoint, { x: 21, z: 37.5, radius: 1.8 });
-  assert.deepEqual(must(town.exits[0], 'town exit').requires, [{ type: 'objective', quest: 'fallen_in', objective: 'tallier', is: 'done' }]);
-  assert.equal(must(town.exits[0], 'town exit').lockedHint, 'The Tallier is calling you over');
+  const stair = must(town.exits.find((exit): boolean => exit.id === 'bastion_stair'), 'town stair');
+  assert.deepEqual(stair.requires, [{ type: 'objective', quest: 'fallen_in', objective: 'tallier', is: 'done', not: false }]);
+  assert.equal(stair.lockedHint, 'The Tallier is calling you over');
+  const secret = must(town.exits.find((exit): boolean => exit.id === 'fallstone'), 'hidden exit');
+  assert.equal(secret.hiddenWhenLocked, true);
+  assert.equal(must(town.props.find((placed): boolean => placed.when.length > 0), 'conditional prop').when.length, 1);
   assert.equal(arena.ambience.background, '#06090f');
   assert.equal(content.world.start, 'stillhold');
   assert.deepEqual(content.world.scaling, { lifePerLevel: 0.22, damagePerLevel: 0.12, xpPerLevel: 0.15 });
@@ -260,7 +273,7 @@ void test('a malformed zone is rejected: ragged tiles, a town with packs, bad ex
   assert.throws((): Content => parseContent(withZone({ ...bastion, exits: [{ ...stair, arrival: 'door' }] })), (error: unknown): boolean => problem(error, 'exits[0].arrival'));
   assert.throws((): Content => parseContent(withZone({ ...bastion, exits: [stair, stair] })), (error: unknown): boolean => problem(error, 'duplicate id stair'));
   assert.throws((): Content => parseContent(withZone({ ...bastion, checkpoints: [{ id: 'a', x: 1, z: 1 }] })), (error: unknown): boolean => problem(error, 'checkpoints[0].radius'));
-  assert.throws((): Content => parseContent({ ...shipped, zones: [stillhold, bastion, bastion] }), (error: unknown): boolean => problem(error, 'duplicate id drowned_bastion'));
+  assert.throws((): Content => parseContent({ ...shipped, zones: zones(stillhold, bastion, bastion) }), (error: unknown): boolean => problem(error, 'duplicate id drowned_bastion'));
   assert.throws((): Content => parseContent({ ...shipped, world: { start: 'stillhold' } }), (error: unknown): boolean => problem(error, 'world.scaling'));
 });
 
@@ -268,13 +281,13 @@ void test('contentProblems reports an unknown start zone and exits that lead now
   const [stair] = bastion.exits;
   const lost: Content = parseContent({ ...shipped, world: { ...world, start: 'nowhere' } });
   assert.ok(contentProblems(lost).some((found: string): boolean => found.includes('unknown zone nowhere')));
-  const noZone: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, exits: [{ ...stair, to: 'the_moon' }] }] });
+  const noZone: Content = parseContent({ ...shipped, zones: zones(stillhold, { ...bastion, exits: [{ ...stair, to: 'the_moon' }] }) });
   assert.ok(contentProblems(noZone).some((found: string): boolean => found.includes('unknown exit the_moon.bastion_stair')));
-  const noExit: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, exits: [{ ...stair, toExit: 'trapdoor' }] }] });
+  const noExit: Content = parseContent({ ...shipped, zones: zones(stillhold, { ...bastion, exits: [{ ...stair, toExit: 'trapdoor' }] }) });
   assert.ok(contentProblems(noExit).some((found: string): boolean => found.includes('unknown exit stillhold.trapdoor')));
-  const oneWay: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, exits: [{ ...stair, id: 'ladder' }] }] });
+  const oneWay: Content = parseContent({ ...shipped, zones: zones(stillhold, { ...bastion, exits: [{ ...stair, id: 'ladder' }] }) });
   assert.ok(contentProblems(oneWay).some((found: string): boolean => found.includes('exit ladder is not matched by stillhold.bastion_stair')));
-  const badPack: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, packs: [{ x: 1, z: 1, members: [{ monster: 'nobody', count: 1 }] }] }] });
+  const badPack: Content = parseContent({ ...shipped, zones: zones(stillhold, { ...bastion, packs: [{ x: 1, z: 1, members: [{ monster: 'nobody', count: 1 }] }] }) });
   assert.ok(contentProblems(badPack).some((found: string): boolean => found.includes('zone drowned_bastion pack uses unknown monster nobody')));
 });
 
@@ -301,7 +314,7 @@ const extraLines = [
 ];
 
 function peopled(): RawContent {
-  return { ...shipped, npcs: [...npcs, extraNpc], lines: [...lines, ...extraLines], zones: [{ ...stillhold, npcs: [...stillhold.npcs, { npc: 'pedlar', x: 22, z: 16, facingDegrees: 90 }] }, bastion] };
+  return { ...shipped, npcs: [...npcs, extraNpc], lines: [...lines, ...extraLines], zones: zones({ ...stillhold, npcs: [...stillhold.npcs, { npc: 'pedlar', x: 22, z: 16, facingDegrees: 90 }] }, bastion) };
 }
 
 void test('an npc, its conversations, its lines and its placement are data only', (): void => {
@@ -323,7 +336,7 @@ void test('malformed npcs and lines are rejected', (): void => {
   assert.throws((): Content => parseContent({ ...base, npcs: [{ ...extraNpc, scale: 0 }] }), (error: unknown): boolean => problem(error, 'npcs[0].scale'));
   assert.throws((): Content => parseContent({ ...base, lines: [...extraLines, { id: 'pedlar_hello_1', speaker: 'pedlar', text: 'Again.' }] }), (error: unknown): boolean => problem(error, 'duplicate id pedlar_hello_1'));
   assert.throws((): Content => parseContent({ ...base, lines: [{ id: 'blank', speaker: 'pedlar', text: '  ' }] }), (error: unknown): boolean => problem(error, 'lines[0].text'));
-  assert.throws((): Content => parseContent({ ...shipped, zones: [{ ...stillhold, npcs: [{ npc: 'maren', x: 1 }] }, bastion] }), (error: unknown): boolean => problem(error, 'npcs[0].z'));
+  assert.throws((): Content => parseContent({ ...shipped, zones: zones({ ...stillhold, npcs: [{ npc: 'maren', x: 1 }] }, bastion) }), (error: unknown): boolean => problem(error, 'npcs[0].z'));
 });
 
 void test('contentProblems reports dangling npc references', (): void => {
@@ -338,7 +351,7 @@ void test('contentProblems reports dangling npc references', (): void => {
   assert.ok(has({ ...base, lines: [...lines, ...extraLines.slice(1)] }, 'conversation pedlar_hello uses unknown line pedlar_hello_1'));
   assert.ok(has({ ...base, lines: [...lines, ...extraLines, { id: 'ghost_1', speaker: 'ghost', text: 'Boo.' }] }, 'line ghost_1 has unknown speaker ghost'));
   assert.ok(has({ ...base, npcs: [...npcs, { ...extraNpc, talks: [{ id: 'pedlar_again', once: false, lines: ['maren_idle_1'] }] }] }, 'uses line maren_idle_1, which is spoken by maren'));
-  assert.ok(has({ ...shipped, zones: [{ ...stillhold, npcs: [{ npc: 'nobody', x: 22, z: 16, facingDegrees: 0 }] }, bastion] }, 'zone stillhold places unknown npc nobody'));
+  assert.ok(has({ ...shipped, zones: zones({ ...stillhold, npcs: [{ npc: 'nobody', x: 22, z: 16, facingDegrees: 0 }] }, bastion) }, 'zone stillhold places unknown npc nobody'));
 });
 
 const extraQuest = {
@@ -354,18 +367,18 @@ const extraQuest = {
 
 void test('a quest, its three kinds of objective, conditions, a waypoint and map places are data only', (): void => {
   const gate = { type: 'objective', quest: 'errand', objective: 'go', is: 'done' };
-  const [stair] = stillhold.exits;
-  const content: Content = parseContent({ ...shipped, quests: [...quests, extraQuest], zones: [{ ...stillhold, exits: [{ ...stair, requires: [gate, { type: 'quest', quest: 'fallen_in', is: 'done' }], lockedHint: 'Later' }] }, bastion] });
+  const content: Content = parseContent({ ...shipped, quests: [...quests, extraQuest], zones: zones(townWithStair({ requires: [gate, { type: 'quest', quest: 'fallen_in', is: 'done', not: true }], lockedHint: 'Later' }), bastion) });
   assert.deepEqual(contentProblems(content), []);
   const errand: QuestDef = must(content.quests.get('errand'), 'errand');
   assert.deepEqual(errand.requires, ['fallen_in']);
   assert.deepEqual(errand.objectives, extraQuest.objectives);
   const town: ZoneDef = must(content.zones.get('stillhold'), 'town');
-  assert.deepEqual(must(town.exits[0], 'exit').requires, [gate, { type: 'quest', quest: 'fallen_in', is: 'done' }]);
-  assert.equal(must(town.exits[0], 'exit').lockedHint, 'Later');
+  const stair = must(town.exits.find((exit): boolean => exit.id === 'bastion_stair'), 'town stair');
+  assert.deepEqual(stair.requires, [{ ...gate, not: false }, { type: 'quest', quest: 'fallen_in', is: 'done', not: true }]);
+  assert.equal(stair.lockedHint, 'Later');
   assert.deepEqual(town.waypoint, stillhold.waypoint);
   assert.deepEqual(content.world.map, world.map);
-  assert.deepEqual(must(must(content.npcs.get('maren'), 'maren').talks[0], 'talk').when, [{ type: 'objective', quest: 'fallen_in', objective: 'tallier', is: 'current' }]);
+  assert.deepEqual(must(must(content.npcs.get('maren'), 'maren').talks[0], 'talk').when, [{ type: 'objective', quest: 'fallen_in', objective: 'tallier', is: 'current', not: false }]);
 });
 
 void test('malformed quests, conditions and waypoints are rejected', (): void => {
@@ -377,9 +390,9 @@ void test('malformed quests, conditions and waypoints are rejected', (): void =>
   assert.throws((): Content => parseContent(onlyQuest({ ...extraQuest, objectives: [{ ...go, radius: 0 }] })), (error: unknown): boolean => problem(error, 'objectives[0].radius'));
   assert.throws((): Content => parseContent({ ...shipped, quests: [extraQuest, extraQuest] }), (error: unknown): boolean => problem(error, 'duplicate id errand'));
   const badState = { ...stair, requires: [{ type: 'quest', quest: 'fallen_in', is: 'finished' }], lockedHint: 'No' };
-  assert.throws((): Content => parseContent({ ...shipped, zones: [{ ...stillhold, exits: [badState] }, bastion] }), (error: unknown): boolean => problem(error, 'requires[0].is'));
+  assert.throws((): Content => parseContent({ ...shipped, zones: zones({ ...stillhold, exits: [badState] }, bastion) }), (error: unknown): boolean => problem(error, 'requires[0].is'));
   const noHint = { ...stair, requires: [{ type: 'quest', quest: 'fallen_in', is: 'done' }], lockedHint: undefined };
-  assert.throws((): Content => parseContent({ ...shipped, zones: [{ ...stillhold, exits: [noHint] }, bastion] }), (error: unknown): boolean => problem(error, 'exits[0].lockedHint'));
+  assert.throws((): Content => parseContent({ ...shipped, zones: zones({ ...stillhold, exits: [noHint] }, bastion) }), (error: unknown): boolean => problem(error, 'exits[0].lockedHint'));
   const { waypoint: _waypoint, ...noWaypointKey } = bastion;
   assert.throws((): Content => parseContent(withZone(noWaypointKey)), (error: unknown): boolean => problem(error, 'zones[1].waypoint'));
   assert.equal(must(parseContent(withZone({ ...bastion, waypoint: null })).zones.get('drowned_bastion'), 'arena').waypoint, null);
@@ -394,8 +407,7 @@ void test('contentProblems reports dangling quest references', (): void => {
   assert.ok(has(addedQuest({ ...extraQuest, objectives: [{ ...ask, npc: 'nobody' }] }), 'quest errand objective ask names unknown npc nobody'));
   assert.ok(has(addedQuest({ ...extraQuest, objectives: [{ ...go, zone: 'atlantis' }] }), 'quest errand objective go names unknown zone atlantis'));
   assert.ok(has(addedQuest({ ...extraQuest, objectives: [{ ...kill, monster: 'dragon' }] }), 'quest errand objective kill names unknown monster dragon'));
-  const [stair] = stillhold.exits;
-  const gated = (requires: unknown): RawContent => ({ ...shipped, zones: [{ ...stillhold, exits: [{ ...stair, requires, lockedHint: 'No' }] }, bastion] });
+  const gated = (requires: unknown): RawContent => ({ ...shipped, zones: zones(townWithStair({ requires, lockedHint: 'No' }), bastion) });
   assert.ok(has(gated([{ type: 'quest', quest: 'prologue', is: 'done' }]), 'zone stillhold exit bastion_stair names unknown quest prologue'));
   assert.ok(has(gated([{ type: 'objective', quest: 'fallen_in', objective: 'dance', is: 'done' }]), 'zone stillhold exit bastion_stair names unknown objective fallen_in.dance'));
   assert.ok(has({ ...shipped, world: { ...world, map: [world.map[0]] } }, 'zone drowned_bastion has no place on the world map'));
@@ -424,7 +436,7 @@ void test('a boss block parses with its phases, poise, drop and barks, and a pac
   assert.equal(must(content.monsters.get('bone_thrall'), 'thrall').boss, null);
   const during = [{ type: 'quest', quest: 'fallen_in', is: 'done' }];
   const gated: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, packs: [{ ...bastion.packs[0], when: during }] }] });
-  assert.deepEqual(must(must(gated.zones.get('drowned_bastion'), 'arena').packs[0], 'pack').when, [{ type: 'quest', quest: 'fallen_in', is: 'done' }]);
+  assert.deepEqual(must(must(gated.zones.get('drowned_bastion'), 'arena').packs[0], 'pack').when, [{ type: 'quest', quest: 'fallen_in', is: 'done', not: false }]);
   assert.deepEqual(must(must(content.zones.get('drowned_bastion'), 'arena').packs[0], 'pack').when, []);
 });
 
@@ -453,4 +465,33 @@ void test('contentProblems reports a boss that names an unknown skill, rarity or
   assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['no_such_line'], death: [] } })), 'boss mason barks unknown line no_such_line'));
   assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['one_before_sight_1'], death: [] } })), 'boss mason barks line one_before_sight_1, which is spoken by one_before'));
   assert.ok(has({ ...shipped, lines: [...lines, { id: 'ghost_1', speaker: 'ghost', text: 'Boo.' }] }, 'line ghost_1 has unknown speaker ghost'));
+});
+
+void test('a zone takes spoken lines tied to a place: a voice needs lines, known lines and an id of its own', (): void => {
+  const until = { type: 'quest', quest: 'fallen_in', is: 'done', not: true };
+  const voice = { id: 'well_whisper', x: 26, z: 22, radius: 3, lines: ['pedlar_hello_1', 'pedlar_hello_2'], when: [until] };
+  const { when: _when, ...always } = voice;
+  const voiced = (entries: readonly unknown[]): RawContent => ({ ...peopled(), zones: zones({ ...stillhold, voices: entries }, bastion) });
+  const content: Content = parseContent(voiced([voice, { ...always, id: 'well_echo' }]));
+  assert.deepEqual(contentProblems(content), []);
+  assert.deepEqual(must(content.zones.get('stillhold'), 'town').voices, [voice, { ...always, id: 'well_echo', when: [] }]);
+  assert.deepEqual(must(content.zones.get('drowned_bastion'), 'arena').voices, []);
+  assert.throws((): Content => parseContent(voiced([{ ...voice, lines: [] }])), (error: unknown): boolean => problem(error, 'a voice needs at least one line'));
+  assert.throws((): Content => parseContent(voiced([voice, voice])), (error: unknown): boolean => problem(error, 'duplicate id well_whisper'));
+  assert.throws((): Content => parseContent(voiced([{ ...voice, radius: 0 }])), (error: unknown): boolean => problem(error, 'voices[0].radius'));
+  assert.ok(has(voiced([{ ...voice, lines: ['no_such_line'] }]), 'zone stillhold voice well_whisper uses unknown line no_such_line'));
+  assert.ok(has(voiced([{ ...voice, when: [{ type: 'quest', quest: 'no_such_quest', is: 'done' }] }]), 'zone stillhold voice well_whisper names unknown quest no_such_quest'));
+  assert.ok(has(voiced([{ ...voice, id: 'pedlar_hello' }]), 'zone stillhold voice pedlar_hello shares its id with a conversation'));
+  const echoed: RawContent = { ...peopled(), zones: zones({ ...stillhold, voices: [voice] }, { ...bastion, voices: [{ ...voice, x: 28, z: 30 }] }) };
+  assert.ok(has(echoed, 'voice well_whisper shares its id with a voice in zone'));
+});
+
+void test('a prop placed with a condition is data only, and one that blocks the way is reported', (): void => {
+  const lit = { type: 'objective', quest: 'fallen_in', objective: 'tallier', is: 'done' };
+  const placed = (prop: string): RawContent => ({ ...shipped, zones: zones({ ...stillhold, props: [...stillhold.props, { prop, x: 26, z: 30, y: 0, rotationDegrees: 0, when: [lit] }] }, bastion) });
+  const content: Content = parseContent(placed('candle_triple'));
+  assert.deepEqual(contentProblems(content), []);
+  assert.deepEqual(must(content.zones.get('stillhold'), 'town').props.at(-1), { prop: 'candle_triple', x: 26, z: 30, y: 0, rotationDegrees: 0, when: [{ ...lit, not: false }] });
+  assert.ok(has(placed('pillar'), 'zone stillhold places prop pillar with a condition, but it blocks the way'));
+  assert.ok(has(placed('no_such_prop'), 'zone stillhold places unknown prop no_such_prop'));
 });

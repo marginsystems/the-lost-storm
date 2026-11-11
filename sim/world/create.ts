@@ -93,6 +93,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     time: 0,
     player: freshPlayer(content, save),
     monsters: [],
+    spawnedPacks: [],
     npcs: [],
     dialogue: null,
     heard: save === null ? [] : [...save.heard],

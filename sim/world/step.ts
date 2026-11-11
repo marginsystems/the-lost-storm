@@ -3,6 +3,7 @@ import { removeCorpses, stepMonster, stepSurge } from './monsters.ts';
 import { separateActors } from './movement.ts';
 import { handleCommand, stepPlayer } from './player.ts';
 import { stepQuests } from './quests.ts';
+import { stepVoices } from './voices.ts';
 import { stepProjectiles } from './skills.ts';
 import type { Command, World, WorldEvent } from './types.ts';
 
@@ -20,6 +21,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   removeCorpses(world);
   stepSurge(world, dt);
   stepBosses(world);
+  stepVoices(world);
   stepQuests(world);
   return world.events;
 }

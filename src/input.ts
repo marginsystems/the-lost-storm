@@ -1,6 +1,7 @@
 import { Vector2, Vector3 } from 'three';
 import type { SkillDef, ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
+import { allHold } from '../sim/world/conditions.ts';
 import type { Command, MonsterState, NpcState, World } from '../sim/world/types.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
@@ -135,7 +136,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
 
   const exitAt = (ground: Vec2 | null): ZoneExit | null => {
     if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
-    return world.zone.exits.find((exit: ZoneExit): boolean => Math.hypot(exit.x - ground.x, exit.z - ground.z) <= exit.radius) ?? null;
+    return world.zone.exits.find((exit: ZoneExit): boolean => Math.hypot(exit.x - ground.x, exit.z - ground.z) <= exit.radius && !(exit.hiddenWhenLocked && !allHold(world, exit.requires))) ?? null;
   };
 
   const onWaypointMark = (ground: Vec2 | null): boolean => {

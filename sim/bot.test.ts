@@ -10,12 +10,29 @@ import type { World } from './world/types.ts';
 
 const content: Content = loadContent();
 
-void test('the bot completes every quest from a fresh save', (): void => {
-  const world: World = createWorld(content, { seed: 11, save: null });
-  const report: BotReport = botPlay(createBot(world));
-  assert.equal(report.stuck, null);
-  assert.deepEqual(report.completed.toSorted(), [...content.quests.keys()].toSorted());
-  assert.ok(report.seconds > 0);
+const ACT = {
+  seeds: [11, 12, 13],
+  minMinutes: 5,
+  maxMinutes: 12,
+  minLevel: 6,
+  maxLevel: 9,
+  maxDeaths: 1,
+  optionalZone: 'drowned_bastion',
+} as const;
+
+void test('the bot plays the whole act from a fresh save: every quest, in the time and at the level it is tuned for, never needing the optional zone', (): void => {
+  const needed: string[] = [...content.zones.keys()].filter((zone: string): boolean => zone !== ACT.optionalZone).toSorted();
+  for (const seed of ACT.seeds) {
+    const world: World = createWorld(content, { seed, save: null });
+    const report: BotReport = botPlay(createBot(world));
+    const minutes: number = report.seconds / 60;
+    assert.equal(report.stuck, null, `seed ${seed}`);
+    assert.deepEqual(report.completed.toSorted(), [...content.quests.keys()].toSorted(), `seed ${seed}`);
+    assert.ok(minutes >= ACT.minMinutes && minutes <= ACT.maxMinutes, `seed ${seed} took ${minutes.toFixed(1)} minutes`);
+    assert.ok(world.player.level >= ACT.minLevel && world.player.level <= ACT.maxLevel, `seed ${seed} ended at level ${world.player.level}`);
+    assert.ok(report.deaths <= ACT.maxDeaths, `seed ${seed} died ${report.deaths} times`);
+    assert.deepEqual(world.visited.toSorted(), needed, `seed ${seed}`);
+  }
 });
 
 void test('the bot walks, talks and travels between zones', (): void => {

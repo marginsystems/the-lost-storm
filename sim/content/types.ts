@@ -309,6 +309,16 @@ export interface ZoneProp {
   readonly z: number;
   readonly y: number;
   readonly rotationDegrees: number;
+  readonly when: readonly Condition[];
+}
+
+export interface ZoneVoice {
+  readonly id: string;
+  readonly x: number;
+  readonly z: number;
+  readonly radius: number;
+  readonly lines: readonly string[];
+  readonly when: readonly Condition[];
 }
 
 export interface PackMember {
@@ -349,6 +359,7 @@ export interface QuestCondition {
   readonly type: 'quest';
   readonly quest: string;
   readonly is: QuestState;
+  readonly not: boolean;
 }
 
 export interface ObjectiveCondition {
@@ -356,6 +367,7 @@ export interface ObjectiveCondition {
   readonly quest: string;
   readonly objective: string;
   readonly is: ObjectiveState;
+  readonly not: boolean;
 }
 
 export type Condition = QuestCondition | ObjectiveCondition;
@@ -370,6 +382,7 @@ export interface ZoneExit {
   readonly arrival: ZonePoint;
   readonly requires: readonly Condition[];
   readonly lockedHint: string;
+  readonly hiddenWhenLocked: boolean;
 }
 
 export interface ZoneWaypoint {
@@ -423,6 +436,7 @@ export interface ZoneDef {
   readonly checkpoints: readonly ZoneCheckpoint[];
   readonly waypoint: ZoneWaypoint | null;
   readonly npcs: readonly ZoneNpc[];
+  readonly voices: readonly ZoneVoice[];
   readonly ambience: ZoneAmbience;
 }
 

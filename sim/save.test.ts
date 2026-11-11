@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must, worldIn } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
-import type { Content } from './content/types.ts';
+import type { Content, ZoneDef, ZoneVoice } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import { parseSaveText, readSave, SAVE_VERSION, toSave } from './save.ts';
@@ -223,12 +223,13 @@ void test('an unknown zone or respawn id in a save falls back to the start', ():
   assert.deepEqual(oddRespawn.visited, ['drowned_bastion']);
 });
 
-void test('the conversations already heard survive a save, and unknown ones are dropped', (): void => {
+void test('the conversations and the voices of a place already heard survive a save, and unknown ones are dropped', (): void => {
+  const voice: string = must([...content.zones.values()].flatMap((zone: ZoneDef): readonly ZoneVoice[] => zone.voices)[0], 'a zone voice').id;
   const world: World = createWorld(content, { seed: 8, save: null });
-  world.heard = ['maren_wake', 'hale_first'];
+  world.heard = ['maren_wake', 'hale_first', voice];
   const save: SaveData = roundTrip(world);
-  assert.deepEqual(save.heard, ['maren_wake', 'hale_first']);
-  assert.deepEqual(createWorld(content, { seed: 9, save }).heard, ['maren_wake', 'hale_first']);
+  assert.deepEqual(save.heard, ['maren_wake', 'hale_first', voice]);
+  assert.deepEqual(createWorld(content, { seed: 9, save }).heard, ['maren_wake', 'hale_first', voice]);
   const { heard: _heard, ...older } = toSave(world);
   assert.deepEqual(must(readSave(content, older), 'save').heard, []);
   assert.deepEqual(must(readSave(content, { ...toSave(world), heard: ['maren_wake', 'a_rumour', 4] }), 'save').heard, ['maren_wake']);

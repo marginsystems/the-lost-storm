@@ -71,11 +71,11 @@
     "rig": "skeleton_hero",
     "scale": 1.22,
     "radius": 0.5,
-    "life": 420,
-    "damageMin": 8,
-    "damageMax": 13,
+    "life": 560,
+    "damageMin": 7,
+    "damageMax": 11,
     "moveSpeed": 5.6,
-    "xp": 140,
+    "xp": 60,
     "aggroRadius": 12,
     "behaviour": {
       "type": "chaser"
@@ -163,11 +163,11 @@
     "rig": "skeleton_thrall",
     "scale": 1.75,
     "radius": 0.5,
-    "life": 600,
-    "damageMin": 11,
-    "damageMax": 17,
+    "life": 780,
+    "damageMin": 9,
+    "damageMax": 14,
     "moveSpeed": 3.7,
-    "xp": 150,
+    "xp": 60,
     "aggroRadius": 12,
     "behaviour": {
       "type": "chaser"
@@ -237,6 +237,280 @@
       "barks": {
         "aggro": [],
         "death": []
+      }
+    }
+  },
+  {
+    "id": "roadbound",
+    "name": "Roadbound",
+    "rig": "skeleton_thrall",
+    "scale": 1.0,
+    "radius": 0.5,
+    "life": 46,
+    "damageMin": 5,
+    "damageMax": 8,
+    "moveSpeed": 4.9,
+    "xp": 9,
+    "aggroRadius": 9,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "roadbound_reach",
+    "loot": {
+      "goldChance": 0.55,
+      "goldMin": 2,
+      "goldMax": 7,
+      "itemChance": 0.18
+    },
+    "color": "#8fb0ff",
+    "tint": "#9aa3b8",
+    "gear": [
+      "rusted_blade"
+    ],
+    "wear": [
+      "sackcloth_robe",
+      "sackcloth_cowl"
+    ],
+    "boss": null
+  },
+  {
+    "id": "lamenter",
+    "name": "Lamenter",
+    "rig": "skeleton_caster",
+    "scale": 1.05,
+    "radius": 0.5,
+    "life": 30,
+    "damageMin": 6,
+    "damageMax": 10,
+    "moveSpeed": 3.8,
+    "xp": 12,
+    "aggroRadius": 10,
+    "behaviour": {
+      "type": "ranged",
+      "preferredRange": 9,
+      "retreatRange": 4.5
+    },
+    "skill": "lament",
+    "loot": {
+      "goldChance": 0.7,
+      "goldMin": 4,
+      "goldMax": 11,
+      "itemChance": 0.24
+    },
+    "color": "#7f9dff",
+    "tint": "#8a93b0",
+    "gear": [
+      "hex_staff"
+    ],
+    "wear": [
+      "hex_robe",
+      "hex_cowl"
+    ],
+    "boss": null
+  },
+  {
+    "id": "misbuilt",
+    "name": "Misbuilt",
+    "rig": "skeleton_thrall",
+    "scale": 1.25,
+    "radius": 0.5,
+    "life": 84,
+    "damageMin": 6,
+    "damageMax": 10,
+    "moveSpeed": 3.9,
+    "xp": 13,
+    "aggroRadius": 9,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "misbuilt_slam",
+    "loot": {
+      "goldChance": 0.6,
+      "goldMin": 4,
+      "goldMax": 10,
+      "itemChance": 0.2
+    },
+    "color": "#e0a070",
+    "tint": "#b09a80",
+    "gear": [
+      "greatsword"
+    ],
+    "wear": [
+      "rag_trousers"
+    ],
+    "boss": null
+  },
+  {
+    "id": "hodman",
+    "name": "Hodman",
+    "rig": "skeleton_caster",
+    "scale": 1.0,
+    "radius": 0.5,
+    "life": 34,
+    "damageMin": 6,
+    "damageMax": 9,
+    "moveSpeed": 4.0,
+    "xp": 11,
+    "aggroRadius": 10,
+    "behaviour": {
+      "type": "ranged",
+      "preferredRange": 8,
+      "retreatRange": 4
+    },
+    "skill": "hod_stone",
+    "loot": {
+      "goldChance": 0.65,
+      "goldMin": 3,
+      "goldMax": 9,
+      "itemChance": 0.2
+    },
+    "color": "#d8b890",
+    "tint": "#a89880",
+    "gear": [],
+    "wear": [
+      "rag_shirt",
+      "thrall_breeches"
+    ],
+    "boss": null
+  },
+  {
+    "id": "echo",
+    "name": "Echo",
+    "rig": "skeleton_thrall",
+    "scale": 0.95,
+    "radius": 0.5,
+    "life": 24,
+    "damageMin": 5,
+    "damageMax": 8,
+    "moveSpeed": 6.8,
+    "xp": 9,
+    "aggroRadius": 9,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "echo_touch",
+    "loot": {
+      "goldChance": 0.4,
+      "goldMin": 2,
+      "goldMax": 6,
+      "itemChance": 0.12
+    },
+    "color": "#f0f0ff",
+    "tint": "#e8e8f0",
+    "gear": [],
+    "wear": [
+      "sackcloth_robe"
+    ],
+    "boss": null
+  },
+  {
+    "id": "welcome",
+    "name": "The Welcome",
+    "rig": "skeleton_caster",
+    "scale": 1.7,
+    "radius": 0.5,
+    "life": 1000,
+    "damageMin": 7,
+    "damageMax": 10,
+    "moveSpeed": 4.2,
+    "xp": 0,
+    "aggroRadius": 10,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "welcome_ring",
+    "loot": {
+      "goldChance": 0,
+      "goldMin": 0,
+      "goldMax": 0,
+      "itemChance": 0
+    },
+    "color": "#ffe2b0",
+    "tint": "#f4f0e6",
+    "gear": [],
+    "wear": [
+      "sackcloth_robe",
+      "sackcloth_cowl"
+    ],
+    "boss": {
+      "title": "It has been calling",
+      "phases": [
+        {
+          "below": 1,
+          "skills": [
+            {
+              "skill": "welcome_ring",
+              "weight": 3
+            },
+            {
+              "skill": "welcome_lance",
+              "weight": 3
+            }
+          ],
+          "barks": []
+        },
+        {
+          "below": 0.66,
+          "skills": [
+            {
+              "skill": "welcome_ring",
+              "weight": 2
+            },
+            {
+              "skill": "welcome_lance",
+              "weight": 2
+            },
+            {
+              "skill": "welcome_fan",
+              "weight": 3
+            }
+          ],
+          "barks": [
+            "welcome_two_1"
+          ]
+        },
+        {
+          "below": 0.33,
+          "skills": [
+            {
+              "skill": "welcome_ring",
+              "weight": 2
+            },
+            {
+              "skill": "welcome_lance",
+              "weight": 2
+            },
+            {
+              "skill": "welcome_fan",
+              "weight": 2
+            },
+            {
+              "skill": "welcome_embrace",
+              "weight": 3
+            }
+          ],
+          "barks": [
+            "welcome_three_1"
+          ]
+        }
+      ],
+      "poise": {
+        "knockback": 0.05
+      },
+      "drop": {
+        "items": 2,
+        "rarity": "rare",
+        "goldMin": 60,
+        "goldMax": 90
+      },
+      "barks": {
+        "aggro": [
+          "welcome_fight_1"
+        ],
+        "death": [
+          "welcome_death_1",
+          "welcome_death_2"
+        ]
       }
     }
   }

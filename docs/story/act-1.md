@@ -27,7 +27,7 @@ The Gate to the Still stays shut until both lamps are lit.
 | `dusks_end` | Dusk's End | wild | The same dusk, colder. The road stops. | Main path: the North Lamp and a waypoint. Side path: the Empty Frame, a lone doorway with no house behind it, where the One Before keeps watch. |
 | `the_spill` | The Spill | wild | Rust and dust. Half-things everywhere: stairs to nowhere, a wall with no room. | Pell's camp near the entrance. Misbuilt and Hodmen. One checkpoint. |
 | `the_coursework` | The Coursework | wild | Neat, endless, pointless walls in warm stone. | Main path: the East Lamp and a waypoint. Side path: the yard where the Mason builds. |
-| `the_still` | The Still | wild | Pale, silent, almost no colour. | A waypoint at the Gate, a quiet approach with Echoes, and the lit door at the centre, where the Welcome waits. |
+| `the_still` | The Still | wild | Pale, silent, almost no colour. | A waypoint at the Gate, where the voice is first heard. An antechamber of Echoes, a checkpoint at the threshold of the hall, and the lit door at its far end, where the Welcome waits. After the fight the door is a way out onto the Fallstone. |
 | `drowned_bastion` | The Drowned Bastion | wild, surges | As it is today. | The endless arena. Never required. |
 
 ## Monsters
@@ -47,7 +47,7 @@ The Gate to the Still stays shut until both lamps are lit.
 |---|---|---|---|---|
 | `one_before` | The One Before | The Empty Frame, Dusk's End | Fights like the hero: a sweep, a spread of bolts, and below half life a slow ring the player must step out of. | The north wick (quest), a guaranteed item. |
 | `mason` | The Mason | The yard, the Coursework | Slow heavy overhead blow in front, thrown stone at range, and below half life a wide ground slam. | The east wick (quest), a guaranteed item. |
-| `welcome` | The Welcome | The door, the Still | Three phases: rings of light that pulse outward, fans of orbs, then both. | A guaranteed rare item. |
+| `welcome` | The Welcome | The door, the Still | Three phases: a ring that pulses outward and a lance of light; then fans of bolts as well; then a slow, wide embrace the player must walk out of. | Two guaranteed rare items. |
 
 ## Beats
 
@@ -55,7 +55,7 @@ The Gate to the Still stays shut until both lamps are lit.
 2. **The errand.** Hale believes whoever made the world sits in the Still and will know where the door is. The Gate opens when the North Lamp and the East Lamp burn. Something took the wicks. *Goal the player holds for the whole act: light two lamps, pass the Gate, ask the way home.*
 3. **North: the memory is not yours alone.** Duskway is the road from the memory. At its end, off a side path, a lone doorframe stands with nothing behind it. The One Before guards it and is certain the hero has come to take *their* door. Halfway through the fight: "What name did it call you? Say it. You can't hear it either." Dying: "Then who was it calling?" The hero lights the North Lamp. Back in town, Maren opens the ledger: she has written that same memory nine times. The hero is the tenth. She told the first one; he sat down on the Fallstone and came apart by evening. So she stopped telling.
 4. **East: nobody has a past.** In the Spill, Pell picks through the lovely wrong things. She mentions, as gossip, that she watched Stillhold land: the same night the hero did, whole, lamps lit, Hale already grumbling about the oil he has "kept for forty years". She told them once. "They were so kind about it." Then the joke that stops short: maybe she only fell in this morning, remembering all that. In the Coursework the Mason builds walls around nothing and never asks why. It does not speak. The hero lights the East Lamp.
-5. **The Gate.** Hale sees both lamps catch. He asks one thing: "Ask if I've kept them well." Maren would like, for once, to finish an entry.
+5. **The Gate.** Hale sees both lamps catch. He asks one thing: "Ask if I've kept them well." Maren comes down to the Gate to see the hero off: she would like, for once, to finish an entry.
 6. **The Still.** Past the Gate it is quiet. At the centre is the door from the memory, real, lit, with the voice inside. It is the Welcome: the Storm's own pull, the thing every memory of home has been. "That was never a house. That was us, calling." It notices the player, too: "And the one behind you, the one who moves you. It may come too. It is ours as well, though it thinks not." The hero refuses. The Welcome tries to carry them in. In its last phase: "We never said a name. There are no names in here."
 7. **After.** The door stays open and silent. Hale has followed. He looks around the Still: no one, not even a chair. "Nobody set the table, then. Hm. Well. Lamps want lighting all the same. More than before, I'd say." He goes home to light them.
 8. **The last entry.** The open door leads out onto the Fallstone, where the hero woke. Maren: "You came back. Nobody comes back." She writes it differently: not *fell in*, but *went, chose, came back*. "First thing in this book that was done on purpose."
@@ -84,6 +84,12 @@ Objectives run in order. A quest starts when the quests it requires are complete
 | `the_gate` | The Gate | `north_lamp`, `east_lamp` | Talk to the Lampwright. Reach the door in the Still. Defeat the Welcome. Talk to the Lampwright in the Still. Talk to the Tallier. |
 
 Quest names and objective texts shown in the tracker must not give a later beat away: an objective says what to do next, never what will be found there.
+
+## Pacing
+
+The scripted bot in `sim/bot.ts` plays the act from a fresh save in seven to eight minutes of game time, ends at level 7 and does not die. It walks straight to each goal, never reads and never looks around, so a new player takes roughly four times as long. `sim/bot.test.ts` fails if the bot's time, level or deaths leave that range, or if it ever needs the Drowned Bastion.
+
+No pack stands where it can see the hero arrive, respawn or step off a waypoint; `sim/content/content.test.ts` checks that for every zone, with each boss present.
 
 ## Things that must hold whatever changes
 

@@ -33,15 +33,25 @@ export interface BotReport {
   readonly deaths: number;
 }
 
+export interface BotHabits {
+  readonly dodges: boolean;
+  readonly reaction: number;
+}
+
+export const CAREFUL: BotHabits = { dodges: true, reaction: 0 };
+
+export type BotWatch = (events: readonly WorldEvent[]) => void;
+
 export interface Bot {
   readonly world: World;
   readonly events: WorldEvent[];
-  readonly dodges: boolean;
+  readonly habits: BotHabits;
+  readonly watch: BotWatch | null;
   deaths: number;
 }
 
-export function createBot(world: World, dodges: boolean = true): Bot {
-  return { world, events: [], dodges, deaths: 0 };
+export function createBot(world: World, habits: BotHabits = CAREFUL, watch: BotWatch | null = null): Bot {
+  return { world, events: [], habits, watch, deaths: 0 };
 }
 
 function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
@@ -50,6 +60,7 @@ function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
     if (event.type === 'death' && event.team === 'player') bot.deaths += 1;
   }
   bot.events.push(...events);
+  bot.watch?.(events);
   return events;
 }
 
@@ -88,9 +99,9 @@ function attack(world: World, target: MonsterState, crowd: readonly MonsterState
   return { type: 'skill', slot: 0, aim: target.pos, targetId: target.id };
 }
 
-function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2): boolean {
+function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reaction: number): boolean {
   const action = monster.action;
-  if (!monster.alive || action === null || action.phase !== 'windup') return false;
+  if (!monster.alive || action === null || action.phase !== 'windup' || action.windup - action.timeLeft < reaction) return false;
   const reach: number = world.player.radius + BOT.dodgeMargin;
   const offset: Vec2 = { x: pos.x - monster.pos.x, z: pos.z - monster.pos.z };
   const gap: number = Math.hypot(offset.x, offset.z);
@@ -120,8 +131,8 @@ function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2): boo
   return inside;
 }
 
-export function botInDanger(world: World, pos: ReadonlyVec2): boolean {
-  return world.monsters.some((monster: MonsterState): boolean => threatened(world, monster, pos));
+export function botInDanger(world: World, pos: ReadonlyVec2, reaction: number = 0): boolean {
+  return world.monsters.some((monster: MonsterState): boolean => threatened(world, monster, pos, reaction));
 }
 
 function refuge(world: World): Vec2 | null {
@@ -142,7 +153,7 @@ function fightStep(bot: Bot, prefer: string | null): boolean {
   const wanted: MonsterState[] = prefer === null ? [] : world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.def.id === prefer);
   const target: MonsterState | null = nearest(world, hostile.length > 0 ? hostile : wanted);
   if (target === null) return false;
-  if (bot.dodges && world.player.alive && botInDanger(world, world.player.pos)) {
+  if (bot.habits.dodges && world.player.alive && botInDanger(world, world.player.pos, bot.habits.reaction)) {
     const spot: Vec2 | null = world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest) ? null : refuge(world);
     tick(bot, free(world) && spot !== null ? [{ type: 'move', held: false, dest: spot }] : []);
     return true;

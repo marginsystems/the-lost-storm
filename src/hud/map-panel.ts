@@ -113,7 +113,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
   }
 
   const zones: readonly ZoneDef[] = [...world.content.zones.values()];
-  const neighbours = (zone: ZoneDef): boolean => zones.some((other: ZoneDef): boolean => world.visited.includes(other.id) && other.exits.some((exit: ZoneExit): boolean => exit.to === zone.id));
+  const neighbours = (zone: ZoneDef): boolean => zones.some((other: ZoneDef): boolean => world.visited.includes(other.id) && other.exits.some((exit: ZoneExit): boolean => exit.to === zone.id && !(exit.hiddenWhenLocked && !allHold(world, exit.requires))));
 
   const refresh = (): void => {
     const standing: boolean = onWaypoint(world);
@@ -131,7 +131,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
       node.button.classList.toggle('travel', travel);
     }
     for (const link of links) {
-      const usable: Way[] = link.ways.filter((way: Way): boolean => world.visited.includes(way.from.id));
+      const usable: Way[] = link.ways.filter((way: Way): boolean => world.visited.includes(way.from.id) && !(way.exit.hiddenWhenLocked && !allHold(world, way.exit.requires)));
       link.line.classList.toggle('shown', usable.length > 0);
       link.line.classList.toggle('locked', !usable.some((way: Way): boolean => allHold(world, way.exit.requires)));
     }

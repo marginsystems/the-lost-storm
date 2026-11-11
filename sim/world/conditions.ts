@@ -26,7 +26,7 @@ export function holds(world: World, condition: Condition): boolean {
       held = objectiveState(world, condition.quest, condition.objective) === condition.is;
       break;
   }
-  return held;
+  return held !== condition.not;
 }
 
 export function allHold(world: World, conditions: readonly Condition[]): boolean {

@@ -30,14 +30,14 @@
   font-size: 14px;
   letter-spacing: 0.1em;
   color: var(--ember);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  text-shadow: var(--legible-shadow);
 }
 
 .quest-goal {
   margin-top: 2px;
   font-size: 14px;
   color: var(--text);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  text-shadow: var(--legible-shadow);
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-smooth-ms) var(--spring-smooth), color var(--spring-smooth-ms) var(--spring-smooth);
 }
 

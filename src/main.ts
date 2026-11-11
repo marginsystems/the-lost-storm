@@ -61,6 +61,7 @@ import type { GoogleIdentity } from './google-identity.ts';
 import { createTitleAccount } from './title-account.ts';
 import type { TitleAccount } from './title-account.ts';
 import { createTitleSync } from './title-sync.ts';
+import { changesSave } from './save-events.ts';
 import type { ZoneTransition } from './transition.ts';
 import type { VoicePlayer } from './voice.ts';
 import { createZoneTransition } from './transition.ts';
@@ -71,8 +72,6 @@ const GAME = {
   soundLogLength: 300,
   millisecondsPerSecond: 1000,
 } as const;
-
-const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['type']>(['character_changed', 'level_up', 'pickup', 'surge', 'xp', 'zone_changed', 'checkpoint', 'dialogue_closed', 'quest_started', 'quest_advanced', 'quest_completed', 'waypoint_unlocked']);
 
 export interface DebugHandle {
   readonly world: World;
@@ -235,6 +234,7 @@ async function start(): Promise<void> {
   if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send };
 
   let playing: boolean = false;
+  let torchVersion: number = 0;
   let failed: boolean = false;
   let saveHeld: boolean = false;
   let hitStop: number = 0;
@@ -255,7 +255,7 @@ async function start(): Promise<void> {
     hud.handleEvents(events);
     for (const event of events) playCues(cuesForEvent(audioDef, world, event));
     hitStop = Math.max(hitStop, effects.takeHitStop());
-    if (events.some((event: WorldEvent): boolean => SAVE_EVENTS.has(event.type))) dirty = true;
+    if (changesSave(events)) dirty = true;
   };
 
   const showZone = async (events: readonly WorldEvent[]): Promise<void> => {
@@ -268,6 +268,7 @@ async function start(): Promise<void> {
     markers = createZoneMarkers(stage.scene, world.zone);
     stage.setAmbience(world.zone.ambience);
     effects.setTorches(zoneView.torches);
+    torchVersion = zoneView.lightsVersion;
     startZoneAmbience();
     camera.snap(world.player.pos.x, world.player.pos.z);
     queue.length = 0;
@@ -324,7 +325,11 @@ async function start(): Promise<void> {
     audio.update(dt);
     particles.update(dt);
     weather.update(dt);
-    zoneView.update(now / 1000);
+    zoneView.update(now / 1000, dt, world);
+    if (zoneView.lightsVersion !== torchVersion) {
+      torchVersion = zoneView.lightsVersion;
+      effects.setTorches(zoneView.torches);
+    }
     markers.update(dt, now / 1000, world);
     stage.setFlash(weather.flash);
     hud.update(dt);

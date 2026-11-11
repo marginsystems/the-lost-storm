@@ -20,7 +20,7 @@
   letter-spacing: 0.16em;
   text-indent: 0.16em;
   color: var(--text);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+  text-shadow: var(--legible-shadow);
 }
 
 .boss-title {
@@ -28,7 +28,7 @@
   font-size: 12.5px;
   font-style: italic;
   color: var(--text-dim);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  text-shadow: var(--legible-shadow);
 }
 
 .boss-track {
@@ -81,7 +81,7 @@
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, 12px);
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy), bottom var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .hud-bark.visible {
@@ -94,7 +94,7 @@
   font-size: 13.5px;
   letter-spacing: 0.12em;
   color: var(--ember);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.95);
+  text-shadow: var(--legible-shadow);
 }
 
 .bark-text {
@@ -102,9 +102,7 @@
   font-size: 19px;
   line-height: 1.4;
   color: var(--text);
-  text-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.95),
-    0 0 14px rgba(0, 0, 0, 0.85);
+  text-shadow: var(--legible-shadow);
 }
 
 .bark-text.line {

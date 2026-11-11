@@ -66,6 +66,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   clearProjectiles(world);
   for (const monster of world.monsters) world.events.push({ type: 'monster_remove', monsterId: monster.id });
   world.monsters = [];
+  world.spawnedPacks = [];
   const carried: ItemInstance[] = world.ground.flatMap((ground: GroundItem): ItemInstance[] => (ground.kept && ground.content.kind === 'item' ? [ground.content.item] : []));
   world.ground = [];
   world.surgeTimer = null;

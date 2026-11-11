@@ -37,8 +37,83 @@
         ]
       },
       {
+        "id": "maren_end",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_gate",
+            "objective": "tallier_end",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "maren_end_1",
+          "maren_end_2",
+          "maren_end_3"
+        ]
+      },
+      {
+        "id": "maren_ledger",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "north_lamp",
+            "objective": "tell",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "maren_ledger_1",
+          "maren_ledger_2",
+          "maren_ledger_3",
+          "maren_ledger_4",
+          "maren_ledger_5"
+        ]
+      },
+      {
+        "id": "maren_gate",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_gate",
+            "objective": "lampwright",
+            "is": "done"
+          },
+          {
+            "type": "objective",
+            "quest": "the_gate",
+            "objective": "welcome",
+            "is": "done",
+            "not": true
+          }
+        ],
+        "lines": [
+          "maren_gate_1",
+          "maren_gate_2"
+        ]
+      },
+      {
+        "id": "maren_after",
+        "once": false,
+        "when": [
+          {
+            "type": "quest",
+            "quest": "the_gate",
+            "is": "done"
+          }
+        ],
+        "lines": [
+          "maren_after_1",
+          "maren_after_2"
+        ]
+      },
+      {
         "id": "maren_idle",
         "once": false,
+        "when": [],
         "lines": [
           "maren_idle_1",
           "maren_idle_2"
@@ -82,10 +157,181 @@
         ]
       },
       {
+        "id": "hale_gate",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_gate",
+            "objective": "lampwright",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "hale_gate_1",
+          "hale_gate_2",
+          "hale_gate_3"
+        ]
+      },
+      {
+        "id": "hale_still",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_gate",
+            "objective": "hale_still",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "hale_still_1",
+          "hale_still_2",
+          "hale_still_3"
+        ]
+      },
+      {
+        "id": "hale_after",
+        "once": false,
+        "when": [
+          {
+            "type": "quest",
+            "quest": "the_gate",
+            "is": "done"
+          }
+        ],
+        "lines": [
+          "hale_after_1"
+        ]
+      },
+      {
+        "id": "hale_wait",
+        "once": false,
+        "when": [
+          {
+            "type": "quest",
+            "quest": "the_gate",
+            "is": "active"
+          }
+        ],
+        "lines": [
+          "hale_wait_1"
+        ]
+      },
+      {
+        "id": "hale_north",
+        "once": false,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "north_lamp",
+            "objective": "light",
+            "is": "done"
+          },
+          {
+            "type": "objective",
+            "quest": "east_lamp",
+            "objective": "light",
+            "is": "done",
+            "not": true
+          }
+        ],
+        "lines": [
+          "hale_north_1"
+        ]
+      },
+      {
+        "id": "hale_east",
+        "once": false,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "east_lamp",
+            "objective": "light",
+            "is": "done"
+          },
+          {
+            "type": "objective",
+            "quest": "north_lamp",
+            "objective": "light",
+            "is": "done",
+            "not": true
+          }
+        ],
+        "lines": [
+          "hale_east_1"
+        ]
+      },
+      {
         "id": "hale_idle",
         "once": false,
+        "when": [],
         "lines": [
           "hale_idle_1"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pell",
+    "name": "Pell",
+    "title": "Scavenger",
+    "rig": "skeleton_townsfolk",
+    "scale": 0.92,
+    "tint": "#d6c8b0",
+    "color": "#e8b866",
+    "gear": [],
+    "wear": [
+      "sackcloth_robe",
+      "tanned_gloves",
+      "rough_breeches",
+      "worn_boots"
+    ],
+    "talks": [
+      {
+        "id": "pell_first",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "east_lamp",
+            "objective": "scavenger",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "pell_first_1",
+          "pell_first_2",
+          "pell_first_3",
+          "pell_first_4",
+          "pell_first_5",
+          "pell_first_6",
+          "pell_first_7",
+          "pell_first_8"
+        ]
+      },
+      {
+        "id": "pell_done",
+        "once": false,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "east_lamp",
+            "objective": "mason",
+            "is": "done"
+          }
+        ],
+        "lines": [
+          "pell_done_1",
+          "pell_done_2"
+        ]
+      },
+      {
+        "id": "pell_idle",
+        "once": false,
+        "when": [],
+        "lines": [
+          "pell_idle_1"
         ]
       }
     ]

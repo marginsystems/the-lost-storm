@@ -25,6 +25,7 @@ const NAV = {
 function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[] {
   const list: Blocker[] = [];
   for (const placed of zone.props) {
+    if (placed.when.length > 0) continue;
     const radius: number = props.get(placed.prop)?.blockRadius ?? 0;
     if (radius > 0) list.push({ x: placed.x, z: placed.z, radius });
   }

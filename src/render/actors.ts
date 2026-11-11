@@ -12,11 +12,19 @@ export const ACTORS = {
   monsterFlash: 1,
   playerFlash: 0.85,
   defaultHeight: 2.2,
+  npcAppearRate: 3.4,
+  npcSettledWithin: 0.01,
 } as const;
 
 interface MonsterEntry {
   readonly view: ActorView;
   readonly spawnTime: number;
+}
+
+interface NpcEntry {
+  readonly view: ActorView;
+  pose: ActorPose;
+  shown: number;
 }
 
 export interface Actors {
@@ -30,6 +38,10 @@ const HIT_RED: Color = new Color(0xff2a1a);
 
 function poseOf(actor: ActorState): ActorPose {
   return { pos: actor.pos, facing: actor.facing, moving: actor.moving, busy: actor.action !== null, deadTime: actor.deadTime };
+}
+
+function npcPose(npc: NpcState): ActorPose {
+  return { pos: npc.pos, facing: npc.facing, moving: false, busy: false, deadTime: 0 };
 }
 
 function playerGear(content: Content, player: PlayerState): string[] {
@@ -52,10 +64,11 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   dress(content, playerView.rig, content.player.wear, world.player.equipped);
   scene.add(playerView.rig.root);
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
-  const npcs: Map<number, ActorView> = new Map<number, ActorView>();
+  const npcs: Map<number, NpcEntry> = new Map<number, NpcEntry>();
+  let npcZone: World['zone'] | null = null;
 
-  const npcView = (npc: NpcState): ActorView | null => {
-    const existing: ActorView | undefined = npcs.get(npc.id);
+  const npcEntry = (npc: NpcState, arriving: boolean): NpcEntry | null => {
+    const existing: NpcEntry | undefined = npcs.get(npc.id);
     if (existing !== undefined) return existing;
     const rig: LoadedRig | undefined = library.rigs.get(npc.def.rig);
     if (rig === undefined) return null;
@@ -63,8 +76,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     view.rig.setGear(npc.def.gear);
     dress(content, view.rig, npc.def.wear, null);
     scene.add(view.rig.root);
-    npcs.set(npc.id, view);
-    return view;
+    const entry: NpcEntry = { view, pose: npcPose(npc), shown: arriving ? 0 : 1 };
+    npcs.set(npc.id, entry);
+    return entry;
   };
 
   const entryFor = (monster: MonsterState): MonsterEntry | null => {
@@ -84,7 +98,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
 
   const viewOf = (actorId: number): ActorView | null => {
     if (actorId === world.player.id) return playerView;
-    return monsters.get(actorId)?.view ?? npcs.get(actorId) ?? null;
+    return monsters.get(actorId)?.view ?? npcs.get(actorId)?.view ?? null;
   };
 
   return {
@@ -100,16 +114,28 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         entry.view.setHover(monster.id === hoveredId);
         entry.view.sync(dt, poseOf(monster), { moveSpeed: monster.def.moveSpeed, rise: 1 - monster.spawnTime / entry.spawnTime, floor, turnRate: ACTOR.turnRate });
       }
+      const sameZone: boolean = npcZone === current.zone;
+      npcZone = current.zone;
+      const ease: number = 1 - Math.exp(-ACTORS.npcAppearRate * dt);
       for (const npc of current.npcs) {
-        const view: ActorView | null = npcView(npc);
-        if (view === null) continue;
-        view.setHover(npc.id === hoveredId);
-        view.sync(dt, { pos: npc.pos, facing: npc.facing, moving: false, busy: false, deadTime: 0 }, { moveSpeed: 0, rise: 1, floor, turnRate: ACTOR.npcTurnRate });
+        const entry: NpcEntry | null = npcEntry(npc, sameZone);
+        if (entry === null) continue;
+        entry.pose = npcPose(npc);
+        entry.shown += (1 - entry.shown) * ease;
+        if (1 - entry.shown < ACTORS.npcSettledWithin) entry.shown = 1;
+        entry.view.setHover(npc.id === hoveredId);
+        entry.view.sync(dt, entry.pose, { moveSpeed: 0, rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate });
       }
-      for (const [id, view] of npcs) {
+      for (const [id, entry] of npcs) {
         if (current.npcs.some((npc: NpcState): boolean => npc.id === id)) continue;
-        view.dispose();
-        npcs.delete(id);
+        entry.shown -= entry.shown * ease;
+        if (!sameZone || entry.shown < ACTORS.npcSettledWithin) {
+          entry.view.dispose();
+          npcs.delete(id);
+          continue;
+        }
+        entry.view.setHover(false);
+        entry.view.sync(dt, entry.pose, { moveSpeed: 0, rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate });
       }
     },
     handle(events: readonly WorldEvent[], current: World): void {

@@ -19,6 +19,7 @@ import type {
   ZonePack,
   ZonePoint,
   ZoneProp,
+  ZoneVoice,
   ZoneWaypoint,
 } from './types.ts';
 import { OBJECTIVE_STATES, QUEST_STATES, ZONE_KINDS } from './types.ts';
@@ -30,7 +31,7 @@ function point(value: unknown, where: string): ZonePoint {
 
 function zoneProp(value: unknown, where: string): ZoneProp {
   const source: Fields = fields(value, where);
-  return { prop: text(source, 'prop', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), y: numeric(source, 'y', where), rotationDegrees: numeric(source, 'rotationDegrees', where) };
+  return { prop: text(source, 'prop', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), y: numeric(source, 'y', where), rotationDegrees: numeric(source, 'rotationDegrees', where), when: conditions(source, 'when', where) };
 }
 
 function packMember(value: unknown, where: string): PackMember {
@@ -53,8 +54,9 @@ function surgeRules(value: unknown, where: string): SurgeRules | null {
 function condition(value: unknown, where: string): Condition {
   const source: Fields = fields(value, where);
   const type: Condition['type'] = choice(source, 'type', ['quest', 'objective'] as const, where);
-  if (type === 'quest') return { type, quest: text(source, 'quest', where), is: choice(source, 'is', QUEST_STATES, where) };
-  return { type, quest: text(source, 'quest', where), objective: text(source, 'objective', where), is: choice(source, 'is', OBJECTIVE_STATES, where) };
+  const not: boolean = source['not'] === undefined ? false : flag(source, 'not', where);
+  if (type === 'quest') return { type, quest: text(source, 'quest', where), is: choice(source, 'is', QUEST_STATES, where), not };
+  return { type, quest: text(source, 'quest', where), objective: text(source, 'objective', where), is: choice(source, 'is', OBJECTIVE_STATES, where), not };
 }
 
 function conditions(source: Fields, key: string, where: string): Condition[] {
@@ -67,6 +69,7 @@ function zoneExit(value: unknown, where: string): ZoneExit {
   return {
     requires,
     lockedHint: requires.length === 0 ? '' : text(source, 'lockedHint', where),
+    hiddenWhenLocked: source['hiddenWhenLocked'] === undefined ? false : flag(source, 'hiddenWhenLocked', where),
     id: text(source, 'id', where),
     x: numeric(source, 'x', where),
     z: numeric(source, 'z', where),
@@ -92,6 +95,13 @@ function zoneWaypoint(value: unknown, where: string): ZoneWaypoint | null {
   if (value === null) return null;
   const source: Fields = fields(value, where);
   return { x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
+}
+
+function zoneVoice(value: unknown, where: string): ZoneVoice {
+  const source: Fields = fields(value, where);
+  const lines: string[] = textList(source, 'lines', where);
+  if (lines.length === 0) throw new ContentError(`${where}.lines`, 'a voice needs at least one line');
+  return { id: text(source, 'id', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where), lines, when: conditions(source, 'when', where) };
 }
 
 function zoneAmbience(value: unknown, where: string): ZoneAmbience {
@@ -140,6 +150,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     checkpoints: [...byId(each(source['checkpoints'], `${where}.checkpoints`, zoneCheckpoint), `${where}.checkpoints`).values()],
     waypoint: zoneWaypoint(source['waypoint'], `${where}.waypoint`),
     npcs: each(source['npcs'], `${where}.npcs`, zoneNpc),
+    voices: source['voices'] === undefined ? [] : [...byId(each(source['voices'], `${where}.voices`, zoneVoice), `${where}.voices`).values()],
     ambience: zoneAmbience(source['ambience'], `${where}.ambience`),
   };
 }

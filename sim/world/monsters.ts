@@ -191,7 +191,8 @@ export function spawnPacks(world: World): void {
   const rules: SurgeRules | null = world.zone.surge;
   const extra: number = rules === null ? 0 : Math.min(rules.maxExtraMonsters, Math.floor((world.surge - 1) / Math.max(1, rules.surgesPerExtraMonster)));
   for (const pack of world.zone.packs) {
-    if (!allHold(world, pack.when)) continue;
+    if (world.spawnedPacks.includes(pack) || !allHold(world, pack.when)) continue;
+    world.spawnedPacks.push(pack);
     const packId: number = world.nextPackId;
     world.nextPackId += 1;
     pack.members.forEach((member, index: number): void => {
@@ -216,6 +217,7 @@ export function stepSurge(world: World, dt: number): void {
   if (world.surgeTimer > 0) return;
   world.surgeTimer = null;
   world.surge += 1;
+  world.spawnedPacks = [];
   spawnPacks(world);
   world.events.push({ type: 'surge', surge: world.surge });
 }

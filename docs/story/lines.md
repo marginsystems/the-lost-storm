@@ -23,7 +23,7 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 | `maren_ledger_3` | It's the commonest thing that falls in. Commoner than cartwheels. | Same conversation. |
 | `maren_ledger_4` | I told the first one. He sat down on the stone where you woke. By evening there was nothing left to count. | Same conversation. |
 | `maren_ledger_5` | So I stopped telling. Be angry later. There are lamps to light. | Same conversation. |
-| `maren_gate_1` | Both lamps. I saw. I've written it in. | Conversation, once, after both lamps are lit and before the Welcome is dead. |
+| `maren_gate_1` | Both lamps. I saw. I've written it in. | Conversation, once, after both lamps are lit and before the Welcome is dead. She comes to the Gate to say it, and waits there until the hero has reached the hall in the Still; after that she is back at the Fallstone. |
 | `maren_gate_2` | Nine went looking for that door. I never got to finish an entry. I'd like to finish yours. | Same conversation. |
 | `maren_end_1` | You came back. Nobody comes back. | Conversation, once, after the Welcome is dead. |
 | `maren_end_2` | Then I write this one differently. Not "fell in". "Went. Chose. Came back." | Same conversation. |
@@ -41,7 +41,8 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 | `hale_first_4` | The Gate only opens when both great lamps burn. North Lamp, East Lamp. Both dark, and my knees won't do the roads. | Same conversation. |
 | `hale_first_5` | Something out there took the wicks. Fetch them back and light the lamps. The Gate will know you. | Same conversation. |
 | `hale_idle_1` | Forty years I've trimmed these lamps. Never once seen who I'm trimming them for. Doesn't mean they're not looking. | Conversation, any talk while no lamp is lit. |
-| `hale_one_1` | One's burning! I saw it catch from here. Go on, go on. The other. | Conversation, any talk while exactly one lamp is lit. |
+| `hale_north_1` | The North Lamp's burning! I saw it catch from here. Go on, go on. The other. | Conversation, any talk while only the North Lamp is lit. |
+| `hale_east_1` | The East Lamp's burning! I saw it catch from here. Go on. The north one, now. | Conversation, any talk while only the East Lamp is lit. |
 | `hale_gate_1` | Both burning. Felt like being young again. Or like remembering it, anyhow. | Conversation, once, when both lamps are lit. |
 | `hale_gate_2` | The Gate's open. Go and ask about your door. | Same conversation. |
 | `hale_gate_3` | And ask one thing for me. Ask if I've kept them well. | Same conversation. |

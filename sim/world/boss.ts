@@ -34,10 +34,10 @@ export function pickBossSkill(world: World, monster: MonsterState, boss: BossDef
   return world.content.skills.get(usable.at(-1)?.skill ?? '') ?? null;
 }
 
-function bark(world: World, speaker: string, lineIds: readonly string[]): void {
+export function bark(world: World, lineIds: readonly string[]): void {
   for (const lineId of lineIds) {
     const line: LineDef | undefined = world.content.lines.get(lineId);
-    if (line !== undefined) world.events.push({ type: 'bark', speaker, line });
+    if (line !== undefined) world.events.push({ type: 'bark', speaker: line.speaker, line });
   }
 }
 
@@ -59,7 +59,7 @@ function bossOf(world: World, monsterId: number): MonsterState | null {
 function onAggro(world: World, monsterId: number): void {
   const monster: MonsterState | null = bossOf(world, monsterId);
   const boss: BossDef | null = monster?.def.boss ?? null;
-  if (monster !== null && boss !== null) bark(world, monster.def.id, boss.barks.aggro);
+  if (monster !== null && boss !== null) bark(world, boss.barks.aggro);
 }
 
 function onHurt(world: World, monsterId: number): void {
@@ -70,7 +70,7 @@ function onHurt(world: World, monsterId: number): void {
   if (phase <= monster.phase) return;
   for (let entered: number = monster.phase + 1; entered <= phase; entered += 1) {
     world.events.push({ type: 'boss_phase', monsterId: monster.id, phase: entered });
-    bark(world, monster.def.id, boss.phases[entered]?.barks ?? []);
+    bark(world, boss.phases[entered]?.barks ?? []);
   }
   monster.phase = phase;
   monster.nextSkill = null;
@@ -81,7 +81,7 @@ function onDeath(world: World, monsterId: number): void {
   const boss: BossDef | null = monster?.def.boss ?? null;
   if (monster === null || boss === null) return;
   reward(world, monster, boss);
-  bark(world, monster.def.id, boss.barks.death);
+  bark(world, boss.barks.death);
 }
 
 export function stepBosses(world: World): void {

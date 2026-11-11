@@ -2,7 +2,12 @@
   "start": "stillhold",
   "scaling": { "lifePerLevel": 0.22, "damagePerLevel": 0.12, "xpPerLevel": 0.15 },
   "map": [
+    { "zone": "the_still", "x": -1, "y": 0 },
     { "zone": "stillhold", "x": 0, "y": 0 },
+    { "zone": "the_spill", "x": 1, "y": 0 },
+    { "zone": "the_coursework", "x": 2, "y": 0 },
+    { "zone": "duskway", "x": 0, "y": -1 },
+    { "zone": "dusks_end", "x": 0, "y": -2 },
     { "zone": "drowned_bastion", "x": 0, "y": 1 }
   ]
 }

@@ -4,6 +4,7 @@ import { finishQuests, must } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, NpcDef, TalkDef } from '../content/types.ts';
 import { distance } from '../math.ts';
+import { allHold } from './conditions.ts';
 import { createWorld } from './create.ts';
 import { DIALOGUE, hasNews, nextTalk } from './dialogue.ts';
 import { stepWorld } from './step.ts';
@@ -55,7 +56,9 @@ function finish(world: World): WorldEvent[] {
 
 void test('the town has its people standing where the zone places them, and they are not monsters', (): void => {
   const world: World = fresh();
-  assert.deepEqual(world.npcs.map((npc: NpcState): string => npc.def.id).toSorted(), world.zone.npcs.map((placed): string => placed.npc).toSorted());
+  const standing: string[] = world.npcs.map((npc: NpcState): string => `${npc.def.id} ${npc.pos.x},${npc.pos.z}`).toSorted();
+  assert.deepEqual(standing, world.zone.npcs.filter((placed): boolean => allHold(world, placed.when)).map((placed): string => `${placed.npc} ${placed.x},${placed.z}`).toSorted());
+  assert.equal(new Set<string>(world.npcs.map((npc: NpcState): string => npc.def.id)).size, world.npcs.length);
   assert.equal(world.monsters.length, 0);
   assert.equal(world.dialogue, null);
   assert.deepEqual(world.heard, []);
@@ -107,17 +110,18 @@ void test('advance steps through every line in order, then closes the conversati
 void test('a finished once conversation is not offered again; the repeatable one is, every time', (): void => {
   const world: World = fresh();
   const def: NpcDef = npcOf(world, 'maren').def;
-  const [first, later] = def.talks;
+  const first: TalkDef = must(def.talks[0], 'first talk');
+  const later: TalkDef = must(def.talks.find((talk: TalkDef): boolean => !talk.once && talk.when.length === 0), 'repeatable talk');
   talkTo(world, 'maren');
   finish(world);
   assert.equal(hasNews(world, def), false);
-  assert.equal(nextTalk(world, def)?.id, must(later, 'later talk').id);
+  assert.equal(nextTalk(world, def)?.id, later.id);
   for (let round: number = 0; round < 2; round += 1) {
     talkTo(world, 'maren');
-    assert.equal(dialogueOf(world).talk.id, must(later, 'later talk').id);
+    assert.equal(dialogueOf(world).talk.id, later.id);
     finish(world);
   }
-  assert.deepEqual(world.heard, [must(first, 'first talk').id]);
+  assert.deepEqual(world.heard, [first.id]);
 });
 
 void test('walking away half-way closes the conversation without using it up', (): void => {

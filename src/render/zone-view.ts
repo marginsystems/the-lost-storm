@@ -1,8 +1,10 @@
 import type { Object3D, Scene } from 'three';
 import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { Content, PropDef, ZoneDef } from '../../sim/content/types.ts';
+import type { Content, PropDef, PropLight, ZoneDef, ZoneProp } from '../../sim/content/types.ts';
 import { floorCells, wallCorners, wallEdges, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
+import { allHold } from '../../sim/world/conditions.ts';
+import type { World } from '../../sim/world/types.ts';
 import { loadModel } from './character-loader.ts';
 
 export const ZONE_VIEW = {
@@ -12,6 +14,8 @@ export const ZONE_VIEW = {
   flickerDepth: 0.22,
   lightDecay: 1.7,
   torchReach: 0.45,
+  appearRate: 2.4,
+  settledWithin: 0.004,
 } as const;
 
 interface Placement {
@@ -25,11 +29,24 @@ interface Torch {
   readonly phase: number;
 }
 
+interface Conditional {
+  readonly placed: ZoneProp;
+  readonly def: PropDef;
+  readonly light: PointLight | null;
+  readonly point: Vector3 | null;
+  readonly phase: number;
+  readonly materials: MeshStandardMaterial[];
+  object: Object3D | null;
+  shown: number;
+  on: boolean | null;
+}
+
 export interface ZoneView {
   readonly zone: ZoneDef;
   readonly group: Group;
   readonly torches: readonly Vector3[];
-  update(time: number): void;
+  readonly lightsVersion: number;
+  update(time: number, dt: number, world: World): void;
   dispose(): void;
 }
 
@@ -63,12 +80,24 @@ export async function preloadZones(loader: GLTFLoader, content: Content): Promis
   await Promise.allSettled([...models].map((model: string): Promise<GLTF> => loadModel(loader, model)));
 }
 
+function lightPoint(light: PropLight, x: number, y: number, z: number, yaw: number): Vector3 {
+  return new Vector3(x + Math.sin(yaw) * ZONE_VIEW.torchReach, y + light.height, z + Math.cos(yaw) * ZONE_VIEW.torchReach);
+}
+
+function standardMaterials(value: unknown): MeshStandardMaterial[] {
+  if (value instanceof MeshStandardMaterial) return [value];
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry: unknown): entry is MeshStandardMaterial => entry instanceof MeshStandardMaterial);
+}
+
 export async function buildZoneView(loader: GLTFLoader, content: Content, zone: ZoneDef, scene: Scene): Promise<ZoneView> {
   const placements: Map<string, Placement[]> = new Map<string, Placement[]>();
   const group: Group = new Group();
   const torches: Torch[] = [];
   const torchPoints: Vector3[] = [];
   const instances: InstancedMesh[] = [];
+  const conditionals: Conditional[] = [];
+  let lightsVersion: number = 0;
 
   const place = (propId: string, x: number, y: number, z: number, yaw: number, castShadow: boolean): void => {
     const def: PropDef | undefined = content.props.get(propId);
@@ -77,9 +106,8 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     list.push({ matrix: transform(x, y, z, yaw, def.scale), castShadow });
     placements.set(propId, list);
     if (def.light === null) return;
-    const forward: Vector3 = new Vector3(Math.sin(yaw), 0, Math.cos(yaw)).multiplyScalar(ZONE_VIEW.torchReach);
     const light: PointLight = new PointLight(new Color(def.light.color), def.light.intensity, def.light.distance, ZONE_VIEW.lightDecay);
-    light.position.set(x + forward.x, y + def.light.height, z + forward.z);
+    light.position.copy(lightPoint(def.light, x, y, z, yaw));
     group.add(light);
     torches.push({ light, intensity: def.light.intensity, phase: hash(x, z, 1) * 40 });
     torchPoints.push(light.position.clone());
@@ -96,7 +124,20 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     if (variant !== undefined) place(variant, edge.x, 0, edge.z, alongZ ? Math.PI / 2 : 0, true);
   }
   for (const corner of wallCorners(zone)) place(zone.walls.corner, corner.x, 0, corner.z, 0, true);
-  for (const prop of zone.props) place(prop.prop, prop.x, prop.y, prop.z, prop.rotationDegrees * DEGREES, true);
+  for (const prop of zone.props) {
+    if (prop.when.length === 0) {
+      place(prop.prop, prop.x, prop.y, prop.z, prop.rotationDegrees * DEGREES, true);
+      continue;
+    }
+    const def: PropDef | undefined = content.props.get(prop.prop);
+    if (def === undefined) continue;
+    const light: PointLight | null = def.light === null ? null : new PointLight(new Color(def.light.color), 0, def.light.distance, ZONE_VIEW.lightDecay);
+    if (light !== null && def.light !== null) {
+      light.position.copy(lightPoint(def.light, prop.x, prop.y, prop.z, prop.rotationDegrees * DEGREES));
+      group.add(light);
+    }
+    conditionals.push({ placed: prop, def, light, point: light === null ? null : light.position.clone(), phase: hash(prop.x, prop.z, 1) * 40, materials: [], object: null, shown: 0, on: null });
+  }
 
   const loaded: [string, GLTF][] = await Promise.all(
     [...placements.keys()].map(async (propId: string): Promise<[string, GLTF]> => {
@@ -126,6 +167,41 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     });
   }
 
+  await Promise.all(
+    conditionals.map(async (conditional: Conditional): Promise<void> => {
+      const gltf: GLTF = await loadModel(loader, conditional.def.model);
+      const object: Object3D = gltf.scene.clone(true);
+      object.position.set(conditional.placed.x, conditional.placed.y, conditional.placed.z);
+      object.rotation.y = conditional.placed.rotationDegrees * DEGREES;
+      object.scale.setScalar(conditional.def.scale);
+      object.traverse((child: Object3D): void => {
+        if (!(child instanceof Mesh)) return;
+        child.castShadow = true;
+        child.receiveShadow = true;
+        const shared: unknown = child.material;
+        const own: MeshStandardMaterial[] = standardMaterials(shared).map((material: MeshStandardMaterial): MeshStandardMaterial => material.clone());
+        const first: MeshStandardMaterial | undefined = own[0];
+        if (Array.isArray(shared)) {
+          if (own.length !== shared.length) return;
+          child.material = own;
+        } else if (first !== undefined) {
+          child.material = first;
+        } else {
+          return;
+        }
+        conditional.materials.push(...own);
+      });
+      object.visible = false;
+      group.add(object);
+      conditional.object = object;
+    }),
+  );
+
+  const flicker = (time: number, phase: number): number => {
+    const wobble: number = Math.sin(time * ZONE_VIEW.flickerSpeed + phase) * 0.6 + Math.sin(time * ZONE_VIEW.flickerSpeed * 2.7 + phase * 1.7) * 0.4;
+    return 1 - ZONE_VIEW.flickerDepth * 0.5 + wobble * ZONE_VIEW.flickerDepth * 0.5;
+  };
+
   const width: number = zoneColumns(zone) * zone.cellSize;
   const depth: number = zoneRows(zone) * zone.cellSize;
   const abyss: Mesh = new Mesh(new PlaneGeometry(width + ZONE_VIEW.abyssMargin, depth + ZONE_VIEW.abyssMargin), new MeshStandardMaterial({ color: new Color(zone.ambience.abyss), roughness: 1, metalness: 0 }));
@@ -138,18 +214,42 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   return {
     zone,
     group,
-    torches: torchPoints,
+    get torches(): readonly Vector3[] {
+      return [...torchPoints, ...conditionals.flatMap((conditional: Conditional): Vector3[] => (conditional.on === true && conditional.point !== null ? [conditional.point] : []))];
+    },
+    get lightsVersion(): number {
+      return lightsVersion;
+    },
     dispose(): void {
       group.removeFromParent();
       for (const instanced of instances) instanced.dispose();
       for (const torch of torches) torch.light.dispose();
+      for (const conditional of conditionals) {
+        conditional.light?.dispose();
+        for (const material of conditional.materials) material.dispose();
+      }
       abyss.geometry.dispose();
       if (abyss.material instanceof MeshStandardMaterial) abyss.material.dispose();
     },
-    update(time: number): void {
-      for (const torch of torches) {
-        const wobble: number = Math.sin(time * ZONE_VIEW.flickerSpeed + torch.phase) * 0.6 + Math.sin(time * ZONE_VIEW.flickerSpeed * 2.7 + torch.phase * 1.7) * 0.4;
-        torch.light.intensity = torch.intensity * (1 - ZONE_VIEW.flickerDepth * 0.5 + wobble * ZONE_VIEW.flickerDepth * 0.5);
+    update(time: number, dt: number, world: World): void {
+      for (const torch of torches) torch.light.intensity = torch.intensity * flicker(time, torch.phase);
+      for (const conditional of conditionals) {
+        const wanted: boolean = allHold(world, conditional.placed.when);
+        if (conditional.on === null) conditional.shown = wanted ? 1 : 0;
+        if (wanted !== conditional.on) {
+          conditional.on = wanted;
+          lightsVersion += 1;
+        }
+        const target: number = wanted ? 1 : 0;
+        conditional.shown += (target - conditional.shown) * (1 - Math.exp(-ZONE_VIEW.appearRate * dt));
+        if (Math.abs(target - conditional.shown) < ZONE_VIEW.settledWithin) conditional.shown = target;
+        const solid: boolean = conditional.shown === 1;
+        for (const material of conditional.materials) {
+          material.transparent = !solid;
+          material.opacity = conditional.shown;
+        }
+        if (conditional.object !== null) conditional.object.visible = conditional.shown > 0;
+        if (conditional.light !== null && conditional.def.light !== null) conditional.light.intensity = conditional.def.light.intensity * conditional.shown * flicker(time, conditional.phase);
       }
     },
   };

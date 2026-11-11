@@ -3,11 +3,11 @@ import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { byId, choice, choiceList, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   AffixDef,
+  AnimationKey,
   AttachmentDef,
   BossDef,
   BossPhase,
   BossSkill,
-  AnimationKey,
   Condition,
   Content,
   Delivery,
@@ -17,6 +17,7 @@ import type {
   MapPlace,
   MonsterBehaviour,
   MonsterDef,
+  NpcDef,
   ObjectiveDef,
   PlayerDef,
   PropDef,
@@ -466,7 +467,16 @@ export function contentProblems(content: Content): string[] {
     const at: string = `zone ${zoneDef.id}`;
     for (const models of Object.values(zoneDef.floors)) for (const model of models) need(content.props.has(model), `${at} floor uses unknown prop ${model}`);
     for (const model of [...zoneDef.walls.tall, zoneDef.walls.low, zoneDef.walls.corner]) need(content.props.has(model), `${at} wall uses unknown prop ${model}`);
-    for (const placed of zoneDef.props) need(content.props.has(placed.prop), `${at} places unknown prop ${placed.prop}`);
+    for (const placed of zoneDef.props) {
+      const def: PropDef | undefined = content.props.get(placed.prop);
+      need(def !== undefined, `${at} places unknown prop ${placed.prop}`);
+      known(`${at} prop ${placed.prop}`, placed.when);
+      if (def !== undefined && placed.when.length > 0) need(def.blockRadius === 0, `${at} places prop ${placed.prop} with a condition, but it blocks the way; a prop that comes and goes cannot block`);
+    }
+    for (const voice of zoneDef.voices) {
+      known(`${at} voice ${voice.id}`, voice.when);
+      for (const lineId of voice.lines) need(content.lines.has(lineId), `${at} voice ${voice.id} uses unknown line ${lineId}`);
+    }
     for (const packDef of zoneDef.packs) {
       known(`${at} pack`, packDef.when);
       for (const member of packDef.members) need(content.monsters.has(member.monster), `${at} pack uses unknown monster ${member.monster}`);
@@ -497,6 +507,16 @@ export function contentProblems(content: Content): string[] {
         need(spoken !== undefined, `conversation ${entry.id} uses unknown line ${lineId}`);
         if (spoken !== undefined) need(spoken.speaker === def.id, `conversation ${entry.id} of ${def.id} uses line ${lineId}, which is spoken by ${spoken.speaker}`);
       }
+    }
+  }
+  const talkIds: Set<string> = new Set<string>([...content.npcs.values()].flatMap((def: NpcDef): string[] => def.talks.map((entry: TalkDef): string => entry.id)));
+  const voiceZones: Map<string, string> = new Map<string, string>();
+  for (const zoneDef of content.zones.values()) {
+    for (const voice of zoneDef.voices) {
+      const first: string | undefined = voiceZones.get(voice.id);
+      need(!talkIds.has(voice.id), `zone ${zoneDef.id} voice ${voice.id} shares its id with a conversation; what the hero has heard is kept by id`);
+      need(first === undefined, `zone ${zoneDef.id} voice ${voice.id} shares its id with a voice in zone ${first ?? ''}; what the hero has heard is kept by id`);
+      voiceZones.set(voice.id, zoneDef.id);
     }
   }
   for (const spoken of content.lines.values()) need(content.npcs.has(spoken.speaker) || content.monsters.has(spoken.speaker), `line ${spoken.id} has unknown speaker ${spoken.speaker}`);

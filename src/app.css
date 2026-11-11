@@ -512,6 +512,13 @@ body {
   }
 }
 
+@keyframes label-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.7);
+  }
+}
+
 @keyframes loot-out {
   from {
     opacity: 1;
@@ -543,7 +550,7 @@ body {
   font-size: 14px;
   letter-spacing: 0.06em;
   white-space: nowrap;
-  animation: loot-in var(--spring-bouncy-ms) var(--spring-bouncy) both;
+  animation: label-in var(--spring-bouncy-ms) var(--spring-bouncy) backwards;
   transition:
     background-color var(--spring-snappy-ms) var(--spring-snappy),
     opacity var(--spring-smooth-ms) var(--spring-smooth),
@@ -556,6 +563,14 @@ body {
 
 .exit-label.locked span {
   opacity: 0.5;
+}
+
+.exit-label.secret {
+  pointer-events: none;
+}
+
+.exit-label.secret span {
+  opacity: 0;
 }
 
 .exit-label:hover span,
@@ -582,10 +597,19 @@ body {
   border-radius: 4px;
   background: rgba(8, 10, 16, 0.62);
   white-space: nowrap;
-  animation: loot-in var(--spring-bouncy-ms) var(--spring-bouncy) both;
+  animation: label-in var(--spring-bouncy-ms) var(--spring-bouncy) backwards;
   transition:
     background-color var(--spring-snappy-ms) var(--spring-snappy),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
     scale var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.npc-label.leaving {
+  pointer-events: none;
+}
+
+.npc-label.leaving span {
+  opacity: 0;
 }
 
 .npc-label b {

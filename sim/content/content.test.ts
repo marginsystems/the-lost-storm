@@ -1,20 +1,25 @@
 import assert from 'node:assert/strict';
 import { readdirSync } from 'node:fs';
 import { test } from 'node:test';
-import { must } from '../../test/support.ts';
+import { must, zoneOf } from '../../test/support.ts';
 import type { Vec2 } from '../math.ts';
 import { buildNavGrid, isWalkable } from '../nav/grid.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { loadContent } from './content.ts';
 import { contentProblems } from './parse.ts';
+import { allHold } from '../world/conditions.ts';
 import { createWorld } from '../world/create.ts';
 import { nextTalk } from '../world/dialogue.ts';
-import type { World } from '../world/types.ts';
-import type { Content, ItemBaseDef, NpcDef, QuestDef, SkillTreeNodeDef, TalkDef, ZoneDef } from './types.ts';
+import { stepWorld } from '../world/step.ts';
+import type { World, WorldEvent } from '../world/types.ts';
+import { enterZone } from '../world/zones.ts';
+import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, QuestDef, SkillTreeNodeDef, TalkDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
 import { ANIMATION_KEYS } from './types.ts';
 
 const content: Content = loadContent();
+
+const SAFE = { seeds: [1, 2, 3], seconds: 1.2, dt: 1 / 60 } as const;
 
 void test('the shipped data loads and has no dangling references', (): void => {
   assert.deepEqual(contentProblems(content), []);
@@ -130,7 +135,7 @@ void test('towns are safe and wild zones have something to fight', (): void => {
   }
 });
 
-void test('every line has a known speaker, is spoken in exactly one conversation or boss bark of that speaker, and says something', (): void => {
+void test('every line has a known speaker, is spoken in exactly one conversation, boss bark or place, and says something', (): void => {
   const used: Map<string, string> = new Map<string, string>();
   for (const npc of content.npcs.values()) {
     for (const talk of npc.talks) {
@@ -149,6 +154,15 @@ void test('every line has a known speaker, is spoken in exactly one conversation
       assert.equal(line.speaker, monster.id, `${lineId} speaker`);
       assert.equal(used.get(lineId), undefined, `${lineId} is used twice`);
       used.set(lineId, monster.id);
+    }
+  }
+  for (const zone of content.zones.values()) {
+    for (const voice of zone.voices) {
+      for (const lineId of voice.lines) {
+        must(content.lines.get(lineId), `line ${lineId}`);
+        assert.equal(used.get(lineId), undefined, `${lineId} is used twice`);
+        used.set(lineId, voice.id);
+      }
     }
   }
   for (const line of content.lines.values()) {
@@ -206,4 +220,101 @@ void test('every zone has a place on the world map and no two share one', (): vo
   const places: string[] = content.world.map.map((place): string => `${place.x},${place.y}`);
   assert.equal(new Set<string>(places).size, places.length);
   assert.deepEqual(content.world.map.map((place): string => place.zone).toSorted(), [...content.zones.keys()].toSorted());
+});
+
+function progressAt(quest: QuestDef, index: number): Record<string, number> {
+  const before: Set<string> = new Set<string>();
+  const queue: string[] = [...quest.requires];
+  while (queue.length > 0) {
+    const id: string = must(queue.pop(), 'queued quest');
+    if (before.has(id)) continue;
+    before.add(id);
+    queue.push(...must(content.quests.get(id), `quest ${id}`).requires);
+  }
+  const progress: Record<string, number> = {};
+  for (const other of content.quests.values()) {
+    if (before.has(other.id)) progress[other.id] = other.objectives.length;
+    else if (other.id === quest.id) progress[other.id] = index;
+    else if (other.requires.every((required: string): boolean => before.has(required))) progress[other.id] = 0;
+  }
+  return progress;
+}
+
+function worldAt(zone: ZoneDef, seed: number, progress: Record<string, number> | null): World {
+  const world: World = createWorld(content, { seed, save: null });
+  if (progress !== null) world.quests = { ...progress };
+  enterZone(world, zone, { type: 'start' });
+  world.events = [];
+  return world;
+}
+
+function openZones(world: World): Set<string> {
+  const reached: Set<string> = new Set<string>([content.world.start]);
+  const queue: string[] = [content.world.start];
+  while (queue.length > 0) {
+    const zone: ZoneDef = zoneOf(content, must(queue.pop(), 'queued zone'));
+    for (const exit of zone.exits) {
+      if (reached.has(exit.to) || !allHold(world, exit.requires)) continue;
+      reached.add(exit.to);
+      queue.push(exit.to);
+    }
+  }
+  return reached;
+}
+
+function placesOf(world: World, objective: ObjectiveDef): string[] {
+  if (objective.type === 'reach') return [objective.zone];
+  const zones: ZoneDef[] = [...content.zones.values()];
+  if (objective.type === 'talk') {
+    const npc: string = objective.npc;
+    return zones.filter((zone: ZoneDef): boolean => zone.npcs.some((placed: ZoneNpc): boolean => placed.npc === npc && allHold(world, placed.when))).map((zone: ZoneDef): string => zone.id);
+  }
+  const monster: string = objective.monster;
+  return zones.filter((zone: ZoneDef): boolean => zone.packs.some((pack: ZonePack): boolean => allHold(world, pack.when) && pack.members.some((member): boolean => member.monster === monster))).map((zone: ZoneDef): string => zone.id);
+}
+
+void test('every objective, taken in quest order, lies in a zone the exits already let the hero into', (): void => {
+  for (const quest of content.quests.values()) {
+    quest.objectives.forEach((objective: ObjectiveDef, index: number): void => {
+      const world: World = createWorld(content, { seed: 1, save: null });
+      world.quests = progressAt(quest, index);
+      const open: Set<string> = openZones(world);
+      const places: string[] = placesOf(world, objective);
+      assert.ok(places.some((zone: string): boolean => open.has(zone)), `${quest.id}.${objective.id} is in [${places.join(', ')}] but only [${[...open].join(', ')}] can be entered`);
+    });
+  }
+});
+
+function noticed(world: World, at: Vec2): boolean {
+  world.player.pos = { x: at.x, z: at.z };
+  let woke: boolean = false;
+  for (let elapsed: number = 0; elapsed < SAFE.seconds; elapsed += SAFE.dt) {
+    if (stepWorld(world, [], SAFE.dt).some((event: WorldEvent): boolean => event.type === 'aggro')) woke = true;
+  }
+  return woke;
+}
+
+void test('no pack, and no boss while its fight is on, notices the hero at a zone start, an arrival point, a checkpoint or a waypoint', (): void => {
+  for (const zone of content.zones.values()) {
+    const states: (Record<string, number> | null)[] = [null];
+    for (const quest of content.quests.values()) {
+      quest.objectives.forEach((_objective: ObjectiveDef, index: number): void => {
+        const probe: World = createWorld(content, { seed: 1, save: null });
+        probe.quests = progressAt(quest, index);
+        if (zone.packs.some((pack: ZonePack): boolean => pack.when.length > 0 && allHold(probe, pack.when))) states.push(probe.quests);
+      });
+    }
+    for (const progress of states) {
+      const probe: World = worldAt(zone, 1, progress);
+      const safe: [string, Vec2][] = [
+        ['start', zone.playerStart],
+        ...zone.exits.filter((exit: ZoneExit): boolean => allHold(probe, exit.requires)).map((exit: ZoneExit): [string, Vec2] => [`arrival ${exit.id}`, exit.arrival]),
+        ...zone.checkpoints.map((checkpoint): [string, Vec2] => [`checkpoint ${checkpoint.id}`, checkpoint]),
+      ];
+      if (zone.waypoint !== null) safe.push(['waypoint', zone.waypoint]);
+      for (const [label, point] of safe) {
+        for (const seed of SAFE.seeds) assert.equal(noticed(worldAt(zone, seed, progress), point), false, `${zone.id} ${label}, seed ${seed}, quests ${JSON.stringify(progress)}`);
+      }
+    }
+  }
 });

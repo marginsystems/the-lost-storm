@@ -126,7 +126,9 @@ function readVisited(content: Content, value: unknown, zone: string): string[] {
 
 function readHeard(content: Content, value: unknown): string[] {
   const list: readonly unknown[] = Array.isArray(value) ? value : [];
-  const known: Set<string> = new Set<string>([...content.npcs.values()].flatMap((npc): string[] => npc.talks.map((talk): string => talk.id)));
+  const talks: string[] = [...content.npcs.values()].flatMap((npc): string[] => npc.talks.map((talk): string => talk.id));
+  const voices: string[] = [...content.zones.values()].flatMap((zone): string[] => zone.voices.map((voice): string => voice.id));
+  const known: Set<string> = new Set<string>([...talks, ...voices]);
   return list.filter((id: unknown): id is string => typeof id === 'string' && known.has(id));
 }
 

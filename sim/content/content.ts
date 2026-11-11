@@ -12,13 +12,18 @@ import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
 import world from '../../data/world.json' with { type: 'json' };
 import drownedBastion from '../../data/zones/drowned_bastion.json' with { type: 'json' };
+import dusksEnd from '../../data/zones/dusks_end.json' with { type: 'json' };
+import duskway from '../../data/zones/duskway.json' with { type: 'json' };
 import stillhold from '../../data/zones/stillhold.json' with { type: 'json' };
+import theCoursework from '../../data/zones/the_coursework.json' with { type: 'json' };
+import theSpill from '../../data/zones/the_spill.json' with { type: 'json' };
+import theStill from '../../data/zones/the_still.json' with { type: 'json' };
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, zones: [stillhold, drownedBastion], world, npcs, lines, quests, player };
+export const RAW_CONTENT: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, zones: [stillhold, duskway, dusksEnd, theSpill, theCoursework, theStill, drownedBastion], world, npcs, lines, quests, player };
 
 export function loadContent(): Content {
   const content: Content = parseContent(RAW_CONTENT);

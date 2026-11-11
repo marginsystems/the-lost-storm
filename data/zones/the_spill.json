@@ -1,0 +1,72 @@
+{
+  "id": "the_spill",
+  "name": "The Spill",
+  "kind": "wild",
+  "level": 2,
+  "cellSize": 4,
+  "floorHeight": 0.09,
+  "tiles": [
+    "   ....    ...  ",
+    " .......  ..... ",
+    "................",
+    "................",
+    " .............. ",
+    "  ....  ....... ",
+    "   ..    .....  ",
+    "          ...   "
+  ],
+  "floors": {
+    ".": ["floor_dirt_large", "floor_dirt_large_rocky", "floor_tile_large_rocks", "floor_dirt_large"]
+  },
+  "walls": {"tall": ["wall_broken", "wall_cracked", "wall_broken", "wall"], "low": "barrier", "corner": "pillar", "halfThickness": 0.5},
+  "playerStart": {"x": 6.6, "z": 12},
+  "props": [
+    {"prop": "stairs", "x": 22.5, "z": 2.2, "y": 0, "rotationDegrees": 0},
+    {"prop": "trunk_large_A", "x": 10.6, "z": 3.4, "y": 0, "rotationDegrees": 20},
+    {"prop": "box_large", "x": 17.4, "z": 3, "y": 0, "rotationDegrees": -15},
+    {"prop": "keg", "x": 8.4, "z": 6.6, "y": 0, "rotationDegrees": 60},
+    {"prop": "candle_triple", "x": 12.6, "z": 4.6, "y": 0, "rotationDegrees": 0},
+    {"prop": "chair", "x": 15.4, "z": 6.4, "y": 0, "rotationDegrees": 200},
+    {"prop": "wall_doorway", "x": 26, "z": 21, "y": 0, "rotationDegrees": 28},
+    {"prop": "wall_doorway", "x": 50, "z": 5.6, "y": 0, "rotationDegrees": -40},
+    {"prop": "table_long_broken", "x": 34, "z": 6, "y": 0, "rotationDegrees": 70},
+    {"prop": "rubble_large", "x": 38.4, "z": 19.6, "y": 0, "rotationDegrees": 0},
+    {"prop": "rubble_half", "x": 21.6, "z": 14.4, "y": 0, "rotationDegrees": 30},
+    {"prop": "rubble_half", "x": 55.6, "z": 16.4, "y": 0, "rotationDegrees": -60},
+    {"prop": "pillar", "x": 30, "z": 16.5, "y": 0, "rotationDegrees": 0},
+    {"prop": "column", "x": 36.6, "z": 10.4, "y": 0, "rotationDegrees": 0},
+    {"prop": "sword_shield_broken", "x": 44.6, "z": 17.6, "y": 0, "rotationDegrees": 80},
+    {"prop": "stairs", "x": 52.4, "z": 24.6, "y": 0, "rotationDegrees": 200},
+    {"prop": "box_stacked", "x": 9.6, "z": 21.4, "y": 0, "rotationDegrees": 12},
+    {"prop": "barrel_large", "x": 20.4, "z": 22.6, "y": 0, "rotationDegrees": 0}
+  ],
+  "packs": [
+    {"x": 46, "z": 5, "members": [{"monster": "misbuilt", "count": 3}, {"monster": "hodman", "count": 2}]},
+    {"x": 44, "z": 13.5, "members": [{"monster": "misbuilt", "count": 4}, {"monster": "hodman", "count": 1}]},
+    {"x": 41, "z": 25, "members": [{"monster": "misbuilt", "count": 3}, {"monster": "hodman", "count": 3}]},
+    {"x": 14, "z": 23.5, "members": [{"monster": "misbuilt", "count": 3}, {"monster": "hodman", "count": 2}]}
+  ],
+  "surge": null,
+  "exits": [
+    {"id": "west", "x": 2.4, "z": 12, "radius": 1.6, "to": "stillhold", "toExit": "east_gate", "arrival": {"x": 6.6, "z": 12}},
+    {"id": "east", "x": 61.6, "z": 12, "radius": 1.6, "to": "the_coursework", "toExit": "west", "arrival": {"x": 57.4, "z": 12}}
+  ],
+  "checkpoints": [
+    {"id": "middle", "x": 30, "z": 11, "radius": 2.2}
+  ],
+  "waypoint": null,
+  "npcs": [
+    {"npc": "pell", "x": 14, "z": 6.4, "facingDegrees": 0}
+  ],
+  "ambience": {
+    "background": "#140d08",
+    "abyss": "#0b0705",
+    "fogNear": 34,
+    "fogFar": 84,
+    "skyColor": "#b08a6a",
+    "groundColor": "#2a1a10",
+    "skyIntensity": 0.72,
+    "keyColor": "#ffb37a",
+    "keyIntensity": 1.3
+  }
+}

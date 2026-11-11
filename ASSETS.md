@@ -13,6 +13,7 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 | Modular Character Outfits - Fantasy (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/modularcharacteroutfitsfantasy.html | CC0 1.0 | [licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt](licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt) |
 | MakeHuman community garments (suits02, gloves01) | Donitz, Rehman Polanski, MRT (makehumancommunity.org) | http://www.makehumancommunity.org/clothes.html | CC0 1.0 | [licenses/MakeHuman-community-assets.txt](licenses/MakeHuman-community-assets.txt) |
 | KayKit Dungeon Remastered 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0 | CC0 1.0 | [licenses/KayKit-Dungeon-Remastered-LICENSE.txt](licenses/KayKit-Dungeon-Remastered-LICENSE.txt) |
+| KayKit Halloween Bits 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0 | CC0 1.0 | [licenses/KayKit-Halloween-Bits-LICENSE.txt](licenses/KayKit-Halloween-Bits-LICENSE.txt) |
 
 ## Credit required by CC BY 4.0
 
@@ -122,6 +123,25 @@ Unmodified downloads, renamed to lower case.
 | `public/models/arena/wall_endcap.glb` | `Assets/gltf/wall_endcap.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
 | `public/models/arena/wall_half.glb` | `Assets/gltf/wall_half.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
 | `public/models/arena/wall_pillar.glb` | `Assets/gltf/wall_pillar.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/banner_patternB_red.glb` | `Assets/gltf/banner_patternB_red.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/banner_patternC_white.glb` | `Assets/gltf/banner_patternC_white.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/barrier_column.glb` | `Assets/gltf/barrier_column.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/box_stacked.glb` | `Assets/gltf/box_stacked.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/candle_triple.glb` | `Assets/gltf/candle_triple.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/chair.glb` | `Assets/gltf/chair.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/chest.glb` | `Assets/gltf/chest.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/floor_foundation_allsides.glb` | `Assets/gltf/floor_foundation_allsides.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/floor_wood_large_dark.glb` | `Assets/gltf/floor_wood_large_dark.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/keg.glb` | `Assets/gltf/keg.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/stairs.glb` | `Assets/gltf/stairs.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/table_long.glb` | `Assets/gltf/table_long.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/table_long_broken.glb` | `Assets/gltf/table_long_broken.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/trunk_large_A.glb` | `Assets/gltf/trunk_large_A.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/wall_arched.glb` | `Assets/gltf/wall_arched.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/wall_doorway.glb` | `Assets/gltf/wall_doorway.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/wall_gated.glb` | `Assets/gltf/wall_gated.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/wall_open_scaffold.glb` | `Assets/gltf/wall_open_scaffold.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/arena/wall_scaffold.glb` | `Assets/gltf/wall_scaffold.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
 
 ## Fonts
 
@@ -131,6 +151,35 @@ The font files are not committed. They come from npm packages that Vite bundles 
 |---|---|---|---|---|---|
 | Cinzel | Labels, buttons, headings, banners, damage numbers, loot labels | `@fontsource/cinzel` | https://fonts.google.com/specimen/Cinzel (Natanael Gama) | SIL OFL 1.1 | [licenses/Cinzel-OFL-1.1.txt](licenses/Cinzel-OFL-1.1.txt) |
 | Alegreya Sans | Body text, tooltips, numbers | `@fontsource/alegreya-sans` | https://fonts.google.com/specimen/Alegreya+Sans (Juan Pablo del Peral, Huerta Tipográfica) | SIL OFL 1.1 | [licenses/Alegreya-Sans-OFL-1.1.txt](licenses/Alegreya-Sans-OFL-1.1.txt) |
+
+## Roads and yards
+
+From KayKit Halloween Bits 1.0. Each `.gltf` with its `.bin` and texture was packed into one `.glb` by `tools/pack-gltf.ts`; geometry and textures are unchanged.
+
+| File | Original file | Pack | Licence |
+|---|---|---|---|
+| `public/models/yard/arch.glb` | `addons/kaykit_halloween_bits/Assets/gltf/arch.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/bench.glb` | `addons/kaykit_halloween_bits/Assets/gltf/bench.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/fence.glb` | `addons/kaykit_halloween_bits/Assets/gltf/fence.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/fence_broken.glb` | `addons/kaykit_halloween_bits/Assets/gltf/fence_broken.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/fence_pillar.glb` | `addons/kaykit_halloween_bits/Assets/gltf/fence_pillar.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/floor_dirt.glb` | `addons/kaykit_halloween_bits/Assets/gltf/floor_dirt.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/grave_A.glb` | `addons/kaykit_halloween_bits/Assets/gltf/grave_A.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/gravemarker_A.glb` | `addons/kaykit_halloween_bits/Assets/gltf/gravemarker_A.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/gravestone.glb` | `addons/kaykit_halloween_bits/Assets/gltf/gravestone.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/lantern_standing.glb` | `addons/kaykit_halloween_bits/Assets/gltf/lantern_standing.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/post.glb` | `addons/kaykit_halloween_bits/Assets/gltf/post.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/post_lantern.glb` | `addons/kaykit_halloween_bits/Assets/gltf/post_lantern.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/shrine_candles.glb` | `addons/kaykit_halloween_bits/Assets/gltf/shrine_candles.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/tree_dead_large.glb` | `addons/kaykit_halloween_bits/Assets/gltf/tree_dead_large.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/tree_dead_medium.glb` | `addons/kaykit_halloween_bits/Assets/gltf/tree_dead_medium.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+| `public/models/yard/tree_dead_small.glb` | `addons/kaykit_halloween_bits/Assets/gltf/tree_dead_small.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
+
+Rebuild one with:
+
+```bash
+node tools/pack-gltf.ts <pack>/addons/kaykit_halloween_bits/Assets/gltf/fence.gltf public/models/yard/fence.glb
+```
 
 ## Everything else
 

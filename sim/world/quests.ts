@@ -2,6 +2,7 @@ import type { ObjectiveDef, QuestDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { questState } from './conditions.ts';
 import { refreshNpcs } from './dialogue.ts';
+import { spawnPacks } from './monsters.ts';
 import type { MonsterState, World, WorldEvent } from './types.ts';
 
 export function currentObjective(world: World, quest: QuestDef): ObjectiveDef | null {
@@ -69,4 +70,5 @@ export function stepQuests(world: World): void {
   if (!changed) return;
   startQuests(world);
   refreshNpcs(world);
+  spawnPacks(world);
 }
