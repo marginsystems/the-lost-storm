@@ -19,8 +19,8 @@ void test('only an http or https base is accepted and it ends with a slash', ():
 void test('an asset url stays under the base', (): void => {
   const base: string = 'https://sounds.example/storm/';
   assert.equal(assetUrl(base, 'manifest.json'), 'https://sounds.example/storm/manifest.json');
-  assert.equal(assetUrl(base, 'build/combat/hit_bone_1.ogg'), 'https://sounds.example/storm/build/combat/hit_bone_1.ogg');
-  for (const bad of ['/etc/passwd', '../x.ogg', 'build/../../x.ogg', 'https://evil.example/x.ogg', '//evil.example/x.ogg', 'build\\x.ogg', 'a b.ogg', '']) {
+  assert.equal(assetUrl(base, 'group/one_1.ogg'), 'https://sounds.example/storm/group/one_1.ogg');
+  for (const bad of ['/etc/passwd', '../x.ogg', 'group/../../x.ogg', 'https://evil.example/x.ogg', '//evil.example/x.ogg', 'build\\x.ogg', 'a b.ogg', '']) {
     assert.equal(assetUrl(base, bad), null, bad);
   }
 });
