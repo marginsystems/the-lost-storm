@@ -76,11 +76,15 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   };
   let mapWanted: boolean = false;
 
+  const grid: HTMLDivElement = el('div', 'hud-grid', null);
+  root.insertBefore(grid, root.firstChild);
+
   function setOpen(panel: HudPanel, next: boolean): void {
     if (open[panel] !== next) api.playUi(next ? 'panel_open' : 'panel_close');
     open[panel] = next;
     const view: PanelView = panels[panel];
     view.element.classList.toggle('open', next);
+    grid.classList.toggle('visible', PANEL_IDS.some((id: HudPanel): boolean => open[id]));
     buttons[panel]?.setActive(next);
     if (next) {
       view.refresh();
