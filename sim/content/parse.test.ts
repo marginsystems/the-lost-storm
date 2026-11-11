@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import arena from '../../data/arena.json' with { type: 'json' };
 import attachments from '../../data/attachments.json' with { type: 'json' };
 import items from '../../data/items.json' with { type: 'json' };
 import monsters from '../../data/monsters.json' with { type: 'json' };
@@ -10,17 +9,19 @@ import rigs from '../../data/rigs.json' with { type: 'json' };
 import skillTree from '../../data/skill-tree.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
-import { must } from '../../test/support.ts';
+import world from '../../data/world.json' with { type: 'json' };
+import bastion from '../../data/zones/drowned_bastion.json' with { type: 'json' };
+import stillhold from '../../data/zones/stillhold.json' with { type: 'json' };
+import { must, worldIn } from '../../test/support.ts';
 import { generateItem } from '../items.ts';
 import { createRng } from '../rng.ts';
 import { canAllocate } from '../progression.ts';
-import { createWorld } from '../world/create.ts';
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
-import type { Content, MonsterDef } from './types.ts';
+import type { Content, MonsterDef, ZoneDef } from './types.ts';
 
-const shipped: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, arena, player };
+const shipped: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, zones: [stillhold, bastion], world, player };
 
 const extraSkill = {
   id: 'ember_lash',
@@ -105,8 +106,12 @@ function extended(): RawContent {
     wearables: [...wearables, extraWearable],
     items: { ...items, bases: [...items.bases, extraBase] },
     skillTree: [...skillTree, extraNode],
-    arena: { ...arena, packs: [...arena.packs, { x: 28, z: 22, members: [{ monster: 'ash_wraith', count: 3 }] }] },
+    zones: [stillhold, { ...bastion, packs: [...bastion.packs, { x: 28, z: 22, members: [{ monster: 'ash_wraith', count: 3 }] }] }],
   };
+}
+
+function withZone(zone: unknown): RawContent {
+  return { ...shipped, zones: [stillhold, zone] };
 }
 
 function problem(error: unknown, text: string): boolean {
@@ -148,8 +153,8 @@ void test('a new skill, monster, item base and tree node are data only', (): voi
   const wraith: MonsterDef = must(content.monsters.get('ash_wraith'), 'ash_wraith');
   assert.equal(wraith.skill, 'ember_lash');
 
-  const world = createWorld(content, { seed: 7, save: null });
-  const spawned = world.monsters.filter((monster): boolean => monster.def.id === 'ash_wraith');
+  const arena = worldIn(content, 'drowned_bastion', 7);
+  const spawned = arena.monsters.filter((monster): boolean => monster.def.id === 'ash_wraith');
   assert.equal(spawned.length, 3);
   assert.ok(spawned.every((monster): boolean => monster.life === 45));
 
@@ -197,4 +202,52 @@ void test('worn gear is data: unknown wearables, doubled regions and unknown bod
 
   const badItem: Content = parseContent({ ...shipped, items: { ...items, bases: [...items.bases, { ...extraBase, id: 'ghost_coat', slot: 'chest', visual: null, wear: ['no_such_coat'] }] } });
   assert.ok(contentProblems(badItem).some((found: string): boolean => found.includes('item ghost_coat wears unknown wearable no_such_coat')));
+});
+
+void test('a zone parses with its kind, level, exits, checkpoints, surge rules and ambience', (): void => {
+  const content: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, checkpoints: [{ id: 'grate', x: 28, z: 22, radius: 2 }] }] });
+  const town: ZoneDef = must(content.zones.get('stillhold'), 'town');
+  const arena: ZoneDef = must(content.zones.get('drowned_bastion'), 'arena');
+  assert.equal(town.kind, 'town');
+  assert.equal(town.surge, null);
+  assert.equal(arena.kind, 'wild');
+  assert.equal(arena.level, 1);
+  assert.deepEqual(arena.surge, { delay: 5, surgesPerExtraMonster: 2, maxExtraMonsters: 3 });
+  assert.deepEqual(arena.checkpoints, [{ id: 'grate', x: 28, z: 22, radius: 2 }]);
+  assert.deepEqual(arena.exits, [{ id: 'stair', x: 28, z: 41.6, radius: 1.5, to: 'stillhold', toExit: 'bastion_stair', arrival: { x: 28, z: 37 } }]);
+  assert.equal(arena.ambience.background, '#06090f');
+  assert.equal(content.world.start, 'stillhold');
+  assert.deepEqual(content.world.scaling, { lifePerLevel: 0.22, damagePerLevel: 0.12, xpPerLevel: 0.15 });
+  assert.deepEqual(contentProblems(content), []);
+});
+
+void test('a malformed zone is rejected: ragged tiles, a town with packs, bad exits, duplicate ids', (): void => {
+  assert.throws((): Content => parseContent(withZone({ ...bastion, tiles: ['....', '..'] })), (error: unknown): boolean => problem(error, 'zones[1].tiles'));
+  assert.throws((): Content => parseContent(withZone({ ...bastion, kind: 'town' })), (error: unknown): boolean => problem(error, 'a town is safe'));
+  assert.throws((): Content => parseContent(withZone({ ...bastion, kind: 'swamp' })), (error: unknown): boolean => problem(error, 'zones[1].kind'));
+  assert.throws((): Content => parseContent(withZone({ ...bastion, level: 0 })), (error: unknown): boolean => problem(error, 'zones[1].level'));
+  const { surge: _surge, ...noSurgeKey } = bastion;
+  assert.throws((): Content => parseContent(withZone(noSurgeKey)), (error: unknown): boolean => problem(error, 'zones[1].surge'));
+  assert.equal(must(parseContent(withZone({ ...bastion, surge: null })).zones.get('drowned_bastion'), 'arena').surge, null);
+  const [stair] = bastion.exits;
+  assert.throws((): Content => parseContent(withZone({ ...bastion, exits: [{ ...stair, radius: 0 }] })), (error: unknown): boolean => problem(error, 'exits[0].radius'));
+  assert.throws((): Content => parseContent(withZone({ ...bastion, exits: [{ ...stair, arrival: 'door' }] })), (error: unknown): boolean => problem(error, 'exits[0].arrival'));
+  assert.throws((): Content => parseContent(withZone({ ...bastion, exits: [stair, stair] })), (error: unknown): boolean => problem(error, 'duplicate id stair'));
+  assert.throws((): Content => parseContent(withZone({ ...bastion, checkpoints: [{ id: 'a', x: 1, z: 1 }] })), (error: unknown): boolean => problem(error, 'checkpoints[0].radius'));
+  assert.throws((): Content => parseContent({ ...shipped, zones: [stillhold, bastion, bastion] }), (error: unknown): boolean => problem(error, 'duplicate id drowned_bastion'));
+  assert.throws((): Content => parseContent({ ...shipped, world: { start: 'stillhold' } }), (error: unknown): boolean => problem(error, 'world.scaling'));
+});
+
+void test('contentProblems reports an unknown start zone and exits that lead nowhere or are not matched', (): void => {
+  const [stair] = bastion.exits;
+  const lost: Content = parseContent({ ...shipped, world: { ...world, start: 'nowhere' } });
+  assert.ok(contentProblems(lost).some((found: string): boolean => found.includes('unknown zone nowhere')));
+  const noZone: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, exits: [{ ...stair, to: 'the_moon' }] }] });
+  assert.ok(contentProblems(noZone).some((found: string): boolean => found.includes('unknown exit the_moon.bastion_stair')));
+  const noExit: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, exits: [{ ...stair, toExit: 'trapdoor' }] }] });
+  assert.ok(contentProblems(noExit).some((found: string): boolean => found.includes('unknown exit stillhold.trapdoor')));
+  const oneWay: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, exits: [{ ...stair, id: 'ladder' }] }] });
+  assert.ok(contentProblems(oneWay).some((found: string): boolean => found.includes('exit ladder is not matched by stillhold.bastion_stair')));
+  const badPack: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, packs: [{ x: 1, z: 1, members: [{ monster: 'nobody', count: 1 }] }] }] });
+  assert.ok(contentProblems(badPack).some((found: string): boolean => found.includes('zone drowned_bastion pack uses unknown monster nobody')));
 });

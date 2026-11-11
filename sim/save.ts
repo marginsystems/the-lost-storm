@@ -3,7 +3,7 @@ import { isFields } from './content/read.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
-import type { Equipment, GroundItem, ItemInstance, RolledAffix, World } from './world/types.ts';
+import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, World } from './world/types.ts';
 
 export const SAVE_VERSION: number = 2;
 const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, SAVE_VERSION]);
@@ -21,6 +21,9 @@ export interface SaveData {
   readonly spilled: readonly ItemInstance[];
   readonly surge: number;
   readonly nextItemUid: number;
+  readonly zone: string;
+  readonly respawn: RespawnPoint;
+  readonly visited: readonly string[];
 }
 
 interface Worn {
@@ -43,6 +46,9 @@ export function toSave(world: World): SaveData {
     spilled: world.ground.flatMap((ground: GroundItem): ItemInstance[] => (ground.kept && ground.content.kind === 'item' ? [ground.content.item] : [])),
     surge: world.surge,
     nextItemUid: world.nextItemUid,
+    zone: world.zone.id,
+    respawn: world.respawn,
+    visited: [...world.visited],
   };
 }
 
@@ -96,6 +102,21 @@ function readEquipped(content: Content, value: unknown, inventory: (ItemInstance
   return { equipped, spilled };
 }
 
+function readRespawn(value: unknown): RespawnPoint {
+  if (!isFields(value)) return { type: 'start' };
+  const exit: unknown = value['exit'];
+  const checkpoint: unknown = value['checkpoint'];
+  if (value['type'] === 'exit' && typeof exit === 'string') return { type: 'exit', exit };
+  if (value['type'] === 'checkpoint' && typeof checkpoint === 'string') return { type: 'checkpoint', checkpoint };
+  return { type: 'start' };
+}
+
+function readVisited(content: Content, value: unknown, zone: string): string[] {
+  const list: readonly unknown[] = Array.isArray(value) ? value : [];
+  const visited: string[] = list.filter((id: unknown): id is string => typeof id === 'string' && content.zones.has(id));
+  return visited.includes(zone) ? visited : [...visited, zone];
+}
+
 export function readSave(content: Content, value: unknown): SaveData | null {
   if (!isFields(value) || !READABLE_VERSIONS.has(value['version'])) return null;
   const level: number | null = count(value, 'level', 1);
@@ -112,6 +133,9 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const allocatedList: readonly unknown[] = allocated;
   const inventoryList: readonly unknown[] = inventory;
   const size: number = content.player.inventorySize;
+  const savedZone: unknown = value['zone'];
+  const known: boolean = typeof savedZone === 'string' && content.zones.has(savedZone);
+  const zone: string = typeof savedZone === 'string' && known ? savedZone : content.world.start;
   const slots: (ItemInstance | null)[] = Array.from({ length: size }, (_: unknown, index: number): ItemInstance | null => readItem(content, inventoryList[index]));
   const worn: Worn = readEquipped(content, value['equipped'], slots);
   const spilled: unknown = value['spilled'];
@@ -130,6 +154,9 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     spilled: [...kept, ...worn.spilled],
     surge: Math.floor(surge),
     nextItemUid: Math.floor(nextItemUid),
+    zone,
+    respawn: known ? readRespawn(value['respawn']) : { type: 'start' },
+    visited: readVisited(content, value['visited'], zone),
   };
 }
 

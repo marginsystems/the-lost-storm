@@ -56,7 +56,7 @@ export function aggroPack(world: World, monster: MonsterState): void {
 function rollLoot(world: World, monster: MonsterState): void {
   const loot = monster.def.loot;
   if (world.rng.chance(loot.goldChance)) {
-    const scale: number = (1 + world.arena.surge.xpPerSurge * (monster.level - 1)) * (1 + world.player.stats.goldFind);
+    const scale: number = (1 + world.content.world.scaling.xpPerLevel * (monster.level - 1)) * (1 + world.player.stats.goldFind);
     dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, Math.round(world.rng.int(loot.goldMin, loot.goldMax) * scale)) });
   }
   if (world.rng.chance(loot.itemChance)) {
@@ -83,7 +83,7 @@ function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
   }
   world.player.kills += 1;
   rollLoot(world, target);
-  grantXp(world, Math.round(target.def.xp * (1 + world.arena.surge.xpPerSurge * (target.level - 1))));
+  grantXp(world, Math.round(target.def.xp * (1 + world.content.world.scaling.xpPerLevel * (target.level - 1))));
 }
 
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): void {

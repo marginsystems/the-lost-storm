@@ -32,6 +32,7 @@ export interface BurstOptions {
 export interface ParticleSystem {
   burst(options: BurstOptions): void;
   update(dt: number): void;
+  clear(): void;
 }
 
 const VERTEX: string = `
@@ -152,6 +153,9 @@ export function createParticles(scene: Scene): ParticleSystem {
       tintAttribute.needsUpdate = true;
       sizeAttribute.needsUpdate = true;
       alphaAttribute.needsUpdate = true;
+    },
+    clear(): void {
+      lives.fill(0);
     },
   };
 }

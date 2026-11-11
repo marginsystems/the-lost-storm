@@ -101,6 +101,8 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'monster_remove':
     case 'xp':
     case 'character_changed':
+    case 'zone_changed':
+    case 'checkpoint':
       break;
   }
   return found;
@@ -125,6 +127,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'pickup':
     case 'stop':
     case 'drop':
+    case 'travel':
       break;
   }
   return action;

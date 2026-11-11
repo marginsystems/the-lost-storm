@@ -43,7 +43,7 @@ A change to how damage is rolled, how a skill hits, how a monster decides, what 
 
 ## Content is data
 
-Monsters, skills, items, rarities, affixes, skill-tree nodes, rigs, attachments, props and the arena are JSON files in `data/`. Adding a monster, a skill, an item or a tree node is a data change only.
+Monsters, skills, items, rarities, affixes, skill-tree nodes, rigs, attachments, props, the world and its zones (`data/zones/`) are JSON files in `data/`. Adding a monster, a skill, an item or a tree node is a data change only.
 
 If new content cannot be expressed in the data, extend the schema in `sim/content/` and its handling in the engine in a general way (a new delivery type, a new modifier target), then write the content as data. Do not special-case an id in engine or render code. `sim/content/content.test.ts` checks every cross-reference between the data files.
 

@@ -28,8 +28,6 @@ import type { Input } from './input.ts';
 import { createInput } from './input.ts';
 import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
-import type { ArenaView } from './render/arena-view.ts';
-import { buildArena } from './render/arena-view.ts';
 import type { CharacterLibrary } from './render/character-loader.ts';
 import { loadCharacters } from './render/character-loader.ts';
 import type { Effects } from './render/effects.ts';
@@ -48,7 +46,13 @@ import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
 import type { Weather } from './render/weather.ts';
 import { createWeather } from './render/weather.ts';
+import type { ZoneMarkers } from './render/zone-markers.ts';
+import { createZoneMarkers } from './render/zone-markers.ts';
+import type { ZoneView } from './render/zone-view.ts';
+import { buildZoneView, preloadZones } from './render/zone-view.ts';
 import { clearSave, readSaveText, writeSave } from './storage.ts';
+import type { ZoneTransition } from './transition.ts';
+import { createZoneTransition } from './transition.ts';
 
 const GAME = {
   maxFrame: 0.1,
@@ -57,7 +61,7 @@ const GAME = {
   millisecondsPerSecond: 1000,
 } as const;
 
-const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['type']>(['character_changed', 'level_up', 'pickup', 'surge', 'xp']);
+const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['type']>(['character_changed', 'level_up', 'pickup', 'surge', 'xp', 'zone_changed', 'checkpoint']);
 
 export interface DebugHandle {
   readonly world: World;
@@ -86,6 +90,7 @@ async function start(): Promise<void> {
   const enter: HTMLButtonElement = element('title-enter', HTMLButtonElement);
   const reset: HTMLButtonElement = element('title-reset', HTMLButtonElement);
   const vignette: HTMLDivElement = element('vignette', HTMLDivElement);
+  const titlePlace: HTMLParagraphElement = element('title-place', HTMLParagraphElement);
 
   const content: Content = loadContent();
   const save: SaveData | null = parseSaveText(content, readSaveText());
@@ -93,12 +98,16 @@ async function start(): Promise<void> {
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader();
 
-  const [library, arena]: [CharacterLibrary, ArenaView] = await Promise.all([loadCharacters(loader, content), buildArena(loader, content, stage.scene)]);
+  const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
+  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content), buildZoneView(loader, content, world.zone, stage.scene)]);
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
   const thumbnails: ItemThumbnails = createItemThumbnails(library, shownPieces);
+  let zoneView: ZoneView = firstView;
+  let markers: ZoneMarkers = createZoneMarkers(stage.scene, world.zone);
+  stage.setAmbience(world.zone.ambience);
+  titlePlace.textContent = world.zone.name;
 
-  const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
   const audioDef: AudioDef = loadAudio(content);
   const controls: AudioControls = createSettingsStore(browserSettingsStorage());
   const audio: AudioSystem = createAudioSystem({
@@ -115,7 +124,11 @@ async function start(): Promise<void> {
     }
   };
   const playUi = (action: UiAction): void => playCues(cuesForUi(audioDef, action));
-  const zone: ZoneAmbience | undefined = audioDef.ambience.get(content.arena.id);
+  const startZoneAmbience = (): void => {
+    const ambience: ZoneAmbience | undefined = audioDef.ambience.get(world.zone.id);
+    if (ambience === undefined) audio.stopAmbience();
+    else audio.startAmbience(ambience);
+  };
   const sounds: Trigger[] = [];
   if (import.meta.env.DEV) {
     audio.onTrigger((trigger: Trigger): void => {
@@ -131,7 +144,8 @@ async function start(): Promise<void> {
   };
   const particles: ParticleSystem = createParticles(stage.scene);
   const weather: Weather = createWeather();
-  const effects: Effects = createEffects(stage.scene, particles, camera, arena.torches, (power: number): void => weather.strike(power));
+  const effects: Effects = createEffects(stage.scene, particles, camera, (power: number): void => weather.strike(power));
+  effects.setTorches(zoneView.torches);
   const actors: Actors = createActors(stage.scene, library, world);
   const itemImage = (item: ItemInstance): string | null => {
     const base: ItemBaseDef | null = baseOf(content, item);
@@ -141,61 +155,111 @@ async function start(): Promise<void> {
     return piece === null ? null : (thumbnails.get(wornImageKey(piece)) ?? null);
   };
   const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send, itemImage, audio: controls, playUi });
-  const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, (id: number): number => actors.heightOf(id), (groundId: number): void => send({ type: 'pickup', groundId }));
+  const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
+    heightOf: (id: number): number => actors.heightOf(id),
+    onPickup: (groundId: number): void => send({ type: 'pickup', groundId }),
+    onTravel: (exit: string): void => send({ type: 'travel', exit }),
+  });
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),
     clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile),
+    aimExit: (exit: string | null): void => overlays.aimExit(exit),
   });
   if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send };
 
   let playing: boolean = false;
+  let failed: boolean = false;
+  let saveHeld: boolean = false;
   let hitStop: number = 0;
   let dirty: boolean = false;
   let sinceSave: number = 0;
   let last: number = performance.now();
 
   const persist = (): void => {
-    if (!dirty) return;
+    if (!dirty || saveHeld) return;
     dirty = !writeSave(toSave(world));
     sinceSave = 0;
   };
+
+  const present = (events: readonly WorldEvent[]): void => {
+    actors.handle(events, world);
+    effects.handle(events, world);
+    overlays.handle(events, world);
+    hud.handleEvents(events);
+    for (const event of events) playCues(cuesForEvent(audioDef, world, event));
+    hitStop = Math.max(hitStop, effects.takeHitStop());
+    if (events.some((event: WorldEvent): boolean => SAVE_EVENTS.has(event.type))) dirty = true;
+  };
+
+  const showZone = async (events: readonly WorldEvent[]): Promise<void> => {
+    present(events);
+    effects.clear();
+    particles.clear();
+    markers.dispose();
+    zoneView.dispose();
+    zoneView = await buildZoneView(loader, content, world.zone, stage.scene);
+    markers = createZoneMarkers(stage.scene, world.zone);
+    stage.setAmbience(world.zone.ambience);
+    effects.setTorches(zoneView.torches);
+    startZoneAmbience();
+    camera.snap(world.player.pos.x, world.player.pos.z);
+    queue.length = 0;
+    hitStop = 0;
+    saveHeld = false;
+    persist();
+  };
+
+  const transition: ZoneTransition = createZoneTransition(element('fade', HTMLDivElement), (error: unknown): void => {
+    failed = true;
+    playing = false;
+    status.textContent = error instanceof Error ? `${world.zone.name} could not be built: ${error.message}` : `${world.zone.name} could not be built.`;
+    status.classList.remove('quiet');
+    titlePlace.textContent = world.zone.name;
+    enter.textContent = 'Reload';
+    reset.hidden = true;
+    title.classList.remove('gone');
+  });
 
   const frame = (now: number): void => {
     const dt: number = Math.min(GAME.maxFrame, Math.max(0, (now - last) / 1000));
     last = now;
     let events: WorldEvent[] = [];
-    if (playing) {
+    const live: boolean = playing && !transition.blocking;
+    if (live) {
       queue.push(...input.collect(dt));
       hitStop = Math.max(0, hitStop - dt);
       if (hitStop <= 0) {
         let remaining: number = dt;
-        while (remaining > 1e-5) {
+        while (remaining > 1e-5 && !events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
           const step: number = Math.min(MAX_STEP, remaining);
           events = events.concat(stepWorld(world, queue.splice(0, queue.length), step));
           remaining -= step;
         }
       }
     }
-    const simDt: number = playing && hitStop <= 0 ? dt : 0;
-    actors.handle(events, world);
-    effects.handle(events, world);
-    overlays.handle(events, world);
-    hud.handleEvents(events);
-    for (const event of events) playCues(cuesForEvent(audioDef, world, event));
-    audio.update(dt);
-    hitStop = Math.max(hitStop, effects.takeHitStop());
-    if (events.some((event: WorldEvent): boolean => SAVE_EVENTS.has(event.type))) dirty = true;
+    if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
+      const held: WorldEvent[] = events;
+      saveHeld = true;
+      transition.begin((): Promise<void> => showZone(held));
+    } else {
+      present(events);
+    }
 
-    actors.sync(simDt, world, input.hoveredId);
-    loot.sync(world);
-    camera.update(dt, world.player.pos.x, world.player.pos.z);
-    effects.update(dt, world);
+    if (!transition.blocking) {
+      const simDt: number = live && hitStop <= 0 ? dt : 0;
+      actors.sync(simDt, world, input.hoveredId);
+      loot.sync(world);
+      camera.update(dt, world.player.pos.x, world.player.pos.z);
+      effects.update(dt, world);
+      stage.follow(world.player.pos.x, world.player.pos.z);
+      overlays.update(dt, world, input.hoveredId);
+    }
+    audio.update(dt);
     particles.update(dt);
     weather.update(dt);
-    arena.update(now / 1000);
-    stage.follow(world.player.pos.x, world.player.pos.z);
+    zoneView.update(now / 1000);
+    markers.update(dt, now / 1000, world);
     stage.setFlash(weather.flash);
-    overlays.update(dt, world, input.hoveredId);
     hud.update(dt);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     stage.render();
@@ -213,16 +277,21 @@ async function start(): Promise<void> {
 
   camera.snap(world.player.pos.x, world.player.pos.z);
   requestAnimationFrame(frame);
+  void preloadZones(loader, content);
 
   status.classList.add('quiet');
   enter.disabled = false;
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = save === null;
   enter.addEventListener('click', (): void => {
+    if (failed) {
+      window.location.reload();
+      return;
+    }
     title.classList.add('gone');
     playing = true;
     audio.unlock();
-    if (zone !== undefined) audio.startAmbience(zone);
+    startZoneAmbience();
   });
   reset.addEventListener('click', (): void => {
     dirty = false;

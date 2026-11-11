@@ -1,16 +1,17 @@
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
 import { test } from 'node:test';
 import { must } from '../../test/support.ts';
+import type { Vec2 } from '../math.ts';
 import { buildNavGrid, isWalkable } from '../nav/grid.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { loadContent } from './content.ts';
 import { contentProblems } from './parse.ts';
-import type { Content, ItemBaseDef, SkillTreeNodeDef } from './types.ts';
+import type { Content, ItemBaseDef, SkillTreeNodeDef, ZoneDef } from './types.ts';
 import { ANIMATION_KEYS } from './types.ts';
 
 const content: Content = loadContent();
-const grid: NavGrid = buildNavGrid(content.arena, content.props, content.player.radius);
 
 void test('the shipped data loads and has no dangling references', (): void => {
   assert.deepEqual(contentProblems(content), []);
@@ -61,13 +62,60 @@ void test('the skill tree has six nodes and each one can be reached from a root'
   assert.equal(reachable(content.skillTree).size, content.skillTree.length);
 });
 
-void test('the player start and every pack centre are walkable and connected', (): void => {
-  const start = content.arena.playerStart;
-  assert.ok(isWalkable(grid, start.x, start.z), 'player start');
-  for (const pack of content.arena.packs) {
-    assert.ok(isWalkable(grid, pack.x, pack.z), `pack at ${pack.x},${pack.z}`);
-    const path = findPath(grid, start, pack);
-    const last = must(path.at(-1), 'path end');
-    assert.ok(Math.hypot(last.x - pack.x, last.z - pack.z) < 0.01, `path reaches pack at ${pack.x},${pack.z}`);
+function reaches(grid: NavGrid, from: Vec2, to: Vec2): boolean {
+  if (!isWalkable(grid, to.x, to.z)) return false;
+  if (Math.hypot(from.x - to.x, from.z - to.z) < 0.01) return true;
+  const last: Vec2 | undefined = findPath(grid, from, to).at(-1);
+  return last !== undefined && Math.hypot(last.x - to.x, last.z - to.z) < 0.01;
+}
+
+void test('every zone file under data/zones is loaded under its own name', (): void => {
+  const files: string[] = readdirSync('data/zones').filter((name: string): boolean => name.endsWith('.json')).map((name: string): string => name.replace('.json', ''));
+  assert.deepEqual([...content.zones.keys()].toSorted(), files.toSorted());
+  assert.ok(content.zones.has(content.world.start));
+});
+
+void test('in every zone the start, packs, exits, arrival points and checkpoints are walkable and reachable on foot', (): void => {
+  for (const zone of content.zones.values()) {
+    const grid: NavGrid = buildNavGrid(zone, content.props, content.player.radius);
+    const start: Vec2 = zone.playerStart;
+    assert.ok(isWalkable(grid, start.x, start.z), `${zone.id} player start`);
+    for (const pack of zone.packs) assert.ok(reaches(grid, start, pack), `${zone.id} pack at ${pack.x},${pack.z}`);
+    for (const exit of zone.exits) {
+      assert.ok(reaches(grid, start, exit), `${zone.id} exit ${exit.id}`);
+      assert.ok(reaches(grid, start, exit.arrival), `${zone.id} exit ${exit.id} arrival`);
+      assert.ok(Math.hypot(exit.x - exit.arrival.x, exit.z - exit.arrival.z) > exit.radius, `${zone.id} exit ${exit.id} arrival lies inside the exit`);
+    }
+    for (const checkpoint of zone.checkpoints) assert.ok(reaches(grid, start, checkpoint), `${zone.id} checkpoint ${checkpoint.id}`);
+  }
+});
+
+void test('every exit leads to an exit that leads back, and every zone can be reached from the start zone', (): void => {
+  const reached: Set<string> = new Set<string>([content.world.start]);
+  const queue: string[] = [content.world.start];
+  while (queue.length > 0) {
+    const zone: ZoneDef = must(content.zones.get(must(queue.pop(), 'queued zone')), 'zone');
+    for (const exit of zone.exits) {
+      const far: ZoneDef = must(content.zones.get(exit.to), `${zone.id}.${exit.id} target`);
+      const back = must(far.exits.find((candidate): boolean => candidate.id === exit.toExit), `${zone.id}.${exit.id} far exit`);
+      assert.equal(back.to, zone.id);
+      assert.equal(back.toExit, exit.id);
+      if (!reached.has(far.id)) {
+        reached.add(far.id);
+        queue.push(far.id);
+      }
+    }
+  }
+  assert.deepEqual([...reached].toSorted(), [...content.zones.keys()].toSorted());
+});
+
+void test('towns are safe and wild zones have something to fight', (): void => {
+  for (const zone of content.zones.values()) {
+    if (zone.kind === 'town') {
+      assert.equal(zone.packs.length, 0, `${zone.id} packs`);
+      assert.equal(zone.surge, null, `${zone.id} surge`);
+    } else {
+      assert.ok(zone.packs.length > 0, `${zone.id} has no packs`);
+    }
   }
 });

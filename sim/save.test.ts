@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must } from '../test/support.ts';
+import { must, worldIn } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
 import type { Content } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
@@ -175,4 +175,50 @@ void test('loot that was never part of a save is not carried by it', (): void =>
   world.ground.push({ id: 900, pos: { x: 0, z: 0 }, from: { x: 0, z: 0 }, content: { kind: 'item', item: made('gale_charm', 'common', 70) }, age: 0, kept: false });
   world.ground.push({ id: 901, pos: { x: 0, z: 0 }, from: { x: 0, z: 0 }, content: { kind: 'gold', amount: 5 }, age: 0, kept: true });
   assert.deepEqual(toSave(world).spilled, []);
+});
+
+void test('the zone, the respawn point and the zones visited survive a save', (): void => {
+  const world: World = worldIn(content, 'drowned_bastion', 3);
+  world.respawn = { type: 'exit', exit: 'stair' };
+  const save: SaveData = roundTrip(world);
+  assert.equal(save.zone, 'drowned_bastion');
+  assert.deepEqual(save.respawn, { type: 'exit', exit: 'stair' });
+  assert.deepEqual(save.visited, ['stillhold', 'drowned_bastion']);
+  const restored: World = createWorld(content, { seed: 4, save });
+  assert.equal(restored.zone.id, 'drowned_bastion');
+  assert.deepEqual(restored.respawn, { type: 'exit', exit: 'stair' });
+  assert.deepEqual(restored.player.pos, { x: 28, z: 37 });
+  assert.deepEqual(restored.visited, ['stillhold', 'drowned_bastion']);
+  assert.ok(restored.monsters.length > 0);
+});
+
+void test('a version 1 save, which has no zone, loads into the start zone with its character intact', (): void => {
+  const { zone: _zone, respawn: _respawn, visited: _visited, ...old } = toSave(played());
+  const save: SaveData = must(readSave(content, JSON.parse(JSON.stringify({ ...old, version: 1 }))), 'save');
+  assert.equal(save.zone, content.world.start);
+  assert.deepEqual(save.respawn, { type: 'start' });
+  assert.deepEqual(save.visited, [content.world.start]);
+  assert.equal(save.level, 4);
+  assert.equal(save.surge, 3);
+  const restored: World = createWorld(content, { seed: 5, save });
+  assert.equal(restored.zone.id, content.world.start);
+  assert.equal(restored.player.level, 4);
+  assert.equal(restored.player.equipped.weapon?.base, 'stormsteel_sword');
+  assert.equal(restored.monsters.length, 0);
+});
+
+void test('an unknown zone or respawn id in a save falls back to the start', (): void => {
+  const base: SaveData = toSave(worldIn(content, 'drowned_bastion', 6));
+  const lostZone: SaveData = must(readSave(content, { ...base, zone: 'atlantis', respawn: { type: 'exit', exit: 'stair' }, visited: ['atlantis', 'stillhold', 7] }), 'save');
+  assert.equal(lostZone.zone, content.world.start);
+  assert.deepEqual(lostZone.respawn, { type: 'start' });
+  assert.deepEqual(lostZone.visited, ['stillhold']);
+  const lostExit: SaveData = must(readSave(content, { ...base, respawn: { type: 'exit', exit: 'trapdoor' } }), 'save');
+  const world: World = createWorld(content, { seed: 7, save: lostExit });
+  assert.equal(world.zone.id, 'drowned_bastion');
+  assert.deepEqual(world.respawn, { type: 'start' });
+  assert.deepEqual(world.player.pos, { x: 28, z: 37 });
+  const oddRespawn: SaveData = must(readSave(content, { ...base, respawn: { type: 'checkpoint' }, visited: 'everywhere' }), 'save');
+  assert.deepEqual(oddRespawn.respawn, { type: 'start' });
+  assert.deepEqual(oddRespawn.visited, ['drowned_bastion']);
 });

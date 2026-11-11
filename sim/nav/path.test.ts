@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must } from '../../test/support.ts';
+import { must, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -9,7 +9,7 @@ import type { NavGrid } from './grid.ts';
 import { findPath } from './path.ts';
 
 const content: Content = loadContent();
-const grid: NavGrid = buildNavGrid(content.arena, content.props, content.player.radius);
+const grid: NavGrid = buildNavGrid(zoneOf(content, 'drowned_bastion'), content.props, content.player.radius);
 
 function follow(from: Vec2, path: readonly Vec2[]): number {
   let length: number = 0;

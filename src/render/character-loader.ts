@@ -67,6 +67,9 @@ export function loadModel(loader: GLTFLoader, path: string): Promise<GLTF> {
   if (cached !== undefined) return cached;
   const started: Promise<GLTF> = loader.loadAsync(assetUrl(path));
   pending.set(path, started);
+  started.catch((): void => {
+    pending.delete(path);
+  });
   return started;
 }
 

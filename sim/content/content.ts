@@ -1,4 +1,3 @@
-import arena from '../../data/arena.json' with { type: 'json' };
 import attachments from '../../data/attachments.json' with { type: 'json' };
 import items from '../../data/items.json' with { type: 'json' };
 import monsters from '../../data/monsters.json' with { type: 'json' };
@@ -8,12 +7,18 @@ import rigs from '../../data/rigs.json' with { type: 'json' };
 import skillTree from '../../data/skill-tree.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
+import world from '../../data/world.json' with { type: 'json' };
+import drownedBastion from '../../data/zones/drowned_bastion.json' with { type: 'json' };
+import stillhold from '../../data/zones/stillhold.json' with { type: 'json' };
 import { contentProblems, parseContent } from './parse.ts';
+import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
+export const RAW_CONTENT: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, zones: [stillhold, drownedBastion], world, player };
+
 export function loadContent(): Content {
-  const content: Content = parseContent({ skills, monsters, items, skillTree, rigs, attachments, wearables, props, arena, player });
+  const content: Content = parseContent(RAW_CONTENT);
   const problems: string[] = contentProblems(content);
   if (problems.length > 0) throw new ContentError('content', problems.join('; '));
   return content;

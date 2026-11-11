@@ -1,0 +1,4 @@
+{
+  "start": "stillhold",
+  "scaling": { "lifePerLevel": 0.22, "damagePerLevel": 0.12, "xpPerLevel": 0.15 }
+}

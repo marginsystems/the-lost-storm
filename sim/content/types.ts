@@ -258,12 +258,12 @@ export interface PropDef {
   readonly light: PropLight | null;
 }
 
-export interface ArenaPoint {
+export interface ZonePoint {
   readonly x: number;
   readonly z: number;
 }
 
-export interface ArenaProp {
+export interface ZoneProp {
   readonly prop: string;
   readonly x: number;
   readonly z: number;
@@ -276,7 +276,7 @@ export interface PackMember {
   readonly count: number;
 }
 
-export interface ArenaPack {
+export interface ZonePack {
   readonly x: number;
   readonly z: number;
   readonly members: readonly PackMember[];
@@ -284,32 +284,77 @@ export interface ArenaPack {
 
 export interface SurgeRules {
   readonly delay: number;
-  readonly lifePerSurge: number;
-  readonly damagePerSurge: number;
-  readonly xpPerSurge: number;
   readonly surgesPerExtraMonster: number;
   readonly maxExtraMonsters: number;
 }
 
-export interface ArenaWalls {
+export interface ZoneWalls {
   readonly tall: readonly string[];
   readonly low: string;
   readonly corner: string;
   readonly halfThickness: number;
 }
 
-export interface ArenaDef {
+export const ZONE_KINDS = ['town', 'wild'] as const;
+export type ZoneKind = (typeof ZONE_KINDS)[number];
+
+export interface ZoneExit {
+  readonly id: string;
+  readonly x: number;
+  readonly z: number;
+  readonly radius: number;
+  readonly to: string;
+  readonly toExit: string;
+  readonly arrival: ZonePoint;
+}
+
+export interface ZoneCheckpoint {
+  readonly id: string;
+  readonly x: number;
+  readonly z: number;
+  readonly radius: number;
+}
+
+export interface ZoneAmbience {
+  readonly background: string;
+  readonly abyss: string;
+  readonly fogNear: number;
+  readonly fogFar: number;
+  readonly skyColor: string;
+  readonly groundColor: string;
+  readonly skyIntensity: number;
+  readonly keyColor: string;
+  readonly keyIntensity: number;
+}
+
+export interface ZoneDef {
   readonly id: string;
   readonly name: string;
+  readonly kind: ZoneKind;
+  readonly level: number;
   readonly cellSize: number;
   readonly floorHeight: number;
   readonly tiles: readonly string[];
   readonly floors: Readonly<Record<string, readonly string[]>>;
-  readonly walls: ArenaWalls;
-  readonly props: readonly ArenaProp[];
-  readonly playerStart: ArenaPoint;
-  readonly packs: readonly ArenaPack[];
-  readonly surge: SurgeRules;
+  readonly walls: ZoneWalls;
+  readonly props: readonly ZoneProp[];
+  readonly playerStart: ZonePoint;
+  readonly packs: readonly ZonePack[];
+  readonly surge: SurgeRules | null;
+  readonly exits: readonly ZoneExit[];
+  readonly checkpoints: readonly ZoneCheckpoint[];
+  readonly ambience: ZoneAmbience;
+}
+
+export interface MonsterScaling {
+  readonly lifePerLevel: number;
+  readonly damagePerLevel: number;
+  readonly xpPerLevel: number;
+}
+
+export interface WorldDef {
+  readonly start: string;
+  readonly scaling: MonsterScaling;
 }
 
 export interface SkillBinding {
@@ -355,6 +400,7 @@ export interface Content {
   readonly attachments: ReadonlyMap<string, AttachmentDef>;
   readonly wearables: ReadonlyMap<string, WearableDef>;
   readonly props: ReadonlyMap<string, PropDef>;
-  readonly arena: ArenaDef;
+  readonly zones: ReadonlyMap<string, ZoneDef>;
+  readonly world: WorldDef;
   readonly player: PlayerDef;
 }

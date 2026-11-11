@@ -74,7 +74,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       return viewOf(actorId)?.height ?? ACTORS.defaultHeight;
     },
     sync(dt: number, current: World, hoveredId: number | null): void {
-      const floor: number = current.arena.floorHeight;
+      const floor: number = current.zone.floorHeight;
       playerView.sync(dt, current.player, { moveSpeed: current.player.stats.moveSpeed, rise: 1, floor });
       for (const monster of current.monsters) {
         const entry: MonsterEntry | null = entryFor(monster);
@@ -116,7 +116,12 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             }
             break;
           }
+          case 'zone_changed':
+            for (const entry of monsters.values()) entry.view.dispose();
+            monsters.clear();
+            break;
           case 'skill_impact':
+          case 'checkpoint':
           case 'projectile_spawn':
           case 'projectile_end':
           case 'monster_spawn':

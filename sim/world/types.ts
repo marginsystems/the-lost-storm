@@ -1,4 +1,4 @@
-import type { ArenaDef, Content, ItemSlot, MonsterDef, SkillDef, StatBlock } from '../content/types.ts';
+import type { Content, ItemSlot, MonsterDef, SkillDef, StatBlock, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
@@ -65,7 +65,12 @@ export interface PickupIntent {
   readonly groundId: number;
 }
 
-export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent;
+export interface TravelIntent {
+  readonly type: 'travel';
+  readonly exit: string;
+}
+
+export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent | TravelIntent;
 
 export interface PlayerState extends ActorState {
   readonly kind: 'player';
@@ -184,7 +189,28 @@ export interface AllocateCommand {
   readonly node: string;
 }
 
-export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand;
+export interface TravelCommand {
+  readonly type: 'travel';
+  readonly exit: string;
+}
+
+export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand;
+
+export interface StartRespawn {
+  readonly type: 'start';
+}
+
+export interface ExitRespawn {
+  readonly type: 'exit';
+  readonly exit: string;
+}
+
+export interface CheckpointRespawn {
+  readonly type: 'checkpoint';
+  readonly checkpoint: string;
+}
+
+export type RespawnPoint = StartRespawn | ExitRespawn | CheckpointRespawn;
 
 export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full';
 
@@ -206,14 +232,18 @@ export type WorldEvent =
   | { readonly type: 'surge'; readonly surge: number }
   | { readonly type: 'surge_cleared'; readonly surge: number; readonly delay: number }
   | { readonly type: 'player_respawn' }
+  | { readonly type: 'zone_changed'; readonly from: string; readonly to: string }
+  | { readonly type: 'checkpoint'; readonly checkpoint: string; readonly pos: Vec2 }
   | { readonly type: 'hero_step'; readonly pos: Vec2 }
   | { readonly type: 'notice'; readonly reason: NoticeReason }
   | { readonly type: 'character_changed' };
 
 export interface World {
   readonly content: Content;
-  readonly arena: ArenaDef;
-  readonly grid: NavGrid;
+  zone: ZoneDef;
+  grid: NavGrid;
+  respawn: RespawnPoint;
+  visited: string[];
   readonly rng: Rng;
   time: number;
   readonly player: PlayerState;

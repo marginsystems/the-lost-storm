@@ -267,6 +267,15 @@
   gap: 4px;
 }
 
+.hud-top {
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.hud-top.visible {
+  opacity: 1;
+}
+
 .surge-label {
   font-family: var(--serif);
   font-size: 18px;
@@ -330,6 +339,16 @@
 
 .banner.level .banner-title {
   color: var(--ember);
+}
+
+.banner.zone .banner-title {
+  color: var(--text);
+  font-size: 44px;
+}
+
+.banner.checkpoint .banner-title {
+  color: var(--ember);
+  font-size: 30px;
 }
 
 .banner-sub {

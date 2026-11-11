@@ -122,7 +122,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
     if (attachment !== undefined) {
       const pivot: Group = new Group();
       pivot.rotation.order = 'YXZ';
-      pivot.add(lyingModel(attachment, heldScale(world.content, attachment.def), world.arena.floorHeight));
+      pivot.add(lyingModel(attachment, heldScale(world.content, attachment.def), world.zone.floorHeight));
       group.add(pivot);
       return { kind: 'weapon', group, pivot, yaw: Math.random() * FULL_TURN, beam: buildBeam(group, color) };
     }

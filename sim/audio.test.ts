@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must } from '../test/support.ts';
+import { must, worldIn } from '../test/support.ts';
 import { cuesForEvent, cuesForUi, uiActionForCommand } from './audio.ts';
 import type { SoundCue } from './audio.ts';
 import type { AudioDef } from './content/audio.ts';
@@ -8,7 +8,6 @@ import { loadAudio } from './content/audio.ts';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillDef } from './content/types.ts';
 import type { Vec2 } from './math.ts';
-import { createWorld } from './world/create.ts';
 import { stepWorld } from './world/step.ts';
 import type { GroundItem, MonsterState, World, WorldEvent } from './world/types.ts';
 
@@ -17,7 +16,7 @@ const audio: AudioDef = loadAudio(content);
 const AWAY: Vec2 = { x: 3, z: 4 };
 
 function fresh(): World {
-  return createWorld(content, { seed: 1, save: null });
+  return worldIn(content, 'drowned_bastion', 1);
 }
 
 function skill(id: string): SkillDef {

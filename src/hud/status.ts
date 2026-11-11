@@ -70,9 +70,15 @@ export function createSurgeStatus(parent: HTMLElement): WorldStatus {
   const surge: HTMLDivElement = el('div', 'surge-label', element);
   const gather: HTMLDivElement = el('div', 'surge-gather', element);
   let gathering: boolean | null = null;
+  let surging: boolean | null = null;
   return {
     update(world: World): void {
-      setText(surge, `Surge ${world.surge}`, true);
+      const inSurgeZone: boolean = world.zone.surge !== null;
+      if (inSurgeZone !== surging) {
+        surging = inSurgeZone;
+        element.classList.toggle('visible', inSurgeZone);
+      }
+      if (inSurgeZone) setText(surge, `Surge ${world.surge}`, true);
       const timer: number | null = world.surgeTimer;
       const active: boolean = timer !== null;
       if (timer !== null) setText(gather, `The storm gathers… ${Math.max(0, Math.ceil(timer))}`, true);

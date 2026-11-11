@@ -1,4 +1,4 @@
-import type { MonsterDef, RangedBehaviour, SkillDef } from '../content/types.ts';
+import type { MonsterDef, MonsterScaling, RangedBehaviour, SkillDef, SurgeRules } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, facingOf, normalize, rotate } from '../math.ts';
 import { lineOfSight, lineWalkable, moveWithCollision, nearestWalkable } from '../nav/grid.ts';
@@ -130,15 +130,19 @@ export function removeCorpses(world: World): void {
   world.monsters = kept;
 }
 
+export function monsterLevel(world: World): number {
+  return world.zone.level + (world.zone.surge === null ? 0 : world.surge - 1);
+}
+
 function spawnMonster(world: World, def: MonsterDef, packId: number, center: Vec2): void {
-  const rules = world.arena.surge;
-  const level: number = world.surge;
+  const scaling: MonsterScaling = world.content.world.scaling;
+  const level: number = monsterLevel(world);
   const angle: number = world.rng.range(0, Math.PI * 2);
   const reach: number = world.rng.range(0, MONSTERS.spawnScatter);
   const wanted: Vec2 = { x: center.x + Math.cos(angle) * reach, z: center.z + Math.sin(angle) * reach };
   const pos: Vec2 = nearestWalkable(world.grid, wanted, MONSTERS.spawnSnap) ?? { x: center.x, z: center.z };
-  const life: number = Math.round(def.life * (1 + rules.lifePerSurge * (level - 1)));
-  const damageScale: number = 1 + rules.damagePerSurge * (level - 1);
+  const life: number = Math.round(def.life * (1 + scaling.lifePerLevel * (level - 1)));
+  const damageScale: number = 1 + scaling.damagePerLevel * (level - 1);
   const monster: MonsterState = {
     kind: 'monster',
     id: world.nextId,
@@ -171,10 +175,10 @@ function spawnMonster(world: World, def: MonsterDef, packId: number, center: Vec
   world.events.push({ type: 'monster_spawn', monsterId: monster.id });
 }
 
-export function spawnSurge(world: World): void {
-  const rules = world.arena.surge;
-  const extra: number = Math.min(rules.maxExtraMonsters, Math.floor((world.surge - 1) / Math.max(1, rules.surgesPerExtraMonster)));
-  for (const pack of world.arena.packs) {
+export function spawnPacks(world: World): void {
+  const rules: SurgeRules | null = world.zone.surge;
+  const extra: number = rules === null ? 0 : Math.min(rules.maxExtraMonsters, Math.floor((world.surge - 1) / Math.max(1, rules.surgesPerExtraMonster)));
+  for (const pack of world.zone.packs) {
     const packId: number = world.nextPackId;
     world.nextPackId += 1;
     pack.members.forEach((member, index: number): void => {
@@ -187,9 +191,11 @@ export function spawnSurge(world: World): void {
 }
 
 export function stepSurge(world: World, dt: number): void {
+  const rules: SurgeRules | null = world.zone.surge;
+  if (rules === null) return;
   if (world.surgeTimer === null) {
     if (world.monsters.some((monster: MonsterState): boolean => monster.alive)) return;
-    world.surgeTimer = world.arena.surge.delay;
+    world.surgeTimer = rules.delay;
     world.events.push({ type: 'surge_cleared', surge: world.surge, delay: world.surgeTimer });
     return;
   }
@@ -197,6 +203,6 @@ export function stepSurge(world: World, dt: number): void {
   if (world.surgeTimer > 0) return;
   world.surgeTimer = null;
   world.surge += 1;
-  spawnSurge(world);
+  spawnPacks(world);
   world.events.push({ type: 'surge', surge: world.surge });
 }

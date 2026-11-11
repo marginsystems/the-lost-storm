@@ -202,7 +202,7 @@ export function knownIdsOf(content: Content): KnownIds {
     projectileSkills: new Set<string>(skills.filter((id: string): boolean => content.skills.get(id)?.delivery.type === 'projectile')),
     monsters: new Set<string>(content.monsters.keys()),
     rarities: new Set<string>(content.rarities.map((rarity: RarityDef): string => rarity.id)),
-    zones: new Set<string>([content.arena.id]),
+    zones: new Set<string>(content.zones.keys()),
   };
 }
 

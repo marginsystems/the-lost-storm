@@ -1,6 +1,6 @@
 # The Lost Storm
 
-A single-player isometric action RPG that runs in the browser. Three.js, TypeScript and Vite, with no game engine on top. This is the first playable slice: one hero, one arena (the Drowned Bastion), two monster types, loot, levelling and a small skill tree.
+A single-player isometric action RPG that runs in the browser. Three.js, TypeScript and Vite, with no game engine on top. The world is a set of zones joined by exits: a safe town (Stillhold) and the Drowned Bastion, an arena of endless surges. One hero, two monster types, loot, levelling and a small skill tree.
 
 ## Run it
 
@@ -13,7 +13,7 @@ Open http://localhost:5193.
 
 | Input | Action |
 |---|---|
-| Left mouse | Move, attack the monster under the cursor, pick up loot. Hold to keep going. |
+| Left mouse | Move, attack the monster under the cursor, pick up loot, travel through the exit under the cursor. Hold to keep going. |
 | Shift + left mouse | Attack in place |
 | Q | Thunderclap (area hit around you) |
 | W or right mouse | Storm Bolt (projectile) |
@@ -21,7 +21,7 @@ Open http://localhost:5193.
 | Mouse wheel | Zoom |
 | Escape | Close panels |
 
-Progress saves to `localStorage` on its own. "Start over" on the title screen clears it.
+Progress saves to `localStorage` on its own, including the zone you are in and where you last arrived or touched a checkpoint; dying returns you there. "Start over" on the title screen clears it.
 
 ## Checks
 
@@ -37,11 +37,11 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 
 | Path | What it holds |
 |---|---|
-| `data/` | All content as JSON: skills, monsters, items, the skill tree, rigs, held gear, clothing and armour, props, the arena, the player and which sound id plays for which event (`audio.json`) |
+| `data/` | All content as JSON: skills, monsters, items, the skill tree, rigs, held gear, clothing and armour, props, the player, the world (`world.json`), one file per zone in `data/zones/`, and which sound id plays for which event (`audio.json`) |
 | `sim/` | The game itself in plain TypeScript: stats, combat, skills, monster behaviour, pathfinding, loot, progression, saving. No Three.js and no DOM, so it runs and is tested in Node |
 | `sim/content/` | The content schema (`types.ts`) and the readers that check every JSON file at start-up |
 | `sim/world/` | World state, the commands the player can send and the events each step returns (`types.ts`), and `stepWorld` (`step.ts`) |
-| `src/render/` | Three.js: stage and lighting, the isometric camera, character loading, the arena, effects, weather, world-anchored overlays |
+| `src/render/` | Three.js: stage and lighting, the isometric camera, character loading, the zone view and its exit and checkpoint markers, effects, weather, world-anchored overlays |
 | `src/hud/` | DOM HUD: globes, skill bar, inventory, skill tree, volume panel, tooltips |
 | `src/audio/` | Web Audio: loads sounds from the asset server, plays them with variation, distance and panning, keeps volumes |
 | `src/input.ts` | Mouse and keyboard to commands |
@@ -55,15 +55,15 @@ The renderer reads the world and the events `stepWorld` returns, and sends comma
 
 ## Adding content
 
-Content is data. None of these need a code change:
+Content is data. None of these need a change to the game's logic; the one code edit is registering a new zone file in the content loader, described below:
 
 - **A skill**: add an entry to `data/skills.json`. `delivery` picks how it hits: `arc` (melee sweep), `nova` (ring around the user) or `projectile`. `windup`, `recovery`, `cooldown` and `manaCost` set its timing and cost; `knockback`, `stagger`, `shake`, `hitStop` and `vfx` set how it feels. Put it on the bar in `data/player.json` (`skillBar`, with key bindings) or give it to a monster.
-- **A monster**: add an entry to `data/monsters.json` with its `rig`, stats, `behaviour` (`chaser` or `ranged`), `skill` and `loot`, then add it to a pack in `data/arena.json`.
+- **A monster**: add an entry to `data/monsters.json` with its `rig`, stats, `behaviour` (`chaser` or `ranged`), `skill` and `loot`, then add it to a pack in a zone file.
 - **An item**: add a base, an affix or a rarity to `data/items.json`. Its `slot` is one of `weapon`, `head`, `chest`, `hands`, `legs`, `feet` and `charm`. A weapon base's `visual` names the rig attachment to show in the hero's hand; an armour base's `wear` lists the wearables it puts on the body.
 - **Clothing or armour**: add an entry to `data/wearables.json` (see below) and name it in an item base's `wear`, or in the `wear` list of the player or a monster to dress them with nothing equipped.
 - **A skill-tree node**: add an entry to `data/skill-tree.json` with its grid position, what it `requires`, and its `statMods` and `skillMods`.
-- **A sound**: `data/audio.json` maps game events to sound ids: by skill id (`skillStart`, `skillImpact`, `skillHit`, `projectileSpawn`, `projectileExpire`), by monster id or `player` (`hit`, `critHit`, `death`, `aggro`), by rarity or `gold` (`drop`, `pickup`), `notice`, `world` (`hero_step`, `level_up`, `surge`, `monster_spawn` and others), `ui` actions, and `ambience` per arena. Each entry can set `volume`, `maxVoices` (copies of that sound at once) and `cooldown`. The sound files themselves are not in this repository (see Sound below).
-- **The arena**: `data/arena.json` holds the tile map (4-unit cells), wall and floor models, prop placements, the player start and the monster packs.
+- **A sound**: `data/audio.json` maps game events to sound ids: by skill id (`skillStart`, `skillImpact`, `skillHit`, `projectileSpawn`, `projectileExpire`), by monster id or `player` (`hit`, `critHit`, `death`, `aggro`), by rarity or `gold` (`drop`, `pickup`), `notice`, `world` (`hero_step`, `level_up`, `surge`, `monster_spawn` and others), `ui` actions, and `ambience` per zone id. Each entry can set `volume`, `maxVoices` (copies of that sound at once) and `cooldown`. The sound files themselves are not in this repository (see Sound below).
+- **A zone**: add `data/zones/<id>.json`, then import it in `sim/content/content.ts` and add it to the `zones` list of `RAW_CONTENT` there (a test fails when a zone file is not loaded). A zone holds the tile map (4-unit cells), wall and floor models, prop placements, the player start, the monster packs and their `level`, its `kind` (`town` is safe and has no packs; `wild` has monsters), optional `surge` rules for endless surges, `checkpoints`, its `ambience` (fog, sky and key light) and its `exits`. An exit names the zone and the exit on the other side (`to`, `toExit`) and the `arrival` point where a hero coming through it stands; the two exits must name each other. `data/world.json` names the start zone and how monsters scale with level.
 
 If something cannot be expressed in the data, extend the schema in `sim/content/` in a general way first. See [AGENTS.md](AGENTS.md).
 

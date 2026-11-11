@@ -1,6 +1,8 @@
 {
   "id": "drowned_bastion",
   "name": "The Drowned Bastion",
+  "kind": "wild",
+  "level": 1,
   "cellSize": 4,
   "floorHeight": 0.09,
   "tiles": [
@@ -59,5 +61,18 @@
     { "x": 7, "z": 23, "members": [{ "monster": "hex_caller", "count": 2 }, { "monster": "bone_thrall", "count": 2 }] },
     { "x": 49, "z": 25, "members": [{ "monster": "bone_thrall", "count": 4 }, { "monster": "hex_caller", "count": 1 }] }
   ],
-  "surge": { "delay": 5, "lifePerSurge": 0.22, "damagePerSurge": 0.12, "xpPerSurge": 0.15, "surgesPerExtraMonster": 2, "maxExtraMonsters": 3 }
+  "surge": { "delay": 5, "surgesPerExtraMonster": 2, "maxExtraMonsters": 3 },
+  "exits": [{ "id": "stair", "x": 28, "z": 41.6, "radius": 1.5, "to": "stillhold", "toExit": "bastion_stair", "arrival": { "x": 28, "z": 37 } }],
+  "checkpoints": [],
+  "ambience": {
+    "background": "#06090f",
+    "abyss": "#04060a",
+    "fogNear": 46,
+    "fogFar": 96,
+    "skyColor": "#6f8fbd",
+    "groundColor": "#1b1612",
+    "skyIntensity": 0.85,
+    "keyColor": "#a9c4f2",
+    "keyIntensity": 1.75
+  }
 }

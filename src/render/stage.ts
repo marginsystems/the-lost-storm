@@ -1,4 +1,5 @@
 import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFShadowMap, PerspectiveCamera, PointLight, Scene, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
+import type { ZoneAmbience } from '../../sim/content/types.ts';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -6,15 +7,8 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 export const STAGE = {
   maxPixelRatio: 1.5,
-  background: 0x06090f,
-  fogNear: 46,
-  fogFar: 96,
   exposure: 1.08,
-  skyColor: 0x6f8fbd,
-  groundColor: 0x1b1612,
-  skyIntensity: 0.85,
-  stormColor: 0xa9c4f2,
-  stormIntensity: 1.75,
+  flashBackground: 0x2a3a55,
   stormOffsetX: -16,
   stormOffsetY: 30,
   stormOffsetZ: 10,
@@ -37,6 +31,7 @@ export interface Stage {
   readonly renderer: WebGLRenderer;
   readonly scene: Scene;
   readonly camera: PerspectiveCamera;
+  setAmbience(ambience: ZoneAmbience): void;
   follow(x: number, z: number): void;
   setFlash(amount: number): void;
   resize(): void;
@@ -53,17 +48,21 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   renderer.shadowMap.type = PCFShadowMap;
 
   const scene: Scene = new Scene();
-  const background: Color = new Color(STAGE.background);
-  const flashBackground: Color = new Color(0x2a3a55);
-  scene.background = background.clone();
-  scene.fog = new Fog(STAGE.background, STAGE.fogNear, STAGE.fogFar);
+  const background: Color = new Color(0x000000);
+  const flashBackground: Color = new Color(STAGE.flashBackground);
+  const shownBackground: Color = background.clone();
+  const fog: Fog = new Fog(background, 1, 2);
+  scene.background = shownBackground;
+  scene.fog = fog;
+  let skyIntensity: number = 0;
+  let keyIntensity: number = 0;
 
   const camera: PerspectiveCamera = new PerspectiveCamera(30, 1, 1, 220);
 
-  const sky: HemisphereLight = new HemisphereLight(STAGE.skyColor, STAGE.groundColor, STAGE.skyIntensity);
+  const sky: HemisphereLight = new HemisphereLight(0xffffff, 0x000000, 0);
   scene.add(sky);
 
-  const storm: DirectionalLight = new DirectionalLight(STAGE.stormColor, STAGE.stormIntensity);
+  const storm: DirectionalLight = new DirectionalLight(0xffffff, 0);
   storm.castShadow = true;
   storm.shadow.mapSize.set(STAGE.shadowSize, STAGE.shadowSize);
   storm.shadow.camera.left = -STAGE.shadowExtent;
@@ -107,6 +106,20 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     renderer,
     scene,
     camera,
+    setAmbience(ambience: ZoneAmbience): void {
+      background.set(ambience.background);
+      shownBackground.copy(background);
+      fog.color.copy(background);
+      fog.near = ambience.fogNear;
+      fog.far = ambience.fogFar;
+      sky.color.set(ambience.skyColor);
+      sky.groundColor.set(ambience.groundColor);
+      storm.color.set(ambience.keyColor);
+      skyIntensity = ambience.skyIntensity;
+      keyIntensity = ambience.keyIntensity;
+      sky.intensity = skyIntensity;
+      storm.intensity = keyIntensity;
+    },
     follow(x: number, z: number): void {
       const snappedX: number = Math.round(x / texel) * texel;
       const snappedZ: number = Math.round(z / texel) * texel;
@@ -115,9 +128,9 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       hero.position.set(x, STAGE.heroHeight, z);
     },
     setFlash(amount: number): void {
-      sky.intensity = STAGE.skyIntensity + STAGE.flashSky * amount;
-      storm.intensity = STAGE.stormIntensity + STAGE.flashStorm * amount;
-      if (scene.background instanceof Color) scene.background.copy(background).lerp(flashBackground, amount);
+      sky.intensity = skyIntensity + STAGE.flashSky * amount;
+      storm.intensity = keyIntensity + STAGE.flashStorm * amount;
+      shownBackground.copy(background).lerp(flashBackground, amount);
     },
     resize,
     render(): void {

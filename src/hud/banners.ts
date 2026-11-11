@@ -5,7 +5,7 @@ const BANNERS = {
   removeMs: 900,
 } as const;
 
-export type BannerTone = 'surge' | 'level';
+export type BannerTone = 'surge' | 'level' | 'zone' | 'checkpoint';
 
 export interface Banners {
   show(title: string, subtitle: string | null, tone: BannerTone): void;

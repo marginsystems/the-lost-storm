@@ -1,4 +1,4 @@
-import type { Content } from '../content/types.ts';
+import type { Content, ZoneDef } from '../content/types.ts';
 import { emptyEquipment, generateItem, slotOf } from '../items.ts';
 import { buildNavGrid } from '../nav/grid.ts';
 import { createRng } from '../rng.ts';
@@ -6,8 +6,9 @@ import type { SaveData } from '../save.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
 import { addToInventory } from './character.ts';
 import { dropOnGround } from './ground.ts';
-import { spawnSurge } from './monsters.ts';
-import type { Equipment, ItemInstance, PlayerState, World } from './types.ts';
+import { spawnPacks } from './monsters.ts';
+import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
+import { placePlayer, respawnExists, startZone } from './zones.ts';
 
 export interface WorldOptions {
   readonly seed: number;
@@ -25,7 +26,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
   return {
     kind: 'player',
     id: PLAYER_ID,
-    pos: { x: content.arena.playerStart.x, z: content.arena.playerStart.z },
+    pos: { x: 0, z: 0 },
     facing: Math.PI,
     knock: { x: 0, z: 0 },
     radius: content.player.radius,
@@ -70,27 +71,39 @@ function giveStartingItems(world: World): void {
   world.player.stats = computeStats(world.content, world.player.level, world.player.equipped, world.player.allocated);
 }
 
+function savedZone(content: Content, save: SaveData | null): ZoneDef {
+  return (save === null ? undefined : content.zones.get(save.zone)) ?? startZone(content);
+}
+
 export function createWorld(content: Content, options: WorldOptions): World {
+  const save: SaveData | null = options.save;
+  const zone: ZoneDef = savedZone(content, save);
+  const respawn: RespawnPoint = save !== null && save.zone === zone.id && respawnExists(zone, save.respawn) ? save.respawn : { type: 'start' };
+  const visited: string[] = save === null ? [] : save.visited.filter((id: string): boolean => content.zones.has(id));
+  if (!visited.includes(zone.id)) visited.push(zone.id);
   const world: World = {
     content,
-    arena: content.arena,
-    grid: buildNavGrid(content.arena, content.props, content.player.radius),
+    zone,
+    grid: buildNavGrid(zone, content.props, content.player.radius),
+    respawn,
+    visited,
     rng: createRng(options.seed),
     time: 0,
-    player: freshPlayer(content, options.save),
+    player: freshPlayer(content, save),
     monsters: [],
     projectiles: [],
     ground: [],
     nextId: PLAYER_ID + 1,
-    nextItemUid: options.save?.nextItemUid ?? 1,
+    nextItemUid: save?.nextItemUid ?? 1,
     nextPackId: 1,
-    surge: options.save?.surge ?? 1,
+    surge: save?.surge ?? 1,
     surgeTimer: null,
     events: [],
   };
-  if (options.save === null) giveStartingItems(world);
-  for (const item of options.save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
-  spawnSurge(world);
+  placePlayer(world);
+  if (save === null) giveStartingItems(world);
+  for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
+  spawnPacks(world);
   world.events = [];
   return world;
 }

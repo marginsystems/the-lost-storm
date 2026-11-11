@@ -1,4 +1,5 @@
 import { Vector2 } from 'three';
+import type { ZoneDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
 import type { GroundItem, MonsterState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { IsoCamera } from './iso-camera.ts';
@@ -10,6 +11,7 @@ export const OVERLAYS = {
   labelLift: 1.35,
   labelExit: 0.26,
   numberHeight: 0.75,
+  exitLift: 2.6,
 } as const;
 
 interface FloatingNumber {
@@ -34,19 +36,36 @@ interface LootLabel {
   leaving: number;
 }
 
+interface ExitLabel {
+  readonly element: HTMLDivElement;
+  readonly id: string;
+  readonly x: number;
+  readonly z: number;
+}
+
+export interface OverlayHooks {
+  heightOf(actorId: number): number;
+  onPickup(groundId: number): void;
+  onTravel(exit: string): void;
+}
+
 export interface Overlays {
   handle(events: readonly WorldEvent[], world: World): void;
   update(dt: number, world: World, hoveredId: number | null): void;
+  aimExit(exit: string | null): void;
 }
 
 function place(element: HTMLElement, point: Vector2): void {
   element.style.transform = `translate3d(${point.x.toFixed(1)}px, ${point.y.toFixed(1)}px, 0)`;
 }
 
-export function createOverlays(root: HTMLElement, camera: IsoCamera, heightOf: (actorId: number) => number, onPickup: (groundId: number) => void): Overlays {
+export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: OverlayHooks): Overlays {
   const numbers: FloatingNumber[] = [];
   const bars: Map<number, HealthBar> = new Map<number, HealthBar>();
   const labels: Map<number, LootLabel> = new Map<number, LootLabel>();
+  let exits: ExitLabel[] = [];
+  let exitsOf: ZoneDef | null = null;
+  let aimed: string | null = null;
   const point: Vector2 = new Vector2();
   const barLayer: HTMLDivElement = document.createElement('div');
   const labelLayer: HTMLDivElement = document.createElement('div');
@@ -101,18 +120,43 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, heightOf: (
     element.addEventListener('pointerdown', (event: PointerEvent): void => {
       event.preventDefault();
       event.stopPropagation();
-      if (event.button === 0) onPickup(ground.id);
+      if (event.button === 0) hooks.onPickup(ground.id);
     });
     labelLayer.append(element);
     labels.set(ground.id, { element, ground, leaving: -1 });
   };
 
+  const showExits = (world: World): void => {
+    for (const label of exits) label.element.remove();
+    exitsOf = world.zone;
+    aimed = null;
+    exits = world.zone.exits.map((exit): ExitLabel => {
+      const element: HTMLDivElement = document.createElement('div');
+      element.className = 'exit-label';
+      const inner: HTMLSpanElement = document.createElement('span');
+      inner.textContent = world.content.zones.get(exit.to)?.name ?? exit.to;
+      element.append(inner);
+      element.addEventListener('pointerdown', (event: PointerEvent): void => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.button === 0) hooks.onTravel(exit.id);
+      });
+      labelLayer.append(element);
+      return { element, id: exit.id, x: exit.x, z: exit.z };
+    });
+  };
+
   return {
+    aimExit(exit: string | null): void {
+      if (exit === aimed) return;
+      aimed = exit;
+      for (const label of exits) label.element.classList.toggle('aimed', label.id === exit);
+    },
     handle(events: readonly WorldEvent[], world: World): void {
       for (const event of events) {
         switch (event.type) {
           case 'damage': {
-            const y: number = heightOf(event.targetId) * OVERLAYS.numberHeight;
+            const y: number = hooks.heightOf(event.targetId) * OVERLAYS.numberHeight;
             const kind: string = event.targetTeam === 'player' ? 'hurt' : event.crit ? 'crit' : '';
             float(event.crit ? `${event.amount}!` : `${event.amount}`, kind, event.pos.x, y, event.pos.z);
             break;
@@ -145,12 +189,20 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, heightOf: (
           case 'player_respawn':
           case 'notice':
           case 'character_changed':
+          case 'zone_changed':
+          case 'checkpoint':
           case 'hero_step':
             break;
         }
       }
     },
     update(dt: number, world: World, hoveredId: number | null): void {
+      if (exitsOf !== world.zone) showExits(world);
+      for (const label of exits) {
+        camera.project(label.x, OVERLAYS.exitLift, label.z, point);
+        place(label.element, point);
+      }
+
       for (let index: number = numbers.length - 1; index >= 0; index -= 1) {
         const number: FloatingNumber | undefined = numbers[index];
         if (number === undefined) continue;
@@ -182,7 +234,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, heightOf: (
           bar.shown = wanted;
           bar.element.classList.toggle('shown', wanted);
         }
-        camera.project(monster.pos.x, heightOf(monster.id) + OVERLAYS.barLift, monster.pos.z, point);
+        camera.project(monster.pos.x, hooks.heightOf(monster.id) + OVERLAYS.barLift, monster.pos.z, point);
         place(bar.element, point);
       }
       for (const [id, bar] of bars) {

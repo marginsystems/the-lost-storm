@@ -53,6 +53,19 @@ body {
   pointer-events: none;
 }
 
+#fade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: #05070b;
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+#fade.on {
+  opacity: 1;
+}
+
 #vignette {
   position: absolute;
   inset: 0;
@@ -415,6 +428,38 @@ body {
     opacity: 0;
     transform: translate(-50%, -170%) scale(0.85);
   }
+}
+
+.exit-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  will-change: transform;
+}
+
+.exit-label span {
+  display: block;
+  transform: translate(-50%, -100%);
+  padding: 4px 12px 5px;
+  border-radius: 4px;
+  background: rgba(8, 10, 16, 0.72);
+  color: #cfe6ff;
+  font-family: var(--serif);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  animation: loot-in var(--spring-bouncy-ms) var(--spring-bouncy) both;
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.exit-label:hover span,
+.exit-label.aimed span {
+  background: rgba(30, 40, 58, 0.95);
+  scale: 1.06;
 }
 
 .name-plate {

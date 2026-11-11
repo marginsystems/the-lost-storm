@@ -1,5 +1,5 @@
 import { Vector2, Vector3 } from 'three';
-import type { SkillDef } from '../sim/content/types.ts';
+import type { SkillDef, ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import type { Command, MonsterState, World } from '../sim/world/types.ts';
 import type { Hud } from './hud/hud-api.ts';
@@ -18,6 +18,7 @@ export const INPUT = {
 export interface InputHooks {
   heightOf(actorId: number): number;
   clickMarker(x: number, z: number, hostile: boolean): void;
+  aimExit(exit: string | null): void;
 }
 
 export interface Input {
@@ -111,6 +112,11 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     return best;
   };
 
+  const exitAt = (ground: Vec2 | null): ZoneExit | null => {
+    if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
+    return world.zone.exits.find((exit: ZoneExit): boolean => Math.hypot(exit.x - ground.x, exit.z - ground.z) <= exit.radius) ?? null;
+  };
+
   const ready = (skill: SkillDef | undefined): boolean => {
     if (skill === undefined) return false;
     const player = world.player;
@@ -125,9 +131,11 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       const commands: Command[] = [];
       const target: MonsterState | null = pick();
       hoveredId = target?.id ?? null;
-      canvas.style.cursor = target === null ? 'default' : 'crosshair';
       const groundHit: Vector3 | null = camera.groundPoint(pointer);
       const ground: Vec2 | null = groundHit === null ? null : { x: groundHit.x, z: groundHit.z };
+      const exit: ZoneExit | null = target === null ? exitAt(ground) : null;
+      hooks.aimExit(exit?.id ?? null);
+      canvas.style.cursor = target !== null ? 'crosshair' : exit !== null ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       holdTimer -= dt;
@@ -143,6 +151,11 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
           if (leftFresh) hooks.clickMarker(target.pos.x, target.pos.z, true);
         } else if (shift) {
           commands.push({ type: 'skill', slot: leftSlot, aim: ground, targetId: null });
+        } else if (exit !== null) {
+          if (leftFresh) {
+            commands.push({ type: 'travel', exit: exit.id });
+            hooks.clickMarker(exit.x, exit.z, false);
+          }
         } else {
           commands.push({ type: 'move', dest: ground });
           if (leftFresh) hooks.clickMarker(ground.x, ground.z, false);

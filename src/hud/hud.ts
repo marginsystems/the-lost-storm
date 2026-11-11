@@ -118,6 +118,12 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'surge':
             banners.show(`SURGE ${event.surge}`, null, 'surge');
             break;
+          case 'zone_changed':
+            banners.show(api.world.zone.name, null, 'zone');
+            break;
+          case 'checkpoint':
+            banners.show('Checkpoint', null, 'checkpoint');
+            break;
           case 'level_up':
             banners.show(`LEVEL ${event.level}`, 'Skill point gained', 'level');
             refreshOpen('tree');

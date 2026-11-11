@@ -4,10 +4,6 @@ import type {
   AffixDef,
   AttachmentDef,
   AnimationKey,
-  ArenaDef,
-  ArenaPack,
-  ArenaPoint,
-  ArenaProp,
   Content,
   Delivery,
   ItemBaseDef,
@@ -27,11 +23,20 @@ import type {
   SkillTreeNodeDef,
   StatBlock,
   StatMod,
+  SurgeRules,
   Triple,
   WearableDef,
   WearRegion,
+  WorldDef,
+  ZoneAmbience,
+  ZoneCheckpoint,
+  ZoneDef,
+  ZoneExit,
+  ZonePack,
+  ZonePoint,
+  ZoneProp,
 } from './types.ts';
-import { ACTION_ANIMATIONS, AFFIX_POSITIONS, ANIMATION_KEYS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { ACTION_ANIMATIONS, AFFIX_POSITIONS, ANIMATION_KEYS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES, WEAR_REGIONS, ZONE_KINDS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -42,7 +47,8 @@ export interface RawContent {
   readonly attachments: unknown;
   readonly wearables: unknown;
   readonly props: unknown;
-  readonly arena: unknown;
+  readonly zones: readonly unknown[];
+  readonly world: unknown;
   readonly player: unknown;
 }
 
@@ -275,12 +281,12 @@ function prop(value: unknown, where: string): PropDef {
   };
 }
 
-function point(value: unknown, where: string): ArenaPoint {
+function point(value: unknown, where: string): ZonePoint {
   const source: Fields = fields(value, where);
   return { x: numeric(source, 'x', where), z: numeric(source, 'z', where) };
 }
 
-function arenaProp(value: unknown, where: string): ArenaProp {
+function zoneProp(value: unknown, where: string): ZoneProp {
   const source: Fields = fields(value, where);
   return { prop: text(source, 'prop', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), y: numeric(source, 'y', where), rotationDegrees: numeric(source, 'rotationDegrees', where) };
 }
@@ -290,39 +296,99 @@ function packMember(value: unknown, where: string): PackMember {
   return { monster: text(source, 'monster', where), count: numeric(source, 'count', where) };
 }
 
-function pack(value: unknown, where: string): ArenaPack {
+function pack(value: unknown, where: string): ZonePack {
   const source: Fields = fields(value, where);
   return { x: numeric(source, 'x', where), z: numeric(source, 'z', where), members: each(source['members'], `${where}.members`, packMember) };
 }
 
-function arena(value: unknown, where: string): ArenaDef {
+function surgeRules(value: unknown, where: string): SurgeRules | null {
+  if (value === undefined) throw new ContentError(where, 'expected surge rules, or null for a zone without surges');
+  if (value === null) return null;
+  const source: Fields = fields(value, where);
+  return { delay: numeric(source, 'delay', where), surgesPerExtraMonster: numeric(source, 'surgesPerExtraMonster', where), maxExtraMonsters: numeric(source, 'maxExtraMonsters', where) };
+}
+
+function positive(source: Fields, key: string, where: string): number {
+  const value: number = numeric(source, key, where);
+  if (value <= 0) throw new ContentError(`${where}.${key}`, 'expected a number above zero');
+  return value;
+}
+
+function zoneExit(value: unknown, where: string): ZoneExit {
+  const source: Fields = fields(value, where);
+  return {
+    id: text(source, 'id', where),
+    x: numeric(source, 'x', where),
+    z: numeric(source, 'z', where),
+    radius: positive(source, 'radius', where),
+    to: text(source, 'to', where),
+    toExit: text(source, 'toExit', where),
+    arrival: point(source['arrival'], `${where}.arrival`),
+  };
+}
+
+function zoneCheckpoint(value: unknown, where: string): ZoneCheckpoint {
+  const source: Fields = fields(value, where);
+  return { id: text(source, 'id', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
+}
+
+function zoneAmbience(value: unknown, where: string): ZoneAmbience {
+  const source: Fields = fields(value, where);
+  return {
+    background: text(source, 'background', where),
+    abyss: text(source, 'abyss', where),
+    fogNear: numeric(source, 'fogNear', where),
+    fogFar: numeric(source, 'fogFar', where),
+    skyColor: text(source, 'skyColor', where),
+    groundColor: text(source, 'groundColor', where),
+    skyIntensity: numeric(source, 'skyIntensity', where),
+    keyColor: text(source, 'keyColor', where),
+    keyIntensity: numeric(source, 'keyIntensity', where),
+  };
+}
+
+function zone(value: unknown, where: string): ZoneDef {
   const source: Fields = fields(value, where);
   const floorFields: Fields = fields(source['floors'], `${where}.floors`);
   const floors: Record<string, readonly string[]> = {};
   for (const key of Object.keys(floorFields)) floors[key] = textList(floorFields, key, `${where}.floors`);
   const walls: Fields = fields(source['walls'], `${where}.walls`);
-  const surge: Fields = fields(source['surge'], `${where}.surge`);
   const tiles: string[] = textList(source, 'tiles', where);
   const width: number = tiles[0]?.length ?? 0;
   if (width === 0 || tiles.some((row: string): boolean => row.length !== width)) throw new ContentError(`${where}.tiles`, 'every row must have the same length');
+  const kind: ZoneDef['kind'] = choice(source, 'kind', ZONE_KINDS, where);
+  const packs: ZonePack[] = each(source['packs'], `${where}.packs`, pack);
+  const surge: SurgeRules | null = surgeRules(source['surge'], `${where}.surge`);
+  if (kind === 'town' && (packs.length > 0 || surge !== null)) throw new ContentError(where, 'a town is safe: it cannot have packs or surges');
   return {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
-    cellSize: numeric(source, 'cellSize', where),
+    kind,
+    level: positive(source, 'level', where),
+    cellSize: positive(source, 'cellSize', where),
     floorHeight: numeric(source, 'floorHeight', where),
     tiles,
     floors,
     walls: { tall: textList(walls, 'tall', `${where}.walls`), low: text(walls, 'low', `${where}.walls`), corner: text(walls, 'corner', `${where}.walls`), halfThickness: numeric(walls, 'halfThickness', `${where}.walls`) },
-    props: each(source['props'], `${where}.props`, arenaProp),
+    props: each(source['props'], `${where}.props`, zoneProp),
     playerStart: point(source['playerStart'], `${where}.playerStart`),
-    packs: each(source['packs'], `${where}.packs`, pack),
-    surge: {
-      delay: numeric(surge, 'delay', `${where}.surge`),
-      lifePerSurge: numeric(surge, 'lifePerSurge', `${where}.surge`),
-      damagePerSurge: numeric(surge, 'damagePerSurge', `${where}.surge`),
-      xpPerSurge: numeric(surge, 'xpPerSurge', `${where}.surge`),
-      surgesPerExtraMonster: numeric(surge, 'surgesPerExtraMonster', `${where}.surge`),
-      maxExtraMonsters: numeric(surge, 'maxExtraMonsters', `${where}.surge`),
+    packs,
+    surge,
+    exits: [...byId(each(source['exits'], `${where}.exits`, zoneExit), `${where}.exits`).values()],
+    checkpoints: [...byId(each(source['checkpoints'], `${where}.checkpoints`, zoneCheckpoint), `${where}.checkpoints`).values()],
+    ambience: zoneAmbience(source['ambience'], `${where}.ambience`),
+  };
+}
+
+function worldDef(value: unknown, where: string): WorldDef {
+  const source: Fields = fields(value, where);
+  const scaling: Fields = fields(source['scaling'], `${where}.scaling`);
+  return {
+    start: text(source, 'start', where),
+    scaling: {
+      lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),
+      damagePerLevel: numeric(scaling, 'damagePerLevel', `${where}.scaling`),
+      xpPerLevel: numeric(scaling, 'xpPerLevel', `${where}.scaling`),
     },
   };
 }
@@ -390,7 +456,8 @@ export function parseContent(raw: RawContent): Content {
     attachments: byId(each(raw.attachments, 'attachments', attachment), 'attachments'),
     wearables: byId(each(raw.wearables, 'wearables', wearable), 'wearables'),
     props: byId(each(raw.props, 'props', prop), 'props'),
-    arena: arena(raw.arena, 'arena'),
+    zones: byId(each(raw.zones, 'zones', zone), 'zones'),
+    world: worldDef(raw.world, 'world'),
     player: player(raw.player, 'player'),
   };
 }
@@ -443,10 +510,18 @@ export function contentProblems(content: Content): string[] {
     for (const required of node.requires) need(nodeIds.has(required), `tree node ${node.id} requires unknown node ${required}`);
     for (const mod of node.skillMods) need(content.skills.has(mod.skill), `tree node ${node.id} modifies unknown skill ${mod.skill}`);
   }
-  const arenaDef: ArenaDef = content.arena;
-  for (const models of Object.values(arenaDef.floors)) for (const model of models) need(content.props.has(model), `arena floor uses unknown prop ${model}`);
-  for (const model of [...arenaDef.walls.tall, arenaDef.walls.low, arenaDef.walls.corner]) need(content.props.has(model), `arena wall uses unknown prop ${model}`);
-  for (const placed of arenaDef.props) need(content.props.has(placed.prop), `arena places unknown prop ${placed.prop}`);
-  for (const packDef of arenaDef.packs) for (const member of packDef.members) need(content.monsters.has(member.monster), `arena pack uses unknown monster ${member.monster}`);
+  need(content.zones.has(content.world.start), `world starts in unknown zone ${content.world.start}`);
+  for (const zoneDef of content.zones.values()) {
+    const at: string = `zone ${zoneDef.id}`;
+    for (const models of Object.values(zoneDef.floors)) for (const model of models) need(content.props.has(model), `${at} floor uses unknown prop ${model}`);
+    for (const model of [...zoneDef.walls.tall, zoneDef.walls.low, zoneDef.walls.corner]) need(content.props.has(model), `${at} wall uses unknown prop ${model}`);
+    for (const placed of zoneDef.props) need(content.props.has(placed.prop), `${at} places unknown prop ${placed.prop}`);
+    for (const packDef of zoneDef.packs) for (const member of packDef.members) need(content.monsters.has(member.monster), `${at} pack uses unknown monster ${member.monster}`);
+    for (const exit of zoneDef.exits) {
+      const far: ZoneExit | undefined = content.zones.get(exit.to)?.exits.find((candidate: ZoneExit): boolean => candidate.id === exit.toExit);
+      need(far !== undefined, `${at} exit ${exit.id} leads to unknown exit ${exit.to}.${exit.toExit}`);
+      if (far !== undefined) need(far.to === zoneDef.id && far.toExit === exit.id, `${at} exit ${exit.id} is not matched by ${exit.to}.${exit.toExit}`);
+    }
+  }
   return problems;
 }

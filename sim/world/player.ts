@@ -1,4 +1,4 @@
-import type { SkillDef } from '../content/types.ts';
+import type { SkillDef, ZoneExit } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { findPath } from '../nav/path.ts';
@@ -8,6 +8,7 @@ import { removeGround } from './ground.ts';
 import { followPath, stepKnock, stepTimers } from './movement.ts';
 import { blockedReason, clearProjectiles, startSkill, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, PlayerState, SkillCommand, World } from './types.ts';
+import { findExit, placePlayer, stepCheckpoints, travelThrough } from './zones.ts';
 
 const PLAYER = {
   moveDeadZone: 0.7,
@@ -87,6 +88,13 @@ function act(world: World, command: Command): void {
     case 'skill':
       useSkill(world, command);
       return;
+    case 'travel': {
+      const exit: ZoneExit | null = findExit(world.zone, command.exit);
+      if (exit === null) return;
+      player.intent = { type: 'travel', exit: exit.id };
+      setDestination(world, exit);
+      return;
+    }
     case 'equip':
     case 'unequip':
     case 'drop':
@@ -114,6 +122,7 @@ export function handleCommand(world: World, command: Command): void {
     case 'stop':
     case 'pickup':
     case 'skill':
+    case 'travel':
       if (!player.alive) return;
       if (player.action !== null) {
         player.queued = command;
@@ -185,6 +194,20 @@ function stepIntent(world: World, dt: number): void {
       if (player.path.length === 0) setDestination(world, ground.pos);
       return;
     }
+    case 'travel': {
+      const exit: ZoneExit | null = findExit(world.zone, intent.exit);
+      if (exit === null) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        return;
+      }
+      if (distance(player.pos, exit) <= exit.radius) {
+        travelThrough(world, exit);
+        return;
+      }
+      pursue(world, exit, dt);
+      return;
+    }
   }
 }
 
@@ -201,11 +224,8 @@ function respawn(world: World): void {
   player.alive = true;
   player.life = player.maxLife;
   player.mana = player.stats.maxMana;
-  player.pos = { x: world.arena.playerStart.x, z: world.arena.playerStart.z };
-  player.knock = { x: 0, z: 0 };
   player.cooldowns = {};
-  player.intent = { type: 'idle' };
-  player.path = [];
+  placePlayer(world);
   clearProjectiles(world);
   for (const monster of world.monsters) {
     if (!monster.alive) continue;
@@ -264,4 +284,5 @@ export function stepPlayer(world: World, dt: number): void {
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.strideTravel = PLAYER.stride * PLAYER.firstStepFraction;
   collectGold(world);
+  stepCheckpoints(world);
 }

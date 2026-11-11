@@ -58,6 +58,8 @@ export interface Effects {
   update(dt: number, world: World): void;
   clickMarker(x: number, z: number, hostile: boolean): void;
   takeHitStop(): number;
+  setTorches(points: readonly Vector3[]): void;
+  clear(): void;
   readonly hurt: number;
 }
 
@@ -75,7 +77,7 @@ function easeOut(t: number): number {
   return 1 - (1 - t) * (1 - t) * (1 - t);
 }
 
-export function createEffects(scene: Scene, particles: ParticleSystem, camera: IsoCamera, torches: readonly Vector3[], onFlash: (power: number) => void): Effects {
+export function createEffects(scene: Scene, particles: ParticleSystem, camera: IsoCamera, onFlash: (power: number) => void): Effects {
   const transients: Transient[] = [];
   const projectiles: Map<number, ProjectileView> = new Map<number, ProjectileView>();
   const colors: Map<string, Color> = new Map<string, Color>();
@@ -91,12 +93,9 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     lights.push(light);
   }
   const flameMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: glow(EMBER, 3.4) });
-  const flames: Mesh[] = torches.map((point: Vector3): Mesh => {
-    const flame: Mesh = new Mesh(new SphereGeometry(EFFECTS.flameSize, 10, 8), flameMaterial);
-    flame.position.copy(point);
-    scene.add(flame);
-    return flame;
-  });
+  const flameGeometry: SphereGeometry = new SphereGeometry(EFFECTS.flameSize, 10, 8);
+  let torches: readonly Vector3[] = [];
+  let flames: Mesh[] = [];
 
   const keepers: Mesh[] = [shockwaveMesh(WHITE, EFFECTS.waveTrail, 1).mesh, scorchMesh(WHITE).mesh, markerMesh(WHITE).mesh, slashMesh(1, 1, WHITE).mesh];
   let warmFrames: number = EFFECTS.warmFrames;
@@ -409,6 +408,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'player_respawn':
             ring(world.player.pos.x, world.player.pos.z, 5, MOVE_MARK, 0.6);
             break;
+          case 'checkpoint':
+            ring(event.pos.x, event.pos.z, 4, EMBER, 0.7);
+            spray(event.pos.x, 0.3, event.pos.z, EMBER, 26, { speed: { min: 0.5, max: 2.6 }, lift: { min: 2, max: 7 }, life: { min: 0.5, max: 1.1 }, gravity: 2, jitter: 0.6 });
+            break;
           case 'monster_remove':
           case 'aggro':
           case 'drop':
@@ -416,10 +419,28 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'surge_cleared':
           case 'notice':
           case 'character_changed':
+          case 'zone_changed':
           case 'hero_step':
             break;
         }
       }
+    },
+    setTorches(points: readonly Vector3[]): void {
+      for (const flame of flames) flame.removeFromParent();
+      torches = points;
+      flames = points.map((point: Vector3): Mesh => {
+        const flame: Mesh = new Mesh(flameGeometry, flameMaterial);
+        flame.position.copy(point);
+        scene.add(flame);
+        return flame;
+      });
+    },
+    clear(): void {
+      for (const transient of transients) disposeObject(transient.object);
+      transients.length = 0;
+      for (const view of projectiles.values()) disposeObject(view.mesh);
+      projectiles.clear();
+      for (const light of lights) light.intensity = 0;
     },
     update(dt: number, world: World): void {
       for (const transient of transients) {

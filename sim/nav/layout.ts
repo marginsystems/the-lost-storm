@@ -1,4 +1,4 @@
-import type { ArenaDef } from '../content/types.ts';
+import type { ZoneDef } from '../content/types.ts';
 
 export type WallSide = 'north' | 'south' | 'east' | 'west';
 
@@ -39,43 +39,43 @@ const NEIGHBOURS: readonly Neighbour[] = [
 
 export const CORNER_PILLAR_RADIUS: number = 0.95;
 
-export function tileAtCell(arena: ArenaDef, column: number, row: number): string {
-  return arena.tiles[row]?.charAt(column) ?? '';
+export function tileAtCell(zone: ZoneDef, column: number, row: number): string {
+  return zone.tiles[row]?.charAt(column) ?? '';
 }
 
-export function isFloorTile(arena: ArenaDef, tile: string): boolean {
-  return tile !== '' && arena.floors[tile] !== undefined;
+export function isFloorTile(zone: ZoneDef, tile: string): boolean {
+  return tile !== '' && zone.floors[tile] !== undefined;
 }
 
-export function isFloorCell(arena: ArenaDef, column: number, row: number): boolean {
-  return isFloorTile(arena, tileAtCell(arena, column, row));
+export function isFloorCell(zone: ZoneDef, column: number, row: number): boolean {
+  return isFloorTile(zone, tileAtCell(zone, column, row));
 }
 
-export function arenaColumns(arena: ArenaDef): number {
-  return arena.tiles[0]?.length ?? 0;
+export function zoneColumns(zone: ZoneDef): number {
+  return zone.tiles[0]?.length ?? 0;
 }
 
-export function arenaRows(arena: ArenaDef): number {
-  return arena.tiles.length;
+export function zoneRows(zone: ZoneDef): number {
+  return zone.tiles.length;
 }
 
-export function floorCells(arena: ArenaDef): FloorCell[] {
+export function floorCells(zone: ZoneDef): FloorCell[] {
   const cells: FloorCell[] = [];
-  for (let row: number = 0; row < arenaRows(arena); row += 1) {
-    for (let column: number = 0; column < arenaColumns(arena); column += 1) {
-      const tile: string = tileAtCell(arena, column, row);
-      if (isFloorTile(arena, tile)) cells.push({ x: (column + 0.5) * arena.cellSize, z: (row + 0.5) * arena.cellSize, column, row, tile });
+  for (let row: number = 0; row < zoneRows(zone); row += 1) {
+    for (let column: number = 0; column < zoneColumns(zone); column += 1) {
+      const tile: string = tileAtCell(zone, column, row);
+      if (isFloorTile(zone, tile)) cells.push({ x: (column + 0.5) * zone.cellSize, z: (row + 0.5) * zone.cellSize, column, row, tile });
     }
   }
   return cells;
 }
 
-export function wallEdges(arena: ArenaDef): WallEdge[] {
+export function wallEdges(zone: ZoneDef): WallEdge[] {
   const edges: WallEdge[] = [];
-  const half: number = arena.cellSize / 2;
-  for (const cell of floorCells(arena)) {
+  const half: number = zone.cellSize / 2;
+  for (const cell of floorCells(zone)) {
     for (const neighbour of NEIGHBOURS) {
-      if (isFloorCell(arena, cell.column + neighbour.dc, cell.row + neighbour.dr)) continue;
+      if (isFloorCell(zone, cell.column + neighbour.dc, cell.row + neighbour.dr)) continue;
       edges.push({
         x: cell.x + neighbour.dc * half,
         z: cell.z + neighbour.dr * half,
@@ -89,17 +89,17 @@ export function wallEdges(arena: ArenaDef): WallEdge[] {
   return edges;
 }
 
-export function wallCorners(arena: ArenaDef): WallCorner[] {
+export function wallCorners(zone: ZoneDef): WallCorner[] {
   const corners: WallCorner[] = [];
-  for (let row: number = 0; row <= arenaRows(arena); row += 1) {
-    for (let column: number = 0; column <= arenaColumns(arena); column += 1) {
-      const northWest: boolean = isFloorCell(arena, column - 1, row - 1);
-      const northEast: boolean = isFloorCell(arena, column, row - 1);
-      const southWest: boolean = isFloorCell(arena, column - 1, row);
-      const southEast: boolean = isFloorCell(arena, column, row);
+  for (let row: number = 0; row <= zoneRows(zone); row += 1) {
+    for (let column: number = 0; column <= zoneColumns(zone); column += 1) {
+      const northWest: boolean = isFloorCell(zone, column - 1, row - 1);
+      const northEast: boolean = isFloorCell(zone, column, row - 1);
+      const southWest: boolean = isFloorCell(zone, column - 1, row);
+      const southEast: boolean = isFloorCell(zone, column, row);
       const tallAlongX: boolean = (southEast && !northEast) || (southWest && !northWest);
       const tallAlongZ: boolean = (southEast && !southWest) || (northEast && !northWest);
-      if (tallAlongX && tallAlongZ) corners.push({ x: column * arena.cellSize, z: row * arena.cellSize });
+      if (tallAlongX && tallAlongZ) corners.push({ x: column * zone.cellSize, z: row * zone.cellSize });
     }
   }
   return corners;
