@@ -24,6 +24,9 @@ export const EFFECTS = {
   markerTime: 0.4,
   levelTime: 1.1,
   flashLights: 3,
+  warmFrames: 3,
+  warmDepth: -30,
+  warmScale: 0.001,
   flashDecay: 9,
   hurtDecay: 2.6,
   projectileHeight: 1.25,
@@ -94,6 +97,15 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     scene.add(flame);
     return flame;
   });
+
+  const keepers: Mesh[] = [shockwaveMesh(WHITE, EFFECTS.waveTrail, 1).mesh, scorchMesh(WHITE).mesh, markerMesh(WHITE).mesh, slashMesh(1, 1, WHITE).mesh];
+  let warmFrames: number = EFFECTS.warmFrames;
+  for (const keeper of keepers) {
+    keeper.position.set(0, EFFECTS.warmDepth, 0);
+    keeper.scale.setScalar(EFFECTS.warmScale);
+    keeper.frustumCulled = false;
+    scene.add(keeper);
+  }
 
   const colorOf = (hex: string): Color => {
     const cached: Color | undefined = colors.get(hex);
@@ -423,6 +435,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         view.mesh.position.set(projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z);
         view.mesh.rotation.z += dt * 14;
         spray(projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z, view.color, 2, { speed: { min: 0, max: 1.2 }, lift: { min: -0.6, max: 0.8 }, life: { min: 0.12, max: 0.32 }, size: { min: 0.3, max: 0.7 }, gravity: 0, jitter: 0.25 });
+      }
+      if (warmFrames > 0) {
+        warmFrames -= 1;
+        if (warmFrames === 0) for (const keeper of keepers) keeper.visible = false;
       }
       for (const light of lights) light.intensity *= Math.exp(-EFFECTS.flashDecay * dt);
       hurt = Math.max(0, hurt - EFFECTS.hurtDecay * dt);
