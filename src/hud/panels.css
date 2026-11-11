@@ -1,3 +1,20 @@
+.hud-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background-image:
+    linear-gradient(rgba(127, 212, 255, 0.11) 1px, rgba(127, 212, 255, 0) 1px),
+    linear-gradient(90deg, rgba(127, 212, 255, 0.11) 1px, rgba(127, 212, 255, 0) 1px),
+    radial-gradient(ellipse at center, rgba(4, 8, 14, 0) 30%, rgba(4, 8, 14, 0.5) 100%);
+  background-size: 44px 44px, 44px 44px, 100% 100%;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.hud-grid.visible {
+  opacity: 1;
+}
+
 .hud-panel {
   position: absolute;
   top: 32px;
@@ -8,7 +25,11 @@
   overflow: auto;
   pointer-events: auto;
   border-radius: 8px;
-  background: var(--panel-bg);
+  background:
+    linear-gradient(rgba(127, 212, 255, 0.075) 1px, rgba(127, 212, 255, 0) 1px),
+    linear-gradient(90deg, rgba(127, 212, 255, 0.075) 1px, rgba(127, 212, 255, 0) 1px),
+    var(--panel-bg);
+  background-size: 22px 22px, 22px 22px, 100% 100%;
   border: 1px solid var(--panel-edge);
   box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
   visibility: hidden;
@@ -27,6 +48,36 @@
 .hud-panel.left {
   left: 16px;
   transform: translateX(-40px);
+}
+
+.hud-panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 36px;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(rgba(127, 212, 255, 0), rgba(127, 212, 255, 0.16) 80%, rgba(190, 235, 255, 0.5));
+}
+
+.hud-panel.open::after {
+  animation: panel-scan var(--spring-smooth-ms) var(--spring-smooth) both;
+}
+
+@keyframes panel-scan {
+  0% {
+    opacity: 0;
+    transform: translateY(-36px);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(420px);
+  }
 }
 
 .hud-panel.open {

@@ -18,6 +18,7 @@
         <div class="title-card">
           <h1>The Lost Storm</h1>
           <p class="title-sub" id="title-place"></p>
+          <div class="title-loader" id="title-loader" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <p class="title-status" id="title-status">Gathering the storm…</p>
           <button id="title-enter" type="button" disabled>Enter</button>
           <button id="title-reset" type="button" class="title-quiet" hidden>Start over</button>
@@ -35,6 +36,25 @@
         </div>
       </div>
     </div>
+    <script>
+      (function () {
+        var status = document.getElementById('title-status');
+        var enter = document.getElementById('title-enter');
+        var loader = document.getElementById('title-loader');
+        function fail() {
+          if (!status || !enter || !enter.disabled) return;
+          status.textContent = 'Loading failed. Reload the page.';
+          status.classList.add('failed');
+          if (loader) loader.classList.add('done');
+        }
+        window.addEventListener('error', function (event) {
+          var target = event.target;
+          if (target instanceof HTMLScriptElement || target instanceof HTMLLinkElement) fail();
+        }, true);
+        window.addEventListener('unhandledrejection', fail);
+        window.setTimeout(fail, 20000);
+      })();
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

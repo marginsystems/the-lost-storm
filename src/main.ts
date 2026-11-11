@@ -93,6 +93,7 @@ async function start(): Promise<void> {
   const vignette: HTMLDivElement = element('vignette', HTMLDivElement);
   const titlePlace: HTMLParagraphElement = element('title-place', HTMLParagraphElement);
 
+  status.textContent = 'Reading the rules…';
   const content: Content = loadContent();
   const save: SaveData | null = parseSaveText(content, readSaveText());
   const stage: Stage = createStage(canvas);
@@ -100,7 +101,9 @@ async function start(): Promise<void> {
   const loader: GLTFLoader = new GLTFLoader();
 
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
+  status.textContent = 'Raising the dead and the walls…';
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content), buildZoneView(loader, content, world.zone, stage.scene)]);
+  status.textContent = 'Waking the world…';
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
   const thumbnails: ItemThumbnails = createItemThumbnails(library, shownPieces);
@@ -290,6 +293,7 @@ async function start(): Promise<void> {
   void preloadZones(loader, content);
 
   status.classList.add('quiet');
+  element('title-loader', HTMLDivElement).classList.add('done');
   enter.disabled = false;
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = save === null;
