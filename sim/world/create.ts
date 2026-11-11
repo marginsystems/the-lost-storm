@@ -1,10 +1,11 @@
 import type { Content } from '../content/types.ts';
-import { generateItem, slotOf } from '../items.ts';
+import { emptyEquipment, generateItem, slotOf } from '../items.ts';
 import { buildNavGrid } from '../nav/grid.ts';
 import { createRng } from '../rng.ts';
 import type { SaveData } from '../save.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
 import { addToInventory } from './character.ts';
+import { dropOnGround } from './ground.ts';
 import { spawnSurge } from './monsters.ts';
 import type { Equipment, ItemInstance, PlayerState, World } from './types.ts';
 
@@ -16,7 +17,7 @@ export interface WorldOptions {
 const PLAYER_ID: number = 1;
 
 function freshPlayer(content: Content, save: SaveData | null): PlayerState {
-  const equipped: Equipment = save === null ? { weapon: null, armour: null, charm: null } : { ...save.equipped };
+  const equipped: Equipment = save === null ? emptyEquipment() : { ...save.equipped };
   const allocated: string[] = save === null ? [] : [...save.allocated];
   const level: number = save?.level ?? 1;
   const stats = computeStats(content, level, equipped, allocated);
@@ -87,6 +88,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     events: [],
   };
   if (options.save === null) giveStartingItems(world);
+  for (const item of options.save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   spawnSurge(world);
   world.events = [];
   return world;

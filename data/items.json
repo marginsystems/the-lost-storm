@@ -49,6 +49,7 @@
       "dropWeight": 10,
       "minLevel": 1,
       "visual": "rusted_blade",
+      "wear": [],
       "implicit": [
         {
           "stat": "damageMin",
@@ -70,6 +71,7 @@
       "dropWeight": 8,
       "minLevel": 2,
       "visual": "sword_1h",
+      "wear": [],
       "implicit": [
         {
           "stat": "damageMin",
@@ -96,6 +98,7 @@
       "dropWeight": 6,
       "minLevel": 2,
       "visual": "greatsword",
+      "wear": [],
       "implicit": [
         {
           "stat": "damageMin",
@@ -115,44 +118,219 @@
       ]
     },
     {
-      "id": "drowned_leathers",
-      "name": "Drowned Leathers",
-      "slot": "armour",
+      "id": "saltworn_shirt",
+      "name": "Saltworn Shirt",
+      "slot": "chest",
       "icon": "armour",
-      "dropWeight": 9,
+      "dropWeight": 8,
       "minLevel": 1,
       "visual": null,
+      "wear": [
+        "linen_shirt",
+        "linen_sleeves"
+      ],
       "implicit": [
         {
-          "stat": "maxLife",
+          "stat": "maxMana",
           "op": "add",
-          "value": 18
+          "value": 10
         },
         {
           "stat": "armour",
           "op": "add",
-          "value": 12
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "drowned_leathers",
+      "name": "Drowned Leathers",
+      "slot": "chest",
+      "icon": "armour",
+      "dropWeight": 7,
+      "minLevel": 2,
+      "visual": null,
+      "wear": [
+        "leather_vest",
+        "leather_sleeves",
+        "leather_pauldron"
+      ],
+      "implicit": [
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 14
+        },
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 10
         }
       ]
     },
     {
       "id": "squall_plate",
       "name": "Squall Plate",
-      "slot": "armour",
+      "slot": "chest",
       "icon": "armour",
-      "dropWeight": 6,
+      "dropWeight": 5,
       "minLevel": 3,
       "visual": null,
+      "wear": [],
       "implicit": [
         {
           "stat": "maxLife",
           "op": "add",
-          "value": 30
+          "value": 24
         },
         {
           "stat": "armour",
           "op": "add",
-          "value": 32
+          "value": 26
+        }
+      ]
+    },
+    {
+      "id": "wayfarer_hood",
+      "name": "Wayfarer's Hood",
+      "slot": "head",
+      "icon": "helm",
+      "dropWeight": 7,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "leather_hood"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 6
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 8
+        }
+      ]
+    },
+    {
+      "id": "strapped_bracers",
+      "name": "Strapped Bracers",
+      "slot": "hands",
+      "icon": "gloves",
+      "dropWeight": 6,
+      "minLevel": 2,
+      "visual": null,
+      "wear": [
+        "leather_bracers"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 5
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.04
+        }
+      ]
+    },
+    {
+      "id": "marsh_breeches",
+      "name": "Marsh Breeches",
+      "slot": "legs",
+      "icon": "legs",
+      "dropWeight": 8,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "wool_trousers"
+      ],
+      "implicit": [
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 8
+        },
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "stalker_leggings",
+      "name": "Stalker's Leggings",
+      "slot": "legs",
+      "icon": "legs",
+      "dropWeight": 6,
+      "minLevel": 2,
+      "visual": null,
+      "wear": [
+        "leather_leggings"
+      ],
+      "implicit": [
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 10
+        },
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 8
+        }
+      ]
+    },
+    {
+      "id": "mudcaked_boots",
+      "name": "Mudcaked Boots",
+      "slot": "feet",
+      "icon": "boots",
+      "dropWeight": 8,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "worn_boots"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 2
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.03
+        }
+      ]
+    },
+    {
+      "id": "strider_boots",
+      "name": "Strider's Boots",
+      "slot": "feet",
+      "icon": "boots",
+      "dropWeight": 6,
+      "minLevel": 2,
+      "visual": null,
+      "wear": [
+        "leather_boots"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 6
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.05
         }
       ]
     },
@@ -164,6 +342,7 @@
       "dropWeight": 7,
       "minLevel": 1,
       "visual": null,
+      "wear": [],
       "implicit": [
         {
           "stat": "maxMana",
@@ -185,6 +364,7 @@
       "dropWeight": 5,
       "minLevel": 2,
       "visual": null,
+      "wear": [],
       "implicit": [
         {
           "stat": "critChance",
@@ -200,7 +380,11 @@
       "label": "Sturdy",
       "position": "prefix",
       "slots": [
-        "armour",
+        "head",
+        "chest",
+        "hands",
+        "legs",
+        "feet",
         "charm"
       ],
       "stat": "maxLife",
@@ -242,7 +426,8 @@
       "position": "prefix",
       "slots": [
         "weapon",
-        "armour",
+        "head",
+        "chest",
         "charm"
       ],
       "stat": "maxMana",
@@ -256,7 +441,11 @@
       "label": "Plated",
       "position": "prefix",
       "slots": [
-        "armour"
+        "head",
+        "chest",
+        "hands",
+        "legs",
+        "feet"
       ],
       "stat": "armour",
       "op": "add",
@@ -270,6 +459,7 @@
       "position": "suffix",
       "slots": [
         "weapon",
+        "hands",
         "charm"
       ],
       "stat": "attackSpeed",
@@ -283,7 +473,8 @@
       "label": "of the Squall",
       "position": "suffix",
       "slots": [
-        "armour",
+        "legs",
+        "feet",
         "charm"
       ],
       "stat": "moveSpeed",
@@ -298,6 +489,7 @@
       "position": "suffix",
       "slots": [
         "weapon",
+        "hands",
         "charm"
       ],
       "stat": "critChance",
@@ -311,7 +503,9 @@
       "label": "of Mending",
       "position": "suffix",
       "slots": [
-        "armour",
+        "head",
+        "chest",
+        "legs",
         "charm"
       ],
       "stat": "lifeRegen",
@@ -326,7 +520,8 @@
       "position": "suffix",
       "slots": [
         "weapon",
-        "armour",
+        "head",
+        "chest",
         "charm"
       ],
       "stat": "manaRegen",
@@ -340,7 +535,8 @@
       "label": "of Plunder",
       "position": "suffix",
       "slots": [
-        "armour",
+        "hands",
+        "feet",
         "charm"
       ],
       "stat": "goldFind",

@@ -1,14 +1,17 @@
-import type { AnimationAction, AnimationClip, IUniform, Object3D } from 'three';
-import { AnimationMixer, Color, Group, Mesh, MeshStandardMaterial, PropertyBinding } from 'three';
+import type { AnimationAction, AnimationClip, BufferGeometry, IUniform, Material, Object3D } from 'three';
+import { AnimationMixer, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import type { AnimationKey, AttachmentDef, Content, RigDef, RigSocket } from '../../sim/content/types.ts';
+import type { AnimationKey, AttachmentDef, Content, RigDef, RigSocket, WearableDef } from '../../sim/content/types.ts';
 import { ANIMATION_KEYS } from '../../sim/content/types.ts';
+import { fitToSkeleton, groupBodyParts, skinnedMeshes } from './wearables.ts';
 
 export interface LoadedRig {
   readonly def: RigDef;
   readonly template: Object3D;
   readonly clips: Readonly<Record<AnimationKey, AnimationClip>>;
+  readonly bodyParts: readonly string[];
+  readonly fitted: Map<string, readonly BufferGeometry[]>;
 }
 
 export interface LoadedAttachment {
@@ -16,9 +19,15 @@ export interface LoadedAttachment {
   readonly template: Object3D;
 }
 
+export interface LoadedWearable {
+  readonly def: WearableDef;
+  readonly pieces: readonly SkinnedMesh[];
+}
+
 export interface CharacterLibrary {
   readonly rigs: ReadonlyMap<string, LoadedRig>;
   readonly attachments: ReadonlyMap<string, LoadedAttachment>;
+  readonly wearables: ReadonlyMap<string, LoadedWearable>;
 }
 
 export interface RigLook {
@@ -33,6 +42,7 @@ export interface RigInstance {
   readonly actions: Readonly<Record<AnimationKey, AnimationAction>>;
   readonly durations: Readonly<Record<AnimationKey, number>>;
   setGear(attachmentIds: readonly string[]): void;
+  setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   setFlash(color: Color, amount: number): void;
   dispose(): void;
 }
@@ -44,6 +54,8 @@ export const CHARACTER = {
 
 const DEGREES: number = Math.PI / 180;
 const FLASH_KEY: string = 'storm-flash';
+const WHITE: string = '#ffffff';
+const UNSEEN: Material = new MeshBasicMaterial({ visible: false });
 const pending: Map<string, Promise<GLTF>> = new Map<string, Promise<GLTF>>();
 
 export function assetUrl(path: string): string {
@@ -89,11 +101,25 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   const extras: GLTF[] = await Promise.all(def.animationUrls.map((url: string): Promise<GLTF> => loadModel(loader, url)));
   const available: AnimationClip[] = [...main.animations, ...extras.flatMap((extra: GLTF): AnimationClip[] => extra.animations)];
   const clip = (key: AnimationKey): AnimationClip => pickClip(def, key, available);
+  const template: Object3D = cloneSkinned(main.scene);
+  const bodyParts: string[] = skinnedMeshes(template).reduce((names: string[], mesh: SkinnedMesh): string[] => {
+    const grouped: string[] = groupBodyParts(mesh, def.bodyParts);
+    return grouped.length > 0 ? grouped : names;
+  }, []);
   return {
     def,
-    template: main.scene,
+    template,
     clips: { idle: clip('idle'), run: clip('run'), attack: clip('attack'), slam: clip('slam'), cast: clip('cast'), hit: clip('hit'), death: clip('death') },
+    bodyParts,
+    fitted: new Map<string, readonly BufferGeometry[]>(),
   };
+}
+
+async function loadWearable(loader: GLTFLoader, def: WearableDef): Promise<LoadedWearable> {
+  const model: GLTF = await loadModel(loader, def.model);
+  const pieces: SkinnedMesh[] = skinnedMeshes(model.scene);
+  if (pieces.length === 0) throw new Error(`Wearable "${def.id}" has no skinned mesh in ${def.model}`);
+  return { def, pieces };
 }
 
 async function loadAttachment(loader: GLTFLoader, def: AttachmentDef): Promise<LoadedAttachment> {
@@ -116,13 +142,15 @@ function usedRigs(content: Content): RigDef[] {
 }
 
 export async function loadCharacters(loader: GLTFLoader, content: Content): Promise<CharacterLibrary> {
-  const [rigs, attachments]: [LoadedRig[], LoadedAttachment[]] = await Promise.all([
+  const [rigs, attachments, wearables]: [LoadedRig[], LoadedAttachment[], LoadedWearable[]] = await Promise.all([
     Promise.all(usedRigs(content).map((def: RigDef): Promise<LoadedRig> => loadRig(loader, def))),
     Promise.all([...content.attachments.values()].map((def: AttachmentDef): Promise<LoadedAttachment> => loadAttachment(loader, def))),
+    Promise.all([...content.wearables.values()].map((def: WearableDef): Promise<LoadedWearable> => loadWearable(loader, def))),
   ]);
   return {
     rigs: new Map<string, LoadedRig>(rigs.map((rig: LoadedRig): [string, LoadedRig] => [rig.def.id, rig])),
     attachments: new Map<string, LoadedAttachment>(attachments.map((held: LoadedAttachment): [string, LoadedAttachment] => [held.def.id, held])),
+    wearables: new Map<string, LoadedWearable>(wearables.map((worn: LoadedWearable): [string, LoadedWearable] => [worn.def.id, worn])),
   };
 }
 
@@ -132,12 +160,7 @@ function recolourEmissiveMap(material: MeshStandardMaterial, glow: string): void
   material.emissiveIntensity = CHARACTER.glowBoost;
 }
 
-function dress(object: Object3D, look: RigLook, flash: IUniform<Color>, sink: MeshStandardMaterial[]): void {
-  if (!(object instanceof Mesh)) return;
-  object.castShadow = true;
-  object.receiveShadow = false;
-  object.frustumCulled = false;
-  const source: unknown = object.material;
+function flashing(source: unknown, look: RigLook, flash: IUniform<Color>): MeshStandardMaterial[] {
   const list: readonly unknown[] = Array.isArray(source) ? source : [source];
   const cloned: MeshStandardMaterial[] = [];
   for (const entry of list) {
@@ -151,10 +174,32 @@ function dress(object: Object3D, look: RigLook, flash: IUniform<Color>, sink: Me
     };
     material.customProgramCacheKey = (): string => FLASH_KEY;
     cloned.push(material);
-    sink.push(material);
   }
+  return cloned;
+}
+
+function dress(object: Object3D, look: RigLook, flash: IUniform<Color>, sink: MeshStandardMaterial[]): void {
+  if (!(object instanceof Mesh)) return;
+  object.castShadow = true;
+  object.receiveShadow = false;
+  object.frustumCulled = false;
+  const cloned: MeshStandardMaterial[] = flashing(object.material, look, flash);
+  sink.push(...cloned);
   const first: MeshStandardMaterial | undefined = cloned[0];
   if (first !== undefined) object.material = cloned.length === 1 ? first : cloned;
+}
+
+interface BodyMesh {
+  readonly mesh: SkinnedMesh;
+  readonly skin: Material;
+}
+
+function fittedPieces(rig: LoadedRig, worn: LoadedWearable, anchor: SkinnedMesh): readonly BufferGeometry[] {
+  const cached: readonly BufferGeometry[] | undefined = rig.fitted.get(worn.def.model);
+  if (cached !== undefined) return cached;
+  const made: BufferGeometry[] = worn.pieces.map((piece: SkinnedMesh): BufferGeometry => fitToSkeleton(piece, anchor.skeleton, `Wearable "${worn.def.id}" on rig "${rig.def.id}"`));
+  rig.fitted.set(worn.def.model, made);
+  return made;
 }
 
 function findNode(model: Object3D, name: string): Object3D | undefined {
@@ -183,6 +228,11 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   for (const key of ANIMATION_KEYS) durations[key] = rig.clips[key].duration;
   const held: Group[] = [];
   let heldKey: string = '';
+  const bodies: BodyMesh[] = skinnedMeshes(model).flatMap((mesh: SkinnedMesh): BodyMesh[] => (Array.isArray(mesh.material) ? [] : [{ mesh, skin: mesh.material }]));
+  const anchor: SkinnedMesh | undefined = bodies[0]?.mesh;
+  const worn: SkinnedMesh[] = [];
+  const wornMaterials: MeshStandardMaterial[] = [];
+  let wornKey: string = '';
 
   return {
     def,
@@ -209,13 +259,44 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         held.push(holder);
       }
     },
+    setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void {
+      const key: string = `${wearableIds.join('|')}#${hiddenParts.join('|')}`;
+      if (key === wornKey || anchor === undefined) return;
+      wornKey = key;
+      for (const piece of worn.splice(0, worn.length)) piece.removeFromParent();
+      for (const material of wornMaterials.splice(0, wornMaterials.length)) material.dispose();
+      for (const id of wearableIds) {
+        const wearable: LoadedWearable | undefined = library.wearables.get(id);
+        if (wearable === undefined) continue;
+        const geometries: readonly BufferGeometry[] = fittedPieces(rig, wearable, anchor);
+        wearable.pieces.forEach((piece: SkinnedMesh, index: number): void => {
+          const geometry: BufferGeometry | undefined = geometries[index];
+          const cloned: MeshStandardMaterial[] = flashing(piece.material, { tint: wearable.def.tint, glow: WHITE }, flash);
+          const first: MeshStandardMaterial | undefined = cloned[0];
+          if (geometry === undefined || first === undefined) return;
+          const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
+          mesh.castShadow = true;
+          mesh.frustumCulled = false;
+          mesh.position.copy(anchor.position);
+          mesh.quaternion.copy(anchor.quaternion);
+          mesh.scale.copy(anchor.scale);
+          mesh.bind(anchor.skeleton, anchor.bindMatrix);
+          (anchor.parent ?? model).add(mesh);
+          worn.push(mesh);
+          wornMaterials.push(...cloned);
+        });
+      }
+      for (const body of bodies) {
+        body.mesh.material = hiddenParts.length === 0 ? body.skin : [body.skin, ...rig.bodyParts.map((part: string): Material => (hiddenParts.includes(part) ? UNSEEN : body.skin))];
+      }
+    },
     setFlash(color: Color, amount: number): void {
       flash.value.copy(color).multiplyScalar(amount * CHARACTER.flashBoost);
     },
     dispose(): void {
       mixer.stopAllAction();
       mixer.uncacheRoot(model);
-      for (const material of materials) material.dispose();
+      for (const material of [...materials, ...wornMaterials]) material.dispose();
     },
   };
 }

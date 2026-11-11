@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
-import type { AffixDef, Content, RarityDef } from './content/types.ts';
-import { baseOf, generateItem, itemLines, itemMods, itemName, rarityOf, slotOf } from './items.ts';
+import type { AffixDef, Content, ItemBaseDef, ItemSlot, RarityDef } from './content/types.ts';
+import { ITEM_SLOTS } from './content/types.ts';
+import { baseOf, emptyEquipment, generateItem, itemLines, itemMods, itemName, rarityOf, slotOf } from './items.ts';
 import type { ItemLine } from './items.ts';
 import { createRng } from './rng.ts';
 import type { Rng } from './rng.ts';
@@ -103,4 +104,23 @@ void test('item lines merge the weapon damage range and list affixes separately'
     lines.map((line: ItemLine): string => line.source),
     ['implicit', 'implicit', 'affix'],
   );
+});
+
+void test('every slot has a base that drops and affixes that can roll on it', (): void => {
+  assert.deepEqual(Object.keys(emptyEquipment()).toSorted(), [...ITEM_SLOTS].toSorted());
+  const dropped: Set<ItemSlot> = new Set<ItemSlot>(rolls(6, 6).map((item: ItemInstance): ItemSlot => must(slotOf(content, item), 'slot')));
+  for (const slot of ITEM_SLOTS) {
+    assert.ok(dropped.has(slot), `${slot} drops`);
+    const prefixes: AffixDef[] = [...content.affixes.values()].filter((affix: AffixDef): boolean => affix.slots.includes(slot) && affix.position === 'prefix');
+    const suffixes: AffixDef[] = [...content.affixes.values()].filter((affix: AffixDef): boolean => affix.slots.includes(slot) && affix.position === 'suffix');
+    assert.ok(prefixes.length >= 1 && suffixes.length >= 1, `${slot} affixes`);
+  }
+});
+
+void test('a held weapon shows a model and never wears clothes, and armour is the reverse', (): void => {
+  for (const base of content.itemBases.values()) {
+    const found: ItemBaseDef = base;
+    if (found.slot === 'weapon') assert.deepEqual(found.wear, [], found.id);
+    else assert.equal(found.visual, null, found.id);
+  }
 });

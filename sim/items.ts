@@ -2,7 +2,7 @@ import type { AffixDef, Content, ItemBaseDef, ItemSlot, RarityDef, StatMod } fro
 import type { Rng } from './rng.ts';
 import { pickWeighted } from './rng.ts';
 import { describeMod, roundStat } from './stat-text.ts';
-import type { ItemInstance, RolledAffix } from './world/types.ts';
+import type { Equipment, ItemInstance, RolledAffix } from './world/types.ts';
 
 export interface ItemLine {
   readonly text: string;
@@ -10,6 +10,10 @@ export interface ItemLine {
 }
 
 const FALLBACK_RARITY: RarityDef = { id: 'unknown', name: 'Unknown', color: '#9aa3ad', weight: 0, affixMin: 0, affixMax: 0, statScale: 1 };
+
+export function emptyEquipment(): Equipment {
+  return { weapon: null, head: null, chest: null, hands: null, legs: null, feet: null, charm: null };
+}
 
 export function rarityOf(content: Content, item: ItemInstance): RarityDef {
   return content.rarities.find((rarity: RarityDef): boolean => rarity.id === item.rarity) ?? FALLBACK_RARITY;

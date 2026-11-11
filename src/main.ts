@@ -1,7 +1,7 @@
 import type { Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { loadContent } from '../sim/content/content.ts';
-import type { Content } from '../sim/content/types.ts';
+import type { Content, ItemBaseDef } from '../sim/content/types.ts';
 import { baseOf } from '../sim/items.ts';
 import type { SaveData } from '../sim/save.ts';
 import { parseSaveText, toSave } from '../sim/save.ts';
@@ -23,7 +23,7 @@ import { createEffects } from './render/effects.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import { createIsoCamera } from './render/iso-camera.ts';
 import type { ItemThumbnails } from './render/item-thumbnails.ts';
-import { createItemThumbnails } from './render/item-thumbnails.ts';
+import { createItemThumbnails, wornImageKey } from './render/item-thumbnails.ts';
 import type { LootView } from './render/loot-view.ts';
 import { createLootView } from './render/loot-view.ts';
 import type { Overlays } from './render/overlays.ts';
@@ -77,7 +77,8 @@ async function start(): Promise<void> {
 
   const [library, arena]: [CharacterLibrary, ArenaView] = await Promise.all([loadCharacters(loader, content), buildArena(loader, content, stage.scene)]);
   const loot: LootView = await createLootView(loader, stage.scene, library);
-  const thumbnails: ItemThumbnails = createItemThumbnails(library);
+  const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
+  const thumbnails: ItemThumbnails = createItemThumbnails(library, shownPieces);
 
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
   const queue: Command[] = [];
@@ -89,8 +90,11 @@ async function start(): Promise<void> {
   const effects: Effects = createEffects(stage.scene, particles, camera, arena.torches, (power: number): void => weather.strike(power));
   const actors: Actors = createActors(stage.scene, library, world);
   const itemImage = (item: ItemInstance): string | null => {
-    const visual: string | null = baseOf(content, item)?.visual ?? null;
-    return visual === null ? null : (thumbnails.get(visual) ?? null);
+    const base: ItemBaseDef | null = baseOf(content, item);
+    if (base === null) return null;
+    if (base.visual !== null) return thumbnails.get(base.visual) ?? null;
+    const piece: string | null = base.wear[0] ?? null;
+    return piece === null ? null : (thumbnails.get(wornImageKey(piece)) ?? null);
   };
   const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send, itemImage });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, (id: number): number => actors.heightOf(id), (groundId: number): void => send({ type: 'pickup', groundId }));

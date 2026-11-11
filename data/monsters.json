@@ -25,6 +25,10 @@
     "tint": "#a89878",
     "gear": [
       "rusted_blade"
+    ],
+    "wear": [
+      "rag_shirt",
+      "rag_trousers"
     ]
   },
   {
@@ -55,6 +59,9 @@
     "tint": "#8a78b0",
     "gear": [
       "hex_staff"
+    ],
+    "wear": [
+      "hex_hood"
     ]
   }
 ]

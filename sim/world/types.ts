@@ -139,6 +139,7 @@ export interface GroundItem {
   readonly from: Vec2;
   readonly content: GoldDrop | ItemDrop;
   age: number;
+  kept: boolean;
 }
 
 export interface MoveCommand {

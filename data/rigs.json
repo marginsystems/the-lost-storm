@@ -69,7 +69,59 @@
         "scale": 1
       }
     },
-    "hiddenNodes": []
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "DEF-head"
+      ],
+      "torso": [
+        "DEF-spine.001",
+        "DEF-spine.002",
+        "DEF-spine.003",
+        "DEF-shoulder.L",
+        "DEF-shoulder.R"
+      ],
+      "hands": [
+        "DEF-hand.L",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-hand.R",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R"
+      ],
+      "feet": [
+        "DEF-foot.L",
+        "DEF-toe.L",
+        "DEF-foot.R",
+        "DEF-toe.R"
+      ]
+    }
   },
   {
     "id": "skeleton_thrall",
@@ -141,7 +193,59 @@
         "scale": 1
       }
     },
-    "hiddenNodes": []
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "DEF-head"
+      ],
+      "torso": [
+        "DEF-spine.001",
+        "DEF-spine.002",
+        "DEF-spine.003",
+        "DEF-shoulder.L",
+        "DEF-shoulder.R"
+      ],
+      "hands": [
+        "DEF-hand.L",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-hand.R",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R"
+      ],
+      "feet": [
+        "DEF-foot.L",
+        "DEF-toe.L",
+        "DEF-foot.R",
+        "DEF-toe.R"
+      ]
+    }
   },
   {
     "id": "skeleton_caster",
@@ -213,6 +317,58 @@
         "scale": 1
       }
     },
-    "hiddenNodes": []
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "DEF-head"
+      ],
+      "torso": [
+        "DEF-spine.001",
+        "DEF-spine.002",
+        "DEF-spine.003",
+        "DEF-shoulder.L",
+        "DEF-shoulder.R"
+      ],
+      "hands": [
+        "DEF-hand.L",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-hand.R",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R"
+      ],
+      "feet": [
+        "DEF-foot.L",
+        "DEF-toe.L",
+        "DEF-foot.R",
+        "DEF-toe.R"
+      ]
+    }
   }
 ]
