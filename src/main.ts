@@ -2,11 +2,12 @@ import type { Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { loadContent } from '../sim/content/content.ts';
 import type { Content } from '../sim/content/types.ts';
+import { baseOf } from '../sim/items.ts';
 import type { SaveData } from '../sim/save.ts';
 import { parseSaveText, toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
-import type { Command, World, WorldEvent } from '../sim/world/types.ts';
+import type { Command, ItemInstance, World, WorldEvent } from '../sim/world/types.ts';
 import { createHud } from './hud/hud.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
@@ -21,6 +22,8 @@ import type { Effects } from './render/effects.ts';
 import { createEffects } from './render/effects.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import { createIsoCamera } from './render/iso-camera.ts';
+import type { ItemThumbnails } from './render/item-thumbnails.ts';
+import { createItemThumbnails } from './render/item-thumbnails.ts';
 import type { LootView } from './render/loot-view.ts';
 import { createLootView } from './render/loot-view.ts';
 import type { Overlays } from './render/overlays.ts';
@@ -72,7 +75,9 @@ async function start(): Promise<void> {
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader();
 
-  const [library, arena, loot]: [CharacterLibrary, ArenaView, LootView] = await Promise.all([loadCharacters(loader, content), buildArena(loader, content, stage.scene), createLootView(loader, stage.scene)]);
+  const [library, arena]: [CharacterLibrary, ArenaView] = await Promise.all([loadCharacters(loader, content), buildArena(loader, content, stage.scene)]);
+  const loot: LootView = await createLootView(loader, stage.scene, library);
+  const thumbnails: ItemThumbnails = createItemThumbnails(library);
 
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
   const queue: Command[] = [];
@@ -83,7 +88,11 @@ async function start(): Promise<void> {
   const weather: Weather = createWeather();
   const effects: Effects = createEffects(stage.scene, particles, camera, arena.torches, (power: number): void => weather.strike(power));
   const actors: Actors = createActors(stage.scene, library, world);
-  const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send });
+  const itemImage = (item: ItemInstance): string | null => {
+    const visual: string | null = baseOf(content, item)?.visual ?? null;
+    return visual === null ? null : (thumbnails.get(visual) ?? null);
+  };
+  const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send, itemImage });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, (id: number): number => actors.heightOf(id), (groundId: number): void => send({ type: 'pickup', groundId }));
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),

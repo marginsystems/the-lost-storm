@@ -1,10 +1,11 @@
-import type { Command, World, WorldEvent } from '../../sim/world/types.ts';
+import type { Command, ItemInstance, World, WorldEvent } from '../../sim/world/types.ts';
 
 export type HudPanel = 'inventory' | 'tree';
 
 export interface HudApi {
   readonly world: World;
   send(command: Command): void;
+  itemImage(item: ItemInstance): string | null;
 }
 
 export interface Hud {

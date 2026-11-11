@@ -1,8 +1,10 @@
-import type { Content, ItemSlot, RarityDef } from '../../sim/content/types.ts';
+import type { Content, ItemBaseDef, ItemSlot, RarityDef } from '../../sim/content/types.ts';
 import type { ItemLine } from '../../sim/items.ts';
-import { itemLines, itemName, rarityOf, slotOf } from '../../sim/items.ts';
+import { baseOf, itemLines, itemName, rarityOf, slotOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
 import { el, label } from './dom.ts';
+import type { HudApi } from './hud-api.ts';
+import { setPicture } from './item-picture.ts';
 
 const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = {
   weapon: 'Weapon',
@@ -15,14 +17,21 @@ function appendLines(parent: HTMLElement, content: Content, item: ItemInstance):
   for (const line of lines) label(`tip-line ${line.source}`, line.text, parent);
 }
 
-export function itemTooltip(content: Content, item: ItemInstance, equipped: ItemInstance | null, hint: string): HTMLElement {
+export function itemTooltip(api: HudApi, item: ItemInstance, equipped: ItemInstance | null, hint: string): HTMLElement {
+  const content: Content = api.world.content;
   const root: HTMLDivElement = el('div', 'tip', null);
   const rarity: RarityDef = rarityOf(content, item);
   const slot: ItemSlot | null = slotOf(content, item);
-  const title: HTMLDivElement = label('tip-title', itemName(content, item), root);
+  const base: ItemBaseDef | null = baseOf(content, item);
+  const head: HTMLDivElement = el('div', 'tip-head', root);
+  const picture: HTMLDivElement = el('div', 'tip-picture', head);
+  picture.style.setProperty('--rarity', rarity.color);
+  setPicture(picture, api.itemImage(item), base === null ? '' : base.icon);
+  const heading: HTMLDivElement = el('div', 'tip-heading', head);
+  const title: HTMLDivElement = label('tip-title', itemName(content, item), heading);
   title.style.color = rarity.color;
-  label('tip-sub', slot === null ? rarity.name : `${rarity.name} ${SLOT_NAMES[slot]}`, root);
-  label('tip-sub', `Item level ${item.level}`, root);
+  label('tip-sub', slot === null ? rarity.name : `${rarity.name} ${SLOT_NAMES[slot]}`, heading);
+  label('tip-sub', `Item level ${item.level}`, heading);
   el('div', 'tip-sep', root);
   appendLines(root, content, item);
   if (equipped !== null) {

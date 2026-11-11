@@ -5,7 +5,7 @@ import { armourReduction, damagePerSecond } from '../../sim/stats.ts';
 import type { ItemInstance, PlayerState } from '../../sim/world/types.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
-import { iconSvg } from './icons.ts';
+import { setPicture } from './item-picture.ts';
 import { itemTooltip } from './item-tooltip.ts';
 import { attachTooltip } from './tooltip.ts';
 
@@ -91,7 +91,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       return true;
     }
     const base: ItemBaseDef | null = baseOf(context.api.world.content, item);
-    view.item.innerHTML = iconSvg(base === null ? '' : base.icon);
+    setPicture(view.item, context.api.itemImage(item), base === null ? '' : base.icon);
     view.item.style.setProperty('--rarity', rarityOf(context.api.world.content, item).color);
     view.item.classList.add('filled');
     retrigger(view.item, 'pop');
@@ -105,7 +105,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
     label('equip-name', SLOT_TITLES[slot], holder);
     equipCells.set(slot, view);
     attachTooltip(context.tooltip, view.cell, (): HTMLElement | null =>
-      view.current === null ? null : itemTooltip(context.api.world.content, view.current, null, INVENTORY.hintEquipped),
+      view.current === null ? null : itemTooltip(context.api, view.current, null, INVENTORY.hintEquipped),
     );
     view.cell.addEventListener('click', (): void => {
       if (view.current === null) return;
@@ -124,7 +124,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       const content = context.api.world.content;
       const slot: ItemSlot | null = slotOf(content, item);
       const equipped: ItemInstance | null = slot === null ? null : context.api.world.player.equipped[slot];
-      return itemTooltip(content, item, equipped, INVENTORY.hintInventory);
+      return itemTooltip(context.api, item, equipped, INVENTORY.hintInventory);
     });
     view.cell.addEventListener('click', (): void => {
       if (view.current === null) return;
