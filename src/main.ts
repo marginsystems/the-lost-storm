@@ -9,7 +9,7 @@ import type { Content, ItemBaseDef } from '../sim/content/types.ts';
 import { baseOf } from '../sim/items.ts';
 import type { Vec2 } from '../sim/math.ts';
 import type { SaveData } from '../sim/save.ts';
-import { parseSaveText, toSave } from '../sim/save.ts';
+import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../sim/world/types.ts';
@@ -22,6 +22,8 @@ import type { AudioControls } from './audio/settings.ts';
 import { browserSettingsStorage, createSettingsStore } from './audio/settings.ts';
 import type { AudioSystem, Trigger } from './audio/system.ts';
 import { createAudioSystem } from './audio/system.ts';
+import type { Backend, BackendState } from './backend/backend.ts';
+import { createBrowserBackend } from './backend/browser.ts';
 import { createHud } from './hud/hud.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
@@ -50,7 +52,8 @@ import type { ZoneMarkers } from './render/zone-markers.ts';
 import { createZoneMarkers } from './render/zone-markers.ts';
 import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones } from './render/zone-view.ts';
-import { clearSave, readSaveText, writeSave } from './storage.ts';
+import { createBrowserTimers } from './browser-timers.ts';
+import { createTitleSync } from './title-sync.ts';
 import type { ZoneTransition } from './transition.ts';
 import { createZoneTransition } from './transition.ts';
 
@@ -93,13 +96,17 @@ async function start(): Promise<void> {
   const titlePlace: HTMLParagraphElement = element('title-place', HTMLParagraphElement);
 
   const content: Content = loadContent();
-  const save: SaveData | null = parseSaveText(content, readSaveText());
+  const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
+  const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
+  const loadingSave: Promise<SaveData | null> = backend.load();
   const stage: Stage = createStage(canvas);
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader();
+  const loadingCharacters: Promise<CharacterLibrary> = loadCharacters(loader, content);
 
+  const save: SaveData | null = await loadingSave;
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
-  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content), buildZoneView(loader, content, world.zone, stage.scene)]);
+  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadingCharacters, buildZoneView(loader, content, world.zone, stage.scene)]);
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
   const thumbnails: ItemThumbnails = createItemThumbnails(library, shownPieces);
@@ -177,7 +184,7 @@ async function start(): Promise<void> {
 
   const persist = (): void => {
     if (!dirty || saveHeld) return;
-    dirty = !writeSave(toSave(world));
+    dirty = !backend.save(toSave(world));
     sinceSave = 0;
   };
 
@@ -270,9 +277,14 @@ async function start(): Promise<void> {
   };
 
   window.addEventListener('resize', (): void => stage.resize());
-  window.addEventListener('beforeunload', persist);
+  window.addEventListener('beforeunload', (): void => {
+    persist();
+    backend.flush();
+  });
   document.addEventListener('visibilitychange', (): void => {
-    if (document.hidden) persist();
+    if (!document.hidden) return;
+    persist();
+    backend.flush();
   });
 
   camera.snap(world.player.pos.x, world.player.pos.z);
@@ -280,6 +292,8 @@ async function start(): Promise<void> {
   void preloadZones(loader, content);
 
   status.classList.add('quiet');
+  showSync(backend.state());
+  backend.subscribe(showSync);
   enter.disabled = false;
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = save === null;
@@ -293,10 +307,14 @@ async function start(): Promise<void> {
     audio.unlock();
     startZoneAmbience();
   });
-  reset.addEventListener('click', (): void => {
+  const startOver = async (): Promise<void> => {
     dirty = false;
-    clearSave();
+    reset.disabled = true;
+    await backend.reset();
     window.location.reload();
+  };
+  reset.addEventListener('click', (): void => {
+    void startOver();
   });
 }
 

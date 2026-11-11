@@ -64,6 +64,10 @@
       }
     },
     {
+      "files": ["src/backend/console-log.ts"],
+      "rules": { "no-console": "off" }
+    },
+    {
       "files": ["tools/**/*.ts"],
       "rules": { "no-console": "off" }
     }

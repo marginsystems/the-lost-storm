@@ -211,6 +211,24 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.title-sync {
+  margin: 14px 0 0;
+  min-height: 16px;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: rgba(239, 230, 214, 0.38);
+  opacity: 0;
+  transition: opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.title-sync.shown {
+  opacity: 1;
+}
+
+.title-sync[data-state='cloud'] {
+  color: rgba(127, 212, 255, 0.7);
+}
+
 .title-keys {
   margin: 30px auto 0;
   display: grid;

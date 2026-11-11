@@ -1,6 +1,6 @@
 # The Lost Storm
 
-A single-player isometric action RPG on Three.js, in TypeScript, built with Vite. It runs in the browser with no server. See [README.md](README.md) for how to run it and how the code is laid out.
+A single-player isometric action RPG on Three.js, in TypeScript, built with Vite. It runs in the browser with no server; an optional cloud save backend is described in the Persistence section below. See [README.md](README.md) for how to run it and how the code is laid out.
 
 ## Code comments
 
@@ -40,6 +40,17 @@ npm test
 - `src/` draws the game and reads input. It reads the world state and the events `stepWorld` returns, and sends commands back. It never changes world state directly.
 
 A change to how damage is rolled, how a skill hits, how a monster decides, what drops or how a level is gained goes in `sim/` with a test, never in `src/`.
+
+## Persistence and the optional backend
+
+`src/backend/` is the only code that loads or saves progress. `main.ts` talks to a `Backend` (`load`, `save`, `reset`, `flush`). The local implementation is the `localStorage` behaviour the game always had. The remote one exists only when `VITE_SERVER_URL` is set.
+
+- With the variable unset the game makes no network request. A plain clone must keep working offline.
+- A backend never fails the game. Network errors, timeouts and bad answers are absorbed and retried, and the game keeps saving locally. Only `load` (started first, so it overlaps the character load) and `reset` (before the page reloads) wait for the network, three seconds at most each. `reset` must keep waiting: a reload that outruns it would load the old cloud copy back.
+- Nothing from the network is trusted unchecked: a response is read with `readSave` before it is used, and a token is only ever sent to the server address that issued it.
+- Console output goes through `src/backend/console-log.ts`, the one file in `src/` exempt from `no-console` (as `tools/` is).
+- Nothing about a particular server belongs in this repository beyond the protocol types in `src/backend/api.ts` and the `VITE_SERVER_URL` entry in the README.
+- The decisions (which copy wins on load and on a conflict) are pure functions in `src/backend/merge.ts`. Test them there, and test the sync behaviour in `src/backend/remote.test.ts` with the fake server in `test/backend-support.ts`.
 
 ## Content is data
 
