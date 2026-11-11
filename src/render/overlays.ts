@@ -1,7 +1,8 @@
 import { Vector2 } from 'three';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
-import type { GroundItem, MonsterState, World, WorldEvent } from '../../sim/world/types.ts';
+import { hasNews } from '../../sim/world/dialogue.ts';
+import type { GroundItem, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { IsoCamera } from './iso-camera.ts';
 
 export const OVERLAYS = {
@@ -12,6 +13,7 @@ export const OVERLAYS = {
   labelExit: 0.26,
   numberHeight: 0.75,
   exitLift: 2.6,
+  npcLift: 0.5,
 } as const;
 
 interface FloatingNumber {
@@ -43,10 +45,17 @@ interface ExitLabel {
   readonly z: number;
 }
 
+interface NpcLabel {
+  readonly element: HTMLDivElement;
+  readonly npc: NpcState;
+  news: boolean | null;
+}
+
 export interface OverlayHooks {
   heightOf(actorId: number): number;
   onPickup(groundId: number): void;
   onTravel(exit: string): void;
+  onTalk(npcId: number): void;
 }
 
 export interface Overlays {
@@ -66,6 +75,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   let exits: ExitLabel[] = [];
   let exitsOf: ZoneDef | null = null;
   let aimed: string | null = null;
+  let people: NpcLabel[] = [];
+  let peopleOf: readonly NpcState[] | null = null;
   const point: Vector2 = new Vector2();
   const barLayer: HTMLDivElement = document.createElement('div');
   const labelLayer: HTMLDivElement = document.createElement('div');
@@ -146,6 +157,30 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     });
   };
 
+  const showPeople = (world: World): void => {
+    for (const label of people) label.element.remove();
+    peopleOf = world.npcs;
+    people = world.npcs.map((npc: NpcState): NpcLabel => {
+      const element: HTMLDivElement = document.createElement('div');
+      element.className = 'npc-label';
+      const inner: HTMLSpanElement = document.createElement('span');
+      const news: HTMLElement = document.createElement('i');
+      const name: HTMLElement = document.createElement('b');
+      name.textContent = npc.def.name;
+      const title: HTMLElement = document.createElement('small');
+      title.textContent = npc.def.title;
+      inner.append(news, name, title);
+      element.append(inner);
+      element.addEventListener('pointerdown', (event: PointerEvent): void => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.button === 0) hooks.onTalk(npc.id);
+      });
+      labelLayer.append(element);
+      return { element, npc, news: null };
+    });
+  };
+
   return {
     aimExit(exit: string | null): void {
       if (exit === aimed) return;
@@ -192,6 +227,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'zone_changed':
           case 'checkpoint':
           case 'hero_step':
+          case 'dialogue_line':
+          case 'dialogue_closed':
             break;
         }
       }
@@ -200,6 +237,17 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       if (exitsOf !== world.zone) showExits(world);
       for (const label of exits) {
         camera.project(label.x, OVERLAYS.exitLift, label.z, point);
+        place(label.element, point);
+      }
+      if (peopleOf !== world.npcs) showPeople(world);
+      for (const label of people) {
+        const news: boolean = hasNews(world, label.npc.def);
+        if (news !== label.news) {
+          label.news = news;
+          label.element.classList.toggle('news', news);
+        }
+        label.element.classList.toggle('aimed', label.npc.id === hoveredId);
+        camera.project(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z, point);
         place(label.element, point);
       }
 

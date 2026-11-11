@@ -103,6 +103,8 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'character_changed':
     case 'zone_changed':
     case 'checkpoint':
+    case 'dialogue_line':
+    case 'dialogue_closed':
       break;
   }
   return found;
@@ -128,6 +130,8 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'stop':
     case 'drop':
     case 'travel':
+    case 'talk':
+    case 'advance':
       break;
   }
   return action;

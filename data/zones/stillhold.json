@@ -55,6 +55,10 @@
   "surge": null,
   "exits": [{ "id": "bastion_stair", "x": 22, "z": 33.6, "radius": 1.5, "to": "drowned_bastion", "toExit": "stair", "arrival": { "x": 22, "z": 29.5 } }],
   "checkpoints": [],
+  "npcs": [
+    { "npc": "maren", "x": 18.5, "z": 19.5, "facingDegrees": 70 },
+    { "npc": "hale", "x": 27, "z": 13.4, "facingDegrees": 200 }
+  ],
   "ambience": {
     "background": "#0a0907",
     "abyss": "#070605",

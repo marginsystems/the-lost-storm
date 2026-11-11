@@ -1,7 +1,7 @@
 import { Vector2, Vector3 } from 'three';
 import type { SkillDef, ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
-import type { Command, MonsterState, World } from '../sim/world/types.ts';
+import type { Command, MonsterState, NpcState, World } from '../sim/world/types.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 
@@ -13,6 +13,7 @@ export const INPUT = {
   inventoryKey: 'KeyI',
   treeKey: 'KeyT',
   closeKey: 'Escape',
+  advanceKeys: ['Space', 'Enter'],
 } as const;
 
 export interface InputHooks {
@@ -35,6 +36,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   let pointerInside: boolean = false;
   let holdTimer: number = 0;
   let shift: boolean = false;
+  const extra: Command[] = [];
 
   const slotFor = (binding: string): number => world.content.player.skillBar.findIndex((entry): boolean => entry.bindings.includes(binding));
 
@@ -84,7 +86,9 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     if (event.repeat) return;
     if (event.code === INPUT.inventoryKey) hud.togglePanel('inventory');
     else if (event.code === INPUT.treeKey) hud.togglePanel('tree');
-    else if (event.code === INPUT.closeKey) hud.closePanels();
+    else if (event.code === INPUT.closeKey) {
+      if (!hud.closePanels() && world.dialogue !== null) extra.push({ type: 'stop' });
+    }
     else press(event.code);
   });
   window.addEventListener('keyup', (event: KeyboardEvent): void => {
@@ -112,6 +116,21 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     return best;
   };
 
+  const pickNpc = (): NpcState | null => {
+    if (!pointerInside || hud.isPointerOverUi()) return null;
+    let best: NpcState | null = null;
+    let bestGap: number = INPUT.pickRadius;
+    for (const npc of world.npcs) {
+      bottom.set(npc.pos.x, 0, npc.pos.z);
+      const gap: number = camera.rayDistanceTo(pointer, bottom, hooks.heightOf(npc.id));
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = npc;
+      }
+    }
+    return best;
+  };
+
   const exitAt = (ground: Vec2 | null): ZoneExit | null => {
     if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
     return world.zone.exits.find((exit: ZoneExit): boolean => Math.hypot(exit.x - ground.x, exit.z - ground.z) <= exit.radius) ?? null;
@@ -128,19 +147,24 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       return hoveredId;
     },
     collect(dt: number): Command[] {
-      const commands: Command[] = [];
+      const commands: Command[] = extra.splice(0, extra.length);
       const target: MonsterState | null = pick();
-      hoveredId = target?.id ?? null;
+      const person: NpcState | null = target === null ? pickNpc() : null;
+      hoveredId = target?.id ?? person?.id ?? null;
       const groundHit: Vector3 | null = camera.groundPoint(pointer);
       const ground: Vec2 | null = groundHit === null ? null : { x: groundHit.x, z: groundHit.z };
-      const exit: ZoneExit | null = target === null ? exitAt(ground) : null;
+      const exit: ZoneExit | null = target === null && person === null ? exitAt(ground) : null;
       hooks.aimExit(exit?.id ?? null);
-      canvas.style.cursor = target !== null ? 'crosshair' : exit !== null ? 'pointer' : 'default';
+      canvas.style.cursor = target !== null ? 'crosshair' : exit !== null || person !== null ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       holdTimer -= dt;
       const holdTick: boolean = holdTimer <= 0;
       if (holdTick) holdTimer = INPUT.holdInterval;
+      if (world.dialogue !== null) {
+        if (fresh.has(INPUT.leftBinding) || INPUT.advanceKeys.some((key: string): boolean => fresh.has(key))) commands.push({ type: 'advance' });
+        return commands;
+      }
       if (aim === null || ground === null) return commands;
 
       const leftSlot: number = slotFor(INPUT.leftBinding);
@@ -151,6 +175,8 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
           if (leftFresh) hooks.clickMarker(target.pos.x, target.pos.z, true);
         } else if (shift) {
           commands.push({ type: 'skill', slot: leftSlot, aim: ground, targetId: null });
+        } else if (person !== null) {
+          if (leftFresh) commands.push({ type: 'talk', npcId: person.id });
         } else if (exit !== null) {
           if (leftFresh) {
             commands.push({ type: 'travel', exit: exit.id });

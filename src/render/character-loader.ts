@@ -136,6 +136,7 @@ async function loadAttachment(loader: GLTFLoader, def: AttachmentDef): Promise<L
 function usedRigs(content: Content): RigDef[] {
   const ids: Set<string> = new Set<string>([content.player.rig]);
   for (const monster of content.monsters.values()) ids.add(monster.rig);
+  for (const npc of content.npcs.values()) ids.add(npc.rig);
   const rigs: RigDef[] = [];
   for (const id of ids) {
     const rig: RigDef | undefined = content.rigs.get(id);

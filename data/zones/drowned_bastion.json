@@ -64,6 +64,7 @@
   "surge": { "delay": 5, "surgesPerExtraMonster": 2, "maxExtraMonsters": 3 },
   "exits": [{ "id": "stair", "x": 28, "z": 41.6, "radius": 1.5, "to": "stillhold", "toExit": "bastion_stair", "arrival": { "x": 28, "z": 37 } }],
   "checkpoints": [],
+  "npcs": [],
   "ambience": {
     "background": "#06090f",
     "abyss": "#04060a",

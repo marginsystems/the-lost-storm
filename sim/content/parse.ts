@@ -8,8 +8,10 @@ import type {
   Delivery,
   ItemBaseDef,
   ItemSlot,
+  LineDef,
   MonsterBehaviour,
   MonsterDef,
+  NpcDef,
   PackMember,
   PlayerDef,
   PropDef,
@@ -25,6 +27,7 @@ import type {
   StatBlock,
   StatMod,
   SurgeRules,
+  TalkDef,
   Triple,
   WearableDef,
   WearRegion,
@@ -33,6 +36,7 @@ import type {
   ZoneCheckpoint,
   ZoneDef,
   ZoneExit,
+  ZoneNpc,
   ZonePack,
   ZonePoint,
   ZoneProp,
@@ -50,6 +54,8 @@ export interface RawContent {
   readonly props: unknown;
   readonly zones: readonly unknown[];
   readonly world: unknown;
+  readonly npcs: unknown;
+  readonly lines: unknown;
   readonly player: unknown;
 }
 
@@ -334,6 +340,11 @@ function zoneCheckpoint(value: unknown, where: string): ZoneCheckpoint {
   return { id: text(source, 'id', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
 }
 
+function zoneNpc(value: unknown, where: string): ZoneNpc {
+  const source: Fields = fields(value, where);
+  return { npc: text(source, 'npc', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), facingDegrees: numeric(source, 'facingDegrees', where) };
+}
+
 function zoneAmbience(value: unknown, where: string): ZoneAmbience {
   const source: Fields = fields(value, where);
   return {
@@ -378,8 +389,48 @@ function zone(value: unknown, where: string): ZoneDef {
     surge,
     exits: [...byId(each(source['exits'], `${where}.exits`, zoneExit), `${where}.exits`).values()],
     checkpoints: [...byId(each(source['checkpoints'], `${where}.checkpoints`, zoneCheckpoint), `${where}.checkpoints`).values()],
+    npcs: each(source['npcs'], `${where}.npcs`, zoneNpc),
     ambience: zoneAmbience(source['ambience'], `${where}.ambience`),
   };
+}
+
+function line(value: unknown, where: string): LineDef {
+  const source: Fields = fields(value, where);
+  const spoken: string = text(source, 'text', where);
+  if (spoken.trim() === '') throw new ContentError(`${where}.text`, 'a line needs words');
+  return { id: text(source, 'id', where), speaker: text(source, 'speaker', where), text: spoken };
+}
+
+function talk(value: unknown, where: string): TalkDef {
+  const source: Fields = fields(value, where);
+  const lines: string[] = textList(source, 'lines', where);
+  if (lines.length === 0) throw new ContentError(`${where}.lines`, 'a conversation needs at least one line');
+  return { id: text(source, 'id', where), once: flag(source, 'once', where), lines };
+}
+
+function npc(value: unknown, where: string): NpcDef {
+  const source: Fields = fields(value, where);
+  return {
+    id: text(source, 'id', where),
+    name: text(source, 'name', where),
+    title: text(source, 'title', where),
+    rig: text(source, 'rig', where),
+    scale: positive(source, 'scale', where),
+    tint: text(source, 'tint', where),
+    color: text(source, 'color', where),
+    gear: textList(source, 'gear', where),
+    wear: textList(source, 'wear', where),
+    talks: each(source['talks'], `${where}.talks`, talk),
+  };
+}
+
+function npcs(value: unknown, where: string): Map<string, NpcDef> {
+  const defs: Map<string, NpcDef> = byId(each(value, where, npc), where);
+  byId(
+    [...defs.values()].flatMap((def: NpcDef): readonly TalkDef[] => def.talks),
+    `${where} talks`,
+  );
+  return defs;
 }
 
 function worldDef(value: unknown, where: string): WorldDef {
@@ -460,6 +511,8 @@ export function parseContent(raw: RawContent): Content {
     props: byId(each(raw.props, 'props', prop), 'props'),
     zones: byId(each(raw.zones, 'zones', zone), 'zones'),
     world: worldDef(raw.world, 'world'),
+    npcs: npcs(raw.npcs, 'npcs'),
+    lines: byId(each(raw.lines, 'lines', line), 'lines'),
     player: player(raw.player, 'player'),
   };
 }
@@ -522,11 +575,28 @@ export function contentProblems(content: Content): string[] {
     for (const model of [...zoneDef.walls.tall, zoneDef.walls.low, zoneDef.walls.corner]) need(content.props.has(model), `${at} wall uses unknown prop ${model}`);
     for (const placed of zoneDef.props) need(content.props.has(placed.prop), `${at} places unknown prop ${placed.prop}`);
     for (const packDef of zoneDef.packs) for (const member of packDef.members) need(content.monsters.has(member.monster), `${at} pack uses unknown monster ${member.monster}`);
+    for (const placed of zoneDef.npcs) need(content.npcs.has(placed.npc), `${at} places unknown npc ${placed.npc}`);
     for (const exit of zoneDef.exits) {
       const far: ZoneExit | undefined = content.zones.get(exit.to)?.exits.find((candidate: ZoneExit): boolean => candidate.id === exit.toExit);
       need(far !== undefined, `${at} exit ${exit.id} leads to unknown exit ${exit.to}.${exit.toExit}`);
       if (far !== undefined) need(far.to === zoneDef.id && far.toExit === exit.id, `${at} exit ${exit.id} is not matched by ${exit.to}.${exit.toExit}`);
     }
   }
+  for (const def of content.npcs.values()) {
+    need(content.rigs.has(def.rig), `npc ${def.id} uses unknown rig ${def.rig}`);
+    for (const held of def.gear) fits(`npc ${def.id}`, def.rig, held);
+    wears(`npc ${def.id}`, def.rig, def.wear);
+    const lastWord: number = def.talks.findIndex((entry: TalkDef): boolean => !entry.once);
+    need(lastWord >= 0, `npc ${def.id} has no repeatable conversation`);
+    for (const unreachable of lastWord < 0 ? [] : def.talks.slice(lastWord + 1)) need(false, `conversation ${unreachable.id} of ${def.id} can never play: it comes after the repeatable conversation ${def.talks[lastWord]?.id ?? ''}`);
+    for (const entry of def.talks) {
+      for (const lineId of entry.lines) {
+        const spoken: LineDef | undefined = content.lines.get(lineId);
+        need(spoken !== undefined, `conversation ${entry.id} uses unknown line ${lineId}`);
+        if (spoken !== undefined) need(spoken.speaker === def.id, `conversation ${entry.id} of ${def.id} uses line ${lineId}, which is spoken by ${spoken.speaker}`);
+      }
+    }
+  }
+  for (const spoken of content.lines.values()) need(content.npcs.has(spoken.speaker), `line ${spoken.id} has unknown speaker ${spoken.speaker}`);
   return problems;
 }

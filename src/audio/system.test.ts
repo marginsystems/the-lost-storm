@@ -47,6 +47,9 @@ void test('with no asset base nothing is requested, nothing throws and nothing i
     system.update(10);
     system.stopAmbience();
     await system.playVoice('anything');
+    system.stopVoice();
+    await Promise.all([system.playVoice('one'), system.playVoice('two')]);
+    system.stopVoice();
     assert.deepEqual(requests, []);
   });
 });

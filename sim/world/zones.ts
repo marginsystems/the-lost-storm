@@ -3,6 +3,7 @@ import type { Content, ZoneCheckpoint, ZoneDef, ZoneExit, ZonePoint } from '../c
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { buildNavGrid } from '../nav/grid.ts';
+import { closeDialogue, spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
 import { clearProjectiles } from './skills.ts';
@@ -58,6 +59,7 @@ export function placePlayer(world: World): void {
 }
 
 export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): void {
+  closeDialogue(world, false);
   clearProjectiles(world);
   for (const monster of world.monsters) world.events.push({ type: 'monster_remove', monsterId: monster.id });
   world.monsters = [];
@@ -70,6 +72,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   if (!world.visited.includes(zone.id)) world.visited.push(zone.id);
   placePlayer(world);
   for (const item of carried) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
+  spawnNpcs(world);
   spawnPacks(world);
 }
 

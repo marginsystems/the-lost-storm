@@ -39,6 +39,7 @@ export interface AudioSystem {
   unlock(): void;
   play(cue: SoundCue, place: Placement): void;
   playVoice(lineId: string): Promise<void>;
+  stopVoice(): void;
   startAmbience(zone: ZoneAmbience): void;
   stopAmbience(): void;
   update(dt: number): void;
@@ -83,6 +84,8 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   let graph: Graph | null = null;
   let manifest: AssetManifest | null = null;
   let voicesPlaying: number = 0;
+  let speaking: AudioBufferSourceNode | null = null;
+  let voiceRequest: number = 0;
   let manifestLoad: Promise<void> = Promise.resolve();
 
   const report = (cue: SoundCue, place: Placement): void => {
@@ -241,22 +244,37 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       trigger('effects', cue, place);
     },
     async playVoice(lineId: string): Promise<void> {
+      this.stopVoice();
+      const request: number = voiceRequest;
       await manifestLoad;
       const current: Graph | null = graph;
       const path: string | undefined = manifest?.voice.get(lineId);
       if (current === null || path === undefined) return;
       const buffer: AudioBuffer | null = await load(path);
-      if (buffer === null) return;
+      if (buffer === null || request !== voiceRequest) return;
       const source: AudioBufferSourceNode = current.context.createBufferSource();
       source.buffer = buffer;
+      speaking = source;
       await new Promise<void>((resolve: () => void): void => {
         connect(source, 1, 0, current.voice, current, (): void => {
+          if (speaking === source) speaking = null;
           duck(-1);
           resolve();
         });
         duck(1);
         source.start();
       });
+    },
+    stopVoice(): void {
+      voiceRequest += 1;
+      const source: AudioBufferSourceNode | null = speaking;
+      speaking = null;
+      if (source === null) return;
+      try {
+        source.stop();
+      } catch {
+        return;
+      }
     },
     startAmbience(zone: ZoneAmbience): void {
       this.stopAmbience();

@@ -24,6 +24,7 @@ export interface SaveData {
   readonly zone: string;
   readonly respawn: RespawnPoint;
   readonly visited: readonly string[];
+  readonly heard: readonly string[];
 }
 
 interface Worn {
@@ -49,6 +50,7 @@ export function toSave(world: World): SaveData {
     zone: world.zone.id,
     respawn: world.respawn,
     visited: [...world.visited],
+    heard: [...world.heard],
   };
 }
 
@@ -117,6 +119,12 @@ function readVisited(content: Content, value: unknown, zone: string): string[] {
   return visited.includes(zone) ? visited : [...visited, zone];
 }
 
+function readHeard(content: Content, value: unknown): string[] {
+  const list: readonly unknown[] = Array.isArray(value) ? value : [];
+  const known: Set<string> = new Set<string>([...content.npcs.values()].flatMap((npc): string[] => npc.talks.map((talk): string => talk.id)));
+  return list.filter((id: unknown): id is string => typeof id === 'string' && known.has(id));
+}
+
 export function readSave(content: Content, value: unknown): SaveData | null {
   if (!isFields(value) || !READABLE_VERSIONS.has(value['version'])) return null;
   const level: number | null = count(value, 'level', 1);
@@ -157,6 +165,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     zone,
     respawn: known ? readRespawn(value['respawn']) : { type: 'start' },
     visited: readVisited(content, value['visited'], zone),
+    heard: readHeard(content, value['heard']),
   };
 }
 

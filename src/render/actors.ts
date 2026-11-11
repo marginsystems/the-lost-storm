@@ -2,9 +2,9 @@ import type { Scene } from 'three';
 import { Color } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import { hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
-import type { Equipment, MonsterState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
-import type { ActorView } from './actor-view.ts';
-import { createActorView } from './actor-view.ts';
+import type { ActorState, Equipment, MonsterState, NpcState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
+import type { ActorPose, ActorView } from './actor-view.ts';
+import { ACTOR, createActorView } from './actor-view.ts';
 import type { CharacterLibrary, LoadedRig, RigInstance } from './character-loader.ts';
 import { instantiateRig } from './character-loader.ts';
 
@@ -28,6 +28,10 @@ export interface Actors {
 const HIT_WHITE: Color = new Color(0xffffff);
 const HIT_RED: Color = new Color(0xff2a1a);
 
+function poseOf(actor: ActorState): ActorPose {
+  return { pos: actor.pos, facing: actor.facing, moving: actor.moving, busy: actor.action !== null, deadTime: actor.deadTime };
+}
+
 function playerGear(content: Content, player: PlayerState): string[] {
   const weapon = player.equipped.weapon;
   const held: string | null = weapon === null ? content.player.unarmedVisual : (content.itemBases.get(weapon.base)?.visual ?? content.player.unarmedVisual);
@@ -48,6 +52,20 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   dress(content, playerView.rig, content.player.wear, world.player.equipped);
   scene.add(playerView.rig.root);
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
+  const npcs: Map<number, ActorView> = new Map<number, ActorView>();
+
+  const npcView = (npc: NpcState): ActorView | null => {
+    const existing: ActorView | undefined = npcs.get(npc.id);
+    if (existing !== undefined) return existing;
+    const rig: LoadedRig | undefined = library.rigs.get(npc.def.rig);
+    if (rig === undefined) return null;
+    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: npc.def.tint, glow: npc.def.color }), npc.def.scale, npc.facing, ACTOR.friendlyHover);
+    view.rig.setGear(npc.def.gear);
+    dress(content, view.rig, npc.def.wear, null);
+    scene.add(view.rig.root);
+    npcs.set(npc.id, view);
+    return view;
+  };
 
   const entryFor = (monster: MonsterState): MonsterEntry | null => {
     const existing: MonsterEntry | undefined = monsters.get(monster.id);
@@ -66,7 +84,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
 
   const viewOf = (actorId: number): ActorView | null => {
     if (actorId === world.player.id) return playerView;
-    return monsters.get(actorId)?.view ?? null;
+    return monsters.get(actorId)?.view ?? npcs.get(actorId) ?? null;
   };
 
   return {
@@ -75,12 +93,23 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     },
     sync(dt: number, current: World, hoveredId: number | null): void {
       const floor: number = current.zone.floorHeight;
-      playerView.sync(dt, current.player, { moveSpeed: current.player.stats.moveSpeed, rise: 1, floor });
+      playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.stats.moveSpeed, rise: 1, floor, turnRate: ACTOR.turnRate });
       for (const monster of current.monsters) {
         const entry: MonsterEntry | null = entryFor(monster);
         if (entry === null) continue;
         entry.view.setHover(monster.id === hoveredId);
-        entry.view.sync(dt, monster, { moveSpeed: monster.def.moveSpeed, rise: 1 - monster.spawnTime / entry.spawnTime, floor });
+        entry.view.sync(dt, poseOf(monster), { moveSpeed: monster.def.moveSpeed, rise: 1 - monster.spawnTime / entry.spawnTime, floor, turnRate: ACTOR.turnRate });
+      }
+      for (const npc of current.npcs) {
+        const view: ActorView | null = npcView(npc);
+        if (view === null) continue;
+        view.setHover(npc.id === hoveredId);
+        view.sync(dt, { pos: npc.pos, facing: npc.facing, moving: false, busy: false, deadTime: 0 }, { moveSpeed: 0, rise: 1, floor, turnRate: ACTOR.npcTurnRate });
+      }
+      for (const [id, view] of npcs) {
+        if (current.npcs.some((npc: NpcState): boolean => npc.id === id)) continue;
+        view.dispose();
+        npcs.delete(id);
       }
     },
     handle(events: readonly WorldEvent[], current: World): void {
@@ -122,6 +151,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             break;
           case 'skill_impact':
           case 'checkpoint':
+          case 'dialogue_line':
+          case 'dialogue_closed':
           case 'projectile_spawn':
           case 'projectile_end':
           case 'monster_spawn':

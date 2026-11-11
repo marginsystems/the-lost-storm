@@ -1,0 +1,86 @@
+.hud-dialogue {
+  position: absolute;
+  left: 50%;
+  bottom: 118px;
+  width: min(620px, 84vw);
+  box-sizing: border-box;
+  padding: 14px 20px 10px;
+  border-radius: 6px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-edge);
+  cursor: pointer;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 16px) scale(0.98);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.hud-dialogue.open {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.dialogue-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.dialogue-name {
+  font-family: var(--serif);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--ember);
+}
+
+.dialogue-title {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+.dialogue-text {
+  min-height: 52px;
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.dialogue-text.line {
+  animation: dialogue-line var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.dialogue-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.dialogue-hint {
+  animation: dialogue-wait calc(var(--spring-bouncy-ms) * 3) var(--spring-smooth) infinite;
+}
+
+@keyframes dialogue-wait {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes dialogue-line {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

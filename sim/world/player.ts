@@ -4,10 +4,11 @@ import { distance } from '../math.ts';
 import { findPath } from '../nav/path.ts';
 import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, unequip } from './character.ts';
 import { findActor } from './combat.ts';
+import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, openDialogue } from './dialogue.ts';
 import { removeGround } from './ground.ts';
 import { followPath, stepKnock, stepTimers } from './movement.ts';
 import { blockedReason, clearProjectiles, startSkill, stepAction } from './skills.ts';
-import type { Actor, Command, GroundItem, NoticeReason, PlayerState, SkillCommand, World } from './types.ts';
+import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { findExit, placePlayer, stepCheckpoints, travelThrough } from './zones.ts';
 
 const PLAYER = {
@@ -30,6 +31,7 @@ function fire(world: World, skill: SkillDef, aim: Vec2): boolean {
     world.events.push({ type: 'notice', reason });
     return false;
   }
+  closeDialogue(world, false);
   player.intent = { type: 'idle' };
   player.path = [];
   startSkill(world, player, skill, { x: aim.x - player.pos.x, z: aim.z - player.pos.z });
@@ -58,6 +60,7 @@ function useSkill(world: World, command: SkillCommand): void {
     world.events.push({ type: 'notice', reason });
     return;
   }
+  closeDialogue(world, false);
   player.intent = { type: 'attack', slot: command.slot, targetId: target.id };
   setDestination(world, target.pos);
 }
@@ -95,6 +98,14 @@ function act(world: World, command: Command): void {
       setDestination(world, exit);
       return;
     }
+    case 'talk': {
+      const npc: NpcState | null = findNpc(world, command.npcId);
+      if (npc === null) return;
+      player.intent = { type: 'talk', npcId: npc.id };
+      setDestination(world, npc.pos);
+      return;
+    }
+    case 'advance':
     case 'equip':
     case 'unequip':
     case 'drop':
@@ -118,12 +129,17 @@ export function handleCommand(world: World, command: Command): void {
     case 'allocate':
       allocateNode(world, command.node);
       return;
+    case 'advance':
+      advanceDialogue(world);
+      return;
     case 'move':
     case 'stop':
     case 'pickup':
     case 'skill':
     case 'travel':
+    case 'talk':
       if (!player.alive) return;
+      if (command.type !== 'skill') closeDialogue(world, false);
       if (player.action !== null) {
         player.queued = command;
         return;
@@ -206,6 +222,22 @@ function stepIntent(world: World, dt: number): void {
         return;
       }
       pursue(world, exit, dt);
+      return;
+    }
+    case 'talk': {
+      const npc: NpcState | null = findNpc(world, intent.npcId);
+      if (npc === null) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        return;
+      }
+      if (distance(player.pos, npc.pos) <= DIALOGUE.reach) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        openDialogue(world, npc);
+        return;
+      }
+      pursue(world, npc.pos, dt);
       return;
     }
   }

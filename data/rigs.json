@@ -370,5 +370,129 @@
         "DEF-toe.R"
       ]
     }
+  },
+  {
+    "id": "skeleton_townsfolk",
+    "url": "models/characters/skeleton.glb",
+    "animationUrls": [
+      "models/animations/humanoid.glb"
+    ],
+    "scale": 1.2,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "clips": {
+      "idle": {
+        "clip": "Idle_Loop",
+        "impactFraction": 0
+      },
+      "run": {
+        "clip": "Walk_Loop",
+        "impactFraction": 0
+      },
+      "attack": {
+        "clip": "Sword_Attack",
+        "impactFraction": 0.3
+      },
+      "slam": {
+        "clip": "Sword_Attack",
+        "impactFraction": 0.3
+      },
+      "cast": {
+        "clip": "Spell_Simple_Shoot",
+        "impactFraction": 0.35
+      },
+      "hit": {
+        "clip": "Hit_Head",
+        "impactFraction": 0
+      },
+      "death": {
+        "clip": "Death01",
+        "impactFraction": 0
+      }
+    },
+    "sockets": {
+      "hand_r": {
+        "bone": "DEF-hand.R",
+        "position": [
+          -0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "DEF-hand.L",
+        "position": [
+          0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          -90,
+          0
+        ],
+        "scale": 1
+      }
+    },
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "DEF-head"
+      ],
+      "torso": [
+        "DEF-spine.001",
+        "DEF-spine.002",
+        "DEF-spine.003",
+        "DEF-shoulder.L",
+        "DEF-shoulder.R"
+      ],
+      "hands": [
+        "DEF-hand.L",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-hand.R",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R"
+      ],
+      "feet": [
+        "DEF-foot.L",
+        "DEF-toe.L",
+        "DEF-foot.R",
+        "DEF-toe.R"
+      ]
+    }
   }
 ]

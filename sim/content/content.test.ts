@@ -8,7 +8,7 @@ import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { loadContent } from './content.ts';
 import { contentProblems } from './parse.ts';
-import type { Content, ItemBaseDef, SkillTreeNodeDef, ZoneDef } from './types.ts';
+import type { Content, ItemBaseDef, NpcDef, SkillTreeNodeDef, TalkDef, ZoneDef } from './types.ts';
 import { ANIMATION_KEYS } from './types.ts';
 
 const content: Content = loadContent();
@@ -75,7 +75,7 @@ void test('every zone file under data/zones is loaded under its own name', (): v
   assert.ok(content.zones.has(content.world.start));
 });
 
-void test('in every zone the start, packs, exits, arrival points and checkpoints are walkable and reachable on foot', (): void => {
+void test('in every zone the start, packs, exits, arrival points, checkpoints and npcs are walkable and reachable on foot', (): void => {
   for (const zone of content.zones.values()) {
     const grid: NavGrid = buildNavGrid(zone, content.props, content.player.radius);
     const start: Vec2 = zone.playerStart;
@@ -87,6 +87,7 @@ void test('in every zone the start, packs, exits, arrival points and checkpoints
       assert.ok(Math.hypot(exit.x - exit.arrival.x, exit.z - exit.arrival.z) > exit.radius, `${zone.id} exit ${exit.id} arrival lies inside the exit`);
     }
     for (const checkpoint of zone.checkpoints) assert.ok(reaches(grid, start, checkpoint), `${zone.id} checkpoint ${checkpoint.id}`);
+    for (const placed of zone.npcs) assert.ok(reaches(grid, start, placed), `${zone.id} npc ${placed.npc}`);
   }
 });
 
@@ -117,5 +118,37 @@ void test('towns are safe and wild zones have something to fight', (): void => {
     } else {
       assert.ok(zone.packs.length > 0, `${zone.id} has no packs`);
     }
+  }
+});
+
+void test('every line has a known speaker, belongs to exactly one conversation of that speaker, and says something', (): void => {
+  const used: Map<string, string> = new Map<string, string>();
+  for (const npc of content.npcs.values()) {
+    for (const talk of npc.talks) {
+      for (const lineId of talk.lines) {
+        const line = must(content.lines.get(lineId), `line ${lineId}`);
+        assert.equal(line.speaker, npc.id, `${lineId} speaker`);
+        assert.equal(used.get(lineId), undefined, `${lineId} is used twice`);
+        used.set(lineId, talk.id);
+      }
+    }
+  }
+  for (const line of content.lines.values()) {
+    assert.ok(content.npcs.has(line.speaker), `${line.id} speaker ${line.speaker}`);
+    assert.ok(used.has(line.id), `${line.id} is never spoken`);
+    assert.ok(line.text.trim().length > 0, `${line.id} is empty`);
+    assert.ok(line.id.startsWith(`${line.speaker}_`), `${line.id} does not start with its speaker`);
+  }
+});
+
+void test('every npc is placed somewhere, has a body, and never falls silent', (): void => {
+  const placed: Set<string> = new Set<string>([...content.zones.values()].flatMap((zone: ZoneDef): string[] => zone.npcs.map((entry): string => entry.npc)));
+  const talkIds: string[] = [...content.npcs.values()].flatMap((npc: NpcDef): string[] => npc.talks.map((talk: TalkDef): string => talk.id));
+  assert.equal(new Set<string>(talkIds).size, talkIds.length);
+  for (const npc of content.npcs.values()) {
+    assert.ok(placed.has(npc.id), `${npc.id} is not placed in any zone`);
+    assert.ok(content.rigs.has(npc.rig), `${npc.id} rig`);
+    assert.ok(npc.talks.some((talk: TalkDef): boolean => !talk.once), `${npc.id} has no repeatable conversation`);
+    assert.ok(npc.name.length > 0 && npc.title.length > 0, `${npc.id} name and title`);
   }
 });

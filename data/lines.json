@@ -1,0 +1,16 @@
+[
+  {"id": "maren_wake_1", "speaker": "maren", "text": "Awake. Good. Most of what lands here isn't."},
+  {"id": "maren_wake_2", "speaker": "maren", "text": "I'm the Tallier. I count what falls in. Today: a cartwheel, half a stair, and you."},
+  {"id": "maren_wake_3", "speaker": "maren", "text": "Tell me what you remember. Quickly. It's the first thing to go."},
+  {"id": "maren_wake_4", "speaker": "maren", "text": "A road at dusk. A lit door at the end. Someone inside, calling you in."},
+  {"id": "maren_wake_5", "speaker": "maren", "text": "Yes. I have it down."},
+  {"id": "maren_wake_6", "speaker": "maren", "text": "If it's a door you want, see Hale, by the lamps. He likes to think things are somewhere."},
+  {"id": "maren_idle_1", "speaker": "maren", "text": "The stair by the south wall goes down to the Drowned Bastion. Clear it and it falls together again, a little worse."},
+  {"id": "maren_idle_2", "speaker": "maren", "text": "I stopped counting those. Go on. The roads don't shorten."},
+  {"id": "hale_first_1", "speaker": "hale", "text": "New, are you? Come into the light. Let's have a look at you."},
+  {"id": "hale_first_2", "speaker": "hale", "text": "A door with a light in it. Well, somebody lit it. Lights don't light themselves. Ask me, I know."},
+  {"id": "hale_first_3", "speaker": "hale", "text": "Whoever set all this out sits in the Still, past the Gate. Ask there. They'll know where they put your door."},
+  {"id": "hale_first_4", "speaker": "hale", "text": "The Gate only opens when both great lamps burn. North Lamp, East Lamp. Both dark, and my knees won't do the roads."},
+  {"id": "hale_first_5", "speaker": "hale", "text": "Something out there took the wicks. Fetch them back and light the lamps. The Gate will know you."},
+  {"id": "hale_idle_1", "speaker": "hale", "text": "Forty years I've trimmed these lamps. Never once seen who I'm trimming them for. Doesn't mean they're not looking."}
+]

@@ -462,6 +462,73 @@ body {
   scale: 1.06;
 }
 
+.npc-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  will-change: transform;
+}
+
+.npc-label span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -100%);
+  padding: 3px 10px 4px;
+  border-radius: 4px;
+  background: rgba(8, 10, 16, 0.62);
+  white-space: nowrap;
+  animation: loot-in var(--spring-bouncy-ms) var(--spring-bouncy) both;
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.npc-label b {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 13.5px;
+  letter-spacing: 0.06em;
+  color: #f3d9a4;
+}
+
+.npc-label small {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-style: italic;
+  color: rgba(239, 230, 214, 0.62);
+}
+
+.npc-label i {
+  position: absolute;
+  left: 50%;
+  top: -16px;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  background: var(--ember);
+  box-shadow: 0 0 10px rgba(232, 184, 102, 0.9);
+  rotate: 45deg;
+  opacity: 0;
+  scale: 0.4;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    scale var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.npc-label.news i {
+  opacity: 1;
+  scale: 1;
+}
+
+.npc-label:hover span,
+.npc-label.aimed span {
+  background: rgba(30, 40, 58, 0.92);
+  scale: 1.06;
+}
+
 .name-plate {
   position: absolute;
   left: 50%;

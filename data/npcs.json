@@ -1,0 +1,77 @@
+[
+  {
+    "id": "maren",
+    "name": "Maren Sedge",
+    "title": "The Tallier",
+    "rig": "skeleton_townsfolk",
+    "scale": 0.96,
+    "tint": "#cfc3b4",
+    "color": "#d8c9a4",
+    "gear": [],
+    "wear": [
+      "linen_shirt",
+      "linen_sleeves",
+      "wool_trousers",
+      "worn_boots",
+      "leather_hood"
+    ],
+    "talks": [
+      {
+        "id": "maren_wake",
+        "once": true,
+        "lines": [
+          "maren_wake_1",
+          "maren_wake_2",
+          "maren_wake_3",
+          "maren_wake_4",
+          "maren_wake_5",
+          "maren_wake_6"
+        ]
+      },
+      {
+        "id": "maren_idle",
+        "once": false,
+        "lines": [
+          "maren_idle_1",
+          "maren_idle_2"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hale",
+    "name": "Hale Orrin",
+    "title": "The Lampwright",
+    "rig": "skeleton_townsfolk",
+    "scale": 1.04,
+    "tint": "#d9b98c",
+    "color": "#ffb060",
+    "gear": [],
+    "wear": [
+      "leather_vest",
+      "leather_sleeves",
+      "leather_leggings",
+      "leather_boots"
+    ],
+    "talks": [
+      {
+        "id": "hale_first",
+        "once": true,
+        "lines": [
+          "hale_first_1",
+          "hale_first_2",
+          "hale_first_3",
+          "hale_first_4",
+          "hale_first_5"
+        ]
+      },
+      {
+        "id": "hale_idle",
+        "once": false,
+        "lines": [
+          "hale_idle_1"
+        ]
+      }
+    ]
+  }
+]

@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import attachments from '../../data/attachments.json' with { type: 'json' };
 import items from '../../data/items.json' with { type: 'json' };
+import lines from '../../data/lines.json' with { type: 'json' };
 import monsters from '../../data/monsters.json' with { type: 'json' };
+import npcs from '../../data/npcs.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
 import props from '../../data/props.json' with { type: 'json' };
 import rigs from '../../data/rigs.json' with { type: 'json' };
@@ -19,9 +21,9 @@ import { canAllocate } from '../progression.ts';
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
-import type { Content, MonsterDef, ZoneDef } from './types.ts';
+import type { Content, MonsterDef, NpcDef, ZoneDef } from './types.ts';
 
-const shipped: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, zones: [stillhold, bastion], world, player };
+const shipped: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, props, zones: [stillhold, bastion], world, npcs, lines, player };
 
 const extraSkill = {
   id: 'ember_lash',
@@ -109,6 +111,10 @@ function extended(): RawContent {
     skillTree: [...skillTree, extraNode],
     zones: [stillhold, { ...bastion, packs: [...bastion.packs, { x: 28, z: 22, members: [{ monster: 'ash_wraith', count: 3 }] }] }],
   };
+}
+
+function has(raw: RawContent, text: string): boolean {
+  return contentProblems(parseContent(raw)).some((found: string): boolean => found.includes(text));
 }
 
 function withZone(zone: unknown): RawContent {
@@ -258,4 +264,65 @@ void test('contentProblems reports an unknown start zone and exits that lead now
   assert.ok(contentProblems(oneWay).some((found: string): boolean => found.includes('exit ladder is not matched by stillhold.bastion_stair')));
   const badPack: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, packs: [{ x: 1, z: 1, members: [{ monster: 'nobody', count: 1 }] }] }] });
   assert.ok(contentProblems(badPack).some((found: string): boolean => found.includes('zone drowned_bastion pack uses unknown monster nobody')));
+});
+
+const extraNpc = {
+  id: 'pedlar',
+  name: 'Pedlar',
+  title: 'The Seller',
+  rig: 'skeleton_townsfolk',
+  scale: 1,
+  tint: '#ffffff',
+  color: '#ffffff',
+  gear: ['hex_staff'],
+  wear: ['linen_shirt'],
+  talks: [
+    { id: 'pedlar_hello', once: true, lines: ['pedlar_hello_1', 'pedlar_hello_2'] },
+    { id: 'pedlar_again', once: false, lines: ['pedlar_again_1'] },
+  ],
+};
+
+const extraLines = [
+  { id: 'pedlar_hello_1', speaker: 'pedlar', text: 'Buy something.' },
+  { id: 'pedlar_hello_2', speaker: 'pedlar', text: 'Or do not.' },
+  { id: 'pedlar_again_1', speaker: 'pedlar', text: 'Still here.' },
+];
+
+function peopled(): RawContent {
+  return { ...shipped, npcs: [...npcs, extraNpc], lines: [...lines, ...extraLines], zones: [{ ...stillhold, npcs: [...stillhold.npcs, { npc: 'pedlar', x: 22, z: 16, facingDegrees: 90 }] }, bastion] };
+}
+
+void test('an npc, its conversations, its lines and its placement are data only', (): void => {
+  const content: Content = parseContent(peopled());
+  assert.deepEqual(contentProblems(content), []);
+  const pedlar: NpcDef = must(content.npcs.get('pedlar'), 'pedlar');
+  assert.equal(pedlar.title, 'The Seller');
+  assert.deepEqual(pedlar.talks, extraNpc.talks);
+  assert.deepEqual(content.lines.get('pedlar_hello_2'), { id: 'pedlar_hello_2', speaker: 'pedlar', text: 'Or do not.' });
+  assert.deepEqual(must(content.zones.get('stillhold'), 'town').npcs.at(-1), { npc: 'pedlar', x: 22, z: 16, facingDegrees: 90 });
+  const town = worldIn(content, 'stillhold', 3);
+  assert.ok(town.npcs.some((npc): boolean => npc.def.id === 'pedlar' && npc.pos.x === 22 && npc.pos.z === 16));
+});
+
+void test('malformed npcs and lines are rejected', (): void => {
+  const base: RawContent = peopled();
+  assert.throws((): Content => parseContent({ ...base, npcs: [{ ...extraNpc, talks: [{ id: 'empty', once: false, lines: [] }] }] }), (error: unknown): boolean => problem(error, 'a conversation needs at least one line'));
+  assert.throws((): Content => parseContent({ ...base, npcs: [extraNpc, { ...extraNpc, id: 'twin' }] }), (error: unknown): boolean => problem(error, 'duplicate id pedlar_hello'));
+  assert.throws((): Content => parseContent({ ...base, npcs: [{ ...extraNpc, scale: 0 }] }), (error: unknown): boolean => problem(error, 'npcs[0].scale'));
+  assert.throws((): Content => parseContent({ ...base, lines: [...extraLines, { id: 'pedlar_hello_1', speaker: 'pedlar', text: 'Again.' }] }), (error: unknown): boolean => problem(error, 'duplicate id pedlar_hello_1'));
+  assert.throws((): Content => parseContent({ ...base, lines: [{ id: 'blank', speaker: 'pedlar', text: '  ' }] }), (error: unknown): boolean => problem(error, 'lines[0].text'));
+  assert.throws((): Content => parseContent({ ...shipped, zones: [{ ...stillhold, npcs: [{ npc: 'maren', x: 1 }] }, bastion] }), (error: unknown): boolean => problem(error, 'npcs[0].z'));
+});
+
+void test('contentProblems reports dangling npc references', (): void => {
+  const base: RawContent = peopled();
+  assert.ok(has({ ...base, npcs: [...npcs, { ...extraNpc, rig: 'no_such_rig' }] }, 'npc pedlar uses unknown rig no_such_rig'));
+  assert.ok(has({ ...base, npcs: [...npcs, { ...extraNpc, gear: ['no_such_gear'] }] }, 'unknown attachment no_such_gear'));
+  assert.ok(has({ ...base, npcs: [...npcs, { ...extraNpc, wear: ['no_such_coat'] }] }, 'npc pedlar wears unknown wearable no_such_coat'));
+  assert.ok(has({ ...base, npcs: [...npcs, { ...extraNpc, talks: [extraNpc.talks[0]] }] }, 'npc pedlar has no repeatable conversation'));
+  assert.ok(has({ ...base, npcs: [...npcs, { ...extraNpc, talks: [extraNpc.talks[1], extraNpc.talks[0]] }] }, 'conversation pedlar_hello of pedlar can never play: it comes after the repeatable conversation pedlar_again'));
+  assert.ok(has({ ...base, lines: [...lines, ...extraLines.slice(1)] }, 'conversation pedlar_hello uses unknown line pedlar_hello_1'));
+  assert.ok(has({ ...base, lines: [...lines, ...extraLines, { id: 'ghost_1', speaker: 'ghost', text: 'Boo.' }] }, 'line ghost_1 has unknown speaker ghost'));
+  assert.ok(has({ ...base, npcs: [...npcs, { ...extraNpc, talks: [{ id: 'pedlar_again', once: false, lines: ['maren_idle_1'] }] }] }, 'uses line maren_idle_1, which is spoken by maren'));
+  assert.ok(has({ ...shipped, zones: [{ ...stillhold, npcs: [{ npc: 'nobody', x: 22, z: 16, facingDegrees: 0 }] }, bastion] }, 'zone stillhold places unknown npc nobody'));
 });

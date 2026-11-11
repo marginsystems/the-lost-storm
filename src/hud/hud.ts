@@ -2,6 +2,9 @@ import type { WorldEvent } from '../../sim/world/types.ts';
 import { createBanners } from './banners.ts';
 import type { Banners } from './banners.ts';
 import type { HudContext, PanelView } from './context.ts';
+import { createDialogueBox } from './dialogue-box.ts';
+import dialogueCss from './dialogue.css?inline';
+import type { DialogueBox } from './dialogue-box.ts';
 import { el } from './dom.ts';
 import type { FpsReadout } from './fps.ts';
 import { createFpsReadout } from './fps.ts';
@@ -29,7 +32,7 @@ const PANEL_IDS: readonly HudPanel[] = ['inventory', 'tree'];
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -47,6 +50,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const surge: WorldStatus = createSurgeStatus(root);
   const banners: Banners = createBanners(root);
   const death: WorldStatus = createDeathOverlay(root);
+
+  const dialogue: DialogueBox = createDialogueBox(root, context);
+  track(dialogue.element);
 
   const bottom: HTMLDivElement = el('div', 'hud-bottom', root);
   const notices: Notices = createNotices(bottom);
@@ -123,6 +129,13 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'checkpoint':
             banners.show('Checkpoint', null, 'checkpoint');
+            break;
+          case 'dialogue_line':
+            dialogue.show(event);
+            break;
+          case 'dialogue_closed':
+            dialogue.close();
+            hovered.delete(dialogue.element);
             break;
           case 'level_up':
             banners.show(`LEVEL ${event.level}`, 'Skill point gained', 'level');

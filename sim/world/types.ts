@@ -1,4 +1,4 @@
-import type { Content, ItemSlot, MonsterDef, SkillDef, StatBlock, ZoneDef } from '../content/types.ts';
+import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
@@ -70,7 +70,12 @@ export interface TravelIntent {
   readonly exit: string;
 }
 
-export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent | TravelIntent;
+export interface TalkIntent {
+  readonly type: 'talk';
+  readonly npcId: number;
+}
+
+export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent | TravelIntent | TalkIntent;
 
 export interface PlayerState extends ActorState {
   readonly kind: 'player';
@@ -109,6 +114,21 @@ export interface MonsterState extends ActorState {
 }
 
 export type Actor = PlayerState | MonsterState;
+
+export interface NpcState {
+  readonly id: number;
+  readonly def: NpcDef;
+  readonly pos: Vec2;
+  readonly homeFacing: number;
+  facing: number;
+}
+
+export interface DialogueState {
+  readonly npcId: number;
+  readonly npc: NpcDef;
+  readonly talk: TalkDef;
+  index: number;
+}
 
 export type Team = 'player' | 'monster';
 
@@ -194,7 +214,16 @@ export interface TravelCommand {
   readonly exit: string;
 }
 
-export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand;
+export interface TalkCommand {
+  readonly type: 'talk';
+  readonly npcId: number;
+}
+
+export interface AdvanceCommand {
+  readonly type: 'advance';
+}
+
+export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -235,6 +264,8 @@ export type WorldEvent =
   | { readonly type: 'zone_changed'; readonly from: string; readonly to: string }
   | { readonly type: 'checkpoint'; readonly checkpoint: string; readonly pos: Vec2 }
   | { readonly type: 'hero_step'; readonly pos: Vec2 }
+  | { readonly type: 'dialogue_line'; readonly npcId: number; readonly npc: string; readonly talk: string; readonly line: LineDef; readonly index: number; readonly last: boolean }
+  | { readonly type: 'dialogue_closed'; readonly npcId: number; readonly npc: string; readonly talk: string; readonly finished: boolean }
   | { readonly type: 'notice'; readonly reason: NoticeReason }
   | { readonly type: 'character_changed' };
 
@@ -248,6 +279,9 @@ export interface World {
   time: number;
   readonly player: PlayerState;
   monsters: MonsterState[];
+  npcs: NpcState[];
+  dialogue: DialogueState | null;
+  heard: string[];
   projectiles: ProjectileState[];
   ground: GroundItem[];
   nextId: number;

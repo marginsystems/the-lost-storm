@@ -319,6 +319,13 @@ export interface ZoneCheckpoint {
   readonly radius: number;
 }
 
+export interface ZoneNpc {
+  readonly npc: string;
+  readonly x: number;
+  readonly z: number;
+  readonly facingDegrees: number;
+}
+
 export interface ZoneAmbience {
   readonly background: string;
   readonly abyss: string;
@@ -347,7 +354,33 @@ export interface ZoneDef {
   readonly surge: SurgeRules | null;
   readonly exits: readonly ZoneExit[];
   readonly checkpoints: readonly ZoneCheckpoint[];
+  readonly npcs: readonly ZoneNpc[];
   readonly ambience: ZoneAmbience;
+}
+
+export interface LineDef {
+  readonly id: string;
+  readonly speaker: string;
+  readonly text: string;
+}
+
+export interface TalkDef {
+  readonly id: string;
+  readonly once: boolean;
+  readonly lines: readonly string[];
+}
+
+export interface NpcDef {
+  readonly id: string;
+  readonly name: string;
+  readonly title: string;
+  readonly rig: string;
+  readonly scale: number;
+  readonly tint: string;
+  readonly color: string;
+  readonly gear: readonly string[];
+  readonly wear: readonly string[];
+  readonly talks: readonly TalkDef[];
 }
 
 export interface MonsterScaling {
@@ -406,5 +439,7 @@ export interface Content {
   readonly props: ReadonlyMap<string, PropDef>;
   readonly zones: ReadonlyMap<string, ZoneDef>;
   readonly world: WorldDef;
+  readonly npcs: ReadonlyMap<string, NpcDef>;
+  readonly lines: ReadonlyMap<string, LineDef>;
   readonly player: PlayerDef;
 }

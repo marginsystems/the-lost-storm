@@ -3,6 +3,7 @@ import { generateItem } from '../items.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { armourReduction } from '../stats.ts';
 import { grantXp } from './character.ts';
+import { closeDialogue } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import type { Actor, ItemInstance, MonsterState, Team, World } from './types.ts';
 
@@ -75,6 +76,7 @@ function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
   target.deadTime = 0;
   world.events.push({ type: 'death', actorId: target.id, team: teamOf(target), pos: { x: target.pos.x, z: target.pos.z }, direction: { x: direction.x, z: direction.z } });
   if (target.kind === 'player') {
+    closeDialogue(world, false);
     target.respawnTimer = world.content.player.respawnDelay;
     target.intent = { type: 'idle' };
     target.path = [];

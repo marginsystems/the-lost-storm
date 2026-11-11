@@ -5,6 +5,7 @@ import { createRng } from '../rng.ts';
 import type { SaveData } from '../save.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
 import { addToInventory } from './character.ts';
+import { spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
@@ -91,6 +92,9 @@ export function createWorld(content: Content, options: WorldOptions): World {
     time: 0,
     player: freshPlayer(content, save),
     monsters: [],
+    npcs: [],
+    dialogue: null,
+    heard: save === null ? [] : [...save.heard],
     projectiles: [],
     ground: [],
     nextId: PLAYER_ID + 1,
@@ -103,6 +107,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   placePlayer(world);
   if (save === null) giveStartingItems(world);
   for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
+  spawnNpcs(world);
   spawnPacks(world);
   world.events = [];
   return world;

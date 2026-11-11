@@ -52,6 +52,7 @@ import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones } from './render/zone-view.ts';
 import { clearSave, readSaveText, writeSave } from './storage.ts';
 import type { ZoneTransition } from './transition.ts';
+import type { VoicePlayer } from './voice.ts';
 import { createZoneTransition } from './transition.ts';
 
 const GAME = {
@@ -154,11 +155,20 @@ async function start(): Promise<void> {
     const piece: string | null = base.wear[0] ?? null;
     return piece === null ? null : (thumbnails.get(wornImageKey(piece)) ?? null);
   };
-  const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send, itemImage, audio: controls, playUi });
+  const voice: VoicePlayer = {
+    play(lineId: string): void {
+      audio.playVoice(lineId).catch((): void => undefined);
+    },
+    stop(): void {
+      audio.stopVoice();
+    },
+  };
+  const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send, itemImage, audio: controls, playUi, voice });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
     heightOf: (id: number): number => actors.heightOf(id),
     onPickup: (groundId: number): void => send({ type: 'pickup', groundId }),
     onTravel: (exit: string): void => send({ type: 'travel', exit }),
+    onTalk: (npcId: number): void => send({ type: 'talk', npcId }),
   });
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),

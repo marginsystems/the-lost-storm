@@ -13,13 +13,14 @@ Open http://localhost:5193.
 
 | Input | Action |
 |---|---|
-| Left mouse | Move, attack the monster under the cursor, pick up loot, travel through the exit under the cursor. Hold to keep going. |
+| Left mouse | Move, attack the monster under the cursor, pick up loot, talk to the character under the cursor, travel through the exit under the cursor. Hold to keep going. |
+| Left mouse, Space or Enter in a conversation | Next line |
 | Shift + left mouse | Attack in place |
 | Q | Thunderclap (area hit around you) |
 | W or right mouse | Storm Bolt (projectile) |
 | I / T | Inventory / skill tree |
 | Mouse wheel | Zoom |
-| Escape | Close panels |
+| Escape | Close panels, leave a conversation |
 
 Progress saves to `localStorage` on its own, including the zone you are in and where you last arrived or touched a checkpoint; dying returns you there. "Start over" on the title screen clears it.
 
@@ -42,8 +43,10 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 | `sim/content/` | The content schema (`types.ts`) and the readers that check every JSON file at start-up |
 | `sim/world/` | World state, the commands the player can send and the events each step returns (`types.ts`), and `stepWorld` (`step.ts`) |
 | `src/render/` | Three.js: stage and lighting, the isometric camera, character loading, the zone view and its exit and checkpoint markers, effects, weather, world-anchored overlays |
-| `src/hud/` | DOM HUD: globes, skill bar, inventory, skill tree, volume panel, tooltips |
-| `src/audio/` | Web Audio: loads sounds from the asset server, plays them with variation, distance and panning, keeps volumes |
+| `src/hud/` | DOM HUD: globes, skill bar, inventory, skill tree, volume panel, tooltips, the dialogue box |
+| `src/audio/` | Web Audio: loads sounds from the asset server, plays them with variation, distance and panning, keeps volumes, plays one voice line at a time |
+| `src/voice.ts` | The voice hook the dialogue box calls for each line; `main.ts` connects it to the audio system |
+| `docs/story/` | The story notes and every spoken line. They give the whole plot away; each file says so at the top |
 | `src/input.ts` | Mouse and keyboard to commands |
 | `src/main.ts` | Loads everything and runs the frame loop |
 | `public/models/` | GLB models. Every file is listed in [ASSETS.md](ASSETS.md) |
@@ -63,6 +66,7 @@ Content is data. None of these need a change to the game's logic; the one code e
 - **Clothing or armour**: add an entry to `data/wearables.json` (see below) and name it in an item base's `wear`, or in the `wear` list of the player or a monster to dress them with nothing equipped.
 - **A skill-tree node**: add an entry to `data/skill-tree.json` with its grid position, what it `requires`, and its `statMods` and `skillMods`.
 - **A sound**: `data/audio.json` maps game events to sound ids: by skill id (`skillStart`, `skillImpact`, `skillHit`, `projectileSpawn`, `projectileExpire`), by monster id or `player` (`hit`, `critHit`, `death`, `aggro`), by rarity or `gold` (`drop`, `pickup`), `notice`, `world` (`hero_step`, `level_up`, `surge`, `monster_spawn` and others), `ui` actions, and `ambience` per zone id. Each entry can set `volume`, `maxVoices` (copies of that sound at once) and `cooldown`. The sound files themselves are not in this repository (see Sound below).
+- **A character to talk to**: add an entry to `data/npcs.json` (`name`, `title`, its `rig`, `tint`, `color` and held `gear`, and its `talks`), put its lines in `data/lines.json` as `{ id, speaker, text }`, and place it in a zone's `npcs` list. `talks` is an ordered list of conversations; the one that plays is the first that is repeatable or has not been heard yet, so list `once` conversations first and end with a repeatable one. A line id is stable: it is also the name of that line's recording, so add a new id rather than renaming one. Every line must also appear in `docs/story/lines.md`.
 - **A zone**: add `data/zones/<id>.json`, then import it in `sim/content/content.ts` and add it to the `zones` list of `RAW_CONTENT` there (a test fails when a zone file is not loaded). A zone holds the tile map (4-unit cells), wall and floor models, prop placements, the player start, the monster packs and their `level`, its `kind` (`town` is safe and has no packs; `wild` has monsters), optional `surge` rules for endless surges, `checkpoints`, its `ambience` (fog, sky and key light) and its `exits`. An exit names the zone and the exit on the other side (`to`, `toExit`) and the `arrival` point where a hero coming through it stands; the two exits must name each other. `data/world.json` names the start zone and how monsters scale with level.
 
 If something cannot be expressed in the data, extend the schema in `sim/content/` in a general way first. See [AGENTS.md](AGENTS.md).

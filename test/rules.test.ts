@@ -88,3 +88,23 @@ void test('every shipped model is listed in ASSETS.md', (): void => {
     });
   for (const path of models('public/models')) assert.ok(assets.includes(path), `${path} is missing from ASSETS.md`);
 });
+
+interface SpokenLine {
+  readonly id: string;
+  readonly text: string;
+}
+
+function isSpokenLine(value: unknown): value is SpokenLine {
+  return typeof value === 'object' && value !== null && 'id' in value && 'text' in value && typeof value.id === 'string' && typeof value.text === 'string';
+}
+
+void test('every spoken line is written down in the story notes with the same words', (): void => {
+  const story: string = readFileSync('docs/story/lines.md', 'utf8');
+  const parsed: unknown = JSON.parse(readFileSync('data/lines.json', 'utf8'));
+  assert.ok(Array.isArray(parsed));
+  const lines: readonly unknown[] = parsed;
+  for (const line of lines) {
+    assert.ok(isSpokenLine(line));
+    assert.ok(story.includes(`| \`${line.id}\` | ${line.text} |`), `${line.id} is missing from docs/story/lines.md or its words differ`);
+  }
+});

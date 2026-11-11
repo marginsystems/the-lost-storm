@@ -222,3 +222,15 @@ void test('an unknown zone or respawn id in a save falls back to the start', ():
   assert.deepEqual(oddRespawn.respawn, { type: 'start' });
   assert.deepEqual(oddRespawn.visited, ['drowned_bastion']);
 });
+
+void test('the conversations already heard survive a save, and unknown ones are dropped', (): void => {
+  const world: World = createWorld(content, { seed: 8, save: null });
+  world.heard = ['maren_wake', 'hale_first'];
+  const save: SaveData = roundTrip(world);
+  assert.deepEqual(save.heard, ['maren_wake', 'hale_first']);
+  assert.deepEqual(createWorld(content, { seed: 9, save }).heard, ['maren_wake', 'hale_first']);
+  const { heard: _heard, ...older } = toSave(world);
+  assert.deepEqual(must(readSave(content, older), 'save').heard, []);
+  assert.deepEqual(must(readSave(content, { ...toSave(world), heard: ['maren_wake', 'a_rumour', 4] }), 'save').heard, ['maren_wake']);
+  assert.deepEqual(must(readSave(content, { ...toSave(world), heard: 'everything' }), 'save').heard, []);
+});
