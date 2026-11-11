@@ -11,6 +11,11 @@ const SKILL_BAR = {
   coolingEpsilon: 0.001,
 } as const;
 
+const KEY_GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
+  ['LMB', 'mouse_left'],
+  ['RMB', 'mouse_right'],
+]);
+
 interface SlotView {
   readonly root: HTMLElement;
   readonly icon: HTMLElement;
@@ -51,7 +56,10 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
     const root: HTMLDivElement = el('div', 'slot', element);
     const icon: HTMLDivElement = el('div', 'slot-icon', root);
     const cooldown: HTMLDivElement = el('div', 'slot-cd', root);
-    label('slot-key', keyOf(index), root);
+    const key: string = keyOf(index);
+    const glyph: string | undefined = KEY_GLYPHS.get(key);
+    if (glyph === undefined) label('slot-key', key, root);
+    else el('div', 'slot-key glyph', root).innerHTML = iconSvg(glyph);
     const cost: HTMLDivElement = el('div', 'slot-cost', root);
     const view: SlotView = { root, icon, cost, cooldown, skill: null, iconId: '', angle: -1, cooling: null, dim: null };
     attachTooltip(context.tooltip, root, (): HTMLElement | null => (view.skill === null ? null : skillTooltip(view.skill, keyOf(index))));

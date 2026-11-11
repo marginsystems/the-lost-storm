@@ -1,3 +1,9 @@
+@import "@fontsource/cinzel/latin-500.css";
+@import "@fontsource/cinzel/latin-700.css";
+@import "@fontsource/alegreya-sans/latin-400.css";
+@import "@fontsource/alegreya-sans/latin-500.css";
+@import "@fontsource/alegreya-sans/latin-700.css";
+
 :root {
   --spring-snappy: linear(0, 0.051, 0.167, 0.308, 0.449, 0.578, 0.688, 0.777, 0.847, 0.899, 0.937, 0.964, 0.982, 0.994, 1, 1.004, 1.006, 1.006, 1.006, 1.005, 1);
   --spring-smooth: linear(0, 0.04, 0.13, 0.241, 0.355, 0.463, 0.559, 0.642, 0.713, 0.771, 0.819, 0.857, 0.888, 0.913, 0.932, 0.948, 0.96, 0.969, 0.976, 0.982, 0.986, 0.989, 0.992, 0.994, 1);
@@ -5,8 +11,8 @@
   --spring-snappy-ms: 260ms;
   --spring-smooth-ms: 520ms;
   --spring-bouncy-ms: 720ms;
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif: "Cinzel", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: "Alegreya Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --text: #efe6d6;
   --storm: #7fd4ff;
   --ember: #e8b866;
@@ -20,6 +26,7 @@ body {
   background: #05070b;
   color: var(--text);
   font-family: var(--sans);
+  font-variant-numeric: lining-nums;
 }
 
 #app {
@@ -107,8 +114,9 @@ body {
   margin: 0;
   font-family: var(--serif);
   font-weight: 500;
-  font-size: 54px;
-  letter-spacing: 0.04em;
+  font-size: 40px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
   color: #f4ecdc;
   text-shadow:
     0 0 28px rgba(127, 212, 255, 0.35),
@@ -117,9 +125,10 @@ body {
 
 .title-sub {
   margin: 6px 0 26px;
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-style: italic;
-  font-size: 17px;
+  font-size: 18px;
+  letter-spacing: 0.04em;
   color: rgba(127, 212, 255, 0.8);
 }
 
@@ -141,11 +150,12 @@ body {
   border-radius: 6px;
   outline: none;
   font-family: var(--serif);
-  font-size: 19px;
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: 0.14em;
   color: #f4ecdc;
   background: rgba(127, 212, 255, 0.14);
-  padding: 11px 46px;
+  padding: 10px 40px;
   cursor: pointer;
   transition:
     transform var(--spring-snappy-ms) var(--spring-snappy),
@@ -171,9 +181,9 @@ body {
   display: block;
   margin: 12px auto 0;
   font-family: var(--sans);
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.02em;
-  padding: 6px 14px;
+  padding: 5px 12px;
   color: rgba(239, 230, 214, 0.55);
   background: transparent;
   border-color: transparent;
@@ -193,7 +203,7 @@ body {
   display: grid;
   gap: 7px;
   width: fit-content;
-  font-size: 12.5px;
+  font-size: 14px;
   text-align: left;
 }
 
@@ -216,8 +226,8 @@ body {
 .title-credits {
   margin: 26px auto 0;
   max-width: 400px;
-  font-size: 10.5px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.45;
   color: rgba(239, 230, 214, 0.38);
 }
 
@@ -234,7 +244,8 @@ body {
   top: 0;
   font-family: var(--serif);
   font-weight: 700;
-  font-size: 19px;
+  font-size: 18px;
+  letter-spacing: 0.02em;
   color: #fff3d8;
   text-shadow:
     0 1px 0 rgba(0, 0, 0, 0.9),
@@ -361,11 +372,13 @@ body {
 .loot-label span {
   display: block;
   transform: translate(-50%, -100%);
-  padding: 3px 9px 4px;
+  padding: 2px 8px 3px;
   border-radius: 4px;
   background: rgba(8, 10, 16, 0.8);
   font-family: var(--serif);
-  font-size: 13.5px;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.06em;
   white-space: nowrap;
   animation: loot-in var(--spring-bouncy-ms) var(--spring-bouncy) both;
   transition:
@@ -413,7 +426,9 @@ body {
   border-radius: 5px;
   background: rgba(8, 10, 16, 0.72);
   font-family: var(--serif);
-  font-size: 15px;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.08em;
   text-align: center;
   opacity: 0;
   transition:

@@ -8,6 +8,9 @@ const GLOBES = {
   goldRate: 7,
 } as const;
 
+const WAVE: string =
+  '<svg viewBox="0 0 240 10" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 5Q15 0 30 5T60 5T90 5T120 5T150 5T180 5T210 5T240 5V10H0Z"/></svg>';
+
 interface GlobeView {
   readonly globe: HTMLElement;
   readonly liquid: HTMLElement;
@@ -22,10 +25,16 @@ export interface Globes {
 
 function buildGlobe(parent: HTMLElement, kind: 'life' | 'mana'): GlobeView {
   const globe: HTMLDivElement = el('div', `hud-globe ${kind}`, parent);
-  const liquid: HTMLDivElement = el('div', 'globe-liquid', globe);
-  el('div', 'globe-flash', globe);
-  el('div', 'globe-gloss', globe);
-  const readout: HTMLDivElement = label('globe-readout', '', parent);
+  const glass: HTMLDivElement = el('div', 'globe-glass', globe);
+  const liquid: HTMLDivElement = el('div', 'globe-liquid', glass);
+  el('div', 'globe-body', liquid);
+  const back: HTMLDivElement = el('div', 'globe-wave back', liquid);
+  back.innerHTML = WAVE;
+  const front: HTMLDivElement = el('div', 'globe-wave', liquid);
+  front.innerHTML = WAVE;
+  el('div', 'globe-flash', glass);
+  el('div', 'globe-gloss', glass);
+  const readout: HTMLDivElement = label('globe-readout', '', glass);
   return { globe, liquid, readout, fill: -1 };
 }
 

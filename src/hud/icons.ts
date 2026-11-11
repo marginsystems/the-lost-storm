@@ -4,9 +4,9 @@ const CLOSE: string = '</svg>';
 const BOLT: string = '<path d="M13.5 2 5.5 13.2h5.3L9.6 22l8.9-12.2h-5.6z" fill="currentColor"/>';
 
 const GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
-  ['cleave', '<path d="M3.5 16.5C5.5 9.5 10.5 5 17 4.5"/><path d="M7 20c2.2-5 6-8 12-9"/><path d="M12 20.5c1.6-3 4-5 8-6" opacity="0.6"/>'],
-  ['thunderclap', `${BOLT}<circle cx="12" cy="12" r="9.5" opacity="0.45"/>`],
-  ['storm_bolt', '<path d="M3 21l6-6-2-3 7-4-2-3"/><circle cx="17.5" cy="5.5" r="3" fill="currentColor"/><path d="M17.5 1.5v1M21.5 5.5h-1M20.3 2.7l-.7.7" opacity="0.6"/>'],
+  ['cleave', '<path d="M3.5 20C4.5 11 11 4.8 20.5 3.5 14.2 7.2 9.8 12.2 8.4 20.5z" fill="currentColor" stroke="none"/><path d="M11.5 20.5c1.1-4.4 4-7.9 9-10.2-3.3 2.9-5.2 5.9-6.1 10.2z" fill="currentColor" stroke="none" opacity="0.5"/>'],
+  ['thunderclap', '<path d="M13.6 1.8 7.2 11.6h3.9L9.3 19l7.5-10.4h-4z" fill="currentColor" stroke="none"/><path d="M2.8 21h5.4M15.8 21h5.4"/><path d="M4.6 16.4l2.3 1.7M19.4 16.4l-2.3 1.7" opacity="0.55"/>'],
+  ['storm_bolt', '<path d="M21.2 2.8 12.4 9.4l2.3 1.7L6.2 17.6l3.5-5.8-2.3-1.7 6.9-5z" fill="currentColor" stroke="none"/><path d="M2.8 21.2l2.6-2.6M7.4 21.6l1.6-1.6" opacity="0.55"/>'],
   ['sword', '<path d="M20 4 9 15"/><path d="M20 4h-4M20 4v4"/><path d="M7 13l4 4"/><path d="M9 15 5 19"/><circle cx="4.3" cy="19.7" r="1.2"/>'],
   ['greatsword', '<path d="M19 3l2 2-11 11-2-2z" fill="currentColor"/><path d="M5 12l7 7"/><path d="M8 16 4 20"/>'],
   ['axe', '<path d="M5 20 14 8"/><path d="M11 4l7-1 3 4-7 4z" fill="currentColor"/>'],
@@ -18,6 +18,8 @@ const GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
   ['thunder', BOLT],
   ['fork', '<path d="M12 21V12"/><path d="M12 12 6 5M12 12l6-7"/><path d="M6 9V5h4M18 9V5h-4"/>'],
   ['eye', '<path d="M2 12c3-6 7-7 10-7s7 1 10 7c-3 6-7 7-10 7s-7-1-10-7z"/><circle cx="12" cy="12" r="3"/>'],
+  ['mouse_left', '<rect x="5.5" y="2" width="13" height="20" rx="6.5" stroke-width="2"/><path d="M12 2v8H5.5V8.5A6.5 6.5 0 0 1 12 2z" fill="currentColor" stroke="none"/>'],
+  ['mouse_right', '<rect x="5.5" y="2" width="13" height="20" rx="6.5" stroke-width="2"/><path d="M12 2v8h6.5V8.5A6.5 6.5 0 0 0 12 2z" fill="currentColor" stroke="none"/>'],
   ['coin', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5" opacity="0.5"/><path d="M12 9.5v5" opacity="0.8"/>'],
 ]);
 

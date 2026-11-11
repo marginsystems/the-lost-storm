@@ -3,6 +3,8 @@ import { createBanners } from './banners.ts';
 import type { Banners } from './banners.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el } from './dom.ts';
+import type { FpsReadout } from './fps.ts';
+import { createFpsReadout } from './fps.ts';
 import { createGlobes } from './globes.ts';
 import type { Globes } from './globes.ts';
 import hudCss from './hud.css?inline';
@@ -38,6 +40,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const tooltip: Tooltip = createTooltip(root);
   const context: HudContext = { api, tooltip };
   const globes: Globes = createGlobes(root);
+  const fps: FpsReadout = createFpsReadout(root);
   const surge: WorldStatus = createSurgeStatus(root);
   const banners: Banners = createBanners(root);
   const death: WorldStatus = createDeathOverlay(root);
@@ -84,6 +87,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   return {
     update(dt: number): void {
       const world = api.world;
+      fps.frame(performance.now());
       globes.update(world.player, dt);
       skillBar.update(world.player);
       xp.update(world.player, world.content);

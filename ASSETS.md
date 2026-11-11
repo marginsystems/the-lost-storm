@@ -2,7 +2,7 @@
 
 Every file under `public/models` is listed here with its source and licence. `test/rules.test.ts` fails when a model is added without a row.
 
-Shipped assets are CC0 (public domain), CC BY 4.0 with the credit below, or made for this project. Nothing here is Mixamo, Splice, or any other licence that forbids redistributing the file.
+Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made for this project. The two fonts are SIL Open Font License 1.1. Nothing here is Mixamo, Splice, or any other licence that forbids redistributing the file.
 
 ## Sources
 
@@ -83,9 +83,18 @@ Unmodified downloads, renamed to lower case.
 | `public/models/arena/wall_half.glb` | `Assets/gltf/wall_half.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
 | `public/models/arena/wall_pillar.glb` | `Assets/gltf/wall_pillar.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
 
+## Fonts
+
+The font files are not committed. They come from npm packages that Vite bundles into the build, so the page makes no request to a font host.
+
+| Font | Used for | Package | Source | Licence | Licence text |
+|---|---|---|---|---|---|
+| Cinzel | Labels, buttons, headings, banners, damage numbers, loot labels | `@fontsource/cinzel` | https://fonts.google.com/specimen/Cinzel (Natanael Gama) | SIL OFL 1.1 | [licenses/Cinzel-OFL-1.1.txt](licenses/Cinzel-OFL-1.1.txt) |
+| Alegreya Sans | Body text, tooltips, numbers | `@fontsource/alegreya-sans` | https://fonts.google.com/specimen/Alegreya+Sans (Juan Pablo del Peral, Huerta Tipográfica) | SIL OFL 1.1 | [licenses/Alegreya-Sans-OFL-1.1.txt](licenses/Alegreya-Sans-OFL-1.1.txt) |
+
 ## Everything else
 
-Effects (slashes, bolts, shockwaves, rain, lightning, particles), the HUD and its icons are drawn in code or CSS in this repository and are covered by the MIT licence in [LICENSE](LICENSE). The game ships no audio and no fonts.
+Effects (slashes, bolts, shockwaves, lightning, particles), the HUD and its icons are drawn in code or CSS in this repository and are covered by the MIT licence in [LICENSE](LICENSE). The game ships no audio.
 
 ## Assets that must not be committed
 
