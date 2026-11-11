@@ -9,6 +9,10 @@ export interface SoundCue extends CueDef {
 
 const NONE: readonly SoundCue[] = [];
 
+type CueTableName = Exclude<keyof AudioDef, 'defaults' | 'ambience'>;
+
+const WARM_TABLES: readonly CueTableName[] = ['world', 'skillStart', 'hit', 'critHit', 'skillHit', 'skillImpact', 'projectileSpawn', 'projectileExpire', 'death', 'aggro', 'pickup', 'drop', 'notice', 'ui'];
+
 function cues(table: CueTable, key: string, position: Vec2 | null): readonly SoundCue[] {
   const list: readonly CueDef[] | undefined = table.get(key);
   if (list === undefined || list.length === 0) return NONE;
@@ -104,6 +108,16 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       break;
   }
   return found;
+}
+
+export function warmSoundIds(audio: AudioDef): readonly string[] {
+  const ids: Set<string> = new Set<string>();
+  for (const name of WARM_TABLES) {
+    for (const list of audio[name].values()) {
+      for (const cue of list) ids.add(cue.sound);
+    }
+  }
+  return [...ids];
 }
 
 export function cuesForUi(audio: AudioDef, action: UiAction): readonly SoundCue[] {
