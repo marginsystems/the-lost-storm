@@ -1,7 +1,7 @@
 .hud-panel {
   position: absolute;
-  top: 16px;
-  max-height: calc(100% - 210px);
+  top: 32px;
+  max-height: calc(100% - 226px);
   width: max-content;
   box-sizing: border-box;
   padding: 12px;
