@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must } from '../test/support.ts';
-import { cuesForEvent, cuesForUi, uiActionForCommand } from './audio.ts';
+import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from './audio.ts';
 import type { SoundCue } from './audio.ts';
 import type { AudioDef } from './content/audio.ts';
 import { loadAudio } from './content/audio.ts';
@@ -154,4 +154,15 @@ void test('interface actions have sounds and commands map to the right action', 
   assert.equal(uiActionForCommand({ type: 'unequip', slot: 'weapon' }), 'equip');
   assert.equal(uiActionForCommand({ type: 'move', dest: AWAY }), null);
   assert.equal(uiActionForCommand({ type: 'stop' }), null);
+});
+
+void test('the warm list names every one-shot sound once, footsteps first and no ambience', (): void => {
+  const ids: readonly string[] = warmSoundIds(audio);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.equal(ids[0], 'footstep_stone');
+  for (const id of ['sword_swing_light', 'bone_hit', 'crit_hit', 'ground_boom', 'coin_pickup', 'ui_click', 'wave_arrival']) assert.ok(ids.includes(id), id);
+  for (const zone of audio.ambience.values()) {
+    for (const loop of zone.loops) assert.equal(ids.includes(loop.sound), false, loop.sound);
+    for (const stinger of zone.stingers) assert.equal(ids.includes(stinger.sound), false, stinger.sound);
+  }
 });
