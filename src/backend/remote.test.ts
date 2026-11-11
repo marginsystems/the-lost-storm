@@ -448,3 +448,23 @@ void test('a conflict keeps the savedAt written by a save that landed while the 
   await settle();
   assert.equal(record(harness).savedAt, later);
 });
+
+void test('a push that settles after another writer replaced the record does not put the old token back', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = harness.open();
+  await backend.load();
+  const guest: SyncRecord = record(harness);
+  const release: () => void = harness.server.holdNext();
+  backend.save(makeSave(5, 0));
+  await harness.timers.advance(1000);
+  const replaced: SyncRecord = { ...guest, accountId: 'another-account', token: 'a-new-session', revision: 0, pending: false };
+  harness.store.write(SYNC_KEY, JSON.stringify(replaced));
+  release();
+  await settle();
+  await settle();
+  assert.deepEqual(record(harness), replaced);
+  backend.save(makeSave(6, 0));
+  await harness.timers.advance(5000);
+  assert.deepEqual(record(harness), replaced);
+  assert.equal(harness.server.count('PUT', '/v1/save'), 1);
+});

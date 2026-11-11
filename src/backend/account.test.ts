@@ -252,14 +252,22 @@ void test('a save made while the sign-in request is in flight is not undone by t
   assert.deepEqual([after.revision, after.pending, after.token], [during.revision + 1, true, 'session-2']);
 });
 
-void test('progress saved while the sign-out request is in flight is not deleted', async (): Promise<void> => {
+void test('progress saved while the sign-out request is in flight is kept, and the sign-out still finishes', async (): Promise<void> => {
   const { harness, service } = await browser(makeSave(4, 10));
   await signInAs(service, 'ada');
+  const session: string = record(harness).token;
   const release: () => void = harness.server.holdNext();
   const leaving: Promise<string> = service.signOut();
   harness.store.write(SYNC_KEY, JSON.stringify({ ...record(harness), pending: true }));
+  harness.store.write(SAVE_KEY, JSON.stringify(makeSave(6, 0)));
   release();
-  assert.equal(await leaving, 'unsynced');
-  assert.notEqual(harness.store.read(SAVE_KEY), null);
-  assert.notEqual(harness.store.read(SYNC_KEY), null);
+  assert.equal(await leaving, 'reload');
+  assert.equal(harness.store.read(SYNC_KEY), null);
+  assert.ok(!owner(harness, 0).sessions.includes(session));
+  const loaded: SaveData | null = await harness.open().load();
+  assert.equal(loaded?.level, 6);
+  await harness.timers.advance(0);
+  assert.equal(harness.server.accounts.length, 2);
+  assert.equal(owner(harness, 1).save?.level, 6);
+  assert.equal(owner(harness, 0).save?.level, 4);
 });

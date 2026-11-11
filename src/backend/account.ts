@@ -71,9 +71,9 @@ export function createAccountService(options: AccountOptions): AccountService {
       if (asked.pending || asked.overwriteCloud) return 'unsynced';
       await api.signOut(asked.token, timeout());
       const current: SyncRecord | null = held();
-      if (current !== null && (current.pending || current.overwriteCloud)) return 'unsynced';
+      const arrived: boolean = current !== null && (current.pending || current.overwriteCloud);
       store.remove(SYNC_KEY);
-      store.remove(SAVE_KEY);
+      if (!arrived) store.remove(SAVE_KEY);
       return 'reload';
     },
   };

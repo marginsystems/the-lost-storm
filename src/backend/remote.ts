@@ -80,7 +80,18 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     state = next;
     for (const listener of listeners) listener(next);
   };
+  const displaced = (): boolean => {
+    if (record === null) return false;
+    const stored: SyncRecord | null = parseSyncRecord(store.read(SYNC_KEY), serverUrl);
+    return stored !== null && stored.token !== record.token;
+  };
   const keep = (next: SyncRecord | null): void => {
+    if (displaced()) {
+      frozen = true;
+      cancelTimer?.();
+      cancelTimer = null;
+      return;
+    }
     record = next;
     if (next === null) store.remove(SYNC_KEY);
     else store.write(SYNC_KEY, serializeSyncRecord(next));
