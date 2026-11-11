@@ -128,18 +128,19 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   };
 
   const settle = (sending: SaveData, held: SyncRecord, current: CloudState): void => {
-    const decision: Decision = chooseOnConflict({ local: sending, current, overwriteCloud: held.overwriteCloud });
+    const base: SyncRecord = record ?? held;
+    const decision: Decision = chooseOnConflict({ local: sending, current, overwriteCloud: base.overwriteCloud });
     if (decision.side === 'cloud' && current.save !== null) {
       log.warn(`keeping the cloud save: ${decision.reason}. Reload to continue from it.`);
       local.save(current.save);
-      keep({ ...held, revision: current.revision, updatedAt: current.updatedAt, pending: false, overwriteCloud: false });
+      keep({ ...base, revision: current.revision, updatedAt: current.updatedAt, pending: false, overwriteCloud: false });
       latest = null;
       frozen = true;
       setState('cloud');
       return;
     }
     log.info(`keeping this device's save: ${decision.reason}.`);
-    keep({ ...held, revision: current.revision, updatedAt: current.updatedAt });
+    keep({ ...base, revision: current.revision, updatedAt: current.updatedAt });
     quickRetries += 1;
     schedule(quickRetries > TIMING.maxQuickRetries ? backoffMs(quickRetries - TIMING.maxQuickRetries) : 0);
   };

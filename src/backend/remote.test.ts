@@ -432,3 +432,19 @@ void test('a start over that cannot replace the cloud copy at load keeps trying 
   assert.equal(reopened.state(), 'cloud');
   assert.equal(record(harness).overwriteCloud, false);
 });
+
+void test('a conflict keeps the savedAt written by a save that landed while the push was in flight', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 2);
+  harness.server.plant(account(harness), makeSave(3, 0));
+  backend.save(makeSave(4, 0));
+  const release: () => void = harness.server.holdNext();
+  await harness.timers.advance(1000);
+  harness.clock.now += 5000;
+  backend.save(makeSave(5, 0));
+  const later: string = new Date(harness.clock.now).toISOString();
+  release();
+  await settle();
+  await settle();
+  assert.equal(record(harness).savedAt, later);
+});
