@@ -3,7 +3,7 @@ import { Color, Group, Mesh, MeshStandardMaterial, OctahedronGeometry } from 'th
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { rarityOf } from '../../sim/items.ts';
 import type { GroundItem, World } from '../../sim/world/types.ts';
-import { assetUrl } from './character-loader.ts';
+import { loadModel } from './character-loader.ts';
 import { additive, disposeObject, glow, pillarMesh } from './effect-shapes.ts';
 
 export const LOOT = {
@@ -43,7 +43,7 @@ function tossOffset(age: number): number {
 }
 
 export async function createLootView(loader: GLTFLoader, scene: Scene): Promise<LootView> {
-  const coins: Object3D = (await loader.loadAsync(assetUrl(LOOT.coinModel))).scene;
+  const coins: Object3D = (await loadModel(loader, LOOT.coinModel)).scene;
   coins.traverse((object: Object3D): void => {
     if (object instanceof Mesh) object.castShadow = true;
   });

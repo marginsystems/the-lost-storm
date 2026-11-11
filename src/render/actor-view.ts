@@ -30,6 +30,7 @@ export const ACTOR = {
 export interface SyncOptions {
   readonly moveSpeed: number;
   readonly rise: number;
+  readonly floor: number;
 }
 
 export interface ActorView {
@@ -88,14 +89,14 @@ export function createActorView(rig: RigInstance, scale: number, facing: number)
 
   return {
     rig,
-    height: rig.def.height * scale,
+    height: rig.def.height * rig.def.scale * scale,
     sync(dt: number, actor: ActorState, options: SyncOptions): void {
-      rig.root.position.set(actor.pos.x, 0, actor.pos.z);
+      rig.root.position.set(actor.pos.x, options.floor, actor.pos.z);
       if (dead) {
         const sunk: number = Math.max(0, actor.deadTime - ACTOR.sinkDelay) * ACTOR.sinkSpeed;
-        rig.root.position.y = -sunk;
+        rig.root.position.y = options.floor - sunk;
       } else {
-        rig.root.position.y = -(1 - options.rise) * ACTOR.riseDepth;
+        rig.root.position.y = options.floor - (1 - options.rise) * ACTOR.riseDepth;
         yaw = turnToward(yaw, actor.facing, ACTOR.turnRate * dt);
         rig.root.rotation.y = yaw;
         if (oneShot > 0) {
@@ -115,7 +116,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number)
       rig.root.scale.set(scale * grow * (1 + squash), scale * grow * (1 - squash), scale * grow * (1 + squash));
       const hoverAmount: number = hover && !dead ? ACTOR.hoverGlow : 0;
       mixed.copy(hoverColor).lerp(flashColor, flash > 0 ? 1 : 0);
-      rig.setGlow(mixed, Math.max(flash, hoverAmount));
+      rig.setFlash(mixed, Math.max(flash, hoverAmount));
       rig.mixer.update(dt);
     },
     startAction(animation: ActionAnimation, windup: number, recovery: number): void {

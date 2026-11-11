@@ -2,6 +2,7 @@
   "id": "drowned_bastion",
   "name": "The Drowned Bastion",
   "cellSize": 4,
+  "floorHeight": 0.09,
   "tiles": [
     "   ........   ",
     " ............ ",

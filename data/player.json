@@ -1,5 +1,5 @@
 {
-  "rig": "knight",
+  "rig": "skeleton_hero",
   "radius": 0.5,
   "baseStats": {
     "maxLife": 100,
@@ -17,21 +17,65 @@
     "goldFind": 0
   },
   "perLevel": [
-    { "stat": "maxLife", "op": "add", "value": 12 },
-    { "stat": "maxMana", "op": "add", "value": 4 },
-    { "stat": "damageMin", "op": "add", "value": 0.5 },
-    { "stat": "damageMax", "op": "add", "value": 1 }
+    {
+      "stat": "maxLife",
+      "op": "add",
+      "value": 12
+    },
+    {
+      "stat": "maxMana",
+      "op": "add",
+      "value": 4
+    },
+    {
+      "stat": "damageMin",
+      "op": "add",
+      "value": 0.5
+    },
+    {
+      "stat": "damageMax",
+      "op": "add",
+      "value": 1
+    }
   ],
   "skillBar": [
-    { "skill": "cleave", "bindings": ["mouse_left"], "label": "LMB" },
-    { "skill": "thunderclap", "bindings": ["KeyQ"], "label": "Q" },
-    { "skill": "storm_bolt", "bindings": ["KeyW", "mouse_right"], "label": "W" }
+    {
+      "skill": "cleave",
+      "bindings": [
+        "mouse_left"
+      ],
+      "label": "LMB"
+    },
+    {
+      "skill": "thunderclap",
+      "bindings": [
+        "KeyQ"
+      ],
+      "label": "Q"
+    },
+    {
+      "skill": "storm_bolt",
+      "bindings": [
+        "KeyW",
+        "mouse_right"
+      ],
+      "label": "W"
+    }
   ],
-  "xp": { "base": 60, "growth": 1.42, "maxLevel": 30 },
-  "startingItems": ["rusted_blade"],
+  "xp": {
+    "base": 60,
+    "growth": 1.42,
+    "maxLevel": 30
+  },
+  "startingItems": [
+    "rusted_blade"
+  ],
   "unarmedVisual": null,
   "inventorySize": 24,
   "pickupRadius": 1.6,
   "goldMagnetRadius": 3.2,
-  "respawnDelay": 3
+  "respawnDelay": 3,
+  "tint": "#f4eedd",
+  "color": "#8fdcff",
+  "gear": []
 }

@@ -2,27 +2,56 @@
 
 Every file under `public/models` is listed here with its source and licence. `test/rules.test.ts` fails when a model is added without a row.
 
-All shipped assets are CC0 (public domain). Nothing in this repository is CC BY, Mixamo, Sketchfab or any other licence that restricts redistribution.
+Shipped assets are CC0 (public domain), CC BY 4.0 with the credit below, or made for this project. Nothing here is Mixamo, Splice, or any other licence that forbids redistributing the file.
 
-## Packs
+## Sources
 
-| Pack | Author | Source | Licence | Licence text |
+| Source | Author | Link | Licence | Licence text |
 |---|---|---|---|---|
-| KayKit Adventurers Character Pack 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0 | CC0 1.0 | [licenses/KayKit-Adventurers-LICENSE.txt](licenses/KayKit-Adventurers-LICENSE.txt) |
-| KayKit Skeletons Character Pack 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0 | CC0 1.0 | [licenses/KayKit-Skeletons-LICENSE.txt](licenses/KayKit-Skeletons-LICENSE.txt) |
+| Free Pack - Human Skeleton | PolyOne Studio | https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Universal Animation Library (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library.txt](licenses/Quaternius-Universal-Animation-Library.txt) |
 | KayKit Dungeon Remastered 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0 | CC0 1.0 | [licenses/KayKit-Dungeon-Remastered-LICENSE.txt](licenses/KayKit-Dungeon-Remastered-LICENSE.txt) |
 
-CC0 asks for no credit. We credit Kay Lousberg anyway.
+## Credit required by CC BY 4.0
 
-## Files
+"Free Pack - Human Skeleton" by PolyOne Studio, https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf, licensed under Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: posed onto the Quaternius rig, decimated and repainted; lower-detail copies removed. The same credit is shown on the game's title screen.
 
-Files are unmodified downloads, renamed to lower case. Each character GLB carries its own mesh, texture and animation clips.
+## Characters and animations
+
+Every humanoid uses one rig, the Universal Animation Library rig (53 `DEF-*` joints), so bodies, clips and held gear are interchangeable.
+
+| File | What it is | Source | Licence |
+|---|---|---|---|
+| `public/models/characters/skeleton.glb` | The skeleton body used by the hero and both monsters | "Free Pack - Human Skeleton" by PolyOne Studio, fitted to the rig, decimated and repainted for Movement Lab (`blender/variant_skeleton.py` in that repository); lower-detail copies stripped here by `tools/build-characters.ts` | CC BY 4.0 |
+| `public/models/animations/humanoid.glb` | The rig and 15 clips (idle, walk, jog, sprint, sword attack, punches, spell, hits, death, roll, landing) | Universal Animation Library (Standard) by Quaternius, Godot Asset Store build; the clips are picked out by `tools/build-characters.ts` | CC0 1.0 |
+
+Rebuild both with:
+
+```bash
+node tools/build-characters.ts <skeleton.glb> <character-with-clips.glb> public/models/characters/skeleton.glb public/models/animations/humanoid.glb
+```
+
+## Weapons
+
+| File | Source | Author | Licence |
+|---|---|---|---|
+| `public/models/weapons/greatsword.glb` | Built by `blender/build_weapons.py` | Made for this project | Repository licence |
+| `public/models/weapons/hex_staff.glb` | Built by `blender/build_weapons.py` | Made for this project | Repository licence |
+| `public/models/weapons/rusted_blade.glb` | Built by `blender/build_weapons.py` | Made for this project | Repository licence |
+| `public/models/weapons/sword_1h.glb` | Built by `blender/build_weapons.py` | Made for this project | Repository licence |
+
+Rebuild with:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_weapons.py -- "$PWD/public/models/weapons"
+```
+
+## Arena
+
+Unmodified downloads, renamed to lower case.
 
 | File | Original file | Pack | Licence |
 |---|---|---|---|
-| `public/models/characters/knight.glb` | `Characters/gltf/Knight.glb` | KayKit Adventurers Character Pack 1.0 | CC0 1.0 |
-| `public/models/characters/skeleton_minion.glb` | `Characters/gltf/Skeleton_Minion.glb` | KayKit Skeletons Character Pack 1.0 | CC0 1.0 |
-| `public/models/characters/skeleton_mage.glb` | `Characters/gltf/Skeleton_Mage.glb` | KayKit Skeletons Character Pack 1.0 | CC0 1.0 |
 | `public/models/arena/banner_patternA_blue.glb` | `Assets/gltf/banner_patternA_blue.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
 | `public/models/arena/banner_shield_blue.glb` | `Assets/gltf/banner_shield_blue.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
 | `public/models/arena/barrel_large.glb` | `Assets/gltf/barrel_large.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
@@ -60,6 +89,16 @@ Effects (slashes, bolts, shockwaves, rain, lightning, particles), the HUD and it
 
 ## Assets that must not be committed
 
-Mixamo characters and animations may be used in a game but may not be redistributed as standalone files, so they never go in this repository. Put them in `public/models/local/`, which is git-ignored, and point a rig in `data/rigs.json` at them. See the README for the rig format.
+Some licences allow use in a game but not handing the files to others, so those files never go in this repository:
 
-Before adding any asset: confirm the licence on the author's own page, download it from the author's own distribution, add its row here and keep its licence text in `licenses/`. CC BY assets need the author, title, source link and licence named here and in the in-game credits.
+- Mixamo characters and animations (Adobe): free to use in a game, not to be redistributed as files.
+- Splice samples: Splice's terms allow use inside a game, including as sound effects, but forbid distributing the samples to third parties except as part of the finished work.
+
+Put such files in `public/models/local/` or `public/audio/local/`, which are git-ignored.
+
+Before adding any asset: confirm the licence on the author's own page, download it from the author's own distribution, add its row here and keep its licence text in `licenses/`. A CC BY asset needs the author, title, source link, licence and a note of changes, here and on the title screen.
+
+## Before this repository goes public
+
+- `skeleton.glb` and `humanoid.glb` were taken from the private Movement Lab repository's processed copies. Their inputs are CC BY 4.0 and CC0, so they may be redistributed with the credit above.
+- Pick the repository licence and name it here.

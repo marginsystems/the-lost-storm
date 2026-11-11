@@ -43,7 +43,7 @@ A change to how damage is rolled, how a skill hits, how a monster decides, what 
 
 ## Content is data
 
-Monsters, skills, items, rarities, affixes, skill-tree nodes, rigs, props and the arena are JSON files in `data/`. Adding a monster, a skill, an item or a tree node is a data change only.
+Monsters, skills, items, rarities, affixes, skill-tree nodes, rigs, attachments, props and the arena are JSON files in `data/`. Adding a monster, a skill, an item or a tree node is a data change only.
 
 If new content cannot be expressed in the data, extend the schema in `sim/content/` and its handling in the engine in a general way (a new delivery type, a new modifier target), then write the content as data. Do not special-case an id in engine or render code. `sim/content/content.test.ts` checks every cross-reference between the data files.
 
@@ -59,8 +59,9 @@ Game balance lives in `data/`. Every other tuning number (camera, effects, timin
 
 This repository is meant to become public, so every file in it must be redistributable.
 
+- Every humanoid shares one rig, so bodies, clips and gear are interchangeable. Do not add a character on a different skeleton without retargeting it to that rig, and never bake a weapon into a character file: held gear is an attachment in `data/attachments.json`.
 - Ship only CC0 assets, or CC BY with full attribution. Every file under `public/models` has a row in [ASSETS.md](ASSETS.md) with its source and licence, and the pack's licence text is in `licenses/`. `test/rules.test.ts` fails on a model with no row.
-- Never commit Mixamo files, Sketchfab downloads without a redistributable licence, or anything ripped from another game. Local-only assets go in `public/models/local/`, which is git-ignored.
+- Never commit Mixamo files, Splice samples, Sketchfab downloads without a redistributable licence, or anything ripped from another game. Local-only assets go in `public/models/local/` and `public/audio/local/`, which are git-ignored.
 - Do not copy another game's name, characters, art, music, levels or interface. The Lost Storm is its own world.
 
 ## Game feel

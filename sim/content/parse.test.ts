@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import arena from '../../data/arena.json' with { type: 'json' };
+import attachments from '../../data/attachments.json' with { type: 'json' };
 import items from '../../data/items.json' with { type: 'json' };
 import monsters from '../../data/monsters.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
@@ -18,7 +19,7 @@ import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content, MonsterDef } from './types.ts';
 
-const shipped: RawContent = { skills, monsters, items, skillTree, rigs, props, arena, player };
+const shipped: RawContent = { skills, monsters, items, skillTree, rigs, attachments, props, arena, player };
 
 const extraSkill = {
   id: 'ember_lash',
@@ -44,7 +45,7 @@ const extraSkill = {
 const extraMonster = {
   id: 'ash_wraith',
   name: 'Ash Wraith',
-  rig: 'skeleton_minion',
+  rig: 'skeleton_thrall',
   scale: 1.2,
   radius: 0.5,
   life: 45,
@@ -57,7 +58,11 @@ const extraMonster = {
   skill: 'ember_lash',
   loot: { goldChance: 0.5, goldMin: 1, goldMax: 3, itemChance: 0.1 },
   color: '#ff8844',
+  tint: '#553322',
+  gear: ['ash_brand'],
 };
+
+const extraAttachment = { id: 'ash_brand', model: 'models/weapons/rusted_blade.glb', socket: 'hand_l' };
 
 const extraBase = {
   id: 'obsidian_blade',
@@ -91,6 +96,7 @@ function extended(): RawContent {
     ...shipped,
     skills: [...skills, extraSkill],
     monsters: [...monsters, extraMonster],
+    attachments: [...attachments, extraAttachment],
     items: { ...items, bases: [...items.bases, extraBase] },
     skillTree: [...skillTree, extraNode],
     arena: { ...arena, packs: [...arena.packs, { x: 28, z: 22, members: [{ monster: 'ash_wraith', count: 3 }] }] },
@@ -117,12 +123,12 @@ void test('a missing field throws a ContentError naming the field', (): void => 
 void test('an unknown enum value and a duplicate id are rejected', (): void => {
   const badBehaviour: RawContent = { ...shipped, monsters: [{ ...extraMonster, behaviour: { type: 'dancer' } }] };
   assert.throws((): Content => parseContent(badBehaviour), (error: unknown): boolean => problem(error, 'behaviour.type'));
-  const duplicate: RawContent = { ...shipped, monsters: [extraMonster, extraMonster] };
+  const duplicate: RawContent = { ...shipped, attachments: [...attachments, extraAttachment], monsters: [extraMonster, extraMonster] };
   assert.throws((): Content => parseContent(duplicate), (error: unknown): boolean => problem(error, 'duplicate id ash_wraith'));
 });
 
 void test('contentProblems reports dangling references', (): void => {
-  const content: Content = parseContent({ ...shipped, monsters: [...monsters, { ...extraMonster, skill: 'no_such_skill', rig: 'no_such_rig' }] });
+  const content: Content = parseContent({ ...shipped, attachments: [...attachments, extraAttachment], monsters: [...monsters, { ...extraMonster, skill: 'no_such_skill', rig: 'no_such_rig' }] });
   const problems: string[] = contentProblems(content);
   assert.ok(problems.some((line: string): boolean => line.includes('ash_wraith') && line.includes('no_such_skill')));
   assert.ok(problems.some((line: string): boolean => line.includes('ash_wraith') && line.includes('no_such_rig')));
@@ -146,4 +152,20 @@ void test('a new skill, monster, item base and tree node are data only', (): voi
 
   assert.equal(canAllocate(content, ['eye_of_the_storm'], 1, 'ember_heart'), true);
   assert.equal(canAllocate(content, [], 1, 'ember_heart'), false);
+});
+
+void test('held gear is data: a missing attachment or socket is reported', (): void => {
+  const geared: RawContent = { ...shipped, skills: [...skills, extraSkill], attachments: [...attachments, extraAttachment], monsters: [...monsters, extraMonster] };
+  const withGear: Content = parseContent(geared);
+  assert.deepEqual(contentProblems(withGear), []);
+  assert.deepEqual(must(withGear.monsters.get('ash_wraith'), 'ash_wraith').gear, ['ash_brand']);
+
+  const unknownAttachment: Content = parseContent({ ...geared, attachments });
+  assert.ok(contentProblems(unknownAttachment).some((found: string): boolean => found.includes('unknown attachment ash_brand')));
+
+  const noSocket: Content = parseContent({ ...geared, attachments: [...attachments, { ...extraAttachment, socket: 'tail' }] });
+  assert.ok(contentProblems(noSocket).some((found: string): boolean => found.includes('no socket tail')));
+
+  const badVisual: Content = parseContent({ ...shipped, items: { ...items, bases: [...items.bases, { ...items.bases[0], id: 'ghost_blade', visual: 'no_such_model' }] } });
+  assert.ok(contentProblems(badVisual).some((found: string): boolean => found.includes('item ghost_blade uses unknown attachment no_such_model')));
 });

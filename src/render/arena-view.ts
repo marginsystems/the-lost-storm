@@ -3,7 +3,7 @@ import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, Mesh
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, PropDef } from '../../sim/content/types.ts';
 import { arenaColumns, arenaRows, floorCells, wallCorners, wallEdges } from '../../sim/nav/layout.ts';
-import { assetUrl } from './character-loader.ts';
+import { loadModel } from './character-loader.ts';
 
 export const ARENA = {
   abyssDepth: -1.06,
@@ -85,7 +85,7 @@ export async function buildArena(loader: GLTFLoader, content: Content, scene: Sc
   const loaded: [string, GLTF][] = await Promise.all(
     [...placements.keys()].map(async (propId: string): Promise<[string, GLTF]> => {
       const def: PropDef | undefined = content.props.get(propId);
-      return [propId, await loader.loadAsync(assetUrl(def?.model ?? ''))];
+      return [propId, await loadModel(loader, def?.model ?? '')];
     }),
   );
 

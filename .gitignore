@@ -5,4 +5,5 @@ dist
 __pycache__
 *.pyc
 public/models/local
+public/audio/local
 .claude/launch.json

@@ -46,6 +46,8 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 | `src/input.ts` | Mouse and keyboard to commands |
 | `src/main.ts` | Loads everything and runs the frame loop |
 | `public/models/` | GLB models. Every file is listed in [ASSETS.md](ASSETS.md) |
+| `blender/` | Blender scripts that build models (weapons) |
+| `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file |
 | `test/rules.test.ts` | Repository rules: no comments, no type escape hatches, `sim/` stays free of rendering code, every model is credited |
 
 The renderer reads the world and the events `stepWorld` returns, and sends commands back. It never changes world state.
@@ -62,42 +64,47 @@ Content is data. None of these need a code change:
 
 If something cannot be expressed in the data, extend the schema in `sim/content/` in a general way first. See [AGENTS.md](AGENTS.md).
 
-## Swapping characters
+## Characters and gear
+
+Every humanoid shares one rig (the Quaternius Universal Animation Library rig), so a body, a clip and a piece of held gear each exist once and work on every character.
 
 A character is a rig entry in `data/rigs.json`. The loader (`src/render/character-loader.ts`) needs nothing else.
 
 ```json
 {
-  "id": "my_hero",
-  "url": "models/local/my_hero.glb",
-  "animationUrls": ["models/local/my_hero_anims.glb"],
-  "scale": 0.01,
+  "id": "skeleton_hero",
+  "url": "models/characters/skeleton.glb",
+  "animationUrls": ["models/animations/humanoid.glb"],
+  "scale": 1.2,
   "yawOffsetDegrees": 0,
-  "height": 1.8,
-  "rootMotionBone": "mixamorigHips",
+  "height": 1.85,
+  "rootMotionBone": null,
   "clips": {
-    "idle": { "clip": "Idle", "impactFraction": 0 },
-    "run": { "clip": "Running", "impactFraction": 0 },
-    "attack": { "clip": "Sword Slash", "impactFraction": 0.4 },
-    "slam": { "clip": "Ground Slam", "impactFraction": 0.5 },
-    "cast": { "clip": "Magic Attack", "impactFraction": 0.45 },
-    "hit": { "clip": "Hit Reaction", "impactFraction": 0 },
-    "death": { "clip": "Dying", "impactFraction": 0 }
+    "idle": { "clip": "Sword_Idle", "impactFraction": 0 },
+    "run": { "clip": "Jog_Fwd_Loop", "impactFraction": 0 },
+    "attack": { "clip": "Sword_Attack", "impactFraction": 0.3 },
+    "slam": { "clip": "Sword_Attack", "impactFraction": 0.3 },
+    "cast": { "clip": "Spell_Simple_Shoot", "impactFraction": 0.35 },
+    "hit": { "clip": "Hit_Chest", "impactFraction": 0 },
+    "death": { "clip": "Death01", "impactFraction": 0 }
   },
-  "attachments": {},
+  "sockets": {
+    "hand_r": { "bone": "DEF-hand.R", "position": [-0.03, 0.085, 0], "rotationDegrees": [90, 90, 0], "scale": 1 }
+  },
   "hiddenNodes": []
 }
 ```
 
-- `url` is the model. `animationUrls` lists extra GLB files whose clips are merged in, so animations can live apart from the mesh as long as they share a skeleton.
+- `url` is the body. `animationUrls` lists GLB files whose clips are merged in, so one animation file serves every body on the same rig.
 - `clips` maps each animation the game needs to a clip name in those files. `impactFraction` is the point in the clip where the blow lands; the game speeds the clip up or down so that point meets the skill's `windup`. If a name is wrong, the error lists the clips the files do contain.
 - `rootMotionBone` pins that bone's horizontal movement so a clip with root motion plays in place.
-- `attachments` maps a weapon `visual` to node names to show; `hiddenNodes` are always hidden.
+- `sockets` are named mounting points: a bone plus an offset, rotation and scale.
+- `hiddenNodes` are nodes in the body file that are never shown.
 
-Then point `data/player.json` (`rig`) or a monster at the new id.
+Held gear is an entry in `data/attachments.json`: an id, a model file and the socket it mounts on. An item base's `visual`, the player's `gear` and a monster's `gear` name attachment ids, so a new weapon model is one GLB and one line of data. Weapon models are authored with the grip at the origin and the blade along +Y. `tint` on the player and on each monster recolours the body, so one body file makes several characters.
 
-Mixamo characters work this way (export FBX, convert to GLB), but Mixamo files may not be redistributed, so they go in `public/models/local/`, which is git-ignored, and never in this repository.
+To use a different rig, add its rig entry with its own bone names in `sockets`, and point `data/player.json` (`rig`) or a monster at it. Mixamo characters work this way (export FBX, convert to GLB, set `scale` to 0.01 and `rootMotionBone` to `mixamorigHips`), but Mixamo files may not be redistributed, so they go in `public/models/local/`, which is git-ignored, and never in this repository.
 
 ## Assets and licence
 
-Every shipped asset is listed with its source and licence in [ASSETS.md](ASSETS.md). All of them are CC0. The pack licence texts are in `licenses/`.
+Every shipped asset is listed with its source and licence in [ASSETS.md](ASSETS.md). They are CC0, CC BY 4.0 with credit, or made for this project. Licence texts are in `licenses/`.

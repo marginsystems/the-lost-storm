@@ -213,6 +213,14 @@ body {
   color: rgba(239, 230, 214, 0.72);
 }
 
+.title-credits {
+  margin: 26px auto 0;
+  max-width: 400px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: rgba(239, 230, 214, 0.38);
+}
+
 .world-layer {
   position: absolute;
   left: 0;

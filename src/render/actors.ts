@@ -4,7 +4,7 @@ import type { Content } from '../../sim/content/types.ts';
 import type { MonsterState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { ActorView } from './actor-view.ts';
 import { createActorView } from './actor-view.ts';
-import type { LoadedRig } from './character-loader.ts';
+import type { CharacterLibrary, LoadedRig } from './character-loader.ts';
 import { instantiateRig } from './character-loader.ts';
 
 export const ACTORS = {
@@ -27,27 +27,28 @@ export interface Actors {
 const HIT_WHITE: Color = new Color(0xffffff);
 const HIT_RED: Color = new Color(0xff2a1a);
 
-function weaponVisual(content: Content, player: PlayerState): string | null {
+function playerGear(content: Content, player: PlayerState): string[] {
   const weapon = player.equipped.weapon;
-  if (weapon === null) return content.player.unarmedVisual;
-  return content.itemBases.get(weapon.base)?.visual ?? content.player.unarmedVisual;
+  const held: string | null = weapon === null ? content.player.unarmedVisual : (content.itemBases.get(weapon.base)?.visual ?? content.player.unarmedVisual);
+  return held === null ? [...content.player.gear] : [...content.player.gear, held];
 }
 
-export function createActors(scene: Scene, rigs: ReadonlyMap<string, LoadedRig>, world: World): Actors {
+export function createActors(scene: Scene, library: CharacterLibrary, world: World): Actors {
   const content: Content = world.content;
-  const playerRig: LoadedRig | undefined = rigs.get(content.player.rig);
+  const playerRig: LoadedRig | undefined = library.rigs.get(content.player.rig);
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
-  const playerView: ActorView = createActorView(instantiateRig(playerRig), 1, world.player.facing);
-  playerView.rig.setAttachment(weaponVisual(content, world.player));
+  const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color }), 1, world.player.facing);
+  playerView.rig.setGear(playerGear(content, world.player));
   scene.add(playerView.rig.root);
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
 
   const entryFor = (monster: MonsterState): MonsterEntry | null => {
     const existing: MonsterEntry | undefined = monsters.get(monster.id);
     if (existing !== undefined) return existing;
-    const rig: LoadedRig | undefined = rigs.get(monster.def.rig);
+    const rig: LoadedRig | undefined = library.rigs.get(monster.def.rig);
     if (rig === undefined) return null;
-    const view: ActorView = createActorView(instantiateRig(rig), monster.def.scale, monster.facing);
+    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: monster.def.tint, glow: monster.def.color }), monster.def.scale, monster.facing);
+    view.rig.setGear(monster.def.gear);
     scene.add(view.rig.root);
     const entry: MonsterEntry = { view, spawnTime: Math.max(monster.spawnTime, 1e-3) };
     monsters.set(monster.id, entry);
@@ -65,12 +66,13 @@ export function createActors(scene: Scene, rigs: ReadonlyMap<string, LoadedRig>,
       return viewOf(actorId)?.height ?? ACTORS.defaultHeight;
     },
     sync(dt: number, current: World, hoveredId: number | null): void {
-      playerView.sync(dt, current.player, { moveSpeed: current.player.stats.moveSpeed, rise: 1 });
+      const floor: number = current.arena.floorHeight;
+      playerView.sync(dt, current.player, { moveSpeed: current.player.stats.moveSpeed, rise: 1, floor });
       for (const monster of current.monsters) {
         const entry: MonsterEntry | null = entryFor(monster);
         if (entry === null) continue;
         entry.view.setHover(monster.id === hoveredId);
-        entry.view.sync(dt, monster, { moveSpeed: monster.def.moveSpeed, rise: 1 - monster.spawnTime / entry.spawnTime });
+        entry.view.sync(dt, monster, { moveSpeed: monster.def.moveSpeed, rise: 1 - monster.spawnTime / entry.spawnTime, floor });
       }
     },
     handle(events: readonly WorldEvent[], current: World): void {
@@ -95,7 +97,7 @@ export function createActors(scene: Scene, rigs: ReadonlyMap<string, LoadedRig>,
             playerView.revive();
             break;
           case 'character_changed':
-            playerView.rig.setAttachment(weaponVisual(content, current.player));
+            playerView.rig.setGear(playerGear(content, current.player));
             break;
           case 'monster_remove': {
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);

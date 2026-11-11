@@ -1,62 +1,218 @@
 [
   {
-    "id": "knight",
-    "url": "models/characters/knight.glb",
-    "animationUrls": [],
-    "scale": 1,
+    "id": "skeleton_hero",
+    "url": "models/characters/skeleton.glb",
+    "animationUrls": [
+      "models/animations/humanoid.glb"
+    ],
+    "scale": 1.2,
     "yawOffsetDegrees": 0,
-    "height": 2.4,
+    "height": 1.85,
     "rootMotionBone": null,
     "clips": {
-      "idle": { "clip": "Idle", "impactFraction": 0 },
-      "run": { "clip": "Running_A", "impactFraction": 0 },
-      "attack": { "clip": "1H_Melee_Attack_Slice_Diagonal", "impactFraction": 0.38 },
-      "slam": { "clip": "1H_Melee_Attack_Chop", "impactFraction": 0.42 },
-      "cast": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
-      "hit": { "clip": "Hit_A", "impactFraction": 0 },
-      "death": { "clip": "Death_A", "impactFraction": 0 }
+      "idle": {
+        "clip": "Sword_Idle",
+        "impactFraction": 0
+      },
+      "run": {
+        "clip": "Jog_Fwd_Loop",
+        "impactFraction": 0
+      },
+      "attack": {
+        "clip": "Sword_Attack",
+        "impactFraction": 0.3
+      },
+      "slam": {
+        "clip": "Sword_Attack",
+        "impactFraction": 0.3
+      },
+      "cast": {
+        "clip": "Spell_Simple_Shoot",
+        "impactFraction": 0.35
+      },
+      "hit": {
+        "clip": "Hit_Chest",
+        "impactFraction": 0
+      },
+      "death": {
+        "clip": "Death01",
+        "impactFraction": 0
+      }
     },
-    "attachments": { "sword_1h": ["1H_Sword"], "sword_2h": ["2H_Sword"] },
-    "hiddenNodes": ["1H_Sword_Offhand", "Badge_Shield", "Rectangle_Shield", "Round_Shield", "Spike_Shield"]
-  },
-  {
-    "id": "skeleton_minion",
-    "url": "models/characters/skeleton_minion.glb",
-    "animationUrls": [],
-    "scale": 1,
-    "yawOffsetDegrees": 0,
-    "height": 2.2,
-    "rootMotionBone": null,
-    "clips": {
-      "idle": { "clip": "Idle", "impactFraction": 0 },
-      "run": { "clip": "Running_A", "impactFraction": 0 },
-      "attack": { "clip": "Unarmed_Melee_Attack_Punch_A", "impactFraction": 0.3 },
-      "slam": { "clip": "Unarmed_Melee_Attack_Punch_A", "impactFraction": 0.3 },
-      "cast": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
-      "hit": { "clip": "Hit_A", "impactFraction": 0 },
-      "death": { "clip": "Death_C_Skeletons", "impactFraction": 0 }
+    "sockets": {
+      "hand_r": {
+        "bone": "DEF-hand.R",
+        "position": [
+          -0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "DEF-hand.L",
+        "position": [
+          0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          -90,
+          0
+        ],
+        "scale": 1
+      }
     },
-    "attachments": {},
     "hiddenNodes": []
   },
   {
-    "id": "skeleton_mage",
-    "url": "models/characters/skeleton_mage.glb",
-    "animationUrls": [],
-    "scale": 1,
+    "id": "skeleton_thrall",
+    "url": "models/characters/skeleton.glb",
+    "animationUrls": [
+      "models/animations/humanoid.glb"
+    ],
+    "scale": 1.2,
     "yawOffsetDegrees": 0,
-    "height": 2.6,
+    "height": 1.85,
     "rootMotionBone": null,
     "clips": {
-      "idle": { "clip": "Idle", "impactFraction": 0 },
-      "run": { "clip": "Walking_D_Skeletons", "impactFraction": 0 },
-      "attack": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
-      "slam": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
-      "cast": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
-      "hit": { "clip": "Hit_A", "impactFraction": 0 },
-      "death": { "clip": "Death_C_Skeletons", "impactFraction": 0 }
+      "idle": {
+        "clip": "Idle_Loop",
+        "impactFraction": 0
+      },
+      "run": {
+        "clip": "Jog_Fwd_Loop",
+        "impactFraction": 0
+      },
+      "attack": {
+        "clip": "Sword_Attack",
+        "impactFraction": 0.3
+      },
+      "slam": {
+        "clip": "Sword_Attack",
+        "impactFraction": 0.3
+      },
+      "cast": {
+        "clip": "Spell_Simple_Shoot",
+        "impactFraction": 0.35
+      },
+      "hit": {
+        "clip": "Hit_Head",
+        "impactFraction": 0
+      },
+      "death": {
+        "clip": "Death01",
+        "impactFraction": 0
+      }
     },
-    "attachments": {},
+    "sockets": {
+      "hand_r": {
+        "bone": "DEF-hand.R",
+        "position": [
+          -0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "DEF-hand.L",
+        "position": [
+          0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          -90,
+          0
+        ],
+        "scale": 1
+      }
+    },
+    "hiddenNodes": []
+  },
+  {
+    "id": "skeleton_caster",
+    "url": "models/characters/skeleton.glb",
+    "animationUrls": [
+      "models/animations/humanoid.glb"
+    ],
+    "scale": 1.2,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "clips": {
+      "idle": {
+        "clip": "Idle_Torch_Loop",
+        "impactFraction": 0
+      },
+      "run": {
+        "clip": "Walk_Loop",
+        "impactFraction": 0
+      },
+      "attack": {
+        "clip": "Spell_Simple_Shoot",
+        "impactFraction": 0.35
+      },
+      "slam": {
+        "clip": "Spell_Simple_Shoot",
+        "impactFraction": 0.35
+      },
+      "cast": {
+        "clip": "Spell_Simple_Shoot",
+        "impactFraction": 0.35
+      },
+      "hit": {
+        "clip": "Hit_Chest",
+        "impactFraction": 0
+      },
+      "death": {
+        "clip": "Death01",
+        "impactFraction": 0
+      }
+    },
+    "sockets": {
+      "hand_r": {
+        "bone": "DEF-hand.R",
+        "position": [
+          -0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "DEF-hand.L",
+        "position": [
+          0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          -90,
+          0
+        ],
+        "scale": 1
+      }
+    },
     "hiddenNodes": []
   }
 ]

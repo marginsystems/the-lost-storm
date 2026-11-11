@@ -2,6 +2,7 @@ import type { Fields } from './read.ts';
 import { byId, choice, choiceList, ContentError, each, fields, flag, nullableText, numeric, text, textList } from './read.ts';
 import type {
   AffixDef,
+  AttachmentDef,
   AnimationKey,
   ArenaDef,
   ArenaPack,
@@ -19,12 +20,14 @@ import type {
   RarityDef,
   RigClip,
   RigDef,
+  RigSocket,
   SkillBinding,
   SkillDef,
   SkillMod,
   SkillTreeNodeDef,
   StatBlock,
   StatMod,
+  Triple,
 } from './types.ts';
 import { ACTION_ANIMATIONS, AFFIX_POSITIONS, ANIMATION_KEYS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES } from './types.ts';
 
@@ -34,6 +37,7 @@ export interface RawContent {
   readonly items: unknown;
   readonly skillTree: unknown;
   readonly rigs: unknown;
+  readonly attachments: unknown;
   readonly props: unknown;
   readonly arena: unknown;
   readonly player: unknown;
@@ -122,6 +126,8 @@ function monster(value: unknown, where: string): MonsterDef {
       itemChance: numeric(loot, 'itemChance', where),
     },
     color: text(source, 'color', where),
+    tint: text(source, 'tint', where),
+    gear: textList(source, 'gear', where),
   };
 }
 
@@ -192,11 +198,26 @@ function rigClips(value: unknown, where: string): Record<AnimationKey, RigClip> 
   return { idle: clip('idle'), run: clip('run'), attack: clip('attack'), slam: clip('slam'), cast: clip('cast'), hit: clip('hit'), death: clip('death') };
 }
 
+function triple(source: Fields, key: string, where: string): Triple {
+  const values: number[] = each(source[key], `${where}.${key}`, (entry: unknown, entryWhere: string): number => {
+    if (typeof entry !== 'number' || !Number.isFinite(entry)) throw new ContentError(entryWhere, 'expected a number');
+    return entry;
+  });
+  const [x, y, z] = values;
+  if (values.length !== 3 || x === undefined || y === undefined || z === undefined) throw new ContentError(`${where}.${key}`, 'expected three numbers');
+  return [x, y, z];
+}
+
+function rigSocket(value: unknown, where: string): RigSocket {
+  const source: Fields = fields(value, where);
+  return { bone: text(source, 'bone', where), position: triple(source, 'position', where), rotationDegrees: triple(source, 'rotationDegrees', where), scale: numeric(source, 'scale', where) };
+}
+
 function rig(value: unknown, where: string): RigDef {
   const source: Fields = fields(value, where);
-  const attachmentFields: Fields = fields(source['attachments'], `${where}.attachments`);
-  const attachments: Record<string, readonly string[]> = {};
-  for (const key of Object.keys(attachmentFields)) attachments[key] = textList(attachmentFields, key, `${where}.attachments`);
+  const socketFields: Fields = fields(source['sockets'], `${where}.sockets`);
+  const sockets: Record<string, RigSocket> = {};
+  for (const key of Object.keys(socketFields)) sockets[key] = rigSocket(socketFields[key], `${where}.sockets.${key}`);
   for (const key of ANIMATION_KEYS) fields(fields(source['clips'], `${where}.clips`)[key], `${where}.clips.${key}`);
   return {
     id: text(source, 'id', where),
@@ -207,9 +228,14 @@ function rig(value: unknown, where: string): RigDef {
     height: numeric(source, 'height', where),
     rootMotionBone: nullableText(source, 'rootMotionBone', where),
     clips: rigClips(source['clips'], `${where}.clips`),
-    attachments,
+    sockets,
     hiddenNodes: textList(source, 'hiddenNodes', where),
   };
+}
+
+function attachment(value: unknown, where: string): AttachmentDef {
+  const source: Fields = fields(value, where);
+  return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where) };
 }
 
 function propLight(value: unknown, where: string): PropLight | null {
@@ -263,6 +289,7 @@ function arena(value: unknown, where: string): ArenaDef {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
     cellSize: numeric(source, 'cellSize', where),
+    floorHeight: numeric(source, 'floorHeight', where),
     tiles,
     floors,
     walls: { tall: textList(walls, 'tall', `${where}.walls`), low: text(walls, 'low', `${where}.walls`), corner: text(walls, 'corner', `${where}.walls`), halfThickness: numeric(walls, 'halfThickness', `${where}.walls`) },
@@ -317,6 +344,9 @@ function player(value: unknown, where: string): PlayerDef {
     xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`) },
     startingItems: textList(source, 'startingItems', where),
     unarmedVisual: nullableText(source, 'unarmedVisual', where),
+    tint: text(source, 'tint', where),
+    color: text(source, 'color', where),
+    gear: textList(source, 'gear', where),
     inventorySize: numeric(source, 'inventorySize', where),
     pickupRadius: numeric(source, 'pickupRadius', where),
     goldMagnetRadius: numeric(source, 'goldMagnetRadius', where),
@@ -336,6 +366,7 @@ export function parseContent(raw: RawContent): Content {
     itemScaling: { implicitPerLevel: numeric(scaling, 'implicitPerLevel', 'items.scaling') },
     skillTree: each(raw.skillTree, 'skillTree', treeNode),
     rigs: byId(each(raw.rigs, 'rigs', rig), 'rigs'),
+    attachments: byId(each(raw.attachments, 'attachments', attachment), 'attachments'),
     props: byId(each(raw.props, 'props', prop), 'props'),
     arena: arena(raw.arena, 'arena'),
     player: player(raw.player, 'player'),
@@ -347,11 +378,23 @@ export function contentProblems(content: Content): string[] {
   const need = (ok: boolean, problem: string): void => {
     if (!ok) problems.push(problem);
   };
+  const fits = (holder: string, rigId: string, attachmentId: string): void => {
+    const held: AttachmentDef | undefined = content.attachments.get(attachmentId);
+    need(held !== undefined, `${holder} uses unknown attachment ${attachmentId}`);
+    const sockets: RigDef['sockets'] | undefined = content.rigs.get(rigId)?.sockets;
+    if (held !== undefined && sockets !== undefined) need(sockets[held.socket] !== undefined, `${holder} uses attachment ${attachmentId}, but rig ${rigId} has no socket ${held.socket}`);
+  };
   for (const def of content.monsters.values()) {
     need(content.skills.has(def.skill), `monster ${def.id} uses unknown skill ${def.skill}`);
     need(content.rigs.has(def.rig), `monster ${def.id} uses unknown rig ${def.rig}`);
+    for (const held of def.gear) fits(`monster ${def.id}`, def.rig, held);
   }
   need(content.rigs.has(content.player.rig), `player uses unknown rig ${content.player.rig}`);
+  for (const held of content.player.gear) fits('player', content.player.rig, held);
+  if (content.player.unarmedVisual !== null) fits('player', content.player.rig, content.player.unarmedVisual);
+  for (const base of content.itemBases.values()) {
+    if (base.visual !== null) fits(`item ${base.id}`, content.player.rig, base.visual);
+  }
   for (const binding of content.player.skillBar) need(content.skills.has(binding.skill), `skill bar uses unknown skill ${binding.skill}`);
   for (const base of content.player.startingItems) need(content.itemBases.has(base), `starting item ${base} is unknown`);
   need(content.rarities.length > 0, 'items need at least one rarity');

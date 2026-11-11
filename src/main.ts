@@ -1,6 +1,7 @@
+import type { Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { loadContent } from '../sim/content/content.ts';
-import type { Content, RigDef } from '../sim/content/types.ts';
+import type { Content } from '../sim/content/types.ts';
 import type { SaveData } from '../sim/save.ts';
 import { parseSaveText, toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
@@ -14,8 +15,8 @@ import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
 import type { ArenaView } from './render/arena-view.ts';
 import { buildArena } from './render/arena-view.ts';
-import type { LoadedRig } from './render/character-loader.ts';
-import { loadRig } from './render/character-loader.ts';
+import type { CharacterLibrary } from './render/character-loader.ts';
+import { loadCharacters } from './render/character-loader.ts';
 import type { Effects } from './render/effects.ts';
 import { createEffects } from './render/effects.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
@@ -41,6 +42,7 @@ const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['type']>
 
 export interface DebugHandle {
   readonly world: World;
+  readonly scene: Scene;
   send(command: Command): void;
 }
 
@@ -54,17 +56,6 @@ function element<T extends HTMLElement>(id: string, type: new () => T): T {
   const found: HTMLElement | null = document.getElementById(id);
   if (!(found instanceof type)) throw new Error(`Missing #${id}`);
   return found;
-}
-
-function usedRigs(content: Content): RigDef[] {
-  const ids: Set<string> = new Set<string>([content.player.rig]);
-  for (const monster of content.monsters.values()) ids.add(monster.rig);
-  const rigs: RigDef[] = [];
-  for (const id of ids) {
-    const rig: RigDef | undefined = content.rigs.get(id);
-    if (rig !== undefined) rigs.push(rig);
-  }
-  return rigs;
 }
 
 async function start(): Promise<void> {
@@ -81,12 +72,7 @@ async function start(): Promise<void> {
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader();
 
-  const [loadedRigs, arena, loot]: [LoadedRig[], ArenaView, LootView] = await Promise.all([
-    Promise.all(usedRigs(content).map((rig: RigDef): Promise<LoadedRig> => loadRig(loader, rig))),
-    buildArena(loader, content, stage.scene),
-    createLootView(loader, stage.scene),
-  ]);
-  const rigs: Map<string, LoadedRig> = new Map<string, LoadedRig>(loadedRigs.map((rig: LoadedRig): [string, LoadedRig] => [rig.def.id, rig]));
+  const [library, arena, loot]: [CharacterLibrary, ArenaView, LootView] = await Promise.all([loadCharacters(loader, content), buildArena(loader, content, stage.scene), createLootView(loader, stage.scene)]);
 
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
   const queue: Command[] = [];
@@ -96,14 +82,14 @@ async function start(): Promise<void> {
   const particles: ParticleSystem = createParticles(stage.scene);
   const weather: Weather = createWeather(stage.scene);
   const effects: Effects = createEffects(stage.scene, particles, camera, arena.torches, (power: number): void => weather.strike(power));
-  const actors: Actors = createActors(stage.scene, rigs, world);
+  const actors: Actors = createActors(stage.scene, library, world);
   const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, (id: number): number => actors.heightOf(id), (groundId: number): void => send({ type: 'pickup', groundId }));
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),
     clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile),
   });
-  if (import.meta.env.DEV) window.storm = { world, send };
+  if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, send };
 
   let playing: boolean = false;
   let hitStop: number = 0;

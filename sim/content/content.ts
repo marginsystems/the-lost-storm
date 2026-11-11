@@ -1,4 +1,5 @@
 import arena from '../../data/arena.json' with { type: 'json' };
+import attachments from '../../data/attachments.json' with { type: 'json' };
 import items from '../../data/items.json' with { type: 'json' };
 import monsters from '../../data/monsters.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
@@ -11,7 +12,7 @@ import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
 export function loadContent(): Content {
-  const content: Content = parseContent({ skills, monsters, items, skillTree, rigs, props, arena, player });
+  const content: Content = parseContent({ skills, monsters, items, skillTree, rigs, attachments, props, arena, player });
   const problems: string[] = contentProblems(content);
   if (problems.length > 0) throw new ContentError('content', problems.join('; '));
   return content;

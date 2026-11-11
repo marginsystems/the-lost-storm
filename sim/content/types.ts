@@ -133,6 +133,8 @@ export interface MonsterDef {
   readonly skill: string;
   readonly loot: MonsterLoot;
   readonly color: string;
+  readonly tint: string;
+  readonly gear: readonly string[];
 }
 
 export const ITEM_SLOTS = ['weapon', 'armour', 'charm'] as const;
@@ -199,6 +201,21 @@ export interface RigClip {
   readonly impactFraction: number;
 }
 
+export type Triple = readonly [number, number, number];
+
+export interface RigSocket {
+  readonly bone: string;
+  readonly position: Triple;
+  readonly rotationDegrees: Triple;
+  readonly scale: number;
+}
+
+export interface AttachmentDef {
+  readonly id: string;
+  readonly model: string;
+  readonly socket: string;
+}
+
 export interface RigDef {
   readonly id: string;
   readonly url: string;
@@ -208,7 +225,7 @@ export interface RigDef {
   readonly height: number;
   readonly rootMotionBone: string | null;
   readonly clips: Readonly<Record<AnimationKey, RigClip>>;
-  readonly attachments: Readonly<Record<string, readonly string[]>>;
+  readonly sockets: Readonly<Record<string, RigSocket>>;
   readonly hiddenNodes: readonly string[];
 }
 
@@ -271,6 +288,7 @@ export interface ArenaDef {
   readonly id: string;
   readonly name: string;
   readonly cellSize: number;
+  readonly floorHeight: number;
   readonly tiles: readonly string[];
   readonly floors: Readonly<Record<string, readonly string[]>>;
   readonly walls: ArenaWalls;
@@ -301,6 +319,9 @@ export interface PlayerDef {
   readonly xp: XpCurve;
   readonly startingItems: readonly string[];
   readonly unarmedVisual: string | null;
+  readonly tint: string;
+  readonly color: string;
+  readonly gear: readonly string[];
   readonly inventorySize: number;
   readonly pickupRadius: number;
   readonly goldMagnetRadius: number;
@@ -316,6 +337,7 @@ export interface Content {
   readonly itemScaling: ItemScaling;
   readonly skillTree: readonly SkillTreeNodeDef[];
   readonly rigs: ReadonlyMap<string, RigDef>;
+  readonly attachments: ReadonlyMap<string, AttachmentDef>;
   readonly props: ReadonlyMap<string, PropDef>;
   readonly arena: ArenaDef;
   readonly player: PlayerDef;

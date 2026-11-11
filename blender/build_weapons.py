@@ -1,0 +1,162 @@
+import math
+import sys
+from typing import Sequence
+
+import bmesh
+import bpy
+from bpy.types import Material, Object
+
+Color = tuple[float, float, float]
+
+STEEL: Color = (0.62, 0.65, 0.7)
+DARK_STEEL: Color = (0.2, 0.21, 0.24)
+RUST: Color = (0.32, 0.17, 0.09)
+BRONZE: Color = (0.48, 0.34, 0.14)
+LEATHER: Color = (0.13, 0.08, 0.05)
+WOOD: Color = (0.17, 0.11, 0.07)
+BONE: Color = (0.62, 0.58, 0.47)
+HEX: Color = (0.62, 0.3, 1.0)
+
+
+def material(name: str, color: Color, metallic: float, roughness: float, emission: float = 0.0) -> Material:
+    made: Material = bpy.data.materials.new(name)
+    made.use_nodes = True
+    shader = made.node_tree.nodes["Principled BSDF"]
+    shader.inputs["Base Color"].default_value = (color[0], color[1], color[2], 1.0)
+    shader.inputs["Metallic"].default_value = metallic
+    shader.inputs["Roughness"].default_value = roughness
+    if emission > 0.0:
+        shader.inputs["Emission Color"].default_value = (color[0], color[1], color[2], 1.0)
+        shader.inputs["Emission Strength"].default_value = emission
+    return made
+
+
+def finish(obj: Object, made: Material) -> Object:
+    obj.data.materials.append(made)
+    return obj
+
+
+def blade(name: str, base: float, length: float, width: float, tip_width: float, thickness: float, made: Material) -> Object:
+    mesh = bpy.data.meshes.new(name)
+    shoulder: float = base + length * 0.82
+    ring = lambda z, w: [(-w / 2, 0.0, z), (0.0, -thickness / 2, z), (w / 2, 0.0, z), (0.0, thickness / 2, z)]
+    verts: list[tuple[float, float, float]] = ring(base, width) + ring(shoulder, tip_width) + [(0.0, 0.0, base + length)]
+    faces: list[Sequence[int]] = [(3, 2, 1, 0)]
+    for side in range(4):
+        after: int = (side + 1) % 4
+        faces.append((side, after, after + 4, side + 4))
+        faces.append((side + 4, after + 4, 8))
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj: Object = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    return finish(obj, made)
+
+
+def box(name: str, size: tuple[float, float, float], z: float, made: Material) -> Object:
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, z))
+    obj: Object = bpy.context.active_object
+    obj.name = name
+    obj.scale = size
+    return finish(obj, made)
+
+
+def rod(name: str, radius: float, top_radius: float, depth: float, z: float, made: Material, sides: int = 10) -> Object:
+    bpy.ops.mesh.primitive_cone_add(vertices=sides, radius1=radius, radius2=top_radius, depth=depth, location=(0.0, 0.0, z))
+    obj: Object = bpy.context.active_object
+    obj.name = name
+    return finish(obj, made)
+
+
+def ball(name: str, radius: float, z: float, made: Material, squash: float = 1.0) -> Object:
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=radius, location=(0.0, 0.0, z))
+    obj: Object = bpy.context.active_object
+    obj.name = name
+    obj.scale = (1.0, 1.0, squash)
+    return finish(obj, made)
+
+
+def prong(name: str, angle: float, z: float, made: Material) -> Object:
+    bpy.ops.mesh.primitive_cone_add(vertices=6, radius1=0.022, radius2=0.004, depth=0.2, location=(0.0, 0.0, 0.0))
+    obj: Object = bpy.context.active_object
+    obj.name = name
+    obj.rotation_euler = (0.42, 0.0, angle)
+    obj.location = (-0.055 * math.sin(angle), -0.055 * math.cos(angle), z)
+    return finish(obj, made)
+
+
+def export(name: str, parts: list[Object], directory: str) -> None:
+    bpy.ops.object.select_all(action="DESELECT")
+    for part in parts:
+        part.select_set(True)
+    bpy.context.view_layer.objects.active = parts[0]
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    bpy.ops.object.join()
+    joined: Object = bpy.context.active_object
+    joined.name = name
+    mesh = bmesh.new()
+    mesh.from_mesh(joined.data)
+    bmesh.ops.recalc_face_normals(mesh, faces=mesh.faces)
+    mesh.to_mesh(joined.data)
+    mesh.free()
+    bpy.ops.export_scene.gltf(filepath=f"{directory}/{name}.glb", export_format="GLB", use_selection=True, export_apply=True, export_yup=True)
+    bpy.data.objects.remove(joined, do_unlink=True)
+
+
+def build(directory: str) -> None:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    steel: Material = material("steel", STEEL, 0.95, 0.32)
+    dark: Material = material("dark_steel", DARK_STEEL, 0.9, 0.45)
+    rust: Material = material("rust", RUST, 0.55, 0.85)
+    bronze: Material = material("bronze", BRONZE, 0.9, 0.4)
+    leather: Material = material("leather", LEATHER, 0.0, 0.8)
+    wood: Material = material("wood", WOOD, 0.0, 0.85)
+    bone: Material = material("bone", BONE, 0.0, 0.7)
+    hex_glow: Material = material("hex_glow", HEX, 0.0, 0.3, 6.0)
+
+    export(
+        "sword_1h",
+        [
+            blade("blade", 0.1, 0.86, 0.058, 0.04, 0.014, steel),
+            box("guard", (0.21, 0.03, 0.026), 0.09, bronze),
+            rod("grip", 0.016, 0.014, 0.16, 0.0, leather),
+            ball("pommel", 0.027, -0.1, bronze, 0.8),
+        ],
+        directory,
+    )
+    export(
+        "greatsword",
+        [
+            blade("blade", 0.2, 1.3, 0.085, 0.06, 0.018, steel),
+            box("guard", (0.34, 0.04, 0.035), 0.185, dark),
+            box("guard_core", (0.07, 0.05, 0.07), 0.185, bronze),
+            rod("grip", 0.019, 0.017, 0.34, 0.0, leather),
+            ball("pommel", 0.036, -0.19, dark, 0.9),
+        ],
+        directory,
+    )
+    export(
+        "rusted_blade",
+        [
+            blade("blade", 0.08, 0.6, 0.06, 0.095, 0.012, rust),
+            box("guard", (0.11, 0.028, 0.02), 0.07, rust),
+            rod("grip", 0.016, 0.015, 0.14, 0.0, leather),
+        ],
+        directory,
+    )
+    export(
+        "hex_staff",
+        [
+            rod("shaft", 0.02, 0.026, 1.75, 0.2, wood, 8),
+            ball("knot", 0.04, 1.05, wood, 1.3),
+            prong("prong_a", 0.0, 1.16, bone),
+            prong("prong_b", 2.094, 1.16, bone),
+            prong("prong_c", 4.188, 1.16, bone),
+            ball("crystal", 0.06, 1.2, hex_glow, 1.5),
+            ball("ferrule", 0.028, -0.67, dark, 1.0),
+        ],
+        directory,
+    )
+
+
+build(sys.argv[sys.argv.index("--") + 1])
