@@ -1,0 +1,8 @@
+node_modules
+dist
+.DS_Store
+*.blend1
+__pycache__
+*.pyc
+public/models/local
+.claude/launch.json

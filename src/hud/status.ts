@@ -1,0 +1,103 @@
+import type { Content } from '../../sim/content/types.ts';
+import { xpToNextLevel } from '../../sim/progression.ts';
+import type { NoticeReason, PlayerState, World } from '../../sim/world/types.ts';
+import { clamp01, el, label, setText } from './dom.ts';
+
+const STATUS = {
+  noticeMs: 1800,
+  xpStep: 0.002,
+} as const;
+
+const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
+  no_mana: 'Not enough mana',
+  on_cooldown: 'Not ready yet',
+  inventory_full: 'Inventory is full',
+};
+
+export interface Notices {
+  readonly element: HTMLElement;
+  show(reason: NoticeReason): void;
+}
+
+export interface XpBar {
+  readonly element: HTMLElement;
+  update(player: PlayerState, content: Content): void;
+}
+
+export interface WorldStatus {
+  update(world: World): void;
+}
+
+export function createNotices(parent: HTMLElement): Notices {
+  const element: HTMLDivElement = el('div', 'hud-notice', parent);
+  let timer: number | null = null;
+  return {
+    element,
+    show(reason: NoticeReason): void {
+      setText(element, NOTICE_TEXT[reason], true);
+      element.classList.add('visible');
+      if (timer !== null) window.clearTimeout(timer);
+      timer = window.setTimeout((): void => {
+        element.classList.remove('visible');
+        timer = null;
+      }, STATUS.noticeMs);
+    },
+  };
+}
+
+export function createXpBar(parent: HTMLElement): XpBar {
+  const element: HTMLDivElement = el('div', 'hud-xp', parent);
+  const level: HTMLDivElement = el('div', 'xp-level', element);
+  const track: HTMLDivElement = el('div', 'xp-track', element);
+  const fill: HTMLDivElement = el('div', 'xp-fill', track);
+  let shown: number = -1;
+  return {
+    element,
+    update(player: PlayerState, content: Content): void {
+      setText(level, String(player.level), true);
+      const need: number = xpToNextLevel(content.player.xp, player.level);
+      const fraction: number = need > 0 ? clamp01(player.xp / need) : 0;
+      const quantised: number = Math.round(fraction / STATUS.xpStep) * STATUS.xpStep;
+      if (quantised === shown) return;
+      shown = quantised;
+      fill.style.transform = `scaleX(${quantised})`;
+    },
+  };
+}
+
+export function createSurgeStatus(parent: HTMLElement): WorldStatus {
+  const element: HTMLDivElement = el('div', 'hud-top', parent);
+  const surge: HTMLDivElement = el('div', 'surge-label', element);
+  const gather: HTMLDivElement = el('div', 'surge-gather', element);
+  let gathering: boolean | null = null;
+  return {
+    update(world: World): void {
+      setText(surge, `Surge ${world.surge}`, true);
+      const timer: number | null = world.surgeTimer;
+      const active: boolean = timer !== null;
+      if (timer !== null) setText(gather, `The storm gathers… ${Math.max(0, Math.ceil(timer))}`, true);
+      if (active !== gathering) {
+        gathering = active;
+        gather.classList.toggle('visible', active);
+      }
+    },
+  };
+}
+
+export function createDeathOverlay(parent: HTMLElement): WorldStatus {
+  const element: HTMLDivElement = el('div', 'hud-death', parent);
+  label('death-title', 'You fell', element);
+  const sub: HTMLDivElement = el('div', 'death-sub', element);
+  let dead: boolean | null = null;
+  return {
+    update(world: World): void {
+      const player: PlayerState = world.player;
+      const isDead: boolean = !player.alive;
+      if (isDead) setText(sub, `The storm returns you in ${Math.max(0, Math.ceil(player.respawnTimer))}…`, false);
+      if (isDead !== dead) {
+        dead = isDead;
+        element.classList.toggle('visible', isDead);
+      }
+    },
+  };
+}

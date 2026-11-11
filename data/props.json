@@ -1,0 +1,217 @@
+[
+  {
+    "id": "banner_patternA_blue",
+    "model": "models/arena/banner_patternA_blue.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "banner_shield_blue",
+    "model": "models/arena/banner_shield_blue.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "barrel_large",
+    "model": "models/arena/barrel_large.glb",
+    "scale": 1,
+    "blockRadius": 0.95,
+    "light": null
+  },
+  {
+    "id": "barrel_small_stack",
+    "model": "models/arena/barrel_small_stack.glb",
+    "scale": 1,
+    "blockRadius": 0.85,
+    "light": null
+  },
+  {
+    "id": "barrier",
+    "model": "models/arena/barrier.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "box_large",
+    "model": "models/arena/box_large.glb",
+    "scale": 1,
+    "blockRadius": 0.95,
+    "light": null
+  },
+  {
+    "id": "coin",
+    "model": "models/arena/coin.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "coin_stack_small",
+    "model": "models/arena/coin_stack_small.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "column",
+    "model": "models/arena/column.glb",
+    "scale": 1,
+    "blockRadius": 0.55,
+    "light": null
+  },
+  {
+    "id": "crates_stacked",
+    "model": "models/arena/crates_stacked.glb",
+    "scale": 1,
+    "blockRadius": 1.35,
+    "light": null
+  },
+  {
+    "id": "floor_dirt_large",
+    "model": "models/arena/floor_dirt_large.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "floor_dirt_large_rocky",
+    "model": "models/arena/floor_dirt_large_rocky.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "floor_tile_big_grate",
+    "model": "models/arena/floor_tile_big_grate.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "floor_tile_large",
+    "model": "models/arena/floor_tile_large.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "floor_tile_large_rocks",
+    "model": "models/arena/floor_tile_large_rocks.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "pillar",
+    "model": "models/arena/pillar.glb",
+    "scale": 1,
+    "blockRadius": 1.05,
+    "light": null
+  },
+  {
+    "id": "pillar_decorated",
+    "model": "models/arena/pillar_decorated.glb",
+    "scale": 1,
+    "blockRadius": 1.15,
+    "light": null
+  },
+  {
+    "id": "rubble_half",
+    "model": "models/arena/rubble_half.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "rubble_large",
+    "model": "models/arena/rubble_large.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "sword_shield_broken",
+    "model": "models/arena/sword_shield_broken.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "torch_lit",
+    "model": "models/arena/torch_lit.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "torch_mounted",
+    "model": "models/arena/torch_mounted.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": {
+      "color": "#ffb060",
+      "intensity": 38,
+      "distance": 17,
+      "height": 0.6
+    }
+  },
+  {
+    "id": "wall",
+    "model": "models/arena/wall.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "wall_archedwindow_gated",
+    "model": "models/arena/wall_archedwindow_gated.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "wall_broken",
+    "model": "models/arena/wall_broken.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "wall_corner",
+    "model": "models/arena/wall_corner.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "wall_cracked",
+    "model": "models/arena/wall_cracked.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "wall_endcap",
+    "model": "models/arena/wall_endcap.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "wall_half",
+    "model": "models/arena/wall_half.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  },
+  {
+    "id": "wall_pillar",
+    "model": "models/arena/wall_pillar.glb",
+    "scale": 1,
+    "blockRadius": 0,
+    "light": null
+  }
+]

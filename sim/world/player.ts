@@ -1,0 +1,247 @@
+import type { SkillDef } from '../content/types.ts';
+import type { Vec2 } from '../math.ts';
+import { distance } from '../math.ts';
+import { findPath } from '../nav/path.ts';
+import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, unequip } from './character.ts';
+import { findActor } from './combat.ts';
+import { removeGround } from './ground.ts';
+import { followPath, stepKnock, stepTimers } from './movement.ts';
+import { blockedReason, clearProjectiles, startSkill, stepAction } from './skills.ts';
+import type { Actor, Command, GroundItem, NoticeReason, PlayerState, SkillCommand, World } from './types.ts';
+
+const PLAYER = {
+  repathInterval: 0.2,
+  goldDelay: 0.45,
+} as const;
+
+function setDestination(world: World, dest: Vec2): void {
+  world.player.path = findPath(world.grid, world.player.pos, dest);
+  world.player.repathTimer = PLAYER.repathInterval;
+}
+
+function fire(world: World, skill: SkillDef, aim: Vec2): boolean {
+  const player: PlayerState = world.player;
+  const reason: NoticeReason | null = blockedReason(player, skill);
+  if (reason !== null) {
+    world.events.push({ type: 'notice', reason });
+    return false;
+  }
+  player.intent = { type: 'idle' };
+  player.path = [];
+  startSkill(world, player, skill, { x: aim.x - player.pos.x, z: aim.z - player.pos.z });
+  return true;
+}
+
+function inEngageRange(player: PlayerState, target: Actor, skill: SkillDef): boolean {
+  return distance(player.pos, target.pos) - target.radius <= skill.engageRange;
+}
+
+function useSkill(world: World, command: SkillCommand): void {
+  const player: PlayerState = world.player;
+  const skill: SkillDef | undefined = player.skills[command.slot];
+  if (skill === undefined) return;
+  const target: Actor | null = command.targetId === null ? null : findActor(world, command.targetId);
+  if (target === null || !target.alive) {
+    fire(world, skill, command.aim);
+    return;
+  }
+  if (inEngageRange(player, target, skill)) {
+    fire(world, skill, target.pos);
+    return;
+  }
+  const reason: NoticeReason | null = blockedReason(player, skill);
+  if (reason !== null) {
+    world.events.push({ type: 'notice', reason });
+    return;
+  }
+  player.intent = { type: 'attack', slot: command.slot, targetId: target.id };
+  setDestination(world, target.pos);
+}
+
+function act(world: World, command: Command): void {
+  const player: PlayerState = world.player;
+  switch (command.type) {
+    case 'move':
+      player.intent = { type: 'move', dest: command.dest };
+      setDestination(world, command.dest);
+      return;
+    case 'stop':
+      player.intent = { type: 'idle' };
+      player.path = [];
+      return;
+    case 'pickup': {
+      const ground: GroundItem | undefined = world.ground.find((entry: GroundItem): boolean => entry.id === command.groundId);
+      if (ground === undefined) return;
+      player.intent = { type: 'pickup', groundId: ground.id };
+      setDestination(world, ground.pos);
+      return;
+    }
+    case 'skill':
+      useSkill(world, command);
+      return;
+    case 'equip':
+    case 'unequip':
+    case 'drop':
+    case 'allocate':
+      return;
+  }
+}
+
+export function handleCommand(world: World, command: Command): void {
+  const player: PlayerState = world.player;
+  switch (command.type) {
+    case 'equip':
+      equipFromInventory(world, command.inventoryIndex);
+      return;
+    case 'unequip':
+      unequip(world, command.slot);
+      return;
+    case 'drop':
+      dropFromInventory(world, command.inventoryIndex);
+      return;
+    case 'allocate':
+      allocateNode(world, command.node);
+      return;
+    case 'move':
+    case 'stop':
+    case 'pickup':
+    case 'skill':
+      if (!player.alive) return;
+      if (player.action !== null) {
+        player.queued = command;
+        return;
+      }
+      act(world, command);
+      return;
+  }
+}
+
+function pickUp(world: World, ground: GroundItem): void {
+  const player: PlayerState = world.player;
+  if (ground.content.kind === 'gold') {
+    player.gold += ground.content.amount;
+  } else if (!addToInventory(player, ground.content.item)) {
+    world.events.push({ type: 'notice', reason: 'inventory_full' });
+    return;
+  }
+  removeGround(world, ground.id);
+  world.events.push({ type: 'pickup', ground });
+  if (ground.content.kind === 'item') world.events.push({ type: 'character_changed' });
+}
+
+function pursue(world: World, dest: Vec2, dt: number): void {
+  const player: PlayerState = world.player;
+  player.repathTimer -= dt;
+  if (player.repathTimer <= 0 || player.path.length === 0) setDestination(world, dest);
+}
+
+function stepIntent(world: World, dt: number): void {
+  const player: PlayerState = world.player;
+  const intent = player.intent;
+  switch (intent.type) {
+    case 'idle':
+      return;
+    case 'move':
+      if (player.path.length === 0) player.intent = { type: 'idle' };
+      return;
+    case 'attack': {
+      const target: Actor | null = findActor(world, intent.targetId);
+      const skill: SkillDef | undefined = player.skills[intent.slot];
+      if (target === null || !target.alive || skill === undefined) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        return;
+      }
+      if (inEngageRange(player, target, skill)) {
+        if (!fire(world, skill, target.pos)) {
+          player.intent = { type: 'idle' };
+          player.path = [];
+        }
+        return;
+      }
+      pursue(world, target.pos, dt);
+      return;
+    }
+    case 'pickup': {
+      const ground: GroundItem | undefined = world.ground.find((entry: GroundItem): boolean => entry.id === intent.groundId);
+      if (ground === undefined) {
+        player.intent = { type: 'idle' };
+        return;
+      }
+      if (distance(player.pos, ground.pos) <= world.content.player.pickupRadius) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        pickUp(world, ground);
+        return;
+      }
+      if (player.path.length === 0) setDestination(world, ground.pos);
+      return;
+    }
+  }
+}
+
+function collectGold(world: World): void {
+  const player: PlayerState = world.player;
+  for (const ground of world.ground) {
+    if (ground.content.kind !== 'gold' || ground.age < PLAYER.goldDelay) continue;
+    if (distance(player.pos, ground.pos) <= world.content.player.goldMagnetRadius) pickUp(world, ground);
+  }
+}
+
+function respawn(world: World): void {
+  const player: PlayerState = world.player;
+  player.alive = true;
+  player.life = player.maxLife;
+  player.mana = player.stats.maxMana;
+  player.pos = { x: world.arena.playerStart.x, z: world.arena.playerStart.z };
+  player.knock = { x: 0, z: 0 };
+  player.cooldowns = {};
+  player.intent = { type: 'idle' };
+  player.path = [];
+  clearProjectiles(world);
+  for (const monster of world.monsters) {
+    if (!monster.alive) continue;
+    monster.aggro = false;
+    monster.life = monster.maxLife;
+    monster.pos = { x: monster.home.x, z: monster.home.z };
+    monster.knock = { x: 0, z: 0 };
+    monster.action = null;
+    monster.path = [];
+    monster.stagger = 0;
+  }
+  world.events.push({ type: 'player_respawn' });
+}
+
+function isBusy(player: PlayerState): boolean {
+  return player.action !== null;
+}
+
+export function stepPlayer(world: World, dt: number): void {
+  const player: PlayerState = world.player;
+  if (!player.alive) {
+    player.deadTime += dt;
+    player.respawnTimer -= dt;
+    stepKnock(world.grid, player, dt);
+    if (player.respawnTimer <= 0) respawn(world);
+    return;
+  }
+  player.life = Math.min(player.maxLife, player.life + player.stats.lifeRegen * dt);
+  player.mana = Math.min(player.stats.maxMana, player.mana + player.stats.manaRegen * dt);
+  stepTimers(player, dt);
+  stepKnock(world.grid, player, dt);
+  stepAction(world, player, dt);
+  player.moving = false;
+  if (player.action === null && player.queued !== null) {
+    const queued: Command = player.queued;
+    player.queued = null;
+    act(world, queued);
+  }
+  if (player.action === null) {
+    stepIntent(world, dt);
+    if (!isBusy(player) && player.path.length > 0) {
+      followPath(player, player.path, player.stats.moveSpeed * dt);
+      player.moving = true;
+    }
+  }
+  collectGold(world);
+}

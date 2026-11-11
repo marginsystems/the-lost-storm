@@ -1,0 +1,36 @@
+[
+  {
+    "id": "bone_thrall",
+    "name": "Bone Thrall",
+    "rig": "skeleton_minion",
+    "scale": 1,
+    "radius": 0.5,
+    "life": 30,
+    "damageMin": 4,
+    "damageMax": 7,
+    "moveSpeed": 5.2,
+    "xp": 10,
+    "aggroRadius": 11,
+    "behaviour": { "type": "chaser" },
+    "skill": "thrall_claw",
+    "loot": { "goldChance": 0.55, "goldMin": 2, "goldMax": 7, "itemChance": 0.16 },
+    "color": "#9dff8a"
+  },
+  {
+    "id": "hex_caller",
+    "name": "Hex Caller",
+    "rig": "skeleton_mage",
+    "scale": 1.08,
+    "radius": 0.5,
+    "life": 20,
+    "damageMin": 6,
+    "damageMax": 10,
+    "moveSpeed": 3.8,
+    "xp": 16,
+    "aggroRadius": 13,
+    "behaviour": { "type": "ranged", "preferredRange": 9, "retreatRange": 4.5 },
+    "skill": "hex_bolt",
+    "loot": { "goldChance": 0.7, "goldMin": 4, "goldMax": 11, "itemChance": 0.24 },
+    "color": "#c77dff"
+  }
+]

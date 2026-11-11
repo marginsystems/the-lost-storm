@@ -1,0 +1,32 @@
+{
+  "scaling": { "implicitPerLevel": 0.14 },
+  "rarities": [
+    { "id": "common", "name": "Common", "color": "#c9ccd1", "weight": 58, "affixMin": 0, "affixMax": 0, "statScale": 1 },
+    { "id": "magic", "name": "Magic", "color": "#6fa8ff", "weight": 29, "affixMin": 1, "affixMax": 2, "statScale": 1.1 },
+    { "id": "rare", "name": "Rare", "color": "#f1d06b", "weight": 11, "affixMin": 3, "affixMax": 4, "statScale": 1.25 },
+    { "id": "stormtouched", "name": "Stormtouched", "color": "#ff9a4a", "weight": 2, "affixMin": 4, "affixMax": 5, "statScale": 1.5 }
+  ],
+  "bases": [
+    { "id": "rusted_blade", "name": "Rusted Blade", "slot": "weapon", "icon": "sword", "dropWeight": 10, "minLevel": 1, "visual": "sword_1h", "implicit": [{ "stat": "damageMin", "op": "add", "value": 3 }, { "stat": "damageMax", "op": "add", "value": 6 }] },
+    { "id": "stormsteel_sword", "name": "Stormsteel Sword", "slot": "weapon", "icon": "sword", "dropWeight": 8, "minLevel": 2, "visual": "sword_1h", "implicit": [{ "stat": "damageMin", "op": "add", "value": 5 }, { "stat": "damageMax", "op": "add", "value": 9 }, { "stat": "attackSpeed", "op": "add", "value": 0.1 }] },
+    { "id": "tempest_greatsword", "name": "Tempest Greatsword", "slot": "weapon", "icon": "greatsword", "dropWeight": 6, "minLevel": 2, "visual": "sword_2h", "implicit": [{ "stat": "damageMin", "op": "add", "value": 9 }, { "stat": "damageMax", "op": "add", "value": 16 }, { "stat": "attackSpeed", "op": "add", "value": -0.15 }] },
+    { "id": "drowned_leathers", "name": "Drowned Leathers", "slot": "armour", "icon": "armour", "dropWeight": 9, "minLevel": 1, "visual": null, "implicit": [{ "stat": "maxLife", "op": "add", "value": 18 }, { "stat": "armour", "op": "add", "value": 12 }] },
+    { "id": "squall_plate", "name": "Squall Plate", "slot": "armour", "icon": "armour", "dropWeight": 6, "minLevel": 3, "visual": null, "implicit": [{ "stat": "maxLife", "op": "add", "value": 30 }, { "stat": "armour", "op": "add", "value": 32 }] },
+    { "id": "gale_charm", "name": "Gale Charm", "slot": "charm", "icon": "charm", "dropWeight": 7, "minLevel": 1, "visual": null, "implicit": [{ "stat": "maxMana", "op": "add", "value": 14 }, { "stat": "manaRegen", "op": "add", "value": 1 }] },
+    { "id": "ember_charm", "name": "Ember Charm", "slot": "charm", "icon": "charm", "dropWeight": 5, "minLevel": 2, "visual": null, "implicit": [{ "stat": "critChance", "op": "add", "value": 0.04 }] }
+  ],
+  "affixes": [
+    { "id": "sturdy", "label": "Sturdy", "position": "prefix", "slots": ["armour", "charm"], "stat": "maxLife", "op": "add", "min": 8, "max": 16, "perLevel": 0.12 },
+    { "id": "jagged", "label": "Jagged", "position": "prefix", "slots": ["weapon"], "stat": "damageMax", "op": "add", "min": 2, "max": 4, "perLevel": 0.12 },
+    { "id": "honed", "label": "Honed", "position": "prefix", "slots": ["weapon", "charm"], "stat": "damagePercent", "op": "add", "min": 0.06, "max": 0.14, "perLevel": 0.03 },
+    { "id": "charged", "label": "Charged", "position": "prefix", "slots": ["weapon", "armour", "charm"], "stat": "maxMana", "op": "add", "min": 6, "max": 14, "perLevel": 0.1 },
+    { "id": "plated", "label": "Plated", "position": "prefix", "slots": ["armour"], "stat": "armour", "op": "add", "min": 8, "max": 18, "perLevel": 0.12 },
+    { "id": "of_haste", "label": "of Haste", "position": "suffix", "slots": ["weapon", "charm"], "stat": "attackSpeed", "op": "add", "min": 0.05, "max": 0.12, "perLevel": 0.02 },
+    { "id": "of_the_squall", "label": "of the Squall", "position": "suffix", "slots": ["armour", "charm"], "stat": "moveSpeed", "op": "percent", "min": 0.04, "max": 0.09, "perLevel": 0.01 },
+    { "id": "of_precision", "label": "of Precision", "position": "suffix", "slots": ["weapon", "charm"], "stat": "critChance", "op": "add", "min": 0.03, "max": 0.07, "perLevel": 0.02 },
+    { "id": "of_mending", "label": "of Mending", "position": "suffix", "slots": ["armour", "charm"], "stat": "lifeRegen", "op": "add", "min": 0.6, "max": 1.6, "perLevel": 0.08 },
+    { "id": "of_the_font", "label": "of the Font", "position": "suffix", "slots": ["weapon", "armour", "charm"], "stat": "manaRegen", "op": "add", "min": 0.5, "max": 1.4, "perLevel": 0.08 },
+    { "id": "of_plunder", "label": "of Plunder", "position": "suffix", "slots": ["armour", "charm"], "stat": "goldFind", "op": "add", "min": 0.1, "max": 0.3, "perLevel": 0.02 },
+    { "id": "of_ruin", "label": "of Ruin", "position": "suffix", "slots": ["weapon"], "stat": "critMultiplier", "op": "add", "min": 0.15, "max": 0.35, "perLevel": 0.02 }
+  ]
+}

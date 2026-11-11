@@ -1,0 +1,226 @@
+.hud-panel {
+  position: absolute;
+  top: 16px;
+  max-height: calc(100% - 210px);
+  width: max-content;
+  box-sizing: border-box;
+  padding: 16px;
+  overflow: auto;
+  pointer-events: auto;
+  border-radius: 8px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-edge);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) var(--spring-smooth-ms);
+}
+
+.hud-panel.right {
+  right: 16px;
+  transform: translateX(40px);
+}
+
+.hud-panel.left {
+  left: 16px;
+  transform: translateX(-40px);
+}
+
+.hud-panel.open {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) 0s;
+}
+
+.panel-title {
+  margin-bottom: 12px;
+  font-family: var(--serif);
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  color: var(--ember);
+}
+
+.panel-subtitle {
+  margin: 16px 0 6px;
+  font-family: var(--serif);
+  font-size: 15px;
+  color: var(--storm);
+}
+
+.equip-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.equip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.equip-name {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 44px);
+  gap: 4px;
+}
+
+.cell {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  box-sizing: border-box;
+  border-radius: 5px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background-color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.cell.big {
+  width: 60px;
+  height: 60px;
+}
+
+.cell:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.cell-item {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: var(--rarity, #cfd6df);
+  background: color-mix(in srgb, var(--rarity, #cfd6df) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rarity, #cfd6df) 26%, transparent);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity var(--spring-snappy-ms) var(--spring-snappy), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.cell-item.filled {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cell-item svg {
+  width: 60%;
+  height: 60%;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sheet-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.sheet-name {
+  color: var(--text-dim);
+}
+
+.sheet-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.tree-points {
+  margin-bottom: 8px;
+  color: var(--storm);
+}
+
+.tree-board {
+  position: relative;
+}
+
+.tree-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tree-link {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 2;
+  transition: stroke var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-link.open {
+  stroke: rgba(127, 212, 255, 0.4);
+}
+
+.tree-link.lit {
+  stroke: rgba(127, 212, 255, 0.85);
+}
+
+.tree-node-holder {
+  position: absolute;
+  width: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tree-node {
+  width: 52px;
+  height: 52px;
+  padding: 12px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  cursor: default;
+  color: rgba(239, 230, 214, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition:
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    background-color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-node.available {
+  cursor: pointer;
+  color: var(--ember);
+  background: rgba(232, 184, 102, 0.1);
+}
+
+.tree-node.available:hover {
+  transform: scale(1.08);
+}
+
+.tree-node.allocated {
+  color: var(--storm);
+  background: rgba(127, 212, 255, 0.16);
+}
+
+.tree-node.available:active {
+  transform: scale(0.94);
+}
+
+.tree-node-name {
+  font-size: 11px;
+  text-align: center;
+  color: var(--text-dim);
+}

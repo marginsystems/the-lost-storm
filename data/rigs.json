@@ -1,0 +1,62 @@
+[
+  {
+    "id": "knight",
+    "url": "models/characters/knight.glb",
+    "animationUrls": [],
+    "scale": 1,
+    "yawOffsetDegrees": 0,
+    "height": 2.4,
+    "rootMotionBone": null,
+    "clips": {
+      "idle": { "clip": "Idle", "impactFraction": 0 },
+      "run": { "clip": "Running_A", "impactFraction": 0 },
+      "attack": { "clip": "1H_Melee_Attack_Slice_Diagonal", "impactFraction": 0.38 },
+      "slam": { "clip": "1H_Melee_Attack_Chop", "impactFraction": 0.42 },
+      "cast": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
+      "hit": { "clip": "Hit_A", "impactFraction": 0 },
+      "death": { "clip": "Death_A", "impactFraction": 0 }
+    },
+    "attachments": { "sword_1h": ["1H_Sword"], "sword_2h": ["2H_Sword"] },
+    "hiddenNodes": ["1H_Sword_Offhand", "Badge_Shield", "Rectangle_Shield", "Round_Shield", "Spike_Shield"]
+  },
+  {
+    "id": "skeleton_minion",
+    "url": "models/characters/skeleton_minion.glb",
+    "animationUrls": [],
+    "scale": 1,
+    "yawOffsetDegrees": 0,
+    "height": 2.2,
+    "rootMotionBone": null,
+    "clips": {
+      "idle": { "clip": "Idle", "impactFraction": 0 },
+      "run": { "clip": "Running_A", "impactFraction": 0 },
+      "attack": { "clip": "Unarmed_Melee_Attack_Punch_A", "impactFraction": 0.3 },
+      "slam": { "clip": "Unarmed_Melee_Attack_Punch_A", "impactFraction": 0.3 },
+      "cast": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
+      "hit": { "clip": "Hit_A", "impactFraction": 0 },
+      "death": { "clip": "Death_C_Skeletons", "impactFraction": 0 }
+    },
+    "attachments": {},
+    "hiddenNodes": []
+  },
+  {
+    "id": "skeleton_mage",
+    "url": "models/characters/skeleton_mage.glb",
+    "animationUrls": [],
+    "scale": 1,
+    "yawOffsetDegrees": 0,
+    "height": 2.6,
+    "rootMotionBone": null,
+    "clips": {
+      "idle": { "clip": "Idle", "impactFraction": 0 },
+      "run": { "clip": "Walking_D_Skeletons", "impactFraction": 0 },
+      "attack": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
+      "slam": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
+      "cast": { "clip": "Spellcast_Shoot", "impactFraction": 0.4 },
+      "hit": { "clip": "Hit_A", "impactFraction": 0 },
+      "death": { "clip": "Death_C_Skeletons", "impactFraction": 0 }
+    },
+    "attachments": {},
+    "hiddenNodes": []
+  }
+]

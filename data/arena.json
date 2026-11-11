@@ -1,0 +1,62 @@
+{
+  "id": "drowned_bastion",
+  "name": "The Drowned Bastion",
+  "cellSize": 4,
+  "tiles": [
+    "   ........   ",
+    " ............ ",
+    " ............ ",
+    "..............",
+    "......,,......",
+    ".....,gg,.....",
+    "......,,......",
+    "..............",
+    " ............ ",
+    " ............ ",
+    "   ........   "
+  ],
+  "floors": {
+    ".": ["floor_tile_large"],
+    ",": ["floor_dirt_large", "floor_dirt_large_rocky"],
+    "g": ["floor_tile_big_grate"]
+  },
+  "walls": { "tall": ["wall", "wall", "wall_cracked", "wall_broken", "wall_archedwindow_gated"], "low": "barrier", "corner": "pillar", "halfThickness": 0.5 },
+  "playerStart": { "x": 28, "z": 37 },
+  "props": [
+    { "prop": "pillar", "x": 20, "z": 14, "y": 0, "rotationDegrees": 0 },
+    { "prop": "pillar", "x": 36, "z": 14, "y": 0, "rotationDegrees": 0 },
+    { "prop": "pillar", "x": 20, "z": 30, "y": 0, "rotationDegrees": 0 },
+    { "prop": "pillar", "x": 36, "z": 30, "y": 0, "rotationDegrees": 0 },
+    { "prop": "torch_mounted", "x": 20, "z": 14.75, "y": 2.2, "rotationDegrees": 0 },
+    { "prop": "torch_mounted", "x": 36, "z": 14.75, "y": 2.2, "rotationDegrees": 0 },
+    { "prop": "torch_mounted", "x": 20.75, "z": 30, "y": 2.2, "rotationDegrees": 90 },
+    { "prop": "torch_mounted", "x": 36.75, "z": 30, "y": 2.2, "rotationDegrees": 90 },
+    { "prop": "torch_mounted", "x": 16, "z": 0.5, "y": 2.4, "rotationDegrees": 0 },
+    { "prop": "torch_mounted", "x": 40, "z": 0.5, "y": 2.4, "rotationDegrees": 0 },
+    { "prop": "torch_mounted", "x": 0.5, "z": 22, "y": 2.4, "rotationDegrees": 90 },
+    { "prop": "banner_shield_blue", "x": 28, "z": 0, "y": 0, "rotationDegrees": 0 },
+    { "prop": "banner_patternA_blue", "x": 22, "z": 0, "y": 0, "rotationDegrees": 0 },
+    { "prop": "banner_patternA_blue", "x": 34, "z": 0, "y": 0, "rotationDegrees": 0 },
+    { "prop": "banner_patternA_blue", "x": 0, "z": 16, "y": 0, "rotationDegrees": 90 },
+    { "prop": "banner_patternA_blue", "x": 0, "z": 28, "y": 0, "rotationDegrees": 90 },
+    { "prop": "crates_stacked", "x": 9.5, "z": 7.5, "y": 0, "rotationDegrees": 20 },
+    { "prop": "barrel_large", "x": 12.6, "z": 6.4, "y": 0, "rotationDegrees": 0 },
+    { "prop": "barrel_small_stack", "x": 44.5, "z": 6.4, "y": 0, "rotationDegrees": -15 },
+    { "prop": "box_large", "x": 47.6, "z": 8.6, "y": 0, "rotationDegrees": 30 },
+    { "prop": "barrel_large", "x": 5.6, "z": 30.5, "y": 0, "rotationDegrees": 0 },
+    { "prop": "box_large", "x": 7.8, "z": 33, "y": 0, "rotationDegrees": 12 },
+    { "prop": "crates_stacked", "x": 48, "z": 34.5, "y": 0, "rotationDegrees": -25 },
+    { "prop": "barrel_large", "x": 45, "z": 36.6, "y": 0, "rotationDegrees": 0 },
+    { "prop": "column", "x": 14.5, "z": 21, "y": 0, "rotationDegrees": 0 },
+    { "prop": "column", "x": 41.5, "z": 23, "y": 0, "rotationDegrees": 0 },
+    { "prop": "pillar_decorated", "x": 28, "z": 6, "y": 0, "rotationDegrees": 0 }
+  ],
+  "packs": [
+    { "x": 12, "z": 12, "members": [{ "monster": "bone_thrall", "count": 4 }] },
+    { "x": 44, "z": 12, "members": [{ "monster": "bone_thrall", "count": 3 }, { "monster": "hex_caller", "count": 2 }] },
+    { "x": 28, "z": 15, "members": [{ "monster": "bone_thrall", "count": 5 }] },
+    { "x": 7, "z": 23, "members": [{ "monster": "hex_caller", "count": 2 }, { "monster": "bone_thrall", "count": 2 }] },
+    { "x": 49, "z": 25, "members": [{ "monster": "bone_thrall", "count": 4 }, { "monster": "hex_caller", "count": 1 }] }
+  ],
+  "surge": { "delay": 5, "lifePerSurge": 0.22, "damagePerSurge": 0.12, "xpPerSurge": 0.15, "surgesPerExtraMonster": 2, "maxExtraMonsters": 3 }
+}
