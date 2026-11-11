@@ -416,6 +416,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'surge_cleared':
           case 'notice':
           case 'character_changed':
+          case 'hero_step':
             break;
         }
       }

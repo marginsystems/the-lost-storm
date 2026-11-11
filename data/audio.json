@@ -1,0 +1,88 @@
+{
+  "defaults": { "volume": 1, "maxVoices": 4, "cooldown": 0 },
+  "skillStart": {
+    "cleave": [{ "sound": "sword_swing_light", "volume": 0.9, "maxVoices": 3 }],
+    "thunderclap": [{ "sound": "electric_crackle", "volume": 0.8, "maxVoices": 2 }],
+    "storm_bolt": [{ "sound": "bolt_zap", "volume": 0.85, "maxVoices": 3 }],
+    "thrall_claw": [{ "sound": "sword_swing_heavy", "volume": 0.5, "maxVoices": 3 }],
+    "hex_bolt": [{ "sound": "hex_charge", "volume": 0.75, "maxVoices": 2 }]
+  },
+  "skillImpact": {
+    "thunderclap": [
+      { "sound": "ground_boom", "volume": 1, "maxVoices": 2 },
+      { "sound": "thunder_crack", "volume": 0.75, "maxVoices": 2 }
+    ]
+  },
+  "projectileSpawn": {
+    "storm_bolt": [{ "sound": "bolt_whoosh", "volume": 0.6, "maxVoices": 3 }],
+    "hex_bolt": [{ "sound": "hex_orb_launch", "volume": 0.7, "maxVoices": 2 }]
+  },
+  "projectileExpire": {
+    "storm_bolt": [{ "sound": "electric_crackle", "volume": 0.45, "maxVoices": 2, "cooldown": 0.1 }]
+  },
+  "skillHit": {
+    "storm_bolt": [{ "sound": "bolt_impact", "volume": 0.9, "maxVoices": 3 }],
+    "hex_bolt": [{ "sound": "hex_impact", "volume": 0.8, "maxVoices": 2 }],
+    "thunderclap": [{ "sound": "bolt_impact", "volume": 0.55, "maxVoices": 3, "cooldown": 0.04 }]
+  },
+  "hit": {
+    "bone_thrall": [{ "sound": "bone_hit", "volume": 0.9, "maxVoices": 4 }],
+    "hex_caller": [{ "sound": "bone_hit", "volume": 0.8, "maxVoices": 4 }],
+    "player": [{ "sound": "hero_hurt", "volume": 0.85, "maxVoices": 2, "cooldown": 0.3 }]
+  },
+  "critHit": {
+    "bone_thrall": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
+    "hex_caller": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
+    "player": [{ "sound": "hero_hurt", "volume": 1, "maxVoices": 2, "cooldown": 0.3 }]
+  },
+  "death": {
+    "bone_thrall": [{ "sound": "bones_collapse", "volume": 1, "maxVoices": 3 }],
+    "hex_caller": [{ "sound": "bones_collapse", "volume": 0.9, "maxVoices": 3 }],
+    "player": [{ "sound": "hero_death", "volume": 1, "maxVoices": 1 }]
+  },
+  "aggro": {
+    "bone_thrall": [{ "sound": "bones_rattle", "volume": 0.65, "maxVoices": 2, "cooldown": 1.5 }]
+  },
+  "drop": {
+    "gold": [{ "sound": "coin_drop", "volume": 0.7, "maxVoices": 3, "cooldown": 0.05 }],
+    "common": [{ "sound": "item_drop_common", "volume": 0.8, "maxVoices": 2 }],
+    "magic": [{ "sound": "item_drop_magic", "volume": 0.85, "maxVoices": 2 }],
+    "rare": [{ "sound": "item_drop_rare", "volume": 0.95, "maxVoices": 2 }],
+    "stormtouched": [{ "sound": "item_drop_stormtouched", "volume": 1, "maxVoices": 2 }]
+  },
+  "pickup": {
+    "gold": [{ "sound": "coin_pickup", "volume": 0.8, "maxVoices": 3, "cooldown": 0.05 }],
+    "common": [{ "sound": "item_metal", "volume": 0.8, "maxVoices": 2 }],
+    "magic": [{ "sound": "item_metal", "volume": 0.85, "maxVoices": 2 }],
+    "rare": [{ "sound": "item_metal", "volume": 0.9, "maxVoices": 2 }],
+    "stormtouched": [{ "sound": "item_metal", "volume": 1, "maxVoices": 2 }]
+  },
+  "notice": {
+    "no_mana": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }],
+    "on_cooldown": [{ "sound": "ui_error", "volume": 0.6, "maxVoices": 1, "cooldown": 0.2 }],
+    "inventory_full": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }]
+  },
+  "world": {
+    "hero_step": [{ "sound": "footstep_stone", "volume": 0.7, "maxVoices": 2 }],
+    "level_up": [{ "sound": "level_up", "volume": 1, "maxVoices": 1 }],
+    "surge": [{ "sound": "wave_arrival", "volume": 0.9, "maxVoices": 1 }],
+    "monster_spawn": [{ "sound": "monsters_rising", "volume": 0.7, "maxVoices": 1, "cooldown": 4 }]
+  },
+  "ui": {
+    "click": [{ "sound": "ui_click", "volume": 0.7, "maxVoices": 3 }],
+    "panel_open": [{ "sound": "ui_panel", "volume": 0.75, "maxVoices": 2 }],
+    "panel_close": [{ "sound": "ui_panel", "volume": 0.55, "maxVoices": 2 }],
+    "error": [{ "sound": "ui_error", "volume": 0.7, "maxVoices": 1 }],
+    "skill_point": [{ "sound": "ui_skill_point", "volume": 0.9, "maxVoices": 2 }],
+    "equip": [{ "sound": "item_metal", "volume": 0.75, "maxVoices": 2 }]
+  },
+  "ambience": {
+    "drowned_bastion": {
+      "loops": [
+        { "sound": "ambience_wind_fort", "volume": 0.8 },
+        { "sound": "ambience_torch_fire", "volume": 0.45 }
+      ],
+      "stingers": [{ "sound": "thunder_distant", "volume": 0.7, "minDelay": 20, "maxDelay": 50 }]
+    }
+  }
+}

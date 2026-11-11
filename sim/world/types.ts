@@ -84,6 +84,7 @@ export interface PlayerState extends ActorState {
   repathTimer: number;
   queued: Command | null;
   respawnTimer: number;
+  strideTravel: number;
   kills: number;
 }
 
@@ -204,6 +205,7 @@ export type WorldEvent =
   | { readonly type: 'surge'; readonly surge: number }
   | { readonly type: 'surge_cleared'; readonly surge: number; readonly delay: number }
   | { readonly type: 'player_respawn' }
+  | { readonly type: 'hero_step'; readonly pos: Vec2 }
   | { readonly type: 'notice'; readonly reason: NoticeReason }
   | { readonly type: 'character_changed' };
 

@@ -117,6 +117,22 @@ void test('a move command walks the player around a pillar to the destination', 
   assert.ok(world.time < 3);
 });
 
+void test('a walking player emits a hero_step for each stride travelled and none while standing', (): void => {
+  const world: World = fresh();
+  isolate(world);
+  assert.equal(ofType(advance(world, 1), 'hero_step').length, 0);
+  const from: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  const events: WorldEvent[] = advance(world, 1, [{ type: 'move', dest: { x: 28, z: 25 } }]);
+  const travelled: number = Math.hypot(world.player.pos.x - from.x, world.player.pos.z - from.z);
+  const steps: readonly EventOf<'hero_step'>[] = ofType(events, 'hero_step');
+  assert.ok(travelled > 6);
+  assert.ok(steps.length >= 2);
+  assert.ok(Math.abs(steps.length - (1.5 + travelled) / 2.5) < 1, `${steps.length} steps over ${travelled}`);
+  for (const step of steps) assert.ok(Math.hypot(step.pos.x - world.player.pos.x, step.pos.z - world.player.pos.z) <= travelled + 0.1);
+  advance(world, 0.5, [{ type: 'stop' }]);
+  assert.equal(ofType(advance(world, 1), 'hero_step').length, 0);
+});
+
 void test('a stop command halts a walking player', (): void => {
   const world: World = fresh();
   isolate(world);

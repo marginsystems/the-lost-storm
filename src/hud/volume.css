@@ -1,0 +1,228 @@
+.hud-row {
+  position: relative;
+}
+
+.hud-volume-wrap {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+}
+
+.hud-volume-btn {
+  width: 44px;
+  margin-bottom: 8px;
+}
+
+.hud-volume-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.hud-volume-btn .volume-waves {
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.hud-volume-btn .volume-cross {
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.hud-volume-btn.muted .volume-waves {
+  opacity: 0;
+}
+
+.hud-volume-btn.muted .volume-cross {
+  opacity: 1;
+}
+
+.hud-volume {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: 236px;
+  box-sizing: border-box;
+  padding: 12px 14px 8px;
+  pointer-events: auto;
+  border-radius: 8px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-edge);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(12px) scale(0.97);
+  transform-origin: bottom right;
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) var(--spring-smooth-ms);
+}
+
+.hud-volume.open {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) 0s;
+}
+
+.volume-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.volume-title {
+  font-family: var(--serif);
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  color: var(--ember);
+}
+
+.volume-mute-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.volume-mute {
+  position: relative;
+  width: 36px;
+  height: 18px;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--panel-edge);
+  transition: background-color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.volume-mute-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--text);
+  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.hud-volume.muted .volume-mute {
+  background: rgba(127, 212, 255, 0.28);
+}
+
+.hud-volume.muted .volume-mute-knob {
+  transform: translateX(18px);
+}
+
+.volume-row {
+  display: grid;
+  grid-template-columns: 62px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.hud-volume.muted .volume-row {
+  opacity: 0.4;
+}
+
+.volume-label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.volume-value {
+  font-size: 11px;
+  text-align: right;
+  color: var(--text-dim);
+}
+
+.volume-slider {
+  position: relative;
+  height: 20px;
+}
+
+.volume-track,
+.volume-fill {
+  position: absolute;
+  top: 9px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.volume-track {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.volume-fill {
+  --level: 0;
+  background: var(--storm);
+  transform: scaleX(var(--level));
+  transform-origin: left center;
+  transition: transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.volume-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+.volume-input::-webkit-slider-runnable-track {
+  height: 20px;
+  background: transparent;
+}
+
+.volume-input::-moz-range-track {
+  height: 20px;
+  background: transparent;
+}
+
+.volume-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 14px;
+  margin-top: 3px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--text);
+  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.volume-input::-moz-range-thumb {
+  width: 8px;
+  height: 14px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--text);
+  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.volume-input:active::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+
+.volume-input:active::-moz-range-thumb {
+  transform: scale(1.25);
+}

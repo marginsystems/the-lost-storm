@@ -13,6 +13,8 @@ const PLAYER = {
   moveDeadZone: 0.7,
   repathInterval: 0.2,
   goldDelay: 0.45,
+  stride: 2.5,
+  firstStepFraction: 0.6,
 } as const;
 
 function setDestination(world: World, dest: Vec2): void {
@@ -222,6 +224,14 @@ function isBusy(player: PlayerState): boolean {
   return player.action !== null;
 }
 
+function emitSteps(world: World, player: PlayerState, travelled: number): void {
+  player.strideTravel += travelled;
+  while (player.strideTravel >= PLAYER.stride) {
+    player.strideTravel -= PLAYER.stride;
+    world.events.push({ type: 'hero_step', pos: { x: player.pos.x, z: player.pos.z } });
+  }
+}
+
 export function stepPlayer(world: World, dt: number): void {
   const player: PlayerState = world.player;
   if (!player.alive) {
@@ -237,6 +247,8 @@ export function stepPlayer(world: World, dt: number): void {
   stepKnock(world.grid, player, dt);
   stepAction(world, player, dt);
   player.moving = false;
+  const startX: number = player.pos.x;
+  const startZ: number = player.pos.z;
   if (player.action === null && player.queued !== null) {
     const queued: Command = player.queued;
     player.queued = null;
@@ -249,5 +261,7 @@ export function stepPlayer(world: World, dt: number): void {
       player.moving = true;
     }
   }
+  if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
+  else player.strideTravel = PLAYER.stride * PLAYER.firstStepFraction;
   collectGold(world);
 }
