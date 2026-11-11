@@ -471,7 +471,16 @@ body {
   animation: loot-in var(--spring-bouncy-ms) var(--spring-bouncy) both;
   transition:
     background-color var(--spring-snappy-ms) var(--spring-snappy),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
     scale var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.exit-label.waypoint span {
+  color: #b9f5e6;
+}
+
+.exit-label.locked span {
+  opacity: 0.5;
 }
 
 .exit-label:hover span,

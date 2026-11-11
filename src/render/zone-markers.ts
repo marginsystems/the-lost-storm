@@ -1,13 +1,17 @@
 import type { Scene } from 'three';
 import { Color, Group, Mesh, PointLight, RingGeometry } from 'three';
 import type { MeshBasicMaterial } from 'three';
-import type { ZoneDef } from '../../sim/content/types.ts';
+import type { ZoneCheckpoint, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
+import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
 import { additive, glow, pillarMesh } from './effect-shapes.ts';
 
 export const MARKERS = {
   exitColor: 0x9fd0ff,
   checkpointColor: 0xffa040,
+  waypointColor: 0x8fe8d0,
+  waypointLight: 14,
+  locked: 0.22,
   lift: 0.07,
   ringInner: 0.86,
   coreOuter: 0.8,
@@ -34,7 +38,7 @@ interface Marker {
   readonly light: PointLight;
   readonly lightPower: number;
   readonly phase: number;
-  readonly checkpoint: string | null;
+  readonly lit: (world: World) => number;
   level: number;
 }
 
@@ -48,7 +52,7 @@ export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
   const markers: Marker[] = [];
   const meshes: Mesh[] = [];
 
-  const build = (x: number, z: number, radius: number, hex: number, lightPower: number, checkpoint: string | null): void => {
+  const build = (x: number, z: number, radius: number, hex: number, lightPower: number, lit: (world: World) => number): void => {
     const color: Color = new Color(hex);
     const ring: Mesh<RingGeometry, MeshBasicMaterial> = new Mesh(new RingGeometry(radius * MARKERS.ringInner, radius, MARKERS.segments), additive(glow(color, 1.6), MARKERS.ringOpacity));
     const core: Mesh<RingGeometry, MeshBasicMaterial> = new Mesh(new RingGeometry(0, radius * MARKERS.coreOuter, MARKERS.segments), additive(color, MARKERS.coreOpacity));
@@ -67,18 +71,20 @@ export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
     const light: PointLight = new PointLight(color, lightPower, MARKERS.lightDistance, 1.8);
     light.position.set(x, MARKERS.lightHeight, z);
     group.add(light);
-    markers.push({ ring: ring.material, core: core.material, beam: beam.material, light, lightPower, phase: x * 0.37 + z * 0.61, checkpoint, level: checkpoint === null ? 1 : MARKERS.idle });
+    markers.push({ ring: ring.material, core: core.material, beam: beam.material, light, lightPower, phase: x * 0.37 + z * 0.61, lit, level: MARKERS.idle });
   };
 
-  for (const exit of zone.exits) build(exit.x, exit.z, exit.radius, MARKERS.exitColor, MARKERS.exitLight, null);
-  for (const checkpoint of zone.checkpoints) build(checkpoint.x, checkpoint.z, checkpoint.radius, MARKERS.checkpointColor, MARKERS.checkpointLight, checkpoint.id);
+  const exitLit = (exit: ZoneExit): ((world: World) => number) => (world: World): number => (allHold(world, exit.requires) ? 1 : MARKERS.locked);
+  const checkpointLit = (checkpoint: ZoneCheckpoint): ((world: World) => number) => (world: World): number => (world.respawn.type === 'checkpoint' && world.respawn.checkpoint === checkpoint.id ? 1 : MARKERS.idle);
+  for (const exit of zone.exits) build(exit.x, exit.z, exit.radius, MARKERS.exitColor, MARKERS.exitLight, exitLit(exit));
+  for (const checkpoint of zone.checkpoints) build(checkpoint.x, checkpoint.z, checkpoint.radius, MARKERS.checkpointColor, MARKERS.checkpointLight, checkpointLit(checkpoint));
+  if (zone.waypoint !== null) build(zone.waypoint.x, zone.waypoint.z, zone.waypoint.radius, MARKERS.waypointColor, MARKERS.waypointLight, (world: World): number => (world.waypoints.includes(zone.id) ? 1 : MARKERS.idle));
   scene.add(group);
 
   return {
     update(dt: number, time: number, world: World): void {
       for (const marker of markers) {
-        const active: boolean = marker.checkpoint === null || (world.respawn.type === 'checkpoint' && world.respawn.checkpoint === marker.checkpoint);
-        marker.level += ((active ? 1 : MARKERS.idle) - marker.level) * (1 - Math.exp(-MARKERS.ease * dt));
+        marker.level += (marker.lit(world) - marker.level) * (1 - Math.exp(-MARKERS.ease * dt));
         const pulse: number = 1 - MARKERS.pulseDepth * (0.5 + 0.5 * Math.sin(time * MARKERS.pulseSpeed + marker.phase));
         marker.ring.opacity = MARKERS.ringOpacity * marker.level * pulse;
         marker.core.opacity = MARKERS.coreOpacity * marker.level;

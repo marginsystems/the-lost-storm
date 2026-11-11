@@ -1,4 +1,4 @@
-import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef } from '../content/types.ts';
+import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
@@ -118,6 +118,7 @@ export type Actor = PlayerState | MonsterState;
 export interface NpcState {
   readonly id: number;
   readonly def: NpcDef;
+  readonly placement: ZoneNpc;
   readonly pos: Vec2;
   readonly homeFacing: number;
   facing: number;
@@ -223,7 +224,12 @@ export interface AdvanceCommand {
   readonly type: 'advance';
 }
 
-export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand;
+export interface TeleportCommand {
+  readonly type: 'teleport';
+  readonly zone: string;
+}
+
+export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -239,7 +245,11 @@ export interface CheckpointRespawn {
   readonly checkpoint: string;
 }
 
-export type RespawnPoint = StartRespawn | ExitRespawn | CheckpointRespawn;
+export interface WaypointRespawn {
+  readonly type: 'waypoint';
+}
+
+export type RespawnPoint = StartRespawn | ExitRespawn | CheckpointRespawn | WaypointRespawn;
 
 export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full';
 
@@ -266,6 +276,11 @@ export type WorldEvent =
   | { readonly type: 'hero_step'; readonly pos: Vec2 }
   | { readonly type: 'dialogue_line'; readonly npcId: number; readonly npc: string; readonly talk: string; readonly line: LineDef; readonly index: number; readonly last: boolean }
   | { readonly type: 'dialogue_closed'; readonly npcId: number; readonly npc: string; readonly talk: string; readonly finished: boolean }
+  | { readonly type: 'quest_started'; readonly quest: string }
+  | { readonly type: 'quest_advanced'; readonly quest: string; readonly objective: string }
+  | { readonly type: 'quest_completed'; readonly quest: string }
+  | { readonly type: 'waypoint_unlocked'; readonly zone: string }
+  | { readonly type: 'exit_locked'; readonly exit: string; readonly hint: string }
   | { readonly type: 'notice'; readonly reason: NoticeReason }
   | { readonly type: 'character_changed' };
 
@@ -282,6 +297,8 @@ export interface World {
   npcs: NpcState[];
   dialogue: DialogueState | null;
   heard: string[];
+  quests: Record<string, number>;
+  waypoints: string[];
   projectiles: ProjectileState[];
   ground: GroundItem[];
   nextId: number;

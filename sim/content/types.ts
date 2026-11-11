@@ -302,6 +302,27 @@ export interface ZoneWalls {
 export const ZONE_KINDS = ['town', 'wild'] as const;
 export type ZoneKind = (typeof ZONE_KINDS)[number];
 
+export const QUEST_STATES = ['locked', 'active', 'done'] as const;
+export type QuestState = (typeof QUEST_STATES)[number];
+
+export const OBJECTIVE_STATES = ['pending', 'current', 'done'] as const;
+export type ObjectiveState = (typeof OBJECTIVE_STATES)[number];
+
+export interface QuestCondition {
+  readonly type: 'quest';
+  readonly quest: string;
+  readonly is: QuestState;
+}
+
+export interface ObjectiveCondition {
+  readonly type: 'objective';
+  readonly quest: string;
+  readonly objective: string;
+  readonly is: ObjectiveState;
+}
+
+export type Condition = QuestCondition | ObjectiveCondition;
+
 export interface ZoneExit {
   readonly id: string;
   readonly x: number;
@@ -310,6 +331,14 @@ export interface ZoneExit {
   readonly to: string;
   readonly toExit: string;
   readonly arrival: ZonePoint;
+  readonly requires: readonly Condition[];
+  readonly lockedHint: string;
+}
+
+export interface ZoneWaypoint {
+  readonly x: number;
+  readonly z: number;
+  readonly radius: number;
 }
 
 export interface ZoneCheckpoint {
@@ -324,6 +353,7 @@ export interface ZoneNpc {
   readonly x: number;
   readonly z: number;
   readonly facingDegrees: number;
+  readonly when: readonly Condition[];
 }
 
 export interface ZoneAmbience {
@@ -354,6 +384,7 @@ export interface ZoneDef {
   readonly surge: SurgeRules | null;
   readonly exits: readonly ZoneExit[];
   readonly checkpoints: readonly ZoneCheckpoint[];
+  readonly waypoint: ZoneWaypoint | null;
   readonly npcs: readonly ZoneNpc[];
   readonly ambience: ZoneAmbience;
 }
@@ -367,7 +398,41 @@ export interface LineDef {
 export interface TalkDef {
   readonly id: string;
   readonly once: boolean;
+  readonly when: readonly Condition[];
   readonly lines: readonly string[];
+}
+
+export interface TalkObjective {
+  readonly type: 'talk';
+  readonly id: string;
+  readonly text: string;
+  readonly npc: string;
+}
+
+export interface ReachObjective {
+  readonly type: 'reach';
+  readonly id: string;
+  readonly text: string;
+  readonly zone: string;
+  readonly x: number;
+  readonly z: number;
+  readonly radius: number;
+}
+
+export interface DefeatObjective {
+  readonly type: 'defeat';
+  readonly id: string;
+  readonly text: string;
+  readonly monster: string;
+}
+
+export type ObjectiveDef = TalkObjective | ReachObjective | DefeatObjective;
+
+export interface QuestDef {
+  readonly id: string;
+  readonly name: string;
+  readonly requires: readonly string[];
+  readonly objectives: readonly ObjectiveDef[];
 }
 
 export interface NpcDef {
@@ -389,9 +454,16 @@ export interface MonsterScaling {
   readonly xpPerLevel: number;
 }
 
+export interface MapPlace {
+  readonly zone: string;
+  readonly x: number;
+  readonly y: number;
+}
+
 export interface WorldDef {
   readonly start: string;
   readonly scaling: MonsterScaling;
+  readonly map: readonly MapPlace[];
 }
 
 export interface SkillBinding {
@@ -441,5 +513,6 @@ export interface Content {
   readonly world: WorldDef;
   readonly npcs: ReadonlyMap<string, NpcDef>;
   readonly lines: ReadonlyMap<string, LineDef>;
+  readonly quests: ReadonlyMap<string, QuestDef>;
   readonly player: PlayerDef;
 }

@@ -12,6 +12,11 @@ export function zoneOf(content: Content, zoneId: string): ZoneDef {
   return must(content.zones.get(zoneId), `zone ${zoneId}`);
 }
 
+export function finishQuests(world: World): World {
+  for (const quest of world.content.quests.values()) world.quests[quest.id] = quest.objectives.length;
+  return world;
+}
+
 export function worldIn(content: Content, zoneId: string, seed: number): World {
   const world: World = createWorld(content, { seed, save: null });
   enterZone(world, zoneOf(content, zoneId), { type: 'start' });

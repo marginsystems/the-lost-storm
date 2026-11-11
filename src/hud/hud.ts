@@ -1,4 +1,5 @@
 import type { WorldEvent } from '../../sim/world/types.ts';
+import { onWaypoint } from '../../sim/world/waypoints.ts';
 import { createBanners } from './banners.ts';
 import type { Banners } from './banners.ts';
 import type { HudContext, PanelView } from './context.ts';
@@ -13,9 +14,14 @@ import type { Globes } from './globes.ts';
 import hudCss from './hud.css?inline';
 import type { Hud, HudApi, HudPanel } from './hud-api.ts';
 import { createInventoryPanel } from './inventory-panel.ts';
+import { createMapPanel } from './map-panel.ts';
+import type { MapPanel } from './map-panel.ts';
 import { createMenuButton } from './menu.ts';
 import type { MenuButton } from './menu.ts';
 import panelsCss from './panels.css?inline';
+import { createQuestTracker } from './quest-tracker.ts';
+import type { QuestTracker } from './quest-tracker.ts';
+import questsCss from './quests.css?inline';
 import { createSkillBar } from './skill-bar.ts';
 import type { SkillBar } from './skill-bar.ts';
 import { createDeathOverlay, createNotices, createSurgeStatus, createXpBar } from './status.ts';
@@ -27,12 +33,12 @@ import volumeCss from './volume.css?inline';
 import { createVolumeControl } from './volume-panel.ts';
 import type { VolumeControl } from './volume-panel.ts';
 
-const PANEL_IDS: readonly HudPanel[] = ['inventory', 'tree'];
+const PANEL_IDS: readonly HudPanel[] = ['inventory', 'tree', 'map'];
 
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -50,6 +56,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const surge: WorldStatus = createSurgeStatus(root);
   const banners: Banners = createBanners(root);
   const death: WorldStatus = createDeathOverlay(root);
+  const quests: QuestTracker = createQuestTracker(root);
 
   const dialogue: DialogueBox = createDialogueBox(root, context);
   track(dialogue.element);
@@ -59,14 +66,17 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const xp: XpBar = createXpBar(bottom);
   const row: HTMLDivElement = el('div', 'hud-row', bottom);
 
+  const open: Record<HudPanel, boolean> = { inventory: false, tree: false, map: false };
+  const buttons: Record<HudPanel, MenuButton | null> = { inventory: null, tree: null, map: null };
+  const map: MapPanel = createMapPanel(root, context, (): void => setOpen('map', false));
   const panels: Record<HudPanel, PanelView> = {
     inventory: createInventoryPanel(root, context),
     tree: createTreePanel(root, context),
+    map,
   };
-  const open: Record<HudPanel, boolean> = { inventory: false, tree: false };
-  const buttons: Record<HudPanel, MenuButton | null> = { inventory: null, tree: null };
+  let mapWanted: boolean = false;
 
-  const setOpen = (panel: HudPanel, next: boolean): void => {
+  function setOpen(panel: HudPanel, next: boolean): void {
     if (open[panel] !== next) api.playUi(next ? 'panel_open' : 'panel_close');
     open[panel] = next;
     const view: PanelView = panels[panel];
@@ -78,7 +88,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       tooltip.hide();
       hovered.delete(view.element);
     }
-  };
+  }
 
   const toggle = (panel: HudPanel): void => {
     setOpen(panel, !open[panel]);
@@ -89,6 +99,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   buttons.inventory = createMenuButton(row, 'Inventory', 'I', (): void => toggle('inventory'), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
   buttons.tree = createMenuButton(row, 'Skills', 'T', (): void => toggle('tree'), track);
+  buttons.map = createMenuButton(row, 'Map', 'M', (): void => toggle('map'), track);
   const volume: VolumeControl = createVolumeControl(row, api.audio, track, (opened: boolean): void => api.playUi(opened ? 'panel_open' : 'panel_close'));
   root.addEventListener('click', (event: MouseEvent): void => {
     const target: EventTarget | null = event.target;
@@ -110,7 +121,15 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       xp.update(world.player, world.content);
       surge.update(world);
       death.update(world);
+      quests.update(world);
       buttons.tree?.setBadge(world.player.skillPoints);
+      if (open.map) map.update();
+      if (mapWanted && onWaypoint(world)) {
+        mapWanted = false;
+        if (world.dialogue === null && world.player.alive) setOpen('map', true);
+      } else if (mapWanted && (world.player.intent.type !== 'move' || world.player.action !== null)) {
+        mapWanted = false;
+      }
     },
     handleEvents(events: readonly WorldEvent[]): void {
       for (const event of events) {
@@ -126,6 +145,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'zone_changed':
             banners.show(api.world.zone.name, null, 'zone');
+            mapWanted = false;
             break;
           case 'checkpoint':
             banners.show('Checkpoint', null, 'checkpoint');
@@ -136,6 +156,21 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'dialogue_closed':
             dialogue.close();
             hovered.delete(dialogue.element);
+            break;
+          case 'quest_started':
+            banners.show(api.world.content.quests.get(event.quest)?.name ?? '', 'New quest', 'quest');
+            break;
+          case 'quest_advanced':
+            quests.handle(event, api.world);
+            break;
+          case 'quest_completed':
+            banners.show(api.world.content.quests.get(event.quest)?.name ?? '', 'Quest complete', 'quest');
+            break;
+          case 'waypoint_unlocked':
+            banners.show('Waypoint', 'Open the map with M to travel between waypoints', 'checkpoint');
+            break;
+          case 'exit_locked':
+            notices.say(event.hint);
             break;
           case 'level_up':
             banners.show(`LEVEL ${event.level}`, 'Skill point gained', 'level');
@@ -173,6 +208,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     },
     togglePanel(panel: HudPanel): void {
       toggle(panel);
+    },
+    requestMap(wanted: boolean): void {
+      mapWanted = wanted;
     },
     closePanels(): boolean {
       let anyOpen: boolean = volume.close();

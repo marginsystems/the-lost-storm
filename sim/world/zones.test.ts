@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must, worldIn, zoneOf } from '../../test/support.ts';
+import { finishQuests, must, worldIn, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef, ZoneExit } from '../content/types.ts';
 import { distance } from '../math.ts';
@@ -81,7 +81,7 @@ void test('a new world starts in the start zone, which is a safe town', (): void
 });
 
 void test('travel walks to the exit, swaps the zone and grid and places the hero at the far arrival point', (): void => {
-  const world: World = createWorld(shipped, { seed: 2, save: null });
+  const world: World = finishQuests(createWorld(shipped, { seed: 2, save: null }));
   const oldGrid = world.grid;
   const out: ZoneExit = must(findExit(town, 'bastion_stair'), 'town exit');
   const events: WorldEvent[] = travel(world, out.id);
@@ -110,7 +110,7 @@ void test('an unknown exit is ignored and walking over an exit without asking do
 });
 
 void test('a wild zone is reset when it is entered again and loot left behind is gone', (): void => {
-  const world: World = createWorld(shipped, { seed: 4, save: null });
+  const world: World = finishQuests(createWorld(shipped, { seed: 4, save: null }));
   travel(world, 'bastion_stair');
   const initial: number = world.monsters.length;
   const firstIds: number[] = world.monsters.map((monster: MonsterState): number => monster.id);
@@ -187,7 +187,7 @@ void test('death returns the hero to the last checkpoint, or to the exit they ca
   assert.deepEqual(marked.player.pos, { x: 28, z: 22 });
   assert.equal(marked.zone.id, bastion.id);
 
-  const arrived: World = createWorld(shipped, { seed: 10, save: null });
+  const arrived: World = finishQuests(createWorld(shipped, { seed: 10, save: null }));
   travel(arrived, 'bastion_stair');
   arrived.player.pos = { x: 28, z: 20 };
   assert.equal(ofType(killPlayer(arrived), 'player_respawn').length, 1);
@@ -202,7 +202,7 @@ void test('a respawn id that no longer exists falls back to the zone start', ():
 });
 
 void test('travel is queued behind an attack in progress and ignored while dead', (): void => {
-  const world: World = createWorld(shipped, { seed: 11, save: null });
+  const world: World = finishQuests(createWorld(shipped, { seed: 11, save: null }));
   run(world, 0.02, [{ type: 'skill', slot: 0, aim: { x: 22, z: 10 }, targetId: null }]);
   assert.notEqual(world.player.action, null);
   stepWorld(world, [{ type: 'travel', exit: 'bastion_stair' }], DT);
@@ -217,7 +217,7 @@ void test('travel is queued behind an attack in progress and ignored while dead'
 });
 
 void test('items that did not fit in a loaded save follow the hero into the next zone instead of being lost', (): void => {
-  const world: World = createWorld(shipped, { seed: 13, save: null });
+  const world: World = finishQuests(createWorld(shipped, { seed: 13, save: null }));
   const spare = must(world.player.equipped.weapon, 'starting weapon');
   world.ground.push({ id: 9100, pos: { x: 22, z: 20 }, from: { x: 22, z: 20 }, content: { kind: 'item', item: spare }, age: 0, kept: true });
   world.ground.push({ id: 9101, pos: { x: 22, z: 21 }, from: { x: 22, z: 21 }, content: { kind: 'item', item: { ...spare, uid: 777 } }, age: 0, kept: false });

@@ -119,8 +119,8 @@ function searchCells(grid: NavGrid, start: number, goal: number): number[] | nul
   }
   if (parent[goal] === -1 && goal !== start) return null;
   const cells: number[] = [];
-  for (let cell: number = goal; cell !== -1 && cell !== start; cell = parent[cell] ?? -1) cells.push(cell);
-  return cells.toReversed();
+  for (let cell: number = goal; cell !== -1 && cell !== start; cell = parent[cell] ?? -1) cells.unshift(cell);
+  return cells;
 }
 
 function smooth(grid: NavGrid, from: ReadonlyVec2, points: readonly Vec2[]): Vec2[] {

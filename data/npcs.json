@@ -19,6 +19,14 @@
       {
         "id": "maren_wake",
         "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "fallen_in",
+            "objective": "tallier",
+            "is": "current"
+          }
+        ],
         "lines": [
           "maren_wake_1",
           "maren_wake_2",
@@ -57,6 +65,14 @@
       {
         "id": "hale_first",
         "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "fallen_in",
+            "objective": "lampwright",
+            "is": "current"
+          }
+        ],
         "lines": [
           "hale_first_1",
           "hale_first_2",

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must } from '../../test/support.ts';
+import { finishQuests, must } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, NpcDef, TalkDef } from '../content/types.ts';
 import { distance } from '../math.ts';
@@ -122,15 +122,15 @@ void test('a finished once conversation is not offered again; the repeatable one
 
 void test('walking away half-way closes the conversation without using it up', (): void => {
   const world: World = fresh();
-  const first: TalkDef = must(npcOf(world, 'hale').def.talks[0], 'first talk');
-  talkTo(world, 'hale');
+  const first: TalkDef = must(npcOf(world, 'maren').def.talks[0], 'first talk');
+  talkTo(world, 'maren');
   send(world, { type: 'advance' });
   assert.equal(dialogueOf(world).index, 1);
-  const events: WorldEvent[] = send(world, { type: 'move', dest: { x: 22, z: 22 } });
+  const events: WorldEvent[] = send(world, { type: 'move', dest: { x: 22, z: 26 } });
   assert.equal(world.dialogue, null);
   assert.deepEqual(ofType(events, 'dialogue_closed').map((event): boolean => event.finished), [false]);
   assert.deepEqual(world.heard, []);
-  talkTo(world, 'hale');
+  talkTo(world, 'maren');
   const again = dialogueOf(world);
   assert.equal(again.talk.id, first.id);
   assert.equal(again.index, 0);
@@ -175,7 +175,7 @@ void test('inventory and skill-tree commands leave an open conversation alone', 
 });
 
 void test('leaving the zone closes the conversation and the people of the next zone replace the old ones', (): void => {
-  const world: World = fresh();
+  const world: World = finishQuests(fresh());
   talkTo(world, 'maren');
   const before: number[] = world.npcs.map((npc: NpcState): number => npc.id);
   const events: WorldEvent[] = [];

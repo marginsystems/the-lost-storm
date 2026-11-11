@@ -65,7 +65,7 @@ const GAME = {
   millisecondsPerSecond: 1000,
 } as const;
 
-const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['type']>(['character_changed', 'level_up', 'pickup', 'surge', 'xp', 'zone_changed', 'checkpoint']);
+const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['type']>(['character_changed', 'level_up', 'pickup', 'surge', 'xp', 'zone_changed', 'checkpoint', 'dialogue_closed', 'quest_started', 'quest_advanced', 'quest_completed', 'waypoint_unlocked']);
 
 export interface DebugHandle {
   readonly world: World;
@@ -177,6 +177,12 @@ async function start(): Promise<void> {
     onPickup: (groundId: number): void => send({ type: 'pickup', groundId }),
     onTravel: (exit: string): void => send({ type: 'travel', exit }),
     onTalk: (npcId: number): void => send({ type: 'talk', npcId }),
+    onWaypoint: (): void => {
+      const waypoint = world.zone.waypoint;
+      if (waypoint === null) return;
+      send({ type: 'move', dest: { x: waypoint.x, z: waypoint.z } });
+      hud.requestMap(true);
+    },
   });
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),

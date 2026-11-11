@@ -8,7 +8,10 @@ import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { loadContent } from './content.ts';
 import { contentProblems } from './parse.ts';
-import type { Content, ItemBaseDef, NpcDef, SkillTreeNodeDef, TalkDef, ZoneDef } from './types.ts';
+import { createWorld } from '../world/create.ts';
+import { nextTalk } from '../world/dialogue.ts';
+import type { World } from '../world/types.ts';
+import type { Content, ItemBaseDef, NpcDef, QuestDef, SkillTreeNodeDef, TalkDef, ZoneDef } from './types.ts';
 import { ANIMATION_KEYS } from './types.ts';
 
 const content: Content = loadContent();
@@ -88,6 +91,12 @@ void test('in every zone the start, packs, exits, arrival points, checkpoints an
     }
     for (const checkpoint of zone.checkpoints) assert.ok(reaches(grid, start, checkpoint), `${zone.id} checkpoint ${checkpoint.id}`);
     for (const placed of zone.npcs) assert.ok(reaches(grid, start, placed), `${zone.id} npc ${placed.npc}`);
+    if (zone.waypoint !== null) assert.ok(reaches(grid, start, zone.waypoint), `${zone.id} waypoint`);
+    for (const quest of content.quests.values()) {
+      for (const objective of quest.objectives) {
+        if (objective.type === 'reach' && objective.zone === zone.id) assert.ok(reaches(grid, start, objective), `${quest.id}.${objective.id} place`);
+      }
+    }
   }
 });
 
@@ -151,4 +160,41 @@ void test('every npc is placed somewhere, has a body, and never falls silent', (
     assert.ok(npc.talks.some((talk: TalkDef): boolean => !talk.once), `${npc.id} has no repeatable conversation`);
     assert.ok(npc.name.length > 0 && npc.title.length > 0, `${npc.id} name and title`);
   }
+});
+
+void test('quests form no cycle, and every one can start from a fresh save once the ones before it are done', (): void => {
+  const done: Set<string> = new Set<string>();
+  let grew: boolean = true;
+  while (grew) {
+    grew = false;
+    for (const quest of content.quests.values()) {
+      if (done.has(quest.id) || !quest.requires.every((required: string): boolean => done.has(required))) continue;
+      done.add(quest.id);
+      grew = true;
+    }
+  }
+  assert.deepEqual([...done].toSorted(), [...content.quests.keys()].toSorted());
+  assert.ok([...content.quests.values()].some((quest: QuestDef): boolean => quest.requires.length === 0));
+});
+
+void test('every talk objective has someone to talk to and a conversation of its own while it is current', (): void => {
+  for (const quest of content.quests.values()) {
+    quest.objectives.forEach((objective, index: number): void => {
+      if (objective.type !== 'talk') return;
+      const world: World = createWorld(content, { seed: 1, save: null });
+      for (const earlier of content.quests.values()) world.quests[earlier.id] = earlier.objectives.length;
+      world.quests[quest.id] = index;
+      const npc: NpcDef = must(content.npcs.get(objective.npc), `${quest.id}.${objective.id} npc`);
+      const placed: boolean = [...content.zones.values()].some((zone: ZoneDef): boolean => zone.npcs.some((entry): boolean => entry.npc === npc.id));
+      assert.ok(placed, `${quest.id}.${objective.id}: ${npc.id} stands nowhere`);
+      const talk: TalkDef = must(nextTalk(world, npc), `${quest.id}.${objective.id} conversation`);
+      assert.ok(talk.when.some((condition): boolean => condition.type === 'objective' && condition.quest === quest.id && condition.objective === objective.id && condition.is === 'current'), `${quest.id}.${objective.id}: ${npc.id} says ${talk.id}, which is not written for this objective`);
+    });
+  }
+});
+
+void test('every zone has a place on the world map and no two share one', (): void => {
+  const places: string[] = content.world.map.map((place): string => `${place.x},${place.y}`);
+  assert.equal(new Set<string>(places).size, places.length);
+  assert.deepEqual(content.world.map.map((place): string => place.zone).toSorted(), [...content.zones.keys()].toSorted());
 });

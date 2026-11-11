@@ -8,6 +8,7 @@ import { addToInventory } from './character.ts';
 import { spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
+import { startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
 import { placePlayer, respawnExists, startZone } from './zones.ts';
 
@@ -95,6 +96,8 @@ export function createWorld(content: Content, options: WorldOptions): World {
     npcs: [],
     dialogue: null,
     heard: save === null ? [] : [...save.heard],
+    quests: save === null ? {} : { ...save.quests },
+    waypoints: save === null ? [] : [...save.waypoints],
     projectiles: [],
     ground: [],
     nextId: PLAYER_ID + 1,
@@ -107,6 +110,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   placePlayer(world);
   if (save === null) giveStartingItems(world);
   for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
+  startQuests(world);
   spawnNpcs(world);
   spawnPacks(world);
   world.events = [];

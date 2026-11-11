@@ -17,6 +17,7 @@ const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
 export interface Notices {
   readonly element: HTMLElement;
   show(reason: NoticeReason): void;
+  say(text: string): void;
 }
 
 export interface XpBar {
@@ -31,16 +32,20 @@ export interface WorldStatus {
 export function createNotices(parent: HTMLElement): Notices {
   const element: HTMLDivElement = el('div', 'hud-notice', parent);
   let timer: number | null = null;
+  const say = (text: string): void => {
+    setText(element, text, true);
+    element.classList.add('visible');
+    if (timer !== null) window.clearTimeout(timer);
+    timer = window.setTimeout((): void => {
+      element.classList.remove('visible');
+      timer = null;
+    }, STATUS.noticeMs);
+  };
   return {
     element,
+    say,
     show(reason: NoticeReason): void {
-      setText(element, NOTICE_TEXT[reason], true);
-      element.classList.add('visible');
-      if (timer !== null) window.clearTimeout(timer);
-      timer = window.setTimeout((): void => {
-        element.classList.remove('visible');
-        timer = null;
-      }, STATUS.noticeMs);
+      say(NOTICE_TEXT[reason]);
     },
   };
 }

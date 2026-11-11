@@ -153,6 +153,11 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'checkpoint':
           case 'dialogue_line':
           case 'dialogue_closed':
+          case 'quest_started':
+          case 'quest_advanced':
+          case 'quest_completed':
+          case 'waypoint_unlocked':
+          case 'exit_locked':
           case 'projectile_spawn':
           case 'projectile_end':
           case 'monster_spawn':

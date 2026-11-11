@@ -12,6 +12,7 @@ export const INPUT = {
   rightBinding: 'mouse_right',
   inventoryKey: 'KeyI',
   treeKey: 'KeyT',
+  mapKey: 'KeyM',
   closeKey: 'Escape',
   advanceKeys: ['Space', 'Enter'],
 } as const;
@@ -86,6 +87,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     if (event.repeat) return;
     if (event.code === INPUT.inventoryKey) hud.togglePanel('inventory');
     else if (event.code === INPUT.treeKey) hud.togglePanel('tree');
+    else if (event.code === INPUT.mapKey) hud.togglePanel('map');
     else if (event.code === INPUT.closeKey) {
       if (!hud.closePanels() && world.dialogue !== null) extra.push({ type: 'stop' });
     }
@@ -136,6 +138,12 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     return world.zone.exits.find((exit: ZoneExit): boolean => Math.hypot(exit.x - ground.x, exit.z - ground.z) <= exit.radius) ?? null;
   };
 
+  const onWaypointMark = (ground: Vec2 | null): boolean => {
+    const waypoint = world.zone.waypoint;
+    if (ground === null || waypoint === null || !pointerInside || hud.isPointerOverUi()) return false;
+    return Math.hypot(waypoint.x - ground.x, waypoint.z - ground.z) <= waypoint.radius;
+  };
+
   const ready = (skill: SkillDef | undefined): boolean => {
     if (skill === undefined) return false;
     const player = world.player;
@@ -155,7 +163,8 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       const ground: Vec2 | null = groundHit === null ? null : { x: groundHit.x, z: groundHit.z };
       const exit: ZoneExit | null = target === null && person === null ? exitAt(ground) : null;
       hooks.aimExit(exit?.id ?? null);
-      canvas.style.cursor = target !== null ? 'crosshair' : exit !== null || person !== null ? 'pointer' : 'default';
+      const marked: boolean = target === null && person === null && exit === null && onWaypointMark(ground);
+      canvas.style.cursor = target !== null ? 'crosshair' : exit !== null || person !== null || marked ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       holdTimer -= dt;
@@ -169,6 +178,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
 
       const leftSlot: number = slotFor(INPUT.leftBinding);
       const leftFresh: boolean = fresh.has(INPUT.leftBinding);
+      if (leftFresh) hud.requestMap(marked && !shift);
       if (leftFresh || (held.has(INPUT.leftBinding) && holdTick)) {
         if (target !== null) {
           commands.push({ type: 'skill', slot: leftSlot, aim, targetId: target.id });

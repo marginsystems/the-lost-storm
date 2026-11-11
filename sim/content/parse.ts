@@ -4,18 +4,22 @@ import type {
   AffixDef,
   AttachmentDef,
   AnimationKey,
+  Condition,
   Content,
   Delivery,
   ItemBaseDef,
   ItemSlot,
   LineDef,
+  MapPlace,
   MonsterBehaviour,
   MonsterDef,
   NpcDef,
+  ObjectiveDef,
   PackMember,
   PlayerDef,
   PropDef,
   PropLight,
+  QuestDef,
   RarityDef,
   RigClip,
   RigDef,
@@ -40,8 +44,9 @@ import type {
   ZonePack,
   ZonePoint,
   ZoneProp,
+  ZoneWaypoint,
 } from './types.ts';
-import { ACTION_ANIMATIONS, AFFIX_POSITIONS, ANIMATION_KEYS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES, WEAR_REGIONS, ZONE_KINDS } from './types.ts';
+import { ACTION_ANIMATIONS, AFFIX_POSITIONS, ANIMATION_KEYS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, OBJECTIVE_STATES, QUEST_STATES, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES, WEAR_REGIONS, ZONE_KINDS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -56,6 +61,7 @@ export interface RawContent {
   readonly world: unknown;
   readonly npcs: unknown;
   readonly lines: unknown;
+  readonly quests: unknown;
   readonly player: unknown;
 }
 
@@ -322,9 +328,23 @@ function positive(source: Fields, key: string, where: string): number {
   return value;
 }
 
+function condition(value: unknown, where: string): Condition {
+  const source: Fields = fields(value, where);
+  const type: Condition['type'] = choice(source, 'type', ['quest', 'objective'] as const, where);
+  if (type === 'quest') return { type, quest: text(source, 'quest', where), is: choice(source, 'is', QUEST_STATES, where) };
+  return { type, quest: text(source, 'quest', where), objective: text(source, 'objective', where), is: choice(source, 'is', OBJECTIVE_STATES, where) };
+}
+
+function conditions(source: Fields, key: string, where: string): Condition[] {
+  return source[key] === undefined ? [] : each(source[key], `${where}.${key}`, condition);
+}
+
 function zoneExit(value: unknown, where: string): ZoneExit {
   const source: Fields = fields(value, where);
+  const requires: Condition[] = conditions(source, 'requires', where);
   return {
+    requires,
+    lockedHint: requires.length === 0 ? '' : text(source, 'lockedHint', where),
     id: text(source, 'id', where),
     x: numeric(source, 'x', where),
     z: numeric(source, 'z', where),
@@ -342,7 +362,14 @@ function zoneCheckpoint(value: unknown, where: string): ZoneCheckpoint {
 
 function zoneNpc(value: unknown, where: string): ZoneNpc {
   const source: Fields = fields(value, where);
-  return { npc: text(source, 'npc', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), facingDegrees: numeric(source, 'facingDegrees', where) };
+  return { npc: text(source, 'npc', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), facingDegrees: numeric(source, 'facingDegrees', where), when: conditions(source, 'when', where) };
+}
+
+function zoneWaypoint(value: unknown, where: string): ZoneWaypoint | null {
+  if (value === undefined) throw new ContentError(where, 'expected a waypoint, or null for a zone without one');
+  if (value === null) return null;
+  const source: Fields = fields(value, where);
+  return { x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
 }
 
 function zoneAmbience(value: unknown, where: string): ZoneAmbience {
@@ -389,6 +416,7 @@ function zone(value: unknown, where: string): ZoneDef {
     surge,
     exits: [...byId(each(source['exits'], `${where}.exits`, zoneExit), `${where}.exits`).values()],
     checkpoints: [...byId(each(source['checkpoints'], `${where}.checkpoints`, zoneCheckpoint), `${where}.checkpoints`).values()],
+    waypoint: zoneWaypoint(source['waypoint'], `${where}.waypoint`),
     npcs: each(source['npcs'], `${where}.npcs`, zoneNpc),
     ambience: zoneAmbience(source['ambience'], `${where}.ambience`),
   };
@@ -405,7 +433,7 @@ function talk(value: unknown, where: string): TalkDef {
   const source: Fields = fields(value, where);
   const lines: string[] = textList(source, 'lines', where);
   if (lines.length === 0) throw new ContentError(`${where}.lines`, 'a conversation needs at least one line');
-  return { id: text(source, 'id', where), once: flag(source, 'once', where), lines };
+  return { id: text(source, 'id', where), once: flag(source, 'once', where), when: conditions(source, 'when', where), lines };
 }
 
 function npc(value: unknown, where: string): NpcDef {
@@ -433,10 +461,33 @@ function npcs(value: unknown, where: string): Map<string, NpcDef> {
   return defs;
 }
 
+function mapPlace(value: unknown, where: string): MapPlace {
+  const source: Fields = fields(value, where);
+  return { zone: text(source, 'zone', where), x: numeric(source, 'x', where), y: numeric(source, 'y', where) };
+}
+
+function objective(value: unknown, where: string): ObjectiveDef {
+  const source: Fields = fields(value, where);
+  const type: ObjectiveDef['type'] = choice(source, 'type', ['talk', 'reach', 'defeat'] as const, where);
+  const id: string = text(source, 'id', where);
+  const shown: string = text(source, 'text', where);
+  if (type === 'talk') return { type, id, text: shown, npc: text(source, 'npc', where) };
+  if (type === 'defeat') return { type, id, text: shown, monster: text(source, 'monster', where) };
+  return { type, id, text: shown, zone: text(source, 'zone', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
+}
+
+function quest(value: unknown, where: string): QuestDef {
+  const source: Fields = fields(value, where);
+  const objectives: ObjectiveDef[] = [...byId(each(source['objectives'], `${where}.objectives`, objective), `${where}.objectives`).values()];
+  if (objectives.length === 0) throw new ContentError(`${where}.objectives`, 'a quest needs at least one objective');
+  return { id: text(source, 'id', where), name: text(source, 'name', where), requires: textList(source, 'requires', where), objectives };
+}
+
 function worldDef(value: unknown, where: string): WorldDef {
   const source: Fields = fields(value, where);
   const scaling: Fields = fields(source['scaling'], `${where}.scaling`);
   return {
+    map: each(source['map'], `${where}.map`, mapPlace),
     start: text(source, 'start', where),
     scaling: {
       lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),
@@ -513,6 +564,7 @@ export function parseContent(raw: RawContent): Content {
     world: worldDef(raw.world, 'world'),
     npcs: npcs(raw.npcs, 'npcs'),
     lines: byId(each(raw.lines, 'lines', line), 'lines'),
+    quests: byId(each(raw.quests, 'quests', quest), 'quests'),
     player: player(raw.player, 'player'),
   };
 }
@@ -568,15 +620,28 @@ export function contentProblems(content: Content): string[] {
     for (const required of node.requires) need(nodeIds.has(required), `tree node ${node.id} requires unknown node ${required}`);
     for (const mod of node.skillMods) need(content.skills.has(mod.skill), `tree node ${node.id} modifies unknown skill ${mod.skill}`);
   }
+  const known = (holder: string, list: readonly Condition[]): void => {
+    for (const entry of list) {
+      const questDef: QuestDef | undefined = content.quests.get(entry.quest);
+      need(questDef !== undefined, `${holder} names unknown quest ${entry.quest}`);
+      if (questDef !== undefined && entry.type === 'objective') need(questDef.objectives.some((candidate: ObjectiveDef): boolean => candidate.id === entry.objective), `${holder} names unknown objective ${entry.quest}.${entry.objective}`);
+    }
+  };
   need(content.zones.has(content.world.start), `world starts in unknown zone ${content.world.start}`);
+  for (const place of content.world.map) need(content.zones.has(place.zone), `world map places unknown zone ${place.zone}`);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;
     for (const models of Object.values(zoneDef.floors)) for (const model of models) need(content.props.has(model), `${at} floor uses unknown prop ${model}`);
     for (const model of [...zoneDef.walls.tall, zoneDef.walls.low, zoneDef.walls.corner]) need(content.props.has(model), `${at} wall uses unknown prop ${model}`);
     for (const placed of zoneDef.props) need(content.props.has(placed.prop), `${at} places unknown prop ${placed.prop}`);
     for (const packDef of zoneDef.packs) for (const member of packDef.members) need(content.monsters.has(member.monster), `${at} pack uses unknown monster ${member.monster}`);
-    for (const placed of zoneDef.npcs) need(content.npcs.has(placed.npc), `${at} places unknown npc ${placed.npc}`);
+    need(content.world.map.some((place: MapPlace): boolean => place.zone === zoneDef.id), `${at} has no place on the world map`);
+    for (const placed of zoneDef.npcs) {
+      need(content.npcs.has(placed.npc), `${at} places unknown npc ${placed.npc}`);
+      known(`${at} npc ${placed.npc}`, placed.when);
+    }
     for (const exit of zoneDef.exits) {
+      known(`${at} exit ${exit.id}`, exit.requires);
       const far: ZoneExit | undefined = content.zones.get(exit.to)?.exits.find((candidate: ZoneExit): boolean => candidate.id === exit.toExit);
       need(far !== undefined, `${at} exit ${exit.id} leads to unknown exit ${exit.to}.${exit.toExit}`);
       if (far !== undefined) need(far.to === zoneDef.id && far.toExit === exit.id, `${at} exit ${exit.id} is not matched by ${exit.to}.${exit.toExit}`);
@@ -586,10 +651,11 @@ export function contentProblems(content: Content): string[] {
     need(content.rigs.has(def.rig), `npc ${def.id} uses unknown rig ${def.rig}`);
     for (const held of def.gear) fits(`npc ${def.id}`, def.rig, held);
     wears(`npc ${def.id}`, def.rig, def.wear);
-    const lastWord: number = def.talks.findIndex((entry: TalkDef): boolean => !entry.once);
-    need(lastWord >= 0, `npc ${def.id} has no repeatable conversation`);
-    for (const unreachable of lastWord < 0 ? [] : def.talks.slice(lastWord + 1)) need(false, `conversation ${unreachable.id} of ${def.id} can never play: it comes after the repeatable conversation ${def.talks[lastWord]?.id ?? ''}`);
+    const lastWord: number = def.talks.findIndex((entry: TalkDef): boolean => !entry.once && entry.when.length === 0);
+    need(lastWord >= 0, `npc ${def.id} has no repeatable conversation without conditions`);
+    for (const unreachable of lastWord < 0 ? [] : def.talks.slice(lastWord + 1)) need(false, `conversation ${unreachable.id} of ${def.id} can never play: it comes after the repeatable conversation ${def.talks[lastWord]?.id ?? ''}, which has no conditions`);
     for (const entry of def.talks) {
+      known(`conversation ${entry.id}`, entry.when);
       for (const lineId of entry.lines) {
         const spoken: LineDef | undefined = content.lines.get(lineId);
         need(spoken !== undefined, `conversation ${entry.id} uses unknown line ${lineId}`);
@@ -598,5 +664,22 @@ export function contentProblems(content: Content): string[] {
     }
   }
   for (const spoken of content.lines.values()) need(content.npcs.has(spoken.speaker), `line ${spoken.id} has unknown speaker ${spoken.speaker}`);
+  for (const questDef of content.quests.values()) {
+    for (const required of questDef.requires) need(content.quests.has(required) && required !== questDef.id, `quest ${questDef.id} requires unknown quest ${required}`);
+    for (const goal of questDef.objectives) {
+      const at: string = `quest ${questDef.id} objective ${goal.id}`;
+      switch (goal.type) {
+        case 'talk':
+          need(content.npcs.has(goal.npc), `${at} names unknown npc ${goal.npc}`);
+          break;
+        case 'reach':
+          need(content.zones.has(goal.zone), `${at} names unknown zone ${goal.zone}`);
+          break;
+        case 'defeat':
+          need(content.monsters.has(goal.monster), `${at} names unknown monster ${goal.monster}`);
+          break;
+      }
+    }
+  }
   return problems;
 }

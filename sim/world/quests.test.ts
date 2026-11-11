@@ -1,0 +1,223 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { must, worldIn, zoneOf } from '../../test/support.ts';
+import { loadContent } from '../content/content.ts';
+import type { Condition, Content, NpcDef, QuestDef, TalkDef, ZoneDef, ZoneExit, ZoneNpc } from '../content/types.ts';
+import { allHold, holds, objectiveState, questState } from './conditions.ts';
+import { createWorld } from './create.ts';
+import { nextTalk } from './dialogue.ts';
+import { activeQuests, currentObjective } from './quests.ts';
+import { stepWorld } from './step.ts';
+import type { Command, MonsterState, NpcState, World, WorldEvent } from './types.ts';
+
+const shipped: Content = loadContent();
+const DT: number = 1 / 60;
+const LIMIT: number = 40;
+
+type EventOf<T extends WorldEvent['type']> = Extract<WorldEvent, { readonly type: T }>;
+
+function ofType<T extends WorldEvent['type']>(events: readonly WorldEvent[], type: T): EventOf<T>[] {
+  return events.filter((event: WorldEvent): event is EventOf<T> => event.type === type);
+}
+
+const errand: QuestDef = {
+  id: 'errand',
+  name: 'An Errand',
+  requires: [],
+  objectives: [
+    { id: 'ask', type: 'talk', npc: 'maren', text: 'Ask' },
+    { id: 'go', type: 'reach', zone: 'stillhold', x: 30, z: 20, radius: 1.5, text: 'Go' },
+    { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill' },
+  ],
+};
+
+const sequel: QuestDef = { id: 'sequel', name: 'After', requires: ['errand'], objectives: [{ id: 'tell', type: 'talk', npc: 'hale', text: 'Tell' }] };
+
+function during(objective: string): Condition[] {
+  return [{ type: 'objective', quest: 'errand', objective, is: 'current' }];
+}
+
+function unconditional(def: NpcDef): NpcDef {
+  return { ...def, talks: def.talks.map((talk: TalkDef): TalkDef => ({ id: talk.id, once: talk.once, when: [], lines: talk.lines })) };
+}
+
+function staged(): Content {
+  const town: ZoneDef = zoneOf(shipped, 'stillhold');
+  const bastion: ZoneDef = zoneOf(shipped, 'drowned_bastion');
+  const locked: Condition[] = [{ type: 'objective', quest: 'errand', objective: 'go', is: 'done' }];
+  const gated: ZoneDef = {
+    ...town,
+    exits: town.exits.map((exit: ZoneExit): ZoneExit => ({ id: exit.id, x: exit.x, z: exit.z, radius: exit.radius, to: exit.to, toExit: exit.toExit, arrival: exit.arrival, requires: locked, lockedHint: 'Not yet' })),
+    npcs: [...town.npcs.map((placed: ZoneNpc): ZoneNpc => ({ npc: placed.npc, x: placed.x, z: placed.z, facingDegrees: placed.facingDegrees, when: [] })), { npc: 'hale', x: 30, z: 24, facingDegrees: 0, when: during('kill') }],
+  };
+  const maren: NpcDef = must(shipped.npcs.get('maren'), 'maren');
+  const hale: NpcDef = must(shipped.npcs.get('hale'), 'hale');
+  return {
+    ...shipped,
+    quests: new Map<string, QuestDef>([
+      [errand.id, errand],
+      [sequel.id, sequel],
+    ]),
+    zones: new Map<string, ZoneDef>([
+      [gated.id, gated],
+      [bastion.id, bastion],
+    ]),
+    npcs: new Map<string, NpcDef>([
+      [maren.id, unconditional(maren)],
+      [hale.id, unconditional(hale)],
+    ]),
+  };
+}
+
+function send(world: World, ...commands: Command[]): WorldEvent[] {
+  return stepWorld(world, commands, DT);
+}
+
+function until(world: World, done: () => boolean, first: readonly Command[] = []): WorldEvent[] {
+  const events: WorldEvent[] = [];
+  const steps: number = Math.round(LIMIT / DT);
+  for (let step: number = 0; step < steps; step += 1) {
+    events.push(...stepWorld(world, step === 0 ? first : [], DT));
+    if (done()) break;
+  }
+  return events;
+}
+
+function converse(world: World, npcId: string): WorldEvent[] {
+  const npc: NpcState = must(world.npcs.find((candidate: NpcState): boolean => candidate.def.id === npcId), npcId);
+  const events: WorldEvent[] = until(world, (): boolean => world.dialogue !== null, [{ type: 'talk', npcId: npc.id }]);
+  for (let guard: number = 0; guard < 40 && world.dialogue !== null; guard += 1) events.push(...send(world, { type: 'advance' }));
+  return events;
+}
+
+void test('a quest with no requirements starts with the world and one that requires it stays locked', (): void => {
+  const world: World = createWorld(staged(), { seed: 1, save: null });
+  assert.deepEqual(world.quests, { errand: 0 });
+  assert.equal(questState(world, 'errand'), 'active');
+  assert.equal(questState(world, 'sequel'), 'locked');
+  assert.equal(questState(world, 'no_such_quest'), 'locked');
+  assert.deepEqual(activeQuests(world).map((quest: QuestDef): string => quest.id), ['errand']);
+  assert.equal(currentObjective(world, errand)?.id, 'ask');
+  assert.equal(currentObjective(world, sequel), null);
+  assert.equal(world.events.length, 0);
+});
+
+void test('conditions read locked, active and done quests and pending, current and done objectives', (): void => {
+  const world: World = createWorld(staged(), { seed: 2, save: null });
+  world.quests = { errand: 1 };
+  assert.equal(objectiveState(world, 'errand', 'ask'), 'done');
+  assert.equal(objectiveState(world, 'errand', 'go'), 'current');
+  assert.equal(objectiveState(world, 'errand', 'kill'), 'pending');
+  assert.equal(objectiveState(world, 'errand', 'no_such'), 'pending');
+  assert.equal(objectiveState(world, 'sequel', 'tell'), 'pending');
+  assert.equal(holds(world, { type: 'quest', quest: 'errand', is: 'active' }), true);
+  assert.equal(holds(world, { type: 'quest', quest: 'sequel', is: 'locked' }), true);
+  assert.equal(holds(world, { type: 'quest', quest: 'errand', is: 'done' }), false);
+  assert.equal(allHold(world, []), true);
+  assert.equal(allHold(world, [...during('go'), { type: 'quest', quest: 'sequel', is: 'locked' }]), true);
+  assert.equal(allHold(world, [...during('go'), { type: 'quest', quest: 'sequel', is: 'active' }]), false);
+  world.quests = { errand: 3 };
+  assert.equal(questState(world, 'errand'), 'done');
+  assert.equal(objectiveState(world, 'errand', 'kill'), 'done');
+});
+
+void test('a talk objective is done by finishing a conversation with that npc, not by starting one or by talking to someone else', (): void => {
+  const world: World = createWorld(staged(), { seed: 3, save: null });
+  const other: WorldEvent[] = converse(world, 'hale');
+  assert.equal(ofType(other, 'quest_advanced').length, 0);
+  const maren: NpcState = must(world.npcs.find((npc: NpcState): boolean => npc.def.id === 'maren'), 'maren');
+  until(world, (): boolean => world.dialogue !== null, [{ type: 'talk', npcId: maren.id }]);
+  send(world, { type: 'stop' });
+  assert.deepEqual(world.quests, { errand: 0 });
+  const events: WorldEvent[] = converse(world, 'maren');
+  assert.deepEqual(ofType(events, 'quest_advanced'), [{ type: 'quest_advanced', quest: 'errand', objective: 'ask' }]);
+  assert.deepEqual(world.quests, { errand: 1 });
+});
+
+void test('a reach objective is done by standing in the circle, in the right zone, only while it is current', (): void => {
+  const world: World = createWorld(staged(), { seed: 4, save: null });
+  until(world, (): boolean => world.player.intent.type === 'idle', [{ type: 'move', dest: { x: 30, z: 20 } }]);
+  assert.deepEqual(world.quests, { errand: 0 });
+  world.quests = { errand: 1 };
+  const events: WorldEvent[] = send(world);
+  assert.deepEqual(ofType(events, 'quest_advanced'), [{ type: 'quest_advanced', quest: 'errand', objective: 'go' }]);
+  const elsewhere: World = worldIn(staged(), 'drowned_bastion', 4);
+  elsewhere.quests = { errand: 1 };
+  elsewhere.monsters = [];
+  until(elsewhere, (): boolean => elsewhere.player.intent.type === 'idle', [{ type: 'move', dest: { x: 30, z: 20 } }]);
+  assert.deepEqual(elsewhere.quests, { errand: 1 });
+});
+
+void test('a defeat objective is done when a monster of that kind dies, and completing a quest starts the next', (): void => {
+  const world: World = worldIn(staged(), 'drowned_bastion', 5);
+  world.quests = { errand: 2 };
+  const caller: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.id === 'hex_caller'), 'caller');
+  const thrall: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.id === 'bone_thrall'), 'thrall');
+  for (const victim of [thrall, caller]) {
+    world.monsters = [victim];
+    victim.spawnTime = 0;
+    victim.life = 1;
+    victim.pos = { x: world.player.pos.x, z: world.player.pos.z - 1.5 };
+    world.player.cooldowns = {};
+    const events: WorldEvent[] = until(world, (): boolean => !victim.alive, [{ type: 'skill', slot: 0, aim: victim.pos, targetId: victim.id }]);
+    if (victim === thrall) {
+      assert.equal(ofType(events, 'quest_advanced').length, 0);
+      continue;
+    }
+    assert.deepEqual(ofType(events, 'quest_advanced'), [{ type: 'quest_advanced', quest: 'errand', objective: 'kill' }]);
+    assert.deepEqual(ofType(events, 'quest_completed'), [{ type: 'quest_completed', quest: 'errand' }]);
+    assert.deepEqual(ofType(events, 'quest_started'), [{ type: 'quest_started', quest: 'sequel' }]);
+  }
+  assert.deepEqual(world.quests, { errand: 3, sequel: 0 });
+  assert.equal(questState(world, 'errand'), 'done');
+});
+
+void test('an exit with a requirement refuses travel with its hint until the condition holds', (): void => {
+  const world: World = createWorld(staged(), { seed: 6, save: null });
+  const refused: WorldEvent[] = send(world, { type: 'travel', exit: 'bastion_stair' });
+  assert.deepEqual(ofType(refused, 'exit_locked'), [{ type: 'exit_locked', exit: 'bastion_stair', hint: 'Not yet' }]);
+  assert.deepEqual(world.player.intent, { type: 'idle' });
+  world.quests = { errand: 2 };
+  const allowed: WorldEvent[] = until(world, (): boolean => world.zone.id !== 'stillhold', [{ type: 'travel', exit: 'bastion_stair' }]);
+  assert.equal(ofType(allowed, 'exit_locked').length, 0);
+  assert.equal(world.zone.id, 'drowned_bastion');
+});
+
+void test('a conversation with a condition is offered only while the condition holds', (): void => {
+  const world: World = createWorld(shipped, { seed: 7, save: null });
+  const hale: NpcDef = must(shipped.npcs.get('hale'), 'hale');
+  const maren: NpcDef = must(shipped.npcs.get('maren'), 'maren');
+  assert.equal(nextTalk(world, maren)?.id, 'maren_wake');
+  assert.equal(nextTalk(world, hale)?.id, 'hale_idle');
+  world.quests = { fallen_in: 1 };
+  assert.equal(nextTalk(world, hale)?.id, 'hale_first');
+  assert.equal(nextTalk(world, maren)?.id, 'maren_idle');
+  world.quests = { fallen_in: 2 };
+  assert.equal(nextTalk(world, hale)?.id, 'hale_idle');
+});
+
+void test('an npc placed with a condition arrives and leaves as the quest moves, and its conversation closes when it goes', (): void => {
+  const world: World = createWorld(staged(), { seed: 8, save: null });
+  const count = (): number => world.npcs.filter((npc: NpcState): boolean => npc.def.id === 'hale').length;
+  assert.equal(count(), 1);
+  const stayed: number[] = world.npcs.map((npc: NpcState): number => npc.id);
+  world.quests = { errand: 1 };
+  until(world, (): boolean => world.quests['errand'] === 2, [{ type: 'move', dest: { x: 30, z: 20 } }]);
+  assert.equal(count(), 2);
+  assert.ok(stayed.every((id: number): boolean => world.npcs.some((npc: NpcState): boolean => npc.id === id)));
+  const visitor: NpcState = must(world.npcs.find((npc: NpcState): boolean => !stayed.includes(npc.id)), 'visitor');
+  assert.deepEqual(visitor.pos, { x: 30, z: 24 });
+  until(world, (): boolean => world.dialogue !== null, [{ type: 'talk', npcId: visitor.id }]);
+  assert.equal(world.dialogue?.npcId, visitor.id);
+  world.quests = { errand: 3 };
+  const events: WorldEvent[] = [];
+  world.events = events;
+  world.quests = { errand: 2 };
+  const caller: MonsterState = { ...must(worldIn(staged(), 'drowned_bastion', 8).monsters.find((monster: MonsterState): boolean => monster.def.id === 'hex_caller'), 'caller'), alive: false };
+  world.monsters = [caller];
+  world.events.push({ type: 'death', actorId: caller.id, team: 'monster', pos: caller.pos, direction: { x: 0, z: 1 } });
+  const after: WorldEvent[] = send(world);
+  assert.equal(world.quests['errand'], 2);
+  assert.equal(ofType(after, 'quest_advanced').length, 0);
+  assert.equal(count(), 2);
+});

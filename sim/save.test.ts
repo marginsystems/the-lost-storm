@@ -234,3 +234,42 @@ void test('the conversations already heard survive a save, and unknown ones are 
   assert.deepEqual(must(readSave(content, { ...toSave(world), heard: ['maren_wake', 'a_rumour', 4] }), 'save').heard, ['maren_wake']);
   assert.deepEqual(must(readSave(content, { ...toSave(world), heard: 'everything' }), 'save').heard, []);
 });
+
+void test('quest progress and unlocked waypoints survive a save, and bad entries are cleaned', (): void => {
+  const world: World = createWorld(content, { seed: 10, save: null });
+  world.quests = { fallen_in: 1 };
+  world.waypoints = ['stillhold', 'drowned_bastion'];
+  const save: SaveData = roundTrip(world);
+  assert.deepEqual(save.quests, { fallen_in: 1 });
+  assert.deepEqual(save.waypoints, ['stillhold', 'drowned_bastion']);
+  const restored: World = createWorld(content, { seed: 11, save });
+  assert.deepEqual(restored.quests, { fallen_in: 1 });
+  assert.deepEqual(restored.waypoints, ['stillhold', 'drowned_bastion']);
+  const messy: SaveData = must(readSave(content, { ...toSave(world), quests: { fallen_in: 99, a_rumour: 1, also: 'no' }, waypoints: ['stillhold', 'atlantis', 7] }), 'save');
+  assert.deepEqual(messy.quests, { fallen_in: must(content.quests.get('fallen_in'), 'quest').objectives.length });
+  assert.deepEqual(messy.waypoints, ['stillhold']);
+  assert.deepEqual(must(readSave(content, { ...toSave(world), quests: { fallen_in: -1 } }), 'save').quests, {});
+});
+
+void test('a save from before quests keeps the hero and starts the quests from the beginning', (): void => {
+  const { quests: _quests, waypoints: _waypoints, ...older } = toSave(played());
+  const save: SaveData = must(readSave(content, JSON.parse(JSON.stringify(older))), 'save');
+  assert.deepEqual(save.quests, {});
+  assert.deepEqual(save.waypoints, []);
+  assert.equal(save.level, 4);
+  const world: World = createWorld(content, { seed: 12, save });
+  assert.deepEqual(world.quests, { fallen_in: 0 });
+  assert.equal(world.player.level, 4);
+  assert.equal(readSave(content, { ...older, version: SAVE_VERSION + 1 }), null);
+});
+
+void test('a hero who teleported keeps the waypoint as the place to return to after a reload', (): void => {
+  const world: World = worldIn(content, 'drowned_bastion', 14);
+  world.respawn = { type: 'waypoint' };
+  const save: SaveData = roundTrip(world);
+  assert.deepEqual(save.respawn, { type: 'waypoint' });
+  const restored: World = createWorld(content, { seed: 15, save });
+  assert.deepEqual(restored.respawn, { type: 'waypoint' });
+  const waypoint = must(restored.zone.waypoint, 'waypoint');
+  assert.deepEqual(restored.player.pos, { x: waypoint.x, z: waypoint.z });
+});

@@ -18,7 +18,7 @@ Open http://localhost:5193.
 | Shift + left mouse | Attack in place |
 | Q | Thunderclap (area hit around you) |
 | W or right mouse | Storm Bolt (projectile) |
-| I / T | Inventory / skill tree |
+| I / T / M | Inventory / skill tree / world map |
 | Mouse wheel | Zoom |
 | Escape | Close panels, leave a conversation |
 
@@ -62,7 +62,8 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 | `sim/content/` | The content schema (`types.ts`) and the readers that check every JSON file at start-up |
 | `sim/world/` | World state, the commands the player can send and the events each step returns (`types.ts`), and `stepWorld` (`step.ts`) |
 | `src/render/` | Three.js: stage and lighting, the isometric camera, character loading, the zone view and its exit and checkpoint markers, effects, weather, world-anchored overlays |
-| `src/hud/` | DOM HUD: globes, skill bar, inventory, skill tree, volume panel, tooltips, the dialogue box |
+| `src/hud/` | DOM HUD: globes, skill bar, inventory, skill tree, volume panel, tooltips, the dialogue box, the quest tracker, the world map |
+| `sim/bot.ts` | A scripted player for tests: walks, travels between zones, talks, fights. `sim/bot.test.ts` uses it to prove every quest can be finished from a fresh save |
 | `src/audio/` | Web Audio: loads sounds from the asset server, plays them with variation, distance and panning, keeps volumes, plays one voice line at a time |
 | `src/voice.ts` | The voice hook the dialogue box calls for each line; `main.ts` connects it to the audio system |
 | `docs/story/` | The story notes and every spoken line. They give the whole plot away; each file says so at the top |
@@ -86,6 +87,8 @@ Content is data. None of these need a change to the game's logic; the one code e
 - **A skill-tree node**: add an entry to `data/skill-tree.json` with its grid position, what it `requires`, and its `statMods` and `skillMods`.
 - **A sound**: `data/audio.json` maps game events to sound ids: by skill id (`skillStart`, `skillImpact`, `skillHit`, `projectileSpawn`, `projectileExpire`), by monster id or `player` (`hit`, `critHit`, `death`, `aggro`), by rarity or `gold` (`drop`, `pickup`), `notice`, `world` (`hero_step`, `level_up`, `surge`, `monster_spawn` and others), `ui` actions, and `ambience` per zone id. Each entry can set `volume`, `maxVoices` (copies of that sound at once) and `cooldown`. The sound files themselves are not in this repository (see Sound below).
 - **A character to talk to**: add an entry to `data/npcs.json` (`name`, `title`, its `rig`, `tint`, `color` and held `gear`, and its `talks`), put its lines in `data/lines.json` as `{ id, speaker, text }`, and place it in a zone's `npcs` list. `talks` is an ordered list of conversations; the one that plays is the first that is repeatable or has not been heard yet, so list `once` conversations first and end with a repeatable one. A line id is stable: it is also the name of that line's recording, so add a new id rather than renaming one. Every line must also appear in `docs/story/lines.md`.
+- **A quest**: add an entry to `data/quests.json`: a `name`, the quests it `requires`, and its `objectives` in order. An objective has an `id`, the `text` the tracker shows, and a `type`: `talk` (finish a conversation with `npc`), `reach` (stand in a circle in a `zone`) or `defeat` (kill a `monster` of that kind). Anything can depend on progress through one small condition, `{ "type": "quest", "quest", "is": locked | active | done }` or `{ "type": "objective", "quest", "objective", "is": pending | current | done }`: a conversation's `when`, an NPC placement's `when`, and an exit's `requires` (with a `lockedHint` shown when the exit is refused). Give every `talk` objective a `once` conversation whose `when` is that objective being `current`.
+- **A waypoint**: give a zone a `waypoint` (`x`, `z`, `radius`, or `null` for none) and a place on the world map in `data/world.json` (`map`). Standing on a waypoint unlocks it; the map (M) then teleports between unlocked waypoints.
 - **A zone**: add `data/zones/<id>.json`, then import it in `sim/content/content.ts` and add it to the `zones` list of `RAW_CONTENT` there (a test fails when a zone file is not loaded). A zone holds the tile map (4-unit cells), wall and floor models, prop placements, the player start, the monster packs and their `level`, its `kind` (`town` is safe and has no packs; `wild` has monsters), optional `surge` rules for endless surges, `checkpoints`, its `ambience` (fog, sky and key light) and its `exits`. An exit names the zone and the exit on the other side (`to`, `toExit`) and the `arrival` point where a hero coming through it stands; the two exits must name each other. `data/world.json` names the start zone and how monsters scale with level.
 
 If something cannot be expressed in the data, extend the schema in `sim/content/` in a general way first. See [AGENTS.md](AGENTS.md).

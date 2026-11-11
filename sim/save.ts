@@ -25,6 +25,8 @@ export interface SaveData {
   readonly respawn: RespawnPoint;
   readonly visited: readonly string[];
   readonly heard: readonly string[];
+  readonly quests: Readonly<Record<string, number>>;
+  readonly waypoints: readonly string[];
 }
 
 interface Worn {
@@ -51,6 +53,8 @@ export function toSave(world: World): SaveData {
     respawn: world.respawn,
     visited: [...world.visited],
     heard: [...world.heard],
+    quests: { ...world.quests },
+    waypoints: [...world.waypoints],
   };
 }
 
@@ -110,6 +114,7 @@ function readRespawn(value: unknown): RespawnPoint {
   const checkpoint: unknown = value['checkpoint'];
   if (value['type'] === 'exit' && typeof exit === 'string') return { type: 'exit', exit };
   if (value['type'] === 'checkpoint' && typeof checkpoint === 'string') return { type: 'checkpoint', checkpoint };
+  if (value['type'] === 'waypoint') return { type: 'waypoint' };
   return { type: 'start' };
 }
 
@@ -123,6 +128,21 @@ function readHeard(content: Content, value: unknown): string[] {
   const list: readonly unknown[] = Array.isArray(value) ? value : [];
   const known: Set<string> = new Set<string>([...content.npcs.values()].flatMap((npc): string[] => npc.talks.map((talk): string => talk.id)));
   return list.filter((id: unknown): id is string => typeof id === 'string' && known.has(id));
+}
+
+function readQuests(content: Content, value: unknown): Record<string, number> {
+  const quests: Record<string, number> = {};
+  if (!isFields(value)) return quests;
+  for (const quest of content.quests.values()) {
+    const index: number | null = count(value, quest.id, 0);
+    if (index !== null) quests[quest.id] = Math.min(Math.floor(index), quest.objectives.length);
+  }
+  return quests;
+}
+
+function readWaypoints(content: Content, value: unknown): string[] {
+  const list: readonly unknown[] = Array.isArray(value) ? value : [];
+  return list.filter((id: unknown): id is string => typeof id === 'string' && (content.zones.get(id)?.waypoint ?? null) !== null);
 }
 
 export function readSave(content: Content, value: unknown): SaveData | null {
@@ -166,6 +186,8 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     respawn: known ? readRespawn(value['respawn']) : { type: 'start' },
     visited: readVisited(content, value['visited'], zone),
     heard: readHeard(content, value['heard']),
+    quests: readQuests(content, value['quests']),
+    waypoints: readWaypoints(content, value['waypoints']),
   };
 }
 

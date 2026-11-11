@@ -109,6 +109,11 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'checkpoint':
     case 'dialogue_line':
     case 'dialogue_closed':
+    case 'quest_started':
+    case 'quest_advanced':
+    case 'quest_completed':
+    case 'waypoint_unlocked':
+    case 'exit_locked':
       break;
   }
   return found;
@@ -146,6 +151,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'travel':
     case 'talk':
     case 'advance':
+    case 'teleport':
       break;
   }
   return action;

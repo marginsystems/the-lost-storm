@@ -1,0 +1,11 @@
+[
+  {
+    "id": "fallen_in",
+    "name": "Fallen In",
+    "requires": [],
+    "objectives": [
+      { "id": "tallier", "type": "talk", "npc": "maren", "text": "Speak to the Tallier" },
+      { "id": "lampwright", "type": "talk", "npc": "hale", "text": "Find the Lampwright, by the lamps" }
+    ]
+  }
+]

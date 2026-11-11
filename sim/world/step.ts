@@ -1,6 +1,7 @@
 import { removeCorpses, stepMonster, stepSurge } from './monsters.ts';
 import { separateActors } from './movement.ts';
 import { handleCommand, stepPlayer } from './player.ts';
+import { stepQuests } from './quests.ts';
 import { stepProjectiles } from './skills.ts';
 import type { Command, World, WorldEvent } from './types.ts';
 
@@ -17,5 +18,6 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   for (const ground of world.ground) ground.age += dt;
   removeCorpses(world);
   stepSurge(world, dt);
+  stepQuests(world);
   return world.events;
 }

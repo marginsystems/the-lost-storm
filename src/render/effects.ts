@@ -423,6 +423,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'hero_step':
           case 'dialogue_line':
           case 'dialogue_closed':
+          case 'quest_started':
+          case 'quest_advanced':
+          case 'quest_completed':
+          case 'waypoint_unlocked':
+          case 'exit_locked':
             break;
         }
       }

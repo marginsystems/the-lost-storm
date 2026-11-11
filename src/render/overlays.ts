@@ -1,6 +1,7 @@
 import { Vector2 } from 'three';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
+import { allHold } from '../../sim/world/conditions.ts';
 import { hasNews } from '../../sim/world/dialogue.ts';
 import type { GroundItem, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { IsoCamera } from './iso-camera.ts';
@@ -14,6 +15,8 @@ export const OVERLAYS = {
   numberHeight: 0.75,
   exitLift: 2.6,
   npcLift: 0.5,
+  waypointId: 'waypoint',
+  waypointName: 'Waypoint',
 } as const;
 
 interface FloatingNumber {
@@ -43,6 +46,7 @@ interface ExitLabel {
   readonly id: string;
   readonly x: number;
   readonly z: number;
+  readonly open: (world: World) => boolean;
 }
 
 interface NpcLabel {
@@ -56,6 +60,7 @@ export interface OverlayHooks {
   onPickup(groundId: number): void;
   onTravel(exit: string): void;
   onTalk(npcId: number): void;
+  onWaypoint(): void;
 }
 
 export interface Overlays {
@@ -153,8 +158,22 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         if (event.button === 0) hooks.onTravel(exit.id);
       });
       labelLayer.append(element);
-      return { element, id: exit.id, x: exit.x, z: exit.z };
+      return { element, id: exit.id, x: exit.x, z: exit.z, open: (current: World): boolean => allHold(current, exit.requires) };
     });
+    const waypoint = world.zone.waypoint;
+    if (waypoint === null) return;
+    const element: HTMLDivElement = document.createElement('div');
+    element.className = 'exit-label waypoint';
+    const inner: HTMLSpanElement = document.createElement('span');
+    inner.textContent = OVERLAYS.waypointName;
+    element.append(inner);
+    element.addEventListener('pointerdown', (event: PointerEvent): void => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.button === 0) hooks.onWaypoint();
+    });
+    labelLayer.append(element);
+    exits.push({ element, id: OVERLAYS.waypointId, x: waypoint.x, z: waypoint.z, open: (current: World): boolean => current.waypoints.includes(current.zone.id) });
   };
 
   const showPeople = (world: World): void => {
@@ -229,6 +248,11 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'hero_step':
           case 'dialogue_line':
           case 'dialogue_closed':
+          case 'quest_started':
+          case 'quest_advanced':
+          case 'quest_completed':
+          case 'waypoint_unlocked':
+          case 'exit_locked':
             break;
         }
       }
@@ -236,6 +260,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     update(dt: number, world: World, hoveredId: number | null): void {
       if (exitsOf !== world.zone) showExits(world);
       for (const label of exits) {
+        label.element.classList.toggle('locked', !label.open(world));
         camera.project(label.x, OVERLAYS.exitLift, label.z, point);
         place(label.element, point);
       }

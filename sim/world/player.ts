@@ -7,8 +7,10 @@ import { findActor } from './combat.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, openDialogue } from './dialogue.ts';
 import { removeGround } from './ground.ts';
 import { followPath, stepKnock, stepTimers } from './movement.ts';
+import { allHold } from './conditions.ts';
 import { blockedReason, clearProjectiles, startSkill, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
+import { stepWaypoints, teleport } from './waypoints.ts';
 import { findExit, placePlayer, stepCheckpoints, travelThrough } from './zones.ts';
 
 const PLAYER = {
@@ -94,6 +96,10 @@ function act(world: World, command: Command): void {
     case 'travel': {
       const exit: ZoneExit | null = findExit(world.zone, command.exit);
       if (exit === null) return;
+      if (!allHold(world, exit.requires)) {
+        world.events.push({ type: 'exit_locked', exit: exit.id, hint: exit.lockedHint });
+        return;
+      }
       player.intent = { type: 'travel', exit: exit.id };
       setDestination(world, exit);
       return;
@@ -105,6 +111,9 @@ function act(world: World, command: Command): void {
       setDestination(world, npc.pos);
       return;
     }
+    case 'teleport':
+      teleport(world, command.zone);
+      return;
     case 'advance':
     case 'equip':
     case 'unequip':
@@ -138,6 +147,7 @@ export function handleCommand(world: World, command: Command): void {
     case 'skill':
     case 'travel':
     case 'talk':
+    case 'teleport':
       if (!player.alive) return;
       if (command.type !== 'skill') closeDialogue(world, false);
       if (player.action !== null) {
@@ -213,6 +223,11 @@ function stepIntent(world: World, dt: number): void {
     case 'travel': {
       const exit: ZoneExit | null = findExit(world.zone, intent.exit);
       if (exit === null) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        return;
+      }
+      if (!allHold(world, exit.requires)) {
         player.intent = { type: 'idle' };
         player.path = [];
         return;
@@ -317,4 +332,5 @@ export function stepPlayer(world: World, dt: number): void {
   else player.strideTravel = PLAYER.stride * PLAYER.firstStepFraction;
   collectGold(world);
   stepCheckpoints(world);
+  stepWaypoints(world);
 }

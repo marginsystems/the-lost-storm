@@ -35,6 +35,9 @@ function anchorOf(zone: ZoneDef, respawn: RespawnPoint): ZonePoint | null {
     case 'checkpoint':
       anchor = findCheckpoint(zone, respawn.checkpoint);
       break;
+    case 'waypoint':
+      anchor = zone.waypoint;
+      break;
   }
   return anchor;
 }

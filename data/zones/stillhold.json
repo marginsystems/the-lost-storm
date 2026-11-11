@@ -53,8 +53,21 @@
   ],
   "packs": [],
   "surge": null,
-  "exits": [{ "id": "bastion_stair", "x": 22, "z": 33.6, "radius": 1.5, "to": "drowned_bastion", "toExit": "stair", "arrival": { "x": 22, "z": 29.5 } }],
+  "exits": [
+    {
+      "id": "bastion_stair",
+      "x": 22,
+      "z": 33.6,
+      "radius": 1.5,
+      "to": "drowned_bastion",
+      "toExit": "stair",
+      "arrival": { "x": 22, "z": 29.5 },
+      "requires": [{ "type": "objective", "quest": "fallen_in", "objective": "tallier", "is": "done" }],
+      "lockedHint": "The Tallier is calling you over"
+    }
+  ],
   "checkpoints": [],
+  "waypoint": { "x": 22, "z": 16, "radius": 1.8 },
   "npcs": [
     { "npc": "maren", "x": 18.5, "z": 19.5, "facingDegrees": 70 },
     { "npc": "hale", "x": 27, "z": 13.4, "facingDegrees": 200 }

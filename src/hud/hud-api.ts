@@ -3,7 +3,7 @@ import type { Command, ItemInstance, World, WorldEvent } from '../../sim/world/t
 import type { AudioControls } from '../audio/settings.ts';
 import type { VoicePlayer } from '../voice.ts';
 
-export type HudPanel = 'inventory' | 'tree';
+export type HudPanel = 'inventory' | 'tree' | 'map';
 
 export interface HudApi {
   readonly world: World;
@@ -20,4 +20,5 @@ export interface Hud {
   isPointerOverUi(): boolean;
   togglePanel(panel: HudPanel): void;
   closePanels(): boolean;
+  requestMap(wanted: boolean): void;
 }
