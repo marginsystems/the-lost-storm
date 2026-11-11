@@ -2,6 +2,7 @@ import { el, setText } from './dom.ts';
 
 const FPS = {
   window: 0.5,
+  maxGap: 0.25,
 } as const;
 
 export interface FpsReadout {
@@ -15,11 +16,11 @@ export function createFpsReadout(parent: HTMLElement): FpsReadout {
   let elapsed: number = 0;
   return {
     frame(now: number): void {
-      if (last !== null) {
-        frames += 1;
-        elapsed += (now - last) / 1000;
-      }
+      const gap: number = last === null ? Infinity : (now - last) / 1000;
       last = now;
+      if (gap > FPS.maxGap) return;
+      frames += 1;
+      elapsed += gap;
       if (elapsed < FPS.window || frames === 0) return;
       setText(element, `${Math.round(frames / elapsed)} FPS · ${((elapsed / frames) * 1000).toFixed(1)} ms`, false);
       frames = 0;

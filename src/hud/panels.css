@@ -42,19 +42,18 @@
 .panel-title {
   margin-bottom: 8px;
   font-family: var(--serif);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.12em;
-  letter-spacing: 0.06em;
   color: var(--ember);
 }
 
 .panel-subtitle {
   margin: 10px 0 5px;
   font-family: var(--serif);
-  font-size: 15px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   color: var(--storm);
 }
 
