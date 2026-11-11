@@ -136,7 +136,7 @@ void test('a talk objective is done by finishing a conversation with that npc, n
 
 void test('a reach objective is done by standing in the circle, in the right zone, only while it is current', (): void => {
   const world: World = createWorld(staged(), { seed: 4, save: null });
-  until(world, (): boolean => world.player.intent.type === 'idle', [{ type: 'move', dest: { x: 30, z: 20 } }]);
+  until(world, (): boolean => world.player.intent.type === 'idle', [{ type: 'move', held: false, dest: { x: 30, z: 20 } }]);
   assert.deepEqual(world.quests, { errand: 0 });
   world.quests = { errand: 1 };
   const events: WorldEvent[] = send(world);
@@ -144,7 +144,7 @@ void test('a reach objective is done by standing in the circle, in the right zon
   const elsewhere: World = worldIn(staged(), 'drowned_bastion', 4);
   elsewhere.quests = { errand: 1 };
   elsewhere.monsters = [];
-  until(elsewhere, (): boolean => elsewhere.player.intent.type === 'idle', [{ type: 'move', dest: { x: 30, z: 20 } }]);
+  until(elsewhere, (): boolean => elsewhere.player.intent.type === 'idle', [{ type: 'move', held: false, dest: { x: 30, z: 20 } }]);
   assert.deepEqual(elsewhere.quests, { errand: 1 });
 });
 
@@ -202,7 +202,7 @@ void test('an npc placed with a condition arrives and leaves as the quest moves,
   assert.equal(count(), 1);
   const stayed: number[] = world.npcs.map((npc: NpcState): number => npc.id);
   world.quests = { errand: 1 };
-  until(world, (): boolean => world.quests['errand'] === 2, [{ type: 'move', dest: { x: 30, z: 20 } }]);
+  until(world, (): boolean => world.quests['errand'] === 2, [{ type: 'move', held: false, dest: { x: 30, z: 20 } }]);
   assert.equal(count(), 2);
   assert.ok(stayed.every((id: number): boolean => world.npcs.some((npc: NpcState): boolean => npc.id === id)));
   const visitor: NpcState = must(world.npcs.find((npc: NpcState): boolean => !stayed.includes(npc.id)), 'visitor');

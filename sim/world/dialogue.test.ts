@@ -126,7 +126,7 @@ void test('walking away half-way closes the conversation without using it up', (
   talkTo(world, 'maren');
   send(world, { type: 'advance' });
   assert.equal(dialogueOf(world).index, 1);
-  const events: WorldEvent[] = send(world, { type: 'move', dest: { x: 22, z: 26 } });
+  const events: WorldEvent[] = send(world, { type: 'move', held: false, dest: { x: 22, z: 26 } });
   assert.equal(world.dialogue, null);
   assert.deepEqual(ofType(events, 'dialogue_closed').map((event): boolean => event.finished), [false]);
   assert.deepEqual(world.heard, []);

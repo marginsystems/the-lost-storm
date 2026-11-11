@@ -193,7 +193,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
             hooks.clickMarker(exit.x, exit.z, false);
           }
         } else {
-          commands.push({ type: 'move', dest: ground });
+          commands.push({ type: 'move', held: !leftFresh, dest: ground });
           if (leftFresh) hooks.clickMarker(ground.x, ground.z, false);
         }
       }

@@ -137,7 +137,7 @@ void test('walking through a real world step produces footstep cues', (): void =
   world.monsters = [];
   const cues: SoundCue[] = [];
   for (let step: number = 0; step < 90; step += 1) {
-    const events: readonly WorldEvent[] = stepWorld(world, step === 0 ? [{ type: 'move', dest: { x: 28, z: 25 } }] : [], 1 / 60);
+    const events: readonly WorldEvent[] = stepWorld(world, step === 0 ? [{ type: 'move', held: false, dest: { x: 28, z: 25 } }] : [], 1 / 60);
     for (const event of events) cues.push(...cuesForEvent(audio, world, event));
   }
   assert.ok(cues.length >= 2);
@@ -151,7 +151,7 @@ void test('interface actions have sounds and commands map to the right action', 
   assert.equal(uiActionForCommand({ type: 'allocate', node: 'x' }), 'skill_point');
   assert.equal(uiActionForCommand({ type: 'equip', inventoryIndex: 0 }), 'equip');
   assert.equal(uiActionForCommand({ type: 'unequip', slot: 'weapon' }), 'equip');
-  assert.equal(uiActionForCommand({ type: 'move', dest: AWAY }), null);
+  assert.equal(uiActionForCommand({ type: 'move', held: false, dest: AWAY }), null);
   assert.equal(uiActionForCommand({ type: 'stop' }), null);
 });
 

@@ -37,7 +37,7 @@ function fresh(seed: number): World {
 }
 
 function standOn(world: World, point: ZoneWaypoint): WorldEvent[] {
-  return until(world, (): boolean => onWaypoint(world), [{ type: 'move', dest: { x: point.x, z: point.z } }]);
+  return until(world, (): boolean => onWaypoint(world), [{ type: 'move', held: false, dest: { x: point.x, z: point.z } }]);
 }
 
 void test('a waypoint unlocks once, when the hero first stands on it', (): void => {
@@ -47,7 +47,7 @@ void test('a waypoint unlocks once, when the hero first stands on it', (): void 
   const events: WorldEvent[] = standOn(world, townPoint);
   assert.deepEqual(ofType(events, 'waypoint_unlocked'), [{ type: 'waypoint_unlocked', zone: town.id }]);
   assert.deepEqual(world.waypoints, [town.id]);
-  const again: WorldEvent[] = until(world, (): boolean => false, [{ type: 'move', dest: { x: townPoint.x + 0.4, z: townPoint.z } }]).slice(0, 600);
+  const again: WorldEvent[] = until(world, (): boolean => false, [{ type: 'move', held: false, dest: { x: townPoint.x + 0.4, z: townPoint.z } }]).slice(0, 600);
   assert.equal(ofType(again, 'waypoint_unlocked').length, 0);
 });
 

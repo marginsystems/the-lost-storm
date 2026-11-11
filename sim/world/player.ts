@@ -15,6 +15,7 @@ import { findExit, placePlayer, stepCheckpoints, travelThrough } from './zones.t
 
 const PLAYER = {
   moveDeadZone: 0.7,
+  resumeDistance: 1.4,
   repathInterval: 0.2,
   goldDelay: 0.45,
   stride: 2.5,
@@ -24,6 +25,25 @@ const PLAYER = {
 function setDestination(world: World, dest: Vec2): void {
   world.player.path = findPath(world.grid, world.player.pos, dest);
   world.player.repathTimer = PLAYER.repathInterval;
+}
+
+function startMove(world: World, dest: Vec2, held: boolean): void {
+  const player: PlayerState = world.player;
+  const path: Vec2[] = findPath(world.grid, player.pos, dest);
+  const goal: Vec2 = path.at(-1) ?? player.pos;
+  const reach: number = distance(player.pos, goal);
+  const standing: boolean = player.path.length === 0;
+  const tooClose: boolean = reach < PLAYER.moveDeadZone || (held && standing && reach < PLAYER.resumeDistance);
+  if (tooClose) {
+    if (!held || reach < PLAYER.moveDeadZone) {
+      player.intent = { type: 'idle' };
+      player.path = [];
+    }
+    return;
+  }
+  player.intent = { type: 'move', dest };
+  player.path = path;
+  player.repathTimer = PLAYER.repathInterval;
 }
 
 function fire(world: World, skill: SkillDef, aim: Vec2): boolean {
@@ -71,13 +91,7 @@ function act(world: World, command: Command): void {
   const player: PlayerState = world.player;
   switch (command.type) {
     case 'move':
-      if (distance(player.pos, command.dest) < PLAYER.moveDeadZone) {
-        player.intent = { type: 'idle' };
-        player.path = [];
-        return;
-      }
-      player.intent = { type: 'move', dest: command.dest };
-      setDestination(world, command.dest);
+      startMove(world, command.dest, command.held);
       return;
     case 'stop':
       player.intent = { type: 'idle' };

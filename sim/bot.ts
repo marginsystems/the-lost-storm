@@ -117,7 +117,7 @@ export function botWalkTo(bot: Bot, zone: string, point: Vec2, radius: number): 
     sinceOrder += BOT.step;
     const order: boolean = free(world) && (sinceOrder >= BOT.idleRepeat || world.player.intent.type === 'idle');
     if (order) sinceOrder = 0;
-    tick(bot, order ? [{ type: 'move', dest: point }] : []);
+    tick(bot, order ? [{ type: 'move', held: false, dest: point }] : []);
   }
   return false;
 }

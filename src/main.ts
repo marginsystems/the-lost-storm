@@ -180,7 +180,7 @@ async function start(): Promise<void> {
     onWaypoint: (): void => {
       const waypoint = world.zone.waypoint;
       if (waypoint === null) return;
-      send({ type: 'move', dest: { x: waypoint.x, z: waypoint.z } });
+      send({ type: 'move', held: false, dest: { x: waypoint.x, z: waypoint.z } });
       hud.requestMap(true);
     },
   });
