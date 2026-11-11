@@ -77,6 +77,13 @@
     "equip": [{ "sound": "item_metal", "volume": 0.75, "maxVoices": 2 }]
   },
   "ambience": {
+    "stillhold": {
+      "loops": [
+        { "sound": "ambience_wind_storm", "volume": 0.55 },
+        { "sound": "ambience_torch_fire", "volume": 0.5 }
+      ],
+      "stingers": [{ "sound": "thunder_distant", "volume": 0.6, "minDelay": 30, "maxDelay": 70 }]
+    },
     "drowned_bastion": {
       "loops": [
         { "sound": "ambience_wind_fort", "volume": 0.8 },

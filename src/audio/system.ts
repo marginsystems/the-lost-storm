@@ -1,5 +1,7 @@
 import type { SoundCue } from '../../sim/audio.ts';
 import type { AmbienceLoop, AmbienceStinger, ZoneAmbience } from '../../sim/content/audio.ts';
+import type { AmbienceBatch, AmbienceTracker } from './ambience.ts';
+import { createAmbienceTracker } from './ambience.ts';
 import type { BufferLoader, LoadOptions } from './buffers.ts';
 import { createBufferLoader, LOOP_LOAD, PLAY_LOAD, WARM_LOAD } from './buffers.ts';
 import type { BufferCache } from './cache.ts';
@@ -103,10 +105,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   });
   let graph: Graph | null = null;
   let voicesPlaying: number = 0;
-  let activeZone: ZoneAmbience | null = null;
-  const wanted: AmbienceLoop[] = [];
-  let attempting: boolean = false;
-  let attempt: number = 0;
+  const zoneLoops: AmbienceTracker<AmbienceLoop> = createAmbienceTracker<AmbienceLoop>();
   let loopRetryLeft: number = 0;
   let warmIds: readonly string[] = [];
   let warming: boolean = false;
@@ -171,7 +170,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       limiter.end(cue.sound);
       return;
     }
-    const asked: number = current.context.currentTime;
+    const asked: number = clock();
     if (loader.current() === null) await loader.ready();
     const paths: readonly string[] | undefined = loader.current()?.sfx.get(cue.sound);
     if (paths === undefined) {
@@ -182,7 +181,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     lastVariant.set(cue.sound, variant);
     const path: string | undefined = paths[variant];
     const buffer: AudioBuffer | null = path === undefined ? null : await load(path);
-    if (buffer === null || current.context.currentTime - asked > SYSTEM.latePlaySeconds) {
+    if (buffer === null || clock() - asked > SYSTEM.latePlaySeconds) {
       limiter.end(cue.sound);
       return;
     }
@@ -205,16 +204,16 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     applySettings(controls.get());
   };
 
-  const startLoop = async (loop: AmbienceLoop, zone: ZoneAmbience): Promise<boolean> => {
+  const startLoop = async (loop: AmbienceLoop, generation: number): Promise<boolean> => {
     await loader.ready();
     const current: Graph | null = graph;
     const manifest: AssetManifest | null = loader.current();
-    if (current === null || activeZone !== zone) return true;
+    if (current === null || !zoneLoops.current(generation)) return true;
     if (manifest === null) return false;
     const path: string | undefined = manifest.sfx.get(loop.sound)?.[0];
     if (path === undefined) return true;
     const buffer: AudioBuffer | null = await load(path, LOOP_LOAD);
-    if (activeZone !== zone) return true;
+    if (!zoneLoops.current(generation)) return true;
     if (buffer === null) return false;
     const source: AudioBufferSourceNode = current.context.createBufferSource();
     source.buffer = buffer;
@@ -230,23 +229,12 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   };
 
   const attemptLoops = (): void => {
-    const zone: ZoneAmbience | null = activeZone;
-    if (zone === null || attempting || wanted.length === 0) return;
-    attempting = true;
-    attempt += 1;
-    const mine: number = attempt;
-    const finish = (): void => {
-      if (attempt === mine) attempting = false;
-    };
-    const batch: AmbienceLoop[] = wanted.splice(0, wanted.length);
-    Promise.all(
-      batch.map(async (loop: AmbienceLoop): Promise<void> => {
-        const done: boolean = await startLoop(loop, zone);
-        if (!done && activeZone === zone) wanted.push(loop);
-      }),
-    )
-      .then(finish)
-      .catch(finish);
+    const batch: AmbienceBatch<AmbienceLoop> | null = zoneLoops.take();
+    if (batch === null) return;
+    const settle = (retry: readonly AmbienceLoop[]): void => zoneLoops.settle(batch, retry);
+    Promise.all(batch.loops.map(async (loop: AmbienceLoop): Promise<AmbienceLoop | null> => ((await startLoop(loop, batch.generation)) ? null : loop)))
+      .then((results: (AmbienceLoop | null)[]): void => settle(results.filter((loop: AmbienceLoop | null): loop is AmbienceLoop => loop !== null)))
+      .catch((): void => settle(batch.loops));
   };
 
   const ensureManifest = (): void => {
@@ -342,17 +330,14 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     },
     startAmbience(zone: ZoneAmbience): void {
       this.stopAmbience();
-      activeZone = zone;
-      wanted.push(...zone.loops);
+      zoneLoops.start(zone.loops);
       loopRetryLeft = SYSTEM.loopRetrySeconds;
       attemptLoops();
       timers = zone.stingers.map((stinger: AmbienceStinger): StingerTimer => ({ stinger, left: delayBetween(stinger.minDelay, stinger.maxDelay, random) }));
     },
     stopAmbience(): void {
       timers = [];
-      activeZone = null;
-      wanted.length = 0;
-      attempting = false;
+      zoneLoops.stop();
       for (const running of loops.splice(0, loops.length)) {
         try {
           running.source.stop();

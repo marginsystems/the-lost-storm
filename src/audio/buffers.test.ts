@@ -135,3 +135,72 @@ void test('a decode failure counts as a failed load', async (): Promise<void> =>
   });
   assert.equal(await failing.load('a/one_1.ogg'), null);
 });
+
+interface Gate {
+  readonly rejects: ((reason: Error) => void)[];
+  readonly resolves: ((bytes: ArrayBuffer) => void)[];
+  readonly behave: (url: string) => Promise<ArrayBuffer>;
+}
+
+function gate(): Gate {
+  const rejects: ((reason: Error) => void)[] = [];
+  const resolves: ((bytes: ArrayBuffer) => void)[] = [];
+  return {
+    rejects,
+    resolves,
+    behave: (): Promise<ArrayBuffer> =>
+      new Promise<ArrayBuffer>((resolve: (bytes: ArrayBuffer) => void, reject: (reason: Error) => void): void => {
+        resolves.push(resolve);
+        rejects.push(reject);
+      }),
+  };
+}
+
+void test('a play that joined a warm-up which then fails fetches for itself and plays', async (): Promise<void> => {
+  const eight: Rig = rig('http://localhost:5210/');
+  const held: Gate = gate();
+  eight.behaviours.push(held.behave);
+  const warm: Promise<string | null> = eight.loader.load('a/one_1.ogg', WARM_LOAD);
+  const play: Promise<string | null> = eight.loader.load('a/one_1.ogg', PLAY_LOAD);
+  held.rejects[0]?.(new Error('503'));
+  assert.equal(await warm, null);
+  assert.equal(await play, 'decoded4');
+  assert.equal(eight.urls.length, 2);
+});
+
+void test('if that retry fails too the failure is remembered like any play failure', async (): Promise<void> => {
+  const nine: Rig = rig('http://localhost:5210/');
+  const held: Gate = gate();
+  nine.behaviours.push(held.behave, FAIL);
+  const warm: Promise<string | null> = nine.loader.load('a/one_1.ogg', WARM_LOAD);
+  const play: Promise<string | null> = nine.loader.load('a/one_1.ogg', PLAY_LOAD);
+  held.rejects[0]?.(new Error('503'));
+  assert.equal(await warm, null);
+  assert.equal(await play, null);
+  assert.equal(nine.urls.length, 2);
+  assert.equal(await nine.loader.load('a/one_1.ogg', PLAY_LOAD), null);
+  assert.equal(nine.urls.length, 2);
+});
+
+void test('a play that joined a warm-up which succeeds shares its result without a second fetch', async (): Promise<void> => {
+  const ten: Rig = rig('http://localhost:5210/');
+  const held: Gate = gate();
+  ten.behaviours.push(held.behave);
+  const warm: Promise<string | null> = ten.loader.load('a/one_1.ogg', WARM_LOAD);
+  const play: Promise<string | null> = ten.loader.load('a/one_1.ogg', PLAY_LOAD);
+  held.resolves[0]?.(new ArrayBuffer(7));
+  assert.deepEqual(await Promise.all([warm, play]), ['decoded7', 'decoded7']);
+  assert.equal(ten.urls.length, 1);
+});
+
+void test('a play that joined a failing play does not fetch again, and a warm-up that joined a play shares it', async (): Promise<void> => {
+  const eleven: Rig = rig('http://localhost:5210/');
+  const held: Gate = gate();
+  eleven.behaviours.push(held.behave);
+  const first: Promise<string | null> = eleven.loader.load('a/one_1.ogg', PLAY_LOAD);
+  const second: Promise<string | null> = eleven.loader.load('a/one_1.ogg', PLAY_LOAD);
+  const warm: Promise<string | null> = eleven.loader.load('a/one_1.ogg', WARM_LOAD);
+  held.rejects[0]?.(new Error('503'));
+  assert.deepEqual(await Promise.all([first, second, warm]), [null, null, null]);
+  assert.equal(eleven.urls.length, 1);
+});
