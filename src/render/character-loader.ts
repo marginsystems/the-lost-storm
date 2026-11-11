@@ -126,6 +126,12 @@ export async function loadCharacters(loader: GLTFLoader, content: Content): Prom
   };
 }
 
+function recolourEmissiveMap(material: MeshStandardMaterial, glow: string): void {
+  if (material.emissiveMap === null) return;
+  material.emissive.set(glow);
+  material.emissiveIntensity = CHARACTER.glowBoost;
+}
+
 function dress(object: Object3D, look: RigLook, flash: IUniform<Color>, sink: MeshStandardMaterial[]): void {
   if (!(object instanceof Mesh)) return;
   object.castShadow = true;
@@ -138,8 +144,7 @@ function dress(object: Object3D, look: RigLook, flash: IUniform<Color>, sink: Me
     if (!(entry instanceof MeshStandardMaterial)) continue;
     const material: MeshStandardMaterial = entry.clone();
     material.color.multiply(new Color(look.tint));
-    material.emissive.set(look.glow);
-    material.emissiveIntensity = CHARACTER.glowBoost;
+    recolourEmissiveMap(material, look.glow);
     material.onBeforeCompile = (shader): void => {
       shader.uniforms['uFlash'] = flash;
       shader.fragmentShader = shader.fragmentShader.replace('void main() {', 'uniform vec3 uFlash;\nvoid main() {').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += uFlash;');
