@@ -1,18 +1,22 @@
 import type { SoundCue } from '../../sim/audio.ts';
 import type { AmbienceLoop, AmbienceStinger, ZoneAmbience } from '../../sim/content/audio.ts';
+import type { BufferLoader, LoadOptions } from './buffers.ts';
+import { createBufferLoader, LOOP_LOAD, PLAY_LOAD, WARM_LOAD } from './buffers.ts';
 import type { BufferCache } from './cache.ts';
 import { createBufferCache } from './cache.ts';
+import { createManifestLoader } from './manifest-loader.ts';
+import type { ManifestLoader } from './manifest-loader.ts';
 import type { AssetManifest } from './manifest.ts';
-import { assetUrl, parseManifest } from './manifest.ts';
 import type { Placement } from './mix.ts';
 import { CENTRE } from './mix.ts';
 import type { AudioControls, AudioSettings } from './settings.ts';
 import { pickVariant, pitchRate, delayBetween, volumeScale } from './variation.ts';
 import type { VoiceLimiter } from './voices.ts';
 import { createVoiceLimiter } from './voices.ts';
+import { warmPaths } from './warm.ts';
 
 const SYSTEM = {
-  cacheBytes: 48 * 1024 * 1024,
+  cacheBytes: 64 * 1024 * 1024,
   bytesPerSample: 4,
   latePlaySeconds: 0.6,
   failedRetrySeconds: 30,
@@ -22,7 +26,12 @@ const SYSTEM = {
   settingsSmoothing: 0.03,
   ambienceFade: 3,
   stingerPan: 0.6,
-  manifestName: 'manifest.json',
+  manifestRetrySeconds: 10,
+  loopRetrySeconds: 35,
+  manifestTimeoutMs: 8000,
+  soundTimeoutMs: 20000,
+  warmLanes: 2,
+  warmFill: 0.75,
 } as const;
 
 export interface Trigger {
@@ -39,6 +48,7 @@ export interface AudioSystem {
   unlock(): void;
   play(cue: SoundCue, place: Placement): void;
   playVoice(lineId: string): Promise<void>;
+  warm(ids: readonly string[]): void;
   stopVoice(): void;
   startAmbience(zone: ZoneAmbience): void;
   stopAmbience(): void;
@@ -75,18 +85,33 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   const { base, controls, random, clock } = options;
   const limiter: VoiceLimiter = createVoiceLimiter(clock);
   const cache: BufferCache<AudioBuffer> = createBufferCache<AudioBuffer>(SYSTEM.cacheBytes, (buffer: AudioBuffer): number => buffer.length * buffer.numberOfChannels * SYSTEM.bytesPerSample);
-  const pending: Map<string, Promise<AudioBuffer | null>> = new Map<string, Promise<AudioBuffer | null>>();
-  const failed: Map<string, number> = new Map<string, number>();
   const lastVariant: Map<string, number> = new Map<string, number>();
   const listeners: ((trigger: Trigger) => void)[] = [];
   const loops: Running[] = [];
   let timers: StingerTimer[] = [];
+  const loader: ManifestLoader = createManifestLoader({
+    base,
+    clock,
+    retrySeconds: SYSTEM.manifestRetrySeconds,
+    timeoutMs: SYSTEM.manifestTimeoutMs,
+    fetchJson: async (url: string, signal: AbortSignal): Promise<unknown> => {
+      const response: Response = await fetch(url, { signal });
+      if (!response.ok) throw new Error(`${response.status}`);
+      const data: unknown = await response.json();
+      return data;
+    },
+  });
   let graph: Graph | null = null;
-  let manifest: AssetManifest | null = null;
   let voicesPlaying: number = 0;
+  let activeZone: ZoneAmbience | null = null;
+  const wanted: AmbienceLoop[] = [];
+  let attempting: boolean = false;
+  let attempt: number = 0;
+  let loopRetryLeft: number = 0;
+  let warmIds: readonly string[] = [];
+  let warming: boolean = false;
   let speaking: AudioBufferSourceNode | null = null;
   let voiceRequest: number = 0;
-  let manifestLoad: Promise<void> = Promise.resolve();
 
   const report = (cue: SoundCue, place: Placement): void => {
     const trigger: Trigger = { sound: cue.sound, time: clock(), volume: cue.volume, gain: place.gain, pan: place.pan };
@@ -105,33 +130,24 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
 
   controls.subscribe(applySettings);
 
-  const load = (path: string): Promise<AudioBuffer | null> => {
-    const cached: AudioBuffer | undefined = cache.get(path);
-    if (cached !== undefined) return Promise.resolve(cached);
-    const running: Promise<AudioBuffer | null> | undefined = pending.get(path);
-    if (running !== undefined) return running;
-    const lastFailure: number | undefined = failed.get(path);
-    if (lastFailure !== undefined && clock() - lastFailure < SYSTEM.failedRetrySeconds) return Promise.resolve(null);
-    const url: string | null = base === null ? null : assetUrl(base, path);
-    const current: Graph | null = graph;
-    if (url === null || current === null) return Promise.resolve(null);
-    const request: Promise<AudioBuffer | null> = (async (): Promise<AudioBuffer | null> => {
-      try {
-        const response: Response = await fetch(url);
-        if (!response.ok) throw new Error(`${response.status}`);
-        const buffer: AudioBuffer = await current.context.decodeAudioData(await response.arrayBuffer());
-        cache.set(path, buffer);
-        return buffer;
-      } catch {
-        failed.set(path, clock());
-        return null;
-      } finally {
-        pending.delete(path);
-      }
-    })();
-    pending.set(path, request);
-    return request;
-  };
+  const buffers: BufferLoader<AudioBuffer> = createBufferLoader<AudioBuffer>({
+    base,
+    clock,
+    cache,
+    failedRetrySeconds: SYSTEM.failedRetrySeconds,
+    timeoutMs: SYSTEM.soundTimeoutMs,
+    ready: (): boolean => graph !== null,
+    fetchBytes: async (url: string, signal: AbortSignal): Promise<ArrayBuffer> => {
+      const response: Response = await fetch(url, { signal });
+      if (!response.ok) throw new Error(`${response.status}`);
+      return response.arrayBuffer();
+    },
+    decode: (bytes: ArrayBuffer): Promise<AudioBuffer> => {
+      if (graph === null) return Promise.reject(new Error('no audio graph'));
+      return graph.context.decodeAudioData(bytes);
+    },
+  });
+  const load = (path: string, how: LoadOptions = PLAY_LOAD): Promise<AudioBuffer | null> => buffers.load(path, how);
 
   const connect = (source: AudioBufferSourceNode, volume: number, pan: number, bus: GainNode, current: Graph, onEnd: () => void): void => {
     const gain: GainNode = current.context.createGain();
@@ -150,17 +166,21 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   };
 
   const playOn = async (bus: 'effects' | 'ambience', cue: SoundCue, place: Placement): Promise<void> => {
-    if (manifest === null) await manifestLoad;
     const current: Graph | null = graph;
-    const paths: readonly string[] | undefined = manifest?.sfx.get(cue.sound);
-    if (current === null || paths === undefined) {
+    if (current === null) {
+      limiter.end(cue.sound);
+      return;
+    }
+    const asked: number = current.context.currentTime;
+    if (loader.current() === null) await loader.ready();
+    const paths: readonly string[] | undefined = loader.current()?.sfx.get(cue.sound);
+    if (paths === undefined) {
       limiter.end(cue.sound);
       return;
     }
     const variant: number = pickVariant(paths.length, lastVariant.get(cue.sound) ?? -1, random);
     lastVariant.set(cue.sound, variant);
     const path: string | undefined = paths[variant];
-    const asked: number = current.context.currentTime;
     const buffer: AudioBuffer | null = path === undefined ? null : await load(path);
     if (buffer === null || current.context.currentTime - asked > SYSTEM.latePlaySeconds) {
       limiter.end(cue.sound);
@@ -174,6 +194,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   };
 
   const trigger = (bus: 'effects' | 'ambience', cue: SoundCue, place: Placement): void => {
+    ensureManifest();
     if (!limiter.tryStart(cue.sound, cue.maxVoices, cue.cooldown)) return;
     report(cue, place);
     playOn(bus, cue, place).catch((): void => limiter.end(cue.sound));
@@ -184,13 +205,17 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     applySettings(controls.get());
   };
 
-  const startLoop = async (loop: AmbienceLoop): Promise<void> => {
-    await manifestLoad;
+  const startLoop = async (loop: AmbienceLoop, zone: ZoneAmbience): Promise<boolean> => {
+    await loader.ready();
     const current: Graph | null = graph;
-    const path: string | undefined = manifest?.sfx.get(loop.sound)?.[0];
-    if (current === null || path === undefined) return;
-    const buffer: AudioBuffer | null = await load(path);
-    if (buffer === null) return;
+    const manifest: AssetManifest | null = loader.current();
+    if (current === null || activeZone !== zone) return true;
+    if (manifest === null) return false;
+    const path: string | undefined = manifest.sfx.get(loop.sound)?.[0];
+    if (path === undefined) return true;
+    const buffer: AudioBuffer | null = await load(path, LOOP_LOAD);
+    if (activeZone !== zone) return true;
+    if (buffer === null) return false;
     const source: AudioBufferSourceNode = current.context.createBufferSource();
     source.buffer = buffer;
     source.loop = true;
@@ -201,19 +226,53 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     gain.connect(current.ambience);
     source.start(0, random() * buffer.duration);
     loops.push({ source, gain });
+    return true;
   };
 
-  const loadManifest = async (): Promise<void> => {
-    const url: string | null = base === null ? null : assetUrl(base, SYSTEM.manifestName);
-    if (url === null) return;
-    try {
-      const response: Response = await fetch(url);
-      if (!response.ok) return;
-      manifest = parseManifest(await response.json());
-    } catch {
-      manifest = null;
-    }
+  const attemptLoops = (): void => {
+    const zone: ZoneAmbience | null = activeZone;
+    if (zone === null || attempting || wanted.length === 0) return;
+    attempting = true;
+    attempt += 1;
+    const mine: number = attempt;
+    const finish = (): void => {
+      if (attempt === mine) attempting = false;
+    };
+    const batch: AmbienceLoop[] = wanted.splice(0, wanted.length);
+    Promise.all(
+      batch.map(async (loop: AmbienceLoop): Promise<void> => {
+        const done: boolean = await startLoop(loop, zone);
+        if (!done && activeZone === zone) wanted.push(loop);
+      }),
+    )
+      .then(finish)
+      .catch(finish);
   };
+
+  const ensureManifest = (): void => {
+    if (graph !== null) loader.ensure();
+  };
+
+  const startWarm = (): void => {
+    const manifest: AssetManifest | null = loader.current();
+    if (manifest === null || graph === null || warming) return;
+    const queue: readonly string[] = warmPaths(warmIds, manifest);
+    if (queue.length === 0) return;
+    warming = true;
+    let next: number = 0;
+    const lane = (): Promise<void> => {
+      if (next >= queue.length || cache.bytes >= SYSTEM.cacheBytes * SYSTEM.warmFill) return Promise.resolve();
+      const path: string | undefined = queue[next];
+      next += 1;
+      return path === undefined ? lane() : load(path, WARM_LOAD).then(lane);
+    };
+    Promise.all(Array.from({ length: SYSTEM.warmLanes }, lane)).catch((): void => undefined);
+  };
+
+  loader.onLoaded((): void => {
+    attemptLoops();
+    startWarm();
+  });
 
   return {
     controls,
@@ -235,7 +294,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
           const action: Promise<void> = document.hidden ? context.suspend() : context.resume();
           action.catch((): void => undefined);
         });
-        manifestLoad = loadManifest();
+        loader.ensure();
       } catch {
         graph = null;
       }
@@ -246,9 +305,10 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     async playVoice(lineId: string): Promise<void> {
       this.stopVoice();
       const request: number = voiceRequest;
-      await manifestLoad;
+      ensureManifest();
+      await loader.ready();
       const current: Graph | null = graph;
-      const path: string | undefined = manifest?.voice.get(lineId);
+      const path: string | undefined = loader.current()?.voice.get(lineId);
       if (current === null || path === undefined) return;
       const buffer: AudioBuffer | null = await load(path);
       if (buffer === null || request !== voiceRequest) return;
@@ -265,6 +325,10 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
         source.start();
       });
     },
+    warm(ids: readonly string[]): void {
+      warmIds = ids;
+      startWarm();
+    },
     stopVoice(): void {
       voiceRequest += 1;
       const source: AudioBufferSourceNode | null = speaking;
@@ -278,11 +342,17 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     },
     startAmbience(zone: ZoneAmbience): void {
       this.stopAmbience();
-      for (const loop of zone.loops) startLoop(loop).catch((): void => undefined);
+      activeZone = zone;
+      wanted.push(...zone.loops);
+      loopRetryLeft = SYSTEM.loopRetrySeconds;
+      attemptLoops();
       timers = zone.stingers.map((stinger: AmbienceStinger): StingerTimer => ({ stinger, left: delayBetween(stinger.minDelay, stinger.maxDelay, random) }));
     },
     stopAmbience(): void {
       timers = [];
+      activeZone = null;
+      wanted.length = 0;
+      attempting = false;
       for (const running of loops.splice(0, loops.length)) {
         try {
           running.source.stop();
@@ -294,6 +364,12 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       }
     },
     update(dt: number): void {
+      ensureManifest();
+      loopRetryLeft -= dt;
+      if (loopRetryLeft <= 0) {
+        loopRetryLeft = SYSTEM.loopRetrySeconds;
+        attemptLoops();
+      }
       for (const timer of timers) {
         timer.left -= dt;
         if (timer.left > 0) continue;
