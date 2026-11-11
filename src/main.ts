@@ -96,6 +96,7 @@ async function start(): Promise<void> {
   const vignette: HTMLDivElement = element('vignette', HTMLDivElement);
   const titlePlace: HTMLParagraphElement = element('title-place', HTMLParagraphElement);
 
+  status.textContent = 'Reading the rules…';
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
   const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
@@ -107,7 +108,9 @@ async function start(): Promise<void> {
 
   const save: SaveData | null = await loadingSave;
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
+  status.textContent = 'Raising the dead and the walls…';
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadingCharacters, buildZoneView(loader, content, world.zone, stage.scene)]);
+  status.textContent = 'Waking the world…';
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
   const thumbnails: ItemThumbnails = createItemThumbnails(library, shownPieces);
@@ -302,7 +305,9 @@ async function start(): Promise<void> {
   requestAnimationFrame(frame);
   void preloadZones(loader, content);
 
+  status.classList.remove('failed');
   status.classList.add('quiet');
+  element('title-loader', HTMLDivElement).classList.add('done');
   showSync(backend.state());
   backend.subscribe(showSync);
   enter.disabled = false;
