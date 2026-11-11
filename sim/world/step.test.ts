@@ -105,7 +105,7 @@ void test('a move command walks the player around a pillar to the destination', 
   let sawDetour: boolean = false;
   const events: WorldEvent[] = [];
   for (let step: number = 0; step < 600; step += 1) {
-    events.push(...stepWorld(world, step === 0 ? [{ type: 'move', dest }] : [], DT));
+    events.push(...stepWorld(world, step === 0 ? [{ type: 'move', held: false, dest }] : [], DT));
     assert.ok(isWalkable(world.grid, world.player.pos.x, world.player.pos.z), `step ${step}`);
     if (Math.abs(world.player.pos.z - 14) > 1) sawDetour = true;
     if (Math.hypot(world.player.pos.x - dest.x, world.player.pos.z - dest.z) < 0.05) break;
@@ -123,7 +123,7 @@ void test('a walking player emits a hero_step for each stride travelled and none
   isolate(world);
   assert.equal(ofType(advance(world, 1), 'hero_step').length, 0);
   const from: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
-  const events: WorldEvent[] = advance(world, 1, [{ type: 'move', dest: { x: 28, z: 25 } }]);
+  const events: WorldEvent[] = advance(world, 1, [{ type: 'move', held: false, dest: { x: 28, z: 25 } }]);
   const travelled: number = Math.hypot(world.player.pos.x - from.x, world.player.pos.z - from.z);
   const steps: readonly EventOf<'hero_step'>[] = ofType(events, 'hero_step');
   assert.ok(travelled > 6);
@@ -137,7 +137,7 @@ void test('a walking player emits a hero_step for each stride travelled and none
 void test('a stop command halts a walking player', (): void => {
   const world: World = fresh();
   isolate(world);
-  advance(world, 0.3, [{ type: 'move', dest: { x: 28, z: 25 } }]);
+  advance(world, 0.3, [{ type: 'move', held: false, dest: { x: 28, z: 25 } }]);
   const at: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
   assert.ok(at.z < START.z);
   advance(world, 0.3, [{ type: 'stop' }]);
@@ -147,7 +147,7 @@ void test('a stop command halts a walking player', (): void => {
 void test('a move next to the player is a stop: he neither moves nor turns', (): void => {
   const world: World = fresh();
   const facing: number = world.player.facing;
-  advance(world, 0.3, [{ type: 'move', dest: { x: START.x + 0.4, z: START.z + 0.3 } }]);
+  advance(world, 0.3, [{ type: 'move', held: false, dest: { x: START.x + 0.4, z: START.z + 0.3 } }]);
   assert.deepEqual(world.player.pos, START);
   assert.equal(world.player.facing, facing);
   assert.equal(world.player.moving, false);
@@ -159,7 +159,7 @@ void test('held moves that flip from side to side of the player never turn him',
   const facing: number = world.player.facing;
   for (let tick: number = 0; tick < 40; tick += 1) {
     const side: number = tick % 2 === 0 ? 1 : -1;
-    advance(world, 0.09, [{ type: 'move', dest: { x: world.player.pos.x + 0.5 * side, z: world.player.pos.z + 0.2 * side } }]);
+    advance(world, 0.09, [{ type: 'move', held: false, dest: { x: world.player.pos.x + 0.5 * side, z: world.player.pos.z + 0.2 * side } }]);
     assert.equal(world.player.facing, facing);
   }
   assert.deepEqual(world.player.pos, START);
@@ -167,18 +167,54 @@ void test('held moves that flip from side to side of the player never turn him',
 
 void test('a move inside the dead zone stops a walking player', (): void => {
   const world: World = fresh();
-  advance(world, 0.4, [{ type: 'move', dest: { x: START.x, z: START.z - 8 } }]);
+  advance(world, 0.4, [{ type: 'move', held: false, dest: { x: START.x, z: START.z - 8 } }]);
   assert.equal(world.player.moving, true);
   const stopped: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
-  advance(world, 0.3, [{ type: 'move', dest: { x: stopped.x + 0.3, z: stopped.z } }]);
+  advance(world, 0.3, [{ type: 'move', held: false, dest: { x: stopped.x + 0.3, z: stopped.z } }]);
   assert.equal(world.player.moving, false);
   assert.ok(Math.hypot(world.player.pos.x - stopped.x, world.player.pos.z - stopped.z) < 0.2);
+});
+
+void test('a held move onto a blocked spot beside the player never moves or turns him', (): void => {
+  const world: World = fresh();
+  let blocked: Vec2 | null = null;
+  const grid = world.grid;
+  for (let index: number = 0; index < grid.columns * grid.rows && blocked === null; index += 1) {
+    const candidate: Vec2 = { x: ((index % grid.columns) + 0.5) * grid.cellSize, z: (Math.floor(index / grid.columns) + 0.5) * grid.cellSize };
+    if (!isWalkable(grid, candidate.x, candidate.z) && nearestWalkable(grid, candidate, 0.5) !== null) blocked = candidate;
+  }
+  const spot: Vec2 = must(blocked, 'a blocked spot beside open floor');
+  const stand: Vec2 = must(nearestWalkable(world.grid, spot, 0.5), 'a walkable point beside it');
+  world.player.pos = { x: stand.x, z: stand.z };
+  const facing: number = world.player.facing;
+  for (let tick: number = 0; tick < 40; tick += 1) {
+    advance(world, 0.09, [{ type: 'move', held: true, dest: { x: spot.x + (tick % 2) * 0.1, z: spot.z } }]);
+    assert.equal(world.player.facing, facing);
+  }
+  assert.ok(Math.hypot(world.player.pos.x - stand.x, world.player.pos.z - stand.z) < 1e-6);
+});
+
+void test('a held move one unit away leaves a standing player standing, but a click walks there', (): void => {
+  const world: World = fresh();
+  const origin: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  const near: Vec2 = { x: origin.x, z: origin.z - 1 };
+  advance(world, 0.5, [{ type: 'move', held: true, dest: near }]);
+  assert.deepEqual(world.player.pos, origin);
+  advance(world, 0.6, [{ type: 'move', held: false, dest: near }]);
+  assert.ok(Math.hypot(world.player.pos.x - near.x, world.player.pos.z - near.z) < 0.05);
+});
+
+void test('a held move three units away walks', (): void => {
+  const world: World = fresh();
+  const origin: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  advance(world, 0.3, [{ type: 'move', held: true, dest: { x: origin.x, z: origin.z - 3 } }]);
+  assert.ok(Math.hypot(world.player.pos.x - origin.x, world.player.pos.z - origin.z) > 1);
 });
 
 void test('a move just outside the dead zone still walks there', (): void => {
   const world: World = fresh();
   const dest: Vec2 = { x: START.x + 1, z: START.z };
-  advance(world, 0.6, [{ type: 'move', dest }]);
+  advance(world, 0.6, [{ type: 'move', held: false, dest }]);
   assert.ok(Math.hypot(world.player.pos.x - dest.x, world.player.pos.z - dest.z) < 0.05);
   assert.ok(Math.abs(world.player.facing - Math.PI / 2) < 1e-6);
 });
@@ -497,7 +533,7 @@ void test('commands are ignored while the player is dead', (): void => {
   isolate(world, must(monstersOf(world, 'bone_thrall')[0], 'thrall'));
   world.player.alive = false;
   world.player.respawnTimer = 10;
-  const events: WorldEvent[] = advance(world, 0.3, [{ type: 'move', dest: { x: 28, z: 20 } }]);
+  const events: WorldEvent[] = advance(world, 0.3, [{ type: 'move', held: false, dest: { x: 28, z: 20 } }]);
   assert.deepEqual(world.player.pos, START);
   assert.equal(ofType(events, 'skill_start').length, 0);
 });

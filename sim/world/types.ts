@@ -170,6 +170,7 @@ export interface GroundItem {
 
 export interface MoveCommand {
   readonly type: 'move';
+  readonly held: boolean;
   readonly dest: Vec2;
 }
 

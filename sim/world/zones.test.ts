@@ -103,7 +103,7 @@ void test('an unknown exit is ignored and walking over an exit without asking do
   const out: ZoneExit = must(findExit(town, 'bastion_stair'), 'town exit');
   run(world, 1, [{ type: 'travel', exit: 'no_such_exit' }]);
   assert.deepEqual(world.player.intent, { type: 'idle' });
-  const events: WorldEvent[] = run(world, 6, [{ type: 'move', dest: { x: out.x, z: out.z } }]);
+  const events: WorldEvent[] = run(world, 6, [{ type: 'move', held: false, dest: { x: out.x, z: out.z } }]);
   assert.ok(distance(world.player.pos, out) <= out.radius);
   assert.equal(ofType(events, 'zone_changed').length, 0);
   assert.equal(world.zone.id, town.id);
@@ -172,10 +172,10 @@ void test('monster level is the zone level, raised by the surge only in a surge 
 void test('a checkpoint is taken once when the hero walks into it', (): void => {
   const world: World = worldIn(withCheckpoint(), bastion.id, 8);
   world.monsters = [];
-  const events: WorldEvent[] = run(world, 6, [{ type: 'move', dest: { x: 28, z: 22 } }]);
+  const events: WorldEvent[] = run(world, 6, [{ type: 'move', held: false, dest: { x: 28, z: 22 } }]);
   assert.deepEqual(ofType(events, 'checkpoint'), [{ type: 'checkpoint', checkpoint: 'grate', pos: { x: 28, z: 22 } }]);
   assert.deepEqual(world.respawn, { type: 'checkpoint', checkpoint: 'grate' });
-  const later: WorldEvent[] = run(world, 2, [{ type: 'move', dest: { x: 28, z: 23 } }]);
+  const later: WorldEvent[] = run(world, 2, [{ type: 'move', held: false, dest: { x: 28, z: 23 } }]);
   assert.equal(ofType(later, 'checkpoint').length, 0);
 });
 
