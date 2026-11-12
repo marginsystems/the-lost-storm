@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { HudPanel } from './hud-api.ts';
-import { closedBy, COVER_CLASS, coverOf, HUD_PANELS, PANEL_COVER } from './panel-cover.ts';
+import { closedBy, COVER_CLASS, coverOf, HUD_PANELS, PANEL_COVER, sheetOverflow } from './panel-cover.ts';
 import type { CoverState } from './panel-cover.ts';
 
 const CLOSED: Readonly<Record<HudPanel, boolean>> = { inventory: false, character: false, tree: false, map: false };
@@ -74,4 +74,13 @@ void test('as sheets, a panel shares the screen only with the inventory', (): vo
   assert.deepEqual(closedBy('tree', { ...CLOSED, inventory: true, character: true }, true), ['character']);
   assert.deepEqual(closedBy('character', { ...CLOSED, inventory: true, tree: true }, true), ['tree']);
   assert.deepEqual(closedBy('inventory', { ...CLOSED, character: true }, true), []);
+});
+
+void test('turning into sheets keeps the latest panel beside the inventory and closes the rest', (): void => {
+  const crowded: Readonly<Record<HudPanel, boolean>> = { ...CLOSED, inventory: true, character: true, tree: true };
+  assert.deepEqual(sheetOverflow(crowded, 'tree'), ['character']);
+  assert.deepEqual(sheetOverflow(crowded, 'character'), ['tree']);
+  assert.deepEqual(sheetOverflow(crowded, 'inventory'), ['tree']);
+  assert.deepEqual(sheetOverflow(crowded, null), ['tree']);
+  assert.deepEqual(sheetOverflow({ ...CLOSED, inventory: true, tree: true }, 'tree'), []);
 });

@@ -24,12 +24,28 @@ function applyFit(root: HTMLElement, fit: HudFit | null): void {
   root.style.setProperty('--fit-quests', `${fit.quests}px`);
 }
 
-export function watchFit(root: HTMLElement): void {
+export interface FitWatch {
+  onSheets(listener: () => void): void;
+}
+
+export function watchFit(root: HTMLElement): FitWatch {
+  const listeners: (() => void)[] = [];
+  let sheets: boolean = false;
   const update = (): void => {
     const touch: boolean = document.body.classList.contains(FIT_VIEW.touchClass);
-    applyFit(root, touch ? null : hudFit(root.clientWidth, root.clientHeight));
+    const fit: HudFit | null = touch ? null : hudFit(root.clientWidth, root.clientHeight);
+    applyFit(root, fit);
+    const next: boolean = fit?.sheets === true;
+    if (next && !sheets) for (const listener of listeners) listener();
+    sheets = next;
   };
   new ResizeObserver(update).observe(root);
   new MutationObserver(update).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   update();
+  return {
+    onSheets(listener: () => void): void {
+      listeners.push(listener);
+      if (sheets) listener();
+    },
+  };
 }

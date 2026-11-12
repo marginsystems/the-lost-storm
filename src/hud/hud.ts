@@ -44,6 +44,7 @@ import type { Hints } from './hints.ts';
 import { createInventoryPanel } from './inventory-panel.ts';
 import { createMapPanel } from './map-panel.ts';
 import type { MapPanel } from './map-panel.ts';
+import type { FitWatch } from './fit-view.ts';
 import { watchFit } from './fit-view.ts';
 import { createMenuButton } from './menu.ts';
 import type { MenuButton } from './menu.ts';
@@ -60,7 +61,7 @@ import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
 import pickerCss from './skill-picker.css?inline';
 import { createTreePanel } from './tree-panel.ts';
-import { applyCover, closedBy, coverOf, HUD_PANELS } from './panel-cover.ts';
+import { applyCover, closedBy, coverOf, HUD_PANELS, sheetOverflow } from './panel-cover.ts';
 import { openWith, promptText, use } from './prompts.ts';
 import tradeCss from './trade.css?inline';
 import { createTradeHud } from './trade-hud.ts';
@@ -73,7 +74,7 @@ const GROUND_HINT: string = 'pick up';
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  watchFit(root);
+  const fit: FitWatch = watchFit(root);
   style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}\n${pickerCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
@@ -129,8 +130,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const grid: HTMLDivElement = el('div', 'hud-grid', null);
   root.insertBefore(grid, root.firstChild);
 
+  let latest: HudPanel | null = null;
+
   function setOpen(panel: HudPanel, next: boolean): void {
     if (next) for (const other of closedBy(panel, open, root.classList.contains('fit-sheets'))) setOpen(other, false);
+    if (next) latest = panel;
     if (open[panel] !== next) api.playUi(next ? 'panel_open' : 'panel_close');
     open[panel] = next;
     const view: PanelView = panels[panel];
@@ -145,6 +149,10 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       hovered.delete(view.element);
     }
   }
+
+  fit.onSheets((): void => {
+    for (const panel of sheetOverflow(open, latest)) setOpen(panel, false);
+  });
 
   const toggle = (panel: HudPanel): void => {
     setOpen(panel, !open[panel]);

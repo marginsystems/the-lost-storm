@@ -38,3 +38,9 @@ export function applyCover(root: HTMLElement, cover: CoverState): void {
   root.classList.toggle(COVER_CLASS.side, cover.side);
   root.classList.toggle(COVER_CLASS.full, cover.full);
 }
+
+export function sheetOverflow(open: Readonly<Record<HudPanel, boolean>>, latest: HudPanel | null): HudPanel[] {
+  const sheets: HudPanel[] = HUD_PANELS.filter((panel: HudPanel): boolean => open[panel] && panel !== SHEET_PARTNER);
+  const kept: HudPanel | undefined = latest !== null && sheets.includes(latest) ? latest : sheets[0];
+  return sheets.filter((panel: HudPanel): boolean => panel !== kept);
+}
