@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   scope:
-    name: CI scope
+    name: ${{ (github.event.action == 'labeled' && github.event.label.name != 'mq-live') && 'CI scope (label event, not run)' || 'CI scope' }}
     if: github.event.action != 'labeled' || github.event.label.name == 'mq-live'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -38,7 +38,7 @@ jobs:
           echo "event=$EVENT queued=$QUEUED"
 
   static:
-    name: Typecheck and lint
+    name: ${{ (github.event.action == 'labeled' && github.event.label.name != 'mq-live') && 'Typecheck and lint (label event, not run)' || 'Typecheck and lint' }}
     if: github.event.action != 'labeled' || github.event.label.name == 'mq-live'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -52,7 +52,7 @@ jobs:
         with:
           node-version: "22"
       - id: modules
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: node_modules
           key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
@@ -60,6 +60,11 @@ jobs:
         if: steps.modules.outputs.cache-hit != 'true'
         continue-on-error: ${{ vars.CI_GATE != 'on' }}
         run: npm ci --no-audit --no-fund
+      - if: steps.install.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: node_modules
+          key: ${{ steps.modules.outputs.cache-primary-key }}
       - id: typecheck
         continue-on-error: ${{ vars.CI_GATE != 'on' }}
         run: npm run typecheck
@@ -68,7 +73,7 @@ jobs:
         run: npm run lint
 
   tests:
-    name: Tests
+    name: ${{ (github.event.action == 'labeled' && github.event.label.name != 'mq-live') && 'Tests (label event, not run)' || 'Tests' }}
     needs: scope
     if: github.event.action != 'labeled' || github.event.label.name == 'mq-live'
     runs-on: ubuntu-latest
@@ -86,7 +91,7 @@ jobs:
         with:
           node-version: "22"
       - id: modules
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: node_modules
           key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
@@ -94,6 +99,11 @@ jobs:
         if: steps.modules.outputs.cache-hit != 'true'
         continue-on-error: ${{ vars.CI_GATE != 'on' }}
         run: npm ci --no-audit --no-fund
+      - if: steps.install.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: node_modules
+          key: ${{ steps.modules.outputs.cache-primary-key }}
       - name: Affected tests
         id: affected
         continue-on-error: ${{ vars.CI_GATE != 'on' }}
@@ -114,7 +124,7 @@ jobs:
         run: npm run test:isolated
 
   result:
-    name: CI result
+    name: ${{ (github.event.action == 'labeled' && github.event.label.name != 'mq-live') && 'CI result (label event, not run)' || 'CI result' }}
     needs: [scope, static, tests]
     if: always() && (github.event.action != 'labeled' || github.event.label.name == 'mq-live')
     runs-on: ubuntu-latest

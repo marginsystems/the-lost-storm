@@ -86,6 +86,8 @@ export function readConfig(value: unknown): AffectedConfig {
 
 export const AFFECTED: AffectedConfig = readConfig(raw);
 
+const REPOSITORY_PATH: RegExp = /['"`](\.?\w[\w.-]*(?:\/[\w.-]+)*)['"`]/g;
+
 export function globToRegExp(glob: string): RegExp {
   let pattern: string = '';
   for (let index: number = 0; index < glob.length; index += 1) {
@@ -120,12 +122,23 @@ export function resolveSpecifier(from: string, specifier: string, files: Readonl
   return candidates.find((candidate: string): boolean => files.has(candidate)) ?? base;
 }
 
+export function repositoryPathsOf(source: string, files: ReadonlySet<string>): string[] {
+  return [...source.matchAll(REPOSITORY_PATH)].map((match: RegExpExecArray): string => match[1] ?? '').filter((path: string): boolean => files.has(path));
+}
+
+export function targetsOf(source: SourceText, files: ReadonlySet<string>): string[] {
+  const targets: string[] = specifiersOf(source.text).map((specifier: string): string => resolveSpecifier(source.path, specifier, files));
+  targets.push(...repositoryPathsOf(source.text, files));
+  const sibling: string = source.path.replace(/\.test\.ts$/, '.ts');
+  if (sibling !== source.path && files.has(sibling)) targets.push(sibling);
+  return targets.filter((target: string): boolean => target !== source.path);
+}
+
 export function buildImportGraph(sources: readonly SourceText[], extraFiles: readonly string[] = []): ImportGraph {
   const files: Set<string> = new Set<string>([...sources.map((source: SourceText): string => source.path), ...extraFiles]);
   const importers: Map<string, string[]> = new Map<string, string[]>();
   for (const source of sources) {
-    for (const specifier of specifiersOf(source.text)) {
-      const target: string = resolveSpecifier(source.path, specifier, files);
+    for (const target of targetsOf(source, files)) {
       const list: string[] = importers.get(target) ?? [];
       if (!list.includes(source.path)) list.push(source.path);
       importers.set(target, list);
