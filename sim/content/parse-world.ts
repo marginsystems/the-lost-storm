@@ -22,6 +22,7 @@ import type {
   ZoneAmbience,
   ZoneCheckpoint,
   ZoneDef,
+  ExitLook,
   ZoneExit,
   ZoneNpc,
   ZoneOutside,
@@ -71,6 +72,18 @@ function surgeRules(value: unknown, where: string): SurgeRules | null {
 }
 
 
+function exitLook(value: unknown, where: string): ExitLook {
+  switch (value) {
+    case undefined:
+    case 'ring':
+      return 'ring';
+    case 'mist':
+      return 'mist';
+    default:
+      throw new ContentError(where, 'expected "ring" or "mist"');
+  }
+}
+
 function zoneExit(value: unknown, where: string): ZoneExit {
   const source: Fields = fields(value, where);
   const requires: Condition[] = conditions(source, 'requires', where);
@@ -85,6 +98,7 @@ function zoneExit(value: unknown, where: string): ZoneExit {
     to: text(source, 'to', where),
     toExit: text(source, 'toExit', where),
     arrival: point(source['arrival'], `${where}.arrival`),
+    look: exitLook(source['look'], `${where}.look`),
   };
 }
 

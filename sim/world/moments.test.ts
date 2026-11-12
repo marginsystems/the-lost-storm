@@ -63,7 +63,7 @@ void test('a strike marks the ground before it lands, then leaves a dormant bubb
 
 void test('strikes keep their distance from the hero, the exits and each other', (): void => {
   const field: MomentField = { ...FIELD, max: 6, interval: { min: 0.5, max: 0.5 } };
-  const zone = { ...fieldZone(field), exits: [{ id: 'east', x: 100, z: 80, radius: 2, to: 'moment_field', toExit: 'east', arrival: { x: 100, z: 80 }, requires: [], lockedHint: '', hiddenWhenLocked: false }] };
+  const zone = { ...fieldZone(field), exits: [{ id: 'east', x: 100, z: 80, radius: 2, to: 'moment_field', toExit: 'east', arrival: { x: 100, z: 80 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' as const }] };
   const world: World = createWorld(withZone(fieldContent(field), zone), { seed: 3, save: null });
   enterZone(world, zone, { type: 'start' });
   for (let index: number = 0; index < 600; index += 1) {

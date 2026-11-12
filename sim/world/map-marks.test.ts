@@ -19,10 +19,10 @@ const march: QuestDef = {
   ],
 };
 
-const ridge: ZoneDef = roadZone({ id: 'ridge', exits: [{ id: 'descent', x: 4, z: 8, radius: 1.6, to: 'hub', toExit: 'gate', arrival: { x: 8, z: 8 }, requires: [], lockedHint: '', hiddenWhenLocked: false }] });
+const ridge: ZoneDef = roadZone({ id: 'ridge', exits: [{ id: 'descent', x: 4, z: 8, radius: 1.6, to: 'hub', toExit: 'gate', arrival: { x: 8, z: 8 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' }] });
 
 function gate(): ZoneExit {
-  return { id: 'gate', x: 26, z: 4, radius: 1.6, to: 'ridge', toExit: 'descent', arrival: { x: 8, z: 8 }, requires: [{ type: 'quest', quest: 'march', is: 'done', not: false }], lockedHint: 'Shut.', hiddenWhenLocked: true };
+  return { id: 'gate', x: 26, z: 4, radius: 1.6, to: 'ridge', toExit: 'descent', arrival: { x: 8, z: 8 }, requires: [{ type: 'quest', quest: 'march', is: 'done', not: false }], lockedHint: 'Shut.', hiddenWhenLocked: true, look: 'ring' };
 }
 
 function marched(): Content {
