@@ -1,0 +1,60 @@
+#fade {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #05070b;
+  color: rgba(239, 230, 214, 0.78);
+  opacity: 0;
+  will-change: opacity;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+#fade.on {
+  opacity: 1;
+}
+
+#fade.light {
+  color: rgba(28, 32, 38, 0.66);
+}
+
+#fade::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse 42% 30% at 32% 42%, rgba(128, 136, 148, 0.16), transparent),
+    radial-gradient(ellipse 36% 26% at 68% 62%, rgba(128, 136, 148, 0.12), transparent);
+  will-change: transform;
+  animation: veil-drift var(--drift-ms) var(--drift-ease) infinite alternate;
+}
+
+@keyframes veil-drift {
+  from {
+    transform: translate3d(-5%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(5%, 2%, 0) scale(1.06);
+  }
+}
+
+.veil-place {
+  position: absolute;
+  inset: 50% 0 auto;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translate3d(0, 8px, 0);
+  will-change: opacity, transform;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.veil-place.named {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}

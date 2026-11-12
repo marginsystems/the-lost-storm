@@ -66,6 +66,7 @@ export interface ActorView {
   hit(color: Color, strength: number, stagger: boolean): void;
   die(): void;
   revive(): void;
+  detach(): void;
   lie(progress: number | null): void;
   setHover(hovered: boolean): void;
   face(facing: number): void;
@@ -254,6 +255,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       }
       ownShadow.opacity = CONTACT_SHADOW.opacity * Math.min(1, Math.max(0, amount));
       shadow.visible = rig.root.visible && ownShadow.opacity > 0;
+    },
+    detach(): void {
+      shadow.removeFromParent();
+      rig.root.removeFromParent();
     },
     dispose(): void {
       ownShadow?.dispose();

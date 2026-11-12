@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
-import { warnInConsole } from './backend/console-log.ts';
+import { noteInConsole, warnInConsole } from './backend/console-log.ts';
 import { element } from './dom-element.ts';
 import { startTitleAccount } from './title-signin.ts';
 import { fadePageOut } from './landing/leave.ts';
@@ -98,6 +98,7 @@ import type { ParticleSystem } from './render/particles.ts';
 import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
+import { WARM_UP, warmUp, warmUpWithin } from './render/warm-up.ts';
 import type { Weather } from './render/weather.ts';
 import { createWeather } from './render/weather.ts';
 import type { Rainfall } from './render/rainfall.ts';
@@ -117,9 +118,10 @@ import type { Bar } from '../sim/skill-book.ts';
 import { shippedKeys, showTitleKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleNames } from './title-keys.ts';
 import type { StatusLine } from './title-status.ts';
 import { changesSave } from './save-events.ts';
-import type { ZoneTransition } from './transition.ts';
+import type { TransitionReport, ZoneTransition } from './transition.ts';
 import type { VoicePlayer } from './voice.ts';
-import { createZoneTransition, leavingColour } from './transition.ts';
+import { createZoneTransition, describeTransition, leavingColour } from './transition.ts';
+import { createVeil } from './veil.ts';
 import type { FigureGauge } from './render/figure-gauge.ts';
 import { createFigureGauge } from './render/figure-gauge.ts';
 
@@ -440,6 +442,7 @@ async function start(): Promise<void> {
     zoneView.setLightBudget(gameSettings.preset().lights);
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
+    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs);
     startZoneAmbience();
     glitches.refresh();
     camera.snap(world.player.pos.x, world.player.pos.z);
@@ -449,7 +452,14 @@ async function start(): Promise<void> {
     persist();
   };
 
-  const transition: ZoneTransition = createZoneTransition(element('fade', HTMLDivElement), (error: unknown): void => {
+  const transition: ZoneTransition = createZoneTransition({
+    veil: createVeil(element('fade', HTMLDivElement), element('fade-place', HTMLDivElement)),
+    timers: createBrowserTimers(),
+    now: (): number => performance.now(),
+    onReport: (report: TransitionReport): void => {
+      if (import.meta.env.DEV) noteInConsole(describeTransition(report));
+    },
+    onError: (error: unknown): void => {
     failed = true;
     playing = false;
     markPlaying(document.body, false);
@@ -460,10 +470,12 @@ async function start(): Promise<void> {
     reset.hidden = true;
     ladder?.setPlaying(false);
     title.classList.remove('gone');
+    },
   });
 
   const frame = (now: number): void => {
     const dt: number = Math.min(GAME.maxFrame, Math.max(0, (now - last) / 1000));
+    if (last > 0) transition.frame(now - last);
     last = now;
     let events: WorldEvent[] = [];
     const paused: boolean = pauseMenu.isOpen;
@@ -473,6 +485,9 @@ async function start(): Promise<void> {
     if (active) {
       const collected: Command[] = [...input.collect(dt), ...touch.collect(dt)];
       if (live) queue.push(...collected);
+    } else if (playing && transition.blocking) {
+      input.collect(dt);
+      touch.collect(dt);
     }
     if (live) {
       hitStop = Math.max(0, hitStop - dt);
@@ -488,12 +503,12 @@ async function start(): Promise<void> {
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
-      transition.begin((): Promise<void> => showZone(held), leavingColour(content.zones, held));
+      transition.begin((): Promise<void> => showZone(held), leavingColour(content.zones, held), world.zone.name);
     } else {
       present(events);
     }
 
-    if (!transition.blocking) {
+    if (transition.presenting) {
       const simDt: number = live && hitStop <= 0 ? dt : 0;
       actors.sync(simDt, world, input.hoveredId);
       loot.sync(world);
@@ -544,6 +559,7 @@ async function start(): Promise<void> {
 
   camera.snap(world.player.pos.x, world.player.pos.z);
   requestAnimationFrame(frame);
+  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns()]);
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library);
     actors.refreshWear(world);

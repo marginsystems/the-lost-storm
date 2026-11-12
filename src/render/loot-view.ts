@@ -8,7 +8,7 @@ import { baseOf, rarityOf } from '../../sim/items.ts';
 import type { GroundItem, ItemInstance, World } from '../../sim/world/types.ts';
 import type { CharacterLibrary, LoadedAttachment } from './character-loader.ts';
 import { loadKeptModel } from './character-loader.ts';
-import { disposeObject, glow } from './effect-shapes.ts';
+import { glow } from './effect-shapes.ts';
 import type { Keepsake } from './keepsake.ts';
 import { createKeepsake } from './keepsake.ts';
 
@@ -66,6 +66,7 @@ type LootEntry = GoldEntry | GemEntry | WeaponEntry | KeepsakeEntry;
 
 export interface LootView {
   sync(world: World): void;
+  standIns(): Object3D[];
 }
 
 function crossedBeam(): BufferGeometry {
@@ -127,6 +128,17 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
 
   const beamGeometry: BufferGeometry = crossedBeam();
   const beamMaterials: Map<number, MeshBasicMaterial> = new Map<number, MeshBasicMaterial>();
+  const gemGeometry: OctahedronGeometry = new OctahedronGeometry(LOOT.gemSize, 0);
+  const gemMaterials: Map<number, MeshStandardMaterial> = new Map<number, MeshStandardMaterial>();
+
+  const gemMaterial = (color: Color): MeshStandardMaterial => {
+    const key: number = color.getHex();
+    const cached: MeshStandardMaterial | undefined = gemMaterials.get(key);
+    if (cached !== undefined) return cached;
+    const made: MeshStandardMaterial = new MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.25, metalness: 0.3 });
+    gemMaterials.set(key, made);
+    return made;
+  };
 
   const buildBeam = (world: World, group: Group, item: ItemInstance, color: Color): Mesh | null => {
     const rank: number = world.content.rarities.findIndex((rarity: RarityDef): boolean => rarity.id === item.rarity);
@@ -172,7 +184,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       group.add(pivot);
       return { kind: 'weapon', group, pivot, yaw: Math.random() * FULL_TURN, beam: buildBeam(world, group, ground.content.item, color) };
     }
-    const gem: Mesh = new Mesh(new OctahedronGeometry(LOOT.gemSize, 0), new MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.25, metalness: 0.3 }));
+    const gem: Mesh = new Mesh(gemGeometry, gemMaterial(color));
     gem.castShadow = true;
     group.add(gem);
     return { kind: 'gem', group, gem, beam: buildBeam(world, group, ground.content.item, color) };
@@ -181,12 +193,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   const release = (entry: LootEntry): void => {
     switch (entry.kind) {
       case 'gold':
-        disposeObject(entry.group);
-        break;
       case 'gem':
-        entry.gem.geometry.dispose();
-        if (Array.isArray(entry.gem.material)) for (const material of entry.gem.material) material.dispose();
-        else entry.gem.material.dispose();
         entry.group.removeFromParent();
         break;
       case 'weapon':
@@ -200,6 +207,9 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   };
 
   return {
+    standIns(): Object3D[] {
+      return [coins.clone()];
+    },
     sync(world: World): void {
       const seen: Set<number> = new Set<number>();
       for (const ground of world.ground) {

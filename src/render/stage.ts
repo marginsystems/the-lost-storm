@@ -1,3 +1,4 @@
+import type { Camera, Object3D } from 'three';
 import { Color, CustomToneMapping, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFShadowMap, PerspectiveCamera, PointLight, Scene, ShaderChunk, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
 import type { ZoneAmbience } from '../../sim/content/types.ts';
 import type { GraphicsPreset } from '../settings/settings.ts';
@@ -95,6 +96,7 @@ export interface Stage {
   resize(): void;
   render(): void;
   applyQuality(tier: QualityTier): void;
+  compileAsync(target: Object3D, viewer: Camera): Promise<Object3D>;
   setFinish(pass: Pass | null): void;
 }
 
@@ -257,6 +259,15 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
     render(): void {
       if (composer === null) renderer.render(scene, camera);
       else composer.render();
+    },
+    compileAsync(target: Object3D, viewer: Camera): Promise<Object3D> {
+      const previous: WebGLRenderTarget | null = renderer.getRenderTarget();
+      renderer.setRenderTarget(composer === null ? null : composer.readBuffer);
+      try {
+        return renderer.compileAsync(target, viewer, scene);
+      } finally {
+        renderer.setRenderTarget(previous);
+      }
     },
   };
 }
