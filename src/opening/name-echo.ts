@@ -8,7 +8,7 @@ export const NAME_ECHO = {
   voiceWait: 2.5,
   nearFind: 9,
   layers: 3,
-  layerDelayMs: 380,
+  layerDelayMs: 400,
   letterDelayMs: 55,
   lifeMs: 6200,
 } as const;
