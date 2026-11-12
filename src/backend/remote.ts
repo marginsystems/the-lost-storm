@@ -76,6 +76,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   let quickRetries: number = 0;
   let blocked: boolean = false;
   let frozen: boolean = false;
+  let cloudUnreadable: boolean = false;
   let epoch: number = 0;
   let creating: Promise<SyncRecord | null> | null = null;
   let enrolRetries: number = 0;
@@ -150,7 +151,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   }
 
   const schedule = (ms: number): void => {
-    if (cancelTimer !== null || pushing || latest === null || frozen || blocked) return;
+    if (cancelTimer !== null || pushing || latest === null || frozen || blocked || cloudUnreadable) return;
     cancelTimer = timers.after(ms, (): void => {
       cancelTimer = null;
       void push();
@@ -254,7 +255,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   };
 
   const push = async (): Promise<void> => {
-    if (pushing || latest === null || frozen || blocked) return;
+    if (pushing || latest === null || frozen || blocked || cloudUnreadable) return;
     pushing = true;
     const mine: number = epoch;
     const sending: SaveData = latest;
@@ -298,6 +299,10 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     const read: ReadResult = await api.readSave(held.token, signal);
     if (read.kind === 'ok') return { held, cloud: read.state };
     if (read.kind === 'refused') blocked = true;
+    if (read.kind === 'unreadable') {
+      cloudUnreadable = true;
+      log.warn('the cloud save was written by a newer or different version of the game and cannot be read here, so it is left as it is and this device saves locally only until a reload');
+    }
     if (read.kind !== 'unauthorized') return null;
     keep(null);
     return retried ? null : reachCloud(signal, true);

@@ -564,3 +564,18 @@ void test('when the save read is refused for an account created in that load, th
   await harness.timers.advance(TIMING.pushGapMs);
   assert.equal(account(harness).save?.xp, 5);
 });
+
+void test('a cloud save this build cannot read is never written over: this device keeps saving locally and sends nothing until a reload', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  await synced(harness, 2);
+  const newer = { ...makeSave(9, 0), version: 99 };
+  harness.server.plant(account(harness), newer);
+  const backend: Backend = harness.open();
+  assert.equal((await backend.load())?.level, 2);
+  const puts: number = harness.server.count('PUT', '/v1/save');
+  backend.save(makeSave(3, 0));
+  await harness.timers.advance(60_000);
+  assert.equal(harness.server.count('PUT', '/v1/save'), puts);
+  assert.deepEqual(account(harness).save, newer);
+  assert.equal(storedLevel(harness), 3);
+});

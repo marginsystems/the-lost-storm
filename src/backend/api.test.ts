@@ -150,7 +150,7 @@ void test('a success the client cannot understand is refused, never trusted', as
   const kinds: string[] = await Promise.all(
     bodies.map(async (body: unknown): Promise<string> => (await api((): Response => reply(200, body)).client.readSave('tok', SIGNAL)).kind),
   );
-  assert.deepEqual(kinds, Array.from({ length: bodies.length }, (): string => 'refused'));
+  assert.deepEqual(kinds, ['refused', 'refused', 'unreadable', 'refused', 'refused', 'refused', 'refused']);
   const guest = api((): Response => reply(201, { accountId: 'a' }));
   assert.deepEqual(await guest.client.createGuest(SIGNAL), { kind: 'refused', status: 201 });
   const empty = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null }));

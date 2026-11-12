@@ -74,7 +74,7 @@ export type SessionResult = { readonly kind: 'ok'; readonly session: Session } |
 export type SignOutResult = { readonly kind: 'ok' } | Failure;
 
 export type GuestResult = { readonly kind: 'ok'; readonly account: GuestAccount } | Failure;
-export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | Failure;
+export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | { readonly kind: 'unreadable' } | Failure;
 export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stale'; readonly epoch: number } | Failure;
 
 export interface BoardRow {
@@ -153,6 +153,10 @@ export function readCloudState(content: Content, value: unknown): CloudState | n
   const save: SaveData | null = readSave(content, value['save']);
   if (save === null || typeof updatedAt !== 'string') return null;
   return { save, revision, updatedAt, epoch };
+}
+
+export function cloudSaveUnreadable(content: Content, value: unknown): boolean {
+  return isFields(value) && value['save'] !== null && value['save'] !== undefined && readSave(content, value['save']) === null;
 }
 
 function readGuest(value: unknown): GuestAccount | null {
@@ -272,7 +276,8 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
       const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/save`, { method: 'GET', headers: headers(token), signal });
       if (!succeeded(answer)) return failureOf(answer);
       const state: CloudState | null = readCloudState(content, answer.body);
-      return state === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', state };
+      if (state !== null) return { kind: 'ok', state };
+      return cloudSaveUnreadable(content, answer.body) ? { kind: 'unreadable' } : { kind: 'refused', status: answer.status };
     },
     async writeSave(token: string, save: SaveData, baseRevision: number, epoch: number, signal: AbortSignal): Promise<WriteResult> {
       const body: string = JSON.stringify({ save, baseRevision, epoch });
