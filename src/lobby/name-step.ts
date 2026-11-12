@@ -72,7 +72,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
     step.dataset['state'] = next;
     step.toggleAttribute('aria-busy', next === 'busy');
     enter.disabled = next === 'busy';
-    choose.disabled = next === 'busy';
+    choose.disabled = next === 'busy' || limited;
     const reachable: number = next === 'open' || next === 'busy' ? 0 : -1;
     field.tabIndex = reachable;
     choose.tabIndex = reachable;
