@@ -86,9 +86,9 @@ void test('garbage, the wrong version and wrong shapes are rejected without thro
 
 void test('items with unknown bases, rarities or affixes are dropped or cleaned', (): void => {
   const base: SaveData = toSave(played());
-  const ghost: ItemInstance = { uid: 8, base: 'ghost_blade', rarity: 'common', level: 1, affixes: [] };
-  const odd: ItemInstance = { uid: 9, base: 'rusted_blade', rarity: 'mythic', level: 1, affixes: [] };
-  const mixed: ItemInstance = { uid: 10, base: 'rusted_blade', rarity: 'magic', level: 1, affixes: [{ affix: 'jagged', value: 2 }, { affix: 'made_up', value: 9 }] };
+  const ghost: ItemInstance = { uid: 8, base: 'ghost_blade', rarity: 'common', level: 1, affixes: [], ledger: null };
+  const odd: ItemInstance = { uid: 9, base: 'rusted_blade', rarity: 'mythic', level: 1, affixes: [], ledger: null };
+  const mixed: ItemInstance = { uid: 10, base: 'rusted_blade', rarity: 'magic', level: 1, affixes: [{ affix: 'jagged', value: 2 }, { affix: 'made_up', value: 9 }], ledger: null };
   const misplaced: ItemInstance = made('drowned_leathers', 'common', 11);
   const raw: unknown = JSON.parse(
     JSON.stringify({

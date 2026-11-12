@@ -1,7 +1,9 @@
 import type { GlitchDef } from '../content/glitches.ts';
 import { loadGlitches } from '../content/glitches.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
-import { emptyEquipment, generateItem, slotOf } from '../items.ts';
+import { emptyEquipment, slotOf } from '../items.ts';
+import { emptyLedger, giveTickets, makeItem } from './ledger.ts';
+import type { LootTicket } from './ledger.ts';
 import { buildNavGrid } from '../nav/grid.ts';
 import { createRng } from '../rng.ts';
 import { defaultBar, startingSkills } from '../skill-book.ts';
@@ -28,6 +30,7 @@ export interface WorldOptions {
   readonly save: SaveData | null;
   readonly opening?: boolean;
   readonly glitches?: GlitchDef;
+  readonly tickets?: readonly LootTicket[];
 }
 
 const PLAYER_ID: number = 1;
@@ -88,9 +91,8 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
 function giveStartingItems(world: World): void {
   const commonRarity: string | null = world.content.rarities[0]?.id ?? null;
   for (const baseId of world.content.player.startingItems) {
-    const item: ItemInstance | null = generateItem(world.content, world.rng, world.nextItemUid, 1, baseId, commonRarity);
+    const item: ItemInstance | null = makeItem(world, 1, baseId, commonRarity, { kind: 'start', base: baseId });
     if (item === null) continue;
-    world.nextItemUid += 1;
     const slot = slotOf(world.content, item);
     if (slot !== null && world.player.equipped[slot] === null) world.player.equipped[slot] = item;
     else addToInventory(world.player, item);
@@ -146,6 +148,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     ground: [],
     nextId: PLAYER_ID + 1,
     nextItemUid: save?.nextItemUid ?? 1,
+    ledger: emptyLedger(),
     nextPackId: 1,
     surge: save?.surge ?? 1,
     surgeTimer: null,
@@ -169,6 +172,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   };
   placePlayer(world);
   beginVoid(world, 'first');
+  giveTickets(world, options.tickets ?? []);
   if (save === null && world.zone.void?.emptyHanded !== true) giveStartingItems(world);
   for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   startQuests(world);

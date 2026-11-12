@@ -1,6 +1,7 @@
 import type { ServiceKind, StockRarity } from '../content/trade-types.ts';
 import type { Content, LineDef, PropDef, TalkDef, ZoneProp } from '../content/types.ts';
-import { generateItem } from '../items.ts';
+import { makeItem } from './ledger.ts';
+import type { ItemSource } from './ledger.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import { pickWeighted } from '../rng.ts';
@@ -64,8 +65,7 @@ function rollStock(world: World): (ItemInstance | null)[] {
   const stock: (ItemInstance | null)[] = [];
   for (let index: number = 0; index < content.trade.stockSize; index += 1) {
     const rarity: StockRarity | null = pickWeighted(world.rng, content.trade.stockRarities);
-    const item: ItemInstance | null = rarity === null ? null : generateItem(content, world.rng, world.nextItemUid, world.player.level, null, rarity.rarity);
-    if (item !== null) world.nextItemUid += 1;
+    const item: ItemInstance | null = rarity === null ? null : makeItem(world, world.player.level, null, rarity.rarity, (rolled: ItemInstance): ItemSource => ({ kind: 'trader', base: rolled.base, rarity: rolled.rarity }));
     stock.push(item);
   }
   return stock;

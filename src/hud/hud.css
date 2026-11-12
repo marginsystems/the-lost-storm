@@ -670,6 +670,10 @@
   color: var(--text-dim);
 }
 
+.tip-sub.tip-unverified {
+  opacity: 0.6;
+}
+
 .tip-line.implicit {
   color: #d4dae2;
 }

@@ -84,7 +84,7 @@ void test('item level and rarity scale the implicit modifiers', (): void => {
 });
 
 void test('the item name carries its prefix and suffix', (): void => {
-  const plain: ItemInstance = { uid: 1, base: 'rusted_blade', rarity: 'common', level: 1, affixes: [] };
+  const plain: ItemInstance = { uid: 1, base: 'rusted_blade', rarity: 'common', level: 1, affixes: [], ledger: null };
   assert.equal(itemName(content, plain), 'Rusted Blade');
   const prefixed: ItemInstance = { ...plain, affixes: [{ affix: 'jagged', value: 3 }] };
   assert.equal(itemName(content, prefixed), 'Jagged Rusted Blade');
@@ -94,7 +94,7 @@ void test('the item name carries its prefix and suffix', (): void => {
 });
 
 void test('item lines merge the weapon damage range and list affixes separately', (): void => {
-  const item: ItemInstance = { uid: 1, base: 'stormsteel_sword', rarity: 'common', level: 1, affixes: [{ affix: 'of_precision', value: 0.05 }] };
+  const item: ItemInstance = { uid: 1, base: 'stormsteel_sword', rarity: 'common', level: 1, affixes: [{ affix: 'of_precision', value: 0.05 }], ledger: null };
   const lines: ItemLine[] = itemLines(content, item);
   assert.deepEqual(
     lines.map((line: ItemLine): string => line.text),

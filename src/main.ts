@@ -18,6 +18,7 @@ import type { Vec2 } from '../sim/math.ts';
 import type { SaveData } from '../sim/save.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
+import type { LootTicket } from '../sim/world/ledger.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../sim/world/types.ts';
 import type { Listener } from './audio/listener.ts';
@@ -33,7 +34,8 @@ import type { AccountService } from './backend/account.ts';
 import type { ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
 import type { Backend, BackendState } from './backend/backend.ts';
-import { createBrowserAccount, createBrowserBackend } from './backend/browser.ts';
+import { createBrowserAccount, createBrowserBackend, createBrowserMinter } from './backend/browser.ts';
+import type { Minter } from './backend/minter.ts';
 import { createHud } from './hud/hud.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
@@ -207,7 +209,9 @@ async function start(): Promise<void> {
   lobby?.feed.subscribe((board: Leaderboard | null): void => {
     if (board !== null) heroName = spokenName(board);
   });
-  const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
+  const minter: Minter | null = createBrowserMinter(content, import.meta.env.VITE_SERVER_URL);
+  const tickets: readonly LootTicket[] = minter === null || save !== null ? [] : await minter.prefetch();
+  const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true, tickets });
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
@@ -308,6 +312,7 @@ async function start(): Promise<void> {
     world,
     send,
     itemImage,
+    unverified: (item: ItemInstance): boolean => minter?.unverified(item) ?? false,
     audio: controls,
     settings: gameSettings,
     openSettings: (section: SettingsSection): void => pauseMenu.open(section),
@@ -498,6 +503,7 @@ async function start(): Promise<void> {
         }
       }
     }
+    minter?.pump(world);
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
