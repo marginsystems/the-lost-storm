@@ -566,7 +566,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       bolt.visible = false;
       arcs.visible = false;
       scene.add(bolt, arcs);
-      await workPaced([...textures], (texture: Texture): void => renderer.initTexture(texture), pacer, kept.length === 0 ? Number.POSITIVE_INFINITY : PACED_WORK.frameBudgetMs);
+      await workPaced([...textures], (texture: Texture): void => renderer.initTexture(texture), pacer, PACED_WORK.frameBudgetMs);
       for (const entry of kept) dispose(entry);
       for (const old of keptStrike) old.removeFromParent();
       kept = warm;
