@@ -160,6 +160,15 @@ void test('a missing field throws a ContentError naming the field', (): void => 
   assert.throws((): Content => parseContent(noRarities), (error: unknown): boolean => problem(error, 'items.rarities'));
 });
 
+void test('a dash whose invulnerable window is negative or longer than its duration is rejected', (): void => {
+  const index: number = skills.findIndex((entry): boolean => entry.id === 'dodge_roll');
+  const roll = must(skills[index], 'dodge_roll');
+  for (const invulnerable of [-0.1, roll.windup + 0.1]) {
+    const broken: RawContent = { ...shipped, skills: skills.map((entry, at: number) => (at === index ? { ...roll, delivery: { ...roll.delivery, invulnerable } } : entry)) };
+    assert.throws((): Content => parseContent(broken), (error: unknown): boolean => problem(error, `skills[${index}].delivery.invulnerable`));
+  }
+});
+
 void test('an unknown enum value and a duplicate id are rejected', (): void => {
   const badBehaviour: RawContent = { ...shipped, monsters: [{ ...extraMonster, behaviour: { type: 'dancer' } }] };
   assert.throws((): Content => parseContent(badBehaviour), (error: unknown): boolean => problem(error, 'behaviour.type'));

@@ -77,7 +77,12 @@ function skillMod(value: unknown, where: string): SkillMod {
 function delivery(value: unknown, where: string): Delivery {
   const source: Fields = fields(value, where);
   const type: Delivery['type'] = choice(source, 'type', ['arc', 'nova', 'projectile', 'dash'] as const, where);
-  if (type === 'dash') return { type, distance: positive(source, 'distance', where), duration: positive(source, 'duration', where), invulnerable: numeric(source, 'invulnerable', where) };
+  if (type === 'dash') {
+    const duration: number = positive(source, 'duration', where);
+    const invulnerable: number = numeric(source, 'invulnerable', where);
+    if (invulnerable < 0 || invulnerable > duration) throw new ContentError(`${where}.invulnerable`, `expected a window from 0 to the duration ${duration}`);
+    return { type, distance: positive(source, 'distance', where), duration, invulnerable };
+  }
   if (type === 'arc') return { type, reach: numeric(source, 'reach', where), arcDegrees: numeric(source, 'arcDegrees', where) };
   if (type === 'nova') return { type, radius: numeric(source, 'radius', where) };
   return {
