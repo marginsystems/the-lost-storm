@@ -3,7 +3,10 @@ import { test } from 'node:test';
 import type { ZoneDrift } from '../../sim/content/road-types.ts';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { OUTPOST_ZONE, SCENE_BASE } from '../../test/road-support.ts';
-import { GROUND, growAt, occlusionAt } from './ground.ts';
+import type { FloorGrid } from './ground.ts';
+import { coverLines, floorGrid, GROUND, growAt, occlusionAt } from './ground.ts';
+import { isFloorCell, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
+import { loadContent } from '../../sim/content/content.ts';
 
 const DRIFT: ZoneDrift = { id: 'drift', column: 1, row: 1, columns: 1, rows: 1, period: 10, open: 0.5, offset: 0, fade: 1 };
 const STRIP: ZoneDef = { ...SCENE_BASE, tiles: ['   ', '.,.', '   '], walls: null };
@@ -33,4 +36,21 @@ void test('the ground darkens under a blocking prop and is untouched beyond its 
   assert.equal(occlusionAt([rock], 10 + 2 * GROUND.propReach + 0.1, 10), 1);
   assert.ok(occlusionAt([rock], 11.5, 10) > GROUND.propShade);
   assert.equal(occlusionAt([], 3, 3), 1);
+});
+
+void test('a floor grid answers exactly like the tile map, inside the zone and past its edges', (): void => {
+  for (const zone of loadContent().zones.values()) {
+    const grid: FloorGrid = floorGrid(zone);
+    for (let row: number = -3; row < zoneRows(zone) + 3; row += 1) {
+      for (let column: number = -3; column < zoneColumns(zone) + 3; column += 1) assert.equal(grid.floor(column, row), isFloorCell(zone, column, row), `${zone.id} ${column},${row}`);
+    }
+  }
+});
+
+void test('a cell is cut into evenly spaced lines shared by neighbouring pieces, with growth only on its outer edges', (): void => {
+  const lines: number[] = coverLines(3, 2, 0.1, 0.2);
+  assert.equal(lines.length, GROUND.divisions + 1);
+  assert.equal(lines[0], 6 - 0.1);
+  assert.equal(lines[GROUND.divisions], 6 + 2 + 0.2);
+  for (let index: number = 1; index < GROUND.divisions; index += 1) assert.equal(lines[index], 6 + (index * 2) / GROUND.divisions);
 });
