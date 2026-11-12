@@ -195,6 +195,7 @@
   },
   {
     "id": "mended_rhythm",
+    "category": "melee",
     "name": "Mended Rhythm",
     "description": "The same two steps and the same blow, again and again.",
     "icon": "cleave",
@@ -226,6 +227,7 @@
   },
   {
     "id": "mender_needle",
+    "category": "single",
     "name": "Needle",
     "description": "A thrown needle trailing thread.",
     "icon": "storm_bolt",
@@ -261,6 +263,7 @@
   },
   {
     "id": "mender_stitch",
+    "category": "revive",
     "name": "Stitch",
     "description": "Thread is drawn through a fallen body until it stands again.",
     "icon": "thunderclap",
@@ -293,6 +296,7 @@
   },
   {
     "id": "brute_haymaker",
+    "category": "melee",
     "name": "Haymaker",
     "description": "A long lopsided wind-up, then the whole weight comes down.",
     "icon": "cleave",
@@ -324,6 +328,7 @@
   },
   {
     "id": "taker_snatch",
+    "category": "area",
     "name": "Snatch",
     "description": "It crouches, springs, and drags what it catches back with it.",
     "icon": "thunderclap",
@@ -360,6 +365,7 @@
   },
   {
     "id": "thrower_stone",
+    "category": "single",
     "name": "Thrown Stone",
     "description": "A stone, a bottle, a boot: whatever is in hand.",
     "icon": "storm_bolt",
@@ -395,6 +401,7 @@
   },
   {
     "id": "borrower_cleave",
+    "category": "melee",
     "name": "Borrowed Blow",
     "description": "A wide cut, swung the way someone else once swung it.",
     "icon": "cleave",
@@ -426,6 +433,7 @@
   },
   {
     "id": "colossus_hammer",
+    "category": "melee",
     "name": "Overhead Blow",
     "description": "A slow blow straight down in front.",
     "icon": "cleave",
@@ -457,6 +465,7 @@
   },
   {
     "id": "colossus_stone",
+    "category": "single",
     "name": "Thrown Stone",
     "description": "A block of stone, thrown hard.",
     "icon": "storm_bolt",
@@ -492,6 +501,7 @@
   },
   {
     "id": "colossus_slam",
+    "category": "area",
     "name": "Ground Slam",
     "description": "Both hands down. The floor answers.",
     "icon": "thunderclap",
@@ -522,6 +532,7 @@
   },
   {
     "id": "still_grasp",
+    "category": "melee",
     "name": "Cold Grasp",
     "description": "A slow reach that does not stop.",
     "icon": "cleave",
@@ -553,6 +564,7 @@
   },
   {
     "id": "keeper_field",
+    "category": "area",
     "name": "Slowed Hour",
     "description": "Time thickens over a patch of ground. Anything inside moves at half its pace.",
     "icon": "thunderclap",
@@ -586,6 +598,7 @@
   },
   {
     "id": "keeper_bind",
+    "category": "root",
     "name": "Held Moment",
     "description": "A brass-bright line that stops its target for a heartbeat.",
     "icon": "storm_bolt",
@@ -622,6 +635,7 @@
   },
   {
     "id": "keeper_replay",
+    "category": "melee",
     "name": "Replayed Cut",
     "description": "A cut, and a moment later the same cut again from where it was made.",
     "icon": "cleave",
@@ -654,6 +668,7 @@
   },
   {
     "id": "gate_replay",
+    "category": "melee",
     "name": "Replayed Sweep",
     "description": "A wide sweep that happens twice.",
     "icon": "cleave",
@@ -686,6 +701,7 @@
   },
   {
     "id": "gate_ring",
+    "category": "area",
     "name": "Struck Hour",
     "description": "A ring of force bursts out, then bursts again.",
     "icon": "thunderclap",
@@ -717,6 +733,7 @@
   },
   {
     "id": "warden_sweep",
+    "category": "melee",
     "name": "Staff Sweep",
     "description": "A wide sweep of a heavy walking staff.",
     "icon": "cleave",
@@ -748,6 +765,7 @@
   },
   {
     "id": "rival_cleave",
+    "category": "melee",
     "name": "Cleave",
     "description": "Your own sweep, swung back at you.",
     "icon": "cleave",
@@ -779,6 +797,7 @@
   },
   {
     "id": "rival_bolt",
+    "category": "single",
     "name": "Storm Bolt",
     "description": "Your own bolts, thrown three at a time.",
     "icon": "storm_bolt",
@@ -814,6 +833,7 @@
   },
   {
     "id": "rival_clap",
+    "category": "area",
     "name": "Thunderclap",
     "description": "Your own thunder, slower to gather.",
     "icon": "thunderclap",
@@ -1237,6 +1257,6 @@
     "vfx": { "style": "fork", "color": "#b8e8ff", "cue": "hand" },
     "echo": 0.6
   },
-  {"id": "first_haymaker", "name": "Haymaker", "description": "A long, slow, telegraphed swing: there is time to step away.", "icon": "cleave", "animation": "slam_charged", "manaCost": 0, "cooldown": 4.2, "windup": 1.9, "recovery": 0.9, "scalesWithAttackSpeed": false, "engageRange": 2.4, "delivery": {"type": "arc", "reach": 3.3, "arcDegrees": 95}, "damage": {"weaponPercent": 1.6, "flatMin": 0, "flatMax": 0}, "knockback": 11, "stagger": 0.4, "shake": 0.62, "hitStop": 0.09, "vfx": {"style": "slash", "color": "#d08a5a"}},
-  {"id": "first_stone", "name": "Thrown Stone", "description": "A lazy lob that is easy to sidestep.", "icon": "storm_bolt", "animation": "throw", "manaCost": 0, "cooldown": 3.6, "windup": 1.0, "recovery": 0.4, "scalesWithAttackSpeed": false, "engageRange": 9, "delivery": {"type": "projectile", "speed": 7, "radius": 0.45, "range": 15, "pierce": 0, "count": 1, "spreadDegrees": 0}, "damage": {"weaponPercent": 1.0, "flatMin": 0, "flatMax": 0}, "knockback": 4, "stagger": 0.15, "shake": 0.3, "hitStop": 0.04, "vfx": {"style": "orb", "color": "#b8a48a"}}
+  {"id": "first_haymaker", "category": "melee", "name": "Haymaker", "description": "A long, slow, telegraphed swing: there is time to step away.", "icon": "cleave", "animation": "slam_charged", "manaCost": 0, "cooldown": 4.2, "windup": 1.9, "recovery": 0.9, "scalesWithAttackSpeed": false, "engageRange": 2.4, "delivery": {"type": "arc", "reach": 3.3, "arcDegrees": 95}, "damage": {"weaponPercent": 1.6, "flatMin": 0, "flatMax": 0}, "knockback": 11, "stagger": 0.4, "shake": 0.62, "hitStop": 0.09, "vfx": {"style": "slash", "color": "#d08a5a"}},
+  {"id": "first_stone", "category": "single", "name": "Thrown Stone", "description": "A lazy lob that is easy to sidestep.", "icon": "storm_bolt", "animation": "throw", "manaCost": 0, "cooldown": 3.6, "windup": 1.0, "recovery": 0.4, "scalesWithAttackSpeed": false, "engageRange": 9, "delivery": {"type": "projectile", "speed": 7, "radius": 0.45, "range": 15, "pierce": 0, "count": 1, "spreadDegrees": 0}, "damage": {"weaponPercent": 1.0, "flatMin": 0, "flatMax": 0}, "knockback": 4, "stagger": 0.15, "shake": 0.3, "hitStop": 0.04, "vfx": {"style": "orb", "color": "#b8a48a"}}
 ]

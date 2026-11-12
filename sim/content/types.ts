@@ -52,7 +52,7 @@ export type VfxStyle = (typeof VFX_STYLES)[number];
 
 export const VFX_CUES = ['none', 'hand', 'ground', 'blade'] as const;
 
-export const SKILL_CATEGORIES = ['none', 'area', 'single', 'chain', 'charged', 'mark', 'movement', 'defence', 'channel', 'lasting'] as const;
+export const SKILL_CATEGORIES = ['none', 'area', 'single', 'chain', 'charged', 'mark', 'movement', 'defence', 'channel', 'lasting', 'melee', 'root', 'revive'] as const;
 
 export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
 export type VfxCue = (typeof VFX_CUES)[number];

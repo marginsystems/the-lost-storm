@@ -466,7 +466,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       }
 
       healthBars.update(dt, world, (actorId: number): number => hooks.heightOf(actorId));
-      targetBar.update(dt, world.monsters, hoveredId);
+      targetBar.update(dt, world, hoveredId);
 
       seenZone = world.zone;
       tip.check((id: number): TipCheck => {

@@ -66,3 +66,93 @@
 .target-track.snap .target-chip {
   transition: none;
 }
+
+.target-summary {
+  display: none;
+}
+
+.target-info {
+  margin-top: 6px;
+  padding: 7px 10px 8px;
+  border-radius: 4px;
+  background: rgba(8, 10, 14, 0.72);
+  font-family: var(--sans);
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(239, 230, 214, 0.86);
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: top center;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-bouncy);
+}
+
+.target-info.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.target-info-state {
+  margin-bottom: 4px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e8b866;
+}
+
+.target-info-ability {
+  margin-top: 4px;
+}
+
+.target-info-ability-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.target-info-name {
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #efe6d6;
+}
+
+.target-info-tags {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: rgba(143, 216, 255, 0.8);
+}
+
+.target-info-effect {
+  color: rgba(239, 230, 214, 0.6);
+}
+
+.target-info-resist,
+.target-info-weak {
+  margin-top: 5px;
+}
+
+.target-info-resist {
+  color: rgba(170, 206, 232, 0.85);
+}
+
+.target-info-weak {
+  color: rgba(232, 160, 120, 0.85);
+}
+
+body.touch .target-info {
+  display: none;
+}
+
+body.touch .target-summary {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--sans);
+  font-size: 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: rgba(239, 230, 214, 0.62);
+}

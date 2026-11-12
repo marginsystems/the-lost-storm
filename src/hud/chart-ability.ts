@@ -12,6 +12,9 @@ export const CATEGORY_NAMES: Readonly<Record<SkillCategory, string>> = {
   defence: 'Defence',
   channel: 'Channel',
   lasting: 'Lasting',
+  melee: 'Melee',
+  root: 'Root',
+  revive: 'Revive',
 };
 
 export interface AbilityCard {
