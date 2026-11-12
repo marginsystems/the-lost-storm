@@ -21,6 +21,7 @@ export const OBJECTIVE = {
   segments: 48,
   ease: 6,
   screenMargin: 56,
+  barGap: 12,
 } as const;
 
 export interface ObjectiveMarker {
@@ -61,7 +62,9 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
       let placement: ArrowPlacement | null = null;
       if (target !== null) {
         camera.project(target.pos.x, world.zone.floorHeight, target.pos.z, screen);
-        placement = arrowPlacement(screen, window.innerWidth, window.innerHeight, OBJECTIVE.screenMargin);
+        const bar: Element | null = hud.querySelector('.hud-bottom');
+        const barTop: number = bar === null ? window.innerHeight : bar.getBoundingClientRect().top;
+        placement = arrowPlacement(screen, window.innerWidth, window.innerHeight, OBJECTIVE.screenMargin, Math.max(OBJECTIVE.screenMargin, window.innerHeight - barTop + OBJECTIVE.barGap));
       }
       arrow.classList.toggle('visible', placement !== null);
       if (placement !== null) arrow.style.transform = `translate(${placement.x.toFixed(1)}px, ${placement.y.toFixed(1)}px) rotate(${placement.angle.toFixed(3)}rad)`;

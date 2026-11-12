@@ -22,3 +22,11 @@ void test('a target above and to the left pins to the top edge on the diagonal',
   assert.ok(placed.x > 40 && placed.x < 500);
   assert.ok(placed.angle < -Math.PI / 2);
 });
+
+void test('a target below the screen stops above a bottom bar instead of on it', (): void => {
+  const placed: ArrowPlacement | null = arrowPlacement({ x: 500, y: 2000 }, 1000, 600, 40, 160);
+  assert.ok(placed !== null);
+  assert.equal(placed.y, 440);
+  assert.equal(placed.x, 500);
+  assert.equal(arrowPlacement({ x: 500, y: 470 }, 1000, 600, 40, 160) !== null, true);
+});
