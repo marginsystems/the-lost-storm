@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { finishQuests, must, worldIn, zoneOf } from '../../test/support.ts';
 import { actOf } from '../content/atlas.ts';
 import { loadContent } from '../content/content.ts';
-import type { ActDef, AtlasRoad, Content } from '../content/types.ts';
+import type { ActDef, AtlasRoad, Content, MapPlace } from '../content/types.ts';
 import { placeState, roadState, zoneMark } from './atlas.ts';
 import { createWorld } from './create.ts';
 import type { World } from './types.ts';
@@ -48,5 +48,18 @@ void test('a zone is marked by its kind, and a zone with a boss pack is a boss z
 });
 
 void test('a zone belongs to the act that places it', (): void => {
-  for (const zone of content.zones.keys()) assert.equal(must(actOf(content, zone), 'act').id, 'act_1');
+  for (const zone of content.zones.keys()) assert.ok(must(actOf(content, zone), 'act').atlas.places.some((place: MapPlace): boolean => place.zone === zone), zone);
+  const without = (zone: string): ActDef => ({ ...act, atlas: { ...act.atlas, places: act.atlas.places.filter((place: MapPlace): boolean => place.zone !== zone) } });
+  const second: ActDef = { ...act, id: 'act_2', atlas: { ...act.atlas, places: act.atlas.places.filter((place: MapPlace): boolean => place.zone === 'duskway') } };
+  const split: Content = { ...content, world: { ...content.world, acts: [without('duskway'), second] } };
+  assert.equal(must(actOf(split, 'duskway'), 'act').id, 'act_2');
+  assert.equal(must(actOf(split, 'stillhold'), 'act').id, 'act_1');
+});
+
+void test('a zone no act places falls back to the first act', (): void => {
+  const trimmed: ActDef = { ...act, atlas: { ...act.atlas, places: act.atlas.places.filter((place: MapPlace): boolean => place.zone !== 'stillhold') } };
+  const lost: Content = { ...content, world: { ...content.world, acts: [trimmed] } };
+  const found: ActDef = must(actOf(lost, 'stillhold'), 'act');
+  assert.equal(found, lost.world.acts[0]);
+  assert.ok(!found.atlas.places.some((place: MapPlace): boolean => place.zone === 'stillhold'));
 });
