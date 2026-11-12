@@ -20,7 +20,8 @@
   box-sizing: border-box;
   min-height: calc(var(--title-foot-h) + env(safe-area-inset-bottom, 0px));
   padding: 0 calc(16px + env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) calc(18px + env(safe-area-inset-left, 0px));
-  background: linear-gradient(to top, rgba(4, 6, 10, 0.78), rgba(4, 6, 10, 0));
+  background: var(--dither), linear-gradient(to top, rgba(4, 6, 10, 0.78), rgba(4, 6, 10, 0));
+  background-size: var(--dither-size), auto;
   font-family: var(--sans);
   font-size: 12px;
   color: rgba(239, 230, 214, 0.3);

@@ -43,7 +43,8 @@
   inset: -90% -30%;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(ellipse 40% 34% at 50% 50%, var(--threshold-light), transparent 100%);
+  background: var(--dither), radial-gradient(ellipse 40% 34% at 50% 50%, var(--threshold-light), transparent 100%);
+  background-size: var(--dither-size), auto;
 }
 
 #title-enter::before {
@@ -54,7 +55,8 @@
 #title-enter::after {
   opacity: 0;
   transform: scale(0.82);
-  background: radial-gradient(ellipse 46% 38% at 50% 50%, var(--threshold-light-lit), transparent 100%);
+  background: var(--dither), radial-gradient(ellipse 46% 38% at 50% 50%, var(--threshold-light-lit), transparent 100%);
+  background-size: var(--dither-size), auto;
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-smooth-ms) var(--spring-smooth);

@@ -6,8 +6,9 @@
   background-image:
     linear-gradient(rgba(127, 212, 255, 0.11) 1px, rgba(127, 212, 255, 0) 1px),
     linear-gradient(90deg, rgba(127, 212, 255, 0.11) 1px, rgba(127, 212, 255, 0) 1px),
+    var(--dither),
     radial-gradient(ellipse at center, rgba(4, 8, 14, 0) 30%, rgba(4, 8, 14, 0.5) 100%);
-  background-size: 44px 44px, 44px 44px, 100% 100%;
+  background-size: 44px 44px, 44px 44px, var(--dither-size), 100% 100%;
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 

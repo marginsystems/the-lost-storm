@@ -445,8 +445,10 @@
   inset: 0;
   pointer-events: none;
   background:
+    var(--dither),
     radial-gradient(ellipse at 50% 46%, rgba(0, 0, 0, 0) 56%, rgba(0, 0, 0, 0.5) 100%),
     linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 0) 72%, rgba(0, 0, 0, 0.72));
+  background-size: var(--dither-size), auto, auto;
 }
 
 .atlas-head {

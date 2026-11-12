@@ -1,0 +1,16 @@
+#vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--dither), radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 52%, rgba(2, 4, 8, 0.62) 100%);
+  background-size: var(--dither-size), auto;
+}
+
+#vignette::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--dither), radial-gradient(ellipse at center, rgba(108, 46, 40, 0) 68%, rgba(108, 46, 40, 0.16) 86%, rgba(120, 52, 44, 0.34) 100%);
+  background-size: var(--dither-size), auto;
+  opacity: var(--hurt, 0);
+}

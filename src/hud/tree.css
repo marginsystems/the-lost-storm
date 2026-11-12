@@ -17,9 +17,10 @@
     radial-gradient(1px 1px at 92px 71px, rgba(200, 225, 255, 0.32), transparent 1.5px),
     radial-gradient(1.5px 1.5px at 141px 133px, rgba(220, 235, 255, 0.4), transparent 2px),
     radial-gradient(1px 1px at 57px 168px, rgba(200, 225, 255, 0.26), transparent 1.5px),
+    var(--dither),
     radial-gradient(ellipse at 50% 46%, rgba(40, 62, 92, 0.34), rgba(5, 7, 11, 0) 68%),
     #05070b;
-  background-size: 190px 190px, 190px 190px, 190px 190px, 190px 190px, 100% 100%, 100% 100%;
+  background-size: 190px 190px, 190px 190px, 190px 190px, 190px 190px, var(--dither-size), 100% 100%, 100% 100%;
   box-shadow: none;
 }
 
