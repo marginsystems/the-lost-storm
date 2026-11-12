@@ -9,7 +9,7 @@ from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from wearable_fit import SKELETONS, SourceSkeleton, Span, inflate, refit, simplify, trim_faces
+from wearable_fit import SKELETONS, SourceSkeleton, Span, inflate, keep_below, refit, simplify, trim_faces
 from wearable_makehuman import Garment
 from wearable_makehuman import load as load_makehuman
 from wearable_makehuman import load_body
@@ -49,6 +49,7 @@ class Part:
     desaturate: float
     luma: float | None
     cutout: bool
+    keep_below: float | None
 
 
 def read_span(raw: object) -> Span | None:
@@ -81,6 +82,7 @@ def read_part(raw: dict[str, object]) -> Part:
         desaturate=float(raw.get("desaturate", 0.0)),
         luma=None if raw.get("luma") is None else float(raw["luma"]),
         cutout=bool(raw.get("cutout", False)),
+        keep_below=None if raw.get("keepBelow") is None else float(raw["keepBelow"]),
     )
 
 
@@ -223,6 +225,7 @@ def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path)
     for source in sources:
         refit(source.obj, source.skeleton, source.heads, target, pack.girth if part.girth is None else part.girth)
         source.obj.data.transform(Matrix.Translation(part.shift))
+        keep_below(source.obj, source.name, part.keep_below if source.name == part.id else None)
         inflate(source.obj, part.inflate)
         simplify(source.obj, part.decimate if source.name == part.id else 1.0)
         retexture(source.obj, source.name, source.size, source.images, scratch, part.desaturate, part.luma if source.name == part.id else None, part.cutout and source.name == part.id)

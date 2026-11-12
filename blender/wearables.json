@@ -21,7 +21,7 @@
     {"id": "wool_trousers", "pack": "makehuman_pants01", "file": "clothes/toigo_wool_pants/toigo_wool_pants.mhclo", "textureSize": 512, "desaturate": 0.6, "luma": 0.45},
     {"id": "hide_boots", "pack": "makehuman_suits02", "file": "clothes/rehmanpolanski_viking_boots/rehmanpolanski_viking_boots.mhclo", "textureSize": 512},
     {"id": "leather_jerkin", "pack": "makehuman_suits02", "file": "clothes/rehmanpolanski_viking_tunic/rehmanpolanski_viking_tunic.mhclo", "decimate": 0.6, "textureSize": 1024, "desaturate": 0.85, "luma": 0.42},
-    {"id": "tall_boots", "pack": "makehuman_shoes01", "file": "clothes/culturalibre_male_boots/culturalibre_male_boots.mhclo", "decimate": 0.2, "textureSize": 512},
+    {"id": "tall_boots", "pack": "makehuman_shoes01", "file": "clothes/culturalibre_male_boots/culturalibre_male_boots.mhclo", "decimate": 0.2, "keepBelow": 0.25, "textureSize": 512},
     {"id": "long_gloves", "pack": "makehuman_gloves01", "file": "clothes/toigo_gloves_long/toigo_gloves_long.mhclo", "decimate": 0.5, "textureSize": 256, "desaturate": 1.0, "luma": 0.45},
     {"id": "hair_short", "pack": "makehuman_system", "file": "hair/short02/short02.mhclo", "shape": [["caucasian-male-young", 0.5], ["caucasian-male-old", 0.5], ["universal-male-young-maxmuscle-averageweight", 0.6]], "textureSize": 1024, "cutout": true},
     {"id": "hair_cropped", "pack": "makehuman_system", "file": "hair/short01/short01.mhclo", "shape": [["caucasian-male-young", 0.5], ["caucasian-male-old", 0.5], ["universal-male-young-maxmuscle-averageweight", 0.6]], "textureSize": 1024, "cutout": true},

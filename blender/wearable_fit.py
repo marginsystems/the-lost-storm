@@ -177,6 +177,22 @@ def refit(obj: Object, skeleton: SourceSkeleton, source: dict[str, Vector], targ
     mesh.update()
 
 
+def keep_below(obj: Object, label: str, top: float | None) -> None:
+    if top is None:
+        return
+    mesh = bmesh.new()
+    mesh.from_mesh(obj.data)
+    bmesh.ops.bisect_plane(mesh, geom=[*mesh.verts, *mesh.edges, *mesh.faces], plane_co=(0.0, 0.0, top), plane_no=(0.0, 0.0, 1.0), dist=1e-6)
+    above = [face for face in mesh.faces if face.calc_center_median().z > top]
+    bmesh.ops.delete(mesh, geom=above, context="FACES")
+    loose = [vert for vert in mesh.verts if not vert.link_faces]
+    bmesh.ops.delete(mesh, geom=loose, context="VERTS")
+    mesh.to_mesh(obj.data)
+    mesh.free()
+    if len(obj.data.polygons) == 0:
+        raise RuntimeError(f"{label}: nothing left below {top}")
+
+
 def inflate(obj: Object, distance: float) -> None:
     if distance == 0.0:
         return
