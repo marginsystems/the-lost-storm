@@ -165,6 +165,7 @@ void test('a leap never lands through a wall raised across its path', (): void =
     const index: number = cellIndex(world.grid, wallX, z);
     world.grid.solid[index] = 1;
     world.grid.walkable[index] = 0;
+    world.grid.ground[index] = 0;
   }
   for (let step: number = 0; step < Math.round((pounce.windup + 0.05) / DT); step += 1) stepWorld(world, [], DT);
   assert.ok(ghoul.pos.x > wallX, `it stayed on its own side of the wall (${ghoul.pos.x.toFixed(2)} against ${wallX.toFixed(2)})`);

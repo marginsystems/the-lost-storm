@@ -12,12 +12,18 @@ export interface NavGrid {
   readonly solid: Uint8Array;
   readonly pace: Float32Array;
   readonly drifts: readonly DriftCells[];
+  readonly ground: Uint8Array;
+  readonly bodies: readonly Blocker[];
+  readonly near: ReadonlyMap<number, readonly number[]>;
+  readonly radius: number;
+  readonly routed: boolean;
 }
 
 export interface DriftCells {
   readonly drift: ZoneDrift;
   readonly cells: Int32Array;
   readonly walkable: Uint8Array;
+  readonly ground: Uint8Array;
   open: boolean;
 }
 
@@ -27,6 +33,7 @@ export interface GridStamp {
   readonly cells: Int32Array;
   readonly walkable: Uint8Array;
   readonly solid: Uint8Array;
+  readonly ground: Uint8Array;
 }
 
 export function propBlocker(def: PropDef, x: number, z: number, rotationDegrees: number): Blocker | null {
@@ -38,16 +45,20 @@ export function propBlocker(def: PropDef, x: number, z: number, rotationDegrees:
   return { kind: 'capsule', from: { x: x - ax, z: z - az }, to: { x: x + ax, z: z + az }, radius: def.blockRadius };
 }
 
-export function propOutline(def: PropDef, x: number, z: number, rotationDegrees: number): Blocker | null {
-  if (def.footprint.length < 3) return null;
+export function propOutlines(def: PropDef, x: number, z: number, rotationDegrees: number): Blocker[] {
   const angle: number = (rotationDegrees * Math.PI) / 180;
   const cos: number = Math.cos(angle);
   const sin: number = Math.sin(angle);
-  return { kind: 'outline', outline: def.footprint.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: x + point.x * cos + point.z * sin, z: z - point.x * sin + point.z * cos })) };
+  return def.footprints
+    .filter((outline: readonly ReadonlyVec2[]): boolean => outline.length >= 3)
+    .map((outline: readonly ReadonlyVec2[]): Blocker => ({ kind: 'outline', outline: outline.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: x + point.x * cos + point.z * sin, z: z - point.x * sin + point.z * cos })) }));
 }
 
 export function propBlockers(def: PropDef, x: number, z: number, rotationDegrees: number): Blocker[] {
-  return [propBlocker(def, x, z, rotationDegrees), propOutline(def, x, z, rotationDegrees)].filter((blocker: Blocker | null): blocker is Blocker => blocker !== null);
+  const outlines: Blocker[] = propOutlines(def, x, z, rotationDegrees);
+  if (outlines.length > 0) return outlines;
+  const capsule: Blocker | null = propBlocker(def, x, z, rotationDegrees);
+  return capsule === null ? [] : [capsule];
 }
 
 export function blockerGap(blocker: Blocker, x: number, z: number): number {
@@ -63,11 +74,12 @@ const NAV = {
   cellSize: 0.5,
   lineStep: 0.25,
   searchStep: 0.5,
+  normalStep: 0.01,
+  touch: 1e-9,
+  backOut: 1e-6,
+  slideLeast: 0.2,
+  slideShares: [1, 0.5],
 } as const;
-
-export function blockerClearance(blocker: Blocker, agentRadius: number): number {
-  return blocker.kind === 'outline' && agentRadius > 0 ? agentRadius + NAV.cellSize * Math.SQRT1_2 : agentRadius;
-}
 
 function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[] {
   const list: Blocker[] = [];
@@ -126,11 +138,10 @@ function fill(zone: ZoneDef, obstacles: readonly Blocker[], columns: number, row
     for (let column: number = 0; column < columns; column += 1) cells[row * columns + column] = insideFloor(zone, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize, margin) ? 1 : 0;
   }
   for (const blocker of obstacles) {
-    const clearance: number = blockerClearance(blocker, agentRadius);
-    const bounds: Bounds = blockerBounds(blocker, clearance, columns, rows);
+    const bounds: Bounds = blockerBounds(blocker, agentRadius, columns, rows);
     for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
       for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
-        if (cells[row * columns + column] === 1 && blockerGap(blocker, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize) < clearance) cells[row * columns + column] = 0;
+        if (cells[row * columns + column] === 1 && blockerGap(blocker, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize) < agentRadius) cells[row * columns + column] = 0;
       }
     }
   }
@@ -148,7 +159,7 @@ function paceOf(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, column
   return pace;
 }
 
-function driftCells(zone: ZoneDef, drift: ZoneDrift, walkable: Uint8Array, columns: number, rows: number): DriftCells {
+function driftCells(zone: ZoneDef, drift: ZoneDrift, walkable: Uint8Array, ground: Uint8Array, columns: number, rows: number): DriftCells {
   const cells: number[] = [];
   const fromX: number = drift.column * zone.cellSize;
   const fromZ: number = drift.row * zone.cellSize;
@@ -163,7 +174,7 @@ function driftCells(zone: ZoneDef, drift: ZoneDrift, walkable: Uint8Array, colum
     }
   }
   const indices: Int32Array = Int32Array.from(cells);
-  return { drift, cells: indices, walkable: Uint8Array.from(indices, (index: number): number => walkable[index] ?? 0), open: true };
+  return { drift, cells: indices, walkable: Uint8Array.from(indices, (index: number): number => walkable[index] ?? 0), ground: Uint8Array.from(indices, (index: number): number => ground[index] ?? 0), open: true };
 }
 
 export function buildNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
@@ -173,28 +184,47 @@ export function buildNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>,
   const open: Uint8Array = fill(zone, obstacles, columns, rows, 0);
   const solid: Uint8Array = open.map((value: number): number => 1 - value);
   const walkable: Uint8Array = fill(zone, obstacles, columns, rows, agentRadius);
-  const drifts: DriftCells[] = zone.drifts.map((drift: ZoneDrift): DriftCells => driftCells(zone, drift, walkable, columns, rows));
-  return { cellSize: NAV.cellSize, columns, rows, walkable, solid, pace: paceOf(zone, surfaces, columns, rows), drifts };
+  const ground: Uint8Array = fill(zone, [], columns, rows, agentRadius);
+  const drifts: DriftCells[] = zone.drifts.map((drift: ZoneDrift): DriftCells => driftCells(zone, drift, walkable, ground, columns, rows));
+  return { cellSize: NAV.cellSize, columns, rows, walkable, solid, pace: paceOf(zone, surfaces, columns, rows), drifts, ground, bodies: obstacles, near: nearBodies(obstacles, agentRadius, columns, rows), radius: agentRadius, routed: false };
+}
+
+function nearBodies(bodies: readonly Blocker[], agentRadius: number, columns: number, rows: number): Map<number, number[]> {
+  const near: Map<number, number[]> = new Map<number, number[]>();
+  const reach: number = agentRadius + NAV.cellSize * Math.SQRT1_2;
+  bodies.forEach((body: Blocker, at: number): void => {
+    const bounds: Bounds = blockerBounds(body, reach, columns, rows);
+    for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
+      for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
+        if (blockerGap(body, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize) >= reach) continue;
+        const index: number = row * columns + column;
+        const list: number[] | undefined = near.get(index);
+        if (list === undefined) near.set(index, [at]);
+        else list.push(at);
+      }
+    }
+  });
+  return near;
 }
 
 export function stampBlockers(grid: NavGrid, stamped: readonly Blocker[], agentRadius: number): GridStamp {
   const gaps: Map<number, number> = new Map<number, number>();
   for (const blocker of stamped) {
-    const extra: number = blockerClearance(blocker, agentRadius) - agentRadius;
-    const bounds: Bounds = blockerBounds(blocker, agentRadius + extra, grid.columns, grid.rows);
+    const bounds: Bounds = blockerBounds(blocker, agentRadius, grid.columns, grid.rows);
     for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
       for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
         const index: number = row * grid.columns + column;
         const centre: Vec2 = cellCenter(grid, index);
-        gaps.set(index, Math.min(gaps.get(index) ?? Infinity, blockerGap(blocker, centre.x, centre.z) - extra));
+        gaps.set(index, Math.min(gaps.get(index) ?? Infinity, blockerGap(blocker, centre.x, centre.z)));
       }
     }
   }
   const touched: [number, number][] = [...gaps].filter(([, gap]: [number, number]): boolean => gap < agentRadius).toSorted((a: [number, number], b: [number, number]): number => a[0] - b[0]);
   const indices: Int32Array = Int32Array.from(touched, ([index]: [number, number]): number => index);
-  const stamp: GridStamp = { cells: indices, walkable: Uint8Array.from(indices, (index: number): number => grid.walkable[index] ?? 0), solid: Uint8Array.from(indices, (index: number): number => grid.solid[index] ?? 0) };
+  const stamp: GridStamp = { cells: indices, walkable: Uint8Array.from(indices, (index: number): number => grid.walkable[index] ?? 0), solid: Uint8Array.from(indices, (index: number): number => grid.solid[index] ?? 0), ground: Uint8Array.from(indices, (index: number): number => grid.ground[index] ?? 0) };
   touched.forEach(([index, gap]: [number, number]): void => {
     grid.walkable[index] = 0;
+    grid.ground[index] = 0;
     if (gap < 0) grid.solid[index] = 1;
   });
   return stamp;
@@ -204,6 +234,7 @@ export function liftStamp(grid: NavGrid, stamp: GridStamp): void {
   stamp.cells.forEach((index: number, at: number): void => {
     grid.walkable[index] = stamp.walkable[at] ?? 0;
     grid.solid[index] = stamp.solid[at] ?? 0;
+    grid.ground[index] = stamp.ground[at] ?? 0;
   });
 }
 
@@ -216,6 +247,7 @@ export function setDriftOpen(grid: NavGrid, patch: DriftCells, open: boolean): v
   patch.open = open;
   patch.cells.forEach((index: number, at: number): void => {
     grid.walkable[index] = open ? (patch.walkable[at] ?? 0) : 0;
+    grid.ground[index] = open ? (patch.ground[at] ?? 0) : 0;
   });
 }
 
@@ -230,9 +262,98 @@ export function cellCenter(grid: NavGrid, index: number): Vec2 {
   return { x: ((index % grid.columns) + 0.5) * grid.cellSize, z: (Math.floor(index / grid.columns) + 0.5) * grid.cellSize };
 }
 
-export function isWalkable(grid: NavGrid, x: number, z: number): boolean {
+export function bodyGap(grid: NavGrid, x: number, z: number): number {
   const index: number = cellIndex(grid, x, z);
-  return index >= 0 && grid.walkable[index] === 1;
+  let gap: number = Number.POSITIVE_INFINITY;
+  for (const at of grid.near.get(index) ?? []) {
+    const body: Blocker | undefined = grid.bodies[at];
+    if (body !== undefined) gap = Math.min(gap, blockerGap(body, x, z));
+  }
+  return gap;
+}
+
+function onGround(grid: NavGrid, x: number, z: number): boolean {
+  const index: number = cellIndex(grid, x, z);
+  return index >= 0 && grid.ground[index] === 1;
+}
+
+export function isWalkable(grid: NavGrid, x: number, z: number): boolean {
+  return onGround(grid, x, z) && (!grid.routed || grid.walkable[cellIndex(grid, x, z)] === 1) && bodyGap(grid, x, z) >= grid.radius - NAV.touch;
+}
+
+const ROUTED: WeakMap<NavGrid, NavGrid> = new WeakMap<NavGrid, NavGrid>();
+
+export function routedGrid(grid: NavGrid): NavGrid {
+  if (grid.routed) return grid;
+  const known: NavGrid | undefined = ROUTED.get(grid);
+  if (known !== undefined) return known;
+  const routed: NavGrid = { ...grid, routed: true };
+  ROUTED.set(grid, routed);
+  return routed;
+}
+
+function canStep(grid: NavGrid, pos: Vec2, x: number, z: number): boolean {
+  if (isWalkable(grid, x, z)) return true;
+  if (grid.routed && isWalkable(grid, pos.x, pos.z)) return false;
+  return onGround(grid, x, z) && bodyGap(grid, x, z) > bodyGap(grid, pos.x, pos.z);
+}
+
+function bodyNormal(grid: NavGrid, x: number, z: number): Vec2 | null {
+  let nearest: Blocker | null = null;
+  let gap: number = grid.radius;
+  for (const at of grid.near.get(cellIndex(grid, x, z)) ?? []) {
+    const body: Blocker | undefined = grid.bodies[at];
+    if (body === undefined) continue;
+    const here: number = blockerGap(body, x, z);
+    if (here < gap) {
+      gap = here;
+      nearest = body;
+    }
+  }
+  if (nearest === null) return null;
+  const step: number = NAV.normalStep;
+  const gx: number = blockerGap(nearest, x + step, z) - blockerGap(nearest, x - step, z);
+  const gz: number = blockerGap(nearest, x, z + step) - blockerGap(nearest, x, z - step);
+  const length: number = Math.hypot(gx, gz);
+  return length <= 0 ? null : { x: gx / length, z: gz / length };
+}
+
+export function slideAlong(grid: NavGrid, pos: ReadonlyVec2, dx: number, dz: number): Vec2 | null {
+  const normal: Vec2 | null = bodyNormal(grid, pos.x + dx, pos.z + dz) ?? bodyNormal(grid, pos.x, pos.z);
+  if (normal === null) return null;
+  const into: number = dx * normal.x + dz * normal.z;
+  if (into >= 0) return null;
+  const along: Vec2 = { x: dx - normal.x * into, z: dz - normal.z * into };
+  return Math.hypot(along.x, along.z) < Math.hypot(dx, dz) * NAV.slideLeast ? null : along;
+}
+
+export function slideOnBody(grid: NavGrid, pos: Vec2, dx: number, dz: number): boolean {
+  const along: Vec2 | null = slideAlong(grid, pos, dx, dz);
+  if (along === null) return false;
+  for (const share of NAV.slideShares) {
+    const target: Vec2 = backOut(grid, { x: pos.x + along.x * share, z: pos.z + along.z * share });
+    if (!canStep(grid, pos, target.x, target.z)) continue;
+    pos.x = target.x;
+    pos.z = target.z;
+    return true;
+  }
+  return false;
+}
+
+function backOut(grid: NavGrid, point: Vec2): Vec2 {
+  const short: number = grid.radius - bodyGap(grid, point.x, point.z);
+  if (short <= 0) return point;
+  const normal: Vec2 | null = bodyNormal(grid, point.x, point.z);
+  if (normal === null) return point;
+  const push: number = short + NAV.backOut;
+  return { x: point.x + normal.x * push, z: point.z + normal.z * push };
+}
+
+export function stepClear(grid: NavGrid, pos: Vec2, dx: number, dz: number): boolean {
+  if (!canStep(grid, pos, pos.x + dx, pos.z + dz)) return false;
+  pos.x += dx;
+  pos.z += dz;
+  return true;
 }
 
 export function isSolid(grid: NavGrid, x: number, z: number): boolean {
@@ -288,14 +409,7 @@ export function nearestWalkable(grid: NavGrid, point: ReadonlyVec2, maxRadius: n
 }
 
 export function moveWithCollision(grid: NavGrid, pos: Vec2, dx: number, dz: number): void {
-  if (isWalkable(grid, pos.x + dx, pos.z + dz)) {
-    pos.x += dx;
-    pos.z += dz;
-    return;
-  }
-  if (isWalkable(grid, pos.x + dx, pos.z)) {
-    pos.x += dx;
-    return;
-  }
-  if (isWalkable(grid, pos.x, pos.z + dz)) pos.z += dz;
+  if (stepClear(grid, pos, dx, dz) || slideOnBody(grid, pos, dx, dz)) return;
+  if (stepClear(grid, pos, dx, 0)) return;
+  stepClear(grid, pos, 0, dz);
 }

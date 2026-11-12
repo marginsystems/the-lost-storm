@@ -4,6 +4,7 @@ import type { ComboStep, Delivery, ProjectileDelivery, SkillDef } from '../conte
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot, facingOf, normalize, rotate } from '../math.ts';
 import { isSolid, isWalkable, lineOfSight, moveWithCollision } from '../nav/grid.ts';
+import { gridFor } from './movement.ts';
 import type { Offence } from './combat.ts';
 import { applyHit, offenceOf, targetsOf, teamOf } from './combat.ts';
 import { stepDash } from './dash.ts';
@@ -134,7 +135,7 @@ function clearReach(world: World, actor: Actor, aim: ReadonlyVec2, wanted: numbe
   let reach: number = 0;
   while (reach < wanted) {
     const next: number = Math.min(wanted, reach + SKILLS.leapProbe);
-    if (!isWalkable(world.grid, actor.pos.x + aim.x * next, actor.pos.z + aim.z * next)) return reach;
+    if (!isWalkable(gridFor(world, actor), actor.pos.x + aim.x * next, actor.pos.z + aim.z * next)) return reach;
     reach = next;
   }
   return reach;
@@ -276,7 +277,7 @@ export function stepEchoes(world: World, dt: number): void {
 
 function land(world: World, actor: Actor, action: ActionState): void {
   const target: Vec2 | null = action.target;
-  if (target === null || !isWalkable(world.grid, target.x, target.z) || !lineOfSight(world.grid, actor.pos, target)) return;
+  if (target === null || !isWalkable(gridFor(world, actor), target.x, target.z) || !lineOfSight(world.grid, actor.pos, target)) return;
   actor.pos.x = target.x;
   actor.pos.z = target.z;
   actor.motion = 'lunge';
@@ -324,12 +325,12 @@ function finishWindup(world: World, actor: Actor, action: ActionState): void {
 export function stepAction(world: World, actor: Actor, dt: number): void {
   const action = actor.action;
   if (action === null) return;
-  stepDash(world.grid, actor, action, dt);
+  stepDash(gridFor(world, actor), actor, action, dt);
   action.timeLeft -= dt;
   action.elapsed += dt;
   if (action.phase === 'windup' && action.travelLeft > 0 && action.timeLeft < action.travelLeft / action.travelSpeed + dt) {
     const step: number = Math.min(action.travelLeft, action.travelSpeed * dt);
-    moveWithCollision(world.grid, actor.pos, action.direction.x * step, action.direction.z * step);
+    moveWithCollision(gridFor(world, actor), actor.pos, action.direction.x * step, action.direction.z * step);
     actor.motion = 'lunge';
     action.travelLeft -= step;
   }

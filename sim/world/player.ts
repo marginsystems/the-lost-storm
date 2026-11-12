@@ -13,7 +13,7 @@ import { advanceDialogue, closeDialogue, DIALOGUE, findNpc } from './dialogue.ts
 import { pickUp } from './finds.ts';
 import { useFlask } from './flasks.ts';
 import type { Steering, SteerStep } from './movement.ts';
-import { beingKnocked, steerAlong, stepKnock, stepTimers } from './movement.ts';
+import { beingKnocked, faceToward, steerAlong, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
 import { blockedReason, startSkill, steerAction, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
@@ -27,6 +27,8 @@ import { findExit, stepCheckpoints, travelThrough } from './zones.ts';
 const PLAYER = {
   heldExitSlack: 1.3,
   moveDeadZone: 0.7,
+  faceDeadZone: 0.1,
+  faceTurn: 0.35,
   resumeDistance: 1.4,
   repathInterval: 0.2,
   goldDelay: 0.45,
@@ -76,9 +78,12 @@ function startMove(world: World, dest: Vec2, held: boolean): void {
   const goal: Vec2 = path.at(-1) ?? player.pos;
   const reach: number = distance(player.pos, goal);
   const standing: boolean = player.path.length === 0;
-  const tooClose: boolean = reach < PLAYER.moveDeadZone || (held && standing && reach < PLAYER.resumeDistance);
+  const pressing: boolean = held && !isWalkable(world.grid, dest.x, dest.z);
+  const deadZone: number = pressing ? PLAYER.faceDeadZone : PLAYER.moveDeadZone;
+  const tooClose: boolean = reach < deadZone || (held && !pressing && standing && reach < PLAYER.resumeDistance);
   if (tooClose) {
-    if (!held || reach < PLAYER.moveDeadZone) {
+    if (pressing) faceToward(player, { x: dest.x - player.pos.x, z: dest.z - player.pos.z }, PLAYER.faceTurn);
+    if (!held || reach < deadZone) {
       player.intent = { type: 'idle' };
       player.path = [];
     }

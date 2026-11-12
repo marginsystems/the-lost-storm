@@ -1,7 +1,8 @@
 import type { AroundScatter, Content, OpenScatter, PropDef, ScatterSize, ZoneDef, ZoneExit, ZoneProp, ZoneScatter } from '../../sim/content/types.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { Blocker } from '../../sim/nav/grid.ts';
-import { blockerGap, propBlockers, propOutline } from '../../sim/nav/grid.ts';
+import { blockerGap, propBlockers, propOutlines } from '../../sim/nav/grid.ts';
+import { convexHull } from '../../sim/nav/outline.ts';
 import { isFloorCell, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
 import { edgeNoise, edgeRocks, propReach } from './zone-edge.ts';
 
@@ -82,8 +83,8 @@ function openStones(zone: ZoneDef, rule: OpenScatter, blockers: readonly Blocker
 }
 
 function ringOf(def: PropDef, placed: ZoneProp): readonly ReadonlyVec2[] {
-  const outline: Blocker | null = propOutline(def, placed.x, placed.z, placed.rotationDegrees);
-  if (outline !== null && outline.kind === 'outline') return outline.outline;
+  const corners: ReadonlyVec2[] = propOutlines(def, placed.x, placed.z, placed.rotationDegrees).flatMap((outline: Blocker): readonly ReadonlyVec2[] => (outline.kind === 'outline' ? outline.outline : []));
+  if (corners.length >= 3) return convexHull(corners);
   const reach: number = propReach(def);
   return Array.from({ length: ZONE_SCATTER.ringPoints }, (_: unknown, index: number): ReadonlyVec2 => {
     const angle: number = (index / ZONE_SCATTER.ringPoints) * ZONE_SCATTER.turn;

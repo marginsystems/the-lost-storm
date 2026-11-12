@@ -2,6 +2,7 @@ import type { AreaDelivery } from '../content/shape-types.ts';
 import type { SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { moveWithCollision } from '../nav/grid.ts';
+import { gridFor } from './movement.ts';
 import { applyHit, findActor, targetsOf } from './combat.ts';
 import { isDashing } from './dash.ts';
 import { steadiness } from './poise.ts';
@@ -52,7 +53,7 @@ function pull(world: World, area: AreaState, delivery: AreaDelivery, dt: number)
     const gap: number = Math.hypot(offset.x, offset.z);
     const step: number = Math.min(delivery.pull * steadiness(target) * dt, gap - AREAS.pullStop);
     if (step <= 0) continue;
-    moveWithCollision(world.grid, target.pos, (offset.x / gap) * step, (offset.z / gap) * step);
+    moveWithCollision(gridFor(world, target), target.pos, (offset.x / gap) * step, (offset.z / gap) * step);
     target.motion = 'pulled';
   }
 }

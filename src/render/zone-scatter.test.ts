@@ -38,7 +38,7 @@ void test('every scattered prop is loose ground cover: no collider, no light, ne
     for (const rule of zone.scatter) {
       for (const id of rule.props) {
         const def: PropDef = must(content.props.get(id), id);
-        assert.equal(def.footprint.length, 0, `${id} is solid`);
+        assert.equal(def.footprints.length, 0, `${id} is solid`);
         assert.equal(def.blockRadius, 0);
         const height: number = must(heights.get(def.model), def.model) * def.scale * rule.size.most;
         assert.ok(height <= ZONE_SCATTER.ankle, `${id} stands ${height.toFixed(2)} m in ${zone.id}`);
