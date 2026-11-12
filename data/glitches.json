@@ -10,7 +10,7 @@
     {"value": 1, "when": [{"type": "quest", "quest": "to_the_waystation", "is": "done"}]}
   ],
   "triggers": [
-    {"id": "first_seam", "kind": "hard_cut", "during": "combat", "when": [{"type": "quest", "quest": "to_the_waystation", "is": "done"}]}
+    {"id": "first_seam", "kind": "hard_cut", "during": "calm", "when": [{"type": "quest", "quest": "to_the_waystation", "is": "done"}]}
   ],
   "edits": [
     {"id": "hero_turn", "type": "hero_turn", "weight": 2},

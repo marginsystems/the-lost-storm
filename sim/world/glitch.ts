@@ -5,14 +5,22 @@ import { createRng, pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
 import { applyEdit, turnHero } from './glitch-edits.ts';
 import type { ActiveGlitch, GlitchRequest, GlitchSave, GlitchSource, GlitchState, PathEntry, Silhouette } from './glitch-types.ts';
-import type { Command, MonsterState, World } from './types.ts';
+import { pendingOffer } from './learning.ts';
+import type { Command, MomentState, MonsterState, World, WorldEvent } from './types.ts';
 
 export const GLITCH = {
   secondsPerMinute: 60,
   freshSilhouetteSeconds: 20,
 } as const;
 
-export type GlitchBlock = 'off' | 'dead' | 'active' | 'cooldown' | 'low_life' | 'telegraph' | 'busy';
+export const CALM = {
+  fightQuiet: 8,
+  arrival: 60,
+  mistGap: 150,
+  mistCap: 1.6,
+} as const;
+
+export type GlitchBlock = 'off' | 'dead' | 'active' | 'cooldown' | 'low_life' | 'telegraph' | 'busy' | 'fight' | 'choice' | 'arrival' | 'spacing';
 
 export function createGlitchState(def: GlitchDef, seed: number, save: GlitchSave | null): GlitchState {
   return {
@@ -25,6 +33,9 @@ export function createGlitchState(def: GlitchDef, seed: number, save: GlitchSave
     holdUntil: 0,
     readyAt: 0,
     combatTime: 0,
+    lastFight: -Infinity,
+    lastMist: -Infinity,
+    zoneSince: 0,
     requests: [],
     wrongWord: null,
   };
@@ -70,7 +81,32 @@ export function glitchBlock(world: World, request: GlitchRequest): GlitchBlock |
   if (lethalTelegraph(world)) return 'telegraph';
   if (player.life < player.maxLife * state.def.rules.minLifeFraction) return 'low_life';
   if (isMist(request.kind) && (world.dialogue !== null || world.service !== null)) return 'busy';
+  return isMist(request.kind) ? calmBlock(world, request) : null;
+}
+
+function momentFight(world: World, moment: MomentState): boolean {
+  return moment.phase === 'awake' && moment.figures.some((figure): boolean => figure.turned && world.monsters.some((monster: MonsterState): boolean => monster.id === figure.monsterId && monster.alive));
+}
+
+export function fighting(world: World): boolean {
+  return inCombat(world) || world.time - world.glitch.lastFight < CALM.fightQuiet || world.moments.some((moment: MomentState): boolean => momentFight(world, moment));
+}
+
+function calmBlock(world: World, request: GlitchRequest): GlitchBlock | null {
+  const state: GlitchState = world.glitch;
+  if (fighting(world)) return 'fight';
+  if (pendingOffer(world) !== null) return 'choice';
+  if (request.source === 'debug' || (request.source === 'zone' && request.kind === 'quiet_pass')) return null;
+  if (world.time - state.zoneSince < CALM.arrival) return 'arrival';
+  if (world.time - state.lastMist < CALM.mistGap) return 'spacing';
   return null;
+}
+
+function noteFights(world: World): void {
+  const state: GlitchState = world.glitch;
+  const hero: number = world.player.id;
+  if (world.events.some((event: WorldEvent): boolean => event.type === 'damage' && (event.targetTeam === 'player' || event.sourceId === hero))) state.lastFight = world.time;
+  if (world.events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) state.zoneSince = world.time;
 }
 
 export function requestGlitch(world: World, kind: GlitchKind, source: GlitchSource): void {
@@ -191,7 +227,7 @@ function begin(world: World, request: GlitchRequest): void {
     world.events.push({ type: 'glitch_start', kind: request.kind, duration: 0, edit: null, silhouettes: [] });
     return;
   }
-  const duration: number = request.kind === 'hard_cut' ? state.rng.range(stage.mist.min, stage.mist.max) : request.kind === 'stutter' ? state.def.stutter : state.def.quietPass;
+  const duration: number = request.kind === 'hard_cut' ? Math.min(CALM.mistCap, state.rng.range(stage.mist.min, stage.mist.max)) : request.kind === 'stutter' ? state.def.stutter : state.def.quietPass;
   const silhouettes: Silhouette[] = request.kind === 'quiet_pass' ? pickSilhouettes(world, stage.silhouettes) : [];
   const chosen = request.kind === 'hard_cut' ? chooseEdit(world, stage, state.rng) : { edit: null, turn: false };
   state.active = { kind: request.kind, source: request.source, duration, edit: chosen.edit, turn: chosen.turn, elapsed: 0 };
@@ -199,6 +235,7 @@ function begin(world: World, request: GlitchRequest): void {
   state.holdUntil = world.time + held;
   interruptMonsters(world);
   if (isMist(request.kind)) {
+    state.lastMist = world.time;
     still(world);
     world.events.push({ type: 'silence', duration });
   }
@@ -231,7 +268,7 @@ function rollCombat(world: World, stage: GlitchStage, dt: number): void {
   while (state.combatTime >= tick) {
     state.combatTime -= tick;
     if (state.active !== null || state.requests.length > 0 || world.time < state.readyAt) continue;
-    const kinds: GlitchKind[] = stage.kinds.filter((kind: GlitchKind): boolean => kind !== 'quiet_pass');
+    const kinds: GlitchKind[] = stage.kinds.filter((kind: GlitchKind): boolean => !isMist(kind));
     if (!state.rng.chance((stage.combatChancePerMinute * tick) / GLITCH.secondsPerMinute)) continue;
     const kind: GlitchKind | undefined = kinds[Math.min(kinds.length - 1, Math.floor(state.rng.next() * kinds.length))];
     if (kind !== undefined) state.requests.push({ kind, source: 'combat', trigger: null });
@@ -246,8 +283,8 @@ function rollZone(world: World, stage: GlitchStage): void {
 }
 
 function momentHolds(world: World, moment: TriggerMoment): boolean {
-  const fighting: boolean = inCombat(world);
-  const holds: Readonly<Record<TriggerMoment, boolean>> = { combat: fighting, calm: !fighting, any: true };
+  const engaged: boolean = inCombat(world);
+  const holds: Readonly<Record<TriggerMoment, boolean>> = { combat: engaged, calm: !engaged, any: true };
   return holds[moment];
 }
 
@@ -290,6 +327,7 @@ export function stepGlitch(world: World, dt: number): void {
     active.elapsed += dt;
     if (active.elapsed >= active.duration) finish(world, active);
   }
+  noteFights(world);
   state.progress = storyProgress(world);
   const stage: GlitchStage = stageOf(state.def, state.progress);
   if (state.enabled) {
