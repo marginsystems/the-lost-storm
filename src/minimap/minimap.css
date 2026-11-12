@@ -1,5 +1,5 @@
 .minimap {
-  --minimap-size: 188px;
+  --minimap-size: var(--fit-minimap, 188px);
   --minimap-top: 12px;
   --minimap-right: 16px;
   --minimap-label: 20px;
@@ -28,7 +28,10 @@
   opacity: 1;
   transform: translateY(0) scale(1);
   transform-origin: top right;
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    width var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .minimap.overlay .minimap-corner {
@@ -61,6 +64,9 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 8px 22px rgba(0, 0, 0, 0.42);
   pointer-events: auto;
   cursor: pointer;
+  transition:
+    width var(--spring-smooth-ms) var(--spring-smooth),
+    height var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .minimap.overlay .minimap-frame {
@@ -88,11 +94,18 @@
 }
 
 .hud > .hud-quests {
-  top: 236px;
+  top: calc(48px + var(--fit-minimap, 188px));
   transition:
     top var(--spring-bouncy-ms) var(--spring-bouncy),
+    width var(--spring-smooth-ms) var(--spring-smooth),
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s;
+}
+
+.hud.fit > .hud-quests {
+  width: var(--fit-quests, 250px);
+  max-height: calc(100% - 60px - var(--fit-minimap, 188px) - var(--hud-cluster-h, 168px));
+  overflow: hidden;
 }
 
 .hud.hud-covered-side > .hud-quests,
@@ -101,10 +114,24 @@
   visibility: hidden;
   transition:
     top var(--spring-bouncy-ms) var(--spring-bouncy),
+    width var(--spring-smooth-ms) var(--spring-smooth),
     opacity var(--spring-snappy-ms) var(--spring-snappy),
     visibility 0s linear var(--spring-snappy-ms);
 }
 
 .hud.minimap-overlaid > .hud-quests {
   top: 44px;
+}
+
+.hud.fit-sheets:has(.hud-panel.open) .minimap-corner,
+.hud.fit-sheets:has(.game-lobby.open) .minimap-corner {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px) scale(0.94);
+}
+
+.hud.fit-sheets:has(.hud-panel.open) > .hud-quests,
+.hud.fit-sheets:has(.game-lobby.open) > .hud-quests {
+  opacity: 0;
+  pointer-events: none;
 }

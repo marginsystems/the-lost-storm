@@ -11,6 +11,10 @@
   align-items: flex-end;
 }
 
+.hud.fit-stacked .hud-volume-wrap {
+  position: static;
+}
+
 .hud-volume-btn {
   width: 44px;
   margin-bottom: 8px;

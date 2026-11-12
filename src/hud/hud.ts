@@ -44,6 +44,7 @@ import type { Hints } from './hints.ts';
 import { createInventoryPanel } from './inventory-panel.ts';
 import { createMapPanel } from './map-panel.ts';
 import type { MapPanel } from './map-panel.ts';
+import { watchFit } from './fit-view.ts';
 import { createMenuButton } from './menu.ts';
 import type { MenuButton } from './menu.ts';
 import panelsCss from './panels.css?inline';
@@ -70,6 +71,7 @@ const GROUND_HINT: string = 'Click to pick up';
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
+  watchFit(root);
   style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {

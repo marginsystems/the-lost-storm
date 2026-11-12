@@ -45,7 +45,7 @@ export function createTradeHud(root: HTMLElement, context: HudContext, track: (e
         else context.api.playUi('panel_open');
       }
       const view: PanelView = panels[next];
-      view.element.style.right = `${TRADE_HUD.edge + inventory.element.offsetWidth + TRADE_HUD.gap}px`;
+      view.element.style.setProperty('--beside-right', `${TRADE_HUD.edge + inventory.element.offsetWidth + TRADE_HUD.gap}px`);
       view.refresh();
       view.element.classList.add('open');
     }

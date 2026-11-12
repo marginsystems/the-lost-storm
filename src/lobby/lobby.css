@@ -336,6 +336,15 @@
   pointer-events: none;
 }
 
+.hud.fit-sheets .game-lobby {
+  left: 8px;
+  right: 8px;
+  top: 8px;
+  width: auto;
+  max-height: calc(100% - 16px - var(--hud-cluster-h, 168px));
+  overflow: auto;
+}
+
 .game-lobby .lobby-panel {
   opacity: 0;
   visibility: hidden;

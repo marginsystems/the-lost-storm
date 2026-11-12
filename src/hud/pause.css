@@ -39,8 +39,8 @@
 }
 
 .pause-card[data-view='settings'] {
-  width: 440px;
-  height: 330px;
+  width: min(440px, calc(100vw - 16px));
+  height: min(330px, calc(100dvh - 16px));
 }
 
 .pause-view {
@@ -178,6 +178,7 @@
 .set-page {
   position: absolute;
   inset: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 6px;

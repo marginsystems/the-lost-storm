@@ -101,14 +101,21 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  scale: var(--hud-s, 1);
+  transition:
+    scale var(--spring-smooth-ms) var(--spring-smooth),
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    right var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .hud-globe-group.life {
-  left: 14px;
+  left: calc(14px * var(--hud-s, 1));
+  transform-origin: left bottom;
 }
 
 .hud-globe-group.mana {
-  right: 14px;
+  right: calc(14px * var(--hud-s, 1));
+  transform-origin: right bottom;
 }
 
 .hud-globe {
@@ -374,8 +381,13 @@
 .hud-bottom {
   position: absolute;
   left: 50%;
-  bottom: 12px;
-  transform: translateX(-50%);
+  bottom: calc(12px + var(--hud-lift, 0px));
+  translate: -50% 0;
+  scale: var(--hud-s, 1);
+  transform-origin: center bottom;
+  transition:
+    scale var(--spring-smooth-ms) var(--spring-smooth),
+    bottom var(--spring-smooth-ms) var(--spring-smooth);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -529,7 +541,7 @@
   color: var(--text);
   background: var(--panel-bg);
   border: 1px solid var(--panel-edge);
-  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy), background-color var(--spring-smooth-ms) var(--spring-smooth);
+  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy), background-color var(--spring-smooth-ms) var(--spring-smooth), gap var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .hud-menu-btn:hover {
@@ -545,10 +557,25 @@
 }
 
 .menu-name {
+  max-width: 120px;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
   font-family: var(--serif);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
+}
+
+.hud.fit-keys .menu-name {
+  max-width: 0;
+  opacity: 0;
+}
+
+.hud.fit-keys .hud-menu-btn {
+  gap: 0;
 }
 
 .menu-key {

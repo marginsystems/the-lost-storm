@@ -9,6 +9,8 @@ export interface MenuButton {
 export function createMenuButton(parent: HTMLElement, name: string, key: string, onClick: () => void, track: (element: HTMLElement) => void): MenuButton {
   const button: HTMLButtonElement = el('button', 'hud-menu-btn', parent);
   button.type = 'button';
+  button.title = name;
+  button.setAttribute('aria-label', name);
   track(button);
   label('menu-name', name, button);
   const keyLabel: HTMLDivElement = label('menu-key', key, button);

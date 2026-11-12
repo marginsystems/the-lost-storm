@@ -18,7 +18,7 @@
 .hud-panel {
   position: absolute;
   top: 32px;
-  max-height: calc(100% - 226px);
+  max-height: calc(100% - 58px - var(--hud-cluster-h, 168px));
   width: max-content;
   box-sizing: border-box;
   padding: 12px;
@@ -37,12 +37,46 @@
   transition:
     transform var(--spring-smooth-ms) var(--spring-smooth),
     opacity var(--spring-snappy-ms) var(--spring-snappy),
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    right var(--spring-smooth-ms) var(--spring-smooth),
+    top var(--spring-smooth-ms) var(--spring-smooth),
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s var(--spring-snappy) var(--spring-smooth-ms);
 }
 
 .hud-panel.right {
   right: 16px;
   transform: translateX(40px);
+}
+
+.hud-panel.character-panel,
+.hud-panel.beside {
+  right: var(--beside-right, 16px);
+}
+
+.hud.fit-sheets .hud-panel.hud-panel {
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  width: auto;
+  max-height: calc(100% - 16px - var(--hud-cluster-h, 168px));
+}
+
+.hud.fit-sheets:not(.fit-tall):has(.inventory-panel.open):has(.hud-panel.open:not(.inventory-panel)) .hud-panel.open:not(.inventory-panel) {
+  right: calc(50% + 4px);
+}
+
+.hud.fit-sheets:not(.fit-tall):has(.hud-panel.open:not(.inventory-panel)) .inventory-panel {
+  left: calc(50% + 4px);
+}
+
+.hud.fit-sheets.fit-tall:has(.inventory-panel.open):has(.hud-panel.open:not(.inventory-panel)) .hud-panel.open:not(.inventory-panel) {
+  max-height: calc((100% - 24px - var(--hud-cluster-h, 168px)) / 2);
+}
+
+.hud.fit-sheets.fit-tall:has(.hud-panel.open:not(.inventory-panel)) .inventory-panel {
+  top: calc(16px + (100% - 24px - var(--hud-cluster-h, 168px)) / 2);
+  max-height: calc((100% - 24px - var(--hud-cluster-h, 168px)) / 2);
 }
 
 .hud-panel.left {
