@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFShadowMap, PerspectiveCamera, PointLight, Scene, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
+import { Color, CustomToneMapping, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFShadowMap, PerspectiveCamera, PointLight, Scene, ShaderChunk, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
 import type { ZoneAmbience } from '../../sim/content/types.ts';
 import type { GraphicsPreset } from '../settings/settings.ts';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -9,6 +9,7 @@ import type { Pass } from 'three/addons/postprocessing/Pass.js';
 import type { QualityTier } from '../mobile/quality.ts';
 import { pixelRatioFor } from '../mobile/quality.ts';
 import { frameGuardPass } from './frame-guard.ts';
+import { RIM_LIGHT } from './character-loader.ts';
 
 export const STAGE = {
   exposure: 1.22,
@@ -20,19 +21,68 @@ export const STAGE = {
   shadowExtent: 30,
   shadowFar: 90,
   heroColor: 0xcfe2ff,
-  heroIntensity: 9,
-  heroDistance: 13,
-  heroHeight: 4.2,
-  bloomStrength: 0.48,
-  bloomRadius: 0.55,
-  bloomThreshold: 0.82,
+  heroIntensity: 24,
+  heroDistance: 21,
+  heroHeight: 6,
+  bloomStrength: 0.62,
+  bloomRadius: 0.42,
+  bloomThreshold: 1.05,
+  shadowSoftness: 3.5,
   samples: 4,
   flashSky: 7,
   flashStorm: 6,
   flashExposure: 0.55,
   flashFogNear: 50,
   flashFogFar: 200,
+  rimStrength: 0.4,
+  rimFlash: 1.6,
+  rimFalloff: 4,
 } as const;
+
+export const GRADE = {
+  coolTint: [0.82, 0.9, 1.08],
+  coolReach: 0.32,
+  coolAmount: 0.55,
+  floor: 0.0035,
+  contrast: 1.06,
+  pivot: 0.18,
+} as const;
+
+function glsl(value: number): string {
+  return Number.isInteger(value) ? `${value}.0` : `${value}`;
+}
+
+export function gradeShader(): string {
+  const [r, g, b] = GRADE.coolTint;
+  return [
+    'vec3 CustomToneMapping( vec3 color ) {',
+    '  vec3 mapped = ACESFilmicToneMapping( color );',
+    '  float light = dot( mapped, vec3( 0.2126, 0.7152, 0.0722 ) );',
+    `  float shade = 1.0 - smoothstep( 0.0, ${glsl(GRADE.coolReach)}, light );`,
+    `  mapped = mix( mapped, mapped * vec3( ${glsl(r)}, ${glsl(g)}, ${glsl(b)} ), shade * ${glsl(GRADE.coolAmount)} );`,
+    `  vec3 deeper = ${glsl(GRADE.pivot)} * pow( max( mapped, vec3( 0.0 ) ) / ${glsl(GRADE.pivot)}, vec3( ${glsl(GRADE.contrast)} ) );`,
+    `  mapped = mix( mapped, min( deeper, mapped ), shade );`,
+    `  return clamp( mapped + ${glsl(GRADE.floor)} * shade, 0.0, 1.0 );`,
+    '}',
+  ].join('\n');
+}
+
+const PASSTHROUGH: string = 'vec3 CustomToneMapping( vec3 color ) { return color; }';
+export function installGrade(): void {
+  const chunk: string = ShaderChunk.tonemapping_pars_fragment;
+  const grade: string = gradeShader();
+  if (chunk.includes(grade)) return;
+  if (!chunk.includes(PASSTHROUGH)) throw new Error('The tone-mapping chunk has no passthrough CustomToneMapping to replace; the grade cannot be installed');
+  ShaderChunk.tonemapping_pars_fragment = chunk.replace(PASSTHROUGH, grade);
+}
+
+installGrade();
+
+export function rimFor(ambience: ZoneAmbience): Color {
+  const background: Color = new Color(ambience.background);
+  const darkness: number = 1 - Math.min(1, Math.max(0, background.r * 0.2126 + background.g * 0.7152 + background.b * 0.0722));
+  return new Color(ambience.keyColor).multiplyScalar(ambience.keyIntensity * STAGE.rimStrength * Math.pow(darkness, STAGE.rimFalloff));
+}
 
 export interface Stage {
   readonly renderer: WebGLRenderer;
@@ -53,7 +103,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   const renderer: WebGLRenderer = new WebGLRenderer({ canvas, antialias: tier.antialias, powerPreference: 'high-performance' });
   renderer.setPixelRatio(pixelRatioFor(tier, window.devicePixelRatio, canvas.clientWidth, canvas.clientHeight));
   renderer.outputColorSpace = SRGBColorSpace;
-  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMapping = CustomToneMapping;
   renderer.toneMappingExposure = STAGE.exposure;
   renderer.shadowMap.enabled = tier.shadows;
   renderer.shadowMap.type = PCFShadowMap;
@@ -71,6 +121,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   let keyIntensity: number = 0;
   let fogNear: number = 1;
   let fogFar: number = 2;
+  const rimBase: Color = new Color(0x000000);
 
   const camera: PerspectiveCamera = new PerspectiveCamera(30, 1, 1, 220);
 
@@ -87,6 +138,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   storm.shadow.camera.far = STAGE.shadowFar;
   storm.shadow.bias = -0.0006;
   storm.shadow.normalBias = 0.04;
+  storm.shadow.radius = STAGE.shadowSoftness;
   scene.add(storm);
   scene.add(storm.target);
 
@@ -169,6 +221,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       keyIntensity = ambience.keyIntensity;
       sky.intensity = skyIntensity;
       storm.intensity = keyIntensity;
+      rimBase.copy(rimFor(ambience));
+      RIM_LIGHT.value.copy(rimBase);
     },
     follow(x: number, z: number): void {
       const snappedX: number = Math.round(x / texel) * texel;
@@ -184,6 +238,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       fog.near = fogNear + (Math.max(fogNear, STAGE.flashFogNear) - fogNear) * amount;
       fog.far = fogFar + (Math.max(fogFar, STAGE.flashFogFar) - fogFar) * amount;
       renderer.toneMappingExposure = STAGE.exposure * (1 + STAGE.flashExposure * amount);
+      RIM_LIGHT.value.copy(rimBase).multiplyScalar(1 + STAGE.rimFlash * amount);
     },
     applyGraphics(next: GraphicsPreset): void {
       preset = next;
