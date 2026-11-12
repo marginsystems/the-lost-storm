@@ -37,7 +37,7 @@
     {"prop": "castle_pillar", "x": 43.58, "z": 43.35, "y": 0, "rotationDegrees": 210},
     {"prop": "castle_column", "x": 54.28, "z": 16.5, "y": 0, "rotationDegrees": 210},
     {"prop": "castle_pillar", "x": 54.41, "z": 43.7, "y": 0, "rotationDegrees": 300},
-    {"prop": "crag_spire", "x": 30.0, "z": 30.0, "y": 0, "rotationDegrees": 20},
+    {"prop": "crag_spire", "x": 30.0, "z": 41.5, "y": 0, "rotationDegrees": 20},
     {"prop": "crag_low", "x": 46.5, "z": 26.5, "y": 0, "rotationDegrees": 140},
     {"prop": "crag_b", "x": 22.0, "z": 50.5, "y": 0, "rotationDegrees": 60},
     {"prop": "castle_rubble_large", "x": 40.0, "z": 10.0, "y": 0, "rotationDegrees": 30},
@@ -144,5 +144,5 @@
     {"npc": "warden_lookout", "x": 77, "z": 34, "facingDegrees": 250}
   ],
   "ambience": {"background": "#06080d", "abyss": "#040508", "fogNear": 20, "fogFar": 70, "skyColor": "#4a5c7c", "groundColor": "#100d0b", "skyIntensity": 1.1, "keyColor": "#9fb3d6", "keyIntensity": 0.7},
-  "weather": {"lightning": {"first": 1.4, "min": 6, "max": 13}, "rain": 0.85, "wet": 0.6, "mistWall": {"from": {"x": -1, "z": 0}, "to": {"x": -1, "z": 60}, "height": 11}}
+  "weather": {"lightning": {"first": 1.4, "min": 6, "max": 13}, "rain": 0.85, "wet": 0.6, "mistWall": {"from": {"x": -10, "z": -6}, "to": {"x": -10, "z": 66}, "height": 7}}
 }

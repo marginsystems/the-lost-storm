@@ -19,6 +19,11 @@ import { enterZone } from '../world/zones.ts';
 import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, PathObjective, QuestDef, RigDef, SkillTreeNodeDef, TalkDef, WearableDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
 import { fields, items, text } from './read.ts';
 
+const ARRIVAL_PUSH = {
+  clickAhead: 10,
+  clickEvery: 15,
+} as const;
+
 const content: Content = loadContent();
 
 const SAFE = { seeds: [1, 2, 3], seconds: 1.2, dt: 1 / 60 } as const;
@@ -389,6 +394,27 @@ void test('no pack, and no boss while its fight is on, notices the hero at a zon
       if (zone.waypoint !== null) safe.push(['waypoint', zone.waypoint]);
       for (const [label, point] of safe) {
         for (const seed of SAFE.seeds) assert.equal(noticed(worldAt(zone, seed, progress), point), false, `${zone.id} ${label}, seed ${seed}, quests ${JSON.stringify(progress)}`);
+      }
+    }
+  }
+});
+
+void test('from the Hall arrival, clicking a few metres ahead toward each reach objective walks the hero straight there', (): void => {
+  for (const quest of content.quests.values()) {
+    for (const objective of quest.objectives) {
+      for (const path of objectivePaths(objective)) {
+        if (path.type !== 'reach' || path.zone !== content.world.start) continue;
+        const world: World = createWorld(content, { seed: 3, save: null });
+        enterZone(world, zoneOf(content, path.zone), { type: 'start' });
+        world.monsters = [];
+        const goal: Vec2 = { x: path.x, z: path.z };
+        for (let step: number = 0; step < 1800 && Math.hypot(world.player.pos.x - goal.x, world.player.pos.z - goal.z) > path.radius; step += 1) {
+          const left: number = Math.hypot(goal.x - world.player.pos.x, goal.z - world.player.pos.z);
+          const reach: number = Math.min(left, ARRIVAL_PUSH.clickAhead);
+          const dest: Vec2 = { x: world.player.pos.x + ((goal.x - world.player.pos.x) / left) * reach, z: world.player.pos.z + ((goal.z - world.player.pos.z) / left) * reach };
+          stepWorld(world, step % ARRIVAL_PUSH.clickEvery === 0 ? [{ type: 'move', held: false, dest }] : [], 1 / 30);
+        }
+        assert.ok(Math.hypot(world.player.pos.x - goal.x, world.player.pos.z - goal.z) <= path.radius, `${quest.id}.${path.id} is not reached by a straight push from the arrival point; the hero stopped at ${world.player.pos.x.toFixed(1)},${world.player.pos.z.toFixed(1)}`);
       }
     }
   }
