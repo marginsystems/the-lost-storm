@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { cast, damageTo, dummy, offset, run, shapeArena } from '../../test/shape-support.ts';
+import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { timeScaleOf } from './areas.ts';
 import type { MonsterState, World, WorldEvent } from './types.ts';
@@ -25,6 +26,17 @@ void test('a pulling area drags enemies toward its centre and strikes once at th
   assert.ok(distance(left.pos, right.pos) < before * 0.5);
   assert.equal(damageTo(events, left.id).length, 1);
   assert.equal(damageTo(events, right.id).length, 1);
+});
+
+void test('a pull moves a monster only as far as its knockback poise lets it, so one immune to knockback stays put', (): void => {
+  const world: World = shapeArena(['test_draught']);
+  const placed: MonsterState = dummy(world, offset(1, 0));
+  const steady: MonsterState = { ...placed, def: { ...placed.def, poise: { ...placed.def.poise, knockback: 0 } } };
+  world.monsters = world.monsters.map((monster: MonsterState): MonsterState => (monster === placed ? steady : monster));
+  const before: Vec2 = { ...steady.pos };
+  cast(world, 0, offset(5, 0));
+  run(world, 0.8);
+  assert.ok(distance(steady.pos, before) < 1e-6);
 });
 
 void test('a slowing area around the caster slows enemies inside it and never the caster', (): void => {

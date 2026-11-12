@@ -11,6 +11,8 @@ import { loadAudio } from '../content/audio.ts';
 import { createWorld } from './create.ts';
 import { forceStrike, insideAwakeMoment, MOMENTS, momentOfEcho, nearestFight, restEchoes, safeSpots, strikeGround } from './moments.ts';
 import { stepWorld } from './step.ts';
+import { applyHit, offenceOf } from './combat.ts';
+import { steadiness } from './poise.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
 import { shiftWorld } from './void.ts';
@@ -418,6 +420,28 @@ void test('echoes are bound to their bubble: a hard knock, a chase or a flight e
     run(world, DT);
     for (const monster of echoesOf(world, moment)) assert.ok(distance(monster.pos, moment.pos) <= RAID.radius - monster.radius + 1e-6, `echo ${monster.id} at ${distance(monster.pos, moment.pos).toFixed(2)} m`);
   }
+});
+
+void test('echoes are immune to knockback and pulls for as long as they belong to a bubble, yet still flinch where they stand', (): void => {
+  const world: World = fieldWorld(quietField());
+  world.player.invulnerable = 1e9;
+  const moment: MomentState = struck(world, RAID.id);
+  standAt(world, moment.pos);
+  run(world, DT * 2);
+  const heavy: SkillDef = { ...must(world.content.skills.get(world.player.bar[0] ?? ''), 'a hero skill'), knockback: BOUND.knock, stagger: 0.5 };
+  for (const monster of echoesOf(world, moment)) {
+    assert.equal(steadiness(monster), 0);
+    const at: Vec2 = { ...monster.pos };
+    applyHit(world, offenceOf(world.player), monster, heavy, { x: 1, z: 0 });
+    assert.deepEqual(monster.knock, { x: 0, z: 0 });
+    assert.ok(monster.stagger > 0 || monster.def.poise.stagger === 0);
+    assert.deepEqual(monster.pos, at);
+  }
+  const echo: MonsterState = must(echoesOf(world, moment)[0], 'an echo');
+  const held: Vec2 = { ...echo.pos };
+  world.player.pos = { x: echo.pos.x + echo.radius, z: echo.pos.z };
+  run(world, DT);
+  assert.ok(distance(echo.pos, held) < 1e-6, `pushed ${distance(echo.pos, held).toFixed(3)} m`);
 });
 
 void test('a knock on the hero near the edge cannot throw him out of the bubble; only his own walking carries him out', (): void => {

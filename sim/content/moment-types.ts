@@ -63,6 +63,7 @@ export interface MomentLibrary {
   readonly playedShare: number;
   readonly rouse: number;
   readonly comeback: number;
+  readonly echoKnockback: number;
   readonly stagger: number;
   readonly defs: ReadonlyMap<string, MomentDef>;
 }

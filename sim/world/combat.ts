@@ -11,6 +11,7 @@ import { closeDialogue } from './dialogue.ts';
 import { mayStrike, provoke, regardOf } from './factions.ts';
 import { gainFlaskCharges } from './flask-charges.ts';
 import { dropOnGround } from './ground.ts';
+import { steadiness } from './poise.ts';
 import type { Actor, BrandState, GuardOutcome, ItemInstance, MonsterState, Offence, Team, World } from './types.ts';
 
 export const COMBAT = {
@@ -107,11 +108,6 @@ export function guardOutcome(target: Actor, skill: SkillDef, direction: Readonly
   const front: number = dot(directionOf(target.facing), { x: -direction.x, z: -direction.z });
   if (front < Math.cos((target.def.guard.arcDegrees / 2) * DEGREES_TO_RADIANS)) return 'open';
   return skill.stagger >= target.def.guard.breakStagger ? 'broken' : 'blocked';
-}
-
-function steadiness(target: Actor): number {
-  if (target.kind === 'player') return 1;
-  return target.def.boss === null ? target.def.poise.knockback : target.def.boss.poise.knockback;
 }
 
 function staggerOf(target: MonsterState, skill: SkillDef, guard: GuardOutcome): number {

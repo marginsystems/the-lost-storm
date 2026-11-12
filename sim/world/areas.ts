@@ -3,6 +3,7 @@ import type { SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { moveWithCollision } from '../nav/grid.ts';
 import { applyHit, findActor, targetsOf } from './combat.ts';
+import { steadiness } from './poise.ts';
 import type { Actor, AreaState, Offence, Team, World } from './types.ts';
 
 export const AREAS = {
@@ -48,7 +49,7 @@ function pull(world: World, area: AreaState, delivery: AreaDelivery, dt: number)
     if (!covers(area, delivery, target.pos, target.radius)) continue;
     const offset: Vec2 = { x: area.pos.x - target.pos.x, z: area.pos.z - target.pos.z };
     const gap: number = Math.hypot(offset.x, offset.z);
-    const step: number = Math.min(delivery.pull * dt, gap - AREAS.pullStop);
+    const step: number = Math.min(delivery.pull * steadiness(target) * dt, gap - AREAS.pullStop);
     if (step <= 0) continue;
     moveWithCollision(world.grid, target.pos, (offset.x / gap) * step, (offset.z / gap) * step);
   }

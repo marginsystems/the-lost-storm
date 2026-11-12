@@ -6,6 +6,7 @@
   "playedShare": 0.3,
   "rouse": 1.2,
   "comeback": 4,
+  "echoKnockback": 0,
   "stagger": 0.9,
   "moments": [
     {

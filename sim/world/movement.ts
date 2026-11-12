@@ -3,7 +3,8 @@ import { distance, facingOf } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { moveWithCollision, paceAt } from '../nav/grid.ts';
 import { isDashing } from './dash.ts';
-import type { ActorState, World } from './types.ts';
+import { heroShare, pushShare } from './poise.ts';
+import type { ActorState, MonsterState, World } from './types.ts';
 
 const MOVEMENT = {
   knockFriction: 9,
@@ -162,16 +163,16 @@ function pushApart(grid: NavGrid, a: ActorState, b: ActorState, shareA: number):
 }
 
 export function separateActors(world: World): void {
-  const living: ActorState[] = world.monsters.filter((monster: ActorState): boolean => monster.alive);
+  const living: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.alive);
   for (let pass: number = 0; pass < MOVEMENT.separationPasses; pass += 1) {
     for (let first: number = 0; first < living.length; first += 1) {
-      const a: ActorState | undefined = living[first];
+      const a: MonsterState | undefined = living[first];
       if (a === undefined) continue;
       for (let second: number = first + 1; second < living.length; second += 1) {
-        const b: ActorState | undefined = living[second];
-        if (b !== undefined) pushApart(world.grid, a, b, 0.5);
+        const b: MonsterState | undefined = living[second];
+        if (b !== undefined) pushApart(world.grid, a, b, pushShare(a, b));
       }
-      if (world.player.alive) pushApart(world.grid, world.player, a, 0);
+      if (world.player.alive) pushApart(world.grid, world.player, a, heroShare(a));
     }
   }
 }

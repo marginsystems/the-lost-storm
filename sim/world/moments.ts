@@ -154,7 +154,7 @@ function place(world: World, field: MomentField, mark: boolean): MomentState | n
 function echoDef(world: World, entry: MomentEcho): MonsterDef | null {
   const base: MonsterDef | undefined = world.content.monsters.get(entry.monster);
   if (base === undefined) return null;
-  const echo: MonsterDef = { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null, xp: 0 };
+  const echo: MonsterDef = { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null, xp: 0, poise: { ...base.poise, knockback: base.poise.knockback * world.content.moments.echoKnockback } };
   return entry.look === null ? echo : { ...echo, rig: entry.look.rig, scale: entry.look.scale, gear: entry.look.gear, wear: entry.look.wear };
 }
 
