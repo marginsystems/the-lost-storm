@@ -191,7 +191,7 @@ function pickUp(world: World, ground: GroundItem): void {
 function pursue(world: World, dest: Vec2, dt: number): void {
   const player: PlayerState = world.player;
   player.repathTimer -= dt;
-  if (player.repathTimer <= 0 || player.path.length === 0) setDestination(world, dest);
+  if (player.repathTimer <= 0) setDestination(world, dest);
 }
 
 function stepIntent(world: World, dt: number): void {
@@ -233,7 +233,7 @@ function stepIntent(world: World, dt: number): void {
         pickUp(world, ground);
         return;
       }
-      if (player.path.length === 0) setDestination(world, ground.pos);
+      pursue(world, ground.pos, dt);
       return;
     }
     case 'travel': {
@@ -351,7 +351,10 @@ export function stepPlayer(world: World, dt: number): void {
     if (!isBusy(player) && player.path.length > 0) {
       const moved: number = followPath(world.grid, player, player.path, player.stats.moveSpeed * dt, PLAYER.turnRate * dt);
       player.moving = moved > PLAYER.stuckStep;
-      if (!player.moving) player.path = [];
+      if (!player.moving) {
+        player.path = [];
+        player.repathTimer = PLAYER.repathInterval;
+      } else if (player.path.length === 0) player.repathTimer = 0;
     }
   }
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));

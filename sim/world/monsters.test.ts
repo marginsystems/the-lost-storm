@@ -23,6 +23,7 @@ const LIMITS = {
   seconds: 10,
   paceEvery: 1.5,
   blockedSeconds: 3,
+  pinnedRunTime: 0.15,
 } as const;
 
 interface Scene extends TestScene {
@@ -155,4 +156,24 @@ void test('a caster backed against a wall stops instead of running in place', ()
   }
   assert.deepEqual(motionProblems('caster', samples, LIMITS.turnRate), []);
   assert.notEqual(caster.stance, 'retreat');
+});
+
+void test('a monster pinned against a prop stops its run within a tenth of a second', (): void => {
+  const world: World = worldIn(content, base.id, 4);
+  enterZone(world, sceneZone(base, 'test_pinned', { tiles: OPEN, props: [placedProp('mossy_pillar', 14, 14)], start: { x: 14, z: 3 } }), { type: 'start' });
+  world.monsters = [];
+  const thrall: MonsterState = spawn(world, 'bone_thrall', { x: 14, z: 16.2 });
+  let blockedSteps: number = 0;
+  let runningWhileBlocked: number = 0;
+  for (let step: number = 0; step < Math.round(1 / MOTION_DT); step += 1) {
+    thrall.path = [{ x: 14, z: 14 }];
+    thrall.repathTimer = LIMITS.seconds;
+    const before: Vec2 = { x: thrall.pos.x, z: thrall.pos.z };
+    stepWorld(world, [], MOTION_DT);
+    if (distance(before, thrall.pos) > 1e-4) continue;
+    blockedSteps += 1;
+    if (thrall.moving) runningWhileBlocked += 1;
+  }
+  assert.ok(blockedSteps > 0);
+  assert.ok(runningWhileBlocked * MOTION_DT <= LIMITS.pinnedRunTime, `ran for ${(runningWhileBlocked * MOTION_DT).toFixed(2)} s while pinned`);
 });

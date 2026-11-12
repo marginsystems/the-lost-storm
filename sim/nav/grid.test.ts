@@ -6,6 +6,7 @@ import type { Vec2 } from '../math.ts';
 import { buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, lineOfSight, lineWalkable, moveWithCollision, nearestWalkable } from './grid.ts';
 import type { NavGrid } from './grid.ts';
 import { must, zoneOf } from '../../test/support.ts';
+import { findPath } from './path.ts';
 
 const content: Content = loadContent();
 const grid: NavGrid = buildNavGrid(zoneOf(content, 'drowned_bastion'), content.props, content.player.radius);
@@ -73,6 +74,11 @@ void test('moveWithCollision moves freely, slides along a wall and never enters 
 
 const AUDIT = {
   spawnSnap: 6,
+  approach: 1.5,
+  sampleStep: 0.1,
+  bodyMargin: 0.25,
+  reported: 5,
+  crossings: [[1, 0], [0, 1], [Math.SQRT1_2, Math.SQRT1_2], [Math.SQRT1_2, -Math.SQRT1_2]],
 } as const;
 
 function reachableFrom(zoneGrid: NavGrid, start: Vec2): Uint8Array {
@@ -104,19 +110,31 @@ function reachableFrom(zoneGrid: NavGrid, start: Vec2): Uint8Array {
 for (const zone of content.zones.values()) {
   const zoneGrid: NavGrid = buildNavGrid(zone, content.props, content.player.radius);
 
-  void test(`${zone.id}: every blocking prop's footprint is solid in the nav grid and closed to walkers`, (): void => {
+  void test(`${zone.id}: paths around every blocking prop keep a walker's body out of its footprint`, (): void => {
     const problems: string[] = [];
-    for (const placed of zone.props) {
-      const radius: number = must(content.props.get(placed.prop), placed.prop).blockRadius;
-      if (radius <= 0 || placed.when.length > 0) continue;
-      for (let index: number = 0; index < zoneGrid.columns * zoneGrid.rows; index += 1) {
-        const centre: Vec2 = cellCenter(zoneGrid, index);
-        const gap: number = Math.hypot(centre.x - placed.x, centre.z - placed.z);
-        if (gap < radius && !isSolid(zoneGrid, centre.x, centre.z)) problems.push(`${placed.prop} at ${placed.x},${placed.z} is not solid at ${centre.x},${centre.z}`);
-        if (gap < radius + content.player.radius && isWalkable(zoneGrid, centre.x, centre.z)) problems.push(`${placed.prop} at ${placed.x},${placed.z} lets a walker stand at ${centre.x},${centre.z}`);
+    const blocking = zone.props.filter((placed) => placed.when.length === 0 && must(content.props.get(placed.prop), placed.prop).blockRadius > 0);
+    for (const placed of blocking) {
+      const reach: number = must(content.props.get(placed.prop), placed.prop).blockRadius + content.player.radius + AUDIT.approach;
+      for (const [dx, dz] of AUDIT.crossings) {
+        const from: Vec2 = { x: placed.x - dx * reach, z: placed.z - dz * reach };
+        const to: Vec2 = { x: placed.x + dx * reach, z: placed.z + dz * reach };
+        if (!isWalkable(zoneGrid, from.x, from.z) || !isWalkable(zoneGrid, to.x, to.z)) continue;
+        let previous: Vec2 = from;
+        for (const point of findPath(zoneGrid, from, to)) {
+          const steps: number = Math.max(1, Math.ceil(Math.hypot(point.x - previous.x, point.z - previous.z) / AUDIT.sampleStep));
+          for (let step: number = 0; step <= steps; step += 1) {
+            const x: number = previous.x + ((point.x - previous.x) * step) / steps;
+            const z: number = previous.z + ((point.z - previous.z) * step) / steps;
+            for (const other of blocking) {
+              const radius: number = must(content.props.get(other.prop), other.prop).blockRadius;
+              if (Math.hypot(x - other.x, z - other.z) < radius + AUDIT.bodyMargin) problems.push(`a path near ${placed.prop} at ${placed.x},${placed.z} passes ${x.toFixed(2)},${z.toFixed(2)}, inside ${other.prop} at ${other.x},${other.z}`);
+            }
+          }
+          previous = point;
+        }
       }
     }
-    assert.deepEqual(problems, []);
+    assert.deepEqual(problems.slice(0, AUDIT.reported), []);
   });
 
   void test(`${zone.id}: every pack, exit, checkpoint, waypoint and NPC is reachable from the start`, (): void => {

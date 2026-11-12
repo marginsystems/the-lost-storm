@@ -29,6 +29,8 @@ const MONSTERS = {
   stuckFraction: 0.3,
   stuckLimit: 0.3,
   restTime: 0.6,
+  stillStep: 1e-4,
+  blockedGrace: 0.1,
 } as const;
 
 function towardOf(monster: MonsterState, target: Vec2): Vec2 {
@@ -40,9 +42,11 @@ function face(monster: MonsterState, target: Vec2, dt: number): void {
 }
 
 function travel(world: World, monster: MonsterState, direction: Vec2, speed: number, dt: number): void {
+  const fromX: number = monster.pos.x;
+  const fromZ: number = monster.pos.z;
   moveWithCollision(world.grid, monster.pos, direction.x * speed * dt, direction.z * speed * dt);
   monster.lastTravel = speed * dt;
-  monster.moving = true;
+  monster.moving = Math.hypot(monster.pos.x - fromX, monster.pos.z - fromZ) > MONSTERS.stillStep || monster.stuckTime < MONSTERS.blockedGrace;
 }
 
 function approach(world: World, monster: MonsterState, target: Vec2, dt: number): void {
@@ -58,10 +62,10 @@ function approach(world: World, monster: MonsterState, target: Vec2, dt: number)
     face(monster, target, dt);
     return;
   }
-  followPath(world.grid, monster, monster.path, monster.def.moveSpeed * dt, MONSTERS.turnRate * dt);
+  const moved: number = followPath(world.grid, monster, monster.path, monster.def.moveSpeed * dt, MONSTERS.turnRate * dt);
   if (monster.path.length === 0) monster.repathTimer = 0;
   monster.lastTravel = monster.def.moveSpeed * dt;
-  monster.moving = true;
+  monster.moving = moved > MONSTERS.stillStep || monster.stuckTime < MONSTERS.blockedGrace;
 }
 
 function attack(world: World, monster: MonsterState, skill: SkillDef, player: PlayerState): boolean {
