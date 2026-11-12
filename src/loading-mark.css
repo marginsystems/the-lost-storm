@@ -1,0 +1,55 @@
+.loading-mark {
+  display: grid;
+  grid-template-columns: repeat(5, 5px);
+  gap: 3px;
+  width: fit-content;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-mark i {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--storm);
+  opacity: 0.12;
+  transform: scale(0.8);
+  will-change: opacity, transform;
+}
+
+.loading-mark.playing {
+  opacity: 1;
+  will-change: opacity, transform;
+  animation: mark-in var(--spring-smooth-ms) var(--spring-smooth) var(--mark-show) backwards;
+}
+
+.loading-mark.playing i {
+  animation: mark-scan var(--mark-cycle) var(--drift-ease) calc(var(--mark-show) + var(--mark-cycle) * var(--mark-phase)) infinite both;
+}
+
+@keyframes mark-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes mark-scan {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: scale(0.8);
+  }
+  20% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  45% {
+    opacity: 0.12;
+    transform: scale(0.8);
+  }
+}

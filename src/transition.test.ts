@@ -30,11 +30,13 @@ void test('with no zone change, or an unknown zone on either side, the fade keep
 interface FakeVeil extends Veil {
   readonly log: string[];
   finishCover(): void;
+  finishHold(): void;
   finishLift(): void;
 }
 
-function fakeVeil(): FakeVeil {
+function fakeVeil(held: boolean = false): FakeVeil {
   const log: string[] = [];
+  const holds: (() => void)[] = [];
   const covers: (() => void)[] = [];
   const lifts: (() => void)[] = [];
   return {
@@ -45,6 +47,13 @@ function fakeVeil(): FakeVeil {
         covers.push(resolve);
       });
     },
+    hold(): Promise<void> {
+      log.push('hold');
+      if (!held) return Promise.resolve();
+      return new Promise<void>((resolve: () => void): void => {
+        holds.push(resolve);
+      });
+    },
     lift(): Promise<void> {
       log.push('lift');
       return new Promise<void>((resolve: () => void): void => {
@@ -53,6 +62,9 @@ function fakeVeil(): FakeVeil {
     },
     finishCover(): void {
       for (const done of covers.splice(0)) done();
+    },
+    finishHold(): void {
+      for (const done of holds.splice(0)) done();
     },
     finishLift(): void {
       for (const done of lifts.splice(0)) done();
@@ -75,8 +87,8 @@ interface Harness {
   advance(ms: number): void;
 }
 
-function harness(): Harness {
-  const veil: FakeVeil = fakeVeil();
+function harness(held: boolean = false): Harness {
+  const veil: FakeVeil = fakeVeil(held);
   const reports: TransitionReport[] = [];
   const errors: unknown[] = [];
   const due: (() => void)[] = [];
@@ -222,7 +234,7 @@ void test('the veil lifts, and the HUD hears of the new zone, only after the new
   assert.deepEqual(run.veil.log.slice(1), ['reveal']);
   cleanFrames(run, 1);
   await settle();
-  assert.deepEqual(run.veil.log.slice(1), ['reveal', 'lift']);
+  assert.deepEqual(run.veil.log.slice(1), ['reveal', 'hold', 'lift']);
   assert.equal(run.transition.blocking, false);
   run.veil.finishLift();
   await settle();
@@ -245,7 +257,7 @@ void test('a zone that never draws clean frames still lifts the veil after the c
   assert.equal(run.due.length, 1);
   for (const task of run.due.splice(0)) task();
   await settle();
-  assert.deepEqual(run.veil.log.slice(1), ['reveal', 'lift']);
+  assert.deepEqual(run.veil.log.slice(1), ['reveal', 'hold', 'lift']);
   run.veil.finishLift();
   await settle();
   assert.equal(only(run.reports).settled, false);
@@ -301,4 +313,24 @@ void test('a clean frame is judged against how the game was running before the c
   assert.equal(cleanFrameLimit([]), TRANSITION.cleanFrameMs);
   assert.equal(cleanFrameLimit([12, 13, 12]), TRANSITION.cleanFrameMs);
   assert.equal(cleanFrameLimit([33, 34, 33]), 33 * TRANSITION.slackOverTypical);
+});
+
+void test('the veil lifts only when the loading mark lets it go, at the end of a cycle', async (): Promise<void> => {
+  const run: Harness = harness(true);
+  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
+  run.veil.finishCover();
+  await settle();
+  cleanFrames(run, TRANSITION.cleanFrames);
+  await settle();
+  cleanFrames(run, TRANSITION.revealFrames);
+  await settle();
+  assert.deepEqual(run.veil.log.slice(1), ['reveal', 'hold']);
+  assert.equal(run.transition.blocking, true);
+  run.advance(300);
+  run.veil.finishHold();
+  await settle();
+  assert.deepEqual(run.veil.log.slice(1), ['reveal', 'hold', 'lift']);
+  run.veil.finishLift();
+  await settle();
+  assert.equal(only(run.reports).holdMs, 300);
 });

@@ -33,3 +33,11 @@
     transform: translate3d(5%, 2%, 0) scale(1.06);
   }
 }
+
+#fade .veil-mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  translate: -50% -50%;
+}

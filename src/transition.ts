@@ -15,6 +15,7 @@ import type { Clock, Timers } from './backend/backend.ts';
 
 export interface Veil {
   cover(colour: string | null): Promise<void>;
+  hold(): Promise<void>;
   lift(): Promise<void>;
 }
 
@@ -24,6 +25,7 @@ export interface TransitionReport {
   readonly settleMs: number;
   readonly settled: boolean;
   readonly revealMs: number;
+  readonly holdMs: number;
   readonly worstHiddenMs: number;
   readonly worstShownMs: number;
 }
@@ -76,7 +78,7 @@ export function cleanFrameLimit(recent: readonly number[]): number {
 
 export function describeTransition(report: TransitionReport): string {
   const settle: string = report.settled ? 'settled' : 'gave up settling';
-  return `Zone change: covered in ${report.coverMs.toFixed(0)} ms, built in ${report.buildMs.toFixed(0)} ms, ${settle} in ${report.settleMs.toFixed(0)} ms, revealed in ${report.revealMs.toFixed(0)} ms; worst frame ${report.worstShownMs.toFixed(1)} ms in view, ${report.worstHiddenMs.toFixed(1)} ms behind the veil`;
+  return `Zone change: covered in ${report.coverMs.toFixed(0)} ms, built in ${report.buildMs.toFixed(0)} ms, ${settle} in ${report.settleMs.toFixed(0)} ms, revealed in ${report.revealMs.toFixed(0)} ms, held ${report.holdMs.toFixed(0)} ms for the mark; worst frame ${report.worstShownMs.toFixed(1)} ms in view, ${report.worstHiddenMs.toFixed(1)} ms behind the veil`;
 }
 
 export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
@@ -123,10 +125,12 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
     reveal();
     await settle(TRANSITION.revealFrames, TRANSITION.revealMaxMs);
     const revealed: number = now();
+    await veil.hold();
+    const held: number = now();
     phase = 'lifting';
     await veil.lift();
     phase = 'idle';
-    deps.onReport({ coverMs: covered - started, buildMs: built - covered, settleMs: ready - built, settled, revealMs: revealed - ready, worstHiddenMs: worstHidden, worstShownMs: worstShown });
+    deps.onReport({ coverMs: covered - started, buildMs: built - covered, settleMs: ready - built, settled, revealMs: revealed - ready, holdMs: held - revealed, worstHiddenMs: worstHidden, worstShownMs: worstShown });
   };
 
   return {
