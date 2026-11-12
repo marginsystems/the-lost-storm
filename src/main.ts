@@ -60,6 +60,7 @@ import { createBrowserLobby } from './lobby/compact.ts';
 import type { Lobby } from './lobby/compact.ts';
 import { mountGameBoard } from './lobby/game-board.ts';
 import type { GameBoard } from './lobby/game-board.ts';
+import { mountBackdrops } from './dither/mount.ts';
 import { mountTitleLobby } from './lobby/title-lobby.ts';
 import { spokenName } from './lobby/lobby-model.ts';
 import { createNameStep, wireEnter } from './lobby/name-step.ts';
@@ -165,6 +166,7 @@ declare global {
 }
 
 async function start(): Promise<void> {
+  mountBackdrops();
   const canvas: HTMLCanvasElement = element('scene', HTMLCanvasElement);
   const title: HTMLDivElement = element('title', HTMLDivElement);
   const status: HTMLParagraphElement = element('title-status', HTMLParagraphElement);

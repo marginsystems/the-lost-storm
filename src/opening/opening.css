@@ -1,18 +1,16 @@
-body[data-zone-kind='void'] #vignette {
-  background: var(--dither), radial-gradient(ellipse at center, rgba(40, 44, 50, 0) 40%, rgba(40, 44, 50, 0.38) 100%);
-  background-size: var(--dither-size), auto;
+body[data-zone-kind='void'] #vignette:not(.dithered) {
+  background: radial-gradient(ellipse at center, rgba(40, 44, 50, 0) 40%, rgba(40, 44, 50, 0.38) 100%);
 }
 
-body[data-zone-kind='void'] #vignette::before {
+body[data-zone-kind='void'] #vignette:not(.dithered)::before {
   content: "";
   position: absolute;
   inset: 0;
   opacity: 0;
-  background: var(--dither), radial-gradient(ellipse at center, rgba(34, 38, 46, 0) 30%, rgba(34, 38, 46, 0.66) 100%);
-  background-size: var(--dither-size), auto;
+  background: radial-gradient(ellipse at center, rgba(34, 38, 46, 0) 30%, rgba(34, 38, 46, 0.66) 100%);
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-body[data-zone-kind='void'][data-void-light='on'] #vignette::before {
+body[data-zone-kind='void'][data-void-light='on'] #vignette:not(.dithered)::before {
   opacity: 1;
 }

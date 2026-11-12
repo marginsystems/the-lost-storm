@@ -1,0 +1,49 @@
+.dither-host {
+  isolation: isolate;
+}
+
+.dither-layer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#title.dithered,
+#vignette.dithered,
+.death-screen.dithered {
+  background: none;
+}
+
+#vignette.dithered::after,
+#fade.dithered::before {
+  display: none;
+}
+
+.vignette-lit {
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+body[data-zone-kind='void'][data-void-light='on'] .vignette-lit {
+  opacity: 1;
+}
+
+body:not([data-zone-kind='void']) .vignette-lit {
+  visibility: hidden;
+}
+
+.vignette-hurt {
+  opacity: var(--hurt, 0);
+}
+
+#fade > .veil-mist {
+  inset: -20%;
+  width: 140%;
+  height: 140%;
+  will-change: transform;
+  animation: veil-drift var(--drift-ms) var(--drift-ease) infinite alternate;
+}

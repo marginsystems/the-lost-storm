@@ -75,8 +75,7 @@ body {
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
-  background: var(--dither), radial-gradient(ellipse at 50% 40%, rgba(22, 34, 52, 0.9), rgba(13, 19, 29, 0.93) 34%, rgba(4, 6, 10, 0.97) 70%);
-  background-size: var(--dither-size), auto;
+  background: radial-gradient(ellipse at 50% 40%, rgba(22, 34, 52, 0.9), rgba(13, 19, 29, 0.93) 34%, rgba(4, 6, 10, 0.97) 70%);
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s linear 0s;

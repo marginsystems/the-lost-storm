@@ -25,14 +25,6 @@
   animation: veil-drift var(--drift-ms) var(--drift-ease) infinite alternate;
 }
 
-#fade::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--dither);
-  background-size: var(--dither-size);
-}
-
 @keyframes veil-drift {
   from {
     transform: translate3d(-5%, -2%, 0) scale(1);

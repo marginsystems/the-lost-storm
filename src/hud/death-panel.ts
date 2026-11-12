@@ -1,12 +1,16 @@
 import { choicesOpen } from '../../sim/world/death.ts';
 import type { RespawnChoice, World } from '../../sim/world/types.ts';
+import { BACKDROPS } from '../dither/backdrops.ts';
+import type { DitherLayer } from '../dither/layer.ts';
+import { mountDither } from '../dither/layer.ts';
 import { el, label, setText } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
 import type { WorldStatus } from './status.ts';
 import { markOverlay } from './overlay-mark.ts';
 
-const DEATH_PANEL: { readonly confirmKeys: readonly string[] } = {
+const DEATH_PANEL: { readonly confirmKeys: readonly string[]; readonly backdropRatio: number } = {
   confirmKeys: ['Enter', 'Space'],
+  backdropRatio: 1,
 };
 
 interface ChoiceButton {
@@ -28,6 +32,7 @@ function causeText(world: World): string {
 
 export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus {
   const screen: HTMLDivElement = el('div', 'death-screen', parent);
+  const backdrop: DitherLayer = mountDither(screen, { className: 'death-backdrop', layers: BACKDROPS.death, eager: false, marksHost: true, maxRatio: DEATH_PANEL.backdropRatio });
   const panel: HTMLDivElement = el('div', 'death-panel', screen);
   label('death-title', 'You have fallen', panel);
   const cause: HTMLDivElement = el('div', 'death-cause', panel);
@@ -44,6 +49,7 @@ export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus 
     element: screen,
     show(): void {
       visible = true;
+      backdrop.paint();
       screen.classList.add('visible');
       markOverlay(screen, true);
     },
