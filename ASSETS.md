@@ -15,6 +15,10 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 | MakeHuman base mesh, shape targets, skins and eyes | The MakeHuman project: Data Collection AB, Joel Palmius, Jonas Hauquier (makehumancommunity.org) | https://github.com/makehumancommunity/makehuman | CC0 1.0 | [licenses/MakeHuman-community-assets.txt](licenses/MakeHuman-community-assets.txt) |
 | Poly Haven models and textures | The authors named in the tables below (polyhaven.com) | https://polyhaven.com | CC0 1.0 | [licenses/Poly-Haven-CC0.txt](licenses/Poly-Haven-CC0.txt) |
 
+## Landing page images
+
+`src/landing/images/`, `public/og.jpg` and `public/apple-touch-icon.png` are screenshots of this game, captured from it for this project, and `public/favicon.svg` was drawn for it. They fall under the repository's MIT licence. What appears in them (models, textures) is credited in the rows below.
+
 ## Credit required by CC BY 4.0
 
 "Free Pack - Human Skeleton" by PolyOne Studio, https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf, licensed under Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: posed onto the Quaternius rig, decimated and repainted; lower-detail copies removed. The same credit is shown on the game's title screen.

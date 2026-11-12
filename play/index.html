@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#05070b" />
+    <meta name="description" content="The Lost Storm: an isometric action RPG that runs in your browser." />
+    <title>The Lost Storm</title>
+    <script>
+      (function () {
+        function fail() {
+          var status = document.getElementById('title-status');
+          var enter = document.getElementById('title-enter');
+          var loader = document.getElementById('title-loader');
+          if (!status || !enter || !enter.disabled || status.classList.contains('failed')) return;
+          status.textContent = 'Loading failed. Reload the page.';
+          status.classList.add('failed');
+          if (loader) loader.classList.add('done');
+        }
+        window.addEventListener('error', function (event) {
+          var target = event.target;
+          if (target instanceof HTMLScriptElement || target === window) fail();
+        }, true);
+        window.addEventListener('unhandledrejection', fail);
+      })();
+    </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/src/app.css" />
+    <link rel="stylesheet" href="/src/title-account.css" />
+    <link rel="stylesheet" href="/src/title-lobby.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="scene"></canvas>
+      <div id="overlays"></div>
+      <div id="fade"></div>
+      <div id="hud"></div>
+      <div id="vignette"></div>
+      <div id="title" data-lobby="%VITE_SERVER_URL%">
+        <div class="title-card">
+          <h1>The Lost Storm</h1>
+          <p class="title-sub" id="title-place"></p>
+          <div class="title-loader" id="title-loader" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <p class="title-status" id="title-status">Gathering the storm…</p>
+          <button id="title-enter" type="button" disabled>Enter</button>
+          <button id="title-reset" type="button" class="title-quiet" hidden>Start over</button>
+          <p class="title-sync" id="title-sync" aria-live="polite"></p>
+          <div class="title-account" id="title-account" data-state="hidden">
+            <div class="title-methods">
+              <div class="title-google" id="title-google" hidden></div>
+              <button id="title-email-open" type="button" class="title-email-open" aria-label="Sign in with email" hidden><span class="title-email-long">Sign in with email</span><span class="title-email-short">Email</span></button>
+            </div>
+            <form class="title-email" id="title-email" data-step="closed" novalidate>
+              <div class="title-email-row title-email-address">
+                <input id="title-email-input" type="email" name="email" autocomplete="email" inputmode="email" spellcheck="false" maxlength="254" placeholder="Email address" aria-label="Email address" />
+                <button id="title-email-send" type="submit" class="title-email-action">Send code</button>
+              </div>
+              <div class="title-email-row title-email-code" id="title-email-code" role="group" aria-label="Six-digit code from the email">
+                <span class="title-email-digits" id="title-email-digits">
+                  <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="Digit 1" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 2" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 3" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 4" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 5" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 6" />
+                </span>
+                <button id="title-email-resend" type="button" class="title-email-action">Resend</button>
+              </div>
+              <button id="title-email-back" type="button" class="title-email-back" aria-label="Back">&#x2190;</button>
+            </form>
+            <p class="title-account-line" id="title-account-line" hidden><span class="title-account-method" id="title-account-method"></span><span id="title-account-name"></span><button id="title-signout" type="button" class="title-quiet">Sign out</button></p>
+            <p class="title-account-note" id="title-account-note" aria-live="polite" hidden></p>
+            <p class="title-email-note" id="title-email-note" aria-live="polite"></p>
+            <div class="title-turnstile" id="title-turnstile"><div id="title-turnstile-mount"></div></div>
+          </div>
+          <dl class="title-keys">
+            <div><dt>Left mouse</dt><dd>Move, attack, pick up</dd></div>
+            <div><dt>Shift + left mouse</dt><dd>Attack in place</dd></div>
+            <div><dt>Q</dt><dd>Thunderclap</dd></div>
+            <div><dt>W or right mouse</dt><dd>Storm Bolt</dd></div>
+            <div><dt>Space</dt><dd>Dodge roll</dd></div>
+            <div><dt>1 · 2</dt><dd>Life flask · Mana flask</dd></div>
+            <div><dt>I · C · T · M · L</dt><dd>Inventory · Character · Skill tree · Map · Ladder</dd></div>
+            <div><dt>Mouse wheel</dt><dd>Zoom</dd></div>
+          </dl>
+          <p class="title-credits">
+            Skeleton: "Free Pack - Human Skeleton" by PolyOne Studio, CC BY 4.0, modified. Rig and animations: Universal Animation Library by Quaternius, CC0. Clothing and armour: Modular Character Outfits - Fantasy by Quaternius, and MakeHuman community garments by Donitz, Rehman Polanski and MRT, all CC0. World: models and textures from Poly Haven, CC0.
+          </p>
+          <p class="title-legal"><a href="/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="/terms.html">Terms</a></p>
+        </div>
+        <aside class="title-lobby lobby" id="title-lobby" aria-label="Ladder"></aside>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
