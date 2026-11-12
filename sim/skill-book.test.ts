@@ -7,10 +7,9 @@ import type { Content } from './content/types.ts';
 import { grantXp } from './world/character.ts';
 import { xpToNextLevel } from './progression.ts';
 import { parseSaveText, toSave } from './save.ts';
-import { assignSlot, defaultBar, everySkill, placeLearned, readBar, readLearned, readTaken, startingSkills, unlockedSkills } from './skill-book.ts';
-import { pendingOffer } from './world/learning.ts';
+import { assignSlot, chartSkills, defaultBar, everySkill, placeLearned, placeOf, readBar, readLearned, startingSkills } from './skill-book.ts';
 import { stepWorld } from './world/step.ts';
-import type { Command, World, WorldEvent } from './world/types.ts';
+import type { World, WorldEvent } from './world/types.ts';
 
 const content: Content = loadContent();
 
@@ -30,15 +29,23 @@ function finish(world: World, quest: string): WorldEvent[] {
   return stepWorld(world, [], 1 / 60);
 }
 
-void test('the hero can earn eight to ten active skills across the first act, beyond the basic attack and the roll, each a different shape', (): void => {
-  const offered: readonly string[] = unlockedSkills(content, 7).filter((skill: string): boolean => skill !== 'cleave' && skill !== 'dodge_roll');
+void test('the chart unlocks eight to ten active skills beyond the basic attack and the roll, one place each, each a different shape', (): void => {
+  const offered: readonly string[] = chartSkills(content, content.skillTree.map((node): string => node.id));
   assert.ok(offered.length >= 8 && offered.length <= 10);
+  assert.equal(new Set<string>(offered).size, offered.length);
   const shapes: Set<string> = new Set<string>(offered.map((id: string): string => {
     const skill = must(content.skills.get(id), id);
     const area: string = skill.delivery.type === 'area' ? `${skill.delivery.anchor}:${skill.delivery.pull > 0 ? 'pull' : ''}:${skill.delivery.pulse > 0 ? 'pulse' : ''}:${skill.delivery.slow < 1 ? 'slow' : ''}` : '';
     return `${skill.delivery.type}:${area}:${skill.press?.type ?? ''}:${skill.brand === null ? '' : 'brand'}`;
   }));
   assert.equal(shapes.size, offered.length);
+});
+
+void test('each path opens on an ability place, so a new character sees five abilities around the eye', (): void => {
+  const entrances = content.skillTree.filter((node): boolean => node.requires.length === 0);
+  assert.equal(entrances.length, content.chart.paths.length);
+  for (const node of entrances) assert.ok(node.unlock !== null, node.id);
+  assert.equal(new Set<string>(entrances.map((node): string => node.path)).size, content.chart.paths.length);
 });
 
 void test('a new hero wakes with nothing but the basic attack, and every other slot empty', (): void => {
@@ -51,56 +58,54 @@ void test('a new hero wakes with nothing but the basic attack, and every other s
   assert.equal(world.player.bar[1], null);
 });
 
-void test('levels alone offer nothing before the road has taught the first skills', (): void => {
+void test('levels give points but never a skill; a skill is learned only by taking its place', (): void => {
   const world: World = worldIn(content, 'between', 3);
-  levelTo(world, 7);
+  levelTo(world, 3);
   stepWorld(world, [], 1 / 60);
   assert.deepEqual(world.player.learned, ['cleave']);
-  assert.equal(pendingOffer(world), null);
+  assert.equal(world.player.skillPoints, 2 * content.chart.pointsPerLevel);
 });
 
-void test('the roll is taught outright; every other skill is chosen from an offer, never granted silently', (): void => {
+void test('the roll is taught by play; the first moment and the lesson each grant a chart point, and a place turns a point into a skill on the bar', (): void => {
   const world: World = worldIn(content, 'hall_of_time', 3);
   const roll: WorldEvent[] = finish(world, 'out_of_the_mist');
-  assert.deepEqual(roll.filter((event: WorldEvent): boolean => event.type === 'skill_unlocked'), [{ type: 'skill_unlocked', skill: 'dodge_roll', slot: 5, chosen: false }]);
-  finish(world, 'the_first_taker');
+  assert.deepEqual(roll.filter((event: WorldEvent): boolean => event.type === 'skill_unlocked'), [{ type: 'skill_unlocked', skill: 'dodge_roll', slot: 5 }]);
+  const moment: WorldEvent[] = finish(world, 'the_first_taker');
+  assert.deepEqual(moment.filter((event: WorldEvent): boolean => event.type === 'chart_point'), [{ type: 'chart_point', source: 'first_moment', points: 1 }]);
   assert.deepEqual(world.player.learned, ['cleave', 'dodge_roll']);
-  const first = must(pendingOffer(world), 'first offer');
-  assert.deepEqual(first.choices, ['thunderclap', 'storm_bolt', 'forkline']);
-  stepWorld(world, [{ type: 'choose', offer: first.offer.id, skill: 'held_breath' }], 1 / 60);
-  stepWorld(world, [{ type: 'choose', offer: 'fire_lesson', skill: 'thunderclap' }], 1 / 60);
-  assert.deepEqual(world.player.learned, ['cleave', 'dodge_roll']);
-  stepWorld(world, [{ type: 'choose', offer: first.offer.id, skill: 'forkline' }], 1 / 60);
-  assert.equal(world.player.bar[1], 'forkline');
-  assert.equal(pendingOffer(world), null);
+  assert.equal(world.player.skillPoints, 1);
+  assert.equal(finish(world, 'the_first_taker').filter((event: WorldEvent): boolean => event.type === 'chart_point').length, 0);
+  const bolt = must(placeOf(content, 'storm_bolt'), 'bolt place');
+  const taken: WorldEvent[] = stepWorld(world, [{ type: 'allocate', node: bolt.id }], 1 / 60);
+  assert.deepEqual(taken.filter((event: WorldEvent): boolean => event.type === 'skill_unlocked'), [{ type: 'skill_unlocked', skill: 'storm_bolt', slot: 1 }]);
+  assert.equal(world.player.skills[1]?.id, 'storm_bolt');
   finish(world, 'wardens_lesson');
-  const fire = must(pendingOffer(world), 'fire offer');
-  assert.deepEqual(fire.choices, ['storm_bolt', 'thunderclap', 'mist_step']);
-  stepWorld(world, [{ type: 'choose', offer: fire.offer.id, skill: 'storm_bolt' }], 1 / 60);
-  assert.equal(world.player.bar[2], 'storm_bolt');
-  levelTo(world, 2);
-  const second = must(pendingOffer(world), 'second offer');
-  assert.ok(!second.choices.includes('forkline'));
-  assert.ok(second.choices.includes('mist_step'));
+  assert.equal(world.player.skillPoints, 1);
+  const clap = must(placeOf(content, 'thunderclap'), 'clap place');
+  stepWorld(world, [{ type: 'allocate', node: clap.id }], 1 / 60);
+  assert.equal(world.player.bar[2], 'thunderclap');
 });
 
-void test('every offered skill can be placed from the slot picker list', (): void => {
+void test('giving a place back forgets its skill and clears it from the bar', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 3);
+  world.player.skillPoints = 1;
+  world.player.gold = 1000;
+  const bolt = must(placeOf(content, 'storm_bolt'), 'bolt place');
+  stepWorld(world, [{ type: 'allocate', node: bolt.id }], 1 / 60);
+  assert.ok(world.player.learned.includes('storm_bolt'));
+  stepWorld(world, [{ type: 'refund', node: bolt.id }], 1 / 60);
+  assert.ok(!world.player.learned.includes('storm_bolt'));
+  assert.ok(!world.player.bar.includes('storm_bolt'));
+  assert.equal(world.player.skillPoints, 1);
+});
+
+void test('every skill a place unlocks can be placed from the slot picker list', (): void => {
   const listed: readonly string[] = everySkill(content).map((entry: SkillUnlock): string => entry.skill);
-  for (const offer of content.player.skillOffers) for (const skill of offer.choices) assert.ok(listed.includes(skill), skill);
+  for (const skill of chartSkills(content, content.skillTree.map((node): string => node.id))) assert.ok(listed.includes(skill), skill);
   assert.equal(new Set<string>(listed).size, listed.length);
 });
 
-void test('a skill passed over comes round again in a later offer', (): void => {
-  const world: World = worldIn(content, 'hall_of_time', 3);
-  world.flags['first_moment'] = 'cleared';
-  world.flags['fire_lesson'] = 'given';
-  stepWorld(world, [{ type: 'choose', offer: 'first_moment', skill: 'storm_bolt' }], 1 / 60);
-  const next = must(pendingOffer(world), 'fire');
-  assert.equal(next.offer.id, 'fire_lesson');
-  assert.ok(next.choices.includes('thunderclap'));
-});
-
-void test('the slice reaches each lesson through a quest step that sets the flag its offer waits for', (): void => {
+void test('the slice reaches each lesson through a quest step that sets the flag its point waits for', (): void => {
   for (const [questId, [flag, value]] of Object.entries(TEACHES)) {
     const quest = must(content.quests.get(questId), questId);
     assert.ok(quest.objectives.some((objective): boolean => objective.sets[flag] === value), `${questId} sets ${flag}`);
@@ -125,68 +130,26 @@ void test('a learned skill goes home when its slot is free and to the first free
   assert.deepEqual(placeLearned(content, ['cleave', 'a', 'b', 'c', 'd', 'e'], 'thunderclap'), ['cleave', 'a', 'b', 'c', 'd', 'e']);
 });
 
-void test('the slot command places only learned skills, and the bar and what was learned survive a save', (): void => {
+void test('the slot command places only learned skills, and the bar, the places and the points granted survive a save', (): void => {
   const world: World = worldIn(content, 'hall_of_time', 3);
   finish(world, 'out_of_the_mist');
   finish(world, 'the_first_taker');
-  stepWorld(world, [{ type: 'choose', offer: 'first_moment', skill: 'thunderclap' }], 1 / 60);
-  const swap: Command[] = [{ type: 'slot', slot: 4, skill: 'thunderclap' }];
-  stepWorld(world, swap, 1 / 60);
+  stepWorld(world, [{ type: 'allocate', node: must(placeOf(content, 'thunderclap'), 'clap').id }], 1 / 60);
+  stepWorld(world, [{ type: 'slot', slot: 4, skill: 'thunderclap' }], 1 / 60);
   assert.equal(world.player.bar[4], 'thunderclap');
+  stepWorld(world, [{ type: 'slot', slot: 3, skill: 'held_breath' }], 1 / 60);
+  assert.equal(world.player.bar[3], null);
   const saved = must(parseSaveText(content, JSON.stringify(toSave(world))), 'save');
   assert.deepEqual(saved.bar, world.player.bar);
   assert.deepEqual(saved.learned, world.player.learned);
-  assert.deepEqual(saved.offers, ['first_moment']);
-  assert.deepEqual(readTaken(content, undefined, ['cleave', 'thunderclap']), ['first_moment']);
-  assert.deepEqual(readTaken(content, undefined, ['cleave', 'thunderclap', 'storm_bolt']), ['first_moment', 'fire_lesson']);
+  assert.deepEqual(saved.grants, ['first_moment']);
 });
 
-void test('an offer whose own skills are all learned still opens with skills passed over before', (): void => {
-  const world: World = worldIn(content, 'hall_of_time', 3);
-  levelTo(world, 7);
-  finish(world, 'out_of_the_mist');
-  finish(world, 'the_first_taker');
-  finish(world, 'wardens_lesson');
-  const picks: readonly string[] = ['thunderclap', 'storm_bolt', 'mist_step', 'downdraught', 'static_brand', 'living_wire', 'held_breath'];
-  for (const skill of picks) {
-    const open = must(pendingOffer(world), skill);
-    assert.ok(open.choices.includes(skill), `${open.offer.id} offers ${skill}`);
-    stepWorld(world, [{ type: 'choose', offer: open.offer.id, skill }], 1 / 60);
-  }
-  const last = must(pendingOffer(world), 'seventh wind');
-  assert.equal(last.offer.id, 'seventh_wind');
-  assert.ok(last.choices.length >= 2);
-  assert.ok(last.choices.every((skill: string): boolean => !world.player.learned.includes(skill)));
-});
-
-void test('an offer whose own skills are mostly learned is topped up with skills passed over before', (): void => {
-  const world: World = worldIn(content, 'hall_of_time', 3);
-  levelTo(world, 7);
-  finish(world, 'out_of_the_mist');
-  finish(world, 'the_first_taker');
-  finish(world, 'wardens_lesson');
-  const picks: Readonly<Record<string, string>> = { fifth_wind: 'living_wire', sixth_wind: 'squall' };
-  for (let guard = 0; guard < 10; guard += 1) {
-    const open = pendingOffer(world);
-    if (open === null || open.offer.id === 'seventh_wind') break;
-    const skill: string = picks[open.offer.id] ?? must(open.choices.find((id: string): boolean => id !== 'held_breath' && id !== 'living_wire' && id !== 'squall'), open.offer.id);
-    stepWorld(world, [{ type: 'choose', offer: open.offer.id, skill }], 1 / 60);
-  }
-  const last = must(pendingOffer(world), 'seventh wind');
-  assert.equal(last.offer.id, 'seventh_wind');
-  assert.equal(last.choices.length, 2);
-  assert.equal(last.choices[0], 'held_breath');
-  assert.ok(!world.player.learned.includes(last.choices[1] ?? 'cleave'));
-});
-
-void test('a save from before skills were earned keeps every skill its level knew and everything on its bar', (): void => {
-  const learned: string[] = readLearned(content, undefined, 3, ['cleave', 'thunderclap', 'storm_bolt', null, null, 'dodge_roll'].filter((skill): skill is string => skill !== null));
-  assert.ok(['cleave', 'dodge_roll', 'thunderclap', 'storm_bolt', 'forkline', 'mist_step', 'downdraught', 'thunderhead'].every((skill: string): boolean => learned.includes(skill)));
-  assert.ok(!learned.includes('held_breath'));
-  const bar = readBar(content, undefined, learned);
-  assert.equal(bar[0], 'cleave');
-  assert.equal(bar[5], 'dodge_roll');
-  assert.ok(bar.includes('forkline'));
+void test('no save brings back a skill without its place: an old kit on the bar or in the learned list is dropped', (): void => {
+  const learned: string[] = readLearned(content, ['cleave', 'thunderclap', 'storm_bolt', 'dodge_roll'], []);
+  assert.deepEqual(learned, ['cleave', 'dodge_roll']);
+  assert.deepEqual(readLearned(content, undefined, []), ['cleave']);
+  assert.deepEqual(readLearned(content, undefined, [must(placeOf(content, 'forkline'), 'fork').id]), ['cleave', 'forkline']);
+  assert.deepEqual(readBar(content, ['cleave', 'thunderclap', 'storm_bolt', null, null, 'dodge_roll'], learned), ['cleave', null, null, null, null, 'dodge_roll']);
   assert.deepEqual(readBar(content, ['held_breath', 'cleave', 'cleave', 42, null, 'nonsense'], learned), [null, 'cleave', null, null, null, null]);
-  assert.deepEqual(readLearned(content, ['thunderclap', 'nonsense', 7], 1, []), ['cleave', 'thunderclap']);
 });

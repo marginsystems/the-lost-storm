@@ -8,7 +8,7 @@ import { faction, factionProblems } from './parse-factions.ts';
 import { momentLibrary } from './parse-moments.ts';
 import { momentProblems } from './moments.ts';
 import { chartDef, chartProblems, statMod, treeNode } from './parse-chart.ts';
-import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillOffer, skillUnlock } from './parse-shapes.ts';
+import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
@@ -52,7 +52,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -160,6 +160,7 @@ function skill(value: unknown, where: string): SkillDef {
     shake: numeric(source, 'shake', where),
     hitStop: numeric(source, 'hitStop', where),
     vfx: skillVfx(source['vfx'], `${where}.vfx`),
+    category: source['category'] === undefined ? 'none' : choice(source, 'category', SKILL_CATEGORIES, where),
     combo: skillCombo(source['combo'], `${where}.combo`),
     ...skillMotion(source, where),
     ...skillPress(source, where),
@@ -458,7 +459,6 @@ function player(value: unknown, where: string): PlayerDef {
     perLevel: each(source['perLevel'], `${where}.perLevel`, statMod),
     skillBar: each(source['skillBar'], `${where}.skillBar`, skillBinding),
     skillBook: each(source['skillBook'], `${where}.skillBook`, skillUnlock),
-    skillOffers: each(source['skillOffers'], `${where}.skillOffers`, skillOffer),
     xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`) },
     startingItems: textList(source, 'startingItems', where),
     unarmedVisual: nullableText(source, 'unarmedVisual', where),
@@ -573,7 +573,7 @@ export function contentProblems(content: Content): string[] {
   };
   problems.push(...roadProblems(content, flagNames));
   for (const entry of content.player.skillBook) known(`skill book ${entry.skill}`, entry.when);
-  for (const offer of content.player.skillOffers) known(`skill offer ${offer.id}`, offer.when);
+  for (const grant of content.chart.grants) known(`chart point grant ${grant.id}`, grant.when);
   for (const def of content.props.values()) {
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `prop ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }

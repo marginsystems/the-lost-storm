@@ -1,8 +1,9 @@
 import { loadContent } from '../sim/content/content.ts';
+import type { SkillUnlock } from '../sim/content/shape-types.ts';
 import type { Content, SkillDef } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { xpToNextLevel } from '../sim/progression.ts';
-import { unlockedSkills } from '../sim/skill-book.ts';
+import { everySkill } from '../sim/skill-book.ts';
 import { grantXp } from '../sim/world/character.ts';
 import { chargeOf } from '../sim/world/skills.ts';
 import { stepWorld } from '../sim/world/step.ts';
@@ -68,17 +69,17 @@ export const ENCOUNTERS: readonly Encounter[] = [
   { name: 'tough', pack: [{ monster: 'unfinished_borrower', at: { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 7 }, mods: ['hulking'] }] },
 ];
 
-export function buildBar(build: Build, level: number): string[] {
-  const known: readonly string[] = unlockedSkills(BALANCE_CONTENT, level);
-  const chosen: string[] = build.order.filter((skill: string): boolean => known.includes(skill)).filter((skill: string): boolean => skill !== 'cleave').slice(0, BALANCE.barSize - 2);
+export function buildBar(build: Build): string[] {
+  const known: ReadonlySet<string> = new Set<string>(everySkill(BALANCE_CONTENT).map((entry: SkillUnlock): string => entry.skill));
+  const chosen: string[] = build.order.filter((skill: string): boolean => known.has(skill)).filter((skill: string): boolean => skill !== 'cleave').slice(0, BALANCE.barSize - 2);
   return ['cleave', ...chosen, 'dodge_roll'];
 }
 
 function hero(build: Build, level: number, seed: number): World {
   const world: World = arena(seed, BALANCE_CONTENT);
   while (world.player.level < level) grantXp(world, xpToNextLevel(BALANCE_CONTENT.player.xp, world.player.level) - world.player.xp);
-  world.player.learned = unlockedSkills(BALANCE_CONTENT, level);
-  const bar: readonly string[] = buildBar(build, level);
+  world.player.learned = everySkill(BALANCE_CONTENT).map((entry: SkillUnlock): string => entry.skill);
+  const bar: readonly string[] = buildBar(build);
   const slots: Command[] = bar.map((skill: string, slot: number): Command => ({ type: 'slot', slot, skill }));
   for (let index: number = 0; index < BALANCE.barSize; index += 1) if (index >= bar.length) slots.push({ type: 'slot', slot: index, skill: null });
   stepWorld(world, slots, BALANCE.dt);

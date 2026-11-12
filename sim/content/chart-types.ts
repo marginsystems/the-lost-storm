@@ -23,10 +23,19 @@ export interface ChartRespec {
   readonly goldPerLevel: number;
 }
 
+import type { Condition } from './condition-types.ts';
+
+export interface PointGrant {
+  readonly id: string;
+  readonly when: readonly Condition[];
+  readonly points: number;
+}
+
 export interface ChartDef {
   readonly title: string;
   readonly pointsPerLevel: number;
   readonly respec: ChartRespec;
   readonly paths: readonly ChartPath[];
   readonly groups: readonly ChartGroup[];
+  readonly grants: readonly PointGrant[];
 }

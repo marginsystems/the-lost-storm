@@ -4,8 +4,9 @@ import type { StoryFlags } from './content/story-types.ts';
 import type { RetiredZones } from './content/road-types.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
-import { findNode } from './progression.ts';
-import { readBar, readLearned, readTaken } from './skill-book.ts';
+import { findNode, reachablePlaces } from './progression.ts';
+import { readBar, readLearned } from './skill-book.ts';
+import { grantIds } from './world/learning.ts';
 import { flaskCharges } from './world/flasks.ts';
 import { glitchToSave } from './world/glitch.ts';
 import type { GlitchSave, PathLogSave } from './world/glitch-types.ts';
@@ -27,7 +28,7 @@ export interface SaveData {
   readonly skillPoints: number;
   readonly allocated: readonly string[];
   readonly learned: readonly string[];
-  readonly offers: readonly string[];
+  readonly grants: readonly string[];
   readonly bar: readonly (string | null)[];
   readonly inventory: readonly (ItemInstance | null)[];
   readonly equipped: Equipment;
@@ -69,7 +70,7 @@ export function toSave(world: World): SaveData {
     skillPoints: player.skillPoints,
     allocated: [...player.allocated],
     learned: [...player.learned],
-    offers: [...player.offersTaken],
+    grants: [...player.grantsTaken],
     bar: [...player.bar],
     inventory: [...player.inventory],
     equipped: { ...player.equipped },
@@ -277,18 +278,19 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const kept: ItemInstance[] = spilledList.map((entry: unknown): ItemInstance | null => readItem(content, entry)).filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
   const reached: number = Math.min(Math.floor(level), content.player.xp.maxLevel);
   const savedBar: unknown = value['bar'];
-  const barList: readonly unknown[] = Array.isArray(savedBar) ? savedBar : [];
-  const learned: string[] = readLearned(content, value['learned'], reached, barList.filter((entry: unknown): entry is string => typeof entry === 'string'));
+  const listed: string[] = allocatedList.filter((node: unknown): node is string => typeof node === 'string' && findNode(content, node) !== null);
+  const taken: string[] = reachablePlaces(content, listed);
+  const learned: string[] = readLearned(content, value['learned'], taken);
   return {
     version: SAVE_VERSION,
     level: reached,
     xp,
     gold,
     kills,
-    skillPoints: Math.floor(skillPoints),
-    allocated: allocatedList.filter((node: unknown): node is string => typeof node === 'string' && findNode(content, node) !== null),
+    skillPoints: Math.floor(skillPoints) + listed.length - taken.length,
+    allocated: taken,
     learned,
-    offers: readTaken(content, value['offers'], learned),
+    grants: grantIds(content.chart.grants, value['grants']),
     bar: readBar(content, savedBar, learned),
     inventory: slots,
     equipped: worn.equipped,

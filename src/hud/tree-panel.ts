@@ -3,13 +3,16 @@ import type { PlayerState } from '../../sim/world/types.ts';
 import { canRefund, refundCost } from '../../sim/progression.ts';
 import { ATLAS_VIEW, atRest, stepMotion, still, toScreen } from './atlas-view.ts';
 import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-view.ts';
+import { abilityCard } from './chart-ability.ts';
+import type { AbilityCard } from './chart-ability.ts';
 import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
-import { clampChart, openChart, panChart, pinLabel, spreadLabels, zoomChart } from './chart-view.ts';
+import { clampChart, frameChart, panChart, pinLabel, spreadLabels, zoomChart } from './chart-view.ts';
 import type { LabelBox, PinnedLabel } from './chart-view.ts';
 import type { ChartBounds, ChartPoint, PathLabel } from './chart-model.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
-import { treeGlyph } from './tree-glyphs.ts';
+import { slotAction } from '../settings/bindings.ts';
+import { placeGlyph } from './tree-glyphs.ts';
 import { statusLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
 
@@ -59,6 +62,17 @@ interface Drag {
   travelled: number;
   vx: number;
   vy: number;
+}
+
+function reachable(status: TreeNodeStatus): boolean {
+  return status.kind === 'available' || status.kind === 'no_points';
+}
+
+function kindWord(node: SkillTreeNodeDef): string {
+  if (node.unlock !== null) return 'ability';
+  if (node.kind === 'keystone') return 'keystone';
+  if (node.variant !== null) return 'changes a skill';
+  return node.kind === 'notable' ? 'named place' : 'place';
 }
 
 function line(svg: SVGSVGElement, from: ChartPoint, to: ChartPoint, className: string, tint: string): SVGLineElement {
@@ -111,6 +125,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   const mapHeight: number = (bounds.bottom - bounds.top + CHART.margin * 2) * CHART.unit;
   const place = (point: ChartPoint): ChartPoint => ({ x: (point.x - bounds.left + CHART.margin) * CHART.unit, y: (point.y - bounds.top + CHART.margin) * CHART.unit });
   const centreOf = (node: SkillTreeNodeDef): ChartPoint => place({ x: node.column, y: node.row });
+  const eye: ChartPoint = place({ x: 0, y: 0 });
 
   const viewport: HTMLDivElement = el('div', 'tree-viewport', element);
   const board: HTMLDivElement = el('div', 'tree-board', viewport);
@@ -141,6 +156,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   const here: HTMLDivElement = el('div', 'chart-here', board);
   el('span', 'chart-here-ring', here);
   label('chart-here-word', 'You are here', here);
+  const prompt: HTMLDivElement = el('div', 'chart-prompt', viewport);
   const card: HTMLDivElement = el('div', 'chart-card', viewport);
   const cardBody: HTMLDivElement = el('div', 'chart-card-body', card);
   const action: HTMLButtonElement = el('button', 'chart-action', card);
@@ -185,7 +201,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const node: SkillTreeNodeDef = view.def;
     const status: TreeNodeStatus = statusOf(node);
     const refundable: boolean = status.kind === 'allocated' && canRefund(content, player().allocated, node.id);
-    const key: string = `${node.id}:${status.kind}:${refundable ? goldFor(1) : -1}:${player().skillPoints}`;
+    const ability: AbilityCard | null = abilityCard(content, node, player().bar);
+    const key: string = `${node.id}:${status.kind}:${refundable ? goldFor(1) : -1}:${player().skillPoints}:${ability?.slot ?? -1}`;
     showRoute(node.id);
     card.style.setProperty('--tint', pathTint(content, node.path));
     action.classList.toggle('shown', refundable);
@@ -198,12 +215,19 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     shownCard = key;
     const body: HTMLDivElement = el('div', 'chart-card-inner', null);
     const path: ChartPath | undefined = content.chart.paths.find((entry: ChartPath): boolean => entry.id === node.path);
-    label('chart-card-path', path === undefined ? node.kind : `${path.name}${node.kind === 'minor' ? '' : ` · ${node.kind === 'keystone' ? 'keystone' : node.variant === null ? 'named place' : 'changes a skill'}`}`, body);
+    label('chart-card-path', path === undefined ? node.kind : `${path.name} · ${kindWord(node)}`, body);
     label('tree-tip-name', node.name, body);
+    if (ability !== null) label('chart-card-tags', ability.tags, body);
     label('tree-tip-effect', node.description, body);
+    if (ability !== null) label('chart-card-cost', `${ability.cost}${slotWords(ability.slot)}`, body);
     label(`tree-tip-status ${status.kind}`, costLine(node, status), body);
     cardBody.replaceChildren(body);
     placeCard();
+  };
+
+  const slotWords = (slot: number | null): string => {
+    if (slot === null) return '';
+    return context.api.touch ? ` · slot ${slot + 1}` : ` · on ${context.api.settings.keys().labelOf(slotAction(slot))}`;
   };
 
   const leaveHover = (): void => {
@@ -395,11 +419,12 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     button.style.top = `${centre.y}px`;
     button.style.setProperty('--tint', pathTint(content, node.path));
     if (node.variant !== null) button.classList.add('variant');
+    if (node.unlock !== null) button.classList.add('ability');
     el('span', 'tree-socket-rim', button);
     el('span', 'tree-socket-well', button);
     el('span', 'tree-socket-fill', button);
     const glyph: HTMLSpanElement = el('span', 'tree-socket-glyph', button);
-    glyph.innerHTML = treeGlyph(node.icon);
+    glyph.innerHTML = placeGlyph(content, node);
     const view: NodeView = { def: node, button };
     button.addEventListener('pointerenter', (event: PointerEvent): void => {
       if (event.pointerType === 'touch' || viewport.classList.contains('dragging')) return;
@@ -476,11 +501,22 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     hovered = null;
     fillCard();
   }).observe(element, { attributes: true, attributeFilter: ['class'] });
+  const openingView = (): ChartPoint[] => {
+    const at: string | null = chartHere(content, player().allocated);
+    const hereNode: SkillTreeNodeDef | undefined = at === null ? undefined : byId.get(at);
+    const open: ChartPoint[] = nodes.filter((node: SkillTreeNodeDef): boolean => reachable(statusOf(node))).map(centreOf);
+    if (hereNode === undefined) return open.length > 0 ? [eye, ...open] : [eye];
+    return [centreOf(hereNode), ...open];
+  };
+
   const sync = (): void => {
     const you = player();
     setText(pointCount, String(you.skillPoints), true);
     setText(pointWord, you.skillPoints === 1 ? 'point' : 'points', false);
     points.classList.toggle('spendable', you.skillPoints > 0);
+    viewport.classList.toggle('choosing', you.skillPoints > 0);
+    prompt.classList.toggle('shown', you.skillPoints > 0);
+    if (you.skillPoints > 0) setText(prompt, `${you.skillPoints} ${you.skillPoints === 1 ? 'point' : 'points'}: choose a place`, false);
     restart.classList.toggle('shown', you.allocated.length > 0);
     if (performance.now() >= confirmUntil) restart.classList.remove('confirm');
     setText(restart, restartLabel(), true);
@@ -490,7 +526,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     }
     const at: string | null = chartHere(content, you.allocated);
     const hereNode: SkillTreeNodeDef | undefined = at === null ? undefined : byId.get(at);
-    const spot: ChartPoint = hereNode === undefined ? { x: mapWidth / 2, y: mapHeight / 2 } : centreOf(hereNode);
+    const spot: ChartPoint = hereNode === undefined ? eye : centreOf(hereNode);
     here.style.left = `${spot.x}px`;
     here.style.top = `${spot.y}px`;
     here.classList.toggle('start', hereNode === undefined);
@@ -509,9 +545,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       const open: boolean = element.classList.contains('open');
       if (open && !wasOpen) {
         measure();
-        const at: string | null = chartHere(content, player().allocated);
-        const node: SkillTreeNodeDef | undefined = at === null ? undefined : byId.get(at);
-        target = openChart(frame, node === undefined ? { x: mapWidth / 2, y: mapHeight / 2 } : centreOf(node));
+        target = frameChart(frame, openingView());
         motion = still(target);
         apply();
       }

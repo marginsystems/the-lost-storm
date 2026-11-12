@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { arena, ARENA_CENTRE, place } from '../../test/arena-support.ts';
-import { chooseSkill, learnSkills, pendingOffer } from './learning.ts';
+import { grantPoints, learnSkills } from './learning.ts';
 import { refreshPlayer } from './character.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World } from './types.ts';
@@ -65,21 +65,22 @@ void test('a skill whose flag is written is learned on the next step, once, with
   assert.deepEqual(world.player.learned, ['cleave']);
   world.flags['roll_taught'] = 'yes';
   const events = stepWorld(world, [], FIGHT.dt);
-  assert.deepEqual(events.filter((event): boolean => event.type === 'skill_unlocked'), [{ type: 'skill_unlocked', skill: 'dodge_roll', slot: 5, chosen: false }]);
+  assert.deepEqual(events.filter((event): boolean => event.type === 'skill_unlocked'), [{ type: 'skill_unlocked', skill: 'dodge_roll', slot: 5 }]);
   const again = stepWorld(world, [], FIGHT.dt);
   assert.equal(again.filter((event): boolean => event.type === 'skill_unlocked').length, 0);
   assert.equal(world.player.skills[5]?.id, 'dodge_roll');
 });
 
-void test('a skill picked from an offer is marked chosen, and one the story grants is not', (): void => {
+void test('a point grant pays once when its flag is written, with its event, and never again', (): void => {
   const world: World = bare(1);
-  learnSkills(world);
+  const before: number = world.player.skillPoints;
+  grantPoints(world);
+  assert.equal(world.player.skillPoints, before);
   world.flags['first_moment'] = 'cleared';
-  const open = pendingOffer(world);
-  assert.ok(open !== null, 'the first offer is open');
-  const pick: string | undefined = open.choices[0];
-  assert.ok(pick !== undefined, 'the offer has a choice');
-  world.events.length = 0;
-  chooseSkill(world, open.offer.id, pick);
-  assert.deepEqual(world.events.filter((event): boolean => event.type === 'skill_unlocked').map((event): boolean => event.type === 'skill_unlocked' && event.chosen), [true]);
+  const events = stepWorld(world, [], FIGHT.dt);
+  assert.deepEqual(events.filter((event): boolean => event.type === 'chart_point'), [{ type: 'chart_point', source: 'first_moment', points: 1 }]);
+  assert.equal(world.player.skillPoints, before + 1);
+  assert.deepEqual(world.player.grantsTaken, ['first_moment']);
+  stepWorld(world, [], FIGHT.dt);
+  assert.equal(world.player.skillPoints, before + 1);
 });

@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillTreeNodeDef, XpCurve } from './content/types.ts';
-import { applyXp, canAllocate, canRefund, refundCost, findNode, requirementsMet, xpToNextLevel } from './progression.ts';
+import { applyXp, canAllocate, canRefund, refundCost, findNode, requirementsMet, reachablePlaces, xpToNextLevel } from './progression.ts';
 import type { XpResult } from './progression.ts';
 
 const content: Content = loadContent();
 const curve: XpCurve = content.player.xp;
 
 function node(requires: readonly string[], requireMode: 'all' | 'any'): SkillTreeNodeDef {
-  return { id: 'test', name: 'Test', description: '', icon: 'lightning', kind: 'minor', path: 'storm', column: 0, row: 0, requires, requireMode, statMods: [], skillMods: [], variant: null };
+  return { id: 'test', name: 'Test', description: '', icon: 'lightning', kind: 'minor', path: 'storm', column: 0, row: 0, requires, requireMode, statMods: [], skillMods: [], variant: null, unlock: null };
 }
 
 void test('the xp curve grows level by level', (): void => {
@@ -55,10 +55,11 @@ void test('requirementsMet honours the all and any modes', (): void => {
 });
 
 void test('canAllocate needs a point, the requirements and an unallocated known node', (): void => {
-  assert.ok(canAllocate(content, [], 1, 'tempered_body'));
-  assert.ok(!canAllocate(content, [], 0, 'tempered_body'));
+  assert.ok(canAllocate(content, [], 1, 'stone_thunderclap'));
+  assert.ok(!canAllocate(content, [], 0, 'stone_thunderclap'));
+  assert.ok(!canAllocate(content, [], 1, 'tempered_body'));
   assert.ok(!canAllocate(content, [], 1, 'bedrock'));
-  assert.ok(canAllocate(content, ['tempered_body', 'stone_1'], 1, 'bedrock'));
+  assert.ok(canAllocate(content, ['stone_thunderclap', 'tempered_body', 'stone_1'], 1, 'bedrock'));
   assert.ok(!canAllocate(content, ['tempered_body'], 1, 'tempered_body'));
   assert.ok(!canAllocate(content, [], 5, 'unknown_node'));
 });
@@ -78,9 +79,15 @@ void test('a skill takes one changed form at a time', (): void => {
 });
 
 void test('a place can be given back only while everything taken after it still stands', (): void => {
-  const taken: readonly string[] = ['tempered_body', 'stone_1', 'bedrock'];
+  const taken: readonly string[] = ['stone_thunderclap', 'tempered_body', 'stone_1', 'bedrock'];
   assert.ok(canRefund(content, taken, 'bedrock'));
   assert.ok(!canRefund(content, taken, 'stone_1'));
   assert.ok(!canRefund(content, taken, 'old_oak'));
   assert.equal(refundCost(content, 5, 2), 2 * (content.chart.respec.goldPerPoint + content.chart.respec.goldPerLevel * 5));
+});
+
+void test('places whose way in is gone are dropped in the order they were taken, and the rest stay', (): void => {
+  assert.deepEqual(reachablePlaces(content, ['stormcallers_focus', 'storm_1', 'stone_thunderclap', 'tempered_body']), ['stone_thunderclap', 'tempered_body']);
+  assert.deepEqual(reachablePlaces(content, ['tempered_body', 'stone_thunderclap']), ['tempered_body', 'stone_thunderclap']);
+  assert.deepEqual(reachablePlaces(content, []), []);
 });

@@ -554,6 +554,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'blink':
           case 'brand':
           case 'skill_unlocked':
+          case 'chart_point':
           case 'xp':
           case 'surge_cleared':
           case 'notice':

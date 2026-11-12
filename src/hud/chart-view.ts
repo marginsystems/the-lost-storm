@@ -7,6 +7,7 @@ export const CHART_VIEW = {
   fitMargin: 0.94,
   labelEdge: 12,
   labelGap: 6,
+  framePad: 120,
 } as const;
 
 export interface LabelBox {
@@ -43,6 +44,18 @@ export function clampChart(view: AtlasView, frame: AtlasFrame): AtlasView {
 
 export function openChart(frame: AtlasFrame, at: ScreenPoint): AtlasView {
   return clampChart({ x: at.x, y: at.y, scale: CHART_VIEW.openScale }, frame);
+}
+
+export function frameChart(frame: AtlasFrame, points: readonly ScreenPoint[]): AtlasView {
+  if (points.length === 0) return wholeChart(frame);
+  const xs: readonly number[] = points.map((point: ScreenPoint): number => point.x);
+  const ys: readonly number[] = points.map((point: ScreenPoint): number => point.y);
+  const left: number = Math.min(...xs);
+  const right: number = Math.max(...xs);
+  const top: number = Math.min(...ys);
+  const bottom: number = Math.max(...ys);
+  const room: number = Math.min((frame.width * CHART_VIEW.fitMargin) / (right - left + CHART_VIEW.framePad * 2), (frame.height * CHART_VIEW.fitMargin) / (bottom - top + CHART_VIEW.framePad * 2));
+  return clampChart({ x: (left + right) / 2, y: (top + bottom) / 2, scale: Math.min(CHART_VIEW.openScale, room) }, frame);
 }
 
 export function wholeChart(frame: AtlasFrame): AtlasView {

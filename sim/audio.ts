@@ -127,6 +127,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'blink':
     case 'brand':
     case 'skill_unlocked':
+    case 'chart_point':
     case 'monster_remove':
     case 'xp':
     case 'glitch_start':
@@ -183,7 +184,6 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'equip':
     case 'unequip':
     case 'slot':
-    case 'choose':
       action = 'equip';
       break;
     case 'trade':

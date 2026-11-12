@@ -60,6 +60,7 @@ import type { Notices, WorldStatus, XpBar } from './status.ts';
 import { createTooltip } from './tooltip.ts';
 import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
+import chartPlacesCss from './chart-places.css?inline';
 import pickerCss from './skill-picker.css?inline';
 import { createTreePanel } from './tree-panel.ts';
 import type { ChartPanel } from './tree-panel.ts';
@@ -78,7 +79,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   const fit: FitWatch = watchFit(root);
-  style.textContent = `${hudCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}\n${pickerCss}`;
+  style.textContent = `${hudCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}\n${pickerCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -281,12 +282,15 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'skill_unlocked':
             if (event.slot !== null) skillBar.learned(event.slot);
-            if (!event.chosen) banners.show(api.world.content.skills.get(event.skill)?.name ?? event.skill, 'New skill', 'quest');
+            banners.show(api.world.content.skills.get(event.skill)?.name ?? event.skill, 'New skill', 'quest');
             break;
           case 'level_up':
-            banners.show(`LEVEL ${event.level}`, 'Skill point gained', 'level');
-            refreshOpen('tree');
+            banners.show(`LEVEL ${event.level}`, 'Chart point gained', 'level');
             refreshOpen('character');
+            break;
+          case 'chart_point':
+            if (event.source !== 'level') notices.say(`${openWith(api.touch, 'chart', keyOf('tree'))} to choose a place`);
+            refreshOpen('tree');
             break;
           case 'notice':
             notices.show(event.reason);

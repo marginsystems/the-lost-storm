@@ -55,3 +55,18 @@ export function canRefund(content: Content, allocated: readonly string[], nodeId
 export function refundCost(content: Content, level: number, points: number): number {
   return Math.round(points * (content.chart.respec.goldPerPoint + content.chart.respec.goldPerLevel * level));
 }
+
+export function reachablePlaces(content: Content, allocated: readonly string[]): string[] {
+  const kept: Set<string> = new Set<string>();
+  let grew: boolean = true;
+  while (grew) {
+    grew = false;
+    for (const id of allocated) {
+      const node: SkillTreeNodeDef | null = findNode(content, id);
+      if (node === null || kept.has(id) || !requirementsMet(node, [...kept])) continue;
+      kept.add(id);
+      grew = true;
+    }
+  }
+  return allocated.filter((id: string): boolean => kept.has(id));
+}

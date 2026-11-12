@@ -5,7 +5,6 @@ import { createRng, pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
 import { applyEdit, turnHero } from './glitch-edits.ts';
 import type { ActiveGlitch, GlitchRequest, GlitchSave, GlitchSource, GlitchState, PathEntry, Silhouette } from './glitch-types.ts';
-import { pendingOffer } from './learning.ts';
 import type { Command, MomentState, MonsterState, World, WorldEvent } from './types.ts';
 
 export const GLITCH = {
@@ -21,7 +20,7 @@ export const CALM = {
   overlayQuiet: 4,
 } as const;
 
-export type GlitchBlock = 'off' | 'dead' | 'active' | 'cooldown' | 'low_life' | 'telegraph' | 'busy' | 'fight' | 'overlay' | 'choice' | 'arrival' | 'spacing';
+export type GlitchBlock = 'off' | 'dead' | 'active' | 'cooldown' | 'low_life' | 'telegraph' | 'busy' | 'fight' | 'overlay' | 'arrival' | 'spacing';
 
 export function createGlitchState(def: GlitchDef, seed: number, save: GlitchSave | null): GlitchState {
   return {
@@ -99,7 +98,6 @@ function calmBlock(world: World, request: GlitchRequest): GlitchBlock | null {
   const state: GlitchState = world.glitch;
   if (fighting(world)) return 'fight';
   if (state.overlay || world.time - state.overlayShut < CALM.overlayQuiet) return 'overlay';
-  if (pendingOffer(world) !== null) return 'choice';
   if (request.source === 'debug' || (request.source === 'zone' && request.kind === 'quiet_pass')) return null;
   if (world.time - state.zoneSince < CALM.arrival) return 'arrival';
   if (world.time - state.lastMist < CALM.mistGap) return 'spacing';
@@ -143,7 +141,6 @@ const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
   skill: true,
   hold: false,
   slot: false,
-  choose: false,
   steer: true,
   pickup: true,
   travel: true,

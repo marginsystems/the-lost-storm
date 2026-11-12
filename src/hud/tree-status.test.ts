@@ -14,8 +14,8 @@ function node(id: string): SkillTreeNodeDef {
 }
 
 void test('a node reports why it can or cannot be taken', (): void => {
-  assert.deepEqual(treeNodeStatus(CONTENT, [], 1, node('tempered_body')), { kind: 'available' });
-  assert.deepEqual(treeNodeStatus(CONTENT, [], 0, node('tempered_body')), { kind: 'no_points' });
+  assert.deepEqual(treeNodeStatus(CONTENT, [], 1, node('stone_thunderclap')), { kind: 'available' });
+  assert.deepEqual(treeNodeStatus(CONTENT, [], 0, node('stone_thunderclap')), { kind: 'no_points' });
   assert.deepEqual(treeNodeStatus(CONTENT, ['tempered_body'], 3, node('tempered_body')), { kind: 'allocated' });
   assert.deepEqual(treeNodeStatus(CONTENT, [], 3, node('bedrock')), { kind: 'locked', missing: [node('stone_1').name], mode: 'all' });
   assert.deepEqual(treeNodeStatus(CONTENT, [], 3, node('storm_blade_near')), { kind: 'locked', missing: [node('storm_1').name, node('blade_1').name], mode: 'any' });
@@ -23,7 +23,8 @@ void test('a node reports why it can or cannot be taken', (): void => {
 });
 
 void test('the tooltip lines name the requirement, the cost and the reason', (): void => {
-  assert.equal(requirementLine(CONTENT, node('tempered_body')), null);
+  assert.equal(requirementLine(CONTENT, node('stone_thunderclap')), null);
+  assert.equal(requirementLine(CONTENT, node('tempered_body')), `Requires ${node('stone_thunderclap').name}`);
   assert.equal(requirementLine(CONTENT, node('storm_blade_near')), `Requires ${node('storm_1').name} or ${node('blade_1').name}`);
   assert.equal(costLine(), 'Cost 1 skill point');
   assert.equal(statusLine({ kind: 'locked', missing: ['Heavy Hands', 'Forked Bolt'], mode: 'any' }, false), 'Locked: allocate Heavy Hands or Forked Bolt first');
