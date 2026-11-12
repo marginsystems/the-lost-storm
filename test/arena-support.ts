@@ -2,7 +2,7 @@ import { loadContent } from '../sim/content/content.ts';
 import type { MonsterModDef } from '../sim/content/combat-types.ts';
 import type { Content, MonsterDef, SkillDef } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
-import { nearestWalkable } from '../sim/nav/grid.ts';
+import { nearestWalkable, routedGrid } from '../sim/nav/grid.ts';
 import { spawnPacks } from '../sim/world/monsters.ts';
 import type { MonsterState, World } from '../sim/world/types.ts';
 import { enterZone } from '../sim/world/zones.ts';
@@ -65,7 +65,7 @@ export function place(world: World, kind: string, at: Vec2, mods: readonly strin
   world.spawnedPacks = [];
   spawnPacks(world);
   const monster: MonsterState = must(world.monsters.at(-1), `${kind} spawned`);
-  monster.pos = must(nearestWalkable(world.grid, at, 6), 'walkable spawn');
+  monster.pos = must(nearestWalkable(routedGrid(world.grid), at, 6), 'walkable spawn');
   monster.lastPos = { x: monster.pos.x, z: monster.pos.z };
   monster.spawnTime = 0;
   monster.aggro = true;

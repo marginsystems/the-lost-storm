@@ -29,7 +29,7 @@ export interface PropDef {
   readonly blockRadius: number;
   readonly blockLength: number;
   readonly solid: boolean | null;
-  readonly footprint: readonly ReadonlyVec2[];
+  readonly footprints: readonly (readonly ReadonlyVec2[])[];
   readonly light: PropLight | null;
   readonly surfaces: Readonly<Record<string, string>>;
   readonly tint: string | null;

@@ -7,8 +7,9 @@ import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef, ZoneExit } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { distance } from '../math.ts';
-import { isWalkable, nearestWalkable, paceAt } from '../nav/grid.ts';
+import { distance, facingOf } from '../math.ts';
+import { blockerGap, buildNavGrid, isWalkable, moveWithCollision, nearestWalkable, paceAt, propBlockers } from '../nav/grid.ts';
+import type { Blocker, NavGrid } from '../nav/grid.ts';
 import { stepWorld } from './step.ts';
 import type { Command, World } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -250,3 +251,106 @@ void test('holding the button toward a spot he cannot reach searches for a route
   }
   assert.ok(searches >= 1 && searches <= 6, `searched ${searches} times in a second`);
 });
+
+const FACE = {
+  at: { x: 14, z: 14 },
+  start: 10,
+  seconds: 6,
+  reach: 0.3,
+  turnSeconds: 1,
+  turnSlack: 0.2,
+  slideStep: 0.02,
+  slideSteps: 150,
+  slideKeep: 0.9,
+  normalStep: 0.005,
+  slideAngle: Math.PI / 4,
+} as const;
+
+const FACE_PROPS: readonly { readonly prop: string; readonly rotationDegrees: number }[] = [
+  { prop: 'castle_rubble_large', rotationDegrees: 0 },
+  { prop: 'castle_wall_ruin', rotationDegrees: 0 },
+  { prop: 'castle_pillar', rotationDegrees: 0 },
+  { prop: 'crag_low', rotationDegrees: 0 },
+  { prop: 'crag_b', rotationDegrees: 0 },
+  { prop: 'crag_b', rotationDegrees: 40 },
+  { prop: 'crag_spire', rotationDegrees: 115 },
+];
+
+const SIDES = [{ name: 'south', x: 0, z: 1 }, { name: 'north', x: 0, z: -1 }, { name: 'east', x: 1, z: 0 }, { name: 'west', x: -1, z: 0 }] as const;
+
+function faceScene(prop: string, rotationDegrees: number, start: Vec2): World {
+  const world: World = worldIn(content, content.world.start, 5);
+  const tiles: readonly string[] = ['.......', '.......', '.......', '.......', '.......', '.......', '.......'];
+  enterZone(world, sceneZone(base, `test_face_${prop}`, { tiles, props: [{ ...placedProp(prop, FACE.at.x, FACE.at.z), rotationDegrees }], start }), { type: 'start' });
+  world.monsters = [];
+  return world;
+}
+
+function gapTo(prop: string, rotationDegrees: number, pos: Vec2): number {
+  const blockers: Blocker[] = propBlockers(must(content.props.get(prop), prop), FACE.at.x, FACE.at.z, rotationDegrees);
+  return Math.min(...blockers.map((blocker: Blocker): number => blockerGap(blocker, pos.x, pos.z)));
+}
+
+function outward(prop: string, rotationDegrees: number, pos: Vec2): Vec2 {
+  const gx: number = gapTo(prop, rotationDegrees, { x: pos.x + FACE.normalStep, z: pos.z }) - gapTo(prop, rotationDegrees, { x: pos.x - FACE.normalStep, z: pos.z });
+  const gz: number = gapTo(prop, rotationDegrees, { x: pos.x, z: pos.z + FACE.normalStep }) - gapTo(prop, rotationDegrees, { x: pos.x, z: pos.z - FACE.normalStep });
+  const length: number = Math.max(1e-9, Math.hypot(gx, gz));
+  return { x: gx / length, z: gz / length };
+}
+
+function rotated(direction: Vec2, angle: number): Vec2 {
+  return { x: direction.x * Math.cos(angle) - direction.z * Math.sin(angle), z: direction.x * Math.sin(angle) + direction.z * Math.cos(angle) };
+}
+
+function turnGap(a: number, b: number): number {
+  const delta: number = Math.abs((((b - a) % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+  return delta;
+}
+
+for (const { prop, rotationDegrees } of FACE_PROPS) {
+  for (const side of SIDES) {
+    void test(`holding the button on ${prop} turned ${rotationDegrees} degrees from the ${side.name} brings his body within ${FACE.reach} m of its base, never into it, and he keeps turning to the pointer there`, (): void => {
+      const radius: number = content.player.radius;
+      const world: World = faceScene(prop, rotationDegrees, { x: FACE.at.x + side.x * FACE.start, z: FACE.at.z + side.z * FACE.start });
+      for (let step: number = 0; step < Math.round(FACE.seconds / MOTION_DT); step += 1) {
+        stepWorld(world, [{ type: 'move', dest: FACE.at, held: true }], MOTION_DT);
+        assert.ok(gapTo(prop, rotationDegrees, world.player.pos) >= radius - 1e-6, `his body entered ${prop} at (${world.player.pos.x.toFixed(2)}, ${world.player.pos.z.toFixed(2)})`);
+      }
+      const gap: number = gapTo(prop, rotationDegrees, world.player.pos);
+      assert.ok(gap <= radius + FACE.reach, `he stopped with his body ${(gap - radius).toFixed(2)} m from ${prop}'s base`);
+      const toward: number = facingOf({ x: FACE.at.x - world.player.pos.x, z: FACE.at.z - world.player.pos.z });
+      world.player.facing = toward + Math.PI;
+      for (let step: number = 0; step < Math.round(FACE.turnSeconds / MOTION_DT); step += 1) {
+        stepWorld(world, [{ type: 'move', dest: FACE.at, held: true }], MOTION_DT);
+      }
+      assert.ok(turnGap(world.player.facing, facingOf({ x: FACE.at.x - world.player.pos.x, z: FACE.at.z - world.player.pos.z })) <= FACE.turnSlack, 'a held pointer inside the prop did not turn him to face it');
+    });
+  }
+}
+
+for (const { prop, rotationDegrees } of FACE_PROPS) {
+  void test(`pressing diagonally into ${prop} turned ${rotationDegrees} degrees slides him along its face at most of his pace, from every side`, (): void => {
+    const radius: number = content.player.radius;
+    const world: World = faceScene(prop, rotationDegrees, { x: 2, z: 2 });
+    const navGrid: NavGrid = buildNavGrid(world.zone, content.props, content.surfaces, radius);
+    for (const side of SIDES) {
+      for (const turn of [-1, 1]) {
+        const pos: Vec2 = { x: FACE.at.x + side.x * FACE.start, z: FACE.at.z + side.z * FACE.start };
+        while (gapTo(prop, rotationDegrees, pos) > radius + FACE.slideStep) moveWithCollision(navGrid, pos, -side.x * FACE.slideStep, -side.z * FACE.slideStep);
+        const into: Vec2 = rotated(outward(prop, rotationDegrees, pos), Math.PI - FACE.slideAngle * turn);
+        let travelled: number = 0;
+        let allowed: number = 0;
+        for (let step: number = 0; step < FACE.slideSteps; step += 1) {
+          const normal: Vec2 = outward(prop, rotationDegrees, pos);
+          const pushIn: number = Math.min(0, into.x * normal.x + into.z * normal.z);
+          allowed += Math.hypot(into.x - normal.x * pushIn, into.z - normal.z * pushIn) * FACE.slideStep;
+          const before: Vec2 = { ...pos };
+          moveWithCollision(navGrid, pos, into.x * FACE.slideStep, into.z * FACE.slideStep);
+          travelled += distance(before, pos);
+          assert.ok(gapTo(prop, rotationDegrees, pos) >= radius - 1e-6, `sliding pushed his body into ${prop}`);
+        }
+        assert.ok(travelled >= allowed * FACE.slideKeep, `pressing into ${prop} from the ${side.name} ${turn < 0 ? 'leftward' : 'rightward'} slid ${travelled.toFixed(2)} m of the ${allowed.toFixed(2)} m its faces allow`);
+      }
+    }
+  });
+}

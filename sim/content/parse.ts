@@ -9,7 +9,7 @@ import { parseFlasks } from './flasks.ts';
 import { combatProblems, fieldDelivery, markDelivery, monsterMod, monsterTraits, reviveDelivery, skillMotion } from './parse-combat.ts';
 import { faction, factionProblems } from './parse-factions.ts';
 import { momentLibrary } from './parse-moments.ts';
-import { rigGaits } from './parse-gaits.ts';
+import { rig } from './parse-rigs.ts';
 import { momentProblems } from './moments.ts';
 import { chartDef, chartProblems, statMod, treeNode } from './parse-chart.ts';
 import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
@@ -40,11 +40,8 @@ import type {
   RarityDef,
   ResistanceRules,
   StatCap,
-  RigActionClip,
   RigClips,
   RigDef,
-  RigSocket,
-  RigUnarmedClips,
   SkillBinding,
   SkillCombo,
   SkillDef,
@@ -52,7 +49,6 @@ import type {
   StatBlock,
   SurfaceDef,
   TalkDef,
-  Triple,
   WearableDef,
   WearRegion,
   ZoneExit,
@@ -254,75 +250,6 @@ function monster(value: unknown, where: string): MonsterDef {
   };
 }
 
-function actionClips(value: unknown, where: string): Record<string, RigActionClip> {
-  const actionFields: Fields = fields(value, where);
-  const actions: Record<string, RigActionClip> = {};
-  for (const key of Object.keys(actionFields)) {
-    const entry: Fields = fields(actionFields[key], `${where}.${key}`);
-    const impactFraction: number = numeric(entry, 'impactFraction', `${where}.${key}`);
-    if (impactFraction < 0 || impactFraction >= 1) throw new ContentError(`${where}.${key}.impactFraction`, 'expected a number from 0 up to, but not including, 1');
-    actions[key] = { clip: text(entry, 'clip', `${where}.${key}`), impactFraction };
-  }
-  return actions;
-}
-
-function unarmedClips(value: unknown, where: string): RigUnarmedClips | null {
-  if (value === undefined || value === null) return null;
-  const source: Fields = fields(value, where);
-  return { idle: text(source, 'idle', where), actions: actionClips(source['actions'], `${where}.actions`) };
-}
-
-function rigClips(value: unknown, where: string): RigClips {
-  const source: Fields = fields(value, where);
-  const actions: Record<string, RigActionClip> = actionClips(source['actions'], `${where}.actions`);
-  const hit: string[] = textList(source, 'hit', where);
-  const death: string[] = textList(source, 'death', where);
-  if (hit.length === 0) throw new ContentError(`${where}.hit`, 'a rig needs at least one hit clip');
-  if (death.length === 0) throw new ContentError(`${where}.death`, 'a rig needs at least one death clip');
-  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, death, rise: source['rise'] === undefined ? null : nullableText(source, 'rise', where), actions, unarmed: unarmedClips(source['unarmed'], `${where}.unarmed`) };
-}
-
-function triple(source: Fields, key: string, where: string): Triple {
-  const values: number[] = each(source[key], `${where}.${key}`, (entry: unknown, entryWhere: string): number => {
-    if (typeof entry !== 'number' || !Number.isFinite(entry)) throw new ContentError(entryWhere, 'expected a number');
-    return entry;
-  });
-  const [x, y, z] = values;
-  if (values.length !== 3 || x === undefined || y === undefined || z === undefined) throw new ContentError(`${where}.${key}`, 'expected three numbers');
-  return [x, y, z];
-}
-
-function rigSocket(value: unknown, where: string): RigSocket {
-  const source: Fields = fields(value, where);
-  return { bone: text(source, 'bone', where), position: triple(source, 'position', where), rotationDegrees: triple(source, 'rotationDegrees', where), scale: numeric(source, 'scale', where) };
-}
-
-function rig(value: unknown, where: string): RigDef {
-  const source: Fields = fields(value, where);
-  const socketFields: Fields = fields(source['sockets'], `${where}.sockets`);
-  const sockets: Record<string, RigSocket> = {};
-  for (const key of Object.keys(socketFields)) sockets[key] = rigSocket(socketFields[key], `${where}.sockets.${key}`);
-  const partFields: Fields = fields(source['bodyParts'], `${where}.bodyParts`);
-  const bodyParts: Record<string, readonly string[]> = {};
-  for (const key of Object.keys(partFields)) bodyParts[key] = textList(partFields, key, `${where}.bodyParts`);
-  return {
-    id: text(source, 'id', where),
-    url: text(source, 'url', where),
-    clipFolder: text(source, 'clipFolder', where),
-    scale: numeric(source, 'scale', where),
-    yawOffsetDegrees: numeric(source, 'yawOffsetDegrees', where),
-    height: numeric(source, 'height', where),
-    rootMotionBone: nullableText(source, 'rootMotionBone', where),
-    gaits: rigGaits(source['gaits'], `${where}.gaits`),
-    idleRate: source['idleRate'] === undefined ? 1 : numeric(source, 'idleRate', where),
-    clips: rigClips(source['clips'], `${where}.clips`),
-    sockets,
-    hiddenNodes: textList(source, 'hiddenNodes', where),
-    bodyParts,
-    base: source['base'] === undefined ? [] : textList(source, 'base', where),
-  };
-}
-
 function attachment(value: unknown, where: string): AttachmentDef {
   const source: Fields = fields(value, where);
   return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where), surfaces: dressing(source['surfaces'], `${where}.surfaces`) };
@@ -383,7 +310,7 @@ function prop(value: unknown, where: string): PropDef {
     blockRadius,
     blockLength,
     solid: source['solid'] === undefined ? null : flag(source, 'solid', where),
-    footprint: [],
+    footprints: [],
     light: propLight(source['light'], `${where}.light`),
     surfaces: dressing(source['surfaces'], `${where}.surfaces`),
     tint: source['tint'] === undefined ? null : colour(source, 'tint', where),
@@ -594,6 +521,14 @@ export function contentProblems(content: Content): string[] {
       need(def !== undefined, `${at} places unknown prop ${placed.prop}`);
       known(`${at} prop ${placed.prop}`, placed.when);
       if (def !== undefined && placed.when.length > 0) need(def.blockRadius === 0, `${at} places prop ${placed.prop} with a condition, but it blocks the way; a prop that comes and goes cannot block`);
+    }
+    for (const scatter of zoneDef.scatter) {
+      for (const id of scatter.props) {
+        const def: PropDef | undefined = content.props.get(id);
+        need(def !== undefined, `${at} scatters unknown prop ${id}`);
+        if (def !== undefined) need(def.blockRadius === 0 && def.light === null, `${at} scatters ${id}, which blocks or glows; scatter is loose ground cover`);
+      }
+      if (scatter.type === 'around') for (const anchor of scatter.anchors) need(content.props.has(anchor), `${at} scatters around unknown prop ${anchor}`);
     }
     for (const voice of zoneDef.voices) {
       known(`${at} voice ${voice.id}`, voice.when);

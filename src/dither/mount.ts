@@ -11,6 +11,7 @@ const MOUNT = {
   sharp: 2,
   soft: 1,
   goneClass: 'gone',
+  openAnimation: 'title-open',
   voidKind: 'void',
   zoneKindAttribute: 'data-zone-kind',
   bloomPseudo: '::after',
@@ -18,9 +19,30 @@ const MOUNT = {
   bloomPainted: 'bloomed',
 } as const;
 
+export type TitleEnd = { readonly kind: 'animation'; readonly name: string } | { readonly kind: 'transition'; readonly name: string; readonly running: readonly string[] };
+
+export function titleClosed(end: TitleEnd): boolean {
+  if (end.kind === 'animation') return end.name === MOUNT.openAnimation;
+  return end.name === 'opacity' && !end.running.includes(MOUNT.openAnimation);
+}
+
+export interface PlayingAnimation {
+  readonly playState: string;
+}
+
+export function unfinishedNames(animations: readonly PlayingAnimation[]): string[] {
+  return animations.filter((animation: PlayingAnimation): boolean => animation.playState !== 'finished').map((animation: PlayingAnimation): string => ('animationName' in animation && typeof animation.animationName === 'string' ? animation.animationName : ''));
+}
+
 function keepWhileShown(title: HTMLElement, backdrop: DitherLayer): void {
+  const close = (end: TitleEnd): void => {
+    if (title.classList.contains(MOUNT.goneClass) && titleClosed(end)) backdrop.release();
+  };
+  title.addEventListener('animationend', (event: AnimationEvent): void => {
+    if (event.target === title) close({ kind: 'animation', name: event.animationName });
+  });
   title.addEventListener('transitionend', (event: TransitionEvent): void => {
-    if (event.target === title && event.propertyName === 'opacity' && title.classList.contains(MOUNT.goneClass)) backdrop.release();
+    if (event.target === title) close({ kind: 'transition', name: event.propertyName, running: unfinishedNames(title.getAnimations()) });
   });
   new MutationObserver((): void => {
     if (!title.classList.contains(MOUNT.goneClass)) backdrop.paint();

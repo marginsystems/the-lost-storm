@@ -48,15 +48,21 @@ export const LOBBY_STAGE = {
   shadowNormalBias: 0.02,
   shadowNear: 2,
   shadowFar: 12,
-  rimColor: 0x9ab4ff,
-  rimIntensity: 9,
-  rimAt: [-1.7, 1.85, -4.4],
-  rimAim: [0, 1.7, 0],
-  rimAngle: 0.2,
-  rimPenumbra: 0.7,
-  rimGlow: 0x3a4f80,
+  rimColor: 0x7d93c4,
+  rimIntensity: 1.2,
+  rimAt: [-1.4, 2.2, -4.8],
+  rimAim: [0, 1.6, 0],
+  rimAngle: 0.3,
+  rimPenumbra: 1,
+  rimGlow: 0x000000,
+  poolColor: 0xf3e6d4,
+  poolIntensity: 4.5,
+  poolAt: [0.4, 6, 1.2],
+  poolAim: [0, 0, 0.15],
+  poolAngle: 0.2,
+  poolPenumbra: 1,
   groundSurface: 'black_rock',
-  groundWet: 0.35,
+  groundWet: 0.3,
   groundShade: 0.6,
   groundRelief: 0.8,
   groundRadius: 14,
@@ -98,7 +104,7 @@ export const LOBBY_POSE: readonly PoseTurn[] = [
 
 export const LOBBY_FRAMING = {
   wide: { across: 0.5, down: 0, zoom: 1 },
-  tall: { across: 0.5, down: 0.2, zoom: 0.78 },
+  tall: { across: 0.5, down: 0.2, zoom: 0.68 },
   tallBelow: 0.8,
 } as const;
 
@@ -273,6 +279,11 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   rim.target.position.set(LOBBY_STAGE.rimAim[0], LOBBY_STAGE.rimAim[1], LOBBY_STAGE.rimAim[2]);
   scene.add(rim);
   scene.add(rim.target);
+  const pool: SpotLight = new SpotLight(LOBBY_STAGE.poolColor, LOBBY_STAGE.poolIntensity, 0, LOBBY_STAGE.poolAngle, LOBBY_STAGE.poolPenumbra, 0);
+  pool.position.set(LOBBY_STAGE.poolAt[0], LOBBY_STAGE.poolAt[1], LOBBY_STAGE.poolAt[2]);
+  pool.target.position.set(LOBBY_STAGE.poolAim[0], LOBBY_STAGE.poolAim[1], LOBBY_STAGE.poolAim[2]);
+  scene.add(pool);
+  scene.add(pool.target);
 
   scene.add(groundMesh(content.surfaces.get(LOBBY_STAGE.groundSurface)));
   const rain: RainLayer = rainLayer(random);

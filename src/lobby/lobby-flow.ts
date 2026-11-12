@@ -31,6 +31,7 @@ export interface LobbyFlowParts {
   readonly look: () => LobbyLook;
   readonly view: () => LobbyView;
   readonly begin: () => void;
+  readonly ready: () => Promise<void>;
   readonly startOver: () => void;
   readonly openSettings: () => void;
   readonly tier: () => QualityName;
@@ -85,12 +86,13 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     return warming;
   };
 
-  const swap = async (into: boolean, middle: () => void): Promise<void> => {
+  const swap = async (into: boolean, middle: () => void, hold: () => Promise<void> = (): Promise<void> => Promise.resolve()): Promise<void> => {
     if (busy) return;
     busy = true;
     screen.setBusy(true);
     if (!into) screen.hide();
     await veil.cover(null);
+    await hold();
     middle();
     active = into;
     document.body.toggleAttribute(`data-${LOBBY_FLOW.bodyMark}`, into);
@@ -108,7 +110,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
 
   const screen: LobbyScreen = createLobbyScreen(parts.root, parts.lobby, {
     primary: (): void => {
-      void swap(false, parts.begin);
+      void swap(false, parts.begin, parts.ready);
     },
     startOver: (): void => {
       screen.setBusy(true);

@@ -8,9 +8,11 @@ export const SOLID = {
   least: 0.15,
 } as const;
 
+export type Outline = readonly ReadonlyVec2[];
+
 export interface ModelFootprint {
   readonly height: number;
-  readonly outline: readonly ReadonlyVec2[];
+  readonly outlines: readonly Outline[];
 }
 
 function corner(value: unknown, where: string): ReadonlyVec2 {
@@ -34,15 +36,23 @@ export function modelFootprints(value: unknown, where: string): ReadonlyMap<stri
   const made: Map<string, ModelFootprint> = new Map<string, ModelFootprint>();
   for (const model of Object.keys(source)) {
     const entry: Fields = fields(source[model], `${where}.${model}`);
-    const outline: ReadonlyVec2[] = items(entry['outline'], `${where}.${model}.outline`).map((point: unknown, index: number): ReadonlyVec2 => corner(point, `${where}.${model}.outline[${index}]`));
-    if (outline.length < 3) throw new ContentError(`${where}.${model}.outline`, 'an outline needs at least three corners');
-    made.set(model, { height: numeric(entry, 'height', `${where}.${model}`), outline });
+    const outlines: Outline[] = items(entry['outlines'], `${where}.${model}.outlines`).map((listed: unknown, piece: number): Outline => {
+      const outline: ReadonlyVec2[] = items(listed, `${where}.${model}.outlines[${piece}]`).map((point: unknown, index: number): ReadonlyVec2 => corner(point, `${where}.${model}.outlines[${piece}][${index}]`));
+      if (outline.length < 3) throw new ContentError(`${where}.${model}.outlines[${piece}]`, 'an outline needs at least three corners');
+      return outline;
+    });
+    if (outlines.length === 0) throw new ContentError(`${where}.${model}.outlines`, 'a footprint needs at least one outline');
+    made.set(model, { height: numeric(entry, 'height', `${where}.${model}`), outlines });
   }
   return made;
 }
 
+export function footprintArea(model: ModelFootprint): number {
+  return model.outlines.reduce((sum: number, outline: Outline): number => sum + outlineArea(outline), 0);
+}
+
 export function solidByShape(scale: number, model: ModelFootprint): boolean {
-  return model.height * scale >= SOLID.knee && outlineArea(model.outline) * scale * scale >= SOLID.least;
+  return model.height * scale >= SOLID.knee && footprintArea(model) * scale * scale >= SOLID.least;
 }
 
 export function withFootprints(props: ReadonlyMap<string, PropDef>, footprints: ReadonlyMap<string, ModelFootprint>): Map<string, PropDef> {
@@ -50,8 +60,8 @@ export function withFootprints(props: ReadonlyMap<string, PropDef>, footprints: 
   for (const [id, prop] of props) {
     const model: ModelFootprint | undefined = footprints.get(prop.model);
     const solid: boolean = model !== undefined && (prop.solid ?? solidByShape(prop.scale, model));
-    const footprint: readonly ReadonlyVec2[] = model === undefined || !solid ? [] : model.outline.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: point.x * prop.scale, z: point.z * prop.scale }));
-    made.set(id, { ...prop, footprint });
+    const outlines: readonly Outline[] = model === undefined || !solid ? [] : model.outlines.map((outline: Outline): Outline => outline.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: point.x * prop.scale, z: point.z * prop.scale })));
+    made.set(id, { ...prop, footprints: outlines });
   }
   return made;
 }

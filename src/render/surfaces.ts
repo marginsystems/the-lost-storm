@@ -4,7 +4,7 @@ import type { Content, SurfaceDef, ZoneDef } from '../../sim/content/types.ts';
 import { renderBudget, texturePath } from '../mobile/quality.ts';
 import { shrinkTexture } from '../mobile/textures.ts';
 import { assetUrl } from './character-loader.ts';
-import { withPropLook } from './prop-surface.ts';
+import { PROP_SURFACE, withPropLook } from './prop-surface.ts';
 import { wetGround } from './wet-ground.ts';
 
 export const SURFACES = {
@@ -117,6 +117,10 @@ export interface PropDressing {
 
 export function propDressing(zone: ZoneDef): PropDressing {
   return { wet: zone.weather.wet, ground: zone.floorHeight };
+}
+
+export function looseDressing(zone: ZoneDef): PropDressing {
+  return { wet: zone.weather.wet, ground: zone.floorHeight - PROP_SURFACE.contactHeight };
 }
 
 export function propSurfaceMaterial(def: SurfaceDef, dressing: PropDressing): MeshStandardMaterial {

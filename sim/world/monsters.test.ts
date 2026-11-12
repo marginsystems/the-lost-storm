@@ -9,7 +9,10 @@ import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { isWalkable, lineOfSight, nearestWalkable } from '../nav/grid.ts';
+import { blockerGap, isWalkable, lineOfSight, lineWalkable, nearestWalkable, propOutlines, routedGrid } from '../nav/grid.ts';
+import type { Blocker, NavGrid } from '../nav/grid.ts';
+import { findPath } from '../nav/path.ts';
+import { forceStrike } from './moments.ts';
 import { spawnPacks } from './monsters.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World } from './types.ts';
@@ -81,7 +84,7 @@ function spawn(world: World, kind: string, at: Vec2): MonsterState {
   world.zone = { ...world.zone, packs: [{ x: at.x, z: at.z, members: [{ monster: kind, count: 1, mods: [] }], when: [] }] };
   spawnPacks(world);
   const monster: MonsterState = must(world.monsters.at(-1), `${kind} spawned`);
-  monster.pos = must(nearestWalkable(world.grid, at, 6), 'walkable spawn');
+  monster.pos = must(nearestWalkable(routedGrid(world.grid), at, 6), 'walkable spawn');
   monster.lastPos = { x: monster.pos.x, z: monster.pos.z };
   monster.spawnTime = 0;
   monster.aggro = true;
@@ -281,4 +284,109 @@ void test('a summoned minion never summons in turn, even when its kind can', ():
   }
   assert.equal(world.monsters.length, 1 + summon.limit);
   assert.ok(world.monsters.every((monster: MonsterState): boolean => monster.summonerId === null || monster.summonerId === breeder.id));
+});
+
+const POCKET = {
+  spacing: 8,
+  wake: 3,
+  knockSpeed: 14,
+  knockSeconds: 1,
+  knockFrom: 1.2,
+  strandSeconds: 4,
+  strandSpeed: 2.5,
+  scan: 0.25,
+} as const;
+
+function joined(grid: NavGrid, from: Vec2, to: Vec2): boolean {
+  const goal: Vec2 | null = nearestWalkable(grid, to, 8);
+  return goal !== null && (lineWalkable(grid, from, goal) || findPath(grid, from, goal).length > 0);
+}
+
+void test('every pack in every zone stands on a cell the pathfinder can route, joined to the hero', (): void => {
+  for (const zone of content.zones.values()) {
+    const world: World = worldIn(content, zone.id, 5);
+    const grid: NavGrid = routedGrid(world.grid);
+    for (const monster of world.monsters) {
+      assert.ok(isWalkable(grid, monster.pos.x, monster.pos.z), `${zone.id}: ${monster.def.id} spawned in a sealed pocket at (${monster.pos.x.toFixed(2)}, ${monster.pos.z.toFixed(2)})`);
+      assert.ok(joined(grid, monster.pos, world.player.pos), `${zone.id}: ${monster.def.id} at (${monster.pos.x.toFixed(2)}, ${monster.pos.z.toFixed(2)}) has no route to the hero`);
+    }
+  }
+});
+
+void test('every echo a Hall moment wakes stands on a routed cell joined to the middle of its bubble', (): void => {
+  const hall: ZoneDef = must(content.zones.get('hall_of_time'), 'hall');
+  let checked: number = 0;
+  for (const def of content.moments.defs.values()) {
+    for (let x: number = POCKET.spacing; x < (hall.tiles[0]?.length ?? 0) * hall.cellSize; x += POCKET.spacing) {
+      for (let z: number = POCKET.spacing; z < hall.tiles.length * hall.cellSize; z += POCKET.spacing) {
+        const world: World = worldIn(content, hall.id, 5);
+        world.monsters = [];
+        world.moments = [];
+        world.wake = null;
+        const grid: NavGrid = routedGrid(world.grid);
+        if (!isWalkable(grid, x, z)) continue;
+        const moment = forceStrike(world, { x, z }, def.id);
+        if (moment === null) continue;
+        world.player.pos = { x: moment.pos.x, z: moment.pos.z };
+        for (let step: number = 0; step < Math.round(POCKET.wake / MOTION_DT) && moment.phase !== 'awake'; step += 1) stepWorld(world, [], MOTION_DT);
+        stepWorld(world, [], MOTION_DT);
+        for (const echo of world.monsters.filter((monster: MonsterState): boolean => monster.alive)) {
+          checked += 1;
+          assert.ok(isWalkable(grid, echo.pos.x, echo.pos.z), `${def.id} at (${x}, ${z}): an echo woke in a sealed pocket at (${echo.pos.x.toFixed(2)}, ${echo.pos.z.toFixed(2)})`);
+          assert.ok(joined(grid, echo.pos, moment.pos), `${def.id} at (${x}, ${z}): an echo at (${echo.pos.x.toFixed(2)}, ${echo.pos.z.toFixed(2)}) has no route into its bubble`);
+        }
+      }
+    }
+  }
+  assert.ok(checked > 0);
+});
+
+void test('knocking a monster hard into any Hall prop never leaves it in a sealed pocket', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 5);
+  world.monsters = [];
+  world.wake = null;
+  const grid: NavGrid = routedGrid(world.grid);
+  for (const placed of world.zone.props) {
+    const def = content.props.get(placed.prop);
+    if (def === undefined || placed.when.length > 0) continue;
+    const outlines: Blocker[] = propOutlines(def, placed.x, placed.z, placed.rotationDegrees);
+    if (outlines.length === 0) continue;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [Math.SQRT1_2, Math.SQRT1_2], [-Math.SQRT1_2, Math.SQRT1_2]] as const) {
+      let along: number = 0;
+      while (along < 12 && Math.min(...outlines.map((outline: Blocker): number => blockerGap(outline, placed.x + dx * along, placed.z + dz * along))) < POCKET.knockFrom) along += POCKET.scan;
+      const from: Vec2 = { x: placed.x + dx * along, z: placed.z + dz * along };
+      if (!isWalkable(grid, from.x, from.z)) continue;
+      world.monsters = [];
+      const monster: MonsterState = spawn(world, 'mended', from);
+      monster.pos = { ...from };
+      monster.aggro = false;
+      monster.knock = { x: -dx * POCKET.knockSpeed, z: -dz * POCKET.knockSpeed };
+      for (let step: number = 0; step < Math.round(POCKET.knockSeconds / MOTION_DT); step += 1) stepWorld(world, [], MOTION_DT);
+      assert.ok(isWalkable(grid, monster.pos.x, monster.pos.z), `${placed.prop} at (${placed.x}, ${placed.z}): a knock from (${from.x.toFixed(2)}, ${from.z.toFixed(2)}) left a monster sealed in at (${monster.pos.x.toFixed(2)}, ${monster.pos.z.toFixed(2)})`);
+    }
+  }
+});
+
+void test('a monster that ends up in a sealed pocket glides out to the nearest routed cell within a few seconds, never jumping', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 5);
+  world.monsters = [];
+  world.wake = null;
+  const grid: NavGrid = routedGrid(world.grid);
+  let pocket: Vec2 | null = null;
+  for (let x: number = 0; x < world.grid.columns * world.grid.cellSize && pocket === null; x += POCKET.scan) {
+    for (let z: number = 0; z < world.grid.rows * world.grid.cellSize && pocket === null; z += POCKET.scan) {
+      if (isWalkable(world.grid, x, z) && !isWalkable(grid, x, z)) pocket = { x, z };
+    }
+  }
+  const start: Vec2 = must(pocket, 'a spot open to the hero but not routed');
+  const monster: MonsterState = spawn(world, 'mended', start);
+  monster.pos = { ...start };
+  monster.aggro = false;
+  let previous: Vec2 = { ...monster.pos };
+  for (let step: number = 0; step < Math.round(POCKET.strandSeconds / MOTION_DT); step += 1) {
+    stepWorld(world, [], MOTION_DT);
+    assert.ok(distance(previous, monster.pos) <= POCKET.strandSpeed * MOTION_DT + 1e-6, 'the stranded monster jumped');
+    previous = { ...monster.pos };
+  }
+  assert.ok(isWalkable(grid, monster.pos.x, monster.pos.z), `it is still sealed in at (${monster.pos.x.toFixed(2)}, ${monster.pos.z.toFixed(2)})`);
 });

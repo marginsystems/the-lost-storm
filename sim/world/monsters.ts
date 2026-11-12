@@ -3,7 +3,8 @@ import type { StalkerBehaviour, SummonDef } from '../content/combat-types.ts';
 import type { MonsterDef, RangedBehaviour, SkillDef, SurgeRules } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { clamp, directionOf, distance, facingOf, normalize, rotate } from '../math.ts';
-import { lineOfSight, lineWalkable } from '../nav/grid.ts';
+import { isWalkable, lineOfSight, lineWalkable, nearestWalkable, routedGrid } from '../nav/grid.ts';
+import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { lifePhase, pickBossSkill } from './boss.ts';
 import { aggroPack } from './combat.ts';
@@ -40,6 +41,9 @@ const MONSTERS = {
   orbitPull: 0.7,
   orbitSpeed: 0.85,
   feudReach: 1.5,
+  strandSeconds: 2,
+  strandReach: 6,
+  strandSpeed: 2.5,
 } as const;
 
 const STEERING: Steering = { maxTurnRate: 11.5, minTurnRate: 2, turnGain: 20, fullSpeedAngle: 0.25, sharpAngle: 1, sharpSpeed: 0.3, passRadius: 0.45, settleRadius: 0.2 };
@@ -57,7 +61,7 @@ function travel(world: World, monster: MonsterState, direction: Vec2, speed: num
     face(monster, foe, dt);
     return;
   }
-  const step: SteerStep = steerToward(world.grid, monster, facingOf(direction), speed * dt, dt, STEERING);
+  const step: SteerStep = steerToward(routedGrid(world.grid), monster, facingOf(direction), speed * dt, dt, STEERING);
   monster.lastTravel = step.tried;
   monster.moving = step.moved > MONSTERS.stillStep || (step.tried > 0 && monster.stuckTime < MONSTERS.blockedGrace);
 }
@@ -71,15 +75,15 @@ function approach(world: World, monster: MonsterState, target: Vec2, dt: number)
   const goal: Vec2 | undefined = monster.path.at(-1);
   const drifted: boolean = goal === undefined || distance(goal, target) > MONSTERS.repathDrift;
   if (monster.repathTimer <= 0 && drifted) {
-    monster.path = findPath(world.grid, monster.pos, target);
+    monster.path = findPath(routedGrid(world.grid), monster.pos, target);
     monster.repathTimer = MONSTERS.repathInterval;
   }
-  if (monster.path.length === 1 && lineWalkable(world.grid, monster.pos, target)) monster.path = [{ x: target.x, z: target.z }];
+  if (monster.path.length === 1 && lineWalkable(routedGrid(world.grid), monster.pos, target)) monster.path = [{ x: target.x, z: target.z }];
   if (monster.path.length === 0) {
     face(monster, target, dt);
     return;
   }
-  const step: SteerStep = steerAlong(world.grid, monster, monster.path, monster.def.moveSpeed * dt, dt, STEERING);
+  const step: SteerStep = steerAlong(routedGrid(world.grid), monster, monster.path, monster.def.moveSpeed * dt, dt, STEERING);
   if (monster.path.length === 0) monster.repathTimer = 0;
   monster.lastTravel = step.tried;
   monster.moving = step.moved > MONSTERS.stillStep || (step.tried > 0 && monster.stuckTime < MONSTERS.blockedGrace);
@@ -132,7 +136,7 @@ function keepRange(world: World, monster: MonsterState, behaviour: RangedBehavio
   if (sight && gap <= skill.engageRange + foe.radius && attack(world, monster, skill, foe)) return;
   const probe: number = MONSTERS.retreatProbe + (monster.stance === 'retreat' ? 0 : MONSTERS.roomBand);
   const behind: Vec2 = { x: monster.pos.x - toward.x * probe, z: monster.pos.z - toward.z * probe };
-  monster.stance = rangeStance(monster, behaviour, gap, sight, lineWalkable(world.grid, monster.pos, behind));
+  monster.stance = rangeStance(monster, behaviour, gap, sight, lineWalkable(routedGrid(world.grid), monster.pos, behind));
   switch (monster.stance) {
     case 'approach':
     case 'engage':
@@ -252,14 +256,33 @@ function support(world: World, monster: MonsterState): boolean {
   return true;
 }
 
+function unstrand(world: World, monster: MonsterState, dt: number): void {
+  const grid: NavGrid = routedGrid(world.grid);
+  if (isWalkable(grid, monster.pos.x, monster.pos.z)) {
+    monster.stranded = 0;
+    return;
+  }
+  monster.stranded += dt;
+  if (monster.stranded < MONSTERS.strandSeconds) return;
+  const way: Vec2 | null = nearestWalkable(grid, monster.pos, MONSTERS.strandReach);
+  if (way === null) return;
+  const gap: number = distance(monster.pos, way);
+  if (gap <= 0) return;
+  const step: number = Math.min(gap, MONSTERS.strandSpeed * dt);
+  monster.pos.x += ((way.x - monster.pos.x) / gap) * step;
+  monster.pos.z += ((way.z - monster.pos.z) / gap) * step;
+  monster.motion = 'stride';
+}
+
 export function stepMonster(world: World, monster: MonsterState, dt: number): void {
   monster.motion = 'still';
-  stepKnock(world.grid, monster, dt);
+  stepKnock(routedGrid(world.grid), monster, dt);
   monster.moving = false;
   if (!monster.alive) {
     monster.deadTime += dt;
     return;
   }
+  unstrand(world, monster, dt);
   stepTimers(monster, dt);
   if (monster.spawnTime > 0) {
     monster.motion = 'rising';

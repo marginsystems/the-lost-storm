@@ -37,6 +37,7 @@ import type {
 import { service } from './parse-trade.ts';
 import type { VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
+import { zoneScatter } from './parse-scatter.ts';
 import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
 import { actEnd, drifts, retiredZones, triggers } from './parse-road.ts';
@@ -202,7 +203,7 @@ export function zone(value: unknown, where: string): ZoneDef {
   const surge: SurgeRules | null = surgeRules(source['surge'], `${where}.surge`);
   if (kind === 'town' && (packs.length > 0 || surge !== null)) throw new ContentError(where, 'a town is safe: it cannot have packs or surges');
   if (kind === 'void' && (packs.length > 0 || surge !== null)) throw new ContentError(where, 'a void is empty: it cannot have packs or surges');
-  if (kind === 'void' && [source['npcs'], source['checkpoints'], source['props']].some((list: unknown): boolean => Array.isArray(list) && list.length > 0)) throw new ContentError(where, 'a void recentres around the hero: it cannot hold npcs, checkpoints or props');
+  if (kind === 'void' && [source['npcs'], source['checkpoints'], source['props'], source['scatter']].some((list: unknown): boolean => Array.isArray(list) && list.length > 0)) throw new ContentError(where, 'a void recentres around the hero: it cannot hold npcs, checkpoints or props');
   if (kind === 'void' && source['waypoint'] !== null && source['waypoint'] !== undefined) throw new ContentError(`${where}.waypoint`, 'a void recentres around the hero: it cannot hold a waypoint');
   if ((kind === 'void') !== (source['void'] !== undefined && source['void'] !== null)) throw new ContentError(`${where}.void`, kind === 'void' ? 'a void zone needs its void rules' : 'only a void zone has void rules');
   return {
@@ -218,6 +219,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     outside: zoneOutside(source['outside'], `${where}.outside`),
     walls: zoneWalls(source['walls'], `${where}.walls`),
     props: each(source['props'], `${where}.props`, zoneProp),
+    scatter: source['scatter'] === undefined ? [] : each(source['scatter'], `${where}.scatter`, zoneScatter),
     playerStart: point(source['playerStart'], `${where}.playerStart`),
     packs,
     surge,

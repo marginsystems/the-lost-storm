@@ -131,14 +131,14 @@ void test('every zone prop a metre or more across blocks over its ground outline
       const prop = must(content.props.get(placed.prop), placed.prop);
       const wide: number = footprint(`public/${prop.model}`, prop.scale);
       if (wide < FOOTPRINT.solid || prop.solid === false) continue;
-      assert.ok(prop.footprint.length >= 3, `${zone.id} places ${placed.prop}, ${wide.toFixed(1)} m across, with no ground outline`);
+      assert.ok(prop.footprints.length >= 1, `${zone.id} places ${placed.prop}, ${wide.toFixed(1)} m across, with no ground outline`);
     }
   }
 });
 
 void test('every rock a zone scatters along its edge is a known prop with a measured footprint', (): void => {
   for (const zone of content.zones.values()) {
-    for (const id of zone.outside?.edge?.props ?? []) assert.ok((content.props.get(id)?.footprint.length ?? 0) >= 3, `${zone.id} edges with ${id}, which is not a solid prop`);
+    for (const id of zone.outside?.edge?.props ?? []) assert.ok((content.props.get(id)?.footprints.length ?? 0) >= 1, `${zone.id} edges with ${id}, which is not a solid prop`);
   }
 });
 

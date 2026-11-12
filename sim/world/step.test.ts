@@ -5,6 +5,7 @@ import { armed, must, worldIn } from '../../test/support.ts';
 import type { Content, PackMember, ZoneDef, ZonePack } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
+import { distance, facingOf } from '../math.ts';
 import { isWalkable, nearestWalkable } from '../nav/grid.ts';
 import { createRng } from '../rng.ts';
 import { toSave } from '../save.ts';
@@ -175,7 +176,7 @@ void test('a move inside the dead zone stops a walking player', (): void => {
   assert.ok(Math.hypot(world.player.pos.x - stopped.x, world.player.pos.z - stopped.z) < 0.2);
 });
 
-void test('a held move onto a blocked spot whose nearest floor is beside the player never moves or turns him', (): void => {
+void test('a held move onto a blocked spot whose nearest floor is beside the player steps him up to its face, turns him to it and then holds still', (): void => {
   const world: World = fresh();
   isolate(world);
   const grid = world.grid;
@@ -193,12 +194,18 @@ void test('a held move onto a blocked spot whose nearest floor is beside the pla
   const { spot, stand } = must(found, 'a blocked spot with open floor behind its nearest walkable point');
   assert.ok(Math.hypot(stand.x - spot.x, stand.z - spot.z) >= 0.7);
   world.player.pos = { x: stand.x, z: stand.z };
-  const facing: number = world.player.facing;
+  world.player.facing = facingOf({ x: stand.x - spot.x, z: stand.z - spot.z });
+  const settled: { pos: Vec2; facing: number }[] = [];
   for (let tick: number = 0; tick < 40; tick += 1) {
     advance(world, 0.09, [{ type: 'move', held: true, dest: { x: spot.x, z: spot.z } }]);
-    assert.equal(world.player.facing, facing);
+    assert.ok(distance(world.player.pos, spot) <= distance(stand, spot) + 1e-6, 'the held press pushed him away from the spot');
+    if (tick >= 20) settled.push({ pos: { ...world.player.pos }, facing: world.player.facing });
   }
-  assert.ok(Math.hypot(world.player.pos.x - stand.x, world.player.pos.z - stand.z) < 1e-6);
+  const last: { pos: Vec2; facing: number } = must(settled.at(-1), 'a settled sample');
+  assert.ok(settled.every((sample: { pos: Vec2; facing: number }): boolean => distance(sample.pos, last.pos) < 1e-6 && sample.facing === last.facing), 'he kept shuffling against the face');
+  const toward: number = facingOf({ x: spot.x - last.pos.x, z: spot.z - last.pos.z });
+  assert.ok(Math.abs(Math.atan2(Math.sin(last.facing - toward), Math.cos(last.facing - toward))) < 0.2, 'he never turned to the held spot');
+  assert.ok(distance(last.pos, spot) < distance(stand, spot), 'he did not step up to the face');
 });
 
 void test('a held move one unit away leaves a standing player standing, but a click walks there', (): void => {

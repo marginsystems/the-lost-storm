@@ -41,7 +41,7 @@ function rect(): DOMRect {
   return { x: 0, y: 0, width: VIEW.size, height: VIEW.size, top: 0, left: 0, right: VIEW.size, bottom: VIEW.size, toJSON: (): null => null };
 }
 
-function rig(world: World): Rig {
+function rig(world: World, overUi: () => boolean = (): boolean => false): Rig {
   const canvas: InputSurface = { addEventListener: (): void => undefined, getBoundingClientRect: rect, setPointerCapture: (): void => undefined, style: { cursor: 'default' } };
   const keys: KeySource = { addEventListener: (): void => undefined };
   const camera: InputCamera = {
@@ -50,7 +50,7 @@ function rig(world: World): Rig {
     rayDistanceTo: (): number => Infinity,
     zoomBy: (): void => undefined,
   };
-  const hud: InputHud = { isPointerOverUi: (): boolean => false, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined };
+  const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined };
   const store: KeyValueStore = { read: (): null => null, write: (): boolean => true, remove: (): void => undefined };
   const settings: SettingsStore = createSettingsStore(store, SLOTS, { flasks: 0, ladder: false });
   const hooks: InputHooks = { heightOf: (): number => 1.8, boundsOf: (): boolean => false, labelHover: (): null => null, clickMarker: (): void => undefined, aimExit: (): void => undefined, aimItem: (): void => undefined, pause: (): void => undefined };
@@ -174,4 +174,19 @@ void test('a held walk across the waypoint keeps walking past it', (): void => {
   const along = (): number => (world.player.pos.x - start.x) * dir.x + (world.player.pos.z - start.z) * dir.z;
   run(setup, 30, (): boolean => along() > gap + 2);
   assert.ok(along() > gap + 2, `stopped ${(gap - along()).toFixed(2)} m short of the waypoint`);
+});
+
+void test('a held walk that began on the ground keeps walking and goes through an open exit while the pointer drifts over the HUD', (): void => {
+  const world: World = arrivedBy('hall_of_time', 'east');
+  let overHud: boolean = false;
+  const setup: Rig = rig(world, (): boolean => overHud);
+  const exit: ZoneExit = must(world.zone.exits.find((entry: ZoneExit): boolean => entry.id === 'east'), 'east exit');
+  const start: Vec2 = screenOf(world, toward(world.player.pos, exit, 1.5));
+  setup.input.holdAt(start.x, start.z);
+  run(setup, 0.2, (): boolean => false);
+  overHud = true;
+  const beyond: Vec2 = screenOf(world, { x: exit.x + 2, z: exit.z });
+  setup.input.moveHold(beyond.x, beyond.z);
+  run(setup, 30, (): boolean => world.zone.id !== 'hall_of_time');
+  assert.equal(world.zone.id, exit.to);
 });

@@ -181,6 +181,7 @@ export interface MonsterState extends ActorState {
   aggro: boolean;
   path: Vec2[];
   repathTimer: number;
+  stranded: number;
   stance: MonsterStance;
   blindTime: number;
   stuckTime: number;

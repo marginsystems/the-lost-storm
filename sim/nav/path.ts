@@ -12,6 +12,7 @@ const PATH = {
   snapRadius: 8,
   maxExpansions: 6000,
   faceStep: 0.1,
+  goalRing: 2,
 } as const;
 
 const STEPS: readonly Step[] = [
@@ -166,18 +167,53 @@ export function directPath(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2):
   return straight(grid, start, goal) ? [goal] : null;
 }
 
+function nearestCell(grid: NavGrid, point: ReadonlyVec2, ring: number, clear: boolean): number {
+  const own: number = cellIndex(grid, point.x, point.z);
+  let best: number = -1;
+  let bestGap: number = Number.POSITIVE_INFINITY;
+  const column: number = own % grid.columns;
+  const row: number = Math.floor(own / grid.columns);
+  for (let dr: number = -ring; dr <= ring; dr += 1) {
+    for (let dc: number = -ring; dc <= ring; dc += 1) {
+      const nextColumn: number = column + dc;
+      const nextRow: number = row + dr;
+      if (nextColumn < 0 || nextRow < 0 || nextColumn >= grid.columns || nextRow >= grid.rows) continue;
+      const next: number = nextRow * grid.columns + nextColumn;
+      if (grid.walkable[next] !== 1) continue;
+      const centre: Vec2 = cellCenter(grid, next);
+      const gap: number = Math.hypot(centre.x - point.x, centre.z - point.z);
+      if (gap < bestGap && (!clear || lineWalkable(grid, point, centre))) {
+        best = next;
+        bestGap = gap;
+      }
+    }
+  }
+  return best;
+}
+
+function openCell(grid: NavGrid, point: ReadonlyVec2): number {
+  const own: number = cellIndex(grid, point.x, point.z);
+  if (own < 0 || grid.walkable[own] === 1) return own;
+  const seen: number = nearestCell(grid, point, PATH.goalRing, true);
+  if (seen >= 0) return seen;
+  const near: number = nearestCell(grid, point, Math.ceil(PATH.snapRadius / grid.cellSize), false);
+  return near >= 0 ? near : own;
+}
+
 export function findPath(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): Vec2[] {
   const start: Vec2 | null = nearestWalkable(grid, from, PATH.snapRadius);
   const goal: Vec2 | null = nearestWalkable(grid, to, PATH.snapRadius);
   if (start === null || goal === null) return [];
   if (straight(grid, start, goal)) return [goal];
-  const startCell: number = cellIndex(grid, start.x, start.z);
-  const goalCell: number = cellIndex(grid, goal.x, goal.z);
+  const startCell: number = openCell(grid, start);
+  const goalCell: number = openCell(grid, goal);
   if (startCell < 0 || goalCell < 0) return [];
   const cells: number[] | null = searchCells(grid, startCell, goalCell);
   if (cells === null) return [];
   const points: Vec2[] = cells.map((cell: number): Vec2 => cellCenter(grid, cell));
-  points.push(goal);
+  const last: Vec2 = points.at(-1) ?? start;
+  if (lineWalkable(grid, last, goal)) points.push(goal);
+  if (points.length === 0) return [];
   return smooth(grid, start, points);
 }
 

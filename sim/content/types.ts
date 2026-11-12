@@ -296,6 +296,34 @@ export interface ZoneProp {
   readonly when: readonly Condition[];
 }
 
+export interface ScatterSize {
+  readonly least: number;
+  readonly most: number;
+}
+
+export interface OpenScatter {
+  readonly type: 'open';
+  readonly props: readonly string[];
+  readonly count: number;
+  readonly clump: number;
+  readonly spread: number;
+  readonly size: ScatterSize;
+  readonly clear: number;
+}
+
+export interface AroundScatter {
+  readonly type: 'around';
+  readonly props: readonly string[];
+  readonly anchors: readonly string[];
+  readonly each: number;
+  readonly spread: number;
+  readonly size: ScatterSize;
+}
+
+export type ZoneScatter = OpenScatter | AroundScatter;
+
+export const SCATTER_TYPES = ['open', 'around'] as const;
+
 export interface ZoneVoice {
   readonly id: string;
   readonly x: number;
@@ -400,6 +428,7 @@ export interface ZoneDef {
   readonly outside: ZoneOutside | null;
   readonly walls: ZoneWalls | null;
   readonly props: readonly ZoneProp[];
+  readonly scatter: readonly ZoneScatter[];
   readonly playerStart: ZonePoint;
   readonly packs: readonly ZonePack[];
   readonly surge: SurgeRules | null;

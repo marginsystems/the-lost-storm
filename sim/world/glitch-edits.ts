@@ -83,7 +83,7 @@ function withProp(zone: ZoneDef, index: number, placed: ZoneProp): ZoneDef {
 
 function blocking(world: World, propId: string): boolean {
   const def: PropDef | undefined = world.content.props.get(propId);
-  return def !== undefined && (def.blockRadius > 0 || def.footprint.length > 0);
+  return def !== undefined && (def.blockRadius > 0 || def.footprints.length > 0);
 }
 
 function clearsHero(world: World, placed: ZoneProp): boolean {

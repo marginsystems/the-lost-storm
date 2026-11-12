@@ -3,13 +3,14 @@ import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
 import type { Content, PropDef, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { blockerGap, buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, liftStamp, lineOfSight, linePace, lineWalkable, moveWithCollision, nearestWalkable, paceAt, propBlocker, propBlockers, propOutline, setDriftOpen, stampBlockers } from './grid.ts';
+import { blockerGap, buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, liftStamp, lineOfSight, linePace, lineWalkable, moveWithCollision, nearestWalkable, paceAt, propBlocker, propBlockers, propOutlines, setDriftOpen, stampBlockers } from './grid.ts';
 import type { Blocker, DriftCells, GridStamp, NavGrid } from './grid.ts';
 import { OUTPOST_ZONE, ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts';
 import { must } from '../../test/support.ts';
 import { findPath } from './path.ts';
 
 const content: Content = loadContent();
+const BODY_SAMPLE: number = 0.1;
 const grid: NavGrid = buildNavGrid(OUTPOST_ZONE, content.props, content.surfaces, content.player.radius);
 
 void test('open floor is walkable and void tiles, the outside and wall margins are not', (): void => {
@@ -77,7 +78,7 @@ const AUDIT = {
   spawnSnap: 6,
   approach: 1.5,
   sampleStep: 0.1,
-  bodyMargin: 0.25,
+  bodyMargin: 0.05,
   reported: 5,
   crossings: [[1, 0], [0, 1], [Math.SQRT1_2, Math.SQRT1_2], [Math.SQRT1_2, -Math.SQRT1_2]],
 } as const;
@@ -134,8 +135,9 @@ for (const zone of content.zones.values()) {
             const x: number = previous.x + ((point.x - previous.x) * step) / steps;
             const z: number = previous.z + ((point.z - previous.z) * step) / steps;
             for (const other of blocking) {
-              const radius: number = must(content.props.get(other.prop), other.prop).blockRadius;
-              if (Math.hypot(x - other.x, z - other.z) < radius + AUDIT.bodyMargin) problems.push(`a path near ${placed.prop} at ${placed.x},${placed.z} passes ${x.toFixed(2)},${z.toFixed(2)}, inside ${other.prop} at ${other.x},${other.z}`);
+              const bodies: Blocker[] = propBlockers(must(content.props.get(other.prop), other.prop), other.x, other.z, other.rotationDegrees);
+              const gap: number = Math.min(...bodies.map((body: Blocker): number => blockerGap(body, x, z)));
+              if (gap < content.player.radius - AUDIT.bodyMargin) problems.push(`a path near ${placed.prop} at ${placed.x},${placed.z} passes ${x.toFixed(2)},${z.toFixed(2)}, inside ${other.prop} at ${other.x},${other.z}`);
             }
           }
           previous = point;
@@ -214,56 +216,71 @@ function findOpen(open: NavGrid): Vec2 | null {
   return null;
 }
 
+function placedOutlines(zone: ZoneDef): { readonly prop: string; readonly at: Vec2; readonly outline: Blocker }[] {
+  return zone.props.flatMap((placed): { readonly prop: string; readonly at: Vec2; readonly outline: Blocker }[] => {
+    const def: PropDef | undefined = content.props.get(placed.prop);
+    if (placed.when.length > 0 || def === undefined) return [];
+    return propOutlines(def, placed.x, placed.z, placed.rotationDegrees).map((outline: Blocker): { readonly prop: string; readonly at: Vec2; readonly outline: Blocker } => ({ prop: placed.prop, at: { x: placed.x, z: placed.z }, outline }));
+  });
+}
+
+function cornersOf(blocker: Blocker): readonly Vec2[] {
+  return blocker.kind === 'outline' ? blocker.outline : [blocker.from, blocker.to];
+}
+
 void test('no point inside a placed prop\'s ground outline can be walked on, in any zone', (): void => {
   for (const zone of content.zones.values()) {
     const zoneGrid: NavGrid = buildNavGrid(zone, content.props, content.surfaces, content.player.radius);
-    for (const placed of zone.props) {
-      const def: PropDef | undefined = content.props.get(placed.prop);
-      const outline: Blocker | null = placed.when.length > 0 || def === undefined ? null : propOutline(def, placed.x, placed.z, placed.rotationDegrees);
-      if (outline === null || outline.kind !== 'outline') continue;
-      const centre: Vec2 = { x: outline.outline.reduce((sum: number, point): number => sum + point.x, 0) / outline.outline.length, z: outline.outline.reduce((sum: number, point): number => sum + point.z, 0) / outline.outline.length };
-      for (const corner of [centre, ...outline.outline]) {
+    for (const { prop, at, outline } of placedOutlines(zone)) {
+      const corners: readonly Vec2[] = cornersOf(outline);
+      const centre: Vec2 = { x: corners.reduce((sum: number, point: Vec2): number => sum + point.x, 0) / corners.length, z: corners.reduce((sum: number, point: Vec2): number => sum + point.z, 0) / corners.length };
+      for (const corner of [centre, ...corners]) {
         for (const share of [0, 0.5, 0.9]) {
           const x: number = centre.x + (corner.x - centre.x) * share;
           const z: number = centre.z + (corner.z - centre.z) * share;
-          assert.equal(isWalkable(zoneGrid, x, z), false, `${zone.id}: ${placed.prop} at (${placed.x}, ${placed.z}) lets the hero stand at (${x.toFixed(2)}, ${z.toFixed(2)})`);
+          assert.equal(isWalkable(zoneGrid, x, z), false, `${zone.id}: ${prop} at (${at.x}, ${at.z}) lets the hero stand at (${x.toFixed(2)}, ${z.toFixed(2)})`);
         }
       }
     }
   }
 });
 
-void test('the hero\'s whole body stays clear of every placed prop\'s ground outline, wherever he stands in a walkable cell', (): void => {
+void test('wherever the hero may stand, his whole body is clear of every placed prop\'s ground outline, and he can come right up to it', (): void => {
   const radius: number = content.player.radius;
   for (const zone of content.zones.values()) {
     const zoneGrid: NavGrid = buildNavGrid(zone, content.props, content.surfaces, radius);
-    for (const placed of zone.props) {
-      const def: PropDef | undefined = content.props.get(placed.prop);
-      const outline: Blocker | null = placed.when.length > 0 || def === undefined ? null : propOutline(def, placed.x, placed.z, placed.rotationDegrees);
-      if (outline === null || outline.kind !== 'outline') continue;
-      const xs: number[] = outline.outline.map((point: Vec2): number => point.x);
-      const zs: number[] = outline.outline.map((point: Vec2): number => point.z);
-      for (let x: number = Math.min(...xs) - 2; x <= Math.max(...xs) + 2; x += zoneGrid.cellSize) {
-        for (let z: number = Math.min(...zs) - 2; z <= Math.max(...zs) + 2; z += zoneGrid.cellSize) {
+    const bareGrid: NavGrid = buildNavGrid({ ...zone, props: [] }, content.props, content.surfaces, radius);
+    let near: number = 0;
+    let measured: number = 0;
+    for (const { prop, at, outline } of placedOutlines(zone)) {
+      const corners: readonly Vec2[] = cornersOf(outline);
+      const xs: number[] = corners.map((point: Vec2): number => point.x);
+      const zs: number[] = corners.map((point: Vec2): number => point.z);
+      let closest: number = Number.POSITIVE_INFINITY;
+      let floorBeside: boolean = false;
+      for (let x: number = Math.min(...xs) - 1.5; x <= Math.max(...xs) + 1.5; x += BODY_SAMPLE) {
+        for (let z: number = Math.min(...zs) - 1.5; z <= Math.max(...zs) + 1.5; z += BODY_SAMPLE) {
+          const gap: number = blockerGap(outline, x, z);
+          if (gap >= radius && gap < radius + BODY_SAMPLE && isWalkable(bareGrid, x, z)) floorBeside = true;
           if (!isWalkable(zoneGrid, x, z)) continue;
-          const column: number = Math.floor(x / zoneGrid.cellSize) * zoneGrid.cellSize;
-          const row: number = Math.floor(z / zoneGrid.cellSize) * zoneGrid.cellSize;
-          for (const [cx, cz] of [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5]] as const) {
-            const gap: number = blockerGap(outline, column + cx * zoneGrid.cellSize, row + cz * zoneGrid.cellSize);
-            assert.ok(gap >= radius - 1e-9, `${zone.id}: ${placed.prop} at (${placed.x}, ${placed.z}) lets the hero stand ${gap.toFixed(2)} m from its base`);
-          }
+          assert.ok(gap >= radius - 1e-6, `${zone.id}: ${prop} at (${at.x}, ${at.z}) lets the hero stand ${gap.toFixed(2)} m from its base`);
+          closest = Math.min(closest, gap);
         }
       }
+      if (!floorBeside) continue;
+      measured += 1;
+      if (closest <= radius + BODY_SAMPLE) near += 1;
     }
+    assert.equal(near, measured, `${zone.id}: the hero can come right up to only ${near} of ${measured} prop outlines`);
   }
 });
 
 void test('a rotated outline turns with its placement, and a point outside it keeps its distance', (): void => {
-  const slab: PropDef = { ...must(content.props.get('dead_log'), 'dead_log'), blockRadius: 0, blockLength: 0, footprint: [{ x: -2, z: -0.5 }, { x: 2, z: -0.5 }, { x: 2, z: 0.5 }, { x: -2, z: 0.5 }] };
-  const along: Blocker = must(propOutline(slab, 10, 10, 0), 'outline');
+  const slab: PropDef = { ...must(content.props.get('dead_log'), 'dead_log'), blockRadius: 0, blockLength: 0, footprints: [[{ x: -2, z: -0.5 }, { x: 2, z: -0.5 }, { x: 2, z: 0.5 }, { x: -2, z: 0.5 }]] };
+  const along: Blocker = must(propOutlines(slab, 10, 10, 0)[0], 'outline');
   assert.ok(blockerGap(along, 11.8, 10) < 0);
   assert.ok(Math.abs(blockerGap(along, 10, 11.5) - 1) < 1e-9);
-  const turned: Blocker = must(propOutline(slab, 10, 10, 90), 'turned outline');
+  const turned: Blocker = must(propOutlines(slab, 10, 10, 90)[0], 'turned outline');
   assert.ok(blockerGap(turned, 10, 8.2) < 0);
   assert.ok(blockerGap(turned, 11.8, 10) > 1);
   assert.equal(propBlockers(slab, 10, 10, 0).length, 1);

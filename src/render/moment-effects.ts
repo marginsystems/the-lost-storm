@@ -11,11 +11,12 @@ export const MOMENT_EFFECTS = {
 
 export interface MomentEffects extends Effects {
   showWarm(x: number, z: number): () => void;
+  readonly ready: Promise<void>;
 }
 
-export async function momentEffects(effects: Effects, deps: MomentViewDeps, renderer: WebGLRenderer, camera: Camera): Promise<MomentEffects> {
+export function momentEffects(effects: Effects, deps: MomentViewDeps, renderer: WebGLRenderer, camera: Camera): MomentEffects {
   const moments: MomentView = createMomentView(deps);
-  await moments.prepare(renderer, camera);
+  const ready: Promise<void> = moments.warm(renderer, camera);
   let warned: number = 0;
   return {
     handle(events: readonly WorldEvent[], world: World): void {
@@ -46,6 +47,7 @@ export async function momentEffects(effects: Effects, deps: MomentViewDeps, rend
     showWarm(x: number, z: number): () => void {
       return moments.showWarm(x, z);
     },
+    ready,
     get hurt(): number {
       return effects.hurt;
     },

@@ -1,8 +1,9 @@
 import type { PropDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import type { Blocker } from '../nav/grid.ts';
+import type { Blocker, NavGrid } from '../nav/grid.ts';
 import { isWalkable, liftStamp, nearestWalkable, propBlocker, stampBlockers } from '../nav/grid.ts';
-import type { ActorState, MomentState, World } from './types.ts';
+import { gridFor } from './movement.ts';
+import type { Actor, MomentState, World } from './types.ts';
 
 export const MOMENT_GROUND = {
   shoveReach: 6,
@@ -18,9 +19,10 @@ export function momentBlockers(world: World, moment: MomentState): Blocker[] {
   return list;
 }
 
-export function standClear(world: World, actor: ActorState): void {
-  if (isWalkable(world.grid, actor.pos.x, actor.pos.z)) return;
-  const free: Vec2 | null = nearestWalkable(world.grid, actor.pos, MOMENT_GROUND.shoveReach);
+export function standClear(world: World, actor: Actor): void {
+  const grid: NavGrid = gridFor(world, actor);
+  if (isWalkable(grid, actor.pos.x, actor.pos.z)) return;
+  const free: Vec2 | null = nearestWalkable(grid, actor.pos, MOMENT_GROUND.shoveReach);
   if (free === null) return;
   actor.pos.x = free.x;
   actor.pos.z = free.z;

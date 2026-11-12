@@ -8,7 +8,7 @@ import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
-import { fitToSkeleton, groupBodyParts, skinnedMeshes } from './wearables.ts';
+import { fitToSkeleton, groupBodyParts, maskHidden, partMasks, skinnedMeshes } from './wearables.ts';
 import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { makeGhost } from './ghost-material.ts';
 import { addBoxUvs } from './box-uv.ts';
@@ -452,7 +452,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const hide = (parts: readonly string[]): void => {
     shownParts = parts;
     for (const body of bodies) {
-      body.mesh.material = parts.length === 0 ? body.skin : [body.skin, ...rig.bodyParts.map((part: string): Material => (parts.includes(part) ? UNSEEN : body.skin))];
+      body.mesh.material = parts.length === 0 ? body.skin : Array.from({ length: partMasks(rig.bodyParts.length) }, (_: unknown, mask: number): Material => (maskHidden(mask, rig.bodyParts, parts) ? UNSEEN : body.skin));
     }
   };
   const fade = (piece: WornPiece, value: number): void => {

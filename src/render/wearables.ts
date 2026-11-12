@@ -5,7 +5,6 @@ type Attribute = BufferAttribute | InterleavedBufferAttribute;
 
 export const WEARABLES = {
   influences: 4,
-  partVotes: 2,
   wideIndexFrom: 65536,
 } as const;
 
@@ -82,6 +81,20 @@ function partOfVertex(mesh: SkinnedMesh, partOfBone: readonly number[], partCoun
   return parts;
 }
 
+export function partMasks(partCount: number): number {
+  return 2 ** partCount;
+}
+
+export function cornerMask(cornerParts: readonly number[]): number {
+  if (cornerParts.some((part: number): boolean => part < 0)) return 0;
+  return cornerParts.reduce((mask: number, part: number): number => mask | (1 << part), 0);
+}
+
+export function maskHidden(mask: number, names: readonly string[], hidden: readonly string[]): boolean {
+  if (mask === 0) return false;
+  return names.every((name: string, part: number): boolean => (mask & (1 << part)) === 0 || hidden.includes(name));
+}
+
 export function groupBodyParts(mesh: SkinnedMesh, bodyParts: Readonly<Record<string, readonly string[]>>): string[] {
   const names: string[] = Object.keys(bodyParts);
   const index: BufferAttribute | null = mesh.geometry.getIndex();
@@ -90,15 +103,10 @@ export function groupBodyParts(mesh: SkinnedMesh, bodyParts: Readonly<Record<str
     names.findIndex((name: string): boolean => (bodyParts[name] ?? []).some((joint: string): boolean => PropertyBinding.sanitizeNodeName(joint) === bone.name || joint === bone.name)),
   );
   const vertexPart: Int16Array = partOfVertex(mesh, partOfBone, names.length);
-  const buckets: number[][] = Array.from({ length: names.length + 1 }, (): number[] => []);
+  const buckets: number[][] = Array.from({ length: partMasks(names.length) }, (): number[] => []);
   for (let corner: number = 0; corner + 2 < index.count; corner += 3) {
     const corners: [number, number, number] = [index.getX(corner), index.getX(corner + 1), index.getX(corner + 2)];
-    let bucket: number = 0;
-    for (let part: number = 0; part < names.length; part += 1) {
-      const votes: number = corners.filter((vertex: number): boolean => vertexPart[vertex] === part).length;
-      if (votes >= WEARABLES.partVotes) bucket = part + 1;
-    }
-    buckets[bucket]?.push(...corners);
+    buckets[cornerMask(corners.map((vertex: number): number => vertexPart[vertex] ?? -1))]?.push(...corners);
   }
   const ordered: number[] = buckets.flat();
   const vertices: number = mesh.geometry.getAttribute('position').count;

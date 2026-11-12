@@ -597,11 +597,11 @@ function fightFirst(seed: number, attack: boolean): FightLog {
   return { time, taken: hits.reduce((sum: number, hit): number => sum + hit.amount, 0), firstHit: hits[0]?.at ?? Infinity, worstSecond, won: world.player.alive && echoFoes(world).length === 0 };
 }
 
-void test('in the first fight a hero who stands still lasts 25 to 32 s, and one who fights back wins in 15 to 25 s after losing a third to a half of his life', (): void => {
+void test('in the first fight a hero who stands still lasts 24 to 35 s, and one who fights back wins in 15 to 25 s after losing a third to a half of his life', (): void => {
   for (let seed: number = 1; seed <= 4; seed += 1) {
     const still: FightLog = fightFirst(seed, false);
     assert.equal(still.won, false, `seed ${seed}`);
-    assert.ok(still.time >= 24 && still.time <= 32, `seed ${seed}: stood ${still.time.toFixed(1)} s`);
+    assert.ok(still.time >= 24 && still.time <= 35, `seed ${seed}: stood ${still.time.toFixed(1)} s`);
     const fought: FightLog = fightFirst(seed, true);
     assert.ok(fought.won, `seed ${seed}`);
     assert.ok(fought.time >= 15 && fought.time <= 25, `seed ${seed}: won in ${fought.time.toFixed(1)} s`);

@@ -16,6 +16,7 @@ import type { BossBar } from './boss-bar.ts';
 import bossCss from './boss.css?inline';
 import bannersCss from './banners.css?inline';
 import fpsCss from './fps.css?inline';
+import globesCss from './globes.css?inline';
 import type { Banners } from './banners.ts';
 import type { ActionId } from '../settings/bindings.ts';
 import { flaskAction } from '../settings/bindings.ts';
@@ -102,7 +103,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}\n${pickerCss}\n${menuCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}\n${pickerCss}\n${menuCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {

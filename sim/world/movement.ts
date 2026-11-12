@@ -1,7 +1,7 @@
 import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
-import { isWalkable, lineWalkable, moveWithCollision, paceAt } from '../nav/grid.ts';
+import { isWalkable, lineWalkable, moveWithCollision, paceAt, routedGrid, slideAlong, slideOnBody, stepClear } from '../nav/grid.ts';
 import { isDashing } from './dash.ts';
 import { heroShare, pushShare, steadiness } from './poise.ts';
 import type { Actor, ActorState, MonsterState, World } from './types.ts';
@@ -132,11 +132,7 @@ const NO_STEP: SteerStep = { moved: 0, tried: 0 };
 function strideWithCollision(grid: NavGrid, pos: Vec2, dx: number, dz: number): void {
   const length: number = Math.hypot(dx, dz);
   if (length <= MOVEMENT.arrive) return;
-  if (isWalkable(grid, pos.x + dx, pos.z + dz)) {
-    pos.x += dx;
-    pos.z += dz;
-    return;
-  }
+  if (stepClear(grid, pos, dx, dz) || slideOnBody(grid, pos, dx, dz)) return;
   const alongX: number = Math.abs(dx) / length;
   const alongZ: number = Math.abs(dz) / length;
   const slideX: boolean = alongX >= MOVEMENT.slideAlong && isWalkable(grid, pos.x + dx, pos.z);
@@ -149,6 +145,8 @@ function aroundWall(grid: NavGrid, pos: Vec2, wanted: number, probe: number): nu
   const dx: number = Math.sin(wanted);
   const dz: number = Math.cos(wanted);
   if (probe <= MOVEMENT.arrive || isWalkable(grid, pos.x + dx * probe, pos.z + dz * probe)) return wanted;
+  const along: Vec2 | null = slideAlong(grid, pos, dx * probe, dz * probe);
+  if (along !== null && Math.hypot(along.x, along.z) > MOVEMENT.arrive) return facingOf(along);
   const alongX: number = Math.abs(dx) >= MOVEMENT.wallLean ? Math.sign(dx) * probe : 0;
   const alongZ: number = Math.abs(dz) >= MOVEMENT.wallLean ? Math.sign(dz) * probe : 0;
   const openX: boolean = alongX !== 0 && isWalkable(grid, pos.x + alongX, pos.z);
@@ -264,4 +262,8 @@ export function separateActors(world: World, dt: number, strides: Strides): void
       if (world.player.alive) pushApart(world.grid, world.player, a, heroShare(a), budget);
     }
   }
+}
+
+export function gridFor(world: World, actor: Actor): NavGrid {
+  return actor.kind === 'monster' ? routedGrid(world.grid) : world.grid;
 }

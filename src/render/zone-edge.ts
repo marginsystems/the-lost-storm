@@ -29,7 +29,7 @@ export function edgeNoise(a: number, b: number, salt: number): number {
 }
 
 export function propReach(def: PropDef): number {
-  const outline: number = Math.max(0, ...def.footprint.map((point: ReadonlyVec2): number => Math.hypot(point.x, point.z)));
+  const outline: number = Math.max(0, ...def.footprints.flat().map((point: ReadonlyVec2): number => Math.hypot(point.x, point.z)));
   return Math.max(outline, def.blockRadius + def.blockLength / 2);
 }
 

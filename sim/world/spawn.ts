@@ -1,6 +1,6 @@
 import type { MonsterDef, MonsterScaling } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { nearestWalkable } from '../nav/grid.ts';
+import { nearestWalkable, routedGrid } from '../nav/grid.ts';
 import type { MonsterState, World } from './types.ts';
 
 export const SPAWN = {
@@ -27,7 +27,7 @@ export function spawnMonster(world: World, def: MonsterDef, packId: number, cent
   const angle: number = world.rng.range(0, Math.PI * 2);
   const reach: number = world.rng.range(0, origin.scatter);
   const wanted: Vec2 = { x: center.x + Math.cos(angle) * reach, z: center.z + Math.sin(angle) * reach };
-  const pos: Vec2 = nearestWalkable(world.grid, wanted, SPAWN.spawnSnap) ?? { x: center.x, z: center.z };
+  const pos: Vec2 = nearestWalkable(routedGrid(world.grid), wanted, SPAWN.spawnSnap) ?? { x: center.x, z: center.z };
   const life: number = Math.round(def.life * (1 + scaling.lifePerLevel * (level - 1)));
   const damageScale: number = 1 + scaling.damagePerLevel * (level - 1);
   const monster: MonsterState = {
@@ -63,6 +63,7 @@ export function spawnMonster(world: World, def: MonsterDef, packId: number, cent
     aggro: false,
     path: [],
     repathTimer: 0,
+    stranded: 0,
     stance: 'approach',
     blindTime: 0,
     stuckTime: 0,

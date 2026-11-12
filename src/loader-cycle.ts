@@ -1,6 +1,10 @@
 export const LOADER_CYCLE = {
-  showDelayMs: 300,
+  showDelayMs: 250,
   cycleMs: 720,
+} as const;
+
+export const COVER_LIMIT = {
+  liftLeadMs: 50,
 } as const;
 
 export interface LoaderTiming {
@@ -25,4 +29,9 @@ export function loaderPhase(elapsedMs: number, doneAtMs: number | null, timing: 
   if (elapsedMs < timing.showDelayMs) return 'waiting';
   if (doneAtMs === null) return 'cycling';
   return elapsedMs < loaderExitAt(doneAtMs, timing) ? 'cycling' : 'leaving';
+}
+
+export function coverExitAt(coveredForMs: number, markRanMs: number, timing: LoaderTiming = LOADER_CYCLE, liftLeadMs: number = COVER_LIMIT.liftLeadMs): number | null {
+  if (coveredForMs + liftLeadMs <= timing.showDelayMs) return null;
+  return loaderExitAt(Math.max(markRanMs, timing.showDelayMs), timing);
 }

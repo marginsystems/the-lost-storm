@@ -30,6 +30,7 @@
   background-color: transparent;
   border: none;
   border-radius: var(--threshold-radius);
+  outline: none;
   box-shadow: var(--threshold-shadow);
   backdrop-filter: blur(6px);
   transition:
@@ -194,5 +195,13 @@
   .title-card #title-enter:not(:disabled):active,
   .title-card #title-reset:not(:disabled):active {
     transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  #title-enter:focus-visible,
+  .threshold-button:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 2px;
   }
 }
