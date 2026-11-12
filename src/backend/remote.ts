@@ -233,6 +233,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
           return;
         }
         restamp(latest, result.epoch);
+        keep({ ...(record ?? held), revision: 0, updatedAt: null, overwriteCloud: false });
         log.info('the save epoch moved on since Start over; this new character is kept and sent again under the new epoch.');
         schedule(0);
         return;
@@ -278,6 +279,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     latest = localSave ?? freshSave();
     if (result.kind === 'stale') {
       restamp(localSave, result.epoch);
+      keep({ ...held, revision: 0, updatedAt: null, overwriteCloud: false });
       schedule(0);
       return;
     }

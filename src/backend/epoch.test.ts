@@ -157,7 +157,7 @@ void test('a character made after Start over with the cloud out of reach is kept
   await harness.timers.advance(0);
   await harness.timers.advance(0);
   await harness.timers.advance(0);
-  assert.deepEqual(harness.server.requests.filter((request: RecordedRequest): boolean => request.method === 'PUT').map((request: RecordedRequest): unknown => (isFields(request.body) ? request.body['epoch'] : null)).slice(-3), [SAVE_EPOCH, SAVE_EPOCH + 1, SAVE_EPOCH + 1]);
+  assert.deepEqual(harness.server.requests.filter((request: RecordedRequest): boolean => request.method === 'PUT').map((request: RecordedRequest): unknown => (isFields(request.body) ? request.body['epoch'] : null)).slice(-2), [SAVE_EPOCH, SAVE_EPOCH + 1]);
   assert.deepEqual([account(harness).save?.level, account(harness).save?.xp], [2, 7]);
   assert.deepEqual(readLocalSave(content, harness.store.read(SAVE_KEY))?.epoch, SAVE_EPOCH + 1);
   assert.ok(!harness.warns.some((line: string): boolean => line.includes('every save was reset')));
@@ -190,4 +190,29 @@ void test('a Start over that never reached the cloud keeps its new character on 
     assert.ok(!harness.warns.some((line: string): boolean => line.includes('every save was reset')));
   }
   assert.equal(record(online).overwriteCloud, false);
+});
+
+void test('after a stale retry a Start over made before the wipe does not overwrite a character another device saved under the new epoch', async (): Promise<void> => {
+  const first: Harness = createHarness();
+  const backend: Backend = await synced(first, 4);
+  const second: Harness = createSecondBrowser(first);
+  second.store.write(SYNC_KEY, must(first.store.read(SYNC_KEY), 'the sync record'));
+  first.server.goDown();
+  await backend.reset();
+  backend.save(makeSave(2, 0));
+  await first.timers.advance(TIMING.pushGapMs);
+  first.server.wipe(SAVE_EPOCH + 1);
+  first.server.comeUp();
+  const other: Backend = second.open();
+  assert.equal(await other.load(), null);
+  other.save(makeSave(9, 40));
+  await second.timers.advance(TIMING.pushGapMs);
+  assert.equal(account(first).revision, 1);
+  await first.timers.advance(TIMING.retryMaxMs);
+  await first.timers.advance(0);
+  await first.timers.advance(0);
+  await first.timers.advance(0);
+  assert.deepEqual([account(first).save?.level, account(first).save?.xp], [9, 40]);
+  assert.ok(first.warns.some((line: string): boolean => line.includes('keeping the cloud save')));
+  assert.equal(lastPut(first).baseRevision, 0);
 });
