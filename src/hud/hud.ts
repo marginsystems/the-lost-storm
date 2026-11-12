@@ -64,7 +64,14 @@ import type { TradeHud } from './trade-hud.ts';
 import volumeCss from './volume.css?inline';
 import { createVolumeButton } from './volume-panel.ts';
 
-const GROUND_HINT: string = 'Click to pick up';
+const GROUND_HINT = {
+  desk: 'Click to pick up',
+  touch: 'Tap to pick up',
+} as const;
+
+const WAYPOINT_HINT = {
+  touch: 'Tap the map at the top to travel between waypoints',
+} as const;
 const PANEL_IDS: readonly HudPanel[] = ['inventory', 'character', 'tree', 'map'];
 
 export function createHud(root: HTMLElement, api: HudApi): Hud {
@@ -119,7 +126,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   };
   let mapWanted: boolean = false;
 
-  const hints: Hints = createHints(bottom, loadHints(api.world.content), createHintStore(createBrowserStore()), (): ResolvedKeys => api.settings.keys(), (): ReadonlySet<HintPanel> => new Set<HintPanel>(HINT_PANELS.filter((id: HintPanel): boolean => open[id])));
+  const hints: Hints = createHints(bottom, loadHints(api.world.content), createHintStore(createBrowserStore()), (): ResolvedKeys => api.settings.keys(), (): ReadonlySet<HintPanel> => new Set<HintPanel>(HINT_PANELS.filter((id: HintPanel): boolean => open[id])), api.touch);
   const pending: WorldEvent[] = [];
 
   const grid: HTMLDivElement = el('div', 'hud-grid', null);
@@ -255,7 +262,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'triggered':
             break;
           case 'waypoint_unlocked':
-            banners.show('Waypoint', `Open the map with ${keyOf('map')} to travel between waypoints`, 'checkpoint');
+            banners.show('Waypoint', api.touch ? WAYPOINT_HINT.touch : `Open the map with ${keyOf('map')} to travel between waypoints`, 'checkpoint');
             break;
           case 'exit_locked':
             notices.say(event.hint);
@@ -313,7 +320,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     showGroundItem(item: ItemInstance, x: number, y: number): void {
       const slot: ItemSlot | null = slotOf(api.world.content, item);
       const equipped: ItemInstance | null = slot === null ? null : api.world.player.equipped[slot];
-      tooltip.show(itemTooltip(api, item, equipped, GROUND_HINT), x, y);
+      tooltip.show(itemTooltip(api, item, equipped, api.touch ? GROUND_HINT.touch : GROUND_HINT.desk), x, y);
     },
     moveGroundItem(x: number, y: number): void {
       tooltip.move(x, y);
