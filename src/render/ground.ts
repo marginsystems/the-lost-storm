@@ -5,6 +5,7 @@ import type { Content, SurfaceDef, ZoneDef } from '../../sim/content/types.ts';
 import { distanceToCell, floorCells, isFloorCell, outsideCells, tileAtCell } from '../../sim/nav/layout.ts';
 import type { FloorCell, OutsideCell } from '../../sim/nav/layout.ts';
 import { surfaceMaterial } from './surfaces.ts';
+import { wetGround } from './wet-ground.ts';
 import type { SurfaceUse } from './surfaces.ts';
 
 export const GROUND = {
@@ -81,6 +82,7 @@ function driftGround(content: Content, drift: ZoneDrift, batches: ReadonlyMap<st
     const mesh: Mesh | null = toMesh(content, surfaceId, 'ground', batch, wet);
     if (mesh === null || !(mesh.material instanceof MeshStandardMaterial)) continue;
     const own: MeshStandardMaterial = mesh.material.clone();
+    wetGround(own, wet);
     own.transparent = true;
     mesh.material = own;
     meshes.push(mesh);
