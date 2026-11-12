@@ -2,6 +2,7 @@ import type { AnimationClip, IUniform, Object3D } from 'three';
 import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
+import { disposeSkeletons } from './skeletons.ts';
 import type { AttachmentDef, Content, RigActionClip, RigDef, RigGait, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
@@ -602,6 +603,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       mixer.stopAllAction();
       mixer.uncacheRoot(model);
       for (const material of [...materials, ...wornMaterials(), ...heldMaterials()]) material.dispose();
+      disposeSkeletons(model);
     },
   };
 }
