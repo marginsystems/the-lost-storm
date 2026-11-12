@@ -11,6 +11,8 @@ import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures
 import { fitToSkeleton, groupBodyParts, maskHidden, partMasks, skinnedMeshes } from './wearables.ts';
 import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { makeGhost } from './ghost-material.ts';
+import { createBrowserTimers } from '../browser-timers.ts';
+import { STALL, withStallLimit } from './stall-limit.ts';
 import { addBoxUvs } from './box-uv.ts';
 
 export interface ActionClip {
@@ -161,7 +163,7 @@ export function assetUrl(path: string): string {
 export function loadModel(loader: GLTFLoader, path: string): Promise<GLTF> {
   const cached: Promise<GLTF> | undefined = pending.get(path);
   if (cached !== undefined) return cached;
-  const started: Promise<GLTF> = loader.loadAsync(assetUrl(path)).then(shrinkModel);
+  const started: Promise<GLTF> = withStallLimit((progress: () => void): Promise<GLTF> => loader.loadAsync(assetUrl(path), progress), createBrowserTimers(), STALL.limitMs, path).then(shrinkModel);
   pending.set(path, started);
   started.catch((): void => {
     pending.delete(path);
