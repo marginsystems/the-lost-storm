@@ -77,7 +77,6 @@ function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
   world.events.push({ type: 'death', actorId: target.id, team: teamOf(target), pos: { x: target.pos.x, z: target.pos.z }, direction: { x: direction.x, z: direction.z } });
   if (target.kind === 'player') {
     closeDialogue(world, false);
-    target.respawnTimer = world.content.player.respawnDelay;
     target.intent = { type: 'idle' };
     target.path = [];
     target.queued = null;
@@ -89,7 +88,7 @@ function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
 }
 
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): void {
-  if (!target.alive) return;
+  if (!target.alive || (target.kind === 'player' && target.invulnerable > 0)) return;
   const weapon: number = world.rng.range(offence.damageMin, offence.damageMax) * (1 + offence.damagePercent) * skill.damage.weaponPercent;
   const flat: number = world.rng.range(skill.damage.flatMin, skill.damage.flatMax);
   const crit: boolean = world.rng.chance(offence.critChance);

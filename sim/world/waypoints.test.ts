@@ -5,6 +5,7 @@ import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef, ZoneWaypoint } from '../content/types.ts';
 import { createWorld } from './create.ts';
 import { stepWorld } from './step.ts';
+import { choicesOpen } from './death.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 import { canTeleport, onWaypoint } from './waypoints.ts';
 
@@ -26,7 +27,7 @@ function until(world: World, done: () => boolean, first: readonly Command[] = []
   const events: WorldEvent[] = [];
   const steps: number = Math.round(LIMIT / DT);
   for (let step: number = 0; step < steps; step += 1) {
-    events.push(...stepWorld(world, step === 0 ? first : [], DT));
+    events.push(...stepWorld(world, step === 0 ? first : choicesOpen(world) ? [{ type: 'respawn', choice: 'checkpoint' }] : [], DT));
     if (done()) break;
   }
   return events;
@@ -100,7 +101,6 @@ void test('the dead cannot teleport', (): void => {
   standOn(world, townPoint);
   world.waypoints = [town.id, bastion.id];
   world.player.alive = false;
-  world.player.respawnTimer = 30;
   stepWorld(world, [{ type: 'teleport', zone: bastion.id }], DT);
   assert.equal(world.zone.id, town.id);
 });

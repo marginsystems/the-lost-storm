@@ -7,6 +7,7 @@ export const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['
   'surge',
   'xp',
   'zone_changed',
+  'player_respawn',
   'checkpoint',
   'dialogue_closed',
   'quest_started',

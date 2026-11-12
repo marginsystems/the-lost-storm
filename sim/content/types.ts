@@ -636,6 +636,13 @@ export interface PlayerDef {
   readonly pickupRadius: number;
   readonly goldMagnetRadius: number;
   readonly respawnDelay: number;
+  readonly respawnInvulnerability: number;
+  readonly deathPenalty: DeathPenalty;
+}
+
+export interface DeathPenalty {
+  readonly minLevel: number;
+  readonly xpPercent: number;
 }
 
 export interface Content {

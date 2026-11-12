@@ -46,3 +46,7 @@ void test('through a whole play of the act, every step that changes what a save 
   assert.ok(world.heard.some((id: string): boolean => voices.has(id)), 'the play never heard a voice tied to a place');
   assert.deepEqual(missed, []);
 });
+
+void test('a respawn asks for a save because it can cost experience', (): void => {
+  assert.equal(changesSave([{ type: 'player_respawn' }]), true);
+});

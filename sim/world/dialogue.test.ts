@@ -199,7 +199,6 @@ void test('talking to an npc that is not here does nothing, and the dead do not 
   send(world, { type: 'talk', npcId: 99999 });
   assert.deepEqual(world.player.intent, { type: 'idle' });
   world.player.alive = false;
-  world.player.respawnTimer = 30;
   send(world, { type: 'talk', npcId: npcOf(world, 'maren').id });
   assert.deepEqual(world.player.intent, { type: 'idle' });
   assert.equal(world.dialogue, null);

@@ -5,6 +5,7 @@ import { isWalkable, lineWalkable } from './nav/grid.ts';
 import { allHold, questState } from './world/conditions.ts';
 import { currentObjective } from './world/quests.ts';
 import { SKILLS } from './world/skills.ts';
+import { choicesOpen } from './world/death.ts';
 import { stepWorld } from './world/step.ts';
 import type { Command, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
 
@@ -55,7 +56,7 @@ export function createBot(world: World, habits: BotHabits = CAREFUL, watch: BotW
 }
 
 function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
-  const events: WorldEvent[] = stepWorld(bot.world, commands, BOT.step);
+  const events: WorldEvent[] = stepWorld(bot.world, choicesOpen(bot.world) ? [...commands, { type: 'respawn', choice: 'checkpoint' }] : commands, BOT.step);
   for (const event of events) {
     if (event.type === 'death' && event.team === 'player') bot.deaths += 1;
   }

@@ -155,6 +155,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'talk':
     case 'advance':
     case 'teleport':
+    case 'respawn':
       break;
   }
   return action;

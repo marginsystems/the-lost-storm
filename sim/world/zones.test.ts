@@ -5,6 +5,7 @@ import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef, ZoneExit } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
+import { choicesOpen } from './death.ts';
 import { createWorld } from './create.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
@@ -59,7 +60,7 @@ function killPlayer(world: World): WorldEvent[] {
   const events: WorldEvent[] = [];
   const steps: number = Math.round(LIMIT / DT);
   for (let step: number = 0; step < steps; step += 1) {
-    const fresher: WorldEvent[] = stepWorld(world, [], DT);
+    const fresher: WorldEvent[] = stepWorld(world, choicesOpen(world) ? [{ type: 'respawn', choice: 'checkpoint' }] : [], DT);
     events.push(...fresher);
     if (ofType(fresher, 'player_respawn').length > 0) break;
   }
@@ -211,7 +212,6 @@ void test('travel is queued behind an attack in progress and ignored while dead'
   assert.deepEqual(world.player.intent, { type: 'travel', exit: 'bastion_stair' });
   const dead: World = createWorld(shipped, { seed: 12, save: null });
   dead.player.alive = false;
-  dead.player.respawnTimer = 30;
   run(dead, 0.5, [{ type: 'travel', exit: 'bastion_stair' }]);
   assert.deepEqual(dead.player.intent, { type: 'idle' });
 });

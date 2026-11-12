@@ -56,7 +56,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     path: [],
     repathTimer: 0,
     queued: null,
-    respawnTimer: 0,
+    invulnerable: 0,
     strideTravel: 0,
     kills: save?.kills ?? 0,
   };
@@ -100,6 +100,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     zone,
     grid: buildNavGrid(zone, content.props, content.player.radius),
     respawn,
+    death: null,
     visited,
     rng: createRng(options.seed),
     time: 0,

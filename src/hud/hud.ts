@@ -12,6 +12,8 @@ import characterCss from './character.css?inline';
 import { createCharacterPanel } from './character-panel.ts';
 import type { CharacterPanel } from './character-panel.ts';
 import type { HudContext, PanelView } from './context.ts';
+import { createDeathPanel } from './death-panel.ts';
+import deathCss from './death.css?inline';
 import { createDialogueBox } from './dialogue-box.ts';
 import dialogueCss from './dialogue.css?inline';
 import type { DialogueBox } from './dialogue-box.ts';
@@ -33,7 +35,7 @@ import type { QuestTracker } from './quest-tracker.ts';
 import questsCss from './quests.css?inline';
 import { createSkillBar } from './skill-bar.ts';
 import type { SkillBar } from './skill-bar.ts';
-import { createDeathOverlay, createNotices, createSurgeStatus, createXpBar } from './status.ts';
+import { createNotices, createSurgeStatus, createXpBar } from './status.ts';
 import type { Notices, WorldStatus, XpBar } from './status.ts';
 import { createTooltip } from './tooltip.ts';
 import type { Tooltip } from './tooltip.ts';
@@ -48,7 +50,7 @@ const PANEL_IDS: readonly HudPanel[] = ['inventory', 'character', 'tree', 'map']
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -65,7 +67,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const fps: FpsReadout = createFpsReadout(root);
   const surge: WorldStatus = createSurgeStatus(root);
   const banners: Banners = createBanners(root);
-  const death: WorldStatus = createDeathOverlay(root);
+  const death: WorldStatus = createDeathPanel(root, api);
   const quests: QuestTracker = createQuestTracker(root);
 
   const dialogue: DialogueBox = createDialogueBox(root, context);

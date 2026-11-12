@@ -4,14 +4,15 @@ import { distance } from '../math.ts';
 import { findPath } from '../nav/path.ts';
 import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, unequip } from './character.ts';
 import { findActor } from './combat.ts';
+import { respawnPlayer } from './death.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, openDialogue } from './dialogue.ts';
 import { removeGround } from './ground.ts';
 import { followPath, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
-import { blockedReason, clearProjectiles, startSkill, stepAction } from './skills.ts';
+import { blockedReason, startSkill, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { stepWaypoints, teleport } from './waypoints.ts';
-import { findExit, placePlayer, stepCheckpoints, travelThrough } from './zones.ts';
+import { findExit, stepCheckpoints, travelThrough } from './zones.ts';
 
 const PLAYER = {
   moveDeadZone: 0.7,
@@ -135,6 +136,7 @@ function act(world: World, command: Command): void {
     case 'unequip':
     case 'drop':
     case 'allocate':
+    case 'respawn':
       return;
   }
 }
@@ -156,6 +158,9 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'advance':
       advanceDialogue(world);
+      return;
+    case 'respawn':
+      respawnPlayer(world, command.choice);
       return;
     case 'move':
     case 'stop':
@@ -282,36 +287,6 @@ function collectGold(world: World): void {
   }
 }
 
-function respawn(world: World): void {
-  const player: PlayerState = world.player;
-  player.alive = true;
-  player.life = player.maxLife;
-  player.mana = player.stats.maxMana;
-  player.cooldowns = {};
-  player.combo = null;
-  placePlayer(world);
-  clearProjectiles(world);
-  for (const monster of world.monsters) {
-    if (!monster.alive) continue;
-    monster.aggro = false;
-    monster.life = monster.maxLife;
-    monster.pos = { x: monster.home.x, z: monster.home.z };
-    monster.knock = { x: 0, z: 0 };
-    monster.action = null;
-    monster.path = [];
-    monster.stance = 'approach';
-    monster.blindTime = 0;
-    monster.stuckTime = 0;
-    monster.restTime = 0;
-    monster.lastPos = { x: monster.pos.x, z: monster.pos.z };
-    monster.lastTravel = 0;
-    monster.stagger = 0;
-    monster.phase = 0;
-    monster.nextSkill = null;
-  }
-  world.events.push({ type: 'player_respawn' });
-}
-
 function isBusy(player: PlayerState): boolean {
   return player.action !== null;
 }
@@ -328,9 +303,7 @@ export function stepPlayer(world: World, dt: number): void {
   const player: PlayerState = world.player;
   if (!player.alive) {
     player.deadTime += dt;
-    player.respawnTimer -= dt;
     stepKnock(world.grid, player, dt);
-    if (player.respawnTimer <= 0) respawn(world);
     return;
   }
   player.life = Math.min(player.maxLife, player.life + player.stats.lifeRegen * dt);
