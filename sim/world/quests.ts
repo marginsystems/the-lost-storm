@@ -4,7 +4,7 @@ import { distance } from '../math.ts';
 import { allHold, questState } from './conditions.ts';
 import { refreshNpcs } from './dialogue.ts';
 import { spawnPacks } from './monsters.ts';
-import { writeFlags } from './flags.ts';
+import { endedActs, reportEndedActs, writeFlags } from './flags.ts';
 import type { MonsterState, World, WorldEvent } from './types.ts';
 
 export function currentObjective(world: World, quest: QuestDef): ObjectiveDef | null {
@@ -70,6 +70,7 @@ function metPath(world: World, objective: ObjectiveDef, events: readonly WorldEv
 
 export function stepQuests(world: World): void {
   const events: readonly WorldEvent[] = [...world.events];
+  const ended: ReadonlySet<string> = endedActs(world);
   let changed: boolean = false;
   for (const quest of world.content.quests.values()) {
     const objective: ObjectiveDef | null = currentObjective(world, quest);
@@ -79,6 +80,7 @@ export function stepQuests(world: World): void {
     changed = true;
   }
   if (!changed) return;
+  reportEndedActs(world, ended);
   startQuests(world);
   refreshNpcs(world);
   spawnPacks(world);

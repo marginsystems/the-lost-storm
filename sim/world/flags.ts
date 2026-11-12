@@ -1,10 +1,17 @@
 import type { StoryFlags } from '../content/story-types.ts';
 import type { ActDef } from '../content/types.ts';
 import { allHold } from './conditions.ts';
-import type { World } from './types.ts';
+import type { World, WorldEvent } from './types.ts';
 
-function endedActs(world: World): Set<string> {
+export function endedActs(world: World): Set<string> {
   return new Set<string>(world.content.world.acts.filter((act: ActDef): boolean => act.end !== null && allHold(world, act.end.when)).map((act: ActDef): string => act.id));
+}
+
+export function reportEndedActs(world: World, before: ReadonlySet<string>): void {
+  for (const act of endedActs(world)) {
+    if (before.has(act) || world.events.some((event: WorldEvent): boolean => event.type === 'act_ended' && event.act === act)) continue;
+    world.events.push({ type: 'act_ended', act });
+  }
 }
 
 export function writeFlags(world: World, sets: StoryFlags): boolean {
@@ -15,6 +22,6 @@ export function writeFlags(world: World, sets: StoryFlags): boolean {
     const value: string | undefined = sets[key];
     if (value !== undefined) world.flags[key] = value;
   }
-  for (const act of endedActs(world)) if (!before.has(act)) world.events.push({ type: 'act_ended', act });
+  reportEndedActs(world, before);
   return true;
 }

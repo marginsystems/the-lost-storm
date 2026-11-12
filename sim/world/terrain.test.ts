@@ -56,3 +56,15 @@ void test('a trigger waits for its conditions', (): void => {
   stepWorld(world, [], 0.01);
   assert.equal(world.flags['seen_mark'], 'yes');
 });
+
+void test('a hero in the middle of a wide patch as it goes is still set down on firm ground', (): void => {
+  const tiles: readonly string[] = Array.from({ length: 12 }, (): string => 'w'.repeat(14));
+  const wide: ZoneDrift = { id: 'wide', column: 2, row: 0, columns: 10, rows: 12, period: 10, open: 0.5, offset: 0, fade: 1 };
+  const world: World = roadWorld(roadZone({ tiles, drifts: [wide], playerStart: { x: 2, z: 2 } }));
+  world.time = 4.9;
+  stepWorld(world, [], 0.01);
+  world.player.pos = { x: 28, z: 24 };
+  world.time = 5.1;
+  stepWorld(world, [], 0.01);
+  assert.equal(isWalkable(world.grid, world.player.pos.x, world.player.pos.z), true);
+});

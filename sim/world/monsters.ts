@@ -55,7 +55,7 @@ function travel(world: World, monster: MonsterState, direction: Vec2, speed: num
   const fromZ: number = monster.pos.z;
   const paced: number = speed * paceAt(world.grid, monster.pos.x, monster.pos.z);
   moveWithCollision(world.grid, monster.pos, direction.x * paced * dt, direction.z * paced * dt);
-  monster.lastTravel = speed * dt;
+  monster.lastTravel = paced * dt;
   monster.moving = Math.hypot(monster.pos.x - fromX, monster.pos.z - fromZ) > MONSTERS.stillStep || monster.stuckTime < MONSTERS.blockedGrace;
 }
 
@@ -78,7 +78,7 @@ function approach(world: World, monster: MonsterState, target: Vec2, dt: number)
   }
   const moved: number = followPath(world.grid, monster, monster.path, monster.def.moveSpeed * dt, MONSTERS.turnRate * dt);
   if (monster.path.length === 0) monster.repathTimer = 0;
-  monster.lastTravel = monster.def.moveSpeed * dt;
+  monster.lastTravel = monster.def.moveSpeed * paceAt(world.grid, monster.pos.x, monster.pos.z) * dt;
   monster.moving = moved > MONSTERS.stillStep || monster.stuckTime < MONSTERS.blockedGrace;
 }
 

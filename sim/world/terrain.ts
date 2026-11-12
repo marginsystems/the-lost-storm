@@ -1,4 +1,4 @@
-import type { ZoneTrigger } from '../content/road-types.ts';
+import type { ZoneDrift, ZoneTrigger } from '../content/road-types.ts';
 import { distance } from '../math.ts';
 import type { Vec2 } from '../math.ts';
 import { driftOpen } from '../nav/drift.ts';
@@ -10,14 +10,19 @@ import { findPath } from '../nav/path.ts';
 import type { MonsterState, PlayerState, World } from './types.ts';
 
 const TERRAIN = {
-  rescueRadius: 12,
+  rescueMargin: 2,
 } as const;
+
+function rescueRadius(world: World): number {
+  const size: number = world.zone.cellSize;
+  return Math.max(0, ...world.zone.drifts.map((drift: ZoneDrift): number => Math.hypot(drift.columns, drift.rows) * size)) / 2 + TERRAIN.rescueMargin;
+}
 
 function rescue(world: World, actor: PlayerState | MonsterState): void {
   const goal: Vec2 | undefined = actor.path.at(-1);
   if (!actor.alive) return;
   if (!isWalkable(world.grid, actor.pos.x, actor.pos.z)) {
-    const safe: Vec2 | null = nearestWalkable(world.grid, actor.pos, TERRAIN.rescueRadius);
+    const safe: Vec2 | null = nearestWalkable(world.grid, actor.pos, rescueRadius(world));
     if (safe !== null) {
       actor.pos.x = safe.x;
       actor.pos.z = safe.z;

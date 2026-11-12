@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
-import type { Condition, Content, NpcDef, QuestDef, TalkDef, ZoneDef, ZoneExit, ZoneNpc } from '../content/types.ts';
+import type { ActDef, Condition, Content, NpcDef, QuestDef, TalkDef, ZoneDef, ZoneExit, ZoneNpc } from '../content/types.ts';
 import { allHold, holds, objectiveState, questState } from './conditions.ts';
 import { createWorld } from './create.ts';
 import { nextTalk } from './dialogue.ts';
@@ -321,4 +321,14 @@ void test('a path with a condition cannot be met until the condition holds', ():
   stepWorld(world, [], DT);
   assert.equal(currentObjective(world, crossing)?.id, 'after');
   assert.equal(world.flags['crossing'], 'quiet');
+});
+
+void test('an act that ends on a quest being done reports its end when the last objective is met', (): void => {
+  const acts: ActDef[] = shipped.world.acts.map((act: ActDef): ActDef => ({ ...act, end: { when: [{ type: 'quest', quest: 'crossing', is: 'done', not: false }], line: 'Done.' } }));
+  const world: World = roadWorld(roadZone({}), { quests: new Map<string, QuestDef>([[crossing.id, crossing]]), world: { ...shipped.world, acts } });
+  world.player.pos = { x: 28, z: 8 };
+  stepWorld(world, [], DT);
+  world.player.pos = { x: 16, z: 8 };
+  const events: WorldEvent[] = stepWorld(world, [], DT);
+  assert.equal(ofType(events, 'act_ended').length, 1);
 });

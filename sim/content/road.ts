@@ -80,10 +80,17 @@ function driftProblems(zone: ZoneDef, drift: ZoneDrift): string[] {
   return problems;
 }
 
+function overlaps(a: ZoneDrift, b: ZoneDrift): boolean {
+  return a.column < b.column + b.columns && b.column < a.column + a.columns && a.row < b.row + b.rows && b.row < a.row + a.rows;
+}
+
 export function roadProblems(content: Content, flags: ReadonlySet<string>): string[] {
   const problems: string[] = [];
   for (const zone of content.zones.values()) {
     for (const drift of zone.drifts) problems.push(...driftProblems(zone, drift));
+    zone.drifts.forEach((drift: ZoneDrift, index: number): void => {
+      for (const other of zone.drifts.slice(index + 1)) if (overlaps(drift, other)) problems.push(`zone ${zone.id} drifts ${drift.id} and ${other.id} overlap; a cell drifts with one patch only`);
+    });
     for (const trigger of zone.triggers) problems.push(...conditionProblems(content, flags, `zone ${zone.id} trigger ${trigger.id}`, trigger.when));
     if (zone.kind === 'void' && (zone.drifts.length > 0 || zone.triggers.length > 0)) problems.push(`zone ${zone.id} is a void: it cannot hold drifts or triggers`);
   }

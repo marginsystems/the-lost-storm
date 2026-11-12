@@ -38,3 +38,9 @@ void test('a flag a trigger sets counts as set, and an either path naming someth
   assert.ok(problems.some((problem: string): boolean => problem.includes('flag missing')));
   assert.equal(problems.some((problem: string): boolean => problem.includes('flag found')), false);
 });
+
+void test('two drifts may not share a cell', (): void => {
+  const drift = { id: 'a', column: 4, row: 0, columns: 2, rows: 2, period: 10, open: 0.5, offset: 0, fade: 1 } as const;
+  const problems: string[] = problemsOf(roadZone({ drifts: [drift, { ...drift, id: 'b', column: 5, offset: 5 }] }));
+  assert.ok(problems.some((problem: string): boolean => problem.includes('drifts a and b overlap')));
+});
