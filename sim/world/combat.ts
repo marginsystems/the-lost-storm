@@ -4,6 +4,7 @@ import type { ReadonlyVec2 } from '../math.ts';
 import { armourReduction } from '../stats.ts';
 import { grantXp } from './character.ts';
 import { closeDialogue } from './dialogue.ts';
+import { gainFlaskCharges } from './flask-charges.ts';
 import { dropOnGround } from './ground.ts';
 import type { Actor, ItemInstance, MonsterState, Team, World } from './types.ts';
 
@@ -83,6 +84,7 @@ function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
     return;
   }
   world.player.kills += 1;
+  gainFlaskCharges(world.player);
   rollLoot(world, target);
   grantXp(world, Math.round(target.def.xp * (1 + world.content.world.scaling.xpPerLevel * (target.level - 1))));
 }

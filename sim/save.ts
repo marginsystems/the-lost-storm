@@ -3,11 +3,12 @@ import { isFields } from './content/read.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
+import { flaskCharges } from './world/flasks.ts';
 import { decodeExplored, encodeExplored, exploredSize } from './world/exploration.ts';
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, World } from './world/types.ts';
 
-export const SAVE_VERSION: number = 2;
-const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, SAVE_VERSION]);
+export const SAVE_VERSION: number = 3;
+const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, SAVE_VERSION]);
 
 export interface SaveData {
   readonly version: number;
@@ -29,6 +30,7 @@ export interface SaveData {
   readonly quests: Readonly<Record<string, number>>;
   readonly waypoints: readonly string[];
   readonly explored: Readonly<Record<string, string>>;
+  readonly flasks: Readonly<Record<string, number>>;
 }
 
 interface Worn {
@@ -58,6 +60,7 @@ export function toSave(world: World): SaveData {
     quests: { ...world.quests },
     waypoints: [...world.waypoints],
     explored: Object.fromEntries(Object.entries(world.explored).map(([zone, cells]: [string, Uint8Array]): [string, string] => [zone, encodeExplored(cells)])),
+    flasks: flaskCharges(player.flasks),
   };
 }
 
@@ -160,6 +163,16 @@ function readExplored(content: Content, value: unknown): Record<string, string> 
   return explored;
 }
 
+function readFlasks(content: Content, value: unknown): Record<string, number> {
+  const flasks: Record<string, number> = {};
+  if (!isFields(value)) return flasks;
+  for (const flask of content.flasks) {
+    const charges: number | null = count(value, flask.id, 0);
+    if (charges !== null) flasks[flask.id] = Math.min(Math.floor(charges), flask.maxCharges);
+  }
+  return flasks;
+}
+
 export function readSave(content: Content, value: unknown): SaveData | null {
   if (!isFields(value) || !READABLE_VERSIONS.has(value['version'])) return null;
   const level: number | null = count(value, 'level', 1);
@@ -204,6 +217,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     quests: readQuests(content, value['quests']),
     waypoints: readWaypoints(content, value['waypoints']),
     explored: readExplored(content, value['explored']),
+    flasks: readFlasks(content, value['flasks']),
   };
 }
 

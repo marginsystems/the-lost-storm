@@ -1,5 +1,6 @@
 import type { Group, Scene, Vector3 } from 'three';
 import { Color, Mesh, MeshBasicMaterial, PointLight, SphereGeometry } from 'three';
+import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
@@ -81,6 +82,9 @@ const MOVE_MARK: Color = new Color(0xb9c6d6);
 const ATTACK_MARK: Color = new Color(0xd9705a);
 const TELEGRAPH: Color = new Color(0xff3a2a);
 const WHITE: Color = new Color(0xffffff);
+const FLASK_GLOW: Readonly<Record<FlaskResource, Color>> = { life: new Color(0xd8402e), mana: new Color(0x4f9be0) };
+const FLASK_SPRAY: Partial<BurstOptions> = { speed: { min: 0.3, max: 1.4 }, lift: { min: 1.5, max: 4 }, life: { min: 0.5, max: 1 }, size: { min: 0.15, max: 0.35 }, gravity: 1, drag: 1.4, jitter: 0.6 };
+const FLASK_BURST = { height: 0.5, count: 22, ring: 1.6, ringTime: 0.5 } as const;
 
 function easeOut(t: number): number {
   return 1 - (1 - t) * (1 - t) * (1 - t);
@@ -433,7 +437,12 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             camera.addTrauma(EFFECTS.phaseShake);
             break;
           }
+          case 'flask_used':
+            spray(event.pos.x, FLASK_BURST.height, event.pos.z, FLASK_GLOW[event.resource], FLASK_BURST.count, FLASK_SPRAY);
+            ring(event.pos.x, event.pos.z, FLASK_BURST.ring, FLASK_GLOW[event.resource], FLASK_BURST.ringTime);
+            break;
           case 'bark':
+          case 'flasks_refilled':
           case 'monster_remove':
           case 'aggro':
           case 'drop':

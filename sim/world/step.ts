@@ -2,6 +2,7 @@ import { stepBosses } from './boss.ts';
 import { stepDeath } from './death.ts';
 import { removeCorpses, stepMonster, stepSurge } from './monsters.ts';
 import { stepExploration } from './exploration.ts';
+import { stepFlasks } from './flasks.ts';
 import { separateActors } from './movement.ts';
 import { handleCommand, stepPlayer } from './player.ts';
 import { stepQuests } from './quests.ts';
@@ -16,6 +17,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   world.time += dt;
   for (const command of commands) handleCommand(world, command);
   stepPlayer(world, dt);
+  stepFlasks(world, dt);
   stepExploration(world);
   for (const monster of world.monsters) stepMonster(world, monster, dt);
   separateActors(world);

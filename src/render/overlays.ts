@@ -266,6 +266,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'exit_locked':
           case 'boss_phase':
           case 'bark':
+          case 'flask_used':
+          case 'flasks_refilled':
             break;
         }
       }

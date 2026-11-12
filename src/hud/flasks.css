@@ -1,0 +1,125 @@
+.hud-flask {
+  position: absolute;
+  bottom: 14px;
+  width: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.hud-flask.life {
+  left: 154px;
+}
+
+.hud-flask.mana {
+  right: 154px;
+}
+
+.hud-flask.used {
+  transform: translateY(-3px) scale(1.06);
+}
+
+.hud-flask.empty {
+  opacity: 0.5;
+}
+
+.hud-flask .flask-picture {
+  width: 34px;
+  height: 53px;
+  overflow: visible;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+}
+
+.flask-glass {
+  fill: rgba(12, 15, 21, 0.82);
+  stroke: rgba(0, 0, 0, 0.7);
+  stroke-width: 0.8;
+}
+
+.flask-cork {
+  fill: #5a4330;
+}
+
+.flask-lip {
+  fill: #2c3038;
+}
+
+.flask-liquid {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transform: scaleY(0);
+  transition: transform var(--spring-smooth-ms) var(--spring-smooth), filter var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.hud-flask.life .flask-liquid {
+  fill: #9a1620;
+}
+
+.hud-flask.mana .flask-liquid {
+  fill: #2263b4;
+}
+
+.hud-flask.cooling .flask-liquid {
+  filter: brightness(0.7);
+}
+
+.flask-notch {
+  stroke: rgba(0, 0, 0, 0.45);
+  stroke-width: 0.7;
+}
+
+.flask-shine {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.flask-key {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-dim);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.globe-restore {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.globe-restore::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  animation: globe-restore calc(var(--drift-ms) / 4) var(--drift-ease) infinite alternate;
+}
+
+.hud-globe.life .globe-restore::before {
+  background: radial-gradient(circle at 50% 75%, rgba(255, 120, 96, 0.34), rgba(255, 120, 96, 0) 70%);
+}
+
+.hud-globe.mana .globe-restore::before {
+  background: radial-gradient(circle at 50% 75%, rgba(140, 205, 255, 0.34), rgba(140, 205, 255, 0) 70%);
+}
+
+.hud-globe.restoring .globe-restore {
+  opacity: 1;
+}
+
+@keyframes globe-restore {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}

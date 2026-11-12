@@ -7,6 +7,7 @@ import { findActor } from './combat.ts';
 import { respawnPlayer } from './death.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, openDialogue } from './dialogue.ts';
 import { removeGround } from './ground.ts';
+import { useFlask } from './flasks.ts';
 import { followPath, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
@@ -131,6 +132,7 @@ function act(world: World, command: Command): void {
     case 'teleport':
       teleport(world, command.zone);
       return;
+    case 'flask':
     case 'advance':
     case 'equip':
     case 'unequip':
@@ -161,6 +163,9 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'respawn':
       respawnPlayer(world, command.choice);
+      return;
+    case 'flask':
+      useFlask(world, command.slot);
       return;
     case 'move':
     case 'stop':

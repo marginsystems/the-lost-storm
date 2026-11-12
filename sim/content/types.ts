@@ -1,3 +1,4 @@
+import type { FlaskDef } from './flasks.ts';
 export const STAT_IDS = [
   'maxLife',
   'maxMana',
@@ -664,4 +665,5 @@ export interface Content {
   readonly lines: ReadonlyMap<string, LineDef>;
   readonly quests: ReadonlyMap<string, QuestDef>;
   readonly player: PlayerDef;
+  readonly flasks: readonly FlaskDef[];
 }

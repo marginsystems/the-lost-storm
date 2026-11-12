@@ -5,6 +5,7 @@ import { createRng } from '../rng.ts';
 import type { SaveData } from '../save.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
 import { addToInventory } from './character.ts';
+import { createFlasks } from './flasks.ts';
 import { decodeExplored, exploredSize, stepExploration } from './exploration.ts';
 import { spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
@@ -59,6 +60,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     invulnerable: 0,
     strideTravel: 0,
     kills: save?.kills ?? 0,
+    flasks: createFlasks(content, save?.flasks ?? null),
   };
 }
 

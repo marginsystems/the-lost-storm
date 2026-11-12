@@ -274,3 +274,24 @@ void test('a hero who teleported keeps the waypoint as the place to return to af
   const waypoint = must(restored.zone.waypoint, 'waypoint');
   assert.deepEqual(restored.player.pos, { x: waypoint.x, z: waypoint.z });
 });
+
+void test('flask charges survive a save, and a version 2 save from before flasks loads with them full', (): void => {
+  const world: World = played();
+  const red = must(world.player.flasks[0], 'life flask');
+  red.charges = 4;
+  const restored: World = createWorld(content, { seed: 2, save: roundTrip(world) });
+  assert.equal(must(restored.player.flasks[0], 'restored life flask').charges, 4);
+  const { flasks: _dropped, ...older } = toSave(played());
+  const migrated: SaveData = must(readSave(content, JSON.parse(JSON.stringify({ ...older, version: 2 }))), 'version 2 save');
+  assert.equal(migrated.version, SAVE_VERSION);
+  assert.equal(SAVE_VERSION, 3);
+  assert.deepEqual(migrated.flasks, {});
+  const loaded: World = createWorld(content, { seed: 2, save: migrated });
+  assert.ok(loaded.player.flasks.every((flask): boolean => flask.charges === flask.def.maxCharges));
+  assert.equal(loaded.player.level, 4);
+});
+
+void test('saved flask charges that are unknown, negative or too large are cleaned up', (): void => {
+  const save: SaveData = must(readSave(content, { ...JSON.parse(JSON.stringify(toSave(played()))), flasks: { life_flask: 500, mana_flask: -3, made_up: 4 } }), 'save');
+  assert.deepEqual(save.flasks, { life_flask: must(content.flasks[0], 'life').maxCharges });
+});
