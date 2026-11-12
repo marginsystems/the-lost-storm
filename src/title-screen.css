@@ -29,27 +29,36 @@ body.hud-away:not(.playing) .tc * {
 }
 
 .title-fold {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  z-index: 1;
   display: grid;
   grid-template-rows: 0fr;
-  margin: 0 auto;
+  width: min(400px, calc(100vw - 32px));
+  border-radius: 4px;
+  background: rgba(8, 11, 16, 0.86);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  text-align: left;
   opacity: 0;
   visibility: hidden;
+  transform: translateY(6px);
   transition:
     grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
-    margin-top var(--spring-smooth-ms) var(--spring-smooth),
     opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s linear var(--spring-smooth-ms);
 }
 
 .title-fold.open {
   grid-template-rows: 1fr;
-  margin-top: 16px;
   opacity: 1;
   visibility: visible;
+  transform: none;
   transition:
     grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
-    margin-top var(--spring-smooth-ms) var(--spring-smooth),
     opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s;
 }
 
@@ -81,25 +90,6 @@ body.input-known.touch .title-keys-touch {
     visibility 0s;
 }
 
-.title-card .title-legal .title-disclose {
-  padding: 0;
-  border: 0;
-  background: none;
-  font-family: var(--sans);
-  font-size: 12px;
-  letter-spacing: 0;
-  color: rgba(239, 230, 214, 0.55);
-  transition: color var(--spring-snappy-ms) var(--spring-snappy);
-}
-
-.title-card .title-legal .title-disclose:hover,
-.title-card .title-legal .title-disclose:focus-visible,
-.title-card .title-legal .title-disclose[aria-expanded='true'] {
-  color: var(--text);
-  background: none;
-  transform: none;
-}
-
 @media (max-width: 600px), (max-height: 520px) {
   .title-keys {
     font-size: 13px;
@@ -108,11 +98,6 @@ body.input-known.touch .title-keys-touch {
   .title-keys div {
     grid-template-columns: minmax(92px, auto) minmax(0, 1fr);
     gap: 10px;
-  }
-
-  .title-legal {
-    flex-wrap: wrap;
-    margin-top: 18px;
   }
 }
 

@@ -21,6 +21,7 @@
 }
 
 html.fonts-wait .title-card,
+html.fonts-wait .title-foot,
 html.fonts-wait .title-lobby,
 html.fonts-wait #title.ready .title-lobby {
   animation-play-state: paused;
@@ -153,14 +154,35 @@ body {
 }
 
 .title-sub {
-  margin: 6px 0 26px;
-  min-height: 24px;
-  font-family: var(--sans);
-  font-style: italic;
-  font-size: 18px;
-  line-height: 24px;
-  letter-spacing: 0.04em;
-  color: rgba(127, 212, 255, 0.8);
+  margin: 12px 0 0;
+  min-height: 20px;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: var(--place-tracking);
+  font-variant-caps: small-caps;
+  color: var(--place-dim);
+}
+
+.title-sub .title-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.title-sub .title-line::before,
+.title-sub .title-line::after {
+  content: '';
+  flex: 0 0 28px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--place-rule));
+}
+
+.title-sub .title-line::after {
+  margin-left: calc(var(--place-tracking) * -1);
+  background: linear-gradient(to left, transparent, var(--place-rule));
 }
 
 .title-loader {

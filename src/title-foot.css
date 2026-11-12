@@ -1,0 +1,187 @@
+:root {
+  --title-foot-h: 44px;
+  --title-foot-gap: 12px;
+}
+
+#title {
+  padding-bottom: calc(var(--title-foot-h) + var(--title-foot-gap) + env(safe-area-inset-bottom, 0px));
+}
+
+.title-foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--title-foot-gap);
+  box-sizing: border-box;
+  min-height: calc(var(--title-foot-h) + env(safe-area-inset-bottom, 0px));
+  padding: 0 calc(16px + env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) calc(18px + env(safe-area-inset-left, 0px));
+  background: linear-gradient(to top, rgba(4, 6, 10, 0.78), rgba(4, 6, 10, 0));
+  font-family: var(--sans);
+  font-size: 12px;
+  color: rgba(239, 230, 214, 0.3);
+  animation: title-foot-in var(--spring-smooth-ms) var(--spring-smooth) both;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-smooth),
+    visibility 0s;
+}
+
+@keyframes title-foot-in {
+  from {
+    opacity: 0;
+  }
+}
+
+body.touch #title:has(input:focus) .title-foot {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-snappy-ms);
+}
+
+.title-foot-start {
+  position: relative;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.title-foot .title-disclose {
+  appearance: none;
+  padding: 6px 0;
+  border: 0;
+  outline: none;
+  background: none;
+  font: inherit;
+  color: rgba(239, 230, 214, 0.55);
+  cursor: pointer;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.title-foot .title-disclose:hover,
+.title-foot .title-disclose:focus-visible,
+.title-foot .title-disclose[aria-expanded='true'] {
+  color: var(--text);
+}
+
+.title-foot .title-keys,
+.title-foot .title-credits {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 14px 16px;
+}
+
+.title-foot .title-keys {
+  width: 100%;
+  font-size: 13px;
+}
+
+.title-foot .title-keys div {
+  grid-template-columns: minmax(92px, auto) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.title-foot .title-credits {
+  max-width: none;
+  color: rgba(239, 230, 214, 0.55);
+}
+
+.title-foot-legal {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 11px;
+  color: rgba(239, 230, 214, 0.22);
+}
+
+.title-foot-legal a {
+  padding: 6px 0;
+  color: rgba(239, 230, 214, 0.38);
+  text-decoration: none;
+  outline: none;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.title-foot-legal a:hover,
+.title-foot-legal a:focus-visible {
+  color: rgba(239, 230, 214, 0.8);
+}
+
+.title-foot-icons {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+}
+
+.title-icon-link {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  outline: none;
+  background: transparent;
+  color: rgba(239, 230, 214, 0.5);
+  cursor: pointer;
+  transition:
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.title-icon-link:hover,
+.title-icon-link:focus-visible {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.title-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 600px) {
+  :root {
+    --title-foot-h: 40px;
+    --title-foot-gap: 8px;
+  }
+
+  .title-foot {
+    padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    padding-right: calc(8px + env(safe-area-inset-right, 0px));
+    font-size: 11px;
+  }
+
+  .title-foot-legal {
+    font-size: 10px;
+  }
+
+  .title-icon-link {
+    width: 28px;
+    height: 28px;
+  }
+
+  .title-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+body:not(.touch) .title-foot .title-keys-touch,
+body.touch .title-foot .title-keys-desk {
+  display: none;
+}

@@ -1,55 +1,8 @@
-.title-legal .title-feedback {
-  padding: 0;
-  border: 0;
-  outline: none;
-  background: none;
-  font: inherit;
-  font-size: 12px;
-  letter-spacing: 0;
-  color: rgba(239, 230, 214, 0.55);
-  cursor: pointer;
-  transition: color var(--spring-snappy-ms) var(--spring-snappy);
-}
-
-.title-legal .title-feedback:hover,
-.title-legal .title-feedback:focus-visible {
-  color: var(--text);
-  background: none;
-  transform: none;
-}
-
-.title-links {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin: 6px auto 0;
-  font-size: 12px;
-}
-
-.title-links:empty {
-  display: none;
-}
-
-.title-link {
-  color: rgba(239, 230, 214, 0.55);
-  text-decoration: none;
-  transition: color var(--spring-snappy-ms) var(--spring-snappy);
-}
-
-.title-link:hover,
-.title-link:focus-visible {
-  outline: none;
-  color: var(--text);
-}
-
 .title-alpha {
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 8px;
-  margin: 8px auto 0;
-  font-size: 12px;
-  color: rgba(239, 230, 214, 0.45);
+  margin: 8px auto 22px;
+  line-height: 14px;
 }
 
 .alpha-tag {

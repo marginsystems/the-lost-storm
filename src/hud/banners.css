@@ -1,0 +1,93 @@
+.hud-banners {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22%;
+  display: grid;
+  justify-items: center;
+}
+
+.banner {
+  grid-area: 1 / 1;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.banner.in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.banner.out {
+  opacity: 0;
+  transform: scale(1.1);
+}
+
+.banner-title {
+  font-family: var(--serif);
+  font-size: 40px;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  text-shadow: 0 0 28px rgba(0, 0, 0, 0.8);
+}
+
+.banner.surge .banner-title {
+  color: var(--storm);
+}
+
+.banner.level .banner-title {
+  color: var(--ember);
+}
+
+.banner.zone .banner-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  color: var(--place);
+  font-size: 30px;
+  font-weight: 500;
+  font-variant-caps: small-caps;
+  letter-spacing: var(--place-tracking);
+  text-indent: 0;
+  text-shadow: var(--legible-shadow), 0 0 28px rgba(0, 0, 0, 0.6);
+}
+
+.banner.zone .banner-title::before,
+.banner.zone .banner-title::after {
+  content: '';
+  flex: 0 0 48px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--place-rule));
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.banner.zone .banner-title::after {
+  margin-left: calc(var(--place-tracking) * -1);
+  background: linear-gradient(to left, transparent, var(--place-rule));
+}
+
+.banner.quest .banner-title {
+  color: var(--ember);
+  font-size: 24px;
+}
+
+.banner.act .banner-title {
+  color: var(--text);
+  font-size: 48px;
+}
+
+.banner.checkpoint .banner-title {
+  color: var(--ember);
+  font-size: 30px;
+}
+
+.banner-sub {
+  margin-top: 6px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  text-shadow: 0 0 14px rgba(0, 0, 0, 0.8);
+}

@@ -52,10 +52,12 @@
   height: var(--minimap-label);
   font-family: var(--serif);
   font-size: 12px;
-  letter-spacing: 0.1em;
+  font-weight: 500;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.18em;
   line-height: var(--minimap-label);
   text-align: right;
-  color: var(--ember);
+  color: var(--place);
   text-shadow: var(--legible-shadow);
   white-space: nowrap;
   overflow: hidden;

@@ -42,10 +42,33 @@ export function wireHudAway(body: HTMLElement, hud: HTMLElement): void {
   hud.addEventListener('transitioncancel', settle);
 }
 
-export function wireFold(button: HTMLButtonElement, fold: HTMLElement): void {
-  button.addEventListener('click', (): void => {
-    const open: boolean = fold.classList.toggle(TITLE_SCREEN.foldOpenClass);
-    button.setAttribute('aria-expanded', String(open));
+export interface Fold {
+  readonly button: HTMLButtonElement;
+  readonly panel: HTMLElement;
+}
+
+export function foldAfterClick(open: number | null, clicked: number): number | null {
+  return open === clicked ? null : clicked;
+}
+
+export function wireFolds(folds: readonly Fold[], area: HTMLElement): void {
+  const state: { open: number | null } = { open: null };
+  const show = (open: number | null): void => {
+    state.open = open;
+    folds.forEach((fold: Fold, index: number): void => {
+      const shown: boolean = index === open;
+      fold.panel.classList.toggle(TITLE_SCREEN.foldOpenClass, shown);
+      fold.button.setAttribute('aria-expanded', String(shown));
+    });
+  };
+  folds.forEach((fold: Fold, index: number): void => {
+    fold.button.addEventListener('click', (): void => show(foldAfterClick(state.open, index)));
+  });
+  document.addEventListener('pointerdown', (event: PointerEvent): void => {
+    if (state.open !== null && event.target instanceof Node && !area.contains(event.target)) show(null);
+  });
+  document.addEventListener('keydown', (event: KeyboardEvent): void => {
+    if (event.key === 'Escape' && state.open !== null) show(null);
   });
 }
 

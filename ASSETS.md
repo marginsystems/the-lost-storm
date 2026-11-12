@@ -19,6 +19,10 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 
 `src/landing/images/`, `public/og.jpg` and `public/apple-touch-icon.png` are screenshots of this game, captured from it for this project, and `public/favicon.svg` was drawn for it. They fall under the repository's MIT licence. What appears in them (models, textures) is credited in the rows below.
 
+## Interface icons
+
+The Discord, GitHub and X marks in the title screen's footer (`play/index.html`) are the SVG paths from [Simple Icons](https://simpleicons.org) 13.21.0, CC0 1.0, licence text in [licenses/Simple-Icons-CC0.txt](licenses/Simple-Icons-CC0.txt). The marks are the trademarks of their owners and are used only to link to this game's pages on those services. The feedback speech bubble was drawn for this project.
+
 ## Credit required by CC BY 4.0
 
 "Free Pack - Human Skeleton" by PolyOne Studio, https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf, licensed under Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: posed onto the Quaternius rig, decimated and repainted; lower-detail copies removed. The same credit is shown on the game's title screen.

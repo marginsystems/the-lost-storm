@@ -7,7 +7,7 @@ import { warnInConsole } from './backend/console-log.ts';
 import { element } from './dom-element.ts';
 import { startTitleAccount } from './title-signin.ts';
 import { fadePageOut } from './landing/leave.ts';
-import { markInput, markPlaying, wireFold, wireHudAway, wireTitleKeys } from './title-screen.ts';
+import { markInput, markPlaying, wireFolds, wireHudAway, wireTitleKeys } from './title-screen.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
@@ -169,8 +169,7 @@ async function start(): Promise<void> {
 
   const mobile: MobileBoot = bootMobile();
   markInput(document.body, mobile.touch);
-  wireFold(element('title-controls-open', HTMLButtonElement), element('title-controls', HTMLDivElement));
-  wireFold(element('title-credits-open', HTMLButtonElement), element('title-credits', HTMLDivElement));
+  wireFolds([{ button: element('title-controls-open', HTMLButtonElement), panel: element('title-controls', HTMLDivElement) }, { button: element('title-credits-open', HTMLButtonElement), panel: element('title-credits', HTMLDivElement) }], element('title-foot', HTMLElement));
   const launch: Launch = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement) });
   statusLine.show('Loading…');
   const content: Content = loadContent();

@@ -12,4 +12,8 @@
   --text: #efe6d6;
   --storm: #7fd4ff;
   --ember: #e8b866;
+  --place: #c9d3df;
+  --place-dim: rgba(201, 211, 223, 0.74);
+  --place-rule: rgba(201, 211, 223, 0.36);
+  --place-tracking: 0.28em;
 }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { ClassTarget } from './title-screen.ts';
-import { GAME_LAYERS, markInput, markPlaying, pressesEnter, settlesAway, TITLE_SCREEN } from './title-screen.ts';
+import { foldAfterClick, GAME_LAYERS, markInput, markPlaying, pressesEnter, settlesAway, TITLE_SCREEN } from './title-screen.ts';
 
 function fakeBody(): ClassTarget & { readonly tokens: Set<string> } {
   const tokens: Set<string> = new Set<string>();
@@ -86,4 +86,11 @@ void test('the hard hide of every layer child waits for the settled-away mark', 
   assert.ok(rule !== null);
   assert.match(rule, /visibility:\s*hidden\s*!important;/);
   assert.match(readFileSync(new URL('../play/index.html', import.meta.url), 'utf8'), new RegExp(`<body class="${TITLE_SCREEN.awayClass}">`));
+});
+
+void test('a fold opens on its button, closes on a second press, and opening one closes the other', (): void => {
+  assert.equal(foldAfterClick(null, 0), 0);
+  assert.equal(foldAfterClick(0, 0), null);
+  assert.equal(foldAfterClick(0, 1), 1);
+  assert.equal(foldAfterClick(1, 0), 0);
 });

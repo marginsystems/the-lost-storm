@@ -413,22 +413,3 @@
   opacity: 0;
 }
 
-.title-legal {
-  margin: 10px auto 0;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  font-size: 12px;
-  color: rgba(239, 230, 214, 0.38);
-}
-
-.title-legal a {
-  color: rgba(239, 230, 214, 0.55);
-  text-decoration: none;
-  transition: color var(--spring-snappy-ms) var(--spring-snappy);
-}
-
-.title-legal a:hover,
-.title-legal a:focus-visible {
-  color: var(--text);
-}
