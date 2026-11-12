@@ -502,3 +502,17 @@ body.touch .hud-panel > .panel-close,
 body.touch .atlas > .panel-close {
   display: none;
 }
+
+.tip-sub.tip-unverified {
+  opacity: 0.6;
+  animation: tip-unverified-in var(--spring-smooth-ms) var(--spring-smooth) both;
+}
+
+@keyframes tip-unverified-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.6;
+  }
+}

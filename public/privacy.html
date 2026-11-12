@@ -93,7 +93,17 @@
       <p>Your character gets a generated two-word name until you pick one. The ladder and the lobby are public: anyone who opens the site can see each character's name, level and furthest zone, whether it played in the last five minutes, and recent level-ups (name, level and how many minutes ago). The ladder never shows an account id, an email address or a Google name.</p>
       <p>When you pick up the journal in the In-Between, your account is counted once toward the number of players who did. Only that number is shown, never who.</p>
 
-      <h2>The voice that speaks your name</h2>
+      <h2>Your items</h2>
+<p>When the game is connected to the server, the server rolls the items you find, so that each one is recorded once and can later be traded fairly. It hands your browser a small batch of random seeds ahead of time and records every item it rolls in a ledger. For each item the ledger stores:</p>
+<ul>
+<li>a random item id, the account that owns it and the save reset it belongs to;</li>
+<li>what it is: its base, rarity, item level and rolled properties;</li>
+<li>where it came from: the kind of source (a monster, a boss, a moment, a find, starting gear or the trader), which one, the zone and the time;</li>
+<li>its state (held or sold to the trader) and a short history of those changes with their times.</li>
+</ul>
+<p>The server also keeps the seeds it handed out, with the account, the time and whether each was used. When it refuses an item, because it came too fast or does not fit the game, it keeps a note with the account, the time, the reason and the source for 30 days. These records are used to keep drops fair and to see which items players find, and are not shown to other players. An item found while the server cannot be reached stays in your save as unverified and is not added to the ledger later.</p>
+
+<h2>The voice that speaks your name</h2>
       <p>At the start of the game a voice may say your character's name. To make it, the server sends the character name, and nothing else about you, to ElevenLabs, which turns it into audio. The audio is kept on the server under a file name made from a hash of the name, so the same name is not sent again. It is not linked to your account. The server keeps at most 4000 of these files and removes the oldest first when it needs room.</p>
 
       <h2>If you sign in with Google</h2>
@@ -134,16 +144,16 @@
       <p>The server uses your IP address to limit how fast one address can send requests, and writes it to its request logs, which are used only to run and protect the service. It is not stored with your account or your save. The site is delivered through Cloudflare, which processes requests, including IP addresses, to deliver and protect it.</p>
 
       <h2>Cookies</h2>
-      <p>The game sets no cookies. It uses your browser's local storage for your save, your token, the minutes you have played, the milestones already counted and any feedback still waiting to be sent. Google may set its own cookies when you use its sign-in, and Cloudflare may when it runs the bot check.</p>
+      <p>The game sets no cookies. It uses your browser's local storage for your save (including each item's ledger id), your token, the minutes you have played, the milestones already counted and any feedback still waiting to be sent. Google may set its own cookies when you use its sign-in, and Cloudflare may when it runs the bot check.</p>
 
       <h2>Removing your data</h2>
       <ul>
         <li>"Start over" on the title screen clears your progress, here and in the cloud copy.</li>
         <li>"Sign out" ends your session on the server and returns this browser to a new guest account.</li>
         <li>Clearing this site's data in your browser removes everything kept on your device. Your account, save and character stay on the server until you ask for them to be deleted, as below.</li>
-        <li>To have your account deleted from the server, email <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a> with your character name, and the address you signed in with if you used email. The operator deletes it by hand: the account, its sign-in identities and sessions, its save, its character and ladder entries, and the feedback tied to it. You get a reply when it is done.</li>
+        <li>To have your account deleted from the server, email <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a> with your character name, and the address you signed in with if you used email. The operator deletes it by hand: the account, its sign-in identities and sessions, its save, its character and ladder entries, its items in the ledger with their history, seeds and refusal notes, and the feedback tied to it. You get a reply when it is done.</li>
       </ul>
-      <p>The alpha may reset every player's progress. A reset deletes every save and every character on the ladder, and keeps accounts and sign-ins.</p>
+      <p>The alpha may reset every player's progress. A reset deletes every save and every character on the ladder, and keeps accounts, sign-ins and the item ledger's record of items found before it.</p>
 
       <h2>Open source</h2>
       <p>The game client is open source under the MIT licence, so you can read exactly what it stores and sends: <a href="https://github.com/marginsystems/the-lost-storm">github.com/marginsystems/the-lost-storm</a>.</p>

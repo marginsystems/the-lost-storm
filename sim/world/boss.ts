@@ -43,7 +43,7 @@ export function bark(world: World, lineIds: readonly string[]): void {
 
 function reward(world: World, monster: MonsterState, boss: BossDef): void {
   for (let dropped: number = 0; dropped < boss.drop.items; dropped += 1) {
-    const item: ItemInstance | null = rollDrop(world, Math.max(monster.level, world.player.level), boss.drop.rarity);
+    const item: ItemInstance | null = rollDrop(world, Math.max(monster.level, world.player.level), boss.drop.rarity, { kind: 'boss', monster: monster.def.id, zone: world.zone.id });
     if (item === null) continue;
     dropOnGround(world, monster.pos, { kind: 'item', item });
   }
