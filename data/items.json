@@ -65,7 +65,14 @@
           "op": "percent",
           "value": 0.03
         }
-      ]
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "stormsteel_sword",
@@ -98,7 +105,14 @@
           "op": "add",
           "value": 0.03
         }
-      ]
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "hexwood_staff",
@@ -126,7 +140,14 @@
           "op": "add",
           "value": 16
         }
-      ]
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "tempest_greatsword",
@@ -159,7 +180,14 @@
           "op": "add",
           "value": 0.15
         }
-      ]
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "penitent_cowl",
@@ -184,7 +212,14 @@
           "op": "add",
           "value": 12
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.3,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "wayfarer_hood",
@@ -209,7 +244,14 @@
           "op": "add",
           "value": 0.02
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.3,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "saltworn_shirt",
@@ -234,7 +276,14 @@
           "op": "add",
           "value": 10
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
     },
     {
       "id": "penitent_robe",
@@ -259,7 +308,14 @@
           "op": "add",
           "value": 22
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
     },
     {
       "id": "drowned_leathers",
@@ -284,7 +340,14 @@
           "op": "add",
           "value": 14
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
     },
     {
       "id": "ringmail_hauberk",
@@ -314,7 +377,14 @@
           "op": "percent",
           "value": -0.03
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
     },
     {
       "id": "squall_plate",
@@ -344,7 +414,14 @@
           "op": "percent",
           "value": -0.06
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
     },
     {
       "id": "tanner_gloves",
@@ -369,7 +446,15 @@
           "op": "add",
           "value": 0.03
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "keep": "left",
+        "scale": 1.4,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "strapped_bracers",
@@ -394,7 +479,15 @@
           "op": "add",
           "value": 0.05
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "keep": "left",
+        "scale": 1.4,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "marsh_breeches",
@@ -419,7 +512,14 @@
           "op": "add",
           "value": 6
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
     },
     {
       "id": "gravedigger_breeches",
@@ -444,7 +544,14 @@
           "op": "add",
           "value": 8
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
     },
     {
       "id": "stalker_leggings",
@@ -474,7 +581,14 @@
           "op": "percent",
           "value": 0.02
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
     },
     {
       "id": "mudcaked_boots",
@@ -504,7 +618,14 @@
           "op": "percent",
           "value": 0.03
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.3,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "strider_boots",
@@ -529,7 +650,14 @@
           "op": "percent",
           "value": 0.06
         }
-      ]
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.3,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "gale_charm",
@@ -552,7 +680,14 @@
           "op": "add",
           "value": 0.06
         }
-      ]
+      ],
+      "ground": {
+        "model": "pouch",
+        "scale": 1,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "ember_charm",
@@ -570,7 +705,14 @@
           "op": "add",
           "value": 0.04
         }
-      ]
+      ],
+      "ground": {
+        "model": "pouch",
+        "scale": 1,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
     },
     {
       "id": "worn_journal",

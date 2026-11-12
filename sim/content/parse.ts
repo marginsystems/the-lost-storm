@@ -1,4 +1,5 @@
 import { atlasProblems } from './atlas.ts';
+import { affix, itemBase, rarity } from './parse-items.ts';
 import { itemProblems } from './item-rules.ts';
 import { books } from './parse-story.ts';
 import { storyFlagNames, storyProblems } from './story.ts';
@@ -14,10 +15,9 @@ import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, sk
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
-import { byId, choice, choiceList, colour, ContentError, each, fields, flag, fraction, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
+import { byId, choice, colour, ContentError, each, fields, flag, fraction, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
-  AffixDef,
   AttachmentDef,
   BossDef,
   BossPhase,
@@ -26,7 +26,6 @@ import type {
   Condition,
   Content,
   Delivery,
-  ItemBaseDef,
   ItemSlot,
   LineDef,
   MapPlace,
@@ -56,7 +55,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { ARMOUR_MATERIALS, DAMAGE_TYPES, ITEM_SLOTS, ITEM_STATS, MOD_OPS, RARITY_MARKERS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { DAMAGE_TYPES, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -250,50 +249,6 @@ function monster(value: unknown, where: string): MonsterDef {
     wear: textList(source, 'wear', where),
     boss: boss(source['boss'], `${where}.boss`),
     ...monsterTraits(source, where),
-  };
-}
-
-function rarity(value: unknown, where: string): RarityDef {
-  const source: Fields = fields(value, where);
-  return {
-    id: text(source, 'id', where),
-    name: text(source, 'name', where),
-    color: text(source, 'color', where),
-    marker: source['marker'] === undefined ? 'none' : choice(source, 'marker', RARITY_MARKERS, where),
-    weight: numeric(source, 'weight', where),
-    affixMin: numeric(source, 'affixMin', where),
-    affixMax: numeric(source, 'affixMax', where),
-  };
-}
-
-function itemBase(value: unknown, where: string): ItemBaseDef {
-  const source: Fields = fields(value, where);
-  return {
-    id: text(source, 'id', where),
-    name: text(source, 'name', where),
-    slot: source['slot'] === null ? null : choice(source, 'slot', ITEM_SLOTS, where),
-    book: source['book'] === undefined ? null : text(source, 'book', where),
-    material: source['material'] === null || source['material'] === undefined ? null : choice(source, 'material', ARMOUR_MATERIALS, where),
-    icon: text(source, 'icon', where),
-    dropWeight: numeric(source, 'dropWeight', where),
-    minLevel: numeric(source, 'minLevel', where),
-    implicit: each(source['implicit'], `${where}.implicit`, statMod),
-    visual: nullableText(source, 'visual', where),
-    wear: textList(source, 'wear', where),
-  };
-}
-
-function affix(value: unknown, where: string): AffixDef {
-  const source: Fields = fields(value, where);
-  return {
-    id: text(source, 'id', where),
-    label: text(source, 'label', where),
-    slots: choiceList(source, 'slots', ITEM_SLOTS, where),
-    stat: choice(source, 'stat', ITEM_STATS, where),
-    op: choice(source, 'op', MOD_OPS, where),
-    min: numeric(source, 'min', where),
-    max: numeric(source, 'max', where),
-    perLevel: numeric(source, 'perLevel', where),
   };
 }
 

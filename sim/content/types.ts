@@ -250,8 +250,8 @@ export interface WearableDef {
   readonly hides: readonly string[];
 }
 
-export { ARMOUR_MATERIALS, ITEM_STATS, RARITY_MARKERS } from './item-types.ts';
-export type { AffixDef, ArmourMaterial, ItemBaseDef, ItemScaling, ItemStat, RarityDef, RarityMarker } from './item-types.ts';
+export { ARMOUR_MATERIALS, GROUND_KEEPS, GROUND_MODELS, ITEM_STATS, RARITY_MARKERS } from './item-types.ts';
+export type { AffixDef, ArmourMaterial, GroundKeep, GroundLook, GroundModel, ItemBaseDef, ItemScaling, ItemStat, RarityDef, RarityMarker } from './item-types.ts';
 
 export const REQUIRE_MODES = ['all', 'any'] as const;
 export type RequireMode = (typeof REQUIRE_MODES)[number];
