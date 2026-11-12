@@ -15,6 +15,8 @@ const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
   flask_empty: 'The flask is empty',
   life_full: 'Life is already full',
   mana_full: 'Mana is already full',
+  no_gold: 'Not enough gold',
+  stash_full: 'Stash is full',
 };
 
 export interface Notices {

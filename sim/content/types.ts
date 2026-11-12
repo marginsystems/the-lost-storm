@@ -1,4 +1,5 @@
 import type { FlaskDef } from './flasks.ts';
+import type { ServiceKind, TradeDef } from './trade-types.ts';
 export const STAT_IDS = [
   'maxLife',
   'maxMana',
@@ -344,6 +345,7 @@ export interface PropDef {
   readonly blockRadius: number;
   readonly light: PropLight | null;
   readonly surfaces: Readonly<Record<string, string>>;
+  readonly service: ServiceKind | null;
 }
 
 export interface ZonePoint {
@@ -551,6 +553,7 @@ export interface NpcDef {
   readonly gear: readonly string[];
   readonly wear: readonly string[];
   readonly talks: readonly TalkDef[];
+  readonly service: ServiceKind | null;
 }
 
 export interface MonsterScaling {
@@ -673,4 +676,5 @@ export interface Content {
   readonly quests: ReadonlyMap<string, QuestDef>;
   readonly player: PlayerDef;
   readonly flasks: readonly FlaskDef[];
+  readonly trade: TradeDef;
 }

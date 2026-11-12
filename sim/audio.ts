@@ -150,6 +150,9 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'unequip':
       action = 'equip';
       break;
+    case 'trade':
+      action = command.action.type === 'close' ? null : 'equip';
+      break;
     case 'move':
     case 'skill':
     case 'pickup':
@@ -161,6 +164,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'teleport':
     case 'respawn':
     case 'flask':
+    case 'use':
       break;
   }
   return action;

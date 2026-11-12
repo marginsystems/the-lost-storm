@@ -5,10 +5,10 @@ import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
 import { flaskCharges } from './world/flasks.ts';
 import { decodeExplored, encodeExplored, exploredSize } from './world/exploration.ts';
-import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, World } from './world/types.ts';
+import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, VendorStock, World } from './world/types.ts';
 
-export const SAVE_VERSION: number = 3;
-const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, SAVE_VERSION]);
+export const SAVE_VERSION: number = 4;
+const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, 3, SAVE_VERSION]);
 
 export interface SaveData {
   readonly version: number;
@@ -31,11 +31,17 @@ export interface SaveData {
   readonly waypoints: readonly string[];
   readonly explored: Readonly<Record<string, string>>;
   readonly flasks: Readonly<Record<string, number>>;
+  readonly stash: readonly (ItemInstance | null)[];
+  readonly vendors: Readonly<Record<string, VendorStock>>;
 }
 
 interface Worn {
   readonly equipped: Equipment;
   readonly spilled: ItemInstance[];
+}
+
+export function copyVendors(vendors: Readonly<Record<string, VendorStock>>): Record<string, VendorStock> {
+  return Object.fromEntries(Object.entries(vendors).map(([id, vendor]: [string, VendorStock]): [string, VendorStock] => [id, { stock: [...vendor.stock], buyback: [...vendor.buyback], stale: vendor.stale }]));
 }
 
 export function toSave(world: World): SaveData {
@@ -61,6 +67,8 @@ export function toSave(world: World): SaveData {
     waypoints: [...world.waypoints],
     explored: Object.fromEntries(Object.entries(world.explored).map(([zone, cells]: [string, Uint8Array]): [string, string] => [zone, encodeExplored(cells)])),
     flasks: flaskCharges(player.flasks),
+    stash: [...world.stash],
+    vendors: copyVendors(world.vendors),
   };
 }
 
@@ -173,6 +181,43 @@ function readFlasks(content: Content, value: unknown): Record<string, number> {
   return flasks;
 }
 
+interface Stashed {
+  readonly stash: (ItemInstance | null)[];
+  readonly overflow: ItemInstance[];
+}
+
+function readStash(content: Content, value: unknown): Stashed {
+  const list: readonly unknown[] = Array.isArray(value) ? value : [];
+  const stash: (ItemInstance | null)[] = Array.from({ length: content.trade.stashSize }, (_: unknown, index: number): ItemInstance | null => readItem(content, list[index]));
+  const overflow: ItemInstance[] = list
+    .slice(content.trade.stashSize)
+    .map((entry: unknown): ItemInstance | null => readItem(content, entry))
+    .filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
+  return { stash, overflow };
+}
+
+function readItems(content: Content, value: unknown): ItemInstance[] {
+  const list: readonly unknown[] = Array.isArray(value) ? value : [];
+  return list.map((entry: unknown): ItemInstance | null => readItem(content, entry)).filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
+}
+
+function readVendors(content: Content, value: unknown): Record<string, VendorStock> {
+  const vendors: Record<string, VendorStock> = {};
+  if (!isFields(value)) return vendors;
+  for (const npc of content.npcs.values()) {
+    const saved: unknown = value[npc.id];
+    if (npc.service !== 'vendor' || !isFields(saved)) continue;
+    const stock: unknown = saved['stock'];
+    const list: readonly unknown[] = Array.isArray(stock) ? stock : [];
+    vendors[npc.id] = {
+      stock: Array.from({ length: content.trade.stockSize }, (_: unknown, index: number): ItemInstance | null => readItem(content, list[index])),
+      buyback: readItems(content, saved['buyback']).slice(0, content.trade.buybackSize),
+      stale: saved['stale'] !== false || !Array.isArray(stock),
+    };
+  }
+  return vendors;
+}
+
 export function readSave(content: Content, value: unknown): SaveData | null {
   if (!isFields(value) || !READABLE_VERSIONS.has(value['version'])) return null;
   const level: number | null = count(value, 'level', 1);
@@ -196,6 +241,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const worn: Worn = readEquipped(content, value['equipped'], slots);
   const spilled: unknown = value['spilled'];
   const spilledList: readonly unknown[] = Array.isArray(spilled) ? spilled : [];
+  const stashed: Stashed = readStash(content, value['stash']);
   const kept: ItemInstance[] = spilledList.map((entry: unknown): ItemInstance | null => readItem(content, entry)).filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
   return {
     version: SAVE_VERSION,
@@ -207,7 +253,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     allocated: allocatedList.filter((node: unknown): node is string => typeof node === 'string' && findNode(content, node) !== null),
     inventory: slots,
     equipped: worn.equipped,
-    spilled: [...kept, ...worn.spilled],
+    spilled: [...kept, ...worn.spilled, ...stashed.overflow],
     surge: Math.floor(surge),
     nextItemUid: Math.floor(nextItemUid),
     zone,
@@ -218,6 +264,8 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     waypoints: readWaypoints(content, value['waypoints']),
     explored: readExplored(content, value['explored']),
     flasks: readFlasks(content, value['flasks']),
+    stash: stashed.stash,
+    vendors: readVendors(content, value['vendors']),
   };
 }
 

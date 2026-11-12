@@ -58,5 +58,11 @@
   {"id": "welcome_two_1", "speaker": "welcome", "text": "Holding a shape is such work. Aren't you tired?"},
   {"id": "welcome_three_1", "speaker": "welcome", "text": "We never said a name. There are no names in here."},
   {"id": "welcome_death_1", "speaker": "welcome", "text": "Stay out, then. Be someone. Be cold."},
-  {"id": "welcome_death_2", "speaker": "welcome", "text": "The door does not close. We are patient. We are all there is."}
+  {"id": "welcome_death_2", "speaker": "welcome", "text": "The door does not close. We are patient. We are all there is."},
+  {"id": "odric_first_1", "speaker": "odric", "text": "Odric Vane. I keep the stall, and the stall keeps me."},
+  {"id": "odric_first_2", "speaker": "odric", "text": "What the Storm drops out there, bring it here. I pay in gold, and gold still spends in Stillhold."},
+  {"id": "odric_first_3", "speaker": "odric", "text": "Sold me something you miss? I hold the last few a while. Same price back, no questions."},
+  {"id": "odric_shop_1", "speaker": "odric", "text": "Back with your pockets full, I hope."},
+  {"id": "odric_shop_2", "speaker": "odric", "text": "Fresh stock since you left. Have a look."},
+  {"id": "odric_shop_3", "speaker": "odric", "text": "Gold first, then the blade. That's the order of things."}
 ]

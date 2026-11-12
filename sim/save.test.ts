@@ -284,7 +284,7 @@ void test('flask charges survive a save, and a version 2 save from before flasks
   const { flasks: _dropped, ...older } = toSave(played());
   const migrated: SaveData = must(readSave(content, JSON.parse(JSON.stringify({ ...older, version: 2 }))), 'version 2 save');
   assert.equal(migrated.version, SAVE_VERSION);
-  assert.equal(SAVE_VERSION, 3);
+  assert.equal(SAVE_VERSION, 4);
   assert.deepEqual(migrated.flasks, {});
   const loaded: World = createWorld(content, { seed: 2, save: migrated });
   assert.ok(loaded.player.flasks.every((flask): boolean => flask.charges === flask.def.maxCharges));
@@ -294,4 +294,81 @@ void test('flask charges survive a save, and a version 2 save from before flasks
 void test('saved flask charges that are unknown, negative or too large are cleaned up', (): void => {
   const save: SaveData = must(readSave(content, { ...JSON.parse(JSON.stringify(toSave(played()))), flasks: { life_flask: 500, mana_flask: -3, made_up: 4 } }), 'save');
   assert.deepEqual(save.flasks, { life_flask: must(content.flasks[0], 'life').maxCharges });
+});
+
+void test('the stash survives a save slot for slot', (): void => {
+  const world: World = played();
+  const kept: ItemInstance = made('stormsteel_sword', 'rare', 60);
+  world.stash[5] = kept;
+  world.stash[content.trade.stashSize - 1] = made('gale_charm', 'magic', 61);
+  const save: SaveData = roundTrip(world);
+  assert.equal(save.stash.length, content.trade.stashSize);
+  const restored: World = createWorld(content, { seed: 8, save });
+  assert.deepEqual(restored.stash, world.stash);
+  assert.deepEqual(restored.stash[5], kept);
+});
+
+void test('a version 2 save, which has no stash, loads as the current version with an empty stash', (): void => {
+  const current: SaveData = toSave(played());
+  const older: Record<string, unknown> = { ...current, version: 2 };
+  delete older['stash'];
+  delete older['vendors'];
+  delete older['flasks'];
+  const save: SaveData = must(readSave(content, older), 'save');
+  assert.equal(save.version, SAVE_VERSION);
+  assert.equal(SAVE_VERSION, 4);
+  assert.equal(save.stash.length, content.trade.stashSize);
+  assert.ok(save.stash.every((item: ItemInstance | null): boolean => item === null));
+  assert.deepEqual(save.inventory, current.inventory);
+  assert.equal(save.gold, current.gold);
+  assert.deepEqual(createWorld(content, { seed: 4, save }).stash, save.stash);
+});
+
+void test('stash entries that are not items are emptied, and items past the stash size are spilled at the hero', (): void => {
+  const extra: ItemInstance = made('drowned_leathers', 'magic', 70);
+  const first: ItemInstance = made('stormsteel_sword', 'common', 71);
+  const stash: unknown[] = [first, 'junk', { uid: 3 }, ...Array.from({ length: content.trade.stashSize - 3 }, (): null => null), extra];
+  const save: SaveData = must(readSave(content, { ...toSave(played()), stash }), 'save');
+  assert.deepEqual(save.stash[0], first);
+  assert.equal(save.stash[1], null);
+  assert.equal(save.stash[2], null);
+  assert.equal(save.stash.length, content.trade.stashSize);
+  assert.ok(save.spilled.some((item: ItemInstance): boolean => item.uid === extra.uid));
+});
+
+function vendorId(): string {
+  const npc = [...content.npcs.values()].find((def): boolean => def.service === 'vendor');
+  return must(npc, 'vendor').id;
+}
+
+void test('the stall stock and its buy-back row survive a save, so a reload in town does not restock', (): void => {
+  const world: World = played();
+  const stock: (ItemInstance | null)[] = [made('stormsteel_sword', 'magic', 80), null, made('gale_charm', 'rare', 81)];
+  const sold: ItemInstance = made('drowned_leathers', 'common', 82);
+  world.vendors[vendorId()] = { stock, buyback: [sold], stale: false };
+  const restored: World = createWorld(content, { seed: 5, save: roundTrip(world) });
+  const vendor = must(restored.vendors[vendorId()], 'vendor');
+  assert.equal(vendor.stale, false);
+  assert.equal(vendor.stock.length, content.trade.stockSize);
+  assert.deepEqual(vendor.stock.slice(0, 3), stock);
+  assert.deepEqual(vendor.buyback, [sold]);
+});
+
+void test('a version 3 save, which has no stall, loads as the current version with the stall rolled fresh', (): void => {
+  const older: Record<string, unknown> = { ...toSave(played()), version: 3 };
+  delete older['vendors'];
+  delete older['stash'];
+  const save: SaveData = must(readSave(content, older), 'save');
+  assert.equal(save.version, SAVE_VERSION);
+  assert.deepEqual(save.vendors, {});
+  assert.ok(save.stash.every((item: ItemInstance | null): boolean => item === null));
+  assert.deepEqual(save.flasks, toSave(played()).flasks);
+});
+
+void test('saved stalls of unknown or non-vendor characters are dropped, and a stall without a stock list restocks', (): void => {
+  const vendors: Record<string, unknown> = { nobody: { stock: [], buyback: [], stale: false }, [vendorId()]: { buyback: ['junk'], stale: false } };
+  const save: SaveData = must(readSave(content, { ...toSave(played()), vendors }), 'save');
+  assert.deepEqual(Object.keys(save.vendors), [vendorId()]);
+  assert.equal(save.vendors[vendorId()]?.stale, true);
+  assert.deepEqual(save.vendors[vendorId()]?.buyback, []);
 });
