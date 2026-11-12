@@ -6,6 +6,7 @@ import { DEGREES_TO_RADIANS, distance } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
 import { pickWeighted } from '../rng.ts';
 import { dropOnGround } from './ground.ts';
+import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
 import type { ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, World } from './types.ts';
 
@@ -90,7 +91,9 @@ function place(world: World, field: MomentField, mark: boolean): MomentState | n
 
 function echoDef(world: World, entry: MomentEcho): MonsterDef | null {
   const base: MonsterDef | undefined = world.content.monsters.get(entry.monster);
-  return base === undefined ? null : { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null };
+  if (base === undefined) return null;
+  const echo: MonsterDef = { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null };
+  return entry.look === null ? echo : { ...echo, rig: entry.look.rig, scale: entry.look.scale, gear: entry.look.gear, wear: entry.look.wear };
 }
 
 function turn(world: World, moment: MomentState): number[] {
@@ -149,7 +152,10 @@ function reward(world: World, moment: MomentState): void {
 }
 
 function end(world: World, moment: MomentState, outcome: MomentOutcome): void {
-  if (outcome === 'resolved') reward(world, moment);
+  if (outcome === 'resolved') {
+    reward(world, moment);
+    setFlags(world, world.content.moments.cleared);
+  }
   removeEchoes(world, moment, true);
   moment.phase = 'fading';
   moment.outcome = outcome;

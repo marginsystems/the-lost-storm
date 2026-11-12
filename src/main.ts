@@ -78,6 +78,7 @@ import type { CharacterLibrary, Dresser } from './render/character-loader.ts';
 import { loadCharacters, loadRemainingCharacters } from './render/character-loader.ts';
 import type { Effects } from './render/effects.ts';
 import { createEffects } from './render/effects.ts';
+import { momentEffects } from './render/moment-effects.ts';
 import type { Ward } from './render/ward.ts';
 import { createWard } from './render/ward.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
@@ -344,7 +345,7 @@ async function start(): Promise<void> {
     rain.setDensity(zone.weather.rain);
   };
   applyWeather(world.zone);
-  const effects: Effects = createEffects(stage.scene, particles, camera, (power: number): void => weather.strike(power));
+  const effects: Effects = await momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.strike(power)), { scene: stage.scene, loader, content, library, dresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene);
   const actors: Actors = createActors(stage.scene, library, world);

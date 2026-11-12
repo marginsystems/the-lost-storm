@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { MomentField } from '../content/moment-types.ts';
+import { loadContent } from '../content/content.ts';
+import type { MomentDef, MomentField, MomentLibrary } from '../content/moment-types.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { parseSaveText, toSave } from '../save.ts';
@@ -13,6 +14,7 @@ import { echoesOf, FIELD, fieldContent, fieldWorld, fieldZone, QUIET, RAID, slay
 import { must } from '../../test/support.ts';
 
 const DT: number = 1 / 30;
+const SHIPPED: MomentLibrary = loadContent().moments;
 const FAR = { x: 150, z: 150 } as const;
 
 function run(world: World, seconds: number): WorldEvent[] {
@@ -112,7 +114,7 @@ void test('a bubble that lands on the hero waits for him to step out and back in
   assert.equal(moment.phase, 'awake');
 });
 
-void test('turned echoes are hostile monsters of the echo faction; killing them resolves the moment and drops its reward', (): void => {
+void test('turned echoes are hostile monsters of the echo faction; killing them resolves the moment, drops its reward and writes the cleared flags', (): void => {
   const world: World = fieldWorld(quietField());
   const moment: MomentState = struck(world, RAID.id);
   standAt(world, moment.pos);
@@ -126,10 +128,12 @@ void test('turned echoes are hostile monsters of the echo faction; killing them 
     assert.equal(momentOfEcho(world, echo.id), moment);
   }
   assert.equal(moment.figures.filter((figure): boolean => figure.turned).length, 2);
+  assert.equal(world.flags['first_moment'], undefined);
   const gold: number = world.player.gold;
   slay(world, echoes);
   const events: WorldEvent[] = run(world, DT * 2);
   assert.equal(moment.outcome, 'resolved');
+  assert.equal(world.flags['first_moment'], 'cleared');
   assert.ok(events.some((event: WorldEvent): boolean => event.type === 'drop' && event.ground.content.kind === 'gold'));
   assert.equal(world.player.gold, gold);
   run(world, world.content.moments.fade + DT * 2);
@@ -212,12 +216,14 @@ void test('saving mid-moment and loading starts a clean field with no orphan ech
   run(loaded, 5);
 });
 
-void test('ten minutes of farming keeps bubbles, echoes and rewards inside their bounds', (): void => {
-  const world: World = fieldWorld();
+function farmTenMinutes(world: World, field: MomentField): void {
   const minutes: number = 10;
   const steps: number = Math.round((minutes * 60) / DT);
-  const maxEchoes: number = FIELD.max * Math.max(QUIET.echoes.length, RAID.echoes.length);
-  const longest: number = world.content.moments.telegraph + Math.max(QUIET.lifetime, RAID.lifetime, QUIET.awake, RAID.awake, world.content.moments.fade) + 1;
+  const defs: MomentDef[] = [...world.content.moments.defs.values()];
+  const maxEchoes: number = field.max * Math.max(...defs.map((def: MomentDef): number => def.echoes.length));
+  const longest: number = world.content.moments.telegraph + Math.max(world.content.moments.fade, ...defs.flatMap((def: MomentDef): number[] => [def.lifetime, def.awake])) + 1;
+  const goldMax: number = Math.max(...defs.map((def: MomentDef): number => def.reward.goldMax));
+  const itemsMax: number = Math.max(...defs.map((def: MomentDef): number => def.reward.items));
   let strikes: number = 0;
   let resolved: number = 0;
   let gold: number = 0;
@@ -241,16 +247,25 @@ void test('ten minutes of farming keeps bubbles, echoes and rewards inside their
       if (event.type === 'drop' && event.ground.content.kind === 'item') items += 1;
     }
     world.ground = [];
-    assert.ok(world.moments.filter((moment: MomentState): boolean => moment.phase !== 'fading').length <= FIELD.max);
+    assert.ok(world.moments.filter((moment: MomentState): boolean => moment.phase !== 'fading').length <= field.max);
     assert.ok(world.monsters.length <= maxEchoes);
     for (const moment of world.moments) assert.ok(moment.phaseTime <= longest);
   }
   const perMinute = (count: number): number => count / minutes;
-  assert.ok(perMinute(strikes) >= 60 / (FIELD.interval.max + world.content.moments.telegraph) / 2, `strikes ${strikes}`);
-  assert.ok(perMinute(strikes) <= 60 / FIELD.interval.min + 1, `strikes ${strikes}`);
+  assert.ok(perMinute(strikes) >= 60 / (field.interval.max + world.content.moments.telegraph) / 2, `strikes ${strikes}`);
+  assert.ok(perMinute(strikes) <= 60 / field.interval.min + 1, `strikes ${strikes}`);
   assert.ok(resolved > 0);
-  assert.ok(perMinute(resolved) <= 60 / FIELD.interval.min + FIELD.start, `resolved ${resolved}`);
+  assert.ok(perMinute(resolved) <= 60 / field.interval.min + field.start, `resolved ${resolved}`);
   assert.ok(gold > 0);
-  assert.ok(perMinute(gold) <= perMinute(resolved) * RAID.reward.goldMax * 2, `gold ${gold}`);
-  assert.ok(items <= resolved * RAID.reward.items);
+  assert.ok(perMinute(gold) <= perMinute(resolved) * goldMax * 2, `gold ${gold}`);
+  assert.ok(items <= resolved * itemsMax);
+}
+
+void test('ten minutes of farming keeps bubbles, echoes and rewards inside their bounds', (): void => {
+  farmTenMinutes(fieldWorld(), FIELD);
+});
+
+void test('ten minutes of farming the shipped moments stays inside the same bounds', (): void => {
+  const field: MomentField = { ...FIELD, table: [...SHIPPED.defs.keys()].map((moment: string) => ({ moment, weight: SHIPPED.defs.get(moment)?.bright === true ? 1 : 4 })) };
+  farmTenMinutes(fieldWorld(field, SHIPPED), field);
 });

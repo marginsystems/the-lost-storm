@@ -3,5 +3,967 @@
   "hostileTint": "#9fc4ff",
   "telegraph": 1.1,
   "fade": 2.4,
-  "moments": []
+  "cleared": { "first_moment": "cleared" },
+  "moments": [
+    {
+      "id": "campfire",
+      "name": "A campfire",
+      "tint": "#ff8a3c",
+      "bright": false,
+      "radius": 6,
+      "lifetime": 50,
+      "awake": 18,
+      "turnChance": 0.55,
+      "props": [
+        {
+          "prop": "fire_pit",
+          "x": 0,
+          "z": 0,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "dead_log",
+          "x": -0.2,
+          "z": -2.6,
+          "rotationDegrees": 80
+        },
+        {
+          "prop": "stool",
+          "x": 2.3,
+          "z": 1.2,
+          "rotationDegrees": 30
+        },
+        {
+          "prop": "pot",
+          "x": 0.7,
+          "z": 0.5,
+          "rotationDegrees": 0
+        }
+      ],
+      "echoes": [
+        {
+          "monster": "unfinished_brute",
+          "x": 0.65,
+          "z": 2.1,
+          "facingDegrees": -163,
+          "pose": {
+            "clip": "idle",
+            "at": 0.2
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "raider_maul"
+            ],
+            "wear": [
+              "leather_vest",
+              "wool_trousers",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "unfinished_thrower",
+          "x": 1.49,
+          "z": -1.62,
+          "facingDegrees": -42,
+          "pose": {
+            "clip": "cast",
+            "at": 0.3
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_woman",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "linen_shirt",
+              "rag_trousers",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": -2.09,
+          "z": -0.68,
+          "facingDegrees": 72,
+          "pose": {
+            "clip": "idle",
+            "at": 0.6
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_elder",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "sackcloth_robe",
+              "sackcloth_cowl"
+            ]
+          }
+        }
+      ],
+      "reward": {
+        "goldMin": 8,
+        "goldMax": 16,
+        "items": 1,
+        "itemChance": 0.5,
+        "rarity": null
+      }
+    },
+    {
+      "id": "market_street",
+      "name": "A market street",
+      "tint": "#f2c14e",
+      "bright": false,
+      "radius": 9,
+      "lifetime": 55,
+      "awake": 22,
+      "turnChance": 0.4,
+      "props": [
+        {
+          "prop": "stall_red",
+          "x": -4.5,
+          "z": 1.5,
+          "rotationDegrees": 90
+        },
+        {
+          "prop": "stall_pale",
+          "x": 4.5,
+          "z": -1.5,
+          "rotationDegrees": -90
+        },
+        {
+          "prop": "basket",
+          "x": -3.2,
+          "z": -0.8,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "crate",
+          "x": 3.4,
+          "z": 1.6,
+          "rotationDegrees": 15
+        },
+        {
+          "prop": "barrel",
+          "x": -5.2,
+          "z": -2.4,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "jug",
+          "x": 3.8,
+          "z": 0.6,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "cask",
+          "x": 5.4,
+          "z": 2.8,
+          "rotationDegrees": 0
+        }
+      ],
+      "echoes": [
+        {
+          "monster": "mender",
+          "x": -3.6,
+          "z": 1.5,
+          "facingDegrees": 90,
+          "pose": {
+            "clip": "idle",
+            "at": 0.1
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_woman",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "linen_shirt",
+              "wool_trousers"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": 3.6,
+          "z": -1.5,
+          "facingDegrees": -90,
+          "pose": {
+            "clip": "cast",
+            "at": 0.5
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_elder",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "leather_vest",
+              "wool_trousers"
+            ]
+          }
+        },
+        {
+          "monster": "unfinished_thrower",
+          "x": -0.8,
+          "z": -3,
+          "facingDegrees": 20,
+          "pose": {
+            "clip": "run",
+            "at": 0.35
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "rag_shirt",
+              "rag_trousers",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "unfinished_brute",
+          "x": 1,
+          "z": 2.8,
+          "facingDegrees": 190,
+          "pose": {
+            "clip": "run",
+            "at": 0.7
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "raider_cleaver"
+            ],
+            "wear": [
+              "dirty_shirt",
+              "dirty_trousers",
+              "leather_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": -1.2,
+          "z": 4.2,
+          "facingDegrees": 160,
+          "pose": {
+            "clip": "run",
+            "at": 0.1
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_woman",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "linen_shirt",
+              "rag_trousers"
+            ]
+          }
+        }
+      ],
+      "reward": {
+        "goldMin": 12,
+        "goldMax": 24,
+        "items": 2,
+        "itemChance": 0.45,
+        "rarity": null
+      }
+    },
+    {
+      "id": "charge",
+      "name": "A charge",
+      "tint": "#e8463a",
+      "bright": false,
+      "radius": 7,
+      "lifetime": 40,
+      "awake": 16,
+      "turnChance": 0.85,
+      "props": [
+        {
+          "prop": "banner_red",
+          "x": -4.6,
+          "z": 0.5,
+          "rotationDegrees": 90
+        },
+        {
+          "prop": "castle_rubble_small",
+          "x": 2.6,
+          "z": -2.4,
+          "rotationDegrees": 40
+        },
+        {
+          "prop": "rock_2",
+          "x": 3.2,
+          "z": 2.6,
+          "rotationDegrees": 0
+        }
+      ],
+      "echoes": [
+        {
+          "monster": "unfinished_borrower",
+          "x": 1.6,
+          "z": 0,
+          "facingDegrees": 90,
+          "pose": {
+            "clip": "run",
+            "at": 0.4
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "sword_1h"
+            ],
+            "wear": [
+              "ringmail_hauberk",
+              "rough_breeches",
+              "leather_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mended",
+          "x": -1,
+          "z": 1.4,
+          "facingDegrees": 90,
+          "pose": {
+            "clip": "run",
+            "at": 0.15
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "rusted_blade"
+            ],
+            "wear": [
+              "leather_vest",
+              "leather_leggings",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mended",
+          "x": -1.4,
+          "z": -1.5,
+          "facingDegrees": 90,
+          "pose": {
+            "clip": "run",
+            "at": 0.65
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "rusted_blade"
+            ],
+            "wear": [
+              "linen_shirt",
+              "wool_trousers",
+              "worn_boots"
+            ]
+          }
+        }
+      ],
+      "reward": {
+        "goldMin": 14,
+        "goldMax": 26,
+        "items": 2,
+        "itemChance": 0.55,
+        "rarity": null
+      }
+    },
+    {
+      "id": "funeral",
+      "name": "A funeral",
+      "tint": "#b48cff",
+      "bright": false,
+      "radius": 7,
+      "lifetime": 60,
+      "awake": 20,
+      "turnChance": 0.3,
+      "props": [
+        {
+          "prop": "grave_slab",
+          "x": 0,
+          "z": 0,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "gravestone",
+          "x": 0,
+          "z": -1.6,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "candles",
+          "x": 1.2,
+          "z": -1.2,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "candlestick",
+          "x": -1.2,
+          "z": -1.2,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "grave_cross",
+          "x": 3.6,
+          "z": -3,
+          "rotationDegrees": 0
+        }
+      ],
+      "echoes": [
+        {
+          "monster": "mender",
+          "x": 0,
+          "z": 2.4,
+          "facingDegrees": 180,
+          "pose": {
+            "clip": "idle",
+            "at": 0.1
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_elder",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "sackcloth_robe",
+              "sackcloth_cowl"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": -2.2,
+          "z": 1.4,
+          "facingDegrees": 122,
+          "pose": {
+            "clip": "idle",
+            "at": 0.5
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_woman",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "linen_shirt",
+              "wool_trousers"
+            ]
+          }
+        },
+        {
+          "monster": "still_standing",
+          "x": 2.2,
+          "z": 1.4,
+          "facingDegrees": -122,
+          "pose": {
+            "clip": "idle",
+            "at": 0.8
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "dirty_shirt",
+              "dirty_trousers",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": 1.2,
+          "z": 2.9,
+          "facingDegrees": -158,
+          "pose": {
+            "clip": "idle",
+            "at": 0.3
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_woman",
+            "scale": 0.65,
+            "gear": [],
+            "wear": [
+              "rag_shirt",
+              "rag_trousers"
+            ]
+          }
+        }
+      ],
+      "reward": {
+        "goldMin": 8,
+        "goldMax": 18,
+        "items": 1,
+        "itemChance": 0.5,
+        "rarity": null
+      }
+    },
+    {
+      "id": "duel",
+      "name": "A duel",
+      "tint": "#4fa8ff",
+      "bright": false,
+      "radius": 6,
+      "lifetime": 45,
+      "awake": 18,
+      "turnChance": 0.7,
+      "props": [
+        {
+          "prop": "post",
+          "x": -3.6,
+          "z": 2.8,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "post",
+          "x": 3.6,
+          "z": 2.8,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "bench",
+          "x": 0,
+          "z": -3.8,
+          "rotationDegrees": 0
+        }
+      ],
+      "echoes": [
+        {
+          "monster": "timekeeper_duelist",
+          "x": -1.1,
+          "z": 0,
+          "facingDegrees": 90,
+          "pose": {
+            "clip": "attack",
+            "at": 0.35
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "sword_1h"
+            ],
+            "wear": [
+              "leather_vest",
+              "leather_leggings",
+              "leather_boots"
+            ]
+          }
+        },
+        {
+          "monster": "timekeeper_duelist",
+          "x": 1.1,
+          "z": 0,
+          "facingDegrees": -90,
+          "pose": {
+            "clip": "attack",
+            "at": 0.6
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "rusted_blade"
+            ],
+            "wear": [
+              "ringmail_hauberk",
+              "rough_breeches",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": 0,
+          "z": -3.2,
+          "facingDegrees": 0,
+          "pose": {
+            "clip": "idle",
+            "at": 0.4
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_elder",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "leather_vest",
+              "wool_trousers"
+            ]
+          }
+        }
+      ],
+      "reward": {
+        "goldMin": 16,
+        "goldMax": 30,
+        "items": 1,
+        "itemChance": 0.7,
+        "rarity": null
+      }
+    },
+    {
+      "id": "children_at_play",
+      "name": "Children at play",
+      "tint": "#7fe07a",
+      "bright": false,
+      "radius": 6,
+      "lifetime": 40,
+      "awake": 12,
+      "turnChance": 0,
+      "props": [
+        {
+          "prop": "bucket",
+          "x": 2.4,
+          "z": -1.8,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "basket",
+          "x": -2.6,
+          "z": 2,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "broom",
+          "x": -0.4,
+          "z": -3.2,
+          "rotationDegrees": 60
+        }
+      ],
+      "echoes": [
+        {
+          "monster": "mender",
+          "x": -1,
+          "z": -0.6,
+          "facingDegrees": 60,
+          "pose": {
+            "clip": "run",
+            "at": 0.2
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_woman",
+            "scale": 0.62,
+            "gear": [],
+            "wear": [
+              "linen_shirt",
+              "rag_trousers"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": 1.3,
+          "z": 0.8,
+          "facingDegrees": 60,
+          "pose": {
+            "clip": "run",
+            "at": 0.65
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_man",
+            "scale": 0.6,
+            "gear": [],
+            "wear": [
+              "rag_shirt",
+              "wool_trousers"
+            ]
+          }
+        }
+      ],
+      "reward": {
+        "goldMin": 0,
+        "goldMax": 0,
+        "items": 0,
+        "itemChance": 0,
+        "rarity": null
+      }
+    },
+    {
+      "id": "shipwreck_deck",
+      "name": "A shipwreck's deck",
+      "tint": "#3fc6d9",
+      "bright": false,
+      "radius": 8,
+      "lifetime": 55,
+      "awake": 22,
+      "turnChance": 0.6,
+      "props": [
+        {
+          "prop": "bridge_broken",
+          "x": 0,
+          "z": 0,
+          "rotationDegrees": 15
+        },
+        {
+          "prop": "crate_tall",
+          "x": -3,
+          "z": 2.2,
+          "rotationDegrees": 10
+        },
+        {
+          "prop": "barrel",
+          "x": 3.4,
+          "z": -2.2,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "cask",
+          "x": 2.6,
+          "z": 2.8,
+          "rotationDegrees": 70
+        },
+        {
+          "prop": "post",
+          "x": -4.4,
+          "z": -2.4,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "crate",
+          "x": -1.8,
+          "z": -3.6,
+          "rotationDegrees": 35
+        }
+      ],
+      "echoes": [
+        {
+          "monster": "unfinished_thrower",
+          "x": -2,
+          "z": 0.6,
+          "facingDegrees": 120,
+          "pose": {
+            "clip": "throw",
+            "at": 0.25
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "rag_shirt",
+              "odd_breeches",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mended",
+          "x": 2,
+          "z": 0.4,
+          "facingDegrees": -80,
+          "pose": {
+            "clip": "attack",
+            "at": 0.5
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "raider_cleaver"
+            ],
+            "wear": [
+              "leather_vest",
+              "rag_trousers",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "unfinished_brute",
+          "x": 0.4,
+          "z": -2.6,
+          "facingDegrees": 10,
+          "pose": {
+            "clip": "hit",
+            "at": 0.4
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "dirty_shirt",
+              "faded_trousers",
+              "cast_off_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": -0.6,
+          "z": 3.4,
+          "facingDegrees": 170,
+          "pose": {
+            "clip": "idle",
+            "at": 0.7
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_elder",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "leather_hood",
+              "linen_shirt",
+              "wool_trousers"
+            ]
+          }
+        }
+      ],
+      "reward": {
+        "goldMin": 14,
+        "goldMax": 28,
+        "items": 2,
+        "itemChance": 0.5,
+        "rarity": null
+      }
+    },
+    {
+      "id": "watch_post",
+      "name": "A watch post",
+      "tint": "#ffd86a",
+      "bright": true,
+      "radius": 7,
+      "lifetime": 35,
+      "awake": 24,
+      "turnChance": 0.9,
+      "props": [
+        {
+          "prop": "post_lantern_lit",
+          "x": -2.8,
+          "z": -2.6,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "brazier",
+          "x": 2.2,
+          "z": -1.6,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "banner_blue",
+          "x": -3.4,
+          "z": 2.4,
+          "rotationDegrees": 30
+        },
+        {
+          "prop": "crate_tall",
+          "x": 3.2,
+          "z": 2.4,
+          "rotationDegrees": -20
+        },
+        {
+          "prop": "castle_wall_low",
+          "x": 0,
+          "z": -4.4,
+          "rotationDegrees": 0
+        }
+      ],
+      "echoes": [
+        {
+          "monster": "unfinished_brute",
+          "x": 0,
+          "z": 0.6,
+          "facingDegrees": 0,
+          "pose": {
+            "clip": "idle",
+            "at": 0.3
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "greatsword"
+            ],
+            "wear": [
+              "ringmail_hauberk",
+              "rough_breeches",
+              "leather_boots"
+            ]
+          }
+        },
+        {
+          "monster": "unfinished_thrower",
+          "x": -1.8,
+          "z": -0.8,
+          "facingDegrees": -30,
+          "pose": {
+            "clip": "throw",
+            "at": 0.1
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_woman",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "leather_vest",
+              "leather_leggings",
+              "leather_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": 1.8,
+          "z": -0.4,
+          "facingDegrees": 40,
+          "pose": {
+            "clip": "cast",
+            "at": 0.4
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_elder",
+            "scale": 1.0,
+            "gear": [
+              "hex_staff"
+            ],
+            "wear": [
+              "sackcloth_robe",
+              "sackcloth_cowl"
+            ]
+          }
+        }
+      ],
+      "reward": {
+        "goldMin": 40,
+        "goldMax": 70,
+        "items": 3,
+        "itemChance": 0.75,
+        "rarity": "rare"
+      }
+    }
+  ]
 }

@@ -8,6 +8,8 @@ import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
 import { fitToSkeleton, groupBodyParts, skinnedMeshes } from './wearables.ts';
+import type { GhostUniforms } from './ghost-material.ts';
+import { makeGhost } from './ghost-material.ts';
 
 export interface ActionClip {
   readonly clip: AnimationClip;
@@ -56,6 +58,7 @@ export interface CharacterLibrary {
 export interface RigLook {
   readonly tint: string;
   readonly glow: string;
+  readonly ghost: GhostUniforms | null;
 }
 
 export interface RigInstance {
@@ -67,6 +70,7 @@ export interface RigInstance {
   armed(): boolean;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   setFlash(color: Color, amount: number): void;
+  setOpacity(opacity: number): void;
   dispose(): void;
 }
 
@@ -307,11 +311,15 @@ function flashing(source: unknown, look: RigLook, flash: IUniform<Color>): MeshS
       material.metalnessMap = null;
     }
     recolourEmissiveMap(material, look.glow);
-    material.onBeforeCompile = (shader): void => {
-      shader.uniforms['uFlash'] = flash;
-      shader.fragmentShader = shader.fragmentShader.replace('void main() {', 'uniform vec3 uFlash;\nvoid main() {').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += uFlash;');
-    };
-    material.customProgramCacheKey = (): string => FLASH_KEY;
+    if (look.ghost === null) {
+      material.onBeforeCompile = (shader): void => {
+        shader.uniforms['uFlash'] = flash;
+        shader.fragmentShader = shader.fragmentShader.replace('void main() {', 'uniform vec3 uFlash;\nvoid main() {').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += uFlash;');
+      };
+      material.customProgramCacheKey = (): string => FLASH_KEY;
+    } else {
+      makeGhost(material, flash, look.ghost);
+    }
     cloned.push(material);
   }
   return cloned;
@@ -367,6 +375,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const anchor: SkinnedMesh | undefined = bodies[0]?.mesh;
   const worn: SkinnedMesh[] = [];
   const wornMaterials: MeshStandardMaterial[] = [];
+  const heldMaterials: MeshStandardMaterial[] = [];
   let wornKey: string = '';
 
   return {
@@ -379,6 +388,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       if (key === heldKey) return;
       heldKey = attachmentIds.every((id: string): boolean => library.attachments.has(id)) ? key : '';
       for (const holder of held.splice(0, held.length)) holder.removeFromParent();
+      for (const material of heldMaterials.splice(0, heldMaterials.length)) material.dispose();
       for (const id of attachmentIds) {
         const attachment: LoadedAttachment | undefined = library.attachments.get(id);
         const socket: RigSocket | undefined = attachment === undefined ? undefined : def.sockets[attachment.def.socket];
@@ -388,7 +398,9 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         holder.position.set(socket.position[0], socket.position[1], socket.position[2]);
         holder.rotation.set(socket.rotationDegrees[0] * DEGREES, socket.rotationDegrees[1] * DEGREES, socket.rotationDegrees[2] * DEGREES);
         holder.scale.setScalar(socket.scale);
-        holder.add(attachment.template.clone(true));
+        const copy: Object3D = attachment.template.clone(true);
+        if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, flash, heldMaterials));
+        holder.add(copy);
         bone.add(holder);
         held.push(holder);
       }
@@ -408,7 +420,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const geometries: readonly BufferGeometry[] = fittedPieces(rig, wearable, anchor);
         wearable.pieces.forEach((piece: SkinnedMesh, index: number): void => {
           const geometry: BufferGeometry | undefined = geometries[index];
-          const cloned: MeshStandardMaterial[] = flashing(piece.material, { tint: wearable.def.tint, glow: WHITE }, flash);
+          const cloned: MeshStandardMaterial[] = flashing(piece.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost }, flash);
           const first: MeshStandardMaterial | undefined = cloned[0];
           if (geometry === undefined || first === undefined) return;
           const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
@@ -430,10 +442,14 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     setFlash(color: Color, amount: number): void {
       flash.value.copy(color).multiplyScalar(amount * CHARACTER.flashBoost);
     },
+    setOpacity(opacity: number): void {
+      if (look.ghost === null) return;
+      for (const material of [...materials, ...wornMaterials, ...heldMaterials]) material.opacity = opacity;
+    },
     dispose(): void {
       mixer.stopAllAction();
       mixer.uncacheRoot(model);
-      for (const material of [...materials, ...wornMaterials]) material.dispose();
+      for (const material of [...materials, ...wornMaterials, ...heldMaterials]) material.dispose();
     },
   };
 }

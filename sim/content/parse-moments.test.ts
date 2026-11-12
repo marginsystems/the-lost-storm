@@ -14,6 +14,12 @@ void test('a moment library reads its moments by id', (): void => {
   assert.equal(library.fade, 2);
 });
 
+void test('an echo reads an optional look', (): void => {
+  const dressed = momentLibrary({ ...LIBRARY, moments: [{ ...MOMENT, echoes: [{ ...ECHO, look: { rig: 'human_man', scale: 0.6, gear: [], wear: ['linen_shirt'] } }] }] }, 'moments');
+  assert.equal(dressed.defs.get('fire')?.echoes[0]?.look?.scale, 0.6);
+  assert.equal(momentLibrary(LIBRARY, 'moments').defs.get('fire')?.echoes[0]?.look, null);
+});
+
 void test('an echo outside its bubble is refused', (): void => {
   assert.throws((): void => {
     momentLibrary({ ...LIBRARY, moments: [{ ...MOMENT, echoes: [{ ...ECHO, x: 9 }] }] }, 'moments');

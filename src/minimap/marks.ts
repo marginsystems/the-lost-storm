@@ -3,7 +3,7 @@ import { allHold } from '../../sim/world/conditions.ts';
 import { isExplored } from '../../sim/world/exploration.ts';
 import type { QuestMark } from '../../sim/world/map-marks.ts';
 import { questMarks } from '../../sim/world/map-marks.ts';
-import type { GroundItem, World } from '../../sim/world/types.ts';
+import type { GroundItem, MomentState, World } from '../../sim/world/types.ts';
 import type { MapMatrix, MapPoint } from './projection.ts';
 import { edgeMark, headingOnMap, toMap } from './projection.ts';
 
@@ -30,6 +30,9 @@ export const MARKS = {
   waypointColour: '#8fe8d0',
   goldColour: '#c9a24e',
   shadowColour: 'rgba(0, 0, 0, 0.85)',
+  momentFill: 0.28,
+  momentEdge: 0.85,
+  momentMarkScale: 0.45,
 } as const;
 
 export interface MarkOptions {
@@ -83,6 +86,36 @@ function gate(context: CanvasRenderingContext2D, at: MapPoint, size: number, col
   context.stroke();
 }
 
+function momentShown(world: World, moment: MomentState): number {
+  switch (moment.phase) {
+    case 'mark':
+      return MARKS.momentMarkScale + (1 - MARKS.momentMarkScale) * Math.min(1, moment.phaseTime / world.content.moments.telegraph);
+    case 'dormant':
+    case 'awake':
+      return 1;
+    case 'fading':
+      return Math.max(0, 1 - moment.phaseTime / world.content.moments.fade);
+  }
+  return 1;
+}
+
+function drawMoment(context: CanvasRenderingContext2D, matrix: MapMatrix, world: World, moment: MomentState): void {
+  const at: MapPoint = toMap(matrix, moment.pos.x, moment.pos.z);
+  const rim: MapPoint = toMap(matrix, moment.pos.x + moment.def.radius, moment.pos.z);
+  const shown: number = momentShown(world, moment);
+  const radius: number = Math.hypot(rim.x - at.x, rim.y - at.y) * (moment.phase === 'fading' ? 1 : shown);
+  context.save();
+  context.beginPath();
+  context.arc(at.x, at.y, radius, 0, Math.PI * 2);
+  context.globalAlpha = MARKS.momentFill * shown;
+  context.fillStyle = moment.def.tint;
+  context.fill();
+  context.globalAlpha = MARKS.momentEdge * shown;
+  context.strokeStyle = moment.def.tint;
+  context.stroke();
+  context.restore();
+}
+
 function lootColour(world: World, ground: GroundItem): string {
   if (ground.content.kind === 'gold') return MARKS.goldColour;
   const rarity: string = ground.content.item.rarity;
@@ -110,6 +143,7 @@ export function drawMarks(context: CanvasRenderingContext2D, matrix: MapMatrix, 
   if (waypoint !== null && (isExplored(world, waypoint.x, waypoint.z) || world.waypoints.includes(zone.id))) {
     diamond(context, toMap(matrix, waypoint.x, waypoint.z), MARKS.waypoint * unit, MARKS.waypointColour);
   }
+  for (const moment of world.moments) drawMoment(context, matrix, world, moment);
   for (const ground of world.ground) {
     if (!isExplored(world, ground.pos.x, ground.pos.z)) continue;
     const at: MapPoint = toMap(matrix, ground.pos.x, ground.pos.z);

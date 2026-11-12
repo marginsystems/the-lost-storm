@@ -58,5 +58,12 @@ export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Eq
       if (monster !== undefined) add(monster.rig, monster.wear, monster.gear);
     }
   }
+  for (const entry of zone.moments?.table ?? []) {
+    for (const echo of content.moments.defs.get(entry.moment)?.echoes ?? []) {
+      const monster: MonsterDef | undefined = content.monsters.get(echo.monster);
+      if (monster === undefined) continue;
+      add(echo.look?.rig ?? monster.rig, echo.look?.wear ?? monster.wear, echo.look?.gear ?? monster.gear);
+    }
+  }
   return { rigs, wearables, attachments };
 }
