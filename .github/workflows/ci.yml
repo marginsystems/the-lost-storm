@@ -99,3 +99,38 @@ jobs:
               *) exit 1 ;;
             esac
           done
+
+  experiment:
+    name: Experiment ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [isolated4, isolated8, shard4, shard4semi, shard4expose]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - id: modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
+      - run: nproc; free -g; node --version; node -e "console.log(require('v8').getHeapStatistics().heap_size_limit/1e6)"
+      - if: matrix.variant == 'isolated4'
+        run: time npm run -s test:isolated > out.txt; tail -3 out.txt
+      - if: matrix.variant == 'isolated8'
+        run: time node --test --test-concurrency=8 'sim/**/*.test.ts' 'src/**/*.test.ts' 'test/**/*.test.ts' 'tools/**/*.test.ts' > out.txt; tail -3 out.txt
+      - if: matrix.variant == 'shard4'
+        run: time node tools/affected.ts --all --run --jobs 4 > out.txt; tail -1 out.txt
+      - if: matrix.variant == 'shard4semi'
+        run: time NODE_OPTIONS=--max-semi-space-size=64 node tools/affected.ts --all --run --jobs 4 > out.txt; tail -1 out.txt
+      - if: matrix.variant == 'shard4expose'
+        run: |
+          NODE_OPTIONS=--trace-gc node --test --experimental-test-isolation=none sim/audio.test.ts sim/world/step.test.ts > gc.txt 2>&1 || true
+          grep -c Mark-Compact gc.txt; grep -c Scavenge gc.txt; grep -E "Mark-Compact" gc.txt | tail -3
+          time node --test --experimental-test-isolation=none --test-reporter=spec sim/audio.test.ts | tail -12
+          time node --test --test-reporter=spec sim/audio.test.ts | tail -12
