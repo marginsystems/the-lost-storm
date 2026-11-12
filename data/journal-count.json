@@ -1,0 +1,5 @@
+{
+  "none": "No one else has picked it up.",
+  "one": "One other picked it up.",
+  "many": "{others} others picked it up."
+}

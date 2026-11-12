@@ -1,0 +1,22 @@
+.journal-count {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 22%;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  color: rgba(44, 50, 58, 0.62);
+  pointer-events: none;
+  opacity: 0;
+  translate: 0 6px;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.journal-count[data-shown='on'] {
+  opacity: 1;
+  translate: 0 0;
+}

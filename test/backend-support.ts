@@ -287,6 +287,8 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     return json(200, { accountId: target.accountId, token, outcome: known === undefined ? 'linked' : 'existing', name: target.name });
   };
   const stamp = (): string => new Date(clock.now).toISOString();
+  const tallied: Set<string> = new Set<string>();
+  const tally = (owner: ServerAccount | undefined): Response => json(200, { count: tallied.size, others: tallied.size - (owner !== undefined && tallied.has(owner.accountId) ? 1 : 0) });
   const handle = (url: string, init: RequestInit): Response => {
     const method: string = init.method ?? 'GET';
     const path: string = new URL(url).pathname;
@@ -319,7 +321,12 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     }
     const owner: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => token !== null && ((account.token === token && !account.guestRetired) || account.sessions.includes(token)));
     if (method === 'GET' && path === '/v1/leaderboard') return json(200, ladder(accounts, owner));
+    if (method === 'GET' && path === '/v1/tallies/journal') return tally(owner);
     if (owner === undefined) return json(401, { error: { code: 'unauthorized', message: 'no' } });
+    if (method === 'POST' && path === '/v1/tallies/journal') {
+      tallied.add(owner.accountId);
+      return tally(owner);
+    }
     if (method === 'PUT' && path === '/v1/character/name') {
       const raw: unknown = isFields(body) ? body['name'] : null;
       const refusal: string | null = nameRefusal(accounts, owner, raw);

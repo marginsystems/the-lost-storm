@@ -61,6 +61,11 @@ import type { NameVoiceClient, SpokenName } from './backend/name-voice.ts';
 import { createBrowserNameVoice } from './opening/browser-voice.ts';
 import type { Opening } from './opening/opening.ts';
 import { createOpening } from './opening/opening.ts';
+import { createBrowserJournalCountClient } from './journal-count/browser-journal-count.ts';
+import type { JournalCountClient } from './backend/journal-count-api.ts';
+import { loadCountLines } from './journal-count/count-lines.ts';
+import type { JournalCount } from './journal-count/journal-count.ts';
+import { createJournalCount } from './journal-count/journal-count.ts';
 import type { GlitchView } from './glitch/glitch-view.ts';
 import { createGlitchView } from './glitch/glitch-view.ts';
 import { createGlitchSettings } from './glitch/glitch-settings.ts';
@@ -420,6 +425,8 @@ async function start(): Promise<void> {
     },
     resume: (): void => startZoneAmbience(),
   });
+  const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(import.meta.env.VITE_SERVER_URL);
+  const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore() });
   if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }) };
 
   let playing: boolean = false;
@@ -544,6 +551,7 @@ async function start(): Promise<void> {
       actors.sync(simDt, world, input.hoveredId);
       loot.sync(world);
       opening.update();
+      journalCount?.update();
       camera.update(dt, world.player.pos.x, world.player.pos.z);
       effects.update(simVisualDt, world);
       ward.update(simVisualDt, world);
