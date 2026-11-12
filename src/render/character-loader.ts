@@ -1,15 +1,27 @@
-import type { AnimationAction, AnimationClip, BufferGeometry, IUniform, Material, Object3D } from 'three';
+import type { AnimationClip, BufferGeometry, IUniform, Material, Object3D } from 'three';
 import { AnimationMixer, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import type { AnimationKey, AttachmentDef, Content, RigDef, RigSocket, WearableDef } from '../../sim/content/types.ts';
-import { ANIMATION_KEYS } from '../../sim/content/types.ts';
+import type { AttachmentDef, Content, RigDef, RigSocket, WearableDef } from '../../sim/content/types.ts';
 import { fitToSkeleton, groupBodyParts, skinnedMeshes } from './wearables.ts';
+
+export interface ActionClip {
+  readonly clip: AnimationClip;
+  readonly impactTime: number;
+}
+
+export interface RigClipSet {
+  readonly idle: AnimationClip;
+  readonly run: AnimationClip;
+  readonly hit: readonly AnimationClip[];
+  readonly death: readonly AnimationClip[];
+  readonly actions: ReadonlyMap<string, ActionClip>;
+}
 
 export interface LoadedRig {
   readonly def: RigDef;
   readonly template: Object3D;
-  readonly clips: Readonly<Record<AnimationKey, AnimationClip>>;
+  readonly clips: RigClipSet;
   readonly bodyParts: readonly string[];
   readonly fitted: Map<string, readonly BufferGeometry[]>;
 }
@@ -39,8 +51,7 @@ export interface RigInstance {
   readonly def: RigDef;
   readonly root: Group;
   readonly mixer: AnimationMixer;
-  readonly actions: Readonly<Record<AnimationKey, AnimationAction>>;
-  readonly durations: Readonly<Record<AnimationKey, number>>;
+  readonly clips: RigClipSet;
   setGear(attachmentIds: readonly string[]): void;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   setFlash(color: Color, amount: number): void;
@@ -89,8 +100,7 @@ function stripRootMotion(clip: AnimationClip, bone: string): AnimationClip {
   return copy;
 }
 
-function pickClip(def: RigDef, key: AnimationKey, available: readonly AnimationClip[]): AnimationClip {
-  const wanted: string = def.clips[key].clip;
+function pickClip(def: RigDef, key: string, wanted: string, available: readonly AnimationClip[]): AnimationClip {
   const found: AnimationClip | undefined = available.find((clip: AnimationClip): boolean => clip.name === wanted);
   if (found === undefined) {
     const names: string = available.map((clip: AnimationClip): string => clip.name).join(', ');
@@ -103,7 +113,12 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   const main: GLTF = await loadModel(loader, def.url);
   const extras: GLTF[] = await Promise.all(def.animationUrls.map((url: string): Promise<GLTF> => loadModel(loader, url)));
   const available: AnimationClip[] = [...main.animations, ...extras.flatMap((extra: GLTF): AnimationClip[] => extra.animations)];
-  const clip = (key: AnimationKey): AnimationClip => pickClip(def, key, available);
+  const clip = (key: string, wanted: string): AnimationClip => pickClip(def, key, wanted, available);
+  const actions: Map<string, ActionClip> = new Map<string, ActionClip>();
+  for (const [key, entry] of Object.entries(def.clips.actions)) {
+    const found: AnimationClip = clip(key, entry.clip);
+    actions.set(key, { clip: found, impactTime: found.duration * entry.impactFraction });
+  }
   const template: Object3D = cloneSkinned(main.scene);
   const bodyParts: string[] = skinnedMeshes(template).reduce((names: string[], mesh: SkinnedMesh): string[] => {
     const grouped: string[] = groupBodyParts(mesh, def.bodyParts);
@@ -112,7 +127,13 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   return {
     def,
     template,
-    clips: { idle: clip('idle'), run: clip('run'), attack: clip('attack'), slam: clip('slam'), cast: clip('cast'), hit: clip('hit'), death: clip('death') },
+    clips: {
+      idle: clip('idle', def.clips.idle),
+      run: clip('run', def.clips.run),
+      hit: def.clips.hit.map((wanted: string): AnimationClip => clip('hit', wanted)),
+      death: def.clips.death.map((wanted: string): AnimationClip => clip('death', wanted)),
+      actions,
+    },
     bodyParts,
     fitted: new Map<string, readonly BufferGeometry[]>(),
   };
@@ -226,10 +247,6 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   }
 
   const mixer: AnimationMixer = new AnimationMixer(model);
-  const action = (key: AnimationKey): AnimationAction => mixer.clipAction(rig.clips[key]);
-  const actions: Record<AnimationKey, AnimationAction> = { idle: action('idle'), run: action('run'), attack: action('attack'), slam: action('slam'), cast: action('cast'), hit: action('hit'), death: action('death') };
-  const durations: Record<AnimationKey, number> = { idle: 0, run: 0, attack: 0, slam: 0, cast: 0, hit: 0, death: 0 };
-  for (const key of ANIMATION_KEYS) durations[key] = rig.clips[key].duration;
   const held: Group[] = [];
   let heldKey: string = '';
   const bodies: BodyMesh[] = skinnedMeshes(model).flatMap((mesh: SkinnedMesh): BodyMesh[] => (Array.isArray(mesh.material) ? [] : [{ mesh, skin: mesh.material }]));
@@ -242,8 +259,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     def,
     root,
     mixer,
-    actions,
-    durations,
+    clips: rig.clips,
     setGear(attachmentIds: readonly string[]): void {
       const key: string = attachmentIds.join('|');
       if (key === heldKey) return;

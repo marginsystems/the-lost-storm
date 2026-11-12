@@ -29,6 +29,12 @@ export interface ActionState {
   readonly direction: Vec2;
 }
 
+export interface ComboState {
+  readonly skill: string;
+  readonly hits: number;
+  timeLeft: number;
+}
+
 export interface ActorState {
   readonly id: number;
   pos: Vec2;
@@ -40,6 +46,7 @@ export interface ActorState {
   action: ActionState | null;
   cooldowns: Record<string, number>;
   stagger: number;
+  combo: ComboState | null;
   alive: boolean;
   deadTime: number;
   moving: boolean;

@@ -7,6 +7,7 @@ import monsters from '../../data/monsters.json' with { type: 'json' };
 import npcs from '../../data/npcs.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
 import quests from '../../data/quests.json' with { type: 'json' };
+import rigs from '../../data/rigs.json' with { type: 'json' };
 import skillTree from '../../data/skill-tree.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
@@ -494,4 +495,35 @@ void test('a prop placed with a condition is data only, and one that blocks the 
   assert.deepEqual(must(content.zones.get('stillhold'), 'town').props.at(-1), { prop: 'candle_triple', x: 26, z: 30, y: 0, rotationDegrees: 0, when: [{ ...lit, not: false }] });
   assert.ok(has(placed('pillar'), 'zone stillhold places prop pillar with a condition, but it blocks the way'));
   assert.ok(has(placed('no_such_prop'), 'zone stillhold places unknown prop no_such_prop'));
+});
+
+void test('a combo is data: its steps parse, and a combo without steps or with a wrong field is rejected', (): void => {
+  const step = { animation: 'attack', windup: 0.2, recovery: 0.2, damageScale: 1.5, areaScale: 1.1, knockbackScale: 2, stagger: 0.4, shake: 0.3, hitStop: 0.05 };
+  const parsed: Content = parseContent({ ...shipped, skills: [...skills, { ...extraSkill, combo: { window: 0.5, steps: [step] } }] });
+  assert.deepEqual(must(parsed.skills.get('ember_lash'), 'skill').combo, { window: 0.5, steps: [step] });
+  assert.equal(must(parseContent(extended()).skills.get('ember_lash'), 'skill').combo, null);
+  assert.throws((): Content => parseContent({ ...shipped, skills: [...skills, { ...extraSkill, combo: { window: 0.5, steps: [] } }] }), /combo\.steps: a combo needs at least one step/);
+  assert.throws((): Content => parseContent({ ...shipped, skills: [...skills, { ...extraSkill, combo: { window: 0, steps: [step] } }] }), /combo\.window/);
+  assert.throws((): Content => parseContent({ ...shipped, skills: [...skills, { ...extraSkill, combo: { window: 0.5, steps: [{ ...step, damageScale: 'big' }] } }] }), /steps\[0\]\.damageScale/);
+});
+
+void test('a rig lists its hit and death clips and names its action clips, and a skill whose clip the rig lacks is reported', (): void => {
+  const [first] = rigs;
+  const rig = must(first, 'first rig');
+  const parsed: Content = parseContent(shipped);
+  const hero = must(parsed.rigs.get(parsed.player.rig), 'hero rig');
+  assert.ok(hero.clips.death.length >= 2);
+  assert.ok(hero.runSpeed > 0);
+  assert.ok(must(hero.clips.actions['attack'], 'attack clip').impactFraction > 0);
+  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, death: [] } }] }), /clips\.death: a rig needs at least one death clip/);
+  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, hit: [] } }] }), /clips\.hit: a rig needs at least one hit clip/);
+  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, actions: { attack: { clip: 'Sword_Attack', impactFraction: 1 } } } }] }), /impactFraction/);
+  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, runSpeed: 0 }] }), /runSpeed/);
+  const lost: string[] = contentProblems(parseContent({ ...shipped, skills: [...skills, { ...extraSkill, animation: 'pirouette' }], monsters: [...monsters, { ...extraMonster, gear: [], wear: [] }] }));
+  assert.ok(lost.includes('monster ash_wraith uses skill ember_lash, but rig skeleton_thrall has no action clip pirouette'));
+  const step = { animation: 'backflip', windup: 0.2, recovery: 0.2, damageScale: 1, areaScale: 1, knockbackScale: 1, stagger: 0, shake: 0, hitStop: 0 };
+  const cleave: unknown = skills.find((entry: { readonly id: string }): boolean => entry.id === 'cleave');
+  const rest: unknown[] = skills.filter((entry: { readonly id: string }): boolean => entry.id !== 'cleave');
+  const chained: string[] = contentProblems(parseContent({ ...shipped, skills: [...rest, Object.assign({}, cleave, { combo: { window: 0.5, steps: [step] } })] }));
+  assert.ok(chained.includes('skill bar uses skill cleave, but rig skeleton_hero has no action clip backflip'));
 });

@@ -172,6 +172,7 @@ function spawnMonster(world: World, def: MonsterDef, packId: number, center: Vec
     action: null,
     cooldowns: {},
     stagger: 0,
+    combo: null,
     alive: true,
     deadTime: 0,
     moving: false,

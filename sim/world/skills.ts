@@ -1,4 +1,4 @@
-import type { ProjectileDelivery, SkillDef } from '../content/types.ts';
+import type { ComboStep, Delivery, ProjectileDelivery, SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot, facingOf, normalize, rotate } from '../math.ts';
 import { isSolid } from '../nav/grid.ts';
@@ -17,7 +17,38 @@ export function blockedReason(actor: Actor, skill: SkillDef): NoticeReason | nul
   return null;
 }
 
-export function startSkill(world: World, actor: Actor, skill: SkillDef, direction: ReadonlyVec2): void {
+function widened(delivery: Delivery, scale: number): Delivery {
+  if (delivery.type === 'arc') return { ...delivery, reach: delivery.reach * scale };
+  if (delivery.type === 'nova') return { ...delivery, radius: delivery.radius * scale };
+  return delivery;
+}
+
+export function comboHits(actor: Actor, skill: SkillDef): number {
+  const chain = actor.combo;
+  if (skill.combo === null || chain === null || chain.skill !== skill.id || chain.timeLeft <= 0) return 0;
+  return chain.hits > skill.combo.steps.length ? 0 : chain.hits;
+}
+
+export function chainedSkill(actor: Actor, skill: SkillDef): SkillDef {
+  const step: ComboStep | undefined = skill.combo?.steps[comboHits(actor, skill) - 1];
+  if (step === undefined) return skill;
+  return {
+    ...skill,
+    animation: step.animation,
+    windup: step.windup,
+    recovery: step.recovery,
+    delivery: widened(skill.delivery, step.areaScale),
+    damage: { weaponPercent: skill.damage.weaponPercent * step.damageScale, flatMin: skill.damage.flatMin * step.damageScale, flatMax: skill.damage.flatMax * step.damageScale },
+    knockback: skill.knockback * step.knockbackScale,
+    stagger: step.stagger,
+    shake: step.shake,
+    hitStop: step.hitStop,
+  };
+}
+
+export function startSkill(world: World, actor: Actor, requested: SkillDef, direction: ReadonlyVec2): void {
+  const hits: number = comboHits(actor, requested);
+  const skill: SkillDef = chainedSkill(actor, requested);
   const speed: number = actor.kind === 'player' && skill.scalesWithAttackSpeed ? Math.max(0.2, actor.stats.attackSpeed) : 1;
   const aim: Vec2 = normalize(direction, directionOf(actor.facing));
   const windup: number = skill.windup / speed;
@@ -27,6 +58,7 @@ export function startSkill(world: World, actor: Actor, skill: SkillDef, directio
   actor.facing = facingOf(aim);
   actor.moving = false;
   actor.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim };
+  actor.combo = requested.combo === null ? null : { skill: requested.id, hits: hits + 1, timeLeft: windup + recovery + requested.combo.window };
   world.events.push({ type: 'skill_start', actorId: actor.id, skill, direction: aim, windup, recovery });
 }
 

@@ -10,6 +10,7 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 |---|---|---|---|---|
 | Free Pack - Human Skeleton | PolyOne Studio | https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
 | Universal Animation Library (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library.txt](licenses/Quaternius-Universal-Animation-Library.txt) |
+| Universal Animation Library 2 (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary2.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library-2.txt](licenses/Quaternius-Universal-Animation-Library-2.txt) |
 | Modular Character Outfits - Fantasy (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/modularcharacteroutfitsfantasy.html | CC0 1.0 | [licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt](licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt) |
 | MakeHuman community garments (suits02, gloves01) | Donitz, Rehman Polanski, MRT (makehumancommunity.org) | http://www.makehumancommunity.org/clothes.html | CC0 1.0 | [licenses/MakeHuman-community-assets.txt](licenses/MakeHuman-community-assets.txt) |
 | KayKit Dungeon Remastered 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0 | CC0 1.0 | [licenses/KayKit-Dungeon-Remastered-LICENSE.txt](licenses/KayKit-Dungeon-Remastered-LICENSE.txt) |
@@ -25,13 +26,21 @@ Every humanoid uses one rig, the Universal Animation Library rig (53 `DEF-*` joi
 
 | File | What it is | Source | Licence |
 |---|---|---|---|
-| `public/models/characters/skeleton.glb` | The skeleton body used by the hero and both monsters | "Free Pack - Human Skeleton" by PolyOne Studio, fitted to the rig, decimated and repainted for Movement Lab (`blender/variant_skeleton.py` in that repository); lower-detail copies stripped here by `tools/build-characters.ts` | CC BY 4.0 |
+| `public/models/characters/skeleton.glb` | The skeleton body used by the hero, the townsfolk and every monster | "Free Pack - Human Skeleton" by PolyOne Studio, fitted to the rig, decimated and repainted for Movement Lab (`blender/variant_skeleton.py` in that repository); lower-detail copies stripped here by `tools/build-characters.ts` | CC BY 4.0 |
 | `public/models/animations/humanoid.glb` | The rig and 15 clips (idle, walk, jog, sprint, sword attack, punches, spell, hits, death, roll, landing) | Universal Animation Library (Standard) by Quaternius, Godot Asset Store build; the clips are picked out by `tools/build-characters.ts` | CC0 1.0 |
 
-Rebuild both with:
+| `public/models/animations/combat.glb` | 22 combat clips on the same rig: a three-swing sword chain, heavy slams, a sweep, a lunge, a dash, blocks, a shield bash, a claw lunge, a throw, a chop, a leap, a zombie idle, walk and scratch, and two more deaths | Universal Animation Library 2 (Standard) by Quaternius, `Unreal-Godot/UAL2_Standard.glb`, moved onto this rig by `tools/retarget-clips.ts` | CC0 1.0 |
+
+Rebuild the first two with:
 
 ```bash
 node tools/build-characters.ts <skeleton.glb> <character-with-clips.glb> public/models/characters/skeleton.glb public/models/animations/humanoid.glb
+```
+
+Universal Animation Library 2 ships on a rig with Unreal joint names (`pelvis`, `spine_01`, `hand_r`) and slightly different finger rest poses, so its clips cannot be loaded as they are. `tools/retarget-clips.ts` reads each joint's world rotation frame by frame, carries it onto the matching `DEF-*` joint with a correction for the two rest poses, scales the hip travel by the hip heights, and writes the result at 30 frames a second. `tools/combat-clips.json` lists the joint pairs and the clips: a clip is one or more parts of a source clip, each with an optional start, end, hold, playback rate or reversal, which is how a strike and its recovery become one clip, how a raised blade is held for a telegraph, and how standing up from the ground becomes a collapse. Rebuild with:
+
+```bash
+node tools/retarget-clips.ts public/models/animations/humanoid.glb <UAL2_Standard.glb> tools/combat-clips.json public/models/animations/combat.glb
 ```
 
 ## Weapons

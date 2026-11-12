@@ -37,6 +37,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     action: null,
     cooldowns: {},
     stagger: 0,
+    combo: null,
     alive: true,
     deadTime: 0,
     moving: false,

@@ -34,12 +34,6 @@ export interface SkillMod {
   readonly value: number;
 }
 
-export const ANIMATION_KEYS = ['idle', 'run', 'attack', 'slam', 'cast', 'hit', 'death'] as const;
-export type AnimationKey = (typeof ANIMATION_KEYS)[number];
-
-export const ACTION_ANIMATIONS = ['attack', 'slam', 'cast'] as const;
-export type ActionAnimation = (typeof ACTION_ANIMATIONS)[number];
-
 export const VFX_STYLES = ['slash', 'claw', 'shockwave', 'bolt', 'orb'] as const;
 export type VfxStyle = (typeof VFX_STYLES)[number];
 
@@ -77,12 +71,29 @@ export interface SkillVfx {
   readonly color: string;
 }
 
+export interface ComboStep {
+  readonly animation: string;
+  readonly windup: number;
+  readonly recovery: number;
+  readonly damageScale: number;
+  readonly areaScale: number;
+  readonly knockbackScale: number;
+  readonly stagger: number;
+  readonly shake: number;
+  readonly hitStop: number;
+}
+
+export interface SkillCombo {
+  readonly window: number;
+  readonly steps: readonly ComboStep[];
+}
+
 export interface SkillDef {
   readonly id: string;
   readonly name: string;
   readonly description: string;
   readonly icon: string;
-  readonly animation: ActionAnimation;
+  readonly animation: string;
   readonly manaCost: number;
   readonly cooldown: number;
   readonly windup: number;
@@ -96,6 +107,7 @@ export interface SkillDef {
   readonly shake: number;
   readonly hitStop: number;
   readonly vfx: SkillVfx;
+  readonly combo: SkillCombo | null;
 }
 
 export interface ChaserBehaviour {
@@ -249,9 +261,17 @@ export interface SkillTreeNodeDef {
   readonly skillMods: readonly SkillMod[];
 }
 
-export interface RigClip {
+export interface RigActionClip {
   readonly clip: string;
   readonly impactFraction: number;
+}
+
+export interface RigClips {
+  readonly idle: string;
+  readonly run: string;
+  readonly hit: readonly string[];
+  readonly death: readonly string[];
+  readonly actions: Readonly<Record<string, RigActionClip>>;
 }
 
 export type Triple = readonly [number, number, number];
@@ -277,7 +297,8 @@ export interface RigDef {
   readonly yawOffsetDegrees: number;
   readonly height: number;
   readonly rootMotionBone: string | null;
-  readonly clips: Readonly<Record<AnimationKey, RigClip>>;
+  readonly runSpeed: number;
+  readonly clips: RigClips;
   readonly sockets: Readonly<Record<string, RigSocket>>;
   readonly hiddenNodes: readonly string[];
   readonly bodyParts: Readonly<Record<string, readonly string[]>>;

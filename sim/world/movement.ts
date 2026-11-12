@@ -18,6 +18,9 @@ export function stepTimers(actor: ActorState, dt: number): void {
     actor.cooldowns[key] = Math.max(0, left);
   }
   actor.stagger = Math.max(0, actor.stagger - dt);
+  if (actor.combo === null) return;
+  actor.combo.timeLeft -= dt;
+  if (actor.combo.timeLeft <= 0) actor.combo = null;
 }
 
 export function stepKnock(grid: NavGrid, actor: ActorState, dt: number): void {

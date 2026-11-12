@@ -84,7 +84,7 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 | `src/main.ts` | Loads everything and runs the frame loop |
 | `public/models/` | GLB models. Every file is listed in [ASSETS.md](ASSETS.md) |
 | `blender/` | Blender scripts that build models: weapons, and clothing and armour converted from outfit packs to the shared rig |
-| `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file, `pack-gltf.ts` packs a `.gltf` with its buffers and textures into one `.glb` |
+| `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file, `retarget-clips.ts` moves clips from a rig with other joint names onto the shared rig (`combat-clips.json` lists which), `pack-gltf.ts` packs a `.gltf` with its buffers and textures into one `.glb` |
 | `test/rules.test.ts` | Repository rules: no comments, no type escape hatches, `sim/` stays free of rendering code, every model is credited |
 
 The renderer reads the world and the events `stepWorld` returns, and sends commands back. It never changes world state.
@@ -93,7 +93,7 @@ The renderer reads the world and the events `stepWorld` returns, and sends comma
 
 Content is data. None of these need a change to the game's logic; the one code edit is registering a new zone file in the content loader, described below:
 
-- **A skill**: add an entry to `data/skills.json`. `delivery` picks how it hits: `arc` (melee sweep), `nova` (ring around the user) or `projectile`. `windup`, `recovery`, `cooldown` and `manaCost` set its timing and cost; `knockback`, `stagger`, `shake`, `hitStop` and `vfx` set how it feels. Put it on the bar in `data/player.json` (`skillBar`, with key bindings) or give it to a monster.
+- **A skill**: add an entry to `data/skills.json`. `delivery` picks how it hits: `arc` (melee sweep), `nova` (ring around the user) or `projectile`. `windup`, `recovery`, `cooldown` and `manaCost` set its timing and cost; `knockback`, `stagger`, `shake`, `hitStop` and `vfx` set how it feels. `animation` names an action clip on the rig of whoever uses it. An optional `combo` (`window`, `steps`) makes the skill a chain: used again within `window` seconds of the last swing ending, it plays the next step instead, and each step has its own `animation`, `windup`, `recovery`, `stagger`, `shake` and `hitStop` and scales the skill's damage, area and knockback (`damageScale`, `areaScale`, `knockbackScale`). The steps scale the skill as the tree has changed it and keep its id, so passives, cooldown and sounds apply to the whole chain. Put it on the bar in `data/player.json` (`skillBar`, with key bindings) or give it to a monster.
 - **A monster**: add an entry to `data/monsters.json` with its `rig`, stats, `behaviour` (`chaser` or `ranged`), `skill` and `loot`, then add it to a pack in a zone file.
 - **An item**: add a base, an affix or a rarity to `data/items.json`. Its `slot` is one of `weapon`, `head`, `chest`, `hands`, `legs`, `feet` and `charm`. A weapon base's `visual` names the rig attachment to show in the hero's hand; an armour base's `wear` lists the wearables it puts on the body.
 - **Clothing or armour**: add an entry to `data/wearables.json` (see below) and name it in an item base's `wear`, or in the `wear` list of the player or a monster to dress them with nothing equipped.
@@ -122,19 +122,23 @@ A character is a rig entry in `data/rigs.json`. The loader (`src/render/characte
 {
   "id": "skeleton_hero",
   "url": "models/characters/skeleton.glb",
-  "animationUrls": ["models/animations/humanoid.glb"],
+  "animationUrls": ["models/animations/humanoid.glb", "models/animations/combat.glb"],
   "scale": 1.2,
   "yawOffsetDegrees": 0,
   "height": 1.85,
   "rootMotionBone": null,
+  "runSpeed": 6.4,
   "clips": {
-    "idle": { "clip": "Sword_Idle", "impactFraction": 0 },
-    "run": { "clip": "Jog_Fwd_Loop", "impactFraction": 0 },
-    "attack": { "clip": "Sword_Attack", "impactFraction": 0.3 },
-    "slam": { "clip": "Sword_Attack", "impactFraction": 0.3 },
-    "cast": { "clip": "Spell_Simple_Shoot", "impactFraction": 0.35 },
-    "hit": { "clip": "Hit_Chest", "impactFraction": 0 },
-    "death": { "clip": "Death01", "impactFraction": 0 }
+    "idle": "Sword_Idle",
+    "run": "Jog_Fwd_Loop",
+    "hit": ["Hit_Chest", "Hit_Head"],
+    "death": ["Death01", "Death_Knockback", "Death_Collapse"],
+    "actions": {
+      "attack": { "clip": "Sword_Combo_A", "impactFraction": 0.18 },
+      "attack_b": { "clip": "Sword_Combo_B", "impactFraction": 0.17 },
+      "slam": { "clip": "Sword_Slam", "impactFraction": 0.245 },
+      "cast": { "clip": "Spell_Simple_Shoot", "impactFraction": 0.35 }
+    }
   },
   "sockets": {
     "hand_r": { "bone": "DEF-hand.R", "position": [-0.03, 0.085, 0], "rotationDegrees": [90, 90, 0], "scale": 1 }
@@ -147,7 +151,8 @@ A character is a rig entry in `data/rigs.json`. The loader (`src/render/characte
 ```
 
 - `url` is the body. `animationUrls` lists GLB files whose clips are merged in, so one animation file serves every body on the same rig.
-- `clips` maps each animation the game needs to a clip name in those files. `impactFraction` is the point in the clip where the blow lands; the game speeds the clip up or down so that point meets the skill's `windup`. If a name is wrong, the error lists the clips the files do contain.
+- `clips` names the clips in those files. `idle` and `run` are one clip each. `hit` and `death` are lists, and one is picked at random each time, so a pack does not fall the same way. `actions` is the set of attack clips this rig can play, under names of your choosing: a skill's `animation` (and each combo step's) is one of those names, and the content check reports a skill given to a character whose rig lacks it. `impactFraction` is the point in the clip where the blow lands; the game speeds the clip up or down so that point meets the skill's `windup`, then plays the rest over the `recovery`. If a clip name is wrong, the error lists the clips the files do contain.
+- `runSpeed` is the ground speed the `run` clip matches at normal playback, so feet do not slide when a character is slower or faster.
 - `rootMotionBone` pins that bone's horizontal movement so a clip with root motion plays in place.
 - `sockets` are named mounting points: a bone plus an offset, rotation and scale.
 - `hiddenNodes` are nodes in the body file that are never shown.

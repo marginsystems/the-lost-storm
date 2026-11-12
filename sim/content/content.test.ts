@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { must, zoneOf } from '../../test/support.ts';
 import type { Vec2 } from '../math.ts';
@@ -15,7 +15,7 @@ import { stepWorld } from '../world/step.ts';
 import type { World, WorldEvent } from '../world/types.ts';
 import { enterZone } from '../world/zones.ts';
 import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, QuestDef, SkillTreeNodeDef, TalkDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
-import { ANIMATION_KEYS } from './types.ts';
+import { fields, items, text } from './read.ts';
 
 const content: Content = loadContent();
 
@@ -34,7 +34,40 @@ void test('every monster has its skill and rig, and every rig has every animatio
   }
   assert.ok(content.rigs.has(content.player.rig));
   for (const rig of content.rigs.values()) {
-    for (const key of ANIMATION_KEYS) assert.ok(rig.clips[key].clip.length > 0, `${rig.id} ${key}`);
+    assert.ok(rig.clips.hit.length > 0 && rig.clips.death.length > 0, `${rig.id} hit and death`);
+    assert.ok(Object.keys(rig.clips.actions).length > 0, `${rig.id} actions`);
+  }
+});
+
+const GLB = { jsonLength: 12, jsonStart: 20 } as const;
+
+function clipNames(path: string): string[] {
+  const file: Buffer = readFileSync(path);
+  const parsed: unknown = JSON.parse(file.subarray(GLB.jsonStart, GLB.jsonStart + file.readUInt32LE(GLB.jsonLength)).toString('utf8'));
+  return items(fields(parsed, path)['animations'], `${path}.animations`).map((entry: unknown): string => text(fields(entry, path), 'name', path));
+}
+
+void test('every clip a rig names is in the animation files it loads, and the hero dies in more than one way', (): void => {
+  for (const rig of content.rigs.values()) {
+    const shipped: Set<string> = new Set<string>(rig.animationUrls.flatMap((url: string): string[] => clipNames(`public/${url}`)));
+    const named: string[] = [rig.clips.idle, rig.clips.run, ...rig.clips.hit, ...rig.clips.death, ...Object.values(rig.clips.actions).map((entry: { readonly clip: string }): string => entry.clip)];
+    for (const clip of named) assert.ok(shipped.has(clip), `${rig.id} names clip ${clip}, which is not in ${rig.animationUrls.join(', ')}`);
+  }
+  const hero = must(content.rigs.get(content.player.rig), 'hero rig');
+  assert.ok(new Set<string>(hero.clips.death).size >= 2);
+  assert.ok(new Set<string>(hero.clips.hit).size >= 2);
+});
+
+void test('every skill on the bar and every monster skill has an action clip on the rig that uses it', (): void => {
+  const hero = must(content.rigs.get(content.player.rig), 'hero rig');
+  for (const binding of content.player.skillBar) {
+    const skill = must(content.skills.get(binding.skill), binding.skill);
+    for (const animation of [skill.animation, ...(skill.combo?.steps ?? []).map((step: { readonly animation: string }): string => step.animation)]) assert.ok(hero.clips.actions[animation] !== undefined, `${skill.id} ${animation}`);
+  }
+  for (const monster of content.monsters.values()) {
+    const rig = must(content.rigs.get(monster.rig), monster.rig);
+    const used: string[] = [monster.skill, ...(monster.boss?.phases ?? []).flatMap((phase: { readonly skills: readonly { readonly skill: string }[] }): string[] => phase.skills.map((entry: { readonly skill: string }): string => entry.skill))];
+    for (const id of used) assert.ok(rig.clips.actions[must(content.skills.get(id), id).animation] !== undefined, `${monster.id} ${id}`);
   }
 });
 

@@ -286,6 +286,7 @@ function respawn(world: World): void {
   player.life = player.maxLife;
   player.mana = player.stats.maxMana;
   player.cooldowns = {};
+  player.combo = null;
   placePlayer(world);
   clearProjectiles(world);
   for (const monster of world.monsters) {

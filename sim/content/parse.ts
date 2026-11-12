@@ -3,11 +3,11 @@ import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { byId, choice, choiceList, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   AffixDef,
-  AnimationKey,
   AttachmentDef,
   BossDef,
   BossPhase,
   BossSkill,
+  ComboStep,
   Condition,
   Content,
   Delivery,
@@ -24,10 +24,12 @@ import type {
   PropLight,
   QuestDef,
   RarityDef,
-  RigClip,
+  RigActionClip,
+  RigClips,
   RigDef,
   RigSocket,
   SkillBinding,
+  SkillCombo,
   SkillDef,
   SkillMod,
   SkillTreeNodeDef,
@@ -39,7 +41,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { ACTION_ANIMATIONS, AFFIX_POSITIONS, ANIMATION_KEYS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -84,6 +86,29 @@ function delivery(value: unknown, where: string): Delivery {
   };
 }
 
+function comboStep(value: unknown, where: string): ComboStep {
+  const source: Fields = fields(value, where);
+  return {
+    animation: text(source, 'animation', where),
+    windup: positive(source, 'windup', where),
+    recovery: numeric(source, 'recovery', where),
+    damageScale: positive(source, 'damageScale', where),
+    areaScale: positive(source, 'areaScale', where),
+    knockbackScale: numeric(source, 'knockbackScale', where),
+    stagger: numeric(source, 'stagger', where),
+    shake: numeric(source, 'shake', where),
+    hitStop: numeric(source, 'hitStop', where),
+  };
+}
+
+function skillCombo(value: unknown, where: string): SkillCombo | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  const steps: ComboStep[] = each(source['steps'], `${where}.steps`, comboStep);
+  if (steps.length === 0) throw new ContentError(`${where}.steps`, 'a combo needs at least one step after the opening hit');
+  return { window: positive(source, 'window', where), steps };
+}
+
 function skill(value: unknown, where: string): SkillDef {
   const source: Fields = fields(value, where);
   const damage: Fields = fields(source['damage'], `${where}.damage`);
@@ -93,7 +118,7 @@ function skill(value: unknown, where: string): SkillDef {
     name: text(source, 'name', where),
     description: text(source, 'description', where),
     icon: text(source, 'icon', where),
-    animation: choice(source, 'animation', ACTION_ANIMATIONS, where),
+    animation: text(source, 'animation', where),
     manaCost: numeric(source, 'manaCost', where),
     cooldown: numeric(source, 'cooldown', where),
     windup: numeric(source, 'windup', where),
@@ -107,6 +132,7 @@ function skill(value: unknown, where: string): SkillDef {
     shake: numeric(source, 'shake', where),
     hitStop: numeric(source, 'hitStop', where),
     vfx: { style: choice(vfx, 'style', VFX_STYLES, `${where}.vfx`), color: text(vfx, 'color', `${where}.vfx`) },
+    combo: skillCombo(source['combo'], `${where}.combo`),
   };
 }
 
@@ -250,13 +276,21 @@ function treeNode(value: unknown, where: string): SkillTreeNodeDef {
   };
 }
 
-function rigClips(value: unknown, where: string): Record<AnimationKey, RigClip> {
+function rigClips(value: unknown, where: string): RigClips {
   const source: Fields = fields(value, where);
-  const clip = (key: AnimationKey): RigClip => {
-    const entry: Fields = fields(source[key], `${where}.${key}`);
-    return { clip: text(entry, 'clip', `${where}.${key}`), impactFraction: numeric(entry, 'impactFraction', `${where}.${key}`) };
-  };
-  return { idle: clip('idle'), run: clip('run'), attack: clip('attack'), slam: clip('slam'), cast: clip('cast'), hit: clip('hit'), death: clip('death') };
+  const actionFields: Fields = fields(source['actions'], `${where}.actions`);
+  const actions: Record<string, RigActionClip> = {};
+  for (const key of Object.keys(actionFields)) {
+    const entry: Fields = fields(actionFields[key], `${where}.actions.${key}`);
+    const impactFraction: number = numeric(entry, 'impactFraction', `${where}.actions.${key}`);
+    if (impactFraction < 0 || impactFraction >= 1) throw new ContentError(`${where}.actions.${key}.impactFraction`, 'expected a number from 0 up to, but not including, 1');
+    actions[key] = { clip: text(entry, 'clip', `${where}.actions.${key}`), impactFraction };
+  }
+  const hit: string[] = textList(source, 'hit', where);
+  const death: string[] = textList(source, 'death', where);
+  if (hit.length === 0) throw new ContentError(`${where}.hit`, 'a rig needs at least one hit clip');
+  if (death.length === 0) throw new ContentError(`${where}.death`, 'a rig needs at least one death clip');
+  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, death, actions };
 }
 
 function triple(source: Fields, key: string, where: string): Triple {
@@ -279,7 +313,6 @@ function rig(value: unknown, where: string): RigDef {
   const socketFields: Fields = fields(source['sockets'], `${where}.sockets`);
   const sockets: Record<string, RigSocket> = {};
   for (const key of Object.keys(socketFields)) sockets[key] = rigSocket(socketFields[key], `${where}.sockets.${key}`);
-  for (const key of ANIMATION_KEYS) fields(fields(source['clips'], `${where}.clips`)[key], `${where}.clips.${key}`);
   const partFields: Fields = fields(source['bodyParts'], `${where}.bodyParts`);
   const bodyParts: Record<string, readonly string[]> = {};
   for (const key of Object.keys(partFields)) bodyParts[key] = textList(partFields, key, `${where}.bodyParts`);
@@ -291,6 +324,7 @@ function rig(value: unknown, where: string): RigDef {
     yawOffsetDegrees: numeric(source, 'yawOffsetDegrees', where),
     height: numeric(source, 'height', where),
     rootMotionBone: nullableText(source, 'rootMotionBone', where),
+    runSpeed: positive(source, 'runSpeed', where),
     clips: rigClips(source['clips'], `${where}.clips`),
     sockets,
     hiddenNodes: textList(source, 'hiddenNodes', where),
@@ -429,9 +463,17 @@ export function contentProblems(content: Content): string[] {
       for (const part of worn.hides) need(bodyParts[part] !== undefined, `${holder} wears ${id}, which hides ${part}, but rig ${rigId} has no body part ${part}`);
     }
   };
+  const animates = (holder: string, rigId: string, skillId: string): void => {
+    const used: SkillDef | undefined = content.skills.get(skillId);
+    const actions: RigClips['actions'] | undefined = content.rigs.get(rigId)?.clips.actions;
+    if (used === undefined || actions === undefined) return;
+    for (const animation of [used.animation, ...(used.combo?.steps ?? []).map((step: ComboStep): string => step.animation)]) need(actions[animation] !== undefined, `${holder} uses skill ${skillId}, but rig ${rigId} has no action clip ${animation}`);
+  };
   for (const def of content.monsters.values()) {
     need(content.skills.has(def.skill), `monster ${def.id} uses unknown skill ${def.skill}`);
     need(content.rigs.has(def.rig), `monster ${def.id} uses unknown rig ${def.rig}`);
+    animates(`monster ${def.id}`, def.rig, def.skill);
+    for (const phase of def.boss?.phases ?? []) for (const entry of phase.skills) animates(`boss ${def.id}`, def.rig, entry.skill);
     for (const held of def.gear) fits(`monster ${def.id}`, def.rig, held);
     wears(`monster ${def.id}`, def.rig, def.wear);
   }
@@ -445,7 +487,10 @@ export function contentProblems(content: Content): string[] {
     need(WORN_SLOTS.has(base.slot) === (base.material !== null), `item ${base.id} in slot ${base.slot} ${base.material === null ? 'needs a material' : 'cannot have a material'}`);
   }
   for (const worn of content.wearables.values()) wears(`wearable ${worn.id}`, content.player.rig, [worn.id]);
-  for (const binding of content.player.skillBar) need(content.skills.has(binding.skill), `skill bar uses unknown skill ${binding.skill}`);
+  for (const binding of content.player.skillBar) {
+    need(content.skills.has(binding.skill), `skill bar uses unknown skill ${binding.skill}`);
+    animates('skill bar', content.player.rig, binding.skill);
+  }
   for (const base of content.player.startingItems) need(content.itemBases.has(base), `starting item ${base} is unknown`);
   need(content.rarities.length > 0, 'items need at least one rarity');
   const nodeIds: Set<string> = new Set<string>(content.skillTree.map((node: SkillTreeNodeDef): string => node.id));

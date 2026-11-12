@@ -1,8 +1,7 @@
-import type { AnimationAction } from 'three';
+import type { AnimationAction, AnimationClip } from 'three';
 import { Color, LoopOnce, LoopRepeat } from 'three';
-import type { ActionAnimation, AnimationKey } from '../../sim/content/types.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
-import type { RigInstance } from './character-loader.ts';
+import type { ActionClip, RigInstance } from './character-loader.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -22,13 +21,21 @@ export const ACTOR = {
   npcTurnRate: 6,
   minActionSpeed: 0.35,
   maxActionSpeed: 5,
+  minFollowSpeed: 0.6,
+  deathSpeed: 1.25,
   sinkDelay: 3.4,
   sinkSpeed: 1.1,
   riseDepth: 2.4,
-  runReferenceSpeed: 6.4,
   minRunSpeed: 0.7,
   maxRunSpeed: 1.7,
 } as const;
+
+export type Chance = () => number;
+
+interface FollowThrough {
+  left: number;
+  readonly speed: number;
+}
 
 export interface ActorPose {
   readonly pos: ReadonlyVec2;
@@ -49,7 +56,7 @@ export interface ActorView {
   readonly rig: RigInstance;
   readonly height: number;
   sync(dt: number, actor: ActorPose, options: SyncOptions): void;
-  startAction(animation: ActionAnimation, windup: number, recovery: number): void;
+  startAction(animation: string, windup: number, recovery: number): void;
   interrupt(): void;
   hit(color: Color, strength: number, stagger: boolean): void;
   die(): void;
@@ -66,8 +73,17 @@ function turnToward(current: number, target: number, maxStep: number): number {
   return current + Math.sign(delta) * maxStep;
 }
 
-export function createActorView(rig: RigInstance, scale: number, facing: number, hoverTint: number = ACTOR.hostileHover): ActorView {
-  let current: AnimationKey = 'idle';
+function clamped(value: number, low: number, high: number): number {
+  return Math.min(high, Math.max(low, value));
+}
+
+function oneOf(clips: readonly AnimationClip[], chance: Chance): AnimationClip | null {
+  return clips[Math.min(clips.length - 1, Math.floor(chance() * clips.length))] ?? null;
+}
+
+export function createActorView(rig: RigInstance, scale: number, facing: number, hoverTint: number = ACTOR.hostileHover, chance: Chance = Math.random): ActorView {
+  let current: AnimationAction = rig.mixer.clipAction(rig.clips.idle);
+  let follow: FollowThrough | null = null;
   let oneShot: number = 0;
   let dead: boolean = false;
   let flash: number = 0;
@@ -79,15 +95,16 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   const mixed: Color = new Color();
   rig.root.scale.setScalar(scale);
   rig.root.rotation.y = yaw;
-  rig.actions.idle.play();
+  current.play();
 
-  const play = (key: AnimationKey, fade: number, speed: number, once: boolean, restart: boolean): void => {
-    const next: AnimationAction = rig.actions[key];
-    const previous: AnimationAction = rig.actions[current];
-    if (key === current && !restart) {
+  const play = (clip: AnimationClip, fade: number, speed: number, once: boolean, restart: boolean): void => {
+    const next: AnimationAction = rig.mixer.clipAction(clip);
+    const previous: AnimationAction = current;
+    if (next === previous && !restart) {
       next.timeScale = speed;
       return;
     }
+    follow = null;
     next.enabled = true;
     next.reset();
     next.setLoop(once ? LoopOnce : LoopRepeat, once ? 1 : Infinity);
@@ -96,7 +113,14 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     next.setEffectiveWeight(1);
     if (previous !== next) next.crossFadeFrom(previous, fade, false);
     next.play();
-    current = key;
+    current = next;
+  };
+
+  const react = (): void => {
+    const clip: AnimationClip | null = oneOf(rig.clips.hit, chance);
+    if (clip === null) return;
+    play(clip, ACTOR.hitFade, ACTOR.hitSpeed, true, true);
+    oneShot = ACTOR.hitTime;
   };
 
   return {
@@ -115,10 +139,17 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
           oneShot -= dt;
           if (!actor.busy && actor.moving) oneShot = 0;
         }
+        if (follow !== null) {
+          follow.left -= dt;
+          if (follow.left <= 0) {
+            current.timeScale = follow.speed;
+            follow = null;
+          }
+        }
         if (oneShot <= 0) {
           const run: boolean = actor.moving;
-          const speed: number = run ? Math.min(ACTOR.maxRunSpeed, Math.max(ACTOR.minRunSpeed, options.moveSpeed / ACTOR.runReferenceSpeed)) : 1;
-          play(run ? 'run' : 'idle', ACTOR.locomotionFade, speed, false, false);
+          const speed: number = run ? clamped(options.moveSpeed / rig.def.runSpeed, ACTOR.minRunSpeed, ACTOR.maxRunSpeed) : 1;
+          play(run ? rig.clips.run : rig.clips.idle, ACTOR.locomotionFade, speed, false, false);
         }
       }
       flash = Math.max(0, flash - ACTOR.flashDecay * dt);
@@ -131,36 +162,34 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       rig.setFlash(mixed, Math.max(flash, hoverAmount));
       rig.mixer.update(dt);
     },
-    startAction(animation: ActionAnimation, windup: number, recovery: number): void {
-      if (dead) return;
-      const impact: number = rig.durations[animation] * rig.def.clips[animation].impactFraction;
-      const speed: number = impact > 0 && windup > 0 ? Math.min(ACTOR.maxActionSpeed, Math.max(ACTOR.minActionSpeed, impact / windup)) : 1;
-      play(animation, ACTOR.actionFade, speed, true, true);
+    startAction(animation: string, windup: number, recovery: number): void {
+      const entry: ActionClip | undefined = rig.clips.actions.get(animation);
+      if (dead || entry === undefined) return;
+      const timed: boolean = entry.impactTime > 0 && windup > 0;
+      play(entry.clip, ACTOR.actionFade, timed ? clamped(entry.impactTime / windup, ACTOR.minActionSpeed, ACTOR.maxActionSpeed) : 1, true, true);
       oneShot = windup + recovery + ACTOR.actionTail;
+      if (timed) follow = { left: windup, speed: clamped((entry.clip.duration - entry.impactTime) / (recovery + ACTOR.actionTail), ACTOR.minFollowSpeed, ACTOR.maxActionSpeed) };
     },
     interrupt(): void {
-      if (dead) return;
-      play('hit', ACTOR.hitFade, ACTOR.hitSpeed, true, true);
-      oneShot = ACTOR.hitTime;
+      if (!dead) react();
     },
     hit(color: Color, strength: number, stagger: boolean): void {
       flashColor.copy(color);
       flash = Math.max(flash, strength);
       punch = Math.max(punch, strength);
-      if (dead || !stagger) return;
-      play('hit', ACTOR.hitFade, ACTOR.hitSpeed, true, true);
-      oneShot = ACTOR.hitTime;
+      if (!dead && stagger) react();
     },
     die(): void {
       if (dead) return;
       dead = true;
       oneShot = 0;
-      play('death', ACTOR.deathFade, 1.25, true, true);
+      const clip: AnimationClip | null = oneOf(rig.clips.death, chance);
+      if (clip !== null) play(clip, ACTOR.deathFade, ACTOR.deathSpeed, true, true);
     },
     revive(): void {
       dead = false;
       oneShot = 0;
-      play('idle', ACTOR.locomotionFade, 1, false, true);
+      play(rig.clips.idle, ACTOR.locomotionFade, 1, false, true);
     },
     setHover(hovered: boolean): void {
       hover = hovered;

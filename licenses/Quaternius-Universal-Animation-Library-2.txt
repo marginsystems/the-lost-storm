@@ -1,0 +1,19 @@
+Universal Animation Library 2 (Standard) by Quaternius
+https://quaternius.com/packs/universalanimationlibrary2.html
+https://quaternius.itch.io/universal-animation-library-2
+
+License: Creative Commons Zero (CC0 1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Free to use in personal, educational and commercial projects. Credit is not required; we credit Quaternius anyway.
+
+The License.txt inside the downloaded archive (UAL2_Standard.zip) reads:
+
+    License:
+    CC0 1.0 Universal (CC0 1.0)
+    Public Domain Dedication
+    https://creativecommons.org/publicdomain/zero/1.0/
+
+    Models by @Quaternius
+
+File in this repository: public/models/animations/combat.glb (22 clips cut from 21 of the library's clips and moved onto the Universal Animation Library 1 rig by tools/retarget-clips.ts).

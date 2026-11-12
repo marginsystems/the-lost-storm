@@ -3,40 +3,55 @@
     "id": "skeleton_hero",
     "url": "models/characters/skeleton.glb",
     "animationUrls": [
-      "models/animations/humanoid.glb"
+      "models/animations/humanoid.glb",
+      "models/animations/combat.glb"
     ],
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
+    "runSpeed": 6.4,
     "clips": {
-      "idle": {
-        "clip": "Sword_Idle",
-        "impactFraction": 0
-      },
-      "run": {
-        "clip": "Jog_Fwd_Loop",
-        "impactFraction": 0
-      },
-      "attack": {
-        "clip": "Sword_Attack",
-        "impactFraction": 0.3
-      },
-      "slam": {
-        "clip": "Sword_Attack",
-        "impactFraction": 0.3
-      },
-      "cast": {
-        "clip": "Spell_Simple_Shoot",
-        "impactFraction": 0.35
-      },
-      "hit": {
-        "clip": "Hit_Chest",
-        "impactFraction": 0
-      },
-      "death": {
-        "clip": "Death01",
-        "impactFraction": 0
+      "idle": "Sword_Idle",
+      "run": "Jog_Fwd_Loop",
+      "hit": [
+        "Hit_Chest",
+        "Hit_Head"
+      ],
+      "death": [
+        "Death01",
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "actions": {
+        "attack": {
+          "clip": "Sword_Combo_A",
+          "impactFraction": 0.18
+        },
+        "attack_b": {
+          "clip": "Sword_Combo_B",
+          "impactFraction": 0.17
+        },
+        "attack_c": {
+          "clip": "Sword_Combo_C",
+          "impactFraction": 0.325
+        },
+        "slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245
+        },
+        "slam_charged": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38
+        },
+        "sweep": {
+          "clip": "Sword_Sweep",
+          "impactFraction": 0.64
+        },
+        "cast": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
+        }
       }
     },
     "sockets": {
@@ -127,40 +142,51 @@
     "id": "skeleton_thrall",
     "url": "models/characters/skeleton.glb",
     "animationUrls": [
-      "models/animations/humanoid.glb"
+      "models/animations/humanoid.glb",
+      "models/animations/combat.glb"
     ],
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
+    "runSpeed": 6.4,
     "clips": {
-      "idle": {
-        "clip": "Idle_Loop",
-        "impactFraction": 0
-      },
-      "run": {
-        "clip": "Jog_Fwd_Loop",
-        "impactFraction": 0
-      },
-      "attack": {
-        "clip": "Sword_Attack",
-        "impactFraction": 0.3
-      },
-      "slam": {
-        "clip": "Sword_Attack",
-        "impactFraction": 0.3
-      },
-      "cast": {
-        "clip": "Spell_Simple_Shoot",
-        "impactFraction": 0.35
-      },
-      "hit": {
-        "clip": "Hit_Head",
-        "impactFraction": 0
-      },
-      "death": {
-        "clip": "Death01",
-        "impactFraction": 0
+      "idle": "Idle_Loop",
+      "run": "Jog_Fwd_Loop",
+      "hit": [
+        "Hit_Head",
+        "Hit_Chest"
+      ],
+      "death": [
+        "Death01",
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "actions": {
+        "attack": {
+          "clip": "Sword_Attack",
+          "impactFraction": 0.3
+        },
+        "chop": {
+          "clip": "Chop",
+          "impactFraction": 0.8
+        },
+        "slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245
+        },
+        "slam_charged": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38
+        },
+        "cast": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
+        },
+        "throw": {
+          "clip": "Throw",
+          "impactFraction": 0.28
+        }
       }
     },
     "sockets": {
@@ -251,40 +277,47 @@
     "id": "skeleton_caster",
     "url": "models/characters/skeleton.glb",
     "animationUrls": [
-      "models/animations/humanoid.glb"
+      "models/animations/humanoid.glb",
+      "models/animations/combat.glb"
     ],
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
+    "runSpeed": 6.4,
     "clips": {
-      "idle": {
-        "clip": "Idle_Torch_Loop",
-        "impactFraction": 0
-      },
-      "run": {
-        "clip": "Walk_Loop",
-        "impactFraction": 0
-      },
-      "attack": {
-        "clip": "Spell_Simple_Shoot",
-        "impactFraction": 0.35
-      },
-      "slam": {
-        "clip": "Spell_Simple_Shoot",
-        "impactFraction": 0.35
-      },
-      "cast": {
-        "clip": "Spell_Simple_Shoot",
-        "impactFraction": 0.35
-      },
-      "hit": {
-        "clip": "Hit_Chest",
-        "impactFraction": 0
-      },
-      "death": {
-        "clip": "Death01",
-        "impactFraction": 0
+      "idle": "Idle_Torch_Loop",
+      "run": "Walk_Loop",
+      "hit": [
+        "Hit_Chest",
+        "Hit_Head"
+      ],
+      "death": [
+        "Death01",
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "actions": {
+        "attack": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
+        },
+        "cast": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
+        },
+        "throw": {
+          "clip": "Throw",
+          "impactFraction": 0.28
+        },
+        "slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245
+        },
+        "slam_charged": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38
+        }
       }
     },
     "sockets": {
@@ -375,40 +408,51 @@
     "id": "skeleton_townsfolk",
     "url": "models/characters/skeleton.glb",
     "animationUrls": [
-      "models/animations/humanoid.glb"
+      "models/animations/humanoid.glb",
+      "models/animations/combat.glb"
     ],
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
+    "runSpeed": 6.4,
     "clips": {
-      "idle": {
-        "clip": "Idle_Loop",
-        "impactFraction": 0
-      },
-      "run": {
-        "clip": "Walk_Loop",
-        "impactFraction": 0
-      },
-      "attack": {
-        "clip": "Sword_Attack",
-        "impactFraction": 0.3
-      },
-      "slam": {
-        "clip": "Sword_Attack",
-        "impactFraction": 0.3
-      },
-      "cast": {
-        "clip": "Spell_Simple_Shoot",
-        "impactFraction": 0.35
-      },
-      "hit": {
-        "clip": "Hit_Head",
-        "impactFraction": 0
-      },
-      "death": {
-        "clip": "Death01",
-        "impactFraction": 0
+      "idle": "Idle_Loop",
+      "run": "Walk_Loop",
+      "hit": [
+        "Hit_Head",
+        "Hit_Chest"
+      ],
+      "death": [
+        "Death01",
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "actions": {
+        "attack": {
+          "clip": "Sword_Attack",
+          "impactFraction": 0.3
+        },
+        "chop": {
+          "clip": "Chop",
+          "impactFraction": 0.8
+        },
+        "slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245
+        },
+        "slam_charged": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38
+        },
+        "cast": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
+        },
+        "throw": {
+          "clip": "Throw",
+          "impactFraction": 0.28
+        }
       }
     },
     "sockets": {
