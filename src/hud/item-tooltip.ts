@@ -1,4 +1,6 @@
 import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, RarityDef } from '../../sim/content/types.ts';
+import { compareItems } from '../../sim/item-compare.ts';
+import type { StatDifference } from '../../sim/item-compare.ts';
 import type { ItemLine } from '../../sim/items.ts';
 import { baseOf, itemLines, itemName, rarityOf, slotOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
@@ -28,9 +30,9 @@ function appendLines(parent: HTMLElement, content: Content, item: ItemInstance):
   for (const line of lines) label(`tip-line ${line.source}`, line.text, parent);
 }
 
-export function itemTooltip(api: HudApi, item: ItemInstance, equipped: ItemInstance | null, hint: string): HTMLElement {
+function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null, hint: string | null, className: string): HTMLElement {
   const content: Content = api.world.content;
-  const root: HTMLDivElement = el('div', 'tip', null);
+  const root: HTMLDivElement = el('div', className, null);
   const rarity: RarityDef = rarityOf(content, item);
   const slot: ItemSlot | null = slotOf(content, item);
   const base: ItemBaseDef | null = baseOf(content, item);
@@ -48,12 +50,22 @@ export function itemTooltip(api: HudApi, item: ItemInstance, equipped: ItemInsta
   el('div', 'tip-sep', root);
   appendLines(root, content, item);
   if (equipped !== null) {
+    const differences: StatDifference[] = compareItems(content, item, equipped);
     el('div', 'tip-sep', root);
-    label('tip-sub', 'Currently equipped', root);
-    const name: HTMLDivElement = label('tip-name', itemName(content, equipped), root);
-    name.style.color = rarityOf(content, equipped).color;
-    appendLines(root, content, equipped);
+    if (differences.length === 0) label('tip-sub', 'Same as equipped', root);
+    for (const difference of differences) label(`tip-diff ${difference.better ? 'better' : 'worse'}`, difference.text, root);
   }
-  label('tip-hint', hint, root);
+  if (hint !== null) label('tip-hint', hint, root);
   return root;
+}
+
+export function itemTooltip(api: HudApi, item: ItemInstance, equipped: ItemInstance | null, hint: string): HTMLElement {
+  const pair: HTMLDivElement = el('div', 'tip-pair', null);
+  pair.append(itemCard(api, item, equipped, hint, 'tip'));
+  if (equipped !== null) {
+    const side: HTMLElement = itemCard(api, equipped, null, null, 'tip tip-equipped');
+    label('tip-sub', 'Equipped', side);
+    pair.append(side);
+  }
+  return pair;
 }

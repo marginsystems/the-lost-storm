@@ -227,3 +227,32 @@
   object-fit: contain;
   user-select: none;
 }
+
+.tip-pair {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tip-equipped {
+  display: none;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.hud-tooltip.compare .tip-equipped {
+  display: flex;
+  animation: hud-tip var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.hud-tooltip.compare {
+  max-width: 560px;
+}
+
+.tip-diff.better {
+  color: #7fd17a;
+}
+
+.tip-diff.worse {
+  color: #e0645a;
+}

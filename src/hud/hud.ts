@@ -1,4 +1,6 @@
-import type { WorldEvent } from '../../sim/world/types.ts';
+import type { ItemSlot } from '../../sim/content/types.ts';
+import { slotOf } from '../../sim/items.ts';
+import type { ItemInstance, WorldEvent } from '../../sim/world/types.ts';
 import { onWaypoint } from '../../sim/world/waypoints.ts';
 import atlasCss from './atlas.css?inline';
 import { createBanners } from './banners.ts';
@@ -24,6 +26,7 @@ import { createGlobes } from './globes.ts';
 import type { Globes } from './globes.ts';
 import hudCss from './hud.css?inline';
 import type { Hud, HudApi, HudPanel } from './hud-api.ts';
+import { itemTooltip } from './item-tooltip.ts';
 import { createInventoryPanel } from './inventory-panel.ts';
 import { createMapPanel } from './map-panel.ts';
 import type { MapPanel } from './map-panel.ts';
@@ -45,6 +48,7 @@ import volumeCss from './volume.css?inline';
 import { createVolumeControl } from './volume-panel.ts';
 import type { VolumeControl } from './volume-panel.ts';
 
+const GROUND_HINT: string = 'Click to pick up';
 const PANEL_IDS: readonly HudPanel[] = ['inventory', 'character', 'tree', 'map'];
 
 export function createHud(root: HTMLElement, api: HudApi): Hud {
@@ -235,6 +239,17 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
         }
       }
+    },
+    showGroundItem(item: ItemInstance, x: number, y: number): void {
+      const slot: ItemSlot | null = slotOf(api.world.content, item);
+      const equipped: ItemInstance | null = slot === null ? null : api.world.player.equipped[slot];
+      tooltip.show(itemTooltip(api, item, equipped, GROUND_HINT), x, y);
+    },
+    moveGroundItem(x: number, y: number): void {
+      tooltip.move(x, y);
+    },
+    hideGroundItem(): void {
+      tooltip.hide();
     },
     isPointerOverUi(): boolean {
       return hovered.size > 0;

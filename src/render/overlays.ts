@@ -1,6 +1,7 @@
 import { Vector2 } from 'three';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
+import type { ItemInstance } from '../../sim/world/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import { hasNews } from '../../sim/world/dialogue.ts';
 import type { GroundItem, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
@@ -9,12 +10,20 @@ import type { TargetBar } from '../hud/target-bar.ts';
 import { createHealthBars } from './health-bars.ts';
 import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
+import { stackLabels } from './label-stack.ts';
+import type { LabelBox } from './label-stack.ts';
 
 export const OVERLAYS = {
   numberLife: 1,
   numberDrift: 26,
   labelLift: 1.35,
   labelExit: 0.26,
+  labelNear: 9,
+  labelGap: 2,
+  labelHeight: 20,
+  labelWidth: 90,
+  labelShownRank: 1,
+  altKey: 'Alt',
   numberHeight: 0.75,
   exitLift: 2.6,
   npcLift: 0.5,
@@ -35,6 +44,10 @@ interface LootLabel {
   readonly element: HTMLDivElement;
   readonly ground: GroundItem;
   leaving: number;
+  rank: number;
+  width: number;
+  height: number;
+  shown: boolean;
 }
 
 interface ExitLabel {
@@ -63,6 +76,9 @@ interface LeavingLabel {
 export interface OverlayHooks {
   heightOf(actorId: number): number;
   onPickup(groundId: number): void;
+  onLootEnter(item: ItemInstance, x: number, y: number): void;
+  onLootMove(x: number, y: number): void;
+  onLootLeave(): void;
   onTravel(exit: string): void;
   onTalk(npcId: number): void;
   onWaypoint(): void;
@@ -84,6 +100,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const labels: Map<number, LootLabel> = new Map<number, LootLabel>();
   let exits: ExitLabel[] = [];
   let labelHoverId: number | null = null;
+  let showAll: boolean = false;
   let exitsOf: ZoneDef | null = null;
   let aimed: string | null = null;
   let people: NpcLabel[] = [];
@@ -99,6 +116,15 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   }
   const healthBars: HealthBars = createHealthBars(root, camera);
   const targetBar: TargetBar = createTargetBar(root);
+
+  const setAlt = (event: KeyboardEvent): void => {
+    if (event.key === OVERLAYS.altKey) showAll = event.type === 'keydown';
+  };
+  window.addEventListener('keydown', setAlt);
+  window.addEventListener('keyup', setAlt);
+  window.addEventListener('blur', (): void => {
+    showAll = false;
+  });
 
   const float = (text: string, kind: string, x: number, y: number, z: number): void => {
     const element: HTMLDivElement = document.createElement('div');
@@ -124,8 +150,13 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       event.stopPropagation();
       if (event.button === 0) hooks.onPickup(ground.id);
     });
+    const item: ItemInstance = ground.content.item;
+    element.addEventListener('pointerenter', (event: PointerEvent): void => hooks.onLootEnter(item, event.clientX, event.clientY));
+    element.addEventListener('pointermove', (event: PointerEvent): void => hooks.onLootMove(event.clientX, event.clientY));
+    element.addEventListener('pointerleave', (): void => hooks.onLootLeave());
     labelLayer.append(element);
-    labels.set(ground.id, { element, ground, leaving: -1 });
+    const rank: number = world.content.rarities.findIndex((rarity): boolean => rarity.id === item.rarity);
+    labels.set(ground.id, { element, ground, leaving: -1, rank, width: OVERLAYS.labelWidth, height: OVERLAYS.labelHeight, shown: true });
   };
 
   const showExits = (world: World): void => {
@@ -321,6 +352,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       targetBar.update(dt, world.monsters, hoveredId);
 
       for (const ground of world.ground) labelFor(world, ground);
+      const boxes: LabelBox[] = [];
       for (const [id, label] of labels) {
         if (label.leaving >= 0) {
           label.leaving -= dt;
@@ -332,8 +364,28 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         } else if (!world.ground.includes(label.ground)) {
           label.leaving = OVERLAYS.labelExit;
           label.element.classList.add('taken');
+          hooks.onLootLeave();
+        }
+        const near: boolean = Math.hypot(label.ground.pos.x - world.player.pos.x, label.ground.pos.z - world.player.pos.z) <= OVERLAYS.labelNear;
+        const shown: boolean = showAll || near || label.rank >= OVERLAYS.labelShownRank;
+        if (shown !== label.shown) {
+          label.shown = shown;
+          label.element.classList.toggle('dim', !shown);
+        }
+        const inner: Element | null = label.element.firstElementChild;
+        if (inner instanceof HTMLElement && inner.offsetWidth > 0) {
+          label.width = inner.offsetWidth;
+          label.height = inner.offsetHeight;
         }
         camera.project(label.ground.pos.x, OVERLAYS.labelLift, label.ground.pos.z, point);
+        if (shown) boxes.push({ id, x: point.x, y: point.y, width: label.width, height: label.height });
+        else place(label.element, point);
+      }
+      const lifts: Map<number, number> = stackLabels(boxes, OVERLAYS.labelGap);
+      for (const box of boxes) {
+        const label: LootLabel | undefined = labels.get(box.id);
+        if (label === undefined) continue;
+        point.set(box.x, box.y + (lifts.get(box.id) ?? 0));
         place(label.element, point);
       }
 

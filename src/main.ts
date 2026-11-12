@@ -223,7 +223,13 @@ async function start(): Promise<void> {
   const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send, itemImage, audio: controls, playUi, voice });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
     heightOf: (id: number): number => actors.heightOf(id),
-    onPickup: (groundId: number): void => send({ type: 'pickup', groundId }),
+    onPickup: (groundId: number): void => {
+      hud.hideGroundItem();
+      send({ type: 'pickup', groundId });
+    },
+    onLootEnter: (item: ItemInstance, x: number, y: number): void => hud.showGroundItem(item, x, y),
+    onLootMove: (x: number, y: number): void => hud.moveGroundItem(x, y),
+    onLootLeave: (): void => hud.hideGroundItem(),
     onTravel: (exit: string): void => send({ type: 'travel', exit }),
     onTalk: (npcId: number): void => send({ type: 'talk', npcId }),
     onWaypoint: (): void => {

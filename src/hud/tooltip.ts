@@ -14,7 +14,12 @@ export interface Tooltip {
 export function createTooltip(root: HTMLElement): Tooltip {
   const node: HTMLDivElement = el('div', 'hud-tooltip', root);
 
+  let shifted: boolean = false;
+  let lastX: number = 0;
+  let lastY: number = 0;
   const place = (x: number, y: number): void => {
+    lastX = x;
+    lastY = y;
     const width: number = node.offsetWidth;
     const height: number = node.offsetHeight;
     const left: number = x + TOOLTIP.offset + width > window.innerWidth - TOOLTIP.margin ? x - TOOLTIP.offset - width : x + TOOLTIP.offset;
@@ -23,9 +28,19 @@ export function createTooltip(root: HTMLElement): Tooltip {
     node.style.top = `${Math.max(TOOLTIP.margin, top)}px`;
   };
 
+  const compare = (event: KeyboardEvent): void => {
+    if (event.key !== 'Shift') return;
+    shifted = event.type === 'keydown';
+    node.classList.toggle('compare', shifted);
+    place(lastX, lastY);
+  };
+  window.addEventListener('keydown', compare);
+  window.addEventListener('keyup', compare);
+
   return {
     show(content: HTMLElement, x: number, y: number): void {
       node.replaceChildren(content);
+      node.classList.toggle('compare', shifted);
       place(x, y);
       node.classList.add('visible');
     },

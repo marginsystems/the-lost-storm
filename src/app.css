@@ -467,6 +467,15 @@ body {
     scale var(--spring-snappy-ms) var(--spring-snappy);
 }
 
+.loot-label {
+  transition: opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.loot-label.dim {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .loot-label:hover span {
   background: rgba(30, 40, 58, 0.95);
   scale: 1.06;

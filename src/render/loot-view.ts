@@ -1,12 +1,14 @@
 import type { Object3D, Scene } from 'three';
-import { Box3, Color, Group, Mesh, MeshStandardMaterial, OctahedronGeometry, Vector3 } from 'three';
+import type { BufferGeometry } from 'three';
+import { AdditiveBlending, Box3, Color, DoubleSide, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, Vector3 } from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { AttachmentDef, Content, ItemBaseDef, RigDef } from '../../sim/content/types.ts';
+import type { AttachmentDef, Content, ItemBaseDef, RarityDef, RigDef } from '../../sim/content/types.ts';
 import { baseOf, rarityOf } from '../../sim/items.ts';
-import type { GroundItem, World } from '../../sim/world/types.ts';
+import type { GroundItem, ItemInstance, World } from '../../sim/world/types.ts';
 import type { CharacterLibrary, LoadedAttachment } from './character-loader.ts';
 import { loadModel } from './character-loader.ts';
-import { additive, disposeObject, glow, pillarMesh } from './effect-shapes.ts';
+import { disposeObject, glow } from './effect-shapes.ts';
 
 export const LOOT = {
   coinModel: 'models/world/coins.glb',
@@ -19,7 +21,10 @@ export const LOOT = {
   gemHover: 0.75,
   gemBob: 0.12,
   gemSpin: 2.4,
-  beamRadius: 0.07,
+  beamWidth: 0.34,
+  beamFromRank: 2,
+  beamGlow: 2.2,
+  beamRenderOrder: 7,
   beamHeight: 7,
   beamOpacity: 0.5,
   weaponTumbleTurns: 2,
@@ -38,7 +43,7 @@ interface GemEntry {
   readonly kind: 'gem';
   readonly group: Group;
   readonly gem: Mesh;
-  readonly beam: Mesh;
+  readonly beam: Mesh | null;
 }
 
 interface WeaponEntry {
@@ -46,13 +51,30 @@ interface WeaponEntry {
   readonly group: Group;
   readonly pivot: Group;
   readonly yaw: number;
-  readonly beam: Mesh;
+  readonly beam: Mesh | null;
 }
 
 type LootEntry = GoldEntry | GemEntry | WeaponEntry;
 
 export interface LootView {
   sync(world: World): void;
+}
+
+function crossedBeam(): BufferGeometry {
+  const planes: BufferGeometry[] = [0, HALF_TURN].map((yaw: number): BufferGeometry => {
+    const plane: PlaneGeometry = new PlaneGeometry(LOOT.beamWidth, LOOT.beamHeight);
+    plane.rotateY(yaw);
+    plane.translate(0, LOOT.beamHeight / 2, 0);
+    const fade: number[] = [];
+    const heights: Float32BufferAttribute = new Float32BufferAttribute(plane.getAttribute('position').array, 3);
+    for (let index: number = 0; index < heights.count; index += 1) {
+      const level: number = 1 - heights.getY(index) / LOOT.beamHeight;
+      fade.push(level, level, level);
+    }
+    plane.setAttribute('color', new Float32BufferAttribute(fade, 3));
+    return plane;
+  });
+  return mergeGeometries(planes);
 }
 
 function tossOffset(age: number): number {
@@ -95,9 +117,20 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   });
   const entries: Map<number, LootEntry> = new Map<number, LootEntry>();
 
-  const buildBeam = (group: Group, color: Color): Mesh => {
-    const beam: Mesh = pillarMesh(glow(color, 2.2), LOOT.beamRadius, LOOT.beamHeight);
-    beam.material = additive(glow(color, 2.2), LOOT.beamOpacity);
+  const beamGeometry: BufferGeometry = crossedBeam();
+  const beamMaterials: Map<number, MeshBasicMaterial> = new Map<number, MeshBasicMaterial>();
+
+  const buildBeam = (world: World, group: Group, item: ItemInstance, color: Color): Mesh | null => {
+    const rank: number = world.content.rarities.findIndex((rarity: RarityDef): boolean => rarity.id === item.rarity);
+    if (rank < LOOT.beamFromRank) return null;
+    const key: number = color.getHex();
+    let material: MeshBasicMaterial | undefined = beamMaterials.get(key);
+    if (material === undefined) {
+      material = new MeshBasicMaterial({ color: glow(color, LOOT.beamGlow), vertexColors: true, transparent: true, opacity: LOOT.beamOpacity, depthWrite: false, side: DoubleSide, blending: AdditiveBlending });
+      beamMaterials.set(key, material);
+    }
+    const beam: Mesh = new Mesh(beamGeometry, material);
+    beam.renderOrder = LOOT.beamRenderOrder;
     group.add(beam);
     return beam;
   };
@@ -124,22 +157,26 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       pivot.rotation.order = 'YXZ';
       pivot.add(lyingModel(attachment, heldScale(world.content, attachment.def), world.zone.floorHeight));
       group.add(pivot);
-      return { kind: 'weapon', group, pivot, yaw: Math.random() * FULL_TURN, beam: buildBeam(group, color) };
+      return { kind: 'weapon', group, pivot, yaw: Math.random() * FULL_TURN, beam: buildBeam(world, group, ground.content.item, color) };
     }
     const gem: Mesh = new Mesh(new OctahedronGeometry(LOOT.gemSize, 0), new MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.25, metalness: 0.3 }));
     gem.castShadow = true;
     group.add(gem);
-    return { kind: 'gem', group, gem, beam: buildBeam(group, color) };
+    return { kind: 'gem', group, gem, beam: buildBeam(world, group, ground.content.item, color) };
   };
 
   const release = (entry: LootEntry): void => {
     switch (entry.kind) {
       case 'gold':
-      case 'gem':
         disposeObject(entry.group);
         break;
+      case 'gem':
+        entry.gem.geometry.dispose();
+        if (Array.isArray(entry.gem.material)) for (const material of entry.gem.material) material.dispose();
+        else entry.gem.material.dispose();
+        entry.group.removeFromParent();
+        break;
       case 'weapon':
-        disposeObject(entry.beam);
         entry.group.removeFromParent();
         break;
     }
@@ -166,13 +203,13 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
           case 'gem':
             entry.gem.position.y = LOOT.gemHover + Math.sin(world.time * 3 + ground.id) * LOOT.gemBob;
             entry.gem.rotation.y = world.time * LOOT.gemSpin + ground.id;
-            entry.beam.visible = landed;
+            if (entry.beam !== null) entry.beam.visible = landed;
             break;
           case 'weapon': {
             const remaining: number = (1 - t) * (1 - t);
             entry.pivot.rotation.y = entry.yaw;
             entry.pivot.rotation.x = remaining * LOOT.weaponTumbleTurns * FULL_TURN;
-            entry.beam.visible = landed;
+            if (entry.beam !== null) entry.beam.visible = landed;
             break;
           }
         }
