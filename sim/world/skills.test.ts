@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { ARENA_CENTRE, arena, place } from '../../test/arena-support.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { ComboStep, Content, SkillDef } from '../content/types.ts';
-import { chainedSkill, comboHits } from './skills.ts';
+import type { Vec2 } from '../math.ts';
+import { distance } from '../math.ts';
+import { chainedSkill, comboHits, startSkill } from './skills.ts';
 import { stepWorld } from './step.ts';
-import type { Command, World, WorldEvent } from './types.ts';
+import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 
 const content: Content = loadContent();
 const DT: number = 1 / 60;
@@ -95,4 +98,54 @@ void test('comboHits counts only a live chain of the same skill', (): void => {
   assert.equal(comboHits({ ...world.player, combo: { skill: 'cleave', hits: steps.length + 1, timeLeft: 0.2 } }, cleave), 0);
   assert.equal(comboHits({ ...world.player, combo: { skill: 'storm_bolt', hits: 1, timeLeft: 0.2 } }, cleave), 0);
   assert.equal(comboHits({ ...world.player, combo: { skill: 'storm_bolt', hits: 1, timeLeft: 0.2 } }, bolt), 0);
+});
+
+void test('a leap crouches first, then flies to where the hero stood and lands there', (): void => {
+  const world: World = arena(6);
+  const ghoul: MonsterState = place(world, 'test_ghoul', { x: ARENA_CENTRE.x + 7, z: ARENA_CENTRE.z });
+  const pounce: SkillDef = must(world.content.skills.get('test_pounce'), 'pounce');
+  const leap = must(pounce.leap, 'leap');
+  const from: Vec2 = { ...ghoul.pos };
+  const hero: Vec2 = { ...world.player.pos };
+  startSkill(world, ghoul, pounce, { x: hero.x - from.x, z: hero.z - from.z });
+  const landing: Vec2 = must(ghoul.action?.target, 'landing point');
+  assert.ok(Math.abs(distance(landing, hero) - leap.stopShort) < 0.05, 'it aims to land just short of the hero');
+  for (let step: number = 0; step < Math.round((pounce.windup - leap.airTime - 0.05) / DT); step += 1) {
+    world.player.pos = { ...hero };
+    stepWorld(world, [], DT);
+  }
+  assert.ok(distance(from, ghoul.pos) < 0.05, 'it holds still while it crouches');
+  const life: number = world.player.life;
+  for (let step: number = 0; step < Math.round((leap.airTime + 0.1) / DT); step += 1) {
+    world.player.pos = { ...hero };
+    stepWorld(world, [], DT);
+  }
+  assert.ok(distance(landing, ghoul.pos) < 0.3, `it landed at the mark (${distance(landing, ghoul.pos).toFixed(2)} away)`);
+  assert.ok(world.player.life < life, 'the landing hits a hero who stayed');
+});
+
+void test('a hero who steps aside is missed: the leap still lands where the hero was', (): void => {
+  const world: World = arena(7);
+  const ghoul: MonsterState = place(world, 'test_ghoul', { x: ARENA_CENTRE.x + 7, z: ARENA_CENTRE.z });
+  const pounce: SkillDef = must(world.content.skills.get('test_pounce'), 'pounce');
+  startSkill(world, ghoul, pounce, { x: world.player.pos.x - ghoul.pos.x, z: world.player.pos.z - ghoul.pos.z });
+  const landing: Vec2 = must(ghoul.action?.target, 'landing point');
+  const life: number = world.player.life;
+  for (let step: number = 0; step < Math.round((pounce.windup + 0.1) / DT); step += 1) {
+    world.player.pos = { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 5 };
+    stepWorld(world, [], DT);
+  }
+  assert.ok(distance(landing, ghoul.pos) < 0.3);
+  assert.equal(world.player.life, life);
+});
+
+void test('a leap toward a wall plans its landing short of the wall, and lands where it showed', (): void => {
+  const world: World = arena(8);
+  const ghoul: MonsterState = place(world, 'test_ghoul', { x: 3, z: ARENA_CENTRE.z });
+  const pounce: SkillDef = must(world.content.skills.get('test_pounce'), 'pounce');
+  startSkill(world, ghoul, pounce, { x: -8, z: 0 });
+  const landing: Vec2 = must(ghoul.action?.target, 'landing point');
+  assert.ok(landing.x > 0, `the landing stays on the floor (${landing.x.toFixed(2)})`);
+  for (let step: number = 0; step < Math.round((pounce.windup + 0.05) / DT); step += 1) stepWorld(world, [], DT);
+  assert.ok(distance(landing, ghoul.pos) < 0.3, `it landed at the mark (${distance(landing, ghoul.pos).toFixed(2)} away)`);
 });

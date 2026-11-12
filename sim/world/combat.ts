@@ -1,11 +1,16 @@
 import type { SkillDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { ReadonlyVec2 } from '../math.ts';
+import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
 import { armourReduction } from '../stats.ts';
 import { grantXp } from './character.ts';
 import { closeDialogue } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
-import type { Actor, ItemInstance, MonsterState, Team, World } from './types.ts';
+import type { Actor, GuardOutcome, ItemInstance, MonsterState, Team, World } from './types.ts';
+
+export const COMBAT = {
+  guardedKnockback: 0.2,
+} as const;
 
 export interface Offence {
   readonly sourceId: number;
@@ -87,25 +92,55 @@ function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
   grantXp(world, Math.round(target.def.xp * (1 + world.content.world.scaling.xpPerLevel * (target.level - 1))));
 }
 
+export function guardOutcome(target: Actor, skill: SkillDef, direction: ReadonlyVec2): GuardOutcome {
+  if (target.kind !== 'monster' || target.def.guard === null || target.stagger > 0 || target.action?.phase === 'recovery') return 'open';
+  const front: number = dot(directionOf(target.facing), { x: -direction.x, z: -direction.z });
+  if (front < Math.cos((target.def.guard.arcDegrees / 2) * DEGREES_TO_RADIANS)) return 'open';
+  return skill.stagger >= target.def.guard.breakStagger ? 'broken' : 'blocked';
+}
+
+function steadiness(target: Actor): number {
+  if (target.kind === 'player') return 1;
+  return target.def.boss === null ? target.def.poise.knockback : target.def.boss.poise.knockback;
+}
+
+function staggerOf(target: MonsterState, skill: SkillDef, guard: GuardOutcome): number {
+  if (target.def.boss !== null) return 0;
+  switch (guard) {
+    case 'open':
+      return skill.stagger * target.def.poise.stagger;
+    case 'blocked':
+      return 0;
+    case 'broken':
+      return Math.max(skill.stagger, target.def.guard?.breakTime ?? 0);
+  }
+  return 0;
+}
+
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): void {
   if (!target.alive || (target.kind === 'player' && target.invulnerable > 0)) return;
+  const guard: GuardOutcome = guardOutcome(target, skill, direction);
+  const guarded: number = guard === 'blocked' && target.kind === 'monster' ? (target.def.guard?.damageTaken ?? 1) : 1;
   const weapon: number = world.rng.range(offence.damageMin, offence.damageMax) * (1 + offence.damagePercent) * skill.damage.weaponPercent;
   const flat: number = world.rng.range(skill.damage.flatMin, skill.damage.flatMax);
   const crit: boolean = world.rng.chance(offence.critChance);
   const mitigation: number = target.kind === 'player' ? 1 - armourReduction(target.stats.armour) : 1;
-  const amount: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation));
+  const amount: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation * guarded));
   target.life -= amount;
-  const poise: number = target.kind === 'monster' && target.def.boss !== null ? target.def.boss.poise.knockback : 1;
+  const poise: number = steadiness(target) * (guard === 'blocked' ? COMBAT.guardedKnockback : 1);
   target.knock.x += direction.x * skill.knockback * poise;
   target.knock.z += direction.z * skill.knockback * poise;
+  if (skill.root > 0) target.root = Math.max(target.root, skill.root);
   if (target.kind === 'monster') {
-    if (skill.stagger > 0 && target.def.boss === null) {
-      target.stagger = Math.max(target.stagger, skill.stagger);
+    const stagger: number = staggerOf(target, skill, guard);
+    if (stagger > 0) {
+      target.stagger = Math.max(target.stagger, stagger);
       if (target.action?.phase === 'windup') {
         target.action = null;
         world.events.push({ type: 'skill_interrupt', actorId: target.id });
       }
     }
+    if (guard !== 'open') world.events.push({ type: 'guarded', monsterId: target.id, broken: guard === 'broken', pos: { x: target.pos.x, z: target.pos.z }, direction: { x: direction.x, z: direction.z } });
     if (!target.aggro) {
       target.aggro = true;
       world.events.push({ type: 'aggro', monsterId: target.id });

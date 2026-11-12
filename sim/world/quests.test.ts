@@ -253,7 +253,7 @@ function hunted(): Content {
       { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill' },
     ],
   };
-  const lair: ZoneDef = { ...bastion, packs: [{ x: den.x, z: den.z, members: [{ monster: 'hex_caller', count: 1 }], when: during('kill') }] };
+  const lair: ZoneDef = { ...bastion, packs: [{ x: den.x, z: den.z, members: [{ monster: 'hex_caller', count: 1, mods: [] }], when: during('kill') }] };
   return { ...shipped, quests: new Map<string, QuestDef>([[hunt.id, hunt]]), zones: new Map<string, ZoneDef>([...shipped.zones, [lair.id, lair]]) };
 }
 

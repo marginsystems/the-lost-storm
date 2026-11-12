@@ -57,7 +57,7 @@ export interface ActorView {
   readonly rig: RigInstance;
   readonly height: number;
   sync(dt: number, actor: ActorPose, options: SyncOptions): void;
-  startAction(animation: string, windup: number, recovery: number): void;
+  startAction(animation: string, windup: number, recovery: number): boolean;
   interrupt(): void;
   hit(color: Color, strength: number, stagger: boolean): void;
   die(): void;
@@ -164,13 +164,14 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       rig.setFlash(mixed, Math.max(flash, hoverAmount));
       rig.mixer.update(dt);
     },
-    startAction(animation: string, windup: number, recovery: number): void {
+    startAction(animation: string, windup: number, recovery: number): boolean {
       const entry: ActionClip | undefined = rig.clips.actions.get(animation);
-      if (dead || entry === undefined) return;
+      if (dead || entry === undefined) return false;
       const timed: boolean = entry.impactTime > 0 && windup > 0;
       play(entry.clip, ACTOR.actionFade, timed ? clamped(entry.impactTime / windup, ACTOR.minActionSpeed, ACTOR.maxActionSpeed) : 1, true, true);
       oneShot = windup + recovery + ACTOR.actionTail;
       if (timed) follow = { left: windup, speed: clamped((entry.clip.duration - entry.impactTime) / (recovery + ACTOR.actionTail), ACTOR.minFollowSpeed, ACTOR.maxActionSpeed) };
+      return true;
     },
     interrupt(): void {
       if (!dead) react();

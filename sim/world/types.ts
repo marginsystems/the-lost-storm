@@ -27,6 +27,9 @@ export interface ActionState {
   readonly windup: number;
   readonly recovery: number;
   readonly direction: Vec2;
+  readonly target: Vec2 | null;
+  readonly travelSpeed: number;
+  travelLeft: number;
 }
 
 export interface ComboState {
@@ -47,6 +50,7 @@ export interface ActorState {
   cooldowns: Record<string, number>;
   stagger: number;
   combo: ComboState | null;
+  root: number;
   alive: boolean;
   deadTime: number;
   moving: boolean;
@@ -128,6 +132,8 @@ export interface MonsterState extends ActorState {
   spawnTime: number;
   phase: number;
   nextSkill: SkillDef | null;
+  readonly summonerId: number | null;
+  summonTimer: number;
 }
 
 export type Actor = PlayerState | MonsterState;
@@ -166,6 +172,24 @@ export interface ProjectileState {
   pierceLeft: number;
   readonly hitIds: number[];
 }
+
+export interface HazardState {
+  readonly id: number;
+  readonly ownerId: number;
+  readonly team: Team;
+  readonly skill: SkillDef;
+  readonly pos: Vec2;
+  readonly radius: number;
+  readonly delay: number;
+  readonly damageMin: number;
+  readonly damageMax: number;
+  readonly damagePercent: number;
+  readonly critChance: number;
+  readonly critMultiplier: number;
+  timeLeft: number;
+}
+
+export type GuardOutcome = 'open' | 'blocked' | 'broken';
 
 export interface GoldDrop {
   readonly kind: 'gold';
@@ -291,6 +315,8 @@ export type WorldEvent =
   | { readonly type: 'projectile_spawn'; readonly projectile: ProjectileState }
   | { readonly type: 'projectile_end'; readonly id: number; readonly pos: Vec2; readonly hit: boolean; readonly skill: SkillDef }
   | { readonly type: 'damage'; readonly targetId: number; readonly sourceId: number; readonly targetTeam: Team; readonly amount: number; readonly crit: boolean; readonly killed: boolean; readonly pos: Vec2; readonly direction: Vec2; readonly skill: SkillDef }
+  | { readonly type: 'guarded'; readonly monsterId: number; readonly broken: boolean; readonly pos: Vec2; readonly direction: Vec2 }
+  | { readonly type: 'hazard'; readonly hazard: HazardState; readonly burst: boolean; readonly hits: number }
   | { readonly type: 'death'; readonly actorId: number; readonly team: Team; readonly pos: Vec2; readonly direction: Vec2 }
   | { readonly type: 'monster_spawn'; readonly monsterId: number }
   | { readonly type: 'monster_remove'; readonly monsterId: number }
@@ -338,6 +364,7 @@ export interface World {
   explored: Record<string, Uint8Array>;
   exploredRevision: number;
   projectiles: ProjectileState[];
+  hazards: HazardState[];
   ground: GroundItem[];
   nextId: number;
   nextItemUid: number;

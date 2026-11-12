@@ -321,7 +321,7 @@ export function stepPlayer(world: World, dt: number): void {
   }
   if (player.action === null) {
     stepIntent(world, dt);
-    if (!isBusy(player) && player.path.length > 0) {
+    if (!isBusy(player) && player.root <= 0 && player.path.length > 0) {
       const moved: number = followPath(world.grid, player, player.path, player.stats.moveSpeed * dt, PLAYER.turnRate * dt);
       player.moving = moved > PLAYER.stuckStep;
       if (!player.moving) {

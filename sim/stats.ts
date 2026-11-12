@@ -48,7 +48,7 @@ export function resolveSkill(content: Content, skill: SkillDef, allocated: reado
   const delivery: SkillDef['delivery'] =
     skill.delivery.type === 'arc'
       ? { ...skill.delivery, reach: skill.delivery.reach * area }
-      : skill.delivery.type === 'nova'
+      : skill.delivery.type === 'nova' || skill.delivery.type === 'mark'
         ? { ...skill.delivery, radius: skill.delivery.radius * area }
         : { ...skill.delivery, count: skill.delivery.count + sumSkillMod(mods, 'projectiles'), pierce: skill.delivery.pierce + sumSkillMod(mods, 'pierce') };
   const damageScale: number = 1 + sumSkillMod(mods, 'damagePercent');

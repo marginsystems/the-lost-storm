@@ -116,8 +116,8 @@ void test('a boss comes back at full life and in its first phase', (): void => {
   const def: MonsterDef = must([...content.monsters.values()].find((candidate: MonsterDef): boolean => candidate.boss !== null), 'boss def');
   const bastion: ZoneDef = zoneOf(content, 'drowned_bastion');
   const packs: ZonePack[] = [
-    { x: 28, z: 14, members: [{ monster: def.id, count: 1 }], when: [] },
-    { x: 28, z: 40, members: [{ monster: 'bone_thrall', count: 1 }], when: [] },
+    { x: 28, z: 14, members: [{ monster: def.id, count: 1, mods: [] }], when: [] },
+    { x: 28, z: 40, members: [{ monster: 'bone_thrall', count: 1, mods: [] }], when: [] },
   ];
   const room: ZoneDef = { ...bastion, id: 'death_room', surge: null, packs, exits: [], waypoint: null };
   const withRoom: Content = { ...content, zones: new Map<string, ZoneDef>([...content.zones, [room.id, room]]) };

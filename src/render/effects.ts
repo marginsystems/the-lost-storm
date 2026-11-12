@@ -47,6 +47,18 @@ export const EFFECTS = {
   telegraphEdgeIn: 6,
   phaseRing: 9,
   phaseShake: 0.5,
+  castLift: 1.7,
+  castReach: 0.6,
+  markRise: 0.4,
+  guardSparks: 14,
+  breakSparks: 30,
+  guardShake: 0.12,
+  breakShake: 0.35,
+  breakRing: 2.4,
+  rootRing: 1.1,
+  rootSpray: 18,
+  guardHeight: 1.3,
+  guardBack: 0.5,
 } as const;
 
 interface Transient {
@@ -81,6 +93,8 @@ const MOVE_MARK: Color = new Color(0xb9c6d6);
 const ATTACK_MARK: Color = new Color(0xd9705a);
 const TELEGRAPH: Color = new Color(0xff3a2a);
 const WHITE: Color = new Color(0xffffff);
+const SPARK: Color = new Color(0xffc070);
+const ROOT: Color = new Color(0x5d7a52);
 
 function easeOut(t: number): number {
   return 1 - (1 - t) * (1 - t) * (1 - t);
@@ -275,8 +289,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     if (event.actorId === world.player.id) return;
     const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
     if (monster === undefined) return;
-    telegraph(monster.id, monster.pos.x, monster.pos.z, event.direction, event.skill, event.windup);
-    if (event.skill.delivery.type === 'projectile') spray(monster.pos.x + event.direction.x * 0.6, 1.7, monster.pos.z + event.direction.z * 0.6, colorOf(event.skill.vfx.color), 16, { speed: { min: 0.3, max: 1.6 }, lift: { min: 0.3, max: 2.2 }, life: { min: 0.3, max: event.windup + 0.1 }, gravity: -1, size: { min: 0.25, max: 0.55 } });
+    const casts: boolean = event.skill.delivery.type === 'projectile' || event.skill.delivery.type === 'mark';
+    const lands: { readonly x: number; readonly z: number } = event.skill.leap === null ? monster.pos : (monster.action?.target ?? monster.pos);
+    if (event.skill.delivery.type !== 'mark') telegraph(monster.id, lands.x, lands.z, event.direction, event.skill, event.windup);
+    if (casts) spray(monster.pos.x + event.direction.x * 0.6, 1.7, monster.pos.z + event.direction.z * 0.6, colorOf(event.skill.vfx.color), 16, { speed: { min: 0.3, max: 1.6 }, lift: { min: 0.3, max: 2.2 }, life: { min: 0.3, max: event.windup + 0.1 }, gravity: -1, size: { min: 0.25, max: 0.55 } });
   };
 
   const onImpact = (event: Extract<WorldEvent, { type: 'skill_impact' }>): void => {
@@ -289,6 +305,9 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         break;
       case 'nova':
         shockwave(event.origin.x, event.origin.z, delivery.radius, color);
+        break;
+      case 'mark':
+        spray(event.origin.x + event.direction.x * EFFECTS.castReach, EFFECTS.castLift, event.origin.z + event.direction.z * EFFECTS.castReach, color, 12, { speed: { min: 1, max: 4 }, lift: { min: 0.5, max: 3 }, life: { min: 0.2, max: 0.5 } });
         break;
       case 'projectile':
         spray(event.origin.x + event.direction.x, EFFECTS.projectileHeight, event.origin.z + event.direction.z, color, 10, { dirX: event.direction.x, dirZ: event.direction.z, spread: 0.9, speed: { min: 3, max: 9 }, lift: { min: -1, max: 2 }, gravity: 2 });
@@ -304,7 +323,12 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const skillColor: Color = colorOf(event.skill.vfx.color);
     if (event.targetTeam === 'player') {
       hurt = 1;
-      camera.addTrauma(EFFECTS.hurtShake);
+      camera.addTrauma(Math.max(EFFECTS.hurtShake, event.skill.shake));
+      hitStop = Math.min(EFFECTS.maxStop, Math.max(hitStop, event.skill.hitStop));
+      if (event.skill.root > 0 && !event.killed) {
+        ring(event.pos.x, event.pos.z, EFFECTS.rootRing, ROOT, event.skill.root);
+        spray(event.pos.x, 0.3, event.pos.z, ROOT, EFFECTS.rootSpray, { speed: { min: 0.3, max: 1.4 }, lift: { min: 0.2, max: 1.6 }, life: { min: 0.4, max: event.skill.root }, gravity: 1, size: { min: 0.3, max: 0.7 } });
+      }
       spray(event.pos.x, 1.3, event.pos.z, BLOOD, 14, { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.4, speed: { min: 2, max: 7 } });
       return;
     }
@@ -342,6 +366,29 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       ring(event.pos.x, event.pos.z, 1.6, color, 0.24);
       flashLight(event.pos.x, 1.6, event.pos.z, color, 55);
     }
+  };
+
+  const onHazard = (event: Extract<WorldEvent, { type: 'hazard' }>): void => {
+    const hazard = event.hazard;
+    const color: Color = colorOf(hazard.skill.vfx.color);
+    if (!event.burst) {
+      telegraph(hazard.id, hazard.pos.x, hazard.pos.z, { x: 0, z: 1 }, hazard.skill, hazard.delay);
+      spray(hazard.pos.x, 0.2, hazard.pos.z, color, 10, { speed: { min: 0.2, max: 1 }, lift: { min: 0.5, max: 2 }, life: { min: EFFECTS.markRise, max: hazard.delay }, gravity: -0.5, jitter: hazard.radius * 0.5 });
+      return;
+    }
+    cancelOwned(hazard.id);
+    shockwave(hazard.pos.x, hazard.pos.z, hazard.radius, color);
+    if (event.hits > 0) camera.addTrauma(hazard.skill.shake);
+  };
+
+  const onGuarded = (event: Extract<WorldEvent, { type: 'guarded' }>): void => {
+    const lift: number = EFFECTS.guardHeight;
+    const backX: number = event.pos.x - event.direction.x * EFFECTS.guardBack;
+    const backZ: number = event.pos.z - event.direction.z * EFFECTS.guardBack;
+    spray(backX, lift, backZ, SPARK, event.broken ? EFFECTS.breakSparks : EFFECTS.guardSparks, { dirX: -event.direction.x, dirZ: -event.direction.z, spread: 1.2, speed: { min: 3, max: 10 }, lift: { min: 0.5, max: 5 }, life: { min: 0.12, max: 0.35 }, size: { min: 0.15, max: 0.35 }, gravity: 6 });
+    flashLight(backX, lift, backZ, SPARK, event.broken ? 60 : 25);
+    camera.addTrauma(event.broken ? EFFECTS.breakShake : EFFECTS.guardShake);
+    if (event.broken) ring(event.pos.x, event.pos.z, EFFECTS.breakRing, SPARK, EFFECTS.ringTime);
   };
 
   const projectileView = (projectile: ProjectileState): ProjectileView => {
@@ -390,6 +437,12 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             break;
           case 'skill_interrupt':
             cancelOwned(event.actorId);
+            break;
+          case 'hazard':
+            onHazard(event);
+            break;
+          case 'guarded':
+            onGuarded(event);
             break;
           case 'damage':
             onDamage(event);
