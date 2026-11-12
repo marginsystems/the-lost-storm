@@ -336,10 +336,11 @@ void test('a Storm Bolt with nothing in its way flies its full range and ends wi
 void test('Forked Bolt fires three projectiles', (): void => {
   const world: World = fresh();
   isolate(world, must(monstersOf(world, 'mended')[0], 'thrall'));
-  world.player.skillPoints = 2;
+  world.player.skillPoints = 3;
   advance(world, 0.1, [{ type: 'allocate', node: 'stormcallers_focus' }]);
+  advance(world, 0.1, [{ type: 'allocate', node: 'storm_1' }]);
   advance(world, 0.1, [{ type: 'allocate', node: 'forked_bolt' }]);
-  assert.deepEqual(world.player.allocated, ['stormcallers_focus', 'forked_bolt']);
+  assert.deepEqual(world.player.allocated, ['stormcallers_focus', 'storm_1', 'forked_bolt']);
   const events: WorldEvent[] = advance(world, 0.5, [{ type: 'skill', slot: 2, aim: { x: 9, z: START.z }, targetId: null }]);
   assert.equal(ofType(events, 'projectile_spawn').length, 3);
 });
@@ -411,7 +412,7 @@ void test('killing monsters emits death, grants xp, levels up and a skill point 
   assert.equal(world.player.kills, 6);
   assert.equal(world.player.level, 2);
   assert.equal(world.player.xp, 0);
-  assert.equal(world.player.skillPoints, 1);
+  assert.equal(world.player.skillPoints, world.content.chart.pointsPerLevel);
   assert.equal(ofType(events, 'xp').reduce((sum: number, entry): number => sum + entry.amount, 0), 60);
   assert.deepEqual(ofType(events, 'level_up').map((entry): number => entry.level), [2]);
   assert.equal(world.player.life, world.player.maxLife);
@@ -420,11 +421,11 @@ void test('killing monsters emits death, grants xp, levels up and a skill point 
   const changed: WorldEvent[] = advance(world, 0.1, [{ type: 'allocate', node: 'tempered_body' }]);
   assert.ok(ofType(changed, 'character_changed').length > 0);
   assert.deepEqual(world.player.allocated, ['tempered_body']);
-  assert.equal(world.player.skillPoints, 0);
+  assert.equal(world.player.skillPoints, world.content.chart.pointsPerLevel - 1);
   assert.equal(world.player.stats.maxLife, lifeBefore + 30);
   assert.equal(world.player.maxLife, lifeBefore + 30);
 
-  advance(world, 0.1, [{ type: 'allocate', node: 'heavy_hands' }]);
+  advance(world, 0.1, [{ type: 'allocate', node: 'bedrock' }]);
   assert.deepEqual(world.player.allocated, ['tempered_body']);
 });
 

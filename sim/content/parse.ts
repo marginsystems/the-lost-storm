@@ -7,6 +7,7 @@ import { combatProblems, fieldDelivery, markDelivery, monsterMod, monsterTraits,
 import { faction, factionProblems } from './parse-factions.ts';
 import { momentLibrary } from './parse-moments.ts';
 import { momentProblems } from './moments.ts';
+import { chartDef, chartProblems, statMod, treeNode } from './parse-chart.ts';
 import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillOffer, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
@@ -42,10 +43,7 @@ import type {
   SkillBinding,
   SkillCombo,
   SkillDef,
-  SkillMod,
-  SkillTreeNodeDef,
   StatBlock,
-  StatMod,
   SurfaceDef,
   TalkDef,
   Triple,
@@ -53,7 +51,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, TREE_NODE_KINDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, STAT_IDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -62,6 +60,7 @@ export interface RawContent {
   readonly factions: unknown;
   readonly items: unknown;
   readonly skillTree: unknown;
+  readonly chart: unknown;
   readonly rigs: unknown;
   readonly attachments: unknown;
   readonly wearables: unknown;
@@ -77,16 +76,6 @@ export interface RawContent {
   readonly trade: unknown;
   readonly books: unknown;
   readonly moments: unknown;
-}
-
-function statMod(value: unknown, where: string): StatMod {
-  const source: Fields = fields(value, where);
-  return { stat: choice(source, 'stat', STAT_IDS, where), op: choice(source, 'op', MOD_OPS, where), value: numeric(source, 'value', where) };
-}
-
-function skillMod(value: unknown, where: string): SkillMod {
-  const source: Fields = fields(value, where);
-  return { skill: text(source, 'skill', where), field: choice(source, 'field', SKILL_MOD_FIELDS, where), value: numeric(source, 'value', where) };
 }
 
 function delivery(value: unknown, where: string): Delivery {
@@ -294,23 +283,6 @@ function affix(value: unknown, where: string): AffixDef {
   };
 }
 
-function treeNode(value: unknown, where: string): SkillTreeNodeDef {
-  const source: Fields = fields(value, where);
-  return {
-    id: text(source, 'id', where),
-    name: text(source, 'name', where),
-    description: text(source, 'description', where),
-    icon: text(source, 'icon', where),
-    kind: choice(source, 'kind', TREE_NODE_KINDS, where),
-    column: numeric(source, 'column', where),
-    row: numeric(source, 'row', where),
-    requires: textList(source, 'requires', where),
-    requireMode: choice(source, 'requireMode', REQUIRE_MODES, where),
-    statMods: each(source['statMods'], `${where}.statMods`, statMod),
-    skillMods: each(source['skillMods'], `${where}.skillMods`, skillMod),
-  };
-}
-
 function actionClips(value: unknown, where: string): Record<string, RigActionClip> {
   const actionFields: Fields = fields(value, where);
   const actions: Record<string, RigActionClip> = {};
@@ -506,6 +478,7 @@ export function parseContent(raw: RawContent): Content {
     affixes: byId(each(itemFields['affixes'], 'items.affixes', affix), 'items.affixes'),
     itemScaling: { implicitPerLevel: numeric(scaling, 'implicitPerLevel', 'items.scaling') },
     skillTree: each(raw.skillTree, 'skillTree', treeNode),
+    chart: chartDef(raw.chart, 'chart'),
     rigs: byId(each(raw.rigs, 'rigs', rig), 'rigs'),
     attachments: byId(each(raw.attachments, 'attachments', attachment), 'attachments'),
     wearables: byId(each(raw.wearables, 'wearables', wearable), 'wearables'),
@@ -583,14 +556,7 @@ export function contentProblems(content: Content): string[] {
   }
   for (const base of content.player.startingItems) need(content.itemBases.has(base), `starting item ${base} is unknown`);
   need(content.rarities.length > 0, 'items need at least one rarity');
-  const nodeIds: Set<string> = new Set<string>(content.skillTree.map((node: SkillTreeNodeDef): string => node.id));
-  need(nodeIds.size === content.skillTree.length, 'skill tree has duplicate node ids');
-  const nodePlaces: Set<string> = new Set<string>(content.skillTree.map((node: SkillTreeNodeDef): string => `${node.column},${node.row}`));
-  need(nodePlaces.size === content.skillTree.length, 'skill tree has two nodes on the same column and row');
-  for (const node of content.skillTree) {
-    for (const required of node.requires) need(nodeIds.has(required), `tree node ${node.id} requires unknown node ${required}`);
-    for (const mod of node.skillMods) need(content.skills.has(mod.skill), `tree node ${node.id} modifies unknown skill ${mod.skill}`);
-  }
+  problems.push(...chartProblems(content));
   const flagNames: ReadonlySet<string> = storyFlagNames(content);
   const known = (holder: string, list: readonly Condition[]): void => {
     problems.push(...conditionProblems(content, flagNames, holder, list));

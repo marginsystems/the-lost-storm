@@ -108,6 +108,8 @@ const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
   unequip: false,
   drop: false,
   allocate: false,
+  refund: false,
+  respec: false,
   advance: false,
   respawn: false,
 };

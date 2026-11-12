@@ -1,0 +1,93 @@
+{
+  "title": "The Storm Chart",
+  "pointsPerLevel": 2,
+  "respec": {
+    "goldPerPoint": 10,
+    "goldPerLevel": 3
+  },
+  "paths": [
+    {
+      "id": "storm",
+      "name": "The Gathering Storm",
+      "tint": "#86c8f0",
+      "description": "Lightning that reaches further, forks wider and lands harder."
+    },
+    {
+      "id": "blade",
+      "name": "The Edge",
+      "tint": "#e2cf9e",
+      "description": "The weapon in your hand: faster swings, heavier blows, cleaner kills."
+    },
+    {
+      "id": "wind",
+      "name": "The Open Wind",
+      "tint": "#9fd6c2",
+      "description": "Never where the blow lands: speed, rolls and steps through the mist."
+    },
+    {
+      "id": "stone",
+      "name": "The Standing Stone",
+      "tint": "#c7a483",
+      "description": "Stand and hold: life, armour, and blows that stop what they hit."
+    },
+    {
+      "id": "echo",
+      "name": "The Echo",
+      "tint": "#bdb2f2",
+      "description": "What happened once happens again: echoes, held moments and long storms."
+    }
+  ],
+  "groups": [
+    {
+      "id": "lightning",
+      "name": "lightning skills",
+      "skills": [
+        "thunderclap",
+        "storm_bolt",
+        "forkline",
+        "squall",
+        "static_brand",
+        "living_wire",
+        "thunderhead"
+      ]
+    },
+    {
+      "id": "weapon",
+      "name": "weapon skills",
+      "skills": [
+        "cleave",
+        "thunderhead",
+        "thunderclap"
+      ]
+    },
+    {
+      "id": "motion",
+      "name": "movement skills",
+      "skills": [
+        "dodge_roll",
+        "mist_step",
+        "downdraught"
+      ]
+    },
+    {
+      "id": "spread",
+      "name": "area skills",
+      "skills": [
+        "thunderclap",
+        "squall",
+        "downdraught",
+        "held_breath",
+        "forkline"
+      ]
+    },
+    {
+      "id": "missile",
+      "name": "bolt skills",
+      "skills": [
+        "storm_bolt",
+        "static_brand",
+        "forkline"
+      ]
+    }
+  ]
+}

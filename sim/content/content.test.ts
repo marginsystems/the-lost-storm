@@ -114,10 +114,20 @@ function reachable(nodes: readonly SkillTreeNodeDef[]): Set<string> {
   return reached;
 }
 
-void test('the skill tree has six nodes and each one can be reached from a root', (): void => {
-  assert.equal(content.skillTree.length, 6);
-  assert.ok(content.skillTree.some((node: SkillTreeNodeDef): boolean => node.requires.length === 0));
+void test('the Storm Chart has five paths of a hundred places or more, every place reachable, with crossings between paths', (): void => {
+  assert.equal(content.chart.title, 'The Storm Chart');
+  assert.ok(content.skillTree.length >= 100);
   assert.equal(reachable(content.skillTree).size, content.skillTree.length);
+  const pathOf: ReadonlyMap<string, string> = new Map<string, string>(content.skillTree.map((node: SkillTreeNodeDef): [string, string] => [node.id, node.path]));
+  for (const path of content.chart.paths) {
+    const own: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.path === path.id);
+    assert.ok(own.some((node: SkillTreeNodeDef): boolean => node.requires.length === 0), `${path.id} has an entrance`);
+    assert.ok(own.filter((node: SkillTreeNodeDef): boolean => node.kind === 'notable').length >= 3, `${path.id} has named places`);
+    assert.equal(own.filter((node: SkillTreeNodeDef): boolean => node.kind === 'keystone').length, 1, `${path.id} ends in one keystone`);
+    assert.ok(own.filter((node: SkillTreeNodeDef): boolean => node.variant !== null).length >= 2, `${path.id} changes at least two skills`);
+  }
+  const crossings: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => new Set<string | undefined>(node.requires.map((id: string): string | undefined => pathOf.get(id))).size > 1);
+  assert.ok(crossings.length >= content.chart.paths.length);
 });
 
 function reaches(grid: NavGrid, from: Vec2, to: Vec2): boolean {

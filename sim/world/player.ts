@@ -4,7 +4,7 @@ import { forceStrike } from './moments.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { findPath } from '../nav/path.ts';
-import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, slotSkill, unequip } from './character.ts';
+import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
 import { respawnPlayer } from './death.ts';
@@ -165,6 +165,8 @@ function act(world: World, command: Command): void {
     case 'unequip':
     case 'drop':
     case 'allocate':
+    case 'refund':
+    case 'respec':
     case 'respawn':
       return;
   }
@@ -190,6 +192,12 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'allocate':
       allocateNode(world, command.node);
+      return;
+    case 'refund':
+      refundNode(world, command.node);
+      return;
+    case 'respec':
+      respecChart(world);
       return;
     case 'advance':
       advanceDialogue(world);

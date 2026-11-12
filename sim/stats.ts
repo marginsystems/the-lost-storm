@@ -1,4 +1,4 @@
-import type { Content, SkillDef, SkillMod, SkillTreeNodeDef, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { ChartGroup, Content, Delivery, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS, STAT_IDS } from './content/types.ts';
 import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
@@ -39,28 +39,101 @@ function sumSkillMod(mods: readonly SkillMod[], field: SkillMod['field']): numbe
   return mods.filter((mod: SkillMod): boolean => mod.field === field).reduce((sum: number, mod: SkillMod): number => sum + mod.value, 0);
 }
 
-function scaledDelivery(delivery: SkillDef['delivery'], area: number, mods: readonly SkillMod[]): SkillDef['delivery'] {
-  if (delivery.type === 'arc') return { ...delivery, reach: delivery.reach * area };
-  if (delivery.type === 'nova' || delivery.type === 'mark') return { ...delivery, radius: delivery.radius * area };
-  if (delivery.type === 'projectile') return { ...delivery, count: delivery.count + sumSkillMod(mods, 'projectiles'), pierce: delivery.pierce + sumSkillMod(mods, 'pierce') };
-  return delivery;
+interface DeliveryScale {
+  readonly area: number;
+  readonly range: number;
+  readonly duration: number;
+  readonly projectiles: number;
+  readonly pierce: number;
+  readonly chains: number;
 }
 
-export function resolveSkill(content: Content, skill: SkillDef, allocated: readonly string[]): SkillDef {
+function scaledDelivery(delivery: Delivery, scale: DeliveryScale): Delivery {
+  const { area, range, duration } = scale;
+  let scaled: Delivery;
+  switch (delivery.type) {
+    case 'arc':
+      scaled = { ...delivery, reach: delivery.reach * area };
+      break;
+    case 'nova':
+      scaled = { ...delivery, radius: delivery.radius * area };
+      break;
+    case 'mark':
+      scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range };
+      break;
+    case 'projectile':
+      scaled = { ...delivery, range: delivery.range * range, count: delivery.count + scale.projectiles, pierce: delivery.pierce + scale.pierce };
+      break;
+    case 'dash':
+      scaled = { ...delivery, distance: delivery.distance * range };
+      break;
+    case 'revive':
+      scaled = { ...delivery, range: delivery.range * range };
+      break;
+    case 'field':
+      scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range, duration: delivery.duration * duration };
+      break;
+    case 'chain':
+      scaled = { ...delivery, jumpRange: delivery.jumpRange * area, range: delivery.range * range, jumps: Math.max(0, delivery.jumps + scale.chains) };
+      break;
+    case 'area':
+      scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range, duration: delivery.duration * duration };
+      break;
+    case 'blink':
+      scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range };
+      break;
+    case 'beam':
+      scaled = { ...delivery, width: delivery.width * area, range: delivery.range * range };
+      break;
+  }
+  return scaled;
+}
+
+export function inGroup(content: Content, group: string, skill: string): boolean {
+  return content.chart.groups.some((entry: ChartGroup): boolean => entry.id === group && entry.skills.includes(skill));
+}
+
+export function modTargets(content: Content, mod: SkillMod, skill: string): boolean {
+  const target: SkillTarget = mod.target;
+  return target.type === 'skill' ? target.skill === skill : inGroup(content, target.group, skill);
+}
+
+export function chosenVariant(content: Content, skill: SkillDef, allocated: readonly string[]): SkillDef {
+  for (const node of allocatedNodes(content, allocated)) {
+    if (node.variant === null || node.variant.skill !== skill.id) continue;
+    const variant: SkillDef | undefined = content.skills.get(node.variant.becomes);
+    if (variant !== undefined) return { ...variant, id: skill.id };
+  }
+  return skill;
+}
+
+function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
+  return Math.max(0, 1 + sumSkillMod(mods, field));
+}
+
+export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[]): SkillDef {
+  const skill: SkillDef = chosenVariant(content, base, allocated);
   const mods: SkillMod[] = allocatedNodes(content, allocated)
     .flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods)
-    .filter((mod: SkillMod): boolean => mod.skill === skill.id);
+    .filter((mod: SkillMod): boolean => modTargets(content, mod, skill.id));
   if (mods.length === 0) return skill;
-  const area: number = 1 + sumSkillMod(mods, 'areaPercent');
-  const delivery: SkillDef['delivery'] = scaledDelivery(skill.delivery, area, mods);
-  const damageScale: number = 1 + sumSkillMod(mods, 'damagePercent');
+  const delivery: Delivery = scaledDelivery(skill.delivery, {
+    area: scaleOf(mods, 'areaPercent'),
+    range: scaleOf(mods, 'rangePercent'),
+    duration: scaleOf(mods, 'durationPercent'),
+    projectiles: sumSkillMod(mods, 'projectiles'),
+    pierce: sumSkillMod(mods, 'pierce'),
+    chains: sumSkillMod(mods, 'chains'),
+  });
+  const damageScale: number = scaleOf(mods, 'damagePercent');
   return {
     ...skill,
     delivery,
     damage: { weaponPercent: skill.damage.weaponPercent * damageScale, flatMin: skill.damage.flatMin * damageScale, flatMax: skill.damage.flatMax * damageScale },
-    cooldown: Math.max(0, skill.cooldown * (1 + sumSkillMod(mods, 'cooldownPercent'))),
-    manaCost: Math.max(0, Math.round(skill.manaCost * (1 + sumSkillMod(mods, 'manaCostPercent')))),
-    knockback: skill.knockback * (1 + sumSkillMod(mods, 'knockbackPercent')),
+    cooldown: skill.cooldown * scaleOf(mods, 'cooldownPercent'),
+    manaCost: Math.round(skill.manaCost * scaleOf(mods, 'manaCostPercent')),
+    knockback: skill.knockback * scaleOf(mods, 'knockbackPercent'),
+    stagger: skill.stagger * scaleOf(mods, 'staggerPercent'),
   };
 }
 

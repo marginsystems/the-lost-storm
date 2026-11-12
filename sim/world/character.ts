@@ -1,6 +1,6 @@
 import type { ItemSlot } from '../content/types.ts';
 import { slotOf } from '../items.ts';
-import { applyXp, canAllocate } from '../progression.ts';
+import { applyXp, canAllocate, canRefund, refundCost } from '../progression.ts';
 import type { XpResult } from '../progression.ts';
 import { assignSlot } from '../skill-book.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
@@ -24,7 +24,7 @@ export function grantXp(world: World, amount: number): void {
   world.events.push({ type: 'xp', amount });
   if (result.levelsGained === 0) return;
   player.level = result.level;
-  player.skillPoints += result.levelsGained;
+  player.skillPoints += result.levelsGained * world.content.chart.pointsPerLevel;
   refreshPlayer(world);
   player.life = player.maxLife;
   player.mana = player.stats.maxMana;
@@ -83,5 +83,33 @@ export function allocateNode(world: World, nodeId: string): void {
   if (!canAllocate(world.content, player.allocated, player.skillPoints, nodeId)) return;
   player.allocated.push(nodeId);
   player.skillPoints -= 1;
+  refreshPlayer(world);
+}
+
+function pay(world: World, points: number): boolean {
+  const player: PlayerState = world.player;
+  const cost: number = refundCost(world.content, player.level, points);
+  if (player.gold < cost) {
+    world.events.push({ type: 'notice', reason: 'no_gold' });
+    return false;
+  }
+  player.gold -= cost;
+  return true;
+}
+
+export function refundNode(world: World, nodeId: string): void {
+  const player: PlayerState = world.player;
+  if (!canRefund(world.content, player.allocated, nodeId) || !pay(world, 1)) return;
+  player.allocated = player.allocated.filter((id: string): boolean => id !== nodeId);
+  player.skillPoints += 1;
+  refreshPlayer(world);
+}
+
+export function respecChart(world: World): void {
+  const player: PlayerState = world.player;
+  const points: number = player.allocated.length;
+  if (points === 0 || !pay(world, points)) return;
+  player.allocated = [];
+  player.skillPoints += points;
   refreshPlayer(world);
 }

@@ -13,6 +13,7 @@ import quests from '../../data/quests.json' with { type: 'json' };
 import props from '../../data/props.json' with { type: 'json' };
 import rigs from '../../data/rigs.json' with { type: 'json' };
 import skillTree from '../../data/skill-tree.json' with { type: 'json' };
+import chart from '../../data/chart.json' with { type: 'json' };
 import trade from '../../data/trade.json' with { type: 'json' };
 import surfaces from '../../data/surfaces.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
@@ -25,7 +26,7 @@ import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [between, hallOfTime], world, npcs, lines, quests, player, flasks, trade, books, moments };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, surfaces, props, zones: [between, hallOfTime], world, npcs, lines, quests, player, flasks, trade, books, moments };
 
 export function loadContent(): Content {
   const content: Content = parseContent(RAW_CONTENT);

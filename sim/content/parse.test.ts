@@ -107,8 +107,9 @@ const extraNode = {
   description: '+10 Maximum Life.',
   icon: 'tempered_body',
   kind: 'minor',
-  column: 3,
-  row: 3,
+  path: 'storm',
+  column: 0,
+  row: -15.2,
   requires: ['eye_of_the_storm'],
   requireMode: 'all',
   statMods: [{ stat: 'maxLife', op: 'add', value: 10 }],
@@ -193,7 +194,7 @@ void test('contentProblems reports dangling references', (): void => {
 
 void test('a tree node needs a known kind and a place of its own', (): void => {
   assert.throws((): Content => parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, kind: 'huge' }] }), /kind/);
-  const stacked: Content = parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, column: 0, row: 0 }] });
+  const stacked: Content = parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, column: 0, row: -14 }] });
   assert.ok(contentProblems(stacked).some((line: string): boolean => line.includes('same column and row')));
 });
 

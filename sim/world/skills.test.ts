@@ -8,7 +8,8 @@ import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { cellIndex } from '../nav/grid.ts';
 import { chainedSkill, chargedSkill, comboHits, startSkill } from './skills.ts';
-import { damageTo, dummy, offset, run, shapeArena, shapeSkill } from '../../test/shape-support.ts';
+import { damageTo, dummy, offset, run, SHAPE_CONTENT, shapeArena, shapeSkill } from '../../test/shape-support.ts';
+import { resolveSkill } from '../stats.ts';
 import { stepWorld } from './step.ts';
 import type { AreaState, Command, MonsterState, World, WorldEvent } from './types.ts';
 
@@ -250,4 +251,19 @@ void test('a channel ends when mana runs out', (): void => {
   const events: WorldEvent[] = run(world, 1.5);
   assert.equal(world.player.action, null);
   assert.ok(events.some((event: WorldEvent): boolean => event.type === 'notice' && event.reason === 'no_mana'));
+});
+
+void test('every changed form the chart offers lands on an enemy when cast at it, and an echoed form lands twice', (): void => {
+  for (const node of SHAPE_CONTENT.skillTree) {
+    if (node.variant === null) continue;
+    const changed: SkillDef = resolveSkill(SHAPE_CONTENT, must(SHAPE_CONTENT.skills.get(node.variant.skill), node.variant.skill), [node.id]);
+    if (changed.press !== null || changed.delivery.type === 'dash') continue;
+    const world: World = shapeArena([]);
+    world.player.skills = [changed];
+    const target: MonsterState = dummy(world, offset(3, 0));
+    const events: WorldEvent[] = run(world, 2.5, [{ type: 'skill', slot: 0, aim: target.pos, targetId: target.id }]);
+    const hits: number[] = damageTo(events, target.id);
+    assert.ok(hits.length > 0, `${node.id} lands`);
+    if (changed.echo > 0) assert.ok(hits.length >= 2, `${node.id} echoes`);
+  }
 });

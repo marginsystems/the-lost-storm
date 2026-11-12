@@ -9,6 +9,7 @@ import type { BookDef, StoryFlags, ZoneHud, ZoneVoid } from './story-types.ts';
 export type { ZoneAmbience } from './ambience-types.ts';
 import type { ActEnd, RetiredZones, ZoneDrift, ZoneTrigger, ZoneWeather } from './road-types.ts';
 import type { MomentField, MomentLibrary } from './moment-types.ts';
+import type { ChartDef, SkillTarget, SkillVariant } from './chart-types.ts';
 
 export const STAT_IDS = [
   'maxLife',
@@ -37,11 +38,11 @@ export interface StatMod {
   readonly value: number;
 }
 
-export const SKILL_MOD_FIELDS = ['damagePercent', 'areaPercent', 'cooldownPercent', 'manaCostPercent', 'knockbackPercent', 'projectiles', 'pierce'] as const;
+export const SKILL_MOD_FIELDS = ['damagePercent', 'areaPercent', 'rangePercent', 'durationPercent', 'cooldownPercent', 'manaCostPercent', 'knockbackPercent', 'staggerPercent', 'projectiles', 'pierce', 'chains'] as const;
 export type SkillModField = (typeof SKILL_MOD_FIELDS)[number];
 
 export interface SkillMod {
-  readonly skill: string;
+  readonly target: SkillTarget;
   readonly field: SkillModField;
   readonly value: number;
 }
@@ -279,7 +280,7 @@ export interface ItemScaling {
 export const REQUIRE_MODES = ['all', 'any'] as const;
 export type RequireMode = (typeof REQUIRE_MODES)[number];
 
-export const TREE_NODE_KINDS = ['minor', 'keystone'] as const;
+export const TREE_NODE_KINDS = ['minor', 'notable', 'keystone'] as const;
 export type TreeNodeKind = (typeof TREE_NODE_KINDS)[number];
 
 export interface SkillTreeNodeDef {
@@ -288,13 +289,17 @@ export interface SkillTreeNodeDef {
   readonly description: string;
   readonly icon: string;
   readonly kind: TreeNodeKind;
+  readonly path: string;
   readonly column: number;
   readonly row: number;
   readonly requires: readonly string[];
   readonly requireMode: RequireMode;
   readonly statMods: readonly StatMod[];
   readonly skillMods: readonly SkillMod[];
+  readonly variant: SkillVariant | null;
 }
+
+export type { ChartDef, ChartGroup, ChartPath, ChartRespec, SkillTarget, SkillVariant } from './chart-types.ts';
 
 export type { AttachmentDef, RigActionClip, RigClips, RigDef, RigSocket, RigUnarmedClips, Triple } from './rig-types.ts';
 
@@ -645,6 +650,7 @@ export interface Content {
   readonly affixes: ReadonlyMap<string, AffixDef>;
   readonly itemScaling: ItemScaling;
   readonly skillTree: readonly SkillTreeNodeDef[];
+  readonly chart: ChartDef;
   readonly rigs: ReadonlyMap<string, RigDef>;
   readonly attachments: ReadonlyMap<string, AttachmentDef>;
   readonly wearables: ReadonlyMap<string, WearableDef>;

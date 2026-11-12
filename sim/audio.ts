@@ -176,6 +176,8 @@ export function uiActionForCommand(command: Command): UiAction | null {
   let action: UiAction | null = null;
   switch (command.type) {
     case 'allocate':
+    case 'refund':
+    case 'respec':
       action = 'skill_point';
       break;
     case 'equip':

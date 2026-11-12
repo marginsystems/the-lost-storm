@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { CLASSIC_BAR, must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
-import type { Content, SkillDef, StatBlock } from './content/types.ts';
+import type { Content, SkillDef, SkillMod, StatBlock } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
@@ -81,6 +81,50 @@ void test('Rolling Thunder widens Thunderclap and shortens its cooldown', (): vo
   assert.ok(Math.abs(rolling.delivery.radius - plain.delivery.radius * 1.35) < 1e-9);
   assert.ok(Math.abs(rolling.cooldown - plain.cooldown * 0.75) < 1e-9);
   assert.ok(Math.abs(rolling.knockback - plain.knockback * 1.5) < 1e-9);
+});
+
+void test('a modifier on a group of skills reaches every skill in the group and nothing else', (): void => {
+  const taken: readonly string[] = ['stormcallers_focus', 'storm_1'];
+  const lightning: number = must(content.chart.groups.find((group): boolean => group.id === 'lightning'), 'lightning').skills.length;
+  assert.ok(lightning > 3);
+  for (const id of ['storm_bolt', 'thunderclap', 'forkline']) {
+    const plain: SkillDef = skillOf(id);
+    assert.ok(resolveSkill(content, plain, taken).damage.weaponPercent > plain.damage.weaponPercent, id);
+  }
+  assert.equal(resolveSkill(content, skillOf('cleave'), taken), skillOf('cleave'));
+});
+
+function probe(skillMods: readonly SkillMod[]): Content {
+  return { ...content, skillTree: [{ ...must(content.skillTree[0], 'node'), id: 'probe', skillMods, statMods: [] }] };
+}
+
+void test('range, duration, jumps and stagger modifiers reach the delivery', (): void => {
+  const squall: SkillDef = resolveSkill(probe([{ target: { type: 'skill', skill: 'squall' }, field: 'durationPercent', value: 0.5 }, { target: { type: 'skill', skill: 'squall' }, field: 'rangePercent', value: 0.2 }]), skillOf('squall'), ['probe']);
+  assert.ok(squall.delivery.type === 'area');
+  assert.equal(squall.delivery.duration, 6);
+  assert.ok(Math.abs(squall.delivery.range - 11 * 1.2) < 1e-9);
+  const fork: SkillDef = resolveSkill(probe([{ target: { type: 'skill', skill: 'forkline' }, field: 'chains', value: 2 }, { target: { type: 'skill', skill: 'forkline' }, field: 'staggerPercent', value: 1 }]), skillOf('forkline'), ['probe']);
+  assert.ok(fork.delivery.type === 'chain' && fork.delivery.jumps === 6);
+  assert.ok(Math.abs(fork.stagger - skillOf('forkline').stagger * 2) < 1e-9);
+});
+
+void test('a variant place swaps how a skill is delivered but keeps its id and slot', (): void => {
+  const lance: SkillDef = resolveSkill(content, skillOf('storm_bolt'), ['stormcallers_focus', 'storm_1', 'forked_bolt', 'storm_4', 'storm_lance']);
+  assert.equal(lance.id, 'storm_bolt');
+  assert.equal(lance.name, 'Storm Lance');
+  assert.equal(lance.delivery.type, 'beam');
+  const whirl: SkillDef = resolveSkill(content, skillOf('cleave'), ['heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave']);
+  assert.equal(whirl.delivery.type, 'nova');
+  assert.equal(whirl.combo, null);
+  const echoed: SkillDef = resolveSkill(content, skillOf('storm_bolt'), ['first_echo', 'echo_1', 'long_squall', 'echo_4', 'twice_told_bolt']);
+  assert.ok(echoed.echo > 0);
+  for (const node of content.skillTree) {
+    if (node.variant === null) continue;
+    const base: SkillDef = skillOf(node.variant.skill);
+    const changed: SkillDef = resolveSkill(content, base, [node.id]);
+    assert.equal(changed.id, base.id, node.id);
+    assert.notEqual(changed.name, base.name, node.id);
+  }
 });
 
 void test('skills without matching modifiers are returned untouched', (): void => {

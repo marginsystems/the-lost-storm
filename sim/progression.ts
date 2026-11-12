@@ -1,4 +1,4 @@
-import type { Content, SkillTreeNodeDef, XpCurve } from './content/types.ts';
+import type { Content, SkillTreeNodeDef, SkillVariant, XpCurve } from './content/types.ts';
 
 export interface XpResult {
   readonly level: number;
@@ -31,8 +31,27 @@ export function requirementsMet(node: SkillTreeNodeDef, allocated: readonly stri
   return node.requireMode === 'all' ? node.requires.every(has) : node.requires.some(has);
 }
 
+export function rivalVariant(content: Content, allocated: readonly string[], node: SkillTreeNodeDef): SkillTreeNodeDef | null {
+  const variant: SkillVariant | null = node.variant;
+  if (variant === null) return null;
+  return content.skillTree.find((other: SkillTreeNodeDef): boolean => other.id !== node.id && allocated.includes(other.id) && other.variant?.skill === variant.skill) ?? null;
+}
+
 export function canAllocate(content: Content, allocated: readonly string[], skillPoints: number, nodeId: string): boolean {
   const node: SkillTreeNodeDef | null = findNode(content, nodeId);
   if (node === null || skillPoints <= 0 || allocated.includes(nodeId)) return false;
-  return requirementsMet(node, allocated);
+  return requirementsMet(node, allocated) && rivalVariant(content, allocated, node) === null;
+}
+
+export function canRefund(content: Content, allocated: readonly string[], nodeId: string): boolean {
+  if (!allocated.includes(nodeId)) return false;
+  const rest: readonly string[] = allocated.filter((id: string): boolean => id !== nodeId);
+  return rest.every((id: string): boolean => {
+    const node: SkillTreeNodeDef | null = findNode(content, id);
+    return node === null || requirementsMet(node, rest);
+  });
+}
+
+export function refundCost(content: Content, level: number, points: number): number {
+  return Math.round(points * (content.chart.respec.goldPerPoint + content.chart.respec.goldPerLevel * level));
 }

@@ -1,4 +1,4 @@
-import type { Content, SkillDef, SkillMod, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { ChartGroup, Content, SkillDef, SkillMod, SkillTarget, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, itemMods } from './items.ts';
 import { describeMod } from './stat-text.ts';
@@ -77,11 +77,16 @@ function gearBonuses(content: Content, equipped: Equipment): SheetBonus[] {
   return [...sums.values()].filter((mod: StatMod): boolean => mod.value !== 0).map((mod: StatMod): SheetBonus => ({ source: 'gear', text: describeMod(mod) }));
 }
 
+function targetName(content: Content, target: SkillTarget): string {
+  if (target.type === 'skill') return content.skills.get(target.skill)?.name ?? target.skill;
+  return content.chart.groups.find((group: ChartGroup): boolean => group.id === target.group)?.name ?? target.group;
+}
+
 function skillModText(content: Content, mod: SkillMod): string {
-  const name: string = content.skills.get(mod.skill)?.name ?? mod.skill;
+  const name: string = targetName(content, mod.target);
   const sign: string = mod.value < 0 ? '-' : '+';
   const size: number = Math.abs(mod.value);
-  const amount: string = mod.field === 'projectiles' || mod.field === 'pierce' ? String(size) : `${Math.round(size * 100)}%`;
+  const amount: string = mod.field === 'projectiles' || mod.field === 'pierce' || mod.field === 'chains' ? String(size) : `${Math.round(size * 100)}%`;
   return `${sign}${amount} ${mod.field.replace(/Percent$/, '')} (${name})`;
 }
 
