@@ -521,9 +521,10 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           label.element.classList.toggle('dim', !shown);
         }
         const inner: Element | null = label.element.firstElementChild;
-        if (inner instanceof HTMLElement && inner.offsetWidth > 0) {
-          label.width = inner.offsetWidth;
-          label.height = inner.offsetHeight;
+        const size: TagSize | null = inner instanceof HTMLElement ? tagSizes.size(inner) : null;
+        if (size !== null && size.width > 0) {
+          label.width = size.width;
+          label.height = size.height;
         }
         camera.project(label.ground.pos.x, label.ground.find === null ? OVERLAYS.labelLift : OVERLAYS.findLift, label.ground.pos.z, point);
         if (shown) {
