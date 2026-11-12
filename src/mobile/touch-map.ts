@@ -149,8 +149,8 @@ export function joinsPinch(stickMoved: boolean, msSinceStick: number): boolean {
   return !stickMoved && msSinceStick <= TOUCH.pinchJoinMs;
 }
 
-export function rotateHintShows(portrait: boolean, msInPortrait: number, dismissed: boolean): boolean {
-  return portrait && !dismissed && msInPortrait < TOUCH.rotateHintMs;
+export function rotateHintShows(portrait: boolean, msInPortrait: number, dismissed: boolean, playing: boolean): boolean {
+  return playing && portrait && !dismissed && msInPortrait < TOUCH.rotateHintMs;
 }
 
 export function cooldownTurn(remaining: number, total: number): number {

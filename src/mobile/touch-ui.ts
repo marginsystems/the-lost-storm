@@ -6,6 +6,7 @@ import type { Hud, HudPanel } from '../hud/hud-api.ts';
 import { iconSvg } from '../hud/icons.ts';
 import type { Input } from '../input.ts';
 import { INPUT } from '../input.ts';
+import { TITLE_SCREEN } from '../title-screen.ts';
 import type { Candidate, FlaskEntry, StickReading, TouchButton } from './touch-map.ts';
 import { aimedSkill, arcPoint, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, pinchWheelDelta, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 import touchCss from './touch.css?inline';
@@ -105,7 +106,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   let rotateTimer: number | undefined;
   const showRotate = (): void => {
     const shownFor: number = performance.now() - portraitSince;
-    const on: boolean = rotateHintShows(portrait.matches, shownFor, rotateDismissed);
+    const on: boolean = rotateHintShows(portrait.matches, shownFor, rotateDismissed, document.body.classList.contains(TITLE_SCREEN.playingClass));
     rotate.classList.toggle('on', on);
     window.clearTimeout(rotateTimer);
     if (on) rotateTimer = window.setTimeout(showRotate, TOUCH.rotateHintMs - shownFor);
@@ -118,6 +119,14 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     rotateDismissed = true;
     showRotate();
   });
+  let wasPlaying: boolean = document.body.classList.contains(TITLE_SCREEN.playingClass);
+  new MutationObserver((): void => {
+    const playing: boolean = document.body.classList.contains(TITLE_SCREEN.playingClass);
+    if (playing === wasPlaying) return;
+    wasPlaying = playing;
+    portraitSince = performance.now();
+    showRotate();
+  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   showRotate();
 
   let views: ButtonView[] = [];

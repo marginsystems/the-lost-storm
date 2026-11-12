@@ -21,6 +21,7 @@ export interface HudApi {
 
 export interface Hud {
   update(dt: number): void;
+  refreshItems(): void;
   handleEvents(events: readonly WorldEvent[]): void;
   isPointerOverUi(): boolean;
   togglePanel(panel: HudPanel): void;

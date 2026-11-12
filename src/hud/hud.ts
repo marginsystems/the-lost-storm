@@ -182,6 +182,10 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   };
 
   return {
+    refreshItems(): void {
+      refreshOpen('inventory');
+      refreshOpen('character');
+    },
     update(dt: number): void {
       const world = api.world;
       fps.frame(performance.now());

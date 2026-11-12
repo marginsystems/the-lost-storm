@@ -97,11 +97,12 @@ void test('the left share of the screen moves, the rest touches the world', (): 
   assert.equal(sideForPoint(700, 800), 'world');
 });
 
-void test('the rotate hint shows only in portrait, until dismissed or timed out', (): void => {
-  assert.equal(rotateHintShows(true, 0, false), true);
-  assert.equal(rotateHintShows(false, 0, false), false);
-  assert.equal(rotateHintShows(true, 0, true), false);
-  assert.equal(rotateHintShows(true, TOUCH.rotateHintMs + 1, false), false);
+void test('the rotate hint shows only in portrait while playing, until dismissed or timed out', (): void => {
+  assert.equal(rotateHintShows(true, 0, false, true), true);
+  assert.equal(rotateHintShows(true, 0, false, false), false);
+  assert.equal(rotateHintShows(false, 0, false, true), false);
+  assert.equal(rotateHintShows(true, 0, true, true), false);
+  assert.equal(rotateHintShows(true, TOUCH.rotateHintMs + 1, false, true), false);
 });
 
 void test('a short still touch is a tap, a drag or a long press is not', (): void => {

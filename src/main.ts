@@ -520,6 +520,7 @@ async function start(): Promise<void> {
     await loadRemainingCharacters(loader, content, library);
     thumbnails = createItemThumbnails(library, shownPieces);
     actors.refreshWear(world);
+    hud.refreshItems();
     if (mobile.quality.tier.preloadAllZones) await preloadZones(loader, content);
   };
 
