@@ -10,6 +10,12 @@
 }
 
 .quest {
+  align-self: flex-end;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 5px 10px 6px;
+  border-radius: 4px;
+  background: var(--legible-plate);
   opacity: 0;
   transform: translateX(26px);
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);

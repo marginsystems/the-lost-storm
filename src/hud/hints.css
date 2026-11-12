@@ -3,6 +3,13 @@
   left: 0;
   right: 0;
   bottom: calc(100% + 6px);
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: var(--legible-plate);
   display: flex;
   align-items: center;
   justify-content: center;

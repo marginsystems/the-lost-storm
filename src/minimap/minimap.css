@@ -42,6 +42,13 @@
 }
 
 .minimap-zone {
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-left: auto;
+  padding: 0 8px;
+  border-radius: 3px;
+  background: var(--legible-plate);
   height: var(--minimap-label);
   font-family: var(--serif);
   font-size: 12px;
