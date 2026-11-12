@@ -73,7 +73,6 @@ interface SurfaceUniforms {
   readonly uTint: IUniform<Color>;
   readonly uStrength: IUniform<number>;
   readonly uTime: IUniform<number>;
-  readonly uDissolve: IUniform<number>;
   readonly uMark: IUniform<number>;
   readonly uPress: IUniform<number>;
   readonly uAngle: IUniform<number>;
@@ -82,7 +81,7 @@ interface SurfaceUniforms {
 }
 
 function surfaceUniforms(tint: Color): SurfaceUniforms {
-  return { uTint: { value: tint.clone() }, uStrength: { value: 0 }, uTime: { value: 0 }, uDissolve: { value: 0 }, uMark: { value: 0 }, uPress: { value: 0 }, uAngle: { value: 0 }, uPressGlow: { value: MEMBRANE.glow }, uPressWidth: { value: MEMBRANE.width } };
+  return { uTint: { value: tint.clone() }, uStrength: { value: 0 }, uTime: { value: 0 }, uMark: { value: 0 }, uPress: { value: 0 }, uAngle: { value: 0 }, uPressGlow: { value: MEMBRANE.glow }, uPressWidth: { value: MEMBRANE.width } };
 }
 
 function glowMaterial(vertex: string, fragment: string, uniforms: SurfaceUniforms): ShaderMaterial {
@@ -442,8 +441,6 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     entry.floorUniforms.uStrength.value = MOMENT_VIEW.floorAlpha * strength * (1 + entry.awake * 0.4);
     entry.floorUniforms.uMark.value = marking ? MOMENT_VIEW.markAlpha * (0.6 + 0.4 * Math.sin(clock * MOMENT_VIEW.markPulse)) : 0;
     entry.floorUniforms.uTint.value.copy(marking ? MARK : entry.lens);
-    entry.domeUniforms.uDissolve.value = fade;
-    entry.floorUniforms.uDissolve.value = fade;
     entry.domeUniforms.uTime.value = clock * MOMENT_VIEW.shimmerSpeed;
     entry.floorUniforms.uTime.value = clock * MOMENT_VIEW.shimmerSpeed;
     entry.dome.scale.setScalar(moment.def.radius * (0.6 + 0.4 * entry.shown));

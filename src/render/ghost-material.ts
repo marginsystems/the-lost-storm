@@ -5,7 +5,7 @@ export const GHOST = {
   rimPower: 2.2,
   rimBoost: 1.8,
   shadeFloor: 0.35,
-  speckle: 3,
+  vanish: 0.004,
 } as const;
 
 export interface GhostUniforms {
@@ -27,8 +27,8 @@ export const GHOST_SHADE: string = [
   `diffuseColor.rgb = mix(diffuseColor.rgb, uGhostTint * (${GHOST.shadeFloor.toFixed(2)} + ghostLuma), uGhostMix);`,
   'float ghostFacing = clamp(1.0 - abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0);',
   `totalEmissiveRadiance += uFlash + uGhostTint * pow(ghostFacing, ${GHOST.rimPower.toFixed(2)}) * ${GHOST.rimBoost.toFixed(2)} * uGhostRim;`,
-  `float ghostSpeck = fract(sin(dot(floor(gl_FragCoord.xy / ${GHOST.speckle.toFixed(1)}), vec2(12.9898, 78.233))) * 43758.5453);`,
-  'if (ghostSpeck < uGhostDissolve) discard;',
+  'diffuseColor.a *= clamp(1.0 - uGhostDissolve, 0.0, 1.0);',
+  `if (diffuseColor.a < ${GHOST.vanish.toFixed(3)}) discard;`,
 ].join('\n');
 
 export function makeGhost(material: MeshStandardMaterial, flash: IUniform<Color>, ghost: GhostUniforms): void {

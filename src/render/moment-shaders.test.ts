@@ -11,3 +11,10 @@ void test('the checker catches the shapes that turned the screen black', (): voi
   assert.equal(unsafeGlsl('float facing = 1.0 - abs(d);\nfloat rim = pow(facing, 3.4);').length, 1);
   assert.equal(unsafeGlsl('float pool = smoothstep(1.0, 0.55, d);').length, 1);
 });
+
+void test('a fading bubble dissolves by its colour alone, with no screen-space speckle', (): void => {
+  for (const shader of [DOME_FRAGMENT, FLOOR_FRAGMENT]) {
+    assert.ok(!shader.includes('gl_FragCoord'));
+    assert.ok(!shader.includes('discard'));
+  }
+});
