@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFSoftShadowMap, PerspectiveCamera, PointLight, Scene, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
+import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFShadowMap, PerspectiveCamera, PointLight, Scene, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
 import type { ZoneAmbience } from '../../sim/content/types.ts';
 import type { GraphicsPreset } from '../settings/settings.ts';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -50,7 +50,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = STAGE.exposure;
   renderer.shadowMap.enabled = tier.shadows;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
 
   const scene: Scene = new Scene();
   const background: Color = new Color(0x000000);
