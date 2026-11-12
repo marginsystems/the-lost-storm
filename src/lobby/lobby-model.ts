@@ -77,10 +77,17 @@ export function asksForName(board: Leaderboard): boolean {
   return board.you === null || !board.you.chosen;
 }
 
-export const CHOSEN_NAMES: readonly string[] = ['Tavin', 'Orrin', 'Sefa', 'Bram', 'Wynn', 'Calder', 'Edda', 'Joren', 'Liesl', 'Teodor', 'Ilse', 'Rook', 'Anwen', 'Halden', 'Mirel', 'Osk'];
+export type NameBody = 'man' | 'woman';
 
-export function chooseName(random: () => number, refused: ReadonlySet<string>): string | null {
-  const open: readonly string[] = CHOSEN_NAMES.filter((name: string): boolean => !refused.has(name));
+const EITHER_NAMES: readonly string[] = ['Wynn', 'Rook', 'Osk', 'Ash', 'Sorrel'];
+
+export const CHOSEN_NAMES: Readonly<Record<NameBody, readonly string[]>> = {
+  man: ['Tavin', 'Garrick', 'Bram', 'Calder', 'Joren', 'Teodor', 'Halden', 'Corvin', 'Edrik', 'Tobin', ...EITHER_NAMES],
+  woman: ['Sefa', 'Edda', 'Liesl', 'Ilse', 'Anwen', 'Mirel', 'Runa', 'Tilde', 'Ysolde', 'Brenna', ...EITHER_NAMES],
+};
+
+export function chooseName(body: NameBody, random: () => number, refused: ReadonlySet<string>): string | null {
+  const open: readonly string[] = CHOSEN_NAMES[body].filter((name: string): boolean => !refused.has(name));
   if (open.length === 0) return null;
   return open[Math.min(open.length - 1, Math.floor(random() * open.length))] ?? null;
 }
