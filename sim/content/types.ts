@@ -294,7 +294,7 @@ export interface SkillTreeNodeDef {
   readonly skillMods: readonly SkillMod[];
 }
 
-export type { AttachmentDef, RigActionClip, RigClips, RigDef, RigSocket, Triple } from './rig-types.ts';
+export type { AttachmentDef, RigActionClip, RigClips, RigDef, RigSocket, RigUnarmedClips, Triple } from './rig-types.ts';
 
 export interface PropLight {
   readonly color: string;

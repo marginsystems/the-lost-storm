@@ -1,5 +1,5 @@
 {
-  "rig": "skeleton_hero",
+  "rig": "hero_man",
   "radius": 0.5,
   "baseStats": {
     "maxLife": 100,
@@ -75,11 +75,8 @@
   "respawnDelay": 1.4,
   "respawnInvulnerability": 3,
   "deathPenalty": {"minLevel": 5, "xpPercent": 0.1},
-  "tint": "#f4eedd",
+  "tint": "#e8d2bd",
   "color": "#8fdcff",
   "gear": [],
-  "wear": [
-    "dirty_shirt",
-    "dirty_trousers"
-  ]
+  "wear": ["traveller_coat", "traveller_trousers", "traveller_boots", "traveller_hood"]
 }

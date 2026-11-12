@@ -1,8 +1,12 @@
-import type { RigDef } from './types.ts';
+import type { RigActionClip, RigDef } from './types.ts';
+
+function actionClipNames(actions: Readonly<Record<string, RigActionClip>>): string[] {
+  return Object.values(actions).map((entry: RigActionClip): string => entry.clip);
+}
 
 export function rigClipNames(rig: RigDef): string[] {
   const clips = rig.clips;
-  const named: string[] = [clips.idle, clips.run, ...clips.hit, ...clips.death, ...(clips.rise === null ? [] : [clips.rise]), ...Object.values(clips.actions).map((entry: { readonly clip: string }): string => entry.clip)];
+  const named: string[] = [clips.idle, clips.run, ...clips.hit, ...clips.death, ...(clips.rise === null ? [] : [clips.rise]), ...actionClipNames(clips.actions), ...(clips.unarmed === null ? [] : [clips.unarmed.idle, ...actionClipNames(clips.unarmed.actions)])];
   return [...new Set<string>(named)];
 }
 

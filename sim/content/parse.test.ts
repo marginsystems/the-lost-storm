@@ -570,6 +570,19 @@ void test('a combo is data: its steps parse, and a combo without steps or with a
   assert.throws((): Content => parseContent({ ...shipped, skills: [...skills, { ...extraSkill, combo: { window: 0.5, steps: [{ ...step, damageScale: 'big' }] } }] }), /steps\[0\]\.damageScale/);
 });
 
+void test('a rig may name unarmed clips for when it holds nothing, and they are checked like its other actions', (): void => {
+  const [first] = rigs;
+  const rig = must(first, 'first rig');
+  const parsed: Content = parseContent(shipped);
+  const hero = must(parsed.rigs.get(parsed.player.rig), 'hero rig');
+  const bare = must(hero.clips.unarmed, 'hero unarmed clips');
+  assert.ok(must(bare.actions['attack'], 'unarmed attack').impactFraction > 0);
+  const plain: Content = parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, unarmed: null } }] });
+  assert.equal(must(plain.rigs.get(rig.id), 'plain rig').clips.unarmed, null);
+  const late = { idle: 'Idle_Loop', actions: { attack: { clip: 'Punch_Jab', impactFraction: 1 } } };
+  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, unarmed: late } }] }), /unarmed\.actions\.attack\.impactFraction/);
+});
+
 void test('a rig lists its hit and death clips and names its action clips, and a skill whose clip the rig lacks is reported', (): void => {
   const [first] = rigs;
   const rig = must(first, 'first rig');
@@ -588,7 +601,7 @@ void test('a rig lists its hit and death clips and names its action clips, and a
   const cleave: unknown = skills.find((entry: { readonly id: string }): boolean => entry.id === 'cleave');
   const rest: unknown[] = skills.filter((entry: { readonly id: string }): boolean => entry.id !== 'cleave');
   const chained: string[] = contentProblems(parseContent({ ...shipped, skills: [...rest, Object.assign({}, cleave, { combo: { window: 0.5, steps: [step] } })] }));
-  assert.ok(chained.includes('skill book uses skill cleave, but rig skeleton_hero has no action clip backflip'));
+  assert.ok(chained.includes('skill book uses skill cleave, but rig hero_man has no action clip backflip'));
 });
 
 function voidWith(change: Readonly<Record<string, unknown>>): RawContent {

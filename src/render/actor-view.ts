@@ -2,7 +2,7 @@ import type { AnimationAction, AnimationClip } from 'three';
 import type { Box3 } from 'three';
 import { Color, LoopOnce, LoopRepeat } from 'three';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
-import type { ActionClip, RigInstance } from './character-loader.ts';
+import type { ActionClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -87,8 +87,18 @@ function oneOf(clips: readonly AnimationClip[], chance: Chance): AnimationClip |
   return clips[Math.min(clips.length - 1, Math.floor(chance() * clips.length))] ?? null;
 }
 
+function idleClip(rig: RigInstance): AnimationClip {
+  const bare: UnarmedClipSet | null = rig.armed() ? null : rig.clips.unarmed;
+  return bare === null ? rig.clips.idle : bare.idle;
+}
+
+function actionClip(rig: RigInstance, animation: string): ActionClip | undefined {
+  const bare: UnarmedClipSet | null = rig.armed() ? null : rig.clips.unarmed;
+  return bare?.actions.get(animation) ?? rig.clips.actions.get(animation);
+}
+
 export function createActorView(rig: RigInstance, scale: number, facing: number, hoverTint: number = ACTOR.hostileHover, chance: Chance = Math.random): ActorView {
-  let current: AnimationAction = rig.mixer.clipAction(rig.clips.idle);
+  let current: AnimationAction = rig.mixer.clipAction(idleClip(rig));
   let follow: FollowThrough | null = null;
   let oneShot: number = 0;
   let dead: boolean = false;
@@ -163,7 +173,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         if (oneShot <= 0) {
           const run: boolean = actor.moving;
           const speed: number = run ? clamped(options.moveSpeed / rig.def.runSpeed, ACTOR.minRunSpeed, ACTOR.maxRunSpeed) : 1;
-          play(run ? rig.clips.run : rig.clips.idle, ACTOR.locomotionFade, speed, false, false);
+          play(run ? rig.clips.run : idleClip(rig), ACTOR.locomotionFade, speed, false, false);
         }
       }
       flash = Math.max(0, flash - ACTOR.flashDecay * dt);
@@ -177,7 +187,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       rig.mixer.update(dt);
     },
     startAction(animation: string, windup: number, recovery: number): boolean {
-      const entry: ActionClip | undefined = rig.clips.actions.get(animation);
+      const entry: ActionClip | undefined = actionClip(rig, animation);
       if (dead || entry === undefined) return false;
       const timed: boolean = entry.impactTime > 0 && windup > 0;
       play(entry.clip, ACTOR.actionFade, timed ? clamped(entry.impactTime / windup, ACTOR.minActionSpeed, ACTOR.maxActionSpeed) : 1, true, true);
@@ -204,12 +214,12 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     revive(): void {
       dead = false;
       oneShot = 0;
-      play(rig.clips.idle, ACTOR.locomotionFade, 1, false, true);
+      play(idleClip(rig), ACTOR.locomotionFade, 1, false, true);
     },
     lie(progress: number | null): void {
       const clip: AnimationClip | null = rig.clips.rise;
       if (progress === null || clip === null || dead) {
-        if (lying) play(rig.clips.idle, ACTOR.standFade, 1, false, true);
+        if (lying) play(idleClip(rig), ACTOR.standFade, 1, false, true);
         lying = false;
         return;
       }

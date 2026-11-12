@@ -2,7 +2,7 @@ import type { AnimationClip, IUniform, Object3D } from 'three';
 import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import type { AttachmentDef, Content, RigDef, RigSocket, WearableDef } from '../../sim/content/types.ts';
+import type { AttachmentDef, Content, RigActionClip, RigDef, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
@@ -14,6 +14,11 @@ export interface ActionClip {
   readonly impactTime: number;
 }
 
+export interface UnarmedClipSet {
+  readonly idle: AnimationClip;
+  readonly actions: ReadonlyMap<string, ActionClip>;
+}
+
 export interface RigClipSet {
   readonly idle: AnimationClip;
   readonly run: AnimationClip;
@@ -21,6 +26,7 @@ export interface RigClipSet {
   readonly death: readonly AnimationClip[];
   readonly rise: AnimationClip | null;
   readonly actions: ReadonlyMap<string, ActionClip>;
+  readonly unarmed: UnarmedClipSet | null;
 }
 
 export interface LoadedRig {
@@ -58,6 +64,7 @@ export interface RigInstance {
   readonly mixer: AnimationMixer;
   readonly clips: RigClipSet;
   setGear(attachmentIds: readonly string[]): void;
+  armed(): boolean;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   setFlash(color: Color, amount: number): void;
   dispose(): void;
@@ -160,11 +167,16 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   const extras: GLTF[] = await Promise.all(rigClipNames(def).map((clip: string): Promise<GLTF> => loadKeptModel(loader, clipUrl(def, clip))));
   const available: AnimationClip[] = [...main.animations, ...extras.flatMap((extra: GLTF): AnimationClip[] => extra.animations)];
   const clip = (key: string, wanted: string): AnimationClip => pickClip(def, key, wanted, available);
-  const actions: Map<string, ActionClip> = new Map<string, ActionClip>();
-  for (const [key, entry] of Object.entries(def.clips.actions)) {
-    const found: AnimationClip = clip(key, entry.clip);
-    actions.set(key, { clip: found, impactTime: found.duration * entry.impactFraction });
-  }
+  const actionSet = (entries: Readonly<Record<string, RigActionClip>>): Map<string, ActionClip> => {
+    const actions: Map<string, ActionClip> = new Map<string, ActionClip>();
+    for (const [key, entry] of Object.entries(entries)) {
+      const found: AnimationClip = clip(key, entry.clip);
+      actions.set(key, { clip: found, impactTime: found.duration * entry.impactFraction });
+    }
+    return actions;
+  };
+  const actions: Map<string, ActionClip> = actionSet(def.clips.actions);
+  const bare: RigUnarmedClips | null = def.clips.unarmed;
   const template: Object3D = cloneSkinned(main.scene);
   const bodyParts: string[] = skinnedMeshes(template).reduce((names: string[], mesh: SkinnedMesh): string[] => {
     const grouped: string[] = groupBodyParts(mesh, def.bodyParts);
@@ -180,6 +192,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
       death: def.clips.death.map((wanted: string): AnimationClip => clip('death', wanted)),
       rise: def.clips.rise === null ? null : clip('rise', def.clips.rise),
       actions,
+      unarmed: bare === null ? null : { idle: clip('unarmed.idle', bare.idle), actions: actionSet(bare.actions) },
     },
     bodyParts,
     fitted: new Map<string, readonly BufferGeometry[]>(),
@@ -379,6 +392,9 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         bone.add(holder);
         held.push(holder);
       }
+    },
+    armed(): boolean {
+      return held.length > 0;
     },
     setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void {
       const key: string = `${wearableIds.join('|')}#${hiddenParts.join('|')}#${library.wearables.size}`;

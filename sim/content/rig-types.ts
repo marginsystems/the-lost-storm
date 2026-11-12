@@ -3,6 +3,11 @@ export interface RigActionClip {
   readonly impactFraction: number;
 }
 
+export interface RigUnarmedClips {
+  readonly idle: string;
+  readonly actions: Readonly<Record<string, RigActionClip>>;
+}
+
 export interface RigClips {
   readonly idle: string;
   readonly run: string;
@@ -10,6 +15,7 @@ export interface RigClips {
   readonly death: readonly string[];
   readonly rise: string | null;
   readonly actions: Readonly<Record<string, RigActionClip>>;
+  readonly unarmed: RigUnarmedClips | null;
 }
 
 export type Triple = readonly [number, number, number];

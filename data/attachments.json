@@ -1,5 +1,5 @@
 [
-  { "id": "rusted_blade", "model": "models/weapons/rusted_blade.glb", "socket": "hand_r", "surfaces": { "rust": "rusted_iron", "leather": "leather" } },
+  { "id": "rusted_blade", "model": "models/weapons/sword_1h.glb", "socket": "hand_r", "surfaces": { "steel": "worn_steel", "bronze": "dark_steel", "leather": "dark_leather" } },
   { "id": "sword_1h", "model": "models/weapons/sword_1h.glb", "socket": "hand_r", "surfaces": { "steel": "steel", "bronze": "bronze", "leather": "leather" } },
   { "id": "hex_staff", "model": "models/weapons/hex_staff.glb", "socket": "hand_r", "surfaces": { "wood": "haft", "bone": "bone", "dark_steel": "dark_steel" } },
   { "id": "greatsword", "model": "models/weapons/greatsword.glb", "socket": "hand_r", "surfaces": { "steel": "steel", "dark_steel": "dark_steel", "bronze": "bronze", "leather": "leather" } },
