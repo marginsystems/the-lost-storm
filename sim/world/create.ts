@@ -12,6 +12,7 @@ import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
 import { startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
+import { beginVoid } from './void.ts';
 import { placePlayer, respawnExists, startZone } from './zones.ts';
 
 export interface WorldOptions {
@@ -123,9 +124,12 @@ export function createWorld(content: Content, options: WorldOptions): World {
     nextPackId: 1,
     surge: save?.surge ?? 1,
     surgeTimer: null,
+    wake: null,
+    shift: { x: 0, z: 0 },
     events: [],
   };
   placePlayer(world);
+  beginVoid(world);
   if (save === null) giveStartingItems(world);
   for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   startQuests(world);

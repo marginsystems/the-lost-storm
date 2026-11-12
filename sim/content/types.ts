@@ -283,6 +283,7 @@ export interface RigClips {
   readonly run: string;
   readonly hit: readonly string[];
   readonly death: readonly string[];
+  readonly rise: string | null;
   readonly actions: Readonly<Record<string, RigActionClip>>;
 }
 
@@ -399,8 +400,21 @@ export interface ZoneWalls {
   readonly halfThickness: number;
 }
 
-export const ZONE_KINDS = ['town', 'wild'] as const;
+export const ZONE_KINDS = ['town', 'wild', 'void'] as const;
 export type ZoneKind = (typeof ZONE_KINDS)[number];
+
+export interface ZoneWake {
+  readonly lie: number;
+  readonly rise: number;
+}
+
+export interface ZoneVoid {
+  readonly span: number;
+  readonly wake: ZoneWake | null;
+}
+
+export const HUD_PARTS = ['life', 'mana', 'bar', 'quests', 'minimap', 'hints'] as const;
+export type HudPart = (typeof HUD_PARTS)[number];
 
 export const QUEST_STATES = ['locked', 'active', 'done'] as const;
 export type QuestState = (typeof QUEST_STATES)[number];
@@ -424,6 +438,11 @@ export interface ObjectiveCondition {
 }
 
 export type Condition = QuestCondition | ObjectiveCondition;
+
+export interface ZoneHud {
+  readonly hide: readonly HudPart[];
+  readonly until: readonly Condition[];
+}
 
 export interface ZoneExit {
   readonly id: string;
@@ -492,6 +511,8 @@ export interface ZoneDef {
   readonly npcs: readonly ZoneNpc[];
   readonly voices: readonly ZoneVoice[];
   readonly ambience: ZoneAmbience;
+  readonly void: ZoneVoid | null;
+  readonly hud: ZoneHud | null;
 }
 
 export interface LineDef {
@@ -611,6 +632,7 @@ export interface ActDef {
 
 export interface WorldDef {
   readonly start: string;
+  readonly town: string;
   readonly scaling: MonsterScaling;
   readonly acts: readonly ActDef[];
 }

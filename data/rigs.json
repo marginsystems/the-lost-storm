@@ -23,6 +23,7 @@
         "Death_Knockback",
         "Death_Collapse"
       ],
+      "rise": "Death_Collapse",
       "actions": {
         "attack": {
           "clip": "Sword_Combo_A",

@@ -13,6 +13,7 @@ import surfaces from '../../data/surfaces.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
 import world from '../../data/world.json' with { type: 'json' };
+import between from '../../data/zones/between.json' with { type: 'json' };
 import drownedBastion from '../../data/zones/drowned_bastion.json' with { type: 'json' };
 import dusksEnd from '../../data/zones/dusks_end.json' with { type: 'json' };
 import duskway from '../../data/zones/duskway.json' with { type: 'json' };
@@ -25,7 +26,7 @@ import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [stillhold, duskway, dusksEnd, theSpill, theCoursework, theStill, drownedBastion], world, npcs, lines, quests, player, flasks };
+export const RAW_CONTENT: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [between, stillhold, duskway, dusksEnd, theSpill, theCoursework, theStill, drownedBastion], world, npcs, lines, quests, player, flasks };
 
 export function loadContent(): Content {
   const content: Content = parseContent(RAW_CONTENT);

@@ -8,10 +8,17 @@ import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
 import { clearProjectiles } from './skills.ts';
 import type { GroundItem, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
+import { beginVoid } from './void.ts';
 
 export function startZone(content: Content): ZoneDef {
   const zone: ZoneDef | undefined = content.zones.get(content.world.start);
   if (zone === undefined) throw new ContentError('world.start', `unknown zone ${content.world.start}`);
+  return zone;
+}
+
+export function townZone(content: Content): ZoneDef {
+  const zone: ZoneDef | undefined = content.zones.get(content.world.town);
+  if (zone === undefined) throw new ContentError('world.town', `unknown zone ${content.world.town}`);
   return zone;
 }
 
@@ -75,6 +82,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   world.respawn = respawn;
   if (!world.visited.includes(zone.id)) world.visited.push(zone.id);
   placePlayer(world);
+  beginVoid(world);
   for (const item of carried) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   spawnNpcs(world);
   spawnPacks(world);

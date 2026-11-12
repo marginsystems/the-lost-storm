@@ -17,6 +17,7 @@ export interface RigClipSet {
   readonly run: AnimationClip;
   readonly hit: readonly AnimationClip[];
   readonly death: readonly AnimationClip[];
+  readonly rise: AnimationClip | null;
   readonly actions: ReadonlyMap<string, ActionClip>;
 }
 
@@ -163,6 +164,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
       run: clip('run', def.clips.run),
       hit: def.clips.hit.map((wanted: string): AnimationClip => clip('hit', wanted)),
       death: def.clips.death.map((wanted: string): AnimationClip => clip('death', wanted)),
+      rise: def.clips.rise === null ? null : clip('rise', def.clips.rise),
       actions,
     },
     bodyParts,
