@@ -73,6 +73,7 @@
     {"stat": "critChance", "max": 0.5},
     {"stat": "moveSpeed", "max": 10.64}
   ],
+  "manaShows": "costly_skill",
   "tint": "#e8d2bd",
   "color": "#8fdcff",
   "gear": [],

@@ -10,7 +10,7 @@ import type { SkillDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import { createWorld } from './create.ts';
 import type { HudPart } from './hud.ts';
-import { hudHidden, hudView } from './hud.ts';
+import { HUD_FRAME, hudBegun, hudHidden, hudView } from './hud.ts';
 import { stepWorld } from './step.ts';
 import type { ItemInstance, World } from './types.ts';
 
@@ -60,28 +60,40 @@ function spender(): SkillDef {
   return skill;
 }
 
-void test('a hero with nothing has no HUD parts and no skill slots, so the whole HUD stays hidden while he wakes', (): void => {
+void test('a hero with nothing keeps the whole HUD hidden while he wakes', (): void => {
   const world: World = newHero();
   assert.notEqual(world.wake, null);
-  assert.deepEqual(hudView(world), { parts: [], slots: [] });
+  assert.equal(hudBegun(world), false);
   assert.equal(hudHidden(world), true);
 });
 
-void test('his first item brings the life globe and the bag, and nothing else', (): void => {
+void test('his first item brings the whole fixed frame at once: life, XP, the bag, the sheet, the chart and the map', (): void => {
   const world: World = newHero();
   world.player.inventory[0] = item(world, 'worn_journal');
-  assert.deepEqual(parts(world), ['life', 'inventory']);
+  assert.equal(hudHidden(world), false);
+  assert.deepEqual(parts(world), [...HUD_FRAME]);
   assert.deepEqual(hudView(world).slots, []);
 });
 
-void test('a weapon skill gets its slot only once he holds a weapon, and equipping one opens the character sheet', (): void => {
+void test('the frame never changes as he earns things: later parts only add the corner pieces', (): void => {
   const world: World = newHero();
+  world.player.inventory[0] = item(world, 'worn_journal');
+  const before: readonly HudPart[] = parts(world);
   world.player.equipped.weapon = item(world, weaponBase());
-  assert.deepEqual(hudView(world).slots, [0]);
-  assert.deepEqual(parts(world), ['life', 'character']);
+  world.player.level = 2;
+  world.player.skillPoints = 1;
+  for (const part of HUD_FRAME) assert.equal(parts(world).includes(part), true, part);
+  assert.deepEqual(parts(world), before);
 });
 
-void test('each ability on the bar adds its own slot, and empty slots never show', (): void => {
+void test('a weapon skill fills its slot only once he holds a weapon', (): void => {
+  const world: World = newHero();
+  assert.deepEqual(hudView(world).slots, []);
+  world.player.equipped.weapon = item(world, weaponBase());
+  assert.deepEqual(hudView(world).slots, [0]);
+});
+
+void test('each ability on the bar fills its own slot', (): void => {
   const world: World = newHero();
   world.player.equipped.weapon = item(world, weaponBase());
   world.player.skills[3] = spender();
@@ -98,19 +110,29 @@ void test('the mana globe shows only while an ability on the bar spends mana', (
   assert.equal(parts(world).includes('mana'), false);
 });
 
-void test('XP, gold, the chart, the character sheet, the map and the quest line each come with what they are for', (): void => {
+void test('the player data can show the mana globe from the start instead', (): void => {
+  const content: Content = { ...real, player: { ...real.player, manaShows: 'always' } };
+  const world: World = createWorld(content, { seed: 2, save: null, opening: true });
+  assert.equal(parts(world).includes('mana'), true);
+});
+
+void test('gold, the quest line and the minimap each come with what they are for', (): void => {
   const world: World = newHero();
-  world.player.xp = 5;
+  assert.equal(parts(world).includes('gold'), false);
   world.player.gold = 3;
-  world.player.skillPoints = 1;
   world.visited.push('hall_of_time');
-  assert.deepEqual(parts(world), ['xp', 'gold', 'chart', 'map', 'minimap']);
-  world.player.level = 2;
-  assert.equal(parts(world).includes('character'), true);
+  assert.equal(parts(world).includes('gold'), true);
+  assert.equal(parts(world).includes('minimap'), true);
   const quest: string | undefined = [...real.quests.keys()][0];
   if (quest === undefined) throw new Error('no quest');
   world.quests[quest] = 0;
   assert.equal(parts(world).includes('quests'), true);
+});
+
+void test('anything earned shows the HUD, not only an item', (): void => {
+  const world: World = newHero();
+  world.player.xp = 5;
+  assert.equal(hudBegun(world), true);
 });
 
 void test('a returning character shows exactly what that character has earned', (): void => {

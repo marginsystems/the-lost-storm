@@ -37,8 +37,8 @@ export interface Candidate {
 }
 
 export type TouchButton =
-  | { readonly kind: 'attack'; readonly slot: number }
-  | { readonly kind: 'skill'; readonly slot: number }
+  | { readonly kind: 'attack'; readonly slot: number; readonly filled: boolean }
+  | { readonly kind: 'skill'; readonly slot: number; readonly filled: boolean }
   | { readonly kind: 'flask'; readonly slot: number; readonly label: string };
 
 export interface SkillBarEntry {
@@ -116,8 +116,7 @@ export function aimedSkill(slot: number, from: Vec2, ahead: Vec2, target: Candid
 export function touchButtons(skillBar: readonly SkillBarEntry[], attackBinding: string, flasks: readonly (FlaskEntry | null)[]): TouchButton[] {
   const buttons: TouchButton[] = [];
   skillBar.forEach((entry: SkillBarEntry, slot: number): void => {
-    if (!entry.filled) return;
-    buttons.push(entry.bindings.includes(attackBinding) ? { kind: 'attack', slot } : { kind: 'skill', slot });
+    buttons.push(entry.bindings.includes(attackBinding) ? { kind: 'attack', slot, filled: entry.filled } : { kind: 'skill', slot, filled: entry.filled });
   });
   buttons.sort((a: TouchButton, b: TouchButton): number => (a.kind === 'attack' ? 0 : 1) - (b.kind === 'attack' ? 0 : 1));
   flasks.forEach((flask: FlaskEntry | null, slot: number): void => {

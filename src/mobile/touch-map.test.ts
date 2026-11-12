@@ -69,9 +69,9 @@ void test('an aimed skill targets the enemy, or swings ahead at full range when 
 void test('buttons put the left click skill first as the attack, then every other slot, then the flasks', (): void => {
   const buttons = touchButtons([{ bindings: ['KeyQ'], filled: true }, { bindings: ['mouse_left'], filled: true }, { bindings: ['KeyW', 'mouse_right'], filled: true }], 'mouse_left', [{ name: 'Life Flask' }]);
   assert.deepEqual(buttons, [
-    { kind: 'attack', slot: 1 },
-    { kind: 'skill', slot: 0 },
-    { kind: 'skill', slot: 2 },
+    { kind: 'attack', slot: 1, filled: true },
+    { kind: 'skill', slot: 0, filled: true },
+    { kind: 'skill', slot: 2, filled: true },
     { kind: 'flask', slot: 0, label: 'Life Flask' },
   ]);
 });
@@ -122,11 +122,14 @@ void test('a still stick finger joins a second finger that lands soon after as a
   assert.equal(joinsPinch(false, TOUCH.pinchJoinMs + 1), false);
 });
 
-void test('only bar slots that hold a usable skill get a button, the attack included', (): void => {
+void test('every bar slot keeps its button, and a slot with no usable skill is marked empty, the attack included', (): void => {
   const bar = [{ bindings: ['mouse_left'], filled: false }, { bindings: ['KeyQ'], filled: false }, { bindings: ['KeyW'], filled: true }];
-  assert.deepEqual(touchButtons(bar, 'mouse_left', []), [{ kind: 'skill', slot: 2 }]);
-  assert.deepEqual(touchButtons(bar.slice(0, 2), 'mouse_left', []), []);
-  assert.deepEqual(touchButtons([{ bindings: ['mouse_left'], filled: true }], 'mouse_left', []), [{ kind: 'attack', slot: 0 }]);
+  assert.deepEqual(touchButtons(bar, 'mouse_left', []), [
+    { kind: 'attack', slot: 0, filled: false },
+    { kind: 'skill', slot: 1, filled: false },
+    { kind: 'skill', slot: 2, filled: true },
+  ]);
+  assert.deepEqual(touchButtons([{ bindings: ['mouse_left'], filled: true }], 'mouse_left', []), [{ kind: 'attack', slot: 0, filled: true }]);
 });
 
 void test('a flask the HUD does not show gets no button, and the others keep their own slot', (): void => {

@@ -6,10 +6,11 @@ import { GAME_LAYERS } from '../title-screen.ts';
 import { createHudGate, followWorld, HUD_GATE, hudGateCss, panelPart, shownData } from './hud-gate.ts';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content } from '../../sim/content/types.ts';
+import { generateItem } from '../../sim/items.ts';
 import { createWorld } from '../../sim/world/create.ts';
 import { stepWorld } from '../../sim/world/step.ts';
 import type { GroundItem, ItemInstance, World } from '../../sim/world/types.ts';
-import { HUD_PARTS } from '../../sim/world/hud.ts';
+import { HUD_FRAME, HUD_PARTS } from '../../sim/world/hud.ts';
 import type { HudGate, HudGateTarget } from './hud-gate.ts';
 
 interface Mount {
@@ -110,10 +111,10 @@ void test('the gate closes at once and opens with a reveal that settles', (): vo
   assert.equal(createHudGate(body(), false).state(), 'open');
 });
 
-void test('a HUD part or skill slot the hero has not earned is taken out of the layout, and each has its rule', (): void => {
+void test('a HUD part the hero has not earned is taken out of the layout, and each has its rule', (): void => {
   const css: string = hudGateCss();
   for (const part of HUD_PARTS) assert.ok(css.includes(`body[data-hud-show]:not([data-hud-show~='${part}']) [${HUD_GATE.partAttribute}~='${part}']`), part);
-  for (let slot: number = 0; slot < HUD_GATE.slots; slot += 1) assert.ok(css.includes(`body[data-hud-slots]:not([data-hud-slots~='${slot}']) [${HUD_GATE.slotAttribute}='${slot}']`), String(slot));
+  assert.doesNotMatch(css, /data-hud-slot/);
   assert.ok(css.includes('display: none !important'));
   assert.ok(css.includes(`animation: ${HUD_GATE.partAnimation} var(--spring-snappy-ms) var(--spring-snappy)`));
   const fade: string = css.slice(css.indexOf(`@keyframes ${HUD_GATE.partAnimation}`));
@@ -121,12 +122,12 @@ void test('a HUD part or skill slot the hero has not earned is taken out of the 
   assert.doesNotMatch(fade, /translate|transform|scale/);
 });
 
-void test('the gate writes the shown parts and slots to the page', (): void => {
+void test('the gate writes the shown parts to the page', (): void => {
   const page: HudGateTarget = { dataset: {} };
   const gate: HudGate = createHudGate(page, false);
   gate.show({ parts: ['life', 'inventory'], slots: [0, 3] });
   assert.equal(page.dataset['hudShow'], 'life inventory');
-  assert.equal(page.dataset['hudSlots'], '0 3');
+  assert.equal(page.dataset['hudSlots'], undefined);
   gate.show({ parts: [], slots: [] });
   assert.equal(page.dataset['hudShow'], '');
   assert.equal(shownData({ parts: ['map'], slots: [] }).hudShow, 'map');
@@ -156,11 +157,11 @@ void test('picking up the journal in the mist opens the gate on the life globe a
   const world: World = createWorld(content, { seed: 4, save: null, opening: true });
   const page: HudGateTarget = { dataset: {} };
   const gate: HudGate = createHudGate(page, true);
-  followWorld(gate, world);
+  followWorld(gate, world, false);
   assert.equal(gate.state(), 'closed');
   for (let seconds: number = 0; lying(world) === null && seconds < JOURNEY.limit; seconds += JOURNEY.step) {
     stepWorld(world, [{ type: 'move', held: true, dest: { x: world.player.pos.x, z: world.player.pos.z + JOURNEY.lead } }], JOURNEY.step);
-    followWorld(gate, world);
+    followWorld(gate, world, false);
     assert.equal(gate.state(), 'closed');
   }
   const journal: GroundItem | null = lying(world);
@@ -169,8 +170,23 @@ void test('picking up the journal in the mist opens the gate on the life globe a
   for (let seconds: number = 0; !carried(content, world) && seconds < JOURNEY.limit; seconds += JOURNEY.step) stepWorld(world, [], JOURNEY.step);
   assert.ok(carried(content, world));
   assert.equal(world.player.equipped.weapon, null);
-  followWorld(gate, world);
+  followWorld(gate, world, false);
   assert.notEqual(gate.state(), 'closed');
-  assert.equal(page.dataset['hudShow'], 'life inventory');
-  assert.equal(page.dataset['hudSlots'], '');
+  assert.equal(page.dataset['hudShow'], HUD_FRAME.join(' '));
+});
+
+void test('a note read as the HUD first arrives holds the frame back until it closes, so the frame fades in once', (): void => {
+  const content: Content = loadContent();
+  const world: World = createWorld(content, { seed: 2, save: null, opening: true });
+  const gate: HudGate = createHudGate({ dataset: {} }, true);
+  const journal: ItemInstance | null = generateItem(content, world.rng, world.nextItemUid, 1, 'worn_journal', null);
+  assert.ok(journal !== null);
+  world.player.inventory[0] = journal;
+  followWorld(gate, world, true);
+  assert.equal(gate.state(), 'closed');
+  followWorld(gate, world, false);
+  assert.equal(gate.state(), 'opening');
+  gate.settle();
+  followWorld(gate, world, true);
+  assert.equal(gate.state(), 'open');
 });

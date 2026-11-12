@@ -1,82 +1,53 @@
-.globe-beads {
+.globe-flask {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 9px;
+  bottom: 2px;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 7px;
+  align-items: baseline;
+  gap: 5px;
   pointer-events: none;
-  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 
-.globe-beads.used {
-  transform: translateY(1px);
+.hud-globe.life .globe-flask {
+  left: calc(100% - 8px);
 }
 
-.globe-bead {
-  --bead-fill: 0;
-  position: relative;
-  display: block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(14, 10, 12, calc(0.62 - var(--bead-fill) * 0.3));
-  box-shadow:
-    0 0 3px 1px rgba(0, 0, 0, 0.55),
-    inset 0 0 0 1px rgba(244, 232, 214, calc(0.58 + var(--bead-fill) * 0.3));
-  transition:
-    width var(--spring-smooth-ms) var(--spring-smooth),
-    height var(--spring-smooth-ms) var(--spring-smooth),
-    background-color var(--spring-smooth-ms) var(--spring-smooth),
-    box-shadow var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-.globe-bead.ready {
-  width: 11px;
-  height: 11px;
-  background: rgba(250, 236, 214, 0.94);
-  box-shadow:
-    0 0 6px rgba(250, 236, 214, 0.45),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.25);
+.hud-globe.mana .globe-flask {
+  right: calc(100% - 8px);
+  flex-direction: row-reverse;
 }
 
 .globe-key {
-  position: absolute;
-  bottom: 2px;
   font-family: var(--sans);
   font-size: 11px;
   font-weight: 500;
   line-height: 1;
   color: var(--text-dim);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 
-.hud-globe.life .globe-key {
-  right: -4px;
+.globe-count {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(244, 234, 216, 0.95);
+  transition:
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
 }
 
-.hud-globe.mana .globe-key {
-  left: -4px;
+.globe-count.none {
+  color: var(--text-dim);
+  opacity: 0.55;
 }
 
-body.touch .globe-key {
+.globe-count.used {
+  transform: translateY(1px);
+}
+
+body.touch .globe-flask {
   display: none;
-}
-
-body.touch .globe-bead {
-  width: 9px;
-  height: 9px;
-}
-
-body.touch .globe-bead.ready {
-  width: 15px;
-  height: 15px;
-}
-
-body.touch .globe-beads {
-  gap: 10px;
 }
 
 .globe-restore {

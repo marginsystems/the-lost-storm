@@ -14,8 +14,6 @@ export const HUD_GATE = {
   revealAnimation: 'hud-gate-reveal',
   partAnimation: 'hud-part-in',
   partAttribute: 'data-hud-part',
-  slotAttribute: 'data-hud-slot',
-  slots: 12,
 } as const;
 
 export type HudGateState = 'closed' | 'opening' | 'open';
@@ -46,14 +44,11 @@ function scoped(state: HudGateState, selectors: string): string {
 
 export function partCss(): string {
   const parts: string = HUD_PARTS.map((name: HudPart): string => `body[data-hud-show]:not([data-hud-show~='${name}']) [${HUD_GATE.partAttribute}~='${name}']`).join(',\n');
-  const slots: string = Array.from({ length: HUD_GATE.slots }, (_: unknown, slot: number): string => `body[data-hud-slots]:not([data-hud-slots~='${slot}']) [${HUD_GATE.slotAttribute}='${slot}']`).join(',\n');
-  return `${parts},
-${slots} {
+  return `${parts} {
   display: none !important;
 }
 
-[${HUD_GATE.partAttribute}],
-[${HUD_GATE.slotAttribute}] {
+[${HUD_GATE.partAttribute}] {
   animation: ${HUD_GATE.partAnimation} var(--spring-snappy-ms) var(--spring-snappy);
 }
 
@@ -78,12 +73,8 @@ export function tagPart(element: HTMLElement, part: HudPart): void {
   element.setAttribute(HUD_GATE.partAttribute, part);
 }
 
-export function tagSlot(element: HTMLElement, slot: number): void {
-  element.setAttribute(HUD_GATE.slotAttribute, String(slot));
-}
-
-export function shownData(view: HudView): Readonly<Record<'hudShow' | 'hudSlots', string>> {
-  return { hudShow: view.parts.join(' '), hudSlots: view.slots.join(' ') };
+export function shownData(view: HudView): Readonly<Record<'hudShow', string>> {
+  return { hudShow: view.parts.join(' ') };
 }
 
 export function hudGateCss(): string {
@@ -128,9 +119,7 @@ export function createHudGate(body: HudGateTarget, hidden: boolean): HudGate {
   };
   return {
     show(view: HudView): void {
-      const data: Readonly<Record<'hudShow' | 'hudSlots', string>> = shownData(view);
-      write('hudShow', data.hudShow);
-      write('hudSlots', data.hudSlots);
+      write('hudShow', shownData(view).hudShow);
     },
     set(next: boolean): void {
       const wanted: HudGateState = next ? 'closed' : state === 'closed' ? 'opening' : state;
@@ -149,7 +138,7 @@ export function createHudGate(body: HudGateTarget, hidden: boolean): HudGate {
   };
 }
 
-export function followWorld(gate: HudGate, world: World): void {
-  gate.set(hudHidden(world));
+export function followWorld(gate: HudGate, world: World, reading: boolean): void {
+  gate.set(hudHidden(world) || (reading && gate.state() === 'closed'));
   gate.show(hudView(world));
 }

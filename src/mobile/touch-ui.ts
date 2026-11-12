@@ -1,12 +1,13 @@
 import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { HudView } from '../../sim/world/hud.ts';
 import { hudView } from '../../sim/world/hud.ts';
-import { panelPart, tagPart, tagSlot } from '../hud/hud-gate.ts';
+import { panelPart, tagPart } from '../hud/hud-gate.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import type { Command, FlaskState, MonsterState, World } from '../../sim/world/types.ts';
 import type { KeyValueStore } from '../backend/backend.ts';
 import { el } from '../hud/dom.ts';
+import { flaskUses, paintUses } from '../hud/flask-belt.ts';
 import type { Hud, HudPanel } from '../hud/hud-api.ts';
 import { iconSvg } from '../hud/icons.ts';
 import { PANEL_ICONS } from '../hud/key-labels.ts';
@@ -47,8 +48,10 @@ interface ButtonView {
   readonly spec: TouchButton;
   readonly root: HTMLElement;
   readonly ring: HTMLElement;
+  readonly count: HTMLElement | null;
   turn: number;
   dim: boolean | null;
+  uses: number;
 }
 
 const MENU: readonly { readonly panel: HudPanel; readonly label: string; readonly icon: string }[] = [
@@ -132,7 +135,7 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   set('--ph-stick-y', layout.stick.y + layout.stick.h / 2);
 }
 
-const signature = (buttons: readonly TouchButton[]): string => buttons.map((button: TouchButton): string => `${button.kind}${button.slot}`).join('|');
+const signature = (buttons: readonly TouchButton[]): string => buttons.map((button: TouchButton): string => `${button.kind}${button.slot}${button.kind === 'flask' || button.filled ? '' : '-'}`).join('|');
 
 export function createTouchControls(setup: TouchSetup): TouchControls {
   const style: HTMLStyleElement = document.createElement('style');
@@ -285,19 +288,18 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       root.setAttribute('role', 'button');
       const ringEl: HTMLElement = el('i', 'tc-cd', root);
       const icon: HTMLElement = el('span', 'tc-icon', root);
+      const count: HTMLElement | null = spec.kind === 'flask' ? icon : null;
       if (spec.kind === 'flask') {
         const resource: FlaskResource | undefined = world.player.flasks[spec.slot]?.def.resource;
         if (resource !== undefined) tagPart(root, resource);
-        icon.textContent = String(spec.slot + 1);
         root.setAttribute('aria-label', spec.label);
       } else {
-        const skill: SkillDef | undefined = world.player.skills[spec.slot] ?? undefined;
+        const skill: SkillDef | undefined = spec.filled ? (world.player.skills[spec.slot] ?? undefined) : undefined;
         icon.innerHTML = skill === undefined ? '' : iconSvg(skill.icon);
         root.classList.toggle('empty', skill === undefined);
-        root.setAttribute('aria-label', skill?.name ?? 'Skill');
-        tagSlot(root, spec.slot);
+        root.setAttribute('aria-label', skill?.name ?? 'Empty skill slot');
       }
-      return { spec, root, ring: ringEl, turn: -1, dim: null };
+      return { spec, root, ring: ringEl, count, turn: -1, dim: null, uses: -1 };
     });
     place();
   };
@@ -481,6 +483,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       views.forEach((view: ButtonView, index: number): void => {
         const isFresh: boolean = pressedNow.has(index);
         const isHeld: boolean = heldButtons.has(index);
+        if (view.spec.kind !== 'flask' && !view.spec.filled) return;
         switch (view.spec.kind) {
           case 'attack':
             if (isFresh) commands.push({ type: 'hold', slot: view.spec.slot, down: true });
@@ -512,7 +515,16 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       if (talking !== document.body.classList.contains(TOUCH.talkingClass)) document.body.classList.toggle(TOUCH.talkingClass, talking);
       const player = world.player;
       for (const view of views) {
-        if (view.spec.kind === 'flask') continue;
+        if (view.spec.kind === 'flask') {
+          const flask: FlaskState | undefined = player.flasks[view.spec.slot];
+          const uses: number = flask === undefined ? 0 : flaskUses({ charges: flask.charges, chargesPerUse: flask.def.chargesPerUse });
+          if (view.count !== null && uses !== view.uses) {
+            paintUses(view.count, uses, view.uses >= 0);
+            view.uses = uses;
+          }
+          continue;
+        }
+        if (!view.spec.filled) continue;
         const skill: SkillDef | undefined = player.skills[view.spec.slot] ?? undefined;
         if (skill === undefined) continue;
         const turn: number = cooldownTurn(player.cooldowns[skill.id] ?? 0, skill.cooldown);

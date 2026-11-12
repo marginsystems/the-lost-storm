@@ -45,7 +45,8 @@ export function createHints(parent: HTMLElement, defs: HintsDef, store: HintStor
     });
   };
 
-  const setShown = (next: boolean): void => {
+  const setShown = (wanted: boolean): void => {
+    const next: boolean = wanted && element.childNodes.length > 0;
     if (next === showing) return;
     showing = next;
     element.classList.toggle('visible', next);

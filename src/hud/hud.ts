@@ -47,7 +47,7 @@ import { createInventoryPanel } from './inventory-panel.ts';
 import { createMapPanel } from './map-panel.ts';
 import type { MapPanel } from './map-panel.ts';
 import { watchFit } from './fit-view.ts';
-import { createMenuButton } from './menu.ts';
+import { createMenuButton, nextCalling } from './menu.ts';
 import menuCss from './menu.css?inline';
 import { PICKUP_NOTE, pickupLine } from './pickup-notes.ts';
 import type { MenuButton } from './menu.ts';
@@ -250,6 +250,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     if (isOpen(panel)) panels[panel].refresh();
   };
   let alive: boolean = api.world.player.alive;
+  let chartCalling: boolean = false;
+  let chartPoints: number = 0;
 
   return {
     refreshItems(): void {
@@ -269,6 +271,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       hints.update(world, pending.splice(0, pending.length));
       bossBar.update(world);
       buttons.tree?.setBadge(world.player.skillPoints);
+      chartCalling = nextCalling(chartCalling, chartPoints, world.player.skillPoints, isLive('tree'));
+      chartPoints = world.player.skillPoints;
+      buttons.tree?.setCalling(chartCalling);
       if (isLive('map')) map.update(dt);
       if (isLive('tree')) chartPanel.update(dt);
       if (isLive('character')) characterPanel.update(dt);

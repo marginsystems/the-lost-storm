@@ -1,5 +1,5 @@
-import { tagSlot } from './hud-gate.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
+import { usable } from '../../sim/world/hud.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { slotAction } from '../settings/bindings.ts';
 import type { HudContext } from './context.ts';
@@ -77,7 +77,6 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
 
   const buildSlot = (index: number): SlotView => {
     const root: HTMLDivElement = el('div', 'slot', element);
-    tagSlot(root, index);
     root.addEventListener('click', (event: MouseEvent): void => {
       event.stopPropagation();
       if (picker.slot === index) picker.close();
@@ -129,7 +128,8 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
       picker.refresh(player);
       element.classList.toggle('spare', player.learned.some((skill: string): boolean => !player.bar.includes(skill)));
       slots.forEach((view: SlotView, index: number): void => {
-        const skill: SkillDef | null = player.skills[index] ?? null;
+        const held: SkillDef | null = player.skills[index] ?? null;
+        const skill: SkillDef | null = held !== null && usable(player, held) ? held : null;
         if (view.skill !== skill || view.empty === null) applySkill(view, skill);
         if (skill === null) return;
         const remaining: number = player.cooldowns[skill.id] ?? 0;

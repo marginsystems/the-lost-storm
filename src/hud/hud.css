@@ -456,7 +456,18 @@
   color: #a9e2ff;
   background: linear-gradient(180deg, rgba(40, 52, 74, 0.55), rgba(10, 13, 20, 0.6));
   border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
+  box-shadow: inset 0 0 0 30px rgba(6, 8, 12, 0);
+  transition:
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    box-shadow var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.slot.empty {
+  box-shadow: inset 0 0 0 30px rgba(6, 8, 12, 0.45);
+}
+
+.slot.empty .slot-key {
+  opacity: 0.4;
 }
 
 .slot.press {
@@ -495,6 +506,7 @@
   font-weight: 700;
   font-size: 10px;
   color: var(--text-dim);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .slot-key.glyph {

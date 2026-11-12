@@ -56,7 +56,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { ARMOUR_MATERIALS, DAMAGE_TYPES, ITEM_SLOTS, ITEM_STATS, MOD_OPS, RARITY_MARKERS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { ARMOUR_MATERIALS, DAMAGE_TYPES, ITEM_SLOTS, ITEM_STATS, MANA_SHOWS, MOD_OPS, RARITY_MARKERS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -480,6 +480,7 @@ function player(value: unknown, where: string): PlayerDef {
     xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`) },
     startingItems: textList(source, 'startingItems', where),
     unarmedVisual: nullableText(source, 'unarmedVisual', where),
+    manaShows: choice(source, 'manaShows', MANA_SHOWS, where),
     tint: text(source, 'tint', where),
     color: text(source, 'color', where),
     gear: textList(source, 'gear', where),

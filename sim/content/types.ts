@@ -586,7 +586,11 @@ export interface PlayerDef {
   readonly deathPenalty: DeathPenalty;
   readonly resistance: ResistanceRules;
   readonly caps: readonly StatCap[];
+  readonly manaShows: ManaShows;
 }
+
+export const MANA_SHOWS = ['costly_skill', 'always'] as const;
+export type ManaShows = (typeof MANA_SHOWS)[number];
 
 export interface StatCap {
   readonly stat: StatId;

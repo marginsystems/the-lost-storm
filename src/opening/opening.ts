@@ -135,8 +135,8 @@ export function createOpening(deps: OpeningDeps): Opening {
         shownShore = depth;
         deps.setAmbience(blendAmbience(world.zone.ambience, shore.ambience, depth));
       }
-      followWorld(gate, world);
       noticeBooks();
+      followWorld(gate, world, reader.isOpen());
       echo.update(world);
     },
   };

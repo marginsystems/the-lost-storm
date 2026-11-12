@@ -38,7 +38,7 @@ interface GlobeView {
   readonly globe: HTMLElement;
   readonly liquid: HTMLElement;
   readonly readout: HTMLElement;
-  readonly beads: HTMLElement;
+  readonly count: HTMLElement;
   readonly key: HTMLElement;
   readonly storm: Storm | null;
   fill: number;
@@ -48,7 +48,7 @@ export interface Globes {
   update(player: PlayerState, dt: number): void;
   flashLife(): void;
   setRestoring(resource: FlaskResource, on: boolean): void;
-  beads(resource: FlaskResource): HTMLElement;
+  count(resource: FlaskResource): HTMLElement;
   key(resource: FlaskResource): HTMLElement;
 }
 
@@ -78,10 +78,11 @@ function buildGlobe(parent: HTMLElement, kind: FlaskResource): GlobeView {
   el('div', 'globe-restore', glass);
   const gloss: HTMLDivElement = el('div', 'globe-gloss', glass);
   gloss.innerHTML = GLASS;
-  const beads: HTMLDivElement = el('div', 'globe-beads', glass);
   const readout: HTMLDivElement = label('globe-readout', '', glass);
-  const key: HTMLDivElement = label('globe-key', '', globe);
-  return { globe, liquid, readout, beads, key, storm, fill: -1 };
+  const flask: HTMLDivElement = el('div', 'globe-flask', globe);
+  const key: HTMLDivElement = label('globe-key', '', flask);
+  const count: HTMLDivElement = label('globe-count', '', flask);
+  return { globe, liquid, readout, count, key, storm, fill: -1 };
 }
 
 function pointsText(points: readonly BoltPoint[]): string {
@@ -147,8 +148,8 @@ export function createGlobes(root: HTMLElement): Globes {
     setRestoring(resource: FlaskResource, on: boolean): void {
       viewOf(resource).globe.classList.toggle('restoring', on);
     },
-    beads(resource: FlaskResource): HTMLElement {
-      return viewOf(resource).beads;
+    count(resource: FlaskResource): HTMLElement {
+      return viewOf(resource).count;
     },
     key(resource: FlaskResource): HTMLElement {
       return viewOf(resource).key;
