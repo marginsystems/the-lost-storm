@@ -7,10 +7,10 @@ const YAW: number = Math.PI / 4;
 const near = (actual: number, expected: number): void => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
 
 void test('a query string forces touch on or off, otherwise a coarse pointer decides', (): void => {
-  assert.equal(prefersTouch('?touch=1', false), true);
-  assert.equal(prefersTouch('?touch=0', true), false);
-  assert.equal(prefersTouch('', true), true);
-  assert.equal(prefersTouch('', false), false);
+  assert.equal(prefersTouch('?touch=1', false, 900), true);
+  assert.equal(prefersTouch('?touch=0', true, 390), false);
+  assert.equal(prefersTouch('', true, 900), true);
+  assert.equal(prefersTouch('', false, 900), false);
 });
 
 void test('the stick reads a direction and a magnitude capped at its radius', (): void => {
@@ -129,4 +129,9 @@ void test('only bar slots that hold a skill get a button, and the attack always 
     { kind: 'skill', slot: 2 },
   ]);
   assert.deepEqual(touchButtons(bar.slice(0, 2), 'mouse_left', []), [{ kind: 'attack', slot: 0 }]);
+});
+
+void test('a phone-sized screen takes the phone layout even when no coarse pointer is reported', (): void => {
+  for (const side of [340, 375, 390, TOUCH.phoneShortSide]) assert.equal(prefersTouch('', false, side), true);
+  assert.equal(prefersTouch('', false, TOUCH.phoneShortSide + 1), false);
 });

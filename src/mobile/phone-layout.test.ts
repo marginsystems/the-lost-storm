@@ -19,6 +19,8 @@ const SCREENS: readonly PhoneScreen[] = [
   { width: 360, height: 640, safe: NO_INSETS },
   { width: 640, height: 360, safe: NO_INSETS },
   { width: 932, height: 430, safe: NOTCH_LANDSCAPE },
+  { width: 320, height: 568, safe: NO_INSETS },
+  { width: 568, height: 320, safe: NO_INSETS },
 ];
 
 const label = (screen: PhoneScreen, skills: number, flasks: number): string => `${screen.width}x${screen.height} top ${screen.safe.top} with ${skills} skills, ${flasks} flasks`;
@@ -104,7 +106,7 @@ void test('the rotate toast and both globes stay whole and clear of every other 
 void test('the zone name gets its own width above the minimap, clear of the menu', (): void => {
   for (const screen of SCREENS) {
     const layout = phoneLayout(screen, { skills: 1, flasks: 2, menu: 5 });
-    assert.ok(layout.zone.w >= PHONE.zoneWidth, label(screen, 1, 2));
+    assert.ok(layout.zone.w >= (screen.width >= PHONE.zoneRoomyWidth ? PHONE.zoneWidth : layout.minimap.w), label(screen, 1, 2));
     assert.equal(layout.zone.x + layout.zone.w, layout.minimap.x + layout.minimap.w);
     assert.equal(overlaps(layout.zone, layout.menu.rect), false, label(screen, 1, 2));
   }

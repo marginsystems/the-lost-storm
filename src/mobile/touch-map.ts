@@ -11,6 +11,7 @@ export const TOUCH = {
   repeatSeconds: 0.09,
   moveSideShare: 0.45,
   rotateHintMs: 5200,
+  phoneShortSide: 500,
   rotateSeenKey: 'the-lost-storm.rotate-hint.v1',
   fullTurn: 360,
   tapSlopPx: 12,
@@ -44,11 +45,11 @@ export interface FlaskEntry {
   readonly name: string;
 }
 
-export function prefersTouch(search: string, coarsePointer: boolean): boolean {
+export function prefersTouch(search: string, coarsePointer: boolean, shortSide: number): boolean {
   const forced: string | null = new URLSearchParams(search).get('touch');
   if (forced === '1') return true;
   if (forced === '0') return false;
-  return coarsePointer;
+  return coarsePointer || shortSide <= TOUCH.phoneShortSide;
 }
 
 export function readStick(dx: number, dy: number, radius: number = TOUCH.stickRadius): StickReading {

@@ -10,6 +10,8 @@ import type { TargetBar } from '../hud/target-bar.ts';
 import { createHealthBars } from './health-bars.ts';
 import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
+import { anchorInView } from './label-edge.ts';
+import type { ViewSize } from './label-edge.ts';
 import { stackLabels } from './label-stack.ts';
 import type { LabelBox } from './label-stack.ts';
 
@@ -101,6 +103,10 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const numbers: FloatingNumber[] = [];
   const labels: Map<number, LootLabel> = new Map<number, LootLabel>();
   let exits: ExitLabel[] = [];
+  let view: ViewSize = { width: root.clientWidth, height: root.clientHeight };
+  new ResizeObserver((): void => {
+    view = { width: root.clientWidth, height: root.clientHeight };
+  }).observe(root);
   let labelHoverId: number | null = null;
   let showAll: boolean = false;
   let exitsOf: ZoneDef | null = null;
@@ -345,6 +351,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         label.element.classList.toggle('locked', !open);
         label.element.classList.toggle('secret', !open && label.secret);
         camera.project(label.x, OVERLAYS.exitLift, label.z, point);
+        label.element.classList.toggle('edge', !anchorInView(point.x, point.y, view));
         place(label.element, point);
       }
       if (peopleOf !== world.npcs) showPeople(world);

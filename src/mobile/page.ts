@@ -10,6 +10,7 @@ export function readDeviceFacts(): DeviceFacts {
   return {
     search: window.location.search,
     coarsePointer: window.matchMedia('(pointer: coarse)').matches,
+    shortSide: Math.min(window.innerWidth, window.innerHeight),
     deviceMemory: typeof memory === 'number' && memory > 0 ? memory : null,
     cores: cores > 0 ? cores : null,
   };

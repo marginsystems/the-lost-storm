@@ -516,6 +516,11 @@ body {
   will-change: transform;
 }
 
+.exit-label.edge {
+  pointer-events: none;
+}
+
+
 .exit-label span {
   display: block;
   transform: translate(-50%, -100%);
@@ -554,6 +559,11 @@ body {
 .exit-label.aimed span {
   background: rgba(30, 40, 58, 0.95);
   scale: 1.06;
+}
+
+.exit-label.edge span,
+.exit-label.edge.locked span {
+  opacity: 0;
 }
 
 .npc-label {

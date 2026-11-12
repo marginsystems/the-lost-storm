@@ -171,12 +171,17 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   let portraitSince: number = performance.now();
   const seenStore: KeyValueStore = createBrowserStore();
   let rotateDismissed: boolean = seenStore.read(TOUCH.rotateSeenKey) !== null;
+  let rotateShown: boolean = false;
   let rotateTimer: number | undefined;
   const showRotate = (): void => {
     const shownFor: number = performance.now() - portraitSince;
     const on: boolean = rotateHintShows(portrait.matches, shownFor, rotateDismissed, document.body.classList.contains(TITLE_SCREEN.playingClass));
     rotate.classList.toggle('on', on);
-    if (on) seenStore.write(TOUCH.rotateSeenKey, '1');
+    if (on && !rotateShown) {
+      rotateShown = true;
+      seenStore.write(TOUCH.rotateSeenKey, '1');
+    }
+    if (!on && rotateShown) rotateDismissed = true;
     window.clearTimeout(rotateTimer);
     if (on) rotateTimer = window.setTimeout(showRotate, TOUCH.rotateHintMs - shownFor);
   };

@@ -14,8 +14,10 @@ export const PHONE = {
   menuGap: 2,
   minimapPortrait: 96,
   minimapLandscape: 104,
+  minimapMin: 64,
   zoneLabel: 20,
   zoneWidth: 160,
+  zoneRoomyWidth: 360,
   questWidth: 150,
   questZoom: 0.72,
   questMinHeight: 40,
@@ -148,8 +150,9 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const manaFlask: Rect = { x: right(lifeFlask) + PHONE.flaskGap, y: top, w: flaskW, h: flaskH };
   const clusterBottom: number = Math.max(bottom(life), bottom(mana), bottom(lifeFlask));
 
-  const mapSize: number = landscape ? PHONE.minimapLandscape : PHONE.minimapPortrait;
-  const zoneWidth: number = Math.max(mapSize, PHONE.zoneWidth);
+  const menuWidth: number = counts.menu * PHONE.menuButton + Math.max(0, counts.menu - 1) * PHONE.menuGap;
+  const mapSize: number = Math.max(PHONE.minimapMin, Math.min(landscape ? PHONE.minimapLandscape : PHONE.minimapPortrait, rightEdge - left - menuWidth - PHONE.gap));
+  const zoneWidth: number = Math.max(mapSize, Math.min(PHONE.zoneWidth, rightEdge - right(manaFlask) - PHONE.gap));
   const zone: Rect = { x: rightEdge - zoneWidth, y: top, w: zoneWidth, h: PHONE.zoneLabel };
   const minimap: Rect = { x: rightEdge - mapSize, y: bottom(zone), w: mapSize, h: mapSize };
   const menu: MenuPlacement = placeMenu(counts.menu, top, right(manaFlask) + PHONE.gap, zone.x - PHONE.gap, minimap.x - PHONE.gap, Math.ceil(clusterBottom + PHONE.gap), left);
@@ -189,7 +192,9 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
 
   const column: Rect = { x: rightEdge - PHONE.questWidth, y: 0, w: PHONE.questWidth, h: height };
   const below: number = Math.min(height, ...[toast, hint, ...controls].filter((rect: Rect): boolean => rect.x < right(column) && column.x < right(rect)).map((rect: Rect): number => rect.y));
-  const quests: Rect | null = questsRect(column, bottom(minimap) + PHONE.gap, below, height);
+  const sharesColumn: boolean = menu.rect.x < right(column) && column.x < right(menu.rect);
+  const questTop: number = Math.max(bottom(minimap), sharesColumn ? bottom(menu.rect) : 0) + PHONE.gap;
+  const quests: Rect | null = questsRect(column, questTop, below, height);
 
   return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, toast, xp, stick, attack, skills, flasks };
 }

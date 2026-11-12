@@ -74,6 +74,7 @@ export const DEVICE_LIMITS = {
 export interface DeviceFacts {
   readonly search: string;
   readonly coarsePointer: boolean;
+  readonly shortSide: number;
   readonly deviceMemory: number | null;
   readonly cores: number | null;
 }
