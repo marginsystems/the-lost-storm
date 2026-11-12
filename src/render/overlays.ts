@@ -295,6 +295,12 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'surge_cleared':
           case 'player_respawn':
           case 'notice':
+          case 'glitch_start':
+          case 'glitch_end':
+          case 'glitch_word':
+          case 'silence':
+          case 'zone_edited':
+          case 'path_marked':
           case 'character_changed':
           case 'zone_changed':
           case 'checkpoint':

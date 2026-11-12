@@ -3,7 +3,9 @@ import { test } from 'node:test';
 import { worldIn, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
+import { requestGlitch } from './glitch.ts';
 import { hudHidden } from './hud.ts';
+import { stepWorld } from './step.ts';
 import type { World } from './types.ts';
 
 const shipped: Content = loadContent();
@@ -35,4 +37,14 @@ void test('the void hides the whole HUD while the hero wakes', (): void => {
   const voidZone: ZoneDef | undefined = [...shipped.zones.values()].find((zone: ZoneDef): boolean => zone.kind === 'void');
   assert.ok(voidZone !== undefined);
   assert.equal(hudHidden(worldIn(shipped, voidZone.id, 1)), true);
+});
+
+void test('while a glitch holds the hero in the mist the HUD is hidden, and it returns after', (): void => {
+  const world: World = withHud(null);
+  world.monsters = [];
+  requestGlitch(world, 'hard_cut', 'debug');
+  stepWorld(world, [], 1 / 30);
+  assert.equal(hudHidden(world), true);
+  for (let step: number = 0; step < 120; step += 1) stepWorld(world, [], 1 / 30);
+  assert.equal(hudHidden(world), false);
 });

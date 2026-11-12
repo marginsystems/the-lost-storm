@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { finishQuests, must, zoneOf } from '../../test/support.ts';
+import { finishQuests, must, withoutGlitches, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef, ZoneWaypoint } from '../content/types.ts';
 import { createWorld } from './create.ts';
@@ -70,7 +70,7 @@ void test('teleport needs the hero on a waypoint and the target unlocked', (): v
 });
 
 void test('teleport enters the target zone at its waypoint, resets it, and death returns the hero there', (): void => {
-  const world: World = fresh(3);
+  const world: World = withoutGlitches(fresh(3));
   standOn(world, townPoint);
   world.waypoints = [town.id, bastion.id];
   const events: WorldEvent[] = stepWorld(world, [{ type: 'teleport', zone: bastion.id }], DT);

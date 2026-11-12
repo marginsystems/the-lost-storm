@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { finishQuests, must } from '../../test/support.ts';
+import { finishQuests, must, withoutGlitches } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, NpcDef, TalkDef } from '../content/types.ts';
 import { distance } from '../math.ts';
@@ -179,7 +179,7 @@ void test('inventory and skill-tree commands leave an open conversation alone', 
 });
 
 void test('leaving the zone closes the conversation and the people of the next zone replace the old ones', (): void => {
-  const world: World = finishQuests(fresh());
+  const world: World = withoutGlitches(finishQuests(fresh()));
   talkTo(world, 'maren');
   const before: number[] = world.npcs.map((npc: NpcState): number => npc.id);
   const events: WorldEvent[] = [];

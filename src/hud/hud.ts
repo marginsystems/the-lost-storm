@@ -282,6 +282,12 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'pickup':
             refreshOpen('inventory');
             break;
+          case 'glitch_start':
+          case 'glitch_end':
+          case 'glitch_word':
+          case 'silence':
+          case 'zone_edited':
+          case 'path_marked':
           case 'skill_impact':
           case 'hazard':
           case 'guarded':

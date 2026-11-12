@@ -1,6 +1,7 @@
 import type { AudioControls } from '../audio/settings.ts';
 import type { SettingsSection } from '../settings/settings.ts';
 import { SETTINGS_SECTIONS } from '../settings/settings.ts';
+import type { GlitchSettingsStore } from '../glitch/glitch-settings.ts';
 import type { SettingsStore } from '../settings/store.ts';
 import { el, label } from './dom.ts';
 import { mountControls } from './settings-controls.ts';
@@ -13,6 +14,7 @@ const SECTION_LABELS: Readonly<Record<SettingsSection, string>> = { graphics: 'G
 
 export interface PauseHooks {
   readonly settings: SettingsStore;
+  readonly glitches: GlitchSettingsStore;
   readonly audio: AudioControls;
   onOpen(): void;
   onClose(): void;
@@ -67,7 +69,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
   const soundPage: HTMLDivElement | undefined = pages.get('sound');
   const controlsPage: HTMLDivElement | undefined = pages.get('controls');
   if (graphicsPage === undefined || soundPage === undefined || controlsPage === undefined) throw new Error('Settings pages are missing');
-  mountGraphics(graphicsPage, hooks.settings);
+  mountGraphics(graphicsPage, hooks.settings, hooks.glitches);
   mountVolumeSliders(soundPage, hooks.audio);
   const controls: ControlsPage = mountControls(controlsPage, hooks.settings);
 

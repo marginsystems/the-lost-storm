@@ -15,6 +15,7 @@ import { blockedReason, startSkill, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './trade.ts';
 import type { Station } from './trade.ts';
+import { requestGlitch } from './glitch.ts';
 import { readPage } from './story.ts';
 import { stepWaypoints, teleport } from './waypoints.ts';
 import { findExit, stepCheckpoints, travelThrough } from './zones.ts';
@@ -150,6 +151,7 @@ function act(world: World, command: Command): void {
     case 'flask':
     case 'trade':
     case 'read':
+    case 'glitch':
     case 'advance':
     case 'equip':
     case 'unequip':
@@ -195,6 +197,9 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'read':
       readPage(world, command.book, command.page);
+      return;
+    case 'glitch':
+      requestGlitch(world, command.kind, 'debug');
       return;
     case 'use':
     case 'move':
