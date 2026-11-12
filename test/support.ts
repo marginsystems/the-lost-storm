@@ -1,4 +1,5 @@
 import type { Content, ZoneDef } from '../sim/content/types.ts';
+import { refreshPlayer } from '../sim/world/character.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { setGlitchesEnabled } from '../sim/world/glitch.ts';
 import type { World } from '../sim/world/types.ts';
@@ -26,6 +27,16 @@ export function withoutGlitches(world: World): World {
 export function worldIn(content: Content, zoneId: string, seed: number): World {
   const world: World = createWorld(content, { seed, save: null });
   enterZone(world, zoneOf(content, zoneId), { type: 'start' });
+  world.events = [];
+  return world;
+}
+
+export const CLASSIC_BAR: readonly (string | null)[] = ['cleave', 'thunderclap', 'storm_bolt', null, null, 'dodge_roll'];
+
+export function armed(world: World): World {
+  for (const skill of CLASSIC_BAR) if (skill !== null && !world.player.learned.includes(skill)) world.player.learned.push(skill);
+  world.player.bar = [...CLASSIC_BAR];
+  refreshPlayer(world);
   world.events = [];
   return world;
 }

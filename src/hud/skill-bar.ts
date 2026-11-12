@@ -12,6 +12,7 @@ import { attachTooltip } from './tooltip.ts';
 const SKILL_BAR = {
   pressMs: 110,
   swapMs: 320,
+  learnedMs: 1400,
   fullTurn: 360,
   coolingEpsilon: 0.001,
 } as const;
@@ -41,6 +42,7 @@ export interface SkillBar {
   update(player: PlayerState): void;
   refreshKeys(): void;
   press(skillId: string): void;
+  learned(slot: number): void;
   closePicker(): boolean;
 }
 
@@ -107,6 +109,10 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
 
   return {
     element,
+    learned(slot: number): void {
+      const view: SlotView | undefined = slots[slot];
+      if (view !== undefined) pulseClass(view.root, 'learned', SKILL_BAR.learnedMs);
+    },
     refreshKeys(): void {
       slots.forEach((view: SlotView, index: number): void => paintKey(view, keyOf(index)));
     },
@@ -119,6 +125,7 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
         });
       }
       picker.refresh(player);
+      element.classList.toggle('spare', player.learned.some((skill: string): boolean => !player.bar.includes(skill)));
       slots.forEach((view: SlotView, index: number): void => {
         const skill: SkillDef | null = player.skills[index] ?? null;
         if (view.skill !== skill || view.empty === null) applySkill(view, skill);

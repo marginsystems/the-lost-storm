@@ -85,6 +85,9 @@ function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarge
     case 'skill_point':
       holds = player.skillPoints > 0;
       break;
+    case 'skill_learned':
+      holds = player.learned.includes(trigger.skill);
+      break;
     case 'gear_in_bag':
       holds = gearInBag(world);
       break;
@@ -96,8 +99,7 @@ function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarge
 }
 
 function usedSlot(world: World, state: HintState, slot: number): boolean {
-  const entry = world.content.player.skillBar[slot];
-  const skill: string | null = world.player.bar[slot] ?? entry?.skill ?? null;
+  const skill: string | null = world.player.bar[slot] ?? null;
   return skill !== null && state.skillsUsed.has(skill);
 }
 

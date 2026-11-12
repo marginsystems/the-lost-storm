@@ -8,7 +8,7 @@ import type { MonsterState, World } from '../sim/world/types.ts';
 import { enterZone } from '../sim/world/zones.ts';
 import { sceneZone } from './motion-support.ts';
 import { SCENE_BASE } from './road-support.ts';
-import { must, worldIn } from './support.ts';
+import { armed, must, worldIn } from './support.ts';
 
 export const ARENA_CENTRE: Vec2 = { x: 14, z: 14 };
 
@@ -56,9 +56,8 @@ export const ARENA_CONTENT: Content = {
 export function arena(seed: number, content: Content = ARENA_CONTENT): World {
   const world: World = worldIn(content, content.world.start, seed);
   enterZone(world, sceneZone(SCENE_BASE, 'test_arena', { tiles: OPEN, props: [], start: ARENA_CENTRE }), { type: 'start' });
-  world.events = [];
   world.monsters = [];
-  return world;
+  return armed(world);
 }
 
 export function place(world: World, kind: string, at: Vec2, mods: readonly string[] = []): MonsterState {

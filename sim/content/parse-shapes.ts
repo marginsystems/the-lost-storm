@@ -1,3 +1,4 @@
+import { conditions } from './parse-conditions.ts';
 import type { Fields } from './read.ts';
 import { choice, ContentError, fields, fraction, nonNegative, positive, text } from './read.ts';
 import type { BeamDelivery, BlinkDelivery, BrandDef, ChainDelivery, AreaDelivery, PressDef, SkillUnlock } from './shape-types.ts';
@@ -97,7 +98,7 @@ export function skillUnlock(value: unknown, where: string): SkillUnlock {
   const source: Fields = fields(value, where);
   const level: number = positive(source, 'level', where);
   if (!Number.isInteger(level)) throw new ContentError(`${where}.level`, 'expected a whole level');
-  return { skill: text(source, 'skill', where), level };
+  return { skill: text(source, 'skill', where), level, when: conditions(source, 'when', where) };
 }
 
 export function bookProblems(content: Content): string[] {
@@ -109,6 +110,7 @@ export function bookProblems(content: Content): string[] {
   need(book.size === content.player.skillBook.length, 'skill book lists a skill twice');
   const slotted: string[] = content.player.skillBar.flatMap((binding: SkillBinding): string[] => (binding.skill === null ? [] : [binding.skill]));
   need(new Set<string>(slotted).size === slotted.length, 'skill bar starts with a skill in two slots');
-  for (const skill of slotted) need(book.get(skill) === 1, `skill bar starts with ${skill}, which is not in the skill book at level 1`);
+  for (const skill of slotted) need(book.has(skill), `skill bar keeps a home slot for ${skill}, which is not in the skill book`);
+  need(content.player.skillBook.some((entry: SkillUnlock): boolean => entry.level === 1 && entry.when.length === 0), 'skill book teaches nothing at the start');
   return problems;
 }

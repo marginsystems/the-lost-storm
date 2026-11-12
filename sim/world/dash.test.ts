@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { TestScene } from '../../test/motion-support.ts';
 import { MOTION_DT, placedProp, sceneZone } from '../../test/motion-support.ts';
-import { must, worldIn } from '../../test/support.ts';
+import { armed, must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, DashDelivery, SkillDef, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -33,7 +33,7 @@ const LIMITS = { tolerance: 0.05, settle: 3, shove: 0.2 } as const;
 type Start = Extract<WorldEvent, { readonly type: 'skill_start' }>;
 
 function scene(name: string, layout: TestScene): World {
-  const world: World = worldIn(content, content.world.start, 5);
+  const world: World = armed(worldIn(content, content.world.start, 5));
   enterZone(world, sceneZone(base, `test_${name}`, layout), { type: 'start' });
   world.events = [];
   world.monsters = [];
@@ -209,7 +209,7 @@ void test('a monster whose skill is a dash rolls with the same code', (): void =
 });
 
 void test('a roll through deep water covers only the water\'s share of its distance', (): void => {
-  const world: World = roadWorld(roadZone({ tiles: ['ssssssss', 'ssssssss', 'ssssssss', 'ssssssss'], playerStart: { x: 4, z: 8 } }));
+  const world: World = armed(roadWorld(roadZone({ tiles: ['ssssssss', 'ssssssss', 'ssssssss', 'ssssssss'], playerStart: { x: 4, z: 8 } })));
   const from: Vec2 = { ...world.player.pos };
   stepWorld(world, [rollToward({ x: from.x + 10, z: from.z })], MOTION_DT);
   finish(world);

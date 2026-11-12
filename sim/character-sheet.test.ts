@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must, worldIn } from '../test/support.ts';
+import { CLASSIC_BAR, must, worldIn } from '../test/support.ts';
 import { characterSheet } from './character-sheet.ts';
 import type { CharacterSheet, SheetSubject, SkillOffence } from './character-sheet.ts';
 import { loadContent } from './content/content.ts';
@@ -8,7 +8,6 @@ import type { Content } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import { computeStats, resolveSkillBar, skillCycle } from './stats.ts';
-import { defaultBar } from './skill-book.ts';
 import type { World } from './world/types.ts';
 
 const content: Content = loadContent();
@@ -16,7 +15,7 @@ const content: Content = loadContent();
 function subject(level: number, allocated: readonly string[], weapon: boolean): SheetSubject {
   const equipped = emptyEquipment();
   if (weapon) equipped.weapon = must(generateItem(content, createRng(1), 1, 1, 'rusted_blade', 'common'), 'blade');
-  return { level, xp: 0, equipped, allocated: [...allocated], skills: resolveSkillBar(content, defaultBar(content), allocated) };
+  return { level, xp: 0, equipped, allocated: [...allocated], skills: resolveSkillBar(content, CLASSIC_BAR, allocated) };
 }
 
 function near(actual: number, expected: number): void {

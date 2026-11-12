@@ -5,7 +5,7 @@ import type { RetiredZones } from './content/road-types.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
-import { readBar } from './skill-book.ts';
+import { readBar, readLearned } from './skill-book.ts';
 import { flaskCharges } from './world/flasks.ts';
 import { glitchToSave } from './world/glitch.ts';
 import type { GlitchSave, PathLogSave } from './world/glitch-types.ts';
@@ -26,6 +26,7 @@ export interface SaveData {
   readonly kills: number;
   readonly skillPoints: number;
   readonly allocated: readonly string[];
+  readonly learned: readonly string[];
   readonly bar: readonly (string | null)[];
   readonly inventory: readonly (ItemInstance | null)[];
   readonly equipped: Equipment;
@@ -66,6 +67,7 @@ export function toSave(world: World): SaveData {
     kills: player.kills,
     skillPoints: player.skillPoints,
     allocated: [...player.allocated],
+    learned: [...player.learned],
     bar: [...player.bar],
     inventory: [...player.inventory],
     equipped: { ...player.equipped },
@@ -271,15 +273,20 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const spilledList: readonly unknown[] = Array.isArray(spilled) ? spilled : [];
   const stashed: Stashed = readStash(content, value['stash']);
   const kept: ItemInstance[] = spilledList.map((entry: unknown): ItemInstance | null => readItem(content, entry)).filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
+  const reached: number = Math.min(Math.floor(level), content.player.xp.maxLevel);
+  const savedBar: unknown = value['bar'];
+  const barList: readonly unknown[] = Array.isArray(savedBar) ? savedBar : [];
+  const learned: string[] = readLearned(content, value['learned'], reached, barList.filter((entry: unknown): entry is string => typeof entry === 'string'));
   return {
     version: SAVE_VERSION,
-    level: Math.min(Math.floor(level), content.player.xp.maxLevel),
+    level: reached,
     xp,
     gold,
     kills,
     skillPoints: Math.floor(skillPoints),
     allocated: allocatedList.filter((node: unknown): node is string => typeof node === 'string' && findNode(content, node) !== null),
-    bar: readBar(content, value['bar'], Math.min(Math.floor(level), content.player.xp.maxLevel)),
+    learned,
+    bar: readBar(content, savedBar, learned),
     inventory: slots,
     equipped: worn.equipped,
     spilled: [...kept, ...worn.spilled, ...stashed.overflow],

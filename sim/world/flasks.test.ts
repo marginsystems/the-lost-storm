@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { roadWorld, roadZone } from '../../test/road-support.ts';
-import { must, worldIn } from '../../test/support.ts';
+import { armed, must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneWaypoint } from '../content/types.ts';
 import { createFlasks, flaskCharges, isRestoring } from './flasks.ts';
@@ -15,7 +15,7 @@ const LIFE: number = 0;
 const MANA: number = 1;
 
 function quiet(zone: string): World {
-  return settled(worldIn(content, zone, 3));
+  return settled(armed(worldIn(content, zone, 3)));
 }
 
 function settled(world: World): World {

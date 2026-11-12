@@ -20,6 +20,21 @@
     ],
     "talks": [
       {
+        "id": "warden_guide_lesson",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "wardens_lesson",
+            "objective": "ask",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "warden_guide_lesson"
+        ]
+      },
+      {
         "id": "warden_guide_talk",
         "once": false,
         "when": [],

@@ -44,7 +44,7 @@ void test('every slot can dress its own region and unequipping brings the clothe
   const worn: string[] = wornWearables(content, content.player.wear, equipped);
   assert.deepEqual(worn.toSorted(), ['leather_boots', 'leather_bracers', 'leather_hood', 'leather_leggings', 'linen_shirt']);
   const bare: string[] = wornWearables(content, content.player.wear, { ...equipped, chest: null, legs: null });
-  assert.ok(bare.includes('traveller_coat') && bare.includes('traveller_trousers'));
+  assert.ok(bare.includes('dirty_shirt') && bare.includes('dirty_trousers'));
 });
 
 void test('unknown ids are ignored and a weapon wears nothing', (): void => {

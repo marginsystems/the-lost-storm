@@ -4,7 +4,7 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import { emptyEquipment, generateItem, slotOf } from '../items.ts';
 import { buildNavGrid } from '../nav/grid.ts';
 import { createRng } from '../rng.ts';
-import { defaultBar } from '../skill-book.ts';
+import { defaultBar, startingSkills } from '../skill-book.ts';
 import { copyVendors } from '../save.ts';
 import type { SaveData } from '../save.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
@@ -67,6 +67,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     gold: save?.gold ?? 0,
     skillPoints: save?.skillPoints ?? 0,
     allocated,
+    learned: save === null ? startingSkills(content) : [...save.learned],
     inventory,
     equipped,
     intent: { type: 'idle' },

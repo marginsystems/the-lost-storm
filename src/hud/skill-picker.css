@@ -12,12 +12,42 @@
 
 .slot.empty .slot-icon::after {
   content: "";
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
   position: absolute;
   inset: 11px;
   border-radius: 2px;
   background:
     linear-gradient(rgba(169, 226, 255, 0.28), rgba(169, 226, 255, 0.28)) center / 100% 1px no-repeat,
     linear-gradient(rgba(169, 226, 255, 0.28), rgba(169, 226, 255, 0.28)) center / 1px 100% no-repeat;
+}
+
+.hud-skillbar.spare .slot.empty .slot-icon::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.slot.learned {
+  animation: slot-learned calc(var(--spring-smooth-ms) * 4) var(--spring-smooth);
+}
+
+.slot.learned .slot-icon {
+  animation: hud-pop var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+@keyframes slot-learned {
+  0% {
+    box-shadow: inset 0 0 0 0 rgba(169, 226, 255, 0), 0 0 0 0 rgba(169, 226, 255, 0);
+  }
+  30% {
+    box-shadow: inset 0 0 14px 2px rgba(169, 226, 255, 0.35), 0 0 18px 2px rgba(120, 190, 255, 0.28);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 rgba(169, 226, 255, 0), 0 0 0 0 rgba(169, 226, 255, 0);
+  }
 }
 
 .slot.swap .slot-icon {

@@ -42,7 +42,10 @@
               }
             ]
           }
-        ]
+        ],
+        "sets": {
+          "roll_taught": "yes"
+        }
       }
     ]
   },
@@ -63,6 +66,42 @@
         "text": "Reach the waystation",
         "sets": {
           "alpha_slice_complete": "reached"
+        }
+      }
+    ]
+  },
+  {
+    "id": "the_first_taker",
+    "name": "A Thing That Takes",
+    "requires": [
+      "out_of_the_mist"
+    ],
+    "objectives": [
+      {
+        "id": "put_down",
+        "type": "defeat",
+        "monster": "unfinished_taker",
+        "text": "Put down a Taker on the road",
+        "sets": {
+          "first_moment": "cleared"
+        }
+      }
+    ]
+  },
+  {
+    "id": "wardens_lesson",
+    "name": "The Warden's Lesson",
+    "requires": [
+      "to_the_waystation"
+    ],
+    "objectives": [
+      {
+        "id": "ask",
+        "type": "talk",
+        "npc": "warden_guide",
+        "text": "Ask the Warden Guide about the storm in your hands",
+        "sets": {
+          "fire_lesson": "given"
         }
       }
     ]

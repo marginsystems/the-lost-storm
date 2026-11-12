@@ -578,6 +578,7 @@ export function contentProblems(content: Content): string[] {
     problems.push(...conditionProblems(content, flagNames, holder, list));
   };
   problems.push(...roadProblems(content, flagNames));
+  for (const entry of content.player.skillBook) known(`skill book ${entry.skill}`, entry.when);
   for (const def of content.props.values()) {
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `prop ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }

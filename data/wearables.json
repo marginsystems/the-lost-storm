@@ -399,40 +399,5 @@
     "hides": [
       "hands"
     ]
-  },
-  {
-    "id": "traveller_coat",
-    "model": "models/wear/leather_jerkin.glb",
-    "region": "chest",
-    "tint": "#d6bc9a",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "traveller_trousers",
-    "model": "models/wear/wool_trousers.glb",
-    "region": "legs",
-    "tint": "#a69a88",
-    "hides": [
-      "legs"
-    ]
-  },
-  {
-    "id": "traveller_boots",
-    "model": "models/wear/tall_boots.glb",
-    "region": "feet",
-    "tint": "#d8bc9c",
-    "hides": [
-      "feet"
-    ]
-  },
-  {
-    "id": "traveller_hood",
-    "model": "models/wear/monk_hood.glb",
-    "region": "head",
-    "tint": "#c8b498",
-    "hides": []
   }
 ]

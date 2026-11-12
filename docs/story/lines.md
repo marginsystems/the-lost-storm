@@ -10,6 +10,7 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 
 | Id | Line | When |
 |---|---|---|
+| `warden_guide_lesson` | You carry the storm and swing it like a stick. Hold it so, and throw. There. It goes where you look. | Conversation, once, while The Warden's Lesson asks you to talk to the Guide; teaches Storm Bolt. |
 | `warden_guide_road` | Stay on the road. It holds while we walk it. | Conversation, any talk. |
 
 ## Warden Trader (`warden_trader`)

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
-import { must, worldIn, zoneOf } from '../../test/support.ts';
+import { armed, must, worldIn, zoneOf } from '../../test/support.ts';
 import { botFight, botInDanger, createBot } from '../bot.ts';
 import type { Bot } from '../bot.ts';
 import { loadContent } from '../content/content.ts';
@@ -111,7 +111,7 @@ void test('the active phase is the last one whose threshold the life fraction ha
 
 void test('a boss uses more than one skill in a fight, and only skills of its active phase', (): void => {
   for (const def of bosses()) {
-    const world: World = sturdy(worldIn(room(def.id), ROOM, 3));
+    const world: World = sturdy(armed(worldIn(room(def.id), ROOM, 3)));
     const boss: MonsterState = bossOf(world);
     const block: BossDef = must(def.boss, def.id);
     world.player.pos = { x: 28, z: 22 };
@@ -130,14 +130,14 @@ void test('a boss uses more than one skill in a fight, and only skills of its ac
 
 void test('a skill on cooldown is not picked while another is ready, and the pick is reproducible', (): void => {
   const pick = (seed: number): string[] => {
-    const world: World = worldIn(room('unfinished_colossus'), ROOM, seed);
+    const world: World = armed(worldIn(room('unfinished_colossus'), ROOM, seed));
     const boss: MonsterState = bossOf(world);
     const block: BossDef = must(boss.def.boss, 'boss');
     return Array.from({ length: 12 }, (): string => must(pickBossSkill(world, boss, block), 'skill').id);
   };
   assert.deepEqual(pick(5), pick(5));
   assert.ok(new Set<string>(pick(5)).size >= 2);
-  const world: World = worldIn(room('unfinished_colossus'), ROOM, 6);
+  const world: World = armed(worldIn(room('unfinished_colossus'), ROOM, 6));
   const boss: MonsterState = bossOf(world);
   boss.cooldowns['colossus_hammer'] = 3;
   for (let attempt: number = 0; attempt < 12; attempt += 1) assert.equal(pickBossSkill(world, boss, must(boss.def.boss, 'boss'))?.id, 'colossus_stone');
@@ -146,7 +146,7 @@ void test('a skill on cooldown is not picked while another is ready, and the pic
 });
 
 void test('crossing a threshold fires the phase event once and the phase barks follow it', (): void => {
-  const world: World = worldIn(voiced(), ROOM, 7);
+  const world: World = armed(worldIn(voiced(), ROOM, 7));
   const boss: MonsterState = bossOf(world);
   boss.spawnTime = 0;
   const first: WorldEvent[] = hurt(world, boss, 0.5);
@@ -158,7 +158,7 @@ void test('crossing a threshold fires the phase event once and the phase barks f
 });
 
 void test('a boss is not staggered, its wind-up is not interrupted, and it takes a fraction of the knockback', (): void => {
-  const world: World = sturdy(worldIn(room('unfinished_colossus'), ROOM, 8));
+  const world: World = sturdy(armed(worldIn(room('unfinished_colossus'), ROOM, 8)));
   const boss: MonsterState = bossOf(world);
   const cleave = must(world.content.skills.get('cleave'), 'cleave');
   boss.spawnTime = 0;
@@ -173,7 +173,7 @@ void test('a boss is not staggered, its wind-up is not interrupted, and it takes
   assert.equal(ofType(world.events, 'skill_interrupt').length, 0);
   assert.ok(Math.abs(Math.hypot(boss.knock.x, boss.knock.z) - cleave.knockback * must(boss.def.boss, 'boss').poise.knockback) < 1e-9);
 
-  const plain: World = worldIn(OUTPOST_CONTENT, 'outpost', 8);
+  const plain: World = armed(worldIn(OUTPOST_CONTENT, 'outpost', 8));
   const thrall: MonsterState = must(plain.monsters.find((monster: MonsterState): boolean => monster.def.id === 'mended'), 'thrall');
   applyHit(plain, offenceOf(plain.player), thrall, cleave, { x: 0, z: -1 });
   if (thrall.alive) assert.equal(thrall.stagger, cleave.stagger);
@@ -181,7 +181,7 @@ void test('a boss is not staggered, its wind-up is not interrupted, and it takes
 });
 
 void test('a boss barks when it notices the hero and when it dies, and drops its guaranteed reward', (): void => {
-  const world: World = worldIn(voiced(), ROOM, 9);
+  const world: World = armed(worldIn(voiced(), ROOM, 9));
   const boss: MonsterState = bossOf(world);
   const block: BossDef = must(boss.def.boss, 'boss');
   boss.spawnTime = 0;
@@ -203,7 +203,7 @@ void test('a boss barks when it notices the hero and when it dies, and drops its
 });
 
 void test('one blow that takes a boss through a threshold and kills it still announces the phase before the death', (): void => {
-  const world: World = worldIn(voiced(), ROOM, 14);
+  const world: World = armed(worldIn(voiced(), ROOM, 14));
   const boss: MonsterState = bossOf(world);
   const block: BossDef = must(boss.def.boss, 'boss');
   boss.spawnTime = 0;
@@ -217,7 +217,7 @@ void test('one blow that takes a boss through a threshold and kills it still ann
 });
 
 void test('a boss that outlives the hero starts the next attempt from its first phase', (): void => {
-  const world: World = worldIn(room('unfinished_colossus'), ROOM, 15);
+  const world: World = armed(worldIn(room('unfinished_colossus'), ROOM, 15));
   const boss: MonsterState = bossOf(world);
   boss.spawnTime = 0;
   hurt(world, boss, 0.4);
@@ -247,7 +247,7 @@ void test('a boss that crosses a threshold picks from the new phase at once, eve
     ],
   };
   const content: Content = { ...base, monsters: new Map<string, MonsterDef>([...base.monsters, [mason.id, { ...mason, boss: split }]]) };
-  const world: World = sturdy(worldIn(content, ROOM, 17));
+  const world: World = sturdy(armed(worldIn(content, ROOM, 17)));
   const boss: MonsterState = bossOf(world);
   boss.spawnTime = 0;
   boss.aggro = true;
@@ -262,7 +262,7 @@ void test('a boss that crosses a threshold picks from the new phase at once, eve
 });
 
 void test('the lane a bolt is read by reaches as far as the bolt does', (): void => {
-  const world: World = sturdy(worldIn(room('unfinished_colossus'), ROOM, 16));
+  const world: World = sturdy(armed(worldIn(room('unfinished_colossus'), ROOM, 16)));
   const boss: MonsterState = bossOf(world);
   const stone = must(world.content.skills.get('colossus_stone'), 'stone');
   const delivery = stone.delivery;
@@ -282,7 +282,7 @@ void test('a pack whose condition fails does not spawn, so a beaten boss is not 
   const hunt: QuestDef = { id: 'hunt', name: 'Hunt', requires: [], when: [], objectives: [{ id: 'slay', type: 'defeat', monster: 'unfinished_colossus', text: 'Slay', when: [], sets: {} }] };
   const during: Condition[] = [{ type: 'objective', quest: 'hunt', objective: 'slay', is: 'current', not: false }];
   const content: Content = { ...room('unfinished_colossus', during), quests: new Map<string, QuestDef>([[hunt.id, hunt]]) };
-  const world: World = worldIn(content, ROOM, 10);
+  const world: World = armed(worldIn(content, ROOM, 10));
   assert.equal(world.monsters.length, 1);
   const boss: MonsterState = bossOf(world);
   boss.spawnTime = 0;
@@ -299,7 +299,7 @@ void test('a pack whose condition fails does not spawn, so a beaten boss is not 
 void test('the bot beats each boss at the level the act expects, and reading the telegraph is what keeps it alive', (): void => {
   for (const def of bosses()) {
     const fight = (dodges: boolean): { readonly won: boolean; readonly deaths: number; readonly lifeLeft: number } => {
-      const world: World = worldIn(room(def.id), ROOM, 21);
+      const world: World = armed(worldIn(room(def.id), ROOM, 21));
       world.player.level = 3;
       const bot: Bot = createBot(world, { dodges, reaction: 0 });
       const boss: MonsterState = bossOf(world);

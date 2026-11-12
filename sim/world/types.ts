@@ -143,6 +143,7 @@ export interface PlayerState extends ActorState {
   gold: number;
   skillPoints: number;
   allocated: string[];
+  learned: string[];
   inventory: (ItemInstance | null)[];
   equipped: Equipment;
   intent: Intent;

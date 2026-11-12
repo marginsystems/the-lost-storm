@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { finishQuests, must, withoutGlitches } from '../../test/support.ts';
+import { armed, finishQuests, must, withoutGlitches } from '../../test/support.ts';
 import { TOWN_CONTENT } from '../../test/town-support.ts';
 import type { Content, NpcDef, TalkDef } from '../content/types.ts';
 import { distance } from '../math.ts';
@@ -21,7 +21,7 @@ function ofType<T extends WorldEvent['type']>(events: readonly WorldEvent[], typ
 }
 
 function fresh(seed: number = 1): World {
-  return createWorld(content, { seed, save: null });
+  return armed(createWorld(content, { seed, save: null }));
 }
 
 function npcOf(world: World, id: string): NpcState {

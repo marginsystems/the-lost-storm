@@ -2,7 +2,7 @@ import type { ItemSlot } from '../content/types.ts';
 import { slotOf } from '../items.ts';
 import { applyXp, canAllocate } from '../progression.ts';
 import type { XpResult } from '../progression.ts';
-import { assignSlot, isUnlocked, newlyUnlocked, withUnlocks } from '../skill-book.ts';
+import { assignSlot } from '../skill-book.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
 import { dropOnGround } from './ground.ts';
 import type { ItemInstance, PlayerState, World } from './types.ts';
@@ -23,14 +23,8 @@ export function grantXp(world: World, amount: number): void {
   player.xp = result.xp;
   world.events.push({ type: 'xp', amount });
   if (result.levelsGained === 0) return;
-  const before: number = player.level;
   player.level = result.level;
   player.skillPoints += result.levelsGained;
-  player.bar = withUnlocks(world.content, player.bar, before, player.level);
-  for (const skill of newlyUnlocked(world.content, before, player.level)) {
-    const slot: number = player.bar.indexOf(skill);
-    world.events.push({ type: 'skill_unlocked', skill, slot: slot < 0 ? null : slot });
-  }
   refreshPlayer(world);
   player.life = player.maxLife;
   player.mana = player.stats.maxMana;
@@ -78,7 +72,7 @@ export function dropFromInventory(world: World, inventoryIndex: number): void {
 
 export function slotSkill(world: World, slot: number, skill: string | null): void {
   const player: PlayerState = world.player;
-  if (skill !== null && !isUnlocked(world.content, skill, player.level)) return;
+  if (skill !== null && !player.learned.includes(skill)) return;
   if (player.action !== null && player.action.slot !== null) return;
   player.bar = assignSlot(player.bar, slot, skill);
   refreshPlayer(world);

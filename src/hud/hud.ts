@@ -278,6 +278,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             barks.say(event.speaker, event.line);
             break;
           case 'skill_unlocked':
+            if (event.slot !== null) skillBar.learned(event.slot);
             banners.show(api.world.content.skills.get(event.skill)?.name ?? event.skill, event.slot === null ? 'New skill learned' : 'New skill learned and placed on your bar', 'quest');
             break;
           case 'level_up':

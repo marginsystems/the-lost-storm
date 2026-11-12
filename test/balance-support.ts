@@ -77,6 +77,7 @@ export function buildBar(build: Build, level: number): string[] {
 function hero(build: Build, level: number, seed: number): World {
   const world: World = arena(seed, BALANCE_CONTENT);
   while (world.player.level < level) grantXp(world, xpToNextLevel(BALANCE_CONTENT.player.xp, world.player.level) - world.player.xp);
+  world.player.learned = unlockedSkills(BALANCE_CONTENT, level);
   const bar: readonly string[] = buildBar(build, level);
   const slots: Command[] = bar.map((skill: string, slot: number): Command => ({ type: 'slot', slot, skill }));
   for (let index: number = 0; index < BALANCE.barSize; index += 1) if (index >= bar.length) slots.push({ type: 'slot', slot: index, skill: null });

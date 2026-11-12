@@ -1,5 +1,5 @@
 {
-  "rig": "hero_man",
+  "rig": "skeleton_hero",
   "radius": 0.5,
   "baseStats": {
     "maxLife": 100,
@@ -39,18 +39,18 @@
     }
   ],
   "skillBook": [
-    { "skill": "cleave", "level": 1 },
-    { "skill": "dodge_roll", "level": 1 },
-    { "skill": "thunderclap", "level": 1 },
-    { "skill": "storm_bolt", "level": 1 },
-    { "skill": "forkline", "level": 2 },
-    { "skill": "mist_step", "level": 2 },
-    { "skill": "downdraught", "level": 3 },
-    { "skill": "thunderhead", "level": 3 },
-    { "skill": "squall", "level": 5 },
-    { "skill": "static_brand", "level": 4 },
-    { "skill": "living_wire", "level": 6 },
-    { "skill": "held_breath", "level": 7 }
+    {"skill": "cleave", "level": 1},
+    {"skill": "dodge_roll", "level": 1, "when": [{"type": "flag", "flag": "roll_taught", "is": "yes"}]},
+    {"skill": "thunderclap", "level": 1, "when": [{"type": "flag", "flag": "first_moment", "is": "cleared"}]},
+    {"skill": "storm_bolt", "level": 1, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
+    {"skill": "forkline", "level": 2, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
+    {"skill": "mist_step", "level": 2, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
+    {"skill": "downdraught", "level": 3, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
+    {"skill": "thunderhead", "level": 3, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
+    {"skill": "static_brand", "level": 4, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
+    {"skill": "squall", "level": 5, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
+    {"skill": "living_wire", "level": 6, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
+    {"skill": "held_breath", "level": 7, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]}
   ],
   "skillBar": [
     { "skill": "cleave", "bindings": ["mouse_left"], "label": "LMB" },
@@ -75,8 +75,11 @@
   "respawnDelay": 1.4,
   "respawnInvulnerability": 3,
   "deathPenalty": {"minLevel": 5, "xpPercent": 0.1},
-  "tint": "#e8d2bd",
+  "tint": "#f4eedd",
   "color": "#8fdcff",
   "gear": [],
-  "wear": ["traveller_coat", "traveller_trousers", "traveller_boots", "traveller_hood"]
+  "wear": [
+    "dirty_shirt",
+    "dirty_trousers"
+  ]
 }

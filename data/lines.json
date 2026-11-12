@@ -6,5 +6,6 @@
   {"id": "unfinished_borrower_said_5", "speaker": "unfinished_borrower", "text": "Who let the dog out?"},
   {"id": "warden_guide_road", "speaker": "warden_guide", "text": "Stay on the road. It holds while we walk it."},
   {"id": "warden_trader_goods", "speaker": "warden_trader", "text": "Whatever the road gives me, I carry. Not much today."},
-  {"id": "warden_lookout_ahead", "speaker": "warden_lookout", "text": "Unfinished on the road ahead. Keep your eyes open."}
+  {"id": "warden_lookout_ahead", "speaker": "warden_lookout", "text": "Unfinished on the road ahead. Keep your eyes open."},
+  {"id": "warden_guide_lesson", "speaker": "warden_guide", "text": "You carry the storm and swing it like a stick. Hold it so, and throw. There. It goes where you look."}
 ]

@@ -1,3 +1,4 @@
+import type { Condition } from './condition-types.ts';
 import type { SkillLeap } from './combat-types.ts';
 
 export interface ChainDelivery {
@@ -64,4 +65,5 @@ export interface SkillShape {
 export interface SkillUnlock {
   readonly skill: string;
   readonly level: number;
+  readonly when: readonly Condition[];
 }

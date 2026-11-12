@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
-import { finishQuests, must, withoutGlitches, worldIn } from '../../test/support.ts';
+import { armed, finishQuests, must, withoutGlitches, worldIn } from '../../test/support.ts';
 import type { Content, ZoneDef, ZoneExit } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
@@ -144,7 +144,7 @@ void test('a wild zone is reset when it is entered again and loot left behind is
 });
 
 void test('projectiles in flight end when the hero leaves the zone', (): void => {
-  const world: World = worldIn(shipped, outpost.id, 5);
+  const world: World = armed(worldIn(shipped, outpost.id, 5));
   world.monsters = [];
   run(world, 0.25, [{ type: 'skill', slot: 2, aim: { x: 28, z: 20 }, targetId: null }]);
   assert.equal(world.projectiles.length, 1);
@@ -156,14 +156,14 @@ void test('projectiles in flight end when the hero leaves the zone', (): void =>
 });
 
 void test('surges only run where the zone has surge rules', (): void => {
-  const world: World = worldIn(shipped, outpost.id, 6);
+  const world: World = armed(worldIn(shipped, outpost.id, 6));
   for (const monster of world.monsters) monster.alive = false;
   const inOutpost: WorldEvent[] = run(world, must(outpost.surge, 'surge rules').delay + 1);
   assert.equal(ofType(inOutpost, 'surge').length, 1);
   assert.equal(world.surge, 2);
   const quiet: ZoneDef = { ...outpost, id: 'quiet', surge: null };
   const content: Content = { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [quiet.id, quiet]]) };
-  const calm: World = worldIn(content, quiet.id, 6);
+  const calm: World = armed(worldIn(content, quiet.id, 6));
   assert.ok(calm.monsters.every((monster: MonsterState): boolean => monster.level === quiet.level));
   for (const monster of calm.monsters) monster.alive = false;
   const inQuiet: WorldEvent[] = run(calm, 12);
@@ -176,7 +176,7 @@ void test('surges only run where the zone has surge rules', (): void => {
 void test('monster level is the zone level, raised by the surge only in a surge zone', (): void => {
   const deep: ZoneDef = { ...outpost, id: 'deep', level: 4, surge: null };
   const content: Content = { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [deep.id, deep]]) };
-  const world: World = worldIn(content, deep.id, 7);
+  const world: World = armed(worldIn(content, deep.id, 7));
   const thrall: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.id === 'mended'), 'thrall');
   assert.equal(thrall.level, 4);
   assert.equal(thrall.maxLife, Math.round(thrall.def.life * (1 + content.world.scaling.lifePerLevel * 3)));
@@ -184,7 +184,7 @@ void test('monster level is the zone level, raised by the surge only in a surge 
 });
 
 void test('a checkpoint is taken once when the hero walks into it', (): void => {
-  const world: World = worldIn(withCheckpoint(), outpost.id, 8);
+  const world: World = armed(worldIn(withCheckpoint(), outpost.id, 8));
   world.monsters = [];
   const events: WorldEvent[] = run(world, 6, [{ type: 'move', held: false, dest: { x: 28, z: 22 } }]);
   assert.deepEqual(ofType(events, 'checkpoint'), [{ type: 'checkpoint', checkpoint: 'grate', pos: { x: 28, z: 22 } }]);
@@ -194,7 +194,7 @@ void test('a checkpoint is taken once when the hero walks into it', (): void => 
 });
 
 void test('death returns the hero to the last checkpoint, or to the exit they came in by', (): void => {
-  const marked: World = worldIn(withCheckpoint(), outpost.id, 9);
+  const marked: World = armed(worldIn(withCheckpoint(), outpost.id, 9));
   marked.respawn = { type: 'checkpoint', checkpoint: 'grate' };
   marked.player.pos = { x: 12, z: 30 };
   assert.equal(ofType(killPlayer(marked), 'player_respawn').length, 1);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
-import { must, worldIn } from '../../test/support.ts';
+import { armed, must, worldIn } from '../../test/support.ts';
 import type { Content, PackMember, ZoneDef, ZonePack } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
@@ -24,7 +24,7 @@ function ofType<T extends WorldEvent['type']>(events: readonly WorldEvent[], typ
 }
 
 function fresh(seed: number = 1): World {
-  return worldIn(content, outpost.id, seed);
+  return armed(worldIn(content, outpost.id, seed));
 }
 
 function advance(world: World, seconds: number, first: readonly Command[] = []): WorldEvent[] {
