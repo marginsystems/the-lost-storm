@@ -7,8 +7,8 @@ export const PROP_SURFACE = {
   wetRoughnessHigh: 0.8,
   leastRoughness: 0.4,
   lumaRoughness: 2.5,
-  puddleUp: 0.82,
-  puddleFull: 0.95,
+  puddleUp: 0.93,
+  puddleFull: 0.99,
   puddleScale: 1.3,
   puddleFrom: 0.58,
   puddleTo: 0.68,
@@ -18,6 +18,12 @@ export const PROP_SURFACE = {
   streakScale: 7,
   streakStretch: 0.35,
   streakDarken: 0.82,
+  topFrom: 0.35,
+  topTo: 0.9,
+  topLift: 1.2,
+  edgeGain: 2.2,
+  edgeLift: 0.55,
+  edgeGloss: 0.55,
   contactHeight: 0.45,
   contactDarken: 0.45,
 } as const;
@@ -98,6 +104,8 @@ const WET_TERMS: string = [
   `float propUp = smoothstep( ${glsl(PROP_SURFACE.puddleUp)}, ${glsl(PROP_SURFACE.puddleFull)}, normalize( vPropNormal ).y );`,
   `float propPuddle = smoothstep( ${glsl(PROP_SURFACE.puddleFrom)}, ${glsl(PROP_SURFACE.puddleTo)}, propNoise( vPropWorld.xz * ${glsl(PROP_SURFACE.puddleScale)} ) ) * propUp * uPropWet;`,
   `float propStreak = propNoise( vec2( ( vPropWorld.x + vPropWorld.z ) * ${glsl(PROP_SURFACE.streakScale)}, vPropWorld.y * ${glsl(PROP_SURFACE.streakStretch)} ) ) * ( 1.0 - propUp ) * uPropWet;`,
+  `float propTop = smoothstep( ${glsl(PROP_SURFACE.topFrom)}, ${glsl(PROP_SURFACE.topTo)}, normalize( vPropNormal ).y );`,
+  `float propEdge = clamp( length( fwidth( vPropNormal ) ) * ${glsl(PROP_SURFACE.edgeGain)}, 0.0, 1.0 );`,
   `float propContact = mix( ${glsl(PROP_SURFACE.contactDarken)}, 1.0, smoothstep( 0.0, ${glsl(PROP_SURFACE.contactHeight)}, vPropWorld.y - uPropGround ) );`,
 ].join('\n');
 
@@ -113,13 +121,14 @@ function mapChunk(triplanar: boolean): string {
     sampled,
     '#endif',
     orm,
-    `diffuseColor.rgb *= mix( 1.0, ${glsl(PROP_SURFACE.wetDarken)}, uPropWet ) * mix( 1.0, ${glsl(PROP_SURFACE.streakDarken)}, propStreak ) * mix( 1.0, ${glsl(PROP_SURFACE.puddleDarken)}, propPuddle ) * propContact;`,
+    `diffuseColor.rgb *= mix( 1.0, ${glsl(PROP_SURFACE.wetDarken)}, uPropWet ) * mix( 1.0, ${glsl(PROP_SURFACE.streakDarken)}, propStreak ) * mix( 1.0, ${glsl(PROP_SURFACE.puddleDarken)}, propPuddle ) * propContact * mix( 1.0, ${glsl(PROP_SURFACE.topLift)}, propTop * ( 1.0 - propPuddle ) ) * ( 1.0 + propEdge * ${glsl(PROP_SURFACE.edgeLift)} );`,
   ].join('\n');
 }
 
 const ROUGHNESS_CHUNK: string = [
   '#include <roughnessmap_fragment>',
   `roughnessFactor = mix( roughnessFactor, max( roughnessFactor * mix( ${glsl(PROP_SURFACE.wetRoughnessLow)}, ${glsl(PROP_SURFACE.wetRoughnessHigh)}, propRough ), ${glsl(PROP_SURFACE.leastRoughness)} ), uPropWet );`,
+  `roughnessFactor = mix( roughnessFactor, max( roughnessFactor * ${glsl(PROP_SURFACE.edgeGloss)}, ${glsl(PROP_SURFACE.leastRoughness)} ), propEdge * propTop * uPropWet );`,
   `roughnessFactor = mix( roughnessFactor, ${glsl(PROP_SURFACE.puddleRoughness)}, propPuddle );`,
 ].join('\n');
 
