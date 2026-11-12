@@ -53,7 +53,7 @@
     {"prop": "brazier", "x": 17.5, "z": 11.5, "y": 0, "rotationDegrees": 0},
     {"prop": "bench", "x": 20.0, "z": 23.5, "y": 0, "rotationDegrees": 90},
     {"prop": "stool", "x": 27.5, "z": 24.0, "y": 0, "rotationDegrees": 0},
-    {"prop": "stall_pale", "x": 29.5, "z": 11.5, "y": 0, "rotationDegrees": 200},
+    {"prop": "stall_camp", "x": 29.5, "z": 11.5, "y": 0, "rotationDegrees": 200},
     {"prop": "stash_chest", "x": 20.5, "z": 26.5, "y": 0, "rotationDegrees": 160},
     {"prop": "shelter", "x": 31.0, "z": 28.5, "y": 0, "rotationDegrees": 270}
   ],

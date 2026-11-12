@@ -21,7 +21,8 @@ export const PROP_SURFACE = {
   topFrom: 0.35,
   topTo: 0.9,
   topLift: 1.2,
-  edgeGain: 2.2,
+  edgeFrom: 0.12,
+  edgeTo: 0.45,
   edgeLift: 0.55,
   edgeGloss: 0.55,
   contactHeight: 0.45,
@@ -105,7 +106,7 @@ const WET_TERMS: string = [
   `float propPuddle = smoothstep( ${glsl(PROP_SURFACE.puddleFrom)}, ${glsl(PROP_SURFACE.puddleTo)}, propNoise( vPropWorld.xz * ${glsl(PROP_SURFACE.puddleScale)} ) ) * propUp * uPropWet;`,
   `float propStreak = propNoise( vec2( ( vPropWorld.x + vPropWorld.z ) * ${glsl(PROP_SURFACE.streakScale)}, vPropWorld.y * ${glsl(PROP_SURFACE.streakStretch)} ) ) * ( 1.0 - propUp ) * uPropWet;`,
   `float propTop = smoothstep( ${glsl(PROP_SURFACE.topFrom)}, ${glsl(PROP_SURFACE.topTo)}, normalize( vPropNormal ).y );`,
-  `float propEdge = clamp( length( fwidth( vPropNormal ) ) * ${glsl(PROP_SURFACE.edgeGain)}, 0.0, 1.0 );`,
+  `float propEdge = smoothstep( ${glsl(PROP_SURFACE.edgeFrom)}, ${glsl(PROP_SURFACE.edgeTo)}, length( fwidth( vPropNormal ) ) );`,
   `float propContact = mix( ${glsl(PROP_SURFACE.contactDarken)}, 1.0, smoothstep( 0.0, ${glsl(PROP_SURFACE.contactHeight)}, vPropWorld.y - uPropGround ) );`,
 ].join('\n');
 

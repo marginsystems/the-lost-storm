@@ -78,7 +78,7 @@ void test('a triplanar surface with no ORM map still varies its wet roughness, f
 void test('top faces and worn edges are lifted so a prop keeps its silhouette against dark ground, and edges catch a wet sheen', (): void => {
   const shader: ShaderSource = physical();
   patchPropShader(shader, TRIPLANAR);
-  assert.match(shader.fragmentShader, /float propEdge = clamp\( length\( fwidth\( vPropNormal \) \)/);
+  assert.match(shader.fragmentShader, /float propEdge = smoothstep\( [0-9.]+, [0-9.]+, length\( fwidth\( vPropNormal \) \) \);/);
   assert.match(shader.fragmentShader, /propTop \* \( 1\.0 - propPuddle \)/);
   assert.match(shader.fragmentShader, /propEdge \* propTop \* uPropWet/);
 });
