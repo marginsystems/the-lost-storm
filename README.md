@@ -67,13 +67,13 @@ The title screen shows "Cloud save on" or "Offline". Without the variable it alw
 
 ## Checks
 
-There is no CI yet. Run this before every pull request; it must pass with zero errors:
+CI runs typecheck, lint and the affected tests on every pull request, and the whole suite in the merge queue and on `main`. It reports without blocking unless the repository variable `CI_GATE` is `on`. Run this before every pull request; it must pass with zero errors:
 
 ```bash
 npm run check
 ```
 
-It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with type information, rules in `.oxlintrc.json`) and `npm test` (Node's test runner; takes about a second). `npm run build` makes the production bundle in `dist/`.
+It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with type information, rules in `.oxlintrc.json`) and `npm test` (Node's test runner, the whole suite split over a few processes; a few seconds). `npm run test:affected` runs only the tests a branch can affect, and `npm run test:isolated` runs the whole suite with one process per file. `npm run build` makes the production bundle in `dist/`.
 
 ## Layout
 

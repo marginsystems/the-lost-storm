@@ -78,6 +78,29 @@ void test('every test file sits beside the file it tests', (): void => {
   }
 });
 
+const STARTS_SOMETHING: RegExp = /(?:from\s*|import\s*\(\s*|require\s*\(\s*)['"`](?:node:)?(?:http|https|http2|net|tls|dgram|child_process|cluster|worker_threads|inspector|playwright[^'"`]*|puppeteer[^'"`]*|selenium-webdriver)['"`]|\.listen\s*\(|\bnew\s+Worker\s*\(/;
+
+void test('the process guard catches every way a test could start a server, a browser or a process', (): void => {
+  const caught: readonly string[] = [
+    "import { createServer } from 'node:http';",
+    'import { spawn } from "child_process";',
+    "const net = await import('node:net');",
+    'const { fork } = require("node:child_process");',
+    "import { chromium } from 'playwright-core';",
+    'server.listen (0);',
+    "new Worker(new URL('./w.ts', import.meta.url));",
+  ];
+  const allowed: readonly string[] = ["import { test } from 'node:test';", "import { readFileSync } from 'node:fs';", 'const listener = 1;'];
+  for (const line of caught) assert.ok(STARTS_SOMETHING.test(line), line);
+  for (const line of allowed) assert.ok(!STARTS_SOMETHING.test(line), line);
+});
+
+void test('no test starts a server, a browser or another process', (): void => {
+  for (const { path, lines } of typescript.filter((source: SourceFile): boolean => source.path.endsWith('.test.ts') && source.path !== 'test/rules.test.ts')) {
+    assert.ok(!lines.some((line: string): boolean => STARTS_SOMETHING.test(line)), `${path} starts a server, a browser or a process`);
+  }
+});
+
 void test('every shipped model and texture is listed in ASSETS.md', (): void => {
   const assets: string = readFileSync('ASSETS.md', 'utf8');
   const models = (dir: string): string[] =>
