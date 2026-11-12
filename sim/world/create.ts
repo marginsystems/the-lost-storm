@@ -1,7 +1,8 @@
 import type { GlitchDef } from '../content/glitches.ts';
 import { loadGlitches } from '../content/glitches.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
-import { emptyEquipment, generateItem, slotOf } from '../items.ts';
+import { emptyEquipment, slotOf } from '../items.ts';
+import { emptyLedger, makeItem } from './ledger.ts';
 import { buildNavGrid } from '../nav/grid.ts';
 import { createRng } from '../rng.ts';
 import { defaultBar, startingSkills } from '../skill-book.ts';
@@ -95,9 +96,8 @@ function giveStartingItems(world: World, emptyHanded: boolean): void {
   for (const baseId of world.content.player.startingItems) {
     if (emptyHanded && (world.content.itemBases.get(baseId)?.visual ?? null) !== null) continue;
     const worn: boolean = (world.content.itemBases.get(baseId)?.wear.length ?? 0) > 0;
-    const item: ItemInstance | null = generateItem(world.content, worn ? createRng(world.nextItemUid) : world.rng, world.nextItemUid, 1, baseId, commonRarity);
+    const item: ItemInstance | null = makeItem(world, 1, baseId, commonRarity, { kind: 'start', base: baseId }, worn ? createRng(world.nextItemUid) : world.rng);
     if (item === null) continue;
-    world.nextItemUid += 1;
     const slot = slotOf(world.content, item);
     if (slot !== null && world.player.equipped[slot] === null) world.player.equipped[slot] = item;
     else addToInventory(world.player, item);
@@ -156,6 +156,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     ground: [],
     nextId: PLAYER_ID + 1,
     nextItemUid: save?.nextItemUid ?? 1,
+    ledger: emptyLedger(),
     nextPackId: 1,
     surge: save?.surge ?? 1,
     surgeTimer: null,

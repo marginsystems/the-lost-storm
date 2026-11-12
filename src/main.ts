@@ -36,7 +36,8 @@ import type { AccountService } from './backend/account.ts';
 import type { ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
 import type { Backend, BackendState } from './backend/backend.ts';
-import { createBrowserAccount, createBrowserBackend } from './backend/browser.ts';
+import { createBrowserAccount, createBrowserBackend, createBrowserMinter } from './backend/browser.ts';
+import type { Minter } from './backend/minter.ts';
 import { createHud } from './hud/hud.ts';
 import { findLabel } from './hud/pickup-notes.ts';
 import type { Hud } from './hud/hud-api.ts';
@@ -180,6 +181,7 @@ async function start(): Promise<void> {
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
   const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
   const loadingSave: Promise<SaveData | null> = backend.load();
+  const minter: Minter | null = createBrowserMinter(content, import.meta.env.VITE_SERVER_URL);
   const lobby: Lobby | null = createBrowserLobby(import.meta.env.VITE_SERVER_URL, true);
   title.dataset['lobby'] = lobby === null ? 'off' : 'on';
   const gameSettings: SettingsStore = createGameSettings(createBrowserStore(), skillSlots(content), shippedKeys(content, lobby !== null));
@@ -309,6 +311,7 @@ async function start(): Promise<void> {
     world,
     send,
     itemImage,
+    unverified: (item: ItemInstance): boolean => minter?.unverified(world, item) ?? false,
     audio: controls,
     settings: gameSettings,
     openSettings: (section: SettingsSection): void => pauseMenu.open(section),
@@ -511,6 +514,7 @@ async function start(): Promise<void> {
       }
     }
     debug.record(events);
+    if (minter?.pump(world) === true) dirty = true;
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
