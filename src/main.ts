@@ -18,7 +18,9 @@ import type { Vec2 } from '../sim/math.ts';
 import type { SaveData } from '../sim/save.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
+import { insideAwakeMoment } from '../sim/world/moments.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
+import type { MeasureRecorder } from './measure-recorder.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../sim/world/types.ts';
 import type { Listener } from './audio/listener.ts';
 import { createListener } from './audio/listener.ts';
@@ -153,6 +155,7 @@ export interface DebugHandle {
   send(command: Command): void;
   memory(): MemoryReport;
   glitch(kind: GlitchKind): void;
+  saveMeasurements(): void;
 }
 
 declare global {
@@ -385,7 +388,17 @@ async function start(): Promise<void> {
   });
   const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(import.meta.env.VITE_SERVER_URL);
   const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore(), onScreen: (): boolean => playing && !pauseMenu.isOpen });
-  if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }) };
+  let recorder: MeasureRecorder | null = null;
+  if (import.meta.env.DEV) {
+    const attachRecorder = async (): Promise<void> => {
+      const module = await import('./measure-recorder.ts');
+      const made: MeasureRecorder = module.createRecorder(world, import.meta.env.VITE_BUILD_ID ?? 'dev');
+      recorder = made;
+      if (window.storm !== undefined) window.storm = { ...window.storm, saveMeasurements: (): void => module.saveRecording(made) };
+    };
+    void attachRecorder();
+    window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }), saveMeasurements: (): void => undefined };
+  }
 
   let playing: boolean = false;
   let torchVersion: number = 0;
@@ -507,6 +520,7 @@ async function start(): Promise<void> {
         }
       }
     }
+    recorder?.record(events);
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
@@ -527,6 +541,7 @@ async function start(): Promise<void> {
       stage.follow(world.player.pos.x, world.player.pos.z);
       overlays.update(dt, world, input.hoveredId);
     }
+    audio.setMuffled(insideAwakeMoment(world));
     audio.update(dt);
     particles.update(dt);
     weather.update(dt, world.player.pos.x, world.player.pos.z, glitchSettings.get().reduceFlashes);

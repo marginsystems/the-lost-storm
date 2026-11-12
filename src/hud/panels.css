@@ -291,3 +291,89 @@
 .tip-diff.worse {
   color: #e0645a;
 }
+
+.panel-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0);
+  color: var(--text-dim);
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.panel-close:hover,
+.panel-close:focus-visible {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  outline: none;
+}
+
+.panel-close:active {
+  scale: 0.92;
+}
+
+.panel-close-glyph {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.atlas > .panel-close {
+  top: 14px;
+  right: 14px;
+  background: rgba(9, 12, 16, 0.55);
+}
+
+body[data-overlay-full='on'] .hud-hint,
+body[data-overlay-full='on'] .hud-banners,
+body[data-overlay-full='on'] .world-layer,
+body[data-overlay-full='on'] .hud-bark {
+  animation: overlay-chrome-yield var(--spring-snappy-ms) var(--spring-snappy) both;
+  pointer-events: none;
+}
+
+body[data-overlay-full='off'] .hud-hint,
+body[data-overlay-full='off'] .hud-banners,
+body[data-overlay-full='off'] .world-layer,
+body[data-overlay-full='off'] .hud-bark {
+  animation: overlay-chrome-return var(--spring-smooth-ms) var(--spring-smooth) both;
+}
+
+@keyframes overlay-chrome-yield {
+  from {
+    filter: opacity(1);
+  }
+  to {
+    filter: opacity(0);
+    visibility: hidden;
+  }
+}
+
+@keyframes overlay-chrome-return {
+  from {
+    filter: opacity(0);
+  }
+  to {
+    filter: opacity(1);
+  }
+}
+
+body.touch .hud-panel > .panel-close,
+body.touch .atlas > .panel-close {
+  display: none;
+}

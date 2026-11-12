@@ -30,6 +30,9 @@ const SYSTEM = {
   duckRelease: 0.35,
   settingsSmoothing: 0.03,
   ambienceFade: 3,
+  muffleOpenHz: 20000,
+  muffleClosedHz: 700,
+  muffleSmoothing: 0.5,
   stingerPan: 0.6,
   manifestRetrySeconds: 10,
   loopRetrySeconds: 35,
@@ -59,6 +62,7 @@ export interface AudioSystem {
   startAmbience(zone: ZoneAmbience): void;
   stopAmbience(): void;
   update(dt: number): void;
+  setMuffled(on: boolean): void;
   onTrigger(listener: (trigger: Trigger) => void): void;
 }
 
@@ -85,6 +89,7 @@ interface Graph {
   readonly effects: GainNode;
   readonly voice: GainNode;
   readonly ambience: GainNode;
+  readonly muffle: BiquadFilterNode;
 }
 
 export function createAudioSystem(options: AudioOptions): AudioSystem {
@@ -108,6 +113,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     },
   });
   let graph: Graph | null = null;
+  let muffled: boolean = false;
   let voicesPlaying: number = 0;
   const zoneLoops: AmbienceTracker<AmbienceLoop> = createAmbienceTracker<AmbienceLoop>();
   let loopRetryLeft: number = 0;
@@ -272,9 +278,14 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
         const effects: GainNode = context.createGain();
         const voice: GainNode = context.createGain();
         const ambience: GainNode = context.createGain();
-        for (const bus of [effects, voice, ambience]) bus.connect(master);
+        const muffle: BiquadFilterNode = context.createBiquadFilter();
+        muffle.type = 'lowpass';
+        muffle.frequency.value = muffled ? SYSTEM.muffleClosedHz : SYSTEM.muffleOpenHz;
+        for (const bus of [effects, voice]) bus.connect(master);
+        ambience.connect(muffle);
+        muffle.connect(master);
         master.connect(context.destination);
-        graph = { context, master, effects, voice, ambience };
+        graph = { context, master, effects, voice, ambience, muffle };
         applySettings(controls.get());
         context.resume().catch((): void => undefined);
         document.addEventListener('visibilitychange', (): void => {
@@ -372,6 +383,12 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
         running.source.disconnect();
         running.gain.disconnect();
       }
+    },
+    setMuffled(on: boolean): void {
+      if (on === muffled) return;
+      muffled = on;
+      if (graph === null) return;
+      graph.muffle.frequency.setTargetAtTime(on ? SYSTEM.muffleClosedHz : SYSTEM.muffleOpenHz, graph.context.currentTime, SYSTEM.muffleSmoothing);
     },
     update(dt: number): void {
       ensureManifest();

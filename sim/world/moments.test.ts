@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
-import type { MomentDef, MomentField, MomentLibrary } from '../content/moment-types.ts';
-import type { Content, ZoneDef } from '../content/types.ts';
+import type { MomentDef, MomentField, MomentLibrary, StrikeInterval } from '../content/moment-types.ts';
+import type { Content, ZoneDef, ZoneNpc } from '../content/types.ts';
+import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { parseSaveText, toSave } from '../save.ts';
+import { cuesForEvent } from '../audio.ts';
+import { loadAudio } from '../content/audio.ts';
 import { createWorld } from './create.ts';
-import { forceStrike, MOMENTS, momentOfEcho, nearestFight, safeSpots, strikeGround } from './moments.ts';
+import { forceStrike, insideAwakeMoment, MOMENTS, momentOfEcho, nearestFight, safeSpots, strikeGround } from './moments.ts';
 import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -18,6 +21,8 @@ import { must } from '../../test/support.ts';
 const DT: number = 1 / 30;
 const SHIPPED: MomentLibrary = loadContent().moments;
 const FAR = { x: 150, z: 150 } as const;
+const ROAD_WALK = { speed: 4, within: 4 } as const;
+const SAFE_PROBE = { x: 40, z: 47 } as const;
 
 function run(world: World, seconds: number): WorldEvent[] {
   const events: WorldEvent[] = [];
@@ -359,19 +364,29 @@ void test('while the field is sure, a woken fight never runs out even with the h
   assert.equal(moment.phase, 'awake');
 });
 
-void test('a new hero in the Hall gets a grace period, and the first moment is a fixed fight away from the arrival and the road to the fire', (): void => {
+void test('a new hero in the Hall gets a grace period, then the first moment strikes on screen beside him as he walks the road', (): void => {
   const shipped: Content = loadContent();
   const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');
   const field: MomentField = must(hall.moments, 'hall field');
-  for (let seed: number = 1; seed <= 8; seed += 1) {
+  const near: StrikeInterval = must(field.near, 'hall near');
+  const east: Vec2 = must(hall.exits.find((exit): boolean => exit.id === 'east'), 'east exit');
+  for (let seed: number = 1; seed <= 12; seed += 1) {
     const world: World = createWorld(shipped, { seed, save: null });
     enterZone(world, hall, { type: 'start' });
-    const early: WorldEvent[] = run(world, field.grace - 0.5);
-    assert.equal(early.some((event: WorldEvent): boolean => event.type === 'moment_mark'), false, `seed ${seed}`);
-    run(world, field.interval.max - field.grace + 1);
-    const first: MomentState = must(world.moments[0], `seed ${seed} first moment`);
-    assert.equal(first.def.id, must(field.first[0], 'first entry').moment);
-    for (const keep of field.avoid) assert.ok(distance(first.pos, keep) >= first.def.radius + keep.radius, `seed ${seed}`);
+    world.player.invulnerable = 1e9;
+    const from: Vec2 = { ...world.player.pos };
+    let landed: { readonly at: number; readonly gap: number; readonly id: string } | null = null;
+    for (let elapsed: number = 0; elapsed < field.grace + ROAD_WALK.within && landed === null; elapsed += DT) {
+      const along: number = Math.min(1, (elapsed * ROAD_WALK.speed) / distance(from, east));
+      standAt(world, { x: from.x + (east.x - from.x) * along, z: from.z + (east.z - from.z) * along });
+      for (const event of stepWorld(world, [], DT)) {
+        if (event.type === 'moment_mark' && elapsed < field.grace - DT) assert.fail(`seed ${seed}: struck at ${elapsed.toFixed(1)} s, inside the grace`);
+        if (event.type === 'moment_mark') landed = { at: elapsed, gap: distance(event.moment.pos, world.player.pos), id: event.moment.def.id };
+      }
+    }
+    const strike = must(landed, `seed ${seed}: no first moment within ${field.grace + ROAD_WALK.within} s`);
+    assert.equal(strike.id, must(field.first[0], 'first entry').moment, `seed ${seed}`);
+    assert.ok(strike.gap >= near.min - 1e-6 && strike.gap <= near.max + 1e-6, `seed ${seed}: ${strike.gap.toFixed(1)} m from the hero`);
   }
 });
 
@@ -380,11 +395,14 @@ void test('no strike ever lands near the safe ground or close enough to a living
   const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');
   const field: MomentField = must(hall.moments, 'hall field');
   assert.ok(field.clearance.safe > 0);
+  const keeper: ZoneNpc = must(must(shipped.zones.get('hideout'), 'hideout').npcs[0], 'a camp NPC');
+  const guarded: ZoneDef = { ...hall, npcs: [{ ...keeper, x: SAFE_PROBE.x, z: SAFE_PROBE.z, when: [] }] };
   for (let seed: number = 1; seed <= 6; seed += 1) {
     const world: World = createWorld(shipped, { seed, save: null });
-    enterZone(world, hall, { type: 'start' });
+    world.flags['first_moment'] = 'cleared';
+    enterZone(world, guarded, { type: 'start' });
     const spots = safeSpots(world);
-    assert.ok(spots.length >= world.npcs.length + 1);
+    assert.ok(spots.some((spot: Vec2): boolean => distance(spot, SAFE_PROBE) < 1e-6));
     const seen: MomentState[] = [];
     const packAt: number[] = [];
     for (let elapsed: number = 0; elapsed < 240; elapsed += 1) {
@@ -398,7 +416,7 @@ void test('no strike ever lands near the safe ground or close enough to a living
       for (const moment of world.moments) if (moment.phase === 'dormant') moment.timeLeft = 0;
     }
     assert.ok(seen.length >= 4, `seed ${seed}`);
-    for (const moment of seen) for (const spot of spots) assert.ok(distance(moment.pos, spot) >= moment.def.radius + field.clearance.safe, `seed ${seed}: ${moment.def.id}`);
+    for (const moment of seen) for (const spot of spots) assert.ok(distance(moment.pos, spot) >= moment.def.radius + field.clearance.safe, `seed ${seed}: ${moment.def.id} ${distance(moment.pos, spot).toFixed(1)} from ${spot.x.toFixed(1)},${spot.z.toFixed(1)} npc now ${world.npcs.map((npc) => `${npc.pos.x.toFixed(1)},${npc.pos.z.toFixed(1)}`).join(" ")}`);
     assert.ok(packAt.length > 0);
     for (const gap of packAt) assert.ok(gap >= field.clearance.packs - 1e-6, `seed ${seed}: a strike ${gap.toFixed(1)} m past a pack's reach`);
   }
@@ -513,7 +531,7 @@ void test('a hero who falls in the first fight and rises at the checkpoint comes
   assert.ok(world.moments.includes(moment) && moment.phase !== 'fading');
 });
 
-void test('safe ground is every NPC, the arrival, the waypoint and every service prop such as the stash, wherever the zone puts them', (): void => {
+void test('safe ground is every NPC, the waypoint and every service prop such as the stash, wherever the zone puts them', (): void => {
   const shipped: Content = loadContent();
   const hideout: ZoneDef = must(shipped.zones.get('hideout'), 'hideout');
   const world: World = createWorld(shipped, { seed: 3, save: null });
@@ -522,10 +540,35 @@ void test('safe ground is every NPC, the arrival, the waypoint and every service
   const has = (x: number, z: number): boolean => spots.some((spot): boolean => Math.abs(spot.x - x) < 1e-6 && Math.abs(spot.z - z) < 1e-6);
   assert.ok(world.npcs.length > 0);
   for (const npc of world.npcs) assert.ok(has(npc.pos.x, npc.pos.z), npc.def.id);
-  assert.ok(has(hideout.playerStart.x, hideout.playerStart.z));
   const waypoint = must(hideout.waypoint, 'hideout waypoint');
   assert.ok(has(waypoint.x, waypoint.z));
   const services = hideout.props.filter((placed): boolean => (shipped.props.get(placed.prop)?.service ?? null) !== null);
   assert.ok(services.length > 0);
   for (const placed of services) assert.ok(has(placed.x, placed.z), placed.prop);
+});
+
+void test('the bubble sound and the muffled bed follow the hero into a woken bubble', (): void => {
+  const world: World = fieldWorld(quietField());
+  const moment: MomentState = struck(world, QUIET.id);
+  assert.equal(insideAwakeMoment(world), false);
+  standAt(world, moment.pos);
+  const events: WorldEvent[] = run(world, DT * 2);
+  assert.equal(insideAwakeMoment(world), true);
+  const woke: WorldEvent | undefined = events.find((event: WorldEvent): boolean => event.type === 'moment_woke');
+  assert.ok(woke !== undefined);
+  const audio = loadAudio(world.content);
+  assert.deepEqual(cuesForEvent(audio, world, woke).map((cue): string => cue.sound), ['bubble_calm']);
+  world.player.pos = { x: moment.pos.x + moment.def.radius + 5, z: moment.pos.z };
+  assert.equal(insideAwakeMoment(world), false);
+});
+
+void test('a bubble that turns its echoes opens with the hostile sound', (): void => {
+  const world: World = fieldWorld(quietField({ table: [{ moment: RAID.id, weight: 1 }] }), momentLibrary([RAID]));
+  const moment: MomentState = must(forceStrike(world, { x: 40, z: 40 }, RAID.id), 'strike');
+  run(world, world.content.moments.telegraph + DT * 2);
+  standAt(world, moment.pos);
+  const events: WorldEvent[] = run(world, DT * 2);
+  const woke: WorldEvent | undefined = events.find((event: WorldEvent): boolean => event.type === 'moment_woke' && event.turned.length > 0);
+  assert.ok(woke !== undefined);
+  assert.deepEqual(cuesForEvent(loadAudio(world.content), world, woke).map((cue): string => cue.sound), ['bubble_hostile']);
 });

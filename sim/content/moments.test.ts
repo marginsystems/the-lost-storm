@@ -61,6 +61,6 @@ void test('an echo look must fit its rig, and an echo that may turn needs its fi
 void test('a zone field naming an unknown moment or an area outside the zone is reported', (): void => {
   const base: ZoneDef | undefined = shipped.zones.get(shipped.world.start);
   assert.ok(base !== undefined);
-  const zone: ZoneDef = { ...base, id: 'test_field', moments: { combat: true, areas: [{ x: -50, z: 4, radius: 4 }], clearance: { hero: 1, exits: 1, between: 1, safe: 0, packs: 0 }, interval: { min: 1, max: 2 }, start: 0, max: 1, table: [{ moment: 'ghost', weight: 1 }], sure: [], first: [], grace: 0, avoid: [] } };
+  const zone: ZoneDef = { ...base, id: 'test_field', moments: { combat: true, areas: [{ x: -50, z: 4, radius: 4 }], clearance: { hero: 1, exits: 1, between: 1, safe: 0, packs: 0 }, interval: { min: 1, max: 2 }, start: 0, max: 1, table: [{ moment: 'ghost', weight: 1 }], sure: [], first: [], grace: 0, avoid: [], near: null } };
   assert.equal(momentProblems(withMoment(MOMENT, zone)).length, 2);
 });

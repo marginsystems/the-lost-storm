@@ -57,6 +57,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
   field.placeholder = NAME_STEP.placeholder;
   field.autocomplete = 'off';
   field.spellcheck = false;
+  field.enterKeyHint = 'go';
   field.tabIndex = -1;
   field.setAttribute('aria-label', NAME_STEP.ask);
   const choose: HTMLButtonElement = el('button', 'name-step-choose', row);

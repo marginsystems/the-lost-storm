@@ -109,3 +109,34 @@ void test('a held key let go while the hero wakes is still released, and a new v
   beginVoid(world, 'first');
   assert.deepEqual(world.player.held, []);
 });
+
+void test('a recentre mid-walk is invisible from the hero: his step, facing and order carry straight across it', (): void => {
+  const world: World = worldIn(content, voidZone.id, 5);
+  world.wake = null;
+  const ahead = { x: 14, z: -5 };
+  let last = { ...world.player.pos };
+  let lastShift = { ...world.shift };
+  let lastStep: number | null = null;
+  let lastFacing: number = world.player.facing;
+  let crossings: number = 0;
+  for (let step: number = 0; step < Math.round(12 / DT); step += 1) {
+    stepWorld(world, [{ type: 'move', held: true, dest: { x: world.player.pos.x + ahead.x, z: world.player.pos.z + ahead.z } }], DT);
+    const shiftedBy = { x: world.shift.x - lastShift.x, z: world.shift.z - lastShift.z };
+    const crossed: boolean = shiftedBy.x !== 0 || shiftedBy.z !== 0;
+    if (crossed) crossings += 1;
+    const stepLength: number = distance(world.player.pos, { x: last.x + shiftedBy.x, z: last.z + shiftedBy.z });
+    if (lastStep !== null && step * DT > 1) {
+      assert.ok(Math.abs(stepLength - lastStep) < 1e-6, `step ${stepLength} after ${lastStep}${crossed ? ' across a recentre' : ''}`);
+      assert.ok(Math.abs(world.player.facing - lastFacing) < 1e-9, `facing moved ${world.player.facing - lastFacing}${crossed ? ' across a recentre' : ''}`);
+    }
+    if (world.player.intent.type === 'move') {
+      const order = world.player.intent.dest;
+      assert.ok(distance(order, { x: world.player.pos.x + ahead.x, z: world.player.pos.z + ahead.z }) < content.player.baseStats.moveSpeed * DT * 2);
+    }
+    last = { ...world.player.pos };
+    lastShift = { ...world.shift };
+    lastStep = stepLength;
+    lastFacing = world.player.facing;
+  }
+  assert.ok(crossings >= 2, `crossed ${crossings} recentres`);
+});

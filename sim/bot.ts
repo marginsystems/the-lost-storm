@@ -1,3 +1,5 @@
+import type { BotPlan } from './bot-plan.ts';
+import { flaskCommands, junkIndex, nextPlace, planAttack, releaseCommands, rollCommand, upgradeIndex } from './bot-plan.ts';
 import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, SkillTreeNodeDef, ZoneDef, ZoneExit } from './content/types.ts';
 import { canAllocate } from './progression.ts';
 import type { ReadonlyVec2, Vec2 } from './math.ts';
@@ -11,7 +13,7 @@ import { choicesOpen } from './world/death.ts';
 import { stepWorld } from './world/step.ts';
 import { fightZones, nearestFight } from './world/moments.ts';
 import { playerMayStrike } from './world/factions.ts';
-import type { Command, EchoState, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
+import type { Command, EchoState, ItemInstance, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
 
 export const BOT = {
   step: 1 / 30,
@@ -52,14 +54,53 @@ export interface Bot {
   readonly events: WorldEvent[];
   readonly habits: BotHabits;
   readonly watch: BotWatch | null;
+  readonly plan: BotPlan | null;
   deaths: number;
+  bagChanged: boolean;
+  readonly discarded: Set<number>;
 }
 
-export function createBot(world: World, habits: BotHabits = CAREFUL, watch: BotWatch | null = null): Bot {
-  return { world, events: [], habits, watch, deaths: 0 };
+export function createBot(world: World, habits: BotHabits = CAREFUL, watch: BotWatch | null = null, plan: BotPlan | null = null): Bot {
+  return { world, events: [], habits, watch, plan, deaths: 0, bagChanged: false, discarded: new Set<number>() };
 }
 
-function nextPlace(world: World): SkillTreeNodeDef | null {
+function planned(bot: Bot, commands: readonly Command[]): Command[] {
+  const plan: BotPlan | null = bot.plan;
+  const world: World = bot.world;
+  if (plan === null) {
+    const first: SkillTreeNodeDef | null = firstPlace(world);
+    return first === null ? [...commands] : [...commands, { type: 'allocate', node: first.id }];
+  }
+  const extra: Command[] = [...flaskCommands(world, plan), ...releaseCommands(world)];
+  const place: string | null = nextPlace(world.content, plan, world.player.allocated, world.player.skillPoints);
+  if (place !== null) extra.push({ type: 'allocate', node: place });
+  if (plan.loot && bot.bagChanged && world.player.action === null) {
+    const upgrade: number | null = upgradeIndex(world);
+    const junk: number | null = upgrade === null ? junkIndex(world) : null;
+    if (upgrade !== null) extra.push({ type: 'equip', inventoryIndex: upgrade });
+    else if (junk !== null) {
+      const item: ItemInstance | null = world.player.inventory[junk] ?? null;
+      if (item !== null) bot.discarded.add(item.uid);
+      extra.push({ type: 'drop', inventoryIndex: junk });
+    }
+    else bot.bagChanged = false;
+  }
+  return [...commands, ...extra];
+}
+
+function pause(bot: Bot, seconds: number): void {
+  for (let waited: number = 0; waited < seconds; waited += BOT.step) tick(bot, []);
+}
+
+export function botStep(bot: Bot, commands: readonly Command[]): WorldEvent[] {
+  return tick(bot, commands);
+}
+
+export function botPause(bot: Bot, seconds: number): void {
+  pause(bot, seconds);
+}
+
+function firstPlace(world: World): SkillTreeNodeDef | null {
   const player = world.player;
   if (player.skillPoints <= 0) return null;
   const open: readonly SkillTreeNodeDef[] = world.content.skillTree.filter((node: SkillTreeNodeDef): boolean => canAllocate(world.content, player.allocated, player.skillPoints, node.id));
@@ -67,11 +108,13 @@ function nextPlace(world: World): SkillTreeNodeDef | null {
 }
 
 function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
-  const place: SkillTreeNodeDef | null = nextPlace(bot.world);
-  const chosen: readonly Command[] = place === null ? commands : [...commands, { type: 'allocate', node: place.id }];
+  const reading: number = bot.plan?.lineSeconds ?? 0;
+  if (reading > 0 && commands.some((command: Command): boolean => command.type === 'advance')) pause(bot, reading);
+  const chosen: readonly Command[] = planned(bot, commands);
   const events: WorldEvent[] = stepWorld(bot.world, choicesOpen(bot.world) ? [...chosen, { type: 'respawn', choice: 'checkpoint' }] : chosen, BOT.step);
   for (const event of events) {
     if (event.type === 'death' && event.team === 'player') bot.deaths += 1;
+    if (event.type === 'pickup' || event.type === 'level_up') bot.bagChanged = true;
   }
   bot.events.push(...events);
   bot.watch?.(events);
@@ -195,10 +238,11 @@ function fightStep(bot: Bot, prefer: string | null): boolean {
   if (target === null) return false;
   if (bot.habits.dodges && world.player.alive && botInDanger(world, world.player.pos, bot.habits.reaction)) {
     const spot: Vec2 | null = world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest) ? null : refuge(world);
-    tick(bot, free(world) && spot !== null ? [{ type: 'move', held: false, dest: spot }] : []);
+    const roll: Command | null = spot === null || bot.plan?.rolls !== true ? null : rollCommand(world, spot);
+    tick(bot, free(world) && spot !== null ? [roll ?? { type: 'move', held: false, dest: spot }] : []);
     return true;
   }
-  tick(bot, free(world) ? [attack(world, target, hostile)] : []);
+  tick(bot, free(world) ? (bot.plan === null ? [attack(world, target, hostile)] : planAttack(world, bot.plan, target, hostile)) : []);
   return true;
 }
 

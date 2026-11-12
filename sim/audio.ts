@@ -116,6 +116,9 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'waypoint_unlocked':
       found = worldCues(audio, 'waypoint_unlocked', null);
       break;
+    case 'moment_woke':
+      found = worldCues(audio, event.turned.length > 0 ? 'moment_hostile' : 'moment_calm', event.moment.pos);
+      break;
     case 'hazard':
       if (event.burst) found = cues(audio.skillImpact, event.hazard.skill.id, event.hazard.pos);
       break;
@@ -137,7 +140,6 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'zone_edited':
     case 'moment_mark':
     case 'moment_strike':
-    case 'moment_woke':
     case 'moment_ended':
     case 'moment_gone':
     case 'path_marked':

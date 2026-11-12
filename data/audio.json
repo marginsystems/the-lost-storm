@@ -159,7 +159,9 @@
     "quest_started": [{ "sound": "page_turn", "volume": 0.8, "maxVoices": 2 }],
     "quest_advanced": [{ "sound": "quest_update", "volume": 0.7, "maxVoices": 1 }],
     "quest_completed": [{ "sound": "quest_update", "volume": 0.9, "maxVoices": 1 }],
-    "waypoint_unlocked": [{ "sound": "shimmer_faint", "volume": 0.6, "maxVoices": 1 }]
+    "waypoint_unlocked": [{ "sound": "shimmer_faint", "volume": 0.6, "maxVoices": 1 }],
+    "moment_calm": [{ "sound": "bubble_calm", "volume": 0.8, "maxVoices": 1 }],
+    "moment_hostile": [{ "sound": "bubble_hostile", "volume": 0.85, "maxVoices": 1 }]
   },
   "ui": {
     "click": [{ "sound": "ui_tap", "volume": 0.8, "maxVoices": 3 }],
@@ -173,7 +175,8 @@
     "between": {
       "loops": [
         { "sound": "ambience_mist_wind", "volume": 1 },
-        { "sound": "ambience_mist_air", "volume": 0.3 }
+        { "sound": "ambience_mist_air", "volume": 0.3 },
+        { "sound": "ambience_mist_drone", "volume": 0.25 }
       ],
       "stingers": [
         { "sound": "thunder_rumble", "volume": 0.35, "minDelay": 40, "maxDelay": 90 },
@@ -182,23 +185,25 @@
     },
     "hall_of_time": {
       "loops": [
-        { "sound": "ambience_wind_storm", "volume": 0.6 },
-        { "sound": "ambience_wind_low", "volume": 0.35 }
+        { "sound": "ambience_hall_storm", "volume": 0.8 },
+        { "sound": "ambience_wind_low", "volume": 0.25 }
       ],
       "stingers": [
-        { "sound": "thunder_rumble", "volume": 0.55, "minDelay": 12, "maxDelay": 30 },
-        { "sound": "thunder_distant", "volume": 0.45, "minDelay": 20, "maxDelay": 45 }
+        { "sound": "thunder_far", "volume": 0.5, "minDelay": 20, "maxDelay": 45 },
+        { "sound": "thunder_close", "volume": 0.5, "minDelay": 25, "maxDelay": 60 },
+        { "sound": "thunder_close_sharp", "volume": 0.3, "minDelay": 60, "maxDelay": 140 }
       ]
     },
     "hideout": {
       "loops": [
-        { "sound": "ambience_wind_storm", "volume": 0.5 },
-        { "sound": "ambience_torch_fire", "volume": 0.3 },
-        { "sound": "ambience_wind_low", "volume": 0.35 }
+        { "sound": "ambience_hideout_fire", "volume": 0.6 },
+        { "sound": "ambience_hall_storm", "volume": 0.25 },
+        { "sound": "ambience_wind_low", "volume": 0.2 }
       ],
       "stingers": [
-        { "sound": "thunder_rumble", "volume": 0.55, "minDelay": 12, "maxDelay": 30 },
-        { "sound": "thunder_distant", "volume": 0.45, "minDelay": 20, "maxDelay": 45 }
+        { "sound": "thunder_far", "volume": 0.45, "minDelay": 20, "maxDelay": 45 },
+        { "sound": "thunder_close", "volume": 0.35, "minDelay": 30, "maxDelay": 70 },
+        { "sound": "thunder_close_sharp", "volume": 0.2, "minDelay": 70, "maxDelay": 160 }
       ]
     }
   }

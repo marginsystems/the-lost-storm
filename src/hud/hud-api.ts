@@ -4,6 +4,7 @@ import type { AudioControls } from '../audio/settings.ts';
 import type { SettingsSection } from '../settings/settings.ts';
 import type { SettingsStore } from '../settings/store.ts';
 import type { VoicePlayer } from '../voice.ts';
+import type { OverlayManager } from './overlays.ts';
 
 export type HudPanel = 'inventory' | 'character' | 'tree' | 'map';
 
@@ -22,6 +23,7 @@ export interface HudApi {
 }
 
 export interface Hud {
+  readonly overlays: OverlayManager;
   update(dt: number): void;
   refreshItems(): void;
   handleEvents(events: readonly WorldEvent[]): void;

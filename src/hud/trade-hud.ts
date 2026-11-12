@@ -1,6 +1,7 @@
 import type { ServiceKind } from '../../sim/content/trade-types.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { markOverlay } from './overlay-mark.ts';
+import type { OverlayManager } from './overlays.ts';
 import { createStashPanel } from './stash-panel.ts';
 import { createVendorPanel } from './vendor-panel.ts';
 
@@ -9,72 +10,81 @@ const TRADE_HUD = {
   edge: 16,
 } as const;
 
-export interface InventoryControl {
-  readonly element: HTMLElement;
-  isOpen(): boolean;
-  setOpen(open: boolean): void;
-  besideOpen(): boolean;
-  closeBeside(): void;
-}
-
 export interface TradeHud {
+  readonly panels: readonly PanelView[];
   update(): void;
-  close(): boolean;
 }
 
-export function createTradeHud(root: HTMLElement, context: HudContext, track: (element: HTMLElement) => void, inventory: InventoryControl): TradeHud {
+export function createTradeHud(root: HTMLElement, context: HudContext, track: (element: HTMLElement) => void, overlays: OverlayManager, inventory: HTMLElement): TradeHud {
   const panels: Record<ServiceKind, PanelView> = {
     vendor: createVendorPanel(root, context),
     stash: createStashPanel(root, context),
   };
   for (const panel of Object.values(panels)) track(panel.element);
-  let shown: ServiceKind | null = null;
+  let kind: ServiceKind = 'vendor';
   let openedInventory: boolean = false;
   let closing: boolean = false;
 
-  const show = (next: ServiceKind | null): void => {
-    if (shown !== null) {
-      panels[shown].element.classList.remove('open');
-      markOverlay(panels[shown].element, false);
+  const place = (next: ServiceKind): void => {
+    if (next !== kind) {
+      panels[kind].element.classList.remove('open');
+      markOverlay(panels[kind].element, false);
     }
-    if (next === null) {
-      context.tooltip.hide();
-      if (openedInventory && inventory.isOpen()) inventory.setOpen(false);
-      openedInventory = false;
-    } else {
-      inventory.closeBeside();
-      if (shown === null) {
-        openedInventory = !inventory.isOpen();
-        if (openedInventory) inventory.setOpen(true);
-        else context.api.playUi('panel_open');
-      }
-      const view: PanelView = panels[next];
-      view.element.style.setProperty('--beside-right', `${TRADE_HUD.edge + inventory.element.offsetWidth + TRADE_HUD.gap}px`);
-      view.refresh();
-      view.element.classList.add('open');
-      markOverlay(view.element, true);
-    }
-    shown = next;
+    kind = next;
+    const view: PanelView = panels[kind];
+    view.element.style.setProperty('--beside-right', `${TRADE_HUD.edge + inventory.offsetWidth + TRADE_HUD.gap}px`);
+    view.refresh();
   };
 
-  const close = (): boolean => {
-    if (context.api.world.service === null && shown === null) return false;
-    context.api.send({ type: 'trade', action: { type: 'close' } });
-    closing = true;
-    show(null);
-    return true;
-  };
+  overlays.register('trade', {
+    get element(): HTMLElement {
+      return panels[kind].element;
+    },
+    show(): void {
+      place(kind);
+      panels[kind].element.classList.add('open');
+      markOverlay(panels[kind].element, true);
+    },
+    hide(): void {
+      panels[kind].element.classList.remove('open');
+      markOverlay(panels[kind].element, false);
+      context.tooltip.hide();
+      if (context.api.world.service !== null) {
+        closing = true;
+        context.api.send({ type: 'trade', action: { type: 'close' } });
+      }
+      if (openedInventory) overlays.send({ type: 'close', id: 'inventory' });
+      openedInventory = false;
+    },
+  });
 
   return {
+    panels: Object.values(panels),
     update(): void {
       const next: ServiceKind | null = context.api.world.service?.kind ?? null;
-      if (closing && next !== null) return;
-      closing = false;
-      if (next !== shown) show(next);
-      if (shown === null) return;
-      if (inventory.besideOpen() || !inventory.isOpen()) close();
-      else panels[shown].refresh();
+      if (next === null) {
+        closing = false;
+        if (overlays.shown('trade')) overlays.send({ type: 'close', id: 'trade' });
+        return;
+      }
+      if (closing) return;
+      if (!overlays.shown('trade')) {
+        kind = next;
+        openedInventory = !overlays.shown('inventory');
+        if (overlays.send({ type: 'open', id: 'trade' }) === 'refused') {
+          openedInventory = false;
+          closing = true;
+          context.api.send({ type: 'trade', action: { type: 'close' } });
+        }
+        return;
+      }
+      if (next !== kind) {
+        place(next);
+        panels[kind].element.classList.add('open');
+        markOverlay(panels[kind].element, true);
+      } else {
+        panels[kind].refresh();
+      }
     },
-    close,
   };
 }

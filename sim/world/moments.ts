@@ -1,9 +1,9 @@
-import type { MomentDef, MomentEcho, MomentField, MomentLibrary, StrikeArea, WeightedMoment } from '../content/moment-types.ts';
+import type { MomentDef, MomentEcho, MomentField, MomentLibrary, StrikeArea, StrikeInterval, WeightedMoment } from '../content/moment-types.ts';
 import type { Content, MonsterDef, PropDef, ZoneDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, distance } from '../math.ts';
-import { isWalkable } from '../nav/grid.ts';
+import { isWalkable, lineWalkable } from '../nav/grid.ts';
 import { pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
 import { dropOnGround } from './ground.ts';
@@ -13,6 +13,7 @@ import type { ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterSta
 
 export const MOMENTS = {
   placementTries: 40,
+  retry: 2,
   startLifeMin: 0.35,
   startLifeMax: 1,
   settle: 1.2,
@@ -79,20 +80,33 @@ function serves(world: World, prop: string): boolean {
 export function safeSpots(world: World): Vec2[] {
   const zone: ZoneDef = world.zone;
   const spots: Vec2[] = world.npcs.map((npc: NpcState): Vec2 => npc.pos);
-  spots.push(zone.playerStart);
   if (zone.waypoint !== null) spots.push(zone.waypoint);
   for (const placed of zone.props) if (serves(world, placed.prop)) spots.push(placed);
   return spots.map((spot: Vec2): Vec2 => ({ x: spot.x + world.shift.x, z: spot.z + world.shift.z }));
 }
 
-function clear(world: World, field: MomentField, def: MomentDef, pos: Vec2): boolean {
+function pointNear(world: World, near: StrikeInterval): Vec2 {
+  const angle: number = world.rng.range(0, Math.PI * 2);
+  const reach: number = world.rng.range(near.min, near.max);
+  return { x: world.player.pos.x + Math.cos(angle) * reach, z: world.player.pos.z + Math.sin(angle) * reach };
+}
+
+function roomFor(world: World, field: MomentField, def: MomentDef, pos: Vec2): boolean {
   if (!isWalkable(world.grid, pos.x, pos.z)) return false;
   if (safeSpots(world).some((spot: Vec2): boolean => distance(spot, pos) < def.radius + field.clearance.safe)) return false;
   if (world.monsters.some((monster: MonsterState): boolean => monster.alive && monster.def.faction !== world.content.moments.faction && distance(monster.pos, pos) < monster.def.aggroRadius + field.clearance.packs)) return false;
-  if (distance(world.player.pos, pos) < def.radius + field.clearance.hero) return false;
   if (world.zone.exits.some((exit): boolean => distance(exit, pos) < def.radius + field.clearance.exits)) return false;
-  if (field.avoid.some((keep: StrikeArea): boolean => distance({ x: keep.x + world.shift.x, z: keep.z + world.shift.z }, pos) < def.radius + keep.radius)) return false;
   return world.moments.every((other: MomentState): boolean => distance(other.pos, pos) >= def.radius + other.def.radius + field.clearance.between);
+}
+
+function clear(world: World, field: MomentField, def: MomentDef, pos: Vec2): boolean {
+  if (!roomFor(world, field, def, pos)) return false;
+  if (distance(world.player.pos, pos) < def.radius + field.clearance.hero) return false;
+  return !field.avoid.some((keep: StrikeArea): boolean => distance({ x: keep.x + world.shift.x, z: keep.z + world.shift.z }, pos) < def.radius + keep.radius);
+}
+
+function clearNear(world: World, field: MomentField, def: MomentDef, pos: Vec2): boolean {
+  return roomFor(world, field, def, pos) && lineWalkable(world.grid, world.player.pos, pos);
 }
 
 function sureHolds(world: World, field: MomentField | null): boolean {
@@ -116,7 +130,13 @@ function pickDef(world: World, field: MomentField): MomentDef | null {
 function place(world: World, field: MomentField, mark: boolean): MomentState | null {
   const def: MomentDef | null = pickDef(world, field);
   if (def === null) return null;
+  const near: StrikeInterval | null = sureHolds(world, field) && world.player.alive ? field.near : null;
   for (let attempt: number = 0; attempt < MOMENTS.placementTries; attempt += 1) {
+    if (near !== null) {
+      const pos: Vec2 = pointNear(world, near);
+      if (clearNear(world, field, def, pos)) return begin(world, def, pos, field.combat, mark);
+      continue;
+    }
     const area: StrikeArea | null = pickArea(world, field.areas);
     if (area === null) return null;
     const pos: Vec2 = pointIn(world, area);
@@ -262,7 +282,14 @@ export function stepMoments(world: World, dt: number): void {
   world.strikeTimer -= dt;
   if (world.strikeTimer > 0) return;
   world.strikeTimer = nextInterval(world, field);
-  world.strikeMisses = place(world, field, true) === null ? world.strikeMisses + 1 : 0;
+  const missed: boolean = place(world, field, true) === null;
+  world.strikeMisses = missed ? world.strikeMisses + 1 : 0;
+  if (missed) world.strikeTimer = Math.min(world.strikeTimer, MOMENTS.retry);
+}
+
+export function insideAwakeMoment(world: World): boolean {
+  if (!world.player.alive) return false;
+  return world.moments.some((moment: MomentState): boolean => moment.phase === 'awake' && distance(world.player.pos, moment.pos) < moment.def.radius);
 }
 
 export function clearMoments(world: World): void {
@@ -276,7 +303,7 @@ export function clearMoments(world: World): void {
 export function startMoments(world: World): void {
   clearMoments(world);
   const field: MomentField | null = fieldOf(world);
-  world.strikeTimer = field === null ? 0 : Math.max(field.grace, nextInterval(world, field));
+  world.strikeTimer = field === null ? 0 : sureHolds(world, field) ? field.grace : Math.max(field.grace, nextInterval(world, field));
   if (field === null) return;
   for (let index: number = 0; index < field.start; index += 1) place(world, field, false);
 }

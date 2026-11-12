@@ -154,11 +154,22 @@ function smooth(grid: NavGrid, from: ReadonlyVec2, points: readonly Vec2[]): Vec
   return result;
 }
 
+function straight(grid: NavGrid, start: Vec2, goal: Vec2): boolean {
+  return lineWalkable(grid, start, goal) && linePace(grid, start, goal) >= Math.min(paceAt(grid, start.x, start.z), paceAt(grid, goal.x, goal.z));
+}
+
+export function directPath(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): Vec2[] | null {
+  const start: Vec2 | null = nearestWalkable(grid, from, PATH.snapRadius);
+  const goal: Vec2 | null = nearestWalkable(grid, to, PATH.snapRadius);
+  if (start === null || goal === null) return [];
+  return straight(grid, start, goal) ? [goal] : null;
+}
+
 export function findPath(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): Vec2[] {
   const start: Vec2 | null = nearestWalkable(grid, from, PATH.snapRadius);
   const goal: Vec2 | null = nearestWalkable(grid, to, PATH.snapRadius);
   if (start === null || goal === null) return [];
-  if (lineWalkable(grid, start, goal) && linePace(grid, start, goal) >= Math.min(paceAt(grid, start.x, start.z), paceAt(grid, goal.x, goal.z))) return [goal];
+  if (straight(grid, start, goal)) return [goal];
   const startCell: number = cellIndex(grid, start.x, start.z);
   const goalCell: number = cellIndex(grid, goal.x, goal.z);
   if (startCell < 0 || goalCell < 0) return [];

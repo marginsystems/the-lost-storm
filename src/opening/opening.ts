@@ -6,7 +6,7 @@ import { bookOf } from '../../sim/content/story.ts';
 import { baseOf } from '../../sim/items.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { allHold } from '../../sim/world/conditions.ts';
-import { hudHidden } from '../../sim/world/hud.ts';
+import { hudHidden, hudView } from '../../sim/world/hud.ts';
 import { readablePages } from '../../sim/world/story.ts';
 import type { Command, ItemInstance, WakeState, World } from '../../sim/world/types.ts';
 import type { HudGate } from '../hud/hud-gate.ts';
@@ -124,6 +124,7 @@ export function createOpening(deps: OpeningDeps): Opening {
         deps.setAmbience(blendAmbience(world.zone.ambience, shore.ambience, depth));
       }
       gate.set(hudHidden(world));
+      gate.show(hudView(world));
       noticeBooks();
       echo.update(world);
     },

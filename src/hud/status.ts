@@ -1,3 +1,4 @@
+import { tagPart } from './hud-gate.ts';
 import type { Content } from '../../sim/content/types.ts';
 import { xpToNextLevel } from '../../sim/progression.ts';
 import type { NoticeReason, PlayerState, World } from '../../sim/world/types.ts';
@@ -57,6 +58,7 @@ export function createNotices(parent: HTMLElement): Notices {
 
 export function createXpBar(parent: HTMLElement): XpBar {
   const element: HTMLDivElement = el('div', 'hud-xp', parent);
+  tagPart(element, 'xp');
   const level: HTMLDivElement = el('div', 'xp-level', element);
   const track: HTMLDivElement = el('div', 'xp-track', element);
   const fill: HTMLDivElement = el('div', 'xp-fill', track);

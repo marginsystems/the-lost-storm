@@ -10,3 +10,4 @@ public/audio/local
 .env.local
 .env.*.local
 spec/*_TTrace_*
+simulate-out

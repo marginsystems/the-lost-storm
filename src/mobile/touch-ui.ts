@@ -1,3 +1,7 @@
+import type { FlaskResource } from '../../sim/content/flasks.ts';
+import type { HudView } from '../../sim/world/hud.ts';
+import { hudView } from '../../sim/world/hud.ts';
+import { panelPart, tagPart, tagSlot } from '../hud/hud-gate.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import type { Command, FlaskState, MonsterState, World } from '../../sim/world/types.ts';
@@ -156,6 +160,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   const menu: HTMLDivElement = el('div', 'tc-menu', hudRoot);
   for (const item of MENU) {
     const button: HTMLButtonElement = el('button', 'tc-menu-btn', menu);
+    tagPart(button, panelPart(item.panel));
     button.type = 'button';
     button.setAttribute('aria-label', item.label);
     button.innerHTML = iconSvg(item.icon);
@@ -281,6 +286,8 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       const ringEl: HTMLElement = el('i', 'tc-cd', root);
       const icon: HTMLElement = el('span', 'tc-icon', root);
       if (spec.kind === 'flask') {
+        const resource: FlaskResource | undefined = world.player.flasks[spec.slot]?.def.resource;
+        if (resource !== undefined) tagPart(root, resource);
         icon.textContent = String(spec.slot + 1);
         root.setAttribute('aria-label', spec.label);
       } else {
@@ -288,6 +295,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
         icon.innerHTML = skill === undefined ? '' : iconSvg(skill.icon);
         root.classList.toggle('empty', skill === undefined);
         root.setAttribute('aria-label', skill?.name ?? 'Skill');
+        tagSlot(root, spec.slot);
       }
       return { spec, root, ring: ringEl, turn: -1, dim: null };
     });
@@ -295,8 +303,9 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   };
 
   const refreshButtons = (): void => {
-    const bar: SkillBarEntry[] = world.content.player.skillBar.map((entry: { readonly bindings: readonly string[] }, slot: number): SkillBarEntry => ({ bindings: entry.bindings, filled: (world.player.skills[slot] ?? null) !== null }));
-    const specs: TouchButton[] = touchButtons(bar, INPUT.leftBinding, world.player.flasks.map((flask: FlaskState): FlaskEntry => flask.def));
+    const view: HudView = hudView(world);
+    const bar: SkillBarEntry[] = world.content.player.skillBar.map((entry: { readonly bindings: readonly string[] }, slot: number): SkillBarEntry => ({ bindings: entry.bindings, filled: view.slots.includes(slot) }));
+    const specs: TouchButton[] = touchButtons(bar, INPUT.leftBinding, world.player.flasks.map((flask: FlaskState): FlaskEntry | null => (view.parts.includes(flask.def.resource) ? flask.def : null)));
     const next: string = `${signature(specs)}#${world.player.bar.join(',')}`;
     if (next === shownSignature) return;
     shownSignature = next;
@@ -462,7 +471,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
         stopPending = false;
         commands.push({ type: 'stop' });
       }
-      if (direction !== null && (tick || !moving)) {
+      if (direction !== null) {
         const move = stickMove(player.pos, direction, moving);
         if (move !== null) commands.push(move);
         moving = true;

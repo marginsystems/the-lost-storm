@@ -1,3 +1,7 @@
+import type { HudPart, HudView } from '../../sim/world/hud.ts';
+import { HUD_PARTS } from '../../sim/world/hud.ts';
+import type { HudPanel } from './hud-api.ts';
+
 export const HUD_GATE = {
   roots: ['#hud', '.tc'],
   loose: ['.tc-rotate'],
@@ -7,6 +11,10 @@ export const HUD_GATE = {
   faintIdle: 0.12,
   faintHeld: 0.3,
   revealAnimation: 'hud-gate-reveal',
+  partAnimation: 'hud-part-in',
+  partAttribute: 'data-hud-part',
+  slotAttribute: 'data-hud-slot',
+  slots: 12,
 } as const;
 
 export type HudGateState = 'closed' | 'opening' | 'open';
@@ -17,6 +25,7 @@ export interface HudGateTarget {
 
 export interface HudGate {
   set(hidden: boolean): void;
+  show(view: HudView): void;
   settle(): void;
   state(): HudGateState;
 }
@@ -32,6 +41,48 @@ function scoped(state: HudGateState, selectors: string): string {
     .split(',\n')
     .map((selector: string): string => `body[data-hud-gate='${state}'] ${selector}`)
     .join(',\n');
+}
+
+export function partCss(): string {
+  const parts: string = HUD_PARTS.map((name: HudPart): string => `body[data-hud-show]:not([data-hud-show~='${name}']) [${HUD_GATE.partAttribute}~='${name}']`).join(',\n');
+  const slots: string = Array.from({ length: HUD_GATE.slots }, (_: unknown, slot: number): string => `body[data-hud-slots]:not([data-hud-slots~='${slot}']) [${HUD_GATE.slotAttribute}='${slot}']`).join(',\n');
+  return `${parts},
+${slots} {
+  display: none !important;
+}
+
+[${HUD_GATE.partAttribute}],
+[${HUD_GATE.slotAttribute}] {
+  animation: ${HUD_GATE.partAnimation} var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+@keyframes ${HUD_GATE.partAnimation} {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+`;
+}
+
+const PANEL_PARTS: Readonly<Record<HudPanel, HudPart>> = { inventory: 'inventory', character: 'character', tree: 'chart', map: 'map' };
+
+export function panelPart(panel: HudPanel): HudPart {
+  return PANEL_PARTS[panel];
+}
+
+export function tagPart(element: HTMLElement, part: HudPart): void {
+  element.setAttribute(HUD_GATE.partAttribute, part);
+}
+
+export function tagSlot(element: HTMLElement, slot: number): void {
+  element.setAttribute(HUD_GATE.slotAttribute, String(slot));
+}
+
+export function shownData(view: HudView): Readonly<Record<'hudShow' | 'hudSlots', string>> {
+  return { hudShow: view.parts.join(' '), hudSlots: view.slots.join(' ') };
 }
 
 export function hudGateCss(): string {
@@ -64,13 +115,22 @@ ${revealing} {
     filter: opacity(1);
   }
 }
-`;
+
+${partCss()}`;
 }
 
 export function createHudGate(body: HudGateTarget, hidden: boolean): HudGate {
   let state: HudGateState = hidden ? 'closed' : 'open';
   body.dataset['hudGate'] = state;
+  const write = (key: string, value: string): void => {
+    if (body.dataset[key] !== value) body.dataset[key] = value;
+  };
   return {
+    show(view: HudView): void {
+      const data: Readonly<Record<'hudShow' | 'hudSlots', string>> = shownData(view);
+      write('hudShow', data.hudShow);
+      write('hudSlots', data.hudSlots);
+    },
     set(next: boolean): void {
       const wanted: HudGateState = next ? 'closed' : state === 'closed' ? 'opening' : state;
       if (wanted === state) return;
