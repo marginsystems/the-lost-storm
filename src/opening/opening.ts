@@ -6,11 +6,11 @@ import { bookOf } from '../../sim/content/story.ts';
 import { baseOf } from '../../sim/items.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { allHold } from '../../sim/world/conditions.ts';
-import { hudHidden, hudView } from '../../sim/world/hud.ts';
+import { hudHidden } from '../../sim/world/hud.ts';
 import { readablePages } from '../../sim/world/story.ts';
 import type { Command, ItemInstance, WakeState, World } from '../../sim/world/types.ts';
 import type { HudGate } from '../hud/hud-gate.ts';
-import { createHudGate, HUD_GATE, hudGateCss } from '../hud/hud-gate.ts';
+import { createHudGate, followWorld, HUD_GATE, hudGateCss } from '../hud/hud-gate.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import openingCss from './opening.css?inline';
 import type { SpokenName } from '../backend/name-voice.ts';
@@ -123,8 +123,7 @@ export function createOpening(deps: OpeningDeps): Opening {
         shownShore = depth;
         deps.setAmbience(blendAmbience(world.zone.ambience, shore.ambience, depth));
       }
-      gate.set(hudHidden(world));
-      gate.show(hudView(world));
+      followWorld(gate, world);
       noticeBooks();
       echo.update(world);
     },

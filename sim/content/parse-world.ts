@@ -34,7 +34,7 @@ import type {
   ZoneWaypoint,
 } from './types.ts';
 import { service } from './parse-trade.ts';
-import type { VoidFinds, VoidShore, ZoneHud, ZoneVoid, ZoneWake } from './story-types.ts';
+import type { VoidFinds, VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
@@ -174,13 +174,6 @@ function zoneVoid(value: unknown, where: string): ZoneVoid {
   };
 }
 
-function zoneHud(value: unknown, where: string): ZoneHud | null {
-  if (value === undefined || value === null) return null;
-  const source: Fields = fields(value, where);
-  if (!Array.isArray(source['until'])) throw new ContentError(`${where}.until`, 'a HUD rule needs an until list: the conditions that show the HUD again, or [] to hide it for the whole stay');
-  return { until: conditions(source, 'until', where) };
-}
-
 function zoneOutside(value: unknown, where: string): ZoneOutside | null {
   if (value === null || value === undefined) return null;
   const source: Fields = fields(value, where);
@@ -231,7 +224,6 @@ export function zone(value: unknown, where: string): ZoneDef {
     voices: source['voices'] === undefined ? [] : [...byId(each(source['voices'], `${where}.voices`, zoneVoice), `${where}.voices`).values()],
     ambience: zoneAmbience(source['ambience'], `${where}.ambience`),
     void: kind === 'void' ? zoneVoid(source['void'], `${where}.void`) : null,
-    hud: zoneHud(source['hud'], `${where}.hud`),
     drifts: drifts(source['drifts'], `${where}.drifts`),
     triggers: triggers(source['triggers'], `${where}.triggers`),
     moments: momentField(source['moments'], `${where}.moments`),

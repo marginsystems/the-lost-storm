@@ -109,7 +109,7 @@ void test('turning away from the journal brings it back in front of the hero', (
   assert.equal(world.ground.filter((ground: GroundItem): boolean => ground.find !== null).length, 1);
 });
 
-void test('taking the journal is the first choice; reading it shows the light and starts the quest, the black shore brings the HUD back, and the light leads on', (): void => {
+void test('taking the journal is the first choice; reading it shows the light and starts the quest, the journal itself brings the HUD, and the light leads on', (): void => {
   const world: World = fresh(4);
   walkUntil(world, { x: 0, z: 1 }, (): boolean => found(world) !== null);
   const journal: GroundItem = must(found(world), 'journal');
@@ -118,13 +118,13 @@ void test('taking the journal is the first choice; reading it shows the light an
   assert.ok(carriesJournal(world));
   assert.equal(world.flags['first_choice'], 'took_journal');
   assert.equal(questState(world, 'out_of_the_mist'), 'locked');
-  assert.equal(hudHidden(world), true);
+  assert.equal(hudHidden(world), false);
   const page: string = must(must(content.books.get('journal'), 'journal book').pages[0], 'page').id;
   stepWorld(world, [{ type: 'read', book: 'journal', page }], DT);
   assert.equal(world.flags['opening'], 'read');
   assert.equal(questState(world, 'out_of_the_mist'), 'active');
   assert.equal(questState(world, 'to_the_waystation'), 'locked');
-  assert.equal(hudHidden(world), true);
+  assert.equal(hudHidden(world), false);
   stepWorld(world, [], DT);
   assert.ok(distance(lightExit(world), world.player.pos) > lightExit(world).radius);
   walkUntil(world, world.heading, (): boolean => shoreDepth(world) >= 1);

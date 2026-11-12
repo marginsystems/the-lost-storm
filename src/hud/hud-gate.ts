@@ -1,5 +1,6 @@
 import type { HudPart, HudView } from '../../sim/world/hud.ts';
-import { HUD_PARTS } from '../../sim/world/hud.ts';
+import { HUD_PARTS, hudHidden, hudView } from '../../sim/world/hud.ts';
+import type { World } from '../../sim/world/types.ts';
 import type { HudPanel } from './hud-api.ts';
 
 export const HUD_GATE = {
@@ -146,4 +147,9 @@ export function createHudGate(body: HudGateTarget, hidden: boolean): HudGate {
       return state;
     },
   };
+}
+
+export function followWorld(gate: HudGate, world: World): void {
+  gate.set(hudHidden(world));
+  gate.show(hudView(world));
 }

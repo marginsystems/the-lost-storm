@@ -77,9 +77,9 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   style.textContent = minimapCss;
   const holder: HTMLDivElement = el('div', 'minimap', root);
   const corner: HTMLDivElement = el('div', 'minimap-corner', holder);
+  tagPart(corner, 'minimap');
   const zoneName: HTMLDivElement = el('div', 'minimap-zone', corner);
   const frame: HTMLDivElement = el('div', 'minimap-frame', corner);
-  tagPart(frame, 'minimap');
   const cornerSurface: Surface = surface(el('canvas', 'minimap-canvas', frame));
   const overlay: HTMLDivElement = el('div', 'minimap-overlay', holder);
   tagPart(overlay, 'minimap');

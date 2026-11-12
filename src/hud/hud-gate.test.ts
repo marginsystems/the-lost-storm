@@ -3,7 +3,12 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { GAME_LAYERS } from '../title-screen.ts';
-import { createHudGate, HUD_GATE, hudGateCss, panelPart, shownData } from './hud-gate.ts';
+import { createHudGate, followWorld, HUD_GATE, hudGateCss, panelPart, shownData } from './hud-gate.ts';
+import { loadContent } from '../../sim/content/content.ts';
+import type { Content } from '../../sim/content/types.ts';
+import { createWorld } from '../../sim/world/create.ts';
+import { stepWorld } from '../../sim/world/step.ts';
+import type { GroundItem, ItemInstance, World } from '../../sim/world/types.ts';
 import { HUD_PARTS } from '../../sim/world/hud.ts';
 import type { HudGate, HudGateTarget } from './hud-gate.ts';
 
@@ -130,4 +135,42 @@ void test('the gate writes the shown parts and slots to the page', (): void => {
 void test('each menu panel button belongs to its own HUD part', (): void => {
   assert.equal(panelPart('tree'), 'chart');
   assert.equal(panelPart('inventory'), 'inventory');
+});
+
+const JOURNEY = {
+  step: 1 / 60,
+  lead: 6,
+  limit: 90,
+} as const;
+
+function carried(content: Content, world: World): boolean {
+  return world.player.inventory.some((item: ItemInstance | null): boolean => item !== null && (content.itemBases.get(item.base)?.book ?? null) !== null);
+}
+
+function lying(world: World): GroundItem | null {
+  return world.ground.find((ground: GroundItem): boolean => ground.find !== null) ?? null;
+}
+
+void test('picking up the journal in the mist opens the gate on the life globe and the bag, and nothing else', (): void => {
+  const content: Content = loadContent();
+  const world: World = createWorld(content, { seed: 4, save: null, opening: true });
+  const page: HudGateTarget = { dataset: {} };
+  const gate: HudGate = createHudGate(page, true);
+  followWorld(gate, world);
+  assert.equal(gate.state(), 'closed');
+  for (let seconds: number = 0; lying(world) === null && seconds < JOURNEY.limit; seconds += JOURNEY.step) {
+    stepWorld(world, [{ type: 'move', held: true, dest: { x: world.player.pos.x, z: world.player.pos.z + JOURNEY.lead } }], JOURNEY.step);
+    followWorld(gate, world);
+    assert.equal(gate.state(), 'closed');
+  }
+  const journal: GroundItem | null = lying(world);
+  assert.ok(journal !== null);
+  stepWorld(world, [{ type: 'pickup', groundId: journal.id }], JOURNEY.step);
+  for (let seconds: number = 0; !carried(content, world) && seconds < JOURNEY.limit; seconds += JOURNEY.step) stepWorld(world, [], JOURNEY.step);
+  assert.ok(carried(content, world));
+  assert.equal(world.player.equipped.weapon, null);
+  followWorld(gate, world);
+  assert.notEqual(gate.state(), 'closed');
+  assert.equal(page.dataset['hudShow'], 'life inventory');
+  assert.equal(page.dataset['hudSlots'], '');
 });

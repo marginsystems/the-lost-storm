@@ -17,7 +17,6 @@ export function roadZone(patch: Partial<ZoneDef>): ZoneDef {
     id: 'road_test',
     kind: 'wild',
     void: null,
-    hud: null,
     tiles: OPEN_FIELD,
     floors: { w: 'road_firm', s: 'road_slow' },
     outside: null,

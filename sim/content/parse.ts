@@ -612,7 +612,6 @@ export function contentProblems(content: Content): string[] {
     const places: number = content.world.acts.filter((act: ActDef): boolean => act.atlas.places.some((place: MapPlace): boolean => place.zone === zoneDef.id)).length;
     if (zoneDef.kind === 'void') need(places === 0, `${at} is a void: it has no place on the world map`);
     else need(places === 1, `${at} needs one place on the world map`);
-    if (zoneDef.hud !== null) known(`${at} hud`, zoneDef.hud.until);
     for (const met of zoneDef.void?.encounters ?? []) known(`${at} encounter ${met.id}`, met.when);
     for (const placed of zoneDef.npcs) {
       need(content.npcs.has(placed.npc), `${at} places unknown npc ${placed.npc}`);

@@ -1,15 +1,8 @@
-import type { ZoneHud } from '../content/story-types.ts';
-import { allHold } from './conditions.ts';
 import { inMist } from './glitch.ts';
 import type { SkillDef } from '../content/types.ts';
 import { activeQuests } from './quests.ts';
 import type { ItemInstance, PlayerState, World } from './types.ts';
 
-export function hudHidden(world: World): boolean {
-  if (inMist(world)) return true;
-  const rule: ZoneHud | null = world.zone.hud;
-  return rule !== null && !(rule.until.length > 0 && allHold(world, rule.until));
-}
 
 export const HUD_PARTS = ['life', 'mana', 'xp', 'gold', 'quests', 'inventory', 'character', 'chart', 'map', 'minimap'] as const;
 export type HudPart = (typeof HUD_PARTS)[number];
@@ -44,4 +37,10 @@ export function hudView(world: World): HudView {
   };
   const slots: number[] = player.skills.flatMap((skill: SkillDef | null, slot: number): number[] => (skill !== null && usable(player, skill) ? [slot] : []));
   return { parts: HUD_PARTS.filter((part: HudPart): boolean => earned[part]), slots };
+}
+
+export function hudHidden(world: World): boolean {
+  if (inMist(world)) return true;
+  const view: HudView = hudView(world);
+  return view.parts.length === 0 && view.slots.length === 0;
 }

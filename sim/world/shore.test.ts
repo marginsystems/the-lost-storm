@@ -3,7 +3,6 @@ import { test } from 'node:test';
 import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
-import { hudHidden } from './hud.ts';
 import { shoreDepth } from './shore.ts';
 import { stepWorld } from './step.ts';
 import type { Command, World } from './types.ts';
@@ -51,14 +50,4 @@ void test('walking onto the shore deepens it, and recentring the world carries t
   assert.equal(shoreDepth(world), before);
   walkEast(world, (rules.ahead + rules.thin) / world.player.stats.moveSpeed + 1);
   assert.equal(shoreDepth(world), 1);
-});
-
-void test('the HUD stays hidden in the white and comes back on the black rock', (): void => {
-  const world: World = awake();
-  world.flags['opening'] = 'read';
-  stepWorld(world, [], DT);
-  assert.equal(hudHidden(world), true);
-  const rules = must(between.void?.shore, 'shore rules');
-  walkEast(world, (rules.ahead + rules.thin) / world.player.stats.moveSpeed + 1);
-  assert.equal(hudHidden(world), false);
 });

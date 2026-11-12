@@ -62,10 +62,6 @@ export interface ZoneVoid {
   readonly shore: VoidShore | null;
 }
 
-export interface ZoneHud {
-  readonly until: readonly Condition[];
-}
-
 export interface PageDef {
   readonly id: string;
   readonly lines: readonly string[];

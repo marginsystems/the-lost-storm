@@ -5,7 +5,7 @@ import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillSha
 import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { ZoneAmbience } from './ambience-types.ts';
-import type { BookDef, StoryFlags, ZoneHud, ZoneVoid } from './story-types.ts';
+import type { BookDef, StoryFlags, ZoneVoid } from './story-types.ts';
 export type { ZoneAmbience } from './ambience-types.ts';
 import type { ActEnd, RetiredZones, ZoneDrift, ZoneTrigger, ZoneWeather } from './road-types.ts';
 import type { MomentField, MomentLibrary } from './moment-types.ts';
@@ -466,7 +466,6 @@ export interface ZoneDef {
   readonly voices: readonly ZoneVoice[];
   readonly ambience: ZoneAmbience;
   readonly void: ZoneVoid | null;
-  readonly hud: ZoneHud | null;
   readonly drifts: readonly ZoneDrift[];
   readonly triggers: readonly ZoneTrigger[];
   readonly moments: MomentField | null;

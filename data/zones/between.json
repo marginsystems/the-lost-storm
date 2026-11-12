@@ -111,9 +111,6 @@
       }
     ]
   },
-  "hud": {
-    "until": [{"type": "shore", "depth": 0.6}]
-  },
   "ambience": {
     "background": "#d9dcdf",
     "abyss": "#d9dcdf",

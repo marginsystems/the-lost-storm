@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { worldIn, zoneOf } from '../../test/support.ts';
 import { TOWN_CONTENT } from '../../test/town-support.ts';
-import type { Content, QuestDef, ZoneDef } from '../content/types.ts';
+import type { Content, QuestDef } from '../content/types.ts';
 import { requestGlitch } from './glitch.ts';
 import { loadContent } from '../content/content.ts';
 import { toSave } from '../save.ts';
@@ -17,37 +17,12 @@ import type { ItemInstance, World } from './types.ts';
 const errand: QuestDef = { id: 'errand', name: 'An Errand', requires: [], when: [], objectives: [{ id: 'ask', type: 'talk', npc: 'keeper', text: 'Ask', when: [], sets: {} }] };
 const shipped: Content = { ...TOWN_CONTENT, quests: new Map<string, QuestDef>([[errand.id, errand]]) };
 
-function withHud(hud: ZoneDef['hud']): World {
-  const town: ZoneDef = { ...zoneOf(shipped, 'hub'), hud };
-  const content: Content = { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [town.id, town]]) };
-  return worldIn(content, town.id, 1);
+function town(): World {
+  return worldIn(shipped, zoneOf(shipped, 'hub').id, 1);
 }
 
-void test('a zone without a HUD rule shows the HUD', (): void => {
-  assert.equal(hudHidden(withHud(null)), false);
-});
-
-void test('a HUD rule hides the HUD for as long as its conditions do not all hold', (): void => {
-  const world: World = withHud({ until: [{ type: 'quest', quest: 'errand', is: 'done', not: false }] });
-  assert.equal(hudHidden(world), true);
-  world.quests['errand'] = 1;
-  assert.equal(hudHidden(world), false);
-});
-
-void test('a HUD rule with no conditions hides the HUD for the whole stay', (): void => {
-  const world: World = withHud({ until: [] });
-  world.quests['errand'] = 1;
-  assert.equal(hudHidden(world), true);
-});
-
-void test('the void hides the whole HUD while the hero wakes', (): void => {
-  const voidZone: ZoneDef | undefined = [...shipped.zones.values()].find((zone: ZoneDef): boolean => zone.kind === 'void');
-  assert.ok(voidZone !== undefined);
-  assert.equal(hudHidden(worldIn(shipped, voidZone.id, 1)), true);
-});
-
 void test('while a glitch holds the hero in the mist the HUD is hidden, and it returns after', (): void => {
-  const world: World = withHud(null);
+  const world: World = town();
   world.monsters = [];
   requestGlitch(world, 'hard_cut', 'debug');
   stepWorld(world, [], 1 / 30);
@@ -85,8 +60,11 @@ function spender(): SkillDef {
   return skill;
 }
 
-void test('a hero with nothing has no HUD parts and no skill slots', (): void => {
-  assert.deepEqual(hudView(newHero()), { parts: [], slots: [] });
+void test('a hero with nothing has no HUD parts and no skill slots, so the whole HUD stays hidden while he wakes', (): void => {
+  const world: World = newHero();
+  assert.notEqual(world.wake, null);
+  assert.deepEqual(hudView(world), { parts: [], slots: [] });
+  assert.equal(hudHidden(world), true);
 });
 
 void test('his first item brings the life globe and the bag, and nothing else', (): void => {

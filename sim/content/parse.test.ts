@@ -624,12 +624,6 @@ void test('a void recentres around the hero, so it cannot hold npcs, checkpoints
   assert.doesNotThrow((): unknown => parseContent(voidWith({})));
 });
 
-void test('a HUD rule must say when the HUD comes back, so a typo cannot hide it for good', (): void => {
-  assert.throws((): unknown => parseContent(voidWith({ hud: {} })), (error: unknown): boolean => problem(error, 'needs an until list'));
-  assert.throws((): unknown => parseContent(voidWith({ hud: { untill: [] } })), (error: unknown): boolean => problem(error, 'needs an until list'));
-  assert.doesNotThrow((): unknown => parseContent(voidWith({ hud: { until: [] } })));
-});
-
 void test('a skill effect with no cue or light gets no cue and full light, and a negative light is rejected', (): void => {
   const plain: Content = parseContent({ ...shipped, skills: [...skills, extraSkill] });
   assert.deepEqual(must(plain.skills.get('ember_lash'), 'skill').vfx, { style: 'slash', color: '#ff8844', cue: 'none', light: 1 });
