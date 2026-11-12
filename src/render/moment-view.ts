@@ -323,7 +323,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     const loaded: LoadedRig | undefined = library.rigs.get(rigId);
     if (loaded === undefined || !hasWear(library, wornWearables(content, wear, null), gear)) return null;
     const ghost: GhostUniforms = createGhostUniforms(STILL, MOMENT_VIEW.echoMix);
-    const rig: RigInstance = instantiateRig(loaded, library, { tint: '#ffffff', glow: '#ffffff', ghost });
+    const rig: RigInstance = instantiateRig(loaded, library, { tint: '#ffffff', glow: '#ffffff', ghost, feather: deps.tier.msaaSamples > 0 });
     rig.setGear(gear);
     const worn: string[] = wornWearables(content, wear, null);
     rig.setWear(worn, hiddenBodyParts(content, worn));

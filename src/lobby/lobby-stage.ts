@@ -311,7 +311,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     if (hero !== null) return hero;
     const loaded: LoadedRig | undefined = library.rigs.get(content.player.rig);
     if (loaded === undefined) return null;
-    const made: RigInstance = instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null });
+    const made: RigInstance = instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather: true });
     made.root.rotation.y = LOBBY_STAGE.facing;
     castShadows(made.root);
     posed = poseBones(made.root, LOBBY_POSE);

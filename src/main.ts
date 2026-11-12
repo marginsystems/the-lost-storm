@@ -262,7 +262,7 @@ async function start(): Promise<void> {
   const effects: MomentEffects = momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.pulse(power)), { scene: stage.scene, loader, content, library, dresser: propDresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene, mobile.quality.tier.name === 'mobile');
-  const actors: Actors = createActors(stage.scene, library, world);
+  const actors: Actors = createActors(stage.scene, library, world, mobile.quality.tier.msaaSamples > 0);
   const figureGauge: FigureGauge = createFigureGauge();
   const itemImage = (item: ItemInstance): string | null => {
     const base: ItemBaseDef | null = baseOf(content, item);

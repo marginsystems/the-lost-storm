@@ -67,6 +67,7 @@ export interface RigLook {
   readonly tint: string;
   readonly glow: string;
   readonly ghost: GhostUniforms | null;
+  readonly feather: boolean;
 }
 
 export interface RigInstance {
@@ -92,6 +93,8 @@ export const CHARACTER = {
   metalFrom: 0.5,
   matteRoughness: 0.86,
   rimPower: 6,
+  featherFrom: 0.2,
+  featherTo: 0.8,
 } as const;
 
 export const CHARACTER_SHADE: string = [
@@ -99,6 +102,8 @@ export const CHARACTER_SHADE: string = [
   'float edgeFacing = clamp( 1.0 - dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );',
   `totalEmissiveRadiance += uFlash + uRim * pow( edgeFacing, ${CHARACTER.rimPower.toFixed(2)} ) + uHover * pow( edgeFacing, ${CHARACTER.hoverPower.toFixed(2)} );`,
 ].join('\n');
+
+export const CHARACTER_FEATHER: string = `diffuseColor.a = smoothstep( ${CHARACTER.featherFrom.toFixed(2)}, ${CHARACTER.featherTo.toFixed(2)}, diffuseColor.a );\nif ( diffuseColor.a <= 0.0 ) discard;`;
 
 export const WEAR_FADE = {
   stiffness: 240,
@@ -369,6 +374,7 @@ function flashing(source: unknown, look: RigLook, glow: RigGlow): MeshStandardMa
     if (!(entry instanceof MeshStandardMaterial)) continue;
     const material: MeshStandardMaterial = entry.clone();
     material.color.multiply(new Color(look.tint));
+    material.alphaToCoverage = look.feather && material.alphaTest > 0;
     if (material.metalness < CHARACTER.metalFrom) {
       material.roughness = Math.max(material.roughness, CHARACTER.matteRoughness);
       material.roughnessMap = null;
@@ -383,9 +389,11 @@ function flashing(source: unknown, look: RigLook, glow: RigGlow): MeshStandardMa
         shader.uniforms['uRim'] = RIM_LIGHT;
         shader.fragmentShader = shader.fragmentShader
           .replace('void main() {', 'uniform vec3 uFlash;\nuniform vec3 uHover;\nuniform vec3 uRim;\nvoid main() {')
-          .replace('#include <emissivemap_fragment>', CHARACTER_SHADE);
+          .replace('#include <emissivemap_fragment>', CHARACTER_SHADE)
+          .replace('#include <alphatest_fragment>', material.alphaToCoverage ? CHARACTER_FEATHER : '#include <alphatest_fragment>');
       };
-      material.customProgramCacheKey = (): string => FLASH_KEY;
+      const programKey: string = material.alphaToCoverage ? `${FLASH_KEY}-feather` : FLASH_KEY;
+      material.customProgramCacheKey = (): string => programKey;
     } else {
       makeGhost(material, glow, look.ghost);
     }
@@ -477,7 +485,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     const geometries: readonly BufferGeometry[] = fittedPieces(rig, wearable, skinAnchor);
     wearable.pieces.forEach((source: SkinnedMesh, index: number): void => {
       const geometry: BufferGeometry | undefined = geometries[index];
-      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost }, glow);
+      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow);
       const first: MeshStandardMaterial | undefined = cloned[0];
       if (geometry === undefined || first === undefined) return;
       const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
