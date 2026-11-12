@@ -184,7 +184,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     aimed = null;
     exits = world.zone.exits.map((exit): ExitLabel => {
       const element: HTMLDivElement = document.createElement('div');
-      element.className = 'exit-label';
+      element.className = world.zone.kind === 'void' ? 'exit-label distant' : 'exit-label';
       const inner: HTMLSpanElement = document.createElement('span');
       inner.textContent = world.content.zones.get(exit.to)?.name ?? exit.to;
       element.append(inner);

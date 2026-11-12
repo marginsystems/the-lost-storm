@@ -539,6 +539,13 @@ body {
     scale var(--spring-snappy-ms) var(--spring-snappy);
 }
 
+.exit-label.distant span {
+  padding: 2px 8px 3px;
+  background: rgba(8, 10, 16, 0.42);
+  color: #f3dcb8;
+  font-size: 11px;
+}
+
 .exit-label.waypoint span {
   color: #b9f5e6;
 }

@@ -11,7 +11,7 @@ import type { Eddy, MistDrive, MistField } from './mist-field.ts';
 import { createMistDrive, createMistField, MIST, stepDrive, stepField } from './mist-field.ts';
 import { CAMERA } from './iso-camera.ts';
 import type { VoidLight } from './void-light.ts';
-import { createVoidLight } from './void-light.ts';
+import { createVoidLight, VOID_LIGHT } from './void-light.ts';
 import { GROUND_FRAGMENT, GROUND_VERTEX, MIST_FRAGMENT, MIST_VERTEX, MOTE_FRAGMENT, MOTE_VERTEX } from './void-shaders.ts';
 import type { ViewFocus, ZoneView } from './zone-view.ts';
 import { FIGURE_GAUGE } from './figure-gauge.ts';
@@ -51,6 +51,8 @@ export const VOID_VIEW = {
   pocketShade: { edge: 0.06, inner: 0.05 },
   rockColor: 0x1d2026,
   rockShade: 0x0d0f12,
+  heroPool: { radius: 3.2, strength: 0.16, color: 0x9fb4cc },
+  firePool: { radius: 9, strength: 0.22 },
   shoreFray: 9,
   shoreRate: 0.8,
   wallLight: 0.55,
@@ -194,7 +196,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
   group.add(glimpse.group);
 
   const groundUniforms: Uniforms = UniformsUtils.merge([UniformsLib.fog]);
-  Object.assign(groundUniforms, { uColor: color(VOID_VIEW.groundColor), uShade: color(VOID_VIEW.groundShade), uFlashColor: flashColor, uShift: shift, uHero: hero, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uRipple: { value: VOID_VIEW.ripple }, uShadow: { value: VOID_VIEW.heroShadow }, uField: fieldUniform, uSpan: { value: MIST.span }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uOpen: openScale, uGroundClear: { value: new Vector2(VOID_VIEW.groundClear.inner, VOID_VIEW.groundClear.outer) }, uPocketShade: { value: new Vector2(VOID_VIEW.pocketShade.edge, VOID_VIEW.pocketShade.inner) }, uShore: shoreLine, uShoreLook: shoreLook, uRock: color(VOID_VIEW.rockColor), uRockShade: color(VOID_VIEW.rockShade) });
+  Object.assign(groundUniforms, { uColor: color(VOID_VIEW.groundColor), uShade: color(VOID_VIEW.groundShade), uFlashColor: flashColor, uShift: shift, uHero: hero, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uRipple: { value: VOID_VIEW.ripple }, uShadow: { value: VOID_VIEW.heroShadow }, uField: fieldUniform, uSpan: { value: MIST.span }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uOpen: openScale, uGroundClear: { value: new Vector2(VOID_VIEW.groundClear.inner, VOID_VIEW.groundClear.outer) }, uPocketShade: { value: new Vector2(VOID_VIEW.pocketShade.edge, VOID_VIEW.pocketShade.inner) }, uShore: shoreLine, uShoreLook: shoreLook, uRock: color(VOID_VIEW.rockColor), uRockShade: color(VOID_VIEW.rockShade), uLight: light.uniform, uLightColor: color(VOID_LIGHT.color), uLift: { value: new Vector4(VOID_VIEW.heroPool.radius, VOID_VIEW.heroPool.strength, VOID_VIEW.firePool.strength, VOID_VIEW.firePool.radius) }, uLiftColor: color(VOID_VIEW.heroPool.color) });
   const groundMaterial: ShaderMaterial = new ShaderMaterial({ uniforms: groundUniforms, defines, vertexShader: GROUND_VERTEX, fragmentShader: GROUND_FRAGMENT, fog: true });
   const groundGeometry: PlaneGeometry = new PlaneGeometry(VOID_VIEW.groundSize, VOID_VIEW.groundSize);
   const ground: Mesh = new Mesh(groundGeometry, groundMaterial);
