@@ -31,6 +31,7 @@ export interface InputHooks {
 
 export interface Input {
   collect(dt: number): Command[];
+  tap(clientX: number, clientY: number): void;
   readonly hoveredId: number | null;
 }
 
@@ -45,6 +46,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   let pointerInside: boolean = false;
   let holdTimer: number = 0;
   let shift: boolean = false;
+  let tapping: boolean = false;
   const extra: Command[] = [];
 
   const slotFor = (binding: string): number => world.content.player.skillBar.findIndex((_entry, slot: number): boolean => settings.keys().bindingsOf(slotAction(slot)).includes(binding));
@@ -55,9 +57,12 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     pressed.push(binding);
   };
 
-  const track = (event: PointerEvent | WheelEvent): void => {
+  const trackPoint = (clientX: number, clientY: number): void => {
     const rect: DOMRect = canvas.getBoundingClientRect();
-    pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+    pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+  };
+  const track = (event: PointerEvent | WheelEvent): void => {
+    trackPoint(event.clientX, event.clientY);
   };
 
   canvas.addEventListener('pointerdown', (event: PointerEvent): void => {
@@ -179,6 +184,13 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     get hoveredId(): number | null {
       return hoveredId;
     },
+    tap(clientX: number, clientY: number): void {
+      trackPoint(clientX, clientY);
+      pointerInside = true;
+      tapping = true;
+      shift = false;
+      pressed.push(INPUT.leftBinding);
+    },
     collect(dt: number): Command[] {
       const commands: Command[] = extra.splice(0, extra.length);
       const picked: PickCandidate | null = pickActors();
@@ -190,6 +202,10 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       const exit: ZoneExit | null = target === null && person === null ? exitAt(ground) : null;
       hooks.aimExit(exit?.id ?? null);
       const marked: boolean = target === null && person === null && exit === null && onWaypointMark(ground);
+      if (tapping) {
+        tapping = false;
+        pointerInside = false;
+      }
       canvas.style.cursor = target !== null ? 'crosshair' : exit !== null || person !== null || marked ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));

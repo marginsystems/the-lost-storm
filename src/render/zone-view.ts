@@ -5,10 +5,11 @@ import type { Content, PropDef, PropLight, ZoneDef, ZoneProp } from '../../sim/c
 import { wallCorners, wallEdges, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
-import { loadModel } from './character-loader.ts';
+import { forgetModel, loadModel } from './character-loader.ts';
 import { buildGround } from './ground.ts';
 import type { Ground } from './ground.ts';
 import { dressed, preloadSurfaces } from './surfaces.ts';
+import { renderBudget } from '../mobile/quality.ts';
 
 export const ZONE_VIEW = {
   abyssDepth: -1.06,
@@ -88,6 +89,23 @@ export async function preloadZones(loader: GLTFLoader, content: Content): Promis
   await Promise.allSettled([preloadSurfaces(content), ...[...models].map((model: string): Promise<GLTF> => loadModel(loader, model))]);
 }
 
+function zoneModels(content: Content, zone: ZoneDef): Set<string> {
+  const models: Set<string> = new Set<string>();
+  for (const propId of zoneProps(zone)) {
+    const def: PropDef | undefined = content.props.get(propId);
+    if (def !== undefined) models.add(def.model);
+  }
+  return models;
+}
+
+export function releaseOtherZoneModels(content: Content, kept: ZoneDef): void {
+  const keep: Set<string> = zoneModels(content, kept);
+  for (const zone of content.zones.values()) {
+    if (zone.id === kept.id) continue;
+    for (const model of zoneModels(content, zone)) if (!keep.has(model)) forgetModel(model);
+  }
+}
+
 function lightPoint(light: PropLight, x: number, y: number, z: number, yaw: number): Vector3 {
   return new Vector3(x + Math.sin(yaw) * ZONE_VIEW.torchReach, y + light.height, z + Math.cos(yaw) * ZONE_VIEW.torchReach);
 }
@@ -138,7 +156,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   }
 
   const pool: PointLight[] = [];
-  for (let index: number = 0; index < Math.min(ZONE_VIEW.lightBudget, sources.length); index += 1) {
+  for (let index: number = 0; index < Math.min(ZONE_VIEW.lightBudget, renderBudget().zoneLights, sources.length); index += 1) {
     const light: PointLight = new PointLight(0xffffff, 0, 1, ZONE_VIEW.lightDecay);
     pool.push(light);
     group.add(light);

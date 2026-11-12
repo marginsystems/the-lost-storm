@@ -1,6 +1,8 @@
 import type { Material, Texture } from 'three';
 import { Color, MeshStandardMaterial, NoColorSpace, RepeatWrapping, SRGBColorSpace, TextureLoader, Vector2 } from 'three';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
+import { renderBudget } from '../mobile/quality.ts';
+import { shrinkTexture } from '../mobile/textures.ts';
 import { assetUrl } from './character-loader.ts';
 
 export const SURFACES = {
@@ -36,7 +38,17 @@ function loadTexture(path: string, metres: number, colour: boolean): Texture {
   if (cached !== undefined) return cached.texture;
   const started: Texture[] = [];
   const done: Promise<void> = new Promise<void>((resolve: () => void): void => {
-    started.push(loader.load(assetUrl(path), resolve, undefined, resolve));
+    started.push(
+      loader.load(
+        assetUrl(path),
+        (loaded: Texture): void => {
+          shrinkTexture(loaded, renderBudget().maxTextureSize);
+          resolve();
+        },
+        undefined,
+        resolve,
+      ),
+    );
   });
   const texture: Texture | undefined = started[0];
   if (texture === undefined) throw new Error(`Texture ${path} did not start loading`);

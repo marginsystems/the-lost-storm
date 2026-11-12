@@ -10,6 +10,7 @@ import type { DashTrails } from './dash-trail.ts';
 import { createDashTrails } from './dash-trail.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import type { BurstOptions, ParticleSystem } from './particles.ts';
+import { renderBudget } from '../mobile/quality.ts';
 
 export const EFFECTS = {
   slashTime: 0.2,
@@ -103,7 +104,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   let emberTimer: number = 0;
   const dashTrails: DashTrails = createDashTrails(scene, particles);
 
-  for (let index: number = 0; index < EFFECTS.flashLights; index += 1) {
+  const flashCount: number = Math.max(1, Math.min(EFFECTS.flashLights, renderBudget().flashLights));
+  for (let index: number = 0; index < flashCount; index += 1) {
     const light: PointLight = new PointLight(0xffffff, 0, 16, 1.6);
     scene.add(light);
     lights.push(light);
@@ -142,7 +144,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
 
   const flashLight = (x: number, y: number, z: number, color: Color, intensity: number): void => {
     const light: PointLight | undefined = lights[nextLight];
-    nextLight = (nextLight + 1) % EFFECTS.flashLights;
+    nextLight = (nextLight + 1) % flashCount;
     if (light === undefined) return;
     light.color.copy(color);
     light.intensity = intensity;

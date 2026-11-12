@@ -1,5 +1,6 @@
 import type { Color, Scene } from 'three';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, DynamicDrawUsage, Points, ShaderMaterial } from 'three';
+import { renderBudget } from '../mobile/quality.ts';
 
 export const PARTICLES = {
   capacity: 2400,
@@ -67,7 +68,7 @@ function pick(range: Range): number {
 }
 
 export function createParticles(scene: Scene): ParticleSystem {
-  const capacity: number = PARTICLES.capacity;
+  const capacity: number = Math.max(1, Math.min(PARTICLES.capacity, renderBudget().particleCapacity));
   const positions: Float32Array = new Float32Array(capacity * 3);
   const tints: Float32Array = new Float32Array(capacity * 3);
   const sizes: Float32Array = new Float32Array(capacity);

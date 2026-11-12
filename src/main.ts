@@ -35,6 +35,10 @@ import type { GraphicsPreset, SettingsSection } from './settings/settings.ts';
 import type { SettingsStore } from './settings/store.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
 import { createBrowserStore } from './storage.ts';
+import type { Mobile, MobileBoot } from './mobile/mobile.ts';
+import { bootMobile, startMobile } from './mobile/mobile.ts';
+import type { MemoryReport } from './mobile/memory.ts';
+import { measureMemory } from './mobile/memory.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Actors } from './render/actors.ts';
@@ -63,7 +67,7 @@ import type { ZoneMarkers } from './render/zone-markers.ts';
 import { createZoneMarkers } from './render/zone-markers.ts';
 import { dressed } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
-import { buildZoneView, preloadZones } from './render/zone-view.ts';
+import { buildZoneView, preloadZones, releaseOtherZoneModels } from './render/zone-view.ts';
 import { createBrowserTimers } from './browser-timers.ts';
 import { createAccountFlow } from './account-flow.ts';
 import type { AccountFlow } from './account-flow.ts';
@@ -94,6 +98,7 @@ export interface DebugHandle {
   readonly audio: AudioSystem;
   readonly sounds: readonly Trigger[];
   send(command: Command): void;
+  memory(): MemoryReport;
 }
 
 declare global {
@@ -190,7 +195,8 @@ async function start(): Promise<void> {
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
   const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
   const loadingSave: Promise<SaveData | null> = backend.load();
-  const stage: Stage = createStage(canvas);
+  const mobile: MobileBoot = bootMobile();
+  const stage: Stage = createStage(canvas, mobile.quality.tier);
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader();
   const loadingCharacters: Promise<CharacterLibrary> = loadCharacters(loader, content, (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material));
@@ -331,7 +337,10 @@ async function start(): Promise<void> {
   };
   gameSettings.subscribe(applyGraphics);
   applyGraphics();
-  if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send };
+  const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, openMenu: (): void => {
+      if (playing && !transition.blocking) pauseMenu.open(null);
+    } });
+  if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene) };
 
   let playing: boolean = false;
   let torchVersion: number = 0;
@@ -365,6 +374,7 @@ async function start(): Promise<void> {
     markers.dispose();
     zoneView.dispose();
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene);
+    if (mobile.quality.tier.releaseOtherZones) releaseOtherZoneModels(content, world.zone);
     markers = createZoneMarkers(stage.scene, world.zone);
     stage.setAmbience(world.zone.ambience);
     zoneView.setLightBudget(gameSettings.preset().lights);
@@ -395,10 +405,10 @@ async function start(): Promise<void> {
     let events: WorldEvent[] = [];
     const paused: boolean = pauseMenu.isOpen;
     const simVisualDt: number = paused ? 0 : dt;
-    const active: boolean = playing && !transition.blocking;
+    const active: boolean = playing && !transition.blocking && !touch.lost;
     const live: boolean = active && !paused;
     if (active) {
-      const collected: Command[] = input.collect(dt);
+      const collected: Command[] = [...input.collect(dt), ...touch.collect(dt)];
       if (live) queue.push(...collected);
     }
     if (live) {
@@ -441,6 +451,7 @@ async function start(): Promise<void> {
     markers.update(dt, now / 1000, world);
     stage.setFlash(weather.flash);
     hud.update(dt);
+    touch.update();
     minimap.update(dt);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     stage.render();
@@ -463,7 +474,7 @@ async function start(): Promise<void> {
 
   camera.snap(world.player.pos.x, world.player.pos.z);
   requestAnimationFrame(frame);
-  void preloadZones(loader, content);
+  if (mobile.quality.tier.preloadAllZones) void preloadZones(loader, content);
 
   status.classList.remove('failed');
   status.classList.add('quiet');

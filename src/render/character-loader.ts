@@ -1,8 +1,10 @@
-import type { AnimationClip, BufferGeometry, IUniform, Material, Object3D } from 'three';
-import { AnimationMixer, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
+import type { AnimationClip, IUniform, Object3D } from 'three';
+import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import type { AttachmentDef, Content, RigDef, RigSocket, WearableDef } from '../../sim/content/types.ts';
+import { renderBudget } from '../mobile/quality.ts';
+import { shrinkModelTextures } from '../mobile/textures.ts';
 import { fitToSkeleton, groupBodyParts, skinnedMeshes } from './wearables.ts';
 
 export interface ActionClip {
@@ -78,12 +80,39 @@ export function assetUrl(path: string): string {
 export function loadModel(loader: GLTFLoader, path: string): Promise<GLTF> {
   const cached: Promise<GLTF> | undefined = pending.get(path);
   if (cached !== undefined) return cached;
-  const started: Promise<GLTF> = loader.loadAsync(assetUrl(path));
+  const started: Promise<GLTF> = loader.loadAsync(assetUrl(path)).then(shrinkModel);
   pending.set(path, started);
   started.catch((): void => {
     pending.delete(path);
   });
   return started;
+}
+
+function shrinkModel(gltf: GLTF): GLTF {
+  shrinkModelTextures(gltf.scene, renderBudget().maxModelTextureSize);
+  return gltf;
+}
+
+export function forgetModel(path: string): void {
+  const cached: Promise<GLTF> | undefined = pending.get(path);
+  if (cached === undefined) return;
+  pending.delete(path);
+  cached.then(disposeModel, ignoreFailure);
+}
+
+function ignoreFailure(): undefined {
+  return undefined;
+}
+
+function disposeModel(gltf: GLTF): undefined {
+  gltf.scene.traverse((object: Object3D): void => {
+    if (!(object instanceof Mesh)) return;
+    const geometry: unknown = object.geometry;
+    if (geometry instanceof BufferGeometry) geometry.dispose();
+    const materials: unknown = object.material;
+    for (const material of Array.isArray(materials) ? materials : [materials]) if (material instanceof Material) material.dispose();
+  });
+  return undefined;
 }
 
 function stripRootMotion(clip: AnimationClip, bone: string): AnimationClip {

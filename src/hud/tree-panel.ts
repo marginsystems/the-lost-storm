@@ -13,6 +13,7 @@ const TREE = {
   maxWidth: 520,
   maxHeight: 440,
   reservedHeight: 300,
+  reservedTouchHeight: 72,
   minViewport: 120,
   dragThreshold: 4,
   tipGap: 6,
@@ -142,7 +143,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Panel
 
   const fitViewport = (): void => {
     const width: number = Math.min(layout.width, TREE.maxWidth);
-    const height: number = Math.min(layout.height, TREE.maxHeight, Math.max(TREE.minViewport, window.innerHeight - TREE.reservedHeight));
+    const reserved: number = document.body.classList.contains('touch') ? TREE.reservedTouchHeight : TREE.reservedHeight;
+    const height: number = Math.min(layout.height, TREE.maxHeight, Math.max(TREE.minViewport, window.innerHeight - reserved));
     if (width === pan.width && height === pan.height) return;
     const first: boolean = pan.width === 0;
     pan.width = width;

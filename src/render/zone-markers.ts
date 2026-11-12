@@ -5,6 +5,7 @@ import type { ZoneCheckpoint, ZoneDef, ZoneExit } from '../../sim/content/types.
 import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
 import { additive, glow, pillarMesh } from './effect-shapes.ts';
+import { renderBudget } from '../mobile/quality.ts';
 
 export const MARKERS = {
   exitColor: 0x9fd0ff,
@@ -70,7 +71,7 @@ export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
     meshes.push(beam);
     const light: PointLight = new PointLight(color, lightPower, MARKERS.lightDistance, 1.8);
     light.position.set(x, MARKERS.lightHeight, z);
-    group.add(light);
+    if (renderBudget().markerLights) group.add(light);
     markers.push({ ring: ring.material, core: core.material, beam: beam.material, light, lightPower, phase: x * 0.37 + z * 0.61, lit, level: MARKERS.idle });
   };
 
