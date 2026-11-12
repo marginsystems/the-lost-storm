@@ -126,8 +126,8 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
         const big: boolean = monster.def.boss !== null;
         const barWidth: number = big ? HEALTH_BARS.bossWidth : HEALTH_BARS.width;
         const barHeight: number = big ? HEALTH_BARS.bossHeight : HEALTH_BARS.height;
-        const left: number = Math.round(point.x - barWidth / 2);
-        const top: number = Math.round(point.y - barHeight / 2);
+        const left: number = point.x - barWidth / 2;
+        const top: number = point.y - barHeight / 2;
         context.globalAlpha = state.alpha;
         layer(context, HEALTH_BARS.back, left, top, barWidth, barWidth, barHeight);
         layer(context, HEALTH_BARS.trail, left, top, barWidth, barWidth * state.trail, barHeight);
