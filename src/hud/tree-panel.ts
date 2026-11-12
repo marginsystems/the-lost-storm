@@ -116,7 +116,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Panel
     const requirement: string | null = requirementLine(context.api.world.content, view.def);
     if (requirement !== null && status.kind !== 'locked') label('tree-tip-requires', requirement, body);
     if (status.kind !== 'allocated') label(status.kind === 'no_points' ? 'tree-tip-cost unmet' : 'tree-tip-cost', costLine(), body);
-    label(`tree-tip-status ${status.kind}`, statusLine(status), body);
+    label(`tree-tip-status ${status.kind}`, statusLine(status, context.api.touch), body);
     tip.replaceChildren(body);
     placeTip(view);
   };

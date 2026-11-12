@@ -26,8 +26,9 @@ void test('the tooltip lines name the requirement, the cost and the reason', ():
   assert.equal(requirementLine(CONTENT, node('tempered_body')), null);
   assert.equal(requirementLine(CONTENT, node('eye_of_the_storm')), 'Requires Heavy Hands or Forked Bolt');
   assert.equal(costLine(), 'Cost 1 skill point');
-  assert.equal(statusLine({ kind: 'locked', missing: ['Heavy Hands', 'Forked Bolt'], mode: 'any' }), 'Locked: allocate Heavy Hands or Forked Bolt first');
-  assert.equal(statusLine({ kind: 'no_points' }), 'No skill points to spend');
-  assert.equal(statusLine({ kind: 'available' }), 'Click to allocate');
-  assert.equal(statusLine({ kind: 'allocated' }), 'Allocated');
+  assert.equal(statusLine({ kind: 'locked', missing: ['Heavy Hands', 'Forked Bolt'], mode: 'any' }, false), 'Locked: allocate Heavy Hands or Forked Bolt first');
+  assert.equal(statusLine({ kind: 'no_points' }, false), 'No skill points to spend');
+  assert.equal(statusLine({ kind: 'available' }, false), 'Click to allocate');
+  assert.equal(statusLine({ kind: 'available' }, true), 'Tap to allocate');
+  assert.equal(statusLine({ kind: 'allocated' }, false), 'Allocated');
 });

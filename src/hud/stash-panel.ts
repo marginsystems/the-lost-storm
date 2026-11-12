@@ -3,9 +3,10 @@ import type { HudContext, PanelView } from './context.ts';
 import { el, label, setText } from './dom.ts';
 import type { ItemCell } from './item-cell.ts';
 import { createItemCell, showItem } from './item-cell.ts';
+import { promptText, use } from './prompts.ts';
 
 const STASH = {
-  hint: 'Click to take',
+  hint: 'take',
 } as const;
 
 export function createStashPanel(parent: HTMLElement, context: HudContext): PanelView {
@@ -18,7 +19,7 @@ export function createStashPanel(parent: HTMLElement, context: HudContext): Pane
   const tally: HTMLDivElement = label('trade-role', '', head);
   const grid: HTMLDivElement = el('div', 'inv-grid stash-grid', element);
   const cells: ItemCell[] = Array.from({ length: context.api.world.content.trade.stashSize }, (_: unknown, index: number): ItemCell => {
-    const view: ItemCell = createItemCell(context, grid, (): string => STASH.hint);
+    const view: ItemCell = createItemCell(context, grid, (): string => promptText(context.api.touch, use(STASH.hint)));
     const take = (): void => {
       if (view.current === null) return;
       context.tooltip.hide();
