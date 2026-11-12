@@ -26,5 +26,10 @@
   {"id": "rusted_iron", "color": "textures/iron_color.webp", "normal": "textures/iron_normal.webp", "orm": "textures/iron_orm.webp", "metres": 0.4, "tint": "#b08a70", "roughness": 0.9, "metalness": 0.6, "normalScale": 1.2, "spill": 0},
   {"id": "leather", "color": "textures/leather_color.webp", "normal": "textures/leather_normal.webp", "orm": "textures/leather_orm.webp", "metres": 0.12, "tint": "#8a6a50", "roughness": 1, "metalness": 0, "normalScale": 1, "spill": 0},
   {"id": "haft", "color": "textures/bark_color.webp", "normal": "textures/bark_normal.webp", "orm": "textures/bark_orm.webp", "metres": 0.5, "tint": "#7a6a5a", "roughness": 1, "metalness": 0, "normalScale": 1, "spill": 0},
-  {"id": "bone", "color": "textures/plaster_color.webp", "normal": "textures/plaster_normal.webp", "orm": "textures/plaster_orm.webp", "metres": 0.3, "tint": "#d8cdb4", "roughness": 1, "metalness": 0, "normalScale": 0.8, "spill": 0}
+  {"id": "bone", "color": "textures/plaster_color.webp", "normal": "textures/plaster_normal.webp", "orm": "textures/plaster_orm.webp", "metres": 0.3, "tint": "#d8cdb4", "roughness": 1, "metalness": 0, "normalScale": 0.8, "spill": 0},
+  {"id": "silt", "color": "textures/silt_color.webp", "normal": "textures/silt_normal.webp", "orm": "textures/silt_orm.webp", "metres": 5.2, "tint": "#e4e2dc", "roughness": 1, "metalness": 0, "normalScale": 0.8, "spill": 3},
+  {"id": "pale_flagstone", "color": "textures/flagstone_color.webp", "normal": "textures/flagstone_normal.webp", "orm": "textures/flagstone_orm.webp", "metres": 3.6, "tint": "#ece9e2", "roughness": 1, "metalness": 0, "normalScale": 0.8, "spill": 1},
+  {"id": "shallow_water", "color": "textures/mud_color.webp", "normal": "textures/mud_normal.webp", "orm": "textures/mud_orm.webp", "metres": 4.2, "tint": "#7d8486", "roughness": 0.85, "metalness": 0, "normalScale": 0.45, "spill": 3, "pace": 0.8},
+  {"id": "meadow", "color": "textures/meadow_color.webp", "normal": "textures/meadow_normal.webp", "orm": "textures/meadow_orm.webp", "metres": 4.6, "tint": "#b8b3a2", "roughness": 1, "metalness": 0, "normalScale": 1, "spill": 2},
+  {"id": "worn_marble", "color": "textures/worn_marble_color.webp", "normal": "textures/worn_marble_normal.webp", "orm": "textures/worn_marble_orm.webp", "metres": 3.2, "tint": "#d9d3c6", "roughness": 1, "metalness": 0, "normalScale": 0.8, "spill": 1}
 ]

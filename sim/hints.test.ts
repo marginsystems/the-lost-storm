@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must, worldIn } from '../test/support.ts';
+import { TOWN_CONTENT } from '../test/town-support.ts';
 import { stepWorld } from './world/step.ts';
 import { loadContent } from './content/content.ts';
 import type { HintDef, HintsDef } from './content/hints.ts';
 import { loadHints } from './content/hints.ts';
-import type { Content } from './content/types.ts';
+import type { Content, QuestDef } from './content/types.ts';
 import type { HintChange, HintInput, HintState } from './hints.ts';
 import { createHintState, seedVeteran, stepHints } from './hints.ts';
 import { startQuests } from './world/quests.ts';
@@ -44,7 +45,10 @@ void test('a fresh game shows the move hint first and removes it once the player
 });
 
 void test('the next hint is the person to talk to, and talking completes it', (): void => {
-  const world: World = fresh();
+  const errand: QuestDef = { id: 'errand', name: 'An Errand', requires: [], when: [], objectives: [{ id: 'ask', type: 'talk', npc: 'keeper', text: 'Ask', when: [], sets: {} }] };
+  const world: World = worldIn({ ...TOWN_CONTENT, quests: new Map<string, QuestDef>([[errand.id, errand]]) }, 'hub', 1);
+  startQuests(world);
+  world.monsters = [];
   const state: HintState = createHintState(['move']);
   assert.equal(shown(stepHints(defs, world, state, IDLE)), 'talk');
   const talked: WorldEvent = { type: 'dialogue_line', npcId: 1, npc: 'x', talk: 't', line: must([...content.lines.values()][0], 'a line'), index: 0, last: true };

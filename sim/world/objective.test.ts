@@ -1,14 +1,25 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { worldIn } from '../../test/support.ts';
-import { loadContent } from '../content/content.ts';
-import type { Content } from '../content/types.ts';
+import { TOWN_CONTENT } from '../../test/town-support.ts';
+import type { Content, QuestDef } from '../content/types.ts';
 import { nextAction, objectiveTarget } from './objective.ts';
 import type { ObjectiveTarget } from './objective.ts';
 import { startQuests } from './quests.ts';
 import type { World } from './types.ts';
 
-const content: Content = loadContent();
+const errand: QuestDef = {
+  id: 'errand',
+  name: 'An Errand',
+  requires: [],
+  when: [],
+  objectives: [
+    { id: 'ask', type: 'talk', npc: 'keeper', text: 'Ask', when: [], sets: {} },
+    { id: 'go', type: 'reach', zone: 'outpost', x: 28, z: 30, radius: 2, text: 'Go', when: [], sets: {} },
+  ],
+};
+
+const content: Content = { ...TOWN_CONTENT, quests: new Map<string, QuestDef>([[errand.id, errand]]) };
 
 function fresh(zone: string): World {
   const world: World = worldIn(content, zone, 1);
@@ -25,12 +36,11 @@ void test('a talk objective in this zone points at the person', (): void => {
 
 void test('an objective in another zone points at the exit that leads there', (): void => {
   const world: World = fresh(content.world.start);
-  for (const quest of content.quests.values()) world.quests[quest.id] = quest.objectives.length;
-  world.quests['north_lamp'] = 0;
+  world.quests['errand'] = 1;
   const target: ObjectiveTarget | null = objectiveTarget(world);
   assert.ok(target !== null);
-  if (target.kind === 'exit') assert.ok(world.zone.exits.some((exit): boolean => exit.x === target.pos.x && exit.z === target.pos.z));
-  assert.ok(target.kind === 'exit' || target.kind === 'monster' || target.kind === 'spot');
+  assert.equal(target.kind, 'exit');
+  assert.ok(world.zone.exits.some((exit): boolean => exit.x === target.pos.x && exit.z === target.pos.z));
 });
 
 void test('with no active quest there is no target and the fallback text stays', (): void => {

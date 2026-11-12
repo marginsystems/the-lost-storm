@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
-import type { Content, ZoneDef } from '../../sim/content/types.ts';
-import { zoneModels, zoneProps, zoneSurfaces } from './zone-assets.ts';
+import type { Content, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
+import { neighbourZones, zoneModels, zoneProps, zoneSurfaces } from './zone-assets.ts';
 
 const content: Content = loadContent();
 
@@ -31,5 +31,13 @@ void test('a zone keeps its floors, its outside, its props and every attachment 
     if (zone.outside !== null) assert.ok(kept.has(zone.outside.surface));
     for (const attachment of content.attachments.values()) for (const id of Object.values(attachment.surfaces)) assert.ok(kept.has(id));
     for (const id of kept) assert.ok(content.surfaces.has(id), `${zone.id} keeps unknown surface ${id}`);
+  }
+});
+
+void test('the zones next to a zone are the ones its exits lead to, without itself', (): void => {
+  for (const zone of content.zones.values()) {
+    const near: readonly ZoneDef[] = neighbourZones(content, zone);
+    const targets: Set<string> = new Set<string>(zone.exits.map((exit: ZoneExit): string => exit.to).filter((id: string): boolean => id !== zone.id));
+    assert.deepEqual(new Set<string>(near.map((found: ZoneDef): string => found.id)), targets);
   }
 });

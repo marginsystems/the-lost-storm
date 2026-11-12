@@ -8,60 +8,32 @@ Nothing in this world was made on purpose: it all fell together by chance, you i
 
 ## The world
 
-**The Storm** is not weather. It is the name people give to what everything comes out of: an endless shuffling of everything that could exist. Almost all of what it throws out is rubble. Now and then, by accident, something whole falls out: a wall, a road, a lit lamp, a creature, a person with a lifetime of memories already in place.
+**The Storm** is not weather. It is the name for what everything comes out of: an endless shuffling of everything that could exist. Almost all of what it throws out is rubble. Now and then, by accident, something whole falls out: a wall, a road, a creature, a mind with a lifetime of memories already in place.
 
-People say a thing **fell in** when it arrives and **comes apart** when the Storm takes it back. Nobody has seen anything being made. Things are simply there one morning, complete, as if they always had been.
+The hero is such a mind. Their moments lie scattered across endless time, and each remembers the one before, so they feel continuous. It is not a time loop.
 
-A memory proves nothing here. A person can fall in an hour ago remembering forty years. So can a town. So can the book in which someone wrote it all down.
+**The In-Between** is where the game opens: white mist and storm, no bars, no enemies. It is the gap between moments, which nobody normally notices because there is no one in the gap to notice it. A journal lies there with a note that says "Do not."
 
-**Stillhold** is a town in a calm of the Storm. Its people remember generations of living there.
+**Glitches** are the seams between moments showing through. Mid-fight the screen can white out for a second, the hero stands in the mist alone, and then is back with one small thing changed. A glitch never costs the player progress and never kills them.
 
-**The Still** is the quiet place at the middle of the Storm, past a gate that only opens when the two great lamps burn.
+## Peoples
 
-**The Drowned Bastion** lies under the town. The same garrison falls together there every time it is cleared, a little worse each time. The town calls each return a surge. It is the plainest example of what the Storm does, and nobody in town thinks about it much.
+Nobody was born. Every person is a mind the Storm assembled, and each people is a different answer to that.
 
-## What people believe
+- **Timekeepers**: order; clocks; slowing, holding and replaying moments.
+- **The Unfinished**: assembled wrong, with no memories.
+- **Menders**: stitch dead moments back together.
+- **Stormcallers**: use the Storm itself and fray for it. The hero's skills come from here.
+- **The Still**: stopped moving, half taken by the mist.
+- **Wardens**: keep the roads.
 
-- **Somebody set the table** (Hale). The world is too well arranged to be an accident. Whoever arranged it sits in the Still and is watching to see how well we keep it.
-- **If it is written, it happened** (Maren). It may all be accident, but a careful record makes a thing real. Count everything.
-- **Nothing is for anything** (Pell). So you may keep whatever you like, and nothing is owed.
+## Open questions
 
-None of them is the author's mouthpiece. Each is right about something and wrong about something.
+These are the owner's to decide:
 
-## The hero's question
-
-The hero wakes with one clear memory: **a road at dusk, a lit door at the end of it, and someone inside calling them in by a name they cannot quite hear.**
-
-The question the hero starts with: *where is that door, and how do I get home?*
-
-The question underneath: *if the memory never happened, is it still mine, and does it matter?*
-
-Nobody in the game mentions the hero's body, age, sex or name. The story reads the same whatever the hero looks like.
-
-## The truth (what the act reveals, in order)
-
-1. **The memory is not the hero's alone.** The road, the door and the voice are the commonest thing that falls in. Others have woken with exactly the same memory.
-2. **The town is as new as the hero.** Stillhold fell in the same night, whole, with its people already remembering forty years. The newcomer is not behind everyone else; nobody has a past.
-3. **The door is real, and it is not a home.** The voice in the memory is the Storm itself. Everything it throws out carries the same pull back toward it. "Home" is coming apart. The hero is a piece of the Storm that got lost by becoming someone: a lost storm.
-4. **There is no one in the Still.** No maker, no chair. So the lamps are lit by whoever decides to light them.
-
-## The idea to leave the player with
-
-A thing does not have to have been meant in order to matter. The first purpose in this world is the first thing somebody in it does on purpose.
-
-A second one, quieter, for anyone who notices: the only witness to the town's arrival jokes that she may have fallen in this morning remembering that she watched it. Memory cannot certify history, for her, for the hero, or for whoever is holding the controls.
-
-## Characters
-
-| Id | Name | Where | Voice | Wants |
-|---|---|---|---|---|
-| `maren` | Maren Sedge, the Tallier | Stillhold, by the stone where things fall in | A woman past middle age. Dry, exact, unhurried. Short declarative sentences. Counts things instead of saying what she feels. | To finish an entry: to see one of the ones who go looking come back. |
-| `hale` | Hale Orrin, the Lampwright | Stillhold, by the lamps | An older man. Warm, slow, a little hoarse, fond of small practical things. Talks about oil, wicks and knees. | To be told he has kept the lamps well. |
-| `pell` | Pell | The Spill, at a camp among the rubble | A young woman. Quick, amused, irreverent, laughs at her own remarks. The laugh sometimes stops short. | Nothing much. To keep the lovely wrong things. Not to hurt anyone by being right. |
-| `one_before` | The One Before | Dusk's End, at the Empty Frame | Hoarse, worn thin, possessive. Speaks as if to someone who has taken something from them. | The door, which they are sure stood here and was theirs alone. |
-| `welcome` | The Welcome | The Still, at the door | Soft, patient, many voices as one. Never angry. Says "we". | Every lost piece to come back in. |
-
-The Mason (the east mini-boss) never speaks. It is a thing that fell together able to build and unable to ask why. Its silence is the point.
+- Whether the player can overrule the read-back answer at the end.
+- One act or a multi-act arc.
+- The names of the waystation, its keeper and the people the hero meets.
 
 ## Names
 

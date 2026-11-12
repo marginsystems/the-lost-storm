@@ -9,7 +9,7 @@ import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
 const content: Content = loadContent();
-const SURGE_ZONE: string = 'drowned_bastion';
+const AMBIENT_ZONE: string = 'waystation';
 const known: KnownIds = knownIdsOf(content);
 
 function variant(change: (draft: Record<string, unknown>) => void): unknown {
@@ -31,7 +31,7 @@ void test('the shipped audio data loads against the shipped content', (): void =
   const audio: AudioDef = loadAudio(content);
   assert.equal(audio.defaults.maxVoices, 4);
   assert.ok(audio.skillStart.size >= 5);
-  assert.ok(audio.ambience.has(SURGE_ZONE));
+  assert.ok(audio.ambience.has(AMBIENT_ZONE));
 });
 
 void test('every skill the player or a monster uses has a start sound', (): void => {
@@ -115,23 +115,23 @@ void test('bad cues are rejected with where they are', (): void => {
 
 void test('stingers need a sensible delay window', (): void => {
   reject(variant((draft): void => {
-    draft['ambience'] = { [SURGE_ZONE]: { loops: [], stingers: [{ sound: 'a', minDelay: 30, maxDelay: 10 }] } };
+    draft['ambience'] = { [AMBIENT_ZONE]: { loops: [], stingers: [{ sound: 'a', minDelay: 30, maxDelay: 10 }] } };
   }), /maxDelay/);
   reject(variant((draft): void => {
-    draft['ambience'] = { [SURGE_ZONE]: { loops: [{ sound: 'a', volume: 0 }], stingers: [] } };
+    draft['ambience'] = { [AMBIENT_ZONE]: { loops: [{ sound: 'a', volume: 0 }], stingers: [] } };
   }), /volume/);
 });
 
 void test('a stinger must say how soon and how late it can come', (): void => {
   const stingerWith = (fields: Record<string, unknown>): unknown =>
     variant((draft): void => {
-      draft['ambience'] = { [SURGE_ZONE]: { loops: [], stingers: [{ sound: 'a', ...fields }] } };
+      draft['ambience'] = { [AMBIENT_ZONE]: { loops: [], stingers: [{ sound: 'a', ...fields }] } };
     });
   reject(stingerWith({}), /minDelay/);
   reject(stingerWith({ minDelay: 5 }), /maxDelay/);
   reject(stingerWith({ maxDelay: 5 }), /minDelay/);
   reject(stingerWith({ minDelay: 0, maxDelay: 5 }), /minDelay/);
-  assert.equal(parseAudio(stingerWith({ minDelay: 5, maxDelay: 5 }), known).ambience.get(SURGE_ZONE)?.stingers.length, 1);
+  assert.equal(parseAudio(stingerWith({ minDelay: 5, maxDelay: 5 }), known).ambience.get(AMBIENT_ZONE)?.stingers.length, 1);
 });
 
 void test('the fixed id lists are not empty and have no repeats', (): void => {

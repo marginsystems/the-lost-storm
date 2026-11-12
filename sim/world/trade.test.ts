@@ -11,9 +11,10 @@ import { buyPrice, itemValue, meetNpc, openStation, sellPrice, stationAt, statio
 import type { ItemInstance, NpcState, TradeAction, VendorStock, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
 
-const content: Content = loadContent();
+const shipped: Content = loadContent();
+const content: Content = { ...shipped, world: { ...shipped.world, start: shipped.world.town } };
 const DT: number = 1 / 60;
-const town: string = content.world.start;
+const town: string = content.world.town;
 
 function made(base: string, rarity: string, level: number, uid: number): ItemInstance {
   return must(generateItem(content, createRng(uid), uid, level, base, rarity), base);

@@ -136,6 +136,7 @@ The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and sta
 | `public/models/world/banner_wide.glb` | Wide hanging banner with a boss | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/bench.glb` | Bench | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/brazier.glb` | Iron brazier | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/bridge_broken.glb` | Broken timber bridge | Built by `blender/build_road.py` | MIT |
 | `public/models/world/cairn.glb` | Stacked stone post | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/candles.glb` | Three candles | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/coins.glb` | Pile of coins (gold drops) | Built by `blender/build_environment.py` | MIT |
@@ -153,10 +154,12 @@ The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and sta
 | `public/models/world/grave_cross.glb` | Stone cross | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/grave_slab.glb` | Grave slab | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/gravestone.glb` | Headstone | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/great_doors.glb` | Great stone doors with a carved disc | Built by `blender/build_road.py` | MIT |
 | `public/models/world/great_lamp.glb` | Great lamp, dark | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/great_lamp_lit.glb` | Great lamp, lit | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/house_a.glb` | Timber-framed house | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/house_b.glb` | Tall timber-framed house | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/hut_patched.glb` | Patched hut with mismatched walls | Built by `blender/build_road.py` | MIT |
 | `public/models/world/loose_blocks.glb` | Loose stone blocks | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/pier.glb` | Corner pier | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/pillar.glb` | Square pillar | Built by `blender/build_environment.py` | MIT |
@@ -164,12 +167,19 @@ The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and sta
 | `public/models/world/post.glb` | Wooden post with an arm | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/post_lantern.glb` | Post with an unlit lantern | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/post_lantern_lit.glb` | Post with a lit lantern | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/reeds.glb` | Clump of reeds | Built by `blender/build_road.py` | MIT |
 | `public/models/world/rubble_large.glb` | Large rubble heap | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/rubble_small.glb` | Small rubble heap | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/shelter.glb` | Lean-to of mismatched pieces | Built by `blender/build_road.py` | MIT |
 | `public/models/world/shrine.glb` | Stone shrine with candles | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/stairs.glb` | Ruined stair | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/stall.glb` | Market stall | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/standing_clock.glb` | Standing case clock | Built by `blender/build_road.py` | MIT |
+| `public/models/world/standing_clock_tilted.glb` | Leaning standing clock with a cracked face | Built by `blender/build_road.py` | MIT |
 | `public/models/world/statue_base.glb` | Statue base | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/still_figure.glb` | Still figure standing, in a hooded robe | Built by `blender/build_road.py` from the MakeHuman body in `human_man.glb` and the "Monks Robe" and "Monks Hood" wearables (Donitz, `suits02_cc0.zip`), posed on the shared rig, joined and decimated to about 1400 triangles with the textures dropped | CC0 1.0 |
+| `public/models/world/still_figure_bowed.glb` | Still figure with bowed head, in a hooded robe | Built like `still_figure.glb` with the neck, head and spine turned forward | CC0 1.0 |
+| `public/models/world/sunken_cart.glb` | Cart sunk to its axle | Built by `blender/build_road.py` | MIT |
 | `public/models/world/table_broken.glb` | Broken trestle table | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/torch.glb` | Wall torch | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/wall_a.glb` | Wall section | Built by `blender/build_environment.py` | MIT |
@@ -180,6 +190,8 @@ The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and sta
 | `public/models/world/wall_scaffold.glb` | Wall section with scaffolding | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/wall_window.glb` | Wall section with a barred window | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/wall_works.glb` | Unfinished wall with a timber frame | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/warden_stone.glb` | Road marker stone with a lantern hook | Built by `blender/build_road.py` | MIT |
+| `public/models/world/wide_stair.glb` | Broad flight of worn steps | Built by `blender/build_road.py` | MIT |
 
 Rebuild with:
 
@@ -262,6 +274,9 @@ sh tools/half-textures.sh
 | `public/textures/slates_color.webp`, `public/textures/slates_normal.webp`, `public/textures/slates_orm.webp`, `public/textures/half/slates_color.webp`, `public/textures/half/slates_normal.webp`, `public/textures/half/slates_orm.webp` | "Roof Slates 02" (`roof_slates_02`) | Rob Tuytel | CC0 1.0 |
 | `public/textures/bark_color.webp`, `public/textures/bark_normal.webp`, `public/textures/bark_orm.webp`, `public/textures/half/bark_color.webp`, `public/textures/half/bark_normal.webp`, `public/textures/half/bark_orm.webp` | "Bark Brown 02" (`bark_brown_02`) | Rob Tuytel | CC0 1.0 |
 | `public/textures/leather_color.webp`, `public/textures/leather_normal.webp`, `public/textures/leather_orm.webp`, `public/textures/half/leather_color.webp`, `public/textures/half/leather_normal.webp`, `public/textures/half/leather_orm.webp` | "Brown Leather" (`brown_leather`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/silt_color.webp`, `public/textures/silt_normal.webp`, `public/textures/silt_orm.webp`, `public/textures/half/silt_color.webp`, `public/textures/half/silt_normal.webp`, `public/textures/half/silt_orm.webp` | "Aerial Beach 01" (`aerial_beach_01`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/meadow_color.webp`, `public/textures/meadow_normal.webp`, `public/textures/meadow_orm.webp`, `public/textures/half/meadow_color.webp`, `public/textures/half/meadow_normal.webp`, `public/textures/half/meadow_orm.webp` | "Withered Grass" (`withered_grass`) | Charlotte Baglioni | CC0 1.0 |
+| `public/textures/worn_marble_color.webp`, `public/textures/worn_marble_normal.webp`, `public/textures/worn_marble_orm.webp`, `public/textures/half/worn_marble_color.webp`, `public/textures/half/worn_marble_normal.webp`, `public/textures/half/worn_marble_orm.webp` | "Marble 01" (`marble_01`) | Rob Tuytel | CC0 1.0 |
 
 ## Fonts
 

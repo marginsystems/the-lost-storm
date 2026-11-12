@@ -8,7 +8,7 @@ import { spokenLine } from './glitch-word.ts';
 import type { World } from './types.ts';
 
 const content: Content = loadContent();
-const line: LineDef = must(content.lines.get('maren_wake_1'), 'maren_wake_1');
+const line: LineDef = must(content.lines.get('warden_trader_goods'), 'warden_trader_goods');
 
 void test('an armed wrong word puts a wrong name before the next line, then the line goes on as written', (): void => {
   const world: World = createWorld(content, { seed: 1, save: null });

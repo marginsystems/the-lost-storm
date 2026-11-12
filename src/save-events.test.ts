@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { botPlay, CAREFUL, createBot } from '../sim/bot.ts';
 import type { Bot, BotReport } from '../sim/bot.ts';
 import { loadContent } from '../sim/content/content.ts';
-import type { Content, ZoneDef } from '../sim/content/types.ts';
+import type { Content, ZoneDef, ZoneVoice } from '../sim/content/types.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { stepWorld } from '../sim/world/step.ts';
@@ -12,7 +12,10 @@ import type { World, WorldEvent } from '../sim/world/types.ts';
 import { must } from '../test/support.ts';
 import { changesSave } from './save-events.ts';
 
-const content: Content = loadContent();
+const shipped: Content = loadContent();
+const town: ZoneDef = must(shipped.zones.get('waystation'), 'town');
+const whisper: ZoneVoice = { id: 'well_whisper', x: 36, z: 26, radius: 6, lines: ['warden_trader_goods'], when: [] };
+const content: Content = { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [town.id, { ...town, voices: [whisper] }]]) };
 const PLAY = { seed: 11, dt: 1 / 60, fewestChanges: 50 } as const;
 
 function kept(world: World): string {
@@ -22,6 +25,7 @@ function kept(world: World): string {
 
 void test('a step that changes nothing a save holds does not ask for one', (): void => {
   const world: World = createWorld(content, { seed: PLAY.seed, save: null });
+  stepWorld(world, [], PLAY.dt);
   const before: string = kept(world);
   const events: WorldEvent[] = stepWorld(world, [], PLAY.dt);
   assert.equal(kept(world), before);
@@ -55,14 +59,14 @@ void test('a respawn asks for a save because it can cost experience', (): void =
 
 void test('drinking a flask and refilling flasks each ask for a save', (): void => {
   const world: World = createWorld(content, { seed: PLAY.seed, save: null });
-  enterZone(world, must(content.zones.get('duskway'), 'duskway'), { type: 'start' });
+  enterZone(world, must(content.zones.get('shallows'), 'shallows'), { type: 'start' });
   world.monsters = [];
   world.player.life = 1;
   const before: string = kept(world);
   const drink: WorldEvent[] = stepWorld(world, [{ type: 'flask', slot: 0 }], PLAY.dt);
   assert.notEqual(kept(world), before);
   assert.equal(changesSave(drink), true);
-  enterZone(world, must(content.zones.get(content.world.start), 'start'), { type: 'start' });
+  enterZone(world, must(content.zones.get('waystation'), 'town'), { type: 'start' });
   const spent: string = kept(world);
   const refill: WorldEvent[] = stepWorld(world, [], PLAY.dt);
   assert.notEqual(kept(world), spent);

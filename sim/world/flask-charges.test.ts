@@ -10,7 +10,7 @@ import type { FlaskState, MonsterState, World } from './types.ts';
 const content: Content = loadContent();
 
 function empty(): World {
-  const world: World = worldIn(content, 'duskway', 5);
+  const world: World = worldIn(content, 'shallows', 5);
   for (const flask of world.player.flasks) flask.charges = 0;
   return world;
 }

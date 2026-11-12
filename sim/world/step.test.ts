@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must, worldIn, zoneOf } from '../../test/support.ts';
-import { loadContent } from '../content/content.ts';
+import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
+import { must, worldIn } from '../../test/support.ts';
 import type { Content, PackMember, ZoneDef, ZonePack } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
@@ -12,8 +12,8 @@ import { createWorld } from './create.ts';
 import { stepWorld } from './step.ts';
 import type { Command, GroundItem, ItemInstance, MonsterState, World, WorldEvent } from './types.ts';
 
-const content: Content = loadContent();
-const bastion: ZoneDef = zoneOf(content, 'drowned_bastion');
+const content: Content = OUTPOST_CONTENT;
+const outpost: ZoneDef = OUTPOST_ZONE;
 const DT: number = 1 / 60;
 const START: Vec2 = { x: 28, z: 37 };
 
@@ -24,7 +24,7 @@ function ofType<T extends WorldEvent['type']>(events: readonly WorldEvent[], typ
 }
 
 function fresh(seed: number = 1): World {
-  return worldIn(content, bastion.id, seed);
+  return worldIn(content, outpost.id, seed);
 }
 
 function advance(world: World, seconds: number, first: readonly Command[] = []): WorldEvent[] {
@@ -88,7 +88,7 @@ function annihilate(world: World): WorldEvent[] {
 void test('a fresh world has monsters asleep, the starting weapon equipped and nothing happening', (): void => {
   const world: World = fresh();
   assert.equal(world.surge, 1);
-  assert.equal(world.monsters.length, bastion.packs.flatMap((pack: ZonePack): readonly PackMember[] => pack.members).reduce((sum: number, member: PackMember): number => sum + member.count, 0));
+  assert.equal(world.monsters.length, outpost.packs.flatMap((pack: ZonePack): readonly PackMember[] => pack.members).reduce((sum: number, member: PackMember): number => sum + member.count, 0));
   assert.equal(world.player.equipped.weapon?.base, 'rusted_blade');
   assert.deepEqual(world.player.pos, START);
   const events: WorldEvent[] = advance(world, 2);
@@ -177,6 +177,7 @@ void test('a move inside the dead zone stops a walking player', (): void => {
 
 void test('a held move onto a blocked spot whose nearest floor is beside the player never moves or turns him', (): void => {
   const world: World = fresh();
+  isolate(world);
   const grid = world.grid;
   let found: { spot: Vec2; stand: Vec2 } | null = null;
   for (let index: number = 0; index < grid.columns * grid.rows && found === null; index += 1) {
@@ -516,7 +517,7 @@ void test('clearing every monster fires surge_cleared and then a stronger surge 
   const clearedEvents = ofType(all, 'surge_cleared');
   assert.equal(clearedEvents.length, 1);
   assert.equal(must(clearedEvents[0], 'cleared').surge, 1);
-  assert.equal(must(clearedEvents[0], 'cleared').delay, must(bastion.surge, 'surge rules').delay);
+  assert.equal(must(clearedEvents[0], 'cleared').delay, must(outpost.surge, 'surge rules').delay);
   assert.deepEqual(ofType(all, 'surge').map((entry): number => entry.surge), [2]);
   assert.equal(world.surge, 2);
   assert.equal(world.monsters.length, initial);
@@ -530,7 +531,7 @@ void test('clearing every monster fires surge_cleared and then a stronger surge 
 void test('later surges add extra monsters to the first member of each pack', (): void => {
   const base: World = fresh();
   const world: World = createWorld(content, { seed: 1, save: { ...toSave(base), surge: 3 } });
-  assert.equal(world.monsters.length, base.monsters.length + bastion.packs.length);
+  assert.equal(world.monsters.length, base.monsters.length + outpost.packs.length);
 });
 
 interface SoakResult {

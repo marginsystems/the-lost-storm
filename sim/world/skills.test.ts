@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ARENA_CENTRE, arena, place } from '../../test/arena-support.ts';
-import { must, worldIn } from '../../test/support.ts';
+import { must } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { ComboStep, Content, SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -21,7 +21,7 @@ const swing: Command = { type: 'skill', slot: 0, aim: { x: 28, z: 30 }, targetId
 type Start = Extract<WorldEvent, { readonly type: 'skill_start' }>;
 
 function fresh(): World {
-  return worldIn(content, 'drowned_bastion', 3);
+  return arena(3);
 }
 
 function swingOnce(world: World): Start {

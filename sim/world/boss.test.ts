@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
 import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { botFight, botInDanger, createBot } from '../bot.ts';
 import type { Bot } from '../bot.ts';
@@ -24,10 +25,9 @@ function ofType<T extends WorldEvent['type']>(events: readonly WorldEvent[], typ
 }
 
 function room(monster: string, when: readonly Condition[] = []): Content {
-  const bastion: ZoneDef = zoneOf(shipped, 'drowned_bastion');
   const packs: ZonePack[] = [{ x: 28, z: 14, members: [{ monster, count: 1, mods: [] }], when }];
-  const zone: ZoneDef = { ...bastion, id: ROOM, level: 2, surge: null, packs, exits: [], waypoint: null };
-  return { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [zone.id, zone]]) };
+  const zone: ZoneDef = { ...OUTPOST_ZONE, id: ROOM, level: 2, surge: null, packs, exits: [], waypoint: null };
+  return { ...OUTPOST_CONTENT, zones: new Map<string, ZoneDef>([...OUTPOST_CONTENT.zones, [zone.id, zone]]) };
 }
 
 const SPOKEN: readonly string[] = ['stormcaller_rival_sight_1', 'stormcaller_rival_sight_2', 'stormcaller_rival_half_1', 'stormcaller_rival_death_1'];
@@ -173,7 +173,7 @@ void test('a boss is not staggered, its wind-up is not interrupted, and it takes
   assert.equal(ofType(world.events, 'skill_interrupt').length, 0);
   assert.ok(Math.abs(Math.hypot(boss.knock.x, boss.knock.z) - cleave.knockback * must(boss.def.boss, 'boss').poise.knockback) < 1e-9);
 
-  const plain: World = worldIn(shipped, 'drowned_bastion', 8);
+  const plain: World = worldIn(OUTPOST_CONTENT, 'outpost', 8);
   const thrall: MonsterState = must(plain.monsters.find((monster: MonsterState): boolean => monster.def.id === 'mended'), 'thrall');
   applyHit(plain, offenceOf(plain.player), thrall, cleave, { x: 0, z: -1 });
   if (thrall.alive) assert.equal(thrall.stagger, cleave.stagger);

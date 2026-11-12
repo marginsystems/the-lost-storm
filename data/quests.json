@@ -1,56 +1,70 @@
 [
   {
-    "id": "follow_the_light",
-    "name": "Follow the Light",
-    "requires": [],
-    "when": [{"type": "flag", "flag": "opening", "is": "read"}],
-    "objectives": [
-      {"id": "light", "type": "reach", "zone": "stillhold", "x": 13, "z": 35.5, "radius": 4, "text": "Follow the light"}
-    ]
-  },
-  {
-    "id": "fallen_in",
-    "name": "Fallen In",
+    "id": "out_of_the_mist",
+    "name": "Out of the Mist",
     "requires": [],
     "when": [
-      {"type": "flag", "flag": "opening", "is": "begun", "not": true},
-      {"type": "quest", "quest": "follow_the_light", "is": "active", "not": true}
+      {
+        "type": "flag",
+        "flag": "opening",
+        "is": "begun",
+        "not": true
+      }
     ],
     "objectives": [
-      {"id": "tallier", "type": "talk", "npc": "maren", "text": "Speak to the Tallier"},
-      {"id": "lampwright", "type": "talk", "npc": "hale", "text": "Find the Lampwright, by the lamps"}
+      {
+        "id": "leave",
+        "type": "either",
+        "text": "Leave the In-Between",
+        "paths": [
+          {
+            "id": "shallows",
+            "type": "reach",
+            "zone": "shallows",
+            "x": 14,
+            "z": 30,
+            "radius": 6,
+            "text": "Leave the In-Between"
+          },
+          {
+            "id": "rerouted",
+            "type": "reach",
+            "zone": "waystation",
+            "x": 34,
+            "z": 26,
+            "radius": 8,
+            "text": "Reach the waystation",
+            "when": [
+              {
+                "type": "flag",
+                "flag": "road",
+                "is": "rerouted"
+              }
+            ]
+          }
+        ]
+      }
     ]
   },
   {
-    "id": "north_lamp",
-    "name": "The North Lamp",
-    "requires": ["fallen_in"],
+    "id": "to_the_waystation",
+    "name": "The Waystation",
+    "requires": [
+      "out_of_the_mist"
+    ],
     "objectives": [
-      {"id": "before", "type": "defeat", "monster": "stormcaller_rival", "text": "Find what took the north wick, past the end of Duskway"},
-      {"id": "light", "type": "reach", "zone": "dusks_end", "x": 38, "z": 9.6, "radius": 2.4, "text": "Light the North Lamp"},
-      {"id": "tell", "type": "talk", "npc": "maren", "text": "Tell the Tallier what you met on the road"}
-    ]
-  },
-  {
-    "id": "east_lamp",
-    "name": "The East Lamp",
-    "requires": ["fallen_in"],
-    "objectives": [
-      {"id": "scavenger", "type": "talk", "npc": "pell", "text": "Ask the scavenger in the Spill about the east wick"},
-      {"id": "mason", "type": "defeat", "monster": "unfinished_colossus", "text": "Take the east wick from the Unfinished Colossus, in the Coursework"},
-      {"id": "light", "type": "reach", "zone": "the_coursework", "x": 46.6, "z": 20, "radius": 2.4, "text": "Light the East Lamp"}
-    ]
-  },
-  {
-    "id": "the_gate",
-    "name": "The Gate",
-    "requires": ["north_lamp", "east_lamp"],
-    "objectives": [
-      {"id": "lampwright", "type": "talk", "npc": "hale", "text": "Tell the Lampwright both lamps are lit"},
-      {"id": "door", "type": "reach", "zone": "the_still", "x": 30, "z": 14, "radius": 3, "text": "Pass the Gate and cross the Still"},
-      {"id": "welcome", "type": "defeat", "monster": "timekeeper_gatekeeper", "text": "Stand your ground"},
-      {"id": "hale_still", "type": "talk", "npc": "hale", "text": "Speak to the Lampwright"},
-      {"id": "tallier_end", "type": "talk", "npc": "maren", "text": "Go back to the Tallier"}
+      {
+        "id": "arrive",
+        "type": "reach",
+        "zone": "waystation",
+        "x": 34,
+        "z": 26,
+        "radius": 8,
+        "text": "Reach the waystation",
+        "sets": {
+          "alpha_slice_complete": "reached"
+        }
+      }
     ]
   }
 ]

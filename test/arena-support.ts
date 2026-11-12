@@ -1,13 +1,14 @@
 import { loadContent } from '../sim/content/content.ts';
 import type { MonsterModDef } from '../sim/content/combat-types.ts';
-import type { Content, MonsterDef, SkillDef, ZoneDef } from '../sim/content/types.ts';
+import type { Content, MonsterDef, SkillDef } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { nearestWalkable } from '../sim/nav/grid.ts';
 import { spawnPacks } from '../sim/world/monsters.ts';
 import type { MonsterState, World } from '../sim/world/types.ts';
 import { enterZone } from '../sim/world/zones.ts';
 import { sceneZone } from './motion-support.ts';
-import { must, worldIn, zoneOf } from './support.ts';
+import { SCENE_BASE } from './road-support.ts';
+import { must, worldIn } from './support.ts';
 
 export const ARENA_CENTRE: Vec2 = { x: 14, z: 14 };
 
@@ -53,9 +54,8 @@ export const ARENA_CONTENT: Content = {
 };
 
 export function arena(seed: number, content: Content = ARENA_CONTENT): World {
-  const base: ZoneDef = zoneOf(content, 'drowned_bastion');
-  const world: World = worldIn(content, base.id, seed);
-  enterZone(world, sceneZone(base, 'test_arena', { tiles: OPEN, props: [], start: ARENA_CENTRE }), { type: 'start' });
+  const world: World = worldIn(content, content.world.start, seed);
+  enterZone(world, sceneZone(SCENE_BASE, 'test_arena', { tiles: OPEN, props: [], start: ARENA_CENTRE }), { type: 'start' });
   world.events = [];
   world.monsters = [];
   return world;

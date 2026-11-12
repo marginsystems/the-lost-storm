@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
 import { finishQuests, must, worldIn, zoneOf } from '../../test/support.ts';
-import { loadContent } from '../content/content.ts';
 import type { Content, MonsterDef, ZoneDef, ZonePack, ZoneWaypoint } from '../content/types.ts';
 import { createWorld } from './create.ts';
 import { choicesOpen, penaltyFor } from './death.ts';
@@ -9,7 +9,7 @@ import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
 
-const content: Content = loadContent();
+const content: Content = OUTPOST_CONTENT;
 const DT: number = 1 / 60;
 
 function advance(world: World, seconds: number, first: readonly Command[] = []): WorldEvent[] {
@@ -36,7 +36,7 @@ function dead(zoneId: string): World {
 }
 
 void test('dying records what killed the hero and nothing brings the hero back by itself', (): void => {
-  const world: World = dead('the_still');
+  const world: World = dead('outpost');
   const cause = must(world.death, 'death');
   assert.ok(cause.killer.length > 0);
   assert.ok([...content.skills.values()].some((skill): boolean => skill.name === cause.skill));
@@ -47,7 +47,7 @@ void test('dying records what killed the hero and nothing brings the hero back b
 });
 
 void test('a dead hero ignores every command until the choice opens, and the choice needs a moment', (): void => {
-  const world: World = dead('the_still');
+  const world: World = dead('outpost');
   const where = { ...world.player.pos };
   advance(world, 0.2, [{ type: 'move', held: false, dest: { x: where.x + 5, z: where.z } }, { type: 'respawn', choice: 'checkpoint' }]);
   assert.equal(world.player.alive, false);
@@ -59,7 +59,7 @@ void test('a dead hero ignores every command until the choice opens, and the cho
 });
 
 void test('monsters lose interest the moment the hero falls', (): void => {
-  const world: World = worldIn(content, 'the_still', 3);
+  const world: World = worldIn(content, 'outpost', 3);
   const monster: MonsterState = must(world.monsters.find((candidate: MonsterState): boolean => candidate.def.boss === null), 'monster');
   const other: MonsterState = must(world.monsters.find((candidate: MonsterState): boolean => candidate !== monster && candidate.def.boss === null), 'other');
   other.aggro = true;
@@ -68,7 +68,7 @@ void test('monsters lose interest the moment the hero falls', (): void => {
 });
 
 void test('returning to the checkpoint restores the hero, resets the living and leaves the dead dead', (): void => {
-  const world: World = worldIn(content, 'the_still', 3);
+  const world: World = worldIn(content, 'outpost', 3);
   const all: MonsterState[] = world.monsters.filter((candidate: MonsterState): boolean => candidate.def.boss === null);
   const killer: MonsterState = must(all[0], 'killer');
   const bystander: MonsterState = must(all[1], 'bystander');
@@ -97,7 +97,7 @@ void test('returning to the checkpoint restores the hero, resets the living and 
 });
 
 void test('the hero is untouchable for a short time after returning and mortal again after', (): void => {
-  const world: World = dead('the_still');
+  const world: World = dead('outpost');
   const monster: MonsterState = must(world.monsters[0], 'monster');
   advance(world, content.player.respawnDelay + 0.1);
   advance(world, 0.05, [{ type: 'respawn', choice: 'checkpoint' }]);
@@ -114,12 +114,12 @@ void test('the hero is untouchable for a short time after returning and mortal a
 
 void test('a boss comes back at full life and in its first phase', (): void => {
   const def: MonsterDef = must([...content.monsters.values()].find((candidate: MonsterDef): boolean => candidate.boss !== null), 'boss def');
-  const bastion: ZoneDef = zoneOf(content, 'drowned_bastion');
+  const outpost: ZoneDef = OUTPOST_ZONE;
   const packs: ZonePack[] = [
     { x: 28, z: 14, members: [{ monster: def.id, count: 1, mods: [] }], when: [] },
     { x: 28, z: 40, members: [{ monster: 'mended', count: 1, mods: [] }], when: [] },
   ];
-  const room: ZoneDef = { ...bastion, id: 'death_room', surge: null, packs, exits: [], waypoint: null };
+  const room: ZoneDef = { ...outpost, id: 'death_room', surge: null, packs, exits: [], waypoint: null };
   const withRoom: Content = { ...content, zones: new Map<string, ZoneDef>([...content.zones, [room.id, room]]) };
   const world: World = createWorld(withRoom, { seed: 5, save: null });
   enterZone(world, room, { type: 'start' });
@@ -145,7 +145,7 @@ void test('the experience penalty is zero below the threshold and a share of the
   assert.equal(penaltyFor(penalty, penalty.minLevel - 1, 500), 0);
   assert.equal(penaltyFor(penalty, penalty.minLevel, 500), Math.round(500 * penalty.xpPercent));
   assert.equal(penaltyFor(penalty, penalty.minLevel, 0), 0);
-  const world: World = dead('the_still');
+  const world: World = dead('outpost');
   world.player.level = penalty.minLevel;
   world.player.xp = 200;
   advance(world, content.player.respawnDelay + 0.1);
@@ -155,17 +155,17 @@ void test('the experience penalty is zero below the threshold and a share of the
 });
 
 void test('returning to town leaves the wilds for the town', (): void => {
-  const world: World = dead('the_still');
+  const world: World = dead('outpost');
   advance(world, content.player.respawnDelay + 0.1);
   const events: WorldEvent[] = advance(world, 0.05, [{ type: 'respawn', choice: 'town' }]);
-  assert.equal(world.zone.id, content.world.start);
+  assert.equal(world.zone.id, content.world.town);
   assert.equal(world.zone.kind, 'town');
   assert.equal(world.player.alive, true);
   assert.ok(events.some((event: WorldEvent): boolean => event.type === 'zone_changed'));
 });
 
 void test('touching a waypoint makes it the checkpoint and the hero returns to it', (): void => {
-  const world: World = finishQuests(createWorld(content, { seed: 4, save: null }));
+  const world: World = finishQuests(worldIn(content, 'outpost', 4));
   world.monsters = [];
   const waypoint: ZoneWaypoint = must(world.zone.waypoint, 'waypoint');
   assert.notEqual(world.respawn.type, 'waypoint');
@@ -182,7 +182,7 @@ void test('touching a waypoint makes it the checkpoint and the hero returns to i
 
 void test('entering a zone through an exit makes that entrance the checkpoint', (): void => {
   const world: World = finishQuests(createWorld(content, { seed: 6, save: null }));
-  const wild: ZoneDef = zoneOf(content, 'the_still');
+  const wild: ZoneDef = zoneOf(content, 'outpost');
   const exit = must(world.zone.exits.find((candidate) => candidate.to === wild.id), 'exit');
   world.monsters = [];
   world.player.pos = { x: exit.x, z: exit.z };

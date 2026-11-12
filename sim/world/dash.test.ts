@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { TestScene } from '../../test/motion-support.ts';
 import { MOTION_DT, placedProp, sceneZone } from '../../test/motion-support.ts';
-import { must, worldIn, zoneOf } from '../../test/support.ts';
+import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, DashDelivery, SkillDef, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -13,10 +13,10 @@ import { spawnPacks } from './monsters.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
-import { roadWorld, roadZone } from '../../test/road-support.ts';
+import { roadWorld, roadZone, SCENE_BASE } from '../../test/road-support.ts';
 
 const content: Content = loadContent();
-const base: ZoneDef = zoneOf(content, 'drowned_bastion');
+const base: ZoneDef = SCENE_BASE;
 const roll: SkillDef = must(content.skills.get('dodge_roll'), 'dodge_roll');
 const slot: number = content.player.skillBar.findIndex((entry): boolean => entry.skill === roll.id);
 function dashOfRoll(): DashDelivery {
@@ -33,7 +33,7 @@ const LIMITS = { tolerance: 0.05, settle: 3, shove: 0.2 } as const;
 type Start = Extract<WorldEvent, { readonly type: 'skill_start' }>;
 
 function scene(name: string, layout: TestScene): World {
-  const world: World = worldIn(content, base.id, 5);
+  const world: World = worldIn(content, content.world.start, 5);
   enterZone(world, sceneZone(base, `test_${name}`, layout), { type: 'start' });
   world.events = [];
   world.monsters = [];

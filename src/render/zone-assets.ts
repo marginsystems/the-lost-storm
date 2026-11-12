@@ -1,4 +1,4 @@
-import type { Content, PropDef, ZoneDef } from '../../sim/content/types.ts';
+import type { Content, PropDef, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 
 export function zoneProps(zone: ZoneDef): string[] {
   const walls: string[] = zone.walls === null ? [] : [...zone.walls.tall, zone.walls.low, zone.walls.corner];
@@ -23,4 +23,10 @@ export function zoneSurfaces(content: Content, zone: ZoneDef): Set<string> {
   }
   for (const attachment of content.attachments.values()) for (const id of Object.values(attachment.surfaces)) ids.add(id);
   return ids;
+}
+
+export function neighbourZones(content: Content, zone: ZoneDef): ZoneDef[] {
+  const ids: Set<string> = new Set<string>(zone.exits.map((exit: ZoneExit): string => exit.to));
+  ids.delete(zone.id);
+  return [...ids].map((id: string): ZoneDef | undefined => content.zones.get(id)).filter((found: ZoneDef | undefined): found is ZoneDef => found !== undefined);
 }

@@ -182,7 +182,7 @@ function ladder(accounts: readonly ServerAccount[], viewer: ServerAccount | unde
       return byLevel === 0 ? (right.save?.xp ?? 0) - (left.save?.xp ?? 0) : byLevel;
     });
   const rankOf = (account: ServerAccount): number => 1 + ranked.filter((other: ServerAccount): boolean => (other.save?.level ?? 1) > (account.save?.level ?? 1) || ((other.save?.level ?? 1) === (account.save?.level ?? 1) && (other.save?.xp ?? 0) > (account.save?.xp ?? 0))).length;
-  const row = (account: ServerAccount): Record<string, unknown> => ({ rank: rankOf(account), name: account.character ?? `Guest ${account.accountId.replace('account-', '')}`, level: account.save?.level ?? 1, furthest: 'Stillhold', online: account === viewer });
+  const row = (account: ServerAccount): Record<string, unknown> => ({ rank: rankOf(account), name: account.character ?? `Guest ${account.accountId.replace('account-', '')}`, level: account.save?.level ?? 1, furthest: 'The Waystation', online: account === viewer });
   const you: unknown = viewer === undefined || !ranked.includes(viewer) ? null : { ...row(viewer), chosen: viewer.character !== null };
   return { top: ranked.slice(0, 25).map(row), you, online: viewer === undefined ? 0 : 1, characters: ranked.length, levelUps: [] };
 }

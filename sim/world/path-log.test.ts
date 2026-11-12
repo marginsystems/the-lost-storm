@@ -14,7 +14,7 @@ const content: Content = loadContent();
 const ZONES: ReadonlySet<string> = new Set<string>(content.zones.keys());
 
 function step(index: number, act: PathEntry['act'] = 'step'): PathEntry {
-  return { t: index, zone: 'stillhold', x: index, z: 0, act };
+  return { t: index, zone: 'waystation', x: index, z: 0, act };
 }
 
 void test('a new world marks where the hero stands, and standing still adds nothing', (): void => {
@@ -60,9 +60,9 @@ void test('the log never grows past its cap however long the hero walks', (): vo
 });
 
 void test('the log survives a save compactly and comes back the same', (): void => {
-  const log: PathLog = { entries: [step(1), step(2, 'zone'), { t: 3.4, zone: 'duskway', x: -1.5, z: 22.3, act: 'glitch' }], clock: 9 };
+  const log: PathLog = { entries: [step(1), step(2, 'zone'), { t: 3.4, zone: 'shallows', x: -1.5, z: 22.3, act: 'glitch' }], clock: 9 };
   const saved = pathToSave(log);
-  assert.deepEqual(saved.zones, ['stillhold', 'duskway']);
+  assert.deepEqual(saved.zones, ['waystation', 'shallows']);
   const back: PathLog = readPathLog(JSON.parse(JSON.stringify(saved)), ZONES);
   assert.deepEqual(back.entries, log.entries);
   assert.equal(back.clock, 3.4);
@@ -71,7 +71,7 @@ void test('the log survives a save compactly and comes back the same', (): void 
 void test('a broken, foreign or future log is dropped entry by entry or as a whole', (): void => {
   assert.deepEqual(readPathLog(null, ZONES), emptyPathLog());
   assert.deepEqual(readPathLog({ version: PATH_LOG.version + 1, zones: [], entries: [] }, ZONES), emptyPathLog());
-  const read: PathLog = readPathLog({ version: PATH_LOG.version, zones: ['stillhold', 'nowhere'], entries: [[10, 0, 5, 5, 0], [20, 1, 5, 5, 0], [30, 0, 5, 5, 99], ['x'], [40, 0, 5, 5, 2]] }, ZONES);
+  const read: PathLog = readPathLog({ version: PATH_LOG.version, zones: ['waystation', 'nowhere'], entries: [[10, 0, 5, 5, 0], [20, 1, 5, 5, 0], [30, 0, 5, 5, 99], ['x'], [40, 0, 5, 5, 2]] }, ZONES);
   assert.deepEqual(read.entries.map((entry: PathEntry): number => entry.t), [1, 4]);
 });
 
