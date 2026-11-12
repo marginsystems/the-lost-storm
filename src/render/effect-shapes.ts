@@ -43,7 +43,7 @@ void main() {
   float trail = smoothstep(head - 0.6, head, vArc.x) * (1.0 - smoothstep(head, head + 0.05, vArc.x));
   float edge = smoothstep(0.0, 0.6, vArc.y) * (1.0 - smoothstep(0.88, 1.0, vArc.y));
   float alpha = trail * edge * uOpacity;
-  gl_FragColor = vec4(uColor * (1.0 + trail * 2.5) * alpha, alpha);
+  gl_FragColor = vec4(uColor * (1.0 + trail * 0.9) * alpha, alpha);
 }
 `;
 
@@ -85,7 +85,8 @@ void main() {
   float wobble = (fbm(dir * 2.3 + uSeed) - 0.5) * 0.18;
   float front = eased * 0.84 + wobble * uProgress;
   float lead = 1.0 - smoothstep(front, front + 0.04, r);
-  float trail = smoothstep(front - uTrail, front, r);
+  float width = uTrail * smoothstep(0.0, 0.45, uProgress) + 0.03;
+  float trail = smoothstep(front - width, front, r);
   float band = lead * trail * trail;
   float streak = 0.4 + 0.6 * fbm(dir * 7.0 + vec2(r * 5.0 - uProgress * 3.0, uSeed));
   float veins = pow(max(fbm(dir * 12.0 + vec2(uSeed * 3.1, r * 2.0)), 0.0), 6.0) * 14.0;

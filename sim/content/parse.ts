@@ -12,7 +12,7 @@ import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, sk
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
-import { byId, choice, choiceList, colour, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
+import { byId, choice, choiceList, colour, ContentError, each, fields, flag, fraction, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
   AffixDef,
@@ -43,6 +43,7 @@ import type {
   SkillBinding,
   SkillCombo,
   SkillDef,
+  SkillVfx,
   StatBlock,
   SurfaceDef,
   TalkDef,
@@ -51,7 +52,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, STAT_IDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -127,10 +128,19 @@ function skillCombo(value: unknown, where: string): SkillCombo | null {
   return { window: positive(source, 'window', where), steps };
 }
 
+function skillVfx(value: unknown, where: string): SkillVfx {
+  const source: Fields = fields(value, where);
+  return {
+    style: choice(source, 'style', VFX_STYLES, where),
+    color: text(source, 'color', where),
+    cue: source['cue'] === undefined ? 'none' : choice(source, 'cue', VFX_CUES, where),
+    light: source['light'] === undefined ? 1 : nonNegative(source, 'light', where),
+  };
+}
+
 function skill(value: unknown, where: string): SkillDef {
   const source: Fields = fields(value, where);
   const damage: Fields = fields(source['damage'], `${where}.damage`);
-  const vfx: Fields = fields(source['vfx'], `${where}.vfx`);
   return {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
@@ -149,7 +159,7 @@ function skill(value: unknown, where: string): SkillDef {
     stagger: numeric(source, 'stagger', where),
     shake: numeric(source, 'shake', where),
     hitStop: numeric(source, 'hitStop', where),
-    vfx: { style: choice(vfx, 'style', VFX_STYLES, `${where}.vfx`), color: text(vfx, 'color', `${where}.vfx`) },
+    vfx: skillVfx(source['vfx'], `${where}.vfx`),
     combo: skillCombo(source['combo'], `${where}.combo`),
     ...skillMotion(source, where),
     ...skillPress(source, where),

@@ -629,3 +629,10 @@ void test('a HUD rule must say when the HUD comes back, so a typo cannot hide it
   assert.throws((): unknown => parseContent(voidWith({ hud: { untill: [] } })), (error: unknown): boolean => problem(error, 'needs an until list'));
   assert.doesNotThrow((): unknown => parseContent(voidWith({ hud: { until: [] } })));
 });
+
+void test('a skill effect with no cue or light gets no cue and full light, and a negative light is rejected', (): void => {
+  const plain: Content = parseContent({ ...shipped, skills: [...skills, extraSkill] });
+  assert.deepEqual(must(plain.skills.get('ember_lash'), 'skill').vfx, { style: 'slash', color: '#ff8844', cue: 'none', light: 1 });
+  const blinding: RawContent = { ...shipped, skills: [{ ...extraSkill, vfx: { style: 'slash', color: '#ff8844', light: -1 } }] };
+  assert.throws((): Content => parseContent(blinding), (error: unknown): boolean => problem(error, 'skills[0].vfx'));
+});

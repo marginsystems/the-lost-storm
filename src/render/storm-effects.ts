@@ -2,6 +2,7 @@ import type { Group } from 'three';
 import { Color, PointLight, Vector3 } from 'three';
 import type { BufferGeometry, Mesh, MeshBasicMaterial, Object3D } from 'three';
 import type { AreaDelivery } from '../../sim/content/shape-types.ts';
+import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { areaOf } from '../../sim/world/areas.ts';
 import { chargeOf } from '../../sim/world/skills.ts';
@@ -45,7 +46,7 @@ export interface StormKit {
   readonly add: (object: Mesh | Group, duration: number, tick: (t: number) => void, owner: number | null) => void;
   readonly spray: (x: number, y: number, z: number, color: Color, count: number, overrides: Partial<BurstOptions>) => void;
   readonly ring: (x: number, z: number, radius: number, color: Color, duration: number) => void;
-  readonly shockwave: (x: number, z: number, radius: number, color: Color) => void;
+  readonly burst: (x: number, z: number, radius: number, skill: SkillDef) => void;
   readonly flashLight: (x: number, y: number, z: number, color: Color, intensity: number) => void;
   readonly colorOf: (hex: string) => Color;
   readonly addObject: (object: Object3D) => void;
@@ -159,7 +160,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
     if (view === undefined) return;
     const { delivery, color } = view;
     if (delivery.pull > 0) {
-      kit.shockwave(area.pos.x, area.pos.z, delivery.radius * 0.55, color);
+      kit.burst(area.pos.x, area.pos.z, delivery.radius * 0.55, area.skill);
       kit.spray(area.pos.x, 0.3, area.pos.z, color, 30, { speed: { min: 3, max: 9 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.3, max: 0.7 }, size: { min: 0.8, max: 1.8 }, drag: 3 });
       if (hits > 0) kit.trauma(area.skill.shake);
       return;
@@ -194,8 +195,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
       return;
     }
     const delivery = event.skill.delivery;
-    kit.shockwave(event.pos.x, event.pos.z, delivery.type === 'nova' ? delivery.radius : 2, color);
-    kit.flashLight(event.pos.x, 2, event.pos.z, color, 90);
+    kit.burst(event.pos.x, event.pos.z, delivery.type === 'nova' ? delivery.radius : 2, event.skill);
     kit.trauma(event.skill.shake);
   };
 
@@ -207,7 +207,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
 
   const onRelease = (event: Extract<WorldEvent, { type: 'skill_impact' }>): void => {
     const delivery = event.skill.delivery;
-    if (event.skill.press?.type === 'charge' && delivery.type === 'arc') kit.shockwave(event.origin.x + event.direction.x * 1.2, event.origin.z + event.direction.z * 1.2, delivery.reach * STORM_EFFECTS.releaseWave, kit.colorOf(event.skill.vfx.color));
+    if (event.skill.press?.type === 'charge' && delivery.type === 'arc') kit.burst(event.origin.x + event.direction.x * 1.2, event.origin.z + event.direction.z * 1.2, delivery.reach * STORM_EFFECTS.releaseWave, event.skill);
   };
 
   const motes = (view: AreaView, area: AreaState, dt: number): void => {

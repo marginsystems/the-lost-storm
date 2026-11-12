@@ -13,6 +13,9 @@ import type { StormEffects } from './storm-effects.ts';
 import { createStormEffects } from './storm-effects.ts';
 import type { BurstOptions, ParticleSystem } from './particles.ts';
 import { renderBudget } from '../mobile/quality.ts';
+import type { AbilityCues } from './ability-cues.ts';
+import { createAbilityCues, novaLook } from './ability-cues.ts';
+import type { NovaLook } from './ability-cues.ts';
 
 export const EFFECTS = {
   levelLight: 45,
@@ -21,13 +24,18 @@ export const EFFECTS = {
   slashTime: 0.2,
   slashHeight: 1.15,
   slashTilt: 0.22,
+  slashGlow: 0.8,
   ringTime: 0.42,
-  waveTime: 0.55,
+  waveTime: 0.42,
   waveSize: 1.2,
   waveTrail: 0.36,
   ringTrail: 0.5,
   markerSize: 0.95,
-  scorchTime: 1.6,
+  scorchTime: 0.9,
+  waveGlow: 0.95,
+  waveLight: 46,
+  boltLight: 40,
+  skyBoltDim: 0.55,
   scorchSize: 0.8,
   boltTime: 0.22,
   arcTime: 0.26,
@@ -179,7 +187,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   };
 
   const slash = (x: number, z: number, direction: { readonly x: number; readonly z: number }, reach: number, arcDegrees: number, color: Color, mirrored: boolean): void => {
-    const { mesh, material } = slashMesh(arcDegrees * DEGREES_TO_RADIANS, reach, glow(color, 1.6));
+    const { mesh, material } = slashMesh(arcDegrees * DEGREES_TO_RADIANS, reach, glow(color, EFFECTS.slashGlow));
     mesh.position.set(x, EFFECTS.slashHeight, z);
     mesh.rotation.set(0, facingOf(direction), mirrored ? -EFFECTS.slashTilt : EFFECTS.slashTilt, 'YXZ');
     mesh.scale.x = mirrored ? -1 : 1;
@@ -208,8 +216,9 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     );
   };
 
-  const shockwave = (x: number, z: number, radius: number, color: Color): void => {
-    const wave = shockwaveMesh(glow(color, 1.25), EFFECTS.waveTrail, 1);
+  const shockwave = (x: number, z: number, radius: number, color: Color, light: number): void => {
+    cues.shade(x, z, radius * 1.1);
+    const wave = shockwaveMesh(glow(color, EFFECTS.waveGlow), EFFECTS.waveTrail, 1);
     wave.mesh.position.set(x, 0.13, z);
     wave.mesh.scale.setScalar(radius * EFFECTS.waveSize);
     add(
@@ -231,7 +240,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       },
       null,
     );
-    const bolt = skyBolt(color);
+    const bolt = skyBolt(color.clone().multiplyScalar(EFFECTS.skyBoltDim * Math.min(1, light + 0.3)));
     bolt.position.set(x, 0, z);
     add(
       bolt,
@@ -257,11 +266,21 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       const dirX: number = Math.sin(angle);
       const dirZ: number = Math.cos(angle);
       spray(x + dirX * 0.7, 0.25, z + dirZ * 0.7, color, 2, { dirX, dirZ, spread: 0.35, speed: { min: radius * 2.4, max: radius * 4.2 }, lift: { min: 0.3, max: 2.6 }, life: { min: 0.22, max: 0.5 }, size: { min: 0.22, max: 0.5 }, drag: 4.5 });
-      spray(x + dirX * 1.1, 0.2, z + dirZ * 1.1, DUST, 2, { dirX, dirZ, spread: 0.6, speed: { min: radius * 0.9, max: radius * 1.7 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.5, max: 1.1 }, size: { min: 1.6, max: 3.2 }, gravity: 0.4, drag: 2.6, jitter: 0.6 });
+      spray(x + dirX * 1.1, 0.2, z + dirZ * 1.1, DUST, 2, { dirX, dirZ, spread: 0.6, speed: { min: radius * 0.9, max: radius * 1.7 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.35, max: 0.7 }, size: { min: 1.6, max: 3.2 }, gravity: 0.4, drag: 2.6, jitter: 0.6 });
     }
     spray(x, 0.4, z, color, 20, { speed: { min: 1, max: 5 }, lift: { min: 4, max: 12 }, life: { min: 0.25, max: 0.6 }, size: { min: 0.16, max: 0.36 } });
-    flashLight(x, 3, z, color, 70);
-    onFlash(0.5);
+    flashLight(x, 3, z, color, EFFECTS.waveLight * light);
+  };
+
+  const cues: AbilityCues = createAbilityCues({ add, spray, flashLight, ring });
+
+  const burst = (x: number, z: number, radius: number, skill: SkillDef): void => {
+    const color: Color = colorOf(skill.vfx.color);
+    const look: NovaLook = novaLook(skill.vfx.style);
+    if (look === 'shockwave') shockwave(x, z, radius, color, skill.vfx.light);
+    else if (look === 'whirl') cues.whirl(x, z, radius, color);
+    else if (look === 'gust') cues.gust(x, z, radius, color, skill.vfx.light);
+    else ring(x, z, radius, color, EFFECTS.ringTime);
   };
 
   const telegraph = (owner: number, x: number, z: number, direction: { readonly x: number; readonly z: number }, skill: SkillDef, duration: number): void => {
@@ -295,7 +314,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       const roller: { readonly pos: { readonly x: number; readonly z: number } } | undefined = event.actorId === world.player.id ? world.player : world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
       if (roller !== undefined) dashTrails.start(event.actorId, roller.pos, event.direction, colorOf(event.skill.vfx.color));
     }
-    if (event.actorId === world.player.id) return;
+    if (event.actorId === world.player.id) {
+      if (event.skill.press?.type !== 'charge') cues.windup(event.actorId, world.player.pos, event.direction, event.skill, event.windup, colorOf(event.skill.vfx.color));
+      return;
+    }
     const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
     if (monster === undefined) return;
     const type: Delivery['type'] = event.skill.delivery.type;
@@ -314,7 +336,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         slash(event.origin.x, event.origin.z, event.direction, delivery.reach, delivery.arcDegrees, color, event.team === 'monster');
         break;
       case 'nova':
-        shockwave(event.origin.x, event.origin.z, delivery.radius, color);
+        burst(event.origin.x, event.origin.z, delivery.radius, event.skill);
         break;
       case 'mark':
       case 'field':
@@ -322,7 +344,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         break;
       case 'projectile':
         spray(event.origin.x + event.direction.x, EFFECTS.projectileHeight, event.origin.z + event.direction.z, color, 10, { dirX: event.direction.x, dirZ: event.direction.z, spread: 0.9, speed: { min: 3, max: 9 }, lift: { min: -1, max: 2 }, gravity: 2 });
-        if (event.team === 'player') flashLight(event.origin.x, 2, event.origin.z, color, 40);
+        if (event.team === 'player') flashLight(event.origin.x, 2, event.origin.z, color, EFFECTS.boltLight * event.skill.vfx.light);
         break;
       case 'dash':
         if (event.skill.vfx.style === 'roll') dashTrails.land(event.origin, event.direction, color);
@@ -397,7 +419,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       return;
     }
     cancelOwned(hazard.id);
-    shockwave(hazard.pos.x, hazard.pos.z, hazard.radius, color);
+    burst(hazard.pos.x, hazard.pos.z, hazard.radius, hazard.skill);
     if (event.hits > 0) camera.addTrauma(hazard.skill.shake);
   };
 
@@ -423,7 +445,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     return view;
   };
 
-  const storm: StormEffects = createStormEffects({ add, spray, ring, shockwave, flashLight, colorOf, addObject: (object: Object3D): void => void scene.add(object), trauma: (amount: number): void => camera.addTrauma(amount) });
+  const storm: StormEffects = createStormEffects({ add, spray, ring, burst, flashLight, colorOf, addObject: (object: Object3D): void => void scene.add(object), trauma: (amount: number): void => camera.addTrauma(amount) });
 
   return {
     get hurt(): number {
