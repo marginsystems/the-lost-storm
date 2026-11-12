@@ -51,3 +51,23 @@ void test('the graphics notice takes its own clicks only while it is shown', ():
   assert.match(rule('.ctx-notice.on'), /pointer-events: auto/);
   assert.match(rule('.ctx-notice.failed .ctx-reload'), /pointer-events: auto/);
 });
+
+function sourceFiles(folder: string): string[] {
+  return readdirSync(folder, { recursive: true, encoding: 'utf8' })
+    .filter((name: string): boolean => /\.(ts|css)$/.test(name) && !name.endsWith('.test.ts'))
+    .map((name: string): string => `${folder}/${name}`);
+}
+
+void test('the graphics notice is hidden and out of the layout unless the context is lost', (): void => {
+  const css: string = readFileSync(`${HUD_FOLDER}/context-notice.css`, 'utf8');
+  const base: string = css.slice(css.indexOf('.ctx-notice {'), css.indexOf('}', css.indexOf('.ctx-notice {')));
+  assert.match(base, /position: absolute/);
+  assert.match(base, /visibility: hidden/);
+  assert.match(base, /opacity: 0/);
+  const shows: string[] = [...css.matchAll(/([^{}]+)\{[^}]*visibility: visible/g)].map((match: RegExpMatchArray): string => (match[1] ?? '').trim());
+  assert.deepEqual(shows, ['.ctx-notice.on']);
+  const notices: string[] = sourceFiles('src').filter((file: string): boolean => readFileSync(file, 'utf8').includes('Restoring graphics'));
+  assert.deepEqual(notices, [`${HUD_FOLDER}/context-notice.ts`]);
+  const watches: string = readFileSync(`${HUD_FOLDER}/context-notice.ts`, 'utf8');
+  assert.match(watches, /classList\.toggle\('on', contextNoticeShown\(phase\)\)/);
+});
