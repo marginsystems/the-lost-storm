@@ -1,9 +1,11 @@
 import type { ZoneEncounter, ZoneVoid } from '../content/story-types.ts';
-import type { ZoneDef, ZoneExit } from '../content/types.ts';
-import { generateItem } from '../items.ts';
+import type { ItemSlot, ZoneDef, ZoneExit } from '../content/types.ts';
+import { generateItem, slotOf } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, dot, length, normalize } from '../math.ts';
 import { allHold } from './conditions.ts';
+import { equipFromInventory } from './character.ts';
+import { walkOnFinds } from './finds.ts';
 import { removeGround } from './ground.ts';
 import { setFlags } from './story.ts';
 import type { EncounterState, GroundItem, ItemInstance, World, WorldEvent } from './types.ts';
@@ -95,12 +97,21 @@ function stepOne(world: World, rules: ZoneVoid, met: ZoneEncounter, travelled: n
   if (wandered(world, rules, met, state, state.pos, travelled, dt)) place(world, met, state);
 }
 
+function wieldFound(world: World, item: ItemInstance): void {
+  const slot: ItemSlot | null = slotOf(world.content, item);
+  const index: number = world.player.inventory.findIndex((held: ItemInstance | null): boolean => held?.uid === item.uid);
+  if (slot === null || index < 0 || world.player.equipped[slot] !== null) return;
+  equipFromInventory(world, index);
+}
+
 function takeFinds(world: World, rules: ZoneVoid, events: readonly WorldEvent[]): void {
   for (const event of events) {
     if (event.type !== 'pickup' || event.ground.find === null) continue;
     const found: string = event.ground.find;
     const met: ZoneEncounter | undefined = rules.encounters.find((entry: ZoneEncounter): boolean => entry.id === found);
-    if (met !== undefined && met.find.type === 'item') setFlags(world, met.find.sets);
+    if (met === undefined || met.find.type !== 'item') continue;
+    setFlags(world, met.find.sets);
+    if (met.find.equip && event.ground.content.kind === 'item') wieldFound(world, event.ground.content.item);
   }
 }
 
@@ -118,6 +129,7 @@ function enterLight(world: World, rules: ZoneVoid): void {
 }
 
 export function stepEncounters(world: World, rules: ZoneVoid, travelled: number, dt: number): void {
+  walkOnFinds(world);
   takeFinds(world, rules, world.events);
   for (const met of rules.encounters) stepOne(world, rules, met, travelled, dt);
   if (world.player.alive) enterLight(world, rules);

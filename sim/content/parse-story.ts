@@ -1,5 +1,5 @@
 import type { Fields } from './read.ts';
-import { byId, choice, ContentError, each, fields, nonNegative, positive, text, textList } from './read.ts';
+import { byId, choice, ContentError, each, fields, flag, nonNegative, positive, text, textList } from './read.ts';
 import { conditions } from './parse-conditions.ts';
 import type { BookDef, EncounterFind, PageDef, StoryFlags, ZoneEncounter } from './story-types.ts';
 
@@ -15,7 +15,7 @@ function find(value: unknown, where: string): EncounterFind {
   const source: Fields = fields(value, where);
   const type: EncounterFind['type'] = choice(source, 'type', ['item', 'exit'] as const, where);
   if (type === 'exit') return { type, exit: text(source, 'exit', where) };
-  return { type, item: text(source, 'item', where), sets: storyFlags(source['sets'], `${where}.sets`) };
+  return { type, item: text(source, 'item', where), sets: storyFlags(source['sets'], `${where}.sets`), equip: source['equip'] === undefined ? false : flag(source, 'equip', where) };
 }
 
 export function encounter(value: unknown, where: string): ZoneEncounter {

@@ -33,7 +33,7 @@ import type {
   ZoneWaypoint,
 } from './types.ts';
 import { service } from './parse-trade.ts';
-import type { VoidShore, ZoneHud, ZoneVoid, ZoneWake } from './story-types.ts';
+import type { VoidFinds, VoidShore, ZoneHud, ZoneVoid, ZoneWake } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
@@ -139,6 +139,11 @@ function voidShore(value: unknown, where: string): VoidShore | null {
   return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where), ambience: zoneAmbience(source['ambience'], `${where}.ambience`) };
 }
 
+function voidFinds(value: unknown, where: string): VoidFinds {
+  const source: Fields = fields(value, where);
+  return { reach: positive(source, 'reach', where), aim: positive(source, 'aim', where) };
+}
+
 function zoneVoid(value: unknown, where: string): ZoneVoid {
   const source: Fields = fields(value, where);
   const wander: Fields = fields(source['wander'], `${where}.wander`);
@@ -150,6 +155,8 @@ function zoneVoid(value: unknown, where: string): ZoneVoid {
     sets: storyFlags(source['sets'], `${where}.sets`),
     encounters: [...byId(each(source['encounters'] ?? [], `${where}.encounters`, encounter), `${where}.encounters`).values()],
     shore: voidShore(source['shore'], `${where}.shore`),
+    finds: voidFinds(source['finds'], `${where}.finds`),
+    emptyHanded: source['emptyHanded'] === undefined ? false : flag(source, 'emptyHanded', where),
   };
 }
 

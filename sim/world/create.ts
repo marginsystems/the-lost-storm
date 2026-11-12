@@ -168,7 +168,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   };
   placePlayer(world);
   beginVoid(world);
-  if (save === null) giveStartingItems(world);
+  if (save === null && world.zone.void?.emptyHanded !== true) giveStartingItems(world);
   for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   startQuests(world);
   spawnNpcs(world);

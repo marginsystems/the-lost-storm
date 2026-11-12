@@ -4,12 +4,12 @@ import { forceStrike } from './moments.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { findPath } from '../nav/path.ts';
-import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
+import { allocateNode, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
 import { respawnPlayer } from './death.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc } from './dialogue.ts';
-import { removeGround } from './ground.ts';
+import { aimedFind, pickUp } from './finds.ts';
 import { useFlask } from './flasks.ts';
 import { followPath, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
@@ -105,9 +105,16 @@ function useSkill(world: World, command: SkillCommand): void {
 function act(world: World, command: Command): void {
   const player: PlayerState = world.player;
   switch (command.type) {
-    case 'move':
-      startMove(world, command.dest, command.held);
+    case 'move': {
+      const aimed: GroundItem | null = aimedFind(world, command.dest);
+      if (aimed === null) {
+        startMove(world, command.dest, command.held);
+        return;
+      }
+      player.intent = { type: 'pickup', groundId: aimed.id };
+      setDestination(world, aimed.pos);
       return;
+    }
     case 'stop':
       player.intent = { type: 'idle' };
       player.path = [];
@@ -253,19 +260,6 @@ export function handleCommand(world: World, command: Command): void {
       act(world, command);
       return;
   }
-}
-
-function pickUp(world: World, ground: GroundItem): void {
-  const player: PlayerState = world.player;
-  if (ground.content.kind === 'gold') {
-    player.gold += ground.content.amount;
-  } else if (!addToInventory(player, ground.content.item)) {
-    world.events.push({ type: 'notice', reason: 'inventory_full' });
-    return;
-  }
-  removeGround(world, ground.id);
-  world.events.push({ type: 'pickup', ground });
-  if (ground.content.kind === 'item') world.events.push({ type: 'character_changed' });
 }
 
 function pursue(world: World, dest: Vec2, dt: number): void {
