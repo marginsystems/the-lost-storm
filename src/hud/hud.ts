@@ -1,6 +1,10 @@
 import type { ItemSlot } from '../../sim/content/types.ts';
 import { slotOf } from '../../sim/items.ts';
 import type { ItemInstance, WorldEvent } from '../../sim/world/types.ts';
+import { HINT_PANELS, loadHints } from '../../sim/content/hints.ts';
+import { createBrowserStore } from '../storage.ts';
+import { createHintStore } from '../hints-store.ts';
+import type { HintPanel } from '../../sim/content/hints.ts';
 import { onWaypoint } from '../../sim/world/waypoints.ts';
 import atlasCss from './atlas.css?inline';
 import { createBanners } from './banners.ts';
@@ -28,6 +32,10 @@ import type { Globes } from './globes.ts';
 import hudCss from './hud.css?inline';
 import type { Hud, HudApi, HudPanel } from './hud-api.ts';
 import { itemTooltip } from './item-tooltip.ts';
+import type { ResolvedKeys } from '../settings/bindings.ts';
+import { createHints } from './hints.ts';
+import type { Hints } from './hints.ts';
+import hintsCss from './hints.css?inline';
 import { createInventoryPanel } from './inventory-panel.ts';
 import { createMapPanel } from './map-panel.ts';
 import type { MapPanel } from './map-panel.ts';
@@ -54,7 +62,7 @@ const PANEL_IDS: readonly HudPanel[] = ['inventory', 'character', 'tree', 'map']
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${hintsCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -97,6 +105,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     map,
   };
   let mapWanted: boolean = false;
+
+  const hints: Hints = createHints(bottom, loadHints(api.world.content), createHintStore(createBrowserStore()), (): ResolvedKeys => api.settings.keys(), (): ReadonlySet<HintPanel> => new Set<HintPanel>(HINT_PANELS.filter((id: HintPanel): boolean => open[id])));
+  const pending: WorldEvent[] = [];
 
   const grid: HTMLDivElement = el('div', 'hud-grid', null);
   root.insertBefore(grid, root.firstChild);
@@ -160,6 +171,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       surge.update(world);
       death.update(world);
       quests.update(world);
+      hints.update(world, pending.splice(0, pending.length));
       bossBar.update(world);
       buttons.tree?.setBadge(world.player.skillPoints);
       if (open.map) map.update(dt);
@@ -172,6 +184,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       }
     },
     handleEvents(events: readonly WorldEvent[]): void {
+      pending.push(...events);
       for (const event of events) {
         switch (event.type) {
           case 'damage':

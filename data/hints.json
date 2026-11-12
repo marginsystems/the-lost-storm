@@ -1,0 +1,16 @@
+{
+  "hints": [
+    {"id": "move", "trigger": {"type": "game_started"}, "text": "Click the ground to move", "done": {"type": "moved", "distance": 3}, "after": [], "forNewPlayers": true},
+    {"id": "talk", "trigger": {"type": "objective_person"}, "text": "Click the marked person to talk", "done": {"type": "talked"}, "after": [], "forNewPlayers": true},
+    {"id": "map", "trigger": {"type": "waypoint_near", "range": 14}, "text": "Press {map} to open the map", "done": {"type": "panel", "panel": "map"}, "after": [], "forNewPlayers": true},
+    {"id": "exit", "trigger": {"type": "objective_exit"}, "text": "Walk into the marked exit to leave", "done": {"type": "zone_changed"}, "after": [], "forNewPlayers": true},
+    {"id": "attack", "trigger": {"type": "monster_near", "range": 16}, "text": "Click a monster to attack", "done": {"type": "skills_used", "slots": [0]}, "after": [], "forNewPlayers": true},
+    {"id": "skills", "trigger": {"type": "monster_near", "range": 16}, "text": "Cast with {slot_2} and {slot_3}", "done": {"type": "skills_used", "slots": [1, 2]}, "after": ["attack"], "forNewPlayers": true},
+    {"id": "loot", "trigger": {"type": "item_near", "range": 12}, "text": "Click an item to pick it up", "done": {"type": "picked_up"}, "after": [], "forNewPlayers": true},
+    {"id": "inventory", "trigger": {"type": "game_started"}, "text": "Press {inventory} to open your inventory", "done": {"type": "panel", "panel": "inventory"}, "after": ["loot"], "forNewPlayers": true},
+    {"id": "equip", "trigger": {"type": "game_started"}, "text": "Click an item in your bag to equip it", "done": {"type": "equipped"}, "after": ["inventory"], "forNewPlayers": true},
+    {"id": "skill_point", "trigger": {"type": "skill_point"}, "text": "Press {tree} to spend your skill point", "done": {"type": "allocated"}, "after": [], "forNewPlayers": false},
+    {"id": "low_life", "trigger": {"type": "low_life", "fraction": 0.35, "carrying": "flask"}, "text": "Life is low: press {flask}", "done": {"type": "life_above", "fraction": 0.6}, "after": [], "forNewPlayers": false},
+    {"id": "death", "trigger": {"type": "player_dead"}, "text": "You died: you will return to your last checkpoint", "done": {"type": "alive"}, "after": [], "forNewPlayers": false}
+  ]
+}

@@ -1,0 +1,25 @@
+.objective-arrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.objective-arrow.visible {
+  opacity: 0.85;
+}
+
+.objective-arrow-head {
+  position: absolute;
+  left: -14px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  background: var(--ember);
+  clip-path: polygon(0 0, 100% 50%, 0 100%, 25% 50%);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
+}
