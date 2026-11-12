@@ -6,6 +6,9 @@ import type { AccountService } from './account.ts';
 import { createApi } from './api.ts';
 import type { Backend } from './backend.ts';
 import { createConsoleLogger } from './console-log.ts';
+import { createLedgerApi } from './ledger-api.ts';
+import { createMinter } from './minter.ts';
+import type { Minter } from './minter.ts';
 import { createBackend, readServerUrl } from './create.ts';
 import type { ServerUrl } from './create.ts';
 
@@ -24,4 +27,16 @@ export function createBrowserAccount(content: Content, rawUrl: string | undefine
   if (server.kind !== 'ok') return null;
   const api = createApi(server.url, (url: string, init: RequestInit): Promise<Response> => fetch(url, init), content);
   return createAccountService({ serverUrl: server.url, api, store: createBrowserStore() });
+}
+
+export function createBrowserMinter(content: Content, rawUrl: string | undefined): Minter | null {
+  const server: ServerUrl = readServerUrl(rawUrl);
+  if (server.kind !== 'ok') return null;
+  return createMinter({
+    serverUrl: server.url,
+    store: createBrowserStore(),
+    api: createLedgerApi(server.url, (url: string, init: RequestInit): Promise<Response> => fetch(url, init), content),
+    clock: (): number => Date.now(),
+    timers: createBrowserTimers(),
+  });
 }

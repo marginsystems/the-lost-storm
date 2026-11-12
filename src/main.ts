@@ -19,6 +19,7 @@ import type { SaveData } from '../sim/save.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { insideAwakeMoment } from '../sim/world/moments.ts';
+import type { LootTicket } from '../sim/world/ledger.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { MeasureRecorder } from './measure-recorder.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../sim/world/types.ts';
@@ -35,7 +36,8 @@ import type { AccountService } from './backend/account.ts';
 import type { ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
 import type { Backend, BackendState } from './backend/backend.ts';
-import { createBrowserAccount, createBrowserBackend } from './backend/browser.ts';
+import { createBrowserAccount, createBrowserBackend, createBrowserMinter } from './backend/browser.ts';
+import type { Minter } from './backend/minter.ts';
 import { createHud } from './hud/hud.ts';
 import { findLabel } from './hud/pickup-notes.ts';
 import type { Hud } from './hud/hud-api.ts';
@@ -199,6 +201,8 @@ async function start(): Promise<void> {
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
   const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
   const loadingSave: Promise<SaveData | null> = backend.load();
+  const minter: Minter | null = createBrowserMinter(content, import.meta.env.VITE_SERVER_URL);
+  const fetchingTickets: Promise<readonly LootTicket[]> = minter === null ? Promise.resolve([]) : minter.prefetch();
   const lobby: Lobby | null = createBrowserLobby(import.meta.env.VITE_SERVER_URL, true);
   title.dataset['lobby'] = lobby === null ? 'off' : 'on';
   const gameSettings: SettingsStore = createGameSettings(createBrowserStore(), skillSlots(content), shippedKeys(content, lobby !== null));
@@ -224,7 +228,8 @@ async function start(): Promise<void> {
   lobby?.feed.subscribe((board: Leaderboard | null): void => {
     if (board !== null) heroName = spokenName(board);
   });
-  const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
+  const tickets: readonly LootTicket[] = await fetchingTickets;
+  const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true, tickets });
   const propDresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressedProp(content, dress, material, propDressing(world.zone));
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
   const loot: LootView = await createLootView(loader, stage.scene, library);
@@ -328,6 +333,7 @@ async function start(): Promise<void> {
     world,
     send,
     itemImage,
+    unverified: (item: ItemInstance): boolean => minter?.unverified(item) ?? false,
     audio: controls,
     settings: gameSettings,
     openSettings: (section: SettingsSection): void => pauseMenu.open(section),
@@ -540,6 +546,7 @@ async function start(): Promise<void> {
       }
     }
     recorder?.record(events);
+    if (minter?.pump(world) === true) dirty = true;
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
