@@ -19,6 +19,8 @@ import { foldPiles, stackLabels } from './label-stack.ts';
 import type { LabelGlide } from './label-glide.ts';
 import { createGlide, glideToward } from './label-glide.ts';
 import type { Folding, RankedBox, ScreenRect } from './label-stack.ts';
+import type { TagSize, TagSizes } from './tag-sizes.ts';
+import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
 
 export const OVERLAYS = {
   numberLife: 1,
@@ -163,10 +165,13 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   let leaving: LeavingLabel[] = [];
   const point: Vector2 = new Vector2();
   const anchor: Vector2 = new Vector2();
+  const tagSizes: TagSizes<HTMLElement> = createTagSizes(browserTagMeasure());
   const keepClear = (element: HTMLElement): void => {
     const tag: Element | null = element.firstElementChild;
-    if (!(tag instanceof HTMLElement) || tag.offsetWidth === 0) return;
-    const spot: TagPlace = placeTag(point.x, point.y, tag.offsetWidth, tag.offsetHeight, view, hudRects);
+    if (!(tag instanceof HTMLElement)) return;
+    const size: TagSize = tagSizes.size(tag);
+    if (size.width === 0) return;
+    const spot: TagPlace = placeTag(point.x, point.y, size.width, size.height, view, hudRects);
     point.set(spot.x, spot.y);
   };
   const labelLayer: HTMLDivElement = document.createElement('div');

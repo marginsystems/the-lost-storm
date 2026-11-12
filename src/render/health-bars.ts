@@ -1,6 +1,8 @@
 import { Vector2 } from 'three';
 import type { MonsterState, World } from '../../sim/world/types.ts';
 import type { IsoCamera } from './iso-camera.ts';
+import type { TagSize, TagSizes } from './tag-sizes.ts';
+import { browserTagMeasure, clientBox, createTagSizes } from './tag-sizes.ts';
 
 export const HEALTH_BARS = {
   width: 38,
@@ -73,6 +75,7 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
   const canvas: HTMLCanvasElement = document.createElement('canvas');
   canvas.className = 'health-canvas';
   root.prepend(canvas);
+  const rootSize: TagSizes<HTMLElement> = createTagSizes(browserTagMeasure(clientBox));
   const context: CanvasRenderingContext2D | null = canvas.getContext('2d');
   const states: Map<number, BarState> = new Map<number, BarState>();
   const point: Vector2 = new Vector2();
@@ -82,9 +85,10 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
 
   const fit = (): void => {
     const nextScale: number = window.devicePixelRatio;
-    if (root.clientWidth === width && root.clientHeight === height && nextScale === scale) return;
-    width = root.clientWidth;
-    height = root.clientHeight;
+    const box: TagSize = rootSize.size(root);
+    if (box.width === width && box.height === height && nextScale === scale) return;
+    width = box.width;
+    height = box.height;
     scale = nextScale;
     canvas.width = Math.round(width * scale);
     canvas.height = Math.round(height * scale);
