@@ -75,7 +75,7 @@ export function createNameEcho(deps: NameEchoDeps): NameEcho {
   const ask = (moment: Moment): void => {
     if (voice !== null || asking || asked.has(moment)) return;
     asked.add(moment);
-    if (deps.nameOf() === null) deps.refreshName();
+    deps.refreshName();
     asking = true;
     const load = async (): Promise<void> => {
       voice = await deps.fetchVoice();

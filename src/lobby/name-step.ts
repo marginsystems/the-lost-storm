@@ -29,7 +29,7 @@ export interface NameStepParts {
   readonly begin: () => void;
 }
 
-type StepState = 'closed' | 'open' | 'busy';
+type StepState = 'closed' | 'open' | 'busy' | 'done';
 
 async function sendKept(lobby: Lobby, kept: string): Promise<void> {
   const outcome: RenameOutcome = await lobby.service.rename(kept);
@@ -71,7 +71,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
     step.toggleAttribute('aria-busy', next === 'busy');
     enter.disabled = next === 'busy';
     choose.disabled = next === 'busy';
-    const reachable: number = next === 'closed' ? -1 : 0;
+    const reachable: number = next === 'open' || next === 'busy' ? 0 : -1;
     field.tabIndex = reachable;
     choose.tabIndex = reachable;
   };
@@ -89,12 +89,17 @@ export function createNameStep(parts: NameStepParts): NameStep {
     return false;
   };
 
+  const finish = (): boolean => {
+    setState('done');
+    return true;
+  };
+
   const name = async (raw: string): Promise<boolean> => {
     const wanted: string = tidyName(raw);
     const local: NameProblem | null = nameProblem(wanted);
     if (local !== null) return refuse(local);
     keepHeroName(parts.store, wanted);
-    if (lobby === null || !lobby.service.hasAccount()) return true;
+    if (lobby === null || !lobby.service.hasAccount()) return finish();
     setState('busy');
     const outcome: RenameOutcome = await lobby.service.rename(wanted);
     if (outcome.kind === 'invalid') {
@@ -106,7 +111,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
       return refuse('limited');
     }
     if (outcome.kind === 'named') await lobby.feed.refresh(true);
-    return true;
+    return finish();
   };
 
   const chooseForMe = async (tries: number): Promise<boolean> => {
@@ -125,7 +130,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
   let sentKept: boolean = false;
   lobby?.feed.subscribe((board: Leaderboard | null): void => {
     const kept: string | null = pendingRename(readHeroName(parts.store), board, lobby.service.hasAccount());
-    if (kept === null || sentKept || state !== 'closed') return;
+    if (kept === null || sentKept || state === 'open' || state === 'busy') return;
     sentKept = true;
     void sendKept(lobby, kept);
   });
@@ -150,6 +155,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
   return {
     async enter(): Promise<boolean> {
       if (state === 'busy') return false;
+      if (state === 'done') return true;
       if (state === 'closed') {
         if (!needed()) return true;
         setState('open');
