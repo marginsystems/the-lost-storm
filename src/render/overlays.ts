@@ -11,6 +11,8 @@ import type { TargetBar } from '../hud/target-bar.ts';
 import { createHealthBars } from './health-bars.ts';
 import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
+import { createLootTip } from './loot-tip.ts';
+import type { LootTip, TipCheck } from './loot-tip.ts';
 import { anchorInView } from './label-edge.ts';
 import type { ViewSize } from './label-edge.ts';
 import { clearOfRects, stackLabels } from './label-stack.ts';
@@ -52,7 +54,6 @@ interface LootLabel {
   readonly element: HTMLDivElement;
   readonly ground: GroundItem;
   leaving: number;
-  hovered: boolean;
   rank: number;
   width: number;
   height: number;
@@ -133,6 +134,13 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   let people: NpcLabel[] = [];
   let peopleOf: readonly NpcState[] | null = null;
   let peopleZone: ZoneDef | null = null;
+  let seenZone: ZoneDef | null = null;
+  let tipZone: ZoneDef | null = null;
+  const pointer: Vector2 = new Vector2(-1, -1);
+  window.addEventListener('pointermove', (event: PointerEvent): void => {
+    pointer.set(event.clientX, event.clientY);
+  });
+  const tip: LootTip = createLootTip((): void => hooks.onLootLeave());
   let leaving: LeavingLabel[] = [];
   const point: Vector2 = new Vector2();
   const keepClear = (element: HTMLElement): void => {
@@ -184,18 +192,19 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     const item: ItemInstance = ground.content.item;
     element.addEventListener('pointerenter', (event: PointerEvent): void => {
       const label: LootLabel | undefined = labels.get(ground.id);
-      if (label !== undefined) label.hovered = true;
-      hooks.onLootEnter(item, event.clientX, event.clientY);
+      pointer.set(event.clientX, event.clientY);
+      tipZone = seenZone;
+      tip.enter(ground.id, label === undefined || label.leaving >= 0, (): void => hooks.onLootEnter(item, event.clientX, event.clientY));
     });
-    element.addEventListener('pointermove', (event: PointerEvent): void => hooks.onLootMove(event.clientX, event.clientY));
+    element.addEventListener('pointermove', (event: PointerEvent): void => {
+      if (tip.owner() === ground.id) hooks.onLootMove(event.clientX, event.clientY);
+    });
     element.addEventListener('pointerleave', (): void => {
-      const label: LootLabel | undefined = labels.get(ground.id);
-      if (label !== undefined) label.hovered = false;
-      hooks.onLootLeave();
+      tip.leave(ground.id);
     });
     labelLayer.append(element);
     const rank: number = world.content.rarities.findIndex((rarity): boolean => rarity.id === item.rarity);
-    labels.set(ground.id, { element, ground, leaving: -1, hovered: false, rank, width: OVERLAYS.labelWidth, height: OVERLAYS.labelHeight, shown: true });
+    labels.set(ground.id, { element, ground, leaving: -1, rank, width: OVERLAYS.labelWidth, height: OVERLAYS.labelHeight, shown: true });
   };
 
   const showExits = (world: World): void => {
@@ -422,6 +431,17 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       healthBars.update(dt, world, (actorId: number): number => hooks.heightOf(actorId));
       targetBar.update(dt, world.monsters, hoveredId);
 
+      seenZone = world.zone;
+      tip.check((id: number): TipCheck => {
+        const label: LootLabel | undefined = labels.get(id);
+        const under: Element | null = document.elementFromPoint(pointer.x, pointer.y);
+        return {
+          present: label !== undefined && world.ground.includes(label.ground),
+          leaving: label === undefined || label.leaving >= 0,
+          sameZone: tipZone === world.zone,
+          underPointer: label !== undefined && under !== null && label.element.contains(under),
+        };
+      });
       for (const ground of world.ground) labelFor(world, ground);
       const boxes: LabelBox[] = [];
       for (const [id, label] of labels) {
@@ -435,7 +455,6 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         } else if (!world.ground.includes(label.ground)) {
           label.leaving = OVERLAYS.labelExit;
           label.element.classList.add('taken');
-          if (label.hovered) hooks.onLootLeave();
         }
         const near: boolean = Math.hypot(label.ground.pos.x - world.player.pos.x, label.ground.pos.z - world.player.pos.z) <= OVERLAYS.labelNear;
         const shown: boolean = showAll || near || label.rank >= OVERLAYS.labelShownRank;
