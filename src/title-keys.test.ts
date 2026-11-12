@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { CLASSIC_BAR } from '../test/support.ts';
 import { loadContent } from '../sim/content/content.ts';
 import type { Content, SkillBinding } from '../sim/content/types.ts';
 import type { Bar } from '../sim/skill-book.ts';
@@ -10,8 +11,9 @@ import { defaultKeys, shippedKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleKe
 import type { TitleNames } from './title-keys.ts';
 
 const content: Content = loadContent();
+const FILLERS: readonly (string | null)[] = [null, null, null, 'forkline', 'mist_step', null];
 const names: TitleNames = titleNames(content, defaultBar(content));
-const fullBar: Bar = content.player.skillBar.map((binding: SkillBinding): string | null => binding.skill);
+const fullBar: Bar = content.player.skillBar.map((_binding: SkillBinding, slot: number): string | null => CLASSIC_BAR[slot] ?? FILLERS[slot] ?? null);
 const fullNames: TitleNames = titleNames(content, fullBar);
 const flaskNames: readonly string[] = names.flasks;
 

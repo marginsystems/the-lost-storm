@@ -89,7 +89,7 @@ void test('skills without matching modifiers are returned untouched', (): void =
   const bar: (SkillDef | null)[] = resolveSkillBar(content, CLASSIC_BAR, []);
   assert.deepEqual(
     bar.map((skill: SkillDef | null): string | null => skill?.id ?? null),
-    content.player.skillBar.map((binding): string | null => binding.skill),
+    [...CLASSIC_BAR],
   );
 });
 
