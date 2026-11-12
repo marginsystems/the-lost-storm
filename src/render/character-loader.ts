@@ -87,7 +87,7 @@ export const CHARACTER = {
   glowBoost: 2.4,
   metalFrom: 0.5,
   matteRoughness: 0.86,
-  rimPower: 4,
+  rimPower: 6,
 } as const;
 
 export const WEAR_FADE = {
