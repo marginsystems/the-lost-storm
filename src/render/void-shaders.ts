@@ -26,6 +26,10 @@ float voidFbm(vec2 p) {
   }
   return total;
 }
+
+float voidDither(vec2 at) {
+  return fract(52.9829189 * fract(dot(at, vec2(0.06711056, 0.00583715)))) - 0.5;
+}
 `;
 
 export const GROUND_VERTEX: string = `
@@ -52,12 +56,9 @@ uniform float uFlash;
 uniform float uFlashReach;
 uniform float uRipple;
 uniform float uShadow;
-uniform sampler2D uField;
-uniform float uSpan;
-uniform float uFieldReach;
-uniform float uOpen;
-uniform vec2 uGroundClear;
-uniform vec2 uPocketShade;
+uniform float uDither;
+uniform vec2 uHaze;
+uniform vec3 uMist;
 uniform vec4 uShore;
 uniform vec3 uShoreLook;
 uniform vec3 uRock;
@@ -70,9 +71,6 @@ varying vec3 vWorld;
 ${NOISE}
 void main() {
   vec2 q = vWorld.xz - uShift;
-  vec2 fromCentre = abs(vWorld.xz - uHero);
-  float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
-  float pocket = max(texture2D(uField, q / uSpan).r * inside, 1.0 - smoothstep(uGroundClear.x, uGroundClear.y, distance(vWorld.xz, uHero))) * uOpen;
   float warp = voidFbm(q * 0.11);
   float ripple = sin(dot(q, vec2(0.83, 0.55)) * 2.4 + warp * 9.0) * 0.5 + 0.5;
   float fine = voidNoise(q * 1.7);
@@ -81,8 +79,6 @@ void main() {
   color *= 1.0 - uRipple * (ripple * 0.7 + fine * 0.3);
   vec2 toHero = vWorld.xz - uHero - vec2(-0.25, 0.1);
   color *= 1.0 - uShadow * exp(-dot(toHero, toHero) / 0.9);
-  color *= 1.0 - uPocketShade.x * clamp(pocket * (1.0 - pocket) * 4.0, 0.0, 1.0);
-  color *= mix(1.0 - uPocketShade.y, 1.0, smoothstep(0.15, 1.0, pocket));
   float ashore = dot(q - uShore.xy, uShore.zw) + (voidFbm(q * 0.09 + 3.0) - 0.5) * uShoreLook.z;
   float rock = uShoreLook.y * smoothstep(-2.0, 5.0, ashore);
   vec3 stone = mix(uRockShade, uRock, 0.55 + mottle * 0.45) * (0.82 + fine * 0.18 + ripple * 0.08);
@@ -93,8 +89,10 @@ void main() {
   color += uLightColor * uLight.z * uLift.z * exp(-dot(toFire, toFire) / (uLift.w * uLift.w));
   vec2 toFlash = vWorld.xz - uFlashPos;
   color += uFlashColor * uFlash * 0.18 * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
+  color = mix(color, uMist, smoothstep(uHaze.x, uHaze.y, distance(vWorld.xz, uHero)));
   gl_FragColor = vec4(color, 1.0);
   #include <fog_fragment>
+  gl_FragColor.rgb += voidDither(gl_FragCoord.xy) * uDither;
 }
 `;
 
@@ -114,6 +112,7 @@ uniform vec3 uDeep;
 uniform vec3 uFlashColor;
 uniform vec2 uShift;
 uniform vec3 uEyeFade;
+uniform vec2 uGraze;
 uniform vec2 uHero;
 uniform vec2 uNear;
 uniform vec2 uFlashPos;
@@ -142,7 +141,8 @@ uniform float uWall;
 uniform float uEddyRadius;
 uniform vec4 uEddies[VOID_EDDIES];
 uniform sampler2D uField;
-uniform float uOpen;
+uniform float uFieldSize;
+uniform float uDither;
 uniform vec3 uLight;
 uniform vec3 uLightColor;
 uniform vec4 uShore;
@@ -157,6 +157,22 @@ float figureDistance(vec2 p, vec2 feet, vec2 head) {
 }
 vec2 toGround(vec2 at, float height) {
   return at + (at - cameraPosition.xz) * height / max(cameraPosition.y - height, uEyeFade.z);
+}
+vec4 splineWeights(float t) {
+  float s = 1.0 - t;
+  return vec4(s * s * s, 4.0 + 3.0 * t * t * t - 6.0 * t * t, 4.0 + 3.0 * s * s * s - 6.0 * s * s, t * t * t) / 6.0;
+}
+float fieldAt(vec2 uv) {
+  vec2 cell = uv * uFieldSize - 0.5;
+  vec2 base = floor(cell);
+  vec2 f = cell - base;
+  vec4 wx = splineWeights(f.x);
+  vec4 wy = splineWeights(f.y);
+  vec2 g0 = vec2(wx.x + wx.y, wy.x + wy.y);
+  vec2 g1 = vec2(wx.z + wx.w, wy.z + wy.w);
+  vec2 h0 = (base - 0.5 + vec2(wx.y, wy.y) / g0) / uFieldSize;
+  vec2 h1 = (base + 1.5 + vec2(wx.w, wy.w) / g1) / uFieldSize;
+  return g0.y * (g0.x * texture2D(uField, h0).r + g1.x * texture2D(uField, vec2(h1.x, h0.y)).r) + g1.y * (g0.x * texture2D(uField, vec2(h0.x, h1.y)).r + g1.x * texture2D(uField, h1).r);
 }
 vec2 voidSwirl(vec2 q) {
   for (int index = 0; index < VOID_EDDIES; index++) {
@@ -189,7 +205,7 @@ void main() {
   float figure = 1.0 - smoothstep(uFigure.y * reachOut, uFigure.z * reachOut, figureDistance(p, uHero, head));
   vec2 fromCentre = abs(p - uHero);
   float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
-  float cleared = max(texture2D(uField, (swirled + warp * uWarp) / uSpan).r * inside * uOpen, figure);
+  float cleared = max(fieldAt((swirled + warp * uWarp) / uSpan) * inside, figure);
   float fray = voidFbm(swirled * uFray + roll * 2.2 + uSeed * 3.1);
   float still = 1.0 - uMotion;
   float need = uNeed + (mix(body, fray, 0.55) - 0.5) * uTear * mix(1.0, uRest.x, still);
@@ -224,8 +240,9 @@ void main() {
   color = mix(color, uDeep * 0.75, uLight.z * 0.72 * (1.0 - near * 0.55) * (1.0 - pull * 0.8));
   vec2 nearLight = vWorld.xz - uLight.xy;
   color = mix(color, uLightColor, uLight.z * 0.85 * exp(-dot(nearLight, nearLight) / 90.0));
-  float eye = smoothstep(uEyeFade.x, uEyeFade.y, distance(vWorld, cameraPosition)) * smoothstep(0.0, uEyeFade.z, cameraPosition.y - vWorld.y);
-  gl_FragColor = vec4(color, clamp(density * uOpacity * eye, 0.0, 1.0));
+  float eye = smoothstep(uEyeFade.x, uEyeFade.y, distance(vWorld, cameraPosition)) * smoothstep(0.0, uEyeFade.z, cameraPosition.y - vWorld.y) * smoothstep(uGraze.x, uGraze.y, abs(normalize(vWorld - cameraPosition).y));
+  float grain = voidDither(gl_FragCoord.xy + uSeed * 7.0) * uDither;
+  gl_FragColor = vec4(color + grain, clamp(density * uOpacity * eye + grain, 0.0, 1.0));
 }
 `;
 

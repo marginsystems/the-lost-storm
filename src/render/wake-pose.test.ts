@@ -9,11 +9,11 @@ const PLAN: ZoneWake = { still: 2, stir: 1.2, rise: 3.8, front: 0.18, settle: 3,
 const STEP: number = 1 / 60;
 
 function at(elapsed: number): WakePose {
-  return wakePose(wakeStage(PLAN, elapsed));
+  return wakePose(wakeStage(PLAN, elapsed), elapsed);
 }
 
 void test('he lies flat and still until the stir, and is fully up with his head forward when control comes', (): void => {
-  assert.deepEqual(at(0), { share: 0, standing: false, turn: 0, curl: 0, dip: 0 });
+  assert.deepEqual(at(0), { share: 0, standing: false, turn: 0, curl: 0, dip: 0, breath: 0 });
   assert.equal(at(PLAN.still - STEP).share, 0);
   const end: WakePose = at(wakeLength(PLAN));
   assert.equal(end.share, 1);
@@ -67,4 +67,12 @@ void test('knots ease between values and hold the ends', (): void => {
   assert.equal(throughKnots(knots, 0.5), 1);
   assert.equal(throughKnots(knots, 2), 2);
   assert.equal(throughKnots([], 0.5), 0);
+});
+
+void test('he breathes while he lies there, and the breath is gone by the time he is halfway up', (): void => {
+  const lying: number[] = Array.from({ length: 240 }, (_: unknown, index: number): number => at(index * STEP).breath);
+  assert.ok(Math.max(...lying) > WAKE_POSE.breath.amount * 0.9);
+  assert.ok(Math.min(...lying) < -WAKE_POSE.breath.amount * 0.9);
+  assert.equal(Math.abs(at(PLAN.still + PLAN.stir + PLAN.rise / 2).breath), 0);
+  for (let elapsed: number = STEP; elapsed < wakeLength(PLAN); elapsed += STEP) assert.ok(Math.abs(at(elapsed).breath - at(elapsed - STEP).breath) < 0.01);
 });

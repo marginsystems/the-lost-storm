@@ -20,6 +20,7 @@ export const WAKE_POSE = {
   neckShare: 0.4,
   dip: 0.18,
   dipShare: 0.4,
+  breath: { amount: 0.06, period: 3.6 },
 } as const;
 
 export interface WakePose {
@@ -28,6 +29,7 @@ export interface WakePose {
   readonly turn: number;
   readonly curl: number;
   readonly dip: number;
+  readonly breath: number;
 }
 
 interface Knot {
@@ -65,9 +67,9 @@ export function stirShare(stir: number): number {
   return rest * ease(stir) + (reach - rest) * swell * (1 - ease(stir)) * ease(stir * pulses);
 }
 
-export function wakePose(stage: WakeStage): WakePose {
+export function wakePose(stage: WakeStage, elapsed: number): WakePose {
   const lifted: number = stirShare(stage.stir);
   const share: number = stage.rise > 0 ? lifted + (1 - lifted) * throughKnots(RISE, stage.rise) : lifted;
   const curl: number = WAKE_POSE.stir.curl * Math.sin(clamp01(stage.stir) * Math.PI) * (1 - stage.rise);
-  return { share, standing: stage.rise >= 1, turn: throughKnots(LOOK, stage.settle), curl, dip: WAKE_POSE.dip * Math.sin(Math.PI * clamp01(stage.settle / WAKE_POSE.dipShare)) };
+  return { share, standing: stage.rise >= 1, turn: throughKnots(LOOK, stage.settle), curl, dip: WAKE_POSE.dip * Math.sin(Math.PI * clamp01(stage.settle / WAKE_POSE.dipShare)), breath: WAKE_POSE.breath.amount * Math.sin((elapsed / WAKE_POSE.breath.period) * Math.PI * 2) * (1 - ease(stage.rise * 2)) };
 }

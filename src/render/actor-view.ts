@@ -37,6 +37,7 @@ export const ACTOR = {
   standFade: 0.45,
   head: 'DEF-head',
   neck: 'DEF-neck',
+  chest: ['DEF-spine.002', 'DEF-spine.003'],
   fingers: ['DEF-f_index.01.R', 'DEF-f_index.02.R', 'DEF-thumb.01.R', 'DEF-f_index.01.L', 'DEF-f_index.02.L'],
 } as const;
 
@@ -137,6 +138,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   const side: Vector3 = new Vector3();
   const head: Object3D | undefined = rig.root.getObjectByName(ACTOR.head);
   const neck: Object3D | undefined = rig.root.getObjectByName(ACTOR.neck);
+  const chest: Object3D[] = ACTOR.chest.flatMap((name: string): Object3D[] => {
+    const bone: Object3D | undefined = rig.root.getObjectByName(name);
+    return bone === undefined ? [] : [bone];
+  });
   const fingers: Object3D[] = ACTOR.fingers.flatMap((name: string): Object3D[] => {
     const bone: Object3D | undefined = rig.root.getObjectByName(name);
     return bone === undefined ? [] : [bone];
@@ -146,10 +151,9 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     const turn: number = (pose.turn * WAKE_POSE.turnDegrees * Math.PI) / 180;
     if (neck !== undefined) turnInWorld(neck, UP, turn * WAKE_POSE.neckShare, spare);
     if (head !== undefined) turnInWorld(head, UP, turn * (1 - WAKE_POSE.neckShare), spare);
-    if (head !== undefined && pose.dip > 0) {
-      side.copy(SIDE).applyAxisAngle(UP, rig.root.rotation.y);
-      turnInWorld(head, side, pose.dip, spare);
-    }
+    side.copy(SIDE).applyAxisAngle(UP, rig.root.rotation.y);
+    if (head !== undefined && pose.dip > 0) turnInWorld(head, side, pose.dip, spare);
+    if (pose.breath !== 0) for (const bone of chest) turnInWorld(bone, side, pose.breath / chest.length, spare);
     if (pose.curl > 0) for (const finger of fingers) finger.rotateX(pose.curl / fingers.length);
   };
   let flash: number = 0;

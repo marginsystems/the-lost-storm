@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Vec2 } from '../../sim/math.ts';
-import { clearing, createMistDrive, createMistField, gustAim, MIST, sampleField, stepDrive, stepField, stepMomentum, wantedDir } from './mist-field.ts';
+import { clearing, createMistDrive, createMistField, gustAim, MIST, sampleField, stepDrive, stepField, stepMomentum, wakePocket, wantedDir } from './mist-field.ts';
 import type { MistDrive, MistField } from './mist-field.ts';
 
 const DT: number = 1 / 60;
@@ -24,7 +24,7 @@ function walk(state: Walk, dir: Vec2 | null, seconds: number, finds: readonly Ve
       state.hero.x += dir.x * SPEED * DT;
       state.hero.z += dir.z * SPEED * DT;
     }
-    stepDrive(state.drive, { hero: state.hero, speed: dir === null ? 0 : SPEED, maxSpeed: SPEED, moveDir: dir, look: null, finds, dt: DT, random: (): number => 0.5 });
+    stepDrive(state.drive, { hero: state.hero, speed: dir === null ? 0 : SPEED, maxSpeed: SPEED, moveDir: dir, look: null, finds, wake: null, dt: DT, random: (): number => 0.5 });
     stepField(state.field, state.drive, state.hero, DT);
   }
 }
@@ -160,10 +160,10 @@ void test('walking spins off eddies behind him, a few at a time', (): void => {
 });
 
 void test('the clearing is a small pocket at rest and a channel ahead in motion', (): void => {
-  const rest = { dir: EAST, momentum: 0, gust: null };
+  const rest = { dir: EAST, momentum: 0, gust: null, wake: null };
   assert.ok(clearing(rest, 0, 0) > 0.99);
   assert.equal(clearing(rest, 6, 0), 0);
-  const moving = { dir: EAST, momentum: 1, gust: null };
+  const moving = { dir: EAST, momentum: 1, gust: null, wake: null };
   assert.ok(clearing(moving, 8, 0) > 0.9);
   assert.equal(clearing(moving, -8, 0), 0);
   assert.equal(clearing(moving, 0, 8), 0);
@@ -183,4 +183,28 @@ void test('a full set of eddies lets each one fade out before a new one spins up
 void test('a gust lane runs its whole length inside the field', (): void => {
   const half: number = MIST.span / 2;
   assert.ok(MIST.gustReach <= half * MIST.edgeStart);
+});
+
+void test('the wake pocket starts tight on him, swells out past the play pocket and settles into it', (): void => {
+  assert.equal(wakePocket(0), MIST.wake.lying);
+  assert.ok(Math.abs(wakePocket(1) - MIST.pocketStill) < 1e-9);
+  const peak: number = wakePocket(MIST.wake.swell);
+  assert.ok(peak > MIST.pocketMoving);
+  let before: number = wakePocket(0);
+  for (let front: number = 0.002; front <= 1.0001; front += 0.002) {
+    const now: number = wakePocket(front);
+    assert.ok(Math.abs(now - before) < 0.06, `the pocket jumps at ${front.toFixed(2)}`);
+    before = now;
+  }
+});
+
+void test('the wake front clears the field around him and hands over to the play pocket with no step', (): void => {
+  const lying = { dir: EAST, momentum: 0, gust: null, wake: 0 };
+  assert.equal(clearing(lying, 2, 0), 0);
+  const swelling = { dir: EAST, momentum: 0, gust: null, wake: MIST.wake.swell };
+  assert.ok(clearing(swelling, 2, 0) > 0.9);
+  assert.ok(clearing(swelling, 4, 0) > clearing(lying, 1, 0));
+  const settled = { dir: EAST, momentum: 0, gust: null, wake: 1 };
+  const play = { dir: EAST, momentum: 0, gust: null, wake: null };
+  for (let away: number = 0; away < 8; away += 0.25) assert.ok(Math.abs(clearing(settled, away, 0) - clearing(play, away, 0)) < 1e-9);
 });

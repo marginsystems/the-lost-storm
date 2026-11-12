@@ -217,7 +217,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     sync(dt: number, current: World, hoveredId: number | null): void {
       const floor: number = current.zone.floorHeight;
       holdEquipped(content, playerView.rig, current.player.equipped);
-      playerView.wake(current.wake === null ? null : wakePose(wakeStage(current.wake.plan, current.wake.elapsed)));
+      playerView.wake(current.wake === null ? null : wakePose(wakeStage(current.wake.plan, current.wake.elapsed), current.wake.elapsed));
       playerView.sync(dt, poseOf(current.player), { rise: 1, floor, turnRate: ACTOR.turnRate });
       for (const monster of current.monsters) {
         const entry: MonsterEntry | null = entryFor(current, monster);

@@ -3,10 +3,10 @@ import { wakeLength } from '../../sim/world/wake.ts';
 import type { CameraShot, ShotPose } from '../render/iso-camera.ts';
 
 export const WAKE_SHOT = {
-  start: { distance: 8.8, pitchDegrees: 23, yawDegrees: 82, lookHeight: 0.3, fitWidth: 3.6 },
-  push: 0.7,
+  start: { distance: 5.0, pitchDegrees: 14, yawDegrees: 82, lookHeight: 0.35, fitWidth: 3.2 },
+  push: 0.35,
   pullAt: 0.25,
-  pullPower: 1.6,
+  pullPower: 1.8,
   sway: { amount: 0.045, lift: 0.025, rates: [0.21, 0.34, 0.57], phases: [0.4, 2.1, 4.3], liftPhase: 1.05 },
   soft: 1,
 } as const;

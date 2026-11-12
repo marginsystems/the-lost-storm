@@ -75,7 +75,7 @@
   "void": {
     "span": 48,
     "wake": {
-      "still": 2.0,
+      "still": 1.2,
       "stir": 1.2,
       "rise": 3.8,
       "front": 0.18,
