@@ -167,3 +167,31 @@ void test('a leap never lands through a wall raised across its path', (): void =
   for (let step: number = 0; step < Math.round((pounce.windup + 0.05) / DT); step += 1) stepWorld(world, [], DT);
   assert.ok(ghoul.pos.x > wallX, `it stayed on its own side of the wall (${ghoul.pos.x.toFixed(2)} against ${wallX.toFixed(2)})`);
 });
+
+function impacts(events: readonly WorldEvent[]): number {
+  return events.filter((event: WorldEvent): boolean => event.type === 'skill_impact' && event.actorId === 1).length;
+}
+
+function impactsOfSwing(world: World): number {
+  let total: number = 0;
+  total += impacts(stepWorld(world, [swing], DT));
+  for (let step: number = 0; step < 600 && world.player.action !== null; step += 1) total += impacts(stepWorld(world, [], DT));
+  return total;
+}
+
+void test('a repeat chance of one resolves the impact twice, none resolves it once', (): void => {
+  const world: World = fresh();
+  assert.equal(impactsOfSwing(world), 1);
+  wait(world, 2);
+  world.player.stats.skillRepeat = 1;
+  assert.equal(impactsOfSwing(world), 2);
+});
+
+void test('the dodge roll cooldown follows the dodge cooldown stat and nothing else', (): void => {
+  const world: World = fresh();
+  const slot: number = content.player.skillBar.findIndex((entry): boolean => entry.skill === 'dodge_roll');
+  const roll: SkillDef = must(content.skills.get('dodge_roll'), 'dodge_roll');
+  world.player.stats.dodgeCooldown = -0.5;
+  stepWorld(world, [{ type: 'skill', slot, aim: { x: 30, z: 30 }, targetId: null }], DT);
+  assert.ok(Math.abs(must(world.player.cooldowns['dodge_roll'], 'cooldown') - roll.cooldown * 0.5) < 0.05);
+});

@@ -36,7 +36,9 @@ export interface CharacterNeeds {
 export function heldGear(content: Content, equipped: Equipment | null): string[] {
   const weapon = equipped?.weapon ?? null;
   const held: string | null = weapon === null ? content.player.unarmedVisual : (content.itemBases.get(weapon.base)?.visual ?? content.player.unarmedVisual);
-  return held === null ? [...content.player.gear] : [...content.player.gear, held];
+  const offhand = equipped?.offhand ?? null;
+  const shield: string | null = offhand === null ? null : (content.itemBases.get(offhand.base)?.visual ?? null);
+  return [...content.player.gear, ...(held === null ? [] : [held]), ...(shield === null ? [] : [shield])];
 }
 
 export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Equipment | null): CharacterNeeds {

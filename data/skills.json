@@ -1,6 +1,7 @@
 [
   {
     "id": "cleave",
+    "tags": ["melee"],
     "name": "Cleave",
     "description": "Sweep your weapon in a wide arc, striking every enemy in front of you. Keep swinging: the third blow is a leaping overhead strike that hits harder and throws enemies back.",
     "icon": "cleave",
@@ -28,6 +29,7 @@
   },
   {
     "id": "thunderclap",
+    "tags": ["thunder"],
     "name": "Thunderclap",
     "description": "Slam the ground and release a ring of thunder that hurls back everything around you.",
     "icon": "thunderclap",
@@ -48,6 +50,7 @@
   },
   {
     "id": "storm_bolt",
+    "tags": ["lightning"],
     "name": "Storm Bolt",
     "description": "Hurl a bolt of caged lightning that passes through the first enemy it strikes.",
     "icon": "storm_bolt",
@@ -408,6 +411,7 @@
   },
   {
     "id": "dodge_roll",
+    "tags": ["dodge"],
     "name": "Dodge Roll",
     "description": "Throw yourself into a roll toward the cursor. You cannot be hit for the first moments of it, you pass between enemies, and it cuts short the follow-through of an attack.",
     "icon": "dodge_roll",

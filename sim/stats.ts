@@ -1,7 +1,10 @@
-import type { Content, SkillDef, SkillMod, SkillTreeNodeDef, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { Content, ItemBaseDef, SkillDef, SkillMod, SkillTreeNodeDef, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS, STAT_IDS } from './content/types.ts';
 import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
+
+const TAG_DAMAGE: Readonly<Record<string, StatId>> = { lightning: 'lightningDamage', thunder: 'thunderDamage', melee: 'meleeDamage' };
+
 
 export const ARMOUR_HALF_POINT: number = 100;
 export const MIN_ATTACK_SPEED: number = 0.2;
@@ -46,10 +49,31 @@ function scaledDelivery(delivery: SkillDef['delivery'], area: number, mods: read
   return delivery;
 }
 
-export function resolveSkill(content: Content, skill: SkillDef, allocated: readonly string[]): SkillDef {
-  const mods: SkillMod[] = allocatedNodes(content, allocated)
-    .flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods)
-    .filter((mod: SkillMod): boolean => mod.skill === skill.id);
+export function equippedSkillMods(content: Content, equipped: Equipment | null): SkillMod[] {
+  const mods: SkillMod[] = [];
+  if (equipped === null) return mods;
+  for (const slot of ITEM_SLOTS) {
+    const item = equipped[slot];
+    const base: ItemBaseDef | undefined = item === null ? undefined : content.itemBases.get(item.base);
+    if (base !== undefined) mods.push(...base.skillMods);
+  }
+  return mods;
+}
+
+export function tagDamage(stats: StatBlock, skill: SkillDef): number {
+  let bonus: number = 0;
+  for (const tag of skill.tags) {
+    const stat: StatId | undefined = TAG_DAMAGE[tag];
+    if (stat !== undefined) bonus += stats[stat];
+  }
+  return bonus;
+}
+
+export function resolveSkill(content: Content, skill: SkillDef, allocated: readonly string[], extra: readonly SkillMod[] = []): SkillDef {
+  const mods: SkillMod[] = [
+    ...allocatedNodes(content, allocated).flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods),
+    ...extra,
+  ].filter((mod: SkillMod): boolean => mod.skill === skill.id);
   if (mods.length === 0) return skill;
   const area: number = 1 + sumSkillMod(mods, 'areaPercent');
   const delivery: SkillDef['delivery'] = scaledDelivery(skill.delivery, area, mods);
@@ -64,11 +88,12 @@ export function resolveSkill(content: Content, skill: SkillDef, allocated: reado
   };
 }
 
-export function resolveSkillBar(content: Content, allocated: readonly string[]): SkillDef[] {
+export function resolveSkillBar(content: Content, allocated: readonly string[], equipped: Equipment | null = null): SkillDef[] {
   const skills: SkillDef[] = [];
+  const extra: SkillMod[] = equippedSkillMods(content, equipped);
   for (const binding of content.player.skillBar) {
     const skill: SkillDef | undefined = content.skills.get(binding.skill);
-    if (skill !== undefined) skills.push(resolveSkill(content, skill, allocated));
+    if (skill !== undefined) skills.push(resolveSkill(content, skill, allocated, extra));
   }
   return skills;
 }
@@ -93,7 +118,7 @@ export function skillCycle(stats: StatBlock, skill: SkillDef): number {
 }
 
 export function damagePerSecond(stats: StatBlock, skill: SkillDef): number {
-  const weapon: number = ((stats.damageMin + stats.damageMax) / 2) * (1 + stats.damagePercent) * skill.damage.weaponPercent;
+  const weapon: number = ((stats.damageMin + stats.damageMax) / 2) * (1 + stats.damagePercent + tagDamage(stats, skill)) * skill.damage.weaponPercent;
   const flat: number = (skill.damage.flatMin + skill.damage.flatMax) / 2;
   const crit: number = 1 + Math.min(1, stats.critChance) * (stats.critMultiplier - 1);
   return ((weapon + flat) * crit) / skillCycle(stats, skill);

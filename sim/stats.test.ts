@@ -6,7 +6,7 @@ import type { Content, SkillDef, StatBlock } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
-import { applyMods, armourReduction, averageHit, computeStats, damagePerSecond, resolveSkill, resolveSkillBar } from './stats.ts';
+import { applyMods, armourReduction, averageHit, computeStats, damagePerSecond, resolveSkill, resolveSkillBar, tagDamage } from './stats.ts';
 import type { Equipment, ItemInstance } from './world/types.ts';
 
 const content: Content = loadContent();
@@ -127,4 +127,32 @@ void test('every equipment slot adds its item to the stats', (): void => {
     const without: StatBlock = computeStats(content, 1, { ...dressed, [slot]: null }, []);
     assert.notDeepEqual(without, after, slot);
   }
+});
+
+function unique(base: string): ItemInstance {
+  return must(generateItem(content, createRng(1), 1, 20, base, null), base);
+}
+
+void test('a unique with skill mods changes the skill bar while worn', (): void => {
+  const worn: Equipment = { ...bare, weapon: unique('long_count') };
+  const bolt: SkillDef = must(resolveSkillBar(content, [], worn).find((skill: SkillDef): boolean => skill.id === 'storm_bolt'), 'bolt');
+  const plain: SkillDef = must(resolveSkillBar(content, [], bare).find((skill: SkillDef): boolean => skill.id === 'storm_bolt'), 'plain bolt');
+  assert.equal(bolt.delivery.type === 'projectile' ? bolt.delivery.count : 0, (plain.delivery.type === 'projectile' ? plain.delivery.count : 0) + 2);
+  assert.ok(bolt.damage.weaponPercent < plain.damage.weaponPercent);
+});
+
+void test('skill damage bonuses apply only to skills carrying the tag', (): void => {
+  const stats: StatBlock = { ...computeStats(content, 1, bare, []), lightningDamage: 0.5, thunderDamage: 0.2, meleeDamage: 0.1 };
+  assert.equal(tagDamage(stats, skillOf('storm_bolt')), 0.5);
+  assert.equal(tagDamage(stats, skillOf('thunderclap')), 0.2);
+  assert.equal(tagDamage(stats, skillOf('cleave')), 0.1);
+  assert.equal(tagDamage(stats, skillOf('dodge_roll')), 0);
+  const plain: number = damagePerSecond(stats, skillOf('storm_bolt'));
+  assert.ok(plain > damagePerSecond({ ...stats, lightningDamage: 0 }, skillOf('storm_bolt')));
+});
+
+void test('worn uniques add their stat lines to the stats', (): void => {
+  const stats: StatBlock = computeStats(content, 1, { ...bare, feet: unique('short_road') }, []);
+  assert.equal(stats.dodgeCooldown, -0.3);
+  assert.ok(stats.moveSpeed > content.player.baseStats.moveSpeed * 1.19);
 });

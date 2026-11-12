@@ -14,7 +14,16 @@
     "critMultiplier": 1.6,
     "moveSpeed": 7.6,
     "armour": 0,
-    "goldFind": 0
+    "goldFind": 0,
+    "itemFind": 0,
+    "lightningDamage": 0,
+    "thunderDamage": 0,
+    "meleeDamage": 0,
+    "flaskCharges": 0,
+    "dodgeCooldown": 0,
+    "lifeOnKill": 0,
+    "manaOnKill": 0,
+    "skillRepeat": 0
   },
   "perLevel": [
     {

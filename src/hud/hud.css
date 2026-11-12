@@ -645,6 +645,16 @@
   color: #8fb8ff;
 }
 
+.tip-line.skill {
+  color: #8fb8ff;
+}
+
+.tip-line.flavour {
+  margin-top: 4px;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
 .tip-line.cost {
   color: #8fd0ff;
 }

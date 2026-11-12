@@ -1,277 +1,70 @@
 [
-  {
-    "id": "dirty_shirt",
-    "model": "models/wear/wool_tunic.glb",
-    "region": "chest",
-    "tint": "#9c927c",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "dirty_trousers",
-    "model": "models/wear/wool_trousers.glb",
-    "region": "legs",
-    "tint": "#8f8676",
-    "hides": [
-      "legs"
-    ]
-  },
-  {
-    "id": "rag_shirt",
-    "model": "models/wear/wool_tunic.glb",
-    "region": "chest",
-    "tint": "#6f6a5c",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "rag_trousers",
-    "model": "models/wear/wool_trousers.glb",
-    "region": "legs",
-    "tint": "#77726a",
-    "hides": [
-      "legs"
-    ]
-  },
-  {
-    "id": "linen_shirt",
-    "model": "models/wear/wool_tunic.glb",
-    "region": "chest",
-    "tint": "#c9c0aa",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "wool_trousers",
-    "model": "models/wear/wool_trousers.glb",
-    "region": "legs",
-    "tint": "#b0a898",
-    "hides": [
-      "legs"
-    ]
-  },
-  {
-    "id": "worn_boots",
-    "model": "models/wear/hide_boots.glb",
-    "region": "feet",
-    "tint": "#ffffff",
-    "hides": [
-      "feet"
-    ]
-  },
-  {
-    "id": "leather_hood",
-    "model": "models/wear/monk_hood.glb",
-    "region": "head",
-    "tint": "#8a6648",
-    "hides": []
-  },
-  {
-    "id": "leather_vest",
-    "model": "models/wear/leather_jerkin.glb",
-    "region": "chest",
-    "tint": "#9a7452",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "leather_bracers",
-    "model": "models/wear/long_gloves.glb",
-    "region": "hands",
-    "tint": "#7a583e",
-    "hides": [
-      "hands"
-    ]
-  },
-  {
-    "id": "leather_leggings",
-    "model": "models/wear/viking_breeches.glb",
-    "region": "legs",
-    "tint": "#8a745e",
-    "hides": [
-      "legs"
-    ]
-  },
-  {
-    "id": "leather_boots",
-    "model": "models/wear/tall_boots.glb",
-    "region": "feet",
-    "tint": "#ffffff",
-    "hides": [
-      "feet"
-    ]
-  },
-  {
-    "id": "sackcloth_robe",
-    "model": "models/wear/monk_robe.glb",
-    "region": "chest",
-    "tint": "#ffffff",
-    "hides": [
-      "torso",
-      "arms",
-      "legs"
-    ]
-  },
-  {
-    "id": "sackcloth_cowl",
-    "model": "models/wear/monk_hood.glb",
-    "region": "head",
-    "tint": "#ffffff",
-    "hides": []
-  },
-  {
-    "id": "hex_robe",
-    "model": "models/wear/monk_robe.glb",
-    "region": "chest",
-    "tint": "#b79be0",
-    "hides": [
-      "torso",
-      "arms",
-      "legs"
-    ]
-  },
-  {
-    "id": "hex_cowl",
-    "model": "models/wear/monk_hood.glb",
-    "region": "head",
-    "tint": "#b79be0",
-    "hides": []
-  },
-  {
-    "id": "ringmail_hauberk",
-    "model": "models/wear/mail_tunic.glb",
-    "region": "chest",
-    "tint": "#ffffff",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "squall_hauberk",
-    "model": "models/wear/mail_tunic.glb",
-    "region": "chest",
-    "tint": "#cfe0f2",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "rough_breeches",
-    "model": "models/wear/viking_breeches.glb",
-    "region": "legs",
-    "tint": "#ffffff",
-    "hides": [
-      "legs"
-    ]
-  },
-  {
-    "id": "tanned_gloves",
-    "model": "models/wear/leather_gloves.glb",
-    "region": "hands",
-    "tint": "#ffffff",
-    "hides": [
-      "hands"
-    ]
-  },
-  {
-    "id": "thrall_breeches",
-    "model": "models/wear/viking_breeches.glb",
-    "region": "legs",
-    "tint": "#8f8a80",
-    "hides": [
-      "legs"
-    ]
-  },
-  {
-    "id": "sodden_shirt",
-    "model": "models/wear/wool_tunic.glb",
-    "region": "chest",
-    "tint": "#4f5a52",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "sodden_trousers",
-    "model": "models/wear/wool_trousers.glb",
-    "region": "legs",
-    "tint": "#4a5048",
-    "hides": [
-      "legs"
-    ]
-  },
-  {
-    "id": "marsh_hood",
-    "model": "models/wear/monk_hood.glb",
-    "region": "head",
-    "tint": "#5a5a46",
-    "hides": []
-  },
-  {
-    "id": "marsh_jerkin",
-    "model": "models/wear/leather_jerkin.glb",
-    "region": "chest",
-    "tint": "#6a5a44",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "marsh_breeches",
-    "model": "models/wear/viking_breeches.glb",
-    "region": "legs",
-    "tint": "#5e5446",
-    "hides": [
-      "legs"
-    ]
-  },
-  {
-    "id": "chanter_robe",
-    "model": "models/wear/monk_robe.glb",
-    "region": "chest",
-    "tint": "#5d767a",
-    "hides": [
-      "torso",
-      "arms",
-      "legs"
-    ]
-  },
-  {
-    "id": "chanter_cowl",
-    "model": "models/wear/monk_hood.glb",
-    "region": "head",
-    "tint": "#4e676b",
-    "hides": []
-  },
-  {
-    "id": "bearer_mail",
-    "model": "models/wear/mail_tunic.glb",
-    "region": "chest",
-    "tint": "#9a9a94",
-    "hides": [
-      "torso",
-      "arms"
-    ]
-  },
-  {
-    "id": "bearer_gloves",
-    "model": "models/wear/long_gloves.glb",
-    "region": "hands",
-    "tint": "#4e3e30",
-    "hides": [
-      "hands"
-    ]
-  }
+  {"id": "dirty_shirt", "model": "models/wear/wool_tunic.glb", "region": "chest", "tint": "#9c927c", "hides": ["torso", "arms"]},
+  {"id": "dirty_trousers", "model": "models/wear/wool_trousers.glb", "region": "legs", "tint": "#8f8676", "hides": ["legs"]},
+  {"id": "rag_shirt", "model": "models/wear/wool_tunic.glb", "region": "chest", "tint": "#6f6a5c", "hides": ["torso", "arms"]},
+  {"id": "rag_trousers", "model": "models/wear/wool_trousers.glb", "region": "legs", "tint": "#77726a", "hides": ["legs"]},
+  {"id": "linen_shirt", "model": "models/wear/wool_tunic.glb", "region": "chest", "tint": "#c9c0aa", "hides": ["torso", "arms"]},
+  {"id": "wool_trousers", "model": "models/wear/wool_trousers.glb", "region": "legs", "tint": "#b0a898", "hides": ["legs"]},
+  {"id": "worn_boots", "model": "models/wear/hide_boots.glb", "region": "feet", "tint": "#ffffff", "hides": ["feet"]},
+  {"id": "leather_hood", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#8a6648", "hides": []},
+  {"id": "leather_vest", "model": "models/wear/leather_jerkin.glb", "region": "chest", "tint": "#9a7452", "hides": ["torso", "arms"]},
+  {"id": "leather_bracers", "model": "models/wear/long_gloves.glb", "region": "hands", "tint": "#7a583e", "hides": ["hands"]},
+  {"id": "leather_leggings", "model": "models/wear/viking_breeches.glb", "region": "legs", "tint": "#8a745e", "hides": ["legs"]},
+  {"id": "leather_boots", "model": "models/wear/tall_boots.glb", "region": "feet", "tint": "#ffffff", "hides": ["feet"]},
+  {"id": "sackcloth_robe", "model": "models/wear/monk_robe.glb", "region": "chest", "tint": "#ffffff", "hides": ["torso", "arms", "legs"]},
+  {"id": "sackcloth_cowl", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#ffffff", "hides": []},
+  {"id": "hex_robe", "model": "models/wear/monk_robe.glb", "region": "chest", "tint": "#b79be0", "hides": ["torso", "arms", "legs"]},
+  {"id": "hex_cowl", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#b79be0", "hides": []},
+  {"id": "ringmail_hauberk", "model": "models/wear/mail_tunic.glb", "region": "chest", "tint": "#ffffff", "hides": ["torso", "arms"]},
+  {"id": "squall_hauberk", "model": "models/wear/mail_tunic.glb", "region": "chest", "tint": "#cfe0f2", "hides": ["torso", "arms"]},
+  {"id": "rough_breeches", "model": "models/wear/viking_breeches.glb", "region": "legs", "tint": "#ffffff", "hides": ["legs"]},
+  {"id": "tanned_gloves", "model": "models/wear/leather_gloves.glb", "region": "hands", "tint": "#ffffff", "hides": ["hands"]},
+  {"id": "thrall_breeches", "model": "models/wear/viking_breeches.glb", "region": "legs", "tint": "#8f8a80", "hides": ["legs"]},
+  {"id": "sodden_shirt", "model": "models/wear/wool_tunic.glb", "region": "chest", "tint": "#4f5a52", "hides": ["torso", "arms"]},
+  {"id": "sodden_trousers", "model": "models/wear/wool_trousers.glb", "region": "legs", "tint": "#4a5048", "hides": ["legs"]},
+  {"id": "marsh_hood", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#5a5a46", "hides": []},
+  {"id": "marsh_jerkin", "model": "models/wear/leather_jerkin.glb", "region": "chest", "tint": "#6a5a44", "hides": ["torso", "arms"]},
+  {"id": "marsh_breeches", "model": "models/wear/viking_breeches.glb", "region": "legs", "tint": "#5e5446", "hides": ["legs"]},
+  {"id": "chanter_robe", "model": "models/wear/monk_robe.glb", "region": "chest", "tint": "#5d767a", "hides": ["torso", "arms", "legs"]},
+  {"id": "chanter_cowl", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#4e676b", "hides": []},
+  {"id": "bearer_mail", "model": "models/wear/mail_tunic.glb", "region": "chest", "tint": "#9a9a94", "hides": ["torso", "arms"]},
+  {"id": "bearer_gloves", "model": "models/wear/long_gloves.glb", "region": "hands", "tint": "#4e3e30", "hides": ["hands"]},
+  {"id": "ash_cowl_wear", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#8c8a86", "hides": []},
+  {"id": "veilcloth_cowl_wear", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#5f6a7c", "hides": []},
+  {"id": "hardened_hood_wear", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#54402e", "hides": []},
+  {"id": "stormhide_hood_wear", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#394658", "hides": []},
+  {"id": "chain_hood_wear", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#8d949c", "hides": []},
+  {"id": "iron_cowl_wear", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#5a5f66", "hides": []},
+  {"id": "scavenger_vest_wear", "model": "models/wear/leather_jerkin.glb", "region": "chest", "tint": "#7d6a54", "hides": ["torso", "arms"]},
+  {"id": "hunters_jerkin_wear", "model": "models/wear/leather_jerkin.glb", "region": "chest", "tint": "#4f3b2a", "hides": ["torso", "arms"]},
+  {"id": "stormhide_jerkin_wear", "model": "models/wear/leather_jerkin.glb", "region": "chest", "tint": "#35435a", "hides": ["torso", "arms"]},
+  {"id": "mourning_robe_wear", "model": "models/wear/monk_robe.glb", "region": "chest", "tint": "#3b3a44", "hides": ["torso", "arms", "legs"]},
+  {"id": "stormweave_robe_wear", "model": "models/wear/monk_robe.glb", "region": "chest", "tint": "#5a6f96", "hides": ["torso", "arms", "legs"]},
+  {"id": "chain_hauberk_wear", "model": "models/wear/mail_tunic.glb", "region": "chest", "tint": "#9ea4ac", "hides": ["torso", "arms"]},
+  {"id": "grey_mail_wear", "model": "models/wear/mail_tunic.glb", "region": "chest", "tint": "#6e747c", "hides": ["torso", "arms"]},
+  {"id": "bastion_plate_wear", "model": "models/wear/mail_tunic.glb", "region": "chest", "tint": "#8f98a4", "hides": ["torso", "arms"]},
+  {"id": "deep_plate_wear", "model": "models/wear/mail_tunic.glb", "region": "chest", "tint": "#4c525c", "hides": ["torso", "arms"]},
+  {"id": "ash_trousers_wear", "model": "models/wear/wool_trousers.glb", "region": "legs", "tint": "#85817a", "hides": ["legs"]},
+  {"id": "vigil_trousers_wear", "model": "models/wear/wool_trousers.glb", "region": "legs", "tint": "#4c4a56", "hides": ["legs"]},
+  {"id": "ranger_leggings_wear", "model": "models/wear/viking_breeches.glb", "region": "legs", "tint": "#5a4636", "hides": ["legs"]},
+  {"id": "stormhide_leggings_wear", "model": "models/wear/viking_breeches.glb", "region": "legs", "tint": "#3d4a5e", "hides": ["legs"]},
+  {"id": "chain_chausses_wear", "model": "models/wear/viking_breeches.glb", "region": "legs", "tint": "#98a0a8", "hides": ["legs"]},
+  {"id": "heavy_chausses_wear", "model": "models/wear/viking_breeches.glb", "region": "legs", "tint": "#5d636b", "hides": ["legs"]},
+  {"id": "rag_wraps_wear", "model": "models/wear/leather_gloves.glb", "region": "hands", "tint": "#9a9588", "hides": ["hands"]},
+  {"id": "mourners_gloves_wear", "model": "models/wear/leather_gloves.glb", "region": "hands", "tint": "#4a4a54", "hides": ["hands"]},
+  {"id": "hunters_gloves_wear", "model": "models/wear/leather_gloves.glb", "region": "hands", "tint": "#55402e", "hides": ["hands"]},
+  {"id": "stormhide_gloves_wear", "model": "models/wear/leather_gloves.glb", "region": "hands", "tint": "#3a475a", "hides": ["hands"]},
+  {"id": "chain_gauntlets_wear", "model": "models/wear/long_gloves.glb", "region": "hands", "tint": "#9aa1a9", "hides": ["hands"]},
+  {"id": "iron_gauntlets_wear", "model": "models/wear/long_gloves.glb", "region": "hands", "tint": "#585d66", "hides": ["hands"]},
+  {"id": "wrapped_boots_wear", "model": "models/wear/hide_boots.glb", "region": "feet", "tint": "#a8a294", "hides": ["feet"]},
+  {"id": "ranger_boots_wear", "model": "models/wear/tall_boots.glb", "region": "feet", "tint": "#6a5240", "hides": ["feet"]},
+  {"id": "hunters_boots_wear", "model": "models/wear/tall_boots.glb", "region": "feet", "tint": "#4a3829", "hides": ["feet"]},
+  {"id": "chain_greaves_wear", "model": "models/wear/tall_boots.glb", "region": "feet", "tint": "#9ba2aa", "hides": ["feet"]},
+  {"id": "stormhide_boots_wear", "model": "models/wear/tall_boots.glb", "region": "feet", "tint": "#38455a", "hides": ["feet"]},
+  {"id": "iron_greaves_wear", "model": "models/wear/tall_boots.glb", "region": "feet", "tint": "#565b64", "hides": ["feet"]},
+  {"id": "small_mercies_wear", "model": "models/wear/leather_jerkin.glb", "region": "chest", "tint": "#6b5c4e", "hides": ["torso", "arms"]},
+  {"id": "held_breath_wear", "model": "models/wear/monk_hood.glb", "region": "head", "tint": "#2f3640", "hides": []},
+  {"id": "second_thought_wear", "model": "models/wear/leather_gloves.glb", "region": "hands", "tint": "#3d3a38", "hides": ["hands"]},
+  {"id": "short_road_wear", "model": "models/wear/tall_boots.glb", "region": "feet", "tint": "#2a2d33", "hides": ["feet"]},
+  {"id": "patient_dead_wear", "model": "models/wear/viking_breeches.glb", "region": "legs", "tint": "#6f7a73", "hides": ["legs"]}
 ]

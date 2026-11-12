@@ -38,3 +38,25 @@ void test('killing a monster fills the flasks', (): void => {
   assert.equal(monster.alive, false);
   assert.ok(world.player.flasks.every((flask: FlaskState): boolean => flask.charges === flask.def.chargesPerKill));
 });
+
+void test('the flask charges stat scales what a kill gives', (): void => {
+  const world: World = empty();
+  world.player.stats.flaskCharges = 1;
+  gainFlaskCharges(world.player);
+  const red: FlaskState = must(world.player.flasks[0], 'life flask');
+  assert.equal(red.charges, red.def.chargesPerKill * 2);
+});
+
+void test('a kill restores life and mana by the on-kill stats, up to the maximum', (): void => {
+  const world: World = empty();
+  const monster: MonsterState = must(world.monsters.find((candidate: MonsterState): boolean => candidate.alive), 'monster');
+  world.player.stats.lifeOnKill = 7;
+  world.player.stats.manaOnKill = 5;
+  world.player.life = 10;
+  world.player.mana = 1;
+  monster.life = 1;
+  applyHit(world, offenceOf(world.player), monster, must(world.player.skills[0], 'skill'), { x: 1, z: 0 });
+  assert.equal(monster.alive, false);
+  assert.equal(world.player.life, 17);
+  assert.equal(world.player.mana, 6);
+});

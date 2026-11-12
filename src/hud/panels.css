@@ -110,9 +110,10 @@
   display: grid;
   grid-template-columns: repeat(3, 60px);
   grid-template-areas:
-    '. head .'
-    'weapon chest hands'
-    'charm legs feet';
+    'ring head amulet'
+    'weapon chest offhand'
+    'hands legs charm'
+    '. feet .';
   justify-content: center;
   gap: 6px 20px;
   margin-bottom: 9px;

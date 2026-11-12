@@ -1,8 +1,8 @@
 import type { Content, SkillDef, SkillMod, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, itemMods } from './items.ts';
-import { describeMod } from './stat-text.ts';
-import { armourReduction, computeStats, damagePerSecond, skillCycle } from './stats.ts';
+import { describeMod, describeSkillMod } from './stat-text.ts';
+import { armourReduction, computeStats, damagePerSecond, equippedSkillMods, skillCycle, tagDamage } from './stats.ts';
 import { xpToNextLevel } from './progression.ts';
 import type { Equipment, PlayerState } from './world/types.ts';
 
@@ -60,6 +60,15 @@ function figures(total: StatBlock, base: StatBlock, treeOnly: StatBlock): Record
     moveSpeed: figure('moveSpeed'),
     armour: figure('armour'),
     goldFind: figure('goldFind'),
+    itemFind: figure('itemFind'),
+    lightningDamage: figure('lightningDamage'),
+    thunderDamage: figure('thunderDamage'),
+    meleeDamage: figure('meleeDamage'),
+    flaskCharges: figure('flaskCharges'),
+    dodgeCooldown: figure('dodgeCooldown'),
+    lifeOnKill: figure('lifeOnKill'),
+    manaOnKill: figure('manaOnKill'),
+    skillRepeat: figure('skillRepeat'),
   };
 }
 
@@ -74,29 +83,23 @@ function gearBonuses(content: Content, equipped: Equipment): SheetBonus[] {
       sums.set(key, seen === undefined ? mod : { ...mod, value: seen.value + mod.value });
     }
   }
-  return [...sums.values()].filter((mod: StatMod): boolean => mod.value !== 0).map((mod: StatMod): SheetBonus => ({ source: 'gear', text: describeMod(mod) }));
-}
-
-function skillModText(content: Content, mod: SkillMod): string {
-  const name: string = content.skills.get(mod.skill)?.name ?? mod.skill;
-  const sign: string = mod.value < 0 ? '-' : '+';
-  const size: number = Math.abs(mod.value);
-  const amount: string = mod.field === 'projectiles' || mod.field === 'pierce' ? String(size) : `${Math.round(size * 100)}%`;
-  return `${sign}${amount} ${mod.field.replace(/Percent$/, '')} (${name})`;
+  const stats: SheetBonus[] = [...sums.values()].filter((mod: StatMod): boolean => mod.value !== 0).map((mod: StatMod): SheetBonus => ({ source: 'gear', text: describeMod(mod) }));
+  const skills: SheetBonus[] = equippedSkillMods(content, equipped).map((mod: SkillMod): SheetBonus => ({ source: 'gear', text: describeSkillMod(content, mod) }));
+  return [...stats, ...skills];
 }
 
 function treeBonuses(content: Content, allocated: readonly string[]): SheetBonus[] {
   const bonuses: SheetBonus[] = [];
   for (const node of content.skillTree) {
     if (!allocated.includes(node.id)) continue;
-    const parts: string[] = [...node.statMods.map(describeMod), ...node.skillMods.map((mod: SkillMod): string => skillModText(content, mod))];
+    const parts: string[] = [...node.statMods.map(describeMod), ...node.skillMods.map((mod: SkillMod): string => describeSkillMod(content, mod))];
     bonuses.push({ source: 'tree', text: parts.length === 0 ? node.name : `${node.name}: ${parts.join(', ')}` });
   }
   return bonuses;
 }
 
 export function skillOffence(stats: StatBlock, skill: SkillDef): SkillOffence {
-  const scale: number = 1 + stats.damagePercent;
+  const scale: number = 1 + stats.damagePercent + tagDamage(stats, skill);
   return {
     id: skill.id,
     name: skill.name,

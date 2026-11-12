@@ -1,3 +1,4 @@
+import type { AffixDef, ItemBaseDef, ItemScaling, RarityDef } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
 import type { GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, SkillLeap, StalkerBehaviour, SummonDef } from './combat-types.ts';
 import type { ServiceKind, TradeDef } from './trade-types.ts';
@@ -19,6 +20,15 @@ export const STAT_IDS = [
   'moveSpeed',
   'armour',
   'goldFind',
+  'itemFind',
+  'lightningDamage',
+  'thunderDamage',
+  'meleeDamage',
+  'flaskCharges',
+  'dodgeCooldown',
+  'lifeOnKill',
+  'manaOnKill',
+  'skillRepeat',
 ] as const;
 export type StatId = (typeof STAT_IDS)[number];
 export type StatBlock = Record<StatId, number>;
@@ -124,6 +134,7 @@ export interface SkillDef {
   readonly combo: SkillCombo | null;
   readonly leap: SkillLeap | null;
   readonly root: number;
+  readonly tags: readonly string[];
 }
 
 export interface ChaserBehaviour {
@@ -207,9 +218,6 @@ export interface MonsterDef {
   readonly mods: readonly string[];
 }
 
-export const ITEM_SLOTS = ['weapon', 'head', 'chest', 'hands', 'legs', 'feet', 'charm'] as const;
-export type ItemSlot = (typeof ITEM_SLOTS)[number];
-
 export const WEAR_REGIONS = ['head', 'shoulders', 'chest', 'arms', 'hands', 'legs', 'feet'] as const;
 export type WearRegion = (typeof WEAR_REGIONS)[number];
 
@@ -219,52 +227,6 @@ export interface WearableDef {
   readonly region: WearRegion;
   readonly tint: string;
   readonly hides: readonly string[];
-}
-
-export interface RarityDef {
-  readonly id: string;
-  readonly name: string;
-  readonly color: string;
-  readonly weight: number;
-  readonly affixMin: number;
-  readonly affixMax: number;
-  readonly statScale: number;
-}
-
-export const ARMOUR_MATERIALS = ['cloth', 'leather', 'mail', 'plate'] as const;
-export type ArmourMaterial = (typeof ARMOUR_MATERIALS)[number];
-
-export interface ItemBaseDef {
-  readonly id: string;
-  readonly name: string;
-  readonly slot: ItemSlot | null;
-  readonly book: string | null;
-  readonly material: ArmourMaterial | null;
-  readonly icon: string;
-  readonly dropWeight: number;
-  readonly minLevel: number;
-  readonly implicit: readonly StatMod[];
-  readonly visual: string | null;
-  readonly wear: readonly string[];
-}
-
-export const AFFIX_POSITIONS = ['prefix', 'suffix'] as const;
-export type AffixPosition = (typeof AFFIX_POSITIONS)[number];
-
-export interface AffixDef {
-  readonly id: string;
-  readonly label: string;
-  readonly position: AffixPosition;
-  readonly slots: readonly ItemSlot[];
-  readonly stat: StatId;
-  readonly op: ModOp;
-  readonly min: number;
-  readonly max: number;
-  readonly perLevel: number;
-}
-
-export interface ItemScaling {
-  readonly implicitPerLevel: number;
 }
 
 export const REQUIRE_MODES = ['all', 'any'] as const;
@@ -694,3 +656,6 @@ export interface Content {
   readonly flasks: readonly FlaskDef[];
   readonly trade: TradeDef;
 }
+
+export { AFFIX_GROUPS, AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS } from './item-types.ts';
+export type { AffixDef, AffixGroup, AffixPosition, ArmourMaterial, ItemBaseDef, ItemScaling, ItemSlot, RarityDef } from './item-types.ts';

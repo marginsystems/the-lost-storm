@@ -55,7 +55,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     moving: false,
     mana: stats.maxMana,
     stats,
-    skills: resolveSkillBar(content, allocated),
+    skills: resolveSkillBar(content, allocated, equipped),
     level,
     xp: save?.xp ?? 0,
     gold: save?.gold ?? 0,

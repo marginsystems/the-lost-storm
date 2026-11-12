@@ -3,13 +3,13 @@ import type { SkillDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
-import { armourReduction } from '../stats.ts';
+import { armourReduction, tagDamage } from '../stats.ts';
 import { grantXp } from './character.ts';
 import { isInvulnerable } from './dash.ts';
 import { closeDialogue } from './dialogue.ts';
 import { gainFlaskCharges } from './flask-charges.ts';
 import { dropOnGround } from './ground.ts';
-import type { Actor, GuardOutcome, ItemInstance, MonsterState, Team, World } from './types.ts';
+import type { Actor, GuardOutcome, ItemInstance, MonsterState, PlayerState, Team, World } from './types.ts';
 
 export const COMBAT = {
   guardedKnockback: 0.2,
@@ -29,14 +29,14 @@ export function teamOf(actor: Actor): Team {
   return actor.kind;
 }
 
-export function offenceOf(actor: Actor): Offence {
+export function offenceOf(actor: Actor, skill: SkillDef | null = null): Offence {
   if (actor.kind === 'player') {
     return {
       sourceId: actor.id,
       team: 'player',
       damageMin: actor.stats.damageMin,
       damageMax: actor.stats.damageMax,
-      damagePercent: actor.stats.damagePercent,
+      damagePercent: actor.stats.damagePercent + (skill === null ? 0 : tagDamage(actor.stats, skill)),
       critChance: actor.stats.critChance,
       critMultiplier: actor.stats.critMultiplier,
     };
@@ -69,11 +69,16 @@ function rollLoot(world: World, monster: MonsterState): void {
     dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, Math.round(world.rng.int(loot.goldMin, loot.goldMax) * scale)) });
   }
   if (world.rng.chance(loot.itemChance)) {
-    const item: ItemInstance | null = generateItem(world.content, world.rng, world.nextItemUid, Math.max(monster.level, world.player.level), null, null);
+    const item: ItemInstance | null = generateItem(world.content, world.rng, world.nextItemUid, Math.max(monster.level, world.player.level), null, null, world.player.stats.itemFind);
     if (item === null) return;
     world.nextItemUid += 1;
     dropOnGround(world, monster.pos, { kind: 'item', item });
   }
+}
+
+function restoreOnKill(player: PlayerState): void {
+  player.life = Math.min(player.maxLife, player.life + player.stats.lifeOnKill);
+  player.mana = Math.min(player.stats.maxMana, player.mana + player.stats.manaOnKill);
 }
 
 export function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
@@ -92,6 +97,7 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
   }
   world.player.kills += 1;
   gainFlaskCharges(world.player);
+  restoreOnKill(world.player);
   rollLoot(world, target);
   grantXp(world, Math.round(target.def.xp * (1 + world.content.world.scaling.xpPerLevel * (target.level - 1))));
 }

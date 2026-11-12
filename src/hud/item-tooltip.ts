@@ -16,6 +16,9 @@ const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = {
   legs: 'Leggings',
   feet: 'Boots',
   charm: 'Charm',
+  offhand: 'Shield',
+  ring: 'Ring',
+  amulet: 'Amulet',
 };
 
 const MATERIAL_NAMES: Readonly<Record<ArmourMaterial, string>> = {

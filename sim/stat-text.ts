@@ -1,6 +1,19 @@
-import type { ModOp, StatId, StatMod } from './content/types.ts';
+import type { Content, ModOp, SkillMod, StatId, StatMod } from './content/types.ts';
 
-const RATIO_STATS: ReadonlySet<StatId> = new Set<StatId>(['damagePercent', 'attackSpeed', 'critChance', 'critMultiplier', 'goldFind']);
+const RATIO_STATS: ReadonlySet<StatId> = new Set<StatId>([
+  'damagePercent',
+  'attackSpeed',
+  'critChance',
+  'critMultiplier',
+  'goldFind',
+  'itemFind',
+  'lightningDamage',
+  'thunderDamage',
+  'meleeDamage',
+  'flaskCharges',
+  'dodgeCooldown',
+  'skillRepeat',
+]);
 const DECIMAL_STATS: ReadonlySet<StatId> = new Set<StatId>(['lifeRegen', 'manaRegen']);
 
 const STAT_LABELS: Readonly<Record<StatId, string>> = {
@@ -17,6 +30,15 @@ const STAT_LABELS: Readonly<Record<StatId, string>> = {
   moveSpeed: 'Movement Speed',
   armour: 'Armour',
   goldFind: 'Gold Found',
+  itemFind: 'Item Rarity',
+  lightningDamage: 'Lightning Skill Damage',
+  thunderDamage: 'Thunder Skill Damage',
+  meleeDamage: 'Melee Skill Damage',
+  flaskCharges: 'Flask Charges Gained',
+  dodgeCooldown: 'Dodge Roll Cooldown',
+  lifeOnKill: 'Life Gained on Kill',
+  manaOnKill: 'Mana Gained on Kill',
+  skillRepeat: 'Chance to Repeat Skills',
 };
 
 export function statLabel(stat: StatId): string {
@@ -38,4 +60,12 @@ export function describeMod(mod: StatMod): string {
   const size: number = Math.abs(mod.value);
   if (isRatio(mod.stat, mod.op)) return `${sign}${Math.round(size * 100)}% ${statLabel(mod.stat)}`;
   return `${sign}${size} ${statLabel(mod.stat)}`;
+}
+
+export function describeSkillMod(content: Content, mod: SkillMod): string {
+  const name: string = content.skills.get(mod.skill)?.name ?? mod.skill;
+  const sign: string = mod.value < 0 ? '-' : '+';
+  const size: number = Math.abs(mod.value);
+  const amount: string = mod.field === 'projectiles' || mod.field === 'pierce' ? String(size) : `${Math.round(size * 100)}%`;
+  return `${sign}${amount} ${mod.field.replace(/Percent$/, '')} (${name})`;
 }

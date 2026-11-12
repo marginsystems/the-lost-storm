@@ -12,7 +12,8 @@
       "common": 1,
       "magic": 2.2,
       "rare": 5,
-      "stormtouched": 12
+      "stormtouched": 12,
+      "unique": 30
     }
   },
   "stockRarities": [

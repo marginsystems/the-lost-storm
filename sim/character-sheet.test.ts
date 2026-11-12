@@ -107,3 +107,19 @@ void test('a character at the level cap is flagged as maxed', (): void => {
   const sheet: CharacterSheet = characterSheet(content, subject(content.player.xp.maxLevel, [], false));
   assert.equal(sheet.atMaxLevel, true);
 });
+
+void test('worn uniques show every stat line and skill line, and tagged damage lifts the matching skill', (): void => {
+  const equipped = emptyEquipment();
+  equipped.weapon = must(generateItem(content, createRng(1), 1, 12, 'long_count', null), 'long_count');
+  equipped.ring = must(generateItem(content, createRng(1), 2, 12, 'static_ring', null), 'static_ring');
+  const bare: SheetSubject = { level: 12, xp: 0, equipped: emptyEquipment(), allocated: [], skills: resolveSkillBar(content, []) };
+  const worn: SheetSubject = { level: 12, xp: 0, equipped, allocated: [], skills: resolveSkillBar(content, [], equipped) };
+  const sheet: CharacterSheet = characterSheet(content, worn);
+  const texts: string[] = sheet.bonuses.map((bonus): string => bonus.text);
+  assert.ok(texts.includes('+60% Lightning Skill Damage'), texts.join('|'));
+  assert.ok(texts.includes('+2 projectiles (Storm Bolt)'));
+  assert.ok(texts.includes('-40% manaCost (Storm Bolt)'));
+  assert.ok(sheet.figures.lightningDamage.gear > 0.59);
+  assert.ok(skill(sheet, 'storm_bolt').perSecond > skill(characterSheet(content, bare), 'storm_bolt').perSecond);
+  assert.equal(skill(sheet, 'storm_bolt').manaCost, Math.round(must(content.skills.get('storm_bolt'), 'bolt').manaCost * 0.6));
+});

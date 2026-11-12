@@ -9,7 +9,7 @@ import type { ItemInstance, PlayerState, World } from './types.ts';
 export function refreshPlayer(world: World): void {
   const player: PlayerState = world.player;
   player.stats = computeStats(world.content, player.level, player.equipped, player.allocated);
-  player.skills = resolveSkillBar(world.content, player.allocated);
+  player.skills = resolveSkillBar(world.content, player.allocated, player.equipped);
   player.maxLife = player.stats.maxLife;
   player.life = Math.min(player.life, player.maxLife);
   player.mana = Math.min(player.mana, player.stats.maxMana);

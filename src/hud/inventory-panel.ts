@@ -22,6 +22,9 @@ const SLOT_TITLES: Readonly<Record<ItemSlot, string>> = {
   legs: 'Legs',
   feet: 'Feet',
   charm: 'Charm',
+  offhand: 'Off-hand',
+  ring: 'Ring',
+  amulet: 'Amulet',
 };
 
 interface CellView {

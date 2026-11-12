@@ -74,7 +74,7 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   const windup: number = skill.delivery.type === 'dash' ? skill.delivery.duration : skill.windup / speed;
   const recovery: number = skill.recovery / speed;
   if (actor.kind === 'player') actor.mana -= skill.manaCost;
-  actor.cooldowns[skill.id] = skill.cooldown;
+  actor.cooldowns[skill.id] = actor.kind === 'player' && skill.tags.includes('dodge') ? Math.max(0, skill.cooldown * (1 + actor.stats.dodgeCooldown)) : skill.cooldown;
   actor.facing = facingOf(aim);
   actor.moving = false;
   const planned: number = reachOf(skill, skill.leap, Math.hypot(direction.x, direction.z));
@@ -117,7 +117,7 @@ function spawnProjectiles(world: World, actor: Actor, skill: SkillDef, delivery:
 function resolveImpact(world: World, actor: Actor, action: ActionState): void {
   const skill: SkillDef = action.skill;
   const direction: ReadonlyVec2 = action.direction;
-  const offence: Offence = offenceOf(actor);
+  const offence: Offence = offenceOf(actor, skill);
   let hits: number = 0;
   const delivery = skill.delivery;
   switch (delivery.type) {
@@ -161,6 +161,11 @@ function land(world: World, actor: Actor, action: ActionState): void {
   action.travelLeft = 0;
 }
 
+function repeats(world: World, actor: Actor, action: ActionState): boolean {
+  if (actor.kind !== 'player' || action.skill.delivery.type === 'dash' || actor.stats.skillRepeat <= 0) return false;
+  return world.rng.chance(Math.min(1, actor.stats.skillRepeat));
+}
+
 export function stepAction(world: World, actor: Actor, dt: number): void {
   const action = actor.action;
   if (action === null) return;
@@ -176,6 +181,7 @@ export function stepAction(world: World, actor: Actor, dt: number): void {
     action.phase = 'recovery';
     action.timeLeft += action.recovery;
     resolveImpact(world, actor, action);
+    if (repeats(world, actor, action)) resolveImpact(world, actor, action);
   }
   if (actor.action === action && action.phase === 'recovery' && action.timeLeft <= 0) actor.action = null;
 }

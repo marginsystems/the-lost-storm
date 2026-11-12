@@ -7,10 +7,10 @@ import { combatProblems, markDelivery, monsterMod, monsterTraits, skillMotion } 
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
-import { byId, choice, choiceList, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
+import { itemScaling, parseAffix, parseItemBase, parseRarity, skillMod, statMod } from './parse-items.ts';
+import { byId, choice, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
-  AffixDef,
   AttachmentDef,
   BossDef,
   BossPhase,
@@ -19,7 +19,6 @@ import type {
   Condition,
   Content,
   Delivery,
-  ItemBaseDef,
   ItemSlot,
   LineDef,
   MapPlace,
@@ -37,10 +36,8 @@ import type {
   SkillBinding,
   SkillCombo,
   SkillDef,
-  SkillMod,
   SkillTreeNodeDef,
   StatBlock,
-  StatMod,
   SurfaceDef,
   TalkDef,
   Triple,
@@ -48,7 +45,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, TREE_NODE_KINDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { REQUIRE_MODES, TREE_NODE_KINDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -70,16 +67,6 @@ export interface RawContent {
   readonly flasks: unknown;
   readonly trade: unknown;
   readonly books: unknown;
-}
-
-function statMod(value: unknown, where: string): StatMod {
-  const source: Fields = fields(value, where);
-  return { stat: choice(source, 'stat', STAT_IDS, where), op: choice(source, 'op', MOD_OPS, where), value: numeric(source, 'value', where) };
-}
-
-function skillMod(value: unknown, where: string): SkillMod {
-  const source: Fields = fields(value, where);
-  return { skill: text(source, 'skill', where), field: choice(source, 'field', SKILL_MOD_FIELDS, where), value: numeric(source, 'value', where) };
 }
 
 function delivery(value: unknown, where: string): Delivery {
@@ -152,6 +139,7 @@ function skill(value: unknown, where: string): SkillDef {
     hitStop: numeric(source, 'hitStop', where),
     vfx: { style: choice(vfx, 'style', VFX_STYLES, `${where}.vfx`), color: text(vfx, 'color', `${where}.vfx`) },
     combo: skillCombo(source['combo'], `${where}.combo`),
+    tags: source['tags'] === undefined ? [] : textList(source, 'tags', where),
     ...skillMotion(source, where),
   };
 }
@@ -235,51 +223,6 @@ function monster(value: unknown, where: string): MonsterDef {
     wear: textList(source, 'wear', where),
     boss: boss(source['boss'], `${where}.boss`),
     ...monsterTraits(source, where),
-  };
-}
-
-function rarity(value: unknown, where: string): RarityDef {
-  const source: Fields = fields(value, where);
-  return {
-    id: text(source, 'id', where),
-    name: text(source, 'name', where),
-    color: text(source, 'color', where),
-    weight: numeric(source, 'weight', where),
-    affixMin: numeric(source, 'affixMin', where),
-    affixMax: numeric(source, 'affixMax', where),
-    statScale: numeric(source, 'statScale', where),
-  };
-}
-
-function itemBase(value: unknown, where: string): ItemBaseDef {
-  const source: Fields = fields(value, where);
-  return {
-    id: text(source, 'id', where),
-    name: text(source, 'name', where),
-    slot: source['slot'] === null ? null : choice(source, 'slot', ITEM_SLOTS, where),
-    book: source['book'] === undefined ? null : text(source, 'book', where),
-    material: source['material'] === null || source['material'] === undefined ? null : choice(source, 'material', ARMOUR_MATERIALS, where),
-    icon: text(source, 'icon', where),
-    dropWeight: numeric(source, 'dropWeight', where),
-    minLevel: numeric(source, 'minLevel', where),
-    implicit: each(source['implicit'], `${where}.implicit`, statMod),
-    visual: nullableText(source, 'visual', where),
-    wear: textList(source, 'wear', where),
-  };
-}
-
-function affix(value: unknown, where: string): AffixDef {
-  const source: Fields = fields(value, where);
-  return {
-    id: text(source, 'id', where),
-    label: text(source, 'label', where),
-    position: choice(source, 'position', AFFIX_POSITIONS, where),
-    slots: choiceList(source, 'slots', ITEM_SLOTS, where),
-    stat: choice(source, 'stat', STAT_IDS, where),
-    op: choice(source, 'op', MOD_OPS, where),
-    min: numeric(source, 'min', where),
-    max: numeric(source, 'max', where),
-    perLevel: numeric(source, 'perLevel', where),
   };
 }
 
@@ -433,6 +376,15 @@ function statBlock(value: unknown, where: string): StatBlock {
     moveSpeed: read('moveSpeed'),
     armour: read('armour'),
     goldFind: read('goldFind'),
+    itemFind: read('itemFind'),
+    lightningDamage: read('lightningDamage'),
+    thunderDamage: read('thunderDamage'),
+    meleeDamage: read('meleeDamage'),
+    flaskCharges: read('flaskCharges'),
+    dodgeCooldown: read('dodgeCooldown'),
+    lifeOnKill: read('lifeOnKill'),
+    manaOnKill: read('manaOnKill'),
+    skillRepeat: read('skillRepeat'),
   };
 }
 
@@ -474,10 +426,10 @@ export function parseContent(raw: RawContent): Content {
     skills: byId(each(raw.skills, 'skills', skill), 'skills'),
     monsters: byId(each(raw.monsters, 'monsters', monster), 'monsters'),
     monsterMods: byId(each(raw.monsterMods, 'monsterMods', monsterMod), 'monsterMods'),
-    rarities: each(itemFields['rarities'], 'items.rarities', rarity),
-    itemBases: byId(each(itemFields['bases'], 'items.bases', itemBase), 'items.bases'),
-    affixes: byId(each(itemFields['affixes'], 'items.affixes', affix), 'items.affixes'),
-    itemScaling: { implicitPerLevel: numeric(scaling, 'implicitPerLevel', 'items.scaling') },
+    rarities: each(itemFields['rarities'], 'items.rarities', parseRarity),
+    itemBases: byId(each(itemFields['bases'], 'items.bases', parseItemBase), 'items.bases'),
+    affixes: byId(each(itemFields['affixes'], 'items.affixes', parseAffix), 'items.affixes'),
+    itemScaling: itemScaling(scaling, 'items.scaling'),
     skillTree: each(raw.skillTree, 'skillTree', treeNode),
     rigs: byId(each(raw.rigs, 'rigs', rig), 'rigs'),
     attachments: byId(each(raw.attachments, 'attachments', attachment), 'attachments'),
