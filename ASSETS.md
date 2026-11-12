@@ -107,7 +107,6 @@ The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and sta
 | `public/models/world/brazier.glb` | Iron brazier | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/cairn.glb` | Stacked stone post | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/candles.glb` | Three candles | Built by `blender/build_environment.py` | MIT |
-| `public/models/world/chair.glb` | Chair | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/coins.glb` | Pile of coins (gold drops) | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/column.glb` | Round column | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/column_broken.glb` | Broken column | Built by `blender/build_environment.py` | MIT |
@@ -141,7 +140,6 @@ The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and sta
 | `public/models/world/stall.glb` | Market stall | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/statue_base.glb` | Statue base | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/table_broken.glb` | Broken trestle table | Built by `blender/build_environment.py` | MIT |
-| `public/models/world/table_long.glb` | Trestle table | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/torch.glb` | Wall torch | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/wall_a.glb` | Wall section | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/wall_b.glb` | Wall section with a buttress | Built by `blender/build_environment.py` | MIT |
@@ -183,6 +181,20 @@ Scanned models from polyhaven.com, all CC0. `blender/import_polyhaven.py` keeps 
 | `public/models/props/dead_log.glb` | "Dead Tree Trunk" (`dead_tree_trunk`) | Rob Tuytel | CC0 1.0 |
 | `public/models/props/branches.glb` | "Dry Branches Medium 01" (`dry_branches_medium_01`) | Rico Cilliers | CC0 1.0 |
 | `public/models/props/statue.glb` | "Gothic Statue" (`gothic_statue`) | Benny Weimer | CC0 1.0 |
+| `public/models/props/table.glb` | "Wooden Table 01" (`WoodenTable_01`) | Ethan Place | CC0 1.0 |
+| `public/models/props/basket.glb` | "Wicker Basket 01" (`wicker_basket_01`) | Kuutti Siitonen | CC0 1.0 |
+| `public/models/props/jug.glb` | "Jug 01" (`jug_01`) | Kuutti Siitonen | CC0 1.0 |
+| `public/models/props/pot.glb` | "Ceramic Pot" (`ceramic_pot`) | Aron Łyczek | CC0 1.0 |
+| `public/models/props/bowl.glb` | "Wooden Bowl 01" (`wooden_bowl_01`) | Oliver Harries | CC0 1.0 |
+| `public/models/props/brass_pot.glb` | "Brass Pot 01" (`brass_pot_01`) | Rico Cilliers | CC0 1.0 |
+| `public/models/props/axe.glb` | "Wooden Axe" (`wooden_axe`) | Ulan Cabanilla | CC0 1.0 |
+| `public/models/props/hammer.glb` | "Cross Pein Hammer" (`cross_pein_hammer`) | Tics | CC0 1.0 |
+| `public/models/props/broom.glb` | "Wooden Broom" (`wooden_broom`) | Balen | CC0 1.0 |
+| `public/models/props/lantern.glb` | "Wooden Lantern 01" (`wooden_lantern_01`) | James Ray Cock | CC0 1.0 |
+| `public/models/props/candlestick.glb` | "Wooden Candlestick" (`wooden_candlestick`) | Josh Dean | CC0 1.0 |
+| `public/models/props/cask.glb` | "Wine Barrel 01" (`wine_barrel_01`) | James Ray Cock | CC0 1.0 |
+| `public/models/props/pail.glb` | "Wooden Bucket 02" (`wooden_bucket_02`) | James Ray Cock | CC0 1.0 |
+| `public/models/props/chair.glb` | "Painted Wooden Chair 01" (`painted_wooden_chair_01`) | Kuutti Siitonen | CC0 1.0 |
 
 Rebuild with each asset's 1k glTF download (`https://api.polyhaven.com/files/<asset>` lists the files) unpacked into `<downloads>/<asset>/`:
 
@@ -208,7 +220,7 @@ Ground, wall, wood, metal and cloth textures from polyhaven.com, all CC0. Each i
 | `public/textures/drystone_color.webp`, `public/textures/drystone_normal.webp`, `public/textures/drystone_orm.webp` | "Stacked Stone Wall" (`stacked_stone_wall`) | Dimitrios Savva | CC0 1.0 |
 | `public/textures/planks_color.webp`, `public/textures/planks_normal.webp`, `public/textures/planks_orm.webp` | "Old Planks 02" (`old_planks_02`) | Rob Tuytel | CC0 1.0 |
 | `public/textures/iron_color.webp`, `public/textures/iron_normal.webp`, `public/textures/iron_orm.webp` | "Rusty Metal 02" (`rusty_metal_02`) | Rob Tuytel | CC0 1.0 |
-| `public/textures/linen_color.webp`, `public/textures/linen_normal.webp`, `public/textures/linen_orm.webp` | "Rough Linen" (`rough_linen`) | colormass, Rico Cilliers | CC0 1.0 |
+| `public/textures/burlap_color.webp`, `public/textures/burlap_normal.webp`, `public/textures/burlap_orm.webp` | "Hessian 230" (`hessian_230`) | colormass, Rico Cilliers | CC0 1.0 |
 | `public/textures/plaster_color.webp`, `public/textures/plaster_normal.webp`, `public/textures/plaster_orm.webp` | "Worn Plaster Wall" (`worn_plaster_wall`) | Dimitrios Savva | CC0 1.0 |
 | `public/textures/slates_color.webp`, `public/textures/slates_normal.webp`, `public/textures/slates_orm.webp` | "Roof Slates 02" (`roof_slates_02`) | Rob Tuytel | CC0 1.0 |
 | `public/textures/bark_color.webp`, `public/textures/bark_normal.webp`, `public/textures/bark_orm.webp` | "Bark Brown 02" (`bark_brown_02`) | Rob Tuytel | CC0 1.0 |

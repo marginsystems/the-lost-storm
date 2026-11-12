@@ -191,6 +191,161 @@
       ],
       "maxTriangles": 6000,
       "textureSize": 512
+    },
+    {
+      "id": "table",
+      "asset": "WoodenTable_01",
+      "name": "Wooden Table 01",
+      "authors": [
+        "Ethan Place"
+      ],
+      "maxTriangles": 1200,
+      "textureSize": 512
+    },
+    {
+      "id": "basket",
+      "asset": "wicker_basket_01",
+      "name": "Wicker Basket 01",
+      "authors": [
+        "Kuutti Siitonen"
+      ],
+      "maxTriangles": 900,
+      "textureSize": 256
+    },
+    {
+      "id": "jug",
+      "asset": "jug_01",
+      "name": "Jug 01",
+      "authors": [
+        "Kuutti Siitonen"
+      ],
+      "maxTriangles": 600,
+      "textureSize": 256
+    },
+    {
+      "id": "pot",
+      "asset": "ceramic_pot",
+      "name": "Ceramic Pot",
+      "authors": [
+        "Aron \u0141yczek"
+      ],
+      "maxTriangles": 700,
+      "textureSize": 256
+    },
+    {
+      "id": "bowl",
+      "asset": "wooden_bowl_01",
+      "name": "Wooden Bowl 01",
+      "authors": [
+        "Oliver Harries"
+      ],
+      "maxTriangles": 500,
+      "textureSize": 256
+    },
+    {
+      "id": "brass_pot",
+      "asset": "brass_pot_01",
+      "name": "Brass Pot 01",
+      "authors": [
+        "Rico Cilliers"
+      ],
+      "maxTriangles": 600,
+      "textureSize": 256
+    },
+    {
+      "id": "axe",
+      "asset": "wooden_axe",
+      "name": "Wooden Axe",
+      "authors": [
+        "Ulan Cabanilla"
+      ],
+      "maxTriangles": 500,
+      "textureSize": 256,
+      "rotate": [
+        90,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "hammer",
+      "asset": "cross_pein_hammer",
+      "name": "Cross Pein Hammer",
+      "authors": [
+        "Tics"
+      ],
+      "maxTriangles": 400,
+      "textureSize": 256,
+      "rotate": [
+        90,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "broom",
+      "asset": "wooden_broom",
+      "name": "Wooden Broom",
+      "authors": [
+        "Balen"
+      ],
+      "maxTriangles": 600,
+      "textureSize": 256,
+      "rotate": [
+        -12,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "lantern",
+      "asset": "wooden_lantern_01",
+      "name": "Wooden Lantern 01",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "maxTriangles": 900,
+      "textureSize": 256
+    },
+    {
+      "id": "candlestick",
+      "asset": "wooden_candlestick",
+      "name": "Wooden Candlestick",
+      "authors": [
+        "Josh Dean"
+      ],
+      "maxTriangles": 400,
+      "textureSize": 256
+    },
+    {
+      "id": "cask",
+      "asset": "wine_barrel_01",
+      "name": "Wine Barrel 01",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "maxTriangles": 1500,
+      "textureSize": 512
+    },
+    {
+      "id": "pail",
+      "asset": "wooden_bucket_02",
+      "name": "Wooden Bucket 02",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "maxTriangles": 700,
+      "textureSize": 256
+    },
+    {
+      "id": "chair",
+      "asset": "painted_wooden_chair_01",
+      "name": "Painted Wooden Chair 01",
+      "authors": [
+        "Kuutti Siitonen"
+      ],
+      "maxTriangles": 800,
+      "textureSize": 512
     }
   ]
 }

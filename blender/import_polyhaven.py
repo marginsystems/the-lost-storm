@@ -74,6 +74,7 @@ def join_and_bake_transforms(meshes: list[Object], name: str) -> Object:
 def rotate(obj: Object, degrees: list[float]) -> None:
     if not any(degrees):
         return
+    obj.rotation_mode = "XYZ"
     obj.rotation_euler = (math.radians(degrees[0]), math.radians(degrees[1]), math.radians(degrees[2]))
     select_only([obj])
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)

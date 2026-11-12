@@ -342,10 +342,10 @@ def banner(kit: Kit, half: float, strips: int, emblem: bool) -> None:
     width: float = half * 2.0 / strips
     for index in range(strips):
         length: float = 2.1 + kit.rng.random() * 0.6
-        kit.box("cloth", -half + width * (index + 0.5), y - 0.02 + kit.spread(0.012), 3.48 - length, width - 0.012, 0.024, length, tilt_x=kit.spread(0.02))
+        kit.sheet("cloth", (-half + width * index + 0.006, y - 0.03, 3.5), (width - 0.012, 0.0, 0.0), (0.0, 0.0, -length), 3, 8, 0.1, ragged=0.07, pinned=False)
     if emblem:
-        kit.cylinder("iron", 0.0, y - 0.05, 2.5, 0.36, 0.04, segments=14, tilt_x=math.pi / 2.0)
-        kit.cylinder("iron", 0.0, y - 0.09, 2.5, 0.12, 0.06, segments=10, tilt_x=math.pi / 2.0)
+        kit.cylinder("iron", 0.0, y - 0.07, 2.5, 0.36, 0.04, segments=14, tilt_x=math.pi / 2.0)
+        kit.cylinder("iron", 0.0, y - 0.11, 2.5, 0.12, 0.06, segments=10, tilt_x=math.pi / 2.0)
 
 
 def banner_narrow(kit: Kit) -> None:
@@ -362,14 +362,6 @@ def trestle(kit: Kit, y: float, lean: float) -> None:
     kit.beam("wood", (-0.3, y, 0.3 + lean), (0.3, y, 0.3 + lean), 0.05, 0.07)
 
 
-def table_long(kit: Kit) -> None:
-    for x in (-0.31, 0.0, 0.31):
-        kit.box("wood", x, 0.0, 0.78, 0.3, 3.4, 0.06, jitter=0.008)
-    trestle(kit, -1.2, 0.0)
-    trestle(kit, 1.2, 0.0)
-    kit.beam("wood", (0.0, -1.2, 0.34), (0.0, 1.2, 0.34), 0.06, 0.08)
-
-
 def table_broken(kit: Kit) -> None:
     for x in (-0.31, 0.0):
         kit.box("wood", x, 0.2, 0.4, 0.3, 3.3, 0.06, tilt_x=-0.24, jitter=0.01)
@@ -377,15 +369,6 @@ def table_broken(kit: Kit) -> None:
     trestle(kit, 1.2, 0.0)
     kit.beam("wood", (-0.5, -1.4, 0.05), (0.4, -1.1, 0.09), 0.07, 0.09)
     kit.beam("wood", (-0.2, -1.7, 0.04), (0.3, -1.9, 0.5), 0.07, 0.09)
-
-
-def chair(kit: Kit) -> None:
-    kit.box("wood", 0.0, 0.0, 0.44, 0.46, 0.46, 0.05)
-    for x in (-0.2, 0.2):
-        kit.box("wood", x, -0.2, 0.0, 0.05, 0.05, 0.44)
-        kit.box("wood", x, 0.2, 0.0, 0.05, 0.05, 1.05)
-    for z in (0.7, 0.92):
-        kit.box("wood", 0.0, 0.2, z, 0.42, 0.03, 0.1)
 
 
 def bench(kit: Kit) -> None:
@@ -464,20 +447,32 @@ def house_b(kit: Kit) -> None:
 
 
 def stall(kit: Kit) -> None:
-    for x in (-1.35, 1.35):
-        kit.box("wood", x, FRONT * 0.75, 0.0, 0.1, 0.1, 2.05)
-        kit.box("wood", x, 0.75, 0.0, 0.1, 0.1, 2.5)
-        kit.beam("wood", (x, FRONT * 0.75, 2.02), (x, 0.75, 2.47), 0.07, 0.07)
-    kit.box("wood", 0.0, FRONT * 0.5, 0.86, 2.9, 0.7, 0.06, jitter=0.008)
-    kit.box("wood", 0.0, FRONT * 0.82, 0.25, 2.8, 0.04, 0.6)
-    kit.beam("wood", (-1.35, FRONT * 0.75, 2.05), (1.35, FRONT * 0.75, 2.05), 0.07, 0.07)
-    kit.beam("wood", (-1.35, 0.75, 2.5), (1.35, 0.75, 2.5), 0.07, 0.07)
-    kit.box("cloth", 0.0, 0.0, 2.27, 3.1, 1.95, 0.035, tilt_x=math.atan2(0.45, 1.5))
-    for index in range(6):
-        kit.box("cloth", -1.3 + index * 0.52, FRONT * 0.93, 1.72 + kit.spread(0.05), 0.5, 0.025, 0.36)
-    kit.box("wood", -0.8, FRONT * 0.5, 0.92, 0.5, 0.4, 0.26, yaw=0.2)
-    kit.box("wood", 0.5, FRONT * 0.45, 0.92, 0.36, 0.36, 0.2, yaw=-0.3)
-    kit.cylinder("wood", 1.0, FRONT * 0.5, 0.92, 0.14, 0.3, segments=10)
+    front: float = FRONT * 0.78
+    back: float = 0.78
+    for x in (-1.4, 1.4):
+        kit.box("wood", x, front, 0.0, 0.11, 0.11, 2.08, yaw=kit.spread(0.08), jitter=0.006)
+        kit.box("wood", x, back, 0.0, 0.11, 0.11, 2.56, yaw=kit.spread(0.08), jitter=0.006)
+        kit.beam("wood", (x, front - 0.12, 2.0), (x, back + 0.12, 2.5), 0.07, 0.09)
+        kit.beam("wood", (x, front, 0.5), (x, back, 0.5), 0.05, 0.08)
+        kit.beam("wood", (x, front, 1.1), (x, back, 1.75), 0.04, 0.06)
+    kit.beam("wood", (-1.56, front, 2.06), (1.56, front, 2.06), 0.07, 0.09)
+    kit.beam("wood", (-1.56, back, 2.54), (1.56, back, 2.54), 0.07, 0.09)
+    kit.beam("wood", (-1.4, back, 1.2), (1.4, back, 1.2), 0.05, 0.08)
+    for index in range(4):
+        kit.box("wood", 0.0, front + 0.1 + index * 0.185, 0.86 + kit.spread(0.006), 2.96 + kit.spread(0.05), 0.175, 0.045, yaw=kit.spread(0.006), jitter=0.004)
+    for x in (-0.9, 0.0, 0.9):
+        kit.beam("wood", (x, front + 0.02, 0.82), (x, front + 0.72, 0.82), 0.06, 0.07)
+    for index in range(11):
+        height: float = 0.74 + kit.spread(0.03)
+        kit.box("wood", -1.29 + index * 0.258, front - 0.03, 0.06, 0.24, 0.028, height, tilt_y=kit.spread(0.012))
+    kit.beam("wood", (-1.4, front - 0.05, 0.3), (1.4, front - 0.05, 0.3), 0.04, 0.07)
+    for index in range(5):
+        x: float = -1.56 + index * 0.78
+        kit.beam("wood", (x, front - 0.2, 2.03), (x, back + 0.18, 2.6), 0.05, 0.06)
+    for index in range(4):
+        kit.sheet("cloth", (-1.6 + index * 0.8, back + 0.2, 2.66), (0.8, 0.0, 0.0), (0.0, front - back - 0.42, -0.6), 4, 6, -0.2 - kit.rng.random() * 0.08)
+    kit.sheet("cloth", (-1.62, front - 0.22, 2.11), (3.24, 0.0, 0.0), (0.0, -0.03, -0.42), 12, 3, 0.03, ragged=0.35, pinned=False)
+    kit.sheet("cloth", (-1.45, back + 0.03, 2.5), (2.9, 0.0, 0.0), (0.0, 0.02, -1.5), 8, 6, 0.05, ragged=0.12, pinned=False)
 
 
 def dead_tree(kit: Kit, height: float, girth: float, depth: int) -> None:
@@ -544,9 +539,7 @@ MODELS: dict[str, Callable[[Kit], None]] = {
     "brazier": brazier,
     "banner": banner_narrow,
     "banner_wide": banner_wide,
-    "table_long": table_long,
     "table_broken": table_broken,
-    "chair": chair,
     "bench": bench,
     "gravestone": gravestone,
     "grave_cross": grave_cross,

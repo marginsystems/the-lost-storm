@@ -3,13 +3,18 @@ import random
 
 import bmesh
 import bpy
-from bmesh.types import BMesh, BMFace, BMVert
+from bmesh.types import BMEdge, BMesh, BMFace, BMVert
 from bpy.types import Material, Object
 from mathutils import Matrix, Vector, noise
 
 Color = tuple[float, float, float]
 
 SHARP_ANGLE: float = math.radians(38.0)
+BEVEL_SHARE: float = 0.09
+BEVEL_MAX: float = 0.035
+BEVEL_MIN_SIDE: float = 0.045
+SHEET_THICKNESS: float = 0.012
+SHEET_NOISE_SCALE: float = 1.7
 EMISSION_STRENGTH: float = 2.2
 
 PALETTE: dict[str, tuple[Color, float, float, bool]] = {
@@ -67,11 +72,51 @@ class Kit:
 
     def box(self, name: str, x: float, y: float, z: float, sx: float, sy: float, sz: float, yaw: float = 0.0, tilt_x: float = 0.0, tilt_y: float = 0.0, jitter: float = 0.0) -> None:
         shape: Matrix = self.placed(x, y, z, yaw, tilt_x, tilt_y) @ Matrix.Translation((0.0, 0.0, sz / 2.0)) @ Matrix.Diagonal((sx, sy, sz, 1.0))
-        made = bmesh.ops.create_cube(self.mesh(name), size=1.0, matrix=shape)
-        if jitter <= 0.0:
+        self.chamfered(name, shape, min(sx, sy, sz), jitter)
+
+    def chamfered(self, name: str, shape: Matrix, thinnest: float, jitter: float) -> None:
+        target: BMesh = self.mesh(name)
+        made = bmesh.ops.create_cube(target, size=1.0, matrix=shape)
+        if jitter > 0.0:
+            for vert in made["verts"]:
+                vert.co += Vector((self.spread(jitter), self.spread(jitter), self.spread(jitter)))
+        if thinnest < BEVEL_MIN_SIDE:
             return
+        edges: set[BMEdge] = set()
         for vert in made["verts"]:
-            vert.co += Vector((self.spread(jitter), self.spread(jitter), self.spread(jitter)))
+            edges.update(vert.link_edges)
+        bmesh.ops.bevel(target, geom=list(edges), offset=min(BEVEL_MAX, thinnest * BEVEL_SHARE), segments=1, affect="EDGES", profile=0.5)
+
+    def sheet(self, name: str, corner: tuple[float, float, float], across: tuple[float, float, float], down: tuple[float, float, float], columns: int, rows: int, billow: float, ragged: float = 0.0, pinned: bool = True) -> None:
+        target: BMesh = self.mesh(name)
+        origin: Vector = Vector(corner)
+        u: Vector = Vector(across)
+        v: Vector = Vector(down)
+        out: Vector = u.cross(v).normalized()
+        offset: Vector = Vector((self.rng.random() * 40.0, self.rng.random() * 40.0, self.rng.random() * 40.0))
+        hems: list[float] = [1.0 - self.rng.random() * ragged for _ in range(columns + 1)]
+        front: list[list[BMVert]] = []
+        back: list[list[BMVert]] = []
+        for row in range(rows + 1):
+            front_row: list[BMVert] = []
+            back_row: list[BMVert] = []
+            for column in range(columns + 1):
+                s: float = column / columns
+                t: float = row / rows * hems[column]
+                at: Vector = origin + u * s + v * t
+                held: float = math.sin(math.pi * t) * math.sin(math.pi * s) if pinned else t
+                swell: float = (noise.noise(at * SHEET_NOISE_SCALE + offset) * 0.6 + held) * billow
+                at += out * swell
+                front_row.append(target.verts.new(at))
+                back_row.append(target.verts.new(at - out * SHEET_THICKNESS))
+            front.append(front_row)
+            back.append(back_row)
+        for row in range(rows):
+            for column in range(columns):
+                upper: BMFace = target.faces.new((front[row][column], front[row][column + 1], front[row + 1][column + 1], front[row + 1][column]))
+                lower: BMFace = target.faces.new((back[row][column], back[row + 1][column], back[row + 1][column + 1], back[row][column + 1]))
+                upper.smooth = True
+                lower.smooth = True
 
     def cylinder(self, name: str, x: float, y: float, z: float, radius: float, height: float, segments: int = 10, top: float | None = None, yaw: float = 0.0, tilt_x: float = 0.0, tilt_y: float = 0.0) -> None:
         shape: Matrix = self.placed(x, y, z, yaw, tilt_x, tilt_y) @ Matrix.Translation((0.0, 0.0, height / 2.0))
@@ -105,7 +150,7 @@ class Kit:
         length: float = along.length
         turn: Matrix = along.to_track_quat("Z", "Y").to_matrix().to_4x4()
         shape: Matrix = Matrix.Translation(a) @ turn @ Matrix.Translation((0.0, 0.0, length / 2.0)) @ Matrix.Diagonal((width, depth, length, 1.0))
-        bmesh.ops.create_cube(self.mesh(name), size=1.0, matrix=shape)
+        self.chamfered(name, shape, min(width, depth, length), 0.0)
 
     def rod(self, name: str, start: tuple[float, float, float], end: tuple[float, float, float], radius: float, segments: int = 6, top: float | None = None) -> None:
         a: Vector = Vector(start)
