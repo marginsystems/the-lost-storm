@@ -1,16 +1,23 @@
 .title-account {
+  --signin-width: 220px;
+  --signin-height: 32px;
+  --signin-gap: 6px;
+  --signin-fill: #131314;
+  --signin-fill-active: #202124;
+  --signin-stroke: #8e918f;
+  --signin-text: #e3e3e3;
   position: relative;
   display: grid;
-  grid-template-rows: 32px 24px;
+  grid-template-rows: calc(var(--signin-height) * 2 + var(--signin-gap)) 0px 24px;
   justify-items: center;
   margin: 12px 0 0;
-  height: 56px;
   opacity: 0;
   visibility: hidden;
   transform: translateY(6px);
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-smooth-ms) var(--spring-smooth),
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s linear var(--spring-smooth-ms);
 }
 
@@ -21,81 +28,104 @@
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-smooth-ms) var(--spring-smooth),
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s linear 0s;
+}
+
+.title-account.emailing {
+  grid-template-rows: calc(var(--signin-height) * 2 + var(--signin-gap)) calc(var(--signin-height) + var(--signin-gap)) 24px;
 }
 
 .title-methods {
   grid-area: 1 / 1;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  height: 32px;
-  transition:
-    opacity var(--spring-smooth-ms) var(--spring-smooth),
-    transform var(--spring-smooth-ms) var(--spring-smooth),
-    visibility 0s linear 0s;
-}
-
-.title-account.emailing .title-methods {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition:
-    opacity var(--spring-snappy-ms) var(--spring-snappy),
-    transform var(--spring-snappy-ms) var(--spring-snappy),
-    visibility 0s linear var(--spring-snappy-ms);
+  gap: var(--signin-gap);
 }
 
 .title-card .title-methods > [hidden] {
   display: none;
 }
 
-.title-card button.title-email-open {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
+.title-card .title-signin {
+  position: relative;
+  display: block;
+  width: var(--signin-width);
+  height: var(--signin-height);
   margin: 0;
-  padding: 0 12px;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  color: rgba(239, 230, 214, 0.86);
-  background: rgba(20, 22, 28, 0.88);
+  padding: 0;
+  overflow: hidden;
+  color: var(--signin-text);
+  background: var(--signin-fill);
   border: none;
   border-radius: 4px;
-  white-space: nowrap;
+  box-shadow: inset 0 0 0 1px var(--signin-stroke);
+  outline: none;
+  transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
 }
 
-.title-card button.title-email-open:not(:disabled):hover {
-  background: rgba(36, 40, 50, 0.92);
+.title-card .title-signin:not(:disabled):hover,
+.title-card .title-signin:focus-visible,
+.title-card .title-signin:focus-within,
+.title-card .title-account.emailing .title-email-open {
+  background: var(--signin-fill-active);
   transform: none;
 }
 
-.title-email-short {
-  display: none;
+.title-signin-face {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  padding: 0 12px;
+  font-family: 'Google Sans', Roboto, var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
-@media (max-width: 480px) {
-  .title-email-long {
-    display: none;
-  }
+.title-signin-mark {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
 
-  .title-email-short {
-    display: inline;
-  }
+.title-signin-text {
+  flex: 1 1 auto;
+  text-align: center;
+  margin: 0 18px 0 0;
+}
+
+.title-google-mark {
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.title-google-mark.loaded {
+  opacity: 1;
+}
+
+.title-google-official {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
 }
 
 .title-email {
-  grid-area: 1 / 1;
+  grid-area: 2 / 1;
+  align-self: end;
   position: relative;
   width: min(316px, 100%);
   height: 32px;
   margin: 0;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(4px);
+  transform: translateY(-6px);
   transition:
     opacity var(--spring-snappy-ms) var(--spring-snappy),
     transform var(--spring-snappy-ms) var(--spring-snappy),
@@ -218,7 +248,7 @@
 }
 
 .title-email-note {
-  grid-area: 2 / 1;
+  grid-area: 3 / 1;
   display: block;
   margin: 6px 0 0;
   max-width: 316px;
@@ -246,7 +276,7 @@
 
 .title-turnstile {
   position: absolute;
-  top: 40px;
+  top: calc(var(--signin-height) * 3 + var(--signin-gap) * 3);
   left: 50%;
   z-index: 2;
   width: 300px;
@@ -274,29 +304,6 @@
     visibility 0s linear 0s;
 }
 
-.title-google {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 220px;
-  height: 32px;
-  overflow: hidden;
-  border-radius: 4px;
-}
-
-.title-google iframe {
-  animation: title-google-in var(--spring-smooth-ms) var(--spring-smooth) both;
-}
-
-@keyframes title-google-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 .title-google[hidden],
 .title-account-line[hidden],
 .title-account-note[hidden] {
@@ -305,13 +312,31 @@
 
 .title-account-line {
   grid-area: 1 / 1;
-  display: block;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: var(--signin-width);
+  height: var(--signin-height);
   margin: 0;
-  height: 32px;
+  padding: 0 4px 0 12px;
+  overflow: hidden;
+  font-family: 'Google Sans', Roboto, var(--sans);
   font-size: 13px;
-  line-height: 32px;
-  letter-spacing: 0.02em;
-  color: rgba(239, 230, 214, 0.72);
+  line-height: 20px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: var(--signin-text);
+  background: rgba(19, 19, 20, 0.72);
+  border-radius: 4px;
+}
+
+#title-account-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
 }
 
 .title-account-method {
@@ -329,12 +354,27 @@
 }
 
 .title-card .title-account-line button.title-quiet {
+  flex: 0 0 auto;
   display: inline-block;
-  margin: 0 0 0 6px;
+  height: 24px;
+  margin: 0 0 0 8px;
+  padding: 0 8px;
+  font-size: 13px;
+  line-height: 24px;
+  border-radius: 4px;
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.title-card .title-account-line button.title-quiet:not(:disabled):hover,
+.title-card .title-account-line button.title-quiet:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+  transform: none;
 }
 
 .title-account-note {
-  grid-area: 2 / 1;
+  grid-area: 3 / 1;
   display: block;
   margin: 6px 0 0;
   height: 18px;

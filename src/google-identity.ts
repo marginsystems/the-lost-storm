@@ -13,8 +13,16 @@ interface IdentityApi {
   readonly renderButton: (mount: HTMLElement, options: unknown) => void;
 }
 
-export const GOOGLE_IDENTITY: { readonly script: string; readonly attempts: number; readonly retryMs: number; readonly buttonWidth: number; readonly locale: string } = {
+export interface MarkImage {
+  src: string;
+  readonly classList: { add(token: string): void };
+  addEventListener(type: 'load', listener: () => void, options: { readonly once: boolean }): void;
+}
+
+export const GOOGLE_IDENTITY: { readonly script: string; readonly mark: string; readonly markLoaded: string; readonly attempts: number; readonly retryMs: number; readonly buttonWidth: number; readonly locale: string } = {
   script: 'https://accounts.google.com/gsi/client?hl=en',
+  mark: 'https://www.gstatic.com/images/branding/googleg/svg/googleg_standard_clr_18px.svg',
+  markLoaded: 'loaded',
   attempts: 4,
   retryMs: 1500,
   buttonWidth: 220,
@@ -55,6 +63,17 @@ export function readIdentityApi(globals: unknown): GoogleIdentity | null {
       api.renderButton(mount, { type: 'standard', theme: 'filled_black', size: 'medium', shape: 'rectangular', text: 'signin_with', logo_alignment: 'left', locale: GOOGLE_IDENTITY.locale, width: GOOGLE_IDENTITY.buttonWidth });
     },
   };
+}
+
+export function showGoogleMark(image: MarkImage): void {
+  image.addEventListener(
+    'load',
+    (): void => {
+      image.classList.add(GOOGLE_IDENTITY.markLoaded);
+    },
+    { once: true },
+  );
+  image.src = GOOGLE_IDENTITY.mark;
 }
 
 function fetchScript(): Promise<GoogleIdentity | null> {

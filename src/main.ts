@@ -95,7 +95,7 @@ import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-vi
 import { createBrowserTimers } from './browser-timers.ts';
 import { createAccountFlow } from './account-flow.ts';
 import type { AccountFlow } from './account-flow.ts';
-import { loadGoogleIdentity } from './google-identity.ts';
+import { loadGoogleIdentity, showGoogleMark } from './google-identity.ts';
 import { createTitleEmail, digitInputs } from './title-email.ts';
 import type { TitleEmail } from './title-email.ts';
 import { createTurnstileGate, loadTurnstile } from './turnstile.ts';
@@ -203,7 +203,8 @@ function startTitleAccount(account: AccountService, setBusy: (busy: boolean) => 
     showButton: async (clientId: string, nonce: string, onCredential: (credential: string) => void): Promise<boolean> => {
       const identity: GoogleIdentity | null = await loadGoogleIdentity();
       if (identity === null) return false;
-      identity.start({ clientId, nonce, onCredential }, mount);
+      showGoogleMark(element('title-google-mark', HTMLImageElement));
+      identity.start({ clientId, nonce, onCredential }, element('title-google-official', HTMLDivElement));
       return true;
     },
   });

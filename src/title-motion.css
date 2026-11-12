@@ -75,7 +75,7 @@ body {
 }
 
 #title.ready .title-account.shown {
-  transition-delay: calc(var(--arrive-step) * 2);
+  transition-delay: calc(var(--arrive-step) * 2), calc(var(--arrive-step) * 2), 0s, 0s;
 }
 
 #title.ready .title-lobby {

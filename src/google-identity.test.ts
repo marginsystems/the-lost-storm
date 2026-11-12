@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readCredential, readIdentityApi } from './google-identity.ts';
+import type { MarkImage } from './google-identity.ts';
+import { GOOGLE_IDENTITY, readCredential, readIdentityApi, showGoogleMark } from './google-identity.ts';
 
 function initialize(): void {
   return undefined;
@@ -31,4 +32,26 @@ void test('looking for the script reads only the property it needs', (): void =>
     },
   });
   assert.notEqual(readIdentityApi(globals), null);
+});
+
+void test('the Google mark comes from Google at run time and is marked loaded only once the image has arrived', (): void => {
+  const classes: Set<string> = new Set<string>();
+  const loads: (() => void)[] = [];
+  const image: MarkImage = {
+    src: '',
+    classList: {
+      add: (token: string): void => {
+        classes.add(token);
+      },
+    },
+    addEventListener: (_type: 'load', listener: () => void): void => {
+      loads.push(listener);
+    },
+  };
+  showGoogleMark(image);
+  assert.equal(image.src, GOOGLE_IDENTITY.mark);
+  assert.match(GOOGLE_IDENTITY.mark, /^https:\/\/www\.gstatic\.com\//);
+  assert.equal(classes.has(GOOGLE_IDENTITY.markLoaded), false);
+  for (const load of loads) load();
+  assert.equal(classes.has(GOOGLE_IDENTITY.markLoaded), true);
 });
