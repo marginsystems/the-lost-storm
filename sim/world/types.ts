@@ -105,6 +105,8 @@ export interface PlayerState extends ActorState {
   kills: number;
 }
 
+export type MonsterStance = 'approach' | 'engage' | 'hold' | 'retreat';
+
 export interface MonsterState extends ActorState {
   readonly kind: 'monster';
   readonly def: MonsterDef;
@@ -113,10 +115,16 @@ export interface MonsterState extends ActorState {
   readonly damageMin: number;
   readonly damageMax: number;
   readonly home: Vec2;
-  readonly strafeSign: number;
+  strafeSign: number;
   aggro: boolean;
   path: Vec2[];
   repathTimer: number;
+  stance: MonsterStance;
+  blindTime: number;
+  stuckTime: number;
+  restTime: number;
+  lastPos: Vec2;
+  lastTravel: number;
   spawnTime: number;
   phase: number;
   nextSkill: SkillDef | null;

@@ -8,9 +8,21 @@ const MOVEMENT = {
   knockFriction: 9,
   knockRest: 0.08,
   arrive: 1e-4,
-  turnStep: 0.05,
   separationPasses: 2,
 } as const;
+
+export function turnToward(current: number, target: number, maxStep: number): number {
+  let delta: number = (target - current) % (Math.PI * 2);
+  if (delta > Math.PI) delta -= Math.PI * 2;
+  if (delta < -Math.PI) delta += Math.PI * 2;
+  if (Math.abs(delta) <= maxStep) return target;
+  return current + Math.sign(delta) * maxStep;
+}
+
+export function faceToward(actor: ActorState, direction: Vec2, maxStep: number): void {
+  if (Math.hypot(direction.x, direction.z) <= MOVEMENT.arrive) return;
+  actor.facing = turnToward(actor.facing, facingOf(direction), maxStep);
+}
 
 export function stepTimers(actor: ActorState, dt: number): void {
   for (const key of Object.keys(actor.cooldowns)) {
@@ -35,24 +47,27 @@ export function stepKnock(grid: NavGrid, actor: ActorState, dt: number): void {
   actor.knock.z *= decay;
 }
 
-export function followPath(actor: ActorState, path: Vec2[], travel: number): void {
+export function followPath(grid: NavGrid, actor: ActorState, path: Vec2[], travel: number, maxTurn: number): number {
   let remaining: number = travel;
-  while (remaining > 0) {
+  let moved: number = 0;
+  while (remaining > MOVEMENT.arrive) {
     const next: Vec2 | undefined = path[0];
-    if (next === undefined) return;
+    if (next === undefined) break;
     const gap: number = distance(actor.pos, next);
-    if (gap > MOVEMENT.turnStep) actor.facing = facingOf({ x: next.x - actor.pos.x, z: next.z - actor.pos.z });
-    if (gap <= remaining) {
-      actor.pos.x = next.x;
-      actor.pos.z = next.z;
-      path.shift();
-      remaining -= gap;
-    } else {
-      actor.pos.x += ((next.x - actor.pos.x) / gap) * remaining;
-      actor.pos.z += ((next.z - actor.pos.z) / gap) * remaining;
-      remaining = 0;
-    }
+    const share: number = gap <= remaining ? 1 : remaining / Math.max(gap, MOVEMENT.arrive);
+    const fromX: number = actor.pos.x;
+    const fromZ: number = actor.pos.z;
+    moveWithCollision(grid, actor.pos, (next.x - fromX) * share, (next.z - fromZ) * share);
+    const step: number = Math.hypot(actor.pos.x - fromX, actor.pos.z - fromZ);
+    moved += step;
+    remaining -= step;
+    if (share < 1) break;
+    if (distance(actor.pos, next) > MOVEMENT.arrive) break;
+    path.shift();
   }
+  const ahead: Vec2 | undefined = path[0];
+  if (ahead !== undefined) faceToward(actor, { x: ahead.x - actor.pos.x, z: ahead.z - actor.pos.z }, maxTurn);
+  return moved;
 }
 
 function pushApart(grid: NavGrid, a: ActorState, b: ActorState, shareA: number): void {

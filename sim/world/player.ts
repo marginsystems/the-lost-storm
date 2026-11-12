@@ -20,6 +20,8 @@ const PLAYER = {
   goldDelay: 0.45,
   stride: 2.5,
   firstStepFraction: 0.6,
+  turnRate: 16,
+  stuckStep: 1e-4,
 } as const;
 
 function setDestination(world: World, dest: Vec2): void {
@@ -297,6 +299,12 @@ function respawn(world: World): void {
     monster.knock = { x: 0, z: 0 };
     monster.action = null;
     monster.path = [];
+    monster.stance = 'approach';
+    monster.blindTime = 0;
+    monster.stuckTime = 0;
+    monster.restTime = 0;
+    monster.lastPos = { x: monster.pos.x, z: monster.pos.z };
+    monster.lastTravel = 0;
     monster.stagger = 0;
     monster.phase = 0;
     monster.nextSkill = null;
@@ -341,8 +349,9 @@ export function stepPlayer(world: World, dt: number): void {
   if (player.action === null) {
     stepIntent(world, dt);
     if (!isBusy(player) && player.path.length > 0) {
-      followPath(player, player.path, player.stats.moveSpeed * dt);
-      player.moving = true;
+      const moved: number = followPath(world.grid, player, player.path, player.stats.moveSpeed * dt, PLAYER.turnRate * dt);
+      player.moving = moved > PLAYER.stuckStep;
+      if (!player.moving) player.path = [];
     }
   }
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));

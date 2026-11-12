@@ -70,3 +70,70 @@ void test('moveWithCollision moves freely, slides along a wall and never enters 
   moveWithCollision(grid, pinned, -2, 0);
   assert.deepEqual(pinned, { x: 1.2, z: 22 });
 });
+
+const AUDIT = {
+  spawnSnap: 6,
+} as const;
+
+function reachableFrom(zoneGrid: NavGrid, start: Vec2): Uint8Array {
+  const seen: Uint8Array = new Uint8Array(zoneGrid.columns * zoneGrid.rows);
+  const first: number = cellIndex(zoneGrid, start.x, start.z);
+  if (first < 0) return seen;
+  const queue: number[] = [first];
+  seen[first] = 1;
+  while (queue.length > 0) {
+    const current: number = queue.pop() ?? first;
+    const column: number = current % zoneGrid.columns;
+    const row: number = Math.floor(current / zoneGrid.columns);
+    for (let dr: number = -1; dr <= 1; dr += 1) {
+      for (let dc: number = -1; dc <= 1; dc += 1) {
+        const nextColumn: number = column + dc;
+        const nextRow: number = row + dr;
+        if (nextColumn < 0 || nextRow < 0 || nextColumn >= zoneGrid.columns || nextRow >= zoneGrid.rows) continue;
+        const next: number = nextRow * zoneGrid.columns + nextColumn;
+        if (seen[next] === 1 || zoneGrid.walkable[next] !== 1) continue;
+        if (dc !== 0 && dr !== 0 && (zoneGrid.walkable[row * zoneGrid.columns + nextColumn] !== 1 || zoneGrid.walkable[nextRow * zoneGrid.columns + column] !== 1)) continue;
+        seen[next] = 1;
+        queue.push(next);
+      }
+    }
+  }
+  return seen;
+}
+
+for (const zone of content.zones.values()) {
+  const zoneGrid: NavGrid = buildNavGrid(zone, content.props, content.player.radius);
+
+  void test(`${zone.id}: every blocking prop's footprint is solid in the nav grid and closed to walkers`, (): void => {
+    const problems: string[] = [];
+    for (const placed of zone.props) {
+      const radius: number = must(content.props.get(placed.prop), placed.prop).blockRadius;
+      if (radius <= 0 || placed.when.length > 0) continue;
+      for (let index: number = 0; index < zoneGrid.columns * zoneGrid.rows; index += 1) {
+        const centre: Vec2 = cellCenter(zoneGrid, index);
+        const gap: number = Math.hypot(centre.x - placed.x, centre.z - placed.z);
+        if (gap < radius && !isSolid(zoneGrid, centre.x, centre.z)) problems.push(`${placed.prop} at ${placed.x},${placed.z} is not solid at ${centre.x},${centre.z}`);
+        if (gap < radius + content.player.radius && isWalkable(zoneGrid, centre.x, centre.z)) problems.push(`${placed.prop} at ${placed.x},${placed.z} lets a walker stand at ${centre.x},${centre.z}`);
+      }
+    }
+    assert.deepEqual(problems, []);
+  });
+
+  void test(`${zone.id}: every pack, exit, checkpoint, waypoint and NPC is reachable from the start`, (): void => {
+    const start: Vec2 = must(nearestWalkable(zoneGrid, zone.playerStart, AUDIT.spawnSnap), `${zone.id} start`);
+    const seen: Uint8Array = reachableFrom(zoneGrid, start);
+    const places: { readonly label: string; readonly x: number; readonly z: number }[] = [
+      ...zone.packs.map((pack, index: number) => ({ label: `pack ${index}`, x: pack.x, z: pack.z })),
+      ...zone.exits.map((exit) => ({ label: `exit ${exit.id}`, x: exit.x, z: exit.z })),
+      ...zone.checkpoints.map((checkpoint) => ({ label: `checkpoint ${checkpoint.id}`, x: checkpoint.x, z: checkpoint.z })),
+      ...zone.npcs.map((npc) => ({ label: `npc ${npc.npc}`, x: npc.x, z: npc.z })),
+      ...(zone.waypoint === null ? [] : [{ label: 'waypoint', x: zone.waypoint.x, z: zone.waypoint.z }]),
+    ];
+    const problems: string[] = [];
+    for (const place of places) {
+      const snapped: Vec2 | null = nearestWalkable(zoneGrid, place, AUDIT.spawnSnap);
+      if (snapped === null || seen[cellIndex(zoneGrid, snapped.x, snapped.z)] !== 1) problems.push(`${place.label} at ${place.x},${place.z} is cut off`);
+    }
+    assert.deepEqual(problems, []);
+  });
+}
