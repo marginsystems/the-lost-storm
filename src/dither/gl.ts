@@ -119,9 +119,14 @@ function build(): Program | null {
 }
 
 let shared: Program | null | undefined;
+let lost: boolean = false;
 
 export function ditherRenderer(): DitherRenderer | null {
-  if (shared === undefined) shared = build();
+  if (shared !== null && shared !== undefined && shared.gl.isContextLost()) lost = true;
+  if (shared === undefined || lost) {
+    shared = build();
+    lost = shared === null || shared.gl.isContextLost();
+  }
   const ready: Program | null = shared;
   if (ready === null) return null;
   const { gl, canvas, program } = ready;

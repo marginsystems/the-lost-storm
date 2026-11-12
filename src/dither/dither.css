@@ -18,7 +18,11 @@
   background: none;
 }
 
-#vignette.dithered::after,
+#title > .title-backdrop {
+  position: fixed;
+}
+
+#vignette.dithered-hurt::after,
 #fade.dithered::before {
   display: none;
 }

@@ -32,7 +32,7 @@ function causeText(world: World): string {
 
 export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus {
   const screen: HTMLDivElement = el('div', 'death-screen', parent);
-  const backdrop: DitherLayer = mountDither(screen, { className: 'death-backdrop', layers: BACKDROPS.death, eager: false, marksHost: true, maxRatio: DEATH_PANEL.backdropRatio });
+  const backdrop: DitherLayer = mountDither(screen, { className: 'death-backdrop', layers: BACKDROPS.death, eager: false, marks: 'dithered', maxRatio: DEATH_PANEL.backdropRatio });
   const panel: HTMLDivElement = el('div', 'death-panel', screen);
   label('death-title', 'You have fallen', panel);
   const cause: HTMLDivElement = el('div', 'death-cause', panel);

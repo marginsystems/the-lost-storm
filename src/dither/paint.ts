@@ -55,12 +55,9 @@ export function radii(layer: RadialLayer, box: PixelBox): Radii {
   const cx: number = layer.centre.x * box.width;
   const cy: number = layer.centre.y * box.height;
   if (layer.size.kind === 'fixed') return { cx, cy, rx: Math.max(layer.size.rx * box.width, PAINT.minimumRadius), ry: Math.max(layer.size.ry * box.height, PAINT.minimumRadius) };
-  const nearX: number = Math.max(Math.min(cx, box.width - cx), PAINT.minimumRadius);
-  const nearY: number = Math.max(Math.min(cy, box.height - cy), PAINT.minimumRadius);
-  const farX: number = Math.max(cx, box.width - cx);
-  const farY: number = Math.max(cy, box.height - cy);
-  const stretch: number = Math.hypot(farX / nearX, farY / nearY);
-  return { cx, cy, rx: nearX * stretch, ry: nearY * stretch };
+  const farX: number = Math.max(cx, box.width - cx, PAINT.minimumRadius);
+  const farY: number = Math.max(cy, box.height - cy, PAINT.minimumRadius);
+  return { cx, cy, rx: farX * Math.SQRT2, ry: farY * Math.SQRT2 };
 }
 
 export interface LayerUniforms {

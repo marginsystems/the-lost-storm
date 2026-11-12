@@ -2,7 +2,7 @@ body[data-zone-kind='void'] #vignette:not(.dithered) {
   background: radial-gradient(ellipse at center, rgba(40, 44, 50, 0) 40%, rgba(40, 44, 50, 0.38) 100%);
 }
 
-body[data-zone-kind='void'] #vignette:not(.dithered)::before {
+body[data-zone-kind='void'] #vignette:not(.dithered-lit)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -11,7 +11,7 @@ body[data-zone-kind='void'] #vignette:not(.dithered)::before {
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-body[data-zone-kind='void'][data-void-light='on'] #vignette:not(.dithered)::before {
+body[data-zone-kind='void'][data-void-light='on'] #vignette:not(.dithered-lit)::before {
   opacity: 1;
 }
 

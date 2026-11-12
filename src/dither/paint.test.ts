@@ -4,11 +4,11 @@ import { BACKDROPS, edgeFor } from './backdrops.ts';
 import type { ColourStop, LayerUniforms, RadialLayer } from './paint.ts';
 import { DITHER_LIMITS, layerUniforms, radii, rgba } from './paint.ts';
 
-void test('a farthest-corner ellipse reaches its last stop exactly at the far corner and keeps the closest-side shape', (): void => {
+void test('a farthest-corner ellipse reaches its last stop exactly at the far corner and keeps the farthest-side shape, as CSS does', (): void => {
   const layer: RadialLayer = { centre: { x: 0.5, y: 0.4 }, size: { kind: 'farthest-corner' }, stops: [] };
   const shape = radii(layer, { width: 1000, height: 600 });
   assert.ok(Math.abs(Math.hypot((0 - shape.cx) / shape.rx, (600 - shape.cy) / shape.ry) - 1) < 1e-9);
-  assert.ok(Math.abs(shape.rx / shape.ry - 500 / 240) < 1e-9);
+  assert.ok(Math.abs(shape.rx / shape.ry - 500 / 360) < 1e-9);
 });
 
 void test('a fixed ellipse is sized against the box it covers', (): void => {

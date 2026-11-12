@@ -7,7 +7,6 @@ export const DITHER_LAYER = {
   maxRatio: 2,
   seed: 0x51ed270b,
   hostClass: 'dither-host',
-  paintedClass: 'dithered',
   layerClass: 'dither-layer',
 } as const;
 
@@ -15,7 +14,7 @@ export interface DitherOptions {
   readonly className: string;
   readonly layers: readonly RadialLayer[];
   readonly eager: boolean;
-  readonly marksHost: boolean;
+  readonly marks: string | null;
   readonly maxRatio: number;
 }
 
@@ -52,15 +51,20 @@ export function mountDither(host: HTMLElement, options: DitherOptions): DitherLa
     if (box.width === 0 || box.height === 0) return;
     const renderer: DitherRenderer | null = ditherRenderer();
     const source: HTMLCanvasElement | null = renderer === null ? null : renderer.draw(layers, box, seed);
-    if (source === null) return;
+    const context: CanvasRenderingContext2D | null = source === null ? null : canvas.getContext('2d');
+    if (source === null || context === null) {
+      painted = null;
+      canvas.width = 0;
+      canvas.height = 0;
+      if (options.marks !== null) host.classList.remove(options.marks);
+      return;
+    }
     canvas.width = box.width;
     canvas.height = box.height;
-    const context: CanvasRenderingContext2D | null = canvas.getContext('2d');
-    if (context === null) return;
     context.clearRect(0, 0, box.width, box.height);
     context.drawImage(source, 0, 0);
     painted = box;
-    if (options.marksHost) host.classList.add(DITHER_LAYER.paintedClass);
+    if (options.marks !== null) host.classList.add(options.marks);
   };
 
   new ResizeObserver((): void => {
