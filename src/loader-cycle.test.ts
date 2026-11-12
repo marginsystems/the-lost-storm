@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { LoaderPhase, LoaderTiming } from './loader-cycle.ts';
-import { LOADER_CYCLE, loaderCycles, loaderExitAt, loaderPhase } from './loader-cycle.ts';
+import { COVER_LIMIT, coverExitAt, LOADER_CYCLE, loaderCycles, loaderExitAt, loaderPhase } from './loader-cycle.ts';
 
 const TIMING: LoaderTiming = { showDelayMs: 100, cycleMs: 500 };
 
@@ -50,7 +50,20 @@ void test('the shared cycle stays under a second so a crossing grows by less tha
   for (let done: number = LOADER_CYCLE.showDelayMs; done < 4000; done += 13) assert.ok(loaderExitAt(done) - done <= LOADER_CYCLE.cycleMs);
 });
 
-void test('a quick zone build ends inside the show delay, so a repeat crossing skips the mark and lifts at once', (): void => {
-  const repeatCrossingDoneMs: number = 280;
-  assert.equal(loaderExitAt(repeatCrossingDoneMs), repeatCrossingDoneMs);
+void test('the veil skips the mark only when it can lift with the cover up under the show delay, lift included', (): void => {
+  const lastSkip: number = LOADER_CYCLE.showDelayMs - COVER_LIMIT.liftLeadMs;
+  assert.equal(coverExitAt(lastSkip, lastSkip - 40), null);
+  assert.equal(coverExitAt(0, 0), null);
+});
+
+void test('a cover that runs past the skip window shows the mark for one whole cycle, even if the mark clock started late', (): void => {
+  const lastSkip: number = LOADER_CYCLE.showDelayMs - COVER_LIMIT.liftLeadMs;
+  const once: number = LOADER_CYCLE.showDelayMs + LOADER_CYCLE.cycleMs;
+  assert.equal(coverExitAt(lastSkip + 1, lastSkip - 40), once);
+  assert.equal(coverExitAt(LOADER_CYCLE.showDelayMs + 30, LOADER_CYCLE.showDelayMs - 10), once);
+  assert.equal(coverExitAt(once + 100, once + 60), LOADER_CYCLE.showDelayMs + 2 * LOADER_CYCLE.cycleMs);
+});
+
+void test('the mark is up within the cover limit, lift lead included', (): void => {
+  assert.ok(LOADER_CYCLE.showDelayMs + COVER_LIMIT.liftLeadMs <= 300);
 });

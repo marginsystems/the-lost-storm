@@ -4,7 +4,7 @@ export const VEIL = {
   markClass: 'veil-mark',
 } as const;
 
-import { loaderExitAt } from './loader-cycle.ts';
+import { coverExitAt } from './loader-cycle.ts';
 import type { LoadingMark } from './loading-mark.ts';
 import { createLoadingMark } from './loading-mark.ts';
 import type { Veil } from './transition.ts';
@@ -36,18 +36,21 @@ function wait(ms: number): Promise<void> {
 export function createVeil(element: HTMLElement): Veil {
   const mark: LoadingMark = createLoadingMark(element, VEIL.markClass);
   let markStarted: number | null = null;
+  let coveredAt: number = 0;
   return {
     async cover(colour: string | null): Promise<void> {
       element.style.background = colour ?? '';
       element.classList.add(VEIL.coverClass);
       await faded(element);
+      coveredAt = performance.now();
       markStarted = await mark.start();
     },
     async hold(): Promise<void> {
       if (markStarted === null) return;
-      const doneAt: number = performance.now() - markStarted;
-      const exitAt: number = loaderExitAt(doneAt);
-      if (exitAt <= doneAt) {
+      const now: number = performance.now();
+      const doneAt: number = now - markStarted;
+      const exitAt: number | null = coverExitAt(now - coveredAt, doneAt);
+      if (exitAt === null) {
         mark.stop();
         markStarted = null;
         return;
