@@ -8,6 +8,8 @@ import type { World } from '../../sim/world/types.ts';
 import { forgetModel, loadModel } from './character-loader.ts';
 import { buildGround } from './ground.ts';
 import { buildVoidView } from './void-view.ts';
+import type { Vec2 } from '../../sim/math.ts';
+import type { QualityName } from '../mobile/quality.ts';
 import type { Ground } from './ground.ts';
 import { dressed, preloadSurfaces, releaseSurfaces } from './surfaces.ts';
 import { zoneModels, zoneProps, zoneSurfaces } from './zone-assets.ts';
@@ -57,7 +59,7 @@ export interface ZoneView {
   readonly torches: readonly Vector3[];
   readonly lightsVersion: number;
   setLightBudget(count: number): void;
-  update(time: number, dt: number, world: World): void;
+  update(time: number, dt: number, world: World, look: Vec2 | null): void;
   dispose(): void;
 }
 
@@ -106,9 +108,9 @@ function standardMaterials(value: unknown): MeshStandardMaterial[] {
   return value.filter((entry: unknown): entry is MeshStandardMaterial => entry instanceof MeshStandardMaterial);
 }
 
-export async function buildZoneView(loader: GLTFLoader, content: Content, zone: ZoneDef, scene: Scene): Promise<ZoneView> {
+export async function buildZoneView(loader: GLTFLoader, content: Content, zone: ZoneDef, scene: Scene, quality: QualityName): Promise<ZoneView> {
   if (zone.kind === 'void') {
-    const empty: ZoneView = buildVoidView(zone);
+    const empty: ZoneView = buildVoidView(zone, quality);
     scene.add(empty.group);
     return empty;
   }

@@ -35,6 +35,7 @@ export interface Input {
   collect(dt: number): Command[];
   tap(clientX: number, clientY: number): void;
   readonly hoveredId: number | null;
+  readonly look: Vec2 | null;
 }
 
 export function createInput(canvas: HTMLCanvasElement, world: World, camera: IsoCamera, hud: Hud, settings: SettingsStore, hooks: InputHooks): Input {
@@ -46,6 +47,8 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   const pressed: string[] = [];
   let hoveredId: number | null = null;
   let pointerInside: boolean = false;
+  let mouse: boolean = false;
+  let look: Vec2 | null = null;
   let holdTimer: number = 0;
   let shift: boolean = false;
   let tapping: boolean = false;
@@ -76,6 +79,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   });
   canvas.addEventListener('pointermove', (event: PointerEvent): void => {
     track(event);
+    mouse = event.pointerType === 'mouse';
     shift = event.shiftKey;
     pointerInside = true;
   });
@@ -191,6 +195,9 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     get hoveredId(): number | null {
       return hoveredId;
     },
+    get look(): Vec2 | null {
+      return look;
+    },
     tap(clientX: number, clientY: number): void {
       trackPoint(clientX, clientY);
       pointerInside = true;
@@ -206,6 +213,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       hoveredId = target?.id ?? person?.id ?? null;
       const groundHit: Vector3 | null = camera.groundPoint(pointer);
       const ground: Vec2 | null = groundHit === null ? null : { x: groundHit.x, z: groundHit.z };
+      look = mouse && pointerInside ? ground : null;
       const exit: ZoneExit | null = target === null && person === null ? exitAt(ground) : null;
       hooks.aimExit(exit?.id ?? null);
       const station: Station | null = target === null && person === null && exit === null ? stationAt(ground) : null;
