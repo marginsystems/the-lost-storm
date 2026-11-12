@@ -382,6 +382,8 @@ async function start(): Promise<void> {
       audio.stopAmbience();
       enter.textContent = 'Continue';
       reset.hidden = false;
+      titleBar.current = world.player.bar;
+      drawTitleKeys();
       title.classList.remove('gone');
     },
   });
