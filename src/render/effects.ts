@@ -15,6 +15,9 @@ import type { BurstOptions, ParticleSystem } from './particles.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
 export const EFFECTS = {
+  levelLight: 45,
+  levelRing: 2.4,
+  levelLightHeight: 1.6,
   slashTime: 0.2,
   slashHeight: 1.15,
   slashTilt: 0.22,
@@ -282,10 +285,9 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   };
 
   const levelUp = (x: number, z: number): void => {
-    ring(x, z, 6, GOLD, 0.7);
-    spray(x, 0.3, z, GOLD, 60, { speed: { min: 0.5, max: 3.5 }, lift: { min: 4, max: 14 }, life: { min: 0.6, max: 1.3 }, size: { min: 0.25, max: 0.6 }, gravity: 3, drag: 1.2, jitter: 1.4 });
-    flashLight(x, 3, z, GOLD, 110);
-    onFlash(0.5);
+    ring(x, z, EFFECTS.levelRing, GOLD, 0.7);
+    spray(x, 0.3, z, GOLD, 60, { speed: { min: 0.5, max: 3.5 }, lift: { min: 3, max: 8 }, life: { min: 0.6, max: 1.3 }, size: { min: 0.25, max: 0.6 }, gravity: 3, drag: 1.2, jitter: 1.4 });
+    flashLight(x, EFFECTS.levelLightHeight, z, GOLD, EFFECTS.levelLight);
   };
 
   const onSkillStart = (event: Extract<WorldEvent, { type: 'skill_start' }>, world: World): void => {

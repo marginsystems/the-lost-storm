@@ -258,7 +258,7 @@ async function start(): Promise<void> {
   applyWeather(world.zone);
   const effects: Effects = await momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.strike(power)), { scene: stage.scene, loader, content, library, dresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
-  const ward: Ward = createWard(stage.scene);
+  const ward: Ward = createWard(stage.scene, mobile.quality.tier.name === 'mobile');
   const actors: Actors = createActors(stage.scene, library, world);
   const figureGauge: FigureGauge = createFigureGauge();
   const itemImage = (item: ItemInstance): string | null => {
