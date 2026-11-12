@@ -13,6 +13,8 @@ export const QUIET: MomentDef = {
   id: 'test_quiet',
   name: 'A quiet moment',
   tint: '#ffb060',
+  ground: 'dirt',
+  light: '#ffd0a0',
   bright: false,
   radius: 5,
   lifetime: 30,

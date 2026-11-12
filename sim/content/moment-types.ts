@@ -42,6 +42,8 @@ export interface MomentDef {
   readonly id: string;
   readonly name: string;
   readonly tint: string;
+  readonly ground: string;
+  readonly light: string;
   readonly bright: boolean;
   readonly radius: number;
   readonly lifetime: number;

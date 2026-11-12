@@ -11,6 +11,8 @@ const MOMENT: MomentDef = {
   id: 'test_fire',
   name: 'A campfire',
   tint: '#ff9a3c',
+  ground: 'dirt',
+  light: '#ffb070',
   bright: false,
   radius: 6,
   lifetime: 40,
@@ -43,6 +45,10 @@ void test('a moment naming an unknown prop, monster, clip or rarity is reported'
     reward: { ...MOMENT.reward, rarity: 'mythic' },
   };
   assert.equal(momentProblems(withMoment(broken)).length, 4);
+});
+
+void test('a moment standing on an unknown surface is reported', (): void => {
+  assert.deepEqual(momentProblems(withMoment({ ...MOMENT, ground: 'lava' })), ['moment test_fire stands on unknown surface lava']);
 });
 
 void test('an echo look must fit its rig, and an echo that may turn needs its fighting clip on that rig', (): void => {

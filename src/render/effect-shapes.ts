@@ -17,9 +17,9 @@ export const SHAPES = {
   arcJitter: 0.9,
   arcWidth: 0.09,
   telegraphInner: 0.35,
-  telegraphEdge: 0.965,
-  telegraphFill: 0.1,
-  telegraphLine: 0.42,
+  telegraphEdge: 0.985,
+  telegraphFill: 0.07,
+  telegraphLine: 0.34,
   laneStart: 0.7,
 } as const;
 

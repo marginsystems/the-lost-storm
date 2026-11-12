@@ -42,6 +42,7 @@ function echoProblems(content: Content, at: string, entry: MomentEcho): string[]
 function defProblems(content: Content, def: MomentDef): string[] {
   const at: string = `moment ${def.id}`;
   const problems: string[] = [];
+  if (!content.surfaces.has(def.ground)) problems.push(`${at} stands on unknown surface ${def.ground}`);
   for (const placed of def.props) if (!content.props.has(placed.prop)) problems.push(`${at} places unknown prop ${placed.prop}`);
   def.echoes.forEach((entry: MomentEcho, index: number): void => {
     problems.push(...echoProblems(content, `${at} echo ${index}`, entry));

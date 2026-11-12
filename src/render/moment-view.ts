@@ -1,8 +1,8 @@
-import type { AnimationAction, AnimationClip, BufferGeometry, Camera, IUniform, Material, MeshBasicMaterial, Object3D, Scene, WebGLRenderer } from 'three';
-import { AdditiveBlending, CircleGeometry, Color, Group, LoopRepeat, Mesh, MeshStandardMaterial, PointLight, ShaderMaterial, SphereGeometry } from 'three';
+import type { AnimationAction, AnimationClip, Camera, IUniform, Material, MeshBasicMaterial, Object3D, Scene, WebGLRenderer } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, Group, LoopRepeat, Mesh, MeshStandardMaterial, PointLight, ShaderMaterial, SphereGeometry } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { MomentDef, MomentEcho, MomentProp } from '../../sim/content/moment-types.ts';
-import type { Content, MonsterDef, PropDef } from '../../sim/content/types.ts';
+import type { Content, MonsterDef, PropDef, SurfaceDef } from '../../sim/content/types.ts';
 import { wornWearables, hiddenBodyParts } from '../../sim/wear.ts';
 import type { MomentFigure, MomentState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { QualityTier } from '../mobile/quality.ts';
@@ -12,6 +12,7 @@ import { disposeObject, groundArcs, skyBolt } from './effect-shapes.ts';
 import type { GhostUniforms } from './ghost-material.ts';
 import { createGhostUniforms, makeGhost } from './ghost-material.ts';
 import { DOME_FRAGMENT, DOME_VERTEX, FLOOR_FRAGMENT, FLOOR_VERTEX } from './moment-shaders.ts';
+import { surfaceMaterial } from './surfaces.ts';
 
 export const MOMENT_VIEW = {
   domeSegments: 40,
@@ -20,23 +21,31 @@ export const MOMENT_VIEW = {
   phoneDomeRings: 8,
   floorSegments: 48,
   floorLift: 0.04,
-  domeAlpha: 0.2,
-  floorAlpha: 0.42,
+  groundLift: 0.02,
+  groundSegments: 40,
+  phoneGroundSegments: 20,
+  groundRings: 6,
+  groundFadeFrom: 0.72,
+  groundOffset: -2,
+  lensWhite: 0.75,
+  domeAlpha: 0.07,
+  floorAlpha: 0.22,
   shimmerSpeed: 1.3,
   appearRate: 5.5,
   wakeRate: 3,
   turnFade: 0.35,
-  echoMix: 0.82,
+  echoMix: 0.12,
+  echoRim: 0.25,
+  echoRimAwake: 0.2,
   echoOpacity: 0.62,
   awakeOpacity: 0.8,
   lightHeight: 3.2,
   lightReach: 1.8,
   dormantLight: 14,
   awakeLight: 30,
-  warmth: 0.45,
   lightDecay: 1.4,
   desktopLights: 4,
-  phoneLights: 1,
+  phoneLights: 0,
   boltTime: 0.32,
   arcTime: 0.45,
   flashPower: 0.55,
@@ -47,7 +56,7 @@ export const MOMENT_VIEW = {
   markPulse: 9,
 } as const;
 
-const WARM: Color = new Color(0xffe2b8);
+const WHITE: Color = new Color(0xffffff);
 const STRIKE_WHITE: Color = new Color(0xe8f2ff);
 const MARK: Color = new Color(0xb8d2ff);
 
@@ -65,7 +74,7 @@ function surfaceUniforms(tint: Color): SurfaceUniforms {
   return { uTint: { value: tint.clone() }, uStrength: { value: 0 }, uTime: { value: 0 }, uDissolve: { value: 0 }, uMark: { value: 0 } };
 }
 
-function surfaceMaterial(vertex: string, fragment: string, uniforms: SurfaceUniforms): ShaderMaterial {
+function glowMaterial(vertex: string, fragment: string, uniforms: SurfaceUniforms): ShaderMaterial {
   return new ShaderMaterial({ vertexShader: vertex, fragmentShader: fragment, uniforms, transparent: true, depthWrite: false, blending: AdditiveBlending });
 }
 
@@ -81,6 +90,7 @@ interface MomentEntry {
   readonly group: Group;
   readonly dome: Mesh<BufferGeometry, ShaderMaterial>;
   readonly floor: Mesh<BufferGeometry, ShaderMaterial>;
+  readonly ground: Mesh<BufferGeometry, MeshStandardMaterial> | null;
   readonly domeUniforms: SurfaceUniforms;
   readonly floorUniforms: SurfaceUniforms;
   readonly props: Group;
@@ -88,6 +98,8 @@ interface MomentEntry {
   readonly propMaterials: MeshStandardMaterial[];
   readonly figures: FigureView[];
   readonly tint: Color;
+  readonly lens: Color;
+  readonly glow: Color;
   light: PointLight | null;
   shown: number;
   awake: number;
@@ -145,6 +157,55 @@ function fadeOf(moment: MomentState, world: World): number {
   return moment.phase === 'fading' ? Math.min(1, moment.phaseTime / world.content.moments.fade) : 0;
 }
 
+function groundGeometry(radius: number, segments: number): BufferGeometry {
+  const positions: number[] = [0, 0, 0];
+  const uvs: number[] = [0, 0];
+  const colours: number[] = [1, 1, 1, 1];
+  const index: number[] = [];
+  for (let ring: number = 1; ring <= MOMENT_VIEW.groundRings; ring += 1) {
+    const reach: number = ring / MOMENT_VIEW.groundRings;
+    const alpha: number = reach <= MOMENT_VIEW.groundFadeFrom ? 1 : 1 - (reach - MOMENT_VIEW.groundFadeFrom) / (1 - MOMENT_VIEW.groundFadeFrom);
+    for (let step: number = 0; step < segments; step += 1) {
+      const angle: number = (step / segments) * Math.PI * 2;
+      const x: number = Math.cos(angle) * reach * radius;
+      const z: number = Math.sin(angle) * reach * radius;
+      positions.push(x, 0, z);
+      uvs.push(x, -z);
+      colours.push(1, 1, 1, alpha);
+    }
+  }
+  const at = (ring: number, step: number): number => (ring === 0 ? 0 : 1 + (ring - 1) * segments + (step % segments));
+  for (let step: number = 0; step < segments; step += 1) index.push(0, at(1, step + 1), at(1, step));
+  for (let ring: number = 1; ring < MOMENT_VIEW.groundRings; ring += 1) {
+    for (let step: number = 0; step < segments; step += 1) {
+      index.push(at(ring, step), at(ring, step + 1), at(ring + 1, step), at(ring, step + 1), at(ring + 1, step + 1), at(ring + 1, step));
+    }
+  }
+  const geometry: BufferGeometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
+  geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uvs), 2));
+  geometry.setAttribute('color', new BufferAttribute(new Float32Array(colours), 4));
+  geometry.setIndex(index);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function groundMaterial(def: SurfaceDef): MeshStandardMaterial {
+  const base: MeshStandardMaterial = surfaceMaterial(def, 'solid');
+  return new MeshStandardMaterial({
+    color: base.color,
+    map: base.map,
+    normalMap: base.normalMap,
+    normalScale: base.normalScale,
+    roughness: base.roughness,
+    metalness: 0,
+    vertexColors: true,
+    polygonOffset: true,
+    polygonOffsetFactor: MOMENT_VIEW.groundOffset,
+    polygonOffsetUnits: MOMENT_VIEW.groundOffset,
+  });
+}
+
 export function createMomentView(deps: MomentViewDeps): MomentView {
   const { scene, content, library } = deps;
   const phone: boolean = deps.tier.name === 'mobile';
@@ -159,6 +220,14 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
   const models: Map<string, GLTF> = new Map<string, GLTF>();
   const lights: PointLight[] = [];
   const zeroFlash: IUniform<Color> = { value: new Color(0, 0, 0) };
+  const grounds: Map<number, BufferGeometry> = new Map<number, BufferGeometry>();
+  const groundOf = (radius: number): BufferGeometry => {
+    const known: BufferGeometry | undefined = grounds.get(radius);
+    if (known !== undefined) return known;
+    const made: BufferGeometry = groundGeometry(radius, phone ? MOMENT_VIEW.phoneGroundSegments : MOMENT_VIEW.groundSegments);
+    grounds.set(radius, made);
+    return made;
+  };
   let clock: number = 0;
   for (let index: number = 0; index < (phone ? MOMENT_VIEW.phoneLights : MOMENT_VIEW.desktopLights); index += 1) {
     const light: PointLight = new PointLight(0xffffff, 0, 1, MOMENT_VIEW.lightDecay);
@@ -175,7 +244,8 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       if (prop !== undefined && !models.has(prop.model)) wanted.add(prop.model);
     }
     await Promise.all([...wanted].map(async (model: string): Promise<void> => {
-      models.set(model, await loadModel(deps.loader, model));
+      const gltf: GLTF | null = await loadModel(deps.loader, model).catch((): null => null);
+      if (gltf !== null) models.set(model, gltf);
     }));
   };
 
@@ -232,10 +302,11 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
 
   const build = (moment: MomentState): MomentEntry => {
     const tint: Color = new Color(moment.def.tint);
-    const domeUniforms: SurfaceUniforms = surfaceUniforms(tint);
+    const lens: Color = tint.clone().lerp(WHITE, MOMENT_VIEW.lensWhite);
+    const domeUniforms: SurfaceUniforms = surfaceUniforms(lens);
     const floorUniforms: SurfaceUniforms = surfaceUniforms(tint);
-    const dome: Mesh<BufferGeometry, ShaderMaterial> = new Mesh(domeGeometry, surfaceMaterial(DOME_VERTEX, DOME_FRAGMENT, domeUniforms));
-    const floor: Mesh<BufferGeometry, ShaderMaterial> = new Mesh(floorGeometry, surfaceMaterial(FLOOR_VERTEX, FLOOR_FRAGMENT, floorUniforms));
+    const dome: Mesh<BufferGeometry, ShaderMaterial> = new Mesh(domeGeometry, glowMaterial(DOME_VERTEX, DOME_FRAGMENT, domeUniforms));
+    const floor: Mesh<BufferGeometry, ShaderMaterial> = new Mesh(floorGeometry, glowMaterial(FLOOR_VERTEX, FLOOR_FRAGMENT, floorUniforms));
     dome.renderOrder = 6;
     floor.renderOrder = 3;
     floor.rotation.x = -Math.PI / 2;
@@ -243,12 +314,24 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     dome.scale.setScalar(moment.def.radius);
     floor.scale.setScalar(moment.def.radius);
     dome.frustumCulled = false;
+    dome.visible = !phone;
     const group: Group = new Group();
     group.position.set(moment.pos.x, 0, moment.pos.z);
     const props: Group = new Group();
+    const propGhost: GhostUniforms = createGhostUniforms(tint, 0);
+    propGhost.rim.value = 0;
+    const surface: SurfaceDef | undefined = content.surfaces.get(moment.def.ground);
+    const ground: Mesh<BufferGeometry, MeshStandardMaterial> | null = surface === undefined ? null : new Mesh(groundOf(moment.def.radius), groundMaterial(surface));
+    if (ground !== null) {
+      makeGhost(ground.material, zeroFlash, propGhost);
+      ground.material.depthWrite = false;
+      ground.position.y = MOMENT_VIEW.groundLift;
+      ground.renderOrder = 2;
+      ground.receiveShadow = true;
+      group.add(ground);
+    }
     group.add(floor, props, dome);
-    const entry: MomentEntry = { group, dome, floor, domeUniforms, floorUniforms, props, propGhost: createGhostUniforms(tint, 0), propMaterials: [], figures: [], tint, light: null, shown: 0, awake: 0 };
-    entry.propGhost.rim.value = 0;
+    const entry: MomentEntry = { group, dome, floor, ground, domeUniforms, floorUniforms, props, propGhost, propMaterials: [], figures: [], tint, lens, glow: new Color(moment.def.light), light: null, shown: 0, awake: 0 };
     scene.add(group);
     return entry;
   };
@@ -271,6 +354,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
 
   const dressFigures = (entry: MomentEntry, moment: MomentState): void => {
     for (const figure of moment.figures) {
+      if (figure.turned || entry.figures.some((view: FigureView): boolean => view.echo === figure.echo)) continue;
       const echo: MomentEcho | undefined = moment.def.echoes[figure.echo];
       const view: FigureView | null = echo === undefined ? null : makeFigure(entry, figure, echo);
       if (view !== null) entry.figures.push(view);
@@ -282,6 +366,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     for (const material of entry.propMaterials) material.dispose();
     entry.dome.material.dispose();
     entry.floor.material.dispose();
+    entry.ground?.material.dispose();
     if (entry.light !== null) {
       entry.light.intensity = 0;
       freeLights.push(entry.light);
@@ -312,7 +397,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     entry.domeUniforms.uStrength.value = MOMENT_VIEW.domeAlpha * strength * (1 + entry.awake * 0.5);
     entry.floorUniforms.uStrength.value = MOMENT_VIEW.floorAlpha * strength * (1 + entry.awake * 0.4);
     entry.floorUniforms.uMark.value = marking ? MOMENT_VIEW.markAlpha * (0.6 + 0.4 * Math.sin(clock * MOMENT_VIEW.markPulse)) : 0;
-    entry.floorUniforms.uTint.value.copy(marking ? MARK : entry.tint);
+    entry.floorUniforms.uTint.value.copy(marking ? MARK : entry.lens);
     entry.domeUniforms.uDissolve.value = fade;
     entry.floorUniforms.uDissolve.value = fade;
     entry.domeUniforms.uTime.value = clock * MOMENT_VIEW.shimmerSpeed;
@@ -322,7 +407,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     entry.group.position.set(moment.pos.x, 0, moment.pos.z);
     if (entry.light === null && !marking) entry.light = freeLights.pop() ?? null;
     if (entry.light !== null) {
-      entry.light.color.copy(entry.tint).lerp(WARM, MOMENT_VIEW.warmth);
+      entry.light.color.copy(entry.glow);
       entry.light.position.set(moment.pos.x, MOMENT_VIEW.lightHeight, moment.pos.z);
       entry.light.distance = moment.def.radius * MOMENT_VIEW.lightReach;
       entry.light.intensity = (MOMENT_VIEW.dormantLight + (MOMENT_VIEW.awakeLight - MOMENT_VIEW.dormantLight) * entry.awake) * strength;
@@ -335,7 +420,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       view.rig.mixer.update(dt);
       view.rig.setOpacity((MOMENT_VIEW.echoOpacity + (MOMENT_VIEW.awakeOpacity - MOMENT_VIEW.echoOpacity) * entry.awake) * view.shown * (1 - fade * 0.5));
       view.ghost.dissolve.value = Math.max(fade, 1 - view.shown);
-      view.ghost.rim.value = 1 + entry.awake * 0.6;
+      view.ghost.rim.value = MOMENT_VIEW.echoRim + entry.awake * MOMENT_VIEW.echoRimAwake;
       view.rig.root.visible = view.shown > 0;
       if (figure !== undefined) view.rig.root.position.set(figure.pos.x - moment.pos.x, 0, figure.pos.z - moment.pos.z);
     }
@@ -377,8 +462,8 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
           entry = build(moment);
           entries.set(moment.id, entry);
           dressProps(entry, moment);
-          dressFigures(entry, moment);
         }
+        if (moment.phase !== 'fading' && entry.figures.length < moment.figures.length) dressFigures(entry, moment);
         stepEntry(entry, moment, world, dt);
       }
       for (const [id, entry] of entries) {
