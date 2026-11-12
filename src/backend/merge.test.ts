@@ -10,10 +10,10 @@ function record(overrides: Partial<SyncRecord> = {}): SyncRecord {
 }
 
 function cloud(level: number, xp: number, revision: number, updatedAt: string = '2026-11-11T10:00:00.000Z'): CloudState {
-  return { save: makeSave(level, xp), revision, updatedAt };
+  return { save: makeSave(level, xp), revision, updatedAt, epoch: 2 };
 }
 
-const EMPTY: CloudState = { save: null, revision: 0, updatedAt: null };
+const EMPTY: CloudState = { save: null, revision: 0, updatedAt: null, epoch: 2 };
 
 void test('progress is level first, then experience', (): void => {
   assert.ok(compareProgress(makeSave(5, 0), makeSave(4, 900)) > 0);

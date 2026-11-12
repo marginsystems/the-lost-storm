@@ -38,11 +38,11 @@ function bodyOf(init: RequestInit): unknown {
 
 async function wait(header: string | null): Promise<unknown> {
   const { client } = api((): Response => reply(429, {}, header === null ? {} : { 'Retry-After': header }));
-  return client.writeSave('tok', SAVE, 0, SIGNAL);
+  return client.writeSave('tok', SAVE, 0, 2, SIGNAL);
 }
 
 const SAVE = makeSave(3, 12);
-const COPY = { save: SAVE, revision: 2, updatedAt: '2026-11-11T10:00:00.000Z' };
+const COPY = { save: SAVE, revision: 2, updatedAt: '2026-11-11T10:00:00.000Z', epoch: 2 };
 
 void test('a guest account is created with a POST and no token', async (): Promise<void> => {
   const { client, seen } = api((): Response => reply(201, { accountId: 'a', token: 't' }));
@@ -56,32 +56,46 @@ void test('reading the save sends the token and understands a copy and an empty 
   const full = api((): Response => reply(200, COPY));
   assert.deepEqual(await full.client.readSave('tok', SIGNAL), { kind: 'ok', state: COPY });
   assert.equal(new Headers(sent(full.seen).init.headers).get('authorization'), 'Bearer tok');
-  const empty = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null }));
-  assert.deepEqual(await empty.client.readSave('tok', SIGNAL), { kind: 'ok', state: { save: null, revision: 0, updatedAt: null } });
+  const empty = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null, epoch: 2 }));
+  assert.deepEqual(await empty.client.readSave('tok', SIGNAL), { kind: 'ok', state: { save: null, revision: 0, updatedAt: null, epoch: 2 } });
 });
 
 void test('writing sends the save and the base revision and returns the stored copy', async (): Promise<void> => {
   const { client, seen } = api((): Response => reply(200, COPY));
-  assert.deepEqual(await client.writeSave('tok', SAVE, 1, SIGNAL), { kind: 'ok', copy: COPY });
+  assert.deepEqual(await client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'ok', copy: COPY });
   assert.equal(sent(seen).init.method, 'PUT');
-  assert.deepEqual(bodyOf(sent(seen).init), { save: SAVE, baseRevision: 1 });
+  assert.deepEqual(bodyOf(sent(seen).init), { save: SAVE, baseRevision: 1, epoch: 2 });
   assert.equal(sent(seen).init.keepalive, true);
 });
 
 void test('keepalive is only asked for when the body is small enough for the browser to allow it', async (): Promise<void> => {
   const small = api((): Response => reply(200, COPY));
-  await small.client.writeSave('tok', SAVE, 1, SIGNAL);
+  await small.client.writeSave('tok', SAVE, 1, 2, SIGNAL);
   assert.equal(sent(small.seen).init.keepalive, true);
   const large = api((): Response => reply(200, COPY));
-  await large.client.writeSave('tok', { ...SAVE, allocated: Array.from({ length: 8000 }, (_: unknown, index: number): string => `node_${index}`) }, 1, SIGNAL);
+  await large.client.writeSave('tok', { ...SAVE, allocated: Array.from({ length: 8000 }, (_: unknown, index: number): string => `node_${index}`) }, 1, 2, SIGNAL);
   assert.equal(sent(large.seen).init.keepalive, false);
 });
 
 void test('a 409 hands back the current copy, read through the game rules', async (): Promise<void> => {
   const { client } = api((): Response => reply(409, { error: { code: 'revision_conflict', message: 'x' }, current: COPY }));
-  assert.deepEqual(await client.writeSave('tok', SAVE, 1, SIGNAL), { kind: 'conflict', current: COPY });
+  assert.deepEqual(await client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'conflict', current: COPY });
   const broken = api((): Response => reply(409, { error: {}, current: { ...COPY, save: { version: 99 } } }));
-  assert.deepEqual(await broken.client.writeSave('tok', SAVE, 1, SIGNAL), { kind: 'refused', status: 409 });
+  assert.deepEqual(await broken.client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'refused', status: 409 });
+});
+
+void test('a 409 stale_epoch names the epoch now in force, and one without a readable epoch is a refusal', async (): Promise<void> => {
+  const { client } = api((): Response => reply(409, { error: { code: 'stale_epoch', message: 'x' }, epoch: 3 }));
+  assert.deepEqual(await client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'stale', epoch: 3 });
+  const broken = api((): Response => reply(409, { error: { code: 'stale_epoch', message: 'x' }, epoch: 'three' }));
+  assert.deepEqual(await broken.client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'refused', status: 409 });
+});
+
+void test('a cloud answer without an epoch is from before epochs and counts as epoch 1; a bad epoch is unreadable', async (): Promise<void> => {
+  const legacy = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null }));
+  assert.deepEqual(await legacy.client.readSave('tok', SIGNAL), { kind: 'ok', state: { save: null, revision: 0, updatedAt: null, epoch: 1 } });
+  const bad = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null, epoch: 0 }));
+  assert.deepEqual(await bad.client.readSave('tok', SIGNAL), { kind: 'refused', status: 200 });
 });
 
 void test('failures are told apart: unauthorized, refused, and worth retrying', async (): Promise<void> => {
@@ -99,7 +113,7 @@ void test('failures are told apart: unauthorized, refused, and worth retrying', 
   const kinds: string[] = await Promise.all(
     answers.map(async ([status, body]: readonly [number, unknown]): Promise<string> => {
       const { client } = api((): Response => reply(status, body));
-      return (await client.writeSave('tok', SAVE, 0, SIGNAL)).kind;
+      return (await client.writeSave('tok', SAVE, 0, 2, SIGNAL)).kind;
     }),
   );
   assert.deepEqual(kinds, ['unauthorized', 'refused', 'refused', 'refused', 'refused', 'retry', 'retry', 'retry', 'retry']);
@@ -119,7 +133,7 @@ void test('a network error is a retry, and so is a body that cannot be read', as
   const down = api((): Error => new TypeError('network down'));
   assert.deepEqual(await down.client.readSave('tok', SIGNAL), { kind: 'retry', afterMs: null });
   assert.deepEqual(await down.client.createGuest(SIGNAL), { kind: 'retry', afterMs: null });
-  assert.deepEqual(await down.client.writeSave('tok', SAVE, 0, SIGNAL), { kind: 'retry', afterMs: null });
+  assert.deepEqual(await down.client.writeSave('tok', SAVE, 0, 2, SIGNAL), { kind: 'retry', afterMs: null });
 });
 
 void test('a success the client cannot understand is refused, never trusted', async (): Promise<void> => {
@@ -139,7 +153,7 @@ void test('a success the client cannot understand is refused, never trusted', as
   const guest = api((): Response => reply(201, { accountId: 'a' }));
   assert.deepEqual(await guest.client.createGuest(SIGNAL), { kind: 'refused', status: 201 });
   const empty = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null }));
-  assert.deepEqual(await empty.client.writeSave('tok', SAVE, 0, SIGNAL), { kind: 'refused', status: 200 });
+  assert.deepEqual(await empty.client.writeSave('tok', SAVE, 0, 2, SIGNAL), { kind: 'refused', status: 200 });
 });
 
 void test('a copy is read through readSave, so the game rules repair what they repair', (): void => {

@@ -7,11 +7,21 @@ import { createWorld } from '../sim/world/create.ts';
 import type { FetchFn } from '../src/backend/api.ts';
 import type { Backend, KeyValueStore, Logger, Timers } from '../src/backend/backend.ts';
 import { createBackend } from '../src/backend/create.ts';
+import { epochOf, SAVE_EPOCH } from '../src/backend/epoch.ts';
+import { localSaveText } from '../src/backend/local.ts';
 
 export const content: Content = loadContent();
 
 export function makeSave(level: number, xp: number): SaveData {
   return { ...toSave(createWorld(content, { seed: 1, save: null })), level, xp };
+}
+
+export function storedLocal(save: SaveData, epoch: number = SAVE_EPOCH): string {
+  return localSaveText(save, epoch);
+}
+
+export function preEpochLocal(save: SaveData): string {
+  return JSON.stringify(save);
 }
 
 export function freshSave(): SaveData {
@@ -144,6 +154,8 @@ export interface FakeServer {
   readonly codes: SentCode[];
   codeFor(email: string): string;
   count(method: string, path: string): number;
+  epoch(): number;
+  wipe(epoch?: number): void;
 }
 
 export const BAD_TURNSTILE_TOKEN: string = 'turnstile-refused';
@@ -209,6 +221,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   const codes: SentCode[] = [];
   const cooldowns: Map<string, number> = new Map();
   let lost: { readonly method: string; readonly path: string } | null = null;
+  let epoch: number = SAVE_EPOCH;
   const signIn = (owner: ServerAccount, credential: unknown): Response => {
     const [scheme, subject, nonce, name]: readonly string[] = typeof credential === 'string' ? credential.split('|') : [];
     const expected: string | null = owner.nonce;
@@ -298,7 +311,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       owner.character = typeof raw === 'string' ? raw.trim() : null;
       return json(200, { name: owner.character, chosen: true });
     }
-    if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.method ?? 'guest', name: owner.name, createdAt: stamp() });
+    if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.method ?? 'guest', name: owner.name, createdAt: stamp(), saveEpoch: epoch });
     if (path.startsWith('/v1/auth/google') && googleClientId === null) return json(503, { error: { code: 'sign_in_unavailable', message: 'no' } });
     if (method === 'POST' && path === '/v1/auth/google/nonce') {
       issued += 1;
@@ -316,9 +329,12 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       if (retiresGuest) owner.guestRetired = true;
       return json(200, { signedOut: index >= 0 || retiresGuest });
     }
-    const view = (): unknown => ({ save: owner.save, revision: owner.revision, updatedAt: owner.updatedAt });
+    const view = (): unknown => ({ save: owner.save, revision: owner.revision, updatedAt: owner.updatedAt, epoch });
     if (method === 'GET' && path === '/v1/save') return json(200, view());
     if (method === 'PUT' && path === '/v1/save' && isFields(body)) {
+      const written: number | null = epochOf(body, 'epoch');
+      if (written === null) return failed(400, 'bad_request');
+      if (written < epoch) return failed(409, 'stale_epoch', { epoch });
       const save: SaveData | null = readSave(content, body['save']);
       if (save === null) return json(422, { error: { code: 'invalid_save', message: 'no' } });
       if (body['baseRevision'] !== owner.revision) return json(409, { error: { code: 'revision_conflict', message: 'no' }, current: view() });
@@ -384,6 +400,16 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       return entry.code;
     },
     count: (method: string, path: string): number => requests.filter((request: RecordedRequest): boolean => request.method === method && request.path === path).length,
+    epoch: (): number => epoch,
+    wipe: (next: number = SAVE_EPOCH): void => {
+      epoch = next;
+      for (const account of accounts) {
+        account.save = null;
+        account.revision = 0;
+        account.updatedAt = null;
+        account.character = null;
+      }
+    },
   };
 }
 

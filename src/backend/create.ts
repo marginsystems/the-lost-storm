@@ -2,6 +2,8 @@ import type { Content } from '../../sim/content/types.ts';
 import { createApi } from './api.ts';
 import type { FetchFn } from './api.ts';
 import type { Backend, Clock, KeyValueStore, Logger, Timers } from './backend.ts';
+import { createEpochs, SAVE_EPOCH } from './epoch.ts';
+import type { Epochs } from './epoch.ts';
 import { createLocalBackend } from './local.ts';
 import { createRemoteBackend } from './remote.ts';
 import { readServerUrl } from './server-url.ts';
@@ -19,7 +21,8 @@ export interface BackendEnvironment {
 }
 
 export function createBackend(content: Content, rawUrl: string | undefined, environment: BackendEnvironment): Backend {
-  const local: Backend = createLocalBackend(content, environment.store);
+  const epochs: Epochs = createEpochs(SAVE_EPOCH);
+  const local: Backend = createLocalBackend(content, environment.store, epochs);
   const server: ServerUrl = readServerUrl(rawUrl);
   if (server.kind === 'none') return local;
   if (server.kind === 'invalid') {
@@ -35,5 +38,6 @@ export function createBackend(content: Content, rawUrl: string | undefined, envi
     clock: environment.clock,
     timers: environment.timers,
     log: environment.log,
+    epochs,
   });
 }

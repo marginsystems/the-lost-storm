@@ -3,6 +3,7 @@ import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
 import type { SaveData } from '../../sim/save.ts';
 import { readSave } from '../../sim/save.ts';
+import { epochOf } from './epoch.ts';
 
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
 
@@ -15,12 +16,14 @@ export interface CloudCopy {
   readonly save: SaveData;
   readonly revision: number;
   readonly updatedAt: string;
+  readonly epoch: number;
 }
 
 export interface NoCloudCopy {
   readonly save: null;
   readonly revision: number;
   readonly updatedAt: string | null;
+  readonly epoch: number;
 }
 
 export type CloudState = CloudCopy | NoCloudCopy;
@@ -72,7 +75,7 @@ export type SignOutResult = { readonly kind: 'ok' } | Failure;
 
 export type GuestResult = { readonly kind: 'ok'; readonly account: GuestAccount } | Failure;
 export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | Failure;
-export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy } | { readonly kind: 'conflict'; readonly current: CloudState } | Failure;
+export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stale'; readonly epoch: number } | Failure;
 
 export interface BoardRow {
   readonly rank: number;
@@ -108,7 +111,7 @@ export type NameResult = { readonly kind: 'ok'; readonly name: string } | { read
 export interface Api {
   createGuest(signal: AbortSignal): Promise<GuestResult>;
   readSave(token: string, signal: AbortSignal): Promise<ReadResult>;
-  writeSave(token: string, save: SaveData, baseRevision: number, signal: AbortSignal): Promise<WriteResult>;
+  writeSave(token: string, save: SaveData, baseRevision: number, epoch: number, signal: AbortSignal): Promise<WriteResult>;
   providers(signal: AbortSignal): Promise<ProvidersResult>;
   profile(token: string, signal: AbortSignal): Promise<ProfileResult>;
   googleNonce(token: string, signal: AbortSignal): Promise<NonceResult>;
@@ -141,14 +144,15 @@ function revisionOf(source: Fields): number | null {
 export function readCloudState(content: Content, value: unknown): CloudState | null {
   if (!isFields(value)) return null;
   const revision: number | null = revisionOf(value);
+  const epoch: number | null = epochOf(value, 'epoch');
   const updatedAt: unknown = value['updatedAt'];
-  if (revision === null) return null;
+  if (revision === null || epoch === null) return null;
   if (value['save'] === null) {
-    return updatedAt === null || typeof updatedAt === 'string' ? { save: null, revision, updatedAt } : null;
+    return updatedAt === null || typeof updatedAt === 'string' ? { save: null, revision, updatedAt, epoch } : null;
   }
   const save: SaveData | null = readSave(content, value['save']);
   if (save === null || typeof updatedAt !== 'string') return null;
-  return { save, revision, updatedAt };
+  return { save, revision, updatedAt, epoch };
 }
 
 function readGuest(value: unknown): GuestAccount | null {
@@ -270,9 +274,13 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
       const state: CloudState | null = readCloudState(content, answer.body);
       return state === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', state };
     },
-    async writeSave(token: string, save: SaveData, baseRevision: number, signal: AbortSignal): Promise<WriteResult> {
-      const body: string = JSON.stringify({ save, baseRevision });
+    async writeSave(token: string, save: SaveData, baseRevision: number, epoch: number, signal: AbortSignal): Promise<WriteResult> {
+      const body: string = JSON.stringify({ save, baseRevision, epoch });
       const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/save`, { method: 'PUT', headers: headers(token), body, signal, keepalive: body.length < KEEPALIVE_LIMIT_CHARS });
+      if (answer !== null && answer.status === 409 && errorCodeOf(answer.body) === 'stale_epoch') {
+        const current: number | null = isFields(answer.body) && answer.body['epoch'] !== undefined ? epochOf(answer.body, 'epoch') : null;
+        return current === null ? { kind: 'refused', status: 409 } : { kind: 'stale', epoch: current };
+      }
       if (answer !== null && answer.status === 409) {
         const current: CloudState | null = isFields(answer.body) ? readCloudState(content, answer.body['current']) : null;
         return current === null ? { kind: 'refused', status: 409 } : { kind: 'conflict', current };

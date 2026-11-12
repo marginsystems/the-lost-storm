@@ -5,6 +5,7 @@ import { toSave } from '../../sim/save.ts';
 import { createWorld } from '../../sim/world/create.ts';
 import type { Api, CloudState, GuestResult, ReadResult, WriteResult } from './api.ts';
 import type { Backend, BackendState, Clock, KeyValueStore, Logger, Timers } from './backend.ts';
+import type { Epochs } from './epoch.ts';
 import { chooseOnConflict, chooseOnLoad, describe } from './merge.ts';
 import type { Decision, LoadDecision } from './merge.ts';
 import { parseSyncRecord, serializeSyncRecord, SYNC_KEY } from './sync-record.ts';
@@ -19,6 +20,7 @@ export interface RemoteOptions {
   readonly clock: Clock;
   readonly timers: Timers;
   readonly log: Logger;
+  readonly epochs: Epochs;
 }
 
 export const TIMING: {
@@ -62,7 +64,7 @@ export function backoffMs(failures: number): number {
 }
 
 export function createRemoteBackend(options: RemoteOptions): Backend {
-  const { content, serverUrl, local, store, api, clock, timers, log } = options;
+  const { content, serverUrl, local, store, api, clock, timers, log, epochs } = options;
   const listeners: ((state: BackendState) => void)[] = [];
   let record: SyncRecord | null = parseSyncRecord(store.read(SYNC_KEY), serverUrl);
   let state: BackendState = 'offline';
@@ -195,6 +197,16 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     schedule(quickRetries > TIMING.maxQuickRetries ? backoffMs(quickRetries - TIMING.maxQuickRetries) : 0);
   };
 
+  const dropStale = (current: number): void => {
+    epochs.raise(current);
+    log.warn('every save was reset on the server, so this save from before the reset was dropped. Reload to start a new character.');
+    void local.reset();
+    if (record !== null) keep({ ...record, pending: false, overwriteCloud: false });
+    latest = null;
+    frozen = true;
+    setState('cloud');
+  };
+
   const handle = (sending: SaveData, held: SyncRecord, result: WriteResult): void => {
     switch (result.kind) {
       case 'ok':
@@ -209,6 +221,9 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
         failures += 1;
         schedule(failures > TIMING.maxQuickRetries ? backoffMs(failures) : 0);
         return;
+      case 'stale':
+        dropStale(result.epoch);
+        return;
       case 'refused':
         blocked = true;
         log.warn(`the cloud save refused this save (status ${result.status}); it will try again after the next save`);
@@ -221,7 +236,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   const send = async (sending: SaveData): Promise<{ readonly held: SyncRecord; readonly result: WriteResult } | null> => {
     const held: SyncRecord | null = await account(timeout(TIMING.requestMs));
     if (held === null) return null;
-    return { held, result: await api.writeSave(held.token, sending, held.revision, timeout(TIMING.requestMs)) };
+    return { held, result: await api.writeSave(held.token, sending, held.revision, epochs.current(), timeout(TIMING.requestMs)) };
   };
 
   const push = async (): Promise<void> => {
@@ -241,7 +256,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   };
 
   const overwrite = async (held: SyncRecord, cloud: CloudState, localSave: SaveData | null, signal: AbortSignal): Promise<void> => {
-    const result: WriteResult = await api.writeSave(held.token, localSave ?? freshSave(), cloud.revision, signal);
+    const result: WriteResult = await api.writeSave(held.token, localSave ?? freshSave(), cloud.revision, epochs.current(), signal);
     if (result.kind === 'ok') {
       keep({ ...held, revision: result.copy.revision, updatedAt: result.copy.updatedAt, savedAt: now(), pending: false, overwriteCloud: false });
       setState('cloud');
@@ -249,9 +264,10 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     }
     keep({ ...held, revision: cloud.revision, updatedAt: cloud.updatedAt });
     latest = localSave ?? freshSave();
-    if (result.kind === 'refused') {
+    if (result.kind === 'stale') epochs.raise(result.epoch);
+    if (result.kind === 'refused' || result.kind === 'stale') {
       blocked = true;
-      log.warn(`the cloud save refused the replacement for a reset (status ${result.status}); it will try again after the next save`);
+      log.warn(`the cloud save refused the replacement for a reset (${result.kind === 'stale' ? 'the save epoch moved on' : `status ${result.status}`}); it will try again after the next save`);
       return;
     }
     fail(result.kind === 'retry' ? result.afterMs : null);
@@ -269,7 +285,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   };
 
   const load = async (): Promise<SaveData | null> => {
-    const localSave: SaveData | null = await local.load();
+    let localSave: SaveData | null = await local.load();
     const signal: AbortSignal = timeout(TIMING.loadMs);
     const tokenBefore: string | null = record?.token ?? null;
     const reached = await reachCloud(signal, false);
@@ -283,7 +299,9 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       enrolLater();
       return localSave;
     }
-    const { held, cloud } = reached;
+    const { held } = reached;
+    if (epochs.raise(reached.cloud.epoch)) localSave = await local.load();
+    const cloud: CloudState = reached.cloud.epoch < epochs.current() ? { save: null, revision: reached.cloud.revision, updatedAt: reached.cloud.updatedAt, epoch: reached.cloud.epoch } : reached.cloud;
     setState('cloud');
     if (held.overwriteCloud) {
       await overwrite(held, cloud, localSave, signal);
@@ -309,6 +327,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
         schedule(0);
       }
     }
+    if (decision.side === 'none') keep({ ...held, revision: cloud.revision, updatedAt: cloud.updatedAt, pending: false });
     return localSave;
   };
 
@@ -345,7 +364,8 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
         return;
       }
       if (read.kind === 'ok') {
-        const written: WriteResult = await api.writeSave(held.token, freshSave(), read.state.revision, signal);
+        epochs.raise(read.state.epoch);
+        const written: WriteResult = await api.writeSave(held.token, freshSave(), read.state.revision, epochs.current(), signal);
         if (written.kind === 'ok') {
           keep({ ...held, revision: written.copy.revision, updatedAt: written.copy.updatedAt, savedAt: now(), pending: false, overwriteCloud: false });
           return;

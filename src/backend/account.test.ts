@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { BAD_TURNSTILE_TOKEN, content, createHarness, createSecondBrowser, makeSave, settle } from '../../test/backend-support.ts';
+import { BAD_TURNSTILE_TOKEN, content, createHarness, createSecondBrowser, makeSave, settle, storedLocal } from '../../test/backend-support.ts';
 import type { Harness, ServerAccount } from '../../test/backend-support.ts';
 import { must } from '../../test/support.ts';
 import type { SaveData } from '../../sim/save.ts';
@@ -312,7 +312,7 @@ void test('progress saved while the sign-out request is in flight is kept, and t
   const release: () => void = harness.server.holdNext();
   const leaving: Promise<string> = service.signOut();
   harness.store.write(SYNC_KEY, JSON.stringify({ ...record(harness), pending: true }));
-  harness.store.write(SAVE_KEY, JSON.stringify(makeSave(6, 0)));
+  harness.store.write(SAVE_KEY, storedLocal(makeSave(6, 0)));
   release();
   assert.equal(await leaving, 'reload');
   assert.equal(harness.store.read(SYNC_KEY), null);
