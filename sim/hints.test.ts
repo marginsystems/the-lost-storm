@@ -118,7 +118,7 @@ void test('the low life hint needs a carried item of the named slot', (): void =
 
 function placeInBag(world: World, base: string): void {
   const free: number = world.player.inventory.indexOf(null);
-  world.player.inventory[free] = { uid: 900 + free, base, rarity: 'common', level: 1, affixes: [] };
+  world.player.inventory[free] = { uid: 900 + free, base, rarity: 'common', level: 1, affixes: [], ledger: null };
 }
 
 function allBut(...ids: string[]): string[] {

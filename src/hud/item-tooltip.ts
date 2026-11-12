@@ -7,6 +7,8 @@ import { el, label } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
 import { setPicture } from './item-picture.ts';
 
+export const TOOLTIP_WORDS: { readonly unverified: string } = { unverified: 'Unverified' };
+
 const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = {
   weapon: 'Weapon',
   head: 'Headgear',
@@ -91,6 +93,7 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   const kind: string = slot === null ? '' : material === null ? SLOT_NAMES[slot] : `${MATERIAL_NAMES[material]} ${SLOT_NAMES[slot]}`;
   label('tip-sub', slot === null ? rarity.name : `${rarity.name} ${kind}`, heading);
   label('tip-sub', `Item level ${item.level}`, heading);
+  if (api.unverified(item)) label('tip-sub tip-unverified', TOOLTIP_WORDS.unverified, heading);
   el('div', 'tip-sep', root);
   appendReading(root, readItem(content, item, equipped));
   if (compare) {

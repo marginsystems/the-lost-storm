@@ -6,6 +6,7 @@ import type { ServiceKind } from '../content/trade-types.ts';
 import type { MomentDef } from '../content/moment-types.ts';
 import type { ZoneWake } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
+import type { LedgerState } from './ledger.ts';
 import type { GridStamp, NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
 
@@ -20,6 +21,7 @@ export interface ItemInstance {
   readonly rarity: string;
   readonly level: number;
   readonly affixes: readonly RolledAffix[];
+  readonly ledger: string | null;
 }
 
 export type Equipment = Record<ItemSlot, ItemInstance | null>;
@@ -292,7 +294,7 @@ export interface GroundItem {
   readonly id: number;
   pos: Vec2;
   from: Vec2;
-  readonly content: GoldDrop | ItemDrop;
+  content: GoldDrop | ItemDrop;
   readonly find: string | null;
   age: number;
   kept: boolean;
@@ -624,6 +626,7 @@ export interface World {
   ground: GroundItem[];
   nextId: number;
   nextItemUid: number;
+  readonly ledger: LedgerState;
   nextPackId: number;
   surge: number;
   surgeTimer: number | null;
