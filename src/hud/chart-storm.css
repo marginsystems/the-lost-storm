@@ -1,0 +1,133 @@
+.chart-sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tree-links polyline {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.tree-shade {
+  fill: none;
+  stroke: rgba(4, 6, 10, 0.62);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tree-shade.ring {
+  stroke-width: 5;
+  stroke: rgba(4, 6, 10, 0.4);
+  stroke-dasharray: 0.035 0.05;
+}
+
+.tree-track {
+  stroke: color-mix(in srgb, var(--tint) 42%, transparent);
+  stroke-width: 1.8;
+}
+
+.tree-track.ring {
+  stroke: color-mix(in srgb, var(--tint) 30%, transparent);
+  stroke-width: 1.1;
+  stroke-dasharray: 0.035 0.05;
+}
+
+.tree-track.route {
+  stroke-width: 2.4;
+  stroke-dasharray: none;
+}
+
+.tree-flow {
+  stroke-width: 1.4;
+}
+
+.tree-flow.open {
+  stroke-dashoffset: 0;
+  animation: chart-crackle var(--drift-ms) var(--drift-ease) infinite;
+}
+
+.tree-flow.lit {
+  stroke-width: 1.8;
+  animation: none;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tint) 70%, transparent));
+}
+
+@keyframes chart-crackle {
+  0%,
+  100% {
+    opacity: 0.32;
+  }
+  7% {
+    opacity: 0.85;
+  }
+  9% {
+    opacity: 0.28;
+  }
+  48% {
+    opacity: 0.45;
+  }
+  51% {
+    opacity: 0.9;
+  }
+  54% {
+    opacity: 0.36;
+  }
+}
+
+.tree-socket.allocated .tree-socket-fill {
+  box-shadow: 0 0 14px 2px color-mix(in srgb, var(--tint) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree-flow.open {
+    animation: none;
+    opacity: 0.55;
+  }
+}
+
+.tree-socket {
+  isolation: isolate;
+}
+
+.tree-socket::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(4, 6, 10, 0.82) 44%, rgba(4, 6, 10, 0.5) 60%, rgba(4, 6, 10, 0) 74%);
+  pointer-events: none;
+}
+
+.tree-socket.locked {
+  opacity: 0.82;
+  color: color-mix(in srgb, var(--tint) 46%, #9aa4b2);
+}
+
+.tree-socket.locked .tree-socket-well {
+  background: radial-gradient(circle at 50% 30%, #1a202b, #080a0f 70%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tint) 22%, transparent),
+    inset 0 3px 6px rgba(0, 0, 0, 0.85);
+}
+
+.tree-socket.available .tree-socket-well {
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 184, 102, 0.5),
+    inset 0 3px 6px rgba(0, 0, 0, 0.85),
+    0 0 14px 1px rgba(232, 184, 102, 0.32);
+}
+
+.tree-socket.ability::before {
+  inset: -14px;
+  background: radial-gradient(circle, rgba(4, 6, 10, 0.9) 48%, rgba(4, 6, 10, 0.55) 62%, rgba(4, 6, 10, 0) 76%);
+}
+
+.tree-viewport.choosing .tree-socket.locked:not(.route):not(.match) {
+  opacity: 0.62;
+}

@@ -83,6 +83,7 @@ export function chartDef(value: unknown, where: string): ChartDef {
     paths: each(source['paths'], `${where}.paths`, chartPath),
     groups: each(source['groups'], `${where}.groups`, chartGroup),
     grants: each(source['grants'], `${where}.grants`, pointGrant),
+    twist: nonNegative(source, 'twist', where),
   };
 }
 
