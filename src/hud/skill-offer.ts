@@ -6,7 +6,7 @@ import { slotAction } from '../settings/bindings.ts';
 import type { HudContext } from './context.ts';
 import { el, label, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
-import { markerShown, OFFER_IDLE, stepOffer } from './offer-state.ts';
+import { cardsKey, markerShown, OFFER_IDLE, stepOffer } from './offer-state.ts';
 import type { OfferUi } from './offer-state.ts';
 
 const OFFER = {
@@ -108,8 +108,9 @@ export function createSkillOffer(parent: HTMLElement, context: HudContext, track
     event.stopPropagation();
     const open: OpenOffer | null = pendingOffer(context.api.world);
     if (open === null) return;
-    if (filled !== open.offer.id) {
-      filled = open.offer.id;
+    const key: string = cardsKey(open.offer.id, open.choices);
+    if (filled !== key) {
+      filled = key;
       fill(open);
     }
     element.getBoundingClientRect();

@@ -16,3 +16,7 @@ export function stepOffer(ui: OfferUi, input: OfferInput): OfferUi {
 export function markerShown(ui: OfferUi): boolean {
   return ui.offer !== null && !ui.open;
 }
+
+export function cardsKey(offer: string, choices: readonly string[]): string {
+  return `${offer}:${choices.join(',')}`;
+}

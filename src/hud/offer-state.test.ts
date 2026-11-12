@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { markerShown, OFFER_IDLE, stepOffer } from './offer-state.ts';
+import { cardsKey, markerShown, OFFER_IDLE, stepOffer } from './offer-state.ts';
 import type { OfferUi } from './offer-state.ts';
 
 void test('a new choice waits behind a marker and never opens itself', (): void => {
@@ -28,4 +28,9 @@ void test('a choice made closes the panel, and the next offer in line waits behi
   const done: OfferUi = stepOffer(next, { type: 'pending', offer: null });
   assert.equal(markerShown(done), false);
   assert.equal(stepOffer(done, { type: 'open' }), done);
+});
+
+void test('the cards are drawn again when a choice was learned while the offer waited', (): void => {
+  assert.equal(cardsKey('fire_lesson', ['a', 'b', 'c']), cardsKey('fire_lesson', ['a', 'b', 'c']));
+  assert.notEqual(cardsKey('fire_lesson', ['a', 'b', 'c']), cardsKey('fire_lesson', ['a', 'c']));
 });
