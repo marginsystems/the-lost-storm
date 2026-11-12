@@ -541,8 +541,10 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       }
       const bolt: Mesh<BufferGeometry, MeshBasicMaterial> = skyBolt(STRIKE_WHITE);
       const arcs: Mesh<BufferGeometry, MeshBasicMaterial> = groundArcs(STRIKE_WHITE, 4);
-      scene.add(bolt, arcs);
-      renderer.compile(scene, camera);
+      const holder: Group = new Group();
+      for (const entry of warm) holder.add(entry.group);
+      holder.add(bolt, arcs);
+      await renderer.compileAsync(holder, camera, scene).catch((): undefined => undefined);
       for (const entry of warm) {
         entry.group.traverse((object: Object3D): void => {
           if (!(object instanceof Mesh)) return;
@@ -550,9 +552,11 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
           for (const material of materials) if (material instanceof MeshStandardMaterial) for (const texture of [material.map, material.normalMap, material.roughnessMap, material.emissiveMap]) if (texture !== null) renderer.initTexture(texture);
         });
         entry.group.visible = false;
+        scene.add(entry.group);
       }
       bolt.visible = false;
       arcs.visible = false;
+      scene.add(bolt, arcs);
       for (const entry of kept) dispose(entry);
       for (const old of keptStrike) old.removeFromParent();
       kept = warm;
