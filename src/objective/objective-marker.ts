@@ -23,7 +23,7 @@ export const OBJECTIVE = {
   screenMargin: 56,
   hudGap: 14,
   hudReadSeconds: 0.25,
-  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.hud-flask', '.minimap', '.hud-quests', '.hud-top'],
+  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.minimap', '.hud-quests', '.hud-top'],
 } as const;
 
 function hudRects(hud: HTMLElement): Rect[] {

@@ -1,27 +1,38 @@
 import type { FlaskResource } from '../../sim/content/flasks.ts';
 import { isRestoring } from '../../sim/world/flasks.ts';
 import type { FlaskState, PlayerState } from '../../sim/world/types.ts';
-import { clamp01, el, label, pulseClass, setText } from './dom.ts';
-import { svg } from './svg.ts';
+import { el, pulseClass, setText } from './dom.ts';
 
 const BELT = {
-  fillStep: 0.01,
-  usedMs: 260,
-  width: 28,
-  height: 44,
-  bodyTop: 13,
-  bodyBottom: 42,
-  body: 'M10.5 13V17.2C5.2 19.2 3 24.2 3 29.6C3 37 7.9 42 14 42C20.1 42 25 37 25 29.6C25 24.2 22.8 19.2 17.5 17.2V13Z',
-  shine: 'M7.2 25.5C6.4 28 6.6 31.8 8.2 34.6',
-  cork: { x: 10, y: 4.5, width: 8, height: 6.5 },
-  lip: { x: 9, y: 10.5, width: 10, height: 2.8 },
+  usedMs: 520,
+  fillStep: 0.05,
 } as const;
 
-interface FlaskView {
+export interface BeadState {
+  readonly ready: boolean;
+  readonly fill: number;
+}
+
+export interface BeadCharges {
+  readonly charges: number;
+  readonly chargesPerUse: number;
+  readonly maxCharges: number;
+}
+
+interface BeadView {
   readonly element: HTMLElement;
-  readonly key: HTMLElement;
-  readonly liquid: SVGRectElement;
+  ready: boolean | null;
   fill: number;
+}
+
+interface FlaskView {
+  readonly beads: readonly BeadView[];
+  readonly resource: FlaskResource;
+}
+
+export interface FlaskHosts {
+  beads(resource: FlaskResource): HTMLElement;
+  key(resource: FlaskResource): HTMLElement;
 }
 
 export interface FlaskBelt {
@@ -30,47 +41,46 @@ export interface FlaskBelt {
   refreshKeys(): void;
 }
 
-function drawFlask(parent: HTMLElement, flask: FlaskState): SVGRectElement {
-  const clipId: string = `flask-clip-${flask.def.id}`;
-  const picture: SVGSVGElement = svg('svg', 'flask-picture', null, { viewBox: `0 0 ${BELT.width} ${BELT.height}`, 'aria-hidden': 'true' });
-  parent.appendChild(picture);
-  const defs: SVGDefsElement = svg('defs', '', picture, {});
-  const clip: SVGClipPathElement = svg('clipPath', '', defs, { id: clipId });
-  svg('path', '', clip, { d: BELT.body });
-  svg('rect', 'flask-cork', picture, { ...BELT.cork, rx: 1 });
-  svg('rect', 'flask-lip', picture, { ...BELT.lip, rx: 0.8 });
-  svg('path', 'flask-glass', picture, { d: BELT.body });
-  const inside: SVGGElement = svg('g', '', picture, { 'clip-path': `url(#${clipId})` });
-  const liquid: SVGRectElement = svg('rect', 'flask-liquid', inside, { x: 0, y: BELT.bodyTop, width: BELT.width, height: BELT.bodyBottom - BELT.bodyTop });
-  const span: number = BELT.bodyBottom - BELT.bodyTop;
-  for (let charges: number = flask.def.chargesPerUse; charges < flask.def.maxCharges; charges += flask.def.chargesPerUse) {
-    const y: number = BELT.bodyBottom - (charges / flask.def.maxCharges) * span;
-    svg('line', 'flask-notch', inside, { x1: 0, x2: BELT.width, y1: y, y2: y });
-  }
-  svg('path', 'flask-shine', picture, { d: BELT.shine });
-  return liquid;
+export function beadStates(flask: BeadCharges): BeadState[] {
+  const uses: number = flask.chargesPerUse > 0 ? Math.floor(flask.maxCharges / flask.chargesPerUse) : 0;
+  return Array.from({ length: uses }, (_: unknown, index: number): BeadState => {
+    const need: number = (index + 1) * flask.chargesPerUse;
+    if (flask.charges >= need) return { ready: true, fill: 1 };
+    const into: number = (flask.charges - index * flask.chargesPerUse) / flask.chargesPerUse;
+    return { ready: false, fill: Math.min(1, Math.max(0, into)) };
+  });
 }
 
-function buildFlask(root: HTMLElement, flask: FlaskState, keyLabel: string): FlaskView {
-  const element: HTMLDivElement = el('div', `hud-flask ${flask.def.resource}`, root);
-  const liquid: SVGRectElement = drawFlask(element, flask);
-  const key: HTMLDivElement = label('flask-key', keyLabel, element);
-  return { element, key, liquid, fill: -1 };
+function buildFlask(hosts: FlaskHosts, flask: FlaskState): FlaskView {
+  const host: HTMLElement = hosts.beads(flask.def.resource);
+  const beads: BeadView[] = beadStates({ charges: flask.charges, chargesPerUse: flask.def.chargesPerUse, maxCharges: flask.def.maxCharges }).map((): BeadView => ({ element: el('i', 'globe-bead', host), ready: null, fill: -1 }));
+  return { beads, resource: flask.def.resource };
 }
 
 function updateFlask(view: FlaskView, flask: FlaskState): void {
-  const fraction: number = clamp01(flask.charges / flask.def.maxCharges);
-  const quantised: number = Math.round(fraction / BELT.fillStep) * BELT.fillStep;
-  if (quantised !== view.fill) {
-    view.fill = quantised;
-    view.liquid.style.transform = `scaleY(${quantised})`;
-  }
-  view.element.classList.toggle('empty', flask.charges < flask.def.chargesPerUse);
-  view.element.classList.toggle('cooling', flask.cooldown > 0);
+  const states: BeadState[] = beadStates({ charges: flask.charges, chargesPerUse: flask.def.chargesPerUse, maxCharges: flask.def.maxCharges });
+  view.beads.forEach((bead: BeadView, index: number): void => {
+    const state: BeadState = states[index] ?? { ready: false, fill: 0 };
+    if (state.ready !== bead.ready) {
+      bead.ready = state.ready;
+      bead.element.classList.toggle('ready', state.ready);
+    }
+    const fill: number = Math.round(state.fill / BELT.fillStep) * BELT.fillStep;
+    if (fill !== bead.fill) {
+      bead.fill = fill;
+      bead.element.style.setProperty('--bead-fill', fill.toFixed(2));
+    }
+  });
 }
 
-export function createFlaskBelt(root: HTMLElement, flasks: readonly FlaskState[], keyOf: (slot: number) => string, setRestoring: (resource: FlaskResource, on: boolean) => void): FlaskBelt {
-  const views: FlaskView[] = flasks.map((flask: FlaskState, slot: number): FlaskView => buildFlask(root, flask, keyOf(slot)));
+export function createFlaskBelt(hosts: FlaskHosts, flasks: readonly FlaskState[], keyOf: (slot: number) => string, setRestoring: (resource: FlaskResource, on: boolean) => void): FlaskBelt {
+  const views: FlaskView[] = flasks.map((flask: FlaskState): FlaskView => buildFlask(hosts, flask));
+  const showKeys = (animate: boolean): void => {
+    flasks.forEach((flask: FlaskState, slot: number): void => {
+      setText(hosts.key(flask.def.resource), keyOf(slot), animate);
+    });
+  };
+  showKeys(false);
   return {
     update(player: PlayerState): void {
       const restoring: Record<FlaskResource, boolean> = { life: false, mana: false };
@@ -83,13 +93,13 @@ export function createFlaskBelt(root: HTMLElement, flasks: readonly FlaskState[]
       setRestoring('mana', restoring.mana);
     },
     refreshKeys(): void {
-      views.forEach((view: FlaskView, slot: number): void => {
-        setText(view.key, keyOf(slot), true);
-      });
+      showKeys(true);
     },
     used(slot: number): void {
       const view: FlaskView | undefined = views[slot];
-      if (view !== undefined) pulseClass(view.element, 'used', BELT.usedMs);
+      if (view === undefined) return;
+      const host: HTMLElement | null = view.beads[0]?.element.parentElement ?? null;
+      if (host !== null) pulseClass(host, 'used', BELT.usedMs);
     },
   };
 }
