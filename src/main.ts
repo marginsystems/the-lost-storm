@@ -239,7 +239,7 @@ async function start(): Promise<void> {
   const mobile: MobileBoot = bootMobile();
   markInput(document.body, mobile.touch);
   wireCredits(element('title-credits-open', HTMLButtonElement), element('title-credits', HTMLParagraphElement));
-  const launch: Launch | null = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement) });
+  const launch: Launch | null = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement) });
   statusLine.show('Reading the rules…');
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
