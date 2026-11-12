@@ -7,6 +7,7 @@ import { parseFlasks } from './flasks.ts';
 import { combatProblems, fieldDelivery, markDelivery, monsterMod, monsterTraits, reviveDelivery, skillMotion } from './parse-combat.ts';
 import { faction, factionProblems } from './parse-factions.ts';
 import { momentLibrary } from './parse-moments.ts';
+import { rigGaits } from './parse-gaits.ts';
 import { momentProblems } from './moments.ts';
 import { chartDef, chartProblems, statMod, treeNode } from './parse-chart.ts';
 import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
@@ -40,7 +41,6 @@ import type {
   StatCap,
   RigActionClip,
   RigClips,
-  RigGait,
   RigDef,
   RigSocket,
   RigUnarmedClips,
@@ -313,16 +313,6 @@ function unarmedClips(value: unknown, where: string): RigUnarmedClips | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
   return { idle: text(source, 'idle', where), actions: actionClips(source['actions'], `${where}.actions`) };
-}
-
-function rigGaits(value: unknown, where: string): RigGait[] {
-  const gaits: RigGait[] = each(value, where, (entry: unknown, entryWhere: string): RigGait => {
-    const source: Fields = fields(entry, entryWhere);
-    return { clip: text(source, 'clip', entryWhere), groundSpeed: positive(source, 'groundSpeed', entryWhere) };
-  });
-  if (gaits.length === 0) throw new ContentError(where, 'a rig needs at least one gait');
-  if (gaits.some((gait: RigGait, index: number): boolean => index > 0 && gait.groundSpeed <= (gaits[index - 1]?.groundSpeed ?? 0))) throw new ContentError(where, 'gaits run from the slowest to the fastest');
-  return gaits;
 }
 
 function rigClips(value: unknown, where: string): RigClips {
