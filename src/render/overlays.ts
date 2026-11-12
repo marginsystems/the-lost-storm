@@ -32,7 +32,6 @@ export const OVERLAYS = {
   labelHeight: 20,
   labelWidth: 90,
   labelShownRank: 1,
-  findLabel: 'Pick up',
   arrowFloor: 0.001,
   arrowGap: 1,
   altKey: 'Alt',
@@ -95,6 +94,7 @@ interface LeavingLabel {
 }
 
 export interface OverlayHooks {
+  readonly findLabel: string;
   heightOf(actorId: number): number;
   onPickup(groundId: number): void;
   onLootEnter(item: ItemInstance, x: number, y: number): void;
@@ -109,6 +109,7 @@ export interface Overlays {
   handle(events: readonly WorldEvent[], world: World): void;
   update(dt: number, world: World, hoveredId: number | null): void;
   aimExit(exit: string | null): void;
+  aimItem(groundId: number | null): void;
   labelHover(): number | null;
 }
 
@@ -148,6 +149,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   let showAll: boolean = false;
   let exitsOf: ZoneDef | null = null;
   let aimed: string | null = null;
+  let aimedItem: number | null = null;
   let people: NpcLabel[] = [];
   let peopleOf: readonly NpcState[] | null = null;
   let peopleZone: ZoneDef | null = null;
@@ -214,7 +216,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     const inner: HTMLSpanElement = document.createElement('span');
     const arrow: HTMLElement = document.createElement('i');
     arrow.className = 'loot-arrow';
-    inner.textContent = ground.find === null ? itemName(world.content, ground.content.item) : OVERLAYS.findLabel;
+    inner.textContent = ground.find === null ? itemName(world.content, ground.content.item) : hooks.findLabel;
     inner.style.color = rarityOf(world.content, ground.content.item).color;
     element.append(inner, arrow);
     element.addEventListener('pointerdown', (event: PointerEvent): void => {
@@ -322,6 +324,11 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   };
 
   return {
+    aimItem(groundId: number | null): void {
+      if (groundId === aimedItem) return;
+      aimedItem = groundId;
+      for (const [id, label] of labels) label.element.classList.toggle('aimed', id === groundId);
+    },
     aimExit(exit: string | null): void {
       if (exit === aimed) return;
       aimed = exit;
@@ -498,7 +505,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           label.element.classList.add('taken');
         }
         const near: boolean = Math.hypot(label.ground.pos.x - world.player.pos.x, label.ground.pos.z - world.player.pos.z) <= OVERLAYS.labelNear;
-        const shown: boolean = showAll || near || label.rank >= OVERLAYS.labelShownRank;
+        const shown: boolean = showAll || near || label.ground.find !== null || label.rank >= OVERLAYS.labelShownRank;
         if (shown !== label.shown) {
           label.shown = shown;
           label.element.classList.toggle('dim', !shown);

@@ -1,4 +1,3 @@
-import type { ZoneVoid } from '../content/story-types.ts';
 import { distance } from '../math.ts';
 import type { Vec2 } from '../math.ts';
 import { addToInventory } from './character.ts';
@@ -18,11 +17,10 @@ export function pickUp(world: World, ground: GroundItem): void {
   if (ground.content.kind === 'item') world.events.push({ type: 'character_changed' });
 }
 
-function nearestFind(world: World, at: Vec2, within: number): GroundItem | null {
+export function aimedItem(world: World, at: Vec2): GroundItem | null {
   let best: GroundItem | null = null;
-  let bestAway: number = within;
+  let bestAway: number = world.content.player.pickupAim;
   for (const ground of world.ground) {
-    if (ground.find === null) continue;
     const away: number = distance(ground.pos, at);
     if (away <= bestAway) {
       best = ground;
@@ -30,21 +28,4 @@ function nearestFind(world: World, at: Vec2, within: number): GroundItem | null 
     }
   }
   return best;
-}
-
-export function aimedFind(world: World, dest: Vec2): GroundItem | null {
-  const rules: ZoneVoid | null = world.zone.void;
-  return rules === null ? null : nearestFind(world, dest, rules.finds.aim);
-}
-
-export function walkOnFinds(world: World): void {
-  const rules: ZoneVoid | null = world.zone.void;
-  if (rules === null || !world.player.alive || world.wake !== null) return;
-  const underfoot: GroundItem | null = nearestFind(world, world.player.pos, rules.finds.reach);
-  if (underfoot === null || !fits(world.player, underfoot)) return;
-  pickUp(world, underfoot);
-}
-
-function fits(player: PlayerState, ground: GroundItem): boolean {
-  return ground.content.kind === 'gold' || player.inventory.includes(null);
 }

@@ -33,7 +33,8 @@
   pointer-events: none;
 }
 
-.loot-label:hover span {
+.loot-label:hover span,
+.loot-label.aimed span {
   background: rgba(16, 20, 28, 0.78);
   scale: 1.06;
 }

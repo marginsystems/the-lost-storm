@@ -85,7 +85,6 @@
     "heading": 1.5,
     "wander": {"degrees": 70, "seconds": 4, "farther": 1.6},
     "sets": {"opening": "begun"},
-    "finds": {"reach": 1.4, "aim": 2.8},
     "emptyHanded": true,
     "shore": {"when": [{"type": "flag", "flag": "opening", "is": "read"}], "ahead": 22, "thin": 14, "surface": "black_rock", "ambience": {"background": "#06080d", "abyss": "#040508", "fogNear": 20, "fogFar": 70, "skyColor": "#6a7e9e", "groundColor": "#2a2420", "skyIntensity": 1.7, "keyColor": "#b4c6e4", "keyIntensity": 1.9}},
     "encounters": [
@@ -94,7 +93,6 @@
         "when": [{"type": "flag", "flag": "first_choice", "not": true}],
         "after": 170,
         "ahead": 16,
-        "latest": 50,
         "find": {"type": "item", "item": "worn_journal", "marker": "bolt", "sets": {"first_choice": "took_journal"}}
       },
       {
@@ -102,7 +100,6 @@
         "when": [{"type": "flag", "flag": "first_blade", "not": true}, {"type": "flag", "flag": "opening", "is": "read"}],
         "after": 34,
         "ahead": 9,
-        "latest": 30,
         "find": {"type": "item", "item": "rusted_blade", "marker": "bolt", "sets": {"first_blade": "found"}, "equip": true}
       },
       {

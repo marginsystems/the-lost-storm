@@ -15,7 +15,7 @@ import { createWorld } from '../world/create.ts';
 import { nextTalk } from '../world/dialogue.ts';
 import { startQuests } from '../world/quests.ts';
 import { stepWorld } from '../world/step.ts';
-import type { World, WorldEvent } from '../world/types.ts';
+import type { Command, GroundItem, World, WorldEvent } from '../world/types.ts';
 import { enterZone } from '../world/zones.ts';
 import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, PathObjective, QuestDef, RigDef, SkillTreeNodeDef, TalkDef, WearableDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
 import { fields, items, text } from './read.ts';
@@ -498,6 +498,11 @@ void test('the hero walks out of the In-Between, through the Hall and on to the 
     for (let step: number = 0; step < 1800 && world.zone.id === zoneId && !done(); step += 1) stepWorld(world, step % 30 === 0 ? [{ type: 'move', held: false, dest: goal }] : [], 1 / 30);
   };
   const exit: ZoneExit = must(zoneOf(content, 'between').exits.find((entry: ZoneExit): boolean => entry.id === 'into_the_hall'), 'into_the_hall');
+  for (let step: number = 0; step < 1800 && world.flags['first_blade'] === undefined; step += 1) {
+    const blade: GroundItem | undefined = world.ground.find((ground: GroundItem): boolean => ground.find === 'blade');
+    const click: Command = blade === undefined ? { type: 'move', held: false, dest: { x: world.player.pos.x + world.heading.x * 30, z: world.player.pos.z + world.heading.z * 30 } } : { type: 'pickup', groundId: blade.id };
+    stepWorld(world, step % 30 === 0 ? [click] : [], 1 / 30);
+  }
   walkTo('between', exit, (): boolean => world.zone.id !== 'between');
   assert.equal(world.zone.id, 'hall_of_time');
   walkTo('hall_of_time', onward, (): boolean => world.zone.id !== 'hall_of_time');

@@ -8,7 +8,7 @@ import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
 import { respawnPlayer } from './death.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc } from './dialogue.ts';
-import { aimedFind, pickUp } from './finds.ts';
+import { pickUp } from './finds.ts';
 import { useFlask } from './flasks.ts';
 import type { Steering, SteerStep } from './movement.ts';
 import { steerAlong, stepKnock, stepTimers } from './movement.ts';
@@ -125,16 +125,9 @@ function useSkill(world: World, command: SkillCommand): void {
 function act(world: World, command: Command): void {
   const player: PlayerState = world.player;
   switch (command.type) {
-    case 'move': {
-      const aimed: GroundItem | null = aimedFind(world, command.dest);
-      if (aimed === null) {
-        startMove(world, command.dest, command.held);
-        return;
-      }
-      player.intent = { type: 'pickup', groundId: aimed.id };
-      setDestination(world, aimed.pos);
+    case 'move':
+      startMove(world, command.dest, command.held);
       return;
-    }
     case 'stop':
       player.intent = { type: 'idle' };
       player.path = [];

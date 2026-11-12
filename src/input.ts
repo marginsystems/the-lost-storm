@@ -3,12 +3,15 @@ import { Box3, Vector2, Vector3 } from 'three';
 import type { SkillDef, ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { allHold } from '../sim/world/conditions.ts';
+import { aimedItem } from '../sim/world/finds.ts';
 import { stationNear } from '../sim/world/trade.ts';
 import type { Station } from '../sim/world/trade.ts';
-import type { Command, MonsterState, NpcState, World } from '../sim/world/types.ts';
+import type { Command, GroundItem, MonsterState, NpcState, World } from '../sim/world/types.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { PickCandidate, ScreenRect } from './pick.ts';
 import { pickActor } from './pick.ts';
+import type { ItemPress } from './item-press.ts';
+import { itemPress } from './item-press.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import type { ActionId } from './settings/bindings.ts';
 import { flaskAction, slotAction } from './settings/bindings.ts';
@@ -28,6 +31,7 @@ export interface InputHooks {
   labelHover(): number | null;
   clickMarker(x: number, z: number, hostile: boolean): void;
   aimExit(exit: string | null): void;
+  aimItem(groundId: number | null): void;
   pause(): void;
 }
 
@@ -56,6 +60,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   let holdTimer: number = 0;
   let shift: boolean = false;
   let tapping: boolean = false;
+  let pressedItem: boolean = false;
   const extra: Command[] = [];
 
   const slotFor = (binding: string): number => world.content.player.skillBar.findIndex((_entry, slot: number): boolean => settings.keys().bindingsOf(slotAction(slot)).includes(binding));
@@ -187,6 +192,11 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     return world.zone.exits.find((exit: ZoneExit): boolean => Math.hypot(exit.x - ground.x, exit.z - ground.z) <= exit.radius && !(exit.hiddenWhenLocked && !allHold(world, exit.requires))) ?? null;
   };
 
+  const itemAt = (ground: Vec2 | null): GroundItem | null => {
+    if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
+    return aimedItem(world, ground);
+  };
+
   const onWaypointMark = (ground: Vec2 | null): boolean => {
     const waypoint = world.zone.waypoint;
     if (ground === null || waypoint === null || !pointerInside || hud.isPointerOverUi()) return false;
@@ -241,15 +251,17 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       const groundHit: Vector3 | null = camera.groundPoint(pointer);
       const ground: Vec2 | null = groundHit === null ? null : { x: groundHit.x, z: groundHit.z };
       look = mouse && pointerInside ? ground : null;
-      const exit: ZoneExit | null = target === null && person === null ? exitAt(ground) : null;
+      const item: GroundItem | null = target === null && person === null ? itemAt(ground) : null;
+      hooks.aimItem(item?.id ?? null);
+      const exit: ZoneExit | null = target === null && person === null && item === null ? exitAt(ground) : null;
       hooks.aimExit(exit?.id ?? null);
-      const station: Station | null = target === null && person === null && exit === null ? stationAt(ground) : null;
-      const marked: boolean = target === null && person === null && exit === null && station === null && onWaypointMark(ground);
+      const station: Station | null = target === null && person === null && item === null && exit === null ? stationAt(ground) : null;
+      const marked: boolean = target === null && person === null && item === null && exit === null && station === null && onWaypointMark(ground);
       if (tapping) {
         tapping = false;
         pointerInside = false;
       }
-      canvas.style.cursor = target !== null ? 'crosshair' : exit !== null || person !== null || station !== null || marked ? 'pointer' : 'default';
+      canvas.style.cursor = target !== null ? 'crosshair' : item !== null || exit !== null || person !== null || station !== null || marked ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       const up: Set<string> = new Set<string>(lifted.splice(0, lifted.length));
@@ -278,6 +290,8 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       if (leftFresh) hud.requestMap(marked && !shift);
       const leftRepeats: boolean = leftFresh || (world.player.skills[leftSlot]?.press ?? null) === null;
       const leftHeld: boolean = held.has(INPUT.leftBinding);
+      const itemHit: ItemPress = itemPress(pressedItem, { fresh: leftFresh, held: leftHeld, free: target === null && person === null && !shift, item: item?.id ?? null });
+      pressedItem = itemHit.onItem;
       const leftTick: boolean = leftFresh || (leftHeld && holdTick);
       if (leftFresh || leftHeld) {
         if (target !== null) {
@@ -287,6 +301,11 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
           if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim: ground, targetId: null });
         } else if (person !== null) {
           if (leftFresh) commands.push({ type: 'talk', npcId: person.id });
+        } else if (pressedItem) {
+          if (itemHit.pickup !== null && item !== null) {
+            commands.push({ type: 'pickup', groundId: itemHit.pickup });
+            hooks.clickMarker(item.pos.x, item.pos.z, false);
+          }
         } else if (station !== null) {
           if (leftFresh) {
             commands.push({ type: 'use', prop: station.index });

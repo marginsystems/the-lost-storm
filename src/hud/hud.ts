@@ -48,6 +48,8 @@ import { createMapPanel } from './map-panel.ts';
 import type { MapPanel } from './map-panel.ts';
 import { watchFit } from './fit-view.ts';
 import { createMenuButton } from './menu.ts';
+import menuCss from './menu.css?inline';
+import { PICKUP_NOTE, pickupLine } from './pickup-notes.ts';
 import type { MenuButton } from './menu.ts';
 import panelsCss from './panels.css?inline';
 import { createQuestTracker } from './quest-tracker.ts';
@@ -99,7 +101,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}\n${pickerCss}`;
+  style.textContent = `${hudCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}\n${pickerCss}\n${menuCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -131,6 +133,15 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
 
   const bottom: HTMLDivElement = el('div', 'hud-bottom', root);
   const notices: Notices = createNotices(bottom);
+  let bagTimer: number | null = null;
+  const acknowledgeBag = (): void => {
+    if (bagTimer !== null) window.clearTimeout(bagTimer);
+    root.classList.add(PICKUP_NOTE.bagClass);
+    bagTimer = window.setTimeout((): void => {
+      root.classList.remove(PICKUP_NOTE.bagClass);
+      bagTimer = null;
+    }, PICKUP_NOTE.bagMs);
+  };
   const xp: XpBar = createXpBar(bottom);
   const row: HTMLDivElement = el('div', 'hud-row', bottom);
 
@@ -347,9 +358,16 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             refreshOpen('character');
             refreshOpen('tree');
             break;
-          case 'pickup':
+          case 'pickup': {
             refreshOpen('inventory');
+            const line: string | null = pickupLine(api.world.content, event.ground);
+            if (line !== null) {
+              notices.say(line);
+              acknowledgeBag();
+            }
             break;
+          }
+
           case 'glitch_start':
           case 'glitch_end':
           case 'glitch_word':

@@ -485,6 +485,7 @@ function player(value: unknown, where: string): PlayerDef {
     wear: textList(source, 'wear', where),
     inventorySize: numeric(source, 'inventorySize', where),
     pickupRadius: numeric(source, 'pickupRadius', where),
+    pickupAim: numeric(source, 'pickupAim', where),
     rootGrace: numeric(source, 'rootGrace', where),
     goldMagnetRadius: numeric(source, 'goldMagnetRadius', where),
     respawnDelay: numeric(source, 'respawnDelay', where),

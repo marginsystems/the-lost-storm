@@ -21,13 +21,16 @@ function find(value: unknown, where: string): EncounterFind {
 
 export function encounter(value: unknown, where: string): ZoneEncounter {
   const source: Fields = fields(value, where);
+  const found: ZoneEncounter['find'] = find(source['find'], `${where}.find`);
+  const latest: number | null = source['latest'] === undefined ? null : positive(source, 'latest', where);
+  if (latest !== null && found.type === 'item') throw new ContentError(`${where}.latest`, 'an item find cannot be laid under the hero: an item is only picked up by a click or tap on it');
   return {
     id: text(source, 'id', where),
     when: conditions(source, 'when', where),
     after: nonNegative(source, 'after', where),
     ahead: positive(source, 'ahead', where),
-    latest: source['latest'] === undefined ? null : positive(source, 'latest', where),
-    find: find(source['find'], `${where}.find`),
+    latest,
+    find: found,
   };
 }
 

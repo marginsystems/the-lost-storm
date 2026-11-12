@@ -6,7 +6,6 @@ import { distance, dot, length, normalize } from '../math.ts';
 import { allHold } from './conditions.ts';
 import { equipFromInventory } from './character.ts';
 import { moveExit } from './exits.ts';
-import { walkOnFinds } from './finds.ts';
 import { removeGround } from './ground.ts';
 import { setFlags } from './story.ts';
 import type { EncounterState, GroundItem, ItemInstance, World, WorldEvent } from './types.ts';
@@ -127,7 +126,6 @@ function enterLight(world: World, rules: ZoneVoid): void {
 }
 
 export function stepEncounters(world: World, rules: ZoneVoid, travelled: number, dt: number): void {
-  walkOnFinds(world);
   takeFinds(world, rules, world.events);
   for (const met of rules.encounters) stepOne(world, rules, met, travelled, dt);
   if (world.player.alive) enterLight(world, rules);

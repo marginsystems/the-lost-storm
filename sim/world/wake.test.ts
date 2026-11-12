@@ -43,8 +43,8 @@ function armedOnShore(): World {
   let seconds: number = 0;
   while (world.player.equipped.weapon === null && seconds < RETURN.armLimit) {
     const blade: GroundItem | undefined = world.ground.find((ground: GroundItem): boolean => ground.find === 'blade');
-    const dest: Vec2 = blade === undefined ? { x: world.player.pos.x + heading.x * RETURN.lead, z: world.player.pos.z + heading.z * RETURN.lead } : blade.pos;
-    stepWorld(world, [{ type: 'move', held: true, dest }], DT);
+    const command: Command = blade === undefined ? { type: 'move', held: true, dest: { x: world.player.pos.x + heading.x * RETURN.lead, z: world.player.pos.z + heading.z * RETURN.lead } } : { type: 'pickup', groundId: blade.id };
+    stepWorld(world, [command], DT);
     seconds += DT;
   }
   return world;

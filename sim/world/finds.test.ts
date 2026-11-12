@@ -6,7 +6,9 @@ import type { Content } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { createRng } from '../rng.ts';
+import { distance } from '../math.ts';
 import { createWorld } from './create.ts';
+import { aimedItem } from './finds.ts';
 import { shoreDepth } from './shore.ts';
 import { stepWorld } from './step.ts';
 import { wakeLength } from './wake.ts';
@@ -49,21 +51,39 @@ void test('a new hero wakes in the mist with nothing in his hands', (): void => 
   assert.equal(carries(world, 'rusted_blade'), false);
 });
 
-void test('walking onto the journal picks it up, with no click on its label', (): void => {
+void test('a held walk straight across the journal never picks it up, nor does stopping on it', (): void => {
   const world: World = risen(2);
   walkUntil(world, world.heading, (): boolean => findOf(world, 'journal') !== null);
   const journal: GroundItem = must(findOf(world, 'journal'), 'journal');
-  stepUntil(world, (): readonly Command[] => [{ type: 'move', held: true, dest: journal.pos }], (): boolean => carries(world, 'worn_journal'));
-  assert.ok(carries(world, 'worn_journal'));
+  const beyond: Vec2 = { x: journal.pos.x + (journal.pos.x - world.player.pos.x), z: journal.pos.z + (journal.pos.z - world.player.pos.z) };
+  stepUntil(world, (): readonly Command[] => [{ type: 'move', held: true, dest: beyond }], (): boolean => distance(world.player.pos, beyond) < 1);
+  stepUntil(world, (): readonly Command[] => [{ type: 'move', held: true, dest: journal.pos }], (): boolean => distance(world.player.pos, journal.pos) < 0.2);
+  for (let step: number = 0; step < 60; step += 1) stepWorld(world, [], DT);
+  assert.equal(carries(world, 'worn_journal'), false);
+  assert.notEqual(findOf(world, 'journal'), null);
 });
 
-void test('a click near the journal, not on it, walks over and picks it up', (): void => {
+void test('a click on the ground past the journal\'s reach is only a walk there', (): void => {
+  const world: World = risen(5);
+  walkUntil(world, world.heading, (): boolean => findOf(world, 'journal') !== null);
+  const journal: GroundItem = must(findOf(world, 'journal'), 'journal');
+  const past: Vec2 = { x: journal.pos.x + content.player.pickupAim + 1.2, z: journal.pos.z };
+  assert.equal(aimedItem(world, past), null);
+  stepWorld(world, [{ type: 'move', held: false, dest: past }], DT);
+  for (let step: number = 0; step < 600; step += 1) stepWorld(world, [], DT);
+  assert.equal(carries(world, 'worn_journal'), false);
+});
+
+void test('a click on the journal or anywhere within its reach aims at it, and the pickup it sends walks over and takes it, even mid-walk', (): void => {
   const world: World = risen(3);
   walkUntil(world, world.heading, (): boolean => findOf(world, 'journal') !== null);
   const journal: GroundItem = must(findOf(world, 'journal'), 'journal');
-  const rules = must(world.zone.void, 'void');
-  const near: Vec2 = { x: journal.pos.x + rules.finds.aim * 0.8, z: journal.pos.z };
-  stepWorld(world, [{ type: 'move', held: false, dest: near }], DT);
+  const reach: number = content.player.pickupAim;
+  assert.equal(aimedItem(world, journal.pos)?.id, journal.id);
+  assert.equal(aimedItem(world, { x: journal.pos.x + reach * 0.9, z: journal.pos.z })?.id, journal.id);
+  assert.equal(aimedItem(world, { x: journal.pos.x + reach * 1.1, z: journal.pos.z }), null);
+  stepWorld(world, [walk(world, { x: -world.heading.x, z: -world.heading.z })], DT);
+  stepWorld(world, [{ type: 'pickup', groundId: journal.id }], DT);
   stepUntil(world, (): readonly Command[] => [], (): boolean => carries(world, 'worn_journal'));
   assert.ok(carries(world, 'worn_journal'));
 });
@@ -75,7 +95,10 @@ void test('out on the black shore lies the first blade, and picking it up puts i
   walkUntil(world, east, (): boolean => findOf(world, 'blade') !== null);
   assert.ok(shoreDepth(world) >= 0.3);
   const blade: GroundItem = must(findOf(world, 'blade'), 'blade');
-  stepUntil(world, (): readonly Command[] => [{ type: 'move', held: true, dest: blade.pos }], (): boolean => world.player.equipped.weapon !== null);
+  stepUntil(world, (): readonly Command[] => [{ type: 'move', held: true, dest: blade.pos }], (): boolean => distance(world.player.pos, blade.pos) < 0.5);
+  assert.equal(carries(world, 'rusted_blade'), false);
+  stepWorld(world, [{ type: 'pickup', groundId: blade.id }], DT);
+  stepUntil(world, (): readonly Command[] => [], (): boolean => world.player.equipped.weapon !== null);
   assert.equal(world.player.equipped.weapon?.base, 'rusted_blade');
   assert.equal(world.flags['first_blade'], 'found');
 });

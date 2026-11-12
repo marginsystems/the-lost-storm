@@ -37,6 +37,7 @@ import { createSettingsStore as createGameSettings } from './settings/store.ts';
 import type { Backend, BackendState } from './backend/backend.ts';
 import { createBrowserAccount, createBrowserBackend } from './backend/browser.ts';
 import { createHud } from './hud/hud.ts';
+import { findLabel } from './hud/pickup-notes.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
 import { createInput } from './input.ts';
@@ -334,6 +335,7 @@ async function start(): Promise<void> {
     overlays: overlayManager,
   });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
+    findLabel: findLabel(mobile.touch),
     heightOf: (id: number): number => actors.heightOf(id),
     onPickup: (groundId: number): void => {
       hud.hideGroundItem();
@@ -360,6 +362,7 @@ async function start(): Promise<void> {
     labelHover: (): number | null => overlays.labelHover(),
     clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile),
     aimExit: (exit: string | null): void => overlays.aimExit(exit),
+    aimItem: (groundId: number | null): void => overlays.aimItem(groundId),
     pause: (): void => {
       if (playing && !transition.blocking) pauseMenu.open(null);
     },

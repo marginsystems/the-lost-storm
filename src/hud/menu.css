@@ -1,0 +1,9 @@
+.hud.got-item .hud-menu-btn[data-hud-part~='inventory'],
+.hud.got-item .tc-menu-btn[data-hud-part~='inventory'] {
+  transform: scale(1.08);
+  color: var(--storm);
+}
+
+.hud.got-item .hud-menu-btn[data-hud-part~='inventory'] {
+  background-color: rgba(127, 212, 255, 0.16);
+}

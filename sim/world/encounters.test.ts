@@ -110,7 +110,7 @@ void test('turning away from the journal brings it back in front of the hero', (
   assert.equal(world.ground.filter((ground: GroundItem): boolean => ground.find !== null).length, 1);
 });
 
-void test('taking the journal is the first choice; reading it shows the light and starts the quest, the journal itself brings the HUD, and the light leads on', (): void => {
+void test('taking the journal is the first choice and brings the HUD; reading it shows the light and starts the quest, the blade is taken with a click, and the light leads on', (): void => {
   const world: World = fresh(4);
   walkUntil(world, { x: 0, z: 1 }, (): boolean => found(world) !== null);
   const journal: GroundItem = must(found(world), 'journal');
@@ -131,7 +131,9 @@ void test('taking the journal is the first choice; reading it shows the light an
   walkUntil(world, world.heading, (): boolean => shoreDepth(world) >= 1);
   assert.equal(world.zone.id, opening.id);
   assert.equal(hudHidden(world), false);
-  walkUntil(world, world.heading, (): boolean => world.flags['first_blade'] === 'found');
+  walkUntil(world, world.heading, (): boolean => world.ground.some((ground: GroundItem): boolean => ground.find === 'blade'));
+  assert.equal(world.flags['first_blade'], undefined);
+  takeBlade(world);
   assert.equal(world.player.equipped.weapon?.base, 'rusted_blade');
   assert.equal(world.zone.id, opening.id);
   walkTo(world, (): Vec2 => (world.zone.id === opening.id ? lightExit(world) : world.player.pos), (): boolean => world.zone.id !== opening.id);
@@ -162,10 +164,27 @@ function tookJournal(world: World): boolean {
   return world.flags['first_choice'] !== undefined;
 }
 
+const SEEN = {
+  within: 20,
+  limit: 60,
+} as const;
+
+function laidInView(world: World): boolean {
+  const ground: GroundItem | null = found(world);
+  return ground !== null && distance(ground.pos, world.player.pos) <= SEEN.within;
+}
+
+function takeBlade(world: World): void {
+  for (let seconds: number = 0; world.player.equipped.weapon === null && seconds < WALK.limit; seconds += DT) {
+    const blade: GroundItem | undefined = world.ground.find((ground: GroundItem): boolean => ground.find === 'blade');
+    stepWorld(world, [blade === undefined ? walk(world, world.heading) : { type: 'pickup', groundId: blade.id }], DT);
+  }
+}
+
 function holdFor(world: World, seconds: number, aim: (at: number) => Vec2, start: number): number {
   let clock: number = start;
   let next: number = start;
-  for (let spent: number = 0; spent < seconds && !tookJournal(world); spent += DT) {
+  for (let spent: number = 0; spent < seconds && !laidInView(world); spent += DT) {
     const commands: Command[] = [];
     if (clock >= next) {
       commands.push({ type: 'move', held: true, dest: aim(clock) });
@@ -186,29 +205,32 @@ function beside(world: World, offset: Vec2): () => Vec2 {
   return (): Vec2 => ({ x: world.player.pos.x + offset.x, z: world.player.pos.z + offset.z });
 }
 
-void test('holding the button at one screen point, in five-second legs, finds the journal', (): void => {
+void test('holding the button at one screen point, in five-second legs, lays the journal in view but never takes it', (): void => {
   const world: World = fresh(31);
   let clock: number = idleFor(world, HELD.idle, 0);
-  for (let leg: number = 0; leg < HELD.legs && !tookJournal(world); leg += 1) {
+  for (let leg: number = 0; leg < HELD.legs && !laidInView(world); leg += 1) {
     clock = holdFor(world, HELD.hold, beside(world, HELD.mouse), clock);
     clock = idleFor(world, HELD.release, clock);
   }
-  assert.ok(tookJournal(world));
-  assert.ok(clock < HELD.idle + must(journalFind.latest, 'journal latest') + HELD.hold * 2);
+  assert.ok(laidInView(world));
+  assert.ok(clock < HELD.idle + SEEN.limit);
+  holdFor(world, HELD.hold, beside(world, HELD.mouse), clock);
+  assert.equal(tookJournal(world), false);
 });
 
-void test('walking in a small circle still finds the journal once he has moved long enough', (): void => {
+void test('walking in a small circle still lays the journal in view once he has moved far enough', (): void => {
   const world: World = fresh(32);
   const around = (at: number): Vec2 => ({ x: world.player.pos.x + Math.cos(at * HELD.circle.turn) * HELD.circle.radius, z: world.player.pos.z + Math.sin(at * HELD.circle.turn) * HELD.circle.radius });
-  const clock: number = holdFor(world, must(journalFind.latest, 'journal latest') + HELD.hold, around, 0);
-  assert.ok(tookJournal(world));
-  assert.ok(clock <= must(journalFind.latest, 'journal latest') + 1);
+  holdFor(world, SEEN.limit, around, 0);
+  assert.ok(laidInView(world));
+  assert.equal(tookJournal(world), false);
 });
 
-void test('holding a point right beside the hero still finds the journal', (): void => {
+void test('holding a point right beside the hero still lays the journal in view, and it stays on the ground', (): void => {
   const world: World = fresh(33);
-  holdFor(world, must(journalFind.latest, 'journal latest') + HELD.hold, beside(world, { x: HELD.near, z: 0 }), 0);
-  assert.ok(tookJournal(world));
+  holdFor(world, SEEN.limit, beside(world, { x: HELD.near, z: 0 }), 0);
+  assert.ok(laidInView(world));
+  assert.equal(tookJournal(world), false);
 });
 
 void test('a hero who never walks onto the light is brought to it after its latest time of movement', (): void => {
@@ -242,19 +264,21 @@ void test('walking back and forth finds the journal', (): void => {
     const sign: number = Math.floor(at / PATTERN.swing) % 2 === 0 ? 1 : -1;
     return { x: world.player.pos.x + along.x * PATTERN.reach * sign, z: world.player.pos.z + along.z * PATTERN.reach * sign };
   };
-  holdFor(world, must(journalFind.latest, 'journal latest') + HELD.hold, swing, 0);
-  assert.ok(tookJournal(world));
+  holdFor(world, SEEN.limit, swing, 0);
+  assert.ok(laidInView(world));
+  assert.equal(tookJournal(world), false);
 });
 
-void test('clicking ahead every half second finds the journal', (): void => {
+void test('clicking ahead every half second lays the journal in view without taking it', (): void => {
   const world: World = fresh(36);
   let next: number = 0;
-  for (let clock: number = 0; clock < must(journalFind.latest, 'journal latest') + HELD.hold && !tookJournal(world); clock += DT) {
+  for (let clock: number = 0; clock < SEEN.limit && !laidInView(world); clock += DT) {
     const click: Command[] = clock >= next ? [{ type: 'move', held: false, dest: { x: world.player.pos.x + HELD.mouse.x, z: world.player.pos.z + HELD.mouse.z } }] : [];
     if (click.length > 0) next = clock + PATTERN.clickEvery;
     stepWorld(world, click, DT);
   }
-  assert.ok(tookJournal(world));
+  assert.ok(laidInView(world));
+  assert.equal(tookJournal(world), false);
 });
 
 function readOnTheShore(seed: number): World {
@@ -268,13 +292,14 @@ void test('the light waits for the blade, so nobody reaches the Hall unarmed', (
   const world: World = readOnTheShore(37);
   for (let step: number = 0; step < 60 / DT; step += 1) stepWorld(world, [], DT);
   assert.equal(world.encounters.some((state): boolean => state.id === lightFind.id && state.pos !== null), false);
+  takeBlade(world);
   walkTo(world, (): Vec2 => lightExit(world), (): boolean => world.zone.id !== opening.id);
   assert.equal(world.player.equipped.weapon?.base, 'rusted_blade');
 });
 
 void test('stopping at the visible edge of the light carries the hero through', (): void => {
   const world: World = readOnTheShore(38);
-  walkUntil(world, world.heading, (): boolean => world.flags['first_blade'] === 'found');
+  takeBlade(world);
   stepWorld(world, [], DT);
   const exit = lightExit(world);
   const toward: Vec2 = { x: world.player.pos.x - exit.x, z: world.player.pos.z - exit.z };

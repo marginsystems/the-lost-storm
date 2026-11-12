@@ -53,11 +53,6 @@ export interface VoidShore {
   readonly ambience: ZoneAmbience;
 }
 
-export interface VoidFinds {
-  readonly reach: number;
-  readonly aim: number;
-}
-
 export interface ZoneVoid {
   readonly span: number;
   readonly wake: ZoneWake | null;
@@ -65,7 +60,6 @@ export interface ZoneVoid {
   readonly wander: VoidWander;
   readonly sets: StoryFlags;
   readonly encounters: readonly ZoneEncounter[];
-  readonly finds: VoidFinds;
   readonly emptyHanded: boolean;
   readonly shore: VoidShore | null;
 }
