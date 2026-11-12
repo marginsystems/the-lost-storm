@@ -42,7 +42,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, TREE_NODE_KINDS, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -269,6 +269,7 @@ function treeNode(value: unknown, where: string): SkillTreeNodeDef {
     name: text(source, 'name', where),
     description: text(source, 'description', where),
     icon: text(source, 'icon', where),
+    kind: choice(source, 'kind', TREE_NODE_KINDS, where),
     column: numeric(source, 'column', where),
     row: numeric(source, 'row', where),
     requires: textList(source, 'requires', where),
@@ -523,6 +524,8 @@ export function contentProblems(content: Content): string[] {
   need(content.rarities.length > 0, 'items need at least one rarity');
   const nodeIds: Set<string> = new Set<string>(content.skillTree.map((node: SkillTreeNodeDef): string => node.id));
   need(nodeIds.size === content.skillTree.length, 'skill tree has duplicate node ids');
+  const nodePlaces: Set<string> = new Set<string>(content.skillTree.map((node: SkillTreeNodeDef): string => `${node.column},${node.row}`));
+  need(nodePlaces.size === content.skillTree.length, 'skill tree has two nodes on the same column and row');
   for (const node of content.skillTree) {
     for (const required of node.requires) need(nodeIds.has(required), `tree node ${node.id} requires unknown node ${required}`);
     for (const mod of node.skillMods) need(content.skills.has(mod.skill), `tree node ${node.id} modifies unknown skill ${mod.skill}`);

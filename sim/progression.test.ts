@@ -9,7 +9,7 @@ const content: Content = loadContent();
 const curve: XpCurve = content.player.xp;
 
 function node(requires: readonly string[], requireMode: 'all' | 'any'): SkillTreeNodeDef {
-  return { id: 'test', name: 'Test', description: '', icon: 'life', column: 0, row: 0, requires, requireMode, statMods: [], skillMods: [] };
+  return { id: 'test', name: 'Test', description: '', icon: 'lightning', kind: 'minor', column: 0, row: 0, requires, requireMode, statMods: [], skillMods: [] };
 }
 
 void test('the xp curve grows level by level', (): void => {

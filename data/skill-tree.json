@@ -1,32 +1,32 @@
 [
   {
-    "id": "tempered_body", "name": "Tempered Body", "description": "+30 Maximum Life and +1 Life Regenerated per Second.", "icon": "life",
+    "id": "tempered_body", "name": "Tempered Body", "description": "+30 Maximum Life and +1 Life Regenerated per Second.", "icon": "tempered_body", "kind": "minor",
     "column": 0, "row": 0, "requires": [], "requireMode": "all",
     "statMods": [{ "stat": "maxLife", "op": "add", "value": 30 }, { "stat": "lifeRegen", "op": "add", "value": 1 }], "skillMods": []
   },
   {
-    "id": "stormcallers_focus", "name": "Stormcaller's Focus", "description": "+25 Maximum Mana and +2 Mana Regenerated per Second.", "icon": "mana",
+    "id": "stormcallers_focus", "name": "Stormcaller's Focus", "description": "+25 Maximum Mana and +2 Mana Regenerated per Second.", "icon": "focus", "kind": "minor",
     "column": 2, "row": 0, "requires": [], "requireMode": "all",
     "statMods": [{ "stat": "maxMana", "op": "add", "value": 25 }, { "stat": "manaRegen", "op": "add", "value": 2 }], "skillMods": []
   },
   {
-    "id": "heavy_hands", "name": "Heavy Hands", "description": "+20% Damage.", "icon": "damage",
+    "id": "heavy_hands", "name": "Heavy Hands", "description": "+20% Damage.", "icon": "heavy_strike", "kind": "minor",
     "column": 0, "row": 1, "requires": ["tempered_body"], "requireMode": "all",
     "statMods": [{ "stat": "damagePercent", "op": "add", "value": 0.2 }], "skillMods": []
   },
   {
-    "id": "forked_bolt", "name": "Forked Bolt", "description": "Storm Bolt fires two extra bolts and pierces one more enemy.", "icon": "fork",
+    "id": "forked_bolt", "name": "Forked Bolt", "description": "Storm Bolt fires two extra bolts and pierces one more enemy.", "icon": "forked_bolt", "kind": "minor",
     "column": 2, "row": 1, "requires": ["stormcallers_focus"], "requireMode": "all",
     "statMods": [], "skillMods": [{ "skill": "storm_bolt", "field": "projectiles", "value": 2 }, { "skill": "storm_bolt", "field": "pierce", "value": 1 }]
   },
   {
-    "id": "rolling_thunder", "name": "Rolling Thunder", "description": "Thunderclap reaches 35% further, knocks back 50% harder and recovers 25% sooner.", "icon": "thunder",
+    "id": "rolling_thunder", "name": "Rolling Thunder", "description": "Thunderclap reaches 35% further, knocks back 50% harder and recovers 25% sooner.", "icon": "thunder_ring", "kind": "minor",
     "column": 0, "row": 2, "requires": ["heavy_hands"], "requireMode": "all",
     "statMods": [], "skillMods": [{ "skill": "thunderclap", "field": "areaPercent", "value": 0.35 }, { "skill": "thunderclap", "field": "knockbackPercent", "value": 0.5 }, { "skill": "thunderclap", "field": "cooldownPercent", "value": -0.25 }]
   },
   {
-    "id": "eye_of_the_storm", "name": "Eye of the Storm", "description": "+10% Critical Strike Chance, +10% Attack Speed and +10% Movement Speed.", "icon": "eye",
-    "column": 1, "row": 2, "requires": ["heavy_hands", "forked_bolt"], "requireMode": "any",
+    "id": "eye_of_the_storm", "name": "Eye of the Storm", "description": "+10% Critical Strike Chance, +10% Attack Speed and +10% Movement Speed.", "icon": "eye_of_storm", "kind": "keystone",
+    "column": 1, "row": 1.65, "requires": ["heavy_hands", "forked_bolt"], "requireMode": "any",
     "statMods": [{ "stat": "critChance", "op": "add", "value": 0.1 }, { "stat": "attackSpeed", "op": "add", "value": 0.1 }, { "stat": "moveSpeed", "op": "percent", "value": 0.1 }], "skillMods": []
   }
 ]

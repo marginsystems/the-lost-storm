@@ -33,6 +33,7 @@ import { createDeathOverlay, createNotices, createSurgeStatus, createXpBar } fro
 import type { Notices, WorldStatus, XpBar } from './status.ts';
 import { createTooltip } from './tooltip.ts';
 import type { Tooltip } from './tooltip.ts';
+import treeCss from './tree.css?inline';
 import { createTreePanel } from './tree-panel.ts';
 import volumeCss from './volume.css?inline';
 import { createVolumeControl } from './volume-panel.ts';
@@ -43,7 +44,7 @@ const PANEL_IDS: readonly HudPanel[] = ['inventory', 'tree', 'map'];
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {

@@ -248,11 +248,15 @@ export interface ItemScaling {
 export const REQUIRE_MODES = ['all', 'any'] as const;
 export type RequireMode = (typeof REQUIRE_MODES)[number];
 
+export const TREE_NODE_KINDS = ['minor', 'keystone'] as const;
+export type TreeNodeKind = (typeof TREE_NODE_KINDS)[number];
+
 export interface SkillTreeNodeDef {
   readonly id: string;
   readonly name: string;
   readonly description: string;
   readonly icon: string;
+  readonly kind: TreeNodeKind;
   readonly column: number;
   readonly row: number;
   readonly requires: readonly string[];

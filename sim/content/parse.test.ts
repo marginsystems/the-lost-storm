@@ -99,7 +99,8 @@ const extraNode = {
   id: 'ember_heart',
   name: 'Ember Heart',
   description: '+10 Maximum Life.',
-  icon: 'life',
+  icon: 'tempered_body',
+  kind: 'minor',
   column: 3,
   row: 3,
   requires: ['eye_of_the_storm'],
@@ -172,6 +173,12 @@ void test('contentProblems reports dangling references', (): void => {
   assert.ok(problems.some((line: string): boolean => line.includes('ash_wraith') && line.includes('no_such_rig')));
   const danglingNode: Content = parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, requires: ['nothing'] }] });
   assert.ok(contentProblems(danglingNode).some((line: string): boolean => line.includes('nothing')));
+});
+
+void test('a tree node needs a known kind and a place of its own', (): void => {
+  assert.throws((): Content => parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, kind: 'huge' }] }), /kind/);
+  const stacked: Content = parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, column: 0, row: 0 }] });
+  assert.ok(contentProblems(stacked).some((line: string): boolean => line.includes('same column and row')));
 });
 
 void test('a new skill, monster, item base and tree node are data only', (): void => {

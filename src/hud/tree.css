@@ -1,0 +1,354 @@
+.hud-panel.tree-panel,
+.tree-tip {
+  --socket: 34px;
+  --keystone: 42px;
+  --tree-lit: #8fd8ff;
+  --tree-well: #090c12;
+}
+
+.hud-panel.tree-panel {
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(46, 70, 96, 0.22), rgba(8, 10, 15, 0) 70%),
+    rgba(8, 10, 15, 0.9);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.tree-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 6px 10px 5px;
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.tree-title {
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ember);
+}
+
+.tree-points {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-points-count {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tree-points.spendable {
+  color: var(--tree-lit);
+}
+
+.tree-viewport {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.tree-viewport.pannable {
+  cursor: grab;
+}
+
+.tree-viewport.dragging {
+  cursor: grabbing;
+}
+
+.tree-board {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.tree-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.tree-track {
+  stroke: rgba(150, 170, 195, 0.13);
+  stroke-width: 3;
+}
+
+.tree-flow {
+  stroke: var(--tree-lit);
+  stroke-width: 2;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  transition:
+    stroke-dashoffset var(--spring-smooth-ms) var(--spring-smooth),
+    stroke var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-flow.open {
+  stroke: var(--ember);
+  stroke-dashoffset: 0.45;
+  opacity: 0.5;
+}
+
+.tree-flow.lit {
+  stroke-dashoffset: 0;
+  opacity: 0.95;
+}
+
+.tree-socket {
+  position: absolute;
+  width: var(--socket);
+  height: var(--socket);
+  margin: calc(var(--socket) / -2) 0 0 calc(var(--socket) / -2);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  outline: none;
+  cursor: default;
+  color: rgba(239, 230, 214, 0.2);
+  transition:
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-socket.keystone {
+  width: var(--keystone);
+  height: var(--keystone);
+  margin: calc(var(--keystone) / -2) 0 0 calc(var(--keystone) / -2);
+}
+
+.tree-socket-rim,
+.tree-socket-well,
+.tree-socket-fill,
+.tree-socket-glyph {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.tree-socket-rim {
+  display: none;
+}
+
+.tree-socket.keystone .tree-socket-rim {
+  display: block;
+  inset: 3px;
+  border-radius: 0;
+  transform: rotate(45deg);
+  background: var(--tree-well);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+  transition: box-shadow var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-socket-well {
+  background: radial-gradient(circle at 50% 30%, #161b25, var(--tree-well) 70%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 3px 6px rgba(0, 0, 0, 0.85),
+    0 0 0 0 rgba(143, 216, 255, 0);
+  transition: box-shadow var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-socket-fill {
+  inset: 2px;
+  opacity: 0;
+  transform: scale(0.4);
+  background: radial-gradient(circle at 50% 32%, rgba(170, 228, 255, 0.62), rgba(52, 112, 158, 0.55) 55%, rgba(14, 30, 46, 0.9));
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.tree-socket-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tree-glyph {
+  width: 18px;
+  height: 18px;
+}
+
+.tree-socket.keystone .tree-glyph {
+  width: 22px;
+  height: 22px;
+}
+
+.tree-socket.no_points {
+  color: rgba(232, 184, 102, 0.42);
+}
+
+.tree-socket.no_points .tree-socket-well {
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 184, 102, 0.2),
+    inset 0 3px 6px rgba(0, 0, 0, 0.85),
+    0 0 0 0 rgba(143, 216, 255, 0);
+}
+
+.tree-socket.available {
+  cursor: pointer;
+  color: var(--ember);
+}
+
+.tree-socket.available .tree-socket-well {
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 184, 102, 0.5),
+    inset 0 3px 6px rgba(0, 0, 0, 0.85),
+    0 0 9px 0 rgba(232, 184, 102, 0.2);
+}
+
+.tree-socket.keystone.available .tree-socket-rim {
+  box-shadow: inset 0 0 0 1px rgba(232, 184, 102, 0.32);
+}
+
+.tree-socket.allocated {
+  color: #eaf7ff;
+}
+
+.tree-socket.allocated .tree-socket-well {
+  box-shadow:
+    inset 0 0 0 1px rgba(143, 216, 255, 0.55),
+    inset 0 3px 6px rgba(0, 0, 0, 0.85),
+    0 0 11px 0 rgba(143, 216, 255, 0.3);
+}
+
+.tree-socket.allocated .tree-socket-fill {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tree-socket.keystone.allocated .tree-socket-rim {
+  box-shadow: inset 0 0 0 1px rgba(143, 216, 255, 0.45);
+}
+
+.tree-socket:hover,
+.tree-socket:focus-visible {
+  transform: scale(1.1);
+}
+
+.tree-socket.available:active {
+  transform: scale(0.92);
+}
+
+.tree-socket.deny {
+  animation: tree-deny var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+@keyframes tree-deny {
+  0% {
+    transform: translateX(0);
+  }
+  30% {
+    transform: translateX(-3px);
+  }
+  65% {
+    transform: translateX(3px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.tree-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 50;
+  width: max-content;
+  max-width: 208px;
+  padding: 6px 9px 7px;
+  border-radius: 2px;
+  pointer-events: none;
+  background: rgba(7, 9, 14, 0.97);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    left var(--spring-snappy-ms) var(--spring-snappy),
+    top var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.tree-tip.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.tree-tip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11.5px;
+  line-height: 1.32;
+  animation: hud-tick var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.tree-tip-name {
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ember);
+}
+
+.tree-tip-effect {
+  color: var(--text);
+}
+
+.tree-tip-requires,
+.tree-tip-cost {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.tree-tip-requires {
+  margin-top: 3px;
+}
+
+.tree-tip-cost.unmet {
+  color: #d98572;
+}
+
+.tree-tip-status {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.tree-tip-status.available {
+  color: var(--ember);
+}
+
+.tree-tip-status.allocated {
+  color: var(--tree-lit);
+}
+
+.tree-tip-status.locked,
+.tree-tip-status.no_points {
+  color: #d98572;
+}
+
+.tree-tip.deny .tree-tip-status {
+  animation: tree-deny var(--spring-snappy-ms) var(--spring-snappy);
+}

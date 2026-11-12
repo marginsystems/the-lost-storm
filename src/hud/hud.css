@@ -645,10 +645,6 @@
   font-weight: 700;
 }
 
-.tip-title.tree {
-  color: var(--ember);
-}
-
 .tip-name {
   font-family: var(--serif);
   font-size: 13px;
