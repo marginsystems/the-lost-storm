@@ -204,6 +204,7 @@ void main() {
   color *= 0.82 + shade * 0.28;
   color = mix(color, uDeep, smoothstep(0.36, 0.58, storm) * (1.0 - near * 0.8) * (1.0 - open));
   color = mix(color, uMist * 1.06, wall * uWall);
+  color = mix(color, uMist, uShoreLook.y * (1.0 - smoothstep(-8.0, 2.0, ashore)) * 0.8);
   vec2 toFlash = vWorld.xz - uFlashPos;
   float glow = uFlash * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
   color = mix(color, uFlashColor, clamp(glow * (0.35 + storm * 0.9) + uFlash * wall * 0.6, 0.0, 1.0));

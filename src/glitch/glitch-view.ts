@@ -43,6 +43,7 @@ export interface GlitchViewDeps {
   hero(): Object3D;
   send(command: Command): void;
   setAmbience(ambience: ZoneAmbience): void;
+  restoreAmbience(): void;
   silence(): void;
   resume(): void;
 }
@@ -142,7 +143,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
     hidden.clear();
     for (const shade of shades) shade.dispose();
     shades.length = 0;
-    deps.setAmbience(world.zone.ambience);
+    deps.restoreAmbience();
     document.body.classList.remove(GLITCH_VIEW.mistClass);
   };
 

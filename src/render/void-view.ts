@@ -49,7 +49,7 @@ export const VOID_VIEW = {
   motionRate: 2.2,
   groundClear: { inner: 1.4, outer: 2.6 },
   pocketShade: { edge: 0.06, inner: 0.05 },
-  rockColor: 0x2a2e35,
+  rockColor: 0x1d2026,
   rockShade: 0x0d0f12,
   shoreFray: 9,
   shoreRate: 0.8,

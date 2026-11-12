@@ -449,7 +449,8 @@ async function start(): Promise<void> {
     settings: glitchSettings,
     hero: () => actors.hero(),
     send,
-    setAmbience: (ambience): void => { stage.setAmbience(ambience); opening.relight(); },
+    setAmbience: (ambience): void => stage.setAmbience(ambience),
+    restoreAmbience: (): void => { stage.setAmbience(world.zone.ambience); opening.relight(); },
     silence: (): void => {
       audio.stopAmbience();
       voice.stop();
