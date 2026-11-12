@@ -77,5 +77,5 @@
   "tint": "#e8d2bd",
   "color": "#8fdcff",
   "gear": [],
-  "wear": ["traveller_coat", "traveller_trousers", "traveller_boots", "traveller_hood"]
+  "wear": ["traveller_coat", "traveller_trousers", "traveller_boots"]
 }
