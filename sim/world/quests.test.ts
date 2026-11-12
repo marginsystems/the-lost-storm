@@ -10,8 +10,13 @@ import { nextTalk } from './dialogue.ts';
 import { spawnPacks } from './monsters.ts';
 import { activeQuests, currentObjective, startQuests } from './quests.ts';
 import { stepWorld } from './step.ts';
-import type { Command, MonsterState, NpcState, World, WorldEvent } from './types.ts';
+import type { Command, MomentState, MonsterState, NpcState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
+import { choicesOpen } from './death.ts';
+import { questMarks } from './map-marks.ts';
+import type { QuestMark } from './map-marks.ts';
+import { forceStrike, nearestFight } from './moments.ts';
+import { echoesOf, slay, standAt } from '../../test/moment-support.ts';
 import { ROAD_CONTENT, roadWorld, roadZone } from '../../test/road-support.ts';
 
 const shipped: Content = TOWN_CONTENT;
@@ -339,14 +344,12 @@ void test('reaching the fire marks the camp, and the slice ends only once a mome
   const outOfMist: QuestDef = must(content.quests.get('out_of_the_mist'), 'quest');
   const firstTaker: QuestDef = must(content.quests.get('the_first_taker'), 'quest');
   const world: World = worldIn(content, 'hideout', 9);
-  world.quests = { out_of_the_mist: outOfMist.objectives.length, to_the_waystation: 0, the_first_taker: 0 };
+  world.quests = { out_of_the_mist: outOfMist.objectives.length, the_first_taker: firstTaker.objectives.length };
+  startQuests(world);
   world.player.pos = { x: 24, z: 20 };
   stepWorld(world, [], DT);
   assert.equal(questState(world, 'to_the_waystation'), 'done');
   assert.equal(world.flags['camp'], 'reached');
-  assert.equal(questState(world, 'wardens_lesson'), 'locked');
-  world.quests['the_first_taker'] = firstTaker.objectives.length;
-  startQuests(world);
   assert.equal(world.flags['alpha_slice_complete'], undefined);
   assert.equal(questState(world, 'wardens_lesson'), 'active');
   world.player.pos = { x: 20, z: 21 };
@@ -354,3 +357,131 @@ void test('reaching the fire marks the camp, and the slice ends only once a mome
   assert.equal(questState(world, 'wardens_lesson'), 'done');
   assert.equal(world.flags['alpha_slice_complete'], 'reached');
 });
+
+const HALL_ARRIVAL = { x: 14, z: 30 } as const;
+const HIDEOUT_FIRE = { x: 24, z: 20 } as const;
+const STRIKE_GAP = { x: 6, z: 0 } as const;
+const FIGHT_LIMIT: number = 1800;
+const BESIDE_THE_FIRE = { x: 3, z: 1 } as const;
+
+function arrivedInHall(seed: number): World {
+  const world: World = worldIn(loadContent(), 'hall_of_time', seed);
+  standAt(world, HALL_ARRIVAL);
+  stepWorld(world, [], DT);
+  assert.equal(questState(world, 'out_of_the_mist'), 'done');
+  return world;
+}
+
+function activeIds(world: World): string[] {
+  return activeQuests(world).map((quest: QuestDef): string => quest.id);
+}
+
+function arrow(world: World): QuestMark {
+  return must(questMarks(world)[0], 'objective arrow');
+}
+
+function exitOf(world: World, id: string): ZoneExit {
+  return must(world.zone.exits.find((exit: ZoneExit): boolean => exit.id === id), id);
+}
+
+function struckBeside(world: World): MomentState {
+  const at = { x: world.player.pos.x + STRIKE_GAP.x, z: world.player.pos.z + STRIKE_GAP.z };
+  const moment: MomentState = must(forceStrike(world, at, null), 'strike');
+  for (let step: number = 0; step < FIGHT_LIMIT && moment.phase === 'mark'; step += 1) stepWorld(world, [], DT);
+  return moment;
+}
+
+function clearFirstMoment(world: World): void {
+  const moment: MomentState = struckBeside(world);
+  standAt(world, moment.pos);
+  stepWorld(world, [], DT);
+  stepWorld(world, [], DT);
+  slay(world, echoesOf(world, moment));
+  for (let step: number = 0; step < FIGHT_LIMIT && questState(world, 'the_first_taker') !== 'done'; step += 1) stepWorld(world, [], DT);
+  assert.equal(moment.outcome, 'resolved');
+}
+
+function travel(world: World, zoneId: string, exit: string): void {
+  enterZone(world, zoneOf(world.content, zoneId), { type: 'exit', exit });
+  stepWorld(world, [], DT);
+}
+
+function standAtFire(world: World): void {
+  standAt(world, HIDEOUT_FIRE);
+  stepWorld(world, [], DT);
+}
+
+void test('on first arrival in the Hall the only objective is to clear a moment, and the arrow points at the nearest live bubble', (): void => {
+  const world: World = arrivedInHall(4);
+  assert.deepEqual(activeIds(world), ['the_first_taker']);
+  assert.equal(questState(world, 'to_the_waystation'), 'locked');
+  assert.equal(currentObjective(world, must(world.content.quests.get('the_first_taker'), 'quest'))?.text, 'Clear a moment');
+  assert.equal(arrow(world).quest, 'the_first_taker');
+  assert.equal(arrow(world).here, true);
+  const moment: MomentState = struckBeside(world);
+  assert.equal(nearestFight(world), moment);
+  assert.deepEqual(arrow(world).pos, moment.pos);
+  assert.equal(questMarks(world).length, 1);
+});
+
+void test('clear a moment, then go: shelter appears only after the clear, its arrow leads east, and the fire ends it', (): void => {
+  const world: World = arrivedInHall(5);
+  clearFirstMoment(world);
+  assert.equal(world.flags['first_moment'] !== undefined, true);
+  assert.deepEqual(activeIds(world), ['to_the_waystation']);
+  const east: ZoneExit = exitOf(world, 'east');
+  assert.deepEqual(arrow(world), { quest: 'to_the_waystation', pos: { x: east.x, z: east.z }, here: false });
+  travel(world, 'hideout', 'west');
+  assert.equal(arrow(world).here, true);
+  standAtFire(world);
+  assert.equal(questState(world, 'to_the_waystation'), 'done');
+  assert.equal(world.flags['camp'], 'reached');
+  assert.deepEqual(activeIds(world), ['wardens_lesson']);
+});
+
+void test('go without clearing: the fire gives no credit, the tracker keeps the moment with an arrow back to the Hall, and a clear then the fire finishes the chain', (): void => {
+  const world: World = arrivedInHall(6);
+  travel(world, 'hideout', 'west');
+  standAtFire(world);
+  assert.equal(questState(world, 'to_the_waystation'), 'locked');
+  assert.equal(world.flags['camp'], undefined);
+  assert.deepEqual(activeIds(world), ['the_first_taker']);
+  const west: ZoneExit = exitOf(world, 'west');
+  assert.deepEqual(arrow(world), { quest: 'the_first_taker', pos: { x: west.x, z: west.z }, here: false });
+  travel(world, 'hall_of_time', 'east');
+  assert.deepEqual(activeIds(world), ['the_first_taker']);
+  clearFirstMoment(world);
+  assert.deepEqual(activeIds(world), ['to_the_waystation']);
+  travel(world, 'hideout', 'west');
+  standAtFire(world);
+  assert.equal(questState(world, 'to_the_waystation'), 'done');
+  assert.deepEqual(activeIds(world), ['wardens_lesson']);
+});
+
+for (const choice of ['checkpoint', 'town'] as const) {
+  void test(`die in the first fight, rise at the ${choice}: the moment is still owed, shelter stays locked, and the arrow leads back to a fight`, (): void => {
+    const world: World = arrivedInHall(7);
+    const moment: MomentState = struckBeside(world);
+    standAt(world, { x: moment.pos.x + BESIDE_THE_FIRE.x, z: moment.pos.z + BESIDE_THE_FIRE.z });
+    world.player.stats.lifeRegen = 0;
+    world.player.invulnerable = 0;
+    world.player.life = 1;
+    for (let step: number = 0; step < FIGHT_LIMIT && world.player.alive; step += 1) stepWorld(world, [], DT);
+    assert.equal(world.player.alive, false);
+    for (let step: number = 0; step < FIGHT_LIMIT && !choicesOpen(world); step += 1) stepWorld(world, [], DT);
+    stepWorld(world, [{ type: 'respawn', choice }], DT);
+    stepWorld(world, [], DT);
+    assert.equal(world.player.alive, true);
+    assert.notEqual(moment.outcome, 'resolved');
+    assert.equal(questState(world, 'the_first_taker'), 'active');
+    assert.equal(questState(world, 'to_the_waystation'), 'locked');
+    assert.deepEqual(activeIds(world), ['the_first_taker']);
+    const mark: QuestMark = arrow(world);
+    assert.equal(mark.quest, 'the_first_taker');
+    if (world.zone.id === 'hideout') assert.deepEqual(mark.pos, { x: exitOf(world, 'west').x, z: exitOf(world, 'west').z });
+    else assert.equal(mark.here, true);
+    if (world.zone.id === 'hideout') travel(world, 'hall_of_time', 'east');
+    clearFirstMoment(world);
+    assert.deepEqual(activeIds(world), ['to_the_waystation']);
+  });
+}
