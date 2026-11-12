@@ -11,18 +11,49 @@
     "recovery": 0.2,
     "scalesWithAttackSpeed": true,
     "engageRange": 2.2,
-    "delivery": { "type": "arc", "reach": 3.0, "arcDegrees": 135 },
-    "damage": { "weaponPercent": 1.0, "flatMin": 0, "flatMax": 0 },
+    "delivery": {
+      "type": "arc",
+      "reach": 3.0,
+      "arcDegrees": 135
+    },
+    "damage": {
+      "weaponPercent": 1.0,
+      "flatMin": 0,
+      "flatMax": 0
+    },
     "knockback": 6,
     "stagger": 0.22,
     "shake": 0.16,
     "hitStop": 0.035,
-    "vfx": { "style": "slash", "color": "#d6ecff" },
+    "vfx": {
+      "style": "slash",
+      "color": "#d6ecff"
+    },
     "combo": {
       "window": 0.55,
       "steps": [
-        { "animation": "attack_b", "windup": 0.14, "recovery": 0.2, "damageScale": 1.1, "areaScale": 1, "knockbackScale": 1, "stagger": 0.22, "shake": 0.18, "hitStop": 0.035 },
-        { "animation": "attack_c", "windup": 0.24, "recovery": 0.3, "damageScale": 1.7, "areaScale": 1.15, "knockbackScale": 1.9, "stagger": 0.5, "shake": 0.42, "hitStop": 0.07 }
+        {
+          "animation": "attack_b",
+          "windup": 0.14,
+          "recovery": 0.2,
+          "damageScale": 1.1,
+          "areaScale": 1,
+          "knockbackScale": 1,
+          "stagger": 0.22,
+          "shake": 0.18,
+          "hitStop": 0.035
+        },
+        {
+          "animation": "attack_c",
+          "windup": 0.24,
+          "recovery": 0.3,
+          "damageScale": 1.7,
+          "areaScale": 1.15,
+          "knockbackScale": 1.9,
+          "stagger": 0.5,
+          "shake": 0.42,
+          "hitStop": 0.07
+        }
       ]
     }
   },
@@ -38,13 +69,23 @@
     "recovery": 0.3,
     "scalesWithAttackSpeed": false,
     "engageRange": 3.5,
-    "delivery": { "type": "nova", "radius": 4.6 },
-    "damage": { "weaponPercent": 1.5, "flatMin": 4, "flatMax": 8 },
+    "delivery": {
+      "type": "nova",
+      "radius": 4.6
+    },
+    "damage": {
+      "weaponPercent": 1.5,
+      "flatMin": 4,
+      "flatMax": 8
+    },
     "knockback": 14,
     "stagger": 0.65,
     "shake": 0.8,
     "hitStop": 0.085,
-    "vfx": { "style": "shockwave", "color": "#7fd4ff" }
+    "vfx": {
+      "style": "shockwave",
+      "color": "#7fd4ff"
+    }
   },
   {
     "id": "storm_bolt",
@@ -58,353 +99,28 @@
     "recovery": 0.2,
     "scalesWithAttackSpeed": false,
     "engageRange": 16,
-    "delivery": { "type": "projectile", "speed": 27, "radius": 0.5, "range": 19, "pierce": 1, "count": 1, "spreadDegrees": 12 },
-    "damage": { "weaponPercent": 1.1, "flatMin": 2, "flatMax": 5 },
+    "delivery": {
+      "type": "projectile",
+      "speed": 27,
+      "radius": 0.5,
+      "range": 19,
+      "pierce": 1,
+      "count": 1,
+      "spreadDegrees": 12
+    },
+    "damage": {
+      "weaponPercent": 1.1,
+      "flatMin": 2,
+      "flatMax": 5
+    },
     "knockback": 4.5,
     "stagger": 0.2,
     "shake": 0.14,
     "hitStop": 0.03,
-    "vfx": { "style": "bolt", "color": "#9be1ff" }
-  },
-  {
-    "id": "thrall_claw",
-    "name": "Claw",
-    "description": "A raking swipe.",
-    "icon": "cleave",
-    "animation": "attack",
-    "manaCost": 0,
-    "cooldown": 1.1,
-    "windup": 0.42,
-    "recovery": 0.45,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 1.5,
-    "delivery": { "type": "arc", "reach": 2.0, "arcDegrees": 100 },
-    "damage": { "weaponPercent": 1.0, "flatMin": 0, "flatMax": 0 },
-    "knockback": 2,
-    "stagger": 0,
-    "shake": 0.28,
-    "hitStop": 0,
-    "vfx": { "style": "claw", "color": "#b9ffb0" }
-  },
-  {
-    "id": "hex_bolt",
-    "name": "Hex Bolt",
-    "description": "A slow orb of drowned light.",
-    "icon": "storm_bolt",
-    "animation": "cast",
-    "manaCost": 0,
-    "cooldown": 2.4,
-    "windup": 0.55,
-    "recovery": 0.4,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 10,
-    "delivery": { "type": "projectile", "speed": 11, "radius": 0.4, "range": 17, "pierce": 0, "count": 1, "spreadDegrees": 0 },
-    "damage": { "weaponPercent": 1.0, "flatMin": 0, "flatMax": 0 },
-    "knockback": 2,
-    "stagger": 0,
-    "shake": 0.3,
-    "hitStop": 0,
-    "vfx": { "style": "orb", "color": "#c77dff" }
-  },
-  {
-    "id": "before_sweep",
-    "name": "Remembered Sweep",
-    "description": "A wide cut that you have made yourself.",
-    "icon": "cleave",
-    "animation": "sweep",
-    "manaCost": 0,
-    "cooldown": 1.7,
-    "windup": 0.95,
-    "recovery": 0.5,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 2.6,
-    "delivery": { "type": "arc", "reach": 3.6, "arcDegrees": 150 },
-    "damage": { "weaponPercent": 0.85, "flatMin": 0, "flatMax": 0 },
-    "knockback": 7,
-    "stagger": 0,
-    "shake": 0.35,
-    "hitStop": 0,
-    "vfx": { "style": "slash", "color": "#bfe4ff" }
-  },
-  {
-    "id": "before_bolts",
-    "name": "Three Bolts",
-    "description": "A spread of bolts thrown from the hand.",
-    "icon": "storm_bolt",
-    "animation": "cast",
-    "manaCost": 0,
-    "cooldown": 4.2,
-    "windup": 1.0,
-    "recovery": 0.45,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 11,
-    "delivery": { "type": "projectile", "speed": 15, "radius": 0.45, "range": 19, "pierce": 0, "count": 3, "spreadDegrees": 16 },
-    "damage": { "weaponPercent": 0.7, "flatMin": 0, "flatMax": 0 },
-    "knockback": 4,
-    "stagger": 0,
-    "shake": 0.3,
-    "hitStop": 0,
-    "vfx": { "style": "bolt", "color": "#9be1ff" }
-  },
-  {
-    "id": "before_ring",
-    "name": "Ring of Dusk",
-    "description": "A slow ring that bursts around the caster.",
-    "icon": "thunderclap",
-    "animation": "slam_charged",
-    "manaCost": 0,
-    "cooldown": 6.5,
-    "windup": 1.5,
-    "recovery": 0.6,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 3.6,
-    "delivery": { "type": "nova", "radius": 6.2 },
-    "damage": { "weaponPercent": 1.7, "flatMin": 0, "flatMax": 0 },
-    "knockback": 14,
-    "stagger": 0,
-    "shake": 0.6,
-    "hitStop": 0,
-    "vfx": { "style": "shockwave", "color": "#7fd4ff" }
-  },
-  {
-    "id": "mason_hammer",
-    "name": "Overhead Blow",
-    "description": "A slow blow straight down in front.",
-    "icon": "cleave",
-    "animation": "slam_charged",
-    "manaCost": 0,
-    "cooldown": 2.3,
-    "windup": 1.3,
-    "recovery": 0.8,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 3.2,
-    "delivery": { "type": "arc", "reach": 4.4, "arcDegrees": 70 },
-    "damage": { "weaponPercent": 1.7, "flatMin": 0, "flatMax": 0 },
-    "knockback": 12,
-    "stagger": 0,
-    "shake": 0.5,
-    "hitStop": 0,
-    "vfx": { "style": "slash", "color": "#e8c8a0" }
-  },
-  {
-    "id": "mason_stone",
-    "name": "Thrown Stone",
-    "description": "A block of stone, thrown hard.",
-    "icon": "storm_bolt",
-    "animation": "throw",
-    "manaCost": 0,
-    "cooldown": 3.6,
-    "windup": 1.05,
-    "recovery": 0.5,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 13,
-    "delivery": { "type": "projectile", "speed": 13, "radius": 0.7, "range": 21, "pierce": 0, "count": 1, "spreadDegrees": 0 },
-    "damage": { "weaponPercent": 1.1, "flatMin": 0, "flatMax": 0 },
-    "knockback": 8,
-    "stagger": 0,
-    "shake": 0.4,
-    "hitStop": 0,
-    "vfx": { "style": "orb", "color": "#d8b88a" }
-  },
-  {
-    "id": "mason_slam",
-    "name": "Ground Slam",
-    "description": "Both hands down. The floor answers.",
-    "icon": "thunderclap",
-    "animation": "slam_charged",
-    "manaCost": 0,
-    "cooldown": 7.5,
-    "windup": 1.7,
-    "recovery": 0.9,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 4,
-    "delivery": { "type": "nova", "radius": 7.4 },
-    "damage": { "weaponPercent": 2.1, "flatMin": 0, "flatMax": 0 },
-    "knockback": 16,
-    "stagger": 0,
-    "shake": 0.7,
-    "hitStop": 0,
-    "vfx": { "style": "shockwave", "color": "#e0a060" }
-  },
-  {
-    "id": "roadbound_reach",
-    "name": "Reach",
-    "description": "A long grasping swipe.",
-    "icon": "cleave",
-    "animation": "attack",
-    "manaCost": 0,
-    "cooldown": 1.2,
-    "windup": 0.5,
-    "recovery": 0.45,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 1.6,
-    "delivery": { "type": "arc", "reach": 2.3, "arcDegrees": 110 },
-    "damage": { "weaponPercent": 1.0, "flatMin": 0, "flatMax": 0 },
-    "knockback": 2,
-    "stagger": 0,
-    "shake": 0.28,
-    "hitStop": 0,
-    "vfx": { "style": "claw", "color": "#8fb0ff" }
-  },
-  {
-    "id": "lament",
-    "name": "Lament",
-    "description": "A slow drifting light.",
-    "icon": "storm_bolt",
-    "animation": "cast",
-    "manaCost": 0,
-    "cooldown": 2.6,
-    "windup": 0.6,
-    "recovery": 0.4,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 10,
-    "delivery": { "type": "projectile", "speed": 10, "radius": 0.4, "range": 16, "pierce": 0, "count": 1, "spreadDegrees": 0 },
-    "damage": { "weaponPercent": 1.0, "flatMin": 0, "flatMax": 0 },
-    "knockback": 2,
-    "stagger": 0,
-    "shake": 0.3,
-    "hitStop": 0,
-    "vfx": { "style": "orb", "color": "#7f9dff" }
-  },
-  {
-    "id": "misbuilt_slam",
-    "name": "Lopsided Slam",
-    "description": "A heavy, badly aimed blow.",
-    "icon": "cleave",
-    "animation": "chop",
-    "manaCost": 0,
-    "cooldown": 1.8,
-    "windup": 0.75,
-    "recovery": 0.6,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 1.9,
-    "delivery": { "type": "arc", "reach": 2.6, "arcDegrees": 80 },
-    "damage": { "weaponPercent": 1.25, "flatMin": 0, "flatMax": 0 },
-    "knockback": 6,
-    "stagger": 0,
-    "shake": 0.36,
-    "hitStop": 0,
-    "vfx": { "style": "slash", "color": "#e0a070" }
-  },
-  {
-    "id": "hod_stone",
-    "name": "Hod Stone",
-    "description": "A stone lobbed from a hod.",
-    "icon": "storm_bolt",
-    "animation": "throw",
-    "manaCost": 0,
-    "cooldown": 2.2,
-    "windup": 0.55,
-    "recovery": 0.4,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 9,
-    "delivery": { "type": "projectile", "speed": 14, "radius": 0.45, "range": 15, "pierce": 0, "count": 1, "spreadDegrees": 0 },
-    "damage": { "weaponPercent": 1.0, "flatMin": 0, "flatMax": 0 },
-    "knockback": 3,
-    "stagger": 0,
-    "shake": 0.3,
-    "hitStop": 0,
-    "vfx": { "style": "orb", "color": "#d8b890" }
-  },
-  {
-    "id": "echo_touch",
-    "name": "Echo's Touch",
-    "description": "A quick cold touch.",
-    "icon": "cleave",
-    "animation": "attack",
-    "manaCost": 0,
-    "cooldown": 0.9,
-    "windup": 0.32,
-    "recovery": 0.3,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 1.5,
-    "delivery": { "type": "arc", "reach": 2.0, "arcDegrees": 120 },
-    "damage": { "weaponPercent": 0.8, "flatMin": 0, "flatMax": 0 },
-    "knockback": 1,
-    "stagger": 0,
-    "shake": 0.24,
-    "hitStop": 0,
-    "vfx": { "style": "claw", "color": "#f0f0ff" }
-  },
-  {
-    "id": "welcome_ring",
-    "name": "Open Arms",
-    "description": "A ring of warm light bursts outward.",
-    "icon": "thunderclap",
-    "animation": "slam_charged",
-    "manaCost": 0,
-    "cooldown": 4.5,
-    "windup": 1.3,
-    "recovery": 0.5,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 4,
-    "delivery": { "type": "nova", "radius": 5.6 },
-    "damage": { "weaponPercent": 1.3, "flatMin": 0, "flatMax": 0 },
-    "knockback": 12,
-    "stagger": 0,
-    "shake": 0.5,
-    "hitStop": 0,
-    "vfx": { "style": "shockwave", "color": "#fff0d0" }
-  },
-  {
-    "id": "welcome_lance",
-    "name": "Calling Light",
-    "description": "One bright line of light.",
-    "icon": "storm_bolt",
-    "animation": "cast",
-    "manaCost": 0,
-    "cooldown": 2.6,
-    "windup": 1.0,
-    "recovery": 0.4,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 14,
-    "delivery": { "type": "projectile", "speed": 20, "radius": 0.6, "range": 22, "pierce": 0, "count": 1, "spreadDegrees": 0 },
-    "damage": { "weaponPercent": 1.2, "flatMin": 0, "flatMax": 0 },
-    "knockback": 6,
-    "stagger": 0,
-    "shake": 0.4,
-    "hitStop": 0,
-    "vfx": { "style": "bolt", "color": "#ffe2b0" }
-  },
-  {
-    "id": "welcome_fan",
-    "name": "Many Voices",
-    "description": "A fan of lights, each calling.",
-    "icon": "storm_bolt",
-    "animation": "cast",
-    "manaCost": 0,
-    "cooldown": 3.8,
-    "windup": 1.1,
-    "recovery": 0.45,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 13,
-    "delivery": { "type": "projectile", "speed": 12, "radius": 0.45, "range": 20, "pierce": 0, "count": 5, "spreadDegrees": 15 },
-    "damage": { "weaponPercent": 0.7, "flatMin": 0, "flatMax": 0 },
-    "knockback": 4,
-    "stagger": 0,
-    "shake": 0.4,
-    "hitStop": 0,
-    "vfx": { "style": "orb", "color": "#ffe2b0" }
-  },
-  {
-    "id": "welcome_embrace",
-    "name": "Embrace",
-    "description": "Everything near is drawn into the light.",
-    "icon": "thunderclap",
-    "animation": "slam_charged",
-    "manaCost": 0,
-    "cooldown": 9,
-    "windup": 2.0,
-    "recovery": 0.7,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 6,
-    "delivery": { "type": "nova", "radius": 9 },
-    "damage": { "weaponPercent": 2.0, "flatMin": 0, "flatMax": 0 },
-    "knockback": 18,
-    "stagger": 0,
-    "shake": 0.8,
-    "hitStop": 0,
-    "vfx": { "style": "shockwave", "color": "#ffd9a0" }
+    "vfx": {
+      "style": "bolt",
+      "color": "#9be1ff"
+    }
   },
   {
     "id": "dodge_roll",
@@ -418,115 +134,25 @@
     "recovery": 0.12,
     "scalesWithAttackSpeed": false,
     "engageRange": 6,
-    "delivery": { "type": "dash", "distance": 5.5, "duration": 0.36, "invulnerable": 0.24 },
-    "damage": { "weaponPercent": 0, "flatMin": 0, "flatMax": 0 },
+    "delivery": {
+      "type": "dash",
+      "distance": 5.5,
+      "duration": 0.36,
+      "invulnerable": 0.24
+    },
+    "damage": {
+      "weaponPercent": 0,
+      "flatMin": 0,
+      "flatMax": 0
+    },
     "knockback": 0,
     "stagger": 0,
     "shake": 0,
     "hitStop": 0,
-    "vfx": { "style": "roll", "color": "#8a7a62" }
-  },
-  {
-    "id": "sodden_grab",
-    "name": "Drowned Grasp",
-    "description": "Cold hands close and hold.",
-    "icon": "cleave",
-    "animation": "grab",
-    "manaCost": 0,
-    "cooldown": 1.9,
-    "windup": 0.8,
-    "recovery": 0.7,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 1.6,
-    "delivery": { "type": "arc", "reach": 2.2, "arcDegrees": 80 },
-    "damage": { "weaponPercent": 1.15, "flatMin": 0, "flatMax": 0 },
-    "knockback": 1,
-    "stagger": 0,
-    "shake": 0.32,
-    "hitStop": 0.06,
-    "vfx": { "style": "claw", "color": "#7fa58a" },
-    "root": 1.1
-  },
-  {
-    "id": "gnawer_pounce",
-    "name": "Pounce",
-    "description": "A crouch, then a leap at where you stood.",
-    "icon": "cleave",
-    "animation": "leap",
-    "manaCost": 0,
-    "cooldown": 2.6,
-    "windup": 0.85,
-    "recovery": 0.55,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 8,
-    "delivery": { "type": "nova", "radius": 1.6 },
-    "damage": { "weaponPercent": 1.1, "flatMin": 0, "flatMax": 0 },
-    "knockback": 6,
-    "stagger": 0,
-    "shake": 0.38,
-    "hitStop": 0.06,
-    "vfx": { "style": "claw", "color": "#d8a890" },
-    "leap": { "distance": 9, "stopShort": 0.9, "airTime": 0.38 }
-  },
-  {
-    "id": "spearwife_throw",
-    "name": "Bone Javelin",
-    "description": "A javelin thrown hard and flat.",
-    "icon": "storm_bolt",
-    "animation": "throw",
-    "manaCost": 0,
-    "cooldown": 2.3,
-    "windup": 0.7,
-    "recovery": 0.45,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 11,
-    "delivery": { "type": "projectile", "speed": 17, "radius": 0.35, "range": 18, "pierce": 0, "count": 1, "spreadDegrees": 0 },
-    "damage": { "weaponPercent": 1.1, "flatMin": 0, "flatMax": 0 },
-    "knockback": 4,
-    "stagger": 0,
-    "shake": 0.26,
-    "hitStop": 0.04,
-    "vfx": { "style": "bolt", "color": "#e8dcc0" }
-  },
-  {
-    "id": "chanter_tide",
-    "name": "Undertow",
-    "description": "The ground under you opens to the tide.",
-    "icon": "thunderclap",
-    "animation": "cast",
-    "manaCost": 0,
-    "cooldown": 3.4,
-    "windup": 0.55,
-    "recovery": 0.5,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 12,
-    "delivery": { "type": "mark", "range": 13, "radius": 2.6, "delay": 1.35 },
-    "damage": { "weaponPercent": 1.5, "flatMin": 0, "flatMax": 0 },
-    "knockback": 9,
-    "stagger": 0,
-    "shake": 0.5,
-    "hitStop": 0.07,
-    "vfx": { "style": "shockwave", "color": "#6fc8bc" }
-  },
-  {
-    "id": "bearer_slam",
-    "name": "Maul Fall",
-    "description": "A long wind-up, then the maul comes down.",
-    "icon": "thunderclap",
-    "animation": "slam_charged",
-    "manaCost": 0,
-    "cooldown": 2.8,
-    "windup": 1.35,
-    "recovery": 1.0,
-    "scalesWithAttackSpeed": false,
-    "engageRange": 2.4,
-    "delivery": { "type": "arc", "reach": 3.4, "arcDegrees": 100 },
-    "damage": { "weaponPercent": 1.9, "flatMin": 0, "flatMax": 0 },
-    "knockback": 12,
-    "stagger": 0,
-    "shake": 0.7,
-    "hitStop": 0.1,
-    "vfx": { "style": "slash", "color": "#e0c090" }
+    "vfx": {
+      "style": "roll",
+      "color": "#8a7a62"
+    }
   },
   {
     "id": "volatile_burst",
@@ -540,12 +166,673 @@
     "recovery": 0,
     "scalesWithAttackSpeed": false,
     "engageRange": 0,
-    "delivery": { "type": "mark", "range": 0, "radius": 3, "delay": 1.0 },
-    "damage": { "weaponPercent": 1.4, "flatMin": 0, "flatMax": 0 },
+    "delivery": {
+      "type": "mark",
+      "range": 0,
+      "radius": 3,
+      "delay": 1.0
+    },
+    "damage": {
+      "weaponPercent": 1.4,
+      "flatMin": 0,
+      "flatMax": 0
+    },
     "knockback": 10,
     "stagger": 0,
     "shake": 0.6,
     "hitStop": 0.08,
-    "vfx": { "style": "shockwave", "color": "#ff6a30" }
+    "vfx": {
+      "style": "shockwave",
+      "color": "#ff6a30"
+    }
+  },
+  {
+    "id": "mended_rhythm",
+    "name": "Mended Rhythm",
+    "description": "The same two steps and the same blow, again and again.",
+    "icon": "cleave",
+    "animation": "attack",
+    "manaCost": 0,
+    "cooldown": 1.1,
+    "windup": 0.42,
+    "recovery": 0.45,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 1.5,
+    "delivery": {
+      "type": "arc",
+      "reach": 2.0,
+      "arcDegrees": 100
+    },
+    "damage": {
+      "weaponPercent": 1.0,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 2,
+    "stagger": 0.1,
+    "shake": 0.3,
+    "hitStop": 0.04,
+    "vfx": {
+      "style": "claw",
+      "color": "#d9cfb0"
+    }
+  },
+  {
+    "id": "mender_needle",
+    "name": "Needle",
+    "description": "A thrown needle trailing thread.",
+    "icon": "storm_bolt",
+    "animation": "cast",
+    "manaCost": 0,
+    "cooldown": 2.4,
+    "windup": 0.55,
+    "recovery": 0.4,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 10,
+    "delivery": {
+      "type": "projectile",
+      "speed": 11,
+      "radius": 0.4,
+      "range": 17,
+      "pierce": 0,
+      "count": 1,
+      "spreadDegrees": 0
+    },
+    "damage": {
+      "weaponPercent": 1.0,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 2,
+    "stagger": 0.1,
+    "shake": 0.3,
+    "hitStop": 0.03,
+    "vfx": {
+      "style": "bolt",
+      "color": "#d9cfb0"
+    }
+  },
+  {
+    "id": "mender_stitch",
+    "name": "Stitch",
+    "description": "Thread is drawn through a fallen body until it stands again.",
+    "icon": "thunderclap",
+    "animation": "cast",
+    "manaCost": 0,
+    "cooldown": 7.5,
+    "windup": 1.4,
+    "recovery": 0.6,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 9,
+    "delivery": {
+      "type": "revive",
+      "range": 9,
+      "count": 1,
+      "lifeShare": 0.6
+    },
+    "damage": {
+      "weaponPercent": 0,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 0,
+    "stagger": 0,
+    "shake": 0.2,
+    "hitStop": 0,
+    "vfx": {
+      "style": "orb",
+      "color": "#d9cfb0"
+    }
+  },
+  {
+    "id": "brute_haymaker",
+    "name": "Haymaker",
+    "description": "A long lopsided wind-up, then the whole weight comes down.",
+    "icon": "cleave",
+    "animation": "slam_charged",
+    "manaCost": 0,
+    "cooldown": 2.6,
+    "windup": 1.15,
+    "recovery": 0.9,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 2.4,
+    "delivery": {
+      "type": "arc",
+      "reach": 3.3,
+      "arcDegrees": 95
+    },
+    "damage": {
+      "weaponPercent": 1.6,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 11,
+    "stagger": 0.4,
+    "shake": 0.62,
+    "hitStop": 0.09,
+    "vfx": {
+      "style": "slash",
+      "color": "#d08a5a"
+    }
+  },
+  {
+    "id": "taker_snatch",
+    "name": "Snatch",
+    "description": "It crouches, springs, and drags what it catches back with it.",
+    "icon": "thunderclap",
+    "animation": "lunge",
+    "manaCost": 0,
+    "cooldown": 3.2,
+    "windup": 0.8,
+    "recovery": 0.7,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 7,
+    "delivery": {
+      "type": "nova",
+      "radius": 1.6
+    },
+    "damage": {
+      "weaponPercent": 0.9,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": -6,
+    "stagger": 0.2,
+    "shake": 0.4,
+    "hitStop": 0.07,
+    "vfx": {
+      "style": "claw",
+      "color": "#d08a5a"
+    },
+    "leap": {
+      "distance": 7,
+      "stopShort": 0.9,
+      "airTime": 0.32
+    },
+    "root": 0.9
+  },
+  {
+    "id": "thrower_stone",
+    "name": "Thrown Stone",
+    "description": "A stone, a bottle, a boot: whatever is in hand.",
+    "icon": "storm_bolt",
+    "animation": "throw",
+    "manaCost": 0,
+    "cooldown": 2.2,
+    "windup": 0.55,
+    "recovery": 0.4,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 9,
+    "delivery": {
+      "type": "projectile",
+      "speed": 14,
+      "radius": 0.45,
+      "range": 15,
+      "pierce": 0,
+      "count": 1,
+      "spreadDegrees": 0
+    },
+    "damage": {
+      "weaponPercent": 1.0,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 4,
+    "stagger": 0.15,
+    "shake": 0.3,
+    "hitStop": 0.04,
+    "vfx": {
+      "style": "orb",
+      "color": "#b8a48a"
+    }
+  },
+  {
+    "id": "borrower_cleave",
+    "name": "Borrowed Blow",
+    "description": "A wide cut, swung the way someone else once swung it.",
+    "icon": "cleave",
+    "animation": "chop",
+    "manaCost": 0,
+    "cooldown": 2.2,
+    "windup": 0.95,
+    "recovery": 0.7,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 2.6,
+    "delivery": {
+      "type": "arc",
+      "reach": 3.6,
+      "arcDegrees": 150
+    },
+    "damage": {
+      "weaponPercent": 1.5,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 10,
+    "stagger": 0.3,
+    "shake": 0.55,
+    "hitStop": 0.08,
+    "vfx": {
+      "style": "slash",
+      "color": "#d08a5a"
+    }
+  },
+  {
+    "id": "colossus_hammer",
+    "name": "Overhead Blow",
+    "description": "A slow blow straight down in front.",
+    "icon": "cleave",
+    "animation": "slam_charged",
+    "manaCost": 0,
+    "cooldown": 2.3,
+    "windup": 1.3,
+    "recovery": 0.8,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 3.2,
+    "delivery": {
+      "type": "arc",
+      "reach": 4.4,
+      "arcDegrees": 70
+    },
+    "damage": {
+      "weaponPercent": 1.7,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 12,
+    "stagger": 0.4,
+    "shake": 0.5,
+    "hitStop": 0.1,
+    "vfx": {
+      "style": "slash",
+      "color": "#d08a5a"
+    }
+  },
+  {
+    "id": "colossus_stone",
+    "name": "Thrown Stone",
+    "description": "A block of stone, thrown hard.",
+    "icon": "storm_bolt",
+    "animation": "throw",
+    "manaCost": 0,
+    "cooldown": 3.6,
+    "windup": 1.05,
+    "recovery": 0.5,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 13,
+    "delivery": {
+      "type": "projectile",
+      "speed": 13,
+      "radius": 0.7,
+      "range": 21,
+      "pierce": 0,
+      "count": 1,
+      "spreadDegrees": 0
+    },
+    "damage": {
+      "weaponPercent": 1.1,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 8,
+    "stagger": 0.2,
+    "shake": 0.4,
+    "hitStop": 0.06,
+    "vfx": {
+      "style": "orb",
+      "color": "#b8a48a"
+    }
+  },
+  {
+    "id": "colossus_slam",
+    "name": "Ground Slam",
+    "description": "Both hands down. The floor answers.",
+    "icon": "thunderclap",
+    "animation": "slam_charged",
+    "manaCost": 0,
+    "cooldown": 7.5,
+    "windup": 1.7,
+    "recovery": 0.9,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 4,
+    "delivery": {
+      "type": "nova",
+      "radius": 7.4
+    },
+    "damage": {
+      "weaponPercent": 2.1,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 16,
+    "stagger": 0.5,
+    "shake": 0.7,
+    "hitStop": 0.12,
+    "vfx": {
+      "style": "shockwave",
+      "color": "#d08a5a"
+    }
+  },
+  {
+    "id": "still_grasp",
+    "name": "Cold Grasp",
+    "description": "A slow reach that does not stop.",
+    "icon": "cleave",
+    "animation": "slam",
+    "manaCost": 0,
+    "cooldown": 1.8,
+    "windup": 1.0,
+    "recovery": 0.8,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 1.8,
+    "delivery": {
+      "type": "arc",
+      "reach": 2.4,
+      "arcDegrees": 90
+    },
+    "damage": {
+      "weaponPercent": 1.3,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 7,
+    "stagger": 0.3,
+    "shake": 0.45,
+    "hitStop": 0.07,
+    "vfx": {
+      "style": "claw",
+      "color": "#c8d4dc"
+    }
+  },
+  {
+    "id": "keeper_field",
+    "name": "Slowed Hour",
+    "description": "Time thickens over a patch of ground. Anything inside moves at half its pace.",
+    "icon": "thunderclap",
+    "animation": "cast",
+    "manaCost": 0,
+    "cooldown": 7,
+    "windup": 0.8,
+    "recovery": 0.6,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 11,
+    "delivery": {
+      "type": "field",
+      "range": 12,
+      "radius": 3.4,
+      "duration": 4.5,
+      "slow": 0.55
+    },
+    "damage": {
+      "weaponPercent": 0,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 0,
+    "stagger": 0,
+    "shake": 0.25,
+    "hitStop": 0.03,
+    "vfx": {
+      "style": "shockwave",
+      "color": "#d8b46a"
+    }
+  },
+  {
+    "id": "keeper_bind",
+    "name": "Held Moment",
+    "description": "A brass-bright line that stops its target for a heartbeat.",
+    "icon": "storm_bolt",
+    "animation": "cast",
+    "manaCost": 0,
+    "cooldown": 3.6,
+    "windup": 0.75,
+    "recovery": 0.5,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 11,
+    "delivery": {
+      "type": "projectile",
+      "speed": 15,
+      "radius": 0.4,
+      "range": 17,
+      "pierce": 0,
+      "count": 1,
+      "spreadDegrees": 0
+    },
+    "damage": {
+      "weaponPercent": 0.9,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 3,
+    "stagger": 0.2,
+    "shake": 0.35,
+    "hitStop": 0.06,
+    "vfx": {
+      "style": "bolt",
+      "color": "#d8b46a"
+    },
+    "hold": 0.85
+  },
+  {
+    "id": "keeper_replay",
+    "name": "Replayed Cut",
+    "description": "A cut, and a moment later the same cut again from where it was made.",
+    "icon": "cleave",
+    "animation": "attack",
+    "manaCost": 0,
+    "cooldown": 2.4,
+    "windup": 0.6,
+    "recovery": 0.6,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 2.2,
+    "delivery": {
+      "type": "arc",
+      "reach": 3,
+      "arcDegrees": 110
+    },
+    "damage": {
+      "weaponPercent": 1.1,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 6,
+    "stagger": 0.3,
+    "shake": 0.4,
+    "hitStop": 0.06,
+    "vfx": {
+      "style": "slash",
+      "color": "#d8b46a"
+    },
+    "echo": 0.7
+  },
+  {
+    "id": "gate_replay",
+    "name": "Replayed Sweep",
+    "description": "A wide sweep that happens twice.",
+    "icon": "cleave",
+    "animation": "sweep",
+    "manaCost": 0,
+    "cooldown": 2.4,
+    "windup": 0.95,
+    "recovery": 0.6,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 2.8,
+    "delivery": {
+      "type": "arc",
+      "reach": 3.8,
+      "arcDegrees": 150
+    },
+    "damage": {
+      "weaponPercent": 1.2,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 9,
+    "stagger": 0.4,
+    "shake": 0.5,
+    "hitStop": 0.08,
+    "vfx": {
+      "style": "slash",
+      "color": "#d8b46a"
+    },
+    "echo": 0.8
+  },
+  {
+    "id": "gate_ring",
+    "name": "Struck Hour",
+    "description": "A ring of force bursts out, then bursts again.",
+    "icon": "thunderclap",
+    "animation": "slam_charged",
+    "manaCost": 0,
+    "cooldown": 6.5,
+    "windup": 1.4,
+    "recovery": 0.7,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 4,
+    "delivery": {
+      "type": "nova",
+      "radius": 6
+    },
+    "damage": {
+      "weaponPercent": 1.4,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 13,
+    "stagger": 0.5,
+    "shake": 0.65,
+    "hitStop": 0.1,
+    "vfx": {
+      "style": "shockwave",
+      "color": "#d8b46a"
+    },
+    "echo": 1.1
+  },
+  {
+    "id": "warden_sweep",
+    "name": "Staff Sweep",
+    "description": "A wide sweep of a heavy walking staff.",
+    "icon": "cleave",
+    "animation": "attack",
+    "manaCost": 0,
+    "cooldown": 1.6,
+    "windup": 0.5,
+    "recovery": 0.5,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 2.2,
+    "delivery": {
+      "type": "arc",
+      "reach": 2.9,
+      "arcDegrees": 130
+    },
+    "damage": {
+      "weaponPercent": 1.1,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 7,
+    "stagger": 0.35,
+    "shake": 0.3,
+    "hitStop": 0.05,
+    "vfx": {
+      "style": "slash",
+      "color": "#f0c070"
+    }
+  },
+  {
+    "id": "rival_cleave",
+    "name": "Cleave",
+    "description": "Your own sweep, swung back at you.",
+    "icon": "cleave",
+    "animation": "sweep",
+    "manaCost": 0,
+    "cooldown": 1.7,
+    "windup": 0.85,
+    "recovery": 0.5,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 2.6,
+    "delivery": {
+      "type": "arc",
+      "reach": 3.4,
+      "arcDegrees": 140
+    },
+    "damage": {
+      "weaponPercent": 0.9,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 7,
+    "stagger": 0.3,
+    "shake": 0.35,
+    "hitStop": 0.06,
+    "vfx": {
+      "style": "slash",
+      "color": "#d6ecff"
+    }
+  },
+  {
+    "id": "rival_bolt",
+    "name": "Storm Bolt",
+    "description": "Your own bolts, thrown three at a time.",
+    "icon": "storm_bolt",
+    "animation": "cast",
+    "manaCost": 0,
+    "cooldown": 4.2,
+    "windup": 0.95,
+    "recovery": 0.45,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 11,
+    "delivery": {
+      "type": "projectile",
+      "speed": 17,
+      "radius": 0.45,
+      "range": 19,
+      "pierce": 0,
+      "count": 3,
+      "spreadDegrees": 16
+    },
+    "damage": {
+      "weaponPercent": 0.7,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 4.5,
+    "stagger": 0.2,
+    "shake": 0.3,
+    "hitStop": 0.04,
+    "vfx": {
+      "style": "bolt",
+      "color": "#9be1ff"
+    }
+  },
+  {
+    "id": "rival_clap",
+    "name": "Thunderclap",
+    "description": "Your own thunder, slower to gather.",
+    "icon": "thunderclap",
+    "animation": "slam_charged",
+    "manaCost": 0,
+    "cooldown": 6.5,
+    "windup": 1.35,
+    "recovery": 0.6,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 3.8,
+    "delivery": {
+      "type": "nova",
+      "radius": 5.8
+    },
+    "damage": {
+      "weaponPercent": 1.6,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 14,
+    "stagger": 0.6,
+    "shake": 0.6,
+    "hitStop": 0.09,
+    "vfx": {
+      "style": "shockwave",
+      "color": "#7fd4ff"
+    }
   }
 ]

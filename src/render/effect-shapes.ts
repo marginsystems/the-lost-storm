@@ -226,6 +226,7 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
     }
     case 'nova':
     case 'mark':
+    case 'field':
       fills.push(telegraphPart(sectorGeometry(Math.PI * 2, 0, delivery.radius), color, SHAPES.telegraphFill, 5));
       edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.radius * SHAPES.telegraphEdge, delivery.radius), color, SHAPES.telegraphLine, 6));
       break;
@@ -240,6 +241,8 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
     }
     case 'dash':
       fills.push(telegraphPart(laneGeometry(SHAPES.dashLane, delivery.distance), color, SHAPES.telegraphFill, 5));
+      break;
+    case 'revive':
       break;
   }
   for (const part of [...fills, ...edges]) object.add(part);

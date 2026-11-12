@@ -31,7 +31,7 @@ const errand: QuestDef = {
   objectives: [
     { id: 'ask', type: 'talk', npc: 'maren', text: 'Ask', when: [], sets: {} },
     { id: 'go', type: 'reach', zone: 'stillhold', x: 30, z: 20, radius: 1.5, text: 'Go', when: [], sets: {} },
-    { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill', when: [], sets: {} },
+    { id: 'kill', type: 'defeat', monster: 'mender', text: 'Kill', when: [], sets: {} },
   ],
 };
 
@@ -155,8 +155,8 @@ void test('a reach objective is done by standing in the circle, in the right zon
 void test('a defeat objective is done when a monster of that kind dies, and completing a quest starts the next', (): void => {
   const world: World = worldIn(staged(), 'drowned_bastion', 5);
   world.quests = { errand: 2 };
-  const caller: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.id === 'hex_caller'), 'caller');
-  const thrall: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.id === 'bone_thrall'), 'thrall');
+  const caller: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.id === 'mender'), 'caller');
+  const thrall: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.id === 'mended'), 'thrall');
   for (const victim of [thrall, caller]) {
     world.monsters = [victim];
     victim.spawnTime = 0;
@@ -217,7 +217,7 @@ void test('an npc placed with a condition arrives and leaves as the quest moves,
   const events: WorldEvent[] = [];
   world.events = events;
   world.quests = { errand: 2 };
-  const caller: MonsterState = { ...must(worldIn(staged(), 'drowned_bastion', 8).monsters.find((monster: MonsterState): boolean => monster.def.id === 'hex_caller'), 'caller'), alive: false };
+  const caller: MonsterState = { ...must(worldIn(staged(), 'drowned_bastion', 8).monsters.find((monster: MonsterState): boolean => monster.def.id === 'mender'), 'caller'), alive: false };
   world.monsters = [caller];
   world.events.push({ type: 'death', actorId: caller.id, team: 'monster', pos: caller.pos, direction: { x: 0, z: 1 } });
   const after: WorldEvent[] = send(world);
@@ -252,10 +252,10 @@ function hunted(): Content {
     requires: [], when: [],
     objectives: [
       { id: 'go', type: 'reach', zone: bastion.id, x: bastion.playerStart.x, z: bastion.playerStart.z, radius: 2, text: 'Go', when: [], sets: {} },
-      { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill', when: [], sets: {} },
+      { id: 'kill', type: 'defeat', monster: 'mender', text: 'Kill', when: [], sets: {} },
     ],
   };
-  const lair: ZoneDef = { ...bastion, packs: [{ x: den.x, z: den.z, members: [{ monster: 'hex_caller', count: 1, mods: [] }], when: during('kill') }] };
+  const lair: ZoneDef = { ...bastion, packs: [{ x: den.x, z: den.z, members: [{ monster: 'mender', count: 1, mods: [] }], when: during('kill') }] };
   return { ...shipped, quests: new Map<string, QuestDef>([[hunt.id, hunt]]), zones: new Map<string, ZoneDef>([...shipped.zones, [lair.id, lair]]) };
 }
 
@@ -267,7 +267,7 @@ void test('a pack whose condition starts to hold while the hero is in the zone a
   const events: WorldEvent[] = send(world);
   assert.deepEqual(ofType(events, 'quest_advanced'), [{ type: 'quest_advanced', quest: 'errand', objective: 'go' }]);
   assert.equal(ofType(events, 'monster_spawn').length, 1);
-  assert.deepEqual(world.monsters.map((monster: MonsterState): string => monster.def.id), ['hex_caller']);
+  assert.deepEqual(world.monsters.map((monster: MonsterState): string => monster.def.id), ['mender']);
   spawnPacks(world);
   assert.equal(ofType(send(world), 'monster_spawn').length, 0);
   assert.equal(world.monsters.length, 1);

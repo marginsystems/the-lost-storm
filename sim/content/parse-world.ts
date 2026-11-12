@@ -56,7 +56,9 @@ function packMember(value: unknown, where: string): PackMember {
 
 function pack(value: unknown, where: string): ZonePack {
   const source: Fields = fields(value, where);
-  return { x: numeric(source, 'x', where), z: numeric(source, 'z', where), members: each(source['members'], `${where}.members`, packMember), when: conditions(source, 'when', where) };
+  const row: Fields | null = source['row'] === undefined || source['row'] === null ? null : fields(source['row'], `${where}.row`);
+  const read: ZonePack = { x: numeric(source, 'x', where), z: numeric(source, 'z', where), members: each(source['members'], `${where}.members`, packMember), when: conditions(source, 'when', where) };
+  return row === null ? read : { ...read, row: { x: numeric(row, 'x', `${where}.row`), z: numeric(row, 'z', `${where}.row`) } };
 }
 
 function surgeRules(value: unknown, where: string): SurgeRules | null {
@@ -233,6 +235,7 @@ function npc(value: unknown, where: string): NpcDef {
     wear: textList(source, 'wear', where),
     talks: each(source['talks'], `${where}.talks`, talk),
     service: service(source, where),
+    faction: nullableText(source, 'faction', where),
   };
 }
 

@@ -1,165 +1,164 @@
 [
   {
-    "id": "bone_thrall",
-    "name": "Bone Thrall",
-    "rig": "skeleton_thrall",
-    "scale": 1.0,
+    "id": "unfinished_brute",
+    "name": "Unfinished Brute",
+    "rig": "unfinished_heavy",
+    "faction": "unfinished",
+    "scale": 1.3,
     "radius": 0.5,
-    "life": 30,
-    "damageMin": 4,
-    "damageMax": 7,
-    "moveSpeed": 5.2,
-    "xp": 10,
-    "aggroRadius": 11,
+    "life": 110,
+    "damageMin": 8,
+    "damageMax": 12,
+    "moveSpeed": 3.1,
+    "xp": 18,
+    "aggroRadius": 10,
     "behaviour": {
       "type": "chaser"
     },
-    "skill": "thrall_claw",
+    "skill": "brute_haymaker",
     "loot": {
-      "goldChance": 0.55,
-      "goldMin": 2,
-      "goldMax": 7,
-      "itemChance": 0.16
-    },
-    "color": "#9dff8a",
-    "tint": "#a89878",
-    "gear": [
-      "rusted_blade"
-    ],
-    "wear": [
-      "rag_shirt",
-      "thrall_breeches"
-    ]
-  },
-  {
-    "id": "hex_caller",
-    "name": "Hex Caller",
-    "rig": "skeleton_caster",
-    "scale": 1.1,
-    "radius": 0.5,
-    "life": 20,
-    "damageMin": 6,
-    "damageMax": 10,
-    "moveSpeed": 3.8,
-    "xp": 16,
-    "aggroRadius": 13,
-    "behaviour": {
-      "type": "ranged",
-      "preferredRange": 9,
-      "retreatRange": 4.5
-    },
-    "skill": "hex_bolt",
-    "loot": {
-      "goldChance": 0.7,
+      "goldChance": 0.65,
       "goldMin": 4,
       "goldMax": 11,
       "itemChance": 0.24
     },
-    "color": "#c77dff",
-    "tint": "#8a78b0",
+    "color": "#d08a5a",
+    "tint": "#f2e4d6",
     "gear": [
-      "hex_staff"
+      "raider_maul",
+      "scrap_board"
     ],
     "wear": [
-      "hex_robe",
-      "hex_cowl"
-    ]
-  },
-  {
-    "id": "one_before",
-    "name": "The One Before",
-    "rig": "skeleton_hero",
-    "scale": 1.22,
-    "radius": 0.5,
-    "life": 560,
-    "damageMin": 7,
-    "damageMax": 11,
-    "moveSpeed": 5.6,
-    "xp": 60,
-    "aggroRadius": 12,
-    "behaviour": {
-      "type": "chaser"
-    },
-    "skill": "before_sweep",
-    "loot": {
-      "goldChance": 0,
-      "goldMin": 0,
-      "goldMax": 0,
-      "itemChance": 0
-    },
-    "color": "#8fdcff",
-    "tint": "#d8d2c4",
-    "gear": [
-      "sword_1h"
+      "salvaged_mail",
+      "faded_trousers",
+      "mismatched_gloves"
     ],
-    "wear": [
-      "leather_hood",
-      "leather_vest",
-      "leather_leggings",
-      "leather_boots"
-    ],
-    "boss": {
-      "title": "Keeper of the Empty Frame",
-      "phases": [
-        {
-          "below": 1,
-          "skills": [
-            {
-              "skill": "before_sweep",
-              "weight": 3
-            },
-            {
-              "skill": "before_bolts",
-              "weight": 2
-            }
-          ],
-          "barks": []
-        },
-        {
-          "below": 0.5,
-          "skills": [
-            {
-              "skill": "before_sweep",
-              "weight": 2
-            },
-            {
-              "skill": "before_bolts",
-              "weight": 2
-            },
-            {
-              "skill": "before_ring",
-              "weight": 3
-            }
-          ],
-          "barks": [
-            "one_before_half_1"
-          ]
-        }
-      ],
-      "poise": {
-        "knockback": 0.2
-      },
-      "drop": {
-        "items": 1,
-        "rarity": "rare",
-        "goldMin": 30,
-        "goldMax": 50
-      },
-      "barks": {
-        "aggro": [
-          "one_before_sight_1",
-          "one_before_sight_2"
-        ],
-        "death": [
-          "one_before_death_1"
-        ]
-      }
+    "poise": {
+      "knockback": 0.3,
+      "stagger": 0.35
     }
   },
   {
-    "id": "mason",
-    "name": "The Mason",
-    "rig": "skeleton_thrall",
+    "id": "unfinished_taker",
+    "name": "Unfinished Taker",
+    "rig": "unfinished_taker",
+    "faction": "unfinished",
+    "scale": 1.0,
+    "radius": 0.5,
+    "life": 40,
+    "damageMin": 5,
+    "damageMax": 8,
+    "moveSpeed": 6.6,
+    "xp": 13,
+    "aggroRadius": 11,
+    "behaviour": {
+      "type": "stalker",
+      "orbitRange": 5
+    },
+    "skill": "taker_snatch",
+    "loot": {
+      "goldChance": 0.55,
+      "goldMin": 3,
+      "goldMax": 8,
+      "itemChance": 0.18
+    },
+    "color": "#d08a5a",
+    "tint": "#e6d8c8",
+    "gear": [],
+    "wear": [
+      "patched_tunic",
+      "odd_breeches"
+    ]
+  },
+  {
+    "id": "unfinished_thrower",
+    "name": "Unfinished Thrower",
+    "rig": "unfinished_thrower",
+    "faction": "unfinished",
+    "scale": 1.0,
+    "radius": 0.5,
+    "life": 34,
+    "damageMin": 6,
+    "damageMax": 9,
+    "moveSpeed": 4.0,
+    "xp": 11,
+    "aggroRadius": 10,
+    "behaviour": {
+      "type": "ranged",
+      "preferredRange": 8,
+      "retreatRange": 4
+    },
+    "skill": "thrower_stone",
+    "loot": {
+      "goldChance": 0.65,
+      "goldMin": 3,
+      "goldMax": 9,
+      "itemChance": 0.2
+    },
+    "color": "#d08a5a",
+    "tint": "#f2e4d6",
+    "gear": [
+      "scrap_javelin"
+    ],
+    "wear": [
+      "stolen_jerkin",
+      "faded_trousers",
+      "torn_hood",
+      "cast_off_boots"
+    ]
+  },
+  {
+    "id": "unfinished_borrower",
+    "name": "Unfinished Borrower",
+    "rig": "unfinished_heavy",
+    "faction": "unfinished",
+    "scale": 1.45,
+    "radius": 0.5,
+    "life": 260,
+    "damageMin": 10,
+    "damageMax": 15,
+    "moveSpeed": 3.4,
+    "xp": 55,
+    "aggroRadius": 11,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "borrower_cleave",
+    "loot": {
+      "goldChance": 1,
+      "goldMin": 10,
+      "goldMax": 24,
+      "itemChance": 0.85
+    },
+    "color": "#d08a5a",
+    "tint": "#e6d8c8",
+    "gear": [
+      "raider_cleaver"
+    ],
+    "wear": [
+      "stolen_jerkin",
+      "odd_breeches",
+      "cast_off_boots",
+      "torn_hood",
+      "mismatched_gloves"
+    ],
+    "poise": {
+      "knockback": 0.15,
+      "stagger": 0.2
+    },
+    "barks": [
+      "unfinished_borrower_said_1",
+      "unfinished_borrower_said_2",
+      "unfinished_borrower_said_3",
+      "unfinished_borrower_said_4",
+      "unfinished_borrower_said_5"
+    ]
+  },
+  {
+    "id": "unfinished_colossus",
+    "name": "Unfinished Colossus",
+    "rig": "unfinished_heavy",
+    "faction": "unfinished",
     "scale": 1.75,
     "radius": 0.5,
     "life": 780,
@@ -171,35 +170,36 @@
     "behaviour": {
       "type": "chaser"
     },
-    "skill": "mason_hammer",
+    "skill": "colossus_hammer",
     "loot": {
       "goldChance": 0,
       "goldMin": 0,
       "goldMax": 0,
       "itemChance": 0
     },
-    "color": "#e0a060",
-    "tint": "#9a9288",
+    "color": "#d08a5a",
+    "tint": "#f2e4d6",
     "gear": [
-      "greatsword"
+      "raider_maul"
     ],
     "wear": [
-      "leather_vest",
-      "leather_leggings",
-      "leather_boots"
+      "salvaged_mail",
+      "odd_breeches",
+      "cast_off_boots",
+      "mismatched_gloves"
     ],
     "boss": {
-      "title": "It builds",
+      "title": "Built Too Large",
       "phases": [
         {
           "below": 1,
           "skills": [
             {
-              "skill": "mason_hammer",
+              "skill": "colossus_hammer",
               "weight": 3
             },
             {
-              "skill": "mason_stone",
+              "skill": "colossus_stone",
               "weight": 2
             }
           ],
@@ -209,15 +209,15 @@
           "below": 0.5,
           "skills": [
             {
-              "skill": "mason_hammer",
+              "skill": "colossus_hammer",
               "weight": 2
             },
             {
-              "skill": "mason_stone",
+              "skill": "colossus_stone",
               "weight": 2
             },
             {
-              "skill": "mason_slam",
+              "skill": "colossus_slam",
               "weight": 3
             }
           ],
@@ -240,257 +240,332 @@
     }
   },
   {
-    "id": "roadbound",
-    "name": "Roadbound",
-    "rig": "skeleton_thrall",
+    "id": "still_standing",
+    "name": "Still",
+    "rig": "still_figure",
+    "faction": "still",
     "scale": 1.0,
     "radius": 0.5,
-    "life": 46,
-    "damageMin": 5,
-    "damageMax": 8,
-    "moveSpeed": 4.9,
-    "xp": 9,
-    "aggroRadius": 9,
+    "life": 60,
+    "damageMin": 6,
+    "damageMax": 9,
+    "moveSpeed": 1.6,
+    "xp": 8,
+    "aggroRadius": 6,
     "behaviour": {
       "type": "chaser"
     },
-    "skill": "roadbound_reach",
+    "skill": "still_grasp",
     "loot": {
-      "goldChance": 0.55,
-      "goldMin": 2,
-      "goldMax": 7,
-      "itemChance": 0.18
+      "goldChance": 0.3,
+      "goldMin": 1,
+      "goldMax": 5,
+      "itemChance": 0.1
     },
-    "color": "#8fb0ff",
-    "tint": "#9aa3b8",
-    "gear": [
-      "rusted_blade"
-    ],
+    "color": "#c8d4dc",
+    "tint": "#c4c8ca",
+    "gear": [],
     "wear": [
-      "sackcloth_robe",
-      "sackcloth_cowl"
+      "still_tunic",
+      "still_trousers",
+      "still_hood"
     ],
-    "boss": null
+    "dormant": {
+      "noiseRadius": 0.6
+    },
+    "poise": {
+      "knockback": 0.15,
+      "stagger": 0.1
+    }
   },
   {
-    "id": "lamenter",
-    "name": "Lamenter",
-    "rig": "skeleton_caster",
-    "scale": 1.05,
+    "id": "still_waking",
+    "name": "Still",
+    "rig": "still_figure",
+    "faction": "still",
+    "scale": 1.04,
     "radius": 0.5,
-    "life": 30,
+    "life": 90,
+    "damageMin": 8,
+    "damageMax": 12,
+    "moveSpeed": 1.9,
+    "xp": 14,
+    "aggroRadius": 6,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "still_grasp",
+    "loot": {
+      "goldChance": 0.5,
+      "goldMin": 3,
+      "goldMax": 9,
+      "itemChance": 0.22
+    },
+    "color": "#c8d4dc",
+    "tint": "#b2b6b8",
+    "gear": [],
+    "wear": [
+      "still_tunic",
+      "still_trousers"
+    ],
+    "dormant": {
+      "noiseRadius": 5.5
+    },
+    "poise": {
+      "knockback": 0.1,
+      "stagger": 0.05
+    }
+  },
+  {
+    "id": "mender",
+    "name": "Mender",
+    "rig": "mender",
+    "faction": "menders",
+    "scale": 1.1,
+    "radius": 0.5,
+    "life": 20,
     "damageMin": 6,
     "damageMax": 10,
     "moveSpeed": 3.8,
-    "xp": 12,
+    "xp": 16,
     "aggroRadius": 10,
     "behaviour": {
       "type": "ranged",
       "preferredRange": 9,
       "retreatRange": 4.5
     },
-    "skill": "lament",
+    "skill": "mender_needle",
     "loot": {
       "goldChance": 0.7,
       "goldMin": 4,
       "goldMax": 11,
       "itemChance": 0.24
     },
-    "color": "#7f9dff",
-    "tint": "#8a93b0",
+    "color": "#d9cfb0",
+    "tint": "#fff4e6",
     "gear": [
-      "hex_staff"
+      "mender_knife"
     ],
     "wear": [
-      "hex_robe",
-      "hex_cowl"
+      "mender_coat",
+      "mender_trousers",
+      "mender_gloves",
+      "mender_hood"
     ],
-    "boss": null
+    "support": "mender_stitch"
   },
   {
-    "id": "misbuilt",
-    "name": "Misbuilt",
-    "rig": "skeleton_thrall",
-    "scale": 1.25,
-    "radius": 0.5,
-    "life": 84,
-    "damageMin": 6,
-    "damageMax": 10,
-    "moveSpeed": 3.9,
-    "xp": 13,
-    "aggroRadius": 9,
-    "behaviour": {
-      "type": "chaser"
-    },
-    "skill": "misbuilt_slam",
-    "loot": {
-      "goldChance": 0.6,
-      "goldMin": 4,
-      "goldMax": 10,
-      "itemChance": 0.2
-    },
-    "color": "#e0a070",
-    "tint": "#b09a80",
-    "gear": [
-      "greatsword"
-    ],
-    "wear": [
-      "rag_trousers"
-    ],
-    "boss": null
-  },
-  {
-    "id": "hodman",
-    "name": "Hodman",
-    "rig": "skeleton_caster",
+    "id": "mended",
+    "name": "Mended",
+    "rig": "mended",
+    "faction": "menders",
     "scale": 1.0,
     "radius": 0.5,
-    "life": 34,
-    "damageMin": 6,
-    "damageMax": 9,
-    "moveSpeed": 4.0,
-    "xp": 11,
-    "aggroRadius": 10,
+    "life": 30,
+    "damageMin": 4,
+    "damageMax": 7,
+    "moveSpeed": 5.2,
+    "xp": 10,
+    "aggroRadius": 11,
     "behaviour": {
-      "type": "ranged",
-      "preferredRange": 8,
-      "retreatRange": 4
+      "type": "chaser"
     },
-    "skill": "hod_stone",
+    "skill": "mended_rhythm",
     "loot": {
-      "goldChance": 0.65,
-      "goldMin": 3,
-      "goldMax": 9,
-      "itemChance": 0.2
+      "goldChance": 0.55,
+      "goldMin": 2,
+      "goldMax": 7,
+      "itemChance": 0.16
     },
-    "color": "#d8b890",
-    "tint": "#a89880",
-    "gear": [],
-    "wear": [
-      "rag_shirt",
-      "thrall_breeches"
+    "color": "#d9cfb0",
+    "tint": "#d8ccc0",
+    "gear": [
+      "mended_cleaver"
     ],
-    "boss": null
+    "wear": [
+      "stitched_tunic",
+      "stitched_trousers"
+    ]
   },
   {
-    "id": "echo",
-    "name": "Echo",
-    "rig": "skeleton_thrall",
-    "scale": 0.95,
+    "id": "timekeeper_adept",
+    "name": "Timekeeper Adept",
+    "rig": "timekeeper",
+    "faction": "timekeepers",
+    "scale": 1.02,
     "radius": 0.5,
-    "life": 24,
-    "damageMin": 5,
-    "damageMax": 8,
-    "moveSpeed": 6.8,
-    "xp": 9,
+    "life": 46,
+    "damageMin": 6,
+    "damageMax": 9,
+    "moveSpeed": 3.4,
+    "xp": 20,
+    "aggroRadius": 9,
+    "behaviour": {
+      "type": "ranged",
+      "preferredRange": 10,
+      "retreatRange": 5
+    },
+    "skill": "keeper_field",
+    "loot": {
+      "goldChance": 0.7,
+      "goldMin": 5,
+      "goldMax": 12,
+      "itemChance": 0.26
+    },
+    "color": "#d8b46a",
+    "tint": "#fff4e6",
+    "gear": [
+      "keeper_rod"
+    ],
+    "wear": [
+      "keeper_robe",
+      "keeper_hood"
+    ]
+  },
+  {
+    "id": "timekeeper_binder",
+    "name": "Timekeeper Binder",
+    "rig": "timekeeper",
+    "faction": "timekeepers",
+    "scale": 1.02,
+    "radius": 0.5,
+    "life": 42,
+    "damageMin": 7,
+    "damageMax": 11,
+    "moveSpeed": 3.4,
+    "xp": 20,
+    "aggroRadius": 9,
+    "behaviour": {
+      "type": "ranged",
+      "preferredRange": 9,
+      "retreatRange": 4.5
+    },
+    "skill": "keeper_bind",
+    "loot": {
+      "goldChance": 0.7,
+      "goldMin": 5,
+      "goldMax": 12,
+      "itemChance": 0.26
+    },
+    "color": "#d8b46a",
+    "tint": "#fff4e6",
+    "gear": [
+      "keeper_rod"
+    ],
+    "wear": [
+      "keeper_robe",
+      "keeper_gloves"
+    ]
+  },
+  {
+    "id": "timekeeper_duelist",
+    "name": "Timekeeper Duelist",
+    "rig": "timekeeper",
+    "faction": "timekeepers",
+    "scale": 1.06,
+    "radius": 0.5,
+    "life": 80,
+    "damageMin": 7,
+    "damageMax": 11,
+    "moveSpeed": 4.2,
+    "xp": 22,
     "aggroRadius": 9,
     "behaviour": {
       "type": "chaser"
     },
-    "skill": "echo_touch",
+    "skill": "keeper_replay",
     "loot": {
-      "goldChance": 0.4,
-      "goldMin": 2,
-      "goldMax": 6,
-      "itemChance": 0.12
+      "goldChance": 0.7,
+      "goldMin": 5,
+      "goldMax": 12,
+      "itemChance": 0.28
     },
-    "color": "#f0f0ff",
-    "tint": "#e8e8f0",
-    "gear": [],
-    "wear": [
-      "sackcloth_robe"
+    "color": "#d8b46a",
+    "tint": "#fff4e6",
+    "gear": [
+      "keeper_blade"
     ],
-    "boss": null
+    "wear": [
+      "keeper_robe",
+      "keeper_gloves",
+      "keeper_hood"
+    ],
+    "poise": {
+      "knockback": 0.4,
+      "stagger": 0.5
+    }
   },
   {
-    "id": "welcome",
-    "name": "The Welcome",
-    "rig": "skeleton_caster",
-    "scale": 1.7,
+    "id": "timekeeper_gatekeeper",
+    "name": "Timekeeper Gatekeeper",
+    "rig": "timekeeper",
+    "faction": "timekeepers",
+    "scale": 1.38,
     "radius": 0.5,
     "life": 1000,
     "damageMin": 7,
     "damageMax": 10,
-    "moveSpeed": 4.2,
+    "moveSpeed": 4.0,
     "xp": 0,
     "aggroRadius": 10,
     "behaviour": {
       "type": "chaser"
     },
-    "skill": "welcome_ring",
+    "skill": "gate_replay",
     "loot": {
       "goldChance": 0,
       "goldMin": 0,
       "goldMax": 0,
       "itemChance": 0
     },
-    "color": "#ffe2b0",
-    "tint": "#f4f0e6",
-    "gear": [],
+    "color": "#d8b46a",
+    "tint": "#fff4e6",
+    "gear": [
+      "keeper_blade"
+    ],
     "wear": [
-      "sackcloth_robe",
-      "sackcloth_cowl"
+      "keeper_robe",
+      "keeper_hood",
+      "keeper_gloves"
     ],
     "boss": {
-      "title": "It has been calling",
+      "title": "Guardian of the Gate",
       "phases": [
         {
           "below": 1,
           "skills": [
             {
-              "skill": "welcome_ring",
+              "skill": "gate_replay",
               "weight": 3
             },
             {
-              "skill": "welcome_lance",
-              "weight": 3
+              "skill": "keeper_bind",
+              "weight": 2
             }
           ],
           "barks": []
         },
         {
-          "below": 0.66,
+          "below": 0.5,
           "skills": [
             {
-              "skill": "welcome_ring",
+              "skill": "gate_replay",
               "weight": 2
             },
             {
-              "skill": "welcome_lance",
+              "skill": "keeper_bind",
+              "weight": 1
+            },
+            {
+              "skill": "keeper_field",
               "weight": 2
             },
             {
-              "skill": "welcome_fan",
+              "skill": "gate_ring",
               "weight": 3
             }
           ],
-          "barks": [
-            "welcome_two_1"
-          ]
-        },
-        {
-          "below": 0.33,
-          "skills": [
-            {
-              "skill": "welcome_ring",
-              "weight": 2
-            },
-            {
-              "skill": "welcome_lance",
-              "weight": 2
-            },
-            {
-              "skill": "welcome_fan",
-              "weight": 2
-            },
-            {
-              "skill": "welcome_embrace",
-              "weight": 3
-            }
-          ],
-          "barks": [
-            "welcome_three_1"
-          ]
+          "barks": []
         }
       ],
       "poise": {
@@ -503,198 +578,134 @@
         "goldMax": 90
       },
       "barks": {
-        "aggro": [
-          "welcome_fight_1"
-        ],
-        "death": [
-          "welcome_death_1",
-          "welcome_death_2"
-        ]
+        "aggro": [],
+        "death": []
       }
     }
   },
   {
-    "id": "sodden",
-    "name": "Sodden",
-    "rig": "drowned_man",
-    "scale": 1.12,
+    "id": "warden_patrol",
+    "name": "Warden Patrol",
+    "rig": "warden",
+    "faction": "wardens",
+    "scale": 1.04,
     "radius": 0.5,
-    "life": 80,
-    "damageMin": 6,
-    "damageMax": 9,
-    "moveSpeed": 2.4,
-    "xp": 12,
-    "aggroRadius": 9,
+    "life": 140,
+    "damageMin": 7,
+    "damageMax": 10,
+    "moveSpeed": 4.0,
+    "xp": 0,
+    "aggroRadius": 11,
     "behaviour": {
       "type": "chaser"
     },
-    "skill": "sodden_grab",
+    "skill": "warden_sweep",
     "loot": {
-      "goldChance": 0.6,
-      "goldMin": 3,
-      "goldMax": 9,
-      "itemChance": 0.2
+      "goldChance": 0,
+      "goldMin": 0,
+      "goldMax": 0,
+      "itemChance": 0
     },
-    "color": "#8fd0a0",
-    "tint": "#9aa89a",
-    "gear": [],
-    "wear": [
-      "sodden_shirt",
-      "sodden_trousers"
+    "color": "#f0c070",
+    "tint": "#f2e2d0",
+    "gear": [
+      "warden_staff",
+      "warden_lantern"
     ],
-    "boss": null,
+    "wear": [
+      "warden_jerkin",
+      "warden_breeches",
+      "warden_boots",
+      "warden_hood",
+      "warden_gloves"
+    ],
     "poise": {
-      "knockback": 0.35,
+      "knockback": 0.4,
       "stagger": 0.4
     }
   },
   {
-    "id": "gnawer",
-    "name": "Gnawer",
-    "rig": "gaunt_ghoul",
-    "scale": 0.94,
+    "id": "stormcaller_rival",
+    "name": "Stormcaller Rival",
+    "rig": "skeleton_hero",
+    "faction": "stormcallers",
+    "scale": 1.12,
     "radius": 0.5,
-    "life": 24,
-    "damageMin": 5,
-    "damageMax": 8,
-    "moveSpeed": 6.8,
-    "xp": 11,
-    "aggroRadius": 10,
-    "behaviour": {
-      "type": "stalker",
-      "orbitRange": 5.5
-    },
-    "skill": "gnawer_pounce",
-    "loot": {
-      "goldChance": 0.5,
-      "goldMin": 2,
-      "goldMax": 7,
-      "itemChance": 0.16
-    },
-    "color": "#ffb090",
-    "tint": "#c8bcb0",
-    "gear": [],
-    "wear": [
-      "thrall_breeches"
-    ],
-    "boss": null
-  },
-  {
-    "id": "spearwife",
-    "name": "Spearwife",
-    "rig": "marsh_thrower",
-    "scale": 1.0,
-    "radius": 0.5,
-    "life": 34,
-    "damageMin": 6,
-    "damageMax": 9,
-    "moveSpeed": 4.4,
-    "xp": 13,
-    "aggroRadius": 10,
-    "behaviour": {
-      "type": "ranged",
-      "preferredRange": 10,
-      "retreatRange": 5
-    },
-    "skill": "spearwife_throw",
-    "loot": {
-      "goldChance": 0.6,
-      "goldMin": 3,
-      "goldMax": 9,
-      "itemChance": 0.2
-    },
-    "color": "#e8dcc0",
-    "tint": "#ffffff",
-    "gear": [
-      "bone_javelin"
-    ],
-    "wear": [
-      "marsh_hood",
-      "marsh_jerkin",
-      "marsh_breeches",
-      "worn_boots"
-    ],
-    "boss": null
-  },
-  {
-    "id": "chanter",
-    "name": "Tide Chanter",
-    "rig": "tide_chanter",
-    "scale": 1.04,
-    "radius": 0.5,
-    "life": 32,
+    "life": 560,
     "damageMin": 7,
     "damageMax": 11,
-    "moveSpeed": 3.6,
-    "xp": 16,
-    "aggroRadius": 10,
-    "behaviour": {
-      "type": "ranged",
-      "preferredRange": 10,
-      "retreatRange": 5
-    },
-    "skill": "chanter_tide",
-    "loot": {
-      "goldChance": 0.7,
-      "goldMin": 4,
-      "goldMax": 11,
-      "itemChance": 0.24
-    },
-    "color": "#6fc8bc",
-    "tint": "#ffffff",
-    "gear": [
-      "hex_staff"
-    ],
-    "wear": [
-      "chanter_robe",
-      "chanter_cowl"
-    ],
-    "boss": null
-  },
-  {
-    "id": "bearer",
-    "name": "Shieldbearer",
-    "rig": "shield_bearer",
-    "scale": 1.28,
-    "radius": 0.5,
-    "life": 130,
-    "damageMin": 8,
-    "damageMax": 12,
-    "moveSpeed": 3.3,
-    "xp": 22,
-    "aggroRadius": 10,
+    "moveSpeed": 5.6,
+    "xp": 60,
+    "aggroRadius": 12,
     "behaviour": {
       "type": "chaser"
     },
-    "skill": "bearer_slam",
+    "skill": "rival_cleave",
     "loot": {
-      "goldChance": 0.7,
-      "goldMin": 5,
-      "goldMax": 12,
-      "itemChance": 0.28
+      "goldChance": 0,
+      "goldMin": 0,
+      "goldMax": 0,
+      "itemChance": 0
     },
-    "color": "#e0c090",
-    "tint": "#ffffff",
+    "color": "#8fdcff",
+    "tint": "#f4eedd",
     "gear": [
-      "war_maul",
-      "tower_shield"
+      "sword_1h"
     ],
     "wear": [
-      "bearer_mail",
-      "marsh_breeches",
-      "leather_boots",
-      "bearer_gloves"
+      "dirty_shirt",
+      "dirty_trousers",
+      "leather_boots"
     ],
-    "boss": null,
-    "poise": {
-      "knockback": 0.25,
-      "stagger": 0.3
-    },
-    "guard": {
-      "arcDegrees": 150,
-      "damageTaken": 0.15,
-      "breakStagger": 0.45,
-      "breakTime": 1.6
+    "boss": {
+      "title": "Coming Apart",
+      "phases": [
+        {
+          "below": 1,
+          "skills": [
+            {
+              "skill": "rival_cleave",
+              "weight": 3
+            },
+            {
+              "skill": "rival_bolt",
+              "weight": 2
+            }
+          ],
+          "barks": []
+        },
+        {
+          "below": 0.5,
+          "skills": [
+            {
+              "skill": "rival_cleave",
+              "weight": 2
+            },
+            {
+              "skill": "rival_bolt",
+              "weight": 2
+            },
+            {
+              "skill": "rival_clap",
+              "weight": 3
+            }
+          ],
+          "barks": []
+        }
+      ],
+      "poise": {
+        "knockback": 0.2
+      },
+      "drop": {
+        "items": 1,
+        "rarity": "rare",
+        "goldMin": 30,
+        "goldMax": 50
+      },
+      "barks": {
+        "aggro": [],
+        "death": []
+      }
     }
   }
 ]

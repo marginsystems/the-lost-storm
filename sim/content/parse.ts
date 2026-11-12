@@ -3,7 +3,8 @@ import { books } from './parse-story.ts';
 import { storyFlagNames, storyProblems } from './story.ts';
 import { conditionProblems, roadProblems } from './road.ts';
 import { parseFlasks } from './flasks.ts';
-import { combatProblems, markDelivery, monsterMod, monsterTraits, skillMotion } from './parse-combat.ts';
+import { combatProblems, fieldDelivery, markDelivery, monsterMod, monsterTraits, reviveDelivery, skillMotion } from './parse-combat.ts';
+import { faction, factionProblems } from './parse-factions.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
@@ -54,6 +55,7 @@ export interface RawContent {
   readonly skills: unknown;
   readonly monsters: unknown;
   readonly monsterMods: unknown;
+  readonly factions: unknown;
   readonly items: unknown;
   readonly skillTree: unknown;
   readonly rigs: unknown;
@@ -84,7 +86,7 @@ function skillMod(value: unknown, where: string): SkillMod {
 
 function delivery(value: unknown, where: string): Delivery {
   const source: Fields = fields(value, where);
-  const type: Delivery['type'] = choice(source, 'type', ['arc', 'nova', 'projectile', 'dash', 'mark'] as const, where);
+  const type: Delivery['type'] = choice(source, 'type', ['arc', 'nova', 'projectile', 'dash', 'mark', 'revive', 'field'] as const, where);
   if (type === 'dash') {
     const duration: number = positive(source, 'duration', where);
     const invulnerable: number = numeric(source, 'invulnerable', where);
@@ -92,6 +94,8 @@ function delivery(value: unknown, where: string): Delivery {
     return { type, distance: positive(source, 'distance', where), duration, invulnerable };
   }
   if (type === 'mark') return markDelivery(source, where);
+  if (type === 'revive') return reviveDelivery(source, where);
+  if (type === 'field') return fieldDelivery(source, where);
   if (type === 'arc') return { type, reach: numeric(source, 'reach', where), arcDegrees: numeric(source, 'arcDegrees', where) };
   if (type === 'nova') return { type, radius: numeric(source, 'radius', where) };
   return {
@@ -349,6 +353,7 @@ function rig(value: unknown, where: string): RigDef {
     height: numeric(source, 'height', where),
     rootMotionBone: nullableText(source, 'rootMotionBone', where),
     runSpeed: positive(source, 'runSpeed', where),
+    idleRate: source['idleRate'] === undefined ? 1 : numeric(source, 'idleRate', where),
     clips: rigClips(source['clips'], `${where}.clips`),
     sockets,
     hiddenNodes: textList(source, 'hiddenNodes', where),
@@ -474,6 +479,7 @@ export function parseContent(raw: RawContent): Content {
     skills: byId(each(raw.skills, 'skills', skill), 'skills'),
     monsters: byId(each(raw.monsters, 'monsters', monster), 'monsters'),
     monsterMods: byId(each(raw.monsterMods, 'monsterMods', monsterMod), 'monsterMods'),
+    factions: byId(each(raw.factions, 'factions', faction), 'factions'),
     rarities: each(itemFields['rarities'], 'items.rarities', rarity),
     itemBases: byId(each(itemFields['bases'], 'items.bases', itemBase), 'items.bases'),
     affixes: byId(each(itemFields['affixes'], 'items.affixes', affix), 'items.affixes'),
@@ -579,7 +585,7 @@ export function contentProblems(content: Content): string[] {
   need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
-  for (const problem of combatProblems(content)) problems.push(problem);
+  for (const problem of [...combatProblems(content), ...factionProblems(content)]) problems.push(problem);
   for (const problem of storyProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;

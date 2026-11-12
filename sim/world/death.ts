@@ -30,6 +30,9 @@ function resetMonster(monster: MonsterState): void {
   monster.phase = 0;
   monster.nextSkill = null;
   monster.cooldowns = {};
+  monster.foeId = null;
+  monster.tempo = 1;
+  monster.tempoTime = 0;
 }
 
 function revive(world: World): void {
@@ -42,6 +45,8 @@ function revive(world: World): void {
   player.combo = null;
   player.stagger = 0;
   player.root = 0;
+  player.tempo = 1;
+  player.tempoTime = 0;
   player.invulnerable = world.content.player.respawnInvulnerability;
   world.death = null;
 }

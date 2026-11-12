@@ -32,22 +32,24 @@ The Gate to the Still stays shut until both lamps are lit.
 
 ## Monsters
 
+The peoples, their regards and their gear are in `data/factions.json`.
+
 | Id | Name | Where | Behaviour |
 |---|---|---|---|
-| `roadbound` | Roadbound | North | Chaser. Those who waited on the road too long. |
-| `lamenter` | Lamenter | North, the Still | Ranged. |
-| `misbuilt` | Misbuilt | East | Chaser, slow and tough. Fell together wrong. |
-| `hodman` | Hodman | East | Ranged. Throws stone. |
-| `echo` | Echo | The Still | Fast, fragile chaser. What is left of the ones who went in. |
-| `bone_thrall`, `hex_caller` | as today | The Drowned Bastion | as today |
+| `mended`, `mender` | Mended, Mender | The Drowned Bastion, the Spill, Dusk's End | The Mended fight in a fixed rhythm. The Mender stays back and raises a fallen Mended once. |
+| `unfinished_brute`, `unfinished_taker`, `unfinished_thrower` | Unfinished Brute, Taker, Thrower | Duskway, Dusk's End, the Spill, the Coursework | A heavy haymaker; a leap that grabs and drags; a thrown stone. |
+| `unfinished_borrower` | Unfinished Borrower | Dusk's End, the Coursework | Elite. Speaks other people's sentences. |
+| `warden_patrol` | Warden Patrol | Duskway checkpoint | Neutral to the hero. Fights the Unfinished. |
+| `still_standing`, `still_waking` | The Still | The Still | Rows that do not move. Some wake when a fight is loud nearby. |
+| `timekeeper_adept`, `timekeeper_binder`, `timekeeper_duelist` | Timekeepers | The Still | A slowing field, a hold that freezes, a blow replayed where it first fell. |
 
 ## Bosses
 
 | Id | Name | Where | Pattern | Drop |
 |---|---|---|---|---|
-| `one_before` | The One Before | The Empty Frame, Dusk's End | Fights like the hero: a sweep, a spread of bolts, and below half life a slow ring the player must step out of. | The north wick (quest), a guaranteed item. |
-| `mason` | The Mason | The yard, the Coursework | Slow heavy overhead blow in front, thrown stone at range, and below half life a wide ground slam. | The east wick (quest), a guaranteed item. |
-| `welcome` | The Welcome | The door, the Still | Three phases: a ring that pulses outward and a lance of light; then fans of bolts as well; then a slow, wide embrace the player must walk out of. | Two guaranteed rare items. |
+| `stormcaller_rival` | Stormcaller Rival | Dusk's End | Fights like the hero: a sweep, a spread of bolts, and below half life a slow ring the player must step out of. | The north wick (quest), a guaranteed item. |
+| `unfinished_colossus` | Unfinished Colossus | The Coursework | Slow heavy overhead blow in front, thrown stone at range, and below half life a wide ground slam. Never speaks. | The east wick (quest), a guaranteed item. |
+| `timekeeper_gatekeeper` | Timekeeper Gatekeeper | The Still | Two phases: a blow that replays where it fell and a hold that freezes; below half life a slowing field and a wide ring that replays too. Never speaks. | Two guaranteed rare items. |
 
 ## Beats
 
@@ -95,6 +97,5 @@ No pack stands where it can see the hero arrive, respawn or step off a waypoint;
 
 - Nobody mentions the hero's body.
 - Nobody explains the theme. Hale lights lamps; Maren writes an entry. That is the explanation.
-- The Welcome is never angry and never lies.
-- The Mason never speaks.
+- The act's bosses never speak.
 - No narrator. Everything the player learns comes from a character or from what a place looks like.

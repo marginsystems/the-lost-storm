@@ -305,6 +305,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'hero_step':
           case 'explored':
           case 'boss_phase':
+          case 'revive':
           case 'flasks_refilled':
             break;
         }

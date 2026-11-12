@@ -35,8 +35,12 @@
     {"prop": "pale_column", "x": 50.4, "z": 18.4, "y": 0, "rotationDegrees": 0}
   ],
   "packs": [
-    {"x": 46.5, "z": 14, "members": [{"monster": "echo", "count": 4}, {"monster": "chanter", "count": 1, "mods": ["gravecalling"]}, {"monster": "lamenter", "count": 1}, {"monster": "gnawer", "count": 2}]},
-    {"x": 20, "z": 14, "members": [{"monster": "welcome", "count": 1}], "when": [{"type": "objective", "quest": "the_gate", "objective": "welcome", "is": "current"}]}
+    {"x": 46.5, "z": 14, "members": [{"monster": "timekeeper_duelist", "count": 1}, {"monster": "timekeeper_binder", "count": 1}, {"monster": "timekeeper_adept", "count": 1}]},
+    {"x": 13, "z": 3, "members": [{"monster": "still_waking", "count": 1}, {"monster": "still_standing", "count": 3}, {"monster": "still_waking", "count": 1}], "row": {"x": 4, "z": 0}},
+    {"x": 13, "z": 7.5, "members": [{"monster": "still_standing", "count": 5}], "row": {"x": 4, "z": 0}},
+    {"x": 13, "z": 20.5, "members": [{"monster": "still_standing", "count": 5}], "row": {"x": 4, "z": 0}},
+    {"x": 13, "z": 25, "members": [{"monster": "still_waking", "count": 1}, {"monster": "still_standing", "count": 3}, {"monster": "still_waking", "count": 1}], "row": {"x": 4, "z": 0}},
+    {"x": 20, "z": 14, "members": [{"monster": "timekeeper_gatekeeper", "count": 1}], "when": [{"type": "objective", "quest": "the_gate", "objective": "welcome", "is": "current"}]}
   ],
   "surge": null,
   "exits": [
@@ -50,9 +54,7 @@
   "npcs": [
     {"npc": "hale", "x": 25, "z": 18.5, "facingDegrees": 250, "when": [{"type": "objective", "quest": "the_gate", "objective": "hale_still", "is": "current"}]}
   ],
-  "voices": [
-    {"id": "the_still_calls", "x": 59, "z": 14, "radius": 3.5, "lines": ["welcome_near_1", "welcome_near_2", "welcome_near_3", "welcome_near_4"], "when": [{"type": "objective", "quest": "the_gate", "objective": "welcome", "is": "done", "not": true}]}
-  ],
+  "voices": [],
   "ambience": {
     "background": "#6c6d70",
     "abyss": "#5e5f62",

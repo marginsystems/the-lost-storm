@@ -44,7 +44,7 @@ function exitAt(x: number, z: number): ZoneExit {
 
 void test('a monster that was alive is now dead, and the hero still gets its experience and its kill', (): void => {
   const world: World = arena(1);
-  const thrall: MonsterState = place(world, 'bone_thrall', { x: ARENA_CENTRE.x + 3, z: ARENA_CENTRE.z });
+  const thrall: MonsterState = place(world, 'mended', { x: ARENA_CENTRE.x + 3, z: ARENA_CENTRE.z });
   const xp: number = world.player.xp;
   const kills: number = world.player.kills;
   assert.equal(applyEdit(world, shipped('monster_dead'), createRng(1)), true);
@@ -64,7 +64,7 @@ void test('a boss and a monster out of reach are never struck down by a glitch',
 
 void test('a corpse can vanish, but never a living monster', (): void => {
   const world: World = arena(3);
-  const living: MonsterState = place(world, 'bone_thrall', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
+  const living: MonsterState = place(world, 'mended', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
   assert.equal(applyEdit(world, shipped('corpse_gone'), createRng(3)), false);
   living.alive = false;
   assert.equal(applyEdit(world, shipped('corpse_gone'), createRng(3)), true);

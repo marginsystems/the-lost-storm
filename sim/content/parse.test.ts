@@ -31,7 +31,12 @@ function zones(...mine: readonly unknown[]): unknown[] {
   return [...mine, ...others];
 }
 
+const extraFaction = { id: 'ashen', name: 'The Ashen', description: 'Test people.', palette: { tints: ['#553322'], glow: '#ff8844' }, wearables: ['ash_shroud'], weapons: ['ash_brand'], regards: { player: 'hostile' } };
+
 const shipped: RawContent = RAW_CONTENT;
+
+const shippedFactions: readonly unknown[] = Array.isArray(RAW_CONTENT.factions) ? RAW_CONTENT.factions : [];
+const ashen: readonly unknown[] = [...shippedFactions, extraFaction];
 const act = must(world.acts[0], 'first act');
 const propDefs: readonly unknown[] = Array.isArray(RAW_CONTENT.props) ? RAW_CONTENT.props : [];
 
@@ -59,7 +64,7 @@ const extraSkill = {
 const extraMonster = {
   id: 'ash_wraith',
   name: 'Ash Wraith',
-  rig: 'skeleton_thrall',
+  rig: 'human_man',
   scale: 1.2,
   radius: 0.5,
   life: 45,
@@ -75,6 +80,7 @@ const extraMonster = {
   tint: '#553322',
   gear: ['ash_brand'],
   wear: ['ash_shroud'],
+  faction: 'ashen',
 };
 
 const extraWearable = { id: 'ash_shroud', model: 'models/wear/wool_tunic.glb', region: 'chest', tint: '#33302c', hides: [] };
@@ -116,6 +122,7 @@ function extended(): RawContent {
     ...shipped,
     skills: [...skills, extraSkill],
     monsters: [...monsters, extraMonster],
+    factions: ashen,
     attachments: [...attachments, extraAttachment],
     wearables: [...wearables, extraWearable],
     items: { ...items, bases: [...items.bases, extraBase] },
@@ -178,7 +185,7 @@ void test('an unknown enum value and a duplicate id are rejected', (): void => {
 });
 
 void test('contentProblems reports dangling references', (): void => {
-  const content: Content = parseContent({ ...shipped, attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], monsters: [...monsters, { ...extraMonster, skill: 'no_such_skill', rig: 'no_such_rig' }] });
+  const content: Content = parseContent({ ...shipped, attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], factions: ashen, monsters: [...monsters, { ...extraMonster, skill: 'no_such_skill', rig: 'no_such_rig' }] });
   const problems: string[] = contentProblems(content);
   assert.ok(problems.some((line: string): boolean => line.includes('ash_wraith') && line.includes('no_such_skill')));
   assert.ok(problems.some((line: string): boolean => line.includes('ash_wraith') && line.includes('no_such_rig')));
@@ -211,7 +218,7 @@ void test('a new skill, monster, item base and tree node are data only', (): voi
 });
 
 void test('held gear is data: a missing attachment or socket is reported', (): void => {
-  const geared: RawContent = { ...shipped, skills: [...skills, extraSkill], attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], monsters: [...monsters, extraMonster] };
+  const geared: RawContent = { ...shipped, skills: [...skills, extraSkill], attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], factions: ashen, monsters: [...monsters, extraMonster] };
   const withGear: Content = parseContent(geared);
   assert.deepEqual(contentProblems(withGear), []);
   assert.deepEqual(must(withGear.monsters.get('ash_wraith'), 'ash_wraith').gear, ['ash_brand']);
@@ -227,7 +234,7 @@ void test('held gear is data: a missing attachment or socket is reported', (): v
 });
 
 void test('worn gear is data: unknown wearables, doubled regions and unknown body parts are reported', (): void => {
-  const dressed: RawContent = { ...shipped, skills: [...skills, extraSkill], attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], monsters: [...monsters, extraMonster] };
+  const dressed: RawContent = { ...shipped, skills: [...skills, extraSkill], attachments: [...attachments, extraAttachment], wearables: [...wearables, extraWearable], factions: ashen, monsters: [...monsters, extraMonster] };
   const withWear: Content = parseContent(dressed);
   assert.deepEqual(contentProblems(withWear), []);
   assert.deepEqual(must(withWear.monsters.get('ash_wraith'), 'ash_wraith').wear, ['ash_shroud']);
@@ -322,7 +329,7 @@ const extraNpc = {
   scale: 1,
   tint: '#ffffff',
   color: '#ffffff',
-  gear: ['hex_staff'],
+  gear: ['keeper_rod'],
   wear: ['linen_shirt'],
   talks: [
     { id: 'pedlar_hello', once: true, lines: ['pedlar_hello_1', 'pedlar_hello_2'] },
@@ -384,7 +391,7 @@ const extraQuest = {
   objectives: [
     { id: 'ask', type: 'talk', npc: 'maren', text: 'Ask' },
     { id: 'go', type: 'reach', zone: 'stillhold', x: 30, z: 20, radius: 1.5, text: 'Go' },
-    { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill' },
+    { id: 'kill', type: 'defeat', monster: 'mender', text: 'Kill' },
   ],
 };
 
@@ -451,25 +458,25 @@ void test('contentProblems reports dangling quest references', (): void => {
 });
 
 function bossy(change: (block: Record<string, unknown>) => Record<string, unknown>): RawContent {
-  const source = must(monsters.find((entry): boolean => entry.id === 'mason'), 'mason');
+  const source = must(monsters.find((entry): boolean => entry.id === 'unfinished_colossus'), 'unfinished_colossus');
   const changed: unknown = { ...source, boss: change({ ...must(source.boss, 'boss block') }) };
   return { ...shipped, monsters: monsters.map((entry): unknown => (entry === source ? changed : entry)) };
 }
 
 void test('a boss block parses with its phases, poise, drop and barks, and a pack takes a condition', (): void => {
   const content: Content = parseContent(shipped);
-  const boss: BossDef = must(must(content.monsters.get('one_before'), 'boss').boss, 'boss block');
+  const boss: BossDef = must(must(content.monsters.get('stormcaller_rival'), 'boss').boss, 'boss block');
   assert.equal(boss.title.length > 0, true);
   assert.deepEqual(boss.phases.map((phase): number => phase.below), [1, 0.5]);
   assert.deepEqual(must(boss.phases[0], 'phase').skills, [
-    { skill: 'before_sweep', weight: 3 },
-    { skill: 'before_bolts', weight: 2 },
+    { skill: 'rival_cleave', weight: 3 },
+    { skill: 'rival_bolt', weight: 2 },
   ]);
-  assert.deepEqual(must(boss.phases[1], 'phase').barks, ['one_before_half_1']);
+  assert.deepEqual(must(boss.phases[1], 'phase').barks, []);
   assert.deepEqual(boss.poise, { knockback: 0.2 });
   assert.deepEqual(boss.drop, { items: 1, rarity: 'rare', goldMin: 30, goldMax: 50 });
-  assert.deepEqual(boss.barks, { aggro: ['one_before_sight_1', 'one_before_sight_2'], death: ['one_before_death_1'] });
-  assert.equal(must(content.monsters.get('bone_thrall'), 'thrall').boss, null);
+  assert.deepEqual(boss.barks, { aggro: [], death: [] });
+  assert.equal(must(content.monsters.get('mended'), 'thrall').boss, null);
   const during = [{ type: 'quest', quest: 'fallen_in', is: 'done' }];
   const gated: Content = parseContent({ ...shipped, zones: [stillhold, { ...bastion, packs: [{ ...bastion.packs[0], when: during }] }] });
   assert.deepEqual(must(must(gated.zones.get('drowned_bastion'), 'arena').packs[0], 'pack').when, [{ type: 'quest', quest: 'fallen_in', is: 'done', not: false }]);
@@ -480,11 +487,11 @@ void test('a malformed boss block is rejected', (): void => {
   const rejects = (change: (block: Record<string, unknown>) => Record<string, unknown>, text: string): void => {
     assert.throws((): Content => parseContent(bossy(change)), (error: unknown): boolean => problem(error, text), text);
   };
-  const phase = { below: 1, skills: [{ skill: 'mason_hammer', weight: 1 }], barks: [] };
+  const phase = { below: 1, skills: [{ skill: 'colossus_hammer', weight: 1 }], barks: [] };
   rejects((block) => ({ ...block, phases: [{ ...phase, below: 0.8 }] }), 'the first phase must start at full life');
   rejects((block) => ({ ...block, phases: [phase, { ...phase, below: 0.5 }, { ...phase, below: 0.5 }] }), 'each phase must begin at a lower life fraction');
   rejects((block) => ({ ...block, phases: [{ ...phase, skills: [] }] }), 'a phase needs at least one skill');
-  rejects((block) => ({ ...block, phases: [{ ...phase, skills: [{ skill: 'mason_hammer', weight: 0 }] }] }), 'skills[0].weight');
+  rejects((block) => ({ ...block, phases: [{ ...phase, skills: [{ skill: 'colossus_hammer', weight: 0 }] }] }), 'skills[0].weight');
   rejects((block) => ({ ...block, phases: [phase, { ...phase, below: 0 }] }), 'phases[1].below');
   rejects((block) => ({ ...block, poise: { knockback: 1.5 } }), 'poise.knockback');
   rejects((block) => ({ ...block, drop: { items: -1, rarity: 'rare', goldMin: 1, goldMax: 2 } }), 'drop.items');
@@ -492,14 +499,14 @@ void test('a malformed boss block is rejected', (): void => {
   rejects((block) => ({ ...block, drop: { items: 1, rarity: 'rare', goldMin: -4, goldMax: 2 } }), 'drop.goldMin');
   rejects((block) => ({ ...block, drop: { items: 1, rarity: 'rare', goldMin: 50, goldMax: 30 } }), 'drop.goldMax');
   rejects((block) => ({ ...block, barks: { aggro: [] } }), 'barks.death');
-  assert.equal(must(parseContent(bossy((block) => ({ ...block, drop: { items: 0, rarity: 'rare', goldMin: 0, goldMax: 0 } }))).monsters.get('mason'), 'mason').boss?.drop.items, 0);
+  assert.equal(must(parseContent(bossy((block) => ({ ...block, drop: { items: 0, rarity: 'rare', goldMin: 0, goldMax: 0 } }))).monsters.get('unfinished_colossus'), 'unfinished_colossus').boss?.drop.items, 0);
 });
 
 void test('contentProblems reports a boss that names an unknown skill, rarity or line, or a line that is not its own', (): void => {
-  assert.ok(has(bossy((block) => ({ ...block, phases: [{ below: 1, skills: [{ skill: 'no_such_skill', weight: 1 }], barks: [] }] })), 'boss mason uses unknown skill no_such_skill'));
-  assert.ok(has(bossy((block) => ({ ...block, drop: { items: 1, rarity: 'mythic', goldMin: 0, goldMax: 0 } })), 'boss mason drops unknown rarity mythic'));
-  assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['no_such_line'], death: [] } })), 'boss mason barks unknown line no_such_line'));
-  assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['one_before_sight_1'], death: [] } })), 'boss mason barks line one_before_sight_1, which is spoken by one_before'));
+  assert.ok(has(bossy((block) => ({ ...block, phases: [{ below: 1, skills: [{ skill: 'no_such_skill', weight: 1 }], barks: [] }] })), 'boss unfinished_colossus uses unknown skill no_such_skill'));
+  assert.ok(has(bossy((block) => ({ ...block, drop: { items: 1, rarity: 'mythic', goldMin: 0, goldMax: 0 } })), 'boss unfinished_colossus drops unknown rarity mythic'));
+  assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['no_such_line'], death: [] } })), 'boss unfinished_colossus barks unknown line no_such_line'));
+  assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['unfinished_borrower_said_1'], death: [] } })), 'boss unfinished_colossus barks line unfinished_borrower_said_1, which is spoken by unfinished_borrower'));
   assert.ok(has({ ...shipped, lines: [...lines, { id: 'ghost_1', speaker: 'ghost', text: 'Boo.' }] }, 'line ghost_1 has unknown speaker ghost'));
 });
 
@@ -569,7 +576,7 @@ void test('a rig lists its hit and death clips and names its action clips, and a
   assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, actions: { attack: { clip: 'Sword_Attack', impactFraction: 1 } } } }] }), /impactFraction/);
   assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, runSpeed: 0 }] }), /runSpeed/);
   const lost: string[] = contentProblems(parseContent({ ...shipped, skills: [...skills, { ...extraSkill, animation: 'pirouette' }], monsters: [...monsters, { ...extraMonster, gear: [], wear: [] }] }));
-  assert.ok(lost.includes('monster ash_wraith uses skill ember_lash, but rig skeleton_thrall has no action clip pirouette'));
+  assert.ok(lost.includes('monster ash_wraith uses skill ember_lash, but rig human_man has no action clip pirouette'));
   const step = { animation: 'backflip', windup: 0.2, recovery: 0.2, damageScale: 1, areaScale: 1, knockbackScale: 1, stagger: 0, shake: 0, hitStop: 0 };
   const cleave: unknown = skills.find((entry: { readonly id: string }): boolean => entry.id === 'cleave');
   const rest: unknown[] = skills.filter((entry: { readonly id: string }): boolean => entry.id !== 'cleave');

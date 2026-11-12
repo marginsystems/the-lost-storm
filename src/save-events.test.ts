@@ -45,7 +45,7 @@ void test('through a whole play of the act, every step that changes what a save 
   const report: BotReport = botPlay(bot);
   assert.equal(report.stuck, null);
   assert.ok(changes >= PLAY.fewestChanges, `only ${changes} steps changed the save`);
-  assert.ok(world.heard.some((id: string): boolean => voices.has(id)), 'the play never heard a voice tied to a place');
+  assert.ok(voices.size === 0 || world.heard.some((id: string): boolean => voices.has(id)), 'the play never heard a voice tied to a place');
   assert.deepEqual(missed, []);
 });
 

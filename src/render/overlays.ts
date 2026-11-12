@@ -318,6 +318,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'boss_phase':
           case 'bark':
           case 'flask_used':
+          case 'revive':
           case 'flasks_refilled':
             break;
         }

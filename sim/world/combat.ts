@@ -1,3 +1,4 @@
+import { PLAYER_SIDE } from '../content/combat-types.ts';
 import { attacksHeld } from './glitch-hold.ts';
 import type { SkillDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
@@ -7,6 +8,7 @@ import { armourReduction } from '../stats.ts';
 import { grantXp } from './character.ts';
 import { isInvulnerable } from './dash.ts';
 import { closeDialogue } from './dialogue.ts';
+import { mayStrike, provoke, regardOf } from './factions.ts';
 import { gainFlaskCharges } from './flask-charges.ts';
 import { dropOnGround } from './ground.ts';
 import type { Actor, GuardOutcome, ItemInstance, MonsterState, Team, World } from './types.ts';
@@ -18,6 +20,7 @@ export const COMBAT = {
 export interface Offence {
   readonly sourceId: number;
   readonly team: Team;
+  readonly faction: string | null;
   readonly damageMin: number;
   readonly damageMax: number;
   readonly damagePercent: number;
@@ -34,6 +37,7 @@ export function offenceOf(actor: Actor): Offence {
     return {
       sourceId: actor.id,
       team: 'player',
+      faction: null,
       damageMin: actor.stats.damageMin,
       damageMax: actor.stats.damageMax,
       damagePercent: actor.stats.damagePercent,
@@ -41,12 +45,21 @@ export function offenceOf(actor: Actor): Offence {
       critMultiplier: actor.stats.critMultiplier,
     };
   }
-  return { sourceId: actor.id, team: 'monster', damageMin: actor.damageMin, damageMax: actor.damageMax, damagePercent: 0, critChance: 0, critMultiplier: 1 };
+  return { sourceId: actor.id, team: 'monster', faction: actor.def.faction, damageMin: actor.damageMin, damageMax: actor.damageMax, damagePercent: 0, critChance: 0, critMultiplier: 1 };
 }
 
-export function targetsOf(world: World, team: Team): Actor[] {
-  if (team === 'monster') return world.player.alive && !isInvulnerable(world.player) ? [world.player] : [];
-  return world.monsters.filter((monster: MonsterState): boolean => monster.alive && !isInvulnerable(monster));
+export function targetsOf(world: World, offence: Pick<Offence, 'sourceId' | 'faction'>): Actor[] {
+  const actors: Actor[] = [world.player, ...world.monsters];
+  return actors.filter((actor: Actor): boolean => !isInvulnerable(actor) && mayStrike(world, offence, actor));
+}
+
+export function setTempo(actor: Actor, scale: number, time: number): void {
+  if (scale < actor.tempo || actor.tempoTime <= 0) {
+    actor.tempo = scale;
+    actor.tempoTime = time;
+    return;
+  }
+  if (scale === actor.tempo) actor.tempoTime = Math.max(actor.tempoTime, time);
 }
 
 export function findActor(world: World, id: number): Actor | null {
@@ -63,6 +76,7 @@ export function aggroPack(world: World, monster: MonsterState): void {
 }
 
 function rollLoot(world: World, monster: MonsterState): void {
+  if (monster.revived) return;
   const loot = monster.def.loot;
   if (world.rng.chance(loot.goldChance)) {
     const scale: number = (1 + world.content.world.scaling.xpPerLevel * (monster.level - 1)) * (1 + world.player.stats.goldFind);
@@ -90,6 +104,7 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
     target.queued = null;
     return;
   }
+  if (regardOf(world.content, PLAYER_SIDE, target.def.faction) !== 'hostile') return;
   world.player.kills += 1;
   gainFlaskCharges(world.player);
   rollLoot(world, target);
@@ -135,7 +150,9 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   target.knock.x += direction.x * skill.knockback * poise;
   target.knock.z += direction.z * skill.knockback * poise;
   if (skill.root > 0 && target.kind === 'player') target.root = Math.max(target.root, skill.root);
+  if (skill.hold > 0) setTempo(target, 0, skill.hold);
   if (target.kind === 'monster') {
+    provoke(world, target, offence.sourceId, offence.faction ?? PLAYER_SIDE);
     const stagger: number = staggerOf(target, skill, guard);
     if (stagger > 0) {
       target.stagger = Math.max(target.stagger, stagger);

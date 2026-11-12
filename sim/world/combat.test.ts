@@ -10,7 +10,7 @@ import { stepWorld } from './step.ts';
 import type { MonsterState, World, WorldEvent } from './types.ts';
 
 const DT: number = 1 / 60;
-const light: SkillDef = must(ARENA_CONTENT.skills.get('thrall_claw'), 'light');
+const light: SkillDef = must(ARENA_CONTENT.skills.get('mended_rhythm'), 'light');
 const heavy: SkillDef = must(ARENA_CONTENT.skills.get('test_heavy'), 'heavy');
 const grab: SkillDef = must(ARENA_CONTENT.skills.get('test_grab'), 'grab');
 
@@ -94,7 +94,7 @@ void test('a grab never roots a monster, and a hit on a warded hero does not lan
 void test('poise scales the knockback a monster takes', (): void => {
   const world: World = arena(5);
   const steady: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 3, z: ARENA_CENTRE.z });
-  const loose: MonsterState = place(world, 'bone_thrall', { x: ARENA_CENTRE.x - 3, z: ARENA_CENTRE.z });
+  const loose: MonsterState = place(world, 'mended', { x: ARENA_CENTRE.x - 3, z: ARENA_CENTRE.z });
   applyHit(world, offenceOf(world.player), steady, light, { x: 1, z: 0 });
   applyHit(world, offenceOf(world.player), loose, light, { x: -1, z: 0 });
   assert.ok(Math.abs(steady.knock.x) < Math.abs(loose.knock.x) * 0.5);

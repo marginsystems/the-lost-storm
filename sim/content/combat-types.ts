@@ -48,3 +48,42 @@ export interface MonsterModDef {
   readonly deathSkill: string | null;
   readonly summon: SummonDef | null;
 }
+
+export interface ReviveDelivery {
+  readonly type: 'revive';
+  readonly range: number;
+  readonly count: number;
+  readonly lifeShare: number;
+}
+
+export interface FieldDelivery {
+  readonly type: 'field';
+  readonly range: number;
+  readonly radius: number;
+  readonly duration: number;
+  readonly slow: number;
+}
+
+export interface DormantDef {
+  readonly noiseRadius: number;
+}
+
+export const REGARDS = ['hostile', 'wary', 'neutral', 'friendly'] as const;
+export type Regard = (typeof REGARDS)[number];
+
+export const PLAYER_SIDE: string = 'player';
+
+export interface FactionPalette {
+  readonly tints: readonly string[];
+  readonly glow: string;
+}
+
+export interface FactionDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly palette: FactionPalette;
+  readonly wearables: readonly string[];
+  readonly weapons: readonly string[];
+  readonly regards: Readonly<Record<string, Regard>>;
+}

@@ -37,7 +37,7 @@ function combat(kind: GlitchKind): GlitchRequest {
 
 function fight(seed: number): { readonly world: World; readonly thrall: MonsterState } {
   const world: World = arena(seed);
-  const thrall: MonsterState = place(world, 'bone_thrall', { x: ARENA_CENTRE.x + 1.4, z: ARENA_CENTRE.z });
+  const thrall: MonsterState = place(world, 'mended', { x: ARENA_CENTRE.x + 1.4, z: ARENA_CENTRE.z });
   return { world, thrall };
 }
 
