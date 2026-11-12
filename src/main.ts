@@ -62,7 +62,12 @@ import type { Lobby } from './lobby/compact.ts';
 import { mountGameBoard } from './lobby/game-board.ts';
 import type { GameBoard } from './lobby/game-board.ts';
 import { mountBackdrops } from './dither/mount.ts';
-import { mountTitleLobby } from './lobby/title-lobby.ts';
+import { createLobbyFlow } from './lobby/lobby-flow.ts';
+import type { LobbyFlow } from './lobby/lobby-flow.ts';
+import type { LobbyView } from './lobby/lobby-screen.ts';
+import type { LobbyLook } from './lobby/lobby-stage.ts';
+import { lobbyHero } from './lobby/lobby-sheet.ts';
+import { PLAYED_KEY, readPlayed } from './launch/played.ts';
 import { spokenName } from './lobby/lobby-model.ts';
 import { createNameStep, wireEnter } from './lobby/name-step.ts';
 import { readHeroName } from './lobby/hero-name.ts';
@@ -194,7 +199,6 @@ async function start(): Promise<void> {
   const loadingSave: Promise<SaveData | null> = backend.load();
   const lobby: Lobby | null = createBrowserLobby(import.meta.env.VITE_SERVER_URL, true);
   title.dataset['lobby'] = lobby === null ? 'off' : 'on';
-  if (lobby !== null) mountTitleLobby(element('title-lobby', HTMLElement), lobby);
   const gameSettings: SettingsStore = createGameSettings(createBrowserStore(), skillSlots(content), shippedKeys(content, lobby !== null));
   const titleBar: { current: Bar } = { current: defaultBar(content) };
   const drawTitleKeys = (): void => {
@@ -311,10 +315,9 @@ async function start(): Promise<void> {
       markPlaying(document.body, false);
       audio.stopAmbience();
       enter.textContent = 'Continue';
-      reset.hidden = false;
       titleBar.current = world.player.bar;
       drawTitleKeys();
-      title.classList.remove('gone');
+      void lobbyFlow?.open();
     },
   });
 
@@ -411,6 +414,7 @@ async function start(): Promise<void> {
   }
 
   let playing: boolean = false;
+  let lobbyFlow: LobbyFlow | null = null;
   let torchVersion: number = 0;
   let failed: boolean = false;
   let saveHeld: boolean = false;
@@ -573,7 +577,7 @@ async function start(): Promise<void> {
     launch.update(world, dt, gate.queue);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     if (transition.presenting) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
-    stage.render();
+    if (lobbyFlow?.render(dt) !== true) stage.render();
 
     sinceSave += dt;
     if (sinceSave > GAME.saveEvery) persist();
@@ -621,7 +625,7 @@ async function start(): Promise<void> {
     });
   }, GAME.titleArrivalMs);
   enter.textContent = save === null ? 'Enter' : 'Continue';
-  reset.hidden = save === null;
+  reset.hidden = true;
   title.classList.add('ready');
   const begin = (): void => {
     dirty = dirty || save === null;
@@ -637,7 +641,6 @@ async function start(): Promise<void> {
   };
   wireTitleKeys(title, enter);
   wireHudAway(document.body, element('hud', HTMLDivElement));
-  wireEnter({ enter, begin, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), random: Math.random, begin }) });
   const startOver = async (): Promise<void> => {
     dirty = false;
     reset.disabled = true;
@@ -649,6 +652,15 @@ async function start(): Promise<void> {
   reset.addEventListener('click', (): void => {
     void startOver();
   });
+  let entered: boolean = save !== null;
+  const flow: LobbyFlow = createLobbyFlow({ root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped }), view: (): LobbyView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered }), begin: (): void => {
+    entered = true;
+    begin();
+  }, startOver: (): void => void startOver(), openSettings: (): void => pauseMenu.open('graphics') });
+  lobbyFlow = flow;
+  whenIdle((): void => void flow.warm());
+  const openLobby = (): void => void flow.open();
+  wireEnter({ enter, begin: openLobby, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), random: Math.random, begin: openLobby }) });
 }
 
 start().catch((error: unknown): void => {

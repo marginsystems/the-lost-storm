@@ -1,4 +1,5 @@
-#title-enter {
+#title-enter,
+.threshold-button {
   --threshold-plate: linear-gradient(180deg, rgba(12, 20, 34, 0.58), rgba(4, 8, 15, 0.7));
   --threshold-plate-pressed: linear-gradient(180deg, rgba(4, 8, 15, 0.76), rgba(2, 4, 9, 0.8));
   --threshold-label: rgba(239, 230, 214, 0.8);
@@ -37,7 +38,9 @@
 }
 
 #title-enter::before,
-#title-enter::after {
+.threshold-button::before,
+#title-enter::after,
+.threshold-button::after {
   content: '';
   position: absolute;
   inset: -90% -30%;
@@ -47,12 +50,14 @@
   background-size: var(--dither-size), auto;
 }
 
-#title-enter::before {
+#title-enter::before,
+.threshold-button::before {
   opacity: 0.35;
   animation: threshold-breath var(--drift-ms) var(--drift-ease) infinite;
 }
 
-#title-enter::after {
+#title-enter::after,
+.threshold-button::after {
   opacity: 0;
   transform: scale(0.82);
   background: var(--dither), radial-gradient(ellipse 46% 38% at 50% 50%, var(--threshold-light-lit), transparent 100%);
@@ -82,7 +87,9 @@
 }
 
 .title-card #title-enter:not(:disabled):hover,
-.title-card #title-enter:focus-visible {
+.threshold-button:not(:disabled):hover,
+.title-card #title-enter:focus-visible,
+.threshold-button:focus-visible {
   color: var(--threshold-label-lit);
   text-shadow: var(--threshold-glow-lit);
   background: var(--threshold-plate);
@@ -91,19 +98,23 @@
 }
 
 .title-card #title-enter:not(:disabled):hover::after,
-.title-card #title-enter:focus-visible::after {
+.threshold-button:not(:disabled):hover::after,
+.title-card #title-enter:focus-visible::after,
+.threshold-button:focus-visible::after {
   opacity: 1;
   transform: scale(1);
 }
 
-.title-card #title-enter:not(:disabled):active {
+.title-card #title-enter:not(:disabled):active,
+.threshold-button:not(:disabled):active {
   color: var(--threshold-label-lit);
   background: var(--threshold-plate-pressed);
   background-color: transparent;
   transform: translateY(var(--threshold-sink)) scale(0.985);
 }
 
-.title-card #title-enter:not(:disabled):active::after {
+.title-card #title-enter:not(:disabled):active::after,
+.threshold-button:not(:disabled):active::after {
   opacity: 0.7;
   transform: scale(0.94);
 }
