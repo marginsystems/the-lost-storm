@@ -5,7 +5,6 @@ type Attribute = BufferAttribute | InterleavedBufferAttribute;
 
 export const WEARABLES = {
   influences: 4,
-  partShare: 0.5,
   partVotes: 2,
   wideIndexFrom: 65536,
 } as const;
@@ -78,7 +77,7 @@ function partOfVertex(mesh: SkinnedMesh, partOfBone: readonly number[], partCoun
       owned += held;
       if (held > (share[best] ?? 0)) best = part;
     }
-    if (best >= 0 && owned / total >= WEARABLES.partShare) parts[vertex] = best;
+    if (best >= 0 && (share[best] ?? 0) > total - owned) parts[vertex] = best;
   }
   return parts;
 }

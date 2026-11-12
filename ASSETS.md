@@ -84,6 +84,14 @@ Rebuild with the packs unpacked somewhere outside this repository:
 /Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_wearables.py -- blender/wearables.json public/models/characters/skeleton.glb public/models/wear <scratch-dir> makehuman_suits02=<path to suits02_cc0> makehuman_gloves01=<path to gloves01_cc0> makehuman_shirts01=<path to shirts01_cc0> makehuman_pants01=<path to pants01_cc0> makehuman_shoes01=<path to shoes01_cc0> makehuman_rig=<folder with base.obj, default.mhskel, default_weights.mhw and targets/>
 ```
 
+That command builds the garments. The three townsfolk bodies are parts of the `makehuman_system` pack and are written to a different folder, so they have their own command:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_wearables.py -- blender/wearables.json public/models/characters/skeleton.glb public/models/characters <scratch-dir> makehuman_system=<path to makehuman_system_assets_cc0> makehuman_rig=<folder with base.obj, default.mhskel, default_weights.mhw and targets/> only=human_man,human_woman,human_elder
+```
+
+The garments are fitted to the unshaped MakeHuman base body and the townsfolk bodies carry shape targets, so a body does not match its clothes exactly. The pieces that cover the torso, arms, legs, hands and feet name those body parts in `hides`, so the body under them is not drawn and cannot poke through. The hoods hide nothing: they are widened to clear the head (`girth` in `blender/wearables.json`).
+
 The arguments are the manifest, the body whose rig the parts are fitted to, the output folder, a scratch folder for the repacked PNG textures, and one `<pack>=<folder>` per source pack. Parts of a pack with no folder are left as they are. Add `only=<id>,<id>` to rebuild some parts. The build stops with an error when it would build nothing.
 
 ## World
