@@ -34,7 +34,7 @@ function keepWhileShown(title: HTMLElement, backdrop: DitherLayer): void {
     if (event.target === title) close({ kind: 'animation', name: event.animationName });
   });
   title.addEventListener('transitionend', (event: TransitionEvent): void => {
-    if (event.target === title) close({ kind: 'transition', name: event.propertyName, running: getComputedStyle(title).animationName.split(',').map((name: string): string => name.trim()) });
+    if (event.target === title) close({ kind: 'transition', name: event.propertyName, running: title.getAnimations().filter((animation: Animation): boolean => animation.playState !== 'finished').map((animation: Animation): string => (animation instanceof CSSAnimation ? animation.animationName : '')) });
   });
   new MutationObserver((): void => {
     if (!title.classList.contains(MOUNT.goneClass)) backdrop.paint();

@@ -9,6 +9,10 @@ void test('the title backdrop is released when the opening iris ends, not when t
 });
 
 void test('with no iris running, the end of the fade releases the backdrop', (): void => {
-  assert.equal(titleClosed({ kind: 'transition', name: 'opacity', running: ['none'] }), true);
-  assert.equal(titleClosed({ kind: 'transition', name: 'visibility', running: ['none'] }), false);
+  assert.equal(titleClosed({ kind: 'transition', name: 'opacity', running: [] }), true);
+  assert.equal(titleClosed({ kind: 'transition', name: 'visibility', running: [] }), false);
+});
+
+void test('a finished iris no longer holds the backdrop when the fade ends after it', (): void => {
+  assert.equal(titleClosed({ kind: 'transition', name: 'opacity', running: ['title-leave'] }), true);
 });
