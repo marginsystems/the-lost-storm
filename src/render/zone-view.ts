@@ -15,7 +15,10 @@ import { buildVoidView } from './void-view.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Ground } from './ground.ts';
-import { dressed, preloadSurfaces, releaseSurfaces, wetRoughness } from './surfaces.ts';
+import type { PropDressing } from './surfaces.ts';
+import { dressedProp, preloadSurfaces, releaseSurfaces } from './surfaces.ts';
+import type { PropLook } from './prop-surface.ts';
+import { lookOf, withPropLook } from './prop-surface.ts';
 import { zoneModels, zoneSurfaces } from './zone-assets.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
@@ -117,6 +120,11 @@ function standardMaterials(value: unknown): MeshStandardMaterial[] {
   return value.filter((entry: unknown): entry is MeshStandardMaterial => entry instanceof MeshStandardMaterial);
 }
 
+function carryLook(from: MeshStandardMaterial, to: MeshStandardMaterial): MeshStandardMaterial {
+  const look: PropLook | undefined = lookOf(from);
+  return look === undefined ? to : withPropLook(to, look);
+}
+
 export async function buildZoneView(loader: GLTFLoader, content: Content, zone: ZoneDef, scene: Scene, quality: QualityName): Promise<ZoneView> {
   if (zone.kind === 'void') {
     const rockId: string | null = zone.void?.shore?.surface ?? null;
@@ -132,11 +140,11 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const tintedMaterials: MeshStandardMaterial[] = [];
   let lightsVersion: number = 0;
 
+  const dressing: PropDressing = { wet: zone.weather.wet, ground: zone.floorHeight };
   const finish = (def: PropDef | undefined, material: Material): Material => {
     if (def === undefined || def.tint === null || !(material instanceof MeshStandardMaterial)) return material;
-    const own: MeshStandardMaterial = material.clone();
+    const own: MeshStandardMaterial = carryLook(material, material.clone());
     own.color.multiply(new Color(def.tint));
-    own.roughness = wetRoughness(own.roughness, zone.weather.wet);
     tintedMaterials.push(own);
     return own;
   };
@@ -198,7 +206,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       const geometry: unknown = object.geometry;
       const material: unknown = object.material;
       if (!(material instanceof MeshStandardMaterial) || !isGeometry(geometry)) return;
-      const instanced: InstancedMesh = new InstancedMesh(geometry, withCutaway(finish(content.props.get(propId), dressed(content, dress, material, zone.weather.wet))), list.length);
+      const instanced: InstancedMesh = new InstancedMesh(geometry, withCutaway(finish(content.props.get(propId), dressedProp(content, dress, material, dressing))), list.length);
       list.forEach((placement: Placement, index: number): void => {
         instanced.setMatrixAt(index, new Matrix4().multiplyMatrices(placement.matrix, object.matrixWorld));
       });
@@ -223,7 +231,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
         child.castShadow = true;
         child.receiveShadow = true;
         const shared: unknown = child.material;
-        const own: MeshStandardMaterial[] = standardMaterials(shared).map((material: MeshStandardMaterial): MeshStandardMaterial => standardMaterials(dressed(content, conditional.def.surfaces, material, zone.weather.wet)).map((worn: MeshStandardMaterial): MeshStandardMaterial => worn.clone())[0] ?? material.clone());
+        const own: MeshStandardMaterial[] = standardMaterials(shared).map((material: MeshStandardMaterial): MeshStandardMaterial => standardMaterials(dressedProp(content, conditional.def.surfaces, material, dressing)).map((worn: MeshStandardMaterial): MeshStandardMaterial => carryLook(worn, worn.clone()))[0] ?? material.clone());
         const first: MeshStandardMaterial | undefined = own[0];
         if (Array.isArray(shared)) {
           if (own.length !== shared.length) return;

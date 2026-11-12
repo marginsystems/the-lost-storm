@@ -38,5 +38,10 @@
   {"id": "black_rock", "color": "textures/dirt_color.webp", "normal": "textures/dirt_normal.webp", "orm": null, "metres": 3.4, "tint": "#4a505b", "roughness": 1, "metalness": 0, "normalScale": 1.3, "spill": 2},
   {"id": "black_ledge", "color": "textures/flagstone_color.webp", "normal": "textures/flagstone_normal.webp", "orm": "textures/flagstone_orm.webp", "metres": 3.0, "tint": "#525865", "roughness": 1, "metalness": 0, "normalScale": 1.1, "spill": 1},
   {"id": "ruined_road", "color": "textures/cobble_color.webp", "normal": "textures/cobble_normal.webp", "orm": "textures/cobble_orm.webp", "metres": 3.2, "tint": "#6a6e76", "roughness": 1, "metalness": 0, "normalScale": 1.2, "spill": 0},
-  {"id": "crag_ground", "color": "textures/dirt_color.webp", "normal": "textures/dirt_normal.webp", "orm": null, "metres": 3.8, "tint": "#2c3038", "roughness": 1, "metalness": 0, "normalScale": 1.4, "spill": 3}
+  {"id": "crag_ground", "color": "textures/dirt_color.webp", "normal": "textures/dirt_normal.webp", "orm": null, "metres": 3.8, "tint": "#2c3038", "roughness": 1, "metalness": 0, "normalScale": 1.4, "spill": 3},
+  {"id": "hall_stone", "color": "textures/dark_stone_color.webp", "normal": "textures/dark_stone_normal.webp", "orm": "textures/dark_stone_orm.webp", "metres": 2.0, "tint": "#b8bec8", "roughness": 1, "metalness": 0, "normalScale": 1.3, "spill": 0},
+  {"id": "hall_rock", "color": "textures/dark_rock_color.webp", "normal": "textures/dark_rock_normal.webp", "orm": "textures/dark_rock_orm.webp", "metres": 2.4, "tint": "#b0b6c0", "roughness": 1, "metalness": 0, "normalScale": 1.4, "spill": 0},
+  {"id": "lichen_stone", "color": "textures/lichen_rock_color.webp", "normal": "textures/lichen_rock_normal.webp", "orm": "textures/lichen_rock_orm.webp", "metres": 2.0, "tint": "#a9adb5", "roughness": 1, "metalness": 0, "normalScale": 1.2, "spill": 0},
+  {"id": "hall_wall", "color": "textures/castle_wall_color.webp", "normal": "textures/castle_wall_normal.webp", "orm": "textures/castle_wall_orm.webp", "metres": 3, "tint": "#6c727d", "roughness": 1, "metalness": 0, "normalScale": 1.4, "spill": 0},
+  {"id": "wet_planks", "color": "textures/planks_color.webp", "normal": "textures/planks_normal.webp", "orm": "textures/planks_orm.webp", "metres": 1.4, "tint": "#5e5248", "roughness": 1, "metalness": 0, "normalScale": 1, "spill": 0}
 ]
