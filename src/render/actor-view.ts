@@ -3,6 +3,7 @@ import type { Box3 } from 'three';
 import { Color, LoopOnce, LoopRepeat } from 'three';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { ActionClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
+import { contactShadow } from './contact-shadow.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -112,6 +113,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   const mixed: Color = new Color();
   rig.root.scale.setScalar(scale);
   rig.root.rotation.y = yaw;
+  rig.root.add(contactShadow());
   current.play();
 
   const play = (clip: AnimationClip, fade: number, speed: number, once: boolean, restart: boolean): void => {
