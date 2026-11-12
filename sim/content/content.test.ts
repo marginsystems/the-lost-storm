@@ -16,7 +16,7 @@ import { nextTalk } from '../world/dialogue.ts';
 import { stepWorld } from '../world/step.ts';
 import type { World, WorldEvent } from '../world/types.ts';
 import { enterZone } from '../world/zones.ts';
-import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, PathObjective, QuestDef, SkillTreeNodeDef, TalkDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
+import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, PathObjective, QuestDef, RigDef, SkillTreeNodeDef, TalkDef, WearableDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
 import { fields, items, text } from './read.ts';
 
 const content: Content = loadContent();
@@ -27,6 +27,14 @@ void test('the shipped data loads and has no dangling references', (): void => {
   assert.deepEqual(contentProblems(content), []);
   assert.ok(content.monsters.size >= 2);
   assert.ok(content.skills.size >= 5);
+});
+
+void test('the hero is a dressed human: a human body, and starting clothes that exist and cover the head', (): void => {
+  const rig: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
+  assert.match(rig.url, /^models\/characters\/human_/);
+  assert.ok(content.player.wear.length > 0);
+  const worn: WearableDef[] = content.player.wear.map((id: string): WearableDef => must(content.wearables.get(id), id));
+  assert.ok(worn.some((piece: WearableDef): boolean => piece.region === 'head'));
 });
 
 void test('every monster has its skill and rig, and every rig has every animation', (): void => {

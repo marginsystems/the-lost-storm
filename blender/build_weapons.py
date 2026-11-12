@@ -9,6 +9,7 @@ from bpy.types import Material, Object
 Color = tuple[float, float, float]
 
 STEEL: Color = (0.62, 0.65, 0.7)
+EDGE: Color = (0.86, 0.88, 0.9)
 DARK_STEEL: Color = (0.2, 0.21, 0.24)
 RUST: Color = (0.32, 0.17, 0.09)
 BRONZE: Color = (0.48, 0.34, 0.14)
@@ -124,6 +125,7 @@ def export(name: str, parts: list[Object], directory: str) -> None:
 def build(directory: str) -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     steel: Material = material("steel", STEEL, 0.95, 0.32)
+    edge: Material = material("edge", EDGE, 0.95, 0.2)
     dark: Material = material("dark_steel", DARK_STEEL, 0.9, 0.45)
     rust: Material = material("rust", RUST, 0.55, 0.85)
     bronze: Material = material("bronze", BRONZE, 0.9, 0.4)
@@ -139,6 +141,17 @@ def build(directory: str) -> None:
             box("guard", (0.21, 0.03, 0.026), 0.09, bronze),
             rod("grip", 0.016, 0.014, 0.16, 0.0, leather),
             ball("pommel", 0.027, -0.1, bronze, 0.8),
+        ],
+        directory,
+    )
+    export(
+        "broadsword",
+        [
+            blade("blade_edge", 0.1, 0.8, 0.105, 0.08, 0.012, edge),
+            blade("blade", 0.1, 0.78, 0.07, 0.052, 0.02, steel),
+            box("guard", (0.24, 0.036, 0.03), 0.09, dark),
+            rod("grip", 0.018, 0.016, 0.17, 0.0, leather),
+            ball("pommel", 0.032, -0.1, dark, 0.8),
         ],
         directory,
     )

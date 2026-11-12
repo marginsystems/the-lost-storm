@@ -77,6 +77,7 @@ node tools/compress-models.ts public/models/props/new_prop.glb
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `public/models/weapons/bone_javelin.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
+| `public/models/weapons/broadsword.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/greatsword.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/hex_staff.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/rusted_blade.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
