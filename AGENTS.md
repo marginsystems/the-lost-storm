@@ -36,6 +36,10 @@ npm run test:affected
 
 `npm run test:affected` runs only the tests your branch can affect (its diff against `origin/main` plus uncommitted and untracked files), split over up to four processes, in a few seconds. Run it through the machine's test lane. `npm test` is the whole suite, split over up to four processes that each run their files together (a few seconds); the merge queue runs it. `npm run test:isolated` is the whole suite with one process per file; every push to `main` runs it.
 
+## Before you submit
+
+Run `npm run typecheck`, `npm run lint` and `npm run test:affected` through the machine's lanes (`~/Dev/ops/lanes/lane check --` for typecheck and lint, `~/Dev/ops/lanes/lane test --` for tests). `test:affected` runs only the tests your diff can reach, plus the rules test, in a few seconds. Run `npm test` (the whole suite) only after changing configuration, the lockfile or shared test support. Never start `node --test` over the whole tree yourself. Tests never start a server, a browser or a process, and never wait on real time: use the fake clock. A test that reads files from disk (imports `node:fs`) must match a rule in `tools/affected-rules.json` (`alwaysRun`, an `importers` rule's `alsoRun`, or an `only` run); importing a file or naming its path from the root does not satisfy `tools/affected.test.ts`. CI is informational until `CI_GATE` is `on`, but a warning on `CI result` means a real break: fix it in your own follow-up.
+
 ## Logic and rendering are separate layers
 
 - `sim/` is the game: stats, combat, skills, monster behaviour, pathfinding, loot, inventory, progression, saving. It is plain TypeScript. It never imports Three.js or anything from `src/`, and never touches `window`, `document` or `localStorage`. It runs in Node, which is how it is tested.
