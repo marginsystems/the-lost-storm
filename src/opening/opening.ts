@@ -25,6 +25,7 @@ export interface OpeningDeps {
   readonly world: World;
   readonly camera: IsoCamera;
   readonly hud: HTMLElement;
+  readonly touch: boolean;
   send(command: Command): void;
   nameOf(): string | null;
   fetchVoice(): Promise<SpokenName | null>;
@@ -55,7 +56,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   let shift: Vec2 = { x: world.shift.x, z: world.shift.z };
   let eased: WakeState | null = null;
   let held: WakeState | null = null;
-  const reader: Reader = createReader(hud);
+  const reader: Reader = createReader(hud, deps.touch);
   const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): void => deps.refreshName() });
   let books: Set<number> = carriedBooks(world);
   const gateStyle: HTMLStyleElement = document.createElement('style');
