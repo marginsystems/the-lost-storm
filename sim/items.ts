@@ -100,5 +100,5 @@ export function generateItem(content: Content, rng: Rng, uid: number, level: num
   const base: ItemBaseDef | null = forcedBase === null ? pickedBase : (content.itemBases.get(forcedBase) ?? null);
   const rarity: RarityDef | null = forcedRarity === null ? pickWeighted(rng, content.rarities) : (content.rarities.find((candidate: RarityDef): boolean => candidate.id === forcedRarity) ?? null);
   if (base === null || rarity === null) return null;
-  return { uid, base: base.id, rarity: rarity.id, level, affixes: rollAffixes(content, rng, base, rarity, level) };
+  return { uid, base: base.id, rarity: rarity.id, level, affixes: rollAffixes(content, rng, base, rarity, level), ledger: null };
 }
