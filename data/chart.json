@@ -1,6 +1,7 @@
 {
   "title": "The Storm Chart",
   "pointsPerLevel": 2,
+  "twist": 0.08,
   "respec": {
     "goldPerPoint": 10,
     "goldPerLevel": 3
