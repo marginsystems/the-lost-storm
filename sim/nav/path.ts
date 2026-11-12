@@ -1,6 +1,6 @@
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import type { NavGrid } from './grid.ts';
-import { cellCenter, cellIndex, linePace, lineWalkable, nearestWalkable, paceAt } from './grid.ts';
+import { cellCenter, cellIndex, isWalkable, linePace, lineWalkable, nearestWalkable, paceAt } from './grid.ts';
 
 interface Step {
   readonly dc: number;
@@ -11,6 +11,7 @@ interface Step {
 const PATH = {
   snapRadius: 8,
   maxExpansions: 6000,
+  faceStep: 0.1,
 } as const;
 
 const STEPS: readonly Step[] = [
@@ -178,4 +179,18 @@ export function findPath(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): V
   const points: Vec2[] = cells.map((cell: number): Vec2 => cellCenter(grid, cell));
   points.push(goal);
   return smooth(grid, start, points);
+}
+
+export function nearFace(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): Vec2 | null {
+  if (isWalkable(grid, to.x, to.z)) return null;
+  const dx: number = from.x - to.x;
+  const dz: number = from.z - to.z;
+  const steps: number = Math.ceil(Math.hypot(dx, dz) / PATH.faceStep);
+  for (let step: number = 1; step <= steps; step += 1) {
+    const t: number = step / steps;
+    const x: number = to.x + dx * t;
+    const z: number = to.z + dz * t;
+    if (isWalkable(grid, x, z)) return { x, z };
+  }
+  return null;
 }

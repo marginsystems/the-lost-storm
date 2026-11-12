@@ -2,7 +2,9 @@ import type { SkillDef, ZoneExit } from '../content/types.ts';
 import { forceStrike } from './moments.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { directPath, findPath } from '../nav/path.ts';
+import { isWalkable, nearestWalkable } from '../nav/grid.ts';
+import { directPath, findPath, nearFace } from '../nav/path.ts';
+import { exitOnLine } from './exits.ts';
 import { allocateNode, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
@@ -23,6 +25,7 @@ import { stepWaypoints, teleport } from './waypoints.ts';
 import { findExit, stepCheckpoints, travelThrough } from './zones.ts';
 
 const PLAYER = {
+  heldExitSlack: 1.3,
   moveDeadZone: 0.7,
   resumeDistance: 1.4,
   repathInterval: 0.2,
@@ -48,13 +51,22 @@ function setDestination(world: World, dest: Vec2): void {
   world.player.repathTimer = PLAYER.repathInterval;
 }
 
+function heldAim(world: World, dest: Vec2): Vec2 {
+  const player: PlayerState = world.player;
+  const walkable: boolean = isWalkable(world.grid, dest.x, dest.z);
+  const exit: ZoneExit | null = exitOnLine(world, walkable ? dest : player.pos, dest, PLAYER.heldExitSlack);
+  if (exit !== null) return nearestWalkable(world.grid, exit, exit.radius) ?? dest;
+  return walkable ? dest : (nearFace(world.grid, player.pos, dest) ?? dest);
+}
+
 function heldPath(world: World, dest: Vec2): Vec2[] | null {
   const player: PlayerState = world.player;
-  const direct: Vec2[] | null = directPath(world.grid, player.pos, dest);
+  const aim: Vec2 = heldAim(world, dest);
+  const direct: Vec2[] | null = directPath(world.grid, player.pos, aim);
   if (direct !== null) return direct;
   if (player.repathTimer > 0) return player.path.length > 0 ? player.path : null;
   player.repathTimer = PLAYER.repathInterval;
-  return findPath(world.grid, player.pos, dest);
+  return findPath(world.grid, player.pos, aim);
 }
 
 function startMove(world: World, dest: Vec2, held: boolean): void {

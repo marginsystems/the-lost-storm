@@ -65,6 +65,10 @@ const NAV = {
   searchStep: 0.5,
 } as const;
 
+export function blockerClearance(blocker: Blocker, agentRadius: number): number {
+  return blocker.kind === 'outline' && agentRadius > 0 ? agentRadius + NAV.cellSize * Math.SQRT1_2 : agentRadius;
+}
+
 function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[] {
   const list: Blocker[] = [];
   for (const placed of zone.props) {
@@ -122,10 +126,11 @@ function fill(zone: ZoneDef, obstacles: readonly Blocker[], columns: number, row
     for (let column: number = 0; column < columns; column += 1) cells[row * columns + column] = insideFloor(zone, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize, margin) ? 1 : 0;
   }
   for (const blocker of obstacles) {
-    const bounds: Bounds = blockerBounds(blocker, agentRadius, columns, rows);
+    const clearance: number = blockerClearance(blocker, agentRadius);
+    const bounds: Bounds = blockerBounds(blocker, clearance, columns, rows);
     for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
       for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
-        if (cells[row * columns + column] === 1 && blockerGap(blocker, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize) < agentRadius) cells[row * columns + column] = 0;
+        if (cells[row * columns + column] === 1 && blockerGap(blocker, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize) < clearance) cells[row * columns + column] = 0;
       }
     }
   }
@@ -175,12 +180,13 @@ export function buildNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>,
 export function stampBlockers(grid: NavGrid, stamped: readonly Blocker[], agentRadius: number): GridStamp {
   const gaps: Map<number, number> = new Map<number, number>();
   for (const blocker of stamped) {
-    const bounds: Bounds = blockerBounds(blocker, agentRadius, grid.columns, grid.rows);
+    const extra: number = blockerClearance(blocker, agentRadius) - agentRadius;
+    const bounds: Bounds = blockerBounds(blocker, agentRadius + extra, grid.columns, grid.rows);
     for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
       for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
         const index: number = row * grid.columns + column;
         const centre: Vec2 = cellCenter(grid, index);
-        gaps.set(index, Math.min(gaps.get(index) ?? Infinity, blockerGap(blocker, centre.x, centre.z)));
+        gaps.set(index, Math.min(gaps.get(index) ?? Infinity, blockerGap(blocker, centre.x, centre.z) - extra));
       }
     }
   }

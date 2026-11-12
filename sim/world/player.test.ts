@@ -3,12 +3,12 @@ import { test } from 'node:test';
 import type { MotionSample, TestScene } from '../../test/motion-support.ts';
 import { MOTION_DT, motionProblems, placedProp, sampleOf, sceneZone } from '../../test/motion-support.ts';
 import { SCENE_BASE } from '../../test/road-support.ts';
-import { worldIn } from '../../test/support.ts';
+import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
-import type { Content, ZoneDef } from '../content/types.ts';
+import type { Content, ZoneDef, ZoneExit } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { isWalkable, paceAt } from '../nav/grid.ts';
+import { isWalkable, nearestWalkable, paceAt } from '../nav/grid.ts';
 import { stepWorld } from './step.ts';
 import type { Command, World } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -55,6 +55,87 @@ for (const scene of SCENES) {
     assert.equal(world.player.moving, false);
     if (isWalkable(world.grid, scene.dest.x, scene.dest.z)) assert.ok(distance(world.player.pos, scene.dest) < LIMITS.arrival);
   });
+}
+
+const PILE: Vec2 = { x: 14, z: 13 };
+
+const EXIT_WALK = {
+  start: 6,
+  beyond: 12,
+  seconds: 8,
+  aside: 0.9,
+  sides: [-1, 0, 1],
+} as const;
+
+for (const side of [{ name: 'south', x: 0, z: 1 }, { name: 'north', x: 0, z: -1 }, { name: 'east', x: 1, z: 0 }, { name: 'west', x: -1, z: 0 }] as const) {
+  void test(`holding the button on a rock pile from the ${side.name} walks straight at its near face and stops there, never round to the far side`, (): void => {
+    const start: Vec2 = { x: PILE.x + side.x * 10, z: PILE.z + side.z * 10 };
+    const scene: HeroScene = { name: `holding the button on a rock pile from the ${side.name}`, tiles: ['.......', '.......', '.......', '.......', '.......', '.......', '.......'], props: [placedProp('castle_rubble_large', PILE.x, PILE.z)], start, dest: PILE, held: true };
+    const { world, samples } = walk(scene);
+    assert.deepEqual(motionProblems('hero', samples, LIMITS.turnRate), []);
+    const along = (pos: Vec2): number => (pos.x - PILE.x) * side.x + (pos.z - PILE.z) * side.z;
+    const across = (pos: Vec2): number => Math.abs((pos.x - PILE.x) * side.z - (pos.z - PILE.z) * side.x);
+    assert.ok(samples.every((sample: MotionSample): boolean => along(sample.pos) > 0 && across(sample.pos) < 1), `the hero left the straight line toward the pile from the ${side.name}`);
+    const face: number = Math.min(...samples.map((sample: MotionSample): number => along(sample.pos)));
+    assert.ok(along(world.player.pos) - face < LIMITS.arrival, 'the hero did not stay at the near face');
+    assert.ok(face < 6, `the hero stopped ${face.toFixed(2)} m from the pile's middle, short of its face`);
+  });
+}
+
+for (const zone of content.zones.values()) {
+  for (const exit of zone.exits) {
+    for (const side of zone.kind === 'void' ? [0] : EXIT_WALK.sides) {
+      void test(`holding the button beyond ${zone.id}'s ${exit.id} exit, ${side === 0 ? 'through its middle' : 'past the edge of its trigger'}${side < 0 ? ' on the left' : side > 0 ? ' on the right' : ''}, walks into it and travels`, (): void => {
+        const world: World = worldIn(content, zone.id, 5);
+        world.zone = { ...world.zone, exits: world.zone.exits.map((each: ZoneExit): ZoneExit => ({ ...each, requires: [] })) };
+        world.monsters = [];
+        world.wake = null;
+        stepWorld(world, [], MOTION_DT);
+        const live: ZoneExit = must(world.zone.exits.find((each: ZoneExit): boolean => each.id === exit.id), 'live exit');
+        const middle: Vec2 = { x: ((zone.tiles[0]?.length ?? 0) * zone.cellSize) / 2, z: (zone.tiles.length * zone.cellSize) / 2 };
+        const span: number = Math.max(1e-9, distance(middle, live));
+        const inward: Vec2 = { x: (middle.x - live.x) / span, z: (middle.z - live.z) / span };
+        const aside: number = side * (live.radius + EXIT_WALK.aside);
+        const across: Vec2 = { x: live.x - inward.z * aside, z: live.z + inward.x * aside };
+        const start: Vec2 = must(nearestWalkable(world.grid, { x: across.x + inward.x * (live.radius + EXIT_WALK.start), z: across.z + inward.z * (live.radius + EXIT_WALK.start) }, EXIT_WALK.start), 'start');
+        world.player.pos = { ...start };
+        world.trail = { ...start };
+        const dest: Vec2 = { x: across.x - inward.x * EXIT_WALK.beyond, z: across.z - inward.z * EXIT_WALK.beyond };
+        const shifted: Vec2 = { ...world.shift };
+        for (let step: number = 0; step < Math.round(EXIT_WALK.seconds / MOTION_DT) && world.zone.id === zone.id; step += 1) {
+          const held: Vec2 = { x: dest.x + world.shift.x - shifted.x, z: dest.z + world.shift.z - shifted.z };
+          stepWorld(world, [{ type: 'move', dest: held, held: true }], MOTION_DT);
+        }
+        assert.equal(world.zone.id, exit.to, `the hero stopped at (${world.player.pos.x.toFixed(1)}, ${world.player.pos.z.toFixed(1)})`);
+      });
+    }
+  }
+}
+
+for (const zone of content.zones.values()) {
+  for (const exit of zone.exits) {
+    void test(`holding the button on the glow just outside ${zone.id}'s ${exit.id} trigger walks into it and travels`, (): void => {
+      const world: World = worldIn(content, zone.id, 5);
+      world.zone = { ...world.zone, exits: world.zone.exits.map((each: ZoneExit): ZoneExit => ({ ...each, requires: [] })) };
+      world.monsters = [];
+      world.wake = null;
+      stepWorld(world, [], MOTION_DT);
+      const live: ZoneExit = must(world.zone.exits.find((each: ZoneExit): boolean => each.id === exit.id), 'live exit');
+      const middle: Vec2 = { x: ((zone.tiles[0]?.length ?? 0) * zone.cellSize) / 2, z: (zone.tiles.length * zone.cellSize) / 2 };
+      const span: number = Math.max(1e-9, distance(middle, live));
+      const inward: Vec2 = { x: (middle.x - live.x) / span, z: (middle.z - live.z) / span };
+      const start: Vec2 = must(nearestWalkable(world.grid, { x: live.x + inward.x * (live.radius + EXIT_WALK.start), z: live.z + inward.z * (live.radius + EXIT_WALK.start) }, EXIT_WALK.start), 'start');
+      world.player.pos = { ...start };
+      world.trail = { ...start };
+      const glow: Vec2 = { x: live.x + inward.x * (live.radius + EXIT_WALK.aside), z: live.z + inward.z * (live.radius + EXIT_WALK.aside) };
+      const shifted: Vec2 = { ...world.shift };
+      for (let step: number = 0; step < Math.round(EXIT_WALK.seconds / MOTION_DT) && world.zone.id === zone.id; step += 1) {
+        const held: Vec2 = { x: glow.x + world.shift.x - shifted.x, z: glow.z + world.shift.z - shifted.z };
+        stepWorld(world, [{ type: 'move', dest: held, held: true }], MOTION_DT);
+      }
+      assert.equal(world.zone.id, exit.to, `the hero stopped at (${world.player.pos.x.toFixed(1)}, ${world.player.pos.z.toFixed(1)})`);
+    });
+  }
 }
 
 const SWEEP = {

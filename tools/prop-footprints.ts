@@ -5,10 +5,10 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { convexHull, simplifyOutline } from '../sim/nav/outline.ts';
 import type { ReadonlyVec2 } from '../sim/math.ts';
-import { fields, items, text } from '../sim/content/read.ts';
+import { fields, items, numeric, text } from '../sim/content/read.ts';
 
 export const FOOTPRINT_TOOL = {
-  bodyHeight: 1.5,
+  bodyHeight: 2,
   floorSlack: 0.5,
   most: 12,
   places: 100,
@@ -31,7 +31,7 @@ function rounded(value: number): number {
   return Math.round(value * FOOTPRINT_TOOL.places) / FOOTPRINT_TOOL.places;
 }
 
-function measure(document: Document): Measured | null {
+function measure(document: Document, scale: number): Measured | null {
   const points: [number, number, number][] = [];
   const element: number[] = [0, 0, 0];
   for (const node of document.getRoot().listNodes()) {
@@ -51,7 +51,7 @@ function measure(document: Document): Measured | null {
   const floor: number = Math.min(...points.map((point: readonly number[]): number => point[1] ?? 0));
   const top: number = Math.max(...points.map((point: readonly number[]): number => point[1] ?? 0));
   const low: ReadonlyVec2[] = points
-    .filter((point: readonly number[]): boolean => (point[1] ?? 0) <= Math.max(0, floor) + FOOTPRINT_TOOL.bodyHeight && (point[1] ?? 0) >= floor - FOOTPRINT_TOOL.floorSlack)
+    .filter((point: readonly number[]): boolean => (point[1] ?? 0) <= Math.max(0, floor) + FOOTPRINT_TOOL.bodyHeight / scale && (point[1] ?? 0) >= floor - FOOTPRINT_TOOL.floorSlack)
     .map((point: readonly number[]): ReadonlyVec2 => ({ x: point[0] ?? 0, z: point[2] ?? 0 }));
   const outline: readonly ReadonlyVec2[] = simplifyOutline(convexHull(low), FOOTPRINT_TOOL.most).map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: rounded(point.x), z: rounded(point.z) }));
   return { height: rounded(top - Math.max(0, floor)), outline };
@@ -61,8 +61,15 @@ async function main(): Promise<void> {
   await MeshoptDecoder.ready;
   const io: NodeIO = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
   const props: readonly unknown[] = items(JSON.parse(readFileSync('data/props.json', 'utf8')), 'props');
-  const models: string[] = [...new Set<string>(props.map((prop: unknown, index: number): string => text(fields(prop, `props[${index}]`), 'model', `props[${index}]`)))].toSorted();
-  const measured: (Measured | null)[] = await Promise.all(models.map(async (model: string): Promise<Measured | null> => measure(await io.read(`public/${model}`))));
+  const smallest: Map<string, number> = new Map<string, number>();
+  props.forEach((prop: unknown, index: number): void => {
+    const source: Record<string, unknown> = fields(prop, `props[${index}]`);
+    const model: string = text(source, 'model', `props[${index}]`);
+    const scale: number = numeric(source, 'scale', `props[${index}]`);
+    smallest.set(model, Math.min(smallest.get(model) ?? scale, scale));
+  });
+  const models: string[] = [...smallest.keys()].toSorted();
+  const measured: (Measured | null)[] = await Promise.all(models.map(async (model: string): Promise<Measured | null> => measure(await io.read(`public/${model}`), smallest.get(model) ?? 1)));
   const result: Record<string, { height: number; outline: number[][] }> = {};
   models.forEach((model: string, index: number): void => {
     const entry: Measured | null | undefined = measured[index];

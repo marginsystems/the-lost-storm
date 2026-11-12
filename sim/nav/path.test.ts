@@ -8,7 +8,7 @@ import type { Vec2 } from '../math.ts';
 import { buildNavGrid, isWalkable, lineWalkable, paceAt } from './grid.ts';
 import { ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts';
 import type { NavGrid } from './grid.ts';
-import { findPath } from './path.ts';
+import { findPath, nearFace } from './path.ts';
 
 const content: Content = loadContent();
 const grid: NavGrid = buildNavGrid(OUTPOST_ZONE, content.props, content.surfaces, content.player.radius);
@@ -71,4 +71,15 @@ void test('a path takes the firm way round rather than wading straight across sl
   const wading: number = path.filter((point: Vec2): boolean => paceAt(local, point.x, point.z) < 1).length;
   assert.equal(wading, 0);
   assert.ok(path.some((point: Vec2): boolean => point.z < 4 || point.z > 16));
+});
+
+void test('the near face of a blocked point is the last walkable point on the straight line toward it, and an open point has none', (): void => {
+  const open: Vec2 = { x: 28, z: 22 };
+  assert.equal(nearFace(grid, open, { x: 28.5, z: 22 }), null);
+  const blocked: Vec2 = { x: -3, z: 22 };
+  const face: Vec2 = must(nearFace(grid, open, blocked), 'near face');
+  assert.ok(isWalkable(grid, face.x, face.z));
+  assert.ok(Math.abs(face.z - 22) < 1e-9);
+  assert.ok(face.x < 2 && face.x > blocked.x);
+  assert.equal(isWalkable(grid, face.x - 0.1, face.z), false);
 });

@@ -233,6 +233,31 @@ void test('no point inside a placed prop\'s ground outline can be walked on, in 
   }
 });
 
+void test('the hero\'s whole body stays clear of every placed prop\'s ground outline, wherever he stands in a walkable cell', (): void => {
+  const radius: number = content.player.radius;
+  for (const zone of content.zones.values()) {
+    const zoneGrid: NavGrid = buildNavGrid(zone, content.props, content.surfaces, radius);
+    for (const placed of zone.props) {
+      const def: PropDef | undefined = content.props.get(placed.prop);
+      const outline: Blocker | null = placed.when.length > 0 || def === undefined ? null : propOutline(def, placed.x, placed.z, placed.rotationDegrees);
+      if (outline === null || outline.kind !== 'outline') continue;
+      const xs: number[] = outline.outline.map((point: Vec2): number => point.x);
+      const zs: number[] = outline.outline.map((point: Vec2): number => point.z);
+      for (let x: number = Math.min(...xs) - 2; x <= Math.max(...xs) + 2; x += zoneGrid.cellSize) {
+        for (let z: number = Math.min(...zs) - 2; z <= Math.max(...zs) + 2; z += zoneGrid.cellSize) {
+          if (!isWalkable(zoneGrid, x, z)) continue;
+          const column: number = Math.floor(x / zoneGrid.cellSize) * zoneGrid.cellSize;
+          const row: number = Math.floor(z / zoneGrid.cellSize) * zoneGrid.cellSize;
+          for (const [cx, cz] of [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5]] as const) {
+            const gap: number = blockerGap(outline, column + cx * zoneGrid.cellSize, row + cz * zoneGrid.cellSize);
+            assert.ok(gap >= radius - 1e-9, `${zone.id}: ${placed.prop} at (${placed.x}, ${placed.z}) lets the hero stand ${gap.toFixed(2)} m from its base`);
+          }
+        }
+      }
+    }
+  }
+});
+
 void test('a rotated outline turns with its placement, and a point outside it keeps its distance', (): void => {
   const slab: PropDef = { ...must(content.props.get('dead_log'), 'dead_log'), blockRadius: 0, blockLength: 0, footprint: [{ x: -2, z: -0.5 }, { x: 2, z: -0.5 }, { x: 2, z: 0.5 }, { x: -2, z: 0.5 }] };
   const along: Blocker = must(propOutline(slab, 10, 10, 0), 'outline');
