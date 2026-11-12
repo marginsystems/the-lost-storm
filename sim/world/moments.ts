@@ -1,5 +1,5 @@
 import type { MomentDef, MomentEcho, MomentField, MomentLibrary, StrikeArea, WeightedMoment } from '../content/moment-types.ts';
-import type { Content, MonsterDef, ZoneDef } from '../content/types.ts';
+import type { Content, MonsterDef, PropDef, ZoneDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, distance } from '../math.ts';
@@ -9,10 +9,10 @@ import { allHold } from './conditions.ts';
 import { dropOnGround } from './ground.ts';
 import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
-import type { ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, World } from './types.ts';
+import type { ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, NpcState, World } from './types.ts';
 
 export const MOMENTS = {
-  placementTries: 14,
+  placementTries: 40,
   startLifeMin: 0.35,
   startLifeMax: 1,
   settle: 1.2,
@@ -71,8 +71,24 @@ function pointIn(world: World, area: StrikeArea): Vec2 {
   return { x: area.x + world.shift.x + Math.cos(angle) * reach, z: area.z + world.shift.z + Math.sin(angle) * reach };
 }
 
+function serves(world: World, prop: string): boolean {
+  const def: PropDef | undefined = world.content.props.get(prop);
+  return def !== undefined && def.service !== null;
+}
+
+export function safeSpots(world: World): Vec2[] {
+  const zone: ZoneDef = world.zone;
+  const spots: Vec2[] = world.npcs.map((npc: NpcState): Vec2 => npc.pos);
+  spots.push(zone.playerStart);
+  if (zone.waypoint !== null) spots.push(zone.waypoint);
+  for (const placed of zone.props) if (serves(world, placed.prop)) spots.push(placed);
+  return spots.map((spot: Vec2): Vec2 => ({ x: spot.x + world.shift.x, z: spot.z + world.shift.z }));
+}
+
 function clear(world: World, field: MomentField, def: MomentDef, pos: Vec2): boolean {
   if (!isWalkable(world.grid, pos.x, pos.z)) return false;
+  if (safeSpots(world).some((spot: Vec2): boolean => distance(spot, pos) < def.radius + field.clearance.safe)) return false;
+  if (world.monsters.some((monster: MonsterState): boolean => monster.alive && monster.def.faction !== world.content.moments.faction && distance(monster.pos, pos) < monster.def.aggroRadius + field.clearance.packs)) return false;
   if (distance(world.player.pos, pos) < def.radius + field.clearance.hero) return false;
   if (world.zone.exits.some((exit): boolean => distance(exit, pos) < def.radius + field.clearance.exits)) return false;
   if (field.avoid.some((keep: StrikeArea): boolean => distance({ x: keep.x + world.shift.x, z: keep.z + world.shift.z }, pos) < def.radius + keep.radius)) return false;
@@ -137,6 +153,7 @@ function turn(world: World, moment: MomentState): number[] {
     monster.facing = figure.facing;
     monster.aggro = true;
     monster.foeId = world.player.id;
+    monster.restTime = world.content.moments.rouse + turned.length * world.content.moments.stagger;
     world.events.push({ type: 'aggro', monsterId: monster.id });
     figure.turned = true;
     figure.monsterId = monster.id;
@@ -241,7 +258,7 @@ function stepMoment(world: World, moment: MomentState, dt: number): boolean {
 export function stepMoments(world: World, dt: number): void {
   world.moments = world.moments.filter((moment: MomentState): boolean => stepMoment(world, moment, dt));
   const field: MomentField | null = fieldOf(world);
-  if (field === null || live(world) >= field.max) return;
+  if (field === null || live(world) >= (sureHolds(world, field) ? 1 : field.max)) return;
   world.strikeTimer -= dt;
   if (world.strikeTimer > 0) return;
   world.strikeTimer = nextInterval(world, field);
@@ -270,6 +287,14 @@ export function forceStrike(world: World, at: Vec2, momentId: string | null): Mo
   const def: MomentDef | null = named ?? (field === null ? null : pickDef(world, field)) ?? [...world.content.moments.defs.values()][0] ?? null;
   if (def === null) return null;
   return begin(world, def, at, field?.combat ?? true, true);
+}
+
+export function restEchoes(world: World): void {
+  for (const moment of world.moments) {
+    echoMonsters(world, moment).forEach((monster: MonsterState, order: number): void => {
+      monster.restTime = world.content.moments.rouse + order * world.content.moments.stagger;
+    });
+  }
 }
 
 export function momentOfEcho(world: World, monsterId: number): MomentState | null {

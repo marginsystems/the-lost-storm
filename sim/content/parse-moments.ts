@@ -88,6 +88,8 @@ export function momentLibrary(value: unknown, where: string): MomentLibrary {
     fade: positive(source, 'fade', where),
     cleared: storyFlags(source['cleared'], `${where}.cleared`),
     playedShare: chance(source, 'playedShare', where),
+    rouse: source['rouse'] === undefined ? 0 : nonNegative(source, 'rouse', where),
+    stagger: source['stagger'] === undefined ? 0 : nonNegative(source, 'stagger', where),
     defs: byId(each(source['moments'], `${where}.moments`, moment), `${where}.moments`),
   };
 }
@@ -99,7 +101,7 @@ function area(value: unknown, where: string): StrikeArea {
 
 function clearance(value: unknown, where: string): StrikeClearance {
   const source: Fields = fields(value, where);
-  return { hero: nonNegative(source, 'hero', where), exits: nonNegative(source, 'exits', where), between: nonNegative(source, 'between', where) };
+  return { hero: nonNegative(source, 'hero', where), exits: nonNegative(source, 'exits', where), between: nonNegative(source, 'between', where), safe: source['safe'] === undefined ? 0 : nonNegative(source, 'safe', where), packs: source['packs'] === undefined ? 0 : nonNegative(source, 'packs', where) };
 }
 
 function interval(value: unknown, where: string): StrikeInterval {

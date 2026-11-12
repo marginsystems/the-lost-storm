@@ -4,6 +4,7 @@ import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
 import type { MonsterState, PlayerState, RespawnChoice, World, WorldEvent } from './types.ts';
 import { enterZone, placePlayer, townZone } from './zones.ts';
+import { restEchoes } from './moments.ts';
 
 export function choicesOpen(world: World): boolean {
   return !world.player.alive && world.death !== null && world.death.elapsed >= world.content.player.respawnDelay;
@@ -71,6 +72,7 @@ export function respawnPlayer(world: World, choice: RespawnChoice): void {
     clearHazards(world);
     clearAreas(world);
     for (const monster of world.monsters) if (monster.alive) resetMonster(monster);
+    restEchoes(world);
   }
   world.events.push({ type: 'player_respawn' });
 }

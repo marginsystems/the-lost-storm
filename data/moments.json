@@ -4,6 +4,8 @@
   "telegraph": 1.1,
   "fade": 2.4,
   "playedShare": 0.3,
+  "rouse": 1.2,
+  "stagger": 0.9,
   "moments": [
     {
       "id": "campfire",

@@ -6,7 +6,7 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { parseSaveText, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
-import { forceStrike, MOMENTS, momentOfEcho, strikeGround } from './moments.ts';
+import { forceStrike, MOMENTS, momentOfEcho, nearestFight, safeSpots, strikeGround } from './moments.ts';
 import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -373,4 +373,159 @@ void test('a new hero in the Hall gets a grace period, and the first moment is a
     assert.equal(first.def.id, must(field.first[0], 'first entry').moment);
     for (const keep of field.avoid) assert.ok(distance(first.pos, keep) >= first.def.radius + keep.radius, `seed ${seed}`);
   }
+});
+
+void test('no strike ever lands near the safe ground or close enough to a living pack for it to join the fight', (): void => {
+  const shipped: Content = loadContent();
+  const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');
+  const field: MomentField = must(hall.moments, 'hall field');
+  assert.ok(field.clearance.safe > 0);
+  for (let seed: number = 1; seed <= 6; seed += 1) {
+    const world: World = createWorld(shipped, { seed, save: null });
+    enterZone(world, hall, { type: 'start' });
+    const spots = safeSpots(world);
+    assert.ok(spots.length >= world.npcs.length + 1);
+    const seen: MomentState[] = [];
+    const packAt: number[] = [];
+    for (let elapsed: number = 0; elapsed < 240; elapsed += 1) {
+      run(world, 1);
+      for (const moment of world.moments) {
+        if (seen.includes(moment)) continue;
+        seen.push(moment);
+        const others: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.def.faction !== world.content.moments.faction);
+        if (others.length > 0) packAt.push(Math.min(...others.map((monster: MonsterState): number => distance(monster.pos, moment.pos) - monster.def.aggroRadius)));
+      }
+      for (const moment of world.moments) if (moment.phase === 'dormant') moment.timeLeft = 0;
+    }
+    assert.ok(seen.length >= 4, `seed ${seed}`);
+    for (const moment of seen) for (const spot of spots) assert.ok(distance(moment.pos, spot) >= moment.def.radius + field.clearance.safe, `seed ${seed}: ${moment.def.id}`);
+    assert.ok(packAt.length > 0);
+    for (const gap of packAt) assert.ok(gap >= field.clearance.packs - 1e-6, `seed ${seed}: a strike ${gap.toFixed(1)} m past a pack's reach`);
+  }
+});
+
+void test('while the first fight is still owed, only one moment is up at a time', (): void => {
+  const shipped: Content = loadContent();
+  const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');
+  for (let seed: number = 1; seed <= 4; seed += 1) {
+    const world: World = createWorld(shipped, { seed, save: null });
+    enterZone(world, hall, { type: 'start' });
+    for (let elapsed: number = 0; elapsed < 120; elapsed += 1) {
+      run(world, 1);
+      assert.ok(world.moments.filter((moment: MomentState): boolean => moment.phase !== 'fading').length <= 1, `seed ${seed} at ${elapsed}`);
+    }
+  }
+});
+
+interface FirstFight {
+  readonly world: World;
+  readonly moment: MomentState;
+}
+
+function firstFight(seed: number): FirstFight {
+  const shipped: Content = loadContent();
+  const world: World = createWorld(shipped, { seed, save: null });
+  enterZone(world, must(shipped.zones.get('hall_of_time'), 'hall'), { type: 'start' });
+  world.monsters = [];
+  const at = { x: world.player.pos.x + 30, z: world.player.pos.z };
+  const moment: MomentState = must(forceStrike(world, at, 'first_fire'), 'first fire');
+  run(world, shipped.moments.telegraph + DT * 2);
+  standAt(world, { x: at.x, z: at.z - 0.5 });
+  return { world, moment };
+}
+
+function echoFoes(world: World): MonsterState[] {
+  return world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.def.faction === world.content.moments.faction);
+}
+
+function nearestFoe(world: World): MonsterState | undefined {
+  const from = world.player.pos;
+  return echoFoes(world).toSorted((a: MonsterState, b: MonsterState): number => distance(a.pos, from) - distance(b.pos, from))[0];
+}
+
+interface FightLog {
+  readonly time: number;
+  readonly taken: number;
+  readonly firstHit: number;
+  readonly worstSecond: number;
+  readonly won: boolean;
+}
+
+function fightFirst(seed: number, attack: boolean): FightLog {
+  const { world } = firstFight(seed);
+  const hits: { readonly at: number; readonly amount: number }[] = [];
+  let time: number = 0;
+  let woke: boolean = false;
+  while (time < 60 && world.player.alive) {
+    const foe: MonsterState | undefined = nearestFoe(world);
+    const events: WorldEvent[] = stepWorld(world, attack && foe !== undefined ? [{ type: 'skill', slot: 0, aim: foe.pos, targetId: foe.id }] : [], DT);
+    woke = woke || echoFoes(world).length > 0;
+    if (woke) time += DT;
+    for (const event of events) if (event.type === 'damage' && event.targetTeam === 'player') hits.push({ at: time, amount: event.amount });
+    if (woke && echoFoes(world).length === 0) break;
+  }
+  const worstSecond: number = Math.max(0, ...hits.map((hit): number => hits.filter((other): boolean => other.at >= hit.at && other.at < hit.at + 1).reduce((sum: number, other): number => sum + other.amount, 0)));
+  return { time, taken: hits.reduce((sum: number, hit): number => sum + hit.amount, 0), firstHit: hits[0]?.at ?? Infinity, worstSecond, won: world.player.alive && echoFoes(world).length === 0 };
+}
+
+void test('in the first fight a hero who stands still lasts 25 to 32 s, and one who fights back wins in 15 to 25 s after losing a third to a half of his life', (): void => {
+  for (let seed: number = 1; seed <= 4; seed += 1) {
+    const still: FightLog = fightFirst(seed, false);
+    assert.equal(still.won, false, `seed ${seed}`);
+    assert.ok(still.time >= 24 && still.time <= 32, `seed ${seed}: stood ${still.time.toFixed(1)} s`);
+    const fought: FightLog = fightFirst(seed, true);
+    assert.ok(fought.won, `seed ${seed}`);
+    assert.ok(fought.time >= 15 && fought.time <= 25, `seed ${seed}: won in ${fought.time.toFixed(1)} s`);
+    assert.ok(fought.taken >= 28 && fought.taken <= 55, `seed ${seed}: took ${fought.taken.toFixed(0)}`);
+    for (const log of [still, fought]) {
+      assert.ok(log.firstHit >= SHIPPED.rouse, `seed ${seed}: hit at ${log.firstHit.toFixed(1)} s, before the echoes finished waking`);
+      assert.ok(log.worstSecond <= 28, `seed ${seed}: ${log.worstSecond.toFixed(0)} in one second`);
+    }
+  }
+});
+
+void test('turned echoes wait out the waking, then act one after another instead of all at once', (): void => {
+  const { world, moment } = firstFight(1);
+  run(world, DT * 2);
+  const echoes: MonsterState[] = echoFoes(world);
+  assert.equal(echoes.length, moment.def.echoes.filter((entry): boolean => entry.turns).length);
+  const rests: number[] = echoes.map((monster: MonsterState): number => monster.restTime).toSorted((a: number, b: number): number => a - b);
+  assert.ok((rests[0] ?? 0) >= SHIPPED.rouse - DT * 3);
+  for (let index: number = 1; index < rests.length; index += 1) assert.ok((rests[index] ?? 0) - (rests[index - 1] ?? 0) >= SHIPPED.stagger - 1e-6);
+});
+
+void test('a hero who falls in the first fight and rises at the checkpoint comes back to the same fight, still marked, and its echoes wake again before they hit', (): void => {
+  const { world, moment } = firstFight(2);
+  world.player.maxLife = 30;
+  world.player.life = 30;
+  run(world, 40);
+  assert.equal(world.player.alive, false);
+  run(world, world.content.player.respawnDelay + DT);
+  stepWorld(world, [{ type: 'respawn', choice: 'checkpoint' }], DT);
+  assert.equal(world.player.alive, true);
+  assert.ok(world.moments.includes(moment));
+  assert.notEqual(moment.phase, 'fading');
+  assert.equal(nearestFight(world), moment);
+  const back: MonsterState[] = echoFoes(world);
+  assert.ok(back.length > 0);
+  for (const monster of back) assert.ok(monster.restTime >= SHIPPED.rouse - 1e-6);
+  run(world, 30);
+  assert.ok(world.moments.includes(moment) && moment.phase !== 'fading');
+});
+
+void test('safe ground is every NPC, the arrival, the waypoint and every service prop such as the stash, wherever the zone puts them', (): void => {
+  const shipped: Content = loadContent();
+  const hideout: ZoneDef = must(shipped.zones.get('hideout'), 'hideout');
+  const world: World = createWorld(shipped, { seed: 3, save: null });
+  enterZone(world, hideout, { type: 'start' });
+  const spots = safeSpots(world);
+  const has = (x: number, z: number): boolean => spots.some((spot): boolean => Math.abs(spot.x - x) < 1e-6 && Math.abs(spot.z - z) < 1e-6);
+  assert.ok(world.npcs.length > 0);
+  for (const npc of world.npcs) assert.ok(has(npc.pos.x, npc.pos.z), npc.def.id);
+  assert.ok(has(hideout.playerStart.x, hideout.playerStart.z));
+  const waypoint = must(hideout.waypoint, 'hideout waypoint');
+  assert.ok(has(waypoint.x, waypoint.z));
+  const services = hideout.props.filter((placed): boolean => (shipped.props.get(placed.prop)?.service ?? null) !== null);
+  assert.ok(services.length > 0);
+  for (const placed of services) assert.ok(has(placed.x, placed.z), placed.prop);
 });

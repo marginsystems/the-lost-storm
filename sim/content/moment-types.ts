@@ -61,6 +61,8 @@ export interface MomentLibrary {
   readonly fade: number;
   readonly cleared: StoryFlags;
   readonly playedShare: number;
+  readonly rouse: number;
+  readonly stagger: number;
   readonly defs: ReadonlyMap<string, MomentDef>;
 }
 
@@ -74,6 +76,8 @@ export interface StrikeClearance {
   readonly hero: number;
   readonly exits: number;
   readonly between: number;
+  readonly safe: number;
+  readonly packs: number;
 }
 
 export interface StrikeInterval {
