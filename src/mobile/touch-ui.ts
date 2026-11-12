@@ -4,6 +4,7 @@ import type { Command, FlaskState, MonsterState, World } from '../../sim/world/t
 import { el } from '../hud/dom.ts';
 import type { Hud, HudPanel } from '../hud/hud-api.ts';
 import { iconSvg } from '../hud/icons.ts';
+import { PANEL_ICONS } from '../hud/key-labels.ts';
 import type { Input } from '../input.ts';
 import { INPUT } from '../input.ts';
 import { TITLE_SCREEN } from '../title-screen.ts';
@@ -43,10 +44,10 @@ interface ButtonView {
 }
 
 const MENU: readonly { readonly panel: HudPanel; readonly label: string; readonly icon: string }[] = [
-  { panel: 'inventory', label: 'Inventory', icon: 'armour' },
-  { panel: 'character', label: 'Character', icon: 'helm' },
-  { panel: 'tree', label: 'Skills', icon: 'fork' },
-  { panel: 'map', label: 'Map', icon: 'eye' },
+  { panel: 'inventory', label: 'Inventory', icon: PANEL_ICONS.inventory },
+  { panel: 'character', label: 'Character', icon: PANEL_ICONS.character },
+  { panel: 'tree', label: 'Skills', icon: PANEL_ICONS.tree },
+  { panel: 'map', label: 'Map', icon: PANEL_ICONS.map },
 ];
 
 const ROTATE_HTML: string = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="10" y="4" width="12" height="24" rx="2"/><path d="M14.5 24.5h3"/></svg><div><b>Turn your phone sideways</b><span>The storm needs room.</span></div>';

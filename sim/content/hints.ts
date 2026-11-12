@@ -8,6 +8,7 @@ export type HintPanel = (typeof HINT_PANELS)[number];
 
 export const STATIC_KEYS = ['inventory', 'tree', 'map', 'flask'] as const;
 export const SLOT_KEY: RegExp = /^slot_([1-9])$/;
+export const DESK_WORDS: RegExp = /\b(click|clicks|press|mouse|keyboard|key)\b/i;
 
 export type HintTrigger =
   | { readonly type: 'game_started' }
@@ -36,6 +37,7 @@ export interface HintDef {
   readonly id: string;
   readonly trigger: HintTrigger;
   readonly text: string;
+  readonly touch: string;
   readonly done: HintDone;
   readonly after: readonly string[];
   readonly forNewPlayers: boolean;
@@ -129,6 +131,7 @@ function readHint(value: unknown, where: string): HintDef {
     id: text(source, 'id', where),
     trigger: readTrigger(source['trigger'], `${where}.trigger`),
     text: text(source, 'text', where),
+    touch: text(source, 'touch', where),
     done: readDone(source['done'], `${where}.done`),
     after: textList(source, 'after', where),
     forNewPlayers: flag(source, 'forNewPlayers', where),
@@ -149,6 +152,10 @@ export function parseHints(value: unknown): HintsDef {
   return { hints };
 }
 
+function keyNames(template: string): ReadonlySet<string> {
+  return new Set<string>(hintSegments(template).flatMap((segment: HintSegment): string[] => (segment.type === 'key' ? [segment.name] : [])));
+}
+
 export function hintProblems(defs: HintsDef, content: Content): string[] {
   const problems: string[] = [];
   const slots: number = content.player.skillBar.length;
@@ -158,14 +165,23 @@ export function hintProblems(defs: HintsDef, content: Content): string[] {
         if (slot >= slots) problems.push(`${hint.id}: skill slot ${slot} does not exist`);
       }
     }
-    for (const segment of hintSegments(hint.text)) {
+    for (const segment of [...hintSegments(hint.text), ...hintSegments(hint.touch)]) {
       if (segment.type !== 'key') continue;
       const slot: RegExpMatchArray | null = segment.name.match(SLOT_KEY);
       const known: boolean = STATIC_KEYS.some((name: string): boolean => name === segment.name) || (slot !== null && Number(slot[1]) <= slots);
       if (!known) problems.push(`${hint.id}: unknown key {${segment.name}}`);
     }
+    const deskKeys: ReadonlySet<string> = keyNames(hint.text);
+    for (const name of keyNames(hint.touch)) {
+      if (!deskKeys.has(name)) problems.push(`${hint.id}: touch wording names {${name}}, which the desk wording does not`);
+    }
+    if (DESK_WORDS.test(hint.touch)) problems.push(`${hint.id}: touch wording names a mouse or keyboard action`);
   }
   return problems;
+}
+
+export function hintWording(hint: HintDef, touch: boolean): string {
+  return touch ? hint.touch : hint.text;
 }
 
 export function loadHints(content: Content): HintsDef {

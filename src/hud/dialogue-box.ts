@@ -6,7 +6,14 @@ import { el, retrigger, setText } from './dom.ts';
 const DIALOGUE_BOX = {
   nextHint: 'Click to continue',
   lastHint: 'Click to close',
+  touchNextHint: 'Tap to continue',
+  touchLastHint: 'Tap to close',
 } as const;
+
+export function dialogueHint(last: boolean, touch: boolean): string {
+  if (touch) return last ? DIALOGUE_BOX.touchLastHint : DIALOGUE_BOX.touchNextHint;
+  return last ? DIALOGUE_BOX.lastHint : DIALOGUE_BOX.nextHint;
+}
 
 type LineEvent = Extract<WorldEvent, { readonly type: 'dialogue_line' }>;
 
@@ -42,7 +49,7 @@ export function createDialogueBox(root: HTMLElement, context: HudContext): Dialo
       setText(name, speaker?.name ?? event.line.speaker, false);
       setText(title, speaker?.title ?? '', false);
       setText(count, `${event.index + 1} / ${total}`, false);
-      setText(hint, event.last ? DIALOGUE_BOX.lastHint : DIALOGUE_BOX.nextHint, false);
+      setText(hint, dialogueHint(event.last, context.api.touch), false);
       text.textContent = event.line.text;
       retrigger(text, 'line');
       if (!open) {

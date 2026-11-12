@@ -34,3 +34,17 @@
   background: rgba(12, 16, 24, 0.82);
   text-shadow: none;
 }
+
+.hint-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 18px;
+  padding: 1px 3px;
+  box-sizing: border-box;
+}
+
+.hint-icon svg {
+  width: 14px;
+  height: 14px;
+}
