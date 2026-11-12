@@ -1,6 +1,7 @@
 import type { ZoneEncounter, ZoneVoid } from '../content/story-types.ts';
 import type { ItemSlot } from '../content/types.ts';
-import { generateItem, slotOf } from '../items.ts';
+import { slotOf } from '../items.ts';
+import { makeItem } from './ledger.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, dot, length, normalize } from '../math.ts';
 import { allHold } from './conditions.ts';
@@ -28,9 +29,8 @@ function layItem(world: World, met: ZoneEncounter, state: EncounterState, base: 
     return;
   }
   const commonRarity: string | null = world.content.rarities[0]?.id ?? null;
-  const item: ItemInstance | null = generateItem(world.content, world.rng, world.nextItemUid, 1, base, commonRarity);
+  const item: ItemInstance | null = makeItem(world, 1, base, commonRarity, { kind: 'find', find: met.id, zone: world.zone.id });
   if (item === null) return;
-  world.nextItemUid += 1;
   const ground: GroundItem = { id: world.nextId, pos: { x: pos.x, z: pos.z }, from: { x: pos.x, z: pos.z }, content: { kind: 'item', item }, age: 0, kept: false, find: met.id };
   world.nextId += 1;
   world.ground.push(ground);

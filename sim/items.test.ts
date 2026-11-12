@@ -98,7 +98,7 @@ void test('item level scales the implicit modifiers and rarity does not', (): vo
 });
 
 void test('the item name takes one word from its first line in the fixed order', (): void => {
-  const plain: ItemInstance = { uid: 1, base: 'rusted_blade', rarity: 'common', level: 1, affixes: [] };
+  const plain: ItemInstance = { uid: 1, base: 'rusted_blade', rarity: 'common', level: 1, affixes: [], ledger: null };
   assert.equal(itemName(content, plain), 'Rusted Blade');
   const one: ItemInstance = { ...plain, rarity: 'magic', affixes: [{ affix: 'brimming', value: 9 }] };
   assert.equal(itemName(content, one), 'Brimming Rusted Blade');
@@ -108,7 +108,7 @@ void test('the item name takes one word from its first line in the fixed order',
 });
 
 void test('item lines put the damage range first, then every stat in the fixed order', (): void => {
-  const item: ItemInstance = { uid: 1, base: 'stormsteel_sword', rarity: 'rare', level: 1, affixes: [{ affix: 'brimming', value: 8 }, { affix: 'keen', value: 0.03 }, { affix: 'honed', value: 0.07 }] };
+  const item: ItemInstance = { uid: 1, base: 'stormsteel_sword', rarity: 'rare', level: 1, affixes: [{ affix: 'brimming', value: 8 }, { affix: 'keen', value: 0.03 }, { affix: 'honed', value: 0.07 }], ledger: null };
   const lines: ItemLine[] = itemLines(content, item);
   assert.deepEqual(
     lines.map((line: ItemLine): string => line.text),
@@ -254,6 +254,6 @@ void test('a Legendary roll with no powered base in reach comes out as the top p
 });
 
 void test('a Legendary keeps its own name whatever lines it rolled', (): void => {
-  const mill: ItemInstance = { uid: 1, base: 'the_millwheel', rarity: 'stormtouched', level: 9, affixes: [{ affix: 'honed', value: 0.2 }] };
+  const mill: ItemInstance = { uid: 1, base: 'the_millwheel', rarity: 'stormtouched', level: 9, affixes: [{ affix: 'honed', value: 0.2 }], ledger: null };
   assert.equal(itemName(content, mill), 'The Millwheel');
 });

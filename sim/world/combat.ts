@@ -77,7 +77,7 @@ function rollLoot(world: World, monster: MonsterState): void {
     dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, Math.round(world.rng.int(loot.goldMin, loot.goldMax) * scale)) });
   }
   if (world.rng.chance(loot.itemChance)) {
-    const item: ItemInstance | null = rollDrop(world, Math.max(monster.level, world.player.level), null);
+    const item: ItemInstance | null = rollDrop(world, Math.max(monster.level, world.player.level), null, { kind: 'monster', monster: monster.def.id, zone: world.zone.id });
     if (item === null) return;
     dropOnGround(world, monster.pos, { kind: 'item', item });
   }
