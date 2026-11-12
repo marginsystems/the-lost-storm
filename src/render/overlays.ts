@@ -13,8 +13,8 @@ import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import { createLootTip } from './loot-tip.ts';
 import type { LootTip, TipCheck } from './loot-tip.ts';
-import { anchorInView, keepBelowTop, keepInside } from './label-edge.ts';
-import type { ViewSize } from './label-edge.ts';
+import { anchorInView, placeTag } from './label-edge.ts';
+import type { ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
 import { clearOfRects, stackLabels } from './label-stack.ts';
 import type { ScreenRect } from './label-stack.ts';
 import type { LabelBox } from './label-stack.ts';
@@ -30,13 +30,15 @@ export const OVERLAYS = {
   labelWidth: 90,
   labelShownRank: 1,
   findLabel: 'Pick up',
+  arrowFloor: 0.001,
+  arrowGap: 1,
   altKey: 'Alt',
   numberHeight: 0.75,
   exitLift: 2.6,
   npcLift: 0.5,
   npcLeave: 0.52,
   npcHudGap: 8,
-  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.hud-flask', '.hud-xp', '.tc-btn', '.tc-stick'],
+  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.hud-flask', '.hud-xp', '.tc-btn', '.tc-stick', '.tc-menu', '.minimap-corner', '.hud-quests', '.hud-target.visible', '.hud-hint.visible', '.hud > .hud-banners'],
   hudReadSeconds: 0.25,
   waypointId: 'waypoint',
   waypointName: 'Waypoint',
@@ -181,9 +183,11 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     const element: HTMLDivElement = document.createElement('div');
     element.className = 'loot-label';
     const inner: HTMLSpanElement = document.createElement('span');
+    const arrow: HTMLElement = document.createElement('i');
+    arrow.className = 'loot-arrow';
     inner.textContent = ground.find === null ? itemName(world.content, ground.content.item) : OVERLAYS.findLabel;
     inner.style.color = rarityOf(world.content, ground.content.item).color;
-    element.append(inner);
+    element.append(inner, arrow);
     element.addEventListener('pointerdown', (event: PointerEvent): void => {
       event.preventDefault();
       event.stopPropagation();
@@ -444,6 +448,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       });
       for (const ground of world.ground) labelFor(world, ground);
       const boxes: LabelBox[] = [];
+      const items: Map<number, ItemPoint> = new Map<number, ItemPoint>();
+      const moved: Set<number> = new Set<number>();
       for (const [id, label] of labels) {
         if (label.leaving >= 0) {
           label.leaving -= dt;
@@ -468,15 +474,28 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           label.height = inner.offsetHeight;
         }
         camera.project(label.ground.pos.x, OVERLAYS.labelLift, label.ground.pos.z, point);
-        point.set(keepInside(point.x, label.width, view), keepBelowTop(point.y, label.height, view));
-        if (shown) boxes.push({ id, x: point.x, y: point.y, width: label.width, height: label.height });
+        if (shown) {
+          const first: TagPlace = placeTag(point.x, point.y, label.width, label.height, view, hudRects);
+          items.set(id, { x: point.x, y: point.y });
+          if (first.away) moved.add(id);
+          boxes.push({ id, x: first.x, y: first.y, width: label.width, height: label.height });
+        }
         else place(label.element, point);
       }
       const lifts: Map<number, number> = stackLabels(boxes, OVERLAYS.labelGap);
       for (const box of boxes) {
         const label: LootLabel | undefined = labels.get(box.id);
         if (label === undefined) continue;
-        point.set(box.x, box.y + (lifts.get(box.id) ?? 0));
+        const spot: TagPlace = placeTag(box.x, box.y + (lifts.get(box.id) ?? 0), box.width, box.height, view, hudRects, items.get(box.id));
+        const away: boolean = spot.away || moved.has(box.id);
+        label.element.classList.toggle('away', away);
+        if (away) {
+          const reach: number = Math.min(box.width / 2 / Math.max(OVERLAYS.arrowFloor, Math.abs(Math.cos(spot.turn))), box.height / 2 / Math.max(OVERLAYS.arrowFloor, Math.abs(Math.sin(spot.turn))));
+          label.element.style.setProperty('--tag-turn', `${spot.turn.toFixed(3)}rad`);
+          label.element.style.setProperty('--tag-reach', `${(reach + OVERLAYS.arrowGap).toFixed(1)}px`);
+          label.element.style.setProperty('--tag-mid', `${(-box.height / 2).toFixed(1)}px`);
+        }
+        point.set(spot.x, spot.y);
         place(label.element, point);
       }
 

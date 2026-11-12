@@ -504,6 +504,32 @@ body {
   scale: 1.06;
 }
 
+.loot-arrow {
+  position: absolute;
+  left: 0;
+  top: var(--tag-mid, -10px);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+  rotate: var(--tag-turn, 0rad);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.loot-arrow::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--tag-reach, 40px));
+  top: -4px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid rgba(8, 10, 16, 0.8);
+}
+
+.loot-label.away .loot-arrow {
+  opacity: 1;
+}
+
 .loot-label.taken span {
   animation: loot-out var(--spring-snappy-ms) var(--spring-snappy) both;
 }
