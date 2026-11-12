@@ -2,6 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script>
+      (function () {
+        var quiet = function () {};
+        var guard = function (event) {
+          var transition = event.viewTransition;
+          if (!transition) return;
+          ['ready', 'finished', 'updateCallbackDone'].forEach(function (key) {
+            var promise = transition[key];
+            if (promise && typeof promise.catch === 'function') promise.catch(quiet);
+          });
+          if (document.visibilityState === 'hidden' && typeof transition.skipTransition === 'function') transition.skipTransition();
+        };
+        window.addEventListener('pageswap', guard);
+        window.addEventListener('pagereveal', guard);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>The Lost Storm · Free action RPG in your browser</title>
     <meta name="description" content="A free hack-and-slash action RPG that runs in your browser. Early alpha. No download, no account needed." />

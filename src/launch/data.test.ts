@@ -31,3 +31,17 @@ void test('every milestone zone is a zone the world loads', (): void => {
   const zones: Content['zones'] = loadContent().zones;
   for (const milestone of ALPHA_RULES.milestones) if (milestone.kind === 'zone') assert.ok(zones.has(milestone.zone), `no zone ${milestone.zone}`);
 });
+
+void test('every page quiets a view transition the browser abandons before any stylesheet loads', (): void => {
+  const guards: string[] = [];
+  for (const page of ['index.html', 'play/index.html']) {
+    const html: string = readFileSync(page, 'utf8');
+    const guard: RegExpMatchArray | null = html.match(/<script>(?:(?!<\/script>)[\s\S])*pagereveal(?:(?!<\/script>)[\s\S])*<\/script>/);
+    assert.ok(guard !== null, `${page} has no view transition guard`);
+    const at: number = guard.index ?? -1;
+    assert.ok(at >= 0 && at < html.indexOf('rel="stylesheet"'), `${page} guards after a stylesheet`);
+    for (const name of ['pageswap', 'pagereveal', "'ready'", "'finished'", "'updateCallbackDone'", 'skipTransition', "visibilityState === 'hidden'"]) assert.ok(guard[0].includes(name), `${page} guard misses ${name}`);
+    guards.push(guard[0]);
+  }
+  assert.equal(guards[0], guards[1]);
+});
