@@ -88,6 +88,31 @@ function footprint(path: string, scale: number): number {
   return wide;
 }
 
+function bareMaterials(path: string): string[] {
+  const file: Buffer = readFileSync(path);
+  const parsed: Fields = fields(JSON.parse(file.subarray(GLB.jsonStart, GLB.jsonStart + file.readUInt32LE(GLB.jsonLength)).toString('utf8')), path);
+  const raw: unknown = parsed['materials'];
+  const bare: string[] = [];
+  for (const entry of raw === undefined ? [] : items(raw, `${path}.materials`)) {
+    const material: Fields = fields(entry, path);
+    const pbr: unknown = material['pbrMetallicRoughness'];
+    const textured: boolean = pbr !== undefined && fields(pbr, path)['baseColorTexture'] !== undefined;
+    const glow: unknown = material['emissiveFactor'];
+    const glows: boolean = glow !== undefined && items(glow, `${path}.emissiveFactor`).some((part: unknown): boolean => typeof part === 'number' && part > 0);
+    if (!textured && !glows) bare.push(text(material, 'name', path));
+  }
+  return bare;
+}
+
+void test('every prop placed in a zone or a moment dresses each untextured material in a surface, so nothing draws as a flat colour', (): void => {
+  const placed: Set<string> = new Set<string>([...content.zones.values()].flatMap((zone: ZoneDef): string[] => zone.props.map((entry) => entry.prop)));
+  for (const def of content.moments.defs.values()) for (const entry of def.props) placed.add(entry.prop);
+  for (const id of placed) {
+    const prop = must(content.props.get(id), id);
+    for (const name of bareMaterials(`public/${prop.model}`)) assert.ok(prop.surfaces[name] !== undefined, `${id} leaves its ${name} material undressed`);
+  }
+});
+
 void test('every moment prop a metre or more across has a collider that covers it, so nobody stands on a rock pile', (): void => {
   const used: Set<string> = new Set<string>([...content.moments.defs.values()].flatMap((def) => def.props.map((placed) => placed.prop)));
   for (const id of used) {
