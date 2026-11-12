@@ -102,7 +102,7 @@ void test('projectiles sound when they spawn and when they run out, not when the
 void test('drops sound at the loot by rarity and pickups sound at the hero by kind', (): void => {
   const world: World = fresh();
   const gold: GroundItem = ground({ kind: 'gold', amount: 3 });
-  const rare: GroundItem = ground({ kind: 'item', item: { uid: 1, base: 'rusted_blade', rarity: 'rare', level: 1, affixes: [] } });
+  const rare: GroundItem = ground({ kind: 'item', item: { uid: 1, base: 'rusted_blade', rarity: 'rare', level: 1, affixes: [], ledger: null } });
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'drop', ground: gold })), ['coin_drop']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'drop', ground: rare })), ['item_drop_rare']);
   assert.deepEqual(cuesForEvent(audio, world, { type: 'drop', ground: rare })[0]?.position, rare.pos);

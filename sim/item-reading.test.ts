@@ -13,7 +13,7 @@ const content: Content = loadContent();
 const zone: ZoneDef = must([...content.zones.values()][0], 'zone');
 
 function item(base: string, rarity: string, affixes: ItemInstance['affixes'], level: number = 1): ItemInstance {
-  return { uid: 1, base, rarity, level, affixes };
+  return { uid: 1, base, rarity, level, affixes, ledger: null };
 }
 
 function texts(rows: readonly ReadingRow[]): string[] {

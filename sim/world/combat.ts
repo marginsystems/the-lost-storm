@@ -1,7 +1,7 @@
 import { PLAYER_SIDE } from '../content/combat-types.ts';
 import { attacksHeld } from './glitch-hold.ts';
 import type { SkillDef } from '../content/types.ts';
-import { generateItem } from '../items.ts';
+import { makeItem } from './ledger.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
 import { damageTakenScale, resolveSkill } from '../stats.ts';
@@ -77,9 +77,8 @@ function rollLoot(world: World, monster: MonsterState): void {
     dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, Math.round(world.rng.int(loot.goldMin, loot.goldMax) * scale)) });
   }
   if (world.rng.chance(loot.itemChance)) {
-    const item: ItemInstance | null = generateItem(world.content, world.rng, world.nextItemUid, Math.max(monster.level, world.player.level), null, null);
+    const item: ItemInstance | null = makeItem(world, Math.max(monster.level, world.player.level), null, null, { kind: 'monster', monster: monster.def.id, zone: world.zone.id });
     if (item === null) return;
-    world.nextItemUid += 1;
     dropOnGround(world, monster.pos, { kind: 'item', item });
   }
 }

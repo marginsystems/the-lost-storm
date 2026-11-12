@@ -465,3 +465,7 @@ body.touch .hud-panel > .panel-close,
 body.touch .atlas > .panel-close {
   display: none;
 }
+
+.tip-sub.tip-unverified {
+  opacity: 0.6;
+}
