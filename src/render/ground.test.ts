@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { ZoneDrift } from '../../sim/content/road-types.ts';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { OUTPOST_ZONE, SCENE_BASE } from '../../test/road-support.ts';
-import { GROUND, growAt } from './ground.ts';
+import { GROUND, growAt, occlusionAt } from './ground.ts';
 
 const DRIFT: ZoneDrift = { id: 'drift', column: 1, row: 1, columns: 1, rows: 1, period: 10, open: 0.5, offset: 0, fade: 1 };
 const STRIP: ZoneDef = { ...SCENE_BASE, tiles: ['   ', '.,.', '   '], walls: null };
@@ -25,4 +25,12 @@ void test('a walled zone never grows its floor cells', (): void => {
   const walled: ZoneDef = OUTPOST_ZONE;
   assert.equal(walled.walls === null, false);
   assert.deepEqual(growAt({ ...STRIP, walls: walled.walls }, 1, 1), { left: 0, top: 0, right: 0, bottom: 0 });
+});
+
+void test('the ground darkens under a blocking prop and is untouched beyond its reach', (): void => {
+  const rock = { x: 10, z: 10, radius: 2 };
+  assert.ok(Math.abs(occlusionAt([rock], 10, 10) - GROUND.propShade) < 1e-9);
+  assert.equal(occlusionAt([rock], 10 + 2 * GROUND.propReach + 0.1, 10), 1);
+  assert.ok(occlusionAt([rock], 11.5, 10) > GROUND.propShade);
+  assert.equal(occlusionAt([], 3, 3), 1);
 });

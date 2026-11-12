@@ -28,6 +28,14 @@ export function text(source: Fields, key: string, where: string): string {
   return value;
 }
 
+const HEX_COLOUR: RegExp = /^#[0-9a-f]{6}$/i;
+
+export function colour(source: Fields, key: string, where: string): string {
+  const value: string = text(source, key, where);
+  if (!HEX_COLOUR.test(value)) throw new ContentError(`${where}.${key}`, 'expected a #rrggbb colour');
+  return value;
+}
+
 export function nullableText(source: Fields, key: string, where: string): string | null {
   const value: unknown = source[key];
   if (value === null || value === undefined) return null;

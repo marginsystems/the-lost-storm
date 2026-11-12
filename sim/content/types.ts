@@ -326,6 +326,7 @@ export interface PropDef {
   readonly blockRadius: number;
   readonly light: PropLight | null;
   readonly surfaces: Readonly<Record<string, string>>;
+  readonly tint: string | null;
   readonly service: ServiceKind | null;
 }
 

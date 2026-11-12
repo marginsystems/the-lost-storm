@@ -11,7 +11,7 @@ import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, sk
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
-import { byId, choice, choiceList, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
+import { byId, choice, choiceList, colour, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
   AffixDef,
@@ -435,6 +435,7 @@ function prop(value: unknown, where: string): PropDef {
     blockRadius: numeric(source, 'blockRadius', where),
     light: propLight(source['light'], `${where}.light`),
     surfaces: dressing(source['surfaces'], `${where}.surfaces`),
+    tint: source['tint'] === undefined ? null : colour(source, 'tint', where),
     service: service(source, where),
   };
 }

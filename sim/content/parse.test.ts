@@ -558,6 +558,14 @@ void test('surfaces parse, and a floor, an outside or a prop dressed in an unkno
   assert.throws((): Content => parseContent({ ...shipped, surfaces: [{ ...cobble, metres: 0 }] }), ContentError);
 });
 
+void test('a prop may carry a tint colour, and a malformed one is rejected', (): void => {
+  const plain = { id: 'plain_rock', model: 'models/props/rock_set_1.glb', scale: 1, blockRadius: 0, light: null, surfaces: {} };
+  const parsed: Content = parseContent({ ...shipped, props: [...propDefs, plain, { ...plain, id: 'dark_rock', tint: '#4a4f58' }] });
+  assert.equal(must(parsed.props.get('plain_rock'), 'plain').tint, null);
+  assert.equal(must(parsed.props.get('dark_rock'), 'dark').tint, '#4a4f58');
+  assert.throws((): Content => parseContent({ ...shipped, props: [...propDefs, { ...plain, tint: 'dark' }] }), /tint/);
+});
+
 void test('a combo is data: its steps parse, and a combo without steps or with a wrong field is rejected', (): void => {
   const step = { animation: 'attack', windup: 0.2, recovery: 0.2, damageScale: 1.5, areaScale: 1.1, knockbackScale: 2, stagger: 0.4, shake: 0.3, hitStop: 0.05 };
   const parsed: Content = parseContent({ ...shipped, skills: [...skills, { ...extraSkill, combo: { window: 0.5, steps: [step] } }] });

@@ -1,5 +1,5 @@
 import type { FigureSize } from './figure-gauge.ts';
-import type { Object3D, Scene } from 'three';
+import type { Material, Object3D, Scene } from 'three';
 import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, PropDef, PropLight, ZoneDef, ZoneProp, ZoneWalls } from '../../sim/content/types.ts';
@@ -14,7 +14,7 @@ import { buildVoidView } from './void-view.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Ground } from './ground.ts';
-import { dressed, preloadSurfaces, releaseSurfaces } from './surfaces.ts';
+import { dressed, preloadSurfaces, releaseSurfaces, wetRoughness } from './surfaces.ts';
 import { zoneModels, zoneSurfaces } from './zone-assets.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
@@ -126,7 +126,17 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const sources: Source[] = [];
   const instances: InstancedMesh[] = [];
   const conditionals: Conditional[] = [];
+  const tintedMaterials: MeshStandardMaterial[] = [];
   let lightsVersion: number = 0;
+
+  const finish = (def: PropDef | undefined, material: Material): Material => {
+    if (def === undefined || def.tint === null || !(material instanceof MeshStandardMaterial)) return material;
+    const own: MeshStandardMaterial = material.clone();
+    own.color.multiply(new Color(def.tint));
+    own.roughness = wetRoughness(own.roughness, zone.weather.wet);
+    tintedMaterials.push(own);
+    return own;
+  };
 
   const place = (propId: string, x: number, y: number, z: number, yaw: number, castShadow: boolean): void => {
     const def: PropDef | undefined = content.props.get(propId);
@@ -185,7 +195,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       const geometry: unknown = object.geometry;
       const material: unknown = object.material;
       if (!(material instanceof MeshStandardMaterial) || !isGeometry(geometry)) return;
-      const instanced: InstancedMesh = new InstancedMesh(geometry, dressed(content, dress, material), list.length);
+      const instanced: InstancedMesh = new InstancedMesh(geometry, finish(content.props.get(propId), dressed(content, dress, material)), list.length);
       list.forEach((placement: Placement, index: number): void => {
         instanced.setMatrixAt(index, new Matrix4().multiplyMatrices(placement.matrix, object.matrixWorld));
       });
@@ -260,6 +270,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       group.removeFromParent();
       ground.dispose();
       for (const instanced of instances) instanced.dispose();
+      for (const material of tintedMaterials) material.dispose();
       for (const light of pool) light.dispose();
       for (const conditional of conditionals) {
         for (const material of conditional.materials) material.dispose();

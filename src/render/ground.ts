@@ -1,7 +1,7 @@
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshStandardMaterial } from 'three';
 import type { ZoneDrift } from '../../sim/content/road-types.ts';
 import { driftShown } from '../../sim/nav/drift.ts';
-import type { Content, SurfaceDef, ZoneDef } from '../../sim/content/types.ts';
+import type { Content, SurfaceDef, ZoneDef, ZoneProp } from '../../sim/content/types.ts';
 import { distanceToCell, floorCells, isFloorCell, outsideCells, tileAtCell } from '../../sim/nav/layout.ts';
 import type { FloorCell, OutsideCell } from '../../sim/nav/layout.ts';
 import { surfaceMaterial } from './surfaces.ts';
@@ -26,7 +26,29 @@ export const GROUND = {
   driftBedDepth: 0.03,
   openEdgeOverlap: 0.08,
   driftBedShade: 0.7,
+  propShade: 0.45,
+  propReach: 1.6,
 } as const;
+
+export interface Occluder {
+  readonly x: number;
+  readonly z: number;
+  readonly radius: number;
+}
+
+export function occlusionAt(occluders: readonly Occluder[], x: number, z: number): number {
+  let shade: number = 1;
+  for (const occluder of occluders) {
+    const reach: number = occluder.radius * GROUND.propReach;
+    const dx: number = x - occluder.x;
+    if (dx > reach || dx < -reach) continue;
+    const dz: number = z - occluder.z;
+    if (dz > reach || dz < -reach) continue;
+    const near: number = 1 - smooth(Math.hypot(dx, dz) / reach);
+    shade = Math.min(shade, 1 - (1 - GROUND.propShade) * near);
+  }
+  return shade;
+}
 
 interface Batch {
   readonly positions: number[];
@@ -124,15 +146,16 @@ function nearest(zone: ZoneDef, x: number, z: number, span: number, wanted: (col
   return best;
 }
 
-function shadeAt(zone: ZoneDef, x: number, z: number): number {
+function shadeAt(zone: ZoneDef, occluders: readonly Occluder[], x: number, z: number): number {
   const macro: number = 1 - GROUND.macroDepth * noise(x * GROUND.macroScale, z * GROUND.macroScale);
   const detail: number = 1 - GROUND.detailDepth * noise(x * GROUND.detailScale + 31.7, z * GROUND.detailScale + 11.3);
-  if (zone.walls === null) return macro * detail;
+  const occluded: number = occlusionAt(occluders, x, z);
+  if (zone.walls === null) return macro * detail * occluded;
   const toWall: number = nearest(zone, x, z, 1, (column: number, row: number): boolean => !isFloorCell(zone, column, row));
   const toFloor: number = nearest(zone, x, z, 1, (column: number, row: number): boolean => isFloorCell(zone, column, row));
   const edge: number = Math.max(toWall, toFloor);
   const wall: number = GROUND.wallShade + (1 - GROUND.wallShade) * smooth(edge / GROUND.wallReach);
-  return macro * detail * wall;
+  return macro * detail * wall * occluded;
 }
 
 function emit(batch: Batch, corners: readonly [Corner, Corner, Corner, Corner], y: number): void {
@@ -145,9 +168,9 @@ function emit(batch: Batch, corners: readonly [Corner, Corner, Corner, Corner], 
   batch.indices.push(base, base + 2, base + 1, base + 1, base + 2, base + 3);
 }
 
-function cover(zone: ZoneDef, batch: Batch, column: number, row: number, y: number, tone: number, alphaAt: ((x: number, z: number) => number) | null, grow: Grow = NO_GROW): void {
+function cover(zone: ZoneDef, occluders: readonly Occluder[], batch: Batch, column: number, row: number, y: number, tone: number, alphaAt: ((x: number, z: number) => number) | null, grow: Grow = NO_GROW): void {
   const step: number = zone.cellSize / GROUND.divisions;
-  const corner = (x: number, z: number): Corner => ({ x, z, shade: shadeAt(zone, x, z) * tone, alpha: alphaAt === null ? 1 : alphaAt(x, z) });
+  const corner = (x: number, z: number): Corner => ({ x, z, shade: shadeAt(zone, occluders, x, z) * tone, alpha: alphaAt === null ? 1 : alphaAt(x, z) });
   for (let j: number = 0; j < GROUND.divisions; j += 1) {
     for (let i: number = 0; i < GROUND.divisions; i += 1) {
       const x: number = column * zone.cellSize + i * step - (i === 0 ? grow.left : 0);
@@ -205,6 +228,10 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
   const overlay: Map<string, Batch> = new Map<string, Batch>();
   const floorY: number = zone.floorHeight;
   const zoneWet: number = zone.weather.wet;
+  const occluders: Occluder[] = zone.props.flatMap((placed: ZoneProp): Occluder[] => {
+    const radius: number = content.props.get(placed.prop)?.blockRadius ?? 0;
+    return radius > 0 && placed.when.length === 0 ? [{ x: placed.x, z: placed.z, radius }] : [];
+  });
 
   const drifting: Map<ZoneDrift, Map<string, Batch>> = new Map<ZoneDrift, Map<string, Batch>>();
   for (const cell of floorCells(zone)) {
@@ -215,19 +242,19 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
       const batches: Map<string, Batch> = drifting.get(drift) ?? new Map<string, Batch>();
       drifting.set(drift, batches);
       const grow: Grow = growAt(zone, cell.column, cell.row);
-      cover(zone, batchFor(batches, own.id), cell.column, cell.row, floorY, 1, null, grow);
+      cover(zone, occluders, batchFor(batches, own.id), cell.column, cell.row, floorY, 1, null, grow);
       const bed: string = zone.outside?.surface ?? own.id;
-      cover(zone, batchFor(solid, bed), cell.column, cell.row, floorY - GROUND.driftBedDepth, GROUND.driftBedShade, null, grow);
+      cover(zone, occluders, batchFor(solid, bed), cell.column, cell.row, floorY - GROUND.driftBedDepth, GROUND.driftBedShade, null, grow);
       continue;
     }
-    cover(zone, batchFor(solid, own.id), cell.column, cell.row, floorY, 1, null, growAt(zone, cell.column, cell.row));
+    cover(zone, occluders, batchFor(solid, own.id), cell.column, cell.row, floorY, 1, null, growAt(zone, cell.column, cell.row));
     for (const other of fringes(content, zone, cell, own)) {
       const alphaAt = (x: number, z: number): number => {
         const distance: number = nearest(zone, x, z, 1, (column: number, row: number): boolean => spillOf(content, zone, column, row)?.id === other.id);
         const ragged: number = (noise(x * GROUND.fringeNoiseScale + 7.3, z * GROUND.fringeNoiseScale + 3.1) - 0.5) * GROUND.fringeNoise;
         return smooth(1 - distance / GROUND.fringeReach + ragged);
       };
-      cover(zone, batchFor(overlay, other.id), cell.column, cell.row, floorY + GROUND.overlayLift, 1, alphaAt);
+      cover(zone, occluders, batchFor(overlay, other.id), cell.column, cell.row, floorY + GROUND.overlayLift, 1, alphaAt);
     }
   }
 
@@ -240,7 +267,7 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
       return smooth(1 - distance / reach);
     };
     const cells: OutsideCell[] = outsideCells(zone, outside.reach);
-    for (const cell of cells) cover(zone, batchFor(overlay, outside.surface), cell.column, cell.row, floorY + GROUND.outsideLift, GROUND.outsideShade, alphaAt);
+    for (const cell of cells) cover(zone, occluders, batchFor(overlay, outside.surface), cell.column, cell.row, floorY + GROUND.outsideLift, GROUND.outsideShade, alphaAt);
   }
 
   const meshes: Mesh[] = [];
