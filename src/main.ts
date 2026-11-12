@@ -362,7 +362,7 @@ async function start(): Promise<void> {
   const objectiveMarker: ObjectiveMarker = createObjectiveMarker(stage.scene, camera, element('hud', HTMLDivElement));
   const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby, { isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'ladder', overlays: overlayManager });
   const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
-  const input: Input = createInput(canvas, world, camera, hud, gameSettings, {
+  const input: Input = createInput(canvas, window, world, camera, hud, gameSettings, {
     heightOf: (id: number): number => actors.heightOf(id),
     boundsOf: (id: number, out: Box3): boolean => actors.boundsOf(id, out),
     labelHover: (): number | null => overlays.labelHover(),

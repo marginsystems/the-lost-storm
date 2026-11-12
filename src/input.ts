@@ -49,7 +49,22 @@ export interface Input {
   readonly look: Vec2 | null;
 }
 
-export function createInput(canvas: HTMLCanvasElement, world: World, camera: IsoCamera, hud: Hud, settings: SettingsStore, hooks: InputHooks): Input {
+export interface InputSurface {
+  readonly addEventListener: HTMLCanvasElement['addEventListener'];
+  getBoundingClientRect(): DOMRect;
+  setPointerCapture(pointerId: number): void;
+  readonly style: { cursor: string };
+}
+
+export interface KeySource {
+  readonly addEventListener: Window['addEventListener'];
+}
+
+export type InputCamera = Pick<IsoCamera, 'groundPoint' | 'project' | 'rayDistanceTo' | 'zoomBy'>;
+
+export type InputHud = Pick<Hud, 'isPointerOverUi' | 'closePanels' | 'togglePanel' | 'requestMap'>;
+
+export function createInput(canvas: InputSurface, windowEvents: KeySource, world: World, camera: InputCamera, hud: InputHud, settings: SettingsStore, hooks: InputHooks): Input {
   const pointer: Vector2 = new Vector2(0, 0);
   const bottom: Vector3 = new Vector3();
   const box: Box3 = new Box3();
@@ -118,7 +133,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     },
     { passive: false },
   );
-  window.addEventListener('keydown', (event: KeyboardEvent): void => {
+  windowEvents.addEventListener('keydown', (event: KeyboardEvent): void => {
     shift = event.shiftKey;
     if (event.repeat) return;
     const action: ActionId | null = settings.keys().actionOf(event.code);
@@ -138,11 +153,11 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     }
     else press(event.code);
   });
-  window.addEventListener('keyup', (event: KeyboardEvent): void => {
+  windowEvents.addEventListener('keyup', (event: KeyboardEvent): void => {
     shift = event.shiftKey;
     lift(event.code);
   });
-  window.addEventListener('blur', (): void => {
+  windowEvents.addEventListener('blur', (): void => {
     for (const binding of held) lifted.push(binding);
     held.clear();
     shift = false;
