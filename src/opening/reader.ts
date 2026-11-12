@@ -1,4 +1,5 @@
 import type { BookDef, PageDef } from '../../sim/content/story-types.ts';
+import { promptText, use } from '../hud/prompts.ts';
 import readerCss from './reader.css?inline';
 
 export const READER = {
@@ -6,8 +7,7 @@ export const READER = {
   hintDelayMs: 2800,
   leaveMs: 520,
   nameSlot: '{name}',
-  hint: 'Click to close',
-  touchHint: 'Tap to close',
+  hint: 'close',
 } as const;
 
 export interface ReaderPage {
@@ -61,7 +61,7 @@ export function createReader(root: HTMLElement, touch: boolean): Reader {
         for (const text of entry.page.lines) line(sheet, 'reader-line', text);
         addresses.push(line(sheet, 'reader-address', addressLine(entry.page, entry.name)));
       }
-      const hint: HTMLParagraphElement = line(sheet, 'reader-hint', touch ? READER.touchHint : READER.hint);
+      const hint: HTMLParagraphElement = line(sheet, 'reader-hint', promptText(touch, use(READER.hint)));
       root.append(veil);
       current = veil;
       const timers: number[] = [

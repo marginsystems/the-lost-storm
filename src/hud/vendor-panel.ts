@@ -6,6 +6,7 @@ import { el, label, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
 import type { ItemCell } from './item-cell.ts';
 import { createItemCell, showItem } from './item-cell.ts';
+import { promptText, use } from './prompts.ts';
 
 interface PricedCell {
   readonly view: ItemCell;
@@ -13,7 +14,7 @@ interface PricedCell {
 }
 
 function pricedCell(context: HudContext, parent: HTMLElement, verb: string, priceOf: (item: ItemInstance) => number, onClick: () => void): PricedCell {
-  const view: ItemCell = createItemCell(context, parent, (item: ItemInstance): string => `Click to ${verb} for ${priceOf(item)} gold`);
+  const view: ItemCell = createItemCell(context, parent, (item: ItemInstance): string => promptText(context.api.touch, use(`${verb} for ${priceOf(item)} gold`)));
   const price: HTMLDivElement = el('div', 'cell-price', view.cell);
   view.cell.addEventListener('click', (): void => {
     if (view.current === null) return;

@@ -6,7 +6,7 @@ import { el, label, setText } from './dom.ts';
 const MOUSE_BUTTONS: ReadonlyMap<number, string> = new Map<number, string>([[2, BINDING.rightMouse]]);
 
 const COPY = {
-  idle: 'Click an action, then press the new key. Esc cancels.',
+  idle: 'Pick an action, then press the new key. Esc cancels.',
   waiting: 'Press a key for',
 } as const;
 

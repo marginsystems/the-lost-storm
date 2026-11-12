@@ -8,10 +8,11 @@ import { el, label, retrigger } from './dom.ts';
 import { setPicture } from './item-picture.ts';
 import { itemTooltip } from './item-tooltip.ts';
 import { attachTooltip } from './tooltip.ts';
+import { promptText, use } from './prompts.ts';
 import { inventoryCommand, inventoryHint } from './trade-actions.ts';
 
 const INVENTORY = {
-  hintEquipped: 'Click to unequip',
+  hintEquipped: 'unequip',
 } as const;
 
 const SLOT_TITLES: Readonly<Record<ItemSlot, string>> = {
@@ -76,7 +77,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
     label('equip-name', SLOT_TITLES[slot], holder);
     equipCells.set(slot, view);
     attachTooltip(context.tooltip, view.cell, (): HTMLElement | null =>
-      view.current === null ? null : itemTooltip(context.api, view.current, null, INVENTORY.hintEquipped),
+      view.current === null ? null : itemTooltip(context.api, view.current, null, promptText(context.api.touch, use(INVENTORY.hintEquipped))),
     );
     view.cell.addEventListener('click', (): void => {
       if (view.current === null) return;
@@ -95,7 +96,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       const content = context.api.world.content;
       const slot: ItemSlot | null = slotOf(content, item);
       const equipped: ItemInstance | null = slot === null ? null : context.api.world.player.equipped[slot];
-      return itemTooltip(context.api, item, equipped, inventoryHint(context.api.world, item));
+      return itemTooltip(context.api, item, equipped, inventoryHint(context.api.world, item, context.api.touch));
     });
     view.cell.addEventListener('click', (event: MouseEvent): void => {
       if (view.current === null) return;

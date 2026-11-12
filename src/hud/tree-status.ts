@@ -1,5 +1,6 @@
 import type { Content, RequireMode, SkillTreeNodeDef } from '../../sim/content/types.ts';
 import { canAllocate, findNode, requirementsMet } from '../../sim/progression.ts';
+import { promptText, use } from './prompts.ts';
 
 export const TREE_NODE_COST: number = 1;
 
@@ -37,11 +38,12 @@ export function costLine(): string {
 
 const SETTLED_LINES: Readonly<Record<Exclude<TreeNodeStatus['kind'], 'locked'>, string>> = {
   allocated: 'Allocated',
-  available: 'Click to allocate',
+  available: 'allocate',
   no_points: 'No skill points to spend',
 };
 
-export function statusLine(status: TreeNodeStatus): string {
+export function statusLine(status: TreeNodeStatus, touch: boolean): string {
   if (status.kind === 'locked') return `Locked: allocate ${joined(status.missing, status.mode)} first`;
+  if (status.kind === 'available') return promptText(touch, use(SETTLED_LINES.available));
   return SETTLED_LINES[status.kind];
 }

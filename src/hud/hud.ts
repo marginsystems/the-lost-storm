@@ -60,20 +60,14 @@ import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
 import { createTreePanel } from './tree-panel.ts';
 import { applyCover, closedBy, coverOf, HUD_PANELS } from './panel-cover.ts';
+import { openWith, promptText, use } from './prompts.ts';
 import tradeCss from './trade.css?inline';
 import { createTradeHud } from './trade-hud.ts';
 import type { TradeHud } from './trade-hud.ts';
 import volumeCss from './volume.css?inline';
 import { createVolumeButton } from './volume-panel.ts';
 
-const GROUND_HINT = {
-  desk: 'Click to pick up',
-  touch: 'Tap to pick up',
-} as const;
-
-const WAYPOINT_HINT = {
-  touch: 'Tap the map at the top to travel between waypoints',
-} as const;
+const GROUND_HINT: string = 'pick up';
 
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
@@ -266,7 +260,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'triggered':
             break;
           case 'waypoint_unlocked':
-            banners.show('Waypoint', api.touch ? WAYPOINT_HINT.touch : `Open the map with ${keyOf('map')} to travel between waypoints`, 'checkpoint');
+            banners.show('Waypoint', `${openWith(api.touch, 'map', keyOf('map'))} to travel between waypoints`, 'checkpoint');
             break;
           case 'exit_locked':
             notices.say(event.hint);
@@ -330,7 +324,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     showGroundItem(item: ItemInstance, x: number, y: number): void {
       const slot: ItemSlot | null = slotOf(api.world.content, item);
       const equipped: ItemInstance | null = slot === null ? null : api.world.player.equipped[slot];
-      tooltip.show(itemTooltip(api, item, equipped, api.touch ? GROUND_HINT.touch : GROUND_HINT.desk), x, y);
+      tooltip.show(itemTooltip(api, item, equipped, promptText(api.touch, use(GROUND_HINT))), x, y);
     },
     moveGroundItem(x: number, y: number): void {
       tooltip.move(x, y);

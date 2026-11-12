@@ -2,17 +2,15 @@ import type { NpcDef } from '../../sim/content/types.ts';
 import type { WorldEvent } from '../../sim/world/types.ts';
 import type { HudContext } from './context.ts';
 import { el, retrigger, setText } from './dom.ts';
+import { promptText, use } from './prompts.ts';
 
 const DIALOGUE_BOX = {
-  nextHint: 'Click to continue',
-  lastHint: 'Click to close',
-  touchNextHint: 'Tap to continue',
-  touchLastHint: 'Tap to close',
+  next: 'continue',
+  last: 'close',
 } as const;
 
 export function dialogueHint(last: boolean, touch: boolean): string {
-  if (touch) return last ? DIALOGUE_BOX.touchLastHint : DIALOGUE_BOX.touchNextHint;
-  return last ? DIALOGUE_BOX.lastHint : DIALOGUE_BOX.nextHint;
+  return promptText(touch, use(last ? DIALOGUE_BOX.last : DIALOGUE_BOX.next));
 }
 
 type LineEvent = Extract<WorldEvent, { readonly type: 'dialogue_line' }>;

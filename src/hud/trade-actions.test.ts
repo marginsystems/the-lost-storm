@@ -7,7 +7,7 @@ import { generateItem } from '../../sim/items.ts';
 import { createRng } from '../../sim/rng.ts';
 import { sellPrice } from '../../sim/world/trade.ts';
 import type { ItemInstance, World } from '../../sim/world/types.ts';
-import { INVENTORY_HINTS, inventoryCommand, inventoryHint } from './trade-actions.ts';
+import { inventoryCommand, inventoryHint } from './trade-actions.ts';
 
 const content: Content = loadContent();
 
@@ -17,11 +17,12 @@ void test('an inventory click equips or drops when nothing is open, sells at a v
   assert.deepEqual(inventoryCommand(world, 4, 'click'), { type: 'equip', inventoryIndex: 4 });
   assert.deepEqual(inventoryCommand(world, 4, 'ctrl'), { type: 'equip', inventoryIndex: 4 });
   assert.deepEqual(inventoryCommand(world, 4, 'right'), { type: 'drop', inventoryIndex: 4 });
-  assert.equal(inventoryHint(world, item), INVENTORY_HINTS.equip);
+  assert.equal(inventoryHint(world, item, false), 'Click to equip · Right click to drop');
+  assert.equal(inventoryHint(world, item, true), 'Tap to equip');
   world.service = { kind: 'vendor', owner: 'any', anchor: { x: 0, z: 0 } };
   for (const click of ['click', 'ctrl', 'right'] as const) assert.deepEqual(inventoryCommand(world, 1, click), { type: 'trade', action: { type: 'sell', inventoryIndex: 1 } });
-  assert.ok(inventoryHint(world, item).includes(String(sellPrice(content, item))));
+  assert.ok(inventoryHint(world, item, false).includes(String(sellPrice(content, item))));
   world.service = { kind: 'stash', owner: 'any', anchor: { x: 0, z: 0 } };
   for (const click of ['click', 'ctrl', 'right'] as const) assert.deepEqual(inventoryCommand(world, 2, click), { type: 'trade', action: { type: 'stash', inventoryIndex: 2 } });
-  assert.equal(inventoryHint(world, item), INVENTORY_HINTS.stash);
+  assert.equal(inventoryHint(world, item, false), 'Click to stash');
 });
