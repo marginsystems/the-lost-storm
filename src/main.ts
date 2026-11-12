@@ -107,9 +107,11 @@ import type { Rainfall } from './render/rainfall.ts';
 import { createRainfall } from './render/rainfall.ts';
 import type { ZoneMarkers } from './render/zone-markers.ts';
 import { createZoneMarkers } from './render/zone-markers.ts';
+import type { LightBudget, LightSlots } from './render/light-slots.ts';
+import { createLightSlots, fillersFor } from './render/light-slots.ts';
 import { dressed } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
-import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-view.ts';
+import { buildZoneView, preloadZones, releaseOtherZones, zoneLightPool } from './render/zone-view.ts';
 import { neighbourZones } from './render/zone-assets.ts';
 import { createBrowserTimers } from './browser-timers.ts';
 import { readServerUrl } from './backend/server-url.ts';
@@ -214,6 +216,9 @@ async function start(): Promise<void> {
   let thumbnails: ItemThumbnails = new Map<string, string>();
   let zoneView: ZoneView = firstView;
   let markers: ZoneMarkers = createZoneMarkers(stage.scene, world.zone);
+  const lightSlots: LightSlots = createLightSlots(stage.scene);
+  const lightBudget = (): LightBudget => ({ zone: Math.min(zoneLightPool(), gameSettings.preset().lights), markers: mobile.quality.tier.markerLights });
+  const fillLightSlots = (): void => lightSlots.fill(fillersFor(world.zone, content.zones.values(), lightBudget()));
   stage.setAmbience(world.zone.ambience);
   placeLine.show(world.zone.name);
 
@@ -353,6 +358,7 @@ async function start(): Promise<void> {
     stage.applyGraphics(preset);
     particles.setDensity(preset.effectsDensity);
     zoneView.setLightBudget(preset.lights);
+    fillLightSlots();
   };
   gameSettings.subscribe(applyGraphics);
   applyGraphics();
@@ -423,6 +429,7 @@ async function start(): Promise<void> {
     zoneView.dispose();
     zoneView = next;
     zoneView.setLightBudget(gameSettings.preset().lights);
+    fillLightSlots();
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
   };
@@ -447,6 +454,7 @@ async function start(): Promise<void> {
     stage.setAmbience(world.zone.ambience);
     applyWeather(world.zone);
     zoneView.setLightBudget(gameSettings.preset().lights);
+    fillLightSlots();
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
     await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs);

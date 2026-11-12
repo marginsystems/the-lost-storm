@@ -75,6 +75,10 @@ export interface ZoneView {
 
 const DEGREES: number = Math.PI / 180;
 
+export function zoneLightPool(): number {
+  return Math.min(ZONE_VIEW.lightBudget, renderBudget().zoneLights);
+}
+
 function isGeometry(value: unknown): value is BufferGeometry {
   return value instanceof BufferGeometry;
 }
@@ -174,7 +178,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   }
 
   const pool: PointLight[] = [];
-  for (let index: number = 0; index < Math.min(ZONE_VIEW.lightBudget, renderBudget().zoneLights, sources.length); index += 1) {
+  for (let index: number = 0; index < zoneLightPool(); index += 1) {
     const light: PointLight = new PointLight(0xffffff, 0, 1, ZONE_VIEW.lightDecay);
     pool.push(light);
     group.add(light);
