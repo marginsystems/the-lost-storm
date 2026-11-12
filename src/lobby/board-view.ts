@@ -11,6 +11,7 @@ interface RowParts {
   readonly rank: HTMLSpanElement;
   readonly dot: HTMLSpanElement;
   readonly name: HTMLSpanElement;
+  readonly place: HTMLSpanElement;
   readonly level: HTMLSpanElement;
 }
 
@@ -21,13 +22,15 @@ function makeRow(list: HTMLOListElement): RowParts {
   const rank: HTMLSpanElement = el('span', 'board-rank', item);
   const dot: HTMLSpanElement = el('span', 'board-dot', item);
   const name: HTMLSpanElement = el('span', 'board-name', item);
+  const place: HTMLSpanElement = el('span', 'board-place', item);
   const level: HTMLSpanElement = el('span', 'board-level', item);
-  return { item, rank, dot, name, level };
+  return { item, rank, dot, name, place, level };
 }
 
 function fill(parts: RowParts, row: BoardRow, you: string | null, animate: boolean): void {
   setText(parts.rank, rankText(row.rank), animate);
   setText(parts.name, row.name, false);
+  setText(parts.place, row.furthest, animate);
   setText(parts.level, String(row.level), animate);
   parts.item.title = `${row.name} · level ${row.level} · ${row.furthest}`;
   parts.dot.classList.toggle('on', row.online);

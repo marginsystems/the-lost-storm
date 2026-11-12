@@ -10,7 +10,25 @@
   display: none;
 }
 
-@media (max-width: 860px), (max-height: 520px) {
+@media (max-width: 860px) and (min-height: 521px) {
+  #title {
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .title-lobby {
+    width: min(320px, 100%);
+    height: auto;
+  }
+
+  .title-lobby .lobby-board > li:nth-child(n + 6),
+  .title-lobby .lobby-ticker,
+  .title-lobby .lobby-you {
+    display: none;
+  }
+}
+
+@media (max-height: 520px) {
   .title-lobby {
     display: none;
   }

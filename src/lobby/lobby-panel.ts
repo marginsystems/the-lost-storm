@@ -19,12 +19,12 @@ export interface LobbyPanelOptions {
   readonly ticker: boolean;
 }
 
-export const LOBBY_PANEL: { readonly tickerMs: number; readonly tickerLines: number; readonly swapMs: number; readonly unreachable: string; readonly quiet: string } = {
+export const LOBBY_PANEL: { readonly tickerMs: number; readonly tickerLines: number; readonly swapMs: number; readonly empty: string; readonly unreachable: string } = {
   tickerMs: 4200,
   tickerLines: 5,
   swapMs: 260,
+  empty: 'No one has woken yet.',
   unreachable: 'The ladder is out of reach right now.',
-  quiet: 'No one has levelled up yet.',
 };
 
 interface Ticker {
@@ -44,8 +44,9 @@ function createTicker(parent: HTMLElement): Ticker {
 
   const paint = (): void => {
     const note: LevelUpNote | undefined = notes[index % Math.max(1, notes.length)];
-    what.textContent = note === undefined ? LOBBY_PANEL.quiet : levelUpText(note);
+    what.textContent = note === undefined ? '' : levelUpText(note);
     when.textContent = note === undefined ? '' : agoText(note.minutesAgo);
+    box.classList.toggle('shown', note !== undefined);
     line.classList.remove('out');
   };
 
@@ -109,6 +110,9 @@ export function createLobbyPanel(parent: HTMLElement, options: LobbyPanelOptions
         return;
       }
       root.dataset['state'] = 'ready';
+      root.classList.toggle('empty', next.top.length === 0);
+      setText(note, LOBBY_PANEL.empty, false);
+      online.classList.toggle('shown', next.online > 0);
       setText(onlineCount, onlineText(next.online), true);
       online.title = charactersText(next.characters);
       board.render(next.top, next.you === null ? null : next.you.name);
