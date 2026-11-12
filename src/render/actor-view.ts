@@ -1,8 +1,9 @@
 import type { AnimationAction, AnimationClip } from 'three';
-import type { Box3 } from 'three';
-import { Color, LoopOnce, LoopRepeat } from 'three';
+import type { Box3, Mesh, Object3D } from 'three';
+import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial } from 'three';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { ActionClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
+import { CONTACT_SHADOW, contactShadow } from './contact-shadow.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -59,6 +60,7 @@ export interface ActorView {
   readonly rig: RigInstance;
   readonly height: number;
   sync(dt: number, actor: ActorPose, options: SyncOptions): void;
+  setShadowOpacity(amount: number): void;
   startAction(animation: string, windup: number, recovery: number): boolean;
   interrupt(): void;
   hit(color: Color, strength: number, stagger: boolean): void;
@@ -112,6 +114,8 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   const mixed: Color = new Color();
   rig.root.scale.setScalar(scale);
   rig.root.rotation.y = yaw;
+  const shadow: Mesh = contactShadow();
+  let ownShadow: MeshBasicMaterial | null = null;
   current.play();
 
   const play = (clip: AnimationClip, fade: number, speed: number, once: boolean, restart: boolean): void => {
@@ -181,6 +185,11 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       const squash: number = punch * ACTOR.punchSquash;
       const grow: number = 0.35 + 0.65 * options.rise;
       rig.root.scale.set(scale * grow * (1 + squash), scale * grow * (1 - squash), scale * grow * (1 + squash));
+      const parent: Object3D | null = rig.root.parent;
+      if (parent !== null && shadow.parent !== parent) parent.add(shadow);
+      shadow.position.set(rig.root.position.x, rig.root.position.y + CONTACT_SHADOW.lift, rig.root.position.z);
+      shadow.scale.setScalar(scale * grow);
+      shadow.visible = rig.root.visible && (ownShadow === null || ownShadow.opacity > 0);
       const hoverAmount: number = hover && !dead ? ACTOR.hoverGlow : 0;
       mixed.copy(hoverColor).lerp(flashColor, flash > 0 ? 1 : 0);
       rig.setFlash(mixed, Math.max(flash, hoverAmount));
@@ -236,7 +245,18 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     bounds(out: Box3): void {
       out.setFromObject(rig.root);
     },
+    setShadowOpacity(amount: number): void {
+      if (ownShadow === null) {
+        if (!(shadow.material instanceof MeshBasicMaterial)) return;
+        ownShadow = shadow.material.clone();
+        shadow.material = ownShadow;
+      }
+      ownShadow.opacity = CONTACT_SHADOW.opacity * Math.min(1, Math.max(0, amount));
+      shadow.visible = rig.root.visible && ownShadow.opacity > 0;
+    },
     dispose(): void {
+      ownShadow?.dispose();
+      shadow.removeFromParent();
       rig.root.removeFromParent();
       rig.dispose();
     },

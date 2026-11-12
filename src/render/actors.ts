@@ -121,6 +121,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     view.rig.setGear(monster.def.gear);
     dress(content, view.rig, monster.def.wear, null);
     view.rig.setOpacity(ACTORS.echoOpacity);
+    if (echo !== null) view.setShadowOpacity(ACTORS.echoOpacity);
     scene.add(view.rig.root);
     const entry: MonsterEntry = { view, spawnTime: Math.max(monster.spawnTime, 1e-3), echo };
     monsters.set(monster.id, entry);
@@ -171,6 +172,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         echo.age += dt;
         echo.ghost.dissolve.value = Math.min(1, echo.age / ACTORS.leaveTime);
         echo.entry.view.rig.setOpacity(ACTORS.echoOpacity * (1 - echo.ghost.dissolve.value));
+        echo.entry.view.setShadowOpacity(ACTORS.echoOpacity * (1 - echo.ghost.dissolve.value));
         if (echo.age < ACTORS.leaveTime) continue;
         echo.entry.view.dispose();
         leaving.splice(index, 1);
