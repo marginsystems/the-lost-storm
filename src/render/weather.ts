@@ -145,7 +145,7 @@ export function createWeather(random: () => number = Math.random): Weather {
         bestSample = sample;
       }
     }
-    flash = limiter.limit(bestSample.light, now, soft ? WEATHER.softPerSecond : LIGHTNING.deepPerSecond);
+    flash = limiter.limit(soft ? Math.min(bestSample.light, LIGHTNING.softPeak) : bestSample.light, now, soft ? WEATHER.softPerSecond : LIGHTNING.deepPerSecond);
     bolt = { ...bolt, shown: fork > WEATHER.forkShow ? Math.min(1, fork * 1.5) : 0 };
     if (best === null) {
       light = { ...DARK, dip };

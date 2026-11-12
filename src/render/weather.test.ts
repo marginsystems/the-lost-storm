@@ -182,3 +182,15 @@ void test('the limiter counts a rise from a shallow dip as a flash, so a strike 
   assert.equal(later, 0);
   assert.equal(limiter.limit(0.9, 2.01, 1), 0.9);
 });
+
+void test('turning on softened flashes in the middle of a strike calms that strike at once', (): void => {
+  const weather: Weather = createWeather(seeded(3));
+  weather.setLightning({ ...STORM, kinds: { sheet: 0, near: 1, fork: 0 } });
+  weather.update(1.008);
+  assert.ok(weather.flash > LIGHTNING.softPeak);
+  weather.setSoft(true);
+  for (let step: number = 0; step < 600; step += 1) {
+    weather.update(MS);
+    assert.ok(weather.flash <= LIGHTNING.softPeak + 1e-9);
+  }
+});

@@ -22,10 +22,11 @@ export const STAGE = {
   shadowSize: 2048,
   shadowExtent: 30,
   shadowFar: 90,
-  heroColor: 0xcfe2ff,
-  heroIntensity: 24,
+  heroColor: 0xe9e4dc,
+  heroIntensity: 14,
   heroDistance: 21,
-  heroHeight: 6,
+  heroHeight: 3.6,
+  heroToward: 2.4,
   bloomStrength: 0.62,
   bloomRadius: 0.42,
   bloomThreshold: 1.05,
@@ -37,6 +38,7 @@ export const STAGE = {
   flashFogNear: 50,
   flashFogFar: 200,
   rimStrength: 0.4,
+  rimMost: 0.65,
   rimFlash: 1.6,
   rimFalloff: 4,
   flashCool: 0xb3b6ff,
@@ -89,7 +91,7 @@ installGrade();
 export function rimFor(ambience: ZoneAmbience): Color {
   const background: Color = new Color(ambience.background);
   const darkness: number = 1 - Math.min(1, Math.max(0, background.r * 0.2126 + background.g * 0.7152 + background.b * 0.0722));
-  return new Color(ambience.keyColor).multiplyScalar(ambience.keyIntensity * STAGE.rimStrength * Math.pow(darkness, STAGE.rimFalloff));
+  return new Color(ambience.keyColor).multiplyScalar(Math.min(STAGE.rimMost, ambience.keyIntensity * STAGE.rimStrength * Math.pow(darkness, STAGE.rimFalloff)));
 }
 
 export interface Stage {
@@ -252,7 +254,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       const snappedZ: number = Math.round(z / texel) * texel;
       storm.target.position.set(snappedX, 0, snappedZ);
       placeStorm();
-      hero.position.set(x, STAGE.heroHeight, z);
+      hero.position.set(x + STAGE.heroToward * Math.SQRT1_2, STAGE.heroHeight, z + STAGE.heroToward * Math.SQRT1_2);
     },
     setFlash(light: SkyFlash): void {
       const amount: number = light.amount;

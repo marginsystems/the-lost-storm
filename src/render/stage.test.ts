@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ShaderChunk } from 'three';
-import { gradeShader, installGrade, rimFor } from './stage.ts';
+import { gradeShader, installGrade, rimFor, STAGE } from './stage.ts';
 import type { ZoneAmbience } from '../../sim/content/types.ts';
 
 const NIGHT: ZoneAmbience = { background: '#06080d', abyss: '#040508', fogNear: 20, fogFar: 70, skyColor: '#4a5c7c', groundColor: '#100d0b', skyIntensity: 1.1, keyColor: '#9fb3d6', keyIntensity: 0.7 };
@@ -25,4 +25,9 @@ void test('the grade is installed into the tone-mapping chunk on load, and insta
   const before: string = ShaderChunk.tonemapping_pars_fragment;
   installGrade();
   assert.equal(ShaderChunk.tonemapping_pars_fragment, before);
+});
+
+void test('a bright key never turns the rim into a white outline', (): void => {
+  const rim = rimFor({ ...NIGHT, keyColor: '#ffffff', keyIntensity: 8 });
+  assert.ok(Math.max(rim.r, rim.g, rim.b) <= STAGE.rimMost + 1e-9);
 });

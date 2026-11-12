@@ -43,7 +43,11 @@ uniform float uNear;
 uniform float uClear;
 varying float vEye;
 varying vec2 vUv;
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float hash(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
 float noise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
