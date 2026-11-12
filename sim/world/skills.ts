@@ -2,7 +2,7 @@ import type { SkillLeap } from '../content/combat-types.ts';
 import type { ComboStep, Delivery, ProjectileDelivery, SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot, facingOf, normalize, rotate } from '../math.ts';
-import { isSolid, isWalkable, moveWithCollision } from '../nav/grid.ts';
+import { isSolid, isWalkable, lineOfSight, moveWithCollision } from '../nav/grid.ts';
 import type { Offence } from './combat.ts';
 import { applyHit, offenceOf, targetsOf, teamOf } from './combat.ts';
 import { stepDash } from './dash.ts';
@@ -155,7 +155,7 @@ function resolveImpact(world: World, actor: Actor, action: ActionState): void {
 
 function land(world: World, actor: Actor, action: ActionState): void {
   const target: Vec2 | null = action.target;
-  if (target === null || !isWalkable(world.grid, target.x, target.z)) return;
+  if (target === null || !isWalkable(world.grid, target.x, target.z) || !lineOfSight(world.grid, actor.pos, target)) return;
   actor.pos.x = target.x;
   actor.pos.z = target.z;
   action.travelLeft = 0;

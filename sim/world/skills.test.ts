@@ -6,6 +6,7 @@ import { loadContent } from '../content/content.ts';
 import type { ComboStep, Content, SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
+import { cellIndex } from '../nav/grid.ts';
 import { chainedSkill, comboHits, startSkill } from './skills.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
@@ -148,4 +149,21 @@ void test('a leap toward a wall plans its landing short of the wall, and lands w
   assert.ok(landing.x > 0, `the landing stays on the floor (${landing.x.toFixed(2)})`);
   for (let step: number = 0; step < Math.round((pounce.windup + 0.05) / DT); step += 1) stepWorld(world, [], DT);
   assert.ok(distance(landing, ghoul.pos) < 0.01, `it landed at the mark (${distance(landing, ghoul.pos).toFixed(2)} away)`);
+});
+
+void test('a leap never lands through a wall raised across its path', (): void => {
+  const world: World = arena(9);
+  const ghoul: MonsterState = place(world, 'test_ghoul', { x: ARENA_CENTRE.x + 7, z: ARENA_CENTRE.z });
+  const pounce: SkillDef = must(world.content.skills.get('test_pounce'), 'pounce');
+  const from: Vec2 = { ...ghoul.pos };
+  startSkill(world, ghoul, pounce, { x: -6, z: 0 });
+  const landing: Vec2 = must(ghoul.action?.target, 'landing point');
+  const wallX: number = (from.x + landing.x) / 2;
+  for (let z: number = 0; z < world.grid.rows * world.grid.cellSize; z += world.grid.cellSize) {
+    const index: number = cellIndex(world.grid, wallX, z);
+    world.grid.solid[index] = 1;
+    world.grid.walkable[index] = 0;
+  }
+  for (let step: number = 0; step < Math.round((pounce.windup + 0.05) / DT); step += 1) stepWorld(world, [], DT);
+  assert.ok(ghoul.pos.x > wallX, `it stayed on its own side of the wall (${ghoul.pos.x.toFixed(2)} against ${wallX.toFixed(2)})`);
 });

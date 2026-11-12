@@ -200,6 +200,8 @@ def build(directory: str) -> None:
             box("brace", (0.56, 0.058, 0.06), 0.12, rust, 0.0, SHIELD_OFFSET),
             ball("boss", 0.11, 0.12, dark, 1.0, SHIELD_OFFSET * 1.4),
             rod("grip", 0.016, 0.016, 0.2, 0.0, leather),
+            box("strap_top", (0.034, SHIELD_OFFSET * 0.75, 0.03), 0.085, leather, 0.0, SHIELD_OFFSET * 0.36),
+            box("strap_bottom", (0.034, SHIELD_OFFSET * 0.75, 0.03), -0.085, leather, 0.0, SHIELD_OFFSET * 0.36),
         ],
         directory,
     )
