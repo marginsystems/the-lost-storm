@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { BoardRow, Leaderboard } from '../backend/api.ts';
-import { agoText, asksForName, charactersText, levelUpText, nameProblem, passedNames, tidyName } from './lobby-model.ts';
+import { agoText, asksForName, charactersText, CHOSEN_NAMES, chooseName, levelUpText, nameProblem, passedNames, spokenName, tidyName } from './lobby-model.ts';
 
 function row(rank: number, name: string, level: number): BoardRow {
   return { rank, name, level, furthest: 'The Waystation', online: false };
@@ -57,4 +57,19 @@ void test('times and counts read as short words', (): void => {
   assert.equal(charactersText(1), '1 character');
   assert.equal(charactersText(12), '12 characters');
   assert.equal(levelUpText({ name: 'Wren', level: 4, minutesAgo: 1 }), 'Wren reached level 4');
+});
+
+void test('choose for me picks a name the rules accept and never one already refused', (): void => {
+  for (const name of CHOSEN_NAMES) assert.equal(nameProblem(name), null);
+  assert.equal(chooseName((): number => 0, new Set<string>()), CHOSEN_NAMES[0]);
+  assert.equal(chooseName((): number => 0.9999, new Set<string>()), CHOSEN_NAMES.at(-1));
+  assert.equal(chooseName((): number => 0, new Set<string>([CHOSEN_NAMES[0] ?? ''])), CHOSEN_NAMES[1]);
+  assert.equal(chooseName((): number => 0.5, new Set<string>(CHOSEN_NAMES)), null);
+});
+
+void test('only a name the player chose is ever spoken', (): void => {
+  assert.equal(spokenName(board([row(1, 'Guest 4821', 1)], 'Guest 4821', false)), null);
+  assert.equal(spokenName(board([row(1, 'Tavin', 1)], 'Tavin', true)), 'Tavin');
+  assert.equal(spokenName(board([row(1, 'Ash', 3)], null)), null);
+  assert.equal(spokenName(null), null);
 });

@@ -53,6 +53,9 @@ import type { Lobby } from './lobby/compact.ts';
 import { mountGameBoard } from './lobby/game-board.ts';
 import type { GameBoard } from './lobby/game-board.ts';
 import { mountTitleLobby } from './lobby/title-lobby.ts';
+import { spokenName } from './lobby/lobby-model.ts';
+import { createNameStep } from './lobby/name-step.ts';
+import type { NameStep } from './lobby/name-step.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Leaderboard } from './backend/api.ts';
@@ -285,7 +288,7 @@ async function start(): Promise<void> {
   let heroName: string | null = null;
   const nameVoice: NameVoiceClient | null = createBrowserNameVoice(import.meta.env.VITE_SERVER_URL);
   lobby?.feed.subscribe((board: Leaderboard | null): void => {
-    if (board?.you) heroName = board.you.name;
+    heroName = spokenName(board);
   });
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
   statusLine.show('Raising the dead and the walls…');
@@ -437,7 +440,7 @@ async function start(): Promise<void> {
   const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, openMenu: (): void => {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
-  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, send, nameOf: (): string | null => heroName, fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), refreshName: (): void => {
+  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, send, nameOf: (): string | null => heroName, fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), refreshName: (): void => {
       if (lobby !== null) void lobby.feed.refresh(true);
     } });
   const glitches: GlitchView = createGlitchView({
@@ -658,11 +661,7 @@ async function start(): Promise<void> {
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = save === null;
   title.classList.add('ready');
-  enter.addEventListener('click', (): void => {
-    if (failed) {
-      window.location.reload();
-      return;
-    }
+  const begin = (): void => {
     title.classList.add('gone');
     launch.note('pressed_enter');
     playing = true;
@@ -671,6 +670,14 @@ async function start(): Promise<void> {
     audio.unlock();
     startZoneAmbience();
     preloadNearZones();
+  };
+  const nameStep: NameStep | null = lobby === null || save !== null ? null : createNameStep({ card: enter.parentElement ?? title, enter, lobby, random: Math.random, begin });
+  const press = async (): Promise<void> => {
+    if (nameStep === null || (await nameStep.enter())) begin();
+  };
+  enter.addEventListener('click', (): void => {
+    if (failed) window.location.reload();
+    else void press();
   });
   const startOver = async (): Promise<void> => {
     dirty = false;

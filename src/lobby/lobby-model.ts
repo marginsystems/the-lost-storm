@@ -76,3 +76,16 @@ export function passedNames(previous: Leaderboard | null, next: Leaderboard): re
 export function asksForName(board: Leaderboard): boolean {
   return board.you === null || !board.you.chosen;
 }
+
+export const CHOSEN_NAMES: readonly string[] = ['Tavin', 'Orrin', 'Sefa', 'Bram', 'Wynn', 'Calder', 'Edda', 'Joren', 'Liesl', 'Teodor', 'Ilse', 'Rook', 'Anwen', 'Halden', 'Mirel', 'Osk'];
+
+export function chooseName(random: () => number, refused: ReadonlySet<string>): string | null {
+  const open: readonly string[] = CHOSEN_NAMES.filter((name: string): boolean => !refused.has(name));
+  if (open.length === 0) return null;
+  return open[Math.min(open.length - 1, Math.floor(random() * open.length))] ?? null;
+}
+
+export function spokenName(board: Leaderboard | null): string | null {
+  if (board === null || board.you === null || !board.you.chosen) return null;
+  return board.you.name;
+}
