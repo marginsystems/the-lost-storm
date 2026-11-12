@@ -154,7 +154,8 @@ body.touch .tree-viewport {
   pointer-events: auto;
   transition:
     left var(--spring-smooth-ms) var(--spring-smooth),
-    top var(--spring-smooth-ms) var(--spring-smooth);
+    top var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .tc-menu-btn,
@@ -611,4 +612,32 @@ body.touch .hud.tc-bag .hud-panel.trade-panel.open {
   opacity: 0;
   pointer-events: none;
   transform: translateY(16px);
+}
+
+body.touch .atlas {
+  z-index: 30;
+}
+
+body.touch:has(.atlas.open) .tc-stick,
+body.touch:has(.atlas.open) .tc-btn,
+body.touch:has(.atlas.open) .tc-menu,
+body.touch:has(.atlas.open) .hud-hint,
+body.touch:has(.atlas.open) .tc-rotate {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.touch .atlas-head {
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  left: calc(18px + env(safe-area-inset-left, 0px));
+}
+
+@media (max-width: 600px) {
+  body.touch .atlas-legend {
+    opacity: 0;
+  }
+
+  body.touch .atlas-head {
+    max-width: calc(100% - 72px);
+  }
 }

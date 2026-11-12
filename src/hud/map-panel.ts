@@ -8,8 +8,8 @@ import { drawAtlasArt } from './atlas-art.ts';
 import { smoothPath } from './atlas-geometry.ts';
 import { drawNode, NODE } from './atlas-nodes.ts';
 import type { NodeParts } from './atlas-nodes.ts';
-import { atRest, clampView, openView, panBy, stepMotion, still, toScreen, zoomAt } from './atlas-view.ts';
-import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-view.ts';
+import { atRest, clampView, openView, panBy, pinchTo, stepMotion, still, toScreen, zoomAt } from './atlas-view.ts';
+import type { AtlasFrame, AtlasMotion, AtlasView, Pinch, ScreenPoint } from './atlas-view.ts';
 import { ATLAS_VIEW } from './atlas-view.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, setText } from './dom.ts';
@@ -117,6 +117,8 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
   let drawn: string = '';
   let drag: Drag | null = null;
   let hovered: NodeView | null = null;
+  const fingers: Map<number, ScreenPoint> = new Map<number, ScreenPoint>();
+  let pinch: Pinch | null = null;
 
   const build = (act: ActDef): ActView => {
     defs.replaceChildren();
@@ -246,12 +248,41 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     return { x: event.clientX - box.left, y: event.clientY - box.top };
   };
 
+  const fingerPinch = (): Pinch | null => {
+    const [a, b] = [...fingers.values()];
+    if (a === undefined || b === undefined) return null;
+    const box: DOMRect = element.getBoundingClientRect();
+    return { a: { x: a.x - box.left, y: a.y - box.top }, b: { x: b.x - box.left, y: b.y - box.top } };
+  };
+
+  const endDrag = (): void => {
+    drag = null;
+    element.classList.remove('dragging');
+  };
+
   element.addEventListener('pointerdown', (event: PointerEvent): void => {
     if (event.button !== 0) return;
+    if (event.pointerType === 'touch') fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (fingers.size >= 2) {
+      endDrag();
+      hover(null);
+      pinch = fingerPinch();
+      return;
+    }
     drag = { pressed: nodeAt(event.target), x: event.clientX, y: event.clientY, travelled: 0, time: event.timeStamp, vx: 0, vy: 0 };
     element.setPointerCapture(event.pointerId);
   });
   element.addEventListener('pointermove', (event: PointerEvent): void => {
+    if (fingers.has(event.pointerId)) fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinch !== null) {
+      const next: Pinch | null = fingerPinch();
+      if (next === null) return;
+      target = pinchTo(target, frame, pinch, next);
+      motion = still(pinchTo(motion.view, frame, pinch, next));
+      pinch = next;
+      apply();
+      return;
+    }
     if (drag === null) {
       hover(nodeAt(event.target));
       return;
@@ -273,10 +304,16 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     apply();
   });
   const release = (event: PointerEvent): void => {
+    fingers.delete(event.pointerId);
+    if (pinch !== null) {
+      pinch = fingerPinch();
+      const [left] = [...fingers.values()];
+      if (pinch === null && left !== undefined) drag = { pressed: null, x: left.x, y: left.y, travelled: MAP.dragThreshold, time: event.timeStamp, vx: 0, vy: 0 };
+      return;
+    }
     if (drag === null) return;
     const ended: Drag = drag;
-    drag = null;
-    element.classList.remove('dragging');
+    endDrag();
     if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
     if (ended.travelled >= MAP.dragThreshold) {
       target = panBy(target, frame, ended.vx * ATLAS_VIEW.flingSeconds, ended.vy * ATLAS_VIEW.flingSeconds);
@@ -309,6 +346,9 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
   }).observe(element);
 
   const refresh = (): void => {
+    fingers.clear();
+    endDrag();
+    pinch = null;
     const act: ActDef | undefined = actOf(world.content, world.zone.id);
     if (act === undefined) return;
     if (view?.act !== act) view = build(act);

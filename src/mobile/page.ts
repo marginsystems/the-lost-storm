@@ -37,6 +37,8 @@ function ignore(): undefined {
 
 export function holdPageStill(): void {
   document.addEventListener('gesturestart', stop);
+  document.addEventListener('gesturechange', stop);
+  document.addEventListener('gestureend', stop);
   document.addEventListener('dblclick', stop);
   document.addEventListener(
     'touchmove',
