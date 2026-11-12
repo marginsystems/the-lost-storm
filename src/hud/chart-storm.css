@@ -1,0 +1,69 @@
+.chart-sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tree-links polyline {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.tree-track {
+  stroke-width: 1.5;
+}
+
+.tree-track.route {
+  stroke-width: 2.2;
+}
+
+.tree-flow {
+  stroke-width: 1.4;
+}
+
+.tree-flow.open {
+  stroke-dashoffset: 0;
+  animation: chart-crackle var(--drift-ms) var(--drift-ease) infinite;
+}
+
+.tree-flow.lit {
+  stroke-width: 1.8;
+  animation: none;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tint) 70%, transparent));
+}
+
+@keyframes chart-crackle {
+  0%,
+  100% {
+    opacity: 0.32;
+  }
+  7% {
+    opacity: 0.85;
+  }
+  9% {
+    opacity: 0.28;
+  }
+  48% {
+    opacity: 0.45;
+  }
+  51% {
+    opacity: 0.9;
+  }
+  54% {
+    opacity: 0.36;
+  }
+}
+
+.tree-socket.allocated .tree-socket-fill {
+  box-shadow: 0 0 14px 2px color-mix(in srgb, var(--tint) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree-flow.open {
+    animation: none;
+    opacity: 0.55;
+  }
+}
