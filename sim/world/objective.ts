@@ -2,8 +2,9 @@ import type { ObjectiveDef, PathObjective, QuestDef, ZoneDef, ZoneExit, ZoneNpc,
 import { objectivePaths } from '../content/road.ts';
 import type { Vec2 } from '../math.ts';
 import { allHold } from './conditions.ts';
+import { fightZones, nearestFight } from './moments.ts';
 import { activeQuests, currentObjective } from './quests.ts';
-import type { MonsterState, NpcState, World } from './types.ts';
+import type { MomentState, MonsterState, NpcState, World } from './types.ts';
 
 export type ObjectiveTargetKind = 'person' | 'exit' | 'monster' | 'spot';
 
@@ -37,6 +38,9 @@ function pathDestinations(world: World, objective: PathObjective): readonly stri
       break;
     case 'defeat':
       ids = zonesWhere(world, (zone: ZoneDef): boolean => zone.packs.some((pack: ZonePack): boolean => allHold(world, pack.when) && pack.members.some((member): boolean => member.monster === objective.monster)));
+      break;
+    case 'moment':
+      ids = fightZones(world.content);
       break;
   }
   return ids;
@@ -97,6 +101,11 @@ function pathTarget(world: World, objective: PathObjective): LocalTarget | null 
       const pack: ZonePack | undefined = world.zone.packs.find((candidate: ZonePack): boolean => allHold(world, candidate.when) && candidate.members.some((member): boolean => member.monster === objective.monster));
       if (monster !== undefined) target = { kind: 'monster', pos: monster.pos, radius: MARK.monsterRadius, name: monster.def.name, objective };
       else if (pack !== undefined) target = { kind: 'spot', pos: { x: pack.x, z: pack.z }, radius: MARK.monsterRadius * 2, name: world.content.monsters.get(objective.monster)?.name ?? '', objective };
+      break;
+    }
+    case 'moment': {
+      const moment: MomentState | null = nearestFight(world);
+      if (moment !== null) target = { kind: 'spot', pos: moment.pos, radius: moment.def.radius, name: moment.def.name, objective };
       break;
     }
   }

@@ -19,7 +19,7 @@ const content: Content = loadContent();
 const ACT = {
   seeds: [11, 12, 13],
   minSeconds: 5,
-  maxSeconds: 60,
+  maxSeconds: 90,
   minLevel: 1,
   maxLevel: 3,
   maxDeaths: 1,

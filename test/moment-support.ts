@@ -19,7 +19,7 @@ export const QUIET: MomentDef = {
   awake: 6,
   turnChance: 0,
   props: [],
-  echoes: [{ monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 90, pose: { clip: 'idle', at: 0.3 }, turns: false }],
+  echoes: [{ monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 90, pose: { clip: 'idle', at: 0.3 }, turns: false, look: null }],
   reward: { goldMin: 10, goldMax: 10, items: 1, itemChance: 1, rarity: null },
 };
 
@@ -30,9 +30,9 @@ export const RAID: MomentDef = {
   turnChance: 1,
   awake: 20,
   echoes: [
-    { monster: 'unfinished_taker', x: 1.5, z: 0, facingDegrees: 0, pose: { clip: 'run', at: 0.5 }, turns: true },
-    { monster: 'unfinished_taker', x: -1.5, z: 0, facingDegrees: 0, pose: { clip: 'run', at: 0.2 }, turns: true },
-    { monster: 'unfinished_thrower', x: 0, z: 2, facingDegrees: 180, pose: { clip: 'idle', at: 0 }, turns: false },
+    { monster: 'unfinished_taker', x: 1.5, z: 0, facingDegrees: 0, pose: { clip: 'run', at: 0.5 }, turns: true, look: null },
+    { monster: 'unfinished_taker', x: -1.5, z: 0, facingDegrees: 0, pose: { clip: 'run', at: 0.2 }, turns: true, look: null },
+    { monster: 'unfinished_thrower', x: 0, z: 2, facingDegrees: 180, pose: { clip: 'idle', at: 0 }, turns: false, look: null },
   ],
   reward: { goldMin: 20, goldMax: 40, items: 2, itemChance: 0.5, rarity: null },
 };
@@ -58,13 +58,13 @@ export function fieldZone(field: MomentField = FIELD): ZoneDef {
   return roadZone({ id: 'moment_field', tiles: FIELD_TILES, cellSize: 4, playerStart: { x: 80, z: 80 }, moments: field });
 }
 
-export function fieldContent(field: MomentField = FIELD): Content {
-  return roadContent(fieldZone(field), { moments: momentLibrary() });
+export function fieldContent(field: MomentField = FIELD, library: MomentLibrary = momentLibrary()): Content {
+  return roadContent(fieldZone(field), { moments: library });
 }
 
-export function fieldWorld(field: MomentField = FIELD): World {
+export function fieldWorld(field: MomentField = FIELD, library: MomentLibrary = momentLibrary()): World {
   const zone: ZoneDef = fieldZone(field);
-  return roadWorld(zone, { moments: momentLibrary() });
+  return roadWorld(zone, { moments: library });
 }
 
 export function echoesOf(world: World, moment: MomentState): MonsterState[] {

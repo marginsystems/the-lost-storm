@@ -16,6 +16,7 @@ export function roadFlagNames(content: Content): string[] {
     }
   }
   if (content.world.retired !== null) names.push(...Object.keys(content.world.retired.flags));
+  names.push(...Object.keys(content.moments.cleared));
   return names;
 }
 
@@ -45,6 +46,9 @@ function pathProblems(content: Content, at: string, path: PathObjective): string
       break;
     case 'defeat':
       if (!content.monsters.has(path.monster)) problem = `${at} names unknown monster ${path.monster}`;
+      break;
+    case 'moment':
+      if (![...content.zones.values()].some((zone): boolean => zone.moments?.combat === true)) problem = `${at} needs a zone whose moments can be fought`;
       break;
   }
   return problem === null ? [] : [problem];

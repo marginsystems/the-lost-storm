@@ -106,3 +106,16 @@ void test('the hero holds his weapon, or his bare-handed gear without one', (): 
     assert.ok(heldGear(content, { ...emptyEquipment(), weapon: item(base.id) }).includes(base.visual), base.id);
   }
 });
+
+void test('a zone with a moment field needs the bodies, clothes and gear of its echoes', (): void => {
+  const base = must(content.zones.get(content.world.start), 'start zone');
+  const def = must(content.moments.defs.get('watch_post'), 'watch_post');
+  const zone = { ...base, moments: { combat: true, areas: [{ x: 8, z: 8, radius: 4 }], clearance: { hero: 1, exits: 1, between: 1 }, interval: { min: 5, max: 9 }, start: 0, max: 2, table: [{ moment: def.id, weight: 1 }] } };
+  const needs = zoneCharacterNeeds(content, zone, null);
+  for (const echo of def.echoes) {
+    const look = must(echo.look, 'look');
+    assert.ok(needs.rigs.has(look.rig), look.rig);
+    for (const id of look.wear) assert.ok(needs.wearables.has(id), id);
+    for (const id of look.gear) assert.ok(needs.attachments.has(id), id);
+  }
+});

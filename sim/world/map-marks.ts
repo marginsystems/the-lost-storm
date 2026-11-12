@@ -2,6 +2,7 @@ import type { Content, ObjectiveDef, PathObjective, ZoneDef, ZoneExit } from '..
 import { objectivePaths } from '../content/road.ts';
 import type { Vec2 } from '../math.ts';
 import { allHold } from './conditions.ts';
+import { fightZones, nearestFight } from './moments.ts';
 import { activeQuests, currentObjective } from './quests.ts';
 import type { MonsterState, NpcState, World } from './types.ts';
 
@@ -26,6 +27,9 @@ function pathZones(world: World, objective: PathObjective): string[] {
       break;
     case 'defeat':
       zones = zonesWith(world.content, (zone: ZoneDef): boolean => zone.packs.some((pack): boolean => pack.members.some((member): boolean => member.monster === objective.monster)));
+      break;
+    case 'moment':
+      zones = fightZones(world.content);
       break;
   }
   return zones;
@@ -54,6 +58,9 @@ function pathTarget(world: World, objective: PathObjective): Vec2 | null {
       break;
     case 'defeat':
       target = defeatTarget(world, objective.monster);
+      break;
+    case 'moment':
+      target = nearestFight(world)?.pos ?? null;
       break;
   }
   return target;

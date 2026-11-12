@@ -8,8 +8,9 @@ import { currentObjective } from './world/quests.ts';
 import { SKILLS } from './world/skills.ts';
 import { choicesOpen } from './world/death.ts';
 import { stepWorld } from './world/step.ts';
+import { fightZones, nearestFight } from './world/moments.ts';
 import { playerMayStrike } from './world/factions.ts';
-import type { Command, EchoState, HazardState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
+import type { Command, EchoState, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
 
 export const BOT = {
   step: 1 / 30,
@@ -201,6 +202,20 @@ export function botFight(bot: Bot, done: () => boolean, prefer: string | null): 
   return done();
 }
 
+function botClearMoment(bot: Bot, done: () => boolean): boolean {
+  const zone: string | undefined = fightZones(bot.world.content)[0];
+  if (zone === undefined || !botTravelTo(bot, zone)) return false;
+  const steps: number = Math.round(BOT.fightLimit / BOT.step);
+  for (let step: number = 0; step < steps; step += 1) {
+    if (done()) return true;
+    const moment: MomentState | null = nearestFight(bot.world);
+    if (moment === null || moment.phase === 'mark') tick(bot, []);
+    else if (moment.phase === 'dormant') tick(bot, [{ type: 'move', held: false, dest: moment.pos }]);
+    else if (!fightStep(bot, null)) tick(bot, []);
+  }
+  return done();
+}
+
 export function botWalkTo(bot: Bot, zone: string, point: Vec2, radius: number): boolean {
   const world: World = bot.world;
   const steps: number = Math.round(BOT.walkLimit / BOT.step);
@@ -325,6 +340,9 @@ export function botObjective(bot: Bot, quest: QuestDef, goal: ObjectiveDef): boo
       finished = zone !== null && botTravelTo(bot, zone) && botFight(bot, done, objective.monster);
       break;
     }
+    case 'moment':
+      finished = botClearMoment(bot, done);
+      break;
   }
   return finished;
 }

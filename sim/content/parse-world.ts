@@ -306,13 +306,14 @@ function act(value: unknown, where: string): ActDef {
 
 function pathObjective(value: unknown, where: string): PathObjective {
   const source: Fields = fields(value, where);
-  const type: PathObjective['type'] = choice(source, 'type', ['talk', 'reach', 'defeat'] as const, where);
+  const type: PathObjective['type'] = choice(source, 'type', ['talk', 'reach', 'defeat', 'moment'] as const, where);
   const id: string = text(source, 'id', where);
   const shown: string = text(source, 'text', where);
   const when: Condition[] = conditions(source, 'when', where);
   const sets: Record<string, string> = storyFlags(source['sets'], `${where}.sets`);
   if (type === 'talk') return { type, id, text: shown, when, sets, npc: text(source, 'npc', where) };
   if (type === 'defeat') return { type, id, text: shown, when, sets, monster: text(source, 'monster', where) };
+  if (type === 'moment') return { type, id, text: shown, when, sets };
   return { type, id, text: shown, when, sets, zone: text(source, 'zone', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
 }
 

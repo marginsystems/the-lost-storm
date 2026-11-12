@@ -17,14 +17,14 @@ const MOMENT: MomentDef = {
   awake: 15,
   turnChance: 0.5,
   props: [{ prop: 'fire_pit', x: 0, z: 0, rotationDegrees: 0 }],
-  echoes: [{ monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0.5 }, turns: true }],
+  echoes: [{ monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0.5 }, turns: true, look: null }],
   reward: { goldMin: 5, goldMax: 9, items: 1, itemChance: 0.4, rarity: null },
 };
 
 function withMoment(def: MomentDef, zone: ZoneDef | null = null): Content {
   const zones: Map<string, ZoneDef> = new Map<string, ZoneDef>(shipped.zones);
   if (zone !== null) zones.set(zone.id, zone);
-  return { ...shipped, zones, moments: { ...shipped.moments, defs: new Map<string, MomentDef>([[def.id, def]]) } };
+  return { ...shipped, zones, moments: { ...shipped.moments, defs: new Map<string, MomentDef>([...shipped.moments.defs, [def.id, def]]) } };
 }
 
 void test('the shipped moments are consistent', (): void => {
@@ -37,12 +37,19 @@ void test('a moment naming an unknown prop, monster, clip or rarity is reported'
     ...MOMENT,
     props: [{ prop: 'nowhere', x: 0, z: 0, rotationDegrees: 0 }],
     echoes: [
-      { monster: 'nobody', x: 0, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0 }, turns: false },
-      { monster: 'unfinished_brute', x: 0, z: 0, facingDegrees: 0, pose: { clip: 'juggle', at: 0 }, turns: false },
+      { monster: 'nobody', x: 0, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0 }, turns: false, look: null },
+      { monster: 'unfinished_brute', x: 0, z: 0, facingDegrees: 0, pose: { clip: 'juggle', at: 0 }, turns: false, look: null },
     ],
     reward: { ...MOMENT.reward, rarity: 'mythic' },
   };
   assert.equal(momentProblems(withMoment(broken)).length, 4);
+});
+
+void test('an echo look must fit its rig, and an echo that may turn needs its fighting clip on that rig', (): void => {
+  const dressed: MomentDef = { ...MOMENT, echoes: [{ monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0.5 }, turns: true, look: { rig: 'human_man', scale: 1, gear: ['raider_maul'], wear: ['linen_shirt', 'wool_trousers'] } }] };
+  assert.deepEqual(momentProblems(withMoment(dressed)), []);
+  const misfit: MomentDef = { ...MOMENT, echoes: [{ monster: 'unfinished_taker', x: 1, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0.5 }, turns: true, look: { rig: 'human_man', scale: 0.6, gear: ['nothing'], wear: ['linen_shirt', 'dirty_shirt'] } }] };
+  assert.equal(momentProblems(withMoment(misfit)).length, 3);
 });
 
 void test('a zone field naming an unknown moment or an area outside the zone is reported', (): void => {

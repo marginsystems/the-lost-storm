@@ -80,7 +80,7 @@ void test('the slice teaches each skill through a quest step that sets the flag 
     assert.ok(quest.objectives.some((objective): boolean => objective.sets[flag] === value), `${questId} sets ${flag}`);
   }
   const taker = must(must(content.quests.get('the_first_taker'), 'quest').objectives[0], 'objective');
-  assert.ok(taker.type === 'defeat' && taker.monster === 'unfinished_taker');
+  assert.equal(taker.type, 'moment');
 });
 
 void test('a skill is placed in a slot, placing one already on the bar swaps the two, and a broken slot changes nothing', (): void => {

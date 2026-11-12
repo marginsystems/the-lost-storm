@@ -348,6 +348,7 @@ function pathPlaces(world: World, objective: PathObjective): string[] {
     const npc: string = objective.npc;
     return zones.filter((zone: ZoneDef): boolean => zone.npcs.some((placed: ZoneNpc): boolean => placed.npc === npc && allHold(world, placed.when))).map((zone: ZoneDef): string => zone.id);
   }
+  if (objective.type === 'moment') return zones.filter((zone: ZoneDef): boolean => zone.moments?.combat === true).map((zone: ZoneDef): string => zone.id);
   const monster: string = objective.monster;
   return zones.filter((zone: ZoneDef): boolean => zone.packs.some((pack: ZonePack): boolean => allHold(world, pack.when) && pack.members.some((member): boolean => member.monster === monster))).map((zone: ZoneDef): string => zone.id);
 }

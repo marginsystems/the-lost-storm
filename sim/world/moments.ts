@@ -1,11 +1,12 @@
 import type { MomentDef, MomentEcho, MomentField, MomentLibrary, StrikeArea, WeightedMoment } from '../content/moment-types.ts';
-import type { MonsterDef } from '../content/types.ts';
+import type { Content, MonsterDef, ZoneDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, distance } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
 import { pickWeighted } from '../rng.ts';
 import { dropOnGround } from './ground.ts';
+import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
 import type { ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, World } from './types.ts';
 
@@ -90,7 +91,9 @@ function place(world: World, field: MomentField, mark: boolean): MomentState | n
 
 function echoDef(world: World, entry: MomentEcho): MonsterDef | null {
   const base: MonsterDef | undefined = world.content.monsters.get(entry.monster);
-  return base === undefined ? null : { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null };
+  if (base === undefined) return null;
+  const echo: MonsterDef = { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null };
+  return entry.look === null ? echo : { ...echo, rig: entry.look.rig, scale: entry.look.scale, gear: entry.look.gear, wear: entry.look.wear };
 }
 
 function turn(world: World, moment: MomentState): number[] {
@@ -149,7 +152,10 @@ function reward(world: World, moment: MomentState): void {
 }
 
 function end(world: World, moment: MomentState, outcome: MomentOutcome): void {
-  if (outcome === 'resolved') reward(world, moment);
+  if (outcome === 'resolved') {
+    reward(world, moment);
+    setFlags(world, world.content.moments.cleared);
+  }
   removeEchoes(world, moment, true);
   moment.phase = 'fading';
   moment.outcome = outcome;
@@ -245,4 +251,13 @@ export function shiftMoments(world: World, by: Vec2): void {
       monster.path = [];
     }
   }
+}
+
+export function fightZones(content: Content): string[] {
+  return [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.moments?.combat === true).map((zone: ZoneDef): string => zone.id);
+}
+
+export function nearestFight(world: World): MomentState | null {
+  const open: MomentState[] = world.moments.filter((moment: MomentState): boolean => moment.combat && moment.phase !== 'fading');
+  return open.toSorted((a: MomentState, b: MomentState): number => distance(world.player.pos, a.pos) - distance(world.player.pos, b.pos))[0] ?? null;
 }

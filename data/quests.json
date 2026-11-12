@@ -76,18 +76,11 @@
     "requires": [
       "out_of_the_mist"
     ],
-    "when": [
-      {
-        "type": "flag",
-        "flag": "first_moment",
-        "is": "cleared"
-      }
-    ],
+    "when": [],
     "objectives": [
       {
         "id": "put_down",
-        "type": "defeat",
-        "monster": "unfinished_taker",
+        "type": "moment",
         "text": "Clear a moment",
         "sets": {
           "first_moment": "cleared"

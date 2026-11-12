@@ -1,17 +1,42 @@
-import type { RigClips } from './rig-types.ts';
-import type { MomentDef, MomentEcho, MomentField } from './moment-types.ts';
-import type { Content, MonsterDef, RarityDef, ZoneDef } from './types.ts';
+import type { RigClips, RigDef } from './rig-types.ts';
+import type { EchoLook, MomentDef, MomentEcho, MomentField } from './moment-types.ts';
+import type { Content, MonsterDef, RarityDef, SkillDef, WearableDef, WearRegion, ZoneDef } from './types.ts';
 
 function poseClips(clips: RigClips): ReadonlySet<string> {
   return new Set<string>(['idle', 'run', 'hit', 'death', ...Object.keys(clips.actions)]);
 }
 
+function lookProblems(content: Content, at: string, look: EchoLook, rig: RigDef): string[] {
+  const problems: string[] = [];
+  for (const held of look.gear) {
+    const socket: string | undefined = content.attachments.get(held)?.socket;
+    if (socket === undefined) problems.push(`${at} carries unknown attachment ${held}`);
+    else if (rig.sockets[socket] === undefined) problems.push(`${at} carries ${held}, but rig ${rig.id} has no socket ${socket}`);
+  }
+  const regions: Set<WearRegion> = new Set<WearRegion>();
+  for (const id of look.wear) {
+    const worn: WearableDef | undefined = content.wearables.get(id);
+    if (worn === undefined) {
+      problems.push(`${at} wears unknown wearable ${id}`);
+      continue;
+    }
+    if (regions.has(worn.region)) problems.push(`${at} wears two pieces on its ${worn.region}`);
+    regions.add(worn.region);
+  }
+  return problems;
+}
+
 function echoProblems(content: Content, at: string, entry: MomentEcho): string[] {
   const monster: MonsterDef | undefined = content.monsters.get(entry.monster);
   if (monster === undefined) return [`${at} names unknown monster ${entry.monster}`];
-  const clips: RigClips | undefined = content.rigs.get(monster.rig)?.clips;
-  if (clips === undefined || poseClips(clips).has(entry.pose.clip)) return [];
-  return [`${at} poses in clip ${entry.pose.clip}, which rig ${monster.rig} does not have`];
+  const rigId: string = entry.look?.rig ?? monster.rig;
+  const rig: RigDef | undefined = content.rigs.get(rigId);
+  if (rig === undefined) return [`${at} uses unknown rig ${rigId}`];
+  const problems: string[] = entry.look === null ? [] : lookProblems(content, at, entry.look, rig);
+  if (!poseClips(rig.clips).has(entry.pose.clip)) problems.push(`${at} poses in clip ${entry.pose.clip}, which rig ${rigId} does not have`);
+  const skill: SkillDef | undefined = content.skills.get(monster.skill);
+  if (entry.turns && skill !== undefined && rig.clips.actions[skill.animation] === undefined) problems.push(`${at} may turn and fight with ${skill.id}, but rig ${rigId} has no action clip ${skill.animation}`);
+  return problems;
 }
 
 function defProblems(content: Content, def: MomentDef): string[] {

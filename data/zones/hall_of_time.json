@@ -144,5 +144,14 @@
     {"npc": "warden_lookout", "x": 77, "z": 34, "facingDegrees": 250}
   ],
   "ambience": {"background": "#06080d", "abyss": "#040508", "fogNear": 20, "fogFar": 70, "skyColor": "#4a5c7c", "groundColor": "#100d0b", "skyIntensity": 1.1, "keyColor": "#9fb3d6", "keyIntensity": 0.7},
-  "weather": {"lightning": {"first": 1.4, "min": 6, "max": 13}, "rain": 0.85, "wet": 0.6, "mistWall": {"from": {"x": -10, "z": -6}, "to": {"x": -10, "z": 66}, "height": 7}}
+  "weather": {"lightning": {"first": 1.4, "min": 6, "max": 13}, "rain": 0.85, "wet": 0.6, "mistWall": {"from": {"x": -10, "z": -6}, "to": {"x": -10, "z": 66}, "height": 7}},
+  "moments": {
+    "combat": true,
+    "areas": [{"x": 38, "z": 30, "radius": 14}, {"x": 24, "z": 46, "radius": 7}, {"x": 24, "z": 14, "radius": 7}],
+    "clearance": {"hero": 8, "exits": 12, "between": 6},
+    "interval": {"min": 12, "max": 24},
+    "start": 1,
+    "max": 2,
+    "table": [{"moment": "campfire", "weight": 3}, {"moment": "charge", "weight": 3}, {"moment": "market_street", "weight": 3}, {"moment": "children_at_play", "weight": 1}, {"moment": "funeral", "weight": 1}]
+  }
 }

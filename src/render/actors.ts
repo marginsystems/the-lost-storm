@@ -4,11 +4,14 @@ import { Color } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import { heldGear, hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
 import { wakeProgress } from '../../sim/world/wake.ts';
-import type { ActorState, Equipment, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
+import type { ActorState, Equipment, MomentState, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { ActorPose, ActorView } from './actor-view.ts';
 import { ACTOR, createActorView } from './actor-view.ts';
 import type { CharacterLibrary, LoadedRig, RigInstance } from './character-loader.ts';
 import { hasWear, instantiateRig } from './character-loader.ts';
+import type { GhostUniforms } from './ghost-material.ts';
+import { createGhostUniforms } from './ghost-material.ts';
+import { momentOfEcho } from '../../sim/world/moments.ts';
 
 export const ACTORS = {
   monsterFlash: 1,
@@ -17,11 +20,28 @@ export const ACTORS = {
   npcAppearRate: 3.4,
   npcSettledWithin: 0.01,
   blockTime: 0.35,
+  echoMix: 0.85,
+  echoOpacity: 0.78,
+  turnRim: 4,
+  leaveTime: 1.2,
 } as const;
+
+interface EchoLook {
+  readonly ghost: GhostUniforms;
+  readonly from: Color;
+  readonly to: Color;
+}
 
 interface MonsterEntry {
   readonly view: ActorView;
   readonly spawnTime: number;
+  readonly echo: EchoLook | null;
+}
+
+interface LeavingEcho {
+  readonly entry: MonsterEntry;
+  readonly ghost: GhostUniforms;
+  age: number;
 }
 
 interface NpcEntry {
@@ -56,11 +76,18 @@ function dress(content: Content, rig: RigInstance, clothes: readonly string[], e
   rig.setWear(worn, hiddenBodyParts(content, worn));
 }
 
+function echoLook(current: World, monster: MonsterState): EchoLook | null {
+  const moment: MomentState | null = momentOfEcho(current, monster.id);
+  if (moment === null) return null;
+  const from: Color = new Color(moment.def.tint);
+  return { ghost: createGhostUniforms(from, ACTORS.echoMix), from, to: new Color(current.content.moments.hostileTint) };
+}
+
 export function createActors(scene: Scene, library: CharacterLibrary, world: World): Actors {
   const content: Content = world.content;
   const playerRig: LoadedRig | undefined = library.rigs.get(content.player.rig);
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
-  const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color }), 1, world.player.facing);
+  const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color, ghost: null }), 1, world.player.facing);
   playerView.rig.setGear(heldGear(content, world.player.equipped));
   dress(content, playerView.rig, content.player.wear, world.player.equipped);
   scene.add(playerView.rig.root);
@@ -73,7 +100,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     if (existing !== undefined) return existing;
     const rig: LoadedRig | undefined = library.rigs.get(npc.def.rig);
     if (rig === undefined || !hasWear(library, wornWearables(content, npc.def.wear, null), npc.def.gear)) return null;
-    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: npc.def.tint, glow: npc.def.color }), npc.def.scale, npc.facing, ACTOR.friendlyHover);
+    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: npc.def.tint, glow: npc.def.color, ghost: null }), npc.def.scale, npc.facing, ACTOR.friendlyHover);
     view.rig.setGear(npc.def.gear);
     dress(content, view.rig, npc.def.wear, null);
     scene.add(view.rig.root);
@@ -82,16 +109,20 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     return entry;
   };
 
-  const entryFor = (monster: MonsterState): MonsterEntry | null => {
+  const leaving: LeavingEcho[] = [];
+
+  const entryFor = (current: World, monster: MonsterState): MonsterEntry | null => {
     const existing: MonsterEntry | undefined = monsters.get(monster.id);
     if (existing !== undefined) return existing;
     const rig: LoadedRig | undefined = library.rigs.get(monster.def.rig);
     if (rig === undefined || !hasWear(library, wornWearables(content, monster.def.wear, null), monster.def.gear)) return null;
-    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: monster.def.tint, glow: monster.def.color }), monster.def.scale, monster.facing);
+    const echo: EchoLook | null = echoLook(current, monster);
+    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: echo === null ? monster.def.tint : '#ffffff', glow: echo === null ? monster.def.color : '#ffffff', ghost: echo?.ghost ?? null }), monster.def.scale, monster.facing);
     view.rig.setGear(monster.def.gear);
     dress(content, view.rig, monster.def.wear, null);
+    view.rig.setOpacity(ACTORS.echoOpacity);
     scene.add(view.rig.root);
-    const entry: MonsterEntry = { view, spawnTime: Math.max(monster.spawnTime, 1e-3) };
+    const entry: MonsterEntry = { view, spawnTime: Math.max(monster.spawnTime, 1e-3), echo };
     monsters.set(monster.id, entry);
     if (!monster.alive) view.die();
     return entry;
@@ -124,10 +155,25 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       playerView.lie(current.wake === null ? null : wakeProgress(current.wake));
       playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.stats.moveSpeed * paceAt(current.grid, current.player.pos.x, current.player.pos.z), rise: 1, floor, turnRate: ACTOR.turnRate });
       for (const monster of current.monsters) {
-        const entry: MonsterEntry | null = entryFor(monster);
+        const entry: MonsterEntry | null = entryFor(current, monster);
         if (entry === null) continue;
+        const turning: number = 1 - monster.spawnTime / entry.spawnTime;
+        if (entry.echo !== null) {
+          entry.echo.ghost.tint.value.copy(entry.echo.from).lerp(entry.echo.to, turning);
+          entry.echo.ghost.rim.value = 1 + (1 - turning) * ACTORS.turnRim;
+        }
         entry.view.setHover(monster.id === hoveredId);
-        entry.view.sync(dt, poseOf(monster), { moveSpeed: monster.def.moveSpeed * paceAt(current.grid, monster.pos.x, monster.pos.z), rise: 1 - monster.spawnTime / entry.spawnTime, floor, turnRate: ACTOR.turnRate });
+        entry.view.sync(dt, poseOf(monster), { moveSpeed: monster.def.moveSpeed * paceAt(current.grid, monster.pos.x, monster.pos.z), rise: entry.echo === null ? turning : 1, floor, turnRate: ACTOR.turnRate });
+      }
+      for (let index: number = leaving.length - 1; index >= 0; index -= 1) {
+        const echo: LeavingEcho | undefined = leaving[index];
+        if (echo === undefined) continue;
+        echo.age += dt;
+        echo.ghost.dissolve.value = Math.min(1, echo.age / ACTORS.leaveTime);
+        echo.entry.view.rig.setOpacity(ACTORS.echoOpacity * (1 - echo.ghost.dissolve.value));
+        if (echo.age < ACTORS.leaveTime) continue;
+        echo.entry.view.dispose();
+        leaving.splice(index, 1);
       }
       const sameZone: boolean = npcZone === current.zone;
       npcZone = current.zone;
@@ -192,7 +238,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'monster_remove': {
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);
             if (entry !== undefined) {
-              entry.view.dispose();
+              if (entry.echo === null) entry.view.dispose();
+              else leaving.push({ entry, ghost: entry.echo.ghost, age: 0 });
               monsters.delete(event.monsterId);
             }
             break;
@@ -200,6 +247,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'zone_changed':
             for (const entry of monsters.values()) entry.view.dispose();
             monsters.clear();
+            for (const echo of leaving.splice(0, leaving.length)) echo.entry.view.dispose();
             break;
           case 'skill_impact':
           case 'hazard':

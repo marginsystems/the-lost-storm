@@ -59,6 +59,9 @@ function pathMet(world: World, objective: PathObjective, events: readonly WorldE
     case 'defeat':
       done = died(world, events, objective.monster);
       break;
+    case 'moment':
+      done = events.some((event: WorldEvent): boolean => event.type === 'moment_ended' && event.outcome === 'resolved');
+      break;
   }
   return done;
 }

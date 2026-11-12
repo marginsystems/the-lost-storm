@@ -1,6 +1,7 @@
+import { storyFlags } from './parse-story.ts';
 import type { Fields } from './read.ts';
-import { byId, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text } from './read.ts';
-import type { EchoPose, MomentDef, MomentEcho, MomentField, MomentLibrary, MomentProp, MomentReward, StrikeArea, StrikeClearance, StrikeInterval, WeightedMoment } from './moment-types.ts';
+import { byId, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
+import type { EchoLook, EchoPose, MomentDef, MomentEcho, MomentField, MomentLibrary, MomentProp, MomentReward, StrikeArea, StrikeClearance, StrikeInterval, WeightedMoment } from './moment-types.ts';
 
 function chance(source: Fields, key: string, where: string): number {
   const value: number = numeric(source, key, where);
@@ -24,6 +25,12 @@ function pose(value: unknown, where: string): EchoPose {
   return { clip: text(source, 'clip', where), at: chance(source, 'at', where) };
 }
 
+function look(value: unknown, where: string): EchoLook | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { rig: text(source, 'rig', where), scale: positive(source, 'scale', where), gear: textList(source, 'gear', where), wear: textList(source, 'wear', where) };
+}
+
 function echo(value: unknown, where: string): MomentEcho {
   const source: Fields = fields(value, where);
   return {
@@ -33,6 +40,7 @@ function echo(value: unknown, where: string): MomentEcho {
     facingDegrees: numeric(source, 'facingDegrees', where),
     pose: pose(source['pose'], `${where}.pose`),
     turns: flag(source, 'turns', where),
+    look: look(source['look'], `${where}.look`),
   };
 }
 
@@ -75,6 +83,7 @@ export function momentLibrary(value: unknown, where: string): MomentLibrary {
     hostileTint: text(source, 'hostileTint', where),
     telegraph: positive(source, 'telegraph', where),
     fade: positive(source, 'fade', where),
+    cleared: storyFlags(source['cleared'], `${where}.cleared`),
     defs: byId(each(source['moments'], `${where}.moments`, moment), `${where}.moments`),
   };
 }

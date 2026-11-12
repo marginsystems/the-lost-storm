@@ -491,7 +491,11 @@ export interface DefeatObjective extends ObjectiveBase {
   readonly monster: string;
 }
 
-export type PathObjective = TalkObjective | ReachObjective | DefeatObjective;
+export interface MomentObjective extends ObjectiveBase {
+  readonly type: 'moment';
+}
+
+export type PathObjective = TalkObjective | ReachObjective | DefeatObjective | MomentObjective;
 
 export interface EitherObjective extends ObjectiveBase {
   readonly type: 'either';
