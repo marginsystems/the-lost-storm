@@ -4,7 +4,9 @@ import type { Plugin, ResolvedConfig } from 'vite';
 import links from './data/links.json' with { type: 'json' };
 import { readServerUrl } from './src/backend/server-url.ts';
 import { readLinks } from './src/launch/links.ts';
+import { loadContent } from './sim/content/content.ts';
 import { buildPage } from './src/launch/page-html.ts';
+import { defaultKeys, titleKeyRows, titleKeysHtml, titleNames } from './src/title-keys.ts';
 
 const ROOT: string = import.meta.dirname;
 function pageLinks(): Plugin {
@@ -16,7 +18,9 @@ function pageLinks(): Plugin {
       hasServer = readServerUrl(typeof raw === 'string' ? raw : undefined).kind === 'ok';
     },
     transformIndexHtml(html: string): string {
-      return buildPage(html, readLinks(links), hasServer);
+      const content = loadContent();
+      const keys: string = titleKeysHtml(titleKeyRows(defaultKeys(content, hasServer), titleNames(content)));
+      return buildPage(html, readLinks(links), hasServer, keys);
     },
   };
 }

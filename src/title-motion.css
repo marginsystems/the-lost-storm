@@ -42,6 +42,10 @@ body {
   animation: line-fade var(--spring-snappy-ms) var(--spring-smooth) both;
 }
 
+.title-keys.rebound {
+  animation: line-fade var(--spring-smooth-ms) var(--spring-smooth) both;
+}
+
 @keyframes line-fade {
   from {
     opacity: 0;

@@ -7,6 +7,12 @@ export function applyServer(html: string, hasServer: boolean): string {
   return html.replace(SERVER_ONLY, (_match: string, tag: string, before: string, after: string, inner: string): string => (hasServer ? `<${tag}${before}${after}>${inner}</${tag}>` : ''));
 }
 
-export function buildPage(html: string, links: Links, hasServer: boolean): string {
-  return applyLinks(applyServer(html, hasServer), links);
+const DESK_KEYS: RegExp = /(<dl\b[^>]*\bclass="[^"]*\btitle-keys-desk\b[^"]*"[^>]*>)[\s\S]*?(<\/dl>)/;
+
+export function applyKeys(html: string, keys: string): string {
+  return html.replace(DESK_KEYS, (_match: string, open: string, close: string): string => `${open}${keys}${close}`);
+}
+
+export function buildPage(html: string, links: Links, hasServer: boolean, keys: string): string {
+  return applyKeys(applyLinks(applyServer(html, hasServer), links), keys);
 }

@@ -40,7 +40,6 @@ import type { PauseMenu } from './hud/pause-menu.ts';
 import type { GraphicsPreset, SettingsSection } from './settings/settings.ts';
 import type { SettingsStore } from './settings/store.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
-import { slotName } from './settings/bindings.ts';
 import { createHintStore } from './hints-store.ts';
 import type { ObjectiveMarker } from './objective/objective-marker.ts';
 import { createObjectiveMarker } from './objective/objective-marker.ts';
@@ -112,6 +111,8 @@ import { createTitleAccount } from './title-account.ts';
 import type { TitleAccount } from './title-account.ts';
 import { createTitleSync } from './title-sync.ts';
 import { createStatusLine } from './title-status.ts';
+import { shippedKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleKeysHtml, titleNames } from './title-keys.ts';
+import type { TitleKeyRow } from './title-keys.ts';
 import type { StatusLine } from './title-status.ts';
 import { changesSave } from './save-events.ts';
 import type { ZoneTransition } from './transition.ts';
@@ -128,6 +129,14 @@ const GAME = {
 } as const;
 
 const titleLines: { current: StatusLine | null } = { current: null };
+
+function showTitleKeys(list: Element | null, rows: readonly TitleKeyRow[]): void {
+  if (list === null) return;
+  const markup: string = titleKeysHtml(rows);
+  if (list.innerHTML === markup) return;
+  list.innerHTML = markup;
+  list.classList.add(TITLE_KEYS.reboundClass);
+}
 
 function whenIdle(work: () => void): void {
   if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(work, { timeout: GAME.idleWaitMs });
@@ -249,6 +258,11 @@ async function start(): Promise<void> {
   const lobby: Lobby | null = createBrowserLobby(import.meta.env.VITE_SERVER_URL, true);
   title.dataset['lobby'] = lobby === null ? 'off' : 'on';
   if (lobby !== null) mountTitleLobby(element('title-lobby', HTMLElement), lobby);
+  const gameSettings: SettingsStore = createGameSettings(createBrowserStore(), skillSlots(content), shippedKeys(content, lobby !== null));
+  showTitleKeys(
+    document.querySelector(`.${TITLE_KEYS.listClass}`),
+    titleKeyRows(gameSettings.keys(), titleNames(content)),
+  );
   const stage: Stage = createStage(canvas, mobile.quality.tier);
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -329,11 +343,6 @@ async function start(): Promise<void> {
       audio.stopVoice();
     },
   };
-  const gameSettings: SettingsStore = createGameSettings(
-    createBrowserStore(),
-    content.player.skillBar.map((entry, slot: number) => ({ name: slotName(slot), bindings: entry.bindings })),
-    { flasks: content.flasks.length, ladder: lobby !== null },
-  );
   const glitchSettings: GlitchSettingsStore = createGlitchSettings(createBrowserStore());
   const pauseMenu: PauseMenu = createPauseMenu(element('hud', HTMLDivElement), {
     settings: gameSettings,

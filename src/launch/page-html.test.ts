@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readLinks } from './links.ts';
-import { applyServer, buildPage } from './page-html.ts';
+import { applyKeys, applyServer, buildPage } from './page-html.ts';
 
 const HTML: string = '<p class="title-legal"><a href="/terms.html">Terms</a><span aria-hidden="true" data-server>·</span><button id="title-feedback" type="button" data-server>Feedback</button></p>';
 
@@ -12,6 +12,11 @@ void test('server-only controls are dropped without a server and kept, unmarked,
 
 void test('a page gets both passes', (): void => {
   const links = readLinks({ site: 'https://theloststorm.com', play: 'https://theloststorm.com/play/', github: 'https://github.com/marginsystems/the-lost-storm', discord: '', x: '' });
-  const page: string = buildPage(`${HTML}<a data-link="discord">Discord</a>`, links, false);
+  const page: string = buildPage(`${HTML}<a data-link="discord">Discord</a>`, links, false, '');
   assert.equal(page, '<p class="title-legal"><a href="/terms.html">Terms</a></p>');
+});
+
+void test('the desktop key list is filled from the generated rows and the touch list is left alone', (): void => {
+  const html: string = '<dl class="title-keys title-keys-desk">\n  <div><dt>Old</dt><dd>Row</dd></div>\n</dl><dl class="title-keys title-keys-touch"><div><dt>Tap</dt><dd>Attack</dd></div></dl>';
+  assert.equal(applyKeys(html, '<div><dt>Q</dt><dd>Thunderclap</dd></div>'), '<dl class="title-keys title-keys-desk"><div><dt>Q</dt><dd>Thunderclap</dd></div></dl><dl class="title-keys title-keys-touch"><div><dt>Tap</dt><dd>Attack</dd></div></dl>');
 });
