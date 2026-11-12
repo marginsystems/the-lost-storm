@@ -26,8 +26,7 @@
   "outside": {"surface": "crag_ground", "reach": 6, "edge": {"props": ["boulder_2", "rock_4", "crag_low", "boulder_2", "rock_5"], "gap": 0.3, "exitClear": 4}},
   "walls": null,
   "scatter": [
-    {"type": "open", "props": ["pebble_round", "pebble_flat", "rubble_chip"], "count": 70, "clump": 5, "spread": 0.9, "size": {"least": 0.6, "most": 1.25}, "clear": 0.4},
-    {"type": "around", "props": ["rubble_chip", "rubble_shard", "pebble_flat"], "anchors": ["castle_wall_ruin", "castle_column_broken", "castle_rubble_large", "castle_rubble_small", "castle_loose_blocks", "castle_statue_base", "mossy_wall_low", "castle_pillar", "castle_column"], "each": 6, "spread": 1.8, "size": {"least": 0.7, "most": 1.2}}
+    {"type": "around", "props": ["rubble_chip", "rubble_shard"], "anchors": ["castle_wall_ruin", "castle_column_broken", "castle_rubble_large", "castle_rubble_small", "castle_loose_blocks", "castle_statue_base", "mossy_wall_low", "castle_pillar", "castle_column"], "each": 12, "spread": 0.7, "size": {"least": 0.95, "most": 1.2}}
   ],
   "playerStart": {"x": 8, "z": 30},
   "props": [
