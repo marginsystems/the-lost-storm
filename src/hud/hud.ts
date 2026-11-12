@@ -216,6 +216,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'surge_cleared':
           case 'player_respawn':
           case 'hero_step':
+          case 'explored':
           case 'boss_phase':
             break;
         }

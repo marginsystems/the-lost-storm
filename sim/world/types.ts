@@ -292,6 +292,7 @@ export type WorldEvent =
   | { readonly type: 'zone_changed'; readonly from: string; readonly to: string }
   | { readonly type: 'checkpoint'; readonly checkpoint: string; readonly pos: Vec2 }
   | { readonly type: 'hero_step'; readonly pos: Vec2 }
+  | { readonly type: 'explored'; readonly zone: string }
   | { readonly type: 'dialogue_line'; readonly npcId: number; readonly npc: string; readonly talk: string; readonly line: LineDef; readonly index: number; readonly last: boolean }
   | { readonly type: 'dialogue_closed'; readonly npcId: number; readonly npc: string; readonly talk: string; readonly finished: boolean }
   | { readonly type: 'quest_started'; readonly quest: string }
@@ -320,6 +321,8 @@ export interface World {
   heard: string[];
   quests: Record<string, number>;
   waypoints: string[];
+  explored: Record<string, Uint8Array>;
+  exploredRevision: number;
   projectiles: ProjectileState[];
   ground: GroundItem[];
   nextId: number;

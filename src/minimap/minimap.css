@@ -1,0 +1,84 @@
+.minimap {
+  --minimap-size: 188px;
+  --minimap-top: 12px;
+  --minimap-right: 16px;
+  --minimap-label: 20px;
+}
+
+.minimap-corner {
+  position: absolute;
+  top: var(--minimap-top);
+  right: var(--minimap-right);
+  width: var(--minimap-size);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transform-origin: top right;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.minimap.overlay .minimap-corner {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.94);
+}
+
+.minimap-zone {
+  height: var(--minimap-label);
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  line-height: var(--minimap-label);
+  text-align: right;
+  color: var(--ember);
+  text-shadow: var(--legible-shadow);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.minimap-frame {
+  position: relative;
+  width: var(--minimap-size);
+  height: var(--minimap-size);
+  border-radius: 2px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, rgba(14, 17, 22, 0.66), rgba(4, 5, 8, 0.86));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 8px 22px rgba(0, 0, 0, 0.42);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.minimap.overlay .minimap-frame {
+  pointer-events: none;
+}
+
+.minimap-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.minimap-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.97);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.minimap.overlay .minimap-overlay {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.hud > .hud-quests {
+  top: 236px;
+  transition: top var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.hud.minimap-overlaid > .hud-quests {
+  top: 44px;
+}

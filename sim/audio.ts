@@ -105,6 +105,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'monster_remove':
     case 'xp':
     case 'character_changed':
+    case 'explored':
     case 'zone_changed':
     case 'checkpoint':
     case 'dialogue_line':
