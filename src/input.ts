@@ -1,13 +1,15 @@
-import { Vector2, Vector3 } from 'three';
+import type { Box3 as Box3Type } from 'three';
+import { Box3, Vector2, Vector3 } from 'three';
 import type { SkillDef, ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { allHold } from '../sim/world/conditions.ts';
 import type { Command, MonsterState, NpcState, World } from '../sim/world/types.ts';
 import type { Hud } from './hud/hud-api.ts';
+import type { PickCandidate, ScreenRect } from './pick.ts';
+import { pickActor } from './pick.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 
 export const INPUT = {
-  pickRadius: 0.8,
   holdInterval: 0.09,
   leftBinding: 'mouse_left',
   rightBinding: 'mouse_right',
@@ -20,6 +22,8 @@ export const INPUT = {
 
 export interface InputHooks {
   heightOf(actorId: number): number;
+  boundsOf(actorId: number, out: Box3Type): boolean;
+  labelHover(): number | null;
   clickMarker(x: number, z: number, hostile: boolean): void;
   aimExit(exit: string | null): void;
 }
@@ -32,6 +36,8 @@ export interface Input {
 export function createInput(canvas: HTMLCanvasElement, world: World, camera: IsoCamera, hud: Hud, hooks: InputHooks): Input {
   const pointer: Vector2 = new Vector2(0, 0);
   const bottom: Vector3 = new Vector3();
+  const box: Box3 = new Box3();
+  const corner: Vector2 = new Vector2();
   const held: Set<string> = new Set<string>();
   const pressed: string[] = [];
   let hoveredId: number | null = null;
@@ -103,35 +109,47 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     shift = false;
   });
 
-  const pick = (): MonsterState | null => {
-    if (!pointerInside || hud.isPointerOverUi()) return null;
-    let best: MonsterState | null = null;
-    let bestGap: number = INPUT.pickRadius;
-    for (const monster of world.monsters) {
-      if (!monster.alive) continue;
-      bottom.set(monster.pos.x, 0, monster.pos.z);
-      const gap: number = camera.rayDistanceTo(pointer, bottom, hooks.heightOf(monster.id));
-      if (gap < bestGap) {
-        bestGap = gap;
-        best = monster;
+  const screenRect = (id: number): ScreenRect | null => {
+    if (!hooks.boundsOf(id, box)) return null;
+    let minX: number = Infinity;
+    let minY: number = Infinity;
+    let maxX: number = -Infinity;
+    let maxY: number = -Infinity;
+    for (const x of [box.min.x, box.max.x]) {
+      for (const y of [box.min.y, box.max.y]) {
+        for (const z of [box.min.z, box.max.z]) {
+          if (!camera.project(x, y, z, corner)) continue;
+          minX = Math.min(minX, corner.x);
+          minY = Math.min(minY, corner.y);
+          maxX = Math.max(maxX, corner.x);
+          maxY = Math.max(maxY, corner.y);
+        }
       }
     }
-    return best;
+    return minX > maxX ? null : { minX, minY, maxX, maxY };
   };
 
-  const pickNpc = (): NpcState | null => {
-    if (!pointerInside || hud.isPointerOverUi()) return null;
-    let best: NpcState | null = null;
-    let bestGap: number = INPUT.pickRadius;
-    for (const npc of world.npcs) {
-      bottom.set(npc.pos.x, 0, npc.pos.z);
-      const gap: number = camera.rayDistanceTo(pointer, bottom, hooks.heightOf(npc.id));
-      if (gap < bestGap) {
-        bestGap = gap;
-        best = npc;
-      }
+  const candidateFor = (kind: PickCandidate['kind'], id: number, x: number, z: number): PickCandidate => {
+    bottom.set(x, 0, z);
+    const body: ScreenRect | null = screenRect(id);
+    return { id, kind, body, footGap: camera.rayDistanceTo(pointer, bottom, 0), depth: body === null ? 0 : -body.maxY };
+  };
+
+  const pickActors = (): PickCandidate | null => {
+    const labelId: number | null = hooks.labelHover();
+    if (hud.isPointerOverUi()) return null;
+    if (!pointerInside) {
+      const labelled: NpcState | undefined = world.npcs.find((npc: NpcState): boolean => npc.id === labelId);
+      return labelled === undefined ? null : candidateFor('npc', labelled.id, labelled.pos.x, labelled.pos.z);
     }
-    return best;
+    const rect: DOMRect = canvas.getBoundingClientRect();
+    const point = { x: ((pointer.x + 1) / 2) * rect.width, y: ((1 - pointer.y) / 2) * rect.height };
+    const candidates: PickCandidate[] = [];
+    for (const monster of world.monsters) {
+      if (monster.alive) candidates.push(candidateFor('monster', monster.id, monster.pos.x, monster.pos.z));
+    }
+    for (const npc of world.npcs) candidates.push(candidateFor('npc', npc.id, npc.pos.x, npc.pos.z));
+    return pickActor(candidates, point, labelId);
   };
 
   const exitAt = (ground: Vec2 | null): ZoneExit | null => {
@@ -157,8 +175,9 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     },
     collect(dt: number): Command[] {
       const commands: Command[] = extra.splice(0, extra.length);
-      const target: MonsterState | null = pick();
-      const person: NpcState | null = target === null ? pickNpc() : null;
+      const picked: PickCandidate | null = pickActors();
+      const target: MonsterState | null = picked?.kind === 'monster' ? (world.monsters.find((monster: MonsterState): boolean => monster.id === picked.id) ?? null) : null;
+      const person: NpcState | null = picked?.kind === 'npc' ? (world.npcs.find((npc: NpcState): boolean => npc.id === picked.id) ?? null) : null;
       hoveredId = target?.id ?? person?.id ?? null;
       const groundHit: Vector3 | null = camera.groundPoint(pointer);
       const ground: Vec2 | null = groundHit === null ? null : { x: groundHit.x, z: groundHit.z };

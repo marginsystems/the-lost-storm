@@ -77,6 +77,7 @@ export interface Overlays {
   handle(events: readonly WorldEvent[], world: World): void;
   update(dt: number, world: World, hoveredId: number | null): void;
   aimExit(exit: string | null): void;
+  labelHover(): number | null;
 }
 
 function place(element: HTMLElement, point: Vector2): void {
@@ -88,6 +89,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const bars: Map<number, HealthBar> = new Map<number, HealthBar>();
   const labels: Map<number, LootLabel> = new Map<number, LootLabel>();
   let exits: ExitLabel[] = [];
+  let labelHoverId: number | null = null;
   let exitsOf: ZoneDef | null = null;
   let aimed: string | null = null;
   let people: NpcLabel[] = [];
@@ -219,6 +221,12 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       title.textContent = npc.def.title;
       inner.append(news, name, title);
       element.append(inner);
+      element.addEventListener('pointerenter', (): void => {
+        labelHoverId = npc.id;
+      });
+      element.addEventListener('pointerleave', (): void => {
+        if (labelHoverId === npc.id) labelHoverId = null;
+      });
       element.addEventListener('pointerdown', (event: PointerEvent): void => {
         event.preventDefault();
         event.stopPropagation();
@@ -287,6 +295,9 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             break;
         }
       }
+    },
+    labelHover(): number | null {
+      return labelHoverId;
     },
     update(dt: number, world: World, hoveredId: number | null): void {
       if (exitsOf !== world.zone) showExits(world);

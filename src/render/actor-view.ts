@@ -1,4 +1,5 @@
 import type { AnimationAction, AnimationClip } from 'three';
+import type { Box3 } from 'three';
 import { Color, LoopOnce, LoopRepeat } from 'three';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { ActionClip, RigInstance } from './character-loader.ts';
@@ -62,6 +63,7 @@ export interface ActorView {
   die(): void;
   revive(): void;
   setHover(hovered: boolean): void;
+  bounds(out: Box3): void;
   dispose(): void;
 }
 
@@ -193,6 +195,9 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     },
     setHover(hovered: boolean): void {
       hover = hovered;
+    },
+    bounds(out: Box3): void {
+      out.setFromObject(rig.root);
     },
     dispose(): void {
       rig.root.removeFromParent();

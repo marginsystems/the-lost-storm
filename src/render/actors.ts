@@ -1,4 +1,4 @@
-import type { Scene } from 'three';
+import type { Box3, Scene } from 'three';
 import { Color } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import { hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
@@ -31,6 +31,7 @@ export interface Actors {
   sync(dt: number, world: World, hoveredId: number | null): void;
   handle(events: readonly WorldEvent[], world: World): void;
   heightOf(actorId: number): number;
+  boundsOf(actorId: number, out: Box3): boolean;
 }
 
 const HIT_WHITE: Color = new Color(0xffffff);
@@ -102,6 +103,12 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   };
 
   return {
+    boundsOf(actorId: number, out: Box3): boolean {
+      const view: ActorView | null = viewOf(actorId);
+      if (view === null) return false;
+      view.bounds(out);
+      return !out.isEmpty();
+    },
     heightOf(actorId: number): number {
       return viewOf(actorId)?.height ?? ACTORS.defaultHeight;
     },

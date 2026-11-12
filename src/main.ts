@@ -1,4 +1,4 @@
-import type { Scene } from 'three';
+import type { Box3, Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import type { SoundCue } from '../sim/audio.ts';
@@ -228,6 +228,8 @@ async function start(): Promise<void> {
   });
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),
+    boundsOf: (id: number, out: Box3): boolean => actors.boundsOf(id, out),
+    labelHover: (): number | null => overlays.labelHover(),
     clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile),
     aimExit: (exit: string | null): void => overlays.aimExit(exit),
   });
