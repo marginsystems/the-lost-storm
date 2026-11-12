@@ -35,7 +35,3 @@ export const BACKDROPS: Backdrops = {
     { centre: { x: 0.68, y: 0.62 }, size: { kind: 'fixed', rx: 0.36, ry: 0.26 }, stops: [stop(0, rgba(128, 136, 148, 0.12)), stop(1, transparent())] },
   ],
 };
-
-export function edgeFor(zoneKind: string | undefined): readonly RadialLayer[] {
-  return zoneKind === 'void' ? BACKDROPS.voidEdge : BACKDROPS.edge;
-}

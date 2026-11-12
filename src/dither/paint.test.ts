@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { BACKDROPS, edgeFor } from './backdrops.ts';
+import { BACKDROPS } from './backdrops.ts';
 import type { ColourStop, LayerUniforms, RadialLayer } from './paint.ts';
 import { DITHER_LIMITS, layerUniforms, radii, rgba } from './paint.ts';
 
@@ -47,10 +47,4 @@ void test('every backdrop fits the shader and its stops rise from the centre out
       });
     }
   }
-});
-
-void test('the void zone swaps the edge vignette for its own and every other zone keeps the plain one', (): void => {
-  assert.equal(edgeFor('void'), BACKDROPS.voidEdge);
-  assert.equal(edgeFor('town'), BACKDROPS.edge);
-  assert.equal(edgeFor(undefined), BACKDROPS.edge);
 });

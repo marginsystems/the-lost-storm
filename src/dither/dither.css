@@ -27,6 +27,25 @@
   display: none;
 }
 
+@property --void-edge {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+#vignette {
+  --void-edge: 0;
+  transition: --void-edge var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+body[data-zone-kind='void'] #vignette {
+  --void-edge: 1;
+}
+
+.vignette-edge {
+  opacity: calc(1 - var(--void-edge));
+}
+
 .vignette-lit {
   opacity: 0;
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);

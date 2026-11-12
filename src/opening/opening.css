@@ -1,4 +1,4 @@
-body[data-zone-kind='void'] #vignette:not(.dithered) {
+body[data-zone-kind='void'] #vignette:not(.dithered-void) {
   background: radial-gradient(ellipse at center, rgba(40, 44, 50, 0) 40%, rgba(40, 44, 50, 0.38) 100%);
 }
 
@@ -29,6 +29,6 @@ body:not([data-zone-kind='void']) .vignette-wake {
   visibility: hidden;
 }
 
-body[data-zone-kind='void'] .vignette-edge {
-  opacity: calc(1 - var(--wake-soft, 0));
+.vignette-void-edge {
+  opacity: calc(var(--void-edge) * (1 - var(--wake-soft, 0)));
 }
