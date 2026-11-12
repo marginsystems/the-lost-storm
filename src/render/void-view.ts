@@ -8,7 +8,9 @@ import type { GroundItem, ShoreState, World } from '../../sim/world/types.ts';
 import type { VoidShore } from '../../sim/content/story-types.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Eddy, MistDrive, MistField } from './mist-field.ts';
-import { createMistDrive, createMistField, MIST, stepDrive, stepField } from './mist-field.ts';
+import { createMistDrive, createMistField, MIST, stepDrive, stepField, wakeRim } from './mist-field.ts';
+import type { WakeRim } from './mist-field.ts';
+import type { WakeStage } from '../../sim/world/wake.ts';
 import type { VoidLight } from './void-light.ts';
 import { createVoidLight, VOID_LIGHT } from './void-light.ts';
 import type { ShoreRock } from './shore-rock.ts';
@@ -32,7 +34,7 @@ export const VOID_VIEW = {
   flashColor: 0xd8e4ff,
   lightColor: 0xfff1d6,
   layers: [
-    { height: 0.35, opacity: 0.42, scale: 0.21, drift: 0.11, need: 0.4, tear: 0.5, warp: 1.4, streak: 0.85 },
+    { height: 0.5, opacity: 0.42, scale: 0.21, drift: 0.11, need: 0.4, tear: 0.5, warp: 1.4, streak: 0.85 },
     { height: 1.1, opacity: 0.42, scale: 0.17, drift: 0.09, need: 0.41, tear: 0.55, warp: 1.9, streak: 0.4 },
     { height: 2.1, opacity: 0.45, scale: 0.14, drift: 0.075, need: 0.42, tear: 0.6, warp: 2.4, streak: 0.15 },
     { height: 3.3, opacity: 0.48, scale: 0.11, drift: 0.06, need: 0.43, tear: 0.65, warp: 2.9, streak: 0 },
@@ -44,7 +46,9 @@ export const VOID_VIEW = {
   },
   edgeFeather: 0.3,
   fray: 0.85,
-  figureClear: { inner: 1.15, outer: 2.7, margin: 0.45, lying: 0.35 },
+  figureClear: { inner: 1.15, outer: 2.7, margin: 0.45, lying: 0.35, riseShare: 0.3 },
+  thick: { thinBy: 0.4, floor: 0.9, boost: 1.5 },
+  bodyClear: { inner: 0.75, outer: 1.5 },
   rest: { tear: 1.8, feather: 1.7, breathe: 0.3, curl: 0.24 },
   restWall: 0.5,
   dither: 1.5,
@@ -83,8 +87,8 @@ export const VOID_VIEW = {
   flickerPower: 0.65,
   moteBox: { x: 46, y: 7, z: 46 },
   moteSize: 1.7,
-  moteColor: 0x3d4248,
-  moteOpacity: 0.55,
+  moteColor: 0xc9ced4,
+  moteOpacity: 0.32,
   moteDrift: 0.35,
   maxPixelRatio: 1.5,
   eyeFade: { near: 1.2, far: 4.5, above: 0.8 },
@@ -151,9 +155,14 @@ function buildGlimpse(floor: number): { readonly group: Group; readonly material
   return { group, material, geometries };
 }
 
-function figureOpen(front: number): number {
-  const t: number = Math.min(1, Math.max(0, front / MIST.wake.swell));
+function figureOpen(rise: number): number {
+  const t: number = Math.min(1, Math.max(0, rise / VOID_VIEW.figureClear.riseShare));
   return VOID_VIEW.figureClear.lying + (1 - VOID_VIEW.figureClear.lying) * t * t * (3 - 2 * t);
+}
+
+function wakeThick(front: number): number {
+  const t: number = Math.min(1, Math.max(0, front / VOID_VIEW.thick.thinBy));
+  return 1 - t * t * (3 - 2 * t);
 }
 
 function findsIn(world: World): Vec2[] {
@@ -176,6 +185,8 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
   const dir: IUniform<Vector2> = { value: new Vector2(0, 1) };
   const eyeFade: IUniform<Vector3> = { value: new Vector3(VOID_VIEW.eyeFade.near, VOID_VIEW.eyeFade.far, VOID_VIEW.eyeFade.above) };
   const eddies: IUniform<Vector4[]> = { value: eddyUniforms() };
+  const rim: IUniform<Vector3> = { value: new Vector3(0, 0, 1) };
+  const thick: IUniform<number> = { value: 0 };
   const field: MistField = createMistField(tier.cells);
   const drive: MistDrive = createMistDrive();
   const fieldTexture: DataTexture = new DataTexture(field.bytes, tier.cells, tier.cells, RedFormat);
@@ -211,7 +222,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
   const layers: Mesh[] = tier.layers.map((which: number, index: number): Mesh => {
     const layer = VOID_VIEW.layers[which] ?? VOID_VIEW.layers[0];
     const material: ShaderMaterial = new ShaderMaterial({
-      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uEyeFade: eyeFade, uGraze: { value: new Vector2(VOID_VIEW.graze.flat, VOID_VIEW.graze.full) }, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: which * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uDir: dir, uSpan: { value: MIST.span }, uNeed: { value: layer.need }, uTear: { value: layer.tear }, uWarp: { value: layer.warp }, uFeather: { value: VOID_VIEW.edgeFeather }, uFray: { value: VOID_VIEW.fray }, uFigure: figure, uRest: { value: new Vector4(VOID_VIEW.rest.tear, VOID_VIEW.rest.feather, VOID_VIEW.rest.breathe, VOID_VIEW.rest.curl) }, uMotion: motion, uRestWall: { value: VOID_VIEW.restWall }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uStreak: { value: layer.streak }, uWall: { value: VOID_VIEW.wallLight }, uEddyRadius: { value: MIST.eddyRadius }, uEddies: eddies, uField: fieldUniform, uFieldSize: fieldSize, uDither: dither, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor), uShore: shoreLine, uShoreLook: shoreLook, uPoolClear: { value: new Vector2(VOID_VIEW.poolClear.inner, VOID_VIEW.poolClear.outer) } },
+      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uEyeFade: eyeFade, uRim: rim, uBodyClear: { value: new Vector2(VOID_VIEW.bodyClear.inner, VOID_VIEW.bodyClear.outer) }, uThick: thick, uThickness: { value: new Vector2(VOID_VIEW.thick.floor, VOID_VIEW.thick.boost) }, uGraze: { value: new Vector2(VOID_VIEW.graze.flat, VOID_VIEW.graze.full) }, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: which * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uDir: dir, uSpan: { value: MIST.span }, uNeed: { value: layer.need }, uTear: { value: layer.tear }, uWarp: { value: layer.warp }, uFeather: { value: VOID_VIEW.edgeFeather }, uFray: { value: VOID_VIEW.fray }, uFigure: figure, uRest: { value: new Vector4(VOID_VIEW.rest.tear, VOID_VIEW.rest.feather, VOID_VIEW.rest.breathe, VOID_VIEW.rest.curl) }, uMotion: motion, uRestWall: { value: VOID_VIEW.restWall }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uStreak: { value: layer.streak }, uWall: { value: VOID_VIEW.wallLight }, uEddyRadius: { value: MIST.eddyRadius }, uEddies: eddies, uField: fieldUniform, uFieldSize: fieldSize, uDither: dither, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor), uShore: shoreLine, uShoreLook: shoreLook, uPoolClear: { value: new Vector2(VOID_VIEW.poolClear.inner, VOID_VIEW.poolClear.outer) } },
       defines,
       vertexShader: MIST_VERTEX,
       fragmentShader: MIST_FRAGMENT,
@@ -304,7 +315,10 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
     const lookDir: Vec2 | null = look === null || lookAway < VOID_VIEW.stillBelow ? null : { x: (look.x - pos.x) / lookAway, z: (look.z - pos.z) / lookAway };
     const anchored: Vec2 = { x: pos.x - world.shift.x, z: pos.z - world.shift.z };
     const lying: boolean = world.wake !== null;
-    const front: number | null = world.wake === null ? null : wakeStage(world.wake.plan, world.wake.elapsed).front;
+    const stage: WakeStage | null = world.wake === null ? null : wakeStage(world.wake.plan, world.wake.elapsed);
+    const front: number | null = stage === null ? null : stage.front;
+    const wave: WakeRim | null = stage === null ? null : wakeRim(stage.stir, stage.front);
+    rim.value.set(wave === null ? 0 : wave.radius, wave === null ? 0 : wave.strength, wave === null ? 1 : wave.width);
     stepDrive(drive, { hero: anchored, speed: lying ? 0 : speed, maxSpeed: world.player.stats.moveSpeed, moveDir: lying ? null : moveDir, look: lying ? null : lookDir, finds: findsIn(world), wake: front, dt, random: Math.random });
     stepField(field, drive, anchored, dt);
     fieldTexture.needsUpdate = true;
@@ -331,7 +345,9 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
     update(now: number, dt: number, world: World, focus: ViewFocus): void {
       time.value = now;
       shift.value.set(world.shift.x, world.shift.z);
-      const open: number = world.wake === null ? 1 : figureOpen(wakeStage(world.wake.plan, world.wake.elapsed).front);
+      const stage: WakeStage | null = world.wake === null ? null : wakeStage(world.wake.plan, world.wake.elapsed);
+      const open: number = stage === null ? 1 : figureOpen(stage.rise);
+      thick.value = stage === null ? 0 : wakeThick(stage.front);
       const inner: number = Math.max(VOID_VIEW.figureClear.inner, focus.figure.reach + VOID_VIEW.figureClear.margin) * open;
       figure.value.set(focus.figure.height, inner, inner + (VOID_VIEW.figureClear.outer - VOID_VIEW.figureClear.inner) * open);
       follow(world, dt, focus.look);

@@ -113,6 +113,10 @@ uniform vec3 uFlashColor;
 uniform vec2 uShift;
 uniform vec3 uEyeFade;
 uniform vec2 uGraze;
+uniform vec3 uRim;
+uniform vec2 uBodyClear;
+uniform float uThick;
+uniform vec2 uThickness;
 uniform vec2 uHero;
 uniform vec2 uNear;
 uniform vec2 uFlashPos;
@@ -205,7 +209,8 @@ void main() {
   float figure = 1.0 - smoothstep(uFigure.y * reachOut, uFigure.z * reachOut, figureDistance(p, uHero, head));
   vec2 fromCentre = abs(p - uHero);
   float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
-  float cleared = max(fieldAt((swirled + warp * uWarp) / uSpan) * inside, figure);
+  float aroundBody = 1.0 - smoothstep(uBodyClear.x * reachOut, uBodyClear.y * reachOut, distance(vWorld.xz, uHero));
+  float cleared = max(max(fieldAt((swirled + warp * uWarp) / uSpan) * inside, figure), aroundBody);
   float fray = voidFbm(swirled * uFray + roll * 2.2 + uSeed * 3.1);
   float still = 1.0 - uMotion;
   float need = uNeed + (mix(body, fray, 0.55) - 0.5) * uTear * mix(1.0, uRest.x, still);
@@ -225,6 +230,11 @@ void main() {
   float width = mix(2.5, 7.0, clamp(along / lightAway, 0.0, 1.0));
   float pull = uLight.z * lane * (1.0 - smoothstep(width, width + 3.5, across));
   float density = (1.0 - open) * (1.0 - pull * 0.7) * mix(1.0, 1.35, uLight.z * (1.0 - pull)) * clamp(0.45 + puff * 0.55 + smoothstep(uNear.y * 0.4, uNear.y * 1.3, away) * 0.5, 0.0, 1.0);
+  density = max(density, (1.0 - open) * uThick * uThickness.x);
+  float rimAt = uRim.x * (1.0 + (fray - 0.5) * 0.3 + (body - 0.5) * 0.25);
+  float rimOff = (away - rimAt) / uRim.z;
+  float rim = uRim.y * exp(-rimOff * rimOff) * (1.0 - max(aroundBody, figure));
+  density = max(density, rim * (0.55 + puff * 0.45));
   float ashore = dot(q - uShore.xy, uShore.zw) + (voidFbm(q * 0.09 + 3.0) - 0.5) * uShoreLook.z + (body - 0.5) * 4.0;
   density *= 1.0 - uShoreLook.y * smoothstep(0.0, uShoreLook.x * 0.6, ashore);
   density *= 1.0 - uShoreLook.y * smoothstep(-1.0, 3.0, ashore) * (1.0 - smoothstep(uPoolClear.x, uPoolClear.y, away));
@@ -233,6 +243,7 @@ void main() {
   color *= 0.82 + shade * 0.28;
   color = mix(color, uDeep, smoothstep(0.36, 0.58, storm) * (1.0 - near * 0.8) * (1.0 - open));
   color = mix(color, uMist * 1.06, wall * uWall);
+  color = mix(color, uMist * 1.08, rim * 0.6);
   color = mix(color, uMist, uShoreLook.y * (1.0 - smoothstep(-8.0, 2.0, ashore)) * 0.8);
   vec2 toFlash = vWorld.xz - uFlashPos;
   float glow = uFlash * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
@@ -242,7 +253,7 @@ void main() {
   color = mix(color, uLightColor, uLight.z * 0.85 * exp(-dot(nearLight, nearLight) / 90.0));
   float eye = smoothstep(uEyeFade.x, uEyeFade.y, distance(vWorld, cameraPosition)) * smoothstep(0.0, uEyeFade.z, cameraPosition.y - vWorld.y) * smoothstep(uGraze.x, uGraze.y, abs(normalize(vWorld - cameraPosition).y));
   float grain = voidDither(gl_FragCoord.xy + uSeed * 7.0) * uDither;
-  gl_FragColor = vec4(color + grain, clamp(density * uOpacity * eye + grain, 0.0, 1.0));
+  gl_FragColor = vec4(color + grain, clamp(density * uOpacity * (1.0 + uThick * uThickness.y) * eye + grain, 0.0, 1.0));
 }
 `;
 
@@ -275,7 +286,7 @@ uniform float uOpacity;
 varying float vFade;
 void main() {
   vec2 c = gl_PointCoord - 0.5;
-  float soft = 1.0 - smoothstep(0.15, 0.5, length(c));
+  float soft = 1.0 - smoothstep(0.0, 0.5, length(c));
   gl_FragColor = vec4(uColor, soft * vFade * uOpacity);
 }
 `;

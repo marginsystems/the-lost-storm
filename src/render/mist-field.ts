@@ -45,7 +45,8 @@ export const MIST = {
   eddyBehind: 1.6,
   eddyTurnBoost: 2.5,
   eddyAbove: 0.25,
-  wake: { lying: 1.4, peak: 7, swell: 0.42, softness: 0.85 },
+  wake: { lying: 0.8, peak: 7, swell: 0.42, softness: 0.85 },
+  rim: { ripple: 1.3, rippleStrength: 0.3, strength: 1, width: 0.55, widthGrow: 0.12, drift: 1.6, last: 1.6 },
 } as const;
 
 const DEGREES: number = Math.PI / 180;
@@ -305,4 +306,20 @@ export function sampleField(field: MistField, at: Vec2): number {
   const col: number = Math.floor((((at.x % MIST.span) + MIST.span) % MIST.span) / field.cell);
   const row: number = Math.floor((((at.z % MIST.span) + MIST.span) % MIST.span) / field.cell);
   return field.value[row * field.cells + col] ?? 0;
+}
+
+export interface WakeRim {
+  readonly radius: number;
+  readonly strength: number;
+  readonly width: number;
+}
+
+export function wakeRim(stir: number, front: number): WakeRim {
+  const { ripple, rippleStrength, strength, width, widthGrow, drift, last } = MIST.rim;
+  if (front > 0) {
+    const radius: number = wakePocket(Math.min(front, MIST.wake.swell)) + drift * smooth(MIST.wake.swell, 1, front);
+    return { radius, strength: strength * Math.sin(Math.PI * Math.min(1, front / (MIST.wake.swell * last))), width: width + radius * widthGrow };
+  }
+  const stirred: number = Math.min(1, Math.max(0, stir));
+  return { radius: MIST.wake.lying + ripple * smooth(0, 1, stirred), strength: rippleStrength * Math.sin(Math.PI * stirred), width };
 }

@@ -3,7 +3,7 @@ import { wakeLength } from '../../sim/world/wake.ts';
 import type { CameraShot, ShotPose } from '../render/iso-camera.ts';
 
 export const WAKE_SHOT = {
-  start: { distance: 5.0, pitchDegrees: 14, yawDegrees: 82, lookHeight: 0.35, fitWidth: 3.2 },
+  start: { distance: 5.0, pitchDegrees: 20, yawDegrees: 82, lookHeight: 0.35, fitWidth: 3.2 },
   push: 0.35,
   pullAt: 0.25,
   pullPower: 1.8,

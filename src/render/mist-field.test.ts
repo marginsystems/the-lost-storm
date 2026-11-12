@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Vec2 } from '../../sim/math.ts';
-import { clearing, createMistDrive, createMistField, gustAim, MIST, sampleField, stepDrive, stepField, stepMomentum, wakePocket, wantedDir } from './mist-field.ts';
+import { clearing, createMistDrive, createMistField, gustAim, MIST, sampleField, stepDrive, stepField, stepMomentum, wakePocket, wakeRim, wantedDir } from './mist-field.ts';
 import type { MistDrive, MistField } from './mist-field.ts';
 
 const DT: number = 1 / 60;
@@ -207,4 +207,23 @@ void test('the wake front clears the field around him and hands over to the play
   const settled = { dir: EAST, momentum: 0, gust: null, wake: 1 };
   const play = { dir: EAST, momentum: 0, gust: null, wake: null };
   for (let away: number = 0; away < 8; away += 0.25) assert.ok(Math.abs(clearing(settled, away, 0) - clearing(play, away, 0)) < 1e-9);
+});
+
+void test('the stir sends a small ripple, the rise a front that rolls outward past the play pocket and fades before control', (): void => {
+  assert.equal(wakeRim(0, 0).strength, 0);
+  const ripple = wakeRim(0.5, 0);
+  assert.ok(ripple.strength > 0 && ripple.strength < MIST.rim.strength);
+  assert.ok(ripple.radius > MIST.wake.lying);
+  let before = wakeRim(0, 0.001);
+  let strongest: number = 0;
+  for (let front: number = 0.002; front <= 1.0001; front += 0.002) {
+    const now = wakeRim(0, front);
+    if (now.strength > 0.05) assert.ok(now.radius >= before.radius - 1e-9, `the front turns back at ${front.toFixed(3)}`);
+    assert.ok(Math.abs(now.radius - before.radius) < 0.06 && Math.abs(now.strength - before.strength) < 0.02);
+    strongest = Math.max(strongest, now.strength);
+    before = now;
+  }
+  assert.ok(strongest > 0.95);
+  assert.ok(wakeRim(0, 0.5).radius > MIST.pocketMoving);
+  assert.ok(Math.abs(wakeRim(0, 1).strength) < 1e-9);
 });
