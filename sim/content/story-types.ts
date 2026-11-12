@@ -43,11 +43,7 @@ export interface ZoneVoid {
   readonly encounters: readonly ZoneEncounter[];
 }
 
-export const HUD_PARTS = ['life', 'mana', 'bar', 'quests', 'minimap', 'hints'] as const;
-export type HudPart = (typeof HUD_PARTS)[number];
-
 export interface ZoneHud {
-  readonly hide: readonly HudPart[];
   readonly until: readonly Condition[];
 }
 

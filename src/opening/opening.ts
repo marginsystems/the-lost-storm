@@ -1,12 +1,13 @@
-import type { BookDef, HudPart, PageDef } from '../../sim/content/story-types.ts';
+import type { BookDef, PageDef } from '../../sim/content/story-types.ts';
 import { bookOf } from '../../sim/content/story.ts';
 import { baseOf } from '../../sim/items.ts';
-import { HUD_PARTS } from '../../sim/content/story-types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { allHold } from '../../sim/world/conditions.ts';
-import { hiddenHudParts } from '../../sim/world/hud.ts';
+import { hudHidden } from '../../sim/world/hud.ts';
 import { readablePages } from '../../sim/world/story.ts';
 import type { Command, ItemInstance, WakeState, World } from '../../sim/world/types.ts';
+import type { HudGate } from '../hud/hud-gate.ts';
+import { createHudGate, HUD_GATE, hudGateCss } from '../hud/hud-gate.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import openingCss from './opening.css?inline';
 import type { SpokenName } from '../backend/name-voice.ts';
@@ -18,7 +19,6 @@ import { createReader } from './reader.ts';
 export const OPENING = {
   wakeDistance: 46,
   wakeRate: 0.45,
-  revealAnimation: 'hud-part-reveal',
 } as const;
 
 export interface OpeningDeps {
@@ -58,22 +58,13 @@ export function createOpening(deps: OpeningDeps): Opening {
   const reader: Reader = createReader(hud);
   const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): void => deps.refreshName() });
   let books: Set<number> = carriedBooks(world);
-  let hidden: ReadonlySet<HudPart> = new Set<HudPart>(hiddenHudParts(world));
-  for (const part of hidden) document.body.classList.add(`hud-hide-${part}`);
+  const gateStyle: HTMLStyleElement = document.createElement('style');
+  gateStyle.textContent = hudGateCss();
+  hud.append(gateStyle);
+  const gate: HudGate = createHudGate(document.body, hudHidden(world));
   document.body.addEventListener('animationend', (event: AnimationEvent): void => {
-    if (event.animationName !== OPENING.revealAnimation) return;
-    for (const part of HUD_PARTS) document.body.classList.remove(`hud-reveal-${part}`);
+    if (event.animationName === HUD_GATE.revealAnimation) gate.settle();
   });
-
-  const showHud = (): void => {
-    const now: ReadonlySet<HudPart> = new Set<HudPart>(hiddenHudParts(world));
-    for (const part of HUD_PARTS) {
-      if (now.has(part) === hidden.has(part)) continue;
-      document.body.classList.toggle(`hud-hide-${part}`, now.has(part));
-      if (!now.has(part)) document.body.classList.add(`hud-reveal-${part}`);
-    }
-    hidden = now;
-  };
 
   const readBook = (item: ItemInstance): void => {
     const book: BookDef | null = bookIn(world, item);
@@ -113,7 +104,7 @@ export function createOpening(deps: OpeningDeps): Opening {
         eased = wake;
         camera.ease(OPENING.wakeRate);
       }
-      showHud();
+      gate.set(hudHidden(world));
       noticeBooks();
       echo.update(world);
     },

@@ -5,6 +5,7 @@ import echoCss from './name-echo.css?inline';
 
 export const NAME_ECHO = {
   afterRise: 3,
+  voiceWait: 2.5,
   nearFind: 9,
   layers: 3,
   layerDelayMs: 380,
@@ -60,12 +61,13 @@ export function createNameEcho(deps: NameEchoDeps): NameEcho {
   const asked: Set<Moment> = new Set<Moment>();
   let lying: boolean = false;
   let risenAt: number | null = null;
+  let nearSince: number | null = null;
 
-  const say = (moment: Moment): void => {
-    if (said.has(moment)) return;
-    said.add(moment);
+  const say = (moment: Moment, waited: number): void => {
+    if (said.has(moment) || (asking && waited < NAME_ECHO.voiceWait)) return;
     const name: string | null = voice?.name ?? deps.nameOf();
     if (name === null) return;
+    said.add(moment);
     showLetters(deps.root, name);
     if (voice !== null) deps.play(voice.audio).catch((): void => undefined);
   };
@@ -95,9 +97,11 @@ export function createNameEcho(deps: NameEchoDeps): NameEcho {
       else if (lying && risenAt === null) risenAt = world.time;
       if (risenAt !== null) ask('risen');
       if (world.ground.some((ground: GroundItem): boolean => ground.find !== null)) ask('near');
-      if (risenAt !== null && world.time - risenAt >= NAME_ECHO.afterRise) say('risen');
+      if (risenAt !== null && world.time - risenAt >= NAME_ECHO.afterRise) say('risen', world.time - risenAt - NAME_ECHO.afterRise);
       const near: boolean = world.ground.some((ground: GroundItem): boolean => ground.find !== null && distance(ground.pos, world.player.pos) <= NAME_ECHO.nearFind);
-      if (near && said.has('risen')) say('near');
+      if (near) nearSince ??= world.time;
+      else nearSince = null;
+      if (nearSince !== null && said.has('risen')) say('near', world.time - nearSince);
     },
   };
 }

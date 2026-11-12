@@ -8,7 +8,7 @@ import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { questState } from './conditions.ts';
 import { createWorld } from './create.ts';
-import { hiddenHudParts } from './hud.ts';
+import { hudHidden } from './hud.ts';
 import { stepWorld } from './step.ts';
 import type { Command, GroundItem, ItemInstance, World } from './types.ts';
 
@@ -80,7 +80,7 @@ void test('a new game opens in the void, with the town quest held back and the H
   assert.notEqual(world.wake, null);
   assert.equal(world.flags['opening'], 'begun');
   assert.equal(questState(world, 'fallen_in'), 'locked');
-  assert.ok(hiddenHudParts(world).length > 0);
+  assert.equal(hudHidden(world), true);
   const plain: World = createWorld(content, { seed: 1, save: null });
   assert.equal(plain.zone.id, content.world.start);
   assert.equal(questState(plain, 'fallen_in'), 'active');
@@ -117,13 +117,13 @@ void test('taking the journal is the first choice; reading it shows the light, s
   assert.ok(carriesJournal(world));
   assert.equal(world.flags['first_choice'], 'took_journal');
   assert.equal(questState(world, 'follow_the_light'), 'locked');
-  assert.ok(hiddenHudParts(world).length > 0);
+  assert.equal(hudHidden(world), true);
   const page: string = must(must(content.books.get('journal'), 'journal book').pages[0], 'page').id;
   stepWorld(world, [{ type: 'read', book: 'journal', page }], DT);
   assert.equal(world.flags['opening'], 'read');
   assert.equal(questState(world, 'follow_the_light'), 'active');
   assert.equal(questState(world, 'fallen_in'), 'locked');
-  assert.deepEqual(hiddenHudParts(world), []);
+  assert.equal(hudHidden(world), false);
   stepWorld(world, [], DT);
   assert.ok(distance(lightExit(world), world.player.pos) > lightExit(world).radius);
   walkTo(world, (): Vec2 => (world.zone.id === opening.id ? lightExit(world) : world.player.pos), (): boolean => world.zone.id !== opening.id);

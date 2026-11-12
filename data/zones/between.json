@@ -1,6 +1,6 @@
 {
   "id": "between",
-  "name": "The Between",
+  "name": "The In-Between",
   "kind": "void",
   "level": 1,
   "cellSize": 4,
@@ -99,14 +99,6 @@
     ]
   },
   "hud": {
-    "hide": [
-      "life",
-      "mana",
-      "bar",
-      "quests",
-      "minimap",
-      "hints"
-    ],
     "until": [{"type": "flag", "flag": "opening", "is": "read"}]
   },
   "ambience": {

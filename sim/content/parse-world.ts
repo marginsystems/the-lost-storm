@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
 import { packMods } from './parse-combat.ts';
-import { byId, choice, choiceList, ContentError, each, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
+import { byId, choice, ContentError, each, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
   AtlasDef,
@@ -34,7 +34,6 @@ import type {
 } from './types.ts';
 import { service } from './parse-trade.ts';
 import type { ZoneHud, ZoneVoid, ZoneWake } from './story-types.ts';
-import { HUD_PARTS } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
@@ -146,9 +145,7 @@ function zoneVoid(value: unknown, where: string): ZoneVoid {
 function zoneHud(value: unknown, where: string): ZoneHud | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
-  const hide: ZoneHud['hide'] = choiceList(source, 'hide', HUD_PARTS, where);
-  if (hide.length === 0) throw new ContentError(`${where}.hide`, 'a HUD rule hides at least one part');
-  return { hide, until: conditions(source, 'until', where) };
+  return { until: conditions(source, 'until', where) };
 }
 
 function zoneOutside(value: unknown, where: string): ZoneOutside | null {
