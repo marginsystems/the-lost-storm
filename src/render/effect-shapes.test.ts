@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { BufferAttribute, BufferGeometry, InterleavedBufferAttribute } from 'three';
-import { Color } from 'three';
+import type { BufferAttribute, BufferGeometry, InterleavedBufferAttribute, Material } from 'three';
+import { Color, Mesh, NormalBlending, ShaderMaterial, Vector3 } from 'three';
 import type { Delivery } from '../../sim/content/types.ts';
 import { loadContent } from '../../sim/content/content.ts';
-import { telegraphFor } from './effect-shapes.ts';
+import { bandMesh, discMesh, groundArcs, lightningLine, markerMesh, pillarMesh, programKeepers, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
 import type { TelegraphPart } from './effect-shapes.ts';
 
 interface Spot {
@@ -58,4 +58,38 @@ void test('an arc telegraph fades out along both of its straight sides', (): voi
   const sides: Spot[] = all.filter((spot: Spot): boolean => Math.hypot(spot.x, spot.z) > 1e-3 && Math.abs(Math.abs(Math.atan2(spot.x, spot.z)) - half) < 1e-4);
   assert.ok(sides.length > 0);
   for (const spot of sides) assert.ok(Math.abs(spot.alpha) < 1e-6);
+});
+
+function variantOf(mesh: Mesh): string {
+  const material: Material | Material[] = mesh.material;
+  assert.ok(!Array.isArray(material));
+  const colour: BufferAttribute | InterleavedBufferAttribute | undefined = mesh.geometry.hasAttribute('color') ? mesh.geometry.getAttribute('color') : undefined;
+  const shader: string = material instanceof ShaderMaterial ? `${material.vertexShader}${material.fragmentShader}` : '';
+  const opaque: boolean = !material.transparent && material.blending === NormalBlending;
+  return [material.type, shader, material.side, opaque, material.vertexColors, colour?.itemSize ?? 0, mesh.geometry.hasAttribute('normal')].join('|');
+}
+
+function partsOf(object: Mesh | { readonly fills: readonly Mesh[]; readonly edges: readonly Mesh[] }): Mesh[] {
+  return object instanceof Mesh ? [object] : [...object.fills, ...object.edges];
+}
+
+void test('every effect shape draws with a shader a keeper holds, so freeing the last one never relinks mid-fight', (): void => {
+  const red: Color = new Color(1, 0, 0);
+  const shapes: Mesh[] = [
+    ...partsOf(projectileMesh('orb', red)),
+    ...partsOf(projectileMesh('bolt', red)),
+    ...deliveries().flatMap((delivery: Delivery): Mesh[] => partsOf(telegraphFor(delivery, red))),
+    discMesh(red, 2, 0.5),
+    bandMesh(red, 1, 2, 0.5),
+    skyBolt(red),
+    groundArcs(red, 2),
+    lightningLine(new Vector3(0, 0, 0), new Vector3(3, 0, 0), red, 0.2, 0.3),
+    pillarMesh(red, 1, 2),
+    slashMesh(1, 2, red).mesh,
+    shockwaveMesh(red, 0.5, 0).mesh,
+    markerMesh(red).mesh,
+    scorchMesh(red).mesh,
+  ];
+  const held: Set<string> = new Set<string>(programKeepers(red).map(variantOf));
+  for (const shape of shapes) assert.ok(held.has(variantOf(shape)), `no keeper holds ${variantOf(shape).slice(0, 80)}`);
 });

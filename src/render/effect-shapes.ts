@@ -488,6 +488,13 @@ export function groundArcs(color: Color, radius: number): Mesh<BufferGeometry, M
   return ribbonMesh(positions, indices, glow(color, SHAPES.glowBoost * 1.3), 8);
 }
 
+export function programKeepers(color: Color): Mesh[] {
+  const bare: BufferGeometry = new BufferGeometry();
+  bare.setAttribute('position', new BufferAttribute(new Float32Array(9), 3));
+  const telegraph: TelegraphPart = softPart(featheredSector(Math.PI * 2, bodyRings(0, 1)), color, 0, 5);
+  return [shockwaveMesh(color, 1, 1).mesh, scorchMesh(color).mesh, markerMesh(color).mesh, slashMesh(1, 1, color).mesh, new Mesh(bare, additive(color, 0)), new Mesh(bare, flat(color, 0)), projectileMesh('orb', color), pillarMesh(color, 1, 1), telegraph];
+}
+
 export function disposeObject(object: Mesh | Group): void {
   object.traverse((child): void => {
     if (!(child instanceof Mesh)) return;
