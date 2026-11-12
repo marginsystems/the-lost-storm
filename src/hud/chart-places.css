@@ -1,0 +1,99 @@
+.tree-socket.ability {
+  width: calc(var(--notable) + 6px);
+  height: calc(var(--notable) + 6px);
+  margin: calc((var(--notable) + 6px) / -2) 0 0 calc((var(--notable) + 6px) / -2);
+}
+
+.tree-socket.ability .tree-socket-well,
+.tree-socket.ability .tree-socket-fill {
+  border-radius: 9px;
+}
+
+.tree-socket.ability .tree-socket-rim {
+  display: block;
+  inset: -5px;
+  border-radius: 12px;
+  background: none;
+  transform: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 22%, transparent);
+  transition: box-shadow var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-socket.ability .tree-glyph {
+  width: 24px;
+  height: 24px;
+}
+
+.tree-socket.ability.allocated .tree-socket-rim {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 45%, transparent);
+}
+
+.tree-socket.available::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(232, 184, 102, 0.22), rgba(232, 184, 102, 0) 70%);
+  animation: chart-halo var(--drift-ms) var(--drift-ease) infinite;
+}
+
+.tree-socket.ability.available::after {
+  border-radius: 14px;
+}
+
+.tree-viewport.choosing .tree-socket.locked:not(.route):not(.match) {
+  opacity: 0.32;
+}
+
+.tree-viewport.choosing .tree-flow:not(.lit):not(.open) {
+  opacity: 0.4;
+}
+
+@keyframes chart-halo {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+.chart-prompt {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  z-index: 3;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: var(--serif);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--ember);
+  background: rgba(8, 10, 16, 0.72);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.chart-prompt.shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.chart-card-tags {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ember);
+}
+
+.chart-card-cost {
+  font-size: 11px;
+  color: var(--text-dim);
+}

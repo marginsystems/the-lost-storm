@@ -146,7 +146,7 @@ export interface PlayerState extends ActorState {
   skillPoints: number;
   allocated: string[];
   learned: string[];
-  offersTaken: string[];
+  grantsTaken: string[];
   inventory: (ItemInstance | null)[];
   equipped: Equipment;
   intent: Intent;
@@ -335,12 +335,6 @@ export interface SlotCommand {
   readonly skill: string | null;
 }
 
-export interface ChooseCommand {
-  readonly type: 'choose';
-  readonly offer: string;
-  readonly skill: string;
-}
-
 export interface AllocateCommand {
   readonly type: 'allocate';
   readonly node: string;
@@ -475,7 +469,7 @@ export interface OverlayCommand {
   readonly open: boolean;
 }
 
-export type Command = StrikeCommand | SlotCommand | ChooseCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export type Command = StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -524,7 +518,8 @@ export type WorldEvent =
   | { readonly type: 'pickup'; readonly ground: GroundItem }
   | { readonly type: 'xp'; readonly amount: number }
   | { readonly type: 'level_up'; readonly level: number }
-  | { readonly type: 'skill_unlocked'; readonly skill: string; readonly slot: number | null; readonly chosen: boolean }
+  | { readonly type: 'skill_unlocked'; readonly skill: string; readonly slot: number | null }
+  | { readonly type: 'chart_point'; readonly source: string; readonly points: number }
   | { readonly type: 'surge'; readonly surge: number }
   | { readonly type: 'surge_cleared'; readonly surge: number; readonly delay: number }
   | { readonly type: 'player_respawn' }

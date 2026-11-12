@@ -13,8 +13,8 @@ const content: Content = loadContent();
 
 function chartWorld(): World {
   const world: World = armed(worldIn(content, 'hall_of_time', 1));
-  world.player.skillPoints = 4;
-  for (const node of ['tempered_body', 'stone_1', 'bedrock']) stepWorld(world, [{ type: 'allocate', node }], 1 / 60);
+  world.player.skillPoints = 5;
+  for (const node of ['stone_thunderclap', 'tempered_body', 'stone_1', 'bedrock']) stepWorld(world, [{ type: 'allocate', node }], 1 / 60);
   return world;
 }
 
@@ -32,13 +32,13 @@ void test('every level brings the points the chart asks for', (): void => {
 
 void test('a place at the edge of what was taken is given back for gold and its point returns', (): void => {
   const world: World = chartWorld();
-  assert.deepEqual(world.player.allocated, ['tempered_body', 'stone_1', 'bedrock']);
+  assert.deepEqual(world.player.allocated, ['stone_thunderclap', 'tempered_body', 'stone_1', 'bedrock']);
   const life: number = world.player.stats.maxLife;
   world.player.gold = 1000;
   send(world, { type: 'refund', node: 'stone_1' });
-  assert.equal(world.player.allocated.length, 3);
+  assert.equal(world.player.allocated.length, 4);
   send(world, { type: 'refund', node: 'bedrock' });
-  assert.deepEqual(world.player.allocated, ['tempered_body', 'stone_1']);
+  assert.deepEqual(world.player.allocated, ['stone_thunderclap', 'tempered_body', 'stone_1']);
   assert.equal(world.player.skillPoints, 2);
   assert.equal(world.player.gold, 1000 - refundCost(content, world.player.level, 1));
   assert.ok(world.player.stats.maxLife < life);
@@ -49,10 +49,10 @@ void test('a full respec returns every point and costs gold for each, and withou
   world.player.gold = 0;
   const refused: WorldEvent[] = send(world, { type: 'respec' });
   assert.ok(refused.some((event: WorldEvent): boolean => event.type === 'notice' && event.reason === 'no_gold'));
-  assert.equal(world.player.allocated.length, 3);
-  world.player.gold = refundCost(content, world.player.level, 3);
+  assert.equal(world.player.allocated.length, 4);
+  world.player.gold = refundCost(content, world.player.level, 4);
   send(world, { type: 'respec' });
   assert.deepEqual(world.player.allocated, []);
-  assert.equal(world.player.skillPoints, 4);
+  assert.equal(world.player.skillPoints, 5);
   assert.equal(world.player.gold, 0);
 });

@@ -40,6 +40,10 @@ const GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
 
 const FALLBACK: string = '<path d="M12 3l9 9-9 9-9-9z"/>';
 
+export function iconBody(id: string): string {
+  return GLYPHS.get(id) ?? FALLBACK;
+}
+
 export function iconSvg(id: string): string {
-  return `${OPEN}${GLYPHS.get(id) ?? FALLBACK}${CLOSE}`;
+  return `${OPEN}${iconBody(id)}${CLOSE}`;
 }

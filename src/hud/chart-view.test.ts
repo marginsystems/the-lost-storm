@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { AtlasFrame, AtlasView } from './atlas-view.ts';
-import { CHART_VIEW, clampChart, fitScale, openChart, panChart, pinLabel, spreadLabels, wholeChart, zoomChart } from './chart-view.ts';
+import { CHART_VIEW, clampChart, fitScale, frameChart, openChart, panChart, pinLabel, spreadLabels, wholeChart, zoomChart } from './chart-view.ts';
 import type { LabelBox, PinnedLabel } from './chart-view.ts';
 
 const FRAME: AtlasFrame = { width: 1400, height: 700, mapWidth: 1500, mapHeight: 1400 };
@@ -47,4 +47,15 @@ void test('two names pinned onto the same spot are spread apart toward the middl
   assert.equal(second?.y, 680 - 20 - CHART_VIEW.labelGap);
   const apart: LabelBox[] = spreadLabels([low, { ...low, x: 1100 }], FRAME);
   assert.equal(apart[1]?.y, 680);
+});
+
+void test('the chart opens framed on every place that can be taken, at no more than the readable zoom', (): void => {
+  const spread: AtlasView = frameChart(FRAME, [{ x: 300, y: 300 }, { x: 1200, y: 1100 }]);
+  assert.ok(spread.scale < CHART_VIEW.openScale);
+  assert.ok((1200 - 300 + CHART_VIEW.framePad * 2) * spread.scale <= FRAME.width);
+  assert.ok((1100 - 300 + CHART_VIEW.framePad * 2) * spread.scale <= FRAME.height);
+  assert.equal(spread.x, 750);
+  assert.equal(spread.y, 700);
+  assert.equal(frameChart(FRAME, [{ x: 750, y: 700 }]).scale, CHART_VIEW.openScale);
+  assert.deepEqual(frameChart(FRAME, []), wholeChart(FRAME));
 });

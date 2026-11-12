@@ -35,7 +35,8 @@ void test('every path is named past its farthest place, in its own tint', (): vo
 });
 
 void test('the route to a place starts beside what is taken and ends on the place, and a taken place needs none', (): void => {
-  assert.deepEqual(chartRoute(content, [], 'stormcallers_focus'), ['stormcallers_focus']);
+  assert.deepEqual(chartRoute(content, [], 'storm_storm_bolt'), ['storm_storm_bolt']);
+  assert.deepEqual(chartRoute(content, [], 'stormcallers_focus'), ['storm_storm_bolt', 'stormcallers_focus']);
   assert.deepEqual(chartRoute(content, ['stormcallers_focus'], 'stormcallers_focus'), []);
   const far: string[] = chartRoute(content, ['stormcallers_focus'], 'storm_2');
   assert.equal(far.at(-1), 'storm_2');
@@ -45,7 +46,8 @@ void test('the route to a place starts beside what is taken and ends on the plac
 });
 
 void test('a route only walks forward along what each place requires, and an entrance is reached directly', (): void => {
-  assert.deepEqual(chartRoute(content, ['stormcallers_focus', 'storm_1'], 'heavy_hands'), ['heavy_hands']);
+  assert.deepEqual(chartRoute(content, ['storm_storm_bolt', 'stormcallers_focus', 'storm_1'], 'blade_thunderhead'), ['blade_thunderhead']);
+  assert.deepEqual(chartRoute(content, ['storm_storm_bolt', 'stormcallers_focus', 'storm_1'], 'heavy_hands'), ['blade_thunderhead', 'heavy_hands']);
   const route: string[] = chartRoute(content, ['stormcallers_focus'], 'forked_bolt');
   assert.deepEqual(route, ['storm_1', 'forked_bolt']);
   const taken: string[] = ['stormcallers_focus'];

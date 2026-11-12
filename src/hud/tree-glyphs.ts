@@ -1,3 +1,6 @@
+import type { Content, SkillTreeNodeDef } from '../../sim/content/types.ts';
+import { iconBody } from './icons.ts';
+
 const OPEN: string = '<svg class="tree-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
 const CLOSE: string = '</svg>';
 
@@ -23,4 +26,9 @@ export function treeGlyph(id: string): string {
 
 export function hasTreeGlyph(id: string): boolean {
   return GLYPHS.has(id);
+}
+
+export function placeGlyph(content: Content, node: SkillTreeNodeDef): string {
+  const skill: string | undefined = node.unlock === null ? undefined : content.skills.get(node.unlock)?.icon;
+  return skill === undefined ? treeGlyph(node.icon) : `${OPEN}${iconBody(skill)}${CLOSE}`;
 }

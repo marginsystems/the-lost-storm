@@ -10,7 +10,6 @@ import { distance } from '../math.ts';
 import { readSave, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
 import { CALM, glitchBlock, heldCommands, requestGlitch, setGlitchesEnabled, stageOf, stepGlitch, storyProgress } from './glitch.ts';
-import { pendingOffer } from './learning.ts';
 import { forceStrike } from './moments.ts';
 import { attacksHeld } from './glitch-hold.ts';
 import type { GlitchRequest } from './glitch-types.ts';
@@ -161,9 +160,6 @@ void test('a hard cut waits while a moment fight is awake or a skill choice is o
   moment.figures.splice(0, moment.figures.length, { echo: 0, pos: thrall.pos, facing: 0, turned: true, monsterId: thrall.id });
   assert.equal(glitchBlock(world, story), 'fight');
   world.moments = [];
-  world.flags['first_moment'] = 'cleared';
-  assert.notEqual(pendingOffer(world), null);
-  assert.equal(glitchBlock(world, story), 'choice');
 });
 
 void test('monster attacks wait out the glitch and its grace, then resume', (): void => {

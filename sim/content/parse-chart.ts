@@ -1,4 +1,5 @@
-import type { ChartDef, ChartGroup, ChartPath, SkillTarget, SkillVariant } from './chart-types.ts';
+import type { ChartDef, ChartGroup, ChartPath, PointGrant, SkillTarget, SkillVariant } from './chart-types.ts';
+import { conditions } from './parse-conditions.ts';
 import type { Fields } from './read.ts';
 import { choice, ContentError, each, fields, isFields, nonNegative, numeric, positive, text, textList } from './read.ts';
 import type { Content, SkillMod, SkillTreeNodeDef, StatMod } from './types.ts';
@@ -46,6 +47,7 @@ export function treeNode(value: unknown, where: string): SkillTreeNodeDef {
     statMods: each(source['statMods'], `${where}.statMods`, statMod),
     skillMods: each(source['skillMods'], `${where}.skillMods`, skillMod),
     variant: variant(source['variant'], `${where}.variant`),
+    unlock: source['unlock'] === undefined ? null : text(source, 'unlock', where),
   };
 }
 
@@ -61,6 +63,13 @@ function chartGroup(value: unknown, where: string): ChartGroup {
   return { id: text(source, 'id', where), name: text(source, 'name', where), skills: textList(source, 'skills', where) };
 }
 
+function pointGrant(value: unknown, where: string): PointGrant {
+  const source: Fields = fields(value, where);
+  const points: number = positive(source, 'points', where);
+  if (!Number.isInteger(points)) throw new ContentError(`${where}.points`, 'expected a whole number');
+  return { id: text(source, 'id', where), when: conditions(source, 'when', where), points };
+}
+
 export function chartDef(value: unknown, where: string): ChartDef {
   const source: Fields = fields(value, where);
   const respec: unknown = source['respec'];
@@ -73,6 +82,7 @@ export function chartDef(value: unknown, where: string): ChartDef {
     respec: { goldPerPoint: nonNegative(respec, 'goldPerPoint', `${where}.respec`), goldPerLevel: nonNegative(respec, 'goldPerLevel', `${where}.respec`) },
     paths: each(source['paths'], `${where}.paths`, chartPath),
     groups: each(source['groups'], `${where}.groups`, chartGroup),
+    grants: each(source['grants'], `${where}.grants`, pointGrant),
   };
 }
 
@@ -106,6 +116,7 @@ export function chartProblems(content: Content): string[] {
   if (!unique(nodes.map((node: SkillTreeNodeDef): string => `${node.column},${node.row}`))) problems.push('skill tree has two nodes on the same column and row');
   if (!unique(content.chart.paths.map((path: ChartPath): string => path.id))) problems.push('chart has duplicate path ids');
   if (!unique(content.chart.groups.map((group: ChartGroup): string => group.id))) problems.push('chart has duplicate skill group ids');
+  if (!unique(content.chart.grants.map((grant: PointGrant): string => grant.id))) problems.push('chart has duplicate point grant ids');
   for (const group of content.chart.groups) {
     for (const skill of group.skills) if (!content.skills.has(skill)) problems.push(`skill group ${group.id} names unknown skill ${skill}`);
   }

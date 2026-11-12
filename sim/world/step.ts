@@ -1,4 +1,4 @@
-import { learnSkills } from './learning.ts';
+import { grantPoints, learnSkills } from './learning.ts';
 import { stepBosses } from './boss.ts';
 import { stepDeath } from './death.ts';
 import { stepAreas, timeScaleOf } from './areas.ts';
@@ -47,6 +47,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepTriggers(world);
   stepQuests(world);
   learnSkills(world);
+  grantPoints(world);
   stepTrade(world);
   stepGlitch(world, dt);
   recordPath(world, dt);

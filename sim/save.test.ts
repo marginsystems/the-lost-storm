@@ -31,7 +31,7 @@ function played(): World {
   player.gold = 123;
   player.kills = 9;
   player.skillPoints = 2;
-  player.allocated = ['tempered_body', 'heavy_hands'];
+  player.allocated = ['stone_thunderclap', 'tempered_body', 'blade_thunderhead', 'heavy_hands'];
   player.inventory[0] = made('drowned_leathers', 'rare', 5);
   player.inventory[3] = made('gale_charm', 'magic', 6);
   player.equipped.weapon = made('stormsteel_sword', 'rare', 7);
@@ -55,7 +55,8 @@ void test('a save survives JSON and rebuilds the same character', (): void => {
   assert.equal(player.gold, 123);
   assert.equal(player.kills, 9);
   assert.equal(player.skillPoints, 2);
-  assert.deepEqual(player.allocated, ['tempered_body', 'heavy_hands']);
+  assert.deepEqual(player.allocated, ['stone_thunderclap', 'tempered_body', 'blade_thunderhead', 'heavy_hands']);
+  assert.ok(player.learned.includes('thunderclap') && player.learned.includes('thunderhead'));
   assert.deepEqual(player.inventory, original.player.inventory);
   assert.deepEqual(player.equipped, original.player.equipped);
   assert.equal(restored.surge, 3);
@@ -64,6 +65,25 @@ void test('a save survives JSON and rebuilds the same character', (): void => {
   assert.equal(player.life, player.maxLife);
   assert.ok(player.stats.maxLife >= 100 + 12 * 3 + 30);
   assert.ok(restored.monsters.every((monster): boolean => monster.level === restored.zone.level));
+});
+
+void test('a save from before the ability places gives back the points of places it can no longer reach', (): void => {
+  const old: World = played();
+  old.player.allocated = ['tempered_body', 'stone_1', 'stone_thunderclap', 'blade_1'];
+  const save: SaveData = roundTrip(old);
+  assert.deepEqual(save.allocated, ['tempered_body', 'stone_1', 'stone_thunderclap']);
+  assert.equal(save.skillPoints, 3);
+});
+
+void test('skills a save learned from the old offers keep their places, and one whose way is closed gives a point back', (): void => {
+  const old: World = played();
+  old.player.allocated = [];
+  old.player.skillPoints = 0;
+  old.player.learned = ['cleave', 'thunderclap', 'storm_bolt', 'living_wire'];
+  const save: SaveData = roundTrip(old);
+  assert.deepEqual(save.allocated, ['stone_thunderclap', 'storm_storm_bolt']);
+  assert.ok(save.learned.includes('thunderclap') && save.learned.includes('storm_bolt') && !save.learned.includes('living_wire'));
+  assert.equal(save.skillPoints, 1);
 });
 
 void test('a restored world does not hand out the starting items again', (): void => {
@@ -93,13 +113,13 @@ void test('items with unknown bases, rarities or affixes are dropped or cleaned'
   const raw: unknown = JSON.parse(
     JSON.stringify({
       ...base,
-      allocated: ['tempered_body', 'ghost_node', 7],
+      allocated: ['stone_thunderclap', 'tempered_body', 'ghost_node', 7],
       inventory: [ghost, odd, mixed, 'junk', null],
       equipped: { weapon: misplaced, chest: null, charm: null },
     }),
   );
   const save: SaveData = must(readSave(content, raw), 'save');
-  assert.deepEqual(save.allocated, ['tempered_body']);
+  assert.deepEqual(save.allocated, ['stone_thunderclap', 'tempered_body']);
   assert.equal(save.inventory[0], null);
   assert.equal(save.inventory[1], null);
   assert.deepEqual(must(save.inventory[2], 'mixed').affixes, [{ affix: 'jagged', value: 2 }]);

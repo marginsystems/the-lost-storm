@@ -1,6 +1,5 @@
-import type { OpenOffer } from './skill-book.ts';
-import { pendingOffer } from './world/learning.ts';
-import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, ZoneDef, ZoneExit } from './content/types.ts';
+import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, SkillTreeNodeDef, ZoneDef, ZoneExit } from './content/types.ts';
+import { canAllocate } from './progression.ts';
 import type { ReadonlyVec2, Vec2 } from './math.ts';
 import { DEGREES_TO_RADIANS, distance, dot, normalize, rotate } from './math.ts';
 import { isWalkable, lineWalkable } from './nav/grid.ts';
@@ -60,9 +59,16 @@ export function createBot(world: World, habits: BotHabits = CAREFUL, watch: BotW
   return { world, events: [], habits, watch, deaths: 0 };
 }
 
+function nextPlace(world: World): SkillTreeNodeDef | null {
+  const player = world.player;
+  if (player.skillPoints <= 0) return null;
+  const open: readonly SkillTreeNodeDef[] = world.content.skillTree.filter((node: SkillTreeNodeDef): boolean => canAllocate(world.content, player.allocated, player.skillPoints, node.id));
+  return open.find((node: SkillTreeNodeDef): boolean => node.unlock !== null) ?? open[0] ?? null;
+}
+
 function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
-  const offer: OpenOffer | null = pendingOffer(bot.world);
-  const chosen: readonly Command[] = offer === null ? commands : [...commands, { type: 'choose', offer: offer.offer.id, skill: offer.choices[0] ?? '' }];
+  const place: SkillTreeNodeDef | null = nextPlace(bot.world);
+  const chosen: readonly Command[] = place === null ? commands : [...commands, { type: 'allocate', node: place.id }];
   const events: WorldEvent[] = stepWorld(bot.world, choicesOpen(bot.world) ? [...chosen, { type: 'respawn', choice: 'checkpoint' }] : chosen, BOT.step);
   for (const event of events) {
     if (event.type === 'death' && event.team === 'player') bot.deaths += 1;

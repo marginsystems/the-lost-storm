@@ -1,7 +1,7 @@
 import type { FlaskDef } from './flasks.ts';
 import type { AttachmentDef, RigDef } from './rig-types.ts';
 import type { DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, StalkerBehaviour, SummonDef } from './combat-types.ts';
-import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillOffer, SkillShape, SkillUnlock } from './shape-types.ts';
+import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
 import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { ZoneAmbience } from './ambience-types.ts';
@@ -51,6 +51,10 @@ export const VFX_STYLES = ['slash', 'claw', 'shockwave', 'bolt', 'orb', 'roll', 
 export type VfxStyle = (typeof VFX_STYLES)[number];
 
 export const VFX_CUES = ['none', 'hand', 'ground', 'blade'] as const;
+
+export const SKILL_CATEGORIES = ['none', 'area', 'single', 'chain', 'charged', 'mark', 'movement', 'defence', 'channel', 'lasting'] as const;
+
+export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
 export type VfxCue = (typeof VFX_CUES)[number];
 
 export interface ArcDelivery {
@@ -132,6 +136,7 @@ export interface SkillDef extends SkillShape {
   readonly shake: number;
   readonly hitStop: number;
   readonly vfx: SkillVfx;
+  readonly category: SkillCategory;
   readonly combo: SkillCombo | null;
   readonly hold: number;
   readonly echo: number;
@@ -302,9 +307,10 @@ export interface SkillTreeNodeDef {
   readonly statMods: readonly StatMod[];
   readonly skillMods: readonly SkillMod[];
   readonly variant: SkillVariant | null;
+  readonly unlock: string | null;
 }
 
-export type { ChartDef, ChartGroup, ChartPath, ChartRespec, SkillTarget, SkillVariant } from './chart-types.ts';
+export type { ChartDef, ChartGroup, ChartPath, ChartRespec, PointGrant, SkillTarget, SkillVariant } from './chart-types.ts';
 
 export type { AttachmentDef, RigActionClip, RigClips, RigDef, RigSocket, RigUnarmedClips, Triple } from './rig-types.ts';
 
@@ -627,7 +633,6 @@ export interface PlayerDef {
   readonly perLevel: readonly StatMod[];
   readonly skillBar: readonly SkillBinding[];
   readonly skillBook: readonly SkillUnlock[];
-  readonly skillOffers: readonly SkillOffer[];
   readonly xp: XpCurve;
   readonly startingItems: readonly string[];
   readonly unarmedVisual: string | null;

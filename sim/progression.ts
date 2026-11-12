@@ -55,3 +55,36 @@ export function canRefund(content: Content, allocated: readonly string[], nodeId
 export function refundCost(content: Content, level: number, points: number): number {
   return Math.round(points * (content.chart.respec.goldPerPoint + content.chart.respec.goldPerLevel * level));
 }
+
+export function reachablePlaces(content: Content, allocated: readonly string[]): string[] {
+  const kept: Set<string> = new Set<string>();
+  let grew: boolean = true;
+  while (grew) {
+    grew = false;
+    for (const id of allocated) {
+      const node: SkillTreeNodeDef | null = findNode(content, id);
+      if (node === null || kept.has(id) || !requirementsMet(node, [...kept])) continue;
+      kept.add(id);
+      grew = true;
+    }
+  }
+  return allocated.filter((id: string): boolean => kept.has(id));
+}
+
+export interface AdoptedPlaces {
+  readonly allocated: readonly string[];
+  readonly refund: number;
+}
+
+export function adoptLearned(content: Content, learned: unknown, allocated: readonly string[]): AdoptedPlaces {
+  const taken: string[] = [...allocated];
+  let refund: number = 0;
+  const list: readonly unknown[] = Array.isArray(learned) ? learned : [];
+  for (const skill of list) {
+    const node: SkillTreeNodeDef | undefined = content.skillTree.find((entry: SkillTreeNodeDef): boolean => entry.unlock !== null && entry.unlock === skill);
+    if (node === undefined || taken.includes(node.id)) continue;
+    if (requirementsMet(node, taken)) taken.push(node.id);
+    else refund += 1;
+  }
+  return { allocated: taken, refund };
+}

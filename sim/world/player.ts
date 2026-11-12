@@ -1,4 +1,3 @@
-import { chooseSkill } from './learning.ts';
 import type { SkillDef, ZoneExit } from '../content/types.ts';
 import { forceStrike } from './moments.ts';
 import type { Vec2 } from '../math.ts';
@@ -159,7 +158,6 @@ function act(world: World, command: Command): void {
     }
     case 'flask':
     case 'slot':
-    case 'choose':
     case 'hold':
     case 'steer':
     case 'trade':
@@ -236,9 +234,6 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'slot':
       slotSkill(world, command.slot, command.skill);
-      return;
-    case 'choose':
-      chooseSkill(world, command.offer, command.skill);
       return;
     case 'hold':
       player.held = command.down ? [...player.held.filter((slot: number): boolean => slot !== command.slot), command.slot] : player.held.filter((slot: number): boolean => slot !== command.slot);

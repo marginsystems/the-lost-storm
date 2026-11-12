@@ -83,6 +83,7 @@
     "stagger": 0.65,
     "shake": 0.55,
     "hitStop": 0.07,
+    "category": "area",
     "vfx": {
       "style": "shockwave",
       "color": "#7fd4ff",
@@ -120,6 +121,7 @@
     "stagger": 0.2,
     "shake": 0.14,
     "hitStop": 0.03,
+    "category": "single",
     "vfx": {
       "style": "bolt",
       "color": "#9be1ff",
@@ -858,6 +860,7 @@
     "stagger": 0.18,
     "shake": 0.18,
     "hitStop": 0.03,
+    "category": "chain",
     "vfx": { "style": "fork", "color": "#b8e8ff", "cue": "hand" }
   },
   {
@@ -878,6 +881,7 @@
     "stagger": 0.35,
     "shake": 0.22,
     "hitStop": 0.04,
+    "category": "movement",
     "vfx": { "style": "mist", "color": "#c9d6e2", "cue": "ground" }
   },
   {
@@ -898,6 +902,7 @@
     "stagger": 0.6,
     "shake": 0.45,
     "hitStop": 0.06,
+    "category": "area",
     "vfx": { "style": "wind", "color": "#a9c4cf", "cue": "hand" }
   },
   {
@@ -918,6 +923,7 @@
     "stagger": 0.12,
     "shake": 0.1,
     "hitStop": 0.015,
+    "category": "lasting",
     "vfx": { "style": "storm", "color": "#8fd0ff", "cue": "hand" }
   },
   {
@@ -938,6 +944,7 @@
     "stagger": 0.4,
     "shake": 0.45,
     "hitStop": 0.07,
+    "category": "charged",
     "vfx": { "style": "heave", "color": "#e6f3ff", "cue": "ground", "light": 0.8 },
     "press": { "type": "charge", "max": 1.1, "damageScale": 3.1, "areaScale": 1.7 }
   },
@@ -959,6 +966,7 @@
     "stagger": 0.1,
     "shake": 0.08,
     "hitStop": 0.02,
+    "category": "mark",
     "vfx": { "style": "brand", "color": "#f2e08a", "cue": "hand" },
     "brand": { "duration": 7, "burst": "static_brand_burst" }
   },
@@ -1000,6 +1008,7 @@
     "stagger": 0.08,
     "shake": 0.05,
     "hitStop": 0.01,
+    "category": "channel",
     "vfx": { "style": "beam", "color": "#bfe9ff", "cue": "hand" },
     "press": { "type": "channel", "interval": 0.18, "max": 4 }
   },
@@ -1021,6 +1030,7 @@
     "stagger": 0,
     "shake": 0.3,
     "hitStop": 0.05,
+    "category": "defence",
     "vfx": { "style": "gap", "color": "#d8d0ff", "cue": "hand" }
   },
   {

@@ -194,7 +194,7 @@ void test('contentProblems reports dangling references', (): void => {
 
 void test('a tree node needs a known kind and a place of its own', (): void => {
   assert.throws((): Content => parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, kind: 'huge' }] }), /kind/);
-  const stacked: Content = parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, column: 0, row: -14 }] });
+  const stacked: Content = parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, column: 0, row: -1.6 }] });
   assert.ok(contentProblems(stacked).some((line: string): boolean => line.includes('same column and row')));
 });
 
