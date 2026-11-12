@@ -1,6 +1,8 @@
 export const BROWSER_NOTICES = {
   webgl: 'This browser cannot draw the game: it needs WebGL 2. Try an up-to-date Chrome, Edge, Firefox or Safari, or turn on hardware acceleration.',
   old: 'This browser is too old to run the game. Update it, or try an up-to-date Chrome, Edge, Firefox or Safari.',
+  stopped: 'The storm could not finish loading. Reloading usually helps.',
+  reload: 'Reload',
 } as const;
 
 export interface BrowserProbe {
@@ -21,8 +23,11 @@ export function probeBrowser(scope: object, arrays: object): BrowserProbe {
 }
 
 export function failureText(error: unknown): string {
-  if (error instanceof UnsupportedBrowser) return error.message;
-  return error instanceof Error ? `The storm failed to gather: ${error.message}` : 'The storm failed to gather.';
+  return error instanceof UnsupportedBrowser ? error.message : BROWSER_NOTICES.stopped;
+}
+
+export function reloadHelps(error: unknown): boolean {
+  return !(error instanceof UnsupportedBrowser);
 }
 
 export function createdOrUnsupported<T>(create: () => T): T {

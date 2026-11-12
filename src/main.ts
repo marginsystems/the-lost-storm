@@ -126,7 +126,7 @@ import type { OverlayManager } from './hud/overlays.ts';
 import { readServerUrl } from './backend/server-url.ts';
 import { createTitleSync, followSync } from './title-sync.ts';
 import { createStatusLine, TITLE_NOTICES } from './title-status.ts';
-import { createdOrUnsupported, failureText, probeBrowser, UnsupportedBrowser, unsupportedReason } from './browser-support.ts';
+import { BROWSER_NOTICES, createdOrUnsupported, failureText, probeBrowser, reloadHelps, UnsupportedBrowser, unsupportedReason } from './browser-support.ts';
 import { defaultBar } from '../sim/skill-book.ts';
 import type { Bar } from '../sim/skill-book.ts';
 import { shippedKeys, showTitleKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleNames } from './title-keys.ts';
@@ -591,6 +591,7 @@ async function start(): Promise<void> {
 
   status.classList.remove('failed');
   if (backend.freshStart()) statusLine.show(TITLE_NOTICES.freshStart);
+  else if (backend.setAside()) statusLine.show(TITLE_NOTICES.setAside);
   else status.classList.add('quiet');
   const titleLoader: HTMLDivElement = element('title-loader', HTMLDivElement);
   await untilCycleEnds(titleLoader);
@@ -658,5 +659,12 @@ start().catch((error: unknown): void => {
     status.classList.add('failed');
   }
   document.getElementById('title-loader')?.classList.add('done');
+  const enter: HTMLElement | null = document.getElementById('title-enter');
+  if (reloadHelps(error) && enter instanceof HTMLButtonElement) {
+    enter.textContent = BROWSER_NOTICES.reload;
+    enter.disabled = false;
+    enter.addEventListener('click', (): void => window.location.reload());
+    document.getElementById('title')?.classList.add('stuck');
+  }
   throw error;
 });

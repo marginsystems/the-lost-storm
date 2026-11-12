@@ -107,3 +107,20 @@ void test('the first unreadable save kept is not replaced by a later one', async
   await createLocalBackend(content, store, createEpochs(SAVE_EPOCH)).load();
   assert.equal(store.read(UNREADABLE_KEY), 'first');
 });
+
+void test('the backend says a save was set aside only on the load that set it aside, so the title tells the player once', async (): Promise<void> => {
+  const store = createMemoryStore();
+  store.write(SAVE_KEY, 'garbage');
+  const first = createLocalBackend(content, store, createEpochs(SAVE_EPOCH));
+  assert.equal(first.setAside(), false);
+  await first.load();
+  assert.equal(first.setAside(), true);
+  const reloaded = createLocalBackend(content, store, createEpochs(SAVE_EPOCH));
+  await reloaded.load();
+  assert.equal(reloaded.setAside(), false);
+  const readable = createMemoryStore();
+  readable.write(SAVE_KEY, storedLocal(makeSave(3, 0)));
+  const fine = createLocalBackend(content, readable, createEpochs(SAVE_EPOCH));
+  await fine.load();
+  assert.equal(fine.setAside(), false);
+});

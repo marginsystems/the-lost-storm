@@ -110,6 +110,11 @@ body {
   animation-delay: var(--arrive-step);
 }
 
+#title.stuck #title-enter {
+  visibility: visible;
+  animation: arrive var(--spring-smooth-ms) var(--spring-smooth) var(--arrive-step) backwards;
+}
+
 #title.ready .title-account.shown {
   transition-delay: calc(var(--arrive-step) * 2), calc(var(--arrive-step) * 2), 0s, 0s;
 }

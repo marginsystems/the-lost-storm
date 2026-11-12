@@ -178,7 +178,7 @@ body {
 }
 
 .title-status.failed {
-  color: #ff8d7a;
+  color: rgba(239, 230, 214, 0.85);
 }
 
 .title-status {

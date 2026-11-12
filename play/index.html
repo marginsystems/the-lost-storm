@@ -39,9 +39,14 @@
           var enter = document.getElementById('title-enter');
           var loader = document.getElementById('title-loader');
           if (!status || !enter || !enter.disabled || status.classList.contains('failed')) return;
-          status.textContent = 'Loading failed. Reload the page.';
+          status.textContent = 'The storm could not finish loading. Reloading usually helps.';
           status.classList.add('failed');
           if (loader) loader.classList.add('done');
+          enter.textContent = 'Reload';
+          enter.disabled = false;
+          enter.addEventListener('click', function () { window.location.reload(); });
+          var title = document.getElementById('title');
+          if (title) title.classList.add('stuck');
         }
         window.addEventListener('error', function (event) {
           var target = event.target;

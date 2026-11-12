@@ -378,6 +378,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   return {
     load,
     freshStart: (): boolean => epochs.dropped(),
+    setAside: (): boolean => local.setAside(),
     save(save: SaveData): boolean {
       if (frozen) return true;
       const written: boolean = local.save(save);
