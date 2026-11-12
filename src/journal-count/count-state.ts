@@ -10,6 +10,6 @@ export function shouldAsk(state: CountState, journalTaken: boolean, signedIn: bo
   return !state.shown && !state.asked && journalTaken && signedIn;
 }
 
-export function shouldShow(state: CountState, hidden: boolean): boolean {
-  return !state.shown && state.tally !== null && !hidden;
+export function shouldShow(state: CountState, hidden: boolean, onScreen: boolean): boolean {
+  return !state.shown && state.tally !== null && !hidden && onScreen;
 }

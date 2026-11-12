@@ -13,10 +13,11 @@ void test('the count is asked for once, only after the journal is taken and only
   assert.equal(shouldAsk({ ...fresh, shown: true }, true, true), false);
 });
 
-void test('the line shows once, only with an answer and only while the HUD is shown', (): void => {
+void test('the line shows once, only with an answer, only while the HUD is shown and only while the game is on screen', (): void => {
   const answered: CountState = { shown: false, asked: true, tally: { count: 4, others: 3 } };
-  assert.equal(shouldShow(answered, false), true);
-  assert.equal(shouldShow(answered, true), false);
-  assert.equal(shouldShow({ ...answered, tally: null }, false), false);
-  assert.equal(shouldShow({ ...answered, shown: true }, false), false);
+  assert.equal(shouldShow(answered, false, true), true);
+  assert.equal(shouldShow(answered, true, true), false);
+  assert.equal(shouldShow(answered, false, false), false);
+  assert.equal(shouldShow({ ...answered, tally: null }, false, true), false);
+  assert.equal(shouldShow({ ...answered, shown: true }, false, true), false);
 });

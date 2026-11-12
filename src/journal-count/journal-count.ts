@@ -21,6 +21,7 @@ export interface JournalCountDeps {
   readonly client: JournalCountClient;
   readonly lines: CountLines;
   readonly store: KeyValueStore;
+  readonly onScreen: () => boolean;
 }
 
 export interface JournalCount {
@@ -50,10 +51,10 @@ export function createJournalCount(deps: JournalCountDeps): JournalCount {
         state = { ...state, asked: true };
         void ask();
       }
-      if (!shouldShow(state, hudHidden(world)) || state.tally === null) return;
+      if (!shouldShow(state, hudHidden(world), deps.onScreen()) || state.tally === null) return;
       const { others, count } = state.tally;
       state = { ...state, shown: true };
-      store.write(JOURNAL_COUNT.shownKey, String(count));
+      if (!store.write(JOURNAL_COUNT.shownKey, String(count))) return;
       element.textContent = countLine(lines, others);
       element.dataset['shown'] = 'on';
       window.setTimeout((): void => {
