@@ -288,7 +288,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'zone_changed':
             banners.show(api.world.zone.name, null, 'zone');
-            overlays.send({ type: 'zone' });
+            overlays.send({ type: 'interrupt', cause: 'zone' });
             mapWanted = false;
             barks.clear();
             break;
@@ -296,6 +296,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             banners.show('Checkpoint', null, 'checkpoint');
             break;
           case 'dialogue_line':
+            if (event.index === 0) overlays.send({ type: 'interrupt', cause: 'dialogue' });
             dialogue.show(event);
             break;
           case 'dialogue_closed':

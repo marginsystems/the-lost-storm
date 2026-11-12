@@ -88,6 +88,9 @@ export function createOpening(deps: OpeningDeps): Opening {
       (): void => {
         for (const page of pages) deps.send({ type: 'read', book: book.id, page: page.id });
       },
+      (): void => {
+        books.delete(item.uid);
+      },
     );
   };
 
@@ -113,6 +116,7 @@ export function createOpening(deps: OpeningDeps): Opening {
       const wake: WakeState | null = world.wake;
       if (wake !== null && wake !== held) {
         held = wake;
+        deps.overlays.send({ type: 'interrupt', cause: 'wake' });
         camera.hold(OPENING.wakeDistance);
       }
       if (wake !== null && wake !== eased && wake.elapsed > 0) {

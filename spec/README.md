@@ -17,8 +17,9 @@ A layout change to narrow closes the character sheet when it shares the screen w
 
 Checked properties:
 
-- **Invariants:** one exclusive overlay at a time (`OneExclusive`), exits before entries (`ExitBeforeEntry`), full screens hide the HUD chrome (`FullHidesChrome`), no gap with nothing on screen (`NoIdleGap`), nothing left under death (`DeathAlone`), and the sim's overlay flag equals "any overlay not closed" (`FlagMatches`).
-- **Action properties:** `EscapeTopFirst`, `EscapeClosesOnlyTop` and `ZoneLeavesNoOrphan`.
+- **Invariants:** one exclusive overlay at a time (`OneExclusive`), exits before entries (`ExitBeforeEntry`), full screens hide the HUD chrome (`FullHidesChrome`), no gap with nothing on screen (`NoIdleGap`), nothing left under death (`DeathAlone`), no play panel up or waiting while the hero is dead (`DeadHoldsNothing`), and the sim's overlay flag equals "any overlay not closed" (`FlagMatches`).
+- **Action properties:** `EscapeTopFirst` and `EscapeClosesOnlyTop`.
+- **World interrupts:** `Interrupt` is one action for every reset of the world under the player: a zone change, returning to the lobby, the wake, the end card and a dialogue starting (`WORLD_INTERRUPTS` in `src/hud/overlay-core.ts`). The end card's arrival interrupts too. After any of them no play panel is open or waiting (`NoPanelAfterInterrupt`); death closes every play panel (`NoPanelAfterDeath`), and a respawn starts with nothing open (`RespawnStartsClear`). With `CURRENT = TRUE` and `NoPanelAfterDeath`, TLC finds the playtest bug in three states: open the inventory, die, and it stays open beside the death card.
 - **Death:** a pending death is never dropped (`DeathNeverDropped`), and its card always enters (`DeathShows`).
 - **Liveness:** every request is eventually shown or superseded (`NothingLost`).
 

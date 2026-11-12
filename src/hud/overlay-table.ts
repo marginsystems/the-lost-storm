@@ -40,6 +40,8 @@ export const OVERLAY_Z = {
 
 export const OVERLAY_IDS: readonly OverlayId[] = ['character', 'inventory', 'trade', 'chart', 'map', 'ladder', 'reader', 'endcard', 'pause', 'death'];
 
+export const PLAY_OVERLAYS: readonly OverlayId[] = OVERLAY_IDS.filter((id: OverlayId): boolean => id !== 'death' && id !== 'endcard');
+
 export function overlayZ(id: OverlayId): number {
   return OVERLAY_Z.base + OVERLAY_TABLE[id].rank;
 }

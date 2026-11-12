@@ -179,7 +179,10 @@ async function start(): Promise<void> {
   const mobile: MobileBoot = bootMobile();
   markInput(document.body, mobile.touch);
   wireFolds([{ button: element('title-controls-open', HTMLButtonElement), panel: element('title-controls', HTMLDivElement) }, { button: element('title-credits-open', HTMLButtonElement), panel: element('title-credits', HTMLDivElement) }], element('title-foot', HTMLElement));
-  const launch: Launch = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement) });
+  const overlayManager: OverlayManager = createOverlayManager({ body: document.body, timers: createBrowserTimers(), motionMs: (): number => cssMotionMs(document.documentElement) });
+  const launch: Launch = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement), onEnd: (): void => {
+    overlayManager.send({ type: 'interrupt', cause: 'endcard' });
+  } });
   statusLine.show('Loading…');
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
@@ -286,7 +289,6 @@ async function start(): Promise<void> {
     },
   };
   const glitchSettings: GlitchSettingsStore = createGlitchSettings(createBrowserStore());
-  const overlayManager: OverlayManager = createOverlayManager({ body: document.body, timers: createBrowserTimers(), motionMs: (): number => cssMotionMs(document.documentElement) });
   const pauseMenu: PauseMenu = createPauseMenu(element('hud', HTMLDivElement), {
     overlays: overlayManager,
     settings: gameSettings,
@@ -298,6 +300,7 @@ async function start(): Promise<void> {
     onClose: (): void => playUi('panel_close'),
     life: (): number => world.player.life,
     onTitle: (): void => {
+      overlayManager.send({ type: 'interrupt', cause: 'lobby' });
       ladder?.setPlaying(false);
       persist();
       backend.flush();

@@ -1,5 +1,5 @@
 import type { Timers } from '../backend/backend.ts';
-import { anyOverlay, chromeHidden, INITIAL_OVERLAYS, isShown, stepOverlays, topOverlay } from './overlay-core.ts';
+import { anyOverlay, chromeHidden, dropped, INITIAL_OVERLAYS, isShown, stepOverlays, topOverlay } from './overlay-core.ts';
 import type { OverlayEvent, OverlayOutcome, OverlayPhase, OverlayState, OverlayStep } from './overlay-core.ts';
 import { OVERLAY_IDS, overlayZ } from './overlay-table.ts';
 import type { OverlayId } from './overlay-table.ts';
@@ -51,6 +51,12 @@ export const OVERLAY_MOTION = {
 export function cssMotionMs(element: Element): number {
   const value: number | null = durationMs(getComputedStyle(element).getPropertyValue(OVERLAY_MOTION.token));
   return value !== null && value > 0 ? value : OVERLAY_MOTION.fallbackMs;
+}
+
+export function whenDropped(manager: OverlayManager, id: OverlayId, drop: () => void): void {
+  manager.subscribe((state: OverlayState, previous: OverlayState): void => {
+    if (dropped(previous, state, id)) drop();
+  });
 }
 
 export function durationMs(text: string): number | null {

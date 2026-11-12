@@ -22,6 +22,7 @@ export interface LaunchOptions {
   readonly device: Device;
   readonly hud: HTMLElement;
   readonly title: HTMLElement;
+  readonly onEnd: () => void;
 }
 
 export interface Launch {
@@ -107,6 +108,7 @@ export function startLaunch(options: LaunchOptions): Launch {
       if (unsaved > LAUNCH.saveEvery) savePlayed();
       if (!endTaken && takeEndCard({ flags: world.flags, ended: endedActs(world) })) {
         endTaken = true;
+        options.onEnd();
         card.open('end');
       }
       sinceObserved += dt;

@@ -4,7 +4,7 @@ import { createFakeClock, createFakeTimers } from '../../test/backend-support.ts
 import type { FakeClock, FakeTimers } from '../../test/backend-support.ts';
 import { overlayZ } from './overlay-table.ts';
 import type { OverlayId } from './overlay-table.ts';
-import { createOverlayManager, durationMs, OVERLAY_BODY } from './overlays.ts';
+import { createOverlayManager, durationMs, OVERLAY_BODY, whenDropped } from './overlays.ts';
 import type { OverlayBody, OverlayManager, OverlaySurface } from './overlays.ts';
 
 const MOTION_MS: number = 260;
@@ -125,12 +125,38 @@ void test('a zone change during an exit drops a waiting reader without showing i
   await fake.advance(MOTION_MS);
   assert.equal(manager.send({ type: 'open', id: 'reader' }), 'waiting');
   assert.deepEqual(manager.state().pending, ['reader']);
-  manager.send({ type: 'zone' });
+  manager.send({ type: 'interrupt', cause: 'zone' });
   assert.deepEqual(manager.state().pending, []);
   await fake.advance(MOTION_MS);
   assert.ok(!probe.log.includes('show reader'));
   assert.equal(manager.send({ type: 'open', id: 'reader' }), 'shown');
   assert.equal(probe.log.at(-1), 'show reader');
+});
+
+void test('a request parked behind an exit and then dropped is reported once, and one that enters is not', async (): Promise<void> => {
+  const { manager, fake } = rig(['inventory', 'reader', 'pause']);
+  const drops: string[] = [];
+  whenDropped(manager, 'reader', (): void => {
+    drops.push('reader');
+  });
+  whenDropped(manager, 'pause', (): void => {
+    drops.push('pause');
+  });
+  manager.send({ type: 'open', id: 'inventory' });
+  await fake.advance(MOTION_MS);
+  assert.equal(manager.send({ type: 'open', id: 'reader' }), 'waiting');
+  manager.send({ type: 'interrupt', cause: 'zone' });
+  assert.deepEqual(drops, ['reader']);
+  await fake.advance(MOTION_MS);
+  manager.send({ type: 'open', id: 'inventory' });
+  await fake.advance(MOTION_MS);
+  assert.equal(manager.send({ type: 'open', id: 'pause' }), 'waiting');
+  manager.send({ type: 'escape' });
+  assert.deepEqual(drops, ['reader', 'pause']);
+  await fake.advance(MOTION_MS);
+  assert.equal(manager.send({ type: 'open', id: 'reader' }), 'shown');
+  await fake.advance(MOTION_MS);
+  assert.deepEqual(drops, ['reader', 'pause']);
 });
 
 void test('motion tokens read in milliseconds whether the build writes ms or seconds', (): void => {

@@ -3,6 +3,10 @@ import type { OverlayId, QueuedOverlay } from './overlay-table.ts';
 
 export type OverlayPhase = 'closed' | 'opening' | 'open' | 'closing';
 
+export const WORLD_INTERRUPTS = ['zone', 'lobby', 'wake', 'endcard', 'dialogue'] as const;
+
+export type WorldInterrupt = (typeof WORLD_INTERRUPTS)[number];
+
 export interface OverlayState {
   readonly phase: Readonly<Record<OverlayId, OverlayPhase>>;
   readonly pending: readonly OverlayId[];
@@ -18,7 +22,7 @@ export type OverlayEvent =
   | { readonly type: 'settled'; readonly id: OverlayId }
   | { readonly type: 'death' }
   | { readonly type: 'respawn' }
-  | { readonly type: 'zone' }
+  | { readonly type: 'interrupt'; readonly cause: WorldInterrupt }
   | { readonly type: 'arrive'; readonly id: QueuedOverlay }
   | { readonly type: 'present' }
   | { readonly type: 'layout'; readonly narrow: boolean };
@@ -37,6 +41,10 @@ function closedPhases(): Phases {
 }
 
 export const INITIAL_OVERLAYS: OverlayState = { phase: closedPhases(), pending: [], waiting: [], narrow: false };
+
+export function dropped(previous: OverlayState, next: OverlayState, id: OverlayId): boolean {
+  return previous.pending.includes(id) && !next.pending.includes(id) && !isShown(next, id);
+}
 
 export function isShown(state: OverlayState, id: OverlayId): boolean {
   const phase: OverlayPhase = state.phase[id];
@@ -147,7 +155,7 @@ function death(state: OverlayState): OverlayStep {
   return settle(state, marking(state, visibleOverlays(state), 'closing'), ['death'], 'waiting');
 }
 
-function zone(state: OverlayState): OverlayStep {
+function clearPlay(state: OverlayState): OverlayStep {
   const out: OverlayId[] = visibleOverlays(state).filter((id: OverlayId): boolean => id !== 'death');
   return settle(state, marking(state, out, 'closing'), state.pending.filter((id: OverlayId): boolean => id === 'death'), 'closing');
 }
@@ -201,15 +209,15 @@ export function stepOverlays(state: OverlayState, event: OverlayEvent): OverlayS
     case 'respawn':
       step = state.phase.death === 'open' ? dismiss(state, 'death') : { state, outcome: 'ignored' };
       break;
-    case 'zone':
-      step = zone(state);
+    case 'interrupt':
+      step = clearPlay(state);
       break;
     case 'arrive':
       if (state.waiting.includes(event.id) || state.phase[event.id] !== 'closed') {
         step = { state, outcome: 'ignored' };
         break;
       }
-      step = { state: waitingWith(state, [...state.waiting, event.id]), outcome: 'waiting' };
+      step = { state: waitingWith(clearPlay(state).state, [...state.waiting, event.id]), outcome: 'waiting' };
       break;
     case 'present':
       step = present(state);

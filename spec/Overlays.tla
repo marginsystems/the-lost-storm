@@ -10,6 +10,7 @@ Full == {"chart", "map", "ladder"}
 Keyed == {"inventory", "character", "chart", "map", "ladder", "pause"}
 Blockers == {"reader", "endcard", "pause", "death"}
 Queued == {"endcard"}
+Play == Overlays \ {"death", "endcard"}
 Pairs == {{"inventory", "character"}, {"inventory", "trade"}}
 NarrowPairs == {{"inventory", "trade"}}
 Rank == [o \in Overlays |->
@@ -130,18 +131,20 @@ Respawn ==
   /\ Dismiss("death")
   /\ UNCHANGED <<waiting, narrow>>
 
-ZoneChange ==
-  /\ IF CURRENT
-     THEN UNCHANGED <<phase, pending, chrome, simFlag>>
-     ELSE Settle([x \in Overlays |-> IF x \in Visible \ {"death"} THEN "closing" ELSE phase[x]],
-                 pending \cap {"death"})
+ClearPlay ==
+  Settle([x \in Overlays |-> IF x \in Visible \ {"death"} THEN "closing" ELSE phase[x]],
+         pending \cap {"death"})
+
+Interrupt ==
+  /\ IF CURRENT THEN UNCHANGED <<phase, pending, chrome, simFlag>> ELSE ClearPlay
   /\ UNCHANGED <<waiting, narrow>>
 
 Arrive(m) ==
   /\ m \notin waiting
   /\ phase[m] = "closed"
   /\ waiting' = waiting \cup {m}
-  /\ UNCHANGED <<phase, pending, chrome, simFlag, narrow>>
+  /\ IF CURRENT THEN UNCHANGED <<phase, pending, chrome, simFlag>> ELSE ClearPlay
+  /\ UNCHANGED narrow
 
 Layout ==
   /\ narrow' = ~narrow
@@ -176,7 +179,7 @@ Next ==
   \/ Request("reader")
   \/ Death
   \/ Respawn
-  \/ ZoneChange
+  \/ Interrupt
   \/ \E m \in Queued : Arrive(m)
   \/ Present
   \/ Layout
@@ -202,6 +205,9 @@ NoIdleGap == pending # {} => Exiting # {}
 
 DeathAlone == Shown("death") => Live = {"death"}
 
+DeadHoldsNothing ==
+  (Shown("death") \/ "death" \in pending) => Visible \subseteq {"death"} /\ pending \subseteq {"death"}
+
 FlagMatches == simFlag = (Live # {})
 
 EscapeTopFirst ==
@@ -212,8 +218,14 @@ EscapeClosesOnlyTop ==
   [][Escape /\ Visible \ {"death"} # {}
        => Visible' = Visible \ WithDependents({Top(Visible \ {"death"})})]_vars
 
-ZoneLeavesNoOrphan ==
-  [][ZoneChange => Visible' \subseteq {"death"} /\ pending' \subseteq {"death"}]_vars
+NoPanelAfterInterrupt ==
+  [][(Interrupt \/ \E m \in Queued : Arrive(m)) => Visible' \cap Play = {} /\ pending' \cap Play = {}]_vars
+
+NoPanelAfterDeath ==
+  [][Death => Visible' \cap Play = {} /\ pending' \cap Play = {}]_vars
+
+RespawnStartsClear ==
+  [][Respawn => Visible' = {} /\ pending' = {}]_vars
 
 DeathNeverDropped ==
   [][("death" \in pending) => ("death" \in pending' \/ Shown("death")')]_vars

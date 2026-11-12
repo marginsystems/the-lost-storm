@@ -1,6 +1,7 @@
 import type { BookDef, PageDef } from '../../sim/content/story-types.ts';
 import { markOverlay } from '../hud/overlay-mark.ts';
 import { promptText, use } from '../hud/prompts.ts';
+import { whenDropped } from '../hud/overlays.ts';
 import type { OverlayManager, OverlaySurface } from '../hud/overlays.ts';
 import readerCss from './reader.css?inline';
 
@@ -19,7 +20,7 @@ export interface ReaderPage {
 }
 
 export interface Reader {
-  open(book: BookDef, pages: readonly ReaderPage[], onClose: () => void): boolean;
+  open(book: BookDef, pages: readonly ReaderPage[], onClose: () => void, onDrop: () => void): boolean;
   isOpen(): boolean;
 }
 
@@ -39,6 +40,7 @@ interface ReaderRequest {
   readonly book: BookDef;
   readonly pages: readonly ReaderPage[];
   readonly onClose: () => void;
+  readonly onDrop: () => void;
 }
 
 export function createReader(root: HTMLElement, touch: boolean, overlays: OverlayManager): Reader {
@@ -120,11 +122,17 @@ export function createReader(root: HTMLElement, touch: boolean, overlays: Overla
     },
   });
 
+  whenDropped(overlays, 'reader', (): void => {
+    const request: ReaderRequest | null = next;
+    next = null;
+    request?.onDrop();
+  });
+
   return {
-    open(book: BookDef, pages: readonly ReaderPage[], onClose: () => void): boolean {
+    open(book: BookDef, pages: readonly ReaderPage[], onClose: () => void, onDrop: () => void): boolean {
       if (pages.length === 0) return true;
       if (current !== null || overlays.state().pending.includes('reader')) return false;
-      next = { book, pages, onClose };
+      next = { book, pages, onClose, onDrop };
       if (overlays.send({ type: 'open', id: 'reader' }) !== 'refused') return true;
       next = null;
       return false;

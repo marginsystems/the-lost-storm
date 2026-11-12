@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { anyOverlay, chromeHidden, exitingOverlays, INITIAL_OVERLAYS, isShown, liveOverlays, stepOverlays, visibleOverlays } from './overlay-core.ts';
-import type { OverlayEvent, OverlayState, OverlayStep } from './overlay-core.ts';
-import { NARROW_PAIRS, OVERLAY_IDS, OVERLAY_PAIRS, OVERLAY_TABLE, overlayZ, paired, QUEUED_OVERLAYS } from './overlay-table.ts';
+import { anyOverlay, chromeHidden, exitingOverlays, INITIAL_OVERLAYS, isShown, liveOverlays, stepOverlays, visibleOverlays, WORLD_INTERRUPTS } from './overlay-core.ts';
+import type { OverlayEvent, OverlayState, OverlayStep, WorldInterrupt } from './overlay-core.ts';
+import { NARROW_PAIRS, OVERLAY_IDS, OVERLAY_PAIRS, OVERLAY_TABLE, overlayZ, paired, PLAY_OVERLAYS, QUEUED_OVERLAYS } from './overlay-table.ts';
 import type { OverlayId } from './overlay-table.ts';
 
 const SPEC = {
@@ -27,7 +27,7 @@ function allEvents(): OverlayEvent[] {
     { type: 'escape' },
     { type: 'death' },
     { type: 'respawn' },
-    { type: 'zone' },
+    ...WORLD_INTERRUPTS.map((cause: WorldInterrupt): OverlayEvent => ({ type: 'interrupt', cause })),
     ...QUEUED_OVERLAYS.map((id: 'endcard'): OverlayEvent => ({ type: 'arrive', id })),
     { type: 'present' },
     { type: 'layout', narrow: true },
@@ -48,7 +48,16 @@ function assertInvariants(state: OverlayState, trail: string): void {
   if (OVERLAY_IDS.some((id: OverlayId): boolean => OVERLAY_TABLE[id].layer === 'full' && state.phase[id] !== 'closed')) assert.ok(chromeHidden(state), trail);
   if (state.pending.length > 0) assert.ok(exitingOverlays(state).length > 0, `idle gap after ${trail}`);
   if (isShown(state, 'death')) assert.deepEqual(liveOverlays(state), ['death'], `orphan under death after ${trail}`);
+  if (isShown(state, 'death') || state.pending.includes('death')) assert.ok(noPlay(state), `a panel is up while dead after ${trail}`);
   assert.equal(anyOverlay(state), liveOverlays(state).length > 0);
+}
+
+function noPlay(state: OverlayState): boolean {
+  return PLAY_OVERLAYS.every((id: OverlayId): boolean => !isShown(state, id) && !state.pending.includes(id));
+}
+
+function clearsPlay(event: OverlayEvent): boolean {
+  return event.type === 'interrupt' || event.type === 'arrive' || event.type === 'death';
 }
 
 function apply(state: OverlayState, events: readonly OverlayEvent[]): OverlayState {
@@ -105,7 +114,8 @@ void test('every state the core can reach keeps the spec invariants, and there a
         assert.ok(!isShown(next.state, 'pause') && !next.state.pending.includes('pause'), `escape opened pause over ${keyOf(state)}`);
       }
       if (state.pending.includes('death')) assert.ok(next.state.pending.includes('death') || isShown(next.state, 'death'), `${JSON.stringify(event)} dropped death from ${keyOf(state)}`);
-      if (event.type === 'zone') assert.ok(visibleOverlays(next.state).every((id: OverlayId): boolean => id === 'death'), `zone change left ${keyOf(next.state)}`);
+      if (clearsPlay(event) && next.outcome !== 'ignored') assert.ok(noPlay(next.state), `${JSON.stringify(event)} left a panel in ${keyOf(next.state)}`);
+      if (event.type === 'respawn' && next.outcome !== 'ignored') assert.deepEqual([liveOverlays(next.state).filter((id: OverlayId): boolean => id !== 'death'), next.state.pending], [[], []], `respawn left ${keyOf(next.state)}`);
       const key: string = keyOf(next.state);
       if (!seen.has(key)) {
         seen.set(key, next.state);
@@ -191,17 +201,19 @@ void test('Escape walks down a stack one overlay at a time', (): void => {
   assert.equal(stepOverlays(two, { type: 'escape' }).state.phase.pause, 'opening');
 });
 
-void test('the end card waits until nothing else is up', (): void => {
-  const bag: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'toggle', id: 'inventory' }, { type: 'arrive', id: 'endcard' }]));
-  assert.equal(stepOverlays(bag, { type: 'present' }).outcome, 'ignored');
-  const clear: OverlayState = settleAll(stepOverlays(bag, { type: 'toggle', id: 'inventory' }).state);
+void test('the end card closes the open panels and enters once they are gone', (): void => {
+  const bag: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'inventory' }).state);
+  const arrived: OverlayState = stepOverlays(bag, { type: 'arrive', id: 'endcard' }).state;
+  assert.deepEqual(exitingOverlays(arrived), ['inventory']);
+  assert.equal(stepOverlays(arrived, { type: 'present' }).outcome, 'ignored');
+  const clear: OverlayState = settleAll(arrived);
   const shown: OverlayState = stepOverlays(clear, { type: 'present' }).state;
   assert.equal(shown.phase.endcard, 'opening');
   assert.deepEqual(shown.waiting, []);
   assert.equal(stepOverlays(settleAll(shown), { type: 'toggle', id: 'map' }).outcome, 'refused');
 });
 
-void test('death closes every panel before its card enters; a zone change leaves nothing open', (): void => {
+void test('death closes every panel before its card enters; a world interrupt leaves nothing open', (): void => {
   const busy: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'toggle', id: 'inventory' }, { type: 'toggle', id: 'character' }]));
   const dying: OverlayState = stepOverlays(busy, { type: 'death' }).state;
   assert.deepEqual(exitingOverlays(dying), ['character', 'inventory']);
@@ -209,7 +221,21 @@ void test('death closes every panel before its card enters; a zone change leaves
   assert.deepEqual(liveOverlays(settleAll(dying)), ['death']);
   assert.equal(stepOverlays(settleAll(dying), { type: 'toggle', id: 'map' }).outcome, 'refused');
   const map: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'map' }).state);
-  assert.deepEqual(visibleOverlays(stepOverlays(map, { type: 'zone' }).state), []);
+  for (const cause of WORLD_INTERRUPTS) assert.deepEqual(visibleOverlays(stepOverlays(map, { type: 'interrupt', cause }).state), [], cause);
+});
+
+void test('the playtest case: chart or bag open, the hero dies and respawns at the checkpoint with nothing open', (): void => {
+  for (const id of ['chart', 'inventory', 'character', 'map', 'pause'] as const) {
+    const open: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id }).state);
+    const dying: OverlayState = stepOverlays(open, { type: 'death' }).state;
+    assert.equal(dying.phase[id], 'closing', id);
+    const dead: OverlayState = settleAll(dying);
+    assert.deepEqual(liveOverlays(dead), ['death'], id);
+    for (const other of PLAY_OVERLAYS) assert.notEqual(stepOverlays(dead, { type: 'toggle', id: other }).outcome, 'shown', `${other} opened while dead`);
+    const back: OverlayState = settleAll(apply(dead, [{ type: 'respawn' }, { type: 'interrupt', cause: 'zone' }]));
+    assert.deepEqual(liveOverlays(back), [], id);
+    assert.deepEqual(back.pending, [], id);
+  }
 });
 
 void test('Escape while death waits behind a closing panel keeps death, and its card still enters', (): void => {

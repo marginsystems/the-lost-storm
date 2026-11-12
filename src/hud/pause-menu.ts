@@ -16,6 +16,7 @@ import pauseCss from './pause.css?inline';
 import { mountVolumeSliders } from './volume-panel.ts';
 import type { HurtWatch } from './menu-hurt.ts';
 import { hurtShown, MENU_HURT, watchHurt } from './menu-hurt.ts';
+import { whenDropped } from './overlays.ts';
 import type { OverlayManager } from './overlays.ts';
 
 const PAUSE_ROWS: { readonly base: number } = { base: 3 };
@@ -186,6 +187,9 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
       setView('main');
     }
   };
+  whenDropped(hooks.overlays, 'pause', (): void => {
+    wanted = null;
+  });
   hooks.overlays.register('pause', {
     element: overlay,
     show(): void {
