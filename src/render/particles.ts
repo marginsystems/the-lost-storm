@@ -31,6 +31,7 @@ export interface BurstOptions {
 
 export interface ParticleSystem {
   burst(options: BurstOptions): void;
+  setDensity(density: number): void;
   update(dt: number): void;
   clear(): void;
 }
@@ -101,9 +102,15 @@ export function createParticles(scene: Scene): ParticleSystem {
   points.renderOrder = 10;
   scene.add(points);
 
+  let density: number = 1;
+
   return {
+    setDensity(next: number): void {
+      density = next;
+    },
     burst(options: BurstOptions): void {
-      for (let spawned: number = 0; spawned < options.count; spawned += 1) {
+      const count: number = Math.floor(options.count * density + Math.random());
+      for (let spawned: number = 0; spawned < count; spawned += 1) {
         const index: number = cursor;
         cursor = (cursor + 1) % capacity;
         const baseAngle: number = Math.atan2(options.dirX, options.dirZ);

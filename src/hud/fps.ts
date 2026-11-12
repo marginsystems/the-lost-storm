@@ -7,6 +7,7 @@ const FPS = {
 
 export interface FpsReadout {
   frame(now: number): void;
+  setVisible(visible: boolean): void;
 }
 
 export function createFpsReadout(parent: HTMLElement): FpsReadout {
@@ -15,6 +16,9 @@ export function createFpsReadout(parent: HTMLElement): FpsReadout {
   let frames: number = 0;
   let elapsed: number = 0;
   return {
+    setVisible(visible: boolean): void {
+      element.classList.toggle('shown', visible);
+    },
     frame(now: number): void {
       const gap: number = last === null ? Infinity : (now - last) / 1000;
       last = now;

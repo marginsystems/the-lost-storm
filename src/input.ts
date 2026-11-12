@@ -8,15 +8,14 @@ import type { Hud } from './hud/hud-api.ts';
 import type { PickCandidate, ScreenRect } from './pick.ts';
 import { pickActor } from './pick.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
+import type { ActionId } from './settings/bindings.ts';
+import { slotAction } from './settings/bindings.ts';
+import type { SettingsStore } from './settings/store.ts';
 
 export const INPUT = {
   holdInterval: 0.09,
   leftBinding: 'mouse_left',
   rightBinding: 'mouse_right',
-  inventoryKey: 'KeyI',
-  characterKey: 'KeyC',
-  treeKey: 'KeyT',
-  mapKey: 'KeyM',
   closeKey: 'Escape',
   advanceKeys: ['Space', 'Enter'],
 } as const;
@@ -27,6 +26,7 @@ export interface InputHooks {
   labelHover(): number | null;
   clickMarker(x: number, z: number, hostile: boolean): void;
   aimExit(exit: string | null): void;
+  pause(): void;
 }
 
 export interface Input {
@@ -34,7 +34,7 @@ export interface Input {
   readonly hoveredId: number | null;
 }
 
-export function createInput(canvas: HTMLCanvasElement, world: World, camera: IsoCamera, hud: Hud, hooks: InputHooks): Input {
+export function createInput(canvas: HTMLCanvasElement, world: World, camera: IsoCamera, hud: Hud, settings: SettingsStore, hooks: InputHooks): Input {
   const pointer: Vector2 = new Vector2(0, 0);
   const bottom: Vector3 = new Vector3();
   const box: Box3 = new Box3();
@@ -47,7 +47,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   let shift: boolean = false;
   const extra: Command[] = [];
 
-  const slotFor = (binding: string): number => world.content.player.skillBar.findIndex((entry): boolean => entry.bindings.includes(binding));
+  const slotFor = (binding: string): number => world.content.player.skillBar.findIndex((_entry, slot: number): boolean => settings.keys().bindingsOf(slotAction(slot)).includes(binding));
 
   const press = (binding: string): void => {
     if (held.has(binding)) return;
@@ -93,13 +93,17 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   window.addEventListener('keydown', (event: KeyboardEvent): void => {
     shift = event.shiftKey;
     if (event.repeat) return;
-    if (event.code === INPUT.inventoryKey) hud.togglePanel('inventory');
-    else if (event.code === INPUT.characterKey) hud.togglePanel('character');
-    else if (event.code === INPUT.treeKey) hud.togglePanel('tree');
-    else if (event.code === INPUT.mapKey) hud.togglePanel('map');
-    else if (event.code === INPUT.closeKey) {
-      if (!hud.closePanels() && world.dialogue !== null) extra.push({ type: 'stop' });
+    const action: ActionId | null = settings.keys().actionOf(event.code);
+    if (event.code === INPUT.closeKey) {
+      if (hud.closePanels()) return;
+      if (world.dialogue !== null) extra.push({ type: 'stop' });
+      else hooks.pause();
     }
+    else if (action === 'inventory') hud.togglePanel('inventory');
+    else if (action === 'character') hud.togglePanel('character');
+    else if (action === 'tree') hud.togglePanel('tree');
+    else if (action === 'map') hud.togglePanel('map');
+    else if (action === 'pause') hooks.pause();
     else press(event.code);
   });
   window.addEventListener('keyup', (event: KeyboardEvent): void => {
@@ -220,8 +224,8 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
         }
       }
 
-      world.content.player.skillBar.forEach((entry, slot: number): void => {
-        for (const binding of entry.bindings) {
+      world.content.player.skillBar.forEach((_entry, slot: number): void => {
+        for (const binding of settings.keys().bindingsOf(slotAction(slot))) {
           if (binding === INPUT.leftBinding) continue;
           const isFresh: boolean = fresh.has(binding);
           if (!isFresh && !(held.has(binding) && ready(world.player.skills[slot]))) continue;

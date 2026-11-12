@@ -1,5 +1,6 @@
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
+import { slotAction } from '../settings/bindings.ts';
 import type { HudContext } from './context.ts';
 import { clamp01, el, label, pulseClass, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
@@ -21,6 +22,8 @@ interface SlotView {
   readonly icon: HTMLElement;
   readonly cost: HTMLElement;
   readonly cooldown: HTMLElement;
+  readonly keyNode: HTMLElement;
+  key: string | null;
   skill: SkillDef | null;
   iconId: string;
   angle: number;
@@ -31,6 +34,7 @@ interface SlotView {
 export interface SkillBar {
   readonly element: HTMLElement;
   update(player: PlayerState): void;
+  refreshKeys(): void;
   press(skillId: string): void;
 }
 
@@ -50,18 +54,25 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
   track(element);
   const slots: SlotView[] = [];
 
-  const keyOf = (index: number): string => context.api.world.content.player.skillBar[index]?.label ?? '';
+  const keyOf = (index: number): string => context.api.settings.keys().labelOf(slotAction(index));
+
+  const paintKey = (view: SlotView, key: string): void => {
+    if (view.key === key) return;
+    view.key = key;
+    const glyph: string | undefined = KEY_GLYPHS.get(key);
+    view.keyNode.classList.toggle('glyph', glyph !== undefined);
+    if (glyph === undefined) setText(view.keyNode, key, true);
+    else view.keyNode.innerHTML = iconSvg(glyph);
+  };
 
   const buildSlot = (index: number): SlotView => {
     const root: HTMLDivElement = el('div', 'slot', element);
     const icon: HTMLDivElement = el('div', 'slot-icon', root);
     const cooldown: HTMLDivElement = el('div', 'slot-cd', root);
-    const key: string = keyOf(index);
-    const glyph: string | undefined = KEY_GLYPHS.get(key);
-    if (glyph === undefined) label('slot-key', key, root);
-    else el('div', 'slot-key glyph', root).innerHTML = iconSvg(glyph);
+    const keyNode: HTMLDivElement = el('div', 'slot-key', root);
     const cost: HTMLDivElement = el('div', 'slot-cost', root);
-    const view: SlotView = { root, icon, cost, cooldown, skill: null, iconId: '', angle: -1, cooling: null, dim: null };
+    const view: SlotView = { root, icon, cost, cooldown, keyNode, key: null, skill: null, iconId: '', angle: -1, cooling: null, dim: null };
+    paintKey(view, keyOf(index));
     attachTooltip(context.tooltip, root, (): HTMLElement | null => (view.skill === null ? null : skillTooltip(view.skill, keyOf(index))));
     return view;
   };
@@ -77,6 +88,9 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
 
   return {
     element,
+    refreshKeys(): void {
+      slots.forEach((view: SlotView, index: number): void => paintKey(view, keyOf(index)));
+    },
     update(player: PlayerState): void {
       if (slots.length !== player.skills.length) {
         element.replaceChildren();
