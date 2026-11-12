@@ -18,7 +18,7 @@ export interface NameEchoDeps {
   fetchVoice(): Promise<SpokenName | null>;
   play(audio: ArrayBuffer): Promise<void>;
   nameOf(): string | null;
-  refreshName(): void;
+  refreshName(): Promise<void>;
 }
 
 export interface NameEcho {
@@ -75,9 +75,9 @@ export function createNameEcho(deps: NameEchoDeps): NameEcho {
   const ask = (moment: Moment): void => {
     if (voice !== null || asking || asked.has(moment)) return;
     asked.add(moment);
-    deps.refreshName();
     asking = true;
     const load = async (): Promise<void> => {
+      await deps.refreshName();
       voice = await deps.fetchVoice();
     };
     load()

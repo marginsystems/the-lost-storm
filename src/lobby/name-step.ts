@@ -31,9 +31,10 @@ export interface NameStepParts {
 
 type StepState = 'closed' | 'open' | 'busy' | 'done';
 
-async function sendKept(lobby: Lobby, kept: string): Promise<void> {
+async function sendKept(lobby: Lobby, kept: string): Promise<boolean> {
   const outcome: RenameOutcome = await lobby.service.rename(kept);
   if (outcome.kind === 'named') await lobby.feed.refresh(true);
+  return outcome.kind === 'named' || outcome.kind === 'invalid';
 }
 
 export function createNameStep(parts: NameStepParts): NameStep {
@@ -132,7 +133,10 @@ export function createNameStep(parts: NameStepParts): NameStep {
     const kept: string | null = pendingRename(readHeroName(parts.store), board, lobby.service.hasAccount());
     if (kept === null || sentKept || state === 'open' || state === 'busy') return;
     sentKept = true;
-    void sendKept(lobby, kept);
+    void sendKept(lobby, kept).then((settled: boolean): boolean => {
+      sentKept = settled;
+      return settled;
+    });
   });
 
   step.addEventListener('submit', (event: SubmitEvent): void => {

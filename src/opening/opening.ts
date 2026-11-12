@@ -33,7 +33,7 @@ export interface OpeningDeps {
   send(command: Command): void;
   nameOf(): string | null;
   fetchVoice(): Promise<SpokenName | null>;
-  refreshName(): void;
+  refreshName(): Promise<void>;
   playVoice(audio: ArrayBuffer): Promise<void>;
   setAmbience(ambience: ZoneAmbience): void;
 }
@@ -64,7 +64,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   let eased: WakeState | null = null;
   let held: WakeState | null = null;
   const reader: Reader = createReader(hud, deps.touch);
-  const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): void => deps.refreshName() });
+  const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): Promise<void> => deps.refreshName() });
   let books: Set<number> = carriedBooks(world);
   let shownShore: number = 0;
   const gateStyle: HTMLStyleElement = document.createElement('style');
