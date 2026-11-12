@@ -2,6 +2,7 @@ import attachments from '../../data/attachments.json' with { type: 'json' };
 import flasks from '../../data/flasks.json' with { type: 'json' };
 import items from '../../data/items.json' with { type: 'json' };
 import lines from '../../data/lines.json' with { type: 'json' };
+import monsterMods from '../../data/monster-mods.json' with { type: 'json' };
 import monsters from '../../data/monsters.json' with { type: 'json' };
 import npcs from '../../data/npcs.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
@@ -25,7 +26,7 @@ import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [stillhold, duskway, dusksEnd, theSpill, theCoursework, theStill, drownedBastion], world, npcs, lines, quests, player, flasks };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [stillhold, duskway, dusksEnd, theSpill, theCoursework, theStill, drownedBastion], world, npcs, lines, quests, player, flasks };
 
 export function loadContent(): Content {
   const content: Content = parseContent(RAW_CONTENT);

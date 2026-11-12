@@ -104,6 +104,10 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'flask_used':
       found = worldCues(audio, 'flask_used', event.pos);
       break;
+    case 'hazard':
+      if (event.burst) found = cues(audio.skillImpact, event.hazard.skill.id, event.hazard.pos);
+      break;
+    case 'guarded':
     case 'skill_interrupt':
     case 'monster_remove':
     case 'xp':

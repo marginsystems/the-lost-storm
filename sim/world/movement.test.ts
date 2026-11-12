@@ -43,7 +43,7 @@ void test('followPath reports no progress when the way is blocked', (): void => 
 void test('separating a crowd never pushes anyone into a wall', (): void => {
   const world: World = worldIn(content, 'drowned_bastion', 2);
   world.monsters = [];
-  world.zone = { ...world.zone, packs: [{ x: 2, z: 22, members: [{ monster: 'bone_thrall', count: 6 }], when: [] }] };
+  world.zone = { ...world.zone, packs: [{ x: 2, z: 22, members: [{ monster: 'bone_thrall', count: 6, mods: [] }], when: [] }] };
   spawnPacks(world);
   for (const monster of world.monsters) monster.pos = { x: 1.1, z: 22 };
   world.player.pos = { x: 1.1, z: 22.2 };

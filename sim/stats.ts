@@ -41,7 +41,7 @@ function sumSkillMod(mods: readonly SkillMod[], field: SkillMod['field']): numbe
 
 function scaledDelivery(delivery: SkillDef['delivery'], area: number, mods: readonly SkillMod[]): SkillDef['delivery'] {
   if (delivery.type === 'arc') return { ...delivery, reach: delivery.reach * area };
-  if (delivery.type === 'nova') return { ...delivery, radius: delivery.radius * area };
+  if (delivery.type === 'nova' || delivery.type === 'mark') return { ...delivery, radius: delivery.radius * area };
   if (delivery.type === 'projectile') return { ...delivery, count: delivery.count + sumSkillMod(mods, 'projectiles'), pierce: delivery.pierce + sumSkillMod(mods, 'pierce') };
   return delivery;
 }

@@ -57,7 +57,7 @@ function finish(world: World): Vec2[] {
 }
 
 function spawnAt(world: World, kind: string, at: Vec2): MonsterState {
-  world.zone = { ...world.zone, packs: [{ x: at.x, z: at.z, members: [{ monster: kind, count: 1 }], when: [] }] };
+  world.zone = { ...world.zone, packs: [{ x: at.x, z: at.z, members: [{ monster: kind, count: 1, mods: [] }], when: [] }] };
   spawnPacks(world);
   const monster: MonsterState = must(world.monsters.at(-1), kind);
   monster.pos = { x: at.x, z: at.z };

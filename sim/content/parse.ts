@@ -1,5 +1,6 @@
 import { atlasProblems } from './atlas.ts';
 import { parseFlasks } from './flasks.ts';
+import { combatProblems, markDelivery, monsterMod, monsterTraits, skillMotion } from './parse-combat.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { byId, choice, choiceList, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
@@ -50,6 +51,7 @@ import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, REQUIRE_MODES, 
 export interface RawContent {
   readonly skills: unknown;
   readonly monsters: unknown;
+  readonly monsterMods: unknown;
   readonly items: unknown;
   readonly skillTree: unknown;
   readonly rigs: unknown;
@@ -78,13 +80,14 @@ function skillMod(value: unknown, where: string): SkillMod {
 
 function delivery(value: unknown, where: string): Delivery {
   const source: Fields = fields(value, where);
-  const type: Delivery['type'] = choice(source, 'type', ['arc', 'nova', 'projectile', 'dash'] as const, where);
+  const type: Delivery['type'] = choice(source, 'type', ['arc', 'nova', 'projectile', 'dash', 'mark'] as const, where);
   if (type === 'dash') {
     const duration: number = positive(source, 'duration', where);
     const invulnerable: number = numeric(source, 'invulnerable', where);
     if (invulnerable < 0 || invulnerable > duration) throw new ContentError(`${where}.invulnerable`, `expected a window from 0 to the duration ${duration}`);
     return { type, distance: positive(source, 'distance', where), duration, invulnerable };
   }
+  if (type === 'mark') return markDelivery(source, where);
   if (type === 'arc') return { type, reach: numeric(source, 'reach', where), arcDegrees: numeric(source, 'arcDegrees', where) };
   if (type === 'nova') return { type, radius: numeric(source, 'radius', where) };
   return {
@@ -145,13 +148,15 @@ function skill(value: unknown, where: string): SkillDef {
     hitStop: numeric(source, 'hitStop', where),
     vfx: { style: choice(vfx, 'style', VFX_STYLES, `${where}.vfx`), color: text(vfx, 'color', `${where}.vfx`) },
     combo: skillCombo(source['combo'], `${where}.combo`),
+    ...skillMotion(source, where),
   };
 }
 
 function behaviour(value: unknown, where: string): MonsterBehaviour {
   const source: Fields = fields(value, where);
-  const type: MonsterBehaviour['type'] = choice(source, 'type', ['chaser', 'ranged'] as const, where);
+  const type: MonsterBehaviour['type'] = choice(source, 'type', ['chaser', 'ranged', 'stalker'] as const, where);
   if (type === 'chaser') return { type };
+  if (type === 'stalker') return { type, orbitRange: positive(source, 'orbitRange', where) };
   return { type, preferredRange: numeric(source, 'preferredRange', where), retreatRange: numeric(source, 'retreatRange', where) };
 }
 
@@ -225,6 +230,7 @@ function monster(value: unknown, where: string): MonsterDef {
     gear: textList(source, 'gear', where),
     wear: textList(source, 'wear', where),
     boss: boss(source['boss'], `${where}.boss`),
+    ...monsterTraits(source, where),
   };
 }
 
@@ -460,6 +466,7 @@ export function parseContent(raw: RawContent): Content {
   return {
     skills: byId(each(raw.skills, 'skills', skill), 'skills'),
     monsters: byId(each(raw.monsters, 'monsters', monster), 'monsters'),
+    monsterMods: byId(each(raw.monsterMods, 'monsterMods', monsterMod), 'monsterMods'),
     rarities: each(itemFields['rarities'], 'items.rarities', rarity),
     itemBases: byId(each(itemFields['bases'], 'items.bases', itemBase), 'items.bases'),
     affixes: byId(each(itemFields['affixes'], 'items.affixes', affix), 'items.affixes'),
@@ -563,6 +570,7 @@ export function contentProblems(content: Content): string[] {
   need(content.zones.has(content.world.start), `world starts in unknown zone ${content.world.start}`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
+  for (const problem of combatProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;
     for (const floor of Object.values(zoneDef.floors)) need(content.surfaces.has(floor), `${at} floor uses unknown surface ${floor}`);
