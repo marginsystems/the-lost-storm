@@ -3,7 +3,7 @@ import { ITEM_SLOTS, STAT_IDS } from './content/types.ts';
 import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
 
-const ARMOUR_HALF_POINT: number = 100;
+export const ARMOUR_HALF_POINT: number = 100;
 
 export function applyMods(base: StatBlock, mods: readonly StatMod[]): StatBlock {
   const flat: StatBlock = { ...base };

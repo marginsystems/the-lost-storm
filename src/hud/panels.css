@@ -227,23 +227,3 @@
   object-fit: contain;
   user-select: none;
 }
-
-.sheet {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.sheet-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.sheet-name {
-  color: var(--text-dim);
-}
-
-.sheet-value {
-  font-variant-numeric: tabular-nums;
-}

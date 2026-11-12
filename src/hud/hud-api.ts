@@ -3,7 +3,7 @@ import type { Command, ItemInstance, World, WorldEvent } from '../../sim/world/t
 import type { AudioControls } from '../audio/settings.ts';
 import type { VoicePlayer } from '../voice.ts';
 
-export type HudPanel = 'inventory' | 'tree' | 'map';
+export type HudPanel = 'inventory' | 'character' | 'tree' | 'map';
 
 export interface HudApi {
   readonly world: World;

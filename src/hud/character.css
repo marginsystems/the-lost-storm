@@ -1,0 +1,159 @@
+.hud-panel.character-panel {
+  width: 304px;
+  padding: 8px 10px 10px;
+  border: 0;
+  border-radius: 2px;
+  background: rgba(8, 10, 15, 0.9);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  font-size: 12px;
+  line-height: 16px;
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    right var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) var(--spring-smooth-ms);
+}
+
+.hud-panel.character-panel.open {
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    right var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) 0s;
+}
+
+.cs-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.cs-level {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ember);
+}
+
+.cs-xp {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.cs-track {
+  height: 3px;
+  margin: 3px 0 7px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cs-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #3f95cc, var(--storm));
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.cs-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 14px;
+}
+
+.cs-heading {
+  margin: 0 0 2px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--storm);
+}
+
+.cs-heading.wide {
+  margin-top: 7px;
+}
+
+.cs-row,
+.cs-skill {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: default;
+}
+
+.cs-row:hover,
+.cs-skill:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cs-name {
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.cs-value {
+  white-space: nowrap;
+}
+
+.cs-skill {
+  display: grid;
+  grid-template-columns: 1fr auto 64px;
+}
+
+.cs-rate {
+  text-align: right;
+  color: var(--ember);
+}
+
+.cs-bonuses {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px 14px;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.cs-bonus {
+  animation: hud-tip var(--spring-snappy-ms) var(--spring-snappy);
+  color: var(--text);
+}
+
+.cs-bonus.tree {
+  color: var(--storm);
+}
+
+.cs-none {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+}
+
+.cs-tip {
+  min-width: 150px;
+  font-size: 12px;
+}
+
+.cs-tip-title {
+  margin-bottom: 3px;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ember);
+}
+
+.cs-tip-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cs-tip-name {
+  color: var(--text-dim);
+}
+
+.cs-tip-note {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-dim);
+}

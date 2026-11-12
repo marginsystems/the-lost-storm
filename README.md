@@ -26,7 +26,7 @@ Open http://localhost:5193.
 | Shift + left mouse | Attack in place |
 | Q | Thunderclap (area hit around you) |
 | W or right mouse | Storm Bolt (projectile) |
-| I / T / M | Inventory / skill tree / world map |
+| I / C / T / M | Inventory / character sheet / skill tree / world map |
 | Tab | Corner minimap / large map laid over the game (clicks still reach the game) |
 | Left mouse on the minimap | Walk there; on an exit, travel through it. Hold to keep going |
 | Mouse wheel over the minimap | Minimap zoom |

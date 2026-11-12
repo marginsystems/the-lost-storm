@@ -8,6 +8,9 @@ import { createBossBar } from './boss-bar.ts';
 import type { BossBar } from './boss-bar.ts';
 import bossCss from './boss.css?inline';
 import type { Banners } from './banners.ts';
+import characterCss from './character.css?inline';
+import { createCharacterPanel } from './character-panel.ts';
+import type { CharacterPanel } from './character-panel.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { createDialogueBox } from './dialogue-box.ts';
 import dialogueCss from './dialogue.css?inline';
@@ -40,12 +43,12 @@ import volumeCss from './volume.css?inline';
 import { createVolumeControl } from './volume-panel.ts';
 import type { VolumeControl } from './volume-panel.ts';
 
-const PANEL_IDS: readonly HudPanel[] = ['inventory', 'tree', 'map'];
+const PANEL_IDS: readonly HudPanel[] = ['inventory', 'character', 'tree', 'map'];
 
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -75,12 +78,15 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const xp: XpBar = createXpBar(bottom);
   const row: HTMLDivElement = el('div', 'hud-row', bottom);
 
-  const open: Record<HudPanel, boolean> = { inventory: false, tree: false, map: false };
-  const buttons: Record<HudPanel, MenuButton | null> = { inventory: null, tree: null, map: null };
+  const open: Record<HudPanel, boolean> = { inventory: false, character: false, tree: false, map: false };
+  const buttons: Record<HudPanel, MenuButton | null> = { inventory: null, character: null, tree: null, map: null };
   const map: MapPanel = createMapPanel(root, context, (): void => setOpen('map', false));
   root.insertBefore(map.element, bottom);
+  const inventoryPanel: PanelView = createInventoryPanel(root, context);
+  const characterPanel: CharacterPanel = createCharacterPanel(root, context, inventoryPanel.element);
   const panels: Record<HudPanel, PanelView> = {
-    inventory: createInventoryPanel(root, context),
+    inventory: inventoryPanel,
+    character: characterPanel,
     tree: createTreePanel(root, context),
     map,
   };
@@ -111,6 +117,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   for (const panel of PANEL_IDS) track(panels[panel].element);
 
   buttons.inventory = createMenuButton(row, 'Inventory', 'I', (): void => toggle('inventory'), track);
+  buttons.character = createMenuButton(row, 'Character', 'C', (): void => toggle('character'), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
   buttons.tree = createMenuButton(row, 'Skills', 'T', (): void => toggle('tree'), track);
   buttons.map = createMenuButton(row, 'Map', 'M', (): void => toggle('map'), track);
@@ -139,6 +146,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       bossBar.update(world);
       buttons.tree?.setBadge(world.player.skillPoints);
       if (open.map) map.update(dt);
+      if (open.character) characterPanel.update(dt);
       if (mapWanted && onWaypoint(world)) {
         mapWanted = false;
         if (world.dialogue === null && world.player.alive) setOpen('map', true);
@@ -194,12 +202,14 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'level_up':
             banners.show(`LEVEL ${event.level}`, 'Skill point gained', 'level');
             refreshOpen('tree');
+            refreshOpen('character');
             break;
           case 'notice':
             notices.show(event.reason);
             break;
           case 'character_changed':
             refreshOpen('inventory');
+            refreshOpen('character');
             refreshOpen('tree');
             break;
           case 'pickup':

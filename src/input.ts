@@ -14,6 +14,7 @@ export const INPUT = {
   leftBinding: 'mouse_left',
   rightBinding: 'mouse_right',
   inventoryKey: 'KeyI',
+  characterKey: 'KeyC',
   treeKey: 'KeyT',
   mapKey: 'KeyM',
   closeKey: 'Escape',
@@ -93,6 +94,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     shift = event.shiftKey;
     if (event.repeat) return;
     if (event.code === INPUT.inventoryKey) hud.togglePanel('inventory');
+    else if (event.code === INPUT.characterKey) hud.togglePanel('character');
     else if (event.code === INPUT.treeKey) hud.togglePanel('tree');
     else if (event.code === INPUT.mapKey) hud.togglePanel('map');
     else if (event.code === INPUT.closeKey) {

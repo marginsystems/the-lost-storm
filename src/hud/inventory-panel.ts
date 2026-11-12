@@ -1,10 +1,9 @@
 import type { ItemBaseDef, ItemSlot } from '../../sim/content/types.ts';
 import { ITEM_SLOTS } from '../../sim/content/types.ts';
 import { baseOf, rarityOf, slotOf } from '../../sim/items.ts';
-import { armourReduction, damagePerSecond } from '../../sim/stats.ts';
 import type { ItemInstance, PlayerState } from '../../sim/world/types.ts';
 import type { HudContext, PanelView } from './context.ts';
-import { el, label, retrigger, setText } from './dom.ts';
+import { el, label, retrigger } from './dom.ts';
 import { setPicture } from './item-picture.ts';
 import { itemTooltip } from './item-tooltip.ts';
 import { attachTooltip } from './tooltip.ts';
@@ -30,41 +29,6 @@ interface CellView {
   current: ItemInstance | null;
 }
 
-interface SheetRow {
-  readonly name: string;
-  read(player: PlayerState): string;
-}
-
-const percent = (ratio: number, digits: number): string => `${(ratio * 100).toFixed(digits)}%`;
-
-const SHEET_ROWS: readonly SheetRow[] = [
-  { name: 'Level', read: (player: PlayerState): string => String(player.level) },
-  {
-    name: 'Damage',
-    read: (player: PlayerState): string => {
-      const scale: number = 1 + player.stats.damagePercent;
-      return `${Math.round(player.stats.damageMin * scale)}–${Math.round(player.stats.damageMax * scale)}`;
-    },
-  },
-  {
-    name: 'Damage per second',
-    read: (player: PlayerState): string => {
-      const skill = player.skills[0];
-      return skill === undefined ? '0' : damagePerSecond(player.stats, skill).toFixed(1);
-    },
-  },
-  { name: 'Life', read: (player: PlayerState): string => String(Math.round(player.maxLife)) },
-  { name: 'Mana', read: (player: PlayerState): string => String(Math.round(player.stats.maxMana)) },
-  {
-    name: 'Armour',
-    read: (player: PlayerState): string => `${Math.round(player.stats.armour)} (${percent(armourReduction(player.stats.armour), 0)})`,
-  },
-  { name: 'Attack speed', read: (player: PlayerState): string => percent(player.stats.attackSpeed, 0) },
-  { name: 'Critical chance', read: (player: PlayerState): string => percent(player.stats.critChance, 1) },
-  { name: 'Move speed', read: (player: PlayerState): string => player.stats.moveSpeed.toFixed(1) },
-  { name: 'Gold found', read: (player: PlayerState): string => percent(player.stats.goldFind, 0) },
-];
-
 function buildCell(cellParent: HTMLElement, className: string): CellView {
   const cell: HTMLDivElement = el('div', className, cellParent);
   const item: HTMLDivElement = el('div', 'cell-item', cell);
@@ -80,8 +44,6 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
 
   const equipRow: HTMLDivElement = el('div', 'equip-row', element);
   const grid: HTMLDivElement = el('div', 'inv-grid', element);
-  label('panel-subtitle', 'Character', element);
-  const sheet: HTMLDivElement = el('div', 'sheet', element);
 
   const setItem = (view: CellView, item: ItemInstance | null): boolean => {
     if (item === null && view.current === null) return false;
@@ -143,12 +105,6 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
     });
   }
 
-  const sheetValues: HTMLElement[] = SHEET_ROWS.map((row: SheetRow): HTMLElement => {
-    const line: HTMLDivElement = el('div', 'sheet-row', sheet);
-    label('sheet-name', row.name, line);
-    return el('div', 'sheet-value', line);
-  });
-
   return {
     element,
     refresh(): void {
@@ -162,10 +118,6 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
         if (setItem(view, player.inventory[index] ?? null)) changed = true;
       });
       if (changed) context.tooltip.hide();
-      SHEET_ROWS.forEach((row: SheetRow, index: number): void => {
-        const value: HTMLElement | undefined = sheetValues[index];
-        if (value !== undefined) setText(value, row.read(player), true);
-      });
     },
   };
 }
