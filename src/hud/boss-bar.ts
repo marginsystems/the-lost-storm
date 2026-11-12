@@ -1,5 +1,7 @@
 import type { BossDef } from '../../sim/content/types.ts';
 import type { MonsterState, World } from '../../sim/world/types.ts';
+import { pickTarget } from '../../sim/world/target.ts';
+import type { Target } from '../../sim/world/target.ts';
 import { clamp01, el, setText } from './dom.ts';
 
 const BOSS_BAR = {
@@ -12,7 +14,8 @@ export interface BossBar {
 }
 
 function fighting(world: World): MonsterState | null {
-  return world.monsters.find((monster: MonsterState): boolean => monster.def.boss !== null && monster.alive && monster.aggro) ?? null;
+  const picked: Target | null = pickTarget(world.monsters, null, null, 0);
+  return picked !== null && picked.kind === 'boss' ? picked.monster : null;
 }
 
 export function createBossBar(root: HTMLElement): BossBar {

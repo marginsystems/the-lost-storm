@@ -432,40 +432,13 @@ body {
   }
 }
 
-.health-bar {
+.health-canvas {
   position: absolute;
   left: 0;
   top: 0;
-  width: 46px;
-  height: 5px;
-  margin: -3px 0 0 -23px;
-  border-radius: 2px;
-  background: rgba(6, 8, 12, 0.78);
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity var(--spring-snappy-ms) var(--spring-snappy);
-  will-change: transform, opacity;
-}
-
-.health-bar.shown {
-  opacity: 1;
-}
-
-.health-bar i {
-  position: absolute;
-  inset: 0;
-  transform-origin: left center;
-  border-radius: 2px;
-}
-
-.health-bar .chip {
-  background: rgba(255, 238, 214, 0.85);
-  transition: transform 520ms var(--spring-smooth) 120ms;
-}
-
-.health-bar .fill {
-  background: linear-gradient(#e2473a, #a11f1c);
-  transition: transform 110ms var(--spring-snappy);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .loot-label {
@@ -657,33 +630,3 @@ body {
   scale: 1.06;
 }
 
-.name-plate {
-  position: absolute;
-  left: 50%;
-  top: 58px;
-  transform: translate(-50%, -6px);
-  padding: 5px 16px 6px;
-  border-radius: 5px;
-  background: rgba(8, 10, 16, 0.72);
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  text-align: center;
-  opacity: 0;
-  transition:
-    opacity var(--spring-snappy-ms) var(--spring-snappy),
-    transform var(--spring-snappy-ms) var(--spring-snappy);
-}
-
-.name-plate.shown {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-.name-plate small {
-  display: block;
-  font-family: var(--sans);
-  font-size: 11px;
-  color: rgba(239, 230, 214, 0.6);
-}

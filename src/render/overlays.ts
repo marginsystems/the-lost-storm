@@ -3,13 +3,16 @@ import type { ZoneDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import { hasNews } from '../../sim/world/dialogue.ts';
-import type { GroundItem, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
+import type { GroundItem, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
+import { createTargetBar } from '../hud/target-bar.ts';
+import type { TargetBar } from '../hud/target-bar.ts';
+import { createHealthBars } from './health-bars.ts';
+import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
 
 export const OVERLAYS = {
   numberLife: 1,
   numberDrift: 26,
-  barLift: 0.45,
   labelLift: 1.35,
   labelExit: 0.26,
   numberHeight: 0.75,
@@ -26,14 +29,6 @@ interface FloatingNumber {
   readonly y: number;
   readonly z: number;
   age: number;
-}
-
-interface HealthBar {
-  readonly element: HTMLDivElement;
-  readonly fill: HTMLElement;
-  readonly chip: HTMLElement;
-  ratio: number;
-  shown: boolean;
 }
 
 interface LootLabel {
@@ -86,7 +81,6 @@ function place(element: HTMLElement, point: Vector2): void {
 
 export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: OverlayHooks): Overlays {
   const numbers: FloatingNumber[] = [];
-  const bars: Map<number, HealthBar> = new Map<number, HealthBar>();
   const labels: Map<number, LootLabel> = new Map<number, LootLabel>();
   let exits: ExitLabel[] = [];
   let labelHoverId: number | null = null;
@@ -97,20 +91,14 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   let peopleZone: ZoneDef | null = null;
   let leaving: LeavingLabel[] = [];
   const point: Vector2 = new Vector2();
-  const barLayer: HTMLDivElement = document.createElement('div');
   const labelLayer: HTMLDivElement = document.createElement('div');
   const numberLayer: HTMLDivElement = document.createElement('div');
-  for (const layer of [barLayer, labelLayer, numberLayer]) {
+  for (const layer of [labelLayer, numberLayer]) {
     layer.className = 'world-layer';
     root.append(layer);
   }
-  const plate: HTMLDivElement = document.createElement('div');
-  plate.className = 'name-plate';
-  const plateName: HTMLSpanElement = document.createElement('span');
-  const plateDetail: HTMLElement = document.createElement('small');
-  plate.append(plateName, plateDetail);
-  root.append(plate);
-  let plateFor: number | null = null;
+  const healthBars: HealthBars = createHealthBars(root, camera);
+  const targetBar: TargetBar = createTargetBar(root);
 
   const float = (text: string, kind: string, x: number, y: number, z: number): void => {
     const element: HTMLDivElement = document.createElement('div');
@@ -121,22 +109,6 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     element.append(inner);
     numberLayer.append(element);
     numbers.push({ element, x, y, z, age: 0 });
-  };
-
-  const barFor = (monster: MonsterState): HealthBar => {
-    const existing: HealthBar | undefined = bars.get(monster.id);
-    if (existing !== undefined) return existing;
-    const element: HTMLDivElement = document.createElement('div');
-    element.className = 'health-bar';
-    const chip: HTMLElement = document.createElement('i');
-    chip.className = 'chip';
-    const fill: HTMLElement = document.createElement('i');
-    fill.className = 'fill';
-    element.append(chip, fill);
-    barLayer.append(element);
-    const bar: HealthBar = { element, fill, chip, ratio: 1, shown: false };
-    bars.set(monster.id, bar);
-    return bar;
   };
 
   const labelFor = (world: World, ground: GroundItem): void => {
@@ -247,6 +219,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       for (const event of events) {
         switch (event.type) {
           case 'damage': {
+            if (event.targetTeam !== 'player') targetBar.hit(event.targetId);
             const y: number = hooks.heightOf(event.targetId) * OVERLAYS.numberHeight;
             const kind: string = event.targetTeam === 'player' ? 'hurt' : event.crit ? 'crit' : '';
             float(event.crit ? `${event.amount}!` : `${event.amount}`, kind, event.pos.x, y, event.pos.z);
@@ -344,32 +317,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         place(number.element, point);
       }
 
-      const alive: Set<number> = new Set<number>();
-      let hovered: MonsterState | null = null;
-      for (const monster of world.monsters) {
-        if (monster.id === hoveredId && monster.alive) hovered = monster;
-        const wanted: boolean = monster.alive && (monster.life < monster.maxLife || monster.id === hoveredId);
-        if (!wanted && !bars.has(monster.id)) continue;
-        alive.add(monster.id);
-        const bar: HealthBar = barFor(monster);
-        const ratio: number = Math.max(0, monster.life / monster.maxLife);
-        if (ratio !== bar.ratio) {
-          bar.ratio = ratio;
-          bar.fill.style.transform = `scaleX(${ratio.toFixed(3)})`;
-          bar.chip.style.transform = `scaleX(${ratio.toFixed(3)})`;
-        }
-        if (wanted !== bar.shown) {
-          bar.shown = wanted;
-          bar.element.classList.toggle('shown', wanted);
-        }
-        camera.project(monster.pos.x, hooks.heightOf(monster.id) + OVERLAYS.barLift, monster.pos.z, point);
-        place(bar.element, point);
-      }
-      for (const [id, bar] of bars) {
-        if (alive.has(id)) continue;
-        bar.element.remove();
-        bars.delete(id);
-      }
+      healthBars.update(dt, world, (actorId: number): number => hooks.heightOf(actorId));
+      targetBar.update(dt, world.monsters, hoveredId);
 
       for (const ground of world.ground) labelFor(world, ground);
       for (const [id, label] of labels) {
@@ -388,13 +337,6 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         place(label.element, point);
       }
 
-      const nextPlate: number | null = hovered?.id ?? null;
-      if (nextPlate !== plateFor) {
-        plateFor = nextPlate;
-        plate.classList.toggle('shown', hovered !== null);
-        if (hovered !== null) plateName.textContent = hovered.def.name;
-      }
-      if (hovered !== null) plateDetail.textContent = `Level ${hovered.level} · ${Math.ceil(hovered.life)} / ${hovered.maxLife}`;
     },
   };
 }

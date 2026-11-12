@@ -33,12 +33,10 @@
 
 .boss-track {
   position: relative;
-  height: 11px;
+  height: 7px;
   margin-top: 6px;
-  border-radius: 3px;
   overflow: hidden;
-  background: rgba(8, 10, 16, 0.78);
-  border: 1px solid var(--panel-edge);
+  background: rgba(6, 8, 12, 0.82);
 }
 
 .boss-fill,
@@ -49,12 +47,12 @@
 }
 
 .boss-fill {
-  background: linear-gradient(180deg, #d0524a, #8e2622);
+  background: #a8322b;
   transition: transform var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .boss-chip {
-  background: rgba(255, 226, 190, 0.7);
+  background: rgba(240, 214, 184, 0.62);
   transition: transform var(--spring-smooth-ms) var(--spring-smooth) 180ms;
 }
 
