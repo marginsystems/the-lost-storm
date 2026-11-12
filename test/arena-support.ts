@@ -52,9 +52,9 @@ export const ARENA_CONTENT: Content = {
   monsterMods: byId(shipped.monsterMods, MODS),
 };
 
-export function arena(seed: number): World {
-  const base: ZoneDef = zoneOf(ARENA_CONTENT, 'drowned_bastion');
-  const world: World = worldIn(ARENA_CONTENT, base.id, seed);
+export function arena(seed: number, content: Content = ARENA_CONTENT): World {
+  const base: ZoneDef = zoneOf(content, 'drowned_bastion');
+  const world: World = worldIn(content, base.id, seed);
   enterZone(world, sceneZone(base, 'test_arena', { tiles: OPEN, props: [], start: ARENA_CENTRE }), { type: 'start' });
   world.events = [];
   world.monsters = [];

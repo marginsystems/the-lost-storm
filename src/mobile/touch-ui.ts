@@ -133,6 +133,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   let shownSignature: string = '';
   const tracks: Map<number, Track> = new Map<number, Track>();
   const fresh: Set<number> = new Set<number>();
+  const lifted: Set<number> = new Set<number>();
   let repeat: number = 0;
   let moving: boolean = false;
   let stopPending: boolean = false;
@@ -206,6 +207,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       case 'button': {
         const view: ButtonView | undefined = views[track.index];
         view?.root.classList.remove('down');
+        if (view !== undefined && view.spec.kind !== 'flask') lifted.add(view.spec.slot);
         return;
       }
     }
@@ -271,6 +273,10 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
 
   const reset = (): void => {
     for (const view of views) view.root.classList.remove('down');
+    for (const track of tracks.values()) {
+      const view: ButtonView | undefined = track.kind === 'button' ? views[track.index] : undefined;
+      if (view !== undefined && view.spec.kind !== 'flask') lifted.add(view.spec.slot);
+    }
     tracks.clear();
     fresh.clear();
     pinch = null;
@@ -320,11 +326,13 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
         const isHeld: boolean = heldButtons.has(index);
         switch (view.spec.kind) {
           case 'attack':
-            if (isFresh || (isHeld && tick)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)));
+            if (isFresh) commands.push({ type: 'hold', slot: view.spec.slot, down: true });
+            if (isFresh || (isHeld && tick && player.skills[view.spec.slot]?.hold === null)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)));
             return;
           case 'skill': {
             const skill: SkillDef | undefined = player.skills[view.spec.slot];
-            const ready: boolean = skill !== undefined && player.action === null && player.queued === null && (player.cooldowns[skill.id] ?? 0) <= 0 && player.mana >= skill.manaCost;
+            if (isFresh) commands.push({ type: 'hold', slot: view.spec.slot, down: true });
+            const ready: boolean = skill !== undefined && skill.hold === null && player.action === null && player.queued === null && (player.cooldowns[skill.id] ?? 0) <= 0 && player.mana >= skill.manaCost;
             if (isFresh || (isHeld && tick && ready)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)));
             return;
           }
@@ -333,6 +341,12 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
             return;
         }
       });
+      for (const slot of lifted) commands.push({ type: 'hold', slot, down: false });
+      lifted.clear();
+      const holding = player.action;
+      if (holding !== null && holding.skill.hold !== null && views.some((view: ButtonView, index: number): boolean => heldButtons.has(index) && view.spec.kind !== 'flask' && view.spec.slot === holding.slot)) {
+        commands.push({ type: 'steer', aim: aimedSkill(holding.slot ?? 0, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)).aim });
+      }
       return commands;
     },
     update(): void {

@@ -1,5 +1,6 @@
 import { stepBosses } from './boss.ts';
 import { stepDeath } from './death.ts';
+import { stepFields, timeScaleOf } from './fields.ts';
 import { stepHazards } from './hazards.ts';
 import { removeCorpses, stepMonster, stepSurge } from './monsters.ts';
 import { stepExploration } from './exploration.ts';
@@ -28,10 +29,11 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepFlasks(world, dt);
   stepVoid(world, dt);
   stepExploration(world);
-  for (const monster of world.monsters) stepMonster(world, monster, dt);
+  for (const monster of world.monsters) stepMonster(world, monster, dt * timeScaleOf(world, monster));
   separateActors(world);
   stepProjectiles(world, dt);
   stepHazards(world, dt);
+  stepFields(world, dt);
   stepDeath(world, dt);
   for (const ground of world.ground) ground.age += dt;
   removeCorpses(world);

@@ -1,4 +1,5 @@
 import type { DeathPenalty } from '../content/types.ts';
+import { clearFields } from './fields.ts';
 import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
 import type { MonsterState, PlayerState, RespawnChoice, World, WorldEvent } from './types.ts';
@@ -19,6 +20,7 @@ function resetMonster(monster: MonsterState): void {
   monster.pos = { x: monster.home.x, z: monster.home.z };
   monster.knock = { x: 0, z: 0 };
   monster.action = null;
+  monster.brand = null;
   monster.path = [];
   monster.stance = 'approach';
   monster.blindTime = 0;
@@ -42,6 +44,8 @@ function revive(world: World): void {
   player.combo = null;
   player.stagger = 0;
   player.root = 0;
+  player.brand = null;
+  player.held = [];
   player.invulnerable = world.content.player.respawnInvulnerability;
   world.death = null;
 }
@@ -60,6 +64,7 @@ export function respawnPlayer(world: World, choice: RespawnChoice): void {
     placePlayer(world);
     clearProjectiles(world);
     clearHazards(world);
+    clearFields(world);
     for (const monster of world.monsters) if (monster.alive) resetMonster(monster);
   }
   world.events.push({ type: 'player_respawn' });
