@@ -1,4 +1,4 @@
-import type { AnimationAction, AnimationClip, Camera, IUniform, Material, MeshBasicMaterial, Object3D, Scene, WebGLRenderer } from 'three';
+import type { AnimationAction, AnimationClip, Camera, IUniform, Material, MeshBasicMaterial, Object3D, Scene, Texture, WebGLRenderer } from 'three';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, Group, LoopRepeat, Mesh, MeshStandardMaterial, PointLight, ShaderMaterial, SphereGeometry } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { MomentDef, MomentEcho, MomentProp } from '../../sim/content/moment-types.ts';
@@ -16,6 +16,8 @@ import { DOME_FRAGMENT, DOME_VERTEX, FLOOR_FRAGMENT, FLOOR_VERTEX } from './mome
 import type { Press } from './membrane.ts';
 import { MEMBRANE, pressAngle, pressTarget, SLACK, stepPress } from './membrane.ts';
 import { surfaceMaterial } from './surfaces.ts';
+import type { FramePacer } from './paced-work.ts';
+import { browserPacer, PACED_WORK, workPaced } from './paced-work.ts';
 
 export const MOMENT_VIEW = {
   domeSegments: 40,
@@ -252,6 +254,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
   let warmed: WarmTarget | null = null;
   let warmedRigs: number = 0;
   let warming: boolean = false;
+  const pacer: FramePacer = browserPacer();
   const flashes: Flash[] = [];
   const models: Map<string, GLTF> = new Map<string, GLTF>();
   const lights: PointLight[] = [];
@@ -545,11 +548,12 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       for (const entry of warm) holder.add(entry.group);
       holder.add(bolt, arcs);
       await renderer.compileAsync(holder, camera, scene).catch((): undefined => undefined);
+      const textures: Set<Texture> = new Set<Texture>();
       for (const entry of warm) {
         entry.group.traverse((object: Object3D): void => {
           if (!(object instanceof Mesh)) return;
           const materials: readonly unknown[] = Array.isArray(object.material) ? object.material : [object.material];
-          for (const material of materials) if (material instanceof MeshStandardMaterial) for (const texture of [material.map, material.normalMap, material.roughnessMap, material.emissiveMap]) if (texture !== null) renderer.initTexture(texture);
+          for (const material of materials) if (material instanceof MeshStandardMaterial) for (const texture of [material.map, material.normalMap, material.roughnessMap, material.emissiveMap]) if (texture !== null) textures.add(texture);
         });
         entry.group.visible = false;
         scene.add(entry.group);
@@ -557,6 +561,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       bolt.visible = false;
       arcs.visible = false;
       scene.add(bolt, arcs);
+      await workPaced([...textures], (texture: Texture): void => renderer.initTexture(texture), pacer, kept.length === 0 ? Number.POSITIVE_INFINITY : PACED_WORK.frameBudgetMs);
       for (const entry of kept) dispose(entry);
       for (const old of keptStrike) old.removeFromParent();
       kept = warm;
