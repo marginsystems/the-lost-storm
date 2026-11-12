@@ -121,6 +121,10 @@ export interface Placed {
   readonly focus: number;
 }
 
+export function typedText(value: string, inputType: string, data: string | null): string {
+  return inputType === 'insertText' && data !== null ? data : value;
+}
+
 export function placeDigits(current: readonly string[], at: number, typed: string): Placed {
   const incoming: string = digitsOf(typed);
   const digits: string[] = Array.from({ length: EMAIL_ENTRY.digits }, (_unused: unknown, index: number): string => current[index] ?? '');

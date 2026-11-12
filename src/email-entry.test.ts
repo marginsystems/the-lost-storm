@@ -15,6 +15,7 @@ import {
   openEntry,
   placeDigits,
   sendingEntry,
+  typedText,
   wrongNote,
 } from './email-entry.ts';
 import type { EmailEntry } from './email-entry.ts';
@@ -102,4 +103,14 @@ void test('typing fills one box and moves on, a paste of six fills them all, and
 void test('a code is complete only with six digits', (): void => {
   assert.equal(completeCode(['0', '4', '2', '9', '1', '7']), '042917');
   assert.equal(completeCode(['0', '4', '2', '9', '1', '']), null);
+});
+
+void test('a key typed into a filled box places only the new digit, while a paste or autofill places the whole value', (): void => {
+  assert.equal(typedText('19', 'insertText', '9'), '9');
+  assert.equal(typedText('4', 'insertText', '4'), '4');
+  assert.equal(typedText('042917', 'insertFromPaste', null), '042917');
+  assert.equal(typedText('042917', 'insertReplacementText', null), '042917');
+  assert.equal(typedText('', 'deleteContentBackward', null), '');
+  const filled: readonly string[] = ['1', '2', '3', '4', '5', '6'];
+  assert.deepEqual(placeDigits(filled, 2, typedText('39', 'insertText', '9')), { digits: ['1', '2', '9', '4', '5', '6'], focus: 3 });
 });

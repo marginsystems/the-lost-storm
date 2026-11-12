@@ -1,6 +1,6 @@
 import type { EmailOffer, EmailStartResult, EmailVerifyResult } from './backend/account.ts';
 import type { Clock, Timers } from './backend/backend.ts';
-import { afterStart, afterVerify, canCheck, canResend, checkingEntry, cleanAddress, closedEntry, completeCode, EMAIL_ENTRY, EMAIL_NOTES, invalidEntry, openEntry, placeDigits, sendingEntry } from './email-entry.ts';
+import { afterStart, afterVerify, canCheck, canResend, checkingEntry, cleanAddress, closedEntry, completeCode, EMAIL_ENTRY, EMAIL_NOTES, invalidEntry, openEntry, placeDigits, sendingEntry, typedText } from './email-entry.ts';
 import type { EmailEntry, Placed } from './email-entry.ts';
 import type { TurnstileGate } from './turnstile.ts';
 
@@ -116,8 +116,10 @@ export function createTitleEmail(options: TitleEmailOptions): TitleEmail {
 
   const request = async (email: string): Promise<void> => {
     const before: EmailEntry = entry;
-    move(sendingEntry(before));
+    const sending: EmailEntry = sendingEntry(before);
+    move(sending);
     const ready: TurnstileGate | null = await gateFor();
+    if (entry !== sending) return;
     if (ready === null) {
       gate = null;
       move(afterStart(before, email, { kind: 'unavailable' }, clock()));
@@ -128,13 +130,18 @@ export function createTitleEmail(options: TitleEmailOptions): TitleEmail {
     });
     const token: string | null = await ready.token();
     waitNote();
+    if (entry !== sending) {
+      if (token !== null) ready.spend();
+      return;
+    }
     if (token === null) {
       move(afterStart(before, email, { kind: 'bot-check' }, clock()));
       return;
     }
     const result: EmailStartResult = await options.send(email, token);
     ready.spend();
-    move(afterStart(entry, email, result, clock()));
+    if (entry !== sending) return;
+    move(afterStart(sending, email, result, clock()));
     if (result.kind === 'sent') {
       clearDigits();
       const first: HTMLInputElement | undefined = parts.digits[0];
@@ -146,9 +153,11 @@ export function createTitleEmail(options: TitleEmailOptions): TitleEmail {
     const step = entry.step;
     const code: string | null = completeCode(values());
     if (step.kind !== 'code' || code === null || !canCheck(entry)) return;
-    move(checkingEntry(entry));
+    const checking: EmailEntry = checkingEntry(entry);
+    move(checking);
     const result: EmailVerifyResult = await options.verify(step.email, code);
-    move(afterVerify(entry, result));
+    if (entry !== checking) return;
+    move(afterVerify(checking, result));
     if (result.kind === 'wrong' || result.kind === 'expired' || result.kind === 'locked') {
       clearDigits();
       const first: HTMLInputElement | undefined = parts.digits[0];
@@ -198,8 +207,8 @@ export function createTitleEmail(options: TitleEmailOptions): TitleEmail {
   });
 
   parts.digits.forEach((digit: HTMLInputElement, index: number): void => {
-    digit.addEventListener('input', (): void => {
-      place(index, digit.value);
+    digit.addEventListener('input', (event: Event): void => {
+      place(index, event instanceof InputEvent ? typedText(digit.value, event.inputType, event.data) : digit.value);
     });
     digit.addEventListener('paste', (event: ClipboardEvent): void => {
       event.preventDefault();

@@ -47,7 +47,7 @@
     visibility 0s linear var(--spring-snappy-ms);
 }
 
-.title-methods > [hidden] {
+.title-card .title-methods > [hidden] {
   display: none;
 }
 
