@@ -58,9 +58,11 @@ export const EFFECTS = {
   telegraphHeight: 0.09,
   telegraphStart: 0.45,
   telegraphFaint: 0.07,
-  telegraphStrong: 0.2,
-  telegraphEdge: 0.5,
+  telegraphStrong: 0.14,
+  telegraphEdge: 0.3,
   telegraphEdgeIn: 6,
+  telegraphBreathe: 0.2,
+  telegraphBreatheRate: 6,
   phaseRing: 9,
   phaseShake: 0.5,
   castLift: 1.7,
@@ -107,7 +109,7 @@ const EMBER: Color = new Color(0xff8a2e);
 const DUST: Color = new Color(0x2a3442);
 const MOVE_MARK: Color = new Color(0xb9c6d6);
 const ATTACK_MARK: Color = new Color(0xd9705a);
-const TELEGRAPH: Color = new Color(0xff3a2a);
+const TELEGRAPH: Color = new Color(0xc65a4a);
 const WHITE: Color = new Color(0xffffff);
 const FLASK_GLOW: Readonly<Record<FlaskResource, Color>> = { life: new Color(0xd8402e), mana: new Color(0x4f9be0) };
 const FLASK_SPRAY: Partial<BurstOptions> = { speed: { min: 0.3, max: 1.4 }, lift: { min: 1.5, max: 4 }, life: { min: 0.5, max: 1 }, size: { min: 0.15, max: 0.35 }, gravity: 1, drag: 1.4, jitter: 0.6 };
@@ -292,12 +294,13 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       duration,
       (t: number): void => {
         const grown: number = EFFECTS.telegraphStart + (1 - EFFECTS.telegraphStart) * easeOut(t);
+        const breath: number = 1 - EFFECTS.telegraphBreathe * (0.5 + 0.5 * Math.cos(t * duration * EFFECTS.telegraphBreatheRate));
         for (const fill of shape.fills) {
-          fill.material.opacity = EFFECTS.telegraphFaint + EFFECTS.telegraphStrong * t * t;
+          fill.material.opacity = (EFFECTS.telegraphFaint + EFFECTS.telegraphStrong * t * t) * breath;
           if (shape.lanes) fill.scale.set(1, 1, grown);
           else fill.scale.setScalar(grown);
         }
-        for (const edge of shape.edges) edge.material.opacity = EFFECTS.telegraphEdge * Math.min(1, t * EFFECTS.telegraphEdgeIn);
+        for (const edge of shape.edges) edge.material.opacity = EFFECTS.telegraphEdge * Math.min(1, t * EFFECTS.telegraphEdgeIn) * breath;
       },
       owner,
     );

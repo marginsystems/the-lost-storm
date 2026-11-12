@@ -17,10 +17,15 @@ export const SHAPES = {
   arcJitter: 0.9,
   arcWidth: 0.09,
   telegraphInner: 0.35,
-  telegraphEdge: 0.985,
   telegraphFill: 0.07,
   telegraphLine: 0.5,
   telegraphCore: 0,
+  telegraphBody: 0.82,
+  telegraphFeather: 0.12,
+  telegraphSide: 0.12,
+  rimIn: 0.8,
+  rimOut: 1.06,
+  laneShoulder: 0.45,
   laneStart: 0.7,
 } as const;
 
@@ -208,30 +213,104 @@ function telegraphPart(geometry: BufferGeometry, color: Color, opacity: number, 
   return mesh;
 }
 
-function gradientFill(geometry: BufferGeometry, color: Color, inner: (vertex: number) => boolean): TelegraphPart {
-  const count: number = geometry.getAttribute('position').count;
-  const colours: Float32Array = new Float32Array(count * 4);
-  for (let vertex: number = 0; vertex < count; vertex += 1) colours.set([1, 1, 1, inner(vertex) ? SHAPES.telegraphCore : 1], vertex * 4);
-  geometry.setAttribute('color', new BufferAttribute(colours, 4));
-  const part: TelegraphPart = telegraphPart(geometry, color, SHAPES.telegraphFill, 5);
+interface Ring {
+  readonly at: number;
+  readonly alpha: number;
+}
+
+function sideFade(t: number, open: boolean): number {
+  if (!open) return 1;
+  const side: number = Math.max(0, Math.min(1, Math.min(t, 1 - t) / SHAPES.telegraphSide));
+  return side * side * (3 - 2 * side);
+}
+
+function featheredSector(arc: number, rings: readonly Ring[]): BufferGeometry {
+  const segments: number = SHAPES.sectorSegments;
+  const open: boolean = arc < Math.PI * 2 - 1e-3;
+  const positions: number[] = [];
+  const colours: number[] = [];
+  const indices: number[] = [];
+  const width: number = rings.length;
+  for (let step: number = 0; step <= segments; step += 1) {
+    const t: number = step / segments;
+    const angle: number = (t - 0.5) * arc;
+    const sin: number = Math.sin(angle);
+    const cos: number = Math.cos(angle);
+    const side: number = sideFade(t, open);
+    for (const ring of rings) {
+      positions.push(sin * ring.at, 0, cos * ring.at);
+      colours.push(1, 1, 1, ring.alpha * side);
+    }
+    if (step < segments) {
+      const base: number = step * width;
+      for (let index: number = 0; index < width - 1; index += 1) indices.push(base + index, base + index + 1, base + width + index, base + index + 1, base + width + index + 1, base + width + index);
+    }
+  }
+  return gridGeometry(positions, colours, indices);
+}
+
+function featheredLane(halfWidth: number, length: number): BufferGeometry {
+  const near: number = SHAPES.laneStart;
+  const rows: readonly Ring[] = [
+    { at: near, alpha: SHAPES.telegraphCore },
+    { at: near + (length - near) * SHAPES.telegraphBody, alpha: 1 },
+    { at: length * (1 + SHAPES.telegraphFeather / 2), alpha: 0 },
+  ];
+  const columns: readonly Ring[] = [
+    { at: -halfWidth, alpha: 0 },
+    { at: -halfWidth * SHAPES.laneShoulder, alpha: 1 },
+    { at: halfWidth * SHAPES.laneShoulder, alpha: 1 },
+    { at: halfWidth, alpha: 0 },
+  ];
+  const positions: number[] = [];
+  const colours: number[] = [];
+  const indices: number[] = [];
+  rows.forEach((row: Ring, rowIndex: number): void => {
+    for (const column of columns) {
+      positions.push(column.at, 0, row.at);
+      colours.push(1, 1, 1, row.alpha * column.alpha);
+    }
+    if (rowIndex < rows.length - 1) {
+      const base: number = rowIndex * columns.length;
+      for (let index: number = 0; index < columns.length - 1; index += 1) indices.push(base + index, base + index + 1, base + columns.length + index, base + index + 1, base + columns.length + index + 1, base + columns.length + index);
+    }
+  });
+  return gridGeometry(positions, colours, indices);
+}
+
+function gridGeometry(positions: readonly number[], colours: readonly number[], indices: readonly number[]): BufferGeometry {
+  const geometry: BufferGeometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
+  geometry.setAttribute('color', new BufferAttribute(new Float32Array(colours), 4));
+  geometry.setIndex([...indices]);
+  return geometry;
+}
+
+function softPart(geometry: BufferGeometry, color: Color, opacity: number, order: number): TelegraphPart {
+  const part: TelegraphPart = telegraphPart(geometry, color, opacity, order);
   part.material.vertexColors = true;
   return part;
 }
 
-function sectorInner(vertex: number): boolean {
-  return vertex % 2 === 0;
+function bodyRings(inner: number, outer: number): readonly Ring[] {
+  return [
+    { at: inner, alpha: SHAPES.telegraphCore },
+    { at: inner + (outer - inner) * SHAPES.telegraphBody, alpha: 1 },
+    { at: outer * (1 + SHAPES.telegraphFeather / 2), alpha: 0 },
+  ];
 }
 
-function laneNear(vertex: number): boolean {
-  return vertex < 2;
+function rimRings(outer: number): readonly Ring[] {
+  return [
+    { at: outer * SHAPES.rimIn, alpha: 0 },
+    { at: outer, alpha: 1 },
+    { at: outer * SHAPES.rimOut, alpha: 0 },
+  ];
 }
 
-function laneGeometry(halfWidth: number, length: number): BufferGeometry {
-  const geometry: BufferGeometry = new BufferGeometry();
-  const near: number = SHAPES.laneStart;
-  geometry.setAttribute('position', new BufferAttribute(new Float32Array([-halfWidth, 0, near, halfWidth, 0, near, -halfWidth, 0, length, halfWidth, 0, length]), 3));
-  geometry.setIndex([0, 1, 2, 1, 3, 2]);
-  return geometry;
+function softArea(arc: number, inner: number, outer: number, color: Color, fills: TelegraphPart[], edges: TelegraphPart[]): void {
+  fills.push(softPart(featheredSector(arc, bodyRings(inner, outer)), color, SHAPES.telegraphFill, 5));
+  edges.push(softPart(featheredSector(arc, rimRings(outer)), color, SHAPES.telegraphLine, 6));
 }
 
 export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
@@ -239,38 +318,33 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
   const fills: TelegraphPart[] = [];
   const edges: TelegraphPart[] = [];
   switch (delivery.type) {
-    case 'arc': {
-      const arc: number = (delivery.arcDegrees * Math.PI) / 180;
-      fills.push(gradientFill(sectorGeometry(arc, SHAPES.telegraphInner, delivery.reach), color, sectorInner));
-      edges.push(telegraphPart(sectorGeometry(arc, delivery.reach * SHAPES.telegraphEdge, delivery.reach), color, SHAPES.telegraphLine, 6));
+    case 'arc':
+      softArea((delivery.arcDegrees * Math.PI) / 180, SHAPES.telegraphInner, delivery.reach, color, fills, edges);
       break;
-    }
     case 'nova':
     case 'mark':
     case 'field':
     case 'area':
     case 'blink':
-      fills.push(gradientFill(sectorGeometry(Math.PI * 2, 0, delivery.radius), color, sectorInner));
-      edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.radius * SHAPES.telegraphEdge, delivery.radius), color, SHAPES.telegraphLine, 6));
+      softArea(Math.PI * 2, 0, delivery.radius, color, fills, edges);
       break;
     case 'projectile': {
       const count: number = Math.max(1, Math.round(delivery.count));
       for (let index: number = 0; index < count; index += 1) {
-        const lane: TelegraphPart = gradientFill(laneGeometry(delivery.radius, delivery.range + SKILLS.projectileOrigin + delivery.radius), color, laneNear);
+        const lane: TelegraphPart = softPart(featheredLane(delivery.radius, delivery.range + SKILLS.projectileOrigin + delivery.radius), color, SHAPES.telegraphFill, 5);
         lane.rotation.y = count === 1 ? 0 : ((index - (count - 1) / 2) * delivery.spreadDegrees * Math.PI) / 180;
         fills.push(lane);
       }
       break;
     }
     case 'dash':
-      fills.push(gradientFill(laneGeometry(SHAPES.dashLane, delivery.distance), color, laneNear));
+      fills.push(softPart(featheredLane(SHAPES.dashLane, delivery.distance), color, SHAPES.telegraphFill, 5));
       break;
     case 'beam':
-      fills.push(gradientFill(laneGeometry(delivery.width / 2, delivery.range), color, laneNear));
+      fills.push(softPart(featheredLane(delivery.width / 2, delivery.range), color, SHAPES.telegraphFill, 5));
       break;
     case 'chain':
-      fills.push(gradientFill(sectorGeometry(Math.PI * 2, 0, delivery.range), color, sectorInner));
-      edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.range * SHAPES.telegraphEdge, delivery.range), color, SHAPES.telegraphLine, 6));
+      softArea(Math.PI * 2, 0, delivery.range, color, fills, edges);
       break;
     case 'revive':
       break;
