@@ -26,9 +26,12 @@ export function coverOf(open: Readonly<Record<HudPanel, boolean>>): CoverState {
   return { side: covers.has('side'), full: covers.has('full') };
 }
 
-export function closedBy(panel: HudPanel, open: Readonly<Record<HudPanel, boolean>>): HudPanel[] {
+export const SHEET_PARTNER: HudPanel = 'inventory';
+
+export function closedBy(panel: HudPanel, open: Readonly<Record<HudPanel, boolean>>, sheets: boolean): HudPanel[] {
   const opening: PanelCover = PANEL_COVER[panel];
-  return HUD_PANELS.filter((other: HudPanel): boolean => other !== panel && open[other] && (opening === 'full' || PANEL_COVER[other] === 'full'));
+  const displaced = (other: HudPanel): boolean => opening === 'full' || PANEL_COVER[other] === 'full' || (sheets && panel !== SHEET_PARTNER && other !== SHEET_PARTNER);
+  return HUD_PANELS.filter((other: HudPanel): boolean => other !== panel && open[other] && displaced(other));
 }
 
 export function applyCover(root: HTMLElement, cover: CoverState): void {

@@ -64,8 +64,11 @@ void test('the graphics notice is hidden and out of the layout unless the contex
   assert.match(base, /position: absolute/);
   assert.match(base, /visibility: hidden/);
   assert.match(base, /opacity: 0/);
-  const shows: string[] = [...css.matchAll(/([^{}]+)\{[^}]*visibility: visible/g)].map((match: RegExpMatchArray): string => (match[1] ?? '').trim());
+  const shows: string[] = [...css.matchAll(/([^{}]+)\{[^}]*visibility:\s*visible/g)].map((match: RegExpMatchArray): string => (match[1] ?? '').trim());
   assert.deepEqual(shows, ['.ctx-notice.on']);
+  for (const file of sourceFiles('src').filter((name: string): boolean => name.endsWith('.css') && name !== `${HUD_FOLDER}/context-notice.css`)) {
+    assert.ok(!readFileSync(file, 'utf8').includes('.ctx-'), `${file} styles the graphics notice`);
+  }
   const notices: string[] = sourceFiles('src').filter((file: string): boolean => readFileSync(file, 'utf8').includes('Restoring graphics'));
   assert.deepEqual(notices, [`${HUD_FOLDER}/context-notice.ts`]);
   const watches: string = readFileSync(`${HUD_FOLDER}/context-notice.ts`, 'utf8');

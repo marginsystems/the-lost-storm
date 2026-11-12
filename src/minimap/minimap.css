@@ -115,7 +115,10 @@
 .hud.fit > .hud-quests {
   width: var(--fit-quests, 250px);
   max-height: calc(100% - 60px - var(--fit-minimap, 188px) - var(--hud-cluster-h, 168px));
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  pointer-events: auto;
 }
 
 .hud.hud-covered-side > .hud-quests,

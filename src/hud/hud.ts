@@ -130,7 +130,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.insertBefore(grid, root.firstChild);
 
   function setOpen(panel: HudPanel, next: boolean): void {
-    if (next) for (const other of closedBy(panel, open)) setOpen(other, false);
+    if (next) for (const other of closedBy(panel, open, root.classList.contains('fit-sheets'))) setOpen(other, false);
     if (open[panel] !== next) api.playUi(next ? 'panel_open' : 'panel_close');
     open[panel] = next;
     const view: PanelView = panels[panel];

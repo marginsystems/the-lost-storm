@@ -65,7 +65,13 @@ void test('covered corner pieces stop taking clicks at once, the minimap frame i
 
 void test('the full map closes the other panels and they close it', (): void => {
   const all: Readonly<Record<HudPanel, boolean>> = { inventory: true, character: true, tree: true, map: false };
-  assert.deepEqual(closedBy('map', all), ['inventory', 'character', 'tree']);
-  assert.deepEqual(closedBy('inventory', { ...CLOSED, map: true }), ['map']);
-  assert.deepEqual(closedBy('tree', { ...CLOSED, inventory: true, character: true }), []);
+  assert.deepEqual(closedBy('map', all, false), ['inventory', 'character', 'tree']);
+  assert.deepEqual(closedBy('inventory', { ...CLOSED, map: true }, false), ['map']);
+  assert.deepEqual(closedBy('tree', { ...CLOSED, inventory: true, character: true }, false), []);
+});
+
+void test('as sheets, a panel shares the screen only with the inventory', (): void => {
+  assert.deepEqual(closedBy('tree', { ...CLOSED, inventory: true, character: true }, true), ['character']);
+  assert.deepEqual(closedBy('character', { ...CLOSED, inventory: true, tree: true }, true), ['tree']);
+  assert.deepEqual(closedBy('inventory', { ...CLOSED, character: true }, true), []);
 });
