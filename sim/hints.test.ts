@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must, worldIn } from '../test/support.ts';
+import { stepWorld } from './world/step.ts';
 import { loadContent } from './content/content.ts';
 import type { HintDef, HintsDef } from './content/hints.ts';
 import { loadHints } from './content/hints.ts';
@@ -8,7 +9,7 @@ import type { Content } from './content/types.ts';
 import type { HintChange, HintInput, HintState } from './hints.ts';
 import { createHintState, seedVeteran, stepHints } from './hints.ts';
 import { startQuests } from './world/quests.ts';
-import type { World, WorldEvent } from './world/types.ts';
+import type { ItemInstance, World, WorldEvent } from './world/types.ts';
 
 const content: Content = loadContent();
 const defs: HintsDef = loadHints(content);
@@ -102,4 +103,52 @@ void test('the low life hint needs a carried item of the named slot', (): void =
   const state: HintState = createHintState(earlyIds());
   world.player.life = 1;
   assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+});
+
+function placeInBag(world: World, base: string): void {
+  const free: number = world.player.inventory.indexOf(null);
+  world.player.inventory[free] = { uid: 900 + free, base, rarity: 'common', level: 1, affixes: [] };
+}
+
+function allBut(...ids: string[]): string[] {
+  return defs.hints.map((hint: HintDef): string => hint.id).filter((id: string): boolean => !ids.includes(id));
+}
+
+void test('the equip hint waits until the bag holds something to wear', (): void => {
+  const world: World = fresh();
+  world.player.skillPoints = 0;
+  world.player.inventory.fill(null);
+  const state: HintState = createHintState(allBut('equip', 'death'));
+  placeInBag(world, 'worn_journal');
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+  placeInBag(world, 'rusted_blade');
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'equip');
+});
+
+void test('dying puts the active hint aside for the death hint and keeps it for later', (): void => {
+  const world: World = fresh();
+  world.player.skillPoints = 0;
+  world.player.inventory.fill(null);
+  placeInBag(world, 'rusted_blade');
+  const state: HintState = createHintState(allBut('equip', 'death'));
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'equip');
+  world.player.alive = false;
+  const aside: HintChange[] = stepHints(defs, world, state, IDLE);
+  assert.deepEqual(aside.map((change: HintChange): string => change.type), ['hide']);
+  assert.equal(state.seen.has('equip'), false);
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'death');
+});
+
+void test('swapping the worn weapon for one from the bag completes the equip hint', (): void => {
+  const world: World = fresh();
+  world.player.skillPoints = 0;
+  world.player.inventory.fill(null);
+  assert.notEqual(world.player.equipped.weapon, null);
+  placeInBag(world, 'rusted_blade');
+  const state: HintState = createHintState(allBut('equip', 'death'));
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'equip');
+  stepWorld(world, [{ type: 'equip', inventoryIndex: world.player.inventory.findIndex((item: ItemInstance | null): boolean => item !== null) }], 0.05);
+  const done: HintChange[] = stepHints(defs, world, state, IDLE);
+  assert.deepEqual(done.map((change: HintChange): string => change.type), ['hide']);
+  assert.ok(state.seen.has('equip'));
 });

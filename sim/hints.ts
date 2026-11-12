@@ -1,5 +1,5 @@
 import type { HintDef, HintDone, HintPanel, HintsDef, HintTrigger } from './content/hints.ts';
-import { baseOf } from './items.ts';
+import { baseOf, slotOf } from './items.ts';
 import { distance } from './math.ts';
 import type { Vec2 } from './math.ts';
 import { objectiveTarget } from './world/objective.ts';
@@ -15,7 +15,7 @@ export interface HintState {
   pickedUp: boolean;
   skillsUsed: Set<string>;
   allocatedBase: number;
-  equippedBase: number;
+  equippedUids: ReadonlySet<number>;
   started: boolean;
 }
 
@@ -27,12 +27,12 @@ export interface HintInput {
 
 export type HintChange = { readonly type: 'show'; readonly hint: HintDef } | { readonly type: 'hide'; readonly hint: HintDef; readonly done: boolean };
 
-function equippedCount(world: World): number {
-  return Object.values(world.player.equipped).filter((item: ItemInstance | null): boolean => item !== null).length;
+function wornUids(world: World): number[] {
+  return Object.values(world.player.equipped).flatMap((item: ItemInstance | null): number[] => (item === null ? [] : [item.uid]));
 }
 
 export function createHintState(seen: Iterable<string>): HintState {
-  return { seen: new Set<string>(seen), active: null, anchor: { x: 0, z: 0 }, talked: false, zoneChanged: false, pickedUp: false, skillsUsed: new Set<string>(), allocatedBase: 0, equippedBase: 0, started: false };
+  return { seen: new Set<string>(seen), active: null, anchor: { x: 0, z: 0 }, talked: false, zoneChanged: false, pickedUp: false, skillsUsed: new Set<string>(), allocatedBase: 0, equippedUids: new Set<number>(), started: false };
 }
 
 export function seedVeteran(defs: HintsDef, state: HintState, world: World): void {
@@ -52,6 +52,10 @@ function lifeFraction(world: World): number {
 
 function carries(world: World, slot: string | null): boolean {
   return slot === null || world.player.inventory.some((item: ItemInstance | null): boolean => item !== null && baseOf(world.content, item)?.slot === slot);
+}
+
+function gearInBag(world: World): boolean {
+  return world.player.inventory.some((item: ItemInstance | null): boolean => item !== null && slotOf(world.content, item) !== null);
 }
 
 function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarget | null): boolean {
@@ -80,6 +84,9 @@ function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarge
       break;
     case 'skill_point':
       holds = player.skillPoints > 0;
+      break;
+    case 'gear_in_bag':
+      holds = gearInBag(world);
       break;
     case 'low_life':
       holds = lifeFraction(world) <= trigger.fraction && carries(world, trigger.carrying);
@@ -116,7 +123,7 @@ function finished(done: HintDone, world: World, state: HintState, open: Readonly
       complete = state.pickedUp;
       break;
     case 'equipped':
-      complete = equippedCount(world) > state.equippedBase;
+      complete = wornUids(world).some((uid: number): boolean => !state.equippedUids.has(uid));
       break;
     case 'allocated':
       complete = player.allocated.length > state.allocatedBase || player.skillPoints === 0;
@@ -148,7 +155,7 @@ function begin(state: HintState, world: World, hint: HintDef): void {
   state.pickedUp = false;
   state.skillsUsed = new Set<string>();
   state.allocatedBase = world.player.allocated.length;
-  state.equippedBase = equippedCount(world);
+  state.equippedUids = new Set<number>(wornUids(world));
 }
 
 export function stepHints(defs: HintsDef, world: World, state: HintState, input: HintInput): HintChange[] {
@@ -160,7 +167,7 @@ export function stepHints(defs: HintsDef, world: World, state: HintState, input:
       state.seen.add(current.id);
       state.active = null;
       changes.push({ type: 'hide', hint: current, done: true });
-    } else if (!input.enabled) {
+    } else if (!input.enabled || (!world.player.alive && current.trigger.type !== 'player_dead')) {
       state.active = null;
       changes.push({ type: 'hide', hint: current, done: false });
     }
