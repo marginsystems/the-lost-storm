@@ -2,7 +2,8 @@ import type { AnimationAction, AnimationClip } from 'three';
 import type { Box3, Mesh, Object3D } from 'three';
 import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial, Quaternion, Vector3 } from 'three';
 import type { WakePose } from './wake-pose.ts';
-import { WAKE_POSE } from './wake-pose.ts';
+import { restOffset, restWeight, WAKE_POSE } from './wake-pose.ts';
+import type { Contact } from './wake-pose.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { Motion } from '../../sim/world/types.ts';
 import type { ActionClip, GaitClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
@@ -144,6 +145,16 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     const bone: Object3D | undefined = rig.root.getObjectByName(name);
     return bone === undefined ? [] : [bone];
   });
+  const contacts: { readonly bone: Object3D; readonly radius: number }[] = WAKE_POSE.contacts.flatMap((contact): { readonly bone: Object3D; readonly radius: number }[] => {
+    const bone: Object3D | undefined = rig.root.getObjectByName(contact.bone);
+    return bone === undefined ? [] : [{ bone, radius: contact.radius }];
+  });
+  const touching: Vector3 = new Vector3();
+  const rest = (pose: WakePose, floor: number): void => {
+    rig.root.updateMatrixWorld(true);
+    const reached: Contact[] = contacts.map(({ bone, radius }): Contact => ({ y: bone.getWorldPosition(touching).y, radius }));
+    rig.root.position.y += restOffset(reached, floor) * restWeight(pose.share);
+  };
   const fingers: Object3D[] = ACTOR.fingers.flatMap((name: string): Object3D[] => {
     const bone: Object3D | undefined = rig.root.getObjectByName(name);
     return bone === undefined ? [] : [bone];
@@ -191,7 +202,8 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     next.clampWhenFinished = once;
     next.timeScale = speed;
     next.setEffectiveWeight(1);
-    if (previous !== next) next.crossFadeFrom(previous, fade, false);
+    if (previous !== next && fade > 0) next.crossFadeFrom(previous, fade, false);
+    else if (previous !== next) previous.stop();
     next.play();
     current = next;
   };
@@ -278,7 +290,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       rig.setHover(hoverColor, Math.max(0, hoverLevel.value));
       rig.mixer.update(dt);
       rig.stepWear(dt);
-      if (lying && woke !== null) layerWake(woke);
+      if (lying && woke !== null) {
+        layerWake(woke);
+        if (!risen) rest(woke, options.floor);
+      }
     },
     startAction(animation: string, windup: number, recovery: number): boolean {
       const entry: ActionClip | undefined = actionClip(rig, animation);
@@ -319,7 +334,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         return;
       }
       if (!lying) {
-        play(clip, ACTOR.locomotionFade, 0, true, true);
+        play(clip, 0, 0, true, true);
         lying = true;
         risen = false;
       }

@@ -1,7 +1,9 @@
 import { Group, SpotLight } from 'three';
 import type { Vec2 } from '../../sim/math.ts';
 import type { WakeStage } from '../../sim/world/wake.ts';
-import { WAKE_SHOT } from '../opening/wake-shot.ts';
+import { wakeFrame, WAKE_SHOT } from '../opening/wake-shot.ts';
+import type { ZoneWake } from '../../sim/content/story-types.ts';
+import { CAMERA } from './iso-camera.ts';
 
 export const WAKE_LIGHT = {
   key: { color: 0xfff1e0, intensity: 3.2, turnDegrees: -55, elevationDegrees: 42, distance: 4.5, aimHeight: 0.3, angle: 0.6, penumbra: 0.85 },
@@ -27,7 +29,7 @@ export interface LampOffset {
 
 export interface WakeLights {
   readonly group: Group;
-  update(hero: Vec2, floor: number, lit: number): void;
+  update(hero: Vec2, floor: number, lit: number, cameraYawDegrees: number): void;
   dispose(): void;
 }
 
@@ -40,8 +42,8 @@ export function wakeLit(stage: WakeStage | null): number {
   return stage === null ? 0 : 1 - smoother(stage.settle);
 }
 
-export function lampOffset(spec: LampSpec): LampOffset {
-  const yaw: number = ((WAKE_SHOT.start.yawDegrees + spec.turnDegrees) * Math.PI) / 180;
+export function lampOffset(spec: LampSpec, cameraYawDegrees: number): LampOffset {
+  const yaw: number = ((cameraYawDegrees + spec.turnDegrees) * Math.PI) / 180;
   const pitch: number = (spec.elevationDegrees * Math.PI) / 180;
   const across: number = Math.cos(pitch) * spec.distance;
   return { x: Math.sin(yaw) * across, y: Math.sin(pitch) * spec.distance, z: Math.cos(yaw) * across };
@@ -50,13 +52,12 @@ export function lampOffset(spec: LampSpec): LampOffset {
 interface Lamp {
   readonly light: SpotLight;
   readonly spec: LampSpec;
-  readonly offset: LampOffset;
 }
 
 function lamp(spec: LampSpec): Lamp {
   const light: SpotLight = new SpotLight(spec.color, 0, 0, spec.angle, spec.penumbra, 0);
   light.castShadow = false;
-  return { light, spec, offset: lampOffset(spec) };
+  return { light, spec };
 }
 
 export function createWakeLights(): WakeLights {
@@ -68,8 +69,9 @@ export function createWakeLights(): WakeLights {
   }
   return {
     group,
-    update(hero: Vec2, floor: number, lit: number): void {
-      for (const { light, spec, offset } of lamps) {
+    update(hero: Vec2, floor: number, lit: number, cameraYawDegrees: number): void {
+      for (const { light, spec } of lamps) {
+        const offset: LampOffset = lampOffset(spec, cameraYawDegrees);
         light.intensity = spec.intensity * lit;
         light.position.set(hero.x + offset.x, floor + offset.y, hero.z + offset.z);
         light.target.position.set(hero.x, floor + spec.aimHeight, hero.z);
@@ -80,4 +82,9 @@ export function createWakeLights(): WakeLights {
       group.removeFromParent();
     },
   };
+}
+
+export function wakeCameraYaw(plan: ZoneWake, elapsed: number): number {
+  const blend: number = wakeFrame(plan, elapsed).shot.blend;
+  return WAKE_SHOT.start.yawDegrees + (CAMERA.yawDegrees - WAKE_SHOT.start.yawDegrees) * blend;
 }

@@ -21,7 +21,22 @@ export const WAKE_POSE = {
   dip: 0.18,
   dipShare: 0.4,
   breath: { amount: 0.06, period: 3.6 },
+  contacts: [
+    { bone: 'DEF-hips', radius: 0.12 },
+    { bone: 'DEF-spine.003', radius: 0.12 },
+    { bone: 'DEF-head', radius: 0.11 },
+    { bone: 'DEF-foot.L', radius: 0.07 },
+    { bone: 'DEF-foot.R', radius: 0.07 },
+    { bone: 'DEF-hand.L', radius: 0.03 },
+    { bone: 'DEF-hand.R', radius: 0.03 },
+  ],
+  restUntil: { from: 0.7, to: 1 },
 } as const;
+
+export interface Contact {
+  readonly y: number;
+  readonly radius: number;
+}
 
 export interface WakePose {
   readonly share: number;
@@ -72,4 +87,15 @@ export function wakePose(stage: WakeStage, elapsed: number): WakePose {
   const share: number = stage.rise > 0 ? lifted + (1 - lifted) * throughKnots(RISE, stage.rise) : lifted;
   const curl: number = WAKE_POSE.stir.curl * Math.sin(clamp01(stage.stir) * Math.PI) * (1 - stage.rise);
   return { share, standing: stage.rise >= 1, turn: throughKnots(LOOK, stage.settle), curl, dip: WAKE_POSE.dip * Math.sin(Math.PI * clamp01(stage.settle / WAKE_POSE.dipShare)), breath: WAKE_POSE.breath.amount * Math.sin((elapsed / WAKE_POSE.breath.period) * Math.PI * 2) * (1 - ease(stage.rise * 2)) };
+}
+
+export function restOffset(contacts: readonly Contact[], floor: number): number {
+  if (contacts.length === 0) return 0;
+  let lowest: number = Number.POSITIVE_INFINITY;
+  for (const contact of contacts) lowest = Math.min(lowest, contact.y - contact.radius);
+  return floor - lowest;
+}
+
+export function restWeight(share: number): number {
+  return 1 - ease((share - WAKE_POSE.restUntil.from) / (WAKE_POSE.restUntil.to - WAKE_POSE.restUntil.from));
 }
