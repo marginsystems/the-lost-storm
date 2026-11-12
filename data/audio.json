@@ -172,13 +172,12 @@
   "ambience": {
     "between": {
       "loops": [
-        { "sound": "ambience_mist_air", "volume": 0.6 },
-        { "sound": "ambience_wind_hollow", "volume": 0.3 },
-        { "sound": "ambience_drone_low", "volume": 0.25 }
+        { "sound": "ambience_mist_wind", "volume": 1 },
+        { "sound": "ambience_mist_air", "volume": 0.3 }
       ],
       "stingers": [
         { "sound": "thunder_rumble", "volume": 0.35, "minDelay": 40, "maxDelay": 90 },
-        { "sound": "breath_whisper", "volume": 0.3, "minDelay": 30, "maxDelay": 80 }
+        { "sound": "ambience_mist_gust", "volume": 0.85, "minDelay": 40, "maxDelay": 90 }
       ]
     },
     "hall_of_time": {

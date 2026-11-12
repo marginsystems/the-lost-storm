@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { test } from 'node:test';
+import type { TestContext } from 'node:test';
 import { must } from '../../test/support.ts';
 import audioJson from '../../data/audio.json' with { type: 'json' };
+import soundIds from '../../data/sound-ids.json' with { type: 'json' };
 import type { AudioDef, CueDef, KnownIds } from './audio.ts';
 import { knownIdsOf, loadAudio, parseAudio, UI_ACTIONS, WORLD_SOUND_EVENTS } from './audio.ts';
 import { loadContent } from './content.ts';
@@ -138,4 +142,54 @@ void test('the fixed id lists are not empty and have no repeats', (): void => {
   assert.equal(new Set(UI_ACTIONS).size, UI_ACTIONS.length);
   assert.equal(new Set(WORLD_SOUND_EVENTS).size, WORLD_SOUND_EVENTS.length);
   assert.ok(WORLD_SOUND_EVENTS.includes('hero_step'));
+});
+
+const MANIFEST_VARIABLE: string = 'ASSET_MANIFEST';
+const SIBLING_MANIFEST: string = '../the-lost-storm-assets/manifest.json';
+
+function soundIdsIn(value: unknown, found: Set<string>): void {
+  if (Array.isArray(value)) {
+    for (const entry of value) soundIdsIn(entry, found);
+    return;
+  }
+  if (typeof value !== 'object' || value === null) return;
+  for (const [key, entry] of Object.entries(value)) {
+    if (key === 'sound' && typeof entry === 'string') found.add(entry);
+    else soundIdsIn(entry, found);
+  }
+}
+
+function manifestPath(): string | null {
+  const named: string | undefined = process.env[MANIFEST_VARIABLE];
+  if (named !== undefined && named.length > 0) return resolve(named);
+  const sibling: string = resolve(SIBLING_MANIFEST);
+  return existsSync(sibling) ? sibling : null;
+}
+
+function soundIdsOf(manifest: unknown): ReadonlySet<string> {
+  if (typeof manifest !== 'object' || manifest === null) return new Set<string>();
+  const sfx: unknown = Object.fromEntries(Object.entries(manifest))['sfx'];
+  if (typeof sfx !== 'object' || sfx === null) return new Set<string>();
+  return new Set<string>(Object.keys(sfx));
+}
+
+void test('every sound id in data/audio.json exists in the assets manifest', (t: TestContext): void => {
+  const path: string | null = manifestPath();
+  if (path === null) {
+    t.skip(`no assets manifest: set ${MANIFEST_VARIABLE} or check out the-lost-storm-assets beside this repository`);
+    return;
+  }
+  const available: ReadonlySet<string> = soundIdsOf(JSON.parse(readFileSync(path, 'utf8')));
+  const used: Set<string> = new Set<string>();
+  soundIdsIn(audioJson, used);
+  assert.ok(used.size > 0);
+  assert.deepEqual([...used].filter((id: string): boolean => !available.has(id)), []);
+});
+
+void test('every sound id in data/audio.json is in the committed list of sound ids', (): void => {
+  const used: Set<string> = new Set<string>();
+  soundIdsIn(audioJson, used);
+  const listed: ReadonlySet<string> = new Set<string>(soundIds);
+  assert.ok(used.size > 0);
+  assert.deepEqual([...used].filter((id: string): boolean => !listed.has(id)), []);
 });
