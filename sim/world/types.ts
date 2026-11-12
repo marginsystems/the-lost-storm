@@ -628,4 +628,5 @@ export interface World {
   readonly path: PathLog;
   moments: MomentState[];
   strikeTimer: number;
+  strikeMisses: number;
 }

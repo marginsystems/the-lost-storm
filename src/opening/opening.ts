@@ -60,6 +60,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   style.textContent = openingCss;
   hud.append(style);
   let shift: Vec2 = { x: world.shift.x, z: world.shift.z };
+  let shiftZone: string = world.zone.id;
   let eased: WakeState | null = null;
   let held: WakeState | null = null;
   const reader: Reader = createReader(hud, deps.touch);
@@ -103,9 +104,10 @@ export function createOpening(deps: OpeningDeps): Opening {
       document.body.dataset['zoneKind'] = world.zone.kind;
       document.body.dataset['voidLight'] = world.zone.void !== null && world.zone.exits.some((exit): boolean => exit.hiddenWhenLocked && allHold(world, exit.requires)) ? 'on' : 'off';
       if (world.shift.x !== shift.x || world.shift.z !== shift.z) {
-        camera.shift(world.shift.x - shift.x, world.shift.z - shift.z);
+        if (world.zone.id === shiftZone) camera.shift(world.shift.x - shift.x, world.shift.z - shift.z);
         shift = { x: world.shift.x, z: world.shift.z };
       }
+      shiftZone = world.zone.id;
       const wake: WakeState | null = world.wake;
       if (wake !== null && wake !== held) {
         held = wake;

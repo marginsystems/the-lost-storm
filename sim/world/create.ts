@@ -164,6 +164,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     path: save === null ? emptyPathLog() : readPathLog(save.path, new Set<string>(content.zones.keys())),
     moments: [],
     strikeTimer: 0,
+    strikeMisses: 0,
   };
   placePlayer(world);
   beginVoid(world);

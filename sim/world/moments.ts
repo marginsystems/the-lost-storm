@@ -210,7 +210,7 @@ export function stepMoments(world: World, dt: number): void {
   world.strikeTimer -= dt;
   if (world.strikeTimer > 0) return;
   world.strikeTimer = nextInterval(world, field);
-  place(world, field, true);
+  world.strikeMisses = place(world, field, true) === null ? world.strikeMisses + 1 : 0;
 }
 
 export function clearMoments(world: World): void {

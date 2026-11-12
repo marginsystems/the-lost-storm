@@ -10,6 +10,8 @@ import { forceStrike, momentOfEcho } from './moments.ts';
 import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
+import { shiftWorld } from './void.ts';
+import { isWalkable } from '../nav/grid.ts';
 import { echoesOf, FIELD, fieldContent, fieldWorld, fieldZone, momentLibrary, QUIET, RAID, slay, standAt } from '../../test/moment-support.ts';
 import { must } from '../../test/support.ts';
 
@@ -268,4 +270,20 @@ void test('ten minutes of farming keeps bubbles, echoes and rewards inside their
 void test('ten minutes of farming the shipped moments stays inside the same bounds', (): void => {
   const field: MomentField = { ...FIELD, table: [...SHIPPED.defs.keys()].map((moment: string) => ({ moment, weight: SHIPPED.defs.get(moment)?.bright === true ? 1 : 4 })) };
   farmTenMinutes(fieldWorld(field, SHIPPED), field);
+});
+
+void test('a hero who walked the In-Between still sees strikes land in the Hall, on its own ground', (): void => {
+  const shipped: Content = loadContent();
+  const world: World = createWorld(shipped, { seed: 21, save: null });
+  enterZone(world, must(shipped.zones.get('between'), 'between'), { type: 'start' });
+  shiftWorld(world, { x: 21.9, z: 240.3 });
+  const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');
+  const field: MomentField = must(hall.moments, 'hall field');
+  enterZone(world, hall, { type: 'start' });
+  assert.deepEqual(world.shift, { x: 0, z: 0 });
+  assert.ok(world.moments.length > 0);
+  const events: WorldEvent[] = run(world, field.interval.max + world.content.moments.telegraph + 1);
+  assert.ok(events.some((event: WorldEvent): boolean => event.type === 'moment_strike'));
+  assert.equal(world.strikeMisses, 0);
+  for (const moment of world.moments) assert.ok(isWalkable(world.grid, moment.pos.x, moment.pos.z));
 });

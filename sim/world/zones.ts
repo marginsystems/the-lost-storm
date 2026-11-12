@@ -86,6 +86,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   world.zone = zone;
   world.grid = buildNavGrid(zone, world.content.props, world.content.surfaces, world.content.player.radius);
   world.respawn = respawn;
+  world.shift = { x: 0, z: 0 };
   if (!world.visited.includes(zone.id)) world.visited.push(zone.id);
   placePlayer(world);
   beginVoid(world);
