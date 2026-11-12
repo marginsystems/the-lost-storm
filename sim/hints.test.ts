@@ -8,7 +8,7 @@ import type { HintDef, HintsDef } from './content/hints.ts';
 import { loadHints } from './content/hints.ts';
 import type { Content, QuestDef } from './content/types.ts';
 import type { HintChange, HintInput, HintState } from './hints.ts';
-import { createHintState, seedVeteran, stepHints } from './hints.ts';
+import { createHintState, HINTS, seedVeteran, stepHints } from './hints.ts';
 import { startQuests } from './world/quests.ts';
 import type { ItemInstance, World, WorldEvent } from './world/types.ts';
 
@@ -155,4 +155,26 @@ void test('swapping the worn weapon for one from the bag completes the equip hin
   const done: HintChange[] = stepHints(defs, world, state, IDLE);
   assert.deepEqual(done.map((change: HintChange): string => change.type), ['hide']);
   assert.ok(state.seen.has('equip'));
+});
+
+void test('the inventory hint waits for something to wear, not for any pickup', (): void => {
+  const world: World = fresh();
+  world.player.skillPoints = 0;
+  world.player.inventory.fill(null);
+  const state: HintState = createHintState(allBut('inventory', 'equip', 'death'));
+  placeInBag(world, 'worn_journal');
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+  placeInBag(world, 'rusted_blade');
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'inventory');
+});
+
+void test('a hint the player leaves alone steps aside after a short while and does not come back', (): void => {
+  const world: World = fresh();
+  const state: HintState = createHintState([]);
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'move');
+  world.time += HINTS.maxShowSeconds;
+  const aside: HintChange[] = stepHints(defs, world, state, IDLE);
+  assert.deepEqual(aside.map((change: HintChange): string => change.type), ['hide']);
+  assert.ok(state.seen.has('move'));
+  assert.notEqual(shown(stepHints(defs, world, state, IDLE)), 'move');
 });

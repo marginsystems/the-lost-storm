@@ -6,6 +6,8 @@ import { objectiveTarget } from './world/objective.ts';
 import type { ObjectiveTarget } from './world/objective.ts';
 import type { GroundItem, ItemInstance, MonsterState, World, WorldEvent } from './world/types.ts';
 
+export const HINTS = { maxShowSeconds: 14 } as const;
+
 export interface HintState {
   seen: Set<string>;
   active: string | null;
@@ -17,6 +19,7 @@ export interface HintState {
   allocatedBase: number;
   equippedUids: ReadonlySet<number>;
   started: boolean;
+  shownAt: number;
 }
 
 export interface HintInput {
@@ -32,7 +35,7 @@ function wornUids(world: World): number[] {
 }
 
 export function createHintState(seen: Iterable<string>): HintState {
-  return { seen: new Set<string>(seen), active: null, anchor: { x: 0, z: 0 }, talked: false, zoneChanged: false, pickedUp: false, skillsUsed: new Set<string>(), allocatedBase: 0, equippedUids: new Set<number>(), started: false };
+  return { seen: new Set<string>(seen), active: null, anchor: { x: 0, z: 0 }, talked: false, zoneChanged: false, pickedUp: false, skillsUsed: new Set<string>(), allocatedBase: 0, equippedUids: new Set<number>(), started: false, shownAt: 0 };
 }
 
 export function seedVeteran(defs: HintsDef, state: HintState, world: World): void {
@@ -159,6 +162,7 @@ function begin(state: HintState, world: World, hint: HintDef): void {
   state.skillsUsed = new Set<string>();
   state.allocatedBase = world.player.allocated.length;
   state.equippedUids = new Set<number>(wornUids(world));
+  state.shownAt = world.time;
 }
 
 export function stepHints(defs: HintsDef, world: World, state: HintState, input: HintInput): HintChange[] {
@@ -170,6 +174,10 @@ export function stepHints(defs: HintsDef, world: World, state: HintState, input:
       state.seen.add(current.id);
       state.active = null;
       changes.push({ type: 'hide', hint: current, done: true });
+    } else if (world.time - state.shownAt >= HINTS.maxShowSeconds) {
+      state.seen.add(current.id);
+      state.active = null;
+      changes.push({ type: 'hide', hint: current, done: false });
     } else if (!input.enabled || (!world.player.alive && current.trigger.type !== 'player_dead')) {
       state.active = null;
       changes.push({ type: 'hide', hint: current, done: false });
