@@ -99,3 +99,13 @@ void test('a shift moves the hero, his path, his order and what lies on the grou
   assert.deepEqual(must(world.ground[0], 'ground').pos, { x: 72, z: 86 });
   assert.deepEqual(world.shift, { x: -10, z: 4 });
 });
+
+void test('a held key let go while the hero wakes is still released, and a new void forgets held keys', (): void => {
+  const world: World = worldIn(content, voidZone.id, 3);
+  assert.notEqual(world.wake, null);
+  assert.equal(acceptsCommand(world, { type: 'hold', slot: 1, down: true }), false);
+  assert.equal(acceptsCommand(world, { type: 'hold', slot: 1, down: false }), true);
+  world.player.held = [1];
+  beginVoid(world);
+  assert.deepEqual(world.player.held, []);
+});

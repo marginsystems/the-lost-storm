@@ -270,7 +270,7 @@ void test('the lane a bolt is read by reaches as far as the bolt does', (): void
   assert.ok(range > 0);
   boss.spawnTime = 0;
   boss.pos = { x: 28, z: 6 };
-  boss.action = { skill: stone, phase: 'windup', timeLeft: 0.5, windup: stone.windup, recovery: stone.recovery, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0 };
+  boss.action = { skill: stone, phase: 'windup', timeLeft: 0.5, windup: stone.windup, recovery: stone.recovery, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0 };
   assert.equal(botInDanger(world, { x: 28, z: 6 + range - 1 }), true);
   assert.equal(botInDanger(world, { x: 28, z: 6 + range + SKILLS.projectileOrigin }), true);
   assert.equal(botInDanger(world, { x: 28, z: 6 + range + SKILLS.projectileOrigin + 4 }), false);

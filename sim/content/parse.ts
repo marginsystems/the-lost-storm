@@ -5,6 +5,7 @@ import { conditionProblems, roadProblems } from './road.ts';
 import { parseFlasks } from './flasks.ts';
 import { combatProblems, fieldDelivery, markDelivery, monsterMod, monsterTraits, reviveDelivery, skillMotion } from './parse-combat.ts';
 import { faction, factionProblems } from './parse-factions.ts';
+import { shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
@@ -86,7 +87,8 @@ function skillMod(value: unknown, where: string): SkillMod {
 
 function delivery(value: unknown, where: string): Delivery {
   const source: Fields = fields(value, where);
-  const type: Delivery['type'] = choice(source, 'type', ['arc', 'nova', 'projectile', 'dash', 'mark', 'revive', 'field'] as const, where);
+  const type: Delivery['type'] = choice(source, 'type', ['arc', 'nova', 'projectile', 'dash', 'mark', 'revive', 'field', ...SHAPE_TYPES] as const, where);
+  if (type === 'chain' || type === 'area' || type === 'blink' || type === 'beam') return shapeDelivery(type, source, where);
   if (type === 'dash') {
     const duration: number = positive(source, 'duration', where);
     const invulnerable: number = numeric(source, 'invulnerable', where);
@@ -157,6 +159,7 @@ function skill(value: unknown, where: string): SkillDef {
     vfx: { style: choice(vfx, 'style', VFX_STYLES, `${where}.vfx`), color: text(vfx, 'color', `${where}.vfx`) },
     combo: skillCombo(source['combo'], `${where}.combo`),
     ...skillMotion(source, where),
+    ...skillPress(source, where),
   };
 }
 
@@ -585,7 +588,7 @@ export function contentProblems(content: Content): string[] {
   need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
-  for (const problem of [...combatProblems(content), ...factionProblems(content)]) problems.push(problem);
+  for (const problem of [...combatProblems(content), ...factionProblems(content), ...shapeProblems(content)]) problems.push(problem);
   for (const problem of storyProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;

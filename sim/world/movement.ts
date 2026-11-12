@@ -34,6 +34,10 @@ export function stepTimers(actor: ActorState, dt: number): void {
   actor.root = Math.max(0, actor.root - dt);
   actor.tempoTime = Math.max(0, actor.tempoTime - dt);
   if (actor.tempoTime <= 0) actor.tempo = 1;
+  if (actor.brand !== null) {
+    actor.brand.timeLeft -= dt;
+    if (actor.brand.timeLeft <= 0) actor.brand = null;
+  }
   if (actor.combo === null) return;
   actor.combo.timeLeft -= dt;
   if (actor.combo.timeLeft <= 0) actor.combo = null;

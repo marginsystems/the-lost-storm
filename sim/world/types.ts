@@ -22,7 +22,7 @@ export interface ItemInstance {
 
 export type Equipment = Record<ItemSlot, ItemInstance | null>;
 
-export type ActionPhase = 'windup' | 'recovery';
+export type ActionPhase = 'windup' | 'channel' | 'recovery';
 
 export interface ActionState {
   readonly skill: SkillDef;
@@ -30,10 +30,30 @@ export interface ActionState {
   timeLeft: number;
   readonly windup: number;
   readonly recovery: number;
-  readonly direction: Vec2;
+  direction: Vec2;
   readonly target: Vec2 | null;
   readonly travelSpeed: number;
   travelLeft: number;
+  readonly slot: number | null;
+  elapsed: number;
+}
+
+export interface Offence {
+  readonly sourceId: number;
+  readonly team: Team;
+  readonly faction: string | null;
+  readonly damageMin: number;
+  readonly damageMax: number;
+  readonly damagePercent: number;
+  readonly critChance: number;
+  readonly critMultiplier: number;
+}
+
+export interface BrandState {
+  readonly source: string;
+  readonly burst: SkillDef;
+  readonly offence: Offence;
+  timeLeft: number;
 }
 
 export interface FlaskDose {
@@ -69,6 +89,7 @@ export interface ActorState {
   root: number;
   tempo: number;
   tempoTime: number;
+  brand: BrandState | null;
   alive: boolean;
   deadTime: number;
   moving: boolean;
@@ -127,6 +148,7 @@ export interface PlayerState extends ActorState {
   path: Vec2[];
   repathTimer: number;
   queued: Command | null;
+  held: number[];
   invulnerable: number;
   strideTravel: number;
   kills: number;
@@ -233,6 +255,16 @@ export interface EchoState {
   timeLeft: number;
 }
 
+export interface AreaState {
+  readonly id: number;
+  readonly ownerId: number;
+  readonly skill: SkillDef;
+  readonly offence: Offence;
+  readonly pos: Vec2;
+  timeLeft: number;
+  pulseLeft: number;
+}
+
 export type GuardOutcome = 'open' | 'blocked' | 'broken';
 
 export interface GoldDrop {
@@ -311,6 +343,17 @@ export interface AdvanceCommand {
   readonly type: 'advance';
 }
 
+export interface HoldCommand {
+  readonly type: 'hold';
+  readonly slot: number;
+  readonly down: boolean;
+}
+
+export interface SteerCommand {
+  readonly type: 'steer';
+  readonly aim: Vec2;
+}
+
 export interface FlaskCommand {
   readonly type: 'flask';
   readonly slot: number;
@@ -368,7 +411,7 @@ export interface GlitchSettingCommand {
   readonly enabled: boolean;
 }
 
-export type Command = GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export type Command = HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -390,6 +433,8 @@ export interface WaypointRespawn {
 
 export type RespawnPoint = StartRespawn | ExitRespawn | CheckpointRespawn | WaypointRespawn;
 
+export type AreaStage = 'start' | 'pulse' | 'end';
+
 export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full';
 
 export type WorldEvent =
@@ -401,6 +446,11 @@ export type WorldEvent =
   | { readonly type: 'projectile_end'; readonly id: number; readonly pos: Vec2; readonly hit: boolean; readonly skill: SkillDef }
   | { readonly type: 'damage'; readonly targetId: number; readonly sourceId: number; readonly targetTeam: Team; readonly amount: number; readonly crit: boolean; readonly killed: boolean; readonly pos: Vec2; readonly direction: Vec2; readonly skill: SkillDef }
   | { readonly type: 'guarded'; readonly monsterId: number; readonly broken: boolean; readonly pos: Vec2; readonly direction: Vec2 }
+  | { readonly type: 'area'; readonly area: AreaState; readonly stage: AreaStage; readonly hits: number }
+  | { readonly type: 'chain'; readonly actorId: number; readonly team: Team; readonly skill: SkillDef; readonly points: readonly Vec2[] }
+  | { readonly type: 'beam'; readonly actorId: number; readonly team: Team; readonly skill: SkillDef; readonly from: Vec2; readonly to: Vec2; readonly hits: number }
+  | { readonly type: 'blink'; readonly actorId: number; readonly skill: SkillDef; readonly from: Vec2; readonly to: Vec2 }
+  | { readonly type: 'brand'; readonly targetId: number; readonly skill: SkillDef; readonly pos: Vec2; readonly burst: boolean }
   | { readonly type: 'hazard'; readonly hazard: HazardState; readonly burst: boolean; readonly hits: number }
   | { readonly type: 'death'; readonly actorId: number; readonly team: Team; readonly pos: Vec2; readonly direction: Vec2 }
   | { readonly type: 'monster_spawn'; readonly monsterId: number }
@@ -487,6 +537,7 @@ export interface World {
   projectiles: ProjectileState[];
   hazards: HazardState[];
   echoes: EchoState[];
+  areas: AreaState[];
   ground: GroundItem[];
   nextId: number;
   nextItemUid: number;

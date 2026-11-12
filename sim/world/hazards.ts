@@ -2,6 +2,7 @@ import type { SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import type { Offence } from './combat.ts';
 import { applyHit, offenceOf, setTempo, targetsOf } from './combat.ts';
+import { timeScaleAt } from './areas.ts';
 import type { Actor, HazardState, MonsterState, World, WorldEvent } from './types.ts';
 
 export const HAZARDS = {
@@ -72,7 +73,7 @@ function deathBursts(world: World, events: readonly WorldEvent[]): void {
 export function stepHazards(world: World, dt: number): void {
   const due: HazardState[] = [];
   world.hazards = world.hazards.filter((hazard: HazardState): boolean => {
-    hazard.timeLeft -= dt;
+    hazard.timeLeft -= dt * timeScaleAt(world, hazard.team, hazard.pos, hazard.radius);
     slowInside(world, hazard);
     if (hazard.timeLeft > 0) return true;
     due.push(hazard);

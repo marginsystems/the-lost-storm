@@ -6,6 +6,7 @@ export function beginVoid(world: World): void {
   world.wake = rules === null || rules.wake === null ? null : { elapsed: 0, lie: rules.wake.lie, rise: rules.wake.rise };
   if (rules === null) return;
   world.player.queued = null;
+  world.player.held = [];
   world.trail = { x: world.player.pos.x, z: world.player.pos.z };
   world.heading = { x: Math.sin(world.player.facing), z: Math.cos(world.player.facing) };
   world.encounters = [];
@@ -17,6 +18,7 @@ export function wakeProgress(wake: WakeState): number {
 }
 
 export function acceptsCommand(world: World, command: Command): boolean {
+  if (command.type === 'hold' && !command.down) return true;
   if (world.wake !== null) return false;
   return !(world.zone.kind === 'void' && command.type === 'skill');
 }

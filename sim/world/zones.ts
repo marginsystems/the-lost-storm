@@ -6,6 +6,7 @@ import { buildNavGrid } from '../nav/grid.ts';
 import { closeDialogue, spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
+import { clearAreas } from './areas.ts';
 import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
 import type { GroundItem, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
@@ -73,6 +74,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   closeDialogue(world, false);
   clearProjectiles(world);
   clearHazards(world);
+  clearAreas(world);
   for (const monster of world.monsters) world.events.push({ type: 'monster_remove', monsterId: monster.id });
   world.monsters = [];
   world.spawnedPacks = [];

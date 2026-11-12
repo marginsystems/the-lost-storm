@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ARENA_CENTRE, ARENA_CONTENT, arena, place } from '../../test/arena-support.ts';
+import { cast, damageTo, dummy, offset, run, shapeArena } from '../../test/shape-support.ts';
 import { must } from '../../test/support.ts';
 import type { SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -51,7 +52,7 @@ void test('the guard opens from behind, while the brute is staggered, and in the
   target.stagger = 0.5;
   assert.equal(guardOutcome(target, light, front), 'open');
   target.stagger = 0;
-  target.action = { skill: must(ARENA_CONTENT.skills.get('test_slam'), 'slam'), phase: 'recovery', timeLeft: 0.5, windup: 1, recovery: 1, direction: front, target: null, travelSpeed: 0, travelLeft: 0 };
+  target.action = { skill: must(ARENA_CONTENT.skills.get('test_slam'), 'slam'), phase: 'recovery', timeLeft: 0.5, windup: 1, recovery: 1, direction: front, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0 };
   assert.equal(guardOutcome(target, light, front), 'open');
   target.action = { ...target.action, phase: 'windup' };
   assert.equal(guardOutcome(target, light, front), 'blocked');
@@ -98,4 +99,37 @@ void test('poise scales the knockback a monster takes', (): void => {
   applyHit(world, offenceOf(world.player), steady, light, { x: 1, z: 0 });
   applyHit(world, offenceOf(world.player), loose, light, { x: -1, z: 0 });
   assert.ok(Math.abs(steady.knock.x) < Math.abs(loose.knock.x) * 0.5);
+});
+
+void test('a branding hit marks the enemy, and the next hit from another skill bursts the brand on everything near it', (): void => {
+  const world: World = shapeArena(['test_brander', 'test_fork']);
+  const branded: MonsterState = dummy(world, offset(2, 0));
+  const neighbour: MonsterState = dummy(world, offset(4, 1));
+  const first: WorldEvent[] = [...cast(world, 0, offset(2, 0)), ...run(world, 0.3)];
+  assert.equal(branded.brand?.source, 'test_brander');
+  assert.ok(first.some((event: WorldEvent): boolean => event.type === 'brand' && !event.burst));
+  const second: WorldEvent[] = [...cast(world, 1, branded.pos), ...run(world, 0.3)];
+  assert.equal(branded.brand, null);
+  assert.ok(second.some((event: WorldEvent): boolean => event.type === 'brand' && event.burst));
+  assert.ok(damageTo(second, neighbour.id).includes(50));
+  assert.ok(damageTo(second, branded.id).includes(50));
+});
+
+void test('hitting a brand again with the skill that set it refreshes it instead of bursting it', (): void => {
+  const world: World = shapeArena(['test_brander']);
+  const branded: MonsterState = dummy(world, offset(2, 0));
+  cast(world, 0, offset(2, 0));
+  run(world, 1);
+  const before: number = branded.brand?.timeLeft ?? 0;
+  const again: WorldEvent[] = [...cast(world, 0, offset(2, 0)), ...run(world, 0.3)];
+  assert.ok((branded.brand?.timeLeft ?? 0) > before);
+  assert.ok(!again.some((event: WorldEvent): boolean => event.type === 'brand' && event.burst));
+});
+
+void test('a brand fades when its time runs out', (): void => {
+  const world: World = shapeArena(['test_brander']);
+  const branded: MonsterState = dummy(world, offset(2, 0));
+  cast(world, 0, offset(2, 0));
+  run(world, 5.5);
+  assert.equal(branded.brand, null);
 });

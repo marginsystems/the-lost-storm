@@ -129,6 +129,20 @@ function struck(world: World, skill: SkillDef, origin: ReadonlyVec2, direction: 
       }
       return false;
     }
+    case 'area': {
+      const centre: ReadonlyVec2 = delivery.anchor === 'caster' ? origin : (target ?? origin);
+      return delivery.pulse > 0 && Math.hypot(pos.x - centre.x, pos.z - centre.z) <= delivery.radius + reach;
+    }
+    case 'beam': {
+      const along: number = dot(offset, direction);
+      return along >= 0 && along <= delivery.range + reach && Math.abs(offset.x * direction.z - offset.z * direction.x) <= delivery.width / 2 + reach;
+    }
+    case 'chain':
+      return gap <= delivery.range + delivery.jumps * delivery.jumpRange + reach;
+    case 'blink': {
+      const arrival: ReadonlyVec2 = target ?? origin;
+      return delivery.radius > 0 && Math.hypot(pos.x - arrival.x, pos.z - arrival.z) <= delivery.radius + reach;
+    }
     case 'dash':
     case 'revive':
       return false;
