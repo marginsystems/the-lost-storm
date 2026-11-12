@@ -8,13 +8,13 @@ import { stepExploration } from './exploration.ts';
 import { stepFlasks } from './flasks.ts';
 import { heldCommands, stepGlitch } from './glitch.ts';
 import { recordPath } from './path-log.ts';
-import { separateActors } from './movement.ts';
+import { separateActors, settleGaits, strideOf } from './movement.ts';
 import { handleCommand, stepPlayer } from './player.ts';
 import { stepQuests } from './quests.ts';
 import { stepVoices } from './voices.ts';
 import { stepEchoes, stepProjectiles } from './skills.ts';
 import { stepTrade } from './trade.ts';
-import type { Command, MomentState, World, WorldEvent } from './types.ts';
+import type { ActorState, Command, MomentState, World, WorldEvent } from './types.ts';
 import type { Vec2 } from '../math.ts';
 import { bindEchoes, heldIn, holdHero } from './bubble.ts';
 import { stepVoid } from './void.ts';
@@ -34,18 +34,27 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   }
   const start: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
   const bubble: MomentState | null = heldIn(world, start);
+  const starts: Map<ActorState, Vec2> = new Map<ActorState, Vec2>([[world.player, start]]);
+  const strides: Map<ActorState, Vec2> = new Map<ActorState, Vec2>();
   stepPlayer(world, dt);
+  strides.set(world.player, strideOf(world.player, start));
   stepFlasks(world, dt);
   stepVoid(world, dt);
   stepExploration(world);
-  for (const monster of world.monsters) stepMonster(world, monster, dt * timeScaleOf(world, monster));
-  separateActors(world);
+  for (const monster of world.monsters) {
+    const from: Vec2 = { x: monster.pos.x, z: monster.pos.z };
+    starts.set(monster, from);
+    stepMonster(world, monster, dt * timeScaleOf(world, monster));
+    strides.set(monster, strideOf(monster, from));
+  }
+  separateActors(world, dt, strides);
   stepProjectiles(world, dt);
   stepHazards(world, dt);
   stepEchoes(world, dt);
   stepAreas(world, dt);
   bindEchoes(world);
   holdHero(world, start, bubble);
+  settleGaits(starts, dt);
   stepDeath(world, dt);
   for (const ground of world.ground) ground.age += dt;
   removeCorpses(world);

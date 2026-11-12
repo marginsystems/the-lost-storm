@@ -58,6 +58,8 @@ export function spawnMonster(world: World, def: MonsterDef, packId: number, cent
     alive: true,
     deadTime: 0,
     moving: false,
+    motion: 'still',
+    gait: 0,
     aggro: false,
     path: [],
     repathTimer: 0,

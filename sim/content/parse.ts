@@ -7,6 +7,7 @@ import { parseFlasks } from './flasks.ts';
 import { combatProblems, fieldDelivery, markDelivery, monsterMod, monsterTraits, reviveDelivery, skillMotion } from './parse-combat.ts';
 import { faction, factionProblems } from './parse-factions.ts';
 import { momentLibrary } from './parse-moments.ts';
+import { rigGaits } from './parse-gaits.ts';
 import { momentProblems } from './moments.ts';
 import { chartDef, chartProblems, statMod, treeNode } from './parse-chart.ts';
 import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
@@ -355,7 +356,7 @@ function rig(value: unknown, where: string): RigDef {
     yawOffsetDegrees: numeric(source, 'yawOffsetDegrees', where),
     height: numeric(source, 'height', where),
     rootMotionBone: nullableText(source, 'rootMotionBone', where),
-    runSpeed: positive(source, 'runSpeed', where),
+    gaits: rigGaits(source['gaits'], `${where}.gaits`),
     idleRate: source['idleRate'] === undefined ? 1 : numeric(source, 'idleRate', where),
     clips: rigClips(source['clips'], `${where}.clips`),
     sockets,

@@ -11,7 +11,7 @@ import { advanceDialogue, closeDialogue, DIALOGUE, findNpc } from './dialogue.ts
 import { pickUp } from './finds.ts';
 import { useFlask } from './flasks.ts';
 import type { Steering, SteerStep } from './movement.ts';
-import { steerAlong, stepKnock, stepTimers } from './movement.ts';
+import { beingKnocked, steerAlong, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
 import { blockedReason, startSkill, steerAction, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
@@ -413,6 +413,7 @@ function emitSteps(world: World, player: PlayerState, travelled: number): void {
 
 export function stepPlayer(world: World, dt: number): void {
   const player: PlayerState = world.player;
+  player.motion = 'still';
   if (!player.alive) {
     player.walked = { x: 0, z: 0 };
     player.deadTime += dt;
@@ -435,7 +436,7 @@ export function stepPlayer(world: World, dt: number): void {
   }
   if (player.action === null) {
     stepIntent(world, dt);
-    if (!isBusy(player) && player.root <= 0 && player.tempo > 0 && player.path.length > 0) {
+    if (!isBusy(player) && !beingKnocked(player) && player.root <= 0 && player.tempo > 0 && player.path.length > 0) {
       const step: SteerStep = steerAlong(world.grid, player, player.path, player.stats.moveSpeed * player.tempo * dt, dt, STEERING);
       const stuck: boolean = step.tried > PLAYER.stuckStep && step.moved <= PLAYER.stuckStep;
       player.moving = !stuck && (player.path.length > 0 || step.moved > PLAYER.stuckStep);
@@ -446,7 +447,6 @@ export function stepPlayer(world: World, dt: number): void {
     }
   }
   player.walked = player.moving ? { x: player.pos.x - startX, z: player.pos.z - startZ } : { x: 0, z: 0 };
-  player.gait = player.moving && dt > 0 ? Math.hypot(player.pos.x - startX, player.pos.z - startZ) / dt : 0;
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.strideTravel = PLAYER.stride * PLAYER.firstStepFraction;
   collectGold(world);

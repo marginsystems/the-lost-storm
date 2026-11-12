@@ -27,6 +27,8 @@ const LIMITS = {
   blockedSeconds: 3,
   pinnedRunTime: 0.15,
   flickerGap: 0.3,
+  pressedStep: 0.01,
+  callerClear: 3,
 } as const;
 
 interface Scene extends TestScene {
@@ -128,6 +130,15 @@ function settled(world: World, track: Track): boolean {
   return inRange || still;
 }
 
+function answersTheStep(switches: readonly number[], index: number): boolean {
+  const at: number | undefined = switches[index];
+  return at !== undefined && at >= LIMITS.callerClear && at - LIMITS.callerClear < LIMITS.flickerGap && switches.findIndex((other: number): boolean => other >= LIMITS.callerClear) === index;
+}
+
+function retreating(monster: MonsterState): boolean {
+  return monster.stance === 'retreat';
+}
+
 for (const scene of SCENES) {
   for (const kind of KINDS) {
     void test(`${kind} moves without jitter: ${scene.name}`, (): void => {
@@ -151,14 +162,17 @@ void test('a caster backed against a wall stops instead of running in place', ()
   const caster: MonsterState = spawn(world, 'mender', { x: 1.2, z: 14 });
   caster.stance = 'retreat';
   const samples: MotionSample[] = [];
+  let pressed: number = 0;
   for (let step: number = 0; step < Math.round(LIMITS.blockedSeconds / MOTION_DT); step += 1) {
     world.player.life = world.player.maxLife;
     caster.cooldowns = { [caster.def.skill]: LIMITS.blockedSeconds };
+    const before: Vec2 = { x: caster.pos.x, z: caster.pos.z };
     stepWorld(world, [], MOTION_DT);
     samples.push(sampleOf(caster, false));
+    if (retreating(caster) && distance(before, caster.pos) < LIMITS.pressedStep) pressed += 1;
   }
   assert.deepEqual(motionProblems('caster', samples, LIMITS.turnRate), []);
-  assert.notEqual(caster.stance, 'retreat');
+  assert.ok(pressed * MOTION_DT <= LIMITS.pinnedRunTime, `backed into the wall for ${(pressed * MOTION_DT).toFixed(2)} s`);
 });
 
 void test('a monster pinned against a prop stops its run within a tenth of a second', (): void => {
@@ -226,7 +240,7 @@ void test('a ranged monster backs off from a hero who closes in and holds once c
     const wobble: number = Math.sin(step * MOTION_DT * 9) * 0.6;
     const toward: Vec2 = { x: caller.pos.x - ARENA_CENTRE.x, z: caller.pos.z - ARENA_CENTRE.z };
     const gap: number = Math.hypot(toward.x, toward.z);
-    const wanted: number = step * MOTION_DT < 3 ? retreat - 0.5 + wobble : retreat + 2 + wobble;
+    const wanted: number = step * MOTION_DT < LIMITS.callerClear ? retreat - 0.5 + wobble : retreat + 2 + wobble;
     world.player.pos = { x: caller.pos.x - (toward.x / gap) * wanted, z: caller.pos.z - (toward.z / gap) * wanted };
     stepWorld(world, [], MOTION_DT);
     if (caller.stance === 'retreat') retreated = true;
@@ -234,7 +248,7 @@ void test('a ranged monster backs off from a hero who closes in and holds once c
     stance = caller.stance;
   }
   assert.ok(retreated, 'it backed off');
-  const flickers: number[] = switches.filter((at: number, index: number): boolean => at > LIMITS.settleTime / 4 && index > 0 && at - (switches[index - 1] ?? 0) < LIMITS.flickerGap);
+  const flickers: number[] = switches.filter((at: number, index: number): boolean => at > LIMITS.settleTime / 4 && index > 0 && !answersTheStep(switches, index) && at - (switches[index - 1] ?? 0) < LIMITS.flickerGap);
   assert.deepEqual(flickers, [], `stance changed at ${switches.map((at: number): string => at.toFixed(2)).join(', ')}`);
 });
 

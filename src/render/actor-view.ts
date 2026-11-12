@@ -4,7 +4,10 @@ import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial, Quaternion, Vector3 } f
 import type { WakePose } from './wake-pose.ts';
 import { WAKE_POSE } from './wake-pose.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
-import type { ActionClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
+import type { Motion } from '../../sim/world/types.ts';
+import type { ActionClip, GaitClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
+import type { BodyState, ClipKind, GaitChoice, KnockPose } from './locomotion.ts';
+import { chooseGait, clipKindOf, clipsFor, knockPose } from './locomotion.ts';
 import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
 
 export const ACTOR = {
@@ -31,8 +34,6 @@ export const ACTOR = {
   sinkSpeed: 1.1,
   sinkLimit: 0.35,
   riseDepth: 2.4,
-  minRunSpeed: 0.7,
-  maxRunSpeed: 1.7,
   standFade: 0.45,
   head: 'DEF-head',
   neck: 'DEF-neck',
@@ -62,13 +63,14 @@ interface FollowThrough {
 export interface ActorPose {
   readonly pos: ReadonlyVec2;
   readonly facing: number;
-  readonly moving: boolean;
+  readonly motion: Motion;
+  readonly gait: number;
+  readonly knockTime: number;
   readonly busy: boolean;
   readonly deadTime: number;
 }
 
 export interface SyncOptions {
-  readonly moveSpeed: number;
   readonly rise: number;
   readonly floor: number;
   readonly turnRate: number;
@@ -113,6 +115,11 @@ function idleClip(rig: RigInstance): AnimationClip {
   return bare === null ? rig.clips.idle : bare.idle;
 }
 
+function bodyClip(rig: RigInstance, state: BodyState, chance: Chance): AnimationClip {
+  const choices: readonly AnimationClip[] = clipsFor(state, { idle: idleClip(rig), gaits: rig.clips.gaits.map((gait: GaitClip): AnimationClip => gait.clip), hit: rig.clips.hit, death: rig.clips.death, rise: rig.clips.rise, action: null });
+  return oneOf(choices, chance) ?? idleClip(rig);
+}
+
 function actionClip(rig: RigInstance, animation: string): ActionClip | undefined {
   const bare: UnarmedClipSet | null = rig.armed() ? null : rig.clips.unarmed;
   return bare?.actions.get(animation) ?? rig.clips.actions.get(animation);
@@ -149,10 +156,15 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let punch: number = 0;
   let hover: boolean = false;
   let yaw: number = facing;
+  let gaitIndex: number = -1;
+  let lastKind: ClipKind = 'idle';
+  let knockSpan: number = 0;
+  let knockLeft: number = 0;
   const flashColor: Color = new Color(0xffffff);
   const hoverColor: Color = new Color(hoverTint);
   const mixed: Color = new Color();
   rig.root.scale.setScalar(scale);
+  rig.root.rotation.order = 'YXZ';
   rig.root.rotation.y = yaw;
   const shadow: Mesh = contactShadow();
   SHADOW_OWNERS.set(shadow, rig.root);
@@ -179,10 +191,29 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   };
 
   const react = (): void => {
-    const clip: AnimationClip | null = oneOf(rig.clips.hit, chance);
-    if (clip === null) return;
-    play(clip, ACTOR.hitFade, ACTOR.hitSpeed, true, true);
+    play(bodyClip(rig, 'hit', chance), ACTOR.hitFade, ACTOR.hitSpeed, true, true);
     oneShot = ACTOR.hitTime;
+  };
+
+  const reel = (actor: ActorPose): void => {
+    const fresh: boolean = lastKind !== 'knock' || actor.knockTime > knockLeft;
+    knockLeft = actor.knockTime;
+    if (fresh) {
+      knockSpan = actor.knockTime;
+      react();
+    }
+    oneShot = Math.max(oneShot, ACTOR.hitTime, actor.knockTime);
+  };
+
+  const locomote = (actor: ActorPose): void => {
+    const choice: GaitChoice | null = chooseGait(rig.clips.gaits, scale, actor.gait, gaitIndex);
+    const gait: GaitClip | undefined = choice === null ? undefined : rig.clips.gaits[choice.index];
+    if (choice === null || gait === undefined) {
+      play(idleClip(rig), ACTOR.locomotionFade, 1, false, false);
+      return;
+    }
+    gaitIndex = choice.index;
+    play(gait.clip, ACTOR.locomotionFade, choice.rate, false, false);
   };
 
   return {
@@ -194,6 +225,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     },
     sync(dt: number, actor: ActorPose, options: SyncOptions): void {
       rig.root.position.set(actor.pos.x, options.floor, actor.pos.z);
+      rig.root.rotation.x = 0;
       if (dead) {
         const sunk: number = Math.min(ACTOR.sinkLimit, Math.max(0, actor.deadTime - ACTOR.sinkDelay) * ACTOR.sinkSpeed);
         rig.root.position.y = options.floor - sunk;
@@ -204,9 +236,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         rig.root.position.y = options.floor - (1 - options.rise) * ACTOR.riseDepth;
         yaw = turnToward(yaw, actor.facing, options.turnRate * dt);
         rig.root.rotation.y = yaw;
+        const kind: ClipKind = clipKindOf(actor.motion);
         if (oneShot > 0) {
           oneShot -= dt;
-          if (!actor.busy && actor.moving) oneShot = 0;
+          if (!actor.busy && kind === 'gait') oneShot = 0;
         }
         if (follow !== null) {
           follow.left -= dt;
@@ -215,11 +248,13 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
             follow = null;
           }
         }
-        if (oneShot <= 0) {
-          const run: boolean = actor.moving;
-          const speed: number = run ? clamped(options.moveSpeed / rig.def.runSpeed, ACTOR.minRunSpeed, ACTOR.maxRunSpeed) : 1;
-          play(run ? rig.clips.run : idleClip(rig), ACTOR.locomotionFade, speed, false, false);
-        }
+        if (kind === 'knock') reel(actor);
+        else knockSpan = 0;
+        const knocked: KnockPose = knockPose(knockSpan, actor.knockTime);
+        rig.root.position.y += knocked.lift;
+        rig.root.rotation.x = -knocked.lean;
+        lastKind = kind;
+        if (oneShot <= 0) locomote(actor);
       }
       flash = Math.max(0, flash - ACTOR.flashDecay * dt);
       punch = Math.max(0, punch - ACTOR.punchDecay * dt);
@@ -259,8 +294,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       if (dead) return;
       dead = true;
       oneShot = 0;
-      const clip: AnimationClip | null = oneOf(rig.clips.death, chance);
-      if (clip !== null) play(clip, ACTOR.deathFade, ACTOR.deathSpeed, true, true);
+      play(bodyClip(rig, 'death', chance), ACTOR.deathFade, ACTOR.deathSpeed, true, true);
     },
     revive(): void {
       dead = false;

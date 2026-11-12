@@ -157,7 +157,7 @@ void test('crossing a threshold fires the phase event once and the phase barks f
   assert.equal(ofType(again, 'bark').length, 0);
 });
 
-void test('a boss is not staggered, its wind-up is not interrupted, and it takes a fraction of the knockback', (): void => {
+void test('a boss is not staggered, keeps its feet through its wind-up, and takes a fraction of the knockback once it stands idle', (): void => {
   const world: World = sturdy(armed(worldIn(room('unfinished_colossus'), ROOM, 8)));
   const boss: MonsterState = bossOf(world);
   const cleave = must(world.content.skills.get('cleave'), 'cleave');
@@ -171,6 +171,9 @@ void test('a boss is not staggered, its wind-up is not interrupted, and it takes
   assert.equal(boss.stagger, 0);
   assert.equal(boss.action.phase, 'windup');
   assert.equal(ofType(world.events, 'skill_interrupt').length, 0);
+  assert.deepEqual(boss.knock, { x: 0, z: 0 });
+  boss.action = null;
+  applyHit(world, offenceOf(world.player), boss, cleave, { x: 0, z: -1 });
   assert.ok(Math.abs(Math.hypot(boss.knock.x, boss.knock.z) - cleave.knockback * must(boss.def.boss, 'boss').poise.knockback) < 1e-9);
 
   const plain: World = armed(worldIn(OUTPOST_CONTENT, 'outpost', 8));
