@@ -1,16 +1,19 @@
+import type { SkillLeap } from '../content/combat-types.ts';
 import type { ComboStep, Delivery, ProjectileDelivery, SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot, facingOf, normalize, rotate } from '../math.ts';
-import { isSolid } from '../nav/grid.ts';
+import { isSolid, isWalkable, moveWithCollision } from '../nav/grid.ts';
 import type { Offence } from './combat.ts';
 import { applyHit, offenceOf, targetsOf, teamOf } from './combat.ts';
 import { stepDash } from './dash.ts';
-import type { Actor, NoticeReason, ProjectileState, World } from './types.ts';
 import { effectiveAttackSpeed } from '../stats.ts';
+import { placeHazard } from './hazards.ts';
+import type { ActionState, Actor, NoticeReason, ProjectileState, World } from './types.ts';
 
 export const SKILLS = {
   projectileOrigin: 0.9,
   projectileStep: 0.3,
+  leapProbe: 0.2,
 } as const;
 
 export function blockedReason(actor: Actor, skill: SkillDef): NoticeReason | null {
@@ -21,7 +24,7 @@ export function blockedReason(actor: Actor, skill: SkillDef): NoticeReason | nul
 
 function widened(delivery: Delivery, scale: number): Delivery {
   if (delivery.type === 'arc') return { ...delivery, reach: delivery.reach * scale };
-  if (delivery.type === 'nova') return { ...delivery, radius: delivery.radius * scale };
+  if (delivery.type === 'nova' || delivery.type === 'mark') return { ...delivery, radius: delivery.radius * scale };
   return delivery;
 }
 
@@ -48,6 +51,21 @@ export function chainedSkill(actor: Actor, skill: SkillDef): SkillDef {
   };
 }
 
+function reachOf(skill: SkillDef, leap: SkillLeap | null, wanted: number): number {
+  if (leap !== null) return Math.min(leap.distance, Math.max(0, wanted - leap.stopShort));
+  return skill.delivery.type === 'mark' ? Math.min(skill.delivery.range, wanted) : 0;
+}
+
+function clearReach(world: World, actor: Actor, aim: ReadonlyVec2, wanted: number): number {
+  let reach: number = 0;
+  while (reach < wanted) {
+    const next: number = Math.min(wanted, reach + SKILLS.leapProbe);
+    if (!isWalkable(world.grid, actor.pos.x + aim.x * next, actor.pos.z + aim.z * next)) return reach;
+    reach = next;
+  }
+  return reach;
+}
+
 export function startSkill(world: World, actor: Actor, requested: SkillDef, direction: ReadonlyVec2): void {
   const hits: number = comboHits(actor, requested);
   const skill: SkillDef = chainedSkill(actor, requested);
@@ -59,7 +77,12 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   actor.cooldowns[skill.id] = skill.cooldown;
   actor.facing = facingOf(aim);
   actor.moving = false;
-  actor.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim };
+  const planned: number = reachOf(skill, skill.leap, Math.hypot(direction.x, direction.z));
+  const reach: number = skill.leap === null ? planned : clearReach(world, actor, aim, planned);
+  const aimsAhead: boolean = skill.leap !== null || skill.delivery.type === 'mark';
+  const target: Vec2 | null = aimsAhead ? { x: actor.pos.x + aim.x * reach, z: actor.pos.z + aim.z * reach } : null;
+  const travelSpeed: number = skill.leap === null ? 0 : reach / Math.min(windup, skill.leap.airTime);
+  actor.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach };
   actor.combo = requested.combo === null ? null : { skill: requested.id, hits: hits + 1, timeLeft: windup + recovery + requested.combo.window };
   world.events.push({ type: 'skill_start', actorId: actor.id, skill, direction: aim, windup, recovery });
 }
@@ -91,7 +114,9 @@ function spawnProjectiles(world: World, actor: Actor, skill: SkillDef, delivery:
   }
 }
 
-function resolveImpact(world: World, actor: Actor, skill: SkillDef, direction: ReadonlyVec2): void {
+function resolveImpact(world: World, actor: Actor, action: ActionState): void {
+  const skill: SkillDef = action.skill;
+  const direction: ReadonlyVec2 = action.direction;
   const offence: Offence = offenceOf(actor);
   let hits: number = 0;
   const delivery = skill.delivery;
@@ -123,6 +148,9 @@ function resolveImpact(world: World, actor: Actor, skill: SkillDef, direction: R
       break;
     case 'dash':
       break;
+    case 'mark':
+      placeHazard(world, offence, skill, action.target ?? actor.pos);
+      break;
   }
   world.events.push({ type: 'skill_impact', actorId: actor.id, team: teamOf(actor), skill, origin: { x: actor.pos.x, z: actor.pos.z }, direction: { x: direction.x, z: direction.z }, hits });
 }
@@ -132,10 +160,15 @@ export function stepAction(world: World, actor: Actor, dt: number): void {
   if (action === null) return;
   stepDash(world.grid, actor, action, dt);
   action.timeLeft -= dt;
+  if (action.phase === 'windup' && action.travelLeft > 0 && action.timeLeft < action.travelLeft / action.travelSpeed + dt) {
+    const step: number = Math.min(action.travelLeft, action.travelSpeed * dt);
+    moveWithCollision(world.grid, actor.pos, action.direction.x * step, action.direction.z * step);
+    action.travelLeft -= step;
+  }
   if (action.phase === 'windup' && action.timeLeft <= 0) {
     action.phase = 'recovery';
     action.timeLeft += action.recovery;
-    resolveImpact(world, actor, action.skill, action.direction);
+    resolveImpact(world, actor, action);
   }
   if (actor.action === action && action.phase === 'recovery' && action.timeLeft <= 0) actor.action = null;
 }

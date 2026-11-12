@@ -225,6 +225,7 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
       break;
     }
     case 'nova':
+    case 'mark':
       fills.push(telegraphPart(sectorGeometry(Math.PI * 2, 0, delivery.radius), color, SHAPES.telegraphFill, 5));
       edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.radius * SHAPES.telegraphEdge, delivery.radius), color, SHAPES.telegraphLine, 6));
       break;

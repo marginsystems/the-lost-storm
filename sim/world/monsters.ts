@@ -1,11 +1,13 @@
+import type { StalkerBehaviour, SummonDef } from '../content/combat-types.ts';
 import type { MonsterDef, MonsterScaling, RangedBehaviour, SkillDef, SurgeRules } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { directionOf, distance, normalize, rotate } from '../math.ts';
+import { clamp, directionOf, distance, normalize, rotate } from '../math.ts';
 import { lineOfSight, lineWalkable, moveWithCollision, nearestWalkable } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { lifePhase, pickBossSkill } from './boss.ts';
 import { aggroPack } from './combat.ts';
 import { allHold } from './conditions.ts';
+import { modsNamed, withMods } from './elites.ts';
 import { faceToward, followPath, stepKnock, stepTimers } from './movement.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
 import type { MonsterStance, MonsterState, PlayerState, World } from './types.ts';
@@ -23,6 +25,7 @@ const MONSTERS = {
   holdBand: 0.8,
   retreatBand: 1.2,
   retreatProbe: 1.5,
+  roomBand: 1.5,
   engageBand: 0.6,
   blindGrace: 0.6,
   turnRate: 10,
@@ -31,6 +34,11 @@ const MONSTERS = {
   restTime: 0.6,
   stillStep: 1e-4,
   blockedGrace: 0.1,
+  orbitBand: 1.5,
+  orbitPull: 0.7,
+  orbitSpeed: 0.85,
+  firstSummon: 0.4,
+  summonScatter: 1.8,
 } as const;
 
 function towardOf(monster: MonsterState, target: Vec2): Vec2 {
@@ -42,6 +50,7 @@ function face(monster: MonsterState, target: Vec2, dt: number): void {
 }
 
 function travel(world: World, monster: MonsterState, direction: Vec2, speed: number, dt: number): void {
+  if (monster.root > 0) return;
   const fromX: number = monster.pos.x;
   const fromZ: number = monster.pos.z;
   moveWithCollision(world.grid, monster.pos, direction.x * speed * dt, direction.z * speed * dt);
@@ -50,6 +59,10 @@ function travel(world: World, monster: MonsterState, direction: Vec2, speed: num
 }
 
 function approach(world: World, monster: MonsterState, target: Vec2, dt: number): void {
+  if (monster.root > 0) {
+    face(monster, target, dt);
+    return;
+  }
   monster.repathTimer -= dt;
   const goal: Vec2 | undefined = monster.path.at(-1);
   const drifted: boolean = goal === undefined || distance(goal, target) > MONSTERS.repathDrift;
@@ -113,7 +126,8 @@ function keepRange(world: World, monster: MonsterState, behaviour: RangedBehavio
   const lostSight: boolean = !sight && monster.blindTime === 0;
   monster.blindTime = sight ? 0 : monster.blindTime + dt;
   if (sight && gap <= skill.engageRange + player.radius && attack(world, monster, skill, player)) return;
-  const behind: Vec2 = { x: monster.pos.x - toward.x * MONSTERS.retreatProbe, z: monster.pos.z - toward.z * MONSTERS.retreatProbe };
+  const probe: number = MONSTERS.retreatProbe + (monster.stance === 'retreat' ? 0 : MONSTERS.roomBand);
+  const behind: Vec2 = { x: monster.pos.x - toward.x * probe, z: monster.pos.z - toward.z * probe };
   monster.stance = rangeStance(monster, behaviour, gap, sight, lineWalkable(world.grid, monster.pos, behind));
   switch (monster.stance) {
     case 'approach':
@@ -125,10 +139,43 @@ function keepRange(world: World, monster: MonsterState, behaviour: RangedBehavio
       face(monster, player.pos, dt);
       return;
     case 'hold':
-      if (lostSight) monster.strafeSign = -monster.strafeSign;
+      if (lostSight) {
+        monster.strafeSign = -monster.strafeSign;
+        monster.restTime = MONSTERS.restTime;
+      }
       travel(world, monster, rotate(toward, MONSTERS.strafeAngle * monster.strafeSign), monster.def.moveSpeed * MONSTERS.strafeSpeed, dt);
       face(monster, player.pos, dt);
       return;
+  }
+}
+
+function stalk(world: World, monster: MonsterState, behaviour: StalkerBehaviour, skill: SkillDef, player: PlayerState, dt: number): void {
+  const gap: number = distance(monster.pos, player.pos) - player.radius;
+  const sight: boolean = lineOfSight(world.grid, monster.pos, player.pos);
+  if (sight && gap <= skill.engageRange && attack(world, monster, skill, player)) return;
+  if (!sight || gap > behaviour.orbitRange + MONSTERS.orbitBand) {
+    monster.stance = 'approach';
+    approach(world, monster, player.pos, dt);
+    return;
+  }
+  monster.stance = 'hold';
+  const pull: number = clamp((gap - behaviour.orbitRange) / MONSTERS.orbitBand, -1, 1);
+  const heading: Vec2 = rotate(towardOf(monster, player.pos), (Math.PI / 2 - pull * MONSTERS.orbitPull) * monster.strafeSign);
+  travel(world, monster, heading, monster.def.moveSpeed * MONSTERS.orbitSpeed, dt);
+  faceToward(monster, heading, MONSTERS.turnRate * dt);
+}
+
+function summonOf(world: World, monster: MonsterState, summon: SummonDef, dt: number): void {
+  monster.summonTimer -= dt;
+  if (monster.summonTimer > 0) return;
+  monster.summonTimer = summon.cooldown;
+  const def: MonsterDef | undefined = world.content.monsters.get(summon.monster ?? monster.def.id);
+  if (def === undefined) return;
+  const called: number = world.monsters.filter((other: MonsterState): boolean => other.alive && other.summonerId === monster.id).length;
+  for (let index: number = 0; index < Math.min(summon.count, summon.limit - called); index += 1) {
+    const minion: MonsterState = spawnMonster(world, def, monster.packId, monster.pos, monster.id);
+    minion.aggro = true;
+    world.events.push({ type: 'aggro', monsterId: minion.id });
   }
 }
 
@@ -170,6 +217,7 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   stepAction(world, monster, dt);
   trackProgress(monster, dt);
   const player: PlayerState = world.player;
+  if (monster.aggro && player.alive && monster.summonerId === null && monster.def.summon !== null) summonOf(world, monster, monster.def.summon, dt);
   if (monster.action !== null || monster.stagger > 0 || !player.alive) return;
   if (!monster.aggro) {
     wake(world, monster, player);
@@ -190,6 +238,9 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
     case 'ranged':
       keepRange(world, monster, behaviour, skill, player, dt);
       return;
+    case 'stalker':
+      stalk(world, monster, behaviour, skill, player, dt);
+      return;
   }
 }
 
@@ -206,11 +257,11 @@ export function monsterLevel(world: World): number {
   return world.zone.level + (world.zone.surge === null ? 0 : world.surge - 1);
 }
 
-function spawnMonster(world: World, def: MonsterDef, packId: number, center: Vec2): void {
+function spawnMonster(world: World, def: MonsterDef, packId: number, center: Vec2, summonerId: number | null): MonsterState {
   const scaling: MonsterScaling = world.content.world.scaling;
   const level: number = monsterLevel(world);
   const angle: number = world.rng.range(0, Math.PI * 2);
-  const reach: number = world.rng.range(0, MONSTERS.spawnScatter);
+  const reach: number = world.rng.range(0, summonerId === null ? MONSTERS.spawnScatter : MONSTERS.summonScatter);
   const wanted: Vec2 = { x: center.x + Math.cos(angle) * reach, z: center.z + Math.sin(angle) * reach };
   const pos: Vec2 = nearestWalkable(world.grid, wanted, MONSTERS.spawnSnap) ?? { x: center.x, z: center.z };
   const life: number = Math.round(def.life * (1 + scaling.lifePerLevel * (level - 1)));
@@ -235,6 +286,7 @@ function spawnMonster(world: World, def: MonsterDef, packId: number, center: Vec
     cooldowns: {},
     stagger: 0,
     combo: null,
+    root: 0,
     alive: true,
     deadTime: 0,
     moving: false,
@@ -250,10 +302,13 @@ function spawnMonster(world: World, def: MonsterDef, packId: number, center: Vec
     spawnTime: MONSTERS.spawnTime,
     phase: 0,
     nextSkill: null,
+    summonerId,
+    summonTimer: (def.summon?.cooldown ?? 0) * MONSTERS.firstSummon,
   };
   world.nextId += 1;
   world.monsters.push(monster);
   world.events.push({ type: 'monster_spawn', monsterId: monster.id });
+  return monster;
 }
 
 export function spawnPacks(world: World): void {
@@ -265,10 +320,11 @@ export function spawnPacks(world: World): void {
     const packId: number = world.nextPackId;
     world.nextPackId += 1;
     pack.members.forEach((member, index: number): void => {
-      const def: MonsterDef | undefined = world.content.monsters.get(member.monster);
-      if (def === undefined) return;
+      const base: MonsterDef | undefined = world.content.monsters.get(member.monster);
+      if (base === undefined) return;
+      const def: MonsterDef = withMods(base, modsNamed(world.content.monsterMods, member.mods));
       const count: number = member.count + (index === 0 ? extra : 0);
-      for (let spawned: number = 0; spawned < count; spawned += 1) spawnMonster(world, def, packId, { x: pack.x, z: pack.z });
+      for (let spawned: number = 0; spawned < count; spawned += 1) spawnMonster(world, def, packId, { x: pack.x, z: pack.z }, null);
     });
   }
 }
