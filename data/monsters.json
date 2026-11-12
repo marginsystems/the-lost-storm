@@ -131,9 +131,7 @@
               "weight": 3
             }
           ],
-          "barks": [
-            "one_before_half_1"
-          ]
+          "barks": []
         }
       ],
       "poise": {
@@ -146,13 +144,8 @@
         "goldMax": 50
       },
       "barks": {
-        "aggro": [
-          "one_before_sight_1",
-          "one_before_sight_2"
-        ],
-        "death": [
-          "one_before_death_1"
-        ]
+        "aggro": [],
+        "death": []
       }
     }
   },
@@ -464,9 +457,7 @@
               "weight": 3
             }
           ],
-          "barks": [
-            "welcome_two_1"
-          ]
+          "barks": []
         },
         {
           "below": 0.33,
@@ -488,9 +479,7 @@
               "weight": 3
             }
           ],
-          "barks": [
-            "welcome_three_1"
-          ]
+          "barks": []
         }
       ],
       "poise": {
@@ -503,13 +492,8 @@
         "goldMax": 90
       },
       "barks": {
-        "aggro": [
-          "welcome_fight_1"
-        ],
-        "death": [
-          "welcome_death_1",
-          "welcome_death_2"
-        ]
+        "aggro": [],
+        "death": []
       }
     }
   },

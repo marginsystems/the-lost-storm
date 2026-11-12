@@ -90,6 +90,7 @@ import { createZoneMarkers } from './render/zone-markers.ts';
 import { dressed } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-view.ts';
+import { neighbourZones } from './render/zone-assets.ts';
 import { createBrowserTimers } from './browser-timers.ts';
 import { createAccountFlow } from './account-flow.ts';
 import type { AccountFlow } from './account-flow.ts';
@@ -452,6 +453,13 @@ async function start(): Promise<void> {
     torchVersion = zoneView.lightsVersion;
   };
 
+  const preloadNearZones = (): void => {
+    if (!mobile.quality.tier.preloadNearZones) return;
+    preloadZones(loader, content, neighbourZones(content, world.zone)).catch((error: unknown): void => {
+      warnInConsole(`Preloading the next zones failed: ${String(error)}`);
+    });
+  };
+
   const showZone = async (events: readonly WorldEvent[]): Promise<void> => {
     present(events);
     effects.clear();
@@ -460,6 +468,7 @@ async function start(): Promise<void> {
     zoneView.dispose();
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name);
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
+    preloadNearZones();
     markers = createZoneMarkers(stage.scene, world.zone);
     stage.setAmbience(world.zone.ambience);
     zoneView.setLightBudget(gameSettings.preset().lights);
@@ -571,7 +580,6 @@ async function start(): Promise<void> {
     thumbnails = createItemThumbnails(library, shownPieces);
     actors.refreshWear(world);
     hud.refreshItems();
-    if (mobile.quality.tier.preloadAllZones) await preloadZones(loader, content);
   };
 
   status.classList.remove('failed');
@@ -604,6 +612,7 @@ async function start(): Promise<void> {
     ladder?.setPlaying(true);
     audio.unlock();
     startZoneAmbience();
+    preloadNearZones();
   });
   const startOver = async (): Promise<void> => {
     dirty = false;

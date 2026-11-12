@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
 import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { botFight, botInDanger, createBot } from '../bot.ts';
 import type { Bot } from '../bot.ts';
 import { loadContent } from '../content/content.ts';
-import type { BossDef, Condition, Content, MonsterDef, QuestDef, ZoneDef, ZonePack } from '../content/types.ts';
+import type { BossDef, Condition, Content, LineDef, MonsterDef, QuestDef, ZoneDef, ZonePack } from '../content/types.ts';
 import { phaseAt, pickBossSkill } from './boss.ts';
 import { applyHit, offenceOf } from './combat.ts';
 import { stepWorld } from './step.ts';
@@ -14,6 +15,27 @@ import { SKILLS } from './skills.ts';
 import { enterZone } from './zones.ts';
 
 const shipped: Content = loadContent();
+
+function voice(def: MonsterDef): MonsterDef {
+  const block: BossDef | null = def.boss;
+  if (block === null) return def;
+  const barks = { aggro: [`${def.id}_sight_1`, `${def.id}_sight_2`], death: [`${def.id}_death_1`] };
+  const phases: BossDef['phases'] = block.phases.map((phase, index): BossDef['phases'][number] => Object.assign({}, phase, index === 1 ? { barks: [`${def.id}_half_1`] } : {}));
+  return { ...def, boss: { ...block, barks, phases } };
+}
+
+function linesOf(def: MonsterDef): LineDef[] {
+  const block: BossDef | null = voice(def).boss;
+  if (block === null) return [];
+  const ids: string[] = [...block.barks.aggro, ...block.barks.death, ...block.phases.flatMap((phase): readonly string[] => phase.barks)];
+  return ids.map((id: string): LineDef => ({ id, speaker: def.id, text: `${def.id} speaks ${id}.` }));
+}
+
+const voiced: Content = {
+  ...OUTPOST_CONTENT,
+  monsters: new Map<string, MonsterDef>([...OUTPOST_CONTENT.monsters].map(([id, def]): [string, MonsterDef] => [id, voice(def)])),
+  lines: new Map<string, LineDef>([...OUTPOST_CONTENT.lines, ...[...OUTPOST_CONTENT.monsters.values()].flatMap(linesOf).map((line: LineDef): [string, LineDef] => [line.id, line])]),
+};
 const DT: number = 1 / 30;
 const ROOM: string = 'proving_ground';
 
@@ -24,10 +46,9 @@ function ofType<T extends WorldEvent['type']>(events: readonly WorldEvent[], typ
 }
 
 function room(monster: string, when: readonly Condition[] = []): Content {
-  const bastion: ZoneDef = zoneOf(shipped, 'drowned_bastion');
   const packs: ZonePack[] = [{ x: 28, z: 14, members: [{ monster, count: 1, mods: [] }], when }];
-  const zone: ZoneDef = { ...bastion, id: ROOM, level: 2, surge: null, packs, exits: [], waypoint: null };
-  return { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [zone.id, zone]]) };
+  const zone: ZoneDef = { ...OUTPOST_ZONE, id: ROOM, level: 2, surge: null, packs, exits: [], waypoint: null };
+  return { ...voiced, zones: new Map<string, ZoneDef>([...voiced.zones, [zone.id, zone]]) };
 }
 
 function bossOf(world: World): MonsterState {
@@ -157,7 +178,7 @@ void test('a boss is not staggered, its wind-up is not interrupted, and it takes
   assert.equal(ofType(world.events, 'skill_interrupt').length, 0);
   assert.ok(Math.abs(Math.hypot(boss.knock.x, boss.knock.z) - cleave.knockback * must(boss.def.boss, 'boss').poise.knockback) < 1e-9);
 
-  const plain: World = worldIn(shipped, 'drowned_bastion', 8);
+  const plain: World = worldIn(OUTPOST_CONTENT, 'outpost', 8);
   const thrall: MonsterState = must(plain.monsters.find((monster: MonsterState): boolean => monster.def.id === 'bone_thrall'), 'thrall');
   applyHit(plain, offenceOf(plain.player), thrall, cleave, { x: 0, z: -1 });
   if (thrall.alive) assert.equal(thrall.stagger, cleave.stagger);

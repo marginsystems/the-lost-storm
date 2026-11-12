@@ -1,19 +1,26 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { roadContent, roadZone } from '../../test/road-support.ts';
 import { finishQuests, must, withoutGlitches, zoneOf } from '../../test/support.ts';
-import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef, ZoneWaypoint } from '../content/types.ts';
 import { createWorld } from './create.ts';
 import { stepWorld } from './step.ts';
 import { choicesOpen } from './death.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 import { canTeleport, onWaypoint } from './waypoints.ts';
+import { enterZone } from './zones.ts';
 
-const content: Content = loadContent();
-const town: ZoneDef = zoneOf(content, 'stillhold');
-const bastion: ZoneDef = zoneOf(content, 'drowned_bastion');
+const outpostZone: ZoneDef = roadZone({
+  id: 'outpost',
+  tiles: ['wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww'],
+  waypoint: { x: 21, z: 8, radius: 1.8 },
+  packs: [{ x: 12, z: 8, members: [{ monster: 'bone_thrall', count: 2, mods: [] }], when: [] }],
+});
+const content: Content = roadContent(outpostZone);
+const town: ZoneDef = zoneOf(content, 'waystation');
+const outpost: ZoneDef = zoneOf(content, 'outpost');
 const townPoint: ZoneWaypoint = must(town.waypoint, 'town waypoint');
-const bastionPoint: ZoneWaypoint = must(bastion.waypoint, 'bastion waypoint');
+const outpostPoint: ZoneWaypoint = must(outpost.waypoint, 'outpost waypoint');
 const DT: number = 1 / 60;
 const LIMIT: number = 40;
 
@@ -34,7 +41,10 @@ function until(world: World, done: () => boolean, first: readonly Command[] = []
 }
 
 function fresh(seed: number): World {
-  return finishQuests(createWorld(content, { seed, save: null }));
+  const world: World = finishQuests(createWorld(content, { seed, save: null }));
+  enterZone(world, town, { type: 'start' });
+  world.events = [];
+  return world;
 }
 
 function standOn(world: World, point: ZoneWaypoint): WorldEvent[] {
@@ -54,42 +64,42 @@ void test('a waypoint unlocks once, when the hero first stands on it', (): void 
 
 void test('teleport needs the hero on a waypoint and the target unlocked', (): void => {
   const world: World = fresh(2);
-  world.waypoints = [town.id, bastion.id];
-  assert.equal(canTeleport(world, bastion.id), false);
-  stepWorld(world, [{ type: 'teleport', zone: bastion.id }], DT);
+  world.waypoints = [town.id, outpost.id];
+  assert.equal(canTeleport(world, outpost.id), false);
+  stepWorld(world, [{ type: 'teleport', zone: outpost.id }], DT);
   assert.equal(world.zone.id, town.id);
   standOn(world, townPoint);
   world.waypoints = [town.id];
-  assert.equal(canTeleport(world, bastion.id), false);
-  stepWorld(world, [{ type: 'teleport', zone: bastion.id }], DT);
+  assert.equal(canTeleport(world, outpost.id), false);
+  stepWorld(world, [{ type: 'teleport', zone: outpost.id }], DT);
   assert.equal(world.zone.id, town.id);
-  world.waypoints = [town.id, bastion.id];
+  world.waypoints = [town.id, outpost.id];
   assert.equal(canTeleport(world, town.id), false);
   assert.equal(canTeleport(world, 'nowhere'), false);
-  assert.equal(canTeleport(world, bastion.id), true);
+  assert.equal(canTeleport(world, outpost.id), true);
 });
 
 void test('teleport enters the target zone at its waypoint, resets it, and death returns the hero there', (): void => {
   const world: World = withoutGlitches(fresh(3));
   standOn(world, townPoint);
-  world.waypoints = [town.id, bastion.id];
-  const events: WorldEvent[] = stepWorld(world, [{ type: 'teleport', zone: bastion.id }], DT);
-  assert.deepEqual(ofType(events, 'zone_changed'), [{ type: 'zone_changed', from: town.id, to: bastion.id }]);
-  assert.equal(world.zone.id, bastion.id);
-  assert.deepEqual(world.player.pos, { x: bastionPoint.x, z: bastionPoint.z });
+  world.waypoints = [town.id, outpost.id];
+  const events: WorldEvent[] = stepWorld(world, [{ type: 'teleport', zone: outpost.id }], DT);
+  assert.deepEqual(ofType(events, 'zone_changed'), [{ type: 'zone_changed', from: town.id, to: outpost.id }]);
+  assert.equal(world.zone.id, outpost.id);
+  assert.deepEqual(world.player.pos, { x: outpostPoint.x, z: outpostPoint.z });
   assert.deepEqual(world.respawn, { type: 'waypoint' });
   assert.ok(world.monsters.length > 0);
   assert.equal(onWaypoint(world), true);
   const thrall: MonsterState = must(world.monsters[0], 'monster');
   world.monsters = [thrall];
   thrall.spawnTime = 0;
-  world.player.pos = { x: 28, z: 20 };
-  thrall.pos = { x: 28, z: 21.6 };
+  world.player.pos = { x: 20, z: 12 };
+  thrall.pos = { x: 20, z: 13.6 };
   world.player.life = 1;
   world.player.stats.lifeRegen = 0;
   const died: WorldEvent[] = until(world, (): boolean => world.player.alive && world.player.life === world.player.maxLife && world.time > 3);
   assert.equal(ofType(died, 'player_respawn').length, 1);
-  assert.deepEqual(world.player.pos, { x: bastionPoint.x, z: bastionPoint.z });
+  assert.deepEqual(world.player.pos, { x: outpostPoint.x, z: outpostPoint.z });
   const back: WorldEvent[] = stepWorld(world, [{ type: 'teleport', zone: town.id }], DT);
   assert.equal(ofType(back, 'zone_changed').length, 1);
   assert.deepEqual(world.player.pos, { x: townPoint.x, z: townPoint.z });
@@ -99,8 +109,8 @@ void test('teleport enters the target zone at its waypoint, resets it, and death
 void test('the dead cannot teleport', (): void => {
   const world: World = fresh(4);
   standOn(world, townPoint);
-  world.waypoints = [town.id, bastion.id];
+  world.waypoints = [town.id, outpost.id];
   world.player.alive = false;
-  stepWorld(world, [{ type: 'teleport', zone: bastion.id }], DT);
+  stepWorld(world, [{ type: 'teleport', zone: outpost.id }], DT);
   assert.equal(world.zone.id, town.id);
 });

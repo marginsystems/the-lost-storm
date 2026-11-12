@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { must, zoneOf } from '../../test/support.ts';
 import type { Vec2 } from '../math.ts';
-import { buildNavGrid, isWalkable } from '../nav/grid.ts';
+import { buildNavGrid, isWalkable, setDriftOpen } from '../nav/grid.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { clipUrl, rigClipNames } from './clips.ts';
@@ -123,6 +123,7 @@ void test('every zone file under data/zones is loaded under its own name', (): v
 void test('in every zone the start, packs, exits, arrival points, checkpoints and npcs are walkable and reachable on foot', (): void => {
   for (const zone of content.zones.values()) {
     const grid: NavGrid = buildNavGrid(zone, content.props, content.surfaces, content.player.radius);
+    for (const patch of grid.drifts) setDriftOpen(grid, patch, true);
     const start: Vec2 = zone.playerStart;
     assert.ok(isWalkable(grid, start.x, start.z), `${zone.id} player start`);
     for (const pack of zone.packs) assert.ok(reaches(grid, start, pack), `${zone.id} pack at ${pack.x},${pack.z}`);

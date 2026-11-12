@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { arena, ARENA_CENTRE, place } from '../../test/arena-support.ts';
 import { finishQuests, must } from '../../test/support.ts';
-import type { GlitchKind } from '../content/glitches.ts';
+import type { GlitchDef, GlitchKind } from '../content/glitches.ts';
 import { loadContent } from '../content/content.ts';
+import { loadGlitches } from '../content/glitches.ts';
 import type { Content, ZoneExit } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { readSave, toSave } from '../save.ts';
@@ -200,20 +201,41 @@ function world0(): World {
   return createWorld(content, { seed: 1, save: null });
 }
 
+const done = (quest: string): { readonly type: 'quest'; readonly quest: string; readonly is: 'done'; readonly not: false } => ({ type: 'quest', quest, is: 'done', not: false });
+const STAGED: GlitchDef = {
+  ...loadGlitches(),
+  progress: [
+    { value: 1, when: [done('out_of_the_mist')] },
+    { value: 2, when: [done('to_the_waystation')] },
+    { value: 4, when: [done('out_of_the_mist'), done('to_the_waystation')] },
+  ],
+};
+
+function lateWorld(seed: number, save: ReturnType<typeof readSave> = null): World {
+  return createWorld(content, { seed, save, glitches: STAGED });
+}
+
 void test('story progress comes from quests, never falls, and travels in the save', (): void => {
-  const world: World = finishQuests(world0());
+  const partial: World = lateWorld(1);
+  partial.quests = { out_of_the_mist: must(content.quests.get('out_of_the_mist'), 'quest').objectives.length };
+  assert.equal(storyProgress(partial), 1);
+  partial.quests = { to_the_waystation: must(content.quests.get('to_the_waystation'), 'quest').objectives.length };
+  assert.equal(storyProgress(partial), 2);
+  const world: World = finishQuests(lateWorld(1));
   assert.equal(storyProgress(world), 4);
   stepWorld(world, [], DT);
   assert.equal(world.glitch.progress, 4);
   world.quests = {};
   assert.equal(storyProgress(world), 4);
-  const loaded: World = createWorld(content, { seed: 2, save: readSave(content, JSON.parse(JSON.stringify(toSave(world)))) });
+  const loaded: World = lateWorld(2, readSave(content, JSON.parse(JSON.stringify(toSave(world)))));
   assert.equal(loaded.glitch.progress, 4);
+  const plain: World = finishQuests(world0());
+  assert.equal(storyProgress(plain), 1);
 });
 
 void test('a story trigger waits for its moment, fires once, and stays fired after a save', (): void => {
   const world: World = harmlessFight(7, 0);
-  world.quests = { fallen_in: must(content.quests.get('fallen_in'), 'fallen_in').objectives.length };
+  world.quests = { to_the_waystation: must(content.quests.get('to_the_waystation'), 'quest').objectives.length };
   for (const monster of world.monsters) monster.aggro = false;
   assert.equal(ofType(glitchOnly(world, 2, DT), 'glitch_start').length, 0);
   for (const monster of world.monsters) monster.aggro = true;
@@ -227,7 +249,7 @@ void test('a story trigger waits for its moment, fires once, and stays fired aft
 });
 
 void test('late in the story every zone change passes through the mist, with silhouettes from the hero’s own path', (): void => {
-  const world: World = finishQuests(world0());
+  const world: World = finishQuests(lateWorld(1));
   stepWorld(world, [], DT);
   for (let index: number = 0; index < 30; index += 1) world.path.entries.push({ t: index, zone: world.zone.id, x: 10 + index, z: 30, act: 'step' });
   world.path.clock = 500;

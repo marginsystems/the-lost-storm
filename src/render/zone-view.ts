@@ -12,7 +12,7 @@ import type { Vec2 } from '../../sim/math.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Ground } from './ground.ts';
 import { dressed, preloadSurfaces, releaseSurfaces } from './surfaces.ts';
-import { zoneModels, zoneProps, zoneSurfaces } from './zone-assets.ts';
+import { zoneModels, zoneSurfaces } from './zone-assets.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
 export const ZONE_VIEW = {
@@ -78,15 +78,14 @@ function transform(x: number, y: number, z: number, yaw: number, scale: number):
   return new Matrix4().compose(new Vector3(x, y, z), new Quaternion().setFromEuler(new Euler(0, yaw, 0)), new Vector3(scale, scale, scale));
 }
 
-export async function preloadZones(loader: GLTFLoader, content: Content): Promise<void> {
+export async function preloadZones(loader: GLTFLoader, content: Content, zones: readonly ZoneDef[]): Promise<void> {
   const models: Set<string> = new Set<string>();
-  for (const zone of content.zones.values()) {
-    for (const propId of zoneProps(zone)) {
-      const def: PropDef | undefined = content.props.get(propId);
-      if (def !== undefined) models.add(def.model);
-    }
+  const surfaces: Set<string> = new Set<string>();
+  for (const zone of zones) {
+    for (const model of zoneModels(content, zone)) models.add(model);
+    for (const id of zoneSurfaces(content, zone)) surfaces.add(id);
   }
-  await Promise.allSettled([preloadSurfaces(content), ...[...models].map((model: string): Promise<GLTF> => loadModel(loader, model))]);
+  await Promise.allSettled([preloadSurfaces(content, surfaces), ...[...models].map((model: string): Promise<GLTF> => loadModel(loader, model))]);
 }
 
 export function releaseOtherZones(content: Content, kept: ZoneDef): void {

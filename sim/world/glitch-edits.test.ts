@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { arena, ARENA_CENTRE, place } from '../../test/arena-support.ts';
 import { placedProp, sceneZone } from '../../test/motion-support.ts';
-import { must, worldIn, zoneOf } from '../../test/support.ts';
+import { SCENE_BASE } from '../../test/road-support.ts';
+import { must, worldIn } from '../../test/support.ts';
 import type { GlitchEdit, PropShiftEdit, PropSwapEdit } from '../content/glitches.ts';
 import { loadGlitches } from '../content/glitches.ts';
 import { loadContent } from '../content/content.ts';
@@ -22,8 +23,8 @@ function shipped(id: string): GlitchEdit {
 }
 
 function sceneWith(tiles: readonly string[], props: readonly ZoneProp[], start: { readonly x: number; readonly z: number }, exits: readonly ZoneExit[]): World {
-  const base: ZoneDef = zoneOf(content, 'drowned_bastion');
-  const world: World = worldIn(content, base.id, 1);
+  const base: ZoneDef = SCENE_BASE;
+  const world: World = worldIn(content, content.world.start, 1);
   enterZone(world, { ...sceneZone(base, 'test_scene', { tiles, props, start }), exits }, { type: 'start' });
   world.monsters = [];
   world.events = [];
@@ -39,7 +40,7 @@ function shiftEdit(): PropShiftEdit {
 const GATE: PropSwapEdit = { id: 'gate', type: 'prop_swap', weight: 1, reach: 40, twoWay: true, pairs: [{ from: 'gate_lantern', to: 'dry_plinth' }] };
 
 function exitAt(x: number, z: number): ZoneExit {
-  return { id: 'far', x, z, radius: 1, to: 'stillhold', toExit: 'bastion_stair', arrival: { x, z }, requires: [], lockedHint: '', hiddenWhenLocked: false };
+  return { id: 'far', x, z, radius: 1, to: 'waystation', toExit: 'west_gate', arrival: { x, z }, requires: [], lockedHint: '', hiddenWhenLocked: false };
 }
 
 void test('a monster that was alive is now dead, and the hero still gets its experience and its kill', (): void => {
@@ -101,7 +102,7 @@ void test('a blocking prop is never moved or swapped onto the hero', (): void =>
 });
 
 void test('a prop that only appears under a story condition is never swapped or moved', (): void => {
-  const conditional: ZoneProp = { ...placedProp('gate_lantern', 14, 10), when: [{ type: 'quest', quest: 'fallen_in', is: 'done', not: false }] };
+  const conditional: ZoneProp = { ...placedProp('gate_lantern', 14, 10), when: [{ type: 'quest', quest: 'to_the_waystation', is: 'done', not: false }] };
   const world: World = sceneWith(['#######', '.......', '.......', '.......', '#######'], [conditional], { x: 3, z: 10 }, [exitAt(25, 10)]);
   assert.equal(applyEdit(world, GATE, createRng(8)), false);
   assert.equal(world.zone.props[0]?.prop, 'gate_lantern');

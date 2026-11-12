@@ -1,12 +1,12 @@
 # The Lost Storm
 
-A single-player isometric action RPG that runs in the browser. Three.js, TypeScript and Vite, with no game engine on top. The world is a set of zones joined by exits: a safe town (Stillhold) and the Drowned Bastion, an arena of endless surges. One hero, two monster types, loot, levelling and a small skill tree.
+A single-player isometric action RPG that runs in the browser. Three.js, TypeScript and Vite, with no game engine on top. The world is a set of zones joined by exits along one road east: the In-Between, the Shallows and the waystation, a safe hub with a vendor and a stash. One hero, loot, levelling and a small skill tree.
 
 **Play it:** [theloststorm.com/play](https://theloststorm.com/play/) (the site's front page, [theloststorm.com](https://theloststorm.com), says what the game is first)
 
 ![The title screen](docs/images/title.webp)
 
-![Stillhold, the town where the game starts](docs/images/town.webp)
+![The waystation, the hub on the road east](docs/images/town.webp)
 
 ![The skill tree open over the town](docs/images/skills.webp)
 
@@ -27,7 +27,7 @@ Open http://localhost:5193/play/ for the game. http://localhost:5193/ is the lan
 | Q | Thunderclap (area hit around you) |
 | W or right mouse | Storm Bolt (projectile) |
 | I / C / T / M | Inventory / character sheet / skill tree / world map |
-| Left mouse on the Chandler or the stash chest in Stillhold | Open his stall or your stash beside the inventory. Walk away or press Escape to close |
+| Left mouse on the Warden or the stash chest at the waystation | Open the stall or your stash beside the inventory. Walk away or press Escape to close |
 | Left mouse on an item at the stall | Buy it, or buy back one you sold |
 | Left mouse, right mouse or Ctrl + left mouse on an inventory item while the stall or stash is open | Sell it, or put it in the stash; click a stash item to take it back |
 | Tab | Corner minimap / large map laid over the game (clicks still reach the game) |

@@ -7,14 +7,10 @@
   "silhouettes": {"near": 2.5, "far": 9},
   "wrongWord": {"names": ["Corin", "Aud", "Wenna", "Tobin", "Ysolde"], "template": "{name}— no. {line}", "window": 30},
   "progress": [
-    {"value": 1, "when": [{"type": "quest", "quest": "fallen_in", "is": "done"}]},
-    {"value": 2, "when": [{"type": "quest", "quest": "north_lamp", "is": "done"}]},
-    {"value": 2, "when": [{"type": "quest", "quest": "east_lamp", "is": "done"}]},
-    {"value": 3, "when": [{"type": "quest", "quest": "north_lamp", "is": "done"}, {"type": "quest", "quest": "east_lamp", "is": "done"}]},
-    {"value": 4, "when": [{"type": "quest", "quest": "the_gate", "is": "done"}]}
+    {"value": 1, "when": [{"type": "quest", "quest": "to_the_waystation", "is": "done"}]}
   ],
   "triggers": [
-    {"id": "first_seam", "kind": "hard_cut", "during": "combat", "when": [{"type": "quest", "quest": "fallen_in", "is": "done"}]}
+    {"id": "first_seam", "kind": "hard_cut", "during": "combat", "when": [{"type": "quest", "quest": "to_the_waystation", "is": "done"}]}
   ],
   "edits": [
     {"id": "hero_turn", "type": "hero_turn", "weight": 2},

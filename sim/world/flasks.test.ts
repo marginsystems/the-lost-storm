@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { roadWorld, roadZone } from '../../test/road-support.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneWaypoint } from '../content/types.ts';
@@ -14,7 +15,10 @@ const LIFE: number = 0;
 const MANA: number = 1;
 
 function quiet(zone: string): World {
-  const world: World = worldIn(content, zone, 3);
+  return settled(worldIn(content, zone, 3));
+}
+
+function settled(world: World): World {
   world.monsters = [];
   world.spawnedPacks = [...world.zone.packs];
   world.player.stats.lifeRegen = 0;
@@ -42,7 +46,7 @@ void test('the shipped flasks are one for life in slot 1 and one for mana in slo
 });
 
 void test('a life flask spends its charges and restores its amount over its duration, not at once', (): void => {
-  const world: World = quiet('duskway');
+  const world: World = quiet('shallows');
   const player = world.player;
   const red: FlaskState = flask(world, LIFE);
   player.life = 1;
@@ -60,7 +64,7 @@ void test('a life flask spends its charges and restores its amount over its dura
 });
 
 void test('a mana flask fills mana and never past the maximum', (): void => {
-  const world: World = quiet('duskway');
+  const world: World = quiet('shallows');
   const player = world.player;
   player.mana = player.stats.maxMana - 1;
   run(world, flask(world, MANA).def.duration + 1, [{ type: 'flask', slot: MANA }]);
@@ -68,7 +72,7 @@ void test('a mana flask fills mana and never past the maximum', (): void => {
 });
 
 void test('a flask used again inside its cooldown says it is not ready', (): void => {
-  const world: World = quiet('duskway');
+  const world: World = quiet('shallows');
   const red: FlaskState = flask(world, LIFE);
   world.player.life = 1;
   stepWorld(world, [{ type: 'flask', slot: LIFE }], DT);
@@ -81,7 +85,7 @@ void test('a flask used again inside its cooldown says it is not ready', (): voi
 });
 
 void test('an empty flask and a full globe each give a notice instead of silence', (): void => {
-  const world: World = quiet('duskway');
+  const world: World = quiet('shallows');
   const red: FlaskState = flask(world, LIFE);
   assert.deepEqual(notices(stepWorld(world, [{ type: 'flask', slot: LIFE }], DT)), ['life_full']);
   assert.deepEqual(notices(stepWorld(world, [{ type: 'flask', slot: MANA }], DT)), ['mana_full']);
@@ -94,7 +98,7 @@ void test('an empty flask and a full globe each give a notice instead of silence
 });
 
 void test('a dead hero cannot drink, and death ends a flask that was restoring', (): void => {
-  const world: World = quiet('duskway');
+  const world: World = quiet('shallows');
   const red: FlaskState = flask(world, LIFE);
   world.player.life = 1;
   stepWorld(world, [{ type: 'flask', slot: LIFE }], DT);
@@ -107,26 +111,26 @@ void test('a dead hero cannot drink, and death ends a flask that was restoring',
 });
 
 void test('flasks fill to the top in town and on a waypoint, but not out in the wild', (): void => {
-  const wild: World = quiet('duskway');
+  const wild: World = quiet('shallows');
   flask(wild, LIFE).charges = 0;
   stepWorld(wild, [], DT);
   assert.equal(flask(wild, LIFE).charges, 0);
 
-  const town: World = quiet('stillhold');
+  const town: World = quiet('waystation');
   flask(town, LIFE).charges = 0;
   flask(town, MANA).charges = 0;
   stepWorld(town, [], DT);
   assert.deepEqual(town.player.flasks.map((state: FlaskState): number => state.charges), content.flasks.map((def): number => def.maxCharges));
 
-  const bastion: World = quiet('drowned_bastion');
-  const point: ZoneWaypoint = must(bastion.zone.waypoint, 'bastion waypoint');
-  flask(bastion, MANA).charges = 0;
-  stepWorld(bastion, [], DT);
-  assert.equal(onWaypoint(bastion), false);
-  assert.equal(flask(bastion, MANA).charges, 0);
-  bastion.player.pos = { x: point.x, z: point.z };
-  stepWorld(bastion, [], DT);
-  assert.equal(flask(bastion, MANA).charges, flask(bastion, MANA).def.maxCharges);
+  const outpost: World = settled(roadWorld(roadZone({ waypoint: { x: 21, z: 8, radius: 1.8 } })));
+  const point: ZoneWaypoint = must(outpost.zone.waypoint, 'waypoint');
+  flask(outpost, MANA).charges = 0;
+  stepWorld(outpost, [], DT);
+  assert.equal(onWaypoint(outpost), false);
+  assert.equal(flask(outpost, MANA).charges, 0);
+  outpost.player.pos = { x: point.x, z: point.z };
+  stepWorld(outpost, [], DT);
+  assert.equal(flask(outpost, MANA).charges, flask(outpost, MANA).def.maxCharges);
 });
 
 void test('saved charges are restored within bounds, and a missing flask starts full', (): void => {

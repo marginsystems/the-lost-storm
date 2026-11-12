@@ -16,24 +16,22 @@ const content: Content = loadContent();
 
 const ACT = {
   seeds: [11, 12, 13],
-  minMinutes: 5,
-  maxMinutes: 12,
-  minLevel: 6,
-  maxLevel: 9,
+  minSeconds: 10,
+  maxSeconds: 60,
+  minLevel: 1,
+  maxLevel: 3,
   maxDeaths: 1,
-  optionalZone: 'drowned_bastion',
 } as const;
 
-void test('the bot plays the whole act from a fresh save: every quest, in the time and at the level it is tuned for, never needing the optional zone', (): void => {
+void test('the bot plays the whole act from a fresh save: every quest, in the time and at the level it is tuned for', (): void => {
   const townQuests: string[] = [...content.quests.values()].filter((quest: QuestDef): boolean => !quest.when.some((condition: Condition): boolean => condition.type === 'flag' && !condition.not)).map((quest: QuestDef): string => quest.id).toSorted();
-  const needed: string[] = [...content.zones.values()].filter((zone): boolean => zone.kind !== 'void' && zone.id !== ACT.optionalZone).map((zone): string => zone.id).toSorted();
+  const needed: string[] = [...content.zones.values()].filter((zone): boolean => zone.kind !== 'void').map((zone): string => zone.id).toSorted();
   for (const seed of ACT.seeds) {
     const world: World = createWorld(content, { seed, save: null });
     const report: BotReport = botPlay(createBot(world));
-    const minutes: number = report.seconds / 60;
     assert.equal(report.stuck, null, `seed ${seed}`);
     assert.deepEqual(report.completed.toSorted(), townQuests, `seed ${seed}`);
-    assert.ok(minutes >= ACT.minMinutes && minutes <= ACT.maxMinutes, `seed ${seed} took ${minutes.toFixed(1)} minutes`);
+    assert.ok(report.seconds >= ACT.minSeconds && report.seconds <= ACT.maxSeconds, `seed ${seed} took ${report.seconds.toFixed(1)} seconds`);
     assert.ok(world.player.level >= ACT.minLevel && world.player.level <= ACT.maxLevel, `seed ${seed} ended at level ${world.player.level}`);
     assert.ok(report.deaths <= ACT.maxDeaths, `seed ${seed} died ${report.deaths} times`);
     assert.deepEqual(world.visited.toSorted(), needed, `seed ${seed}`);
@@ -43,23 +41,24 @@ void test('the bot plays the whole act from a fresh save: every quest, in the ti
 void test('the bot walks, talks and travels between zones', (): void => {
   const world: World = finishQuests(createWorld(content, { seed: 12, save: null }));
   const bot: Bot = createBot(world);
-  assert.equal(botWalkTo(bot, 'stillhold', { x: 30, z: 20 }, 0.6), true);
-  assert.equal(botTalk(bot, 'maren'), true);
+  assert.deepEqual(botRoute(world, 'waystation')?.map((exit): string => exit.id), ['east']);
+  assert.equal(botRoute(world, 'nowhere'), null);
+  assert.equal(botTravelTo(bot, 'waystation'), true);
+  assert.equal(world.zone.id, 'waystation');
+  assert.equal(botWalkTo(bot, 'waystation', { x: 40, z: 26 }, 0.6), true);
+  assert.equal(botTalk(bot, 'road_warden'), true);
   assert.equal(world.dialogue, null);
   assert.equal(botTalk(bot, 'nobody'), false);
-  assert.deepEqual(botRoute(world, 'drowned_bastion')?.map((exit): string => exit.id), ['bastion_stair']);
-  assert.equal(botRoute(world, 'nowhere'), null);
-  assert.equal(botTravelTo(bot, 'drowned_bastion'), true);
-  assert.equal(world.zone.id, 'drowned_bastion');
-  assert.equal(botTravelTo(bot, 'stillhold'), true);
-  assert.equal(world.zone.id, 'stillhold');
+  assert.deepEqual(botRoute(world, 'shallows')?.map((exit): string => exit.id), ['west_gate']);
+  assert.equal(botTravelTo(bot, 'shallows'), true);
+  assert.equal(world.zone.id, 'shallows');
 });
 
 void test('the bot will not route through an exit that is still locked', (): void => {
   const world: World = createWorld(content, { seed: 13, save: null });
-  assert.equal(botRoute(world, 'drowned_bastion'), null);
-  assert.equal(botTravelTo(createBot(world), 'drowned_bastion'), false);
-  assert.equal(world.zone.id, 'stillhold');
+  assert.equal(botRoute(world, 'between'), null);
+  assert.equal(botTravelTo(createBot(world), 'between'), false);
+  assert.equal(world.zone.id, 'shallows');
 });
 
 void test('the bot reads a live mark on the ground and the landing spot of a leap as danger', (): void => {

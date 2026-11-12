@@ -67,7 +67,7 @@
   "packs": [],
   "surge": null,
   "exits": [
-    {"id": "into_stillhold", "x": 8, "z": 8, "radius": 2.6, "to": "stillhold", "toExit": "fallstone", "arrival": {"x": 80, "z": 80}, "requires": [{"type": "flag", "flag": "opening", "is": "read"}], "lockedHint": "Only mist.", "hiddenWhenLocked": true}
+    {"id": "into_the_shallows", "x": 8, "z": 8, "radius": 2.6, "to": "shallows", "toExit": "mist", "arrival": {"x": 8, "z": 30}, "requires": [{"type": "flag", "flag": "opening", "is": "read"}], "lockedHint": "Only mist.", "hiddenWhenLocked": true}
   ],
   "checkpoints": [],
   "waypoint": null,
@@ -94,7 +94,7 @@
         "when": [{"type": "flag", "flag": "opening", "is": "read"}],
         "after": 0,
         "ahead": 20,
-        "find": {"type": "exit", "exit": "into_stillhold"}
+        "find": {"type": "exit", "exit": "into_the_shallows"}
       }
     ]
   },

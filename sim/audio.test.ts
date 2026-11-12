@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must, worldIn } from '../test/support.ts';
+import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
+import { must } from '../test/support.ts';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from './audio.ts';
 import type { SoundCue } from './audio.ts';
 import type { AudioDef } from './content/audio.ts';
@@ -16,7 +17,9 @@ const audio: AudioDef = loadAudio(content);
 const AWAY: Vec2 = { x: 3, z: 4 };
 
 function fresh(): World {
-  return worldIn(content, 'drowned_bastion', 1);
+  const world: World = arena(1);
+  place(world, 'bone_thrall', { x: ARENA_CENTRE.x + 6, z: ARENA_CENTRE.z });
+  return world;
 }
 
 function skill(id: string): SkillDef {
@@ -147,7 +150,7 @@ void test('walking through a real world step produces footstep cues', (): void =
   world.monsters = [];
   const cues: SoundCue[] = [];
   for (let step: number = 0; step < 90; step += 1) {
-    const events: readonly WorldEvent[] = stepWorld(world, step === 0 ? [{ type: 'move', held: false, dest: { x: 28, z: 25 } }] : [], 1 / 60);
+    const events: readonly WorldEvent[] = stepWorld(world, step === 0 ? [{ type: 'move', held: false, dest: { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 8 } }] : [], 1 / 60);
     for (const event of events) if (event.type === 'hero_step') cues.push(...cuesForEvent(audio, world, event));
   }
   assert.ok(cues.length >= 2);

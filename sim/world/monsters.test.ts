@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import type { MotionSample, TestScene } from '../../test/motion-support.ts';
 import { MOTION_DT, motionProblems, placedProp, sampleOf, sceneZone } from '../../test/motion-support.ts';
 import { ARENA_CENTRE, arena, place } from '../../test/arena-support.ts';
-import { must, worldIn, zoneOf } from '../../test/support.ts';
+import { SCENE_BASE } from '../../test/road-support.ts';
+import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -15,7 +16,7 @@ import type { Command, MonsterState, World } from './types.ts';
 import { enterZone } from './zones.ts';
 
 const content: Content = loadContent();
-const base: ZoneDef = zoneOf(content, 'drowned_bastion');
+const base: ZoneDef = SCENE_BASE;
 
 const LIMITS = {
   turnRate: 12,
@@ -86,7 +87,7 @@ function spawn(world: World, kind: string, at: Vec2): MonsterState {
 }
 
 function build(scene: Scene, kind: string): World {
-  const world: World = worldIn(content, base.id, 7);
+  const world: World = worldIn(content, content.world.start, 7);
   enterZone(world, sceneZone(base, `test_${scene.name}`, scene), { type: 'start' });
   world.events = [];
   world.monsters = [];
@@ -144,7 +145,7 @@ for (const scene of SCENES) {
 }
 
 void test('a caster backed against a wall stops instead of running in place', (): void => {
-  const world: World = worldIn(content, base.id, 3);
+  const world: World = worldIn(content, content.world.start, 3);
   enterZone(world, sceneZone(base, 'test_blocked', { tiles: OPEN, props: [], start: { x: 4, z: 14 } }), { type: 'start' });
   world.monsters = [];
   const caster: MonsterState = spawn(world, 'hex_caller', { x: 1.2, z: 14 });
@@ -161,7 +162,7 @@ void test('a caster backed against a wall stops instead of running in place', ()
 });
 
 void test('a monster pinned against a prop stops its run within a tenth of a second', (): void => {
-  const world: World = worldIn(content, base.id, 4);
+  const world: World = worldIn(content, content.world.start, 4);
   enterZone(world, sceneZone(base, 'test_pinned', { tiles: OPEN, props: [placedProp('mossy_pillar', 14, 14)], start: { x: 14, z: 3 } }), { type: 'start' });
   world.monsters = [];
   const thrall: MonsterState = spawn(world, 'bone_thrall', { x: 14, z: 16.2 });
