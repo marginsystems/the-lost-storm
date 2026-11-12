@@ -98,9 +98,9 @@
 }
 
 .title-card .name-step button.name-step-choose {
-  height: 28px;
+  height: 24px;
   margin: 0;
-  padding: 0 10px;
+  padding: 0 4px;
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 400;
@@ -109,15 +109,15 @@
   border: none;
   border-radius: 2px;
   background: transparent;
-  transition:
-    color var(--spring-snappy-ms) var(--spring-snappy),
-    background-color var(--spring-snappy-ms) var(--spring-snappy);
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .title-card .name-step button.name-step-choose:not(:disabled):hover,
-.title-card .name-step button.name-step-choose:focus-visible {
-  color: #f4ecdc;
-  background: rgba(255, 255, 255, 0.04);
+.title-card .name-step button.name-step-choose:focus-visible,
+.title-card .name-step button.name-step-choose:not(:disabled):active {
+  color: rgba(244, 236, 220, 0.86);
+  background: transparent;
+  transform: none;
 }
 
 @keyframes name-step-tick {
