@@ -14,7 +14,7 @@ interface IdentityApi {
 }
 
 export const GOOGLE_IDENTITY: { readonly script: string; readonly attempts: number; readonly retryMs: number; readonly buttonWidth: number; readonly locale: string } = {
-  script: 'https://accounts.google.com/gsi/client',
+  script: 'https://accounts.google.com/gsi/client?hl=en',
   attempts: 4,
   retryMs: 1500,
   buttonWidth: 220,
@@ -51,6 +51,7 @@ export function readIdentityApi(globals: unknown): GoogleIdentity | null {
           if (credential !== null) options.onCredential(credential);
         },
       });
+      mount.replaceChildren();
       api.renderButton(mount, { type: 'standard', theme: 'filled_black', size: 'medium', shape: 'rectangular', text: 'signin_with', logo_alignment: 'left', locale: GOOGLE_IDENTITY.locale, width: GOOGLE_IDENTITY.buttonWidth });
     },
   };

@@ -108,6 +108,7 @@ function startTitleAccount(account: AccountService, setBusy: (busy: boolean) => 
   const flow: AccountFlow = createAccountFlow({
     account,
     view,
+    timers: createBrowserTimers(),
     setBusy,
     reload: (): void => {
       window.location.reload();

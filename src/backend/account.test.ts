@@ -62,7 +62,7 @@ void test('a guest on a server that offers Google gets the client id and a nonce
 void test('nothing is offered without a stored account, on a server without sign-in, or when the server is unreachable', async (): Promise<void> => {
   const empty: Harness = createHarness();
   empty.server.offerGoogle(CLIENT_ID);
-  assert.deepEqual(await serviceFor(empty).load(), { kind: 'hidden' });
+  assert.deepEqual(await serviceFor(empty).load(), { kind: 'unreachable' });
   assert.equal(empty.server.requests.length, 0);
 
   const plain: Harness = createHarness();
@@ -72,13 +72,13 @@ void test('nothing is offered without a stored account, on a server without sign
 
   const { harness, service } = await browser();
   harness.server.goDown();
-  assert.deepEqual(await service.load(), { kind: 'hidden' });
+  assert.deepEqual(await service.load(), { kind: 'unreachable' });
 });
 
 void test('a record for another server is never used', async (): Promise<void> => {
   const { harness } = await browser();
   const before: number = harness.server.requests.length;
-  assert.deepEqual(await serviceFor(harness, 'http://localhost:9999').load(), { kind: 'hidden' });
+  assert.deepEqual(await serviceFor(harness, 'http://localhost:9999').load(), { kind: 'unreachable' });
   assert.equal(harness.server.requests.length, before);
 });
 
@@ -186,6 +186,15 @@ void test('a sign-in whose answer never arrives still signs this browser in, bec
   const reloaded: SaveData | null = await harness.open().load();
   assert.equal(reloaded?.level, 4);
   assert.equal(harness.server.accounts.length, 1);
+});
+
+void test('a sign-in whose answer is lost while the server stays out of reach is a failure that is asked about again', async (): Promise<void> => {
+  const { harness, service } = await browser();
+  const state: AccountState = await service.load();
+  harness.server.loseNextAnswer('POST', '/v1/auth/google');
+  harness.server.plan(503, {}, 'GET');
+  assert.deepEqual(await service.signIn(credential(state, 'ada')), { kind: 'failed', state: { kind: 'unreachable' } });
+  assert.deepEqual(await service.load(), { kind: 'signed-in', name: 'Ada' });
 });
 
 void test('a lost answer for a sign-in to another account leaves this browser a guest with a fresh nonce', async (): Promise<void> => {

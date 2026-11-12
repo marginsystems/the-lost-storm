@@ -278,7 +278,9 @@ body {
 }
 
 .title-card button.title-quiet[hidden] {
-  display: none;
+  display: block;
+  visibility: hidden;
+  opacity: 0;
 }
 
 .title-card button.title-quiet:hover {
