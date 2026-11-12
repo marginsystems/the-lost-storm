@@ -98,7 +98,7 @@ export const LOBBY_POSE: readonly PoseTurn[] = [
 
 export const LOBBY_FRAMING = {
   wide: { across: 0.5, down: 0, zoom: 1 },
-  tall: { across: 0.5, down: 0.2, zoom: 0.78 },
+  tall: { across: 0.5, down: 0.2, zoom: 0.68 },
   tallBelow: 0.8,
 } as const;
 
