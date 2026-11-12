@@ -150,6 +150,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   const camera: PerspectiveCamera = new PerspectiveCamera(30, 1, 1, 220);
   const heroAt: Vector2 = new Vector2();
   const drawing: Vector2 = new Vector2();
+  let drawnAt: number | null = null;
 
   const sky: HemisphereLight = new HemisphereLight(0xffffff, 0x000000, 0);
   scene.add(sky);
@@ -294,7 +295,9 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
     },
     render(): void {
       renderer.getDrawingBufferSize(drawing);
-      aimCutaway(camera, heroAt.x, heroAt.y, drawing.x, drawing.y);
+      const now: number = performance.now();
+      aimCutaway(camera, heroAt.x, heroAt.y, drawing.x, drawing.y, drawnAt === null ? 0 : (now - drawnAt) / 1000);
+      drawnAt = now;
       if (composer === null) renderer.render(scene, camera);
       else composer.render();
     },

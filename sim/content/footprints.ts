@@ -61,7 +61,7 @@ export function withFootprints(props: ReadonlyMap<string, PropDef>, footprints: 
     const model: ModelFootprint | undefined = footprints.get(prop.model);
     const solid: boolean = model !== undefined && (prop.solid ?? solidByShape(prop.scale, model));
     const outlines: readonly Outline[] = model === undefined || !solid ? [] : model.outlines.map((outline: Outline): Outline => outline.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: point.x * prop.scale, z: point.z * prop.scale })));
-    made.set(id, { ...prop, footprints: outlines });
+    made.set(id, { ...prop, footprints: outlines, height: model === undefined ? 0 : model.height * prop.scale });
   }
   return made;
 }
