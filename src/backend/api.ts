@@ -74,6 +74,37 @@ export type GuestResult = { readonly kind: 'ok'; readonly account: GuestAccount 
 export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | Failure;
 export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy } | { readonly kind: 'conflict'; readonly current: CloudState } | Failure;
 
+export interface BoardRow {
+  readonly rank: number;
+  readonly name: string;
+  readonly level: number;
+  readonly furthest: string;
+  readonly online: boolean;
+}
+
+export interface YourRow extends BoardRow {
+  readonly chosen: boolean;
+}
+
+export interface LevelUpNote {
+  readonly name: string;
+  readonly level: number;
+  readonly minutesAgo: number;
+}
+
+export interface Leaderboard {
+  readonly top: readonly BoardRow[];
+  readonly you: YourRow | null;
+  readonly online: number;
+  readonly characters: number;
+  readonly levelUps: readonly LevelUpNote[];
+}
+
+export type NameRefusal = 'name_length' | 'name_characters' | 'name_blocked' | 'name_taken';
+
+export type LeaderboardResult = { readonly kind: 'ok'; readonly board: Leaderboard } | Failure;
+export type NameResult = { readonly kind: 'ok'; readonly name: string } | { readonly kind: 'invalid'; readonly reason: NameRefusal } | { readonly kind: 'limited' } | Failure;
+
 export interface Api {
   createGuest(signal: AbortSignal): Promise<GuestResult>;
   readSave(token: string, signal: AbortSignal): Promise<ReadResult>;
@@ -87,7 +118,7 @@ export interface Api {
   emailVerify(token: string, email: string, code: string, signal: AbortSignal): Promise<EmailVerifyAnswer>;
 }
 
-interface Answer {
+export interface Answer {
   readonly status: number;
   readonly retryAfter: string | null;
   readonly body: unknown;
@@ -193,7 +224,7 @@ export function readSession(value: unknown): Session | null {
   return { accountId, token, outcome, name };
 }
 
-async function exchange(fetchFn: FetchFn, url: string, init: RequestInit): Promise<Answer | null> {
+export async function exchange(fetchFn: FetchFn, url: string, init: RequestInit): Promise<Answer | null> {
   try {
     const response: Response = await fetchFn(url, init);
     const raw: string = await response.text();
@@ -209,7 +240,7 @@ async function exchange(fetchFn: FetchFn, url: string, init: RequestInit): Promi
   }
 }
 
-function failureOf(answer: Answer | null): Failure {
+export function failureOf(answer: Answer | null): Failure {
   if (answer === null) return { kind: 'retry', afterMs: null };
   if (answer.status === 401) return { kind: 'unauthorized' };
   if (answer.status === 429) return { kind: 'retry', afterMs: retryAfterMs(answer.retryAfter) };
@@ -217,11 +248,11 @@ function failureOf(answer: Answer | null): Failure {
   return { kind: 'refused', status: answer.status };
 }
 
-function succeeded(answer: Answer | null): answer is Answer {
+export function succeeded(answer: Answer | null): answer is Answer {
   return answer !== null && answer.status >= 200 && answer.status < 300;
 }
 
-function headers(token: string): Record<string, string> {
+export function headers(token: string): Record<string, string> {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
