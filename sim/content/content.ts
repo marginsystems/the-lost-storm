@@ -19,14 +19,13 @@ import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
 import world from '../../data/world.json' with { type: 'json' };
 import between from '../../data/zones/between.json' with { type: 'json' };
-import shallows from '../../data/zones/shallows.json' with { type: 'json' };
-import waystation from '../../data/zones/waystation.json' with { type: 'json' };
+import hallOfTime from '../../data/zones/hall_of_time.json' with { type: 'json' };
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [between, shallows, waystation], world, npcs, lines, quests, player, flasks, trade, books, moments };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [between, hallOfTime], world, npcs, lines, quests, player, flasks, trade, books, moments };
 
 export function loadContent(): Content {
   const content: Content = parseContent(RAW_CONTENT);

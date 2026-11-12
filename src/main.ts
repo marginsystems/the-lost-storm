@@ -92,6 +92,8 @@ import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
 import type { Weather } from './render/weather.ts';
 import { createWeather } from './render/weather.ts';
+import type { Rain } from './render/rain.ts';
+import { createRain } from './render/rain.ts';
 import type { ZoneMarkers } from './render/zone-markers.ts';
 import { createZoneMarkers } from './render/zone-markers.ts';
 import { dressed } from './render/surfaces.ts';
@@ -119,7 +121,7 @@ import type { StatusLine } from './title-status.ts';
 import { changesSave } from './save-events.ts';
 import type { ZoneTransition } from './transition.ts';
 import type { VoicePlayer } from './voice.ts';
-import { createZoneTransition } from './transition.ts';
+import { createZoneTransition, leavingColour } from './transition.ts';
 import type { FigureGauge } from './render/figure-gauge.ts';
 import { createFigureGauge } from './render/figure-gauge.ts';
 
@@ -334,6 +336,12 @@ async function start(): Promise<void> {
   };
   const particles: ParticleSystem = createParticles(stage.scene);
   const weather: Weather = createWeather();
+  const rain: Rain = createRain(stage.scene, mobile.quality.tier.rainDrops);
+  const applyWeather = (zone: World['zone']): void => {
+    weather.setLightning(zone.weather.lightning);
+    rain.setDensity(zone.weather.rain);
+  };
+  applyWeather(world.zone);
   const effects: Effects = createEffects(stage.scene, particles, camera, (power: number): void => weather.strike(power));
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene);
@@ -513,6 +521,7 @@ async function start(): Promise<void> {
     preloadNearZones();
     markers = createZoneMarkers(stage.scene, world.zone);
     stage.setAmbience(world.zone.ambience);
+    applyWeather(world.zone);
     zoneView.setLightBudget(gameSettings.preset().lights);
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
@@ -564,7 +573,7 @@ async function start(): Promise<void> {
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
-      transition.begin((): Promise<void> => showZone(held));
+      transition.begin((): Promise<void> => showZone(held), leavingColour(content.zones, held));
     } else {
       present(events);
     }
@@ -584,6 +593,7 @@ async function start(): Promise<void> {
     audio.update(dt);
     particles.update(simVisualDt);
     weather.update(simVisualDt);
+    rain.update(simVisualDt, world.player.pos.x, world.player.pos.z, weather.flash);
     zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.height(actors.hero(), now / 1000) });
     if (zoneView.lightsVersion !== torchVersion) {
       torchVersion = zoneView.lightsVersion;

@@ -2,22 +2,20 @@
 
 > **SPOILER WARNING.** This file gives away the shape of the first act. If you mean to play the game first, stop reading here.
 
-The act is a journey east, from the In-Between to the gate of the Hall of Hours. Names marked *working* are placeholders until the owner names them.
+The act opens in the In-Between and the Hall of Time; the road beyond is still being built. Names marked *working* are placeholders until the owner names them.
 
 ## Shape
 
 ```
-The In-Between --> The Shallows --> The Waystation (hub) --> The Drowned Road --> The Standing Field --> The Unfinished camp --> The Hall of Hours gate
-                                                                 |                       |                       |
-                                                          flooded chapel           edge of the field      quiet way round
+The In-Between --> The Hall of Time (fire at its edge) --> later zones, after launch
 ```
 
 ## Zones
 
 | Zone | Id | Level | What it is | Rule it teaches |
 |---|---|---|---|---|
-| The Shallows | `shallows` | 1 | Pale, half-formed land. Ground fades to mist at its edges; wall fragments belong nowhere; shallow standing water. First fights, in small groups. A Warden's lantern marks the way east. | Patches of ground drift in and out (`drifts`). |
-| The Waystation (*working*) | `waystation` | 2 | A fortified crossing on the old road: fire, shelters, the Warden's stall, the stash, a waypoint. Safe. Room for the people the hero helps to turn up later (`when` on npcs and props). | Rest, trade, travel. |
+| The In-Between | `between` | 1 | White mist that thins onto a black shore under the night storm. No combat. | Look, then step into the light. |
+| The Hall of Time | `hall_of_time` | 1 | A vast open floor of black stone between crags, at night under a storm: rain, lightning, wet ground, a mist wall behind. No roaming enemies. A small fire at its edge with the Warden's stall, the stash and a waypoint. | Rest, trade, travel; the weather is zone data (`weather`). |
 | The Drowned Road | `drowned_road` | 3 | Causeway and broken bridge, reeds, sunken carts, Wardens' markers. A side path to a flooded chapel. | Deep water slows walking and dodging (surface `pace`). |
 | The Standing Field | `standing_field` | 5 | Rows of the Still, standing, in low mist. Almost silent. | Noise wakes them. |
 | The Unfinished camp | `unfinished_camp` | 7 | A village of people with no pasts. | Two ways through: fight to the far gate, or bring their leader what they want (`either` objectives). |
@@ -28,7 +26,7 @@ The In-Between --> The Shallows --> The Waystation (hub) --> The Drowned Road --
 Objective text is plain and carries no names or lore.
 
 1. `out_of_the_mist`: Leave the In-Between.
-2. `to_the_waystation`: Reach the waystation.
+2. `to_the_waystation`: Reach the fire.
 3. Cross the Drowned Road.
 4. Cross the Standing Field.
 5. Get through the camp (either path).
@@ -36,4 +34,4 @@ Objective text is plain and carries no names or lore.
 
 ## Old saves
 
-The zones of the earlier first act are listed in `world.retired`. A save standing in one of them loads at the waystation with the character intact, and its story is marked `road: rerouted` so the first quest completes there.
+The zones of the earlier first act are listed in `world.retired`. A save standing in one of them, the Shallows and the waystation included, loads at the fire in the Hall of Time with the character intact, and its story is marked `road: rerouted` so the first quest completes there.

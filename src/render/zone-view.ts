@@ -7,6 +7,8 @@ import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
 import { forgetModel, loadModel } from './character-loader.ts';
 import { buildGround } from './ground.ts';
+import type { MistWallView } from './mist-wall.ts';
+import { buildMistWall } from './mist-wall.ts';
 import { buildVoidView } from './void-view.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import type { QualityName } from '../mobile/quality.ts';
@@ -237,6 +239,8 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   abyss.position.set(width / 2, ZONE_VIEW.abyssDepth, depth / 2);
   abyss.receiveShadow = true;
   group.add(abyss);
+  const mistWall: MistWallView | null = zone.weather.mistWall === null ? null : buildMistWall(zone.weather.mistWall);
+  if (mistWall !== null) group.add(mistWall.group);
   scene.add(group);
 
   return {
@@ -261,9 +265,11 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       }
       abyss.geometry.dispose();
       if (abyss.material instanceof MeshStandardMaterial) abyss.material.dispose();
+      mistWall?.dispose();
     },
     update(time: number, dt: number, world: World): void {
       ground.update(world.time);
+      mistWall?.update(time);
       for (const conditional of conditionals) {
         const wanted: boolean = allHold(world, conditional.placed.when);
         if (conditional.on === null) conditional.shown = wanted ? 1 : 0;

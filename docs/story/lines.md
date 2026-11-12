@@ -15,7 +15,7 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 
 ## Warden Trader (`warden_trader`)
 
-The trader keeps the stall at the waystation.
+The trader keeps the stall by the fire at the edge of the Hall of Time.
 
 | Id | Line | When |
 |---|---|---|

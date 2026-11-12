@@ -34,7 +34,7 @@ void test('combat problems name bad bursts, bad summons, unknown pack mods, misp
   assert.deepEqual(combatProblems(ARENA_CONTENT), []);
   const thrall: MonsterDef = must(ARENA_CONTENT.monsters.get('mended'), 'thrall');
   const bolt: SkillDef = must(ARENA_CONTENT.skills.get('mender_needle'), 'bolt');
-  const zone: ZoneDef = must(ARENA_CONTENT.zones.get('shallows'), 'zone');
+  const zone: ZoneDef = must(ARENA_CONTENT.zones.get('hall_of_time'), 'zone');
   const broken: Content = {
     ...ARENA_CONTENT,
     skills: new Map<string, SkillDef>([...ARENA_CONTENT.skills, ['bad_leap', { ...bolt, id: 'bad_leap', leap: { distance: 4, stopShort: 0, airTime: 9 } }]]),

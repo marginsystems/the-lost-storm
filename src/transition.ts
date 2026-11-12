@@ -3,9 +3,20 @@ export const TRANSITION = {
   activeClass: 'on',
 } as const;
 
+import type { ZoneDef } from '../sim/content/types.ts';
+import type { WorldEvent } from '../sim/world/types.ts';
+
 export interface ZoneTransition {
   readonly blocking: boolean;
-  begin(swap: () => Promise<void>): void;
+  begin(swap: () => Promise<void>, colour: string | null): void;
+}
+
+export function leavingColour(zones: ReadonlyMap<string, ZoneDef>, events: readonly WorldEvent[]): string | null {
+  for (const event of events) {
+    if (event.type !== 'zone_changed') continue;
+    return zones.get(event.from)?.ambience.background ?? null;
+  }
+  return null;
 }
 
 function faded(element: HTMLElement): Promise<void> {
@@ -37,9 +48,10 @@ export function createZoneTransition(element: HTMLElement, onError: (error: unkn
     get blocking(): boolean {
       return blocking;
     },
-    begin(swap: () => Promise<void>): void {
+    begin(swap: () => Promise<void>, colour: string | null): void {
       if (blocking) return;
       blocking = true;
+      element.style.background = colour ?? '';
       run(swap).catch(onError);
     },
   };

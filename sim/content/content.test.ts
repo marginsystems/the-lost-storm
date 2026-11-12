@@ -122,6 +122,15 @@ function reaches(grid: NavGrid, from: Vec2, to: Vec2): boolean {
   return last !== undefined && Math.hypot(last.x - to.x, last.z - to.z) < 0.01;
 }
 
+function reachesWithin(grid: NavGrid, from: Vec2, centre: Vec2, radius: number): boolean {
+  for (let dx: number = -radius; dx <= radius; dx += 1) {
+    for (let dz: number = -radius; dz <= radius; dz += 1) {
+      if (Math.hypot(dx, dz) <= radius && reaches(grid, from, { x: centre.x + dx, z: centre.z + dz })) return true;
+    }
+  }
+  return false;
+}
+
 void test('every zone file under data/zones is loaded under its own name', (): void => {
   const files: string[] = readdirSync('data/zones').filter((name: string): boolean => name.endsWith('.json')).map((name: string): string => name.replace('.json', ''));
   assert.deepEqual([...content.zones.keys()].toSorted(), files.toSorted());
@@ -145,7 +154,7 @@ void test('in every zone the start, packs, exits, arrival points, checkpoints an
     if (zone.waypoint !== null) assert.ok(reaches(grid, start, zone.waypoint), `${zone.id} waypoint`);
     for (const quest of content.quests.values()) {
       for (const objective of quest.objectives) {
-        if (objective.type === 'reach' && objective.zone === zone.id) assert.ok(reaches(grid, start, objective), `${quest.id}.${objective.id} place`);
+        if (objective.type === 'reach' && objective.zone === zone.id) assert.ok(reachesWithin(grid, start, objective, objective.radius), `${quest.id}.${objective.id} place`);
       }
     }
   }
@@ -343,6 +352,7 @@ void test('every objective, taken in quest order, lies in a zone the exits alrea
     quest.objectives.forEach((objective: ObjectiveDef, index: number): void => {
       const world: World = createWorld(content, { seed: 1, save: null });
       world.quests = progressAt(quest, index);
+      if (!allHold(world, quest.when)) return;
       const open: Set<string> = openZones(world);
       const places: string[] = placesOf(world, objective);
       assert.ok(places.some((zone: string): boolean => open.has(zone)), `${quest.id}.${objective.id} is in [${places.join(', ')}] but only [${[...open].join(', ')}] can be entered`);
@@ -394,16 +404,19 @@ void test('no arrival point lies inside an exit, so walking in never sends the h
   }
 });
 
-void test('the hero walks out of the In-Between into the Shallows, and on into the waystation, without clicking an exit', (): void => {
+void test('the hero walks out of the In-Between into the Hall, and on to the fire, without clicking an exit', (): void => {
   const world: World = createWorld(content, { seed: 5, save: null });
   enterZone(world, zoneOf(content, 'between'), { type: 'start' });
   world.flags['opening'] = 'read';
-  const walkTo = (zoneId: string, exitId: string): void => {
-    const exit: ZoneExit = must(zoneOf(content, zoneId).exits.find((entry: ZoneExit): boolean => entry.id === exitId), exitId);
+  const fire = must(zoneOf(content, 'hall_of_time').npcs.find((placed): boolean => placed.npc === 'warden_guide'), 'guide');
+  const walkTo = (zoneId: string, goal: Vec2, done: () => boolean): void => {
     world.monsters = [];
-    for (let step: number = 0; step < 900 && world.zone.id === zoneId; step += 1) stepWorld(world, step % 30 === 0 ? [{ type: 'move', held: false, dest: { x: exit.x, z: exit.z } }] : [], 1 / 30);
-    assert.equal(world.zone.id, exit.to);
+    for (let step: number = 0; step < 1800 && world.zone.id === zoneId && !done(); step += 1) stepWorld(world, step % 30 === 0 ? [{ type: 'move', held: false, dest: goal }] : [], 1 / 30);
   };
-  walkTo('between', 'into_the_shallows');
-  walkTo('shallows', 'east');
+  const exit: ZoneExit = must(zoneOf(content, 'between').exits.find((entry: ZoneExit): boolean => entry.id === 'into_the_hall'), 'into_the_hall');
+  walkTo('between', exit, (): boolean => world.zone.id !== 'between');
+  assert.equal(world.zone.id, 'hall_of_time');
+  walkTo('hall_of_time', fire, (): boolean => world.flags['alpha_slice_complete'] === 'reached');
+  assert.equal(world.zone.id, 'hall_of_time');
+  assert.equal(world.flags['alpha_slice_complete'], 'reached');
 });

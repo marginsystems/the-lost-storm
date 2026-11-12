@@ -122,5 +122,10 @@
   {"id": "tree_dead_small", "model": "models/world/dead_tree_small.glb", "scale": 1, "blockRadius": 0.4, "light": null, "surfaces": {"bark": "bark"}},
   {"id": "warden_stone", "model": "models/world/warden_stone.glb", "scale": 1, "blockRadius": 0.45, "light": null, "surfaces": {"stone": "drystone", "iron": "iron"}},
   {"id": "warden_stone_lit", "model": "models/world/warden_stone.glb", "scale": 1, "blockRadius": 0.45, "light": {"color": "#ffc070", "intensity": 20, "distance": 14, "height": 1.4}, "surfaces": {"stone": "drystone", "iron": "iron"}},
-  {"id": "wide_stair", "model": "models/world/wide_stair.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "ashlar"}}
+  {"id": "wide_stair", "model": "models/world/wide_stair.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "ashlar"}},
+  {"id": "crag_a", "model": "models/props/rock_set_1.glb", "scale": 2.4, "blockRadius": 2.2, "light": null, "surfaces": {}},
+  {"id": "crag_b", "model": "models/props/rock_set_2.glb", "scale": 2.8, "blockRadius": 3.0, "light": null, "surfaces": {}},
+  {"id": "crag_spire", "model": "models/props/rock_set_4.glb", "scale": 3.0, "blockRadius": 2.4, "light": null, "surfaces": {}},
+  {"id": "crag_low", "model": "models/props/rock_set_5.glb", "scale": 2.0, "blockRadius": 1.5, "light": null, "surfaces": {}},
+  {"id": "campfire", "model": "models/props/fire_pit.glb", "scale": 1.6, "blockRadius": 1.2, "light": {"color": "#ff8a3a", "intensity": 80, "distance": 28, "height": 1.2}, "surfaces": {}}
 ]

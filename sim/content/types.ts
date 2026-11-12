@@ -5,7 +5,7 @@ import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillSha
 import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { BookDef, StoryFlags, ZoneHud, ZoneVoid } from './story-types.ts';
-import type { ActEnd, RetiredZones, ZoneDrift, ZoneTrigger } from './road-types.ts';
+import type { ActEnd, RetiredZones, ZoneDrift, ZoneTrigger, ZoneWeather } from './road-types.ts';
 import type { MomentField, MomentLibrary } from './moment-types.ts';
 
 export const STAT_IDS = [
@@ -460,6 +460,7 @@ export interface ZoneDef {
   readonly drifts: readonly ZoneDrift[];
   readonly triggers: readonly ZoneTrigger[];
   readonly moments: MomentField | null;
+  readonly weather: ZoneWeather;
 }
 
 export interface LineDef {

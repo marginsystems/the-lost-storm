@@ -10,11 +10,7 @@ import { createWorld } from './create.ts';
 import type { World } from './types.ts';
 
 const content: Content = loadContent();
-const act: ActDef = must(actOf(content, 'waystation'), 'act');
-
-function road(from: string, to: string): AtlasRoad {
-  return must(act.atlas.roads.find((entry: AtlasRoad): boolean => (entry.from === from && entry.to === to) || (entry.from === to && entry.to === from)), `road ${from} ${to}`);
-}
+const act: ActDef = must(actOf(content, 'hall_of_time'), 'act');
 
 function exitTo(to: string, requires: ZoneExit['requires'], hidden: boolean): ZoneExit {
   return { id: `to_${to}`, x: 4, z: 4, radius: 1.6, to, toExit: 'back', arrival: { x: 8, z: 8 }, requires, lockedHint: 'Barred.', hiddenWhenLocked: hidden };
@@ -47,9 +43,8 @@ void test('a new hero sees the town lit, open neighbours dim, barred ones locked
   assert.equal(roadState(world, mapRoad('hub', 'keep')), 'locked');
   assert.equal(roadState(world, mapRoad('vale', 'peak')), 'hidden');
   const shipped: World = createWorld(content, { seed: 1, save: null });
-  assert.equal(placeState(shipped, 'shallows'), 'here');
-  assert.equal(placeState(shipped, 'waystation'), 'reachable');
-  assert.equal(roadState(shipped, road('shallows', 'waystation')), 'open');
+  assert.equal(placeState(shipped, 'hall_of_time'), 'here');
+  assert.deepEqual(act.atlas.roads, []);
 });
 
 void test('quests open barred roads and walking a road lights the far end', (): void => {
@@ -66,8 +61,8 @@ void test('quests open barred roads and walking a road lights the far end', (): 
 });
 
 void test('a zone is marked by its kind, and a zone with a boss pack is a boss zone', (): void => {
-  assert.equal(zoneMark(content, zoneOf(content, 'waystation')), 'town');
-  assert.equal(zoneMark(content, zoneOf(content, 'shallows')), 'wild');
+  assert.equal(zoneMark(content, zoneOf(content, 'hall_of_time')), 'town');
+  assert.equal(zoneMark(staged, vale), 'wild');
   const lair: ZoneDef = roadZone({ id: 'lair', packs: [{ x: 8, z: 8, members: [{ monster: 'unfinished_colossus', count: 1, mods: [] }], when: [] }] });
   const marks: string[] = [...staged.zones.values(), lair].map((zone): string => zoneMark(staged, zone));
   assert.ok(marks.includes('boss'));
@@ -76,17 +71,18 @@ void test('a zone is marked by its kind, and a zone with a boss pack is a boss z
 
 void test('a zone belongs to the act that places it', (): void => {
   for (const zone of [...content.zones.values()].filter((def): boolean => def.kind !== 'void').map((def): string => def.id)) assert.ok(must(actOf(content, zone), 'act').atlas.places.some((place: MapPlace): boolean => place.zone === zone), zone);
-  const without = (zone: string): ActDef => ({ ...act, atlas: { ...act.atlas, places: act.atlas.places.filter((place: MapPlace): boolean => place.zone !== zone) } });
-  const second: ActDef = { ...act, id: 'act_2', atlas: { ...act.atlas, places: act.atlas.places.filter((place: MapPlace): boolean => place.zone === 'shallows') } };
-  const split: Content = { ...content, world: { ...content.world, acts: [without('shallows'), second] } };
-  assert.equal(must(actOf(split, 'shallows'), 'act').id, 'act_2');
-  assert.equal(must(actOf(split, 'waystation'), 'act').id, 'act_1');
+  const first: ActDef = { ...act, atlas };
+  const without = (zone: string): ActDef => ({ ...first, atlas: { ...atlas, places: atlas.places.filter((place: MapPlace): boolean => place.zone !== zone) } });
+  const second: ActDef = { ...first, id: 'act_2', atlas: { ...atlas, places: atlas.places.filter((place: MapPlace): boolean => place.zone === 'vale') } };
+  const split: Content = { ...staged, world: { ...staged.world, acts: [without('vale'), second] } };
+  assert.equal(must(actOf(split, 'vale'), 'act').id, 'act_2');
+  assert.equal(must(actOf(split, 'hub'), 'act').id, 'act_1');
 });
 
 void test('a zone no act places falls back to the first act', (): void => {
-  const trimmed: ActDef = { ...act, atlas: { ...act.atlas, places: act.atlas.places.filter((place: MapPlace): boolean => place.zone !== 'waystation') } };
+  const trimmed: ActDef = { ...act, atlas: { ...act.atlas, places: act.atlas.places.filter((place: MapPlace): boolean => place.zone !== 'hall_of_time') } };
   const lost: Content = { ...content, world: { ...content.world, acts: [trimmed] } };
-  const found: ActDef = must(actOf(lost, 'waystation'), 'act');
+  const found: ActDef = must(actOf(lost, 'hall_of_time'), 'act');
   assert.equal(found, lost.world.acts[0]);
-  assert.ok(!found.atlas.places.some((place: MapPlace): boolean => place.zone === 'waystation'));
+  assert.ok(!found.atlas.places.some((place: MapPlace): boolean => place.zone === 'hall_of_time'));
 });

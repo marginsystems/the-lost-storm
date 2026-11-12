@@ -9,7 +9,7 @@ import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
 const content: Content = loadContent();
-const AMBIENT_ZONE: string = 'waystation';
+const AMBIENT_ZONE: string = 'hall_of_time';
 const known: KnownIds = knownIdsOf(content);
 
 function variant(change: (draft: Record<string, unknown>) => void): unknown {

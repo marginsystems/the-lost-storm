@@ -32,3 +32,22 @@ export interface RetiredZones {
   readonly to: string;
   readonly flags: StoryFlags;
 }
+
+export interface ZoneLightning {
+  readonly first: number;
+  readonly min: number;
+  readonly max: number;
+}
+
+export interface ZoneMistWall {
+  readonly from: { readonly x: number; readonly z: number };
+  readonly to: { readonly x: number; readonly z: number };
+  readonly height: number;
+}
+
+export interface ZoneWeather {
+  readonly lightning: ZoneLightning | null;
+  readonly rain: number;
+  readonly wet: number;
+  readonly mistWall: ZoneMistWall | null;
+}

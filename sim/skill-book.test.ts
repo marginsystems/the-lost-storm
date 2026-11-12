@@ -100,7 +100,7 @@ void test('a learned skill goes home when its slot is free and to the first free
 });
 
 void test('the slot command places only learned skills, and the bar and what was learned survive a save', (): void => {
-  const world: World = worldIn(content, 'waystation', 3);
+  const world: World = worldIn(content, 'hall_of_time', 3);
   finish(world, 'out_of_the_mist');
   finish(world, 'the_first_taker');
   const swap: Command[] = [{ type: 'slot', slot: 4, skill: 'thunderclap' }];

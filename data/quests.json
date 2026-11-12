@@ -18,9 +18,9 @@
         "text": "Leave the In-Between",
         "paths": [
           {
-            "id": "shallows",
+            "id": "hall",
             "type": "reach",
-            "zone": "shallows",
+            "zone": "hall_of_time",
             "x": 14,
             "z": 30,
             "radius": 6,
@@ -29,11 +29,11 @@
           {
             "id": "rerouted",
             "type": "reach",
-            "zone": "waystation",
-            "x": 34,
-            "z": 26,
+            "zone": "hall_of_time",
+            "x": 70,
+            "z": 31,
             "radius": 8,
-            "text": "Reach the waystation",
+            "text": "Reach the fire",
             "when": [
               {
                 "type": "flag",
@@ -51,7 +51,7 @@
   },
   {
     "id": "to_the_waystation",
-    "name": "The Waystation",
+    "name": "Find shelter",
     "requires": [
       "out_of_the_mist"
     ],
@@ -59,11 +59,11 @@
       {
         "id": "arrive",
         "type": "reach",
-        "zone": "waystation",
-        "x": 34,
-        "z": 26,
+        "zone": "hall_of_time",
+        "x": 70,
+        "z": 31,
         "radius": 8,
-        "text": "Reach the waystation",
+        "text": "Reach the fire",
         "sets": {
           "alpha_slice_complete": "reached"
         }
@@ -72,16 +72,23 @@
   },
   {
     "id": "the_first_taker",
-    "name": "A Thing That Takes",
+    "name": "A Moment Cleared",
     "requires": [
       "out_of_the_mist"
+    ],
+    "when": [
+      {
+        "type": "flag",
+        "flag": "first_moment",
+        "is": "cleared"
+      }
     ],
     "objectives": [
       {
         "id": "put_down",
         "type": "defeat",
         "monster": "unfinished_taker",
-        "text": "Put down a Taker on the road",
+        "text": "Clear a moment",
         "sets": {
           "first_moment": "cleared"
         }

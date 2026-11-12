@@ -7,17 +7,17 @@ const RULES: AlphaRules = readAlphaRules({
   complete: { flag: 'alpha_slice_complete' },
   milestones: [
     { event: 'picked_journal', flag: 'first_choice', is: 'took_journal' },
-    { event: 'reached_shallows', zone: 'shallows' },
+    { event: 'reached_shallows', zone: 'hall_of_time' },
   ],
 });
 
-const CONTEXT: FeedbackContext = { zone: 'shallows', level: 3, minutes: 12, device: 'phone', build: 'abc1234' };
+const CONTEXT: FeedbackContext = { zone: 'hall_of_time', level: 3, minutes: 12, device: 'phone', build: 'abc1234' };
 
 void test('the rules file is read strictly', (): void => {
   assert.deepEqual(readAlphaRules({ complete: { act: 'act_1' }, milestones: [] }).complete, { kind: 'act', act: 'act_1' });
   assert.deepEqual(readAlphaRules({ complete: { flag: 'done' }, milestones: [] }).complete, { kind: 'flag', flag: 'done' });
   assert.deepEqual(RULES.milestones[0], { kind: 'flag', event: 'picked_journal', flag: 'first_choice', is: 'took_journal' });
-  assert.deepEqual(RULES.milestones[1], { kind: 'zone', event: 'reached_shallows', zone: 'shallows' });
+  assert.deepEqual(RULES.milestones[1], { kind: 'zone', event: 'reached_shallows', zone: 'hall_of_time' });
   assert.throws((): AlphaRules => readAlphaRules({ complete: { flag: '' }, milestones: [] }));
   assert.throws((): AlphaRules => readAlphaRules({ complete: { flag: 'x' }, milestones: [{ event: 'won', zone: 'a' }] }));
   assert.throws((): AlphaRules => readAlphaRules(null));
@@ -26,7 +26,7 @@ void test('the rules file is read strictly', (): void => {
 void test('milestones are reached from the zone, the flags and the hero being down', (): void => {
   assert.deepEqual(reachedEvents(RULES, { zone: 'between', flags: {}, alive: true }), []);
   assert.deepEqual(reachedEvents(RULES, { zone: 'between', flags: { first_choice: 'left_journal' }, alive: true }), []);
-  assert.deepEqual(reachedEvents(RULES, { zone: 'shallows', flags: { first_choice: 'took_journal' }, alive: false }), ['picked_journal', 'reached_shallows', 'died']);
+  assert.deepEqual(reachedEvents(RULES, { zone: 'hall_of_time', flags: { first_choice: 'took_journal' }, alive: false }), ['picked_journal', 'reached_shallows', 'died']);
 });
 
 void test('the end card is due once, after the slice flag is set', (): void => {

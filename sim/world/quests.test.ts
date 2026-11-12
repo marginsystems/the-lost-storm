@@ -334,12 +334,12 @@ void test('an act that ends on a quest being done reports its end when the last 
   assert.equal(ofType(events, 'act_ended').length, 1);
 });
 
-void test('the first arrival at the waystation finishes the slice and sets its flag', (): void => {
+void test('the first arrival at the fire finishes the slice and sets its flag', (): void => {
   const content: Content = loadContent();
   const outOfMist: QuestDef = must(content.quests.get('out_of_the_mist'), 'quest');
-  const world: World = worldIn(content, 'waystation', 9);
+  const world: World = worldIn(content, 'hall_of_time', 9);
   world.quests = { out_of_the_mist: outOfMist.objectives.length, to_the_waystation: 0 };
-  world.player.pos = { x: 34, z: 26 };
+  world.player.pos = { x: 70, z: 31 };
   stepWorld(world, [], DT);
   assert.equal(questState(world, 'to_the_waystation'), 'done');
   assert.equal(world.flags['alpha_slice_complete'], 'reached');

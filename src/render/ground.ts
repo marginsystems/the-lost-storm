@@ -74,11 +74,11 @@ function driftAt(zone: ZoneDef, column: number, row: number): ZoneDrift | null {
   return zone.drifts.find((drift: ZoneDrift): boolean => column >= drift.column && column < drift.column + drift.columns && row >= drift.row && row < drift.row + drift.rows) ?? null;
 }
 
-function driftGround(content: Content, drift: ZoneDrift, batches: ReadonlyMap<string, Batch>): DriftGround {
+function driftGround(content: Content, drift: ZoneDrift, batches: ReadonlyMap<string, Batch>, wet: number): DriftGround {
   const meshes: Mesh[] = [];
   const materials: MeshStandardMaterial[] = [];
   for (const [surfaceId, batch] of batches) {
-    const mesh: Mesh | null = toMesh(content, surfaceId, 'ground', batch);
+    const mesh: Mesh | null = toMesh(content, surfaceId, 'ground', batch, wet);
     if (mesh === null || !(mesh.material instanceof MeshStandardMaterial)) continue;
     const own: MeshStandardMaterial = mesh.material.clone();
     own.transparent = true;
@@ -183,7 +183,7 @@ function fringes(content: Content, zone: ZoneDef, cell: FloorCell, own: SurfaceD
   return [...found.values()];
 }
 
-function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: Batch): Mesh | null {
+function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: Batch, wet: number): Mesh | null {
   const def: SurfaceDef | undefined = content.surfaces.get(surfaceId);
   if (def === undefined || batch.indices.length === 0) return null;
   const geometry: BufferGeometry = new BufferGeometry();
@@ -192,7 +192,7 @@ function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: Bat
   geometry.setAttribute('color', new Float32BufferAttribute(batch.colors, 4));
   geometry.setAttribute('normal', new Float32BufferAttribute(batch.positions.map((_: number, index: number): number => (index % 3 === 1 ? 1 : 0)), 3));
   geometry.setIndex(batch.indices);
-  const mesh: Mesh = new Mesh(geometry, surfaceMaterial(def, use));
+  const mesh: Mesh = new Mesh(geometry, surfaceMaterial(def, use, wet));
   mesh.receiveShadow = true;
   mesh.renderOrder = use === 'overlay' ? 1 : 0;
   return mesh;
@@ -202,6 +202,7 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
   const solid: Map<string, Batch> = new Map<string, Batch>();
   const overlay: Map<string, Batch> = new Map<string, Batch>();
   const floorY: number = zone.floorHeight;
+  const zoneWet: number = zone.weather.wet;
 
   const drifting: Map<ZoneDrift, Map<string, Batch>> = new Map<ZoneDrift, Map<string, Batch>>();
   for (const cell of floorCells(zone)) {
@@ -242,14 +243,14 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
 
   const meshes: Mesh[] = [];
   for (const [surfaceId, batch] of solid) {
-    const mesh: Mesh | null = toMesh(content, surfaceId, 'ground', batch);
+    const mesh: Mesh | null = toMesh(content, surfaceId, 'ground', batch, zoneWet);
     if (mesh !== null) meshes.push(mesh);
   }
   for (const [surfaceId, batch] of overlay) {
-    const mesh: Mesh | null = toMesh(content, surfaceId, 'overlay', batch);
+    const mesh: Mesh | null = toMesh(content, surfaceId, 'overlay', batch, zoneWet);
     if (mesh !== null) meshes.push(mesh);
   }
-  const drifts: DriftGround[] = [...drifting].map(([drift, batches]: [ZoneDrift, Map<string, Batch>]): DriftGround => driftGround(content, drift, batches));
+  const drifts: DriftGround[] = [...drifting].map(([drift, batches]: [ZoneDrift, Map<string, Batch>]): DriftGround => driftGround(content, drift, batches, zoneWet));
   return {
     meshes: [...meshes, ...drifts.flatMap((entry: DriftGround): readonly Mesh[] => entry.meshes)],
     drifts,

@@ -39,6 +39,7 @@ import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
 import { actEnd, drifts, retiredZones, triggers } from './parse-road.ts';
 import { momentField } from './parse-moments.ts';
+import { zoneWeather } from './parse-weather.ts';
 
 function point(value: unknown, where: string): ZonePoint {
   const source: Fields = fields(value, where);
@@ -206,6 +207,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     drifts: drifts(source['drifts'], `${where}.drifts`),
     triggers: triggers(source['triggers'], `${where}.triggers`),
     moments: momentField(source['moments'], `${where}.moments`),
+    weather: zoneWeather(source['weather'], `${where}.weather`),
   };
 }
 

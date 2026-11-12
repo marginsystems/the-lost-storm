@@ -10,7 +10,12 @@ export const SURFACES = {
   overlayOffset: -2,
   metalFrom: 0.5,
   matteRoughness: 1,
+  wetGloss: 0.62,
 } as const;
+
+export function wetRoughness(roughness: number, wet: number): number {
+  return roughness * (1 - SURFACES.wetGloss * Math.min(1, Math.max(0, wet)));
+}
 
 export function matte(material: Material): Material {
   if (!(material instanceof MeshStandardMaterial) || material.metalness >= SURFACES.metalFrom) return material;
@@ -71,8 +76,8 @@ function loadTexture(path: string, metres: number, colour: boolean): Texture {
   return texture;
 }
 
-export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse): MeshStandardMaterial {
-  const key: string = `${def.id}:${use}`;
+export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse, wet: number = 0): MeshStandardMaterial {
+  const key: string = wet > 0 ? `${def.id}:${use}:wet${wet}` : `${def.id}:${use}`;
   const cached: Made | undefined = materials.get(key);
   if (cached !== undefined) return cached.material;
   const orm: Texture | null = def.orm === null ? null : loadTexture(def.orm, def.metres, false);
@@ -86,7 +91,7 @@ export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse): MeshStandardM
     aoMap: orm,
     roughnessMap: metal ? orm : null,
     metalnessMap: metal ? orm : null,
-    roughness: metal ? def.roughness : Math.max(def.roughness, SURFACES.matteRoughness),
+    roughness: wetRoughness(metal ? def.roughness : Math.max(def.roughness, SURFACES.matteRoughness), wet),
     metalness: metal ? def.metalness : 0,
     vertexColors: use !== 'solid',
   });

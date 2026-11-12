@@ -1,6 +1,6 @@
+import type { ZoneLightning } from '../../sim/content/road-types.ts';
+
 export const WEATHER = {
-  lightningMin: 7,
-  lightningMax: 16,
   lightningDecay: 3.2,
   flickerAt: 0.14,
   flickerPower: 0.7,
@@ -9,12 +9,14 @@ export const WEATHER = {
 export interface Weather {
   update(dt: number): void;
   strike(power: number): void;
+  setLightning(lightning: ZoneLightning | null): void;
   readonly flash: number;
 }
 
-export function createWeather(): Weather {
+export function createWeather(random: () => number = Math.random): Weather {
   let flash: number = 0;
-  let untilStrike: number = WEATHER.lightningMin;
+  let lightning: ZoneLightning | null = null;
+  let untilStrike: number = Number.POSITIVE_INFINITY;
   let untilFlicker: number = -1;
 
   return {
@@ -24,12 +26,17 @@ export function createWeather(): Weather {
     strike(power: number): void {
       flash = Math.max(flash, power);
     },
+    setLightning(next: ZoneLightning | null): void {
+      lightning = next;
+      untilStrike = next === null ? Number.POSITIVE_INFINITY : next.first;
+      untilFlicker = -1;
+    },
     update(dt: number): void {
       flash = Math.max(0, flash - WEATHER.lightningDecay * dt * Math.max(0.25, flash));
       untilStrike -= dt;
-      if (untilStrike <= 0) {
+      if (untilStrike <= 0 && lightning !== null) {
         flash = 1;
-        untilStrike = WEATHER.lightningMin + Math.random() * (WEATHER.lightningMax - WEATHER.lightningMin);
+        untilStrike = lightning.min + random() * (lightning.max - lightning.min);
         untilFlicker = WEATHER.flickerAt;
       }
       if (untilFlicker > 0) {

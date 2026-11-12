@@ -1,16 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { OUTPOST_CONTENT } from '../../test/road-support.ts';
 import { must, worldIn } from '../../test/support.ts';
-import { loadContent } from '../content/content.ts';
-import type { Content } from '../content/types.ts';
 import { applyHit, offenceOf } from './combat.ts';
 import { gainFlaskCharges, refillFlasks } from './flask-charges.ts';
 import type { FlaskState, MonsterState, World } from './types.ts';
 
-const content: Content = loadContent();
-
 function empty(): World {
-  const world: World = worldIn(content, 'shallows', 5);
+  const world: World = worldIn(OUTPOST_CONTENT, 'outpost', 5);
   for (const flask of world.player.flasks) flask.charges = 0;
   return world;
 }

@@ -44,7 +44,7 @@ void test('the wake rises from lying to standing over its rise time', (): void =
 });
 
 void test('a zone that is not a void starts the hero on his feet', (): void => {
-  const world: World = worldIn(content, 'waystation', 3);
+  const world: World = worldIn(content, 'hall_of_time', 3);
   beginVoid(world);
   assert.equal(world.wake, null);
 });
@@ -54,7 +54,7 @@ void test('nothing can be cast in a void, but walking works', (): void => {
   world.wake = null;
   assert.equal(acceptsCommand(world, { type: 'skill', slot: 0, aim: { x: 1, z: 0 }, targetId: null }), false);
   assert.equal(acceptsCommand(world, { type: 'move', held: false, dest: { x: 1, z: 0 } }), true);
-  const town: World = worldIn(content, 'waystation', 3);
+  const town: World = worldIn(content, 'hall_of_time', 3);
   assert.equal(acceptsCommand(town, { type: 'skill', slot: 0, aim: { x: 1, z: 0 }, targetId: null }), true);
 });
 

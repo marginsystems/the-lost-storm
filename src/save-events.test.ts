@@ -9,12 +9,13 @@ import { createWorld } from '../sim/world/create.ts';
 import { stepWorld } from '../sim/world/step.ts';
 import { enterZone } from '../sim/world/zones.ts';
 import type { World, WorldEvent } from '../sim/world/types.ts';
+import { OUTPOST_CONTENT } from '../test/road-support.ts';
 import { must } from '../test/support.ts';
 import { changesSave } from './save-events.ts';
 
 const shipped: Content = loadContent();
-const town: ZoneDef = must(shipped.zones.get('waystation'), 'town');
-const whisper: ZoneVoice = { id: 'well_whisper', x: 36, z: 26, radius: 6, lines: ['warden_trader_goods'], when: [] };
+const town: ZoneDef = must(shipped.zones.get('hall_of_time'), 'town');
+const whisper: ZoneVoice = { id: 'well_whisper', x: 70, z: 31, radius: 6, lines: ['warden_trader_goods'], when: [] };
 const content: Content = { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [town.id, { ...town, voices: [whisper] }]]) };
 const PLAY = { seed: 11, dt: 1 / 60, fewestChanges: 50 } as const;
 
@@ -58,15 +59,15 @@ void test('a respawn asks for a save because it can cost experience', (): void =
 });
 
 void test('drinking a flask and refilling flasks each ask for a save', (): void => {
-  const world: World = createWorld(content, { seed: PLAY.seed, save: null });
-  enterZone(world, must(content.zones.get('shallows'), 'shallows'), { type: 'start' });
+  const world: World = createWorld(OUTPOST_CONTENT, { seed: PLAY.seed, save: null });
+  enterZone(world, must(OUTPOST_CONTENT.zones.get('outpost'), 'outpost'), { type: 'start' });
   world.monsters = [];
   world.player.life = 1;
   const before: string = kept(world);
   const drink: WorldEvent[] = stepWorld(world, [{ type: 'flask', slot: 0 }], PLAY.dt);
   assert.notEqual(kept(world), before);
   assert.equal(changesSave(drink), true);
-  enterZone(world, must(content.zones.get('waystation'), 'town'), { type: 'start' });
+  enterZone(world, must(OUTPOST_CONTENT.zones.get('hub'), 'hub'), { type: 'start' });
   const spent: string = kept(world);
   const refill: WorldEvent[] = stepWorld(world, [], PLAY.dt);
   assert.notEqual(kept(world), spent);

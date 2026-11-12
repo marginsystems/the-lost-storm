@@ -1,10 +1,10 @@
 {
-  "start": "shallows",
+  "start": "hall_of_time",
   "opening": "between",
   "legacyFlags": {
     "opening": "skipped"
   },
-  "town": "waystation",
+  "town": "hall_of_time",
   "scaling": {
     "lifePerLevel": 0.22,
     "damagePerLevel": 0.12,
@@ -24,28 +24,12 @@
         },
         "places": [
           {
-            "zone": "shallows",
-            "x": 260,
-            "y": 560
-          },
-          {
-            "zone": "waystation",
-            "x": 520,
-            "y": 520
+            "zone": "hall_of_time",
+            "x": 360,
+            "y": 540
           }
         ],
-        "roads": [
-          {
-            "from": "shallows",
-            "to": "waystation",
-            "via": [
-              {
-                "x": 390,
-                "y": 548
-              }
-            ]
-          }
-        ],
+        "roads": [],
         "features": [
           {
             "kind": "marsh",
@@ -121,7 +105,7 @@
         ],
         "labels": [
           {
-            "text": "The Shallows",
+            "text": "The Hall of Time",
             "x": 220,
             "y": 720,
             "size": 20,
@@ -139,9 +123,11 @@
       "the_spill",
       "the_coursework",
       "drowned_bastion",
-      "the_still"
+      "the_still",
+      "shallows",
+      "waystation"
     ],
-    "to": "waystation",
+    "to": "hall_of_time",
     "flags": {
       "road": "rerouted"
     }

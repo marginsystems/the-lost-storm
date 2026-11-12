@@ -11,10 +11,8 @@ import rigs from '../../data/rigs.json' with { type: 'json' };
 import skillTree from '../../data/skill-tree.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
-import world from '../../data/world.json' with { type: 'json' };
 import between from '../../data/zones/between.json' with { type: 'json' };
-import shallows from '../../data/zones/shallows.json' with { type: 'json' };
-import waystation from '../../data/zones/waystation.json' with { type: 'json' };
+import { PAIR_WORLD as world, SHALLOWS as shallows, WAYSTATION as waystation } from '../../test/pair-support.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { generateItem } from '../items.ts';
 import { createRng } from '../rng.ts';
@@ -33,7 +31,7 @@ function zones(...mine: readonly unknown[]): unknown[] {
 
 const extraFaction = { id: 'ashen', name: 'The Ashen', description: 'Test people.', palette: { tints: ['#553322'], glow: '#ff8844' }, wearables: ['ash_shroud'], weapons: ['ash_brand'], regards: { player: 'hostile' } };
 
-const shipped: RawContent = RAW_CONTENT;
+const shipped: RawContent = { ...RAW_CONTENT, zones: zones(waystation, shallows), world };
 
 const shippedFactions: readonly unknown[] = Array.isArray(RAW_CONTENT.factions) ? RAW_CONTENT.factions : [];
 const ashen: readonly unknown[] = [...shippedFactions, extraFaction];
@@ -275,10 +273,10 @@ void test('a zone parses with its kind, level, exits, checkpoints, surge rules a
   assert.equal(arena.level, 1);
   assert.deepEqual(arena.surge, { delay: 5, surgesPerExtraMonster: 2, maxExtraMonsters: 3 });
   assert.deepEqual(arena.checkpoints, [{ id: 'grate', x: 28, z: 22, radius: 2 }]);
-  assert.deepEqual(arena.exits[1], { id: 'east', x: 78.4, z: 30, radius: 1.6, to: 'waystation', toExit: 'west_gate', arrival: { x: 73, z: 30 }, requires: [], lockedHint: '', hiddenWhenLocked: false });
+  assert.deepEqual(arena.exits[0], { id: 'east', x: 78.4, z: 30, radius: 1.6, to: 'waystation', toExit: 'west_gate', arrival: { x: 73, z: 30 }, requires: [], lockedHint: '', hiddenWhenLocked: false });
   assert.deepEqual(arena.waypoint, null);
   assert.deepEqual(town.waypoint, waystation.waypoint);
-  const mist = must(arena.exits.find((exit): boolean => exit.id === 'mist'), 'hidden exit');
+  const mist = must(must(content.zones.get('hall_of_time'), 'hall').exits.find((exit): boolean => exit.id === 'mist'), 'hidden exit');
   assert.deepEqual(mist.requires, [{ type: 'quest', quest: 'out_of_the_mist', is: 'locked', not: false }]);
   assert.equal(mist.lockedHint, 'Only mist.');
   assert.equal(mist.hiddenWhenLocked, true);
@@ -606,7 +604,7 @@ void test('a rig lists its hit and death clips and names its action clips, and a
 
 function voidWith(change: Readonly<Record<string, unknown>>): RawContent {
   const changed: unknown = { ...between, ...change };
-  return { ...shipped, zones: RAW_CONTENT.zones.map((zone: unknown): unknown => (zone === between ? changed : zone)) };
+  return { ...shipped, zones: shipped.zones.map((zone: unknown): unknown => (zone === between ? changed : zone)) };
 }
 
 void test('a void recentres around the hero, so it cannot hold npcs, checkpoints or a waypoint', (): void => {

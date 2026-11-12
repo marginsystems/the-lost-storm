@@ -18,6 +18,7 @@ export interface QualityTier {
   readonly preloadNearZones: boolean;
   readonly halfTextures: boolean;
   readonly releaseOtherZones: boolean;
+  readonly rainDrops: number;
 }
 
 export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
@@ -37,6 +38,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     maxTextureSize: 4096,
     maxModelTextureSize: 4096,
     preloadNearZones: true,
+    rainDrops: 1600,
     halfTextures: false,
     releaseOtherZones: false,
   },
@@ -56,6 +58,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     maxTextureSize: 512,
     maxModelTextureSize: 256,
     preloadNearZones: false,
+    rainDrops: 500,
     halfTextures: true,
     releaseOtherZones: true,
   },

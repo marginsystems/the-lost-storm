@@ -82,7 +82,7 @@ void test('experience reads against the next level and armour reduces by its own
 });
 
 void test('the sheet agrees with the stats the world fights with', (): void => {
-  const world: World = worldIn(content, 'shallows', 3);
+  const world: World = worldIn(content, 'hall_of_time', 3);
   const sheet: CharacterSheet = characterSheet(content, world.player);
   assert.deepEqual(
     { life: sheet.figures.maxLife.total, mana: sheet.figures.maxMana.total, armour: sheet.figures.armour.total, crit: sheet.figures.critChance.total },

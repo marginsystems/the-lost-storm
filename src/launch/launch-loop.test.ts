@@ -37,7 +37,7 @@ function rig(): Rig {
 }
 
 function body(text: string): FeedbackBody {
-  return feedbackBody('up', text, { zone: 'shallows', level: 2, minutes: 9, device: 'phone', build: 'abc' });
+  return feedbackBody('up', text, { zone: 'hall_of_time', level: 2, minutes: 9, device: 'phone', build: 'abc' });
 }
 
 void test('events are counted once, with the device class and nothing else', async (): Promise<void> => {
@@ -46,8 +46,8 @@ void test('events are counted once, with the device class and nothing else', asy
   loop.note('opened_game');
   loop.note('opened_game');
   await loop.flush();
-  loop.observe({ zone: 'shallows', flags: { first_choice: 'took_journal' }, alive: true });
-  loop.observe({ zone: 'shallows', flags: { first_choice: 'took_journal' }, alive: true });
+  loop.observe({ zone: 'hall_of_time', flags: { first_choice: 'took_journal' }, alive: true });
+  loop.observe({ zone: 'hall_of_time', flags: { first_choice: 'took_journal' }, alive: true });
   await loop.flush();
   assert.deepEqual(server.counted, [
     { event: 'opened_game', device: 'phone' },

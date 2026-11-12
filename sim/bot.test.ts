@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
+import { OUTPOST_CONTENT } from '../test/road-support.ts';
 import { finishQuests, must } from '../test/support.ts';
 import { botInDanger, botPlay, botRoute, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
 import type { Bot, BotReport } from './bot.ts';
@@ -17,7 +18,7 @@ const content: Content = loadContent();
 
 const ACT = {
   seeds: [11, 12, 13],
-  minSeconds: 10,
+  minSeconds: 5,
   maxSeconds: 60,
   minLevel: 1,
   maxLevel: 3,
@@ -42,17 +43,26 @@ void test('the bot plays the whole act from a fresh save: every quest, in the ti
 void test('the bot walks, talks and travels between zones', (): void => {
   const world: World = finishQuests(createWorld(content, { seed: 12, save: null }));
   const bot: Bot = createBot(world);
-  assert.deepEqual(botRoute(world, 'waystation')?.map((exit): string => exit.id), ['east']);
+  assert.deepEqual(botRoute(world, 'hall_of_time')?.map((exit): string => exit.id), []);
   assert.equal(botRoute(world, 'nowhere'), null);
-  assert.equal(botTravelTo(bot, 'waystation'), true);
-  assert.equal(world.zone.id, 'waystation');
-  assert.equal(botWalkTo(bot, 'waystation', { x: 40, z: 26 }, 0.6), true);
+  assert.equal(botTravelTo(bot, 'hall_of_time'), true);
+  assert.equal(world.zone.id, 'hall_of_time');
+  assert.equal(botWalkTo(bot, 'hall_of_time', { x: 70, z: 31 }, 3), true);
   assert.equal(botTalk(bot, 'warden_guide'), true);
   assert.equal(world.dialogue, null);
   assert.equal(botTalk(bot, 'nobody'), false);
-  assert.deepEqual(botRoute(world, 'shallows')?.map((exit): string => exit.id), ['west_gate']);
-  assert.equal(botTravelTo(bot, 'shallows'), true);
-  assert.equal(world.zone.id, 'shallows');
+});
+
+void test('the bot routes through a chain of exits and back', (): void => {
+  const world: World = finishQuests(createWorld(OUTPOST_CONTENT, { seed: 12, save: null }));
+  const bot: Bot = createBot(world);
+  assert.equal(world.zone.id, 'hub');
+  assert.deepEqual(botRoute(world, 'outpost')?.map((exit): string => exit.id), ['outpost_stair']);
+  assert.equal(botTravelTo(bot, 'outpost'), true);
+  assert.equal(world.zone.id, 'outpost');
+  assert.deepEqual(botRoute(world, 'hub')?.map((exit): string => exit.id), ['stair']);
+  assert.equal(botTravelTo(bot, 'hub'), true);
+  assert.equal(world.zone.id, 'hub');
 });
 
 void test('the bot will not route through an exit that is still locked', (): void => {
@@ -60,7 +70,7 @@ void test('the bot will not route through an exit that is still locked', (): voi
   assert.notEqual(questState(world, 'out_of_the_mist'), 'locked');
   assert.equal(botRoute(world, 'between'), null);
   assert.equal(botTravelTo(createBot(world), 'between'), false);
-  assert.equal(world.zone.id, 'shallows');
+  assert.equal(world.zone.id, 'hall_of_time');
 });
 
 void test('the bot reads a live mark on the ground and the landing spot of a leap as danger', (): void => {
