@@ -588,7 +588,7 @@ void test('a rig lists its hit and death clips and names its action clips, and a
   const cleave: unknown = skills.find((entry: { readonly id: string }): boolean => entry.id === 'cleave');
   const rest: unknown[] = skills.filter((entry: { readonly id: string }): boolean => entry.id !== 'cleave');
   const chained: string[] = contentProblems(parseContent({ ...shipped, skills: [...rest, Object.assign({}, cleave, { combo: { window: 0.5, steps: [step] } })] }));
-  assert.ok(chained.includes('skill book uses skill cleave, but rig skeleton_hero has no action clip backflip'));
+  assert.ok(chained.includes('skill book uses skill cleave, but rig hero_man has no action clip backflip'));
 });
 
 function voidWith(change: Readonly<Record<string, unknown>>): RawContent {
