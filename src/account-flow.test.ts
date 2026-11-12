@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ACCOUNT_NOTES, createAccountFlow } from './account-flow.ts';
+import { createFakeClock, createFakeTimers } from '../test/backend-support.ts';
+import type { FakeTimers } from '../test/backend-support.ts';
+import { ACCOUNT_NOTES, ACCOUNT_RETRY, createAccountFlow } from './account-flow.ts';
 import type { AccountFlow } from './account-flow.ts';
 import type { AccountService, AccountState, SignInResult, SignOutResult } from './backend/account.ts';
+import { must } from '../test/support.ts';
 import type { AccountView } from './title-account.ts';
 
 interface Shown {
@@ -24,6 +27,8 @@ interface Stage {
   readonly reloads: () => number;
   readonly signOuts: () => number;
   readonly busy: boolean[];
+  readonly timers: FakeTimers;
+  readonly loads: () => number;
 }
 
 interface Script {
@@ -31,6 +36,8 @@ interface Script {
   readonly signIn?: SignInResult;
   readonly signOut?: SignOutResult;
   readonly scriptLoads?: boolean;
+  readonly later?: readonly AccountState[];
+  readonly renders?: readonly boolean[];
 }
 
 const GUEST: AccountState = { kind: 'guest', clientId: 'client-1', nonce: 'nonce-1' };
@@ -41,6 +48,13 @@ function settle(): Promise<void> {
   });
 }
 
+async function advanceThrough(timers: FakeTimers, delays: readonly number[]): Promise<void> {
+  const [first, ...rest]: readonly number[] = delays;
+  if (first === undefined) return;
+  await timers.advance(first);
+  await advanceThrough(timers, rest);
+}
+
 function stage(script: Script): Stage {
   const shown: Shown[] = [];
   const buttons: Button[] = [];
@@ -48,8 +62,14 @@ function stage(script: Script): Stage {
   const busy: boolean[] = [];
   let reloads: number = 0;
   let signOuts: number = 0;
+  let loads: number = 0;
+  let asked: number = 0;
+  const timers: FakeTimers = createFakeTimers(createFakeClock());
   const account: AccountService = {
-    load: (): Promise<AccountState> => Promise.resolve(script.initial),
+    load: (): Promise<AccountState> => {
+      loads += 1;
+      return Promise.resolve(loads === 1 ? script.initial : (script.later?.[loads - 2] ?? script.later?.at(-1) ?? script.initial));
+    },
     signIn: (credential: string): Promise<SignInResult> => {
       credentials.push(credential);
       return Promise.resolve(script.signIn ?? { kind: 'reload' });
@@ -66,6 +86,7 @@ function stage(script: Script): Stage {
         shown.push({ view, note });
       },
     },
+    timers: timers.timers,
     reload: (): void => {
       reloads += 1;
     },
@@ -73,12 +94,13 @@ function stage(script: Script): Stage {
       busy.push(next);
     },
     showButton: (clientId: string, nonce: string, press: (credential: string) => void): Promise<boolean> => {
-      if (script.scriptLoads === false) return Promise.resolve(false);
+      asked += 1;
+      if (script.scriptLoads === false || script.renders?.[asked - 1] === false) return Promise.resolve(false);
       buttons.push({ clientId, nonce, press });
       return Promise.resolve(true);
     },
   });
-  return { flow, shown, buttons, credentials, reloads: (): number => reloads, signOuts: (): number => signOuts, busy };
+  return { flow, shown, buttons, credentials, reloads: (): number => reloads, signOuts: (): number => signOuts, busy, timers, loads: (): number => loads };
 }
 
 void test('a guest gets a button made with the client id and the nonce from the server', async (): Promise<void> => {
@@ -98,10 +120,58 @@ void test('nothing is shown and no button is asked for when sign-in is not offer
   assert.equal(buttons.length, 0);
 });
 
-void test('when the sign-in script does not load the control stays hidden', async (): Promise<void> => {
-  const { flow, shown } = stage({ initial: GUEST, scriptLoads: false });
+void test('when the sign-in script does not load the control stays hidden and stops asking after the last retry', async (): Promise<void> => {
+  const { flow, shown, timers, loads } = stage({ initial: GUEST, scriptLoads: false });
   await flow.start();
   assert.deepEqual(shown, [{ view: { kind: 'hidden' }, note: '' }]);
+  await advanceThrough(timers, ACCOUNT_RETRY.delaysMs);
+  assert.equal(loads(), 1 + ACCOUNT_RETRY.delaysMs.length);
+  assert.equal(timers.pending(), 0);
+  assert.ok(shown.every((entry: Shown): boolean => entry.view.kind === 'hidden'));
+});
+
+void test('a sign-in script that arrives late still gets its button, with the nonce asked for then', async (): Promise<void> => {
+  const later: AccountState = { kind: 'guest', clientId: 'client-1', nonce: 'nonce-2' };
+  const { flow, shown, buttons, timers } = stage({ initial: GUEST, later: [later], renders: [false, true] });
+  await flow.start();
+  assert.equal(buttons.length, 0);
+  await timers.advance(must(ACCOUNT_RETRY.delaysMs[0], 'the first retry delay'));
+  assert.deepEqual(shown.at(-1), { view: { kind: 'guest' }, note: '' });
+  assert.equal(buttons.at(-1)?.nonce, 'nonce-2');
+  assert.equal(timers.pending(), 0);
+});
+
+void test('a server that cannot be reached at first is asked again until the button can be shown', async (): Promise<void> => {
+  const { flow, shown, buttons, timers } = stage({ initial: { kind: 'unreachable' }, later: [{ kind: 'unreachable' }, GUEST] });
+  await flow.start();
+  assert.deepEqual(shown, [{ view: { kind: 'hidden' }, note: '' }]);
+  await timers.advance(must(ACCOUNT_RETRY.delaysMs[0], 'the first retry delay'));
+  assert.equal(buttons.length, 0);
+  await timers.advance(must(ACCOUNT_RETRY.delaysMs[1], 'the second retry delay'));
+  assert.deepEqual(shown.at(-1), { view: { kind: 'guest' }, note: '' });
+  assert.equal(buttons.length, 1);
+});
+
+void test('a server without sign-in is not asked again', async (): Promise<void> => {
+  const { flow, timers, loads } = stage({ initial: { kind: 'hidden' } });
+  await flow.start();
+  assert.equal(timers.pending(), 0);
+  assert.equal(loads(), 1);
+});
+
+void test('after a failed sign-in with the server out of reach the button comes back beside the note, so trying again is possible', async (): Promise<void> => {
+  const retry: AccountState = { kind: 'guest', clientId: 'client-1', nonce: 'nonce-2' };
+  const { flow, shown, buttons, timers, credentials } = stage({ initial: GUEST, signIn: { kind: 'failed', state: { kind: 'unreachable' } }, later: [retry] });
+  await flow.start();
+  buttons[0]?.press('lost');
+  await settle();
+  assert.deepEqual(shown.at(-1), { view: { kind: 'hidden' }, note: ACCOUNT_NOTES.failed });
+  await timers.advance(must(ACCOUNT_RETRY.delaysMs[0], 'the first retry delay'));
+  assert.deepEqual(shown.at(-1), { view: { kind: 'guest' }, note: ACCOUNT_NOTES.failed });
+  assert.equal(buttons.at(-1)?.nonce, 'nonce-2');
+  buttons.at(-1)?.press('again');
+  await settle();
+  assert.deepEqual(credentials, ['lost', 'again']);
 });
 
 void test('a credential from the button is exchanged and the page reloads', async (): Promise<void> => {

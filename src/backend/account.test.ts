@@ -62,7 +62,7 @@ void test('a guest on a server that offers Google gets the client id and a nonce
 void test('nothing is offered without a stored account, on a server without sign-in, or when the server is unreachable', async (): Promise<void> => {
   const empty: Harness = createHarness();
   empty.server.offerGoogle(CLIENT_ID);
-  assert.deepEqual(await serviceFor(empty).load(), { kind: 'hidden' });
+  assert.deepEqual(await serviceFor(empty).load(), { kind: 'unreachable' });
   assert.equal(empty.server.requests.length, 0);
 
   const plain: Harness = createHarness();
@@ -72,13 +72,13 @@ void test('nothing is offered without a stored account, on a server without sign
 
   const { harness, service } = await browser();
   harness.server.goDown();
-  assert.deepEqual(await service.load(), { kind: 'hidden' });
+  assert.deepEqual(await service.load(), { kind: 'unreachable' });
 });
 
 void test('a record for another server is never used', async (): Promise<void> => {
   const { harness } = await browser();
   const before: number = harness.server.requests.length;
-  assert.deepEqual(await serviceFor(harness, 'http://localhost:9999').load(), { kind: 'hidden' });
+  assert.deepEqual(await serviceFor(harness, 'http://localhost:9999').load(), { kind: 'unreachable' });
   assert.equal(harness.server.requests.length, before);
 });
 
@@ -162,12 +162,65 @@ void test('a refused credential changes nothing and comes back with a fresh nonc
   assert.deepEqual(await service.signIn(credential(result.kind === 'failed' ? result.state : { kind: 'hidden' }, 'ada')), { kind: 'reload' });
 });
 
-void test('a sign-in that cannot be stored is a failure, not a reload', async (): Promise<void> => {
+void test('a switch to another account that cannot be stored is a failure, not a reload', async (): Promise<void> => {
+  const first: Browser = await browser(makeSave(9, 0));
+  await signInAs(first.service, 'ada');
+  const second: Harness = createSecondBrowser(first.harness);
+  await second.open().load();
+  const service: AccountService = serviceFor(second);
+  const state: AccountState = await service.load();
+  second.store.failWrites = true;
+  const result: SignInResult = await service.signIn(credential(state, 'ada'));
+  assert.equal(result.kind, 'failed');
+});
+
+void test('the guest token still answers as the account after linking, as the real server does', async (): Promise<void> => {
+  const { harness, service } = await browser();
+  const guestToken: string = record(harness).token;
+  await signInAs(service, 'ada');
+  const api = createApi(URL_A, harness.server.fetch, content);
+  const who = await api.profile(guestToken, AbortSignal.timeout(1000));
+  assert.deepEqual(who, { kind: 'ok', profile: { accountId: 'account-1', kind: 'google', name: 'Ada' } });
+});
+
+void test('a sign-in whose answer never arrives still ends signed in: the server linked the account, so the page reloads', async (): Promise<void> => {
+  const { harness, service } = await browser(makeSave(4, 10));
+  const before: SyncRecord = record(harness);
+  const state: AccountState = await service.load();
+  harness.server.loseNextAnswer('POST', '/v1/auth/google');
+  assert.deepEqual(await service.signIn(credential(state, 'ada')), { kind: 'reload' });
+  assert.deepEqual(record(harness), before);
+  assert.equal(owner(harness, 0).google, 'ada');
+  assert.deepEqual(await serviceFor(harness).load(), { kind: 'signed-in', name: 'Ada' });
+  const reloaded: SaveData | null = await harness.open().load();
+  assert.equal(reloaded?.level, 4);
+  assert.equal(harness.server.accounts.length, 1);
+});
+
+void test('a linked sign-in that cannot be stored still ends signed in on the guest token', async (): Promise<void> => {
   const { harness, service } = await browser();
   const state: AccountState = await service.load();
   harness.store.failWrites = true;
-  const result: SignInResult = await service.signIn(credential(state, 'ada'));
-  assert.equal(result.kind, 'failed');
+  assert.deepEqual(await service.signIn(credential(state, 'ada')), { kind: 'reload' });
+});
+
+void test('a sign-in whose answer is lost while the server stays out of reach is a failure that can be retried', async (): Promise<void> => {
+  const { harness, service } = await browser();
+  const state: AccountState = await service.load();
+  harness.server.loseNextAnswer('POST', '/v1/auth/google');
+  harness.server.plan(503, {}, 'GET');
+  assert.deepEqual(await service.signIn(credential(state, 'ada')), { kind: 'failed', state: { kind: 'unreachable' } });
+  assert.deepEqual(await service.load(), { kind: 'signed-in', name: 'Ada' });
+});
+
+void test('signing out on the guest token of a linked account retires that token', async (): Promise<void> => {
+  const { harness, service } = await browser();
+  const state: AccountState = await service.load();
+  harness.server.loseNextAnswer('POST', '/v1/auth/google');
+  await service.signIn(credential(state, 'ada'));
+  assert.equal(await service.signOut(), 'reload');
+  assert.equal(owner(harness, 0).guestRetired, true);
+  assert.equal(harness.store.read(SYNC_KEY), null);
 });
 
 void test('signing out ends the session, forgets the token and the local save, and the next start is a new guest', async (): Promise<void> => {

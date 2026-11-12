@@ -47,9 +47,7 @@ export function createTitleAccount(parts: TitleAccountParts, timers: Timers): Ti
     parts.note.textContent = note;
     parts.note.toggleAttribute('hidden', note === '');
     parts.root.dataset['state'] = view.kind;
-    const used: boolean = view.kind !== 'hidden' || note !== '';
-    if (used) parts.root.classList.add('reserved', 'shown');
-    else parts.root.classList.remove('reserved');
+    if (view.kind !== 'hidden' || note !== '') parts.root.classList.add('shown');
   };
 
   return {

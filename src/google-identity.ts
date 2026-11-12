@@ -14,7 +14,7 @@ interface IdentityApi {
 }
 
 export const GOOGLE_IDENTITY: { readonly script: string; readonly loadMs: number; readonly buttonWidth: number; readonly locale: string } = {
-  script: 'https://accounts.google.com/gsi/client',
+  script: 'https://accounts.google.com/gsi/client?hl=en',
   loadMs: 8000,
   buttonWidth: 220,
   locale: 'en',
@@ -50,27 +50,44 @@ export function readIdentityApi(globals: unknown): GoogleIdentity | null {
           if (credential !== null) options.onCredential(credential);
         },
       });
+      mount.replaceChildren();
       api.renderButton(mount, { type: 'standard', theme: 'filled_black', size: 'medium', shape: 'rectangular', text: 'signin_with', logo_alignment: 'left', locale: GOOGLE_IDENTITY.locale, width: GOOGLE_IDENTITY.buttonWidth });
     },
   };
 }
 
-export function loadGoogleIdentity(): Promise<GoogleIdentity | null> {
-  const ready: GoogleIdentity | null = readIdentityApi(window);
-  if (ready !== null) return Promise.resolve(ready);
-  return new Promise<GoogleIdentity | null>((resolve: (identity: GoogleIdentity | null) => void): void => {
+let loading: Promise<void> | null = null;
+
+function loadScript(): Promise<void> {
+  if (loading !== null) return loading;
+  const started: Promise<void> = new Promise<void>((resolve: () => void): void => {
     const script: HTMLScriptElement = document.createElement('script');
-    const giveUp: number = window.setTimeout((): void => {
-      resolve(null);
-    }, GOOGLE_IDENTITY.loadMs);
-    const finish = (): void => {
-      window.clearTimeout(giveUp);
-      resolve(readIdentityApi(window));
-    };
     script.src = GOOGLE_IDENTITY.script;
     script.async = true;
-    script.addEventListener('load', finish);
-    script.addEventListener('error', finish);
+    const discard = (): void => {
+      script.remove();
+      loading = null;
+      resolve();
+    };
+    script.addEventListener('load', (): void => {
+      if (readIdentityApi(window) === null) discard();
+      else resolve();
+    });
+    script.addEventListener('error', discard);
     document.head.append(script);
   });
+  loading = started;
+  return started;
+}
+
+export async function loadGoogleIdentity(): Promise<GoogleIdentity | null> {
+  const ready: GoogleIdentity | null = readIdentityApi(window);
+  if (ready !== null) return ready;
+  let giveUp: number = 0;
+  const tooLong: Promise<void> = new Promise<void>((resolve: () => void): void => {
+    giveUp = window.setTimeout(resolve, GOOGLE_IDENTITY.loadMs);
+  });
+  await Promise.race([loadScript(), tooLong]);
+  window.clearTimeout(giveUp);
+  return readIdentityApi(window);
 }

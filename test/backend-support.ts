@@ -126,6 +126,7 @@ export interface FakeServer {
   comeUp(): void;
   plan(status: number, headers?: Readonly<Record<string, string>>, method?: string): void;
   holdNext(): () => void;
+  loseNextAnswer(method: string, path: string): void;
   plant(account: ServerAccount, save: SaveData): void;
   offerGoogle(clientId: string | null): void;
   count(method: string, path: string): number;
@@ -143,6 +144,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   let created: number = 0;
   let issued: number = 0;
   let down: boolean = false;
+  let lost: { readonly method: string; readonly path: string } | null = null;
   let googleClientId: string | null = null;
   const signIn = (owner: ServerAccount, credential: unknown): Response => {
     const [scheme, subject, nonce, name]: readonly string[] = typeof credential === 'string' ? credential.split('|') : [];
@@ -156,10 +158,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     const token: string = `session-${issued}`;
     target.sessions.push(token);
     target.name = name ?? null;
-    if (known === undefined) {
-      owner.google = subject;
-      owner.guestRetired = true;
-    }
+    if (known === undefined) owner.google = subject;
     return json(200, { accountId: target.accountId, token, outcome: known === undefined ? 'linked' : 'existing', name: target.name });
   };
   const stamp = (): string => new Date(clock.now).toISOString();
@@ -194,7 +193,9 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     if (method === 'POST' && path === '/v1/signout') {
       const index: number = token === null ? -1 : owner.sessions.indexOf(token);
       if (index >= 0) owner.sessions.splice(index, 1);
-      return json(200, { signedOut: index >= 0 });
+      const retired: boolean = index < 0 && owner.google !== null && token === owner.token;
+      if (retired) owner.guestRetired = true;
+      return json(200, { signedOut: index >= 0 || retired });
     }
     const view = (): unknown => ({ save: owner.save, revision: owner.revision, updatedAt: owner.updatedAt });
     if (method === 'GET' && path === '/v1/save') return json(200, view());
@@ -214,7 +215,15 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       if (down) throw new TypeError('network down');
       const gate: Promise<void> | undefined = gates.shift();
       if (gate !== undefined) await gate;
-      return handle(url, init);
+      const answer: Response = handle(url, init);
+      if (lost !== null && lost.method === (init.method ?? 'GET') && lost.path === new URL(url).pathname) {
+        lost = null;
+        throw new TypeError('the answer was lost');
+      }
+      return answer;
+    },
+    loseNextAnswer: (method: string, path: string): void => {
+      lost = { method, path };
     },
     holdNext: (): (() => void) => {
       const gate: { release: () => void } = { release: (): void => undefined };

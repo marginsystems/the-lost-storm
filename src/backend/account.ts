@@ -6,6 +6,7 @@ import type { SyncRecord } from './sync-record.ts';
 
 export type AccountState =
   | { readonly kind: 'hidden' }
+  | { readonly kind: 'unreachable' }
   | { readonly kind: 'guest'; readonly clientId: string; readonly nonce: string }
   | { readonly kind: 'signed-in'; readonly name: string | null };
 
@@ -25,12 +26,13 @@ export interface AccountOptions {
   readonly store: KeyValueStore;
 }
 
-export const ACCOUNT_TIMING: { readonly requestMs: number } = { requestMs: 8000 };
+export const ACCOUNT_TIMING: { readonly requestMs: number; readonly signInMs: number } = { requestMs: 8000, signInMs: 20_000 };
 
 const HIDDEN: AccountState = { kind: 'hidden' };
+const UNREACHABLE: AccountState = { kind: 'unreachable' };
 
-function timeout(): AbortSignal {
-  return AbortSignal.timeout(ACCOUNT_TIMING.requestMs);
+function timeout(ms: number = ACCOUNT_TIMING.requestMs): AbortSignal {
+  return AbortSignal.timeout(ms);
 }
 
 export function recordAfterSignIn(held: SyncRecord, session: Session): SyncRecord {
@@ -44,14 +46,15 @@ export function createAccountService(options: AccountOptions): AccountService {
 
   const load = async (): Promise<AccountState> => {
     const record: SyncRecord | null = held();
-    if (record === null) return HIDDEN;
+    if (record === null) return UNREACHABLE;
     const offered: ProvidersResult = await api.providers(timeout());
-    if (offered.kind !== 'ok' || offered.providers.googleClientId === null) return HIDDEN;
+    if (offered.kind !== 'ok') return UNREACHABLE;
+    if (offered.providers.googleClientId === null) return HIDDEN;
     const who: ProfileResult = await api.profile(record.token, timeout());
-    if (who.kind !== 'ok') return HIDDEN;
+    if (who.kind !== 'ok') return UNREACHABLE;
     if (who.profile.kind === 'google') return { kind: 'signed-in', name: who.profile.name };
     const issued: NonceResult = await api.googleNonce(record.token, timeout());
-    if (issued.kind !== 'ok') return HIDDEN;
+    if (issued.kind !== 'ok') return UNREACHABLE;
     return { kind: 'guest', clientId: offered.providers.googleClientId, nonce: issued.nonce };
   };
 
@@ -59,11 +62,12 @@ export function createAccountService(options: AccountOptions): AccountService {
     load,
     async signIn(credential: string): Promise<SignInResult> {
       const asked: SyncRecord | null = held();
-      if (asked === null) return { kind: 'failed', state: HIDDEN };
-      const result: SessionResult = await api.googleSignIn(asked.token, credential, timeout());
+      if (asked === null) return { kind: 'failed', state: UNREACHABLE };
+      const result: SessionResult = await api.googleSignIn(asked.token, credential, timeout(ACCOUNT_TIMING.signInMs));
       const current: SyncRecord | null = held();
       if (result.kind === 'ok' && current?.token === asked.token && store.write(SYNC_KEY, serializeSyncRecord(recordAfterSignIn(current, result.session)))) return { kind: 'reload' };
-      return { kind: 'failed', state: await load() };
+      const state: AccountState = await load();
+      return state.kind === 'signed-in' ? { kind: 'reload' } : { kind: 'failed', state };
     },
     async signOut(): Promise<SignOutResult> {
       const asked: SyncRecord | null = held();
