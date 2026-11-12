@@ -102,4 +102,5 @@ export interface MomentField {
   readonly first: readonly WeightedMoment[];
   readonly grace: number;
   readonly avoid: readonly StrikeArea[];
+  readonly near: StrikeInterval | null;
 }

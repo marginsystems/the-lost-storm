@@ -54,6 +54,7 @@ export const FIELD: MomentField = {
   first: [],
   grace: 0,
   avoid: [],
+  near: null,
 };
 
 export function momentLibrary(defs: readonly MomentDef[] = [QUIET, RAID]): MomentLibrary {
