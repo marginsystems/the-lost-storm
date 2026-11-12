@@ -74,11 +74,14 @@ export const CHARACTER = {
   flashBoost: 1.9,
   glowBoost: 2.4,
   metalFrom: 0.5,
-  matteRoughness: 1,
+  matteRoughness: 0.86,
+  rimPower: 4,
 } as const;
 
+export const RIM_LIGHT: IUniform<Color> = { value: new Color(0x000000) };
+
 const DEGREES: number = Math.PI / 180;
-const FLASH_KEY: string = 'storm-flash';
+const FLASH_KEY: string = 'storm-flash-rim';
 const WHITE: string = '#ffffff';
 const UNSEEN: Material = new MeshBasicMaterial({ visible: false });
 const pending: Map<string, Promise<GLTF>> = new Map<string, Promise<GLTF>>();
@@ -309,7 +312,10 @@ function flashing(source: unknown, look: RigLook, flash: IUniform<Color>): MeshS
     recolourEmissiveMap(material, look.glow);
     material.onBeforeCompile = (shader): void => {
       shader.uniforms['uFlash'] = flash;
-      shader.fragmentShader = shader.fragmentShader.replace('void main() {', 'uniform vec3 uFlash;\nvoid main() {').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += uFlash;');
+      shader.uniforms['uRim'] = RIM_LIGHT;
+      shader.fragmentShader = shader.fragmentShader
+        .replace('void main() {', 'uniform vec3 uFlash;\nuniform vec3 uRim;\nvoid main() {')
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\ntotalEmissiveRadiance += uFlash + uRim * pow( 1.0 - clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 ), ${CHARACTER.rimPower.toFixed(2)} );`);
     };
     material.customProgramCacheKey = (): string => FLASH_KEY;
     cloned.push(material);

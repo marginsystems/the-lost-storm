@@ -1,6 +1,7 @@
 import type { Material, Object3D } from 'three';
 import { Color, Mesh, MeshBasicMaterial } from 'three';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
+import { CONTACT_SHADOW_NAME } from '../render/contact-shadow.ts';
 
 export interface Ghost {
   readonly root: Object3D;
@@ -19,6 +20,7 @@ function bonesOf(root: Object3D): Object3D[] {
 
 export function createGhost(source: Object3D, tint: number, opacity: number): Ghost {
   const root: Object3D = clone(source);
+  root.getObjectByName(CONTACT_SHADOW_NAME)?.removeFromParent();
   const materials: MeshBasicMaterial[] = [];
   const color: Color = new Color(tint);
   root.traverse((object: Object3D): void => {
