@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { ClassTarget } from './title-screen.ts';
-import { GAME_LAYERS, markInput, markPlaying, TITLE_SCREEN } from './title-screen.ts';
+import { GAME_LAYERS, markInput, markPlaying, pressesEnter, TITLE_SCREEN } from './title-screen.ts';
 
 function fakeBody(): ClassTarget & { readonly tokens: Set<string> } {
   const tokens: Set<string> = new Set<string>();
@@ -56,4 +56,12 @@ void test('the input kind is marked once known, touch or not', (): void => {
   const mouse = fakeBody();
   markInput(mouse, false);
   assert.deepEqual([...mouse.tokens], [TITLE_SCREEN.inputKnownClass]);
+});
+
+void test('Enter and Space on the title press Enter, but not while a control has focus or the title is not showing', (): void => {
+  assert.equal(pressesEnter('Enter', 'page', true), true);
+  assert.equal(pressesEnter(' ', 'page', true), true);
+  assert.equal(pressesEnter('Enter', 'control', true), false);
+  assert.equal(pressesEnter(' ', 'page', false), false);
+  assert.equal(pressesEnter('Escape', 'page', true), false);
 });

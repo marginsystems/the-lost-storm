@@ -4,7 +4,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { warnInConsole } from './backend/console-log.ts';
-import { markInput, markPlaying, wireFold } from './title-screen.ts';
+import { markInput, markPlaying, wireFold, wireTitleKeys } from './title-screen.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import type { ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
@@ -667,6 +667,7 @@ async function start(): Promise<void> {
     startZoneAmbience();
     preloadNearZones();
   };
+  wireTitleKeys(title, enter);
   wireEnter({ enter, begin, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), random: Math.random, begin }) });
   const startOver = async (): Promise<void> => {
     dirty = false;

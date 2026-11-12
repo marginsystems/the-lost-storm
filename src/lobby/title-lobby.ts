@@ -20,6 +20,7 @@ export function mountTitleLobby(root: HTMLElement, lobby: Lobby): TitleLobby {
   const lineRank: HTMLSpanElement = el('span', 'board-rank', line);
   el('span', 'board-dot on', line);
   const lineName: HTMLSpanElement = el('span', 'board-name', line);
+  const linePlace: HTMLSpanElement = el('span', 'board-place', line);
   const lineLevel: HTMLSpanElement = el('span', 'board-level', line);
 
   const setMode = (mode: YouMode): void => {
@@ -34,6 +35,7 @@ export function mountTitleLobby(root: HTMLElement, lobby: Lobby): TitleLobby {
     }
     setText(lineRank, rankText(mine.rank), true);
     setText(lineName, mine.name, false);
+    setText(linePlace, mine.furthest, true);
     setText(lineLevel, String(mine.level), true);
     setMode('line');
   };
