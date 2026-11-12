@@ -40,6 +40,9 @@ export const PHONE = {
   targetHeight: 28,
   targetMaxWidth: 320,
   targetMinWidth: 140,
+  meterHeight: 28,
+  meterMaxWidth: 200,
+  meterMinWidth: 140,
 } as const;
 
 export interface Rect {
@@ -87,6 +90,7 @@ export interface PhoneLayout {
   readonly card: Rect;
   readonly banner: Rect;
   readonly target: Rect;
+  readonly meter: Rect;
   readonly xp: Rect;
   readonly stick: Rect;
   readonly attack: Rect;
@@ -246,7 +250,9 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const banner: Rect = freeRow([underCluster, top], PHONE.bannerHeight, PHONE.bannerMinWidth, PHONE.bannerMaxWidth, left, rightEdge, taken);
   const target: Rect = freeRow([top, underCluster, bottom(banner) + PHONE.gap], PHONE.targetHeight, PHONE.targetMinWidth, PHONE.targetMaxWidth, left, rightEdge, [...taken.filter((rect: Rect): boolean => rect !== dialogue), banner]);
 
-  return { life, mana, menu, zone, minimap, quests, hint, toast, dialogue, card, banner, target, xp, stick, attack, skills, flasks };
+  const meter: Rect = freeRow([top, underCluster, bottom(banner) + PHONE.gap, bottom(target) + PHONE.gap], PHONE.meterHeight, PHONE.meterMinWidth, PHONE.meterMaxWidth, left, rightEdge, [...taken.filter((rect: Rect): boolean => rect !== dialogue), banner, target]);
+
+  return { life, mana, menu, zone, minimap, quests, hint, toast, dialogue, card, banner, target, meter, xp, stick, attack, skills, flasks };
 }
 
 export function layoutRects(layout: PhoneLayout): NamedRect[] {
@@ -260,6 +266,7 @@ export function layoutRects(layout: PhoneLayout): NamedRect[] {
     { name: 'toast', rect: layout.toast },
     { name: 'banner', rect: layout.banner },
     { name: 'target', rect: layout.target },
+    { name: 'meter', rect: layout.meter },
     { name: 'xp', rect: layout.xp },
     { name: 'stick', rect: layout.stick },
     { name: 'attack', rect: layout.attack },

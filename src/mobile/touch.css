@@ -329,9 +329,28 @@ body.touch .tc-close svg {
   }
 }
 
-body.touch .hud-row,
-body.touch .hud-fps {
+body.touch .hud-row {
   display: none;
+}
+
+body.touch .hud-fps {
+  left: var(--ph-meter-x);
+  top: var(--ph-meter-y);
+  max-width: var(--ph-meter-w);
+  height: auto;
+  font-size: 10px;
+  line-height: 14px;
+}
+
+body.touch .hud-fps-rate,
+body.touch .hud-fps-tier {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.touch .hud-fps-tier::before {
+  content: none;
 }
 
 body.touch .hud-globe-group {

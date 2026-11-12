@@ -21,11 +21,11 @@ function rowFor(rows: readonly TitleKeyRow[], does: string): TitleKeyRow | undef
   return rows.find((row: TitleKeyRow): boolean => row.does.includes(does));
 }
 
-void test('without a server the list has no Ladder key, and it lists the minimap and the pause menu from the binding table', (): void => {
+void test('without a server the list has no Ladder key, and it lists the minimap, the pause menu and the frame rate from the binding table', (): void => {
   const rows: readonly TitleKeyRow[] = titleKeyRows(defaultKeys(content, false), names);
   assert.equal(rowFor(rows, 'Ladder'), undefined);
   assert.equal(rowFor(rows, 'Minimap')?.keys.includes('Tab'), true);
-  assert.deepEqual(rowFor(rows, 'Menu'), { keys: 'Esc', does: 'Menu' });
+  assert.deepEqual(rowFor(rows, 'Menu'), { keys: 'Esc · F3', does: 'Menu · Frame rate' });
   assert.deepEqual(rows[0], TITLE_KEYS.primary);
   assert.deepEqual(rows.at(-1), TITLE_KEYS.zoom);
 });

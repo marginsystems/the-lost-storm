@@ -123,6 +123,10 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     else if (action === 'tree') hud.togglePanel('tree');
     else if (action === 'map') hud.togglePanel('map');
     else if (action === 'pause') hooks.pause();
+    else if (action === 'frameRate') {
+      event.preventDefault();
+      settings.setShowFps(!settings.get().graphics.showFps);
+    }
     else press(event.code);
   });
   window.addEventListener('keyup', (event: KeyboardEvent): void => {

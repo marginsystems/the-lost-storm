@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { PhoneScreen, Rect, SafeInsets } from './phone-layout.ts';
+import type { PhoneLayout, PhoneScreen, Rect, SafeInsets } from './phone-layout.ts';
 import { collisions, layoutRects, overlaps, PHONE, phoneLayout } from './phone-layout.ts';
 
 const NO_INSETS: SafeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -147,5 +147,13 @@ void test('the target plate gets its own stretch, clear of the globes, flasks, m
     assert.ok(inside(layout.target, screen), label(screen, 5, 2));
     assert.ok(layout.target.w >= PHONE.targetMinWidth, label(screen, 5, 2));
     for (const rect of [layout.life, layout.mana, layout.menu.rect, layout.zone, layout.minimap, layout.banner, ...(layout.quests === null ? [] : [layout.quests])]) assert.equal(overlaps(layout.target, rect), false, label(screen, 5, 2));
+  }
+});
+
+void test('the frame meter gets its own line at every phone size, wide enough for its text and clear of every piece', (): void => {
+  for (const screen of SCREENS) {
+    const layout: PhoneLayout = phoneLayout(screen, { skills: 5, flasks: 2, menu: 6 });
+    assert.ok(layout.meter.w >= PHONE.meterMinWidth, label(screen, 5, 2));
+    for (const { name, rect } of layoutRects(layout)) if (name !== 'meter') assert.equal(overlaps(layout.meter, rect), false, `${name} at ${label(screen, 5, 2)}`);
   }
 });

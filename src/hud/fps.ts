@@ -1,34 +1,32 @@
 import { el, setText } from './dom.ts';
-
-const FPS = {
-  window: 0.5,
-  maxGap: 0.25,
-} as const;
+import type { FrameMeter, FrameReading } from './frame-meter.ts';
+import { createFrameMeter, describeFrames, FRAME_METER } from './frame-meter.ts';
 
 export interface FpsReadout {
   frame(now: number): void;
   setVisible(visible: boolean): void;
 }
 
-export function createFpsReadout(parent: HTMLElement): FpsReadout {
+export function createFpsReadout(parent: HTMLElement, tier: () => string): FpsReadout {
   const element: HTMLDivElement = el('div', 'hud-fps', parent);
-  let last: number | null = null;
-  let frames: number = 0;
-  let elapsed: number = 0;
+  const rate: HTMLSpanElement = el('span', 'hud-fps-rate', element);
+  const quality: HTMLSpanElement = el('span', 'hud-fps-tier', element);
+  const meter: FrameMeter = createFrameMeter();
+  let visible: boolean = false;
+  let shownAt: number = -Infinity;
   return {
-    setVisible(visible: boolean): void {
-      element.classList.toggle('shown', visible);
+    setVisible(next: boolean): void {
+      visible = next;
+      element.classList.toggle('shown', next);
     },
     frame(now: number): void {
-      const gap: number = last === null ? Infinity : (now - last) / 1000;
-      last = now;
-      if (gap > FPS.maxGap) return;
-      frames += 1;
-      elapsed += gap;
-      if (elapsed < FPS.window || frames === 0) return;
-      setText(element, `${Math.round(frames / elapsed)} FPS · ${((elapsed / frames) * 1000).toFixed(1)} ms`, false);
-      frames = 0;
-      elapsed = 0;
+      meter.frame(now);
+      if (!visible || now - shownAt < FRAME_METER.updateMs) return;
+      const reading: FrameReading | null = meter.reading(now);
+      if (reading === null) return;
+      shownAt = now;
+      setText(rate, describeFrames(reading), false);
+      setText(quality, tier(), false);
     },
   };
 }

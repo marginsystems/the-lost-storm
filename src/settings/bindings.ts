@@ -1,4 +1,4 @@
-export const FIXED_ACTIONS = ['inventory', 'character', 'tree', 'map', 'minimap', 'ladder', 'flask1', 'flask2', 'flask3', 'flask4', 'flask5', 'pause'] as const;
+export const FIXED_ACTIONS = ['inventory', 'character', 'tree', 'map', 'minimap', 'ladder', 'flask1', 'flask2', 'flask3', 'flask4', 'flask5', 'pause', 'frameRate'] as const;
 export type FixedAction = (typeof FIXED_ACTIONS)[number];
 export const FLASK_ACTIONS: readonly FixedAction[] = ['flask1', 'flask2', 'flask3', 'flask4', 'flask5'];
 export type SkillAction = 'primary' | `skill:${number}`;
@@ -56,6 +56,7 @@ const FIXED_DEFS: readonly (Omit<ActionDef, 'locked'> & { readonly group: Action
   { id: 'minimap', label: 'Minimap', group: 'Panels', defaults: ['Tab'] },
   { id: 'ladder', label: 'Ladder', group: 'Panels', defaults: ['KeyL'] },
   { id: 'pause', label: 'Menu', group: 'System', defaults: [BINDING.escape] },
+  { id: 'frameRate', label: 'Frame rate', group: 'System', defaults: ['F3'] },
 ];
 
 export function isSkillAction(action: ActionId): boolean {

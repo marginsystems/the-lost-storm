@@ -107,6 +107,9 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   set('--ph-toast-x', layout.toast.x);
   set('--ph-toast-y', layout.toast.y);
   set('--ph-toast-w', layout.toast.w);
+  set('--ph-meter-x', layout.meter.x);
+  set('--ph-meter-y', layout.meter.y);
+  set('--ph-meter-w', layout.meter.w);
   set('--ph-banner-x', layout.banner.x);
   set('--ph-banner-y', layout.banner.y);
   set('--ph-banner-w', layout.banner.w);

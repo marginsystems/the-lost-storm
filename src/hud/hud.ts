@@ -98,7 +98,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     return action === null ? '' : api.settings.keys().labelOf(action);
   };
   const flasks: FlaskBelt = createFlaskBelt(globes, api.world.player.flasks, flaskKey, (resource: FlaskResource, on: boolean): void => globes.setRestoring(resource, on));
-  const fps: FpsReadout = createFpsReadout(root);
+  const fps: FpsReadout = createFpsReadout(root, (): string => api.qualityTier());
   const surge: WorldStatus = createSurgeStatus(root);
   const banners: Banners = createBanners(root);
   const death: WorldStatus = createDeathPanel(root, api);

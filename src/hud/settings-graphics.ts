@@ -47,7 +47,7 @@ export function mountGraphics(page: HTMLElement, settings: SettingsStore, glitch
   }
   const detail: HTMLDivElement = label('set-detail', '', page);
 
-  const toggle: HTMLButtonElement = switchRow(page, 'Show FPS', (): void => settings.setShowFps(!settings.get().graphics.showFps));
+  const toggle: HTMLButtonElement = switchRow(page, 'Show frame rate', (): void => settings.setShowFps(!settings.get().graphics.showFps));
   const lens: HTMLButtonElement = switchRow(page, 'Lens water', (): void => settings.setLensWater(!settings.get().graphics.lensWater));
   mountGlitchSwitches(page, glitches);
 

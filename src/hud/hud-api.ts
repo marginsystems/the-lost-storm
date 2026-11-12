@@ -18,6 +18,7 @@ export interface HudApi {
   readonly voice: VoicePlayer;
   readonly touch: boolean;
   readBook(item: ItemInstance): void;
+  qualityTier(): string;
 }
 
 export interface Hud {

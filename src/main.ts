@@ -315,6 +315,7 @@ async function start(): Promise<void> {
     voice,
     readBook: (item: ItemInstance): void => opening.readBook(item),
     touch: mobile.touch,
+    qualityTier: (): string => (mobile.quality.tier.name === 'desktop' ? gameSettings.get().graphics.quality : `${gameSettings.get().graphics.quality} ${mobile.quality.tier.name}`),
   });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
     heightOf: (id: number): number => actors.heightOf(id),
