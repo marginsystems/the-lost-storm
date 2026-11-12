@@ -630,7 +630,6 @@
   border-radius: 6px;
   pointer-events: none;
   background: rgba(10, 13, 20, 0.96);
-  border: 1px solid var(--panel-edge);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   opacity: 0;
   transition: opacity var(--spring-snappy-ms) var(--spring-snappy);

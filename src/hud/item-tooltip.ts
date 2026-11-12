@@ -1,8 +1,7 @@
 import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, RarityDef } from '../../sim/content/types.ts';
-import { compareItems } from '../../sim/item-compare.ts';
-import type { StatDifference } from '../../sim/item-compare.ts';
-import type { ItemLine } from '../../sim/items.ts';
-import { baseOf, itemLines, itemName, rarityOf, slotOf } from '../../sim/items.ts';
+import { itemVerdict, readItem } from '../../sim/item-reading.ts';
+import type { Headline, ItemReading, ReadingRow, Verdict, VerdictKind } from '../../sim/item-reading.ts';
+import { baseOf, itemName, rarityOf, slotOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
 import { el, label } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
@@ -25,12 +24,57 @@ const MATERIAL_NAMES: Readonly<Record<ArmourMaterial, string>> = {
   plate: 'Plate',
 };
 
-function appendLines(parent: HTMLElement, content: Content, item: ItemInstance): void {
-  const lines: ItemLine[] = itemLines(content, item);
-  for (const line of lines) label(`tip-line ${line.source}`, line.text, parent);
+const VERDICT_WORDS: Readonly<Record<VerdictKind, string>> = {
+  better: 'Better',
+  worse: 'Worse',
+  trade: 'Trade',
+  same: 'Same',
+};
+
+function percentChange(value: number): string {
+  const rounded: number = Math.round(value * 100);
+  return `${rounded < 0 ? '−' : '+'}${Math.abs(rounded)}%`;
 }
 
-function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null, hint: string | null, className: string): HTMLElement {
+function deltaClass(delta: number | null): string {
+  if (delta === null || delta === 0) return '';
+  return delta > 0 ? ' better' : ' worse';
+}
+
+function appendRow(parent: HTMLElement, row: ReadingRow, className: string): void {
+  const line: HTMLDivElement = el('div', `tip-row ${className}`, parent);
+  label('tip-row-text', row.text, line);
+  if (row.deltaText !== null) label(`tip-delta${deltaClass(row.delta)}`, row.deltaText, line);
+}
+
+function appendHeadline(parent: HTMLElement, headline: Headline): void {
+  if (headline.kind === 'none') return;
+  const block: HTMLDivElement = el('div', 'tip-headline', parent);
+  if (headline.kind === 'damage') {
+    label('tip-headline-value', `${Math.round(headline.min)}–${Math.round(headline.max)}`, block);
+    label('tip-headline-name', 'Damage', block);
+    if (headline.delta !== null && headline.delta !== 0) label(`tip-delta${deltaClass(headline.delta)}`, `${headline.delta > 0 ? '+' : '−'}${Math.abs(headline.delta)} average hit`, block);
+    return;
+  }
+  label('tip-headline-value', headline.row.text, block);
+  if (headline.row.deltaText !== null) label(`tip-delta${deltaClass(headline.row.delta)}`, headline.row.deltaText, block);
+}
+
+function appendVerdict(parent: HTMLElement, verdict: Verdict): void {
+  const line: HTMLDivElement = el('div', `tip-verdict ${verdict.kind}`, parent);
+  label('tip-verdict-word', VERDICT_WORDS[verdict.kind], line);
+  label('tip-verdict-detail', `${percentChange(verdict.damage)} damage · ${percentChange(verdict.toughness)} toughness`, line);
+}
+
+function appendReading(parent: HTMLElement, reading: ItemReading): void {
+  appendHeadline(parent, reading.headline);
+  if (reading.rows.length + reading.lost.length === 0) return;
+  el('div', 'tip-sep', parent);
+  for (const row of reading.rows) appendRow(parent, row, 'own');
+  for (const row of reading.lost) appendRow(parent, row, 'lost');
+}
+
+function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null, compare: boolean, hint: string | null, className: string): HTMLElement {
   const content: Content = api.world.content;
   const root: HTMLDivElement = el('div', className, null);
   const rarity: RarityDef = rarityOf(content, item);
@@ -48,12 +92,10 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   label('tip-sub', slot === null ? rarity.name : `${rarity.name} ${kind}`, heading);
   label('tip-sub', `Item level ${item.level}`, heading);
   el('div', 'tip-sep', root);
-  appendLines(root, content, item);
-  if (equipped !== null) {
-    const differences: StatDifference[] = compareItems(content, item, equipped);
-    el('div', 'tip-sep', root);
-    if (differences.length === 0) label('tip-sub', 'Same as equipped', root);
-    for (const difference of differences) label(`tip-diff ${difference.better ? 'better' : 'worse'}`, difference.text, root);
+  appendReading(root, readItem(content, item, equipped));
+  if (compare) {
+    const verdict: Verdict | null = itemVerdict(content, api.world.player, api.world.zone, item);
+    if (verdict !== null) appendVerdict(root, verdict);
   }
   if (hint !== null) label('tip-hint', hint, root);
   return root;
@@ -61,9 +103,10 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
 
 export function itemTooltip(api: HudApi, item: ItemInstance, equipped: ItemInstance | null, hint: string): HTMLElement {
   const pair: HTMLDivElement = el('div', 'tip-pair', null);
-  pair.append(itemCard(api, item, equipped, hint, 'tip'));
+  const worn: boolean = Object.values(api.world.player.equipped).some((held: ItemInstance | null): boolean => held !== null && held.uid === item.uid);
+  pair.append(itemCard(api, item, equipped, !worn, hint, 'tip'));
   if (equipped !== null) {
-    const side: HTMLElement = itemCard(api, equipped, null, null, 'tip tip-equipped');
+    const side: HTMLElement = itemCard(api, equipped, null, false, null, 'tip tip-equipped');
     label('tip-sub', 'Equipped', side);
     pair.append(side);
   }
