@@ -481,6 +481,37 @@ body.touch:has(.fb.open) .tc-rotate {
   pointer-events: none;
 }
 
+body.touch .hud > .hud-banners {
+  left: var(--ph-banner-x);
+  right: auto;
+  top: var(--ph-banner-y);
+  width: var(--ph-banner-w);
+}
+
+body.touch .hud .banner {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+body.touch .hud .banner .banner-title {
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-indent: 0;
+}
+
+body.touch .hud .banner .banner-sub {
+  margin-top: 0;
+  overflow: hidden;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+}
+
 .tc-stick.intro {
   opacity: 0.9;
 }

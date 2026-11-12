@@ -132,3 +132,11 @@ void test('the end card is a centred sheet that fits inside the safe area with a
     assert.ok(card.w >= PHONE.hintMinWidth && card.h >= PHONE.dialogueMaxHeight, label(screen, 5, 2));
   }
 });
+
+void test('the banner line sits near the top, clear of the menu row, the dialogue and every control at every phone size', (): void => {
+  for (const screen of SCREENS) {
+    const layout = phoneLayout(screen, { skills: 6, flasks: 2, menu: 5 });
+    assert.ok(layout.banner.w >= PHONE.bannerMinWidth, `banner too narrow at ${label(screen, 6, 2)}`);
+    for (const rect of [layout.menu.rect, layout.dialogue, layout.hint, layout.stick, layout.attack, ...layout.skills, ...layout.flasks]) assert.ok(!overlaps(layout.banner, rect), label(screen, 6, 2));
+  }
+});

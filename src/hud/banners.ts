@@ -25,18 +25,30 @@ export function bannerHoldMs(tone: BannerTone, waiting: number): number {
   return waiting > 0 ? BANNERS.queuedHoldMs : BANNERS.holdMs;
 }
 
+function sameBanner(a: BannerRequest, b: BannerRequest): boolean {
+  return a.title === b.title && a.subtitle === b.subtitle && a.tone === b.tone;
+}
+
+export function admits(showing: BannerRequest | null, queue: readonly BannerRequest[], request: BannerRequest): boolean {
+  if (showing !== null && sameBanner(showing, request)) return false;
+  return !queue.some((waiting: BannerRequest): boolean => sameBanner(waiting, request));
+}
+
 export function createBanners(root: HTMLElement): Banners {
   const layer: HTMLDivElement = el('div', 'hud-banners', root);
   const queue: BannerRequest[] = [];
   let busy: boolean = false;
+  let showing: BannerRequest | null = null;
 
   const next = (): void => {
     const request: BannerRequest | undefined = queue.shift();
     if (request === undefined) {
       busy = false;
+      showing = null;
       return;
     }
     busy = true;
+    showing = request;
     const banner: HTMLDivElement = el('div', `banner ${request.tone}`, layer);
     label('banner-title', request.title, banner);
     if (request.subtitle !== null) label('banner-sub', request.subtitle, banner);
@@ -45,16 +57,19 @@ export function createBanners(root: HTMLElement): Banners {
     window.setTimeout((): void => {
       banner.classList.remove('in');
       banner.classList.add('out');
+      showing = null;
       window.setTimeout((): void => {
         banner.remove();
-        window.setTimeout(next, BANNERS.gapMs);
       }, BANNERS.removeMs);
+      window.setTimeout(next, BANNERS.gapMs);
     }, bannerHoldMs(request.tone, queue.length));
   };
 
   return {
     show(title: string, subtitle: string | null, tone: BannerTone): void {
-      queue.push({ title, subtitle, tone });
+      const request: BannerRequest = { title, subtitle, tone };
+      if (!admits(showing, queue, request)) return;
+      queue.push(request);
       if (!busy) next();
     },
   };
