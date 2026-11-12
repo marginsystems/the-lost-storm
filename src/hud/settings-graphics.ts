@@ -1,11 +1,35 @@
 import type { GraphicsPreset, Quality } from '../settings/settings.ts';
 import { describePreset, QUALITIES } from '../settings/settings.ts';
+import type { GlitchSettings, GlitchSettingsStore } from '../glitch/glitch-settings.ts';
 import type { SettingsStore } from '../settings/store.ts';
 import { el, label, setText } from './dom.ts';
 
 const QUALITY_LABELS: Readonly<Record<Quality, string>> = { low: 'Low', medium: 'Medium', high: 'High' };
 
-export function mountGraphics(page: HTMLElement, settings: SettingsStore): void {
+function switchRow(page: HTMLElement, name: string, onClick: () => void): HTMLButtonElement {
+  const row: HTMLDivElement = el('div', 'set-row', page);
+  label('set-name', name, row);
+  const toggle: HTMLButtonElement = el('button', 'set-switch', row);
+  toggle.type = 'button';
+  toggle.setAttribute('role', 'switch');
+  toggle.setAttribute('aria-label', name);
+  el('span', 'set-switch-knob', toggle);
+  toggle.addEventListener('click', onClick);
+  return toggle;
+}
+
+function mountGlitchSwitches(page: HTMLElement, glitches: GlitchSettingsStore): void {
+  const world: HTMLButtonElement = switchRow(page, 'World glitches', (): void => glitches.set({ glitches: !glitches.get().glitches }));
+  const soft: HTMLButtonElement = switchRow(page, 'Soften flashes', (): void => glitches.set({ reduceFlashes: !glitches.get().reduceFlashes }));
+  const render = (current: GlitchSettings): void => {
+    world.setAttribute('aria-checked', String(current.glitches));
+    soft.setAttribute('aria-checked', String(current.reduceFlashes));
+  };
+  glitches.subscribe(render);
+  render(glitches.get());
+}
+
+export function mountGraphics(page: HTMLElement, settings: SettingsStore, glitches: GlitchSettingsStore): void {
   const quality: HTMLDivElement = el('div', 'set-row', page);
   label('set-name', 'Quality', quality);
   const segment: HTMLDivElement = el('div', 'set-seg', quality);
@@ -23,14 +47,8 @@ export function mountGraphics(page: HTMLElement, settings: SettingsStore): void 
   }
   const detail: HTMLDivElement = label('set-detail', '', page);
 
-  const fps: HTMLDivElement = el('div', 'set-row', page);
-  label('set-name', 'Show FPS', fps);
-  const toggle: HTMLButtonElement = el('button', 'set-switch', fps);
-  toggle.type = 'button';
-  toggle.setAttribute('role', 'switch');
-  toggle.setAttribute('aria-label', 'Show FPS');
-  el('span', 'set-switch-knob', toggle);
-  toggle.addEventListener('click', (): void => settings.setShowFps(!settings.get().graphics.showFps));
+  const toggle: HTMLButtonElement = switchRow(page, 'Show FPS', (): void => settings.setShowFps(!settings.get().graphics.showFps));
+  mountGlitchSwitches(page, glitches);
 
   const render = (): void => {
     const current: Quality = settings.get().graphics.quality;

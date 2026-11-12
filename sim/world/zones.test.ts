@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { finishQuests, must, worldIn, zoneOf } from '../../test/support.ts';
+import { finishQuests, must, withoutGlitches, worldIn, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef, ZoneExit } from '../content/types.ts';
 import { distance } from '../math.ts';
@@ -111,7 +111,7 @@ void test('an unknown exit is ignored and walking over an exit without asking do
 });
 
 void test('a wild zone is reset when it is entered again and loot left behind is gone', (): void => {
-  const world: World = finishQuests(createWorld(shipped, { seed: 4, save: null }));
+  const world: World = withoutGlitches(finishQuests(createWorld(shipped, { seed: 4, save: null })));
   travel(world, 'bastion_stair');
   const initial: number = world.monsters.length;
   const firstIds: number[] = world.monsters.map((monster: MonsterState): number => monster.id);

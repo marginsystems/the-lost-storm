@@ -1,0 +1,37 @@
+{
+  "seed": 7919,
+  "mistZone": "between",
+  "rules": {"cooldown": 45, "minLifeFraction": 0.4, "grace": 1.5, "combatRadius": 14, "combatTick": 1},
+  "stutter": 0.9,
+  "quietPass": 2,
+  "silhouettes": {"near": 2.5, "far": 9},
+  "wrongWord": {"names": ["Corin", "Aud", "Wenna", "Tobin", "Ysolde"], "template": "{name}— no. {line}", "window": 30},
+  "progress": [
+    {"value": 1, "when": [{"type": "quest", "quest": "fallen_in", "is": "done"}]},
+    {"value": 2, "when": [{"type": "quest", "quest": "north_lamp", "is": "done"}]},
+    {"value": 2, "when": [{"type": "quest", "quest": "east_lamp", "is": "done"}]},
+    {"value": 3, "when": [{"type": "quest", "quest": "north_lamp", "is": "done"}, {"type": "quest", "quest": "east_lamp", "is": "done"}]},
+    {"value": 4, "when": [{"type": "quest", "quest": "the_gate", "is": "done"}]}
+  ],
+  "triggers": [
+    {"id": "first_seam", "kind": "hard_cut", "during": "combat", "when": [{"type": "quest", "quest": "fallen_in", "is": "done"}]}
+  ],
+  "edits": [
+    {"id": "hero_turn", "type": "hero_turn", "weight": 2},
+    {"id": "lamp_out", "type": "prop_swap", "weight": 2, "reach": 24, "twoWay": false, "pairs": [
+      {"from": "post_lantern_lit", "to": "post_lantern"},
+      {"from": "gate_lantern_lit", "to": "gate_lantern"},
+      {"from": "great_lamp_lit", "to": "great_lamp"}
+    ]},
+    {"id": "prop_shift", "type": "prop_shift", "weight": 3, "reach": 16, "distance": 0.9, "props": ["crate", "crate_tall", "barrel", "cask", "bench", "stool", "chair", "bucket", "basket", "pot", "jug", "pail", "broom", "brass_pot", "bowl", "dead_log", "branches", "stump", "gravestone", "grave_cross"]},
+    {"id": "corpse_gone", "type": "corpse_gone", "weight": 3, "reach": 20},
+    {"id": "monster_dead", "type": "monster_dead", "weight": 3, "reach": 18}
+  ],
+  "stages": [
+    {"from": 0, "kinds": ["stutter", "wrong_word"], "edits": ["hero_turn", "lamp_out"], "combatChancePerMinute": 0.15, "zoneChance": 0, "mist": {"min": 1, "max": 1.2}, "quietPass": false, "silhouettes": 0},
+    {"from": 1, "kinds": ["stutter", "wrong_word", "hard_cut"], "edits": ["hero_turn", "lamp_out", "prop_shift", "corpse_gone"], "combatChancePerMinute": 0.3, "zoneChance": 0.05, "mist": {"min": 1, "max": 1.6}, "quietPass": false, "silhouettes": 0},
+    {"from": 2, "kinds": ["stutter", "wrong_word", "hard_cut"], "edits": ["hero_turn", "lamp_out", "prop_shift", "corpse_gone", "monster_dead"], "combatChancePerMinute": 0.5, "zoneChance": 0.08, "mist": {"min": 1.2, "max": 2.2}, "quietPass": true, "silhouettes": 0},
+    {"from": 3, "kinds": ["stutter", "wrong_word", "hard_cut"], "edits": ["hero_turn", "lamp_out", "prop_shift", "corpse_gone", "monster_dead"], "combatChancePerMinute": 0.8, "zoneChance": 0.1, "mist": {"min": 1.5, "max": 2.6}, "quietPass": true, "silhouettes": 3},
+    {"from": 4, "kinds": ["stutter", "wrong_word", "hard_cut"], "edits": ["hero_turn", "lamp_out", "prop_shift", "corpse_gone", "monster_dead"], "combatChancePerMinute": 1.2, "zoneChance": 0.15, "mist": {"min": 2, "max": 3}, "quietPass": true, "silhouettes": 7}
+  ]
+}

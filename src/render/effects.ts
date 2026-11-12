@@ -514,6 +514,12 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'xp':
           case 'surge_cleared':
           case 'notice':
+          case 'glitch_start':
+          case 'glitch_end':
+          case 'glitch_word':
+          case 'silence':
+          case 'zone_edited':
+          case 'path_marked':
           case 'character_changed':
           case 'zone_changed':
           case 'hero_step':

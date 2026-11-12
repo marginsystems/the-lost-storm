@@ -1,3 +1,4 @@
+import { attacksHeld } from './glitch-hold.ts';
 import type { StalkerBehaviour, SummonDef } from '../content/combat-types.ts';
 import type { MonsterDef, MonsterScaling, RangedBehaviour, SkillDef, SurgeRules } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -82,7 +83,7 @@ function approach(world: World, monster: MonsterState, target: Vec2, dt: number)
 }
 
 function attack(world: World, monster: MonsterState, skill: SkillDef, player: PlayerState): boolean {
-  if (blockedReason(monster, skill) !== null) return false;
+  if (blockedReason(monster, skill) !== null || attacksHeld(world)) return false;
   startSkill(world, monster, skill, { x: player.pos.x - monster.pos.x, z: player.pos.z - monster.pos.z });
   monster.nextSkill = null;
   return true;

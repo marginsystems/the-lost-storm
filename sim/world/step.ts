@@ -4,6 +4,8 @@ import { stepHazards } from './hazards.ts';
 import { removeCorpses, stepMonster, stepSurge } from './monsters.ts';
 import { stepExploration } from './exploration.ts';
 import { stepFlasks } from './flasks.ts';
+import { heldCommands, stepGlitch } from './glitch.ts';
+import { recordPath } from './path-log.ts';
 import { separateActors } from './movement.ts';
 import { handleCommand, stepPlayer } from './player.ts';
 import { stepQuests } from './quests.ts';
@@ -19,7 +21,7 @@ export const MAX_STEP: number = 1 / 30;
 export function stepWorld(world: World, commands: readonly Command[], dt: number): WorldEvent[] {
   world.events = [];
   world.time += dt;
-  for (const command of commands) if (acceptsCommand(world, command)) handleCommand(world, command);
+  for (const command of heldCommands(world, commands)) if (acceptsCommand(world, command)) handleCommand(world, command);
   stepPlayer(world, dt);
   stepFlasks(world, dt);
   stepVoid(world, dt);
@@ -36,5 +38,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepVoices(world);
   stepQuests(world);
   stepTrade(world);
+  stepGlitch(world, dt);
+  recordPath(world, dt);
   return world.events;
 }

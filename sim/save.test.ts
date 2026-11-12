@@ -284,7 +284,7 @@ void test('flask charges survive a save, and a version 2 save from before flasks
   const { flasks: _dropped, ...older } = toSave(played());
   const migrated: SaveData = must(readSave(content, JSON.parse(JSON.stringify({ ...older, version: 2 }))), 'version 2 save');
   assert.equal(migrated.version, SAVE_VERSION);
-  assert.equal(SAVE_VERSION, 5);
+  assert.equal(SAVE_VERSION, 6);
   assert.deepEqual(migrated.flasks, {});
   const loaded: World = createWorld(content, { seed: 2, save: migrated });
   assert.ok(loaded.player.flasks.every((flask): boolean => flask.charges === flask.def.maxCharges));
@@ -316,7 +316,7 @@ void test('a version 2 save, which has no stash, loads as the current version wi
   delete older['flasks'];
   const save: SaveData = must(readSave(content, older), 'save');
   assert.equal(save.version, SAVE_VERSION);
-  assert.equal(SAVE_VERSION, 5);
+  assert.equal(SAVE_VERSION, 6);
   assert.equal(save.stash.length, content.trade.stashSize);
   assert.ok(save.stash.every((item: ItemInstance | null): boolean => item === null));
   assert.deepEqual(save.inventory, current.inventory);

@@ -1,5 +1,6 @@
 import type { Content, ZoneDef } from '../sim/content/types.ts';
 import { createWorld } from '../sim/world/create.ts';
+import { setGlitchesEnabled } from '../sim/world/glitch.ts';
 import type { World } from '../sim/world/types.ts';
 import { enterZone } from '../sim/world/zones.ts';
 
@@ -14,6 +15,11 @@ export function zoneOf(content: Content, zoneId: string): ZoneDef {
 
 export function finishQuests(world: World): World {
   for (const quest of world.content.quests.values()) world.quests[quest.id] = quest.objectives.length;
+  return world;
+}
+
+export function withoutGlitches(world: World): World {
+  setGlitchesEnabled(world, false);
   return world;
 }
 

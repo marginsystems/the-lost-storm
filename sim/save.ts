@@ -5,12 +5,16 @@ import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
 import { flaskCharges } from './world/flasks.ts';
+import { glitchToSave } from './world/glitch.ts';
+import type { GlitchSave, PathLogSave } from './world/glitch-types.ts';
+import { readGlitchSave } from './world/glitch-save.ts';
+import { emptyPathLog, pathToSave, readPathLog } from './world/path-log.ts';
 import { decodeExplored, encodeExplored, exploredSize } from './world/exploration.ts';
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, VendorStock, World } from './world/types.ts';
 
-export const SAVE_VERSION: number = 5;
+export const SAVE_VERSION: number = 6;
 const FLAGGED_VERSION: number = 5;
-const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, 3, 4, SAVE_VERSION]);
+const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, 3, 4, 5, SAVE_VERSION]);
 
 export interface SaveData {
   readonly version: number;
@@ -36,6 +40,8 @@ export interface SaveData {
   readonly stash: readonly (ItemInstance | null)[];
   readonly vendors: Readonly<Record<string, VendorStock>>;
   readonly flags: StoryFlags;
+  readonly glitch: GlitchSave;
+  readonly path: PathLogSave;
 }
 
 interface Worn {
@@ -73,6 +79,8 @@ export function toSave(world: World): SaveData {
     stash: [...world.stash],
     vendors: copyVendors(world.vendors),
     flags: { ...world.flags },
+    glitch: glitchToSave(world.glitch),
+    path: pathToSave(world.path),
   };
 }
 
@@ -282,6 +290,8 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     stash: stashed.stash,
     vendors: readVendors(content, value['vendors']),
     flags: readFlags(content, value['flags'], legacy),
+    glitch: readGlitchSave(value['glitch']),
+    path: value['version'] === SAVE_VERSION ? pathToSave(readPathLog(value['path'], new Set<string>(content.zones.keys()))) : pathToSave(emptyPathLog()),
   };
 }
 

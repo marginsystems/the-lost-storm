@@ -1,0 +1,27 @@
+.glitch-white {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 59;
+  background: #ffffff;
+  opacity: 0;
+}
+
+.glitch-white.soft {
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+#overlays {
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+body.glitch-mist #overlays,
+body.glitch-mist .hud-dialogue,
+body.glitch-mist .hud-flask,
+body.glitch-mist .hud-banners,
+body.glitch-mist .hud-boss,
+body.glitch-mist .hud-target {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}

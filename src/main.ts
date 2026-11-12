@@ -57,6 +57,11 @@ import type { NameVoiceClient, SpokenName } from './backend/name-voice.ts';
 import { createBrowserNameVoice } from './opening/browser-voice.ts';
 import type { Opening } from './opening/opening.ts';
 import { createOpening } from './opening/opening.ts';
+import type { GlitchView } from './glitch/glitch-view.ts';
+import { createGlitchView } from './glitch/glitch-view.ts';
+import { createGlitchSettings } from './glitch/glitch-settings.ts';
+import type { GlitchSettingsStore } from './glitch/glitch-settings.ts';
+import type { GlitchKind } from '../sim/content/glitches.ts';
 import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
 import type { CharacterLibrary, Dresser } from './render/character-loader.ts';
@@ -121,6 +126,7 @@ export interface DebugHandle {
   readonly sounds: readonly Trigger[];
   send(command: Command): void;
   memory(): MemoryReport;
+  glitch(kind: GlitchKind): void;
 }
 
 declare global {
@@ -308,8 +314,10 @@ async function start(): Promise<void> {
     content.player.skillBar.map((entry, slot: number) => ({ name: slot === 0 ? 'Move / attack' : (content.skills.get(entry.skill)?.name ?? entry.skill), bindings: entry.bindings })),
     { flasks: content.flasks.length, ladder: lobby !== null },
   );
+  const glitchSettings: GlitchSettingsStore = createGlitchSettings(createBrowserStore());
   const pauseMenu: PauseMenu = createPauseMenu(element('hud', HTMLDivElement), {
     settings: gameSettings,
+    glitches: glitchSettings,
     audio: controls,
     onOpen: (): void => playUi('panel_open'),
     onClose: (): void => playUi('panel_close'),
@@ -382,7 +390,21 @@ async function start(): Promise<void> {
   const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), send, nameOf: (): string | null => heroName, fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), refreshName: (): void => {
       if (lobby !== null) void lobby.feed.refresh(true);
     } });
-  if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene) };
+  const glitches: GlitchView = createGlitchView({
+    world,
+    scene: stage.scene,
+    app: element('app', HTMLDivElement),
+    mistZone: content.zones.get(world.glitch.def.mistZone) ?? world.zone,
+    settings: glitchSettings,
+    hero: () => actors.hero(),
+    setAmbience: (ambience): void => stage.setAmbience(ambience),
+    silence: (): void => {
+      audio.stopAmbience();
+      voice.stop();
+    },
+    resume: (): void => startZoneAmbience(),
+  });
+  if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }) };
 
   let playing: boolean = false;
   let torchVersion: number = 0;
@@ -404,9 +426,25 @@ async function start(): Promise<void> {
     effects.handle(events, world);
     overlays.handle(events, world);
     hud.handleEvents(events);
-    for (const event of events) playCues(cuesForEvent(audioDef, world, event));
+    glitches.handle(events);
+    if (!glitches.silences(events)) for (const event of events) playCues(cuesForEvent(audioDef, world, event));
+    if (events.some((event: WorldEvent): boolean => event.type === 'zone_edited')) void refreshZone();
     hitStop = Math.max(hitStop, effects.takeHitStop());
     if (changesSave(events)) dirty = true;
+  };
+
+  const refreshZone = async (): Promise<void> => {
+    const edited: World['zone'] = world.zone;
+    const next: ZoneView = await buildZoneView(loader, content, edited, stage.scene);
+    if (world.zone !== edited || zoneView.zone.id !== edited.id) {
+      next.dispose();
+      return;
+    }
+    zoneView.dispose();
+    zoneView = next;
+    zoneView.setLightBudget(gameSettings.preset().lights);
+    effects.setTorches(zoneView.torches);
+    torchVersion = zoneView.lightsVersion;
   };
 
   const showZone = async (events: readonly WorldEvent[]): Promise<void> => {
@@ -423,6 +461,7 @@ async function start(): Promise<void> {
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
     startZoneAmbience();
+    glitches.refresh();
     camera.snap(world.player.pos.x, world.player.pos.z);
     queue.length = 0;
     hitStop = 0;
@@ -501,6 +540,7 @@ async function start(): Promise<void> {
     minimap.update(dt);
     ladder?.noteLevel(world.player.level);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
+    glitches.update(now / 1000, dt, live && hitStop <= 0 && !transition.blocking ? dt : 0);
     stage.render();
 
     sinceSave += dt;

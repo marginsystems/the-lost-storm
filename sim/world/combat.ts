@@ -1,3 +1,4 @@
+import { attacksHeld } from './glitch-hold.ts';
 import type { SkillDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { ReadonlyVec2 } from '../math.ts';
@@ -75,7 +76,7 @@ function rollLoot(world: World, monster: MonsterState): void {
   }
 }
 
-function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
+export function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
   target.alive = false;
   target.life = 0;
   target.action = null;
@@ -121,7 +122,7 @@ function staggerOf(target: MonsterState, skill: SkillDef, guard: GuardOutcome): 
 }
 
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): boolean {
-  if (!target.alive || (target.kind === 'player' && target.invulnerable > 0)) return false;
+  if (!target.alive || (target.kind === 'player' && (target.invulnerable > 0 || attacksHeld(world)))) return false;
   const guard: GuardOutcome = guardOutcome(target, skill, direction);
   const guarded: number = guard === 'blocked' && target.kind === 'monster' ? (target.def.guard?.damageTaken ?? 1) : 1;
   const weapon: number = world.rng.range(offence.damageMin, offence.damageMax) * (1 + offence.damagePercent) * skill.damage.weaponPercent;
