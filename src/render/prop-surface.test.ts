@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { IUniform } from 'three';
 import { MeshStandardMaterial, ShaderLib } from 'three';
-import { lookOf, patchPropShader, PROP_SURFACE, propLookKey, propUniforms, withPropLook } from './prop-surface.ts';
+import { beneathLook, lookOf, patchBeneath, patchPropShader, PROP_SURFACE, propLookKey, propUniforms, withPropLook } from './prop-surface.ts';
 import type { PropLook, PropUniforms, ShaderSource } from './prop-surface.ts';
 
 const TRIPLANAR: PropLook = { tileMetres: 2, wet: 0.8, ground: 0.5 };
@@ -81,4 +81,19 @@ void test('top faces and worn edges are lifted so a prop keeps its silhouette ag
   assert.match(shader.fragmentShader, /float propEdge = smoothstep\( [0-9.]+, [0-9.]+, length\( fwidth\( vPropNormal \) \) \);/);
   assert.match(shader.fragmentShader, /propTop \* \( 1\.0 - propPuddle \)/);
   assert.match(shader.fragmentShader, /propEdge \* propTop \* uPropWet/);
+});
+
+void test('a look laid beneath another hook patches the prop surface first, then runs the other hook, and joins both keys', (): void => {
+  const material: MeshStandardMaterial = new MeshStandardMaterial();
+  material.customProgramCacheKey = (): string => 'above';
+  beneathLook(material, TRIPLANAR);
+  assert.equal(lookOf(material), TRIPLANAR);
+  assert.equal(material.customProgramCacheKey(), `${propLookKey(TRIPLANAR)}+above`);
+  const shader: ShaderSource = physical();
+  let sawProp: boolean = false;
+  patchBeneath(shader, TRIPLANAR, propUniforms(TRIPLANAR), (): void => {
+    sawProp = shader.fragmentShader.includes('propContact');
+  });
+  assert.equal(sawProp, true);
+  assert.match(shader.fragmentShader, /#include <emissivemap_fragment>/);
 });

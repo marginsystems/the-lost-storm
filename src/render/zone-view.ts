@@ -16,7 +16,7 @@ import type { Vec2 } from '../../sim/math.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Ground } from './ground.ts';
 import type { PropDressing } from './surfaces.ts';
-import { dressedProp, preloadSurfaces, releaseSurfaces } from './surfaces.ts';
+import { dressedProp, preloadSurfaces, propDressing, releaseSurfaces } from './surfaces.ts';
 import type { PropLook } from './prop-surface.ts';
 import { lookOf, withPropLook } from './prop-surface.ts';
 import { edgeRocks } from './zone-edge.ts';
@@ -141,7 +141,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const tintedMaterials: MeshStandardMaterial[] = [];
   let lightsVersion: number = 0;
 
-  const dressing: PropDressing = { wet: zone.weather.wet, ground: zone.floorHeight };
+  const dressing: PropDressing = propDressing(zone);
   const finish = (def: PropDef | undefined, material: Material): Material => {
     if (def === undefined || def.tint === null || !(material instanceof MeshStandardMaterial)) return material;
     const own: MeshStandardMaterial = carryLook(material, material.clone());

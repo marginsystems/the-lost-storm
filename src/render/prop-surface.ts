@@ -1,4 +1,4 @@
-import type { IUniform, MeshStandardMaterial, WebGLProgramParametersWithUniforms } from 'three';
+import type { IUniform, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
 
 export const PROP_SURFACE = {
   blendSharpness: 4,
@@ -183,6 +183,21 @@ export function withPropLook(material: MeshStandardMaterial, look: PropLook): Me
   const uniforms: PropUniforms = propUniforms(look);
   const key: string = propLookKey(look);
   material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms): void => patchPropShader(shader, look, uniforms);
+  material.customProgramCacheKey = (): string => key;
+  return material;
+}
+
+export function patchBeneath(shader: ShaderSource, look: PropLook, uniforms: PropUniforms, above: () => void): void {
+  patchPropShader(shader, look, uniforms);
+  above();
+}
+
+export function beneathLook(material: MeshStandardMaterial, look: PropLook): MeshStandardMaterial {
+  looked.set(material, look);
+  const uniforms: PropUniforms = propUniforms(look);
+  const above: MeshStandardMaterial['onBeforeCompile'] = material.onBeforeCompile.bind(material);
+  const key: string = `${propLookKey(look)}+${material.customProgramCacheKey()}`;
+  material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms, renderer: WebGLRenderer): void => patchBeneath(shader, look, uniforms, (): void => above(shader, renderer));
   material.customProgramCacheKey = (): string => key;
   return material;
 }

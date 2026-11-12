@@ -1,6 +1,6 @@
 import type { Material, Texture } from 'three';
 import { Color, MeshStandardMaterial, NoColorSpace, RepeatWrapping, SRGBColorSpace, TextureLoader, Vector2 } from 'three';
-import type { Content, SurfaceDef } from '../../sim/content/types.ts';
+import type { Content, SurfaceDef, ZoneDef } from '../../sim/content/types.ts';
 import { renderBudget, texturePath } from '../mobile/quality.ts';
 import { shrinkTexture } from '../mobile/textures.ts';
 import { assetUrl } from './character-loader.ts';
@@ -113,6 +113,10 @@ export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse, wet: number = 
 export interface PropDressing {
   readonly wet: number;
   readonly ground: number;
+}
+
+export function propDressing(zone: ZoneDef): PropDressing {
+  return { wet: zone.weather.wet, ground: zone.floorHeight };
 }
 
 export function propSurfaceMaterial(def: SurfaceDef, dressing: PropDressing): MeshStandardMaterial {

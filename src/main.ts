@@ -117,7 +117,7 @@ import type { Rainfall } from './render/rainfall.ts';
 import { createRainfall } from './render/rainfall.ts';
 import type { ZoneMarkers } from './render/zone-markers.ts';
 import { createZoneMarkers } from './render/zone-markers.ts';
-import { dressed } from './render/surfaces.ts';
+import { dressed, dressedProp, propDressing } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-view.ts';
 import { neighbourZones } from './render/zone-assets.ts';
@@ -225,6 +225,7 @@ async function start(): Promise<void> {
     if (board !== null) heroName = spokenName(board);
   });
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
+  const propDresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressedProp(content, dress, material, propDressing(world.zone));
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
@@ -277,7 +278,7 @@ async function start(): Promise<void> {
     rain.setWeather(zone.weather);
   };
   applyWeather(world.zone);
-  const effects: MomentEffects = await momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.pulse(power)), { scene: stage.scene, loader, content, library, dresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
+  const effects: MomentEffects = await momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.pulse(power)), { scene: stage.scene, loader, content, library, dresser: propDresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene, mobile.quality.tier.name === 'mobile');
   const actors: Actors = createActors(stage.scene, library, world);
