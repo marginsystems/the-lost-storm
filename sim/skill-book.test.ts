@@ -62,7 +62,7 @@ void test('levels alone offer nothing before the road has taught the first skill
 void test('the roll is taught outright; every other skill is chosen from an offer, never granted silently', (): void => {
   const world: World = worldIn(content, 'hall_of_time', 3);
   const roll: WorldEvent[] = finish(world, 'out_of_the_mist');
-  assert.deepEqual(roll.filter((event: WorldEvent): boolean => event.type === 'skill_unlocked'), [{ type: 'skill_unlocked', skill: 'dodge_roll', slot: 5 }]);
+  assert.deepEqual(roll.filter((event: WorldEvent): boolean => event.type === 'skill_unlocked'), [{ type: 'skill_unlocked', skill: 'dodge_roll', slot: 5, chosen: false }]);
   finish(world, 'the_first_taker');
   assert.deepEqual(world.player.learned, ['cleave', 'dodge_roll']);
   const first = must(pendingOffer(world), 'first offer');

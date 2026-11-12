@@ -21,8 +21,7 @@ export interface SkillOfferView {
 export function createSkillOffer(parent: HTMLElement, context: HudContext, track: (element: HTMLElement) => void): SkillOfferView {
   const element: HTMLDivElement = el('div', 'skill-offer', parent);
   track(element);
-  label('skill-offer-title', 'A skill comes to you', element);
-  label('skill-offer-sub', 'Choose one. The others may come again.', element);
+  label('skill-offer-title', 'Choose a skill', element);
   const row: HTMLDivElement = el('div', 'skill-offer-row', element);
   let shown: string | null = null;
   let leaving: number | null = null;

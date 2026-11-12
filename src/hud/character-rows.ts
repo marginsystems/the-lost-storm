@@ -46,7 +46,7 @@ export const DEFENCE_ROWS: readonly SheetRow[] = [
 export const OFFENCE_ROWS: readonly SheetRow[] = [
   {
     name: 'Weapon damage',
-    note: 'Before skill multipliers, bonus and critical hits.',
+    note: null,
     read: (sheet: CharacterSheet, source: Source): readonly number[] => [stat(sheet, 'damageMin', source), stat(sheet, 'damageMax', source)],
     format: range,
   },

@@ -3,13 +3,13 @@
     {"id": "move", "trigger": {"type": "game_started"}, "text": "Click the ground to move", "touch": "Drag on the left side of the screen to move", "done": {"type": "moved", "distance": 3}, "after": [], "forNewPlayers": true},
     {"id": "talk", "trigger": {"type": "objective_person"}, "text": "Click the marked person to talk", "touch": "Tap the marked person to talk", "done": {"type": "talked"}, "after": [], "forNewPlayers": true},
     {"id": "attack", "trigger": {"type": "monster_near", "range": 16}, "text": "Click a monster to attack", "touch": "Tap a monster to attack", "done": {"type": "skills_used", "slots": [0]}, "after": [], "forNewPlayers": true},
-    {"id": "roll", "trigger": {"type": "skill_learned", "skill": "dodge_roll"}, "text": "Press {slot_6} to roll through danger", "touch": "Tap {slot_6} to roll through danger", "done": {"type": "skills_used", "slots": [5]}, "after": [], "forNewPlayers": true},
+    {"id": "roll", "trigger": {"type": "skill_learned", "skill": "dodge_roll"}, "text": "Press {slot_6} to roll", "touch": "Tap {slot_6} to roll", "done": {"type": "skills_used", "slots": [5]}, "after": [], "forNewPlayers": true},
     {"id": "skills", "trigger": {"type": "slot_filled", "slot": 1}, "text": "Cast your new skill with {slot_2}", "touch": "Cast your new skill with {slot_2}", "done": {"type": "skills_used", "slots": [1]}, "after": [], "forNewPlayers": true},
     {"id": "bolt", "trigger": {"type": "slot_filled", "slot": 2}, "text": "Cast your second skill with {slot_3}", "touch": "Cast your second skill with {slot_3}", "done": {"type": "skills_used", "slots": [2]}, "after": [], "forNewPlayers": true},
     {"id": "loot", "trigger": {"type": "item_near", "range": 12}, "text": "Click an item to pick it up", "touch": "Tap an item to pick it up", "done": {"type": "picked_up"}, "after": [], "forNewPlayers": true},
     {"id": "inventory", "trigger": {"type": "gear_in_bag"}, "text": "Press {inventory} to open your inventory", "touch": "Tap {inventory} at the top to open your inventory", "done": {"type": "panel", "panel": "inventory"}, "after": [], "forNewPlayers": true},
     {"id": "equip", "trigger": {"type": "gear_in_bag"}, "text": "Click an item in your bag to equip it", "touch": "Tap an item in your bag to equip it", "done": {"type": "equipped"}, "after": ["inventory"], "forNewPlayers": true},
     {"id": "skill_point", "trigger": {"type": "skill_point"}, "text": "Press {tree} to spend your skill point", "touch": "Tap {tree} at the top to spend your skill point", "done": {"type": "allocated"}, "after": [], "forNewPlayers": false},
-    {"id": "low_life", "trigger": {"type": "low_life", "fraction": 0.35, "carrying": "flask"}, "text": "Life is low: press {flask}", "touch": "Life is low: tap flask {flask}", "done": {"type": "life_above", "fraction": 0.6}, "after": [], "forNewPlayers": false}
+    {"id": "low_life", "trigger": {"type": "low_life", "fraction": 0.35, "carrying": "flask"}, "text": "Press {flask} to drink", "touch": "Tap {flask} to drink", "done": {"type": "life_above", "fraction": 0.6}, "after": [], "forNewPlayers": false}
   ]
 }

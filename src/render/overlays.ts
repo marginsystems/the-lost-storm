@@ -1,4 +1,5 @@
 import { Vector2 } from 'three';
+import { shownTitle } from '../hud/npc-title.ts';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
@@ -237,7 +238,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       const name: HTMLElement = document.createElement('b');
       name.textContent = npc.def.name;
       const title: HTMLElement = document.createElement('small');
-      title.textContent = npc.def.title;
+      title.textContent = shownTitle(npc.def);
       inner.append(news, name, title);
       element.append(inner);
       element.addEventListener('pointerenter', (): void => {

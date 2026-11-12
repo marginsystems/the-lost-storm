@@ -517,7 +517,7 @@ export type WorldEvent =
   | { readonly type: 'pickup'; readonly ground: GroundItem }
   | { readonly type: 'xp'; readonly amount: number }
   | { readonly type: 'level_up'; readonly level: number }
-  | { readonly type: 'skill_unlocked'; readonly skill: string; readonly slot: number | null }
+  | { readonly type: 'skill_unlocked'; readonly skill: string; readonly slot: number | null; readonly chosen: boolean }
   | { readonly type: 'surge'; readonly surge: number }
   | { readonly type: 'surge_cleared'; readonly surge: number; readonly delay: number }
   | { readonly type: 'player_respawn' }

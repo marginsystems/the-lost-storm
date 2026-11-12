@@ -72,7 +72,7 @@
   },
   {
     "id": "the_first_taker",
-    "name": "A Moment Cleared",
+    "name": "The First Moment",
     "requires": [
       "out_of_the_mist"
     ],
@@ -99,7 +99,7 @@
         "id": "ask",
         "type": "talk",
         "npc": "warden_guide",
-        "text": "Ask the Warden Guide about the storm in your hands",
+        "text": "Talk to the Warden Guide",
         "sets": {
           "fire_lesson": "given"
         }

@@ -9,7 +9,7 @@ import type { NameProblem } from './lobby-model.ts';
 import stepCss from './name-step.css?inline';
 
 export const NAME_STEP = {
-  ask: 'Before you go: what is your name?',
+  ask: 'What is your name?',
   placeholder: 'Your name',
   choose: 'Choose for me',
   chooseTries: 4,

@@ -1,4 +1,5 @@
 import type { NpcDef } from '../../sim/content/types.ts';
+import { shownTitle } from './npc-title.ts';
 import { buyPrice, sellPrice } from '../../sim/world/trade.ts';
 import type { ItemInstance, VendorStock, World } from '../../sim/world/types.ts';
 import type { HudContext, PanelView } from './context.ts';
@@ -67,7 +68,7 @@ export function createVendorPanel(parent: HTMLElement, context: HudContext): Pan
       const stock: VendorStock | null = owner === null ? null : (world.vendors[owner] ?? null);
       if (npc !== null) {
         setText(title, npc.name, false);
-        setText(role, npc.title, false);
+        setText(role, shownTitle(npc), false);
       }
       const coins: number = world.player.gold;
       setText(gold, String(coins), true);

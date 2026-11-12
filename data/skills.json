@@ -2,7 +2,7 @@
   {
     "id": "cleave",
     "name": "Cleave",
-    "description": "Sweep your weapon in a wide arc, striking every enemy in front of you. Keep swinging: the third blow is a leaping overhead strike that hits harder and throws enemies back.",
+    "description": "Sweep in a wide arc. Every third swing is a leaping blow that hits harder and throws enemies back.",
     "icon": "cleave",
     "animation": "attack",
     "manaCost": 0,
@@ -60,7 +60,7 @@
   {
     "id": "thunderclap",
     "name": "Thunderclap",
-    "description": "Slam the ground and release a ring of thunder that hurls back everything around you.",
+    "description": "Slam the ground and hurl back everything around you.",
     "icon": "thunderclap",
     "animation": "slam",
     "manaCost": 14,
@@ -90,7 +90,7 @@
   {
     "id": "storm_bolt",
     "name": "Storm Bolt",
-    "description": "Hurl a bolt of caged lightning that passes through the first enemy it strikes.",
+    "description": "A bolt of lightning that passes through the first enemy it hits.",
     "icon": "storm_bolt",
     "animation": "cast",
     "manaCost": 7,
@@ -125,7 +125,7 @@
   {
     "id": "dodge_roll",
     "name": "Dodge Roll",
-    "description": "Throw yourself into a roll toward the cursor. You cannot be hit for the first moments of it, you pass between enemies, and it cuts short the follow-through of an attack.",
+    "description": "Roll toward the cursor. Nothing hits you early in the roll, and it cuts an attack short.",
     "icon": "dodge_roll",
     "animation": "roll",
     "manaCost": 0,
@@ -838,7 +838,7 @@
   {
     "id": "forkline",
     "name": "Forkline",
-    "description": "Loose a thread of lightning at the enemy nearest your aim. It forks on to the next nearest, and the next, a little weaker at every jump.",
+    "description": "Lightning that jumps from enemy to enemy, a little weaker each time.",
     "icon": "forkline",
     "animation": "cast",
     "manaCost": 11,
@@ -858,7 +858,7 @@
   {
     "id": "mist_step",
     "name": "Mist Step",
-    "description": "Come apart into mist and gather again where you aim, a short way off. Whatever stands where you arrive is thrown aside.",
+    "description": "Turn to mist and reappear where you aim, throwing aside whatever stands there.",
     "icon": "mist_step",
     "animation": "cast",
     "manaCost": 9,
@@ -878,7 +878,7 @@
   {
     "id": "downdraught",
     "name": "Downdraught",
-    "description": "Drop a column of falling wind where you aim. It drags everything inside toward its heart, then slams them down together.",
+    "description": "Falling wind where you aim pulls enemies together, then slams them down.",
     "icon": "downdraught",
     "animation": "cast",
     "manaCost": 15,
@@ -898,7 +898,7 @@
   {
     "id": "squall",
     "name": "Squall",
-    "description": "Call a knot of storm down where you aim. It stays, lashing everything beneath it with lightning every half second.",
+    "description": "A storm where you aim that strikes everything under it every half second.",
     "icon": "squall",
     "animation": "cast",
     "manaCost": 20,
@@ -918,7 +918,7 @@
   {
     "id": "thunderhead",
     "name": "Thunderhead",
-    "description": "Raise your weapon and let the storm gather in it. Hold to charge, release to bring it down: the longer you hold, the harder and wider it lands.",
+    "description": "Hold to charge, release to strike. The longer you hold, the harder and wider it lands.",
     "icon": "thunderhead",
     "animation": "slam_charged",
     "manaCost": 8,
@@ -939,7 +939,7 @@
   {
     "id": "static_brand",
     "name": "Static Brand",
-    "description": "Flick a spark that sets a charge in the first enemy it touches. Strike a branded enemy with anything else and the charge bursts, tearing into everything around it.",
+    "description": "Charge the first enemy it touches. Hit that enemy with anything else and the charge bursts around it.",
     "icon": "static_brand",
     "animation": "cast",
     "manaCost": 6,
@@ -980,7 +980,7 @@
   {
     "id": "living_wire",
     "name": "Living Wire",
-    "description": "Hold a live line of lightning between your hand and whatever you point at. It burns everything along it for as long as you hold and your mana lasts.",
+    "description": "Hold a line of lightning on your target. It burns everything along it while you hold.",
     "icon": "living_wire",
     "animation": "cast",
     "manaCost": 3,
@@ -1001,7 +1001,7 @@
   {
     "id": "held_breath",
     "name": "Held Breath",
-    "description": "Step into the gap between two moments. For a few heartbeats everything near you moves at a crawl, their blows and bolts with them. You do not.",
+    "description": "For a few heartbeats everything near you moves at a crawl. You do not.",
     "icon": "held_breath",
     "animation": "cast",
     "manaCost": 24,
