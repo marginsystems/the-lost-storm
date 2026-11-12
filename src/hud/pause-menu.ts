@@ -13,6 +13,8 @@ import type { ControlsPage } from './settings-controls.ts';
 import { mountGraphics } from './settings-graphics.ts';
 import pauseCss from './pause.css?inline';
 import { mountVolumeSliders } from './volume-panel.ts';
+import type { HurtWatch } from './menu-hurt.ts';
+import { hurtShown, MENU_HURT, watchHurt } from './menu-hurt.ts';
 
 const PAUSE_ROWS: { readonly base: number } = { base: 3 };
 
@@ -25,6 +27,7 @@ export interface PauseHooks {
   onOpen(): void;
   onClose(): void;
   onTitle(): void;
+  life(): number;
   readonly feedback: (() => void) | null;
 }
 
@@ -49,12 +52,22 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
   style.textContent = pauseCss;
   const overlay: HTMLDivElement = el('div', 'pause', root);
   const card: HTMLDivElement = el('div', 'pause-card', overlay);
+  const hurtLine: HTMLDivElement = label('pause-hurt', MENU_HURT.line, overlay);
+  let hurt: HurtWatch = { life: 0, hold: 0 };
+  let lastWatch: number = 0;
+  const watch = (now: number): void => {
+    if (!isOpen) return;
+    hurt = watchHurt(hurt, hooks.life(), Math.max(0, (now - lastWatch) / 1000));
+    lastWatch = now;
+    hurtLine.classList.toggle('shown', hurtShown(hurt));
+    requestAnimationFrame(watch);
+  };
   let isOpen: boolean = false;
   let view: View = 'main';
   let section: SettingsSection = 'graphics';
 
   const main: HTMLDivElement = el('div', 'pause-view pause-main', card);
-  label('pause-title', 'Paused', main);
+  label('pause-title', 'Menu', main);
   const settingsView: HTMLDivElement = el('div', 'pause-view pause-settings', card);
 
   const head: HTMLDivElement = el('div', 'set-head', settingsView);
@@ -113,7 +126,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
 
   const resume = (): void => api.close();
 
-  button(main, 'pause-btn', 'Resume', resume);
+  button(main, 'pause-btn', 'Back to the game', resume);
   button(main, 'pause-btn', 'Settings', (): void => setView('settings'));
   const feedback: (() => void) | null = hooks.feedback;
   if (feedback !== null) {
@@ -122,7 +135,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
       feedback();
     });
   }
-  button(main, 'pause-btn', 'Return to title', (): void => {
+  button(main, 'pause-btn', 'Back to lobby', (): void => {
     api.close();
     hooks.onTitle();
   });
@@ -169,6 +182,9 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
         isOpen = true;
         window.dispatchEvent(new Event('blur'));
         overlay.classList.add('open');
+        hurt = { life: hooks.life(), hold: 0 };
+        lastWatch = performance.now();
+        requestAnimationFrame(watch);
         markOverlay(overlay, true);
         hooks.onOpen();
       }
@@ -184,6 +200,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
       controls.cancel();
       isOpen = false;
       overlay.classList.remove('open');
+      hurtLine.classList.remove('shown');
       markOverlay(overlay, false);
       hooks.onClose();
     },

@@ -25,7 +25,7 @@ void test('without a server the list has no Ladder key, and it lists the minimap
   const rows: readonly TitleKeyRow[] = titleKeyRows(defaultKeys(content, false), names);
   assert.equal(rowFor(rows, 'Ladder'), undefined);
   assert.equal(rowFor(rows, 'Minimap')?.keys.includes('Tab'), true);
-  assert.deepEqual(rowFor(rows, 'Pause menu'), { keys: 'Esc', does: 'Pause menu' });
+  assert.deepEqual(rowFor(rows, 'Menu'), { keys: 'Esc', does: 'Menu' });
   assert.deepEqual(rows[0], TITLE_KEYS.primary);
   assert.deepEqual(rows.at(-1), TITLE_KEYS.zoom);
 });

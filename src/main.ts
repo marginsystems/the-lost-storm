@@ -39,6 +39,8 @@ import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
 import { createInput } from './input.ts';
 import { createPauseMenu } from './hud/pause-menu.ts';
+import { frameGate } from './frame-gate.ts';
+import type { FrameGate } from './frame-gate.ts';
 import { startLaunch } from './launch/launch.ts';
 import type { Launch } from './launch/launch.ts';
 import type { PauseMenu } from './hud/pause-menu.ts';
@@ -286,6 +288,7 @@ async function start(): Promise<void> {
     feedback: launch.canSend ? (): void => launch.open('ask') : null,
     onOpen: (): void => playUi('panel_open'),
     onClose: (): void => playUi('panel_close'),
+    life: (): number => world.player.life,
     onTitle: (): void => {
       ladder?.setPlaying(false);
       persist();
@@ -478,18 +481,10 @@ async function start(): Promise<void> {
     if (last > 0) transition.frame(now - last);
     last = now;
     let events: WorldEvent[] = [];
-    const paused: boolean = pauseMenu.isOpen;
-    const simVisualDt: number = paused ? 0 : dt;
-    const active: boolean = playing && !transition.blocking && !touch.lost;
-    const live: boolean = active && !paused;
-    if (active) {
-      const collected: Command[] = [...input.collect(dt), ...touch.collect(dt)];
-      if (live) queue.push(...collected);
-    } else if (playing && transition.blocking) {
-      input.collect(dt);
-      touch.collect(dt);
-    }
-    if (live) {
+    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost, menuOpen: pauseMenu.isOpen });
+    const collected: Command[] = gate.collect ? [...input.collect(dt), ...touch.collect(dt)] : [];
+    if (gate.queue) queue.push(...collected);
+    if (gate.step) {
       hitStop = Math.max(0, hitStop - dt);
       if (hitStop <= 0) {
         let remaining: number = dt;
@@ -509,21 +504,21 @@ async function start(): Promise<void> {
     }
 
     if (transition.presenting) {
-      const simDt: number = live && hitStop <= 0 ? dt : 0;
+      const simDt: number = gate.step && hitStop <= 0 ? dt : 0;
       actors.sync(simDt, world, input.hoveredId);
       loot.sync(world);
       opening.update();
       journalCount?.update();
       camera.update(dt, world.player.pos.x, world.player.pos.z);
-      effects.update(simVisualDt, world);
-      ward.update(simVisualDt, world);
+      effects.update(dt, world);
+      ward.update(dt, world);
       stage.follow(world.player.pos.x, world.player.pos.z);
       overlays.update(dt, world, input.hoveredId);
     }
     audio.update(dt);
-    particles.update(simVisualDt);
-    weather.update(simVisualDt);
-    rain.update(simVisualDt, world.player.pos.x, world.player.pos.z, weather.flash, zoneView);
+    particles.update(dt);
+    weather.update(dt);
+    rain.update(dt, world.player.pos.x, world.player.pos.z, weather.flash, zoneView);
     zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.measure(actors.hero(), now / 1000), flash: weather.flash });
     if (zoneView.lightsVersion !== torchVersion) {
       torchVersion = zoneView.lightsVersion;
@@ -536,9 +531,9 @@ async function start(): Promise<void> {
     touch.update();
     minimap.update(dt);
     ladder?.noteLevel(world.player.level);
-    launch.update(world, dt, live);
+    launch.update(world, dt, gate.queue);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
-    glitches.update(now / 1000, dt, live && hitStop <= 0 && !transition.blocking ? dt : 0);
+    glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
     stage.render();
 
     sinceSave += dt;

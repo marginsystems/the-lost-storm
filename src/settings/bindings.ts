@@ -55,7 +55,7 @@ const FIXED_DEFS: readonly (Omit<ActionDef, 'locked'> & { readonly group: Action
   { id: 'map', label: 'World map', group: 'Panels', defaults: ['KeyM'] },
   { id: 'minimap', label: 'Minimap', group: 'Panels', defaults: ['Tab'] },
   { id: 'ladder', label: 'Ladder', group: 'Panels', defaults: ['KeyL'] },
-  { id: 'pause', label: 'Pause menu', group: 'System', defaults: [BINDING.escape] },
+  { id: 'pause', label: 'Menu', group: 'System', defaults: [BINDING.escape] },
 ];
 
 export function isSkillAction(action: ActionId): boolean {
@@ -192,7 +192,7 @@ export function rebind(table: readonly ActionDef[], overrides: Overrides, action
   if (!isBindingCode(code)) return { kind: 'refused', reason: 'That key cannot be used.' };
   if (RESERVED.has(code)) return { kind: 'refused', reason: `${keyLabel(code)} is reserved.` };
   if (code === BINDING.rightMouse && !isSkillAction(action)) return { kind: 'refused', reason: 'Only skills can use the right mouse button.' };
-  if (code === BINDING.escape && action !== 'pause') return { kind: 'refused', reason: 'Esc is reserved for closing and pausing.' };
+  if (code === BINDING.escape && action !== 'pause') return { kind: 'refused', reason: 'Esc is reserved for closing panels and the menu.' };
   const owner: ActionDef | undefined = table.find((def: ActionDef): boolean => def.id !== action && bindingsFrom(def, overrides).includes(code));
   if (owner !== undefined) return { kind: 'conflict', with: owner };
   return { kind: 'ok', overrides: { ...overrides, [action]: [code] } };
