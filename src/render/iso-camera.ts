@@ -17,11 +17,15 @@ export const CAMERA = {
   shakeRoll: 0.018,
   shakeFrequency: 31,
   punchDecay: 14,
+  settled: 0.05,
 } as const;
 
 export interface IsoCamera {
   update(dt: number, targetX: number, targetZ: number): void;
   snap(targetX: number, targetZ: number): void;
+  shift(byX: number, byZ: number): void;
+  hold(atDistance: number): void;
+  ease(rate: number): void;
   zoomBy(wheelDelta: number): void;
   addTrauma(amount: number): void;
   punch(dirX: number, dirZ: number, amount: number): void;
@@ -51,6 +55,7 @@ export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasEle
   let distance: number = CAMERA.distance;
   let wantedDistance: number = CAMERA.distance;
   let trauma: number = 0;
+  let zoomRate: number = CAMERA.zoomRate;
   let time: number = 0;
   camera.fov = CAMERA.fov;
   camera.updateProjectionMatrix();
@@ -75,7 +80,8 @@ export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasEle
       const follow: number = 1 - Math.exp(-CAMERA.followRate * dt);
       focus.x += (targetX - focus.x) * follow;
       focus.z += (targetZ - focus.z) * follow;
-      distance += (wantedDistance - distance) * (1 - Math.exp(-CAMERA.zoomRate * dt));
+      distance += (wantedDistance - distance) * (1 - Math.exp(-zoomRate * dt));
+      if (zoomRate > 0 && Math.abs(wantedDistance - distance) < CAMERA.settled) zoomRate = CAMERA.zoomRate;
       trauma = Math.max(0, trauma - CAMERA.traumaDecay * dt);
       punchOffset.multiplyScalar(Math.exp(-CAMERA.punchDecay * dt));
       place();
@@ -84,7 +90,21 @@ export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasEle
       focus.set(targetX, 0, targetZ);
       place();
     },
+    shift(byX: number, byZ: number): void {
+      focus.x += byX;
+      focus.z += byZ;
+      place();
+    },
+    hold(atDistance: number): void {
+      distance = atDistance;
+      zoomRate = 0;
+      place();
+    },
+    ease(rate: number): void {
+      zoomRate = rate;
+    },
     zoomBy(wheelDelta: number): void {
+      zoomRate = CAMERA.zoomRate;
       wantedDistance = Math.min(CAMERA.maxDistance, Math.max(CAMERA.minDistance, wantedDistance * (1 + wheelDelta * CAMERA.zoomStep)));
     },
     addTrauma(amount: number): void {

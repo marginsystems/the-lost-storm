@@ -30,6 +30,7 @@ export const ACTOR = {
   riseDepth: 2.4,
   minRunSpeed: 0.7,
   maxRunSpeed: 1.7,
+  standFade: 0.45,
 } as const;
 
 export type Chance = () => number;
@@ -63,6 +64,7 @@ export interface ActorView {
   hit(color: Color, strength: number, stagger: boolean): void;
   die(): void;
   revive(): void;
+  lie(progress: number | null): void;
   setHover(hovered: boolean): void;
   bounds(out: Box3): void;
   dispose(): void;
@@ -89,6 +91,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let follow: FollowThrough | null = null;
   let oneShot: number = 0;
   let dead: boolean = false;
+  let lying: boolean = false;
   let flash: number = 0;
   let punch: number = 0;
   let hover: boolean = false;
@@ -134,6 +137,9 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       if (dead) {
         const sunk: number = Math.min(ACTOR.sinkLimit, Math.max(0, actor.deadTime - ACTOR.sinkDelay) * ACTOR.sinkSpeed);
         rig.root.position.y = options.floor - sunk;
+      } else if (lying) {
+        rig.root.position.y = options.floor;
+        rig.root.rotation.y = yaw;
       } else {
         rig.root.position.y = options.floor - (1 - options.rise) * ACTOR.riseDepth;
         yaw = turnToward(yaw, actor.facing, options.turnRate * dt);
@@ -194,6 +200,20 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       dead = false;
       oneShot = 0;
       play(rig.clips.idle, ACTOR.locomotionFade, 1, false, true);
+    },
+    lie(progress: number | null): void {
+      const clip: AnimationClip | null = rig.clips.rise;
+      if (progress === null || clip === null || dead) {
+        if (lying) play(rig.clips.idle, ACTOR.standFade, 1, false, true);
+        lying = false;
+        return;
+      }
+      if (!lying) {
+        play(clip, ACTOR.locomotionFade, 0, true, true);
+        lying = true;
+      }
+      const eased: number = progress * progress * (3 - 2 * progress);
+      current.time = clip.duration * (1 - eased);
     },
     setHover(hovered: boolean): void {
       hover = hovered;

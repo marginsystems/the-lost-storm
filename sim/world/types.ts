@@ -217,8 +217,8 @@ export interface ItemDrop {
 
 export interface GroundItem {
   readonly id: number;
-  readonly pos: Vec2;
-  readonly from: Vec2;
+  pos: Vec2;
+  from: Vec2;
   readonly content: GoldDrop | ItemDrop;
   age: number;
   kept: boolean;
@@ -365,6 +365,12 @@ export type WorldEvent =
   | { readonly type: 'flask_used'; readonly slot: number; readonly flask: string; readonly resource: FlaskResource; readonly pos: Vec2 }
   | { readonly type: 'character_changed' };
 
+export interface WakeState {
+  elapsed: number;
+  readonly lie: number;
+  readonly rise: number;
+}
+
 export interface World {
   readonly content: Content;
   zone: ZoneDef;
@@ -392,5 +398,7 @@ export interface World {
   nextPackId: number;
   surge: number;
   surgeTimer: number | null;
+  wake: WakeState | null;
+  shift: Vec2;
   events: WorldEvent[];
 }

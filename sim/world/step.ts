@@ -10,15 +10,17 @@ import { stepQuests } from './quests.ts';
 import { stepVoices } from './voices.ts';
 import { stepProjectiles } from './skills.ts';
 import type { Command, World, WorldEvent } from './types.ts';
+import { acceptsCommand, stepVoid } from './void.ts';
 
 export const MAX_STEP: number = 1 / 30;
 
 export function stepWorld(world: World, commands: readonly Command[], dt: number): WorldEvent[] {
   world.events = [];
   world.time += dt;
-  for (const command of commands) handleCommand(world, command);
+  for (const command of commands) if (acceptsCommand(world, command)) handleCommand(world, command);
   stepPlayer(world, dt);
   stepFlasks(world, dt);
+  stepVoid(world, dt);
   stepExploration(world);
   for (const monster of world.monsters) stepMonster(world, monster, dt);
   separateActors(world);

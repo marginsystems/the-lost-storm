@@ -138,16 +138,19 @@ void test('in every zone the start, packs, exits, arrival points, checkpoints an
   }
 });
 
-void test('every exit leads to an exit that leads back, and every zone can be reached from the start zone', (): void => {
-  const reached: Set<string> = new Set<string>([content.world.start]);
-  const queue: string[] = [content.world.start];
+void test('every exit out of a place leads to an exit that leads back, and every zone can be reached from the start zone or a void', (): void => {
+  const roots: string[] = [content.world.start, ...[...content.zones.values()].filter((zone: ZoneDef): boolean => zone.kind === 'void').map((zone: ZoneDef): string => zone.id)];
+  const reached: Set<string> = new Set<string>(roots);
+  const queue: string[] = [...reached];
   while (queue.length > 0) {
     const zone: ZoneDef = must(content.zones.get(must(queue.pop(), 'queued zone')), 'zone');
     for (const exit of zone.exits) {
       const far: ZoneDef = must(content.zones.get(exit.to), `${zone.id}.${exit.id} target`);
       const back = must(far.exits.find((candidate): boolean => candidate.id === exit.toExit), `${zone.id}.${exit.id} far exit`);
-      assert.equal(back.to, zone.id);
-      assert.equal(back.toExit, exit.id);
+      if (zone.kind !== 'void') {
+        assert.equal(back.to, zone.id);
+        assert.equal(back.toExit, exit.id);
+      }
       if (!reached.has(far.id)) {
         reached.add(far.id);
         queue.push(far.id);
@@ -157,9 +160,9 @@ void test('every exit leads to an exit that leads back, and every zone can be re
   assert.deepEqual([...reached].toSorted(), [...content.zones.keys()].toSorted());
 });
 
-void test('towns are safe and wild zones have something to fight', (): void => {
+void test('towns and voids are safe and wild zones have something to fight', (): void => {
   for (const zone of content.zones.values()) {
-    if (zone.kind === 'town') {
+    if (zone.kind === 'town' || zone.kind === 'void') {
       assert.equal(zone.packs.length, 0, `${zone.id} packs`);
       assert.equal(zone.surge, null, `${zone.id} surge`);
     } else {
@@ -249,9 +252,10 @@ void test('every talk objective has someone to talk to and a conversation of its
   }
 });
 
-void test('every zone has one place in one act of the world map and no two share one', (): void => {
+void test('every zone but a void has one place in one act of the world map and no two share one', (): void => {
   const placed: string[] = content.world.acts.flatMap((act): string[] => act.atlas.places.map((place): string => place.zone));
-  assert.deepEqual(placed.toSorted(), [...content.zones.keys()].toSorted());
+  const mapped: string[] = [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.kind !== 'void').map((zone: ZoneDef): string => zone.id);
+  assert.deepEqual(placed.toSorted(), mapped.toSorted());
   for (const act of content.world.acts) {
     const spots: string[] = act.atlas.places.map((place): string => `${place.x},${place.y}`);
     assert.equal(new Set<string>(spots).size, spots.length, act.id);

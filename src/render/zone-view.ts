@@ -7,6 +7,7 @@ import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
 import { forgetModel, loadModel } from './character-loader.ts';
 import { buildGround } from './ground.ts';
+import { buildVoidView } from './void-view.ts';
 import type { Ground } from './ground.ts';
 import { dressed, preloadSurfaces } from './surfaces.ts';
 import { renderBudget } from '../mobile/quality.ts';
@@ -117,6 +118,11 @@ function standardMaterials(value: unknown): MeshStandardMaterial[] {
 }
 
 export async function buildZoneView(loader: GLTFLoader, content: Content, zone: ZoneDef, scene: Scene): Promise<ZoneView> {
+  if (zone.kind === 'void') {
+    const empty: ZoneView = buildVoidView(zone);
+    scene.add(empty.group);
+    return empty;
+  }
   const placements: Map<string, Placement[]> = new Map<string, Placement[]>();
   const group: Group = new Group();
   const sources: Source[] = [];
