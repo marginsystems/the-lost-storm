@@ -314,10 +314,14 @@ body.touch .tc-close svg {
   }
 
   body.touch .hud .hud-panel.hud-panel.tree-panel.tree-panel {
-    bottom: 0;
+    inset: 0;
     height: auto;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transform: none;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  }
+
+  body.touch .tree-head {
+    padding: 12px calc(52px + env(safe-area-inset-right, 0px)) 8px 12px;
   }
 
   body.touch .chart-card {

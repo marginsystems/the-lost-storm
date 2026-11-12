@@ -6,7 +6,7 @@ import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-vi
 import { abilityCard } from './chart-ability.ts';
 import type { AbilityCard } from './chart-ability.ts';
 import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
-import { clampChart, frameChart, panChart, pinLabel, spreadLabels, zoomChart } from './chart-view.ts';
+import { clampChart, frameChart, panChart, pinLabel, reopenChart, sameFrame, spreadLabels, zoomChart } from './chart-view.ts';
 import type { LabelBox, PinnedLabel } from './chart-view.ts';
 import type { ChartBounds, ChartPoint, PathLabel } from './chart-model.ts';
 import type { HudContext, PanelView } from './context.ts';
@@ -29,6 +29,7 @@ const CHART = {
   cardGap: 26,
   cardEdge: 10,
   svgNamespace: 'http://www.w3.org/2000/svg',
+  emptyLine: 'No points yet. Moments in the storm and each new level bring them.',
 } as const;
 
 const STATUS_CLASSES: readonly TreeNodeStatus['kind'][] = ['allocated', 'available', 'no_points', 'locked'];
@@ -108,6 +109,10 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   zoomIn.type = 'button';
   zoomIn.textContent = '+';
   zoomIn.setAttribute('aria-label', 'Zoom in');
+  const recentre: HTMLButtonElement = el('button', 'chart-zoom chart-centre', head);
+  recentre.type = 'button';
+  recentre.textContent = 'Centre';
+  recentre.setAttribute('aria-label', 'Centre the chart on where you are');
   const restart: HTMLButtonElement = el('button', 'chart-restart', head);
   restart.type = 'button';
   const shut: HTMLButtonElement = el('button', 'chart-close', head);
@@ -283,9 +288,12 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   let drag: Drag | null = null;
   let pinch: number = 0;
   let suppressClick: boolean = false;
+  let moved: boolean = false;
+  let lastView: AtlasView | null = null;
 
-  const measure = (): void => {
-    frame = { width: Math.max(1, viewport.clientWidth), height: Math.max(1, viewport.clientHeight), mapWidth, mapHeight };
+  const measured = (): AtlasFrame => {
+    const box: DOMRect = viewport.getBoundingClientRect();
+    return { width: Math.max(1, box.width), height: Math.max(1, box.height), mapWidth, mapHeight };
   };
   const placeCard = (): void => {
     const view: NodeView | null = hovered ?? selected;
@@ -343,6 +351,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       const [first, second] = [...pointers.values()];
       if (first === undefined || second === undefined || now <= 0) return;
       const middle: ScreenPoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+      moved = true;
       target = zoomChart(target, frame, middle, -Math.log(now / pinch) / ATLAS_VIEW.wheelRate);
       motion = still(target);
       pinch = now;
@@ -367,6 +376,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       hovered = null;
       fillCard();
     }
+    moved = true;
     target = panChart(target, frame, dx, dy);
     motion = { ...motion, view: panChart(motion.view, frame, dx, dy) };
     apply();
@@ -399,15 +409,21 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     (event: WheelEvent): void => {
       event.preventDefault();
       event.stopPropagation();
+      moved = true;
       target = zoomChart(target, frame, local(event), event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * CHART.wheelLine : event.deltaY);
     },
     { passive: false },
   );
   const zoomBy = (delta: number): void => {
+    moved = true;
     target = zoomChart(target, frame, { x: frame.width / 2, y: frame.height / 2 }, delta);
   };
   zoomIn.addEventListener('click', (): void => zoomBy(-CHART.zoomStep));
   zoomOut.addEventListener('click', (): void => zoomBy(CHART.zoomStep));
+  recentre.addEventListener('click', (): void => {
+    moved = false;
+    target = frameChart(frame, openingView());
+  });
 
   const views: NodeView[] = [];
   for (const node of nodes) {
@@ -476,6 +492,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (next === undefined) return;
     findIndex += 1;
     const at: ChartPoint = centreOf(next.def);
+    moved = true;
     target = clampChart({ x: at.x, y: at.y, scale: Math.max(target.scale, CHART.findZoom) }, frame);
     selected?.button.classList.remove('selected');
     selected = next;
@@ -484,19 +501,12 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   });
   search.addEventListener('keyup', (event: KeyboardEvent): void => event.stopPropagation());
 
-  new ResizeObserver((): void => {
-    if (!element.classList.contains('open')) return;
-    measure();
-    target = clampChart(target, frame);
-    motion = still(clampChart(motion.view, frame));
-    apply();
-  }).observe(viewport);
-
   let wasOpen: boolean = false;
   new MutationObserver((): void => {
     const open: boolean = element.classList.contains('open');
     parent.classList.toggle('chart-open', open);
     if (open) return;
+    if (wasOpen) lastView = target;
     wasOpen = false;
     hovered = null;
     fillCard();
@@ -515,8 +525,11 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     setText(pointWord, you.skillPoints === 1 ? 'point' : 'points', false);
     points.classList.toggle('spendable', you.skillPoints > 0);
     viewport.classList.toggle('choosing', you.skillPoints > 0);
-    prompt.classList.toggle('shown', you.skillPoints > 0);
+    const fresh: boolean = you.skillPoints === 0 && you.allocated.length === 0;
+    prompt.classList.toggle('shown', you.skillPoints > 0 || fresh);
+    prompt.classList.toggle('empty', fresh);
     if (you.skillPoints > 0) setText(prompt, `${you.skillPoints} ${you.skillPoints === 1 ? 'point' : 'points'}: choose a place`, false);
+    else if (fresh) setText(prompt, CHART.emptyLine, false);
     restart.classList.toggle('shown', you.allocated.length > 0);
     if (performance.now() >= confirmUntil) restart.classList.remove('confirm');
     setText(restart, restartLabel(), true);
@@ -544,8 +557,9 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     refresh(): void {
       const open: boolean = element.classList.contains('open');
       if (open && !wasOpen) {
-        measure();
-        target = frameChart(frame, openingView());
+        moved = false;
+        frame = measured();
+        target = reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
         motion = still(target);
         apply();
       }
@@ -554,6 +568,13 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     },
     update(dt: number): void {
       if (performance.now() >= confirmUntil && restart.classList.contains('confirm')) sync();
+      const now: AtlasFrame = measured();
+      if (!sameFrame(now, frame)) {
+        frame = now;
+        target = moved ? clampChart(target, frame) : reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
+        motion = still(moved ? clampChart(motion.view, frame) : target);
+        apply();
+      }
       if (atRest(motion, target)) return;
       motion = stepMotion(motion, target, dt);
       apply();

@@ -67,6 +67,10 @@
   bottom: 18px;
   left: 50%;
   z-index: 3;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+  text-align: center;
   padding: 6px 14px;
   border-radius: 4px;
   font-family: var(--serif);
@@ -79,7 +83,12 @@
   transform: translate(-50%, 6px);
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
+    color var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.chart-prompt.empty {
+  color: var(--text-dim);
 }
 
 .chart-prompt.shown {

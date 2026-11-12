@@ -25,18 +25,23 @@
 }
 
 .hud .hud-panel.hud-panel.tree-panel.tree-panel {
-  top: 0;
-  left: 0;
-  right: 0;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
   width: auto;
-  height: calc(100% - var(--hud-cluster-h, 168px));
+  height: auto;
   max-height: none;
   border-radius: 0;
-  transform: scale(0.985);
+  transform: none;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s var(--spring-snappy) var(--spring-smooth-ms);
 }
 
 .hud .hud-panel.hud-panel.tree-panel.tree-panel.open {
-  transform: none;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s var(--spring-snappy) 0s;
 }
 
 .hud.chart-open .hud-quests,

@@ -6,6 +6,7 @@ export const CHART_VIEW = {
   maxScale: 2.6,
   fitMargin: 0.94,
   labelEdge: 12,
+  labelFoot: 52,
   labelGap: 6,
   framePad: 120,
 } as const;
@@ -47,15 +48,27 @@ export function openChart(frame: AtlasFrame, at: ScreenPoint): AtlasView {
 }
 
 export function frameChart(frame: AtlasFrame, points: readonly ScreenPoint[]): AtlasView {
-  if (points.length === 0) return wholeChart(frame);
-  const xs: readonly number[] = points.map((point: ScreenPoint): number => point.x);
-  const ys: readonly number[] = points.map((point: ScreenPoint): number => point.y);
-  const left: number = Math.min(...xs);
-  const right: number = Math.max(...xs);
-  const top: number = Math.min(...ys);
-  const bottom: number = Math.max(...ys);
-  const room: number = Math.min((frame.width * CHART_VIEW.fitMargin) / (right - left + CHART_VIEW.framePad * 2), (frame.height * CHART_VIEW.fitMargin) / (bottom - top + CHART_VIEW.framePad * 2));
-  return clampChart({ x: (left + right) / 2, y: (top + bottom) / 2, scale: Math.min(CHART_VIEW.openScale, room) }, frame);
+  const [here] = points;
+  if (here === undefined) return wholeChart(frame);
+  const reachX: number = Math.max(...points.map((point: ScreenPoint): number => Math.abs(point.x - here.x)));
+  const reachY: number = Math.max(...points.map((point: ScreenPoint): number => Math.abs(point.y - here.y)));
+  const room: number = Math.min((frame.width * CHART_VIEW.fitMargin) / (reachX * 2 + CHART_VIEW.framePad * 2), (frame.height * CHART_VIEW.fitMargin) / (reachY * 2 + CHART_VIEW.framePad * 2));
+  return clampChart({ x: here.x, y: here.y, scale: Math.min(CHART_VIEW.openScale, room) }, frame);
+}
+
+export interface ChartOpening {
+  readonly last: AtlasView | null;
+  readonly choosing: boolean;
+  readonly points: readonly ScreenPoint[];
+}
+
+export function reopenChart(frame: AtlasFrame, opening: ChartOpening): AtlasView {
+  if (opening.last === null || opening.choosing) return frameChart(frame, opening.points);
+  return clampChart(opening.last, frame);
+}
+
+export function sameFrame(a: AtlasFrame, b: AtlasFrame): boolean {
+  return a.width === b.width && a.height === b.height && a.mapWidth === b.mapWidth && a.mapHeight === b.mapHeight;
 }
 
 export function wholeChart(frame: AtlasFrame): AtlasView {
@@ -76,7 +89,7 @@ export function pinLabel(at: ScreenPoint, halfWidth: number, halfHeight: number,
   const left: number = halfWidth + CHART_VIEW.labelEdge;
   const top: number = halfHeight + CHART_VIEW.labelEdge;
   const x: number = between(at.x, left, frame.width - left);
-  const y: number = between(at.y, top, frame.height - top);
+  const y: number = between(at.y, top, frame.height - halfHeight - CHART_VIEW.labelFoot);
   return { x, y, pinned: x !== at.x || y !== at.y };
 }
 
