@@ -38,6 +38,7 @@ void test('the lobby lists the chosen rows in order with the panel formatting', 
 
 void test('time played reads in hours and minutes and stays hidden under a minute', (): void => {
   assert.equal(playedText(30), null);
+  assert.equal(playedText(Number.NaN), null);
   assert.equal(playedText(600), '10 min');
   assert.equal(playedText(7200), '2 h');
 });

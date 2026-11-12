@@ -33,6 +33,7 @@ export type LobbyHero = FreshHero | KnownHero;
 const ROWS: readonly SheetRow[] = [...DEFENCE_ROWS, ...OFFENCE_ROWS];
 
 export function playedText(seconds: number): string | null {
+  if (!Number.isFinite(seconds)) return null;
   const minutes: number = Math.floor(seconds / LOBBY_SHEET.secondsPerMinute);
   if (minutes < 1) return null;
   const hours: number = Math.floor(minutes / LOBBY_SHEET.minutesPerHour);

@@ -25,7 +25,7 @@ export const LOBBY_STAGE = {
   driftRate: 0.067,
   skyColor: 0x7d8aa3,
   groundColor: 0x090a0d,
-  skyIntensity: 0.55,
+  skyIntensity: 0.3,
   keyColor: 0xf1e4d2,
   keyIntensity: 2.6,
   keyAt: [2.6, 3.8, 3.6],
@@ -34,7 +34,7 @@ export const LOBBY_STAGE = {
   rimAt: [-2.2, 3.1, -4.6],
   rimGlow: 0x3a4f80,
   groundSurface: 'black_rock',
-  groundWet: 0.35,
+  groundWet: 0.12,
   groundRock: 'black_ledge',
   rocks: [
     [-3.4, -4.2, 1.3, 0.9],
@@ -58,11 +58,11 @@ export const LOBBY_STAGE = {
   rainSlant: 0.08,
   rainColor: 0x9aa8c2,
   rainOpacity: 0.22,
-  mistLayers: 3,
-  mistWidth: 11,
+  mistLayers: 4,
+  mistWidth: 18,
   mistHeight: 2.6,
   mistColor: 0x7a879c,
-  mistOpacity: 0.09,
+  mistOpacity: 0.045,
   mistDrift: 0.12,
   mistFirstDepth: -1.6,
   mistDepthStep: -1.4,
@@ -94,8 +94,6 @@ export interface LobbyStage {
   dress(look: LobbyLook): void;
   render(renderer: WebGLRenderer, dt: number): void;
   warm(renderer: WebGLRenderer): Promise<void>;
-  enter(): void;
-  leave(): void;
 }
 
 interface RainLayer {
@@ -221,7 +219,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
   let hero: RigInstance | null = null;
   let heroKey: string = '';
   let time: number = 0;
-  const savedRim: Color = new Color();
   const rimGlow: Color = new Color(LOBBY_STAGE.rimGlow);
   const size: Vector2 = new Vector2();
 
@@ -269,18 +266,12 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
       camera.zoom = framing.zoom;
       camera.setViewOffset(size.x, size.y, (0.5 - framing.across) * size.x, framing.down * size.y, size.x, size.y);
       camera.updateProjectionMatrix();
+      RIM_LIGHT.value.copy(rimGlow);
       renderer.render(scene, camera);
     },
     warm(renderer: WebGLRenderer): Promise<void> {
       build();
       return renderer.compileAsync(scene, camera).then((): void => undefined);
-    },
-    enter(): void {
-      savedRim.copy(RIM_LIGHT.value);
-      RIM_LIGHT.value.copy(rimGlow);
-    },
-    leave(): void {
-      RIM_LIGHT.value.copy(savedRim);
     },
   };
 }

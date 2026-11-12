@@ -53,23 +53,27 @@ function frames(count: number): Promise<void> {
   });
 }
 
-function lendPause(screen: LobbyScreen, hud: HTMLElement): boolean {
+function lendPause(screen: LobbyScreen, hud: HTMLElement, open: () => void): void {
   const pause: Element | null = document.querySelector(LOBBY_FLOW.pauseSelector);
-  if (!(pause instanceof HTMLElement)) return false;
+  if (!(pause instanceof HTMLElement)) return;
   screen.root.after(pause);
   const watcher: MutationObserver = new MutationObserver((): void => {
     if (pause.classList.contains(LOBBY_FLOW.pauseOpenClass)) return;
     watcher.disconnect();
     hud.append(pause);
   });
+  open();
+  if (!pause.classList.contains(LOBBY_FLOW.pauseOpenClass)) {
+    hud.append(pause);
+    return;
+  }
   watcher.observe(pause, { attributes: true, attributeFilter: ['class'] });
-  return true;
 }
 
 export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
   const stage: LobbyStage = createLobbyStage(parts.content, parts.library);
   const veil: Veil = createVeil(parts.veil);
-  mountDither(parts.root, { className: 'lobby-edge', layers: BACKDROPS.edge, eager: true, marksHost: false, maxRatio: LOBBY_FLOW.edgeRatio });
+  mountDither(parts.root, { className: 'lobby-edge', layers: BACKDROPS.edge, eager: true, marks: null, maxRatio: LOBBY_FLOW.edgeRatio });
   let active: boolean = false;
   let busy: boolean = false;
 
@@ -83,10 +87,8 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     active = into;
     if (into) {
       stage.dress(parts.look());
-      stage.enter();
+      screen.setBusy(false);
       screen.show(parts.view());
-    } else {
-      stage.leave();
     }
     await frames(LOBBY_FLOW.settleFrames);
     busy = false;
@@ -103,7 +105,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       parts.startOver();
     },
     settings: (): void => {
-      if (lendPause(screen, parts.hud)) parts.openSettings();
+      lendPause(screen, parts.hud, parts.openSettings);
     },
     back: (): void => {
       void swap(false, (): void => {
