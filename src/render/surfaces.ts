@@ -6,7 +6,18 @@ import { assetUrl } from './character-loader.ts';
 export const SURFACES = {
   anisotropy: 4,
   overlayOffset: -2,
+  metalFrom: 0.5,
+  matteRoughness: 1,
 } as const;
+
+export function matte(material: Material): Material {
+  if (!(material instanceof MeshStandardMaterial) || material.metalness >= SURFACES.metalFrom) return material;
+  material.roughness = Math.max(material.roughness, SURFACES.matteRoughness);
+  material.roughnessMap = null;
+  material.metalness = 0;
+  material.metalnessMap = null;
+  return material;
+}
 
 export type SurfaceUse = 'solid' | 'ground' | 'overlay';
 
@@ -43,6 +54,7 @@ export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse): MeshStandardM
   const cached: MeshStandardMaterial | undefined = materials.get(key);
   if (cached !== undefined) return cached;
   const orm: Texture | null = def.orm === null ? null : loadTexture(def.orm, def.metres, false);
+  const metal: boolean = def.metalness >= SURFACES.metalFrom;
   const made: MeshStandardMaterial = new MeshStandardMaterial({
     name: key,
     color: new Color(def.tint),
@@ -50,10 +62,10 @@ export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse): MeshStandardM
     normalMap: def.normal === null ? null : loadTexture(def.normal, def.metres, false),
     normalScale: new Vector2(def.normalScale, def.normalScale),
     aoMap: orm,
-    roughnessMap: orm,
-    metalnessMap: orm,
-    roughness: def.roughness,
-    metalness: def.metalness,
+    roughnessMap: metal ? orm : null,
+    metalnessMap: metal ? orm : null,
+    roughness: metal ? def.roughness : Math.max(def.roughness, SURFACES.matteRoughness),
+    metalness: metal ? def.metalness : 0,
     vertexColors: use !== 'solid',
   });
   if (use === 'overlay') {
@@ -70,7 +82,7 @@ export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse): MeshStandardM
 export function dressed(content: Content, dress: Readonly<Record<string, string>>, material: Material): Material {
   const surfaceId: string | undefined = dress[material.name];
   const def: SurfaceDef | undefined = surfaceId === undefined ? undefined : content.surfaces.get(surfaceId);
-  return def === undefined ? material : surfaceMaterial(def, 'solid');
+  return def === undefined ? matte(material) : surfaceMaterial(def, 'solid');
 }
 
 export async function preloadSurfaces(content: Content): Promise<void> {
