@@ -58,7 +58,7 @@ export const MOMENT_VIEW = {
   brightFlash: 0.8,
   strikeTrauma: 0.22,
   markRings: 3,
-  markAlpha: 0.5,
+  markAlpha: 0.2,
   markPulse: 9,
 } as const;
 

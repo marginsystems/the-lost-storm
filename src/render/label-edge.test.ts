@@ -33,7 +33,7 @@ void test('a ground tag past either side slides back inside the view, and a tag 
 
 void test('a ground tag above the top or below the bottom slides back so all of it shows', (): void => {
   const phone = { width: 390, height: 844 };
-  assert.equal(keepBelowTop(-32, 20, phone), LABEL_EDGE.side + 20);
+  assert.equal(keepBelowTop(-32, 20, phone), LABEL_EDGE.topClear + 20);
   assert.equal(keepBelowTop(900, 20, phone), 844 - LABEL_EDGE.side);
   assert.equal(keepBelowTop(400, 20, phone), 400);
 });

@@ -26,6 +26,7 @@ export const OVERLAYS = {
   numberLife: 1,
   numberDrift: 26,
   labelLift: 1.35,
+  findLift: 3.15,
   labelExit: 0.52,
   labelNear: 9,
   labelGap: 2,
@@ -166,13 +167,15 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const point: Vector2 = new Vector2();
   const anchor: Vector2 = new Vector2();
   const tagSizes: TagSizes<HTMLElement> = createTagSizes(browserTagMeasure());
+  const tagRects: ScreenRect[] = [];
   const keepClear = (element: HTMLElement): void => {
     const tag: Element | null = element.firstElementChild;
     if (!(tag instanceof HTMLElement)) return;
     const size: TagSize = tagSizes.size(tag);
     if (size.width === 0) return;
-    const spot: TagPlace = placeTag(point.x, point.y, size.width, size.height, view, hudRects);
+    const spot: TagPlace = placeTag(point.x, point.y, size.width, size.height, view, tagRects);
     point.set(spot.x, spot.y);
+    tagRects.push({ left: spot.x - size.width / 2, top: spot.y - size.height, right: spot.x + size.width / 2, bottom: spot.y });
   };
   const labelLayer: HTMLDivElement = document.createElement('div');
   const numberLayer: HTMLDivElement = document.createElement('div');
@@ -430,6 +433,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         sinceHudRead = 0;
       }
       if (exitsOf !== world.zone) showExits(world);
+      tagRects.length = 0;
+      for (const rect of hudRects) tagRects.push(rect);
       for (const label of exits) {
         const open: boolean = label.open(world);
         label.element.classList.toggle('locked', !open);
@@ -520,7 +525,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           label.width = inner.offsetWidth;
           label.height = inner.offsetHeight;
         }
-        camera.project(label.ground.pos.x, OVERLAYS.labelLift, label.ground.pos.z, point);
+        camera.project(label.ground.pos.x, label.ground.find === null ? OVERLAYS.labelLift : OVERLAYS.findLift, label.ground.pos.z, point);
         if (shown) {
           const first: TagPlace = placeTag(point.x, point.y, label.width, label.height, view, hudRects);
           items.set(id, { x: point.x, y: point.y });

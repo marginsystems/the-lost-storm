@@ -24,7 +24,7 @@ export const LIGHT_SHAPE = {
   boltPin: 0.2,
   boltRate: 0.8,
   boltWobble: 0.6,
-  boltCore: 0.024,
+  boltCore: 0.032,
   boltGlow: 0.11,
   boltGlowShare: 0.3,
   boltHaloShare: 0.07,

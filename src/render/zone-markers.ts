@@ -1,10 +1,10 @@
 import type { Scene } from 'three';
-import { Color, Group, Mesh, PointLight, RingGeometry } from 'three';
-import type { MeshBasicMaterial } from 'three';
+import { Color, Group, PointLight } from 'three';
 import type { ExitLook, ZoneCheckpoint, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
-import { additive, glow } from './effect-shapes.ts';
+import type { GroundGlow } from './ground-glow.ts';
+import { createGroundGlow } from './ground-glow.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
 export const MARKERS = {
@@ -14,10 +14,7 @@ export const MARKERS = {
   waypointLight: 14,
   locked: 0.22,
   lift: 0.07,
-  ringInner: 0.86,
-  coreOuter: 0.8,
-  coreOpacity: 0.07,
-  ringOpacity: 0.5,
+  glowStrength: 0.2,
   pulseSpeed: 2.1,
   pulseDepth: 0.35,
   lightHeight: 1.4,
@@ -26,7 +23,6 @@ export const MARKERS = {
   checkpointLight: 16,
   idle: 0.3,
   ease: 5,
-  segments: 48,
   mistLight: 4,
 } as const;
 
@@ -36,8 +32,7 @@ interface MarkerShape {
 }
 
 interface Marker {
-  readonly ring: MeshBasicMaterial;
-  readonly core: MeshBasicMaterial;
+  readonly glow: GroundGlow;
   readonly light: PointLight;
   readonly lightPower: number;
   readonly phase: number;
@@ -62,25 +57,19 @@ export function exitShape(look: ExitLook): MarkerShape {
 export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
   const group: Group = new Group();
   const markers: Marker[] = [];
-  const meshes: Mesh[] = [];
 
   const build = (x: number, z: number, radius: number, hex: number, shape: MarkerShape, lit: (world: World) => number): void => {
     const lightPower: number = shape.light;
     const color: Color = new Color(hex);
-    const ring: Mesh<RingGeometry, MeshBasicMaterial> = new Mesh(new RingGeometry(radius * MARKERS.ringInner, radius, MARKERS.segments), additive(glow(color, 1.6), MARKERS.ringOpacity));
-    const core: Mesh<RingGeometry, MeshBasicMaterial> = new Mesh(new RingGeometry(0, radius * MARKERS.coreOuter, MARKERS.segments), additive(color, MARKERS.coreOpacity));
-    for (const flat of [ring, core]) {
-      flat.rotation.x = -Math.PI / 2;
-      flat.position.set(x, zone.floorHeight + MARKERS.lift, z);
-      flat.renderOrder = 4;
-      flat.visible = shape.flats;
-      group.add(flat);
-      meshes.push(flat);
-    }
+    const glow: GroundGlow = createGroundGlow(color);
+    glow.place(x, zone.floorHeight + MARKERS.lift, z, radius);
+    glow.mesh.renderOrder = 4;
+    glow.mesh.visible = shape.flats;
+    group.add(glow.mesh);
     const light: PointLight = new PointLight(color, lightPower, MARKERS.lightDistance, 1.8);
     light.position.set(x, MARKERS.lightHeight, z);
     if (renderBudget().markerLights) group.add(light);
-    markers.push({ ring: ring.material, core: core.material, light, lightPower, phase: x * 0.37 + z * 0.61, lit, level: null });
+    markers.push({ glow, light, lightPower, phase: x * 0.37 + z * 0.61, lit, level: null });
   };
 
   const exitLit = (exit: ZoneExit): ((world: World) => number) => (world: World): number => (allHold(world, exit.requires) ? 1 : exit.hiddenWhenLocked ? 0 : MARKERS.locked);
@@ -97,18 +86,16 @@ export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
         const level: number = marker.level === null ? target : marker.level + (target - marker.level) * (1 - Math.exp(-MARKERS.ease * dt));
         marker.level = level;
         const pulse: number = 1 - MARKERS.pulseDepth * (0.5 + 0.5 * Math.sin(time * MARKERS.pulseSpeed + marker.phase));
-        marker.ring.opacity = MARKERS.ringOpacity * level * pulse;
-        marker.core.opacity = MARKERS.coreOpacity * level;
+        marker.glow.set(MARKERS.glowStrength * level * pulse, time);
         marker.light.intensity = marker.lightPower * level * pulse;
       }
     },
     dispose(): void {
       group.removeFromParent();
-      for (const mesh of meshes) {
-        mesh.geometry.dispose();
-        if (!Array.isArray(mesh.material)) mesh.material.dispose();
+      for (const marker of markers) {
+        marker.glow.dispose();
+        marker.light.dispose();
       }
-      for (const marker of markers) marker.light.dispose();
     },
   };
 }

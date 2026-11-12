@@ -215,3 +215,18 @@ void test('the first time the hero stands in an awake moment a quiet line says l
   moment.phase = 'awake';
   assert.notEqual(shown(stepHints(defs, world, state, IDLE)), 'moment_edge');
 });
+
+void test('learning the roll shows its hint, and the first roll puts it away for good', (): void => {
+  const world: World = fresh();
+  const state: HintState = createHintState(earlyIds().filter((id: string): boolean => id !== 'roll'));
+  const roll = must(content.skills.get('dodge_roll'), 'the roll');
+  world.player.learned.push(roll.id);
+  world.player.bar[5] = roll.id;
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'roll');
+  const swing: WorldEvent = { type: 'skill_start', actorId: world.player.id + 1, skill: roll, direction: { x: 0, z: 1 }, windup: 0, recovery: 0 };
+  assert.deepEqual(stepHints(defs, world, state, { ...IDLE, events: [swing] }), []);
+  const rolled: WorldEvent = { ...swing, actorId: world.player.id };
+  assert.equal(stepHints(defs, world, state, { ...IDLE, events: [rolled] })[0]?.type, 'hide');
+  assert.ok(state.seen.has('roll'));
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+});

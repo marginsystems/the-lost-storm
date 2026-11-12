@@ -11,6 +11,7 @@
 
 .hud {
   --panel-bg: rgba(12, 16, 24, 0.82);
+  --row-bg: rgba(12, 16, 24, 0.5);
   --panel-edge: rgba(255, 255, 255, 0.06);
   --text: #efe6d6;
   --text-dim: rgba(239, 230, 214, 0.58);
@@ -444,7 +445,7 @@
   padding: 4px;
   pointer-events: auto;
   border-radius: 6px;
-  background: var(--panel-bg);
+  background: var(--row-bg);
   border: 1px solid var(--panel-edge);
 }
 
@@ -454,16 +455,22 @@
   height: 50px;
   border-radius: 4px;
   color: #a9e2ff;
-  background: linear-gradient(180deg, rgba(40, 52, 74, 0.55), rgba(10, 13, 20, 0.6));
+  background: rgba(10, 13, 20, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 30px rgba(6, 8, 12, 0);
-  transition:
-    transform var(--spring-bouncy-ms) var(--spring-bouncy),
-    box-shadow var(--spring-smooth-ms) var(--spring-smooth);
+  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
 }
 
-.slot.empty {
-  box-shadow: inset 0 0 0 30px rgba(6, 8, 12, 0.45);
+.slot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(40, 52, 74, 0.55), rgba(10, 13, 20, 0.6));
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.slot.empty::before {
+  opacity: 0;
 }
 
 .slot.empty .slot-key {
@@ -540,7 +547,7 @@
   cursor: pointer;
   border-radius: 4px;
   color: var(--text);
-  background: var(--panel-bg);
+  background: var(--row-bg);
   border: 1px solid var(--panel-edge);
   transition: transform var(--spring-bouncy-ms) var(--spring-bouncy), background-color var(--spring-smooth-ms) var(--spring-smooth), gap var(--spring-smooth-ms) var(--spring-smooth);
 }

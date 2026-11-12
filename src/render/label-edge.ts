@@ -3,6 +3,7 @@ import type { ScreenRect } from './label-stack.ts';
 export const LABEL_EDGE = {
   top: 48,
   side: 8,
+  topClear: 24,
   hudGap: 4,
   awayDistance: 6,
 } as const;
@@ -30,7 +31,7 @@ export function keepInside(x: number, width: number, view: ViewSize): number {
 }
 
 export function keepBelowTop(bottom: number, height: number, view: ViewSize): number {
-  return Math.min(view.height - LABEL_EDGE.side, Math.max(LABEL_EDGE.side + height, bottom));
+  return Math.min(view.height - LABEL_EDGE.side, Math.max(LABEL_EDGE.topClear + height, bottom));
 }
 
 function boxOf(x: number, y: number, width: number, height: number): ScreenRect {

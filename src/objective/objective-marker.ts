@@ -1,11 +1,11 @@
 import type { Scene } from 'three';
-import { Color, Mesh, RingGeometry, Vector2 } from 'three';
-import type { MeshBasicMaterial } from 'three';
+import { Color, Vector2 } from 'three';
 import type { ObjectiveTarget } from '../../sim/world/objective.ts';
 import { objectiveTarget } from '../../sim/world/objective.ts';
 import type { World } from '../../sim/world/types.ts';
 import { el } from '../hud/dom.ts';
-import { additive, glow } from '../render/effect-shapes.ts';
+import type { GroundGlow } from '../render/ground-glow.ts';
+import { createGroundGlow } from '../render/ground-glow.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import { arrowToward } from './arrow-geometry.ts';
 import type { ArrowPlacement, Point, Rect } from './arrow-geometry.ts';
@@ -15,12 +15,10 @@ import { createGlide, glideToward } from '../render/label-glide.ts';
 
 export const OBJECTIVE = {
   color: 0xe8b866,
-  ringInner: 0.88,
-  ringOpacity: 0.55,
+  glowStrength: 0.16,
   pulseSpeed: 2.4,
   pulseDepth: 0.25,
   lift: 0.09,
-  segments: 48,
   ease: 6,
   screenMargin: 56,
   hudGap: 14,
@@ -50,11 +48,10 @@ function sameSpot(a: ObjectiveTarget | null, b: ObjectiveTarget | null): boolean
 export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTMLElement): ObjectiveMarker {
   const style: HTMLStyleElement = el('style', '', hud);
   style.textContent = css;
-  const ring: Mesh<RingGeometry, MeshBasicMaterial> = new Mesh(new RingGeometry(OBJECTIVE.ringInner, 1, OBJECTIVE.segments), additive(glow(new Color(OBJECTIVE.color), 1.6), 0));
-  ring.rotation.x = -Math.PI / 2;
-  ring.renderOrder = 5;
-  ring.visible = false;
-  scene.add(ring);
+  const glow: GroundGlow = createGroundGlow(new Color(OBJECTIVE.color));
+  glow.mesh.renderOrder = 5;
+  glow.mesh.visible = false;
+  scene.add(glow.mesh);
   const arrow: HTMLDivElement = el('div', 'objective-arrow', hud);
   el('div', 'objective-arrow-head', arrow);
   const screen: Vector2 = new Vector2();
@@ -72,12 +69,9 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
       previous = target;
       const goal: number = target === null ? 0 : 1;
       level += (goal - level) * (1 - Math.exp(-OBJECTIVE.ease * dt));
-      if (target !== null) {
-        ring.position.set(target.pos.x, world.zone.floorHeight + OBJECTIVE.lift, target.pos.z);
-        ring.scale.setScalar(target.radius);
-      }
-      ring.visible = level > 0.01;
-      ring.material.opacity = level * OBJECTIVE.ringOpacity * (1 + Math.sin(time * OBJECTIVE.pulseSpeed) * OBJECTIVE.pulseDepth);
+      if (target !== null) glow.place(target.pos.x, world.zone.floorHeight + OBJECTIVE.lift, target.pos.z, target.radius);
+      glow.mesh.visible = level > 0.01;
+      glow.set(level * OBJECTIVE.glowStrength * (1 + Math.sin(time * OBJECTIVE.pulseSpeed) * OBJECTIVE.pulseDepth), time);
       let placement: ArrowPlacement | null = null;
       sinceRead += dt;
       if (target !== null) {
