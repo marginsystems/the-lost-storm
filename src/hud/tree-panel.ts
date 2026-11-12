@@ -245,8 +245,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Panel
 
   window.addEventListener('resize', (): void => {
     if (!element.classList.contains('open')) return;
-    hideTip();
     fitViewport();
+    if (hovered !== null) placeTip(hovered);
   });
 
   new MutationObserver((): void => {
