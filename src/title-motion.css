@@ -2,6 +2,7 @@
 
 :root {
   --arrive-step: calc(var(--spring-snappy-ms) / 4);
+  --leave-lead: calc(var(--spring-snappy-ms) / 2);
   --arrive-rise: 8px;
   --line-shift: 7px;
 }
@@ -120,8 +121,19 @@ body {
 
 #title.gone {
   transition:
-    opacity var(--spring-smooth-ms) var(--spring-smooth),
-    visibility 0s linear var(--spring-smooth-ms);
+    opacity var(--spring-smooth-ms) var(--spring-smooth) var(--leave-lead),
+    visibility 0s linear calc(var(--spring-smooth-ms) + var(--leave-lead));
+}
+
+#title.gone .title-card,
+#title.gone .title-lobby {
+  animation: title-leave var(--spring-snappy-ms) var(--spring-snappy) both;
+}
+
+@keyframes title-leave {
+  to {
+    opacity: 0;
+  }
 }
 
 body.playing #hud,

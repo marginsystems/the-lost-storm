@@ -6,7 +6,8 @@ import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { warnInConsole } from './backend/console-log.ts';
 import { element } from './dom-element.ts';
 import { startTitleAccount } from './title-signin.ts';
-import { markInput, markPlaying, wireFold, wireTitleKeys } from './title-screen.ts';
+import { fadePageOut } from './landing/leave.ts';
+import { markInput, markPlaying, wireFold, wireHudAway, wireTitleKeys } from './title-screen.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
@@ -583,13 +584,14 @@ async function start(): Promise<void> {
     preloadNearZones();
   };
   wireTitleKeys(title, enter);
+  wireHudAway(document.body, element('hud', HTMLDivElement));
   wireEnter({ enter, begin, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), random: Math.random, begin }) });
   const startOver = async (): Promise<void> => {
     dirty = false;
     reset.disabled = true;
     enter.disabled = true;
     createHintStore(createBrowserStore()).clear();
-    await backend.reset();
+    await Promise.all([backend.reset(), fadePageOut()]);
     window.location.reload();
   };
   reset.addEventListener('click', (): void => {

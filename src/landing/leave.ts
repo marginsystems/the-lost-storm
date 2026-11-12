@@ -3,6 +3,7 @@ export const LEAVE = {
   leavingClass: 'leaving',
   durationToken: '--spring-snappy-ms',
   fallbackMs: 260,
+  msPerSecond: 1000,
   abandonKey: 'Escape',
   abandonEvent: 'navigateerror',
 } as const;
@@ -22,8 +23,19 @@ export function fadesOut(click: LeaveClick): boolean {
 }
 
 export function leaveMs(token: string): number {
-  const parsed: number = Number.parseFloat(token);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : LEAVE.fallbackMs;
+  const trimmed: string = token.trim();
+  const parsed: number = Number.parseFloat(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) return LEAVE.fallbackMs;
+  const seconds: boolean = trimmed.endsWith('s') && !trimmed.endsWith('ms');
+  return seconds ? parsed * LEAVE.msPerSecond : parsed;
+}
+
+export function fadePageOut(): Promise<void> {
+  document.body.classList.add(LEAVE.leavingClass);
+  const ms: number = leaveMs(getComputedStyle(document.documentElement).getPropertyValue(LEAVE.durationToken));
+  return new Promise<void>((resolve: () => void): void => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 export function wireLeave(): void {

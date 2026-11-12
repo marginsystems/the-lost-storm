@@ -5,6 +5,8 @@ export const TITLE_SCREEN = {
   foldOpenClass: 'open',
   readyClass: 'ready',
   goneClass: 'gone',
+  awayClass: 'hud-away',
+  awayProperty: 'opacity',
   enterKeys: ['Enter', ' '],
 } as const;
 
@@ -25,6 +27,19 @@ export function markInput(body: ClassTarget, touch: boolean): void {
 
 export function markPlaying(body: ClassTarget, playing: boolean): void {
   body.classList.toggle(TITLE_SCREEN.playingClass, playing);
+  if (playing) body.classList.toggle(TITLE_SCREEN.awayClass, false);
+}
+
+export function settlesAway(property: string, fromLayer: boolean, playing: boolean): boolean {
+  return fromLayer && !playing && property === TITLE_SCREEN.awayProperty;
+}
+
+export function wireHudAway(body: HTMLElement, hud: HTMLElement): void {
+  const settle = (event: TransitionEvent): void => {
+    if (settlesAway(event.propertyName, event.target === hud, body.classList.contains(TITLE_SCREEN.playingClass))) body.classList.add(TITLE_SCREEN.awayClass);
+  };
+  hud.addEventListener('transitionend', settle);
+  hud.addEventListener('transitioncancel', settle);
 }
 
 export function wireFold(button: HTMLButtonElement, fold: HTMLElement): void {
