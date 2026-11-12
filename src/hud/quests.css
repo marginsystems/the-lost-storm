@@ -42,10 +42,18 @@
 
 .quest-goal {
   margin-top: 2px;
+  max-height: 4.5em;
+  overflow: hidden;
   font-size: 14px;
   color: var(--text);
   text-shadow: var(--legible-shadow);
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-smooth-ms) var(--spring-smooth), color var(--spring-smooth-ms) var(--spring-smooth);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-smooth-ms) var(--spring-smooth), color var(--spring-smooth-ms) var(--spring-smooth), max-height var(--spring-smooth-ms) var(--spring-smooth), margin-top var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.quest-goal.shared {
+  max-height: 0;
+  margin-top: 0;
+  opacity: 0;
 }
 
 .quest-goal.done {

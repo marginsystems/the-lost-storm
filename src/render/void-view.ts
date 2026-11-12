@@ -293,6 +293,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
     lightning.at.y += moved.z;
     glimpse.group.position.x += moved.x;
     glimpse.group.position.z += moved.z;
+    const arriving: boolean = last === null;
     last ??= { x: pos.x, z: pos.z };
     const stepX: number = pos.x - last.x - moved.x;
     const stepZ: number = pos.z - last.z - moved.z;
@@ -310,7 +311,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
     dir.value.set(drive.dir.x, drive.dir.z);
     shiftedEddies(drive.eddies, eddies.value);
     const wanted: number = world.wake === null ? 1 : VOID_VIEW.sleepingClear + (1 - VOID_VIEW.sleepingClear) * wakeProgress(world.wake);
-    openScale.value += (wanted - openScale.value) * Math.min(1, dt * VOID_VIEW.openRate);
+    openScale.value = arriving ? wanted : openScale.value + (wanted - openScale.value) * Math.min(1, dt * VOID_VIEW.openRate);
     const shore: ShoreState | null = world.shore;
     const rules: VoidShore | null = world.zone.void?.shore ?? null;
     if (shore !== null && rules !== null) {
@@ -318,7 +319,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
       shoreLook.value.x = rules.thin;
     }
     const shoreOn: number = shore !== null && rules !== null ? 1 : 0;
-    shoreLook.value.y += (shoreOn - shoreLook.value.y) * Math.min(1, dt * VOID_VIEW.shoreRate);
+    shoreLook.value.y = arriving ? shoreOn : shoreLook.value.y + (shoreOn - shoreLook.value.y) * Math.min(1, dt * VOID_VIEW.shoreRate);
     hero.value.set(pos.x, pos.z);
     rock?.update(shore === null ? null : { hero: pos, shift: world.shift, at: shore.at, facing: shore.facing, shown: shoreLook.value.y }, zone.floorHeight);
   };

@@ -10,6 +10,7 @@ import { clearAreas } from './areas.ts';
 import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
 import type { GroundItem, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
+import type { VoidArrival } from './wake.ts';
 import { beginVoid } from './wake.ts';
 import { clearMoments, startMoments } from './moments.ts';
 
@@ -87,9 +88,10 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   world.grid = buildNavGrid(zone, world.content.props, world.content.surfaces, world.content.player.radius);
   world.respawn = respawn;
   world.shift = { x: 0, z: 0 };
-  if (!world.visited.includes(zone.id)) world.visited.push(zone.id);
+  const arrival: VoidArrival = world.visited.includes(zone.id) ? 'return' : 'first';
+  if (arrival === 'first') world.visited.push(zone.id);
   placePlayer(world);
-  beginVoid(world);
+  beginVoid(world, arrival);
   for (const item of carried) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   spawnNpcs(world);
   spawnPacks(world);

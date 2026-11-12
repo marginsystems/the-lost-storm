@@ -1,10 +1,11 @@
 import type { ZoneEncounter, ZoneVoid } from '../content/story-types.ts';
-import type { ItemSlot, ZoneDef, ZoneExit } from '../content/types.ts';
+import type { ItemSlot, ZoneExit } from '../content/types.ts';
 import { generateItem, slotOf } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, dot, length, normalize } from '../math.ts';
 import { allHold } from './conditions.ts';
 import { equipFromInventory } from './character.ts';
+import { moveExit } from './exits.ts';
 import { walkOnFinds } from './finds.ts';
 import { removeGround } from './ground.ts';
 import { setFlags } from './story.ts';
@@ -16,16 +17,6 @@ const DEGREES: number = Math.PI / 180;
 const ENCOUNTER = {
   closeShare: 0.5,
 } as const;
-
-export function moveExit(world: World, exitId: string, pos: Vec2): void {
-  const zone: ZoneDef = world.zone;
-  const exits: ZoneExit[] = [...zone.exits];
-  const index: number = exits.findIndex((exit: ZoneExit): boolean => exit.id === exitId);
-  const exit: ZoneExit | undefined = exits[index];
-  if (exit === undefined) return;
-  exits[index] = { ...exit, x: pos.x, z: pos.z };
-  world.zone = { ...zone, exits };
-}
 
 function groundOf(world: World, state: EncounterState): GroundItem | null {
   return world.ground.find((ground: GroundItem): boolean => ground.id === state.groundId) ?? null;

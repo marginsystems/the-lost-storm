@@ -2,7 +2,8 @@ import type { VoidShore, ZoneVoid } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { allHold } from './conditions.ts';
-import { moveExit, stepEncounters } from './encounters.ts';
+import { stepEncounters } from './encounters.ts';
+import { moveExit } from './exits.ts';
 import { shiftMoments } from './moments.ts';
 import type { Command, Intent, PlayerState, WakeState, World } from './types.ts';
 

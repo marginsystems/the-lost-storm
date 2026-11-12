@@ -7,13 +7,13 @@ import { surfaceMaterial } from './surfaces.ts';
 export const SHORE_ROCK = {
   size: 30,
   cells: 30,
-  inner: 3.5,
-  outer: 11,
+  inner: 5,
+  outer: 13,
   lineFrom: -2,
   lineTo: 5,
   lift: 0.015,
-  wet: 1,
-  opacity: 0.72,
+  wet: 0.2,
+  opacity: 0.9,
   renderOrder: 2,
 } as const;
 

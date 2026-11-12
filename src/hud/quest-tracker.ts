@@ -3,6 +3,7 @@ import { activeQuests, currentObjective } from '../../sim/world/quests.ts';
 import { nextAction, questTarget } from '../../sim/world/objective.ts';
 import type { World, WorldEvent } from '../../sim/world/types.ts';
 import { el, label, retrigger } from './dom.ts';
+import { repeatedSteps } from './shared-steps.ts';
 
 const TRACKER = {
   swapMs: 520,
@@ -77,11 +78,14 @@ export function createQuestTracker(root: HTMLElement): QuestTracker {
     element,
     update(world: World): void {
       const active: QuestDef[] = activeQuests(world);
-      for (const quest of active) {
+      const texts: string[] = active.map((quest: QuestDef): string => actionText(world, quest, currentObjective(world, quest)));
+      const repeated: readonly boolean[] = repeatedSteps(texts);
+      active.forEach((quest: QuestDef, index: number): void => {
         const block: QuestBlock = blocks.get(quest.id) ?? add(world, quest);
         const objective: ObjectiveDef | null = currentObjective(world, quest);
-        if (objective !== null && (objective.id !== block.shown || actionText(world, quest, objective) !== block.text)) swap(world, quest, block);
-      }
+        if (objective !== null && (objective.id !== block.shown || texts[index] !== block.text)) swap(world, quest, block);
+        block.goal.classList.toggle('shared', repeated[index] === true);
+      });
       for (const [questId, block] of blocks) {
         if (!active.some((quest: QuestDef): boolean => quest.id === questId)) leave(questId, block);
       }

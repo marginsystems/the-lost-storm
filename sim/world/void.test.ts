@@ -45,7 +45,7 @@ void test('the wake rises from lying to standing over its rise time', (): void =
 
 void test('a zone that is not a void starts the hero on his feet', (): void => {
   const world: World = worldIn(content, 'hall_of_time', 3);
-  beginVoid(world);
+  beginVoid(world, 'first');
   assert.equal(world.wake, null);
 });
 
@@ -61,7 +61,7 @@ void test('nothing can be cast in a void, but walking works', (): void => {
 void test('a skill queued before the hero arrives in a void is dropped on arrival', (): void => {
   const world: World = worldIn(content, voidZone.id, 3);
   world.player.queued = { type: 'skill', slot: 0, aim: { x: 1, z: 0 }, targetId: null };
-  beginVoid(world);
+  beginVoid(world, 'first');
   assert.equal(world.player.queued, null);
 });
 
@@ -106,6 +106,6 @@ void test('a held key let go while the hero wakes is still released, and a new v
   assert.equal(acceptsCommand(world, { type: 'hold', slot: 1, down: true }), false);
   assert.equal(acceptsCommand(world, { type: 'hold', slot: 1, down: false }), true);
   world.player.held = [1];
-  beginVoid(world);
+  beginVoid(world, 'first');
   assert.deepEqual(world.player.held, []);
 });
