@@ -11,7 +11,9 @@
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint --type-aware --deny-warnings",
     "check": "npm run typecheck && npm run lint && npm test",
-    "test": "node --test 'sim/**/*.test.ts' 'src/**/*.test.ts' 'test/**/*.test.ts'",
+    "test": "node --test --experimental-test-isolation=none 'sim/**/*.test.ts' 'src/**/*.test.ts' 'test/**/*.test.ts' 'tools/**/*.test.ts'",
+    "test:isolated": "node --test --test-concurrency=4 'sim/**/*.test.ts' 'src/**/*.test.ts' 'test/**/*.test.ts' 'tools/**/*.test.ts'",
+    "test:affected": "node tools/affected.ts --run",
     "assets:inspect": "node tools/inspect-glb.ts"
   },
   "dependencies": {

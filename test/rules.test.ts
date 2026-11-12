@@ -78,6 +78,13 @@ void test('every test file sits beside the file it tests', (): void => {
   }
 });
 
+void test('no test starts a server, a browser or another process', (): void => {
+  const starts: RegExp = /from '(node:)?(http|https|http2|net|child_process|worker_threads)'|from '(playwright|puppeteer)[^']*'|\.listen\(/;
+  for (const { path, lines } of typescript.filter((source: SourceFile): boolean => source.path.endsWith('.test.ts'))) {
+    assert.ok(!lines.some((line: string): boolean => starts.test(line)), `${path} starts a server, a browser or a process`);
+  }
+});
+
 void test('every shipped model and texture is listed in ASSETS.md', (): void => {
   const assets: string = readFileSync('ASSETS.md', 'utf8');
   const models = (dir: string): string[] =>

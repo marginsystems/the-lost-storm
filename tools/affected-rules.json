@@ -1,0 +1,35 @@
+{
+  "testRoots": ["sim", "src", "test", "tools"],
+  "graphRoots": ["sim", "src", "test", "tools", "data"],
+  "fullSuite": ["sim/**/*.test.ts", "src/**/*.test.ts", "test/**/*.test.ts", "tools/**/*.test.ts"],
+  "alwaysRun": ["test/rules.test.ts"],
+  "rules": [
+    {
+      "kind": "everything",
+      "paths": [
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json",
+        ".oxlintrc.json",
+        "vite.config.ts",
+        ".node-version",
+        ".nvmrc",
+        ".github/**",
+        "test/support.ts",
+        "test/*-support.ts",
+        "test/fake-*.ts",
+        "tools/affected.ts",
+        "tools/affected-rules.json"
+      ]
+    },
+    { "kind": "importers", "paths": ["sim/**", "test/**/*.test.ts", "tools/**"], "alsoRun": [] },
+    { "kind": "importers", "paths": ["data/**"], "alsoRun": ["sim/content/content.test.ts", "src/launch/data.test.ts"] },
+    { "kind": "importers", "paths": ["src/**"], "alsoRun": ["src/hud/hud.test.ts", "src/hud/hud-gate.test.ts"] },
+    { "kind": "importers", "paths": ["src/hud/**"], "alsoRun": ["src/hud/**/*.test.ts"] },
+    { "kind": "importers", "paths": ["src/backend/**"], "alsoRun": ["src/backend/**/*.test.ts"] },
+    { "kind": "importers", "paths": ["src/**/*.css"], "alsoRun": ["src/title-screen.test.ts", "src/landing/leave.test.ts", "src/hud/panel-cover.test.ts"] },
+    { "kind": "importers", "paths": ["src/input.ts"], "alsoRun": ["src/input.test.ts"] },
+    { "kind": "only", "paths": ["index.html", "play/**"], "run": ["src/launch/data.test.ts"] },
+    { "kind": "only", "paths": ["**/*.md", "docs/**", "public/**", "licenses/**", "blender/**", "LICENSE", ".gitignore", ".claude/**"], "run": [] }
+  ]
+}
