@@ -12,8 +12,15 @@ export type Milestone =
   | { readonly kind: 'flag'; readonly event: CountedEvent; readonly flag: string; readonly is: string | null }
   | { readonly kind: 'zone'; readonly event: CountedEvent; readonly zone: string };
 
+export type Completion = { readonly kind: 'flag'; readonly flag: string } | { readonly kind: 'act'; readonly act: string };
+
+export interface Progress {
+  readonly flags: Readonly<Record<string, string>>;
+  readonly ended: ReadonlySet<string>;
+}
+
 export interface AlphaRules {
-  readonly completeAct: string;
+  readonly complete: Completion;
   readonly milestones: readonly Milestone[];
 }
 
@@ -84,12 +91,18 @@ function readMilestone(value: unknown, index: number): Milestone {
   return { kind: 'flag', event, flag: textField(value, 'flag', where), is: typeof is === 'string' ? is : null };
 }
 
+function readCompletion(value: unknown): Completion {
+  if (!isFields(value)) throw new Error('alpha.complete must be an object');
+  if (typeof value['act'] === 'string') return { kind: 'act', act: textField(value, 'act', 'alpha.complete') };
+  return { kind: 'flag', flag: textField(value, 'flag', 'alpha.complete') };
+}
+
 export function readAlphaRules(value: unknown): AlphaRules {
   if (!isFields(value)) throw new Error('alpha must be an object');
   const milestones: unknown = value['milestones'];
   if (!Array.isArray(milestones)) throw new Error('alpha.milestones must be an array');
   const list: readonly unknown[] = milestones;
-  return { completeAct: textField(value, 'completeAct', 'alpha'), milestones: list.map(readMilestone) };
+  return { complete: readCompletion(value['complete']), milestones: list.map(readMilestone) };
 }
 
 export function codePoints(text: string): number {
@@ -125,8 +138,11 @@ export function feedbackBody(rating: Rating, text: string, context: FeedbackCont
   };
 }
 
-export function isSliceComplete(rules: AlphaRules, ended: ReadonlySet<string>): boolean {
-  return ended.has(rules.completeAct);
+export function isSliceComplete(rules: AlphaRules, progress: Progress): boolean {
+  const complete: Completion = rules.complete;
+  if (complete.kind === 'act') return progress.ended.has(complete.act);
+  const value: string | undefined = progress.flags[complete.flag];
+  return value !== undefined && value !== '';
 }
 
 function holds(milestone: Milestone, snapshot: Snapshot): boolean {
@@ -160,8 +176,8 @@ export function afterFeedback(state: LaunchState, body: FeedbackBody, outcome: O
   return { ...state, outbox: state.outbox.filter((queued: FeedbackBody): boolean => queued !== body) };
 }
 
-export function shouldShowEnd(state: LaunchState, rules: AlphaRules, ended: ReadonlySet<string>): boolean {
-  return !state.endShown && isSliceComplete(rules, ended);
+export function shouldShowEnd(state: LaunchState, rules: AlphaRules, progress: Progress): boolean {
+  return !state.endShown && isSliceComplete(rules, progress);
 }
 
 export function markEndShown(state: LaunchState): LaunchState {

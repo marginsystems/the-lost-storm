@@ -125,8 +125,47 @@ void test('a busy server is retried, a refused body is dropped', async (): Promi
 void test('the end card is taken once and remembered', (): void => {
   const { store, open } = rig();
   const loop: LaunchLoop = open();
-  assert.equal(loop.takeEndCard(new Set<string>()), false);
-  assert.equal(loop.takeEndCard(new Set<string>([ALPHA_RULES.completeAct])), true);
-  assert.equal(loop.takeEndCard(new Set<string>([ALPHA_RULES.completeAct])), false);
+  const none: ReadonlySet<string> = new Set<string>();
+  assert.equal(loop.takeEndCard({ flags: {}, ended: none }), false);
+  assert.equal(loop.takeEndCard({ flags: { alpha_slice_complete: 'yes' }, ended: none }), true);
+  assert.equal(loop.takeEndCard({ flags: { alpha_slice_complete: 'yes' }, ended: none }), false);
   assert.equal(readLaunchState(store.read(LAUNCH_KEY)).endShown, true);
+});
+
+void test('a flush that starts during a send does not post the feedback twice', async (): Promise<void> => {
+  const { server, open } = rig();
+  const loop: LaunchLoop = open();
+  const release: () => void = server.holdNext();
+  const sending: Promise<string> = loop.send(body('once only'));
+  const flushing: Promise<void> = loop.flush();
+  release();
+  assert.equal(await sending, 'sent');
+  await flushing;
+  await loop.flush();
+  assert.equal(server.feedback.length, 1);
+  assert.equal(server.requests.filter((request) => request.path === '/v1/feedback').length, 1);
+});
+
+void test('feedback the server refuses while a flush is running is reported as refused', async (): Promise<void> => {
+  const { server, open } = rig();
+  const loop: LaunchLoop = open();
+  const release: () => void = server.holdNext();
+  loop.note('died');
+  const refused: FeedbackBody = { ...body('bad level'), context: { ...body('bad level').context, level: 0 } };
+  const sending: Promise<string> = loop.send(refused);
+  release();
+  assert.equal(await sending, 'rejected');
+  assert.deepEqual(loop.state().outbox, []);
+  assert.equal(server.feedback.length, 0);
+});
+
+void test('counts still go out while a feedback body keeps failing', async (): Promise<void> => {
+  const { server, store, timers } = rig();
+  const failing = async (url: string, init: RequestInit): Promise<Response> => (url.endsWith('/v1/feedback') ? new Response(null, { status: 503 }) : server.fetch(url, init));
+  const loop: LaunchLoop = createLaunchLoop({ serverUrl: URL_BASE, fetch: failing, store, timers: timers.timers, rules: ALPHA_RULES, device: 'desktop', token: (): null => null, signal: (): undefined => undefined });
+  assert.equal(await loop.send(body('stuck')), 'queued');
+  loop.note('opened_game');
+  await loop.flush();
+  assert.deepEqual(server.counted, [{ event: 'opened_game', device: 'desktop' }]);
+  assert.equal(loop.state().outbox.length, 1);
 });

@@ -1,5 +1,5 @@
 {
-  "completeAct": "act_1",
+  "complete": {"flag": "alpha_slice_complete"},
   "milestones": [
     {"event": "picked_journal", "flag": "first_choice", "is": "took_journal"},
     {"event": "reached_shallows", "zone": "shallows"},

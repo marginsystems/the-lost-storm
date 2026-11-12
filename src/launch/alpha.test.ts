@@ -4,7 +4,7 @@ import { afterCount, afterFeedback, ALPHA, cleanBuild, cleanText, codePoints, EM
 import type { AlphaRules, FeedbackBody, FeedbackContext, LaunchState } from './alpha.ts';
 
 const RULES: AlphaRules = readAlphaRules({
-  completeAct: 'act_1',
+  complete: { flag: 'alpha_slice_complete' },
   milestones: [
     { event: 'picked_journal', flag: 'first_choice', is: 'took_journal' },
     { event: 'reached_shallows', zone: 'shallows' },
@@ -14,11 +14,12 @@ const RULES: AlphaRules = readAlphaRules({
 const CONTEXT: FeedbackContext = { zone: 'shallows', level: 3, minutes: 12, device: 'phone', build: 'abc1234' };
 
 void test('the rules file is read strictly', (): void => {
-  assert.equal(RULES.completeAct, 'act_1');
+  assert.deepEqual(readAlphaRules({ complete: { act: 'act_1' }, milestones: [] }).complete, { kind: 'act', act: 'act_1' });
+  assert.deepEqual(readAlphaRules({ complete: { flag: 'done' }, milestones: [] }).complete, { kind: 'flag', flag: 'done' });
   assert.deepEqual(RULES.milestones[0], { kind: 'flag', event: 'picked_journal', flag: 'first_choice', is: 'took_journal' });
   assert.deepEqual(RULES.milestones[1], { kind: 'zone', event: 'reached_shallows', zone: 'shallows' });
-  assert.throws((): AlphaRules => readAlphaRules({ completeAct: '', milestones: [] }));
-  assert.throws((): AlphaRules => readAlphaRules({ completeAct: 'x', milestones: [{ event: 'won', zone: 'a' }] }));
+  assert.throws((): AlphaRules => readAlphaRules({ complete: { flag: '' }, milestones: [] }));
+  assert.throws((): AlphaRules => readAlphaRules({ complete: { flag: 'x' }, milestones: [{ event: 'won', zone: 'a' }] }));
   assert.throws((): AlphaRules => readAlphaRules(null));
 });
 
@@ -29,9 +30,14 @@ void test('milestones are reached from the zone, the flags and the hero being do
 });
 
 void test('the end card is due once, after the slice flag is set', (): void => {
-  assert.equal(shouldShowEnd(EMPTY_STATE, RULES, new Set<string>()), false);
-  assert.equal(shouldShowEnd(EMPTY_STATE, RULES, new Set<string>(['act_1'])), true);
-  assert.equal(shouldShowEnd(markEndShown(EMPTY_STATE), RULES, new Set<string>(['act_1'])), false);
+  const none: ReadonlySet<string> = new Set<string>();
+  assert.equal(shouldShowEnd(EMPTY_STATE, RULES, { flags: {}, ended: none }), false);
+  assert.equal(shouldShowEnd(EMPTY_STATE, RULES, { flags: { alpha_slice_complete: '' }, ended: none }), false);
+  assert.equal(shouldShowEnd(EMPTY_STATE, RULES, { flags: { alpha_slice_complete: 'yes' }, ended: none }), true);
+  assert.equal(shouldShowEnd(markEndShown(EMPTY_STATE), RULES, { flags: { alpha_slice_complete: 'yes' }, ended: none }), false);
+  const byAct: AlphaRules = { ...RULES, complete: { kind: 'act', act: 'act_1' } };
+  assert.equal(shouldShowEnd(EMPTY_STATE, byAct, { flags: {}, ended: new Set<string>(['act_1']) }), true);
+  assert.equal(shouldShowEnd(EMPTY_STATE, byAct, { flags: { alpha_slice_complete: 'yes' }, ended: none }), false);
 });
 
 void test('text becomes one clean line of at most 600 characters', (): void => {

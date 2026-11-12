@@ -1,7 +1,7 @@
 import type { FetchFn } from '../backend/api.ts';
 import type { KeyValueStore, Timers } from '../backend/backend.ts';
 import { afterCount, afterFeedback, LAUNCH_KEY, markEndShown, noteEvent, outcomeOf, queueFeedback, reachedEvents, readLaunchState, retryDelay, serializeLaunchState, shouldShowEnd } from './alpha.ts';
-import type { AlphaRules, CountedEvent, Device, FeedbackBody, LaunchState, Outcome, Snapshot } from './alpha.ts';
+import type { AlphaRules, CountedEvent, Device, FeedbackBody, LaunchState, Outcome, Progress, Snapshot } from './alpha.ts';
 
 export type SendResult = 'sent' | 'queued' | 'rejected';
 
@@ -19,7 +19,7 @@ export interface LaunchDeps {
 export interface LaunchLoop {
   note(event: CountedEvent): void;
   observe(snapshot: Snapshot): void;
-  takeEndCard(ended: ReadonlySet<string>): boolean;
+  takeEndCard(progress: Progress): boolean;
   send(body: FeedbackBody): Promise<SendResult>;
   flush(): Promise<void>;
   state(): LaunchState;
@@ -30,6 +30,7 @@ export function createLaunchLoop(deps: LaunchDeps): LaunchLoop {
   let flushing: Promise<void> | null = null;
   let failures: number = 0;
   let retryCancel: (() => void) | null = null;
+  const awaited: Map<FeedbackBody, Outcome | null> = new Map<FeedbackBody, Outcome | null>();
 
   const keep = (next: LaunchState): void => {
     if (next === state) return;
@@ -56,6 +57,7 @@ export function createLaunchLoop(deps: LaunchDeps): LaunchLoop {
   const deliverFeedback = async (body: FeedbackBody): Promise<Outcome> => {
     const outcome: Outcome = await sendFeedback(body);
     keep(afterFeedback(state, body, outcome));
+    if (awaited.has(body)) awaited.set(body, outcome);
     if (outcome === 'sent') keep(noteEvent(state, 'sent_feedback'));
     return outcome;
   };
@@ -86,8 +88,8 @@ export function createLaunchLoop(deps: LaunchDeps): LaunchLoop {
   };
 
   const drain = async (): Promise<void> => {
-    const clear: boolean = (await drainFeedback()) && (await drainCounts());
-    if (clear) failures = 0;
+    const [feedbackClear, countsClear]: readonly [boolean, boolean] = await Promise.all([drainFeedback(), drainCounts()]);
+    if (feedbackClear && countsClear) failures = 0;
     else schedule();
   };
 
@@ -101,18 +103,18 @@ export function createLaunchLoop(deps: LaunchDeps): LaunchLoop {
     observe(snapshot: Snapshot): void {
       for (const event of reachedEvents(deps.rules, snapshot)) loop.note(event);
     },
-    takeEndCard(ended: ReadonlySet<string>): boolean {
-      if (!shouldShowEnd(state, deps.rules, ended)) return false;
+    takeEndCard(progress: Progress): boolean {
+      if (!shouldShowEnd(state, deps.rules, progress)) return false;
       keep(markEndShown(state));
       return true;
     },
     async send(body: FeedbackBody): Promise<SendResult> {
+      awaited.set(body, null);
       keep(queueFeedback(state, body));
       if (flushing !== null) await flushing;
-      if (!state.outbox.includes(body)) return 'sent';
-      const outcome: Outcome = await deliverFeedback(body);
-      if (outcome === 'retry') schedule();
-      else void loop.flush();
+      await loop.flush();
+      const outcome: Outcome | null = awaited.get(body) ?? null;
+      awaited.delete(body);
       return outcome === 'sent' ? 'sent' : outcome === 'rejected' ? 'rejected' : 'queued';
     },
     flush(): Promise<void> {

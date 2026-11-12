@@ -16,8 +16,7 @@ void test('every page names only links the data knows', (): void => {
   }
 });
 
-void test('the slice ends with an act the world defines', (): void => {
-  const world: unknown = JSON.parse(readFileSync('data/world.json', 'utf8'));
-  assert.ok(JSON.stringify(world).includes(`"id":"${ALPHA_RULES.completeAct}"`));
+void test('the slice ends on the alpha flag', (): void => {
+  assert.deepEqual(ALPHA_RULES.complete, { kind: 'flag', flag: 'alpha_slice_complete' });
   assert.ok(ALPHA_RULES.milestones.some((milestone) => milestone.event === 'reached_waystation'));
 });

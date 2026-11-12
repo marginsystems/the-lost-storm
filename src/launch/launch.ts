@@ -89,7 +89,7 @@ export function startLaunch(options: LaunchOptions): Launch | null {
       if (sinceObserved < LAUNCH.observeEvery) return;
       sinceObserved = 0;
       loop.observe({ zone: world.zone.id, flags: world.flags, alive: world.player.alive });
-      if (loop.takeEndCard(endedActs(world))) card.open('end');
+      if (loop.takeEndCard({ flags: world.flags, ended: endedActs(world) })) card.open('end');
     },
     note: (event: CountedEvent): void => loop.note(event),
     open: (mode: CardMode): void => card.open(mode),
