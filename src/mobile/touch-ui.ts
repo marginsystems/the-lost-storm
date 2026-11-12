@@ -9,7 +9,9 @@ import type { Input } from '../input.ts';
 import { INPUT } from '../input.ts';
 import { TITLE_SCREEN } from '../title-screen.ts';
 import type { Candidate, FlaskEntry, StickReading, TouchButton } from './touch-map.ts';
-import { aimedSkill, arcPoint, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, pinchWheelDelta, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import { aimedSkill, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, pinchWheelDelta, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import type { PhoneLayout, Rect, SafeInsets } from './phone-layout.ts';
+import { PHONE, phoneLayout } from './phone-layout.ts';
 import touchCss from './touch.css?inline';
 
 export interface TouchSetup {
@@ -53,6 +55,64 @@ const MENU: readonly { readonly panel: HudPanel; readonly label: string; readonl
 const ROTATE_HTML: string = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="10" y="4" width="12" height="24" rx="2"/><path d="M14.5 24.5h3"/></svg><div><b>Turn your phone sideways</b><span>The storm needs room.</span></div>';
 const MENU_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg>';
 const CLOSE_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+
+const px = (value: string): number => {
+  const parsed: number = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+function readSafe(probe: HTMLElement): SafeInsets {
+  const style: CSSStyleDeclaration = getComputedStyle(probe);
+  return { top: px(style.paddingTop), right: px(style.paddingRight), bottom: px(style.paddingBottom), left: px(style.paddingLeft) };
+}
+
+function placeRect(element: HTMLElement, rect: Rect | undefined): void {
+  if (rect === undefined) return;
+  element.style.left = `${rect.x.toFixed(1)}px`;
+  element.style.top = `${rect.y.toFixed(1)}px`;
+  element.style.width = `${rect.w.toFixed(1)}px`;
+  element.style.height = `${rect.h.toFixed(1)}px`;
+}
+
+function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: PhoneLayout, width: number, height: number): void {
+  const vars: CSSStyleDeclaration = target.style;
+  const set = (name: string, value: number): void => vars.setProperty(name, `${value.toFixed(1)}px`);
+  vars.setProperty('--ph-globe-zoom', String(PHONE.globeZoom));
+  vars.setProperty('--ph-flask-zoom', String(PHONE.flaskZoom));
+  vars.setProperty('--ph-quests-zoom', String(PHONE.questZoom));
+  set('--ph-life-x', layout.life.x / PHONE.globeZoom);
+  set('--ph-life-y', layout.life.y / PHONE.globeZoom);
+  set('--ph-mana-x', layout.mana.x / PHONE.globeZoom);
+  set('--ph-mana-y', layout.mana.y / PHONE.globeZoom);
+  set('--ph-lflask-x', layout.lifeFlask.x / PHONE.flaskZoom);
+  set('--ph-lflask-y', layout.lifeFlask.y / PHONE.flaskZoom);
+  set('--ph-mflask-x', layout.manaFlask.x / PHONE.flaskZoom);
+  set('--ph-mflask-y', layout.manaFlask.y / PHONE.flaskZoom);
+  set('--ph-menu-x', layout.menu.rect.x);
+  set('--ph-menu-y', layout.menu.rect.y);
+  set('--ph-menu-btn', layout.menu.button);
+  set('--ph-menu-gap', layout.menu.gap);
+  set('--ph-map-size', layout.minimap.w);
+  set('--ph-map-top', layout.zone.y);
+  set('--ph-map-right', width - layout.minimap.x - layout.minimap.w);
+  const quests: Rect | null = layout.quests;
+  hudRoot.classList.toggle('ph-no-quests', quests === null);
+  if (quests !== null) {
+    set('--ph-quests-top', quests.y / PHONE.questZoom);
+    set('--ph-quests-right', (width - quests.x - quests.w) / PHONE.questZoom);
+    set('--ph-quests-w', quests.w / PHONE.questZoom);
+    set('--ph-quests-h', quests.h / PHONE.questZoom);
+  }
+  const xpBottom: number = layout.xp.y + layout.xp.h;
+  set('--ph-xp-x', layout.xp.x);
+  set('--ph-xp-w', layout.xp.w);
+  set('--ph-xp-bottom', height - xpBottom);
+  set('--ph-hint-left', layout.hint.x - layout.xp.x);
+  set('--ph-hint-right', layout.xp.x + layout.xp.w - layout.hint.x - layout.hint.w);
+  set('--ph-hint-bottom', xpBottom - layout.hint.y - layout.hint.h);
+  set('--ph-stick-x', layout.stick.x + layout.stick.w / 2);
+  set('--ph-stick-y', layout.stick.y + layout.stick.h / 2);
+}
 
 const signature = (buttons: readonly TouchButton[]): string => buttons.map((button: TouchButton): string => `${button.kind}${button.slot}`).join('|');
 
@@ -140,20 +200,26 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   let stopPending: boolean = false;
   let pinch: number | null = null;
 
+  const safeProbe: HTMLDivElement = el('div', 'tc-safe', layer);
+  const place = (): void => {
+    const width: number = hudRoot.clientWidth;
+    const height: number = hudRoot.clientHeight;
+    const skills: ButtonView[] = views.filter((view: ButtonView): boolean => view.spec.kind === 'skill');
+    const flasks: ButtonView[] = views.filter((view: ButtonView): boolean => view.spec.kind === 'flask');
+    const layout: PhoneLayout = phoneLayout({ width, height, safe: readSafe(safeProbe) }, { skills: skills.length, flasks: flasks.length, menu: menu.childElementCount });
+    applyPhoneLayout(document.documentElement, hudRoot, layout, width, height);
+    for (const view of views) if (view.spec.kind === 'attack') placeRect(view.root, layout.attack);
+    skills.forEach((view: ButtonView, index: number): void => placeRect(view.root, layout.skills[index]));
+    flasks.forEach((view: ButtonView, index: number): void => placeRect(view.root, layout.flasks[index]));
+  };
+  new ResizeObserver(place).observe(hudRoot);
+
   const buildButtons = (specs: readonly TouchButton[]): void => {
     actions.replaceChildren();
-    const ring: number = specs.filter((spec: TouchButton): boolean => spec.kind !== 'attack').length;
-    let arcIndex: number = 0;
     views = specs.map((spec: TouchButton, index: number): ButtonView => {
       const root: HTMLDivElement = el('div', `tc-btn ${spec.kind}`, actions);
       root.dataset['index'] = String(index);
       root.setAttribute('role', 'button');
-      if (spec.kind !== 'attack') {
-        const point = arcPoint(arcIndex, ring);
-        arcIndex += 1;
-        root.style.setProperty('--tc-x', `${point.right.toFixed(1)}px`);
-        root.style.setProperty('--tc-y', `${point.bottom.toFixed(1)}px`);
-      }
       const ringEl: HTMLElement = el('i', 'tc-cd', root);
       const icon: HTMLElement = el('span', 'tc-icon', root);
       if (spec.kind === 'flask') {
@@ -167,6 +233,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       }
       return { spec, root, ring: ringEl, turn: -1, dim: null };
     });
+    place();
   };
 
   const refreshButtons = (): void => {

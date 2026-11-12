@@ -34,7 +34,7 @@ body.touch .tree-viewport {
   background: rgba(10, 16, 24, 0.32);
   opacity: 0.5;
   pointer-events: none;
-  translate: calc(var(--tc-stick-r) + 28px + env(safe-area-inset-left, 0px)) calc(100dvh - var(--tc-stick-r) - 30px - env(safe-area-inset-bottom, 0px));
+  translate: var(--ph-stick-x, 0px) var(--ph-stick-y, 0px);
   transition:
     transform var(--spring-smooth-ms) var(--spring-smooth),
     translate var(--spring-smooth-ms) var(--spring-smooth),
@@ -68,36 +68,40 @@ body.touch .tree-viewport {
 
 .tc-actions {
   position: absolute;
-  right: calc(22px + env(safe-area-inset-right, 0px));
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  width: 64px;
-  height: 64px;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tc-safe {
+  position: fixed;
+  inset: 0;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .tc-btn {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
   display: grid;
   place-items: center;
   width: 64px;
   height: 64px;
   border-radius: 50%;
+  pointer-events: auto;
   background: rgba(10, 16, 24, 0.42);
   color: rgba(239, 230, 214, 0.86);
   overflow: hidden;
   transition:
     transform var(--spring-bouncy-ms) var(--spring-bouncy),
     background-color var(--spring-snappy-ms) var(--spring-snappy),
-    opacity var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-.tc-btn.skill,
-.tc-btn.flask {
-  width: 48px;
-  height: 48px;
-  right: calc(8px + var(--tc-x, 0px));
-  bottom: calc(8px + var(--tc-y, 0px));
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    top var(--spring-smooth-ms) var(--spring-smooth),
+    width var(--spring-smooth-ms) var(--spring-smooth),
+    height var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .tc-btn.down {
@@ -143,20 +147,22 @@ body.touch .tree-viewport {
 
 .tc-menu {
   position: absolute;
-  top: calc(6px + env(safe-area-inset-top, 0px));
-  left: 50%;
+  top: var(--ph-menu-y, 8px);
+  left: var(--ph-menu-x, 8px);
   display: flex;
-  gap: 2px;
-  translate: -50% 0;
+  gap: var(--ph-menu-gap, 2px);
   pointer-events: auto;
+  transition:
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    top var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .tc-menu-btn,
 .tc-close {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: var(--ph-menu-btn, 44px);
+  height: var(--ph-menu-btn, 44px);
   padding: 0;
   border: 0;
   background: none;
@@ -165,8 +171,8 @@ body.touch .tree-viewport {
   transition: color var(--spring-snappy-ms) var(--spring-snappy), transform var(--spring-bouncy-ms) var(--spring-bouncy);
 }
 
-.tc-menu-btn svg,
-.tc-close svg {
+body.touch .tc-menu-btn svg,
+body.touch .tc-close svg {
   width: 18px;
   height: 18px;
   padding: 5px;
@@ -313,50 +319,88 @@ body.touch .hud-fps {
 }
 
 body.touch .hud-globe-group {
-  zoom: 0.42;
-  top: calc((8px + env(safe-area-inset-top, 0px)) / 0.42);
+  zoom: var(--ph-globe-zoom);
   bottom: auto;
+  transition:
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    top var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 body.touch .hud-globe-group.life {
-  left: calc((8px + env(safe-area-inset-left, 0px)) / 0.42);
+  left: var(--ph-life-x);
+  top: var(--ph-life-y);
 }
 
 body.touch .hud-globe-group.mana {
-  left: calc((70px + env(safe-area-inset-left, 0px)) / 0.42);
+  left: var(--ph-mana-x);
+  top: var(--ph-mana-y);
   right: auto;
 }
 
 body.touch .hud-bottom {
-  bottom: calc(4px + env(safe-area-inset-bottom, 0px));
-  width: min(44vw, 360px);
+  left: var(--ph-xp-x);
+  bottom: var(--ph-xp-bottom);
+  width: var(--ph-xp-w);
+  translate: none;
+  pointer-events: none;
+  transition:
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    bottom var(--spring-smooth-ms) var(--spring-smooth),
+    width var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+body.touch .hud-hint {
+  left: var(--ph-hint-left);
+  right: var(--ph-hint-right);
+  bottom: var(--ph-hint-bottom);
+  max-width: none;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    right var(--spring-smooth-ms) var(--spring-smooth),
+    bottom var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 body.touch .minimap {
-  --minimap-size: 112px;
-  --minimap-top: calc(6px + env(safe-area-inset-top, 0px));
-  --minimap-right: calc(8px + env(safe-area-inset-right, 0px));
+  --minimap-size: var(--ph-map-size);
+  --minimap-top: var(--ph-map-top);
+  --minimap-right: var(--ph-map-right);
 }
 
-body.touch .hud-quests {
-  zoom: 0.72;
-  top: calc((154px + env(safe-area-inset-top, 0px)) / 0.72);
-  right: calc((10px + env(safe-area-inset-right, 0px)) / 0.72);
-  width: 200px;
+body.touch .hud > .hud-quests {
+  zoom: var(--ph-quests-zoom);
+  top: var(--ph-quests-top);
+  right: var(--ph-quests-right);
+  width: var(--ph-quests-w);
+  max-height: var(--ph-quests-h);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+body.touch .hud.ph-no-quests > .hud-quests {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-snappy-ms);
 }
 
 body.touch .hud-flask {
-  zoom: 0.6;
-  top: calc((10px + env(safe-area-inset-top, 0px)) / 0.6);
+  zoom: var(--ph-flask-zoom);
   bottom: auto;
 }
 
 body.touch .hud-flask.life {
-  left: calc((132px + env(safe-area-inset-left, 0px)) / 0.6);
+  left: var(--ph-lflask-x);
+  top: var(--ph-lflask-y);
 }
 
 body.touch .hud-flask.mana {
-  left: calc((158px + env(safe-area-inset-left, 0px)) / 0.6);
+  left: var(--ph-mflask-x);
+  top: var(--ph-mflask-y);
   right: auto;
 }
 

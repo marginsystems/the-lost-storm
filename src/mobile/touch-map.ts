@@ -11,9 +11,6 @@ export const TOUCH = {
   repeatSeconds: 0.09,
   moveSideShare: 0.45,
   rotateHintMs: 5200,
-  arcRadius: 84,
-  arcStartDegrees: 180,
-  arcSpanDegrees: 90,
   fullTurn: 360,
   tapSlopPx: 12,
   tapMs: 320,
@@ -43,11 +40,6 @@ export interface SkillBarEntry {
 
 export interface FlaskEntry {
   readonly name: string;
-}
-
-export interface ArcPoint {
-  readonly right: number;
-  readonly bottom: number;
 }
 
 export function prefersTouch(search: string, coarsePointer: boolean): boolean {
@@ -123,13 +115,6 @@ export function touchButtons(skillBar: readonly SkillBarEntry[], attackBinding: 
     buttons.push({ kind: 'flask', slot, label: flask.name });
   });
   return buttons;
-}
-
-export function arcPoint(index: number, count: number): ArcPoint {
-  const steps: number = Math.max(1, count - 1);
-  const degrees: number = TOUCH.arcStartDegrees - (TOUCH.arcSpanDegrees * index) / steps;
-  const radians: number = (degrees * Math.PI) / 180;
-  return { right: -Math.cos(radians) * TOUCH.arcRadius, bottom: Math.sin(radians) * TOUCH.arcRadius };
 }
 
 export function pinchWheelDelta(previous: number, next: number, zoomStep: number): number {

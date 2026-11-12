@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Candidate } from './touch-map.ts';
-import { aimedSkill, arcPoint, autoAimTarget, clampKnob, cooldownTurn, isTap, joinsPinch, pinchWheelDelta, prefersTouch, readStick, rotateHintShows, sideForPoint, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import { aimedSkill, autoAimTarget, clampKnob, cooldownTurn, isTap, joinsPinch, pinchWheelDelta, prefersTouch, readStick, rotateHintShows, sideForPoint, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 
 const YAW: number = Math.PI / 4;
 const near = (actual: number, expected: number): void => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
@@ -74,15 +74,6 @@ void test('buttons put the left click skill first as the attack, then every othe
     { kind: 'skill', slot: 2 },
     { kind: 'flask', slot: 0, label: 'Life Flask' },
   ]);
-});
-
-void test('ring buttons spread from left of the attack button to above it', (): void => {
-  const first = arcPoint(0, 3);
-  near(first.right, TOUCH.arcRadius);
-  near(first.bottom, 0);
-  const last = arcPoint(2, 3);
-  near(last.right, 0);
-  near(last.bottom, TOUCH.arcRadius);
 });
 
 void test('spreading two fingers zooms in by their ratio', (): void => {
