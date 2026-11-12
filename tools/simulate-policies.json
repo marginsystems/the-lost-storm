@@ -1,0 +1,22 @@
+{
+  "skills": {
+    "careful": { "dodges": true, "reaction": 0.1, "flaskAt": 0.5, "manaFlaskAt": 0.2, "rolls": true, "loot": true, "lineSeconds": 2.5, "readSeconds": 4 },
+    "average": { "dodges": true, "reaction": 0.4, "flaskAt": 0.3, "manaFlaskAt": null, "rolls": false, "loot": true, "lineSeconds": 3, "readSeconds": 5 },
+    "poor": { "dodges": false, "reaction": 0, "flaskAt": 0.15, "manaFlaskAt": null, "rolls": false, "loot": true, "lineSeconds": 3.5, "readSeconds": 6 }
+  },
+  "builds": {
+    "mixed": { "paths": ["storm", "blade", "wind", "stone", "echo"], "skills": ["thunderclap", "storm_bolt", "forkline", "thunderhead", "downdraught", "static_brand", "squall", "living_wire", "held_breath", "mist_step"] },
+    "storm": { "paths": ["storm"], "skills": ["storm_bolt", "forkline", "living_wire", "static_brand", "squall", "thunderclap", "thunderhead", "downdraught", "held_breath", "mist_step"] },
+    "blade": { "paths": ["blade"], "skills": ["thunderhead", "thunderclap", "downdraught", "forkline", "storm_bolt", "static_brand", "squall", "living_wire", "held_breath", "mist_step"] },
+    "wind": { "paths": ["wind"], "skills": ["mist_step", "downdraught", "thunderclap", "thunderhead", "forkline", "squall", "storm_bolt", "static_brand", "living_wire", "held_breath"] },
+    "stone": { "paths": ["stone"], "skills": ["thunderclap", "thunderhead", "downdraught", "squall", "storm_bolt", "forkline", "static_brand", "living_wire", "held_breath", "mist_step"] },
+    "echo": { "paths": ["echo"], "skills": ["held_breath", "squall", "static_brand", "thunderclap", "forkline", "storm_bolt", "living_wire", "downdraught", "thunderhead", "mist_step"] }
+  },
+  "milestones": [
+    { "name": "found_blade", "flag": "first_blade", "is": "found" }
+  ],
+  "endCard": "end_card",
+  "rare": "rare",
+  "windows": [10, 30, 60],
+  "sampleMinutes": 5
+}
