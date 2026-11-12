@@ -354,3 +354,28 @@ for (const { prop, rotationDegrees } of FACE_PROPS) {
     }
   });
 }
+
+const RUIN = {
+  at: { x: 66.5, z: 13 },
+  starts: [
+    { name: 'north, at the floor edge', x: 66.5, z: 8 },
+    { name: 'south', x: 66.5, z: 17 },
+    { name: 'west', x: 61, z: 13 },
+    { name: 'east', x: 72, z: 13 },
+  ],
+} as const;
+
+for (const start of RUIN.starts) {
+  void test(`holding the button on the Hall's wall ruin from the ${start.name} walks him to its base, even from ground the floor edge hems in`, (): void => {
+    const world: World = worldIn(content, 'hall_of_time', 5);
+    world.monsters = [];
+    world.player.pos = { x: start.x, z: start.z };
+    world.trail = { x: start.x, z: start.z };
+    for (let step: number = 0; step < Math.round(FACE.seconds / MOTION_DT); step += 1) stepWorld(world, [{ type: 'move', dest: RUIN.at, held: true }], MOTION_DT);
+    const placed = must(world.zone.props.find((prop): boolean => prop.prop === 'castle_wall_ruin' && prop.x === RUIN.at.x && prop.z === RUIN.at.z), 'wall ruin');
+    const gap: number = Math.min(...propBlockers(must(content.props.get(placed.prop), placed.prop), placed.x, placed.z, placed.rotationDegrees).map((blocker: Blocker): number => blockerGap(blocker, world.player.pos.x, world.player.pos.z)));
+    const radius: number = content.player.radius;
+    assert.ok(gap <= radius + FACE.reach, `he stopped with his body ${(gap - radius).toFixed(2)} m from the wall ruin`);
+    assert.ok(gap >= radius - 0.02, 'he walked into the wall ruin');
+  });
+}
