@@ -56,6 +56,7 @@ import { createBrowserStore } from './storage.ts';
 import type { Mobile, MobileBoot } from './mobile/mobile.ts';
 import { bootMobile, startMobile } from './mobile/mobile.ts';
 import type { MemoryReport } from './mobile/memory.ts';
+import type { QualityName } from './mobile/quality.ts';
 import { measureMemory } from './mobile/memory.ts';
 import { createBrowserLobby } from './lobby/compact.ts';
 import type { Lobby } from './lobby/compact.ts';
@@ -657,7 +658,7 @@ async function start(): Promise<void> {
     void startOver();
   });
   let entered: boolean = save !== null;
-  const flow: LobbyFlow = createLobbyFlow({ root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped }), view: (): LobbyView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered }), begin: (): void => {
+  const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped }), view: (): LobbyView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered }), begin: (): void => {
     entered = true;
     begin();
   }, startOver: (): void => void startOver(), openSettings: (): void => pauseMenu.open('graphics') });

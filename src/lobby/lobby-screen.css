@@ -2,7 +2,6 @@
   --sheet-bg: rgba(8, 11, 17, 0.6);
   --sheet-dim: rgba(239, 230, 214, 0.48);
   --sheet-soft: rgba(239, 230, 214, 0.78);
-  --panel-height: 300px;
   position: absolute;
   inset: 0;
   display: grid;
@@ -56,11 +55,6 @@
 
 .lobby-screen.shown .lobby-dock {
   transition-delay: 120ms;
-}
-
-.lobby-sheet,
-.lobby-ladder {
-  min-height: var(--panel-height);
 }
 
 .lobby-sheet {
@@ -159,10 +153,6 @@
 .lobby-ladder {
   grid-area: ladder;
   align-self: center;
-}
-
-.lobby-ladder > .lobby-panel {
-  min-height: var(--panel-height);
 }
 
 .lobby-ladder.offline {
@@ -277,6 +267,10 @@
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 
+body[data-lobby] #vignette {
+  visibility: hidden;
+}
+
 .lobby-veil {
   position: absolute;
   inset: 0;
@@ -322,7 +316,6 @@
 
   .lobby-sheet,
   .lobby-ladder {
-    --panel-height: 0px;
     align-self: start;
   }
 }
@@ -336,11 +329,6 @@
 
   .lobby-sheet {
     padding: 14px 16px 12px;
-  }
-
-  .lobby-sheet,
-  .lobby-ladder {
-    --panel-height: 0px;
   }
 
   .lobby-name {

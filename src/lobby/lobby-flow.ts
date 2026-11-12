@@ -1,10 +1,9 @@
 import type { WebGLRenderer } from 'three';
 import type { Content } from '../../sim/content/types.ts';
+import type { QualityName } from '../mobile/quality.ts';
 import type { CharacterLibrary } from '../render/character-loader.ts';
 import type { Veil } from '../transition.ts';
 import { createVeil } from '../veil.ts';
-import { BACKDROPS } from '../dither/backdrops.ts';
-import { mountDither } from '../dither/layer.ts';
 import type { Lobby } from './compact.ts';
 import { createLobbyScreen } from './lobby-screen.ts';
 import type { LobbyScreen, LobbyView } from './lobby-screen.ts';
@@ -13,9 +12,9 @@ import type { LobbyLook, LobbyStage } from './lobby-stage.ts';
 
 export const LOBBY_FLOW = {
   settleFrames: 2,
-  edgeRatio: 1,
   pauseSelector: '#hud > .pause',
   pauseOpenClass: 'open',
+  bodyMark: 'lobby',
 } as const;
 
 export interface LobbyFlowParts {
@@ -32,6 +31,8 @@ export interface LobbyFlowParts {
   readonly begin: () => void;
   readonly startOver: () => void;
   readonly openSettings: () => void;
+  readonly tier: () => QualityName;
+  readonly restore: () => void;
 }
 
 export interface LobbyFlow {
@@ -73,7 +74,6 @@ function lendPause(screen: LobbyScreen, hud: HTMLElement, open: () => void): voi
 export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
   const stage: LobbyStage = createLobbyStage(parts.content, parts.library);
   const veil: Veil = createVeil(parts.veil);
-  mountDither(parts.root, { className: 'lobby-edge', layers: BACKDROPS.edge, eager: true, marks: null, maxRatio: LOBBY_FLOW.edgeRatio });
   let active: boolean = false;
   let busy: boolean = false;
 
@@ -85,6 +85,8 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     await veil.cover(null);
     middle();
     active = into;
+    document.body.toggleAttribute(`data-${LOBBY_FLOW.bodyMark}`, into);
+    if (!into) parts.restore();
     if (into) {
       stage.dress(parts.look());
       screen.setBusy(false);
@@ -120,7 +122,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     },
     render(dt: number): boolean {
       if (!active) return false;
-      stage.render(parts.renderer, dt);
+      stage.render(parts.renderer, dt, parts.tier(), window.devicePixelRatio);
       return true;
     },
     open(): Promise<void> {
@@ -131,7 +133,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     },
     warm(): Promise<void> {
       stage.dress(parts.look());
-      return stage.warm(parts.renderer);
+      return stage.warm(parts.renderer, parts.tier());
     },
   };
 }
