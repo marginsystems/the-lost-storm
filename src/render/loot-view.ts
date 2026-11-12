@@ -1,16 +1,17 @@
 import type { Object3D, Scene } from 'three';
-import type { BufferGeometry } from 'three';
-import { AdditiveBlending, Box3, Color, DoubleSide, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, Vector3 } from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { Box3, Color, Group, Mesh, MeshStandardMaterial, OctahedronGeometry, Vector3 } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { AttachmentDef, Content, ItemBaseDef, RarityDef, RigDef } from '../../sim/content/types.ts';
 import { baseOf, rarityOf } from '../../sim/items.ts';
 import type { GroundItem, ItemInstance, World } from '../../sim/world/types.ts';
 import type { CharacterLibrary, LoadedAttachment } from './character-loader.ts';
 import { loadKeptModel } from './character-loader.ts';
-import { glow } from './effect-shapes.ts';
 import type { Keepsake } from './keepsake.ts';
 import { createKeepsake } from './keepsake.ts';
+import type { Shaft, ShaftKit } from './loot-shaft.ts';
+import { createShaftKit, driftSeconds } from './loot-shaft.ts';
+import type { FloorPoint } from './shaft-motion.ts';
+import { crowdShares, settle } from './shaft-motion.ts';
 
 export const LOOT = {
   coinModel: 'models/world/coins.glb',
@@ -23,12 +24,9 @@ export const LOOT = {
   gemHover: 0.75,
   gemBob: 0.12,
   gemSpin: 2.4,
-  beamWidth: 0.34,
-  beamFromRank: 2,
-  beamGlow: 2.2,
-  beamRenderOrder: 7,
-  beamHeight: 7,
-  beamOpacity: 0.5,
+  shaftFromRank: 2,
+  shaftSeedStep: 0.137,
+  longestFrame: 0.1,
   weaponTumbleTurns: 2,
   floorClearance: 0.02,
 } as const;
@@ -45,7 +43,7 @@ interface GemEntry {
   readonly kind: 'gem';
   readonly group: Group;
   readonly gem: Mesh;
-  readonly beam: Mesh | null;
+  readonly shaft: Shaft | null;
 }
 
 interface WeaponEntry {
@@ -53,7 +51,7 @@ interface WeaponEntry {
   readonly group: Group;
   readonly pivot: Group;
   readonly yaw: number;
-  readonly beam: Mesh | null;
+  readonly shaft: Shaft | null;
 }
 
 interface KeepsakeEntry {
@@ -67,23 +65,6 @@ type LootEntry = GoldEntry | GemEntry | WeaponEntry | KeepsakeEntry;
 export interface LootView {
   sync(world: World): void;
   standIns(): Object3D[];
-}
-
-function crossedBeam(): BufferGeometry {
-  const planes: BufferGeometry[] = [0, HALF_TURN].map((yaw: number): BufferGeometry => {
-    const plane: PlaneGeometry = new PlaneGeometry(LOOT.beamWidth, LOOT.beamHeight);
-    plane.rotateY(yaw);
-    plane.translate(0, LOOT.beamHeight / 2, 0);
-    const fade: number[] = [];
-    const heights: Float32BufferAttribute = new Float32BufferAttribute(plane.getAttribute('position').array, 3);
-    for (let index: number = 0; index < heights.count; index += 1) {
-      const level: number = 1 - heights.getY(index) / LOOT.beamHeight;
-      fade.push(level, level, level);
-    }
-    plane.setAttribute('color', new Float32BufferAttribute(fade, 3));
-    return plane;
-  });
-  return mergeGeometries(planes);
 }
 
 function tossOffset(age: number): number {
@@ -126,8 +107,10 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   });
   const entries: Map<number, LootEntry> = new Map<number, LootEntry>();
 
-  const beamGeometry: BufferGeometry = crossedBeam();
-  const beamMaterials: Map<number, MeshBasicMaterial> = new Map<number, MeshBasicMaterial>();
+  const kit: ShaftKit = createShaftKit(driftSeconds());
+  const fading: Shaft[] = [];
+  let lastTime: number | null = null;
+  let lastZone: string | null = null;
   const gemGeometry: OctahedronGeometry = new OctahedronGeometry(LOOT.gemSize, 0);
   const gemMaterials: Map<number, MeshStandardMaterial> = new Map<number, MeshStandardMaterial>();
 
@@ -140,19 +123,13 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
     return made;
   };
 
-  const buildBeam = (world: World, group: Group, item: ItemInstance, color: Color): Mesh | null => {
+  const buildShaft = (world: World, ground: GroundItem, item: ItemInstance, color: Color): Shaft | null => {
     const rank: number = world.content.rarities.findIndex((rarity: RarityDef): boolean => rarity.id === item.rarity);
-    if (rank < LOOT.beamFromRank) return null;
-    const key: number = color.getHex();
-    let material: MeshBasicMaterial | undefined = beamMaterials.get(key);
-    if (material === undefined) {
-      material = new MeshBasicMaterial({ color: glow(color, LOOT.beamGlow), vertexColors: true, transparent: true, opacity: LOOT.beamOpacity, depthWrite: false, side: DoubleSide, blending: AdditiveBlending });
-      beamMaterials.set(key, material);
-    }
-    const beam: Mesh = new Mesh(beamGeometry, material);
-    beam.renderOrder = LOOT.beamRenderOrder;
-    group.add(beam);
-    return beam;
+    if (rank < LOOT.shaftFromRank) return null;
+    const shaft: Shaft = kit.create(color, rank - LOOT.shaftFromRank, (ground.id * LOOT.shaftSeedStep) % 1);
+    shaft.group.position.set(ground.pos.x, world.zone.floorHeight, ground.pos.z);
+    scene.add(shaft.group);
+    return shaft;
   };
 
   const attachmentFor = (world: World, ground: GroundItem): LoadedAttachment | undefined => {
@@ -182,21 +159,22 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       pivot.rotation.order = 'YXZ';
       pivot.add(lyingModel(attachment, heldScale(world.content, attachment.def), world.zone.floorHeight));
       group.add(pivot);
-      return { kind: 'weapon', group, pivot, yaw: Math.random() * FULL_TURN, beam: buildBeam(world, group, ground.content.item, color) };
+      return { kind: 'weapon', group, pivot, yaw: Math.random() * FULL_TURN, shaft: buildShaft(world, ground, ground.content.item, color) };
     }
     const gem: Mesh = new Mesh(gemGeometry, gemMaterial(color));
     gem.castShadow = true;
     group.add(gem);
-    return { kind: 'gem', group, gem, beam: buildBeam(world, group, ground.content.item, color) };
+    return { kind: 'gem', group, gem, shaft: buildShaft(world, ground, ground.content.item, color) };
   };
 
   const release = (entry: LootEntry): void => {
     switch (entry.kind) {
       case 'gold':
-      case 'gem':
         entry.group.removeFromParent();
         break;
+      case 'gem':
       case 'weapon':
+        if (entry.shaft !== null) fading.push(entry.shaft);
         entry.group.removeFromParent();
         break;
       case 'keepsake':
@@ -208,9 +186,16 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
 
   return {
     standIns(): Object3D[] {
-      return [coins.clone()];
+      return [coins.clone(), kit.standIn()];
     },
     sync(world: World): void {
+      const dt: number = lastTime === null ? 0 : Math.min(LOOT.longestFrame, Math.max(0, world.time - lastTime));
+      lastTime = world.time;
+      if (lastZone !== world.zone.id) {
+        for (const shaft of fading.splice(0)) kit.dispose(shaft);
+        lastZone = world.zone.id;
+      }
+      const lit: Shaft[] = [];
       const seen: Set<number> = new Set<number>();
       for (const ground of world.ground) {
         seen.add(ground.id);
@@ -235,13 +220,19 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
           case 'gem':
             entry.gem.position.y = LOOT.gemHover + Math.sin(world.time * 3 + ground.id) * LOOT.gemBob;
             entry.gem.rotation.y = world.time * LOOT.gemSpin + ground.id;
-            if (entry.beam !== null) entry.beam.visible = landed;
+            if (entry.shaft !== null) {
+              entry.shaft.presence = settle(entry.shaft.presence, landed ? 1 : 0, dt);
+              lit.push(entry.shaft);
+            }
             break;
           case 'weapon': {
             const remaining: number = (1 - t) * (1 - t);
             entry.pivot.rotation.y = entry.yaw;
             entry.pivot.rotation.x = remaining * LOOT.weaponTumbleTurns * FULL_TURN;
-            if (entry.beam !== null) entry.beam.visible = landed;
+            if (entry.shaft !== null) {
+              entry.shaft.presence = settle(entry.shaft.presence, landed ? 1 : 0, dt);
+              lit.push(entry.shaft);
+            }
             break;
           }
         }
@@ -250,6 +241,16 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
         if (seen.has(id)) continue;
         release(entry);
         entries.delete(id);
+      }
+      for (const shaft of fading) shaft.presence = settle(shaft.presence, 0, dt);
+      const all: Shaft[] = [...lit, ...fading];
+      const shares: number[] = crowdShares(all.map((shaft: Shaft): FloorPoint => ({ x: shaft.group.position.x, z: shaft.group.position.z })));
+      all.forEach((shaft: Shaft, index: number): void => kit.update(shaft, shares[index] ?? 1, world.time));
+      for (let index: number = fading.length - 1; index >= 0; index -= 1) {
+        const shaft: Shaft | undefined = fading[index];
+        if (shaft === undefined || shaft.presence.value > 0) continue;
+        kit.dispose(shaft);
+        fading.splice(index, 1);
       }
     },
   };
