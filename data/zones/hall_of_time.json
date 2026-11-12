@@ -125,10 +125,11 @@
     {"prop": "boulder_2", "x": -7.94, "z": 28.29, "y": -0.05, "rotationDegrees": 300}
   ],
   "packs": [
-    {"x": 30, "z": 23, "members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 2}]},
-    {"x": 46, "z": 37, "members": [{"monster": "unfinished_taker", "count": 2}, {"monster": "unfinished_thrower", "count": 1}]},
-    {"x": 52, "z": 19, "members": [{"monster": "unfinished_brute", "count": 2}, {"monster": "unfinished_thrower", "count": 1}]},
-    {"x": 50, "z": 38, "members": [{"monster": "unfinished_taker", "count": 3}]}
+    {"x": 26, "z": 23, "members": [{"monster": "unfinished_taker", "count": 1}]},
+    {"x": 44, "z": 37, "members": [{"monster": "unfinished_taker", "count": 1}, {"monster": "unfinished_thrower", "count": 1}]},
+    {"x": 58, "z": 22, "members": [{"monster": "unfinished_taker", "count": 2}]},
+    {"x": 60, "z": 10, "members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 2}, {"monster": "unfinished_thrower", "count": 1}]},
+    {"x": 58, "z": 52, "members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 1}, {"monster": "unfinished_thrower", "count": 1}]}
   ],
   "surge": null,
   "exits": [

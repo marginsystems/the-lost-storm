@@ -82,6 +82,20 @@ void test('a grab roots the hero in place for its root time, then the hero walks
   assert.ok(distance(start, world.player.pos) > 1, 'the hero walks on once the root ends');
 });
 
+void test('a second grab right after the first cannot root the hero again until the grace runs out, so grabs never chain', (): void => {
+  const world: World = arena(4);
+  const shambler: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 1.4 });
+  shambler.alive = false;
+  applyHit(world, offenceOf(shambler), world.player, grab, { x: 0, z: -1 });
+  for (let step: number = 0; step < Math.round(grab.root / DT) + 1; step += 1) stepWorld(world, [], DT);
+  assert.equal(world.player.root, 0);
+  applyHit(world, offenceOf(shambler), world.player, grab, { x: 0, z: -1 });
+  assert.equal(world.player.root, 0);
+  for (let step: number = 0; step < Math.round(ARENA_CONTENT.player.rootGrace / DT) + 1; step += 1) stepWorld(world, [], DT);
+  applyHit(world, offenceOf(shambler), world.player, grab, { x: 0, z: -1 });
+  assert.equal(world.player.root, grab.root);
+});
+
 void test('a grab never roots a monster, and a hit on a warded hero does not land', (): void => {
   const world: World = arena(4);
   const shambler: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 1.4 });

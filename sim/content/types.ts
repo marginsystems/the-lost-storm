@@ -637,6 +637,7 @@ export interface PlayerDef {
   readonly wear: readonly string[];
   readonly inventorySize: number;
   readonly pickupRadius: number;
+  readonly rootGrace: number;
   readonly goldMagnetRadius: number;
   readonly respawnDelay: number;
   readonly respawnInvulnerability: number;

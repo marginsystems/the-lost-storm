@@ -32,6 +32,7 @@ export function stepTimers(actor: ActorState, dt: number): void {
   }
   actor.stagger = Math.max(0, actor.stagger - dt);
   actor.root = Math.max(0, actor.root - dt);
+  actor.rootGrace = Math.max(0, actor.rootGrace - dt);
   actor.tempoTime = Math.max(0, actor.tempoTime - dt);
   if (actor.tempoTime <= 0) actor.tempo = 1;
   if (actor.brand !== null) {

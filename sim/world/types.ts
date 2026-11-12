@@ -88,6 +88,7 @@ export interface ActorState {
   stagger: number;
   combo: ComboState | null;
   root: number;
+  rootGrace: number;
   tempo: number;
   tempoTime: number;
   brand: BrandState | null;

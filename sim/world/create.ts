@@ -53,6 +53,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     stagger: 0,
     combo: null,
     root: 0,
+    rootGrace: 0,
     tempo: 1,
     tempoTime: 0,
     brand: null,

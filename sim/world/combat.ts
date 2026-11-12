@@ -140,7 +140,10 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const poise: number = steadiness(target) * (guard === 'blocked' ? COMBAT.guardedKnockback : 1);
   target.knock.x += direction.x * skill.knockback * poise;
   target.knock.z += direction.z * skill.knockback * poise;
-  if (skill.root > 0 && target.kind === 'player') target.root = Math.max(target.root, skill.root);
+  if (skill.root > 0 && target.kind === 'player' && target.rootGrace <= 0) {
+    target.root = Math.max(target.root, skill.root);
+    target.rootGrace = target.root + world.content.player.rootGrace;
+  }
   if (skill.hold > 0) setTempo(target, 0, skill.hold);
   if (target.kind === 'monster') {
     provoke(world, target, offence.sourceId, offence.faction ?? PLAYER_SIDE);
