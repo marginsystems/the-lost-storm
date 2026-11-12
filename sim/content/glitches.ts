@@ -230,6 +230,7 @@ function check(def: GlitchDef): void {
   def.stages.forEach((entry: GlitchStage, index: number): void => {
     if (entry.kinds.length === 0) throw new ContentError(`glitches.stages[${index}].kinds`, 'expected at least one kind');
     if (entry.kinds.includes('hard_cut') && entry.edits.length === 0) throw new ContentError(`glitches.stages[${index}].edits`, 'a stage with hard cuts needs at least one edit');
+    if (entry.kinds.includes('hard_cut') && ![...def.edits.values()].some((candidate: GlitchEdit): boolean => candidate.type === 'hero_turn')) throw new ContentError(`glitches.stages[${index}].edits`, 'a stage with hard cuts needs a hero_turn edit to fall back on');
     for (const id of entry.edits) if (!def.edits.has(id)) throw new ContentError(`glitches.stages[${index}]`, `unknown edit ${id}`);
     const previous: GlitchStage | undefined = def.stages[index - 1];
     if (previous !== undefined && previous.from >= entry.from) throw new ContentError(`glitches.stages[${index}]`, 'stages must rise in from');
@@ -240,6 +241,7 @@ function check(def: GlitchDef): void {
     if (ids.has(entry.id)) throw new ContentError('glitches.triggers', `duplicate id ${entry.id}`);
     ids.add(entry.id);
   }
+  if (def.silhouettes.far <= def.silhouettes.near) throw new ContentError('glitches.silhouettes', 'far must be beyond near');
   if (def.wrongWord.names.length === 0) throw new ContentError('glitches.wrongWord.names', 'expected at least one name');
   if (!def.wrongWord.template.includes('{name}') || !def.wrongWord.template.includes('{line}')) throw new ContentError('glitches.wrongWord.template', 'expected {name} and {line}');
 }

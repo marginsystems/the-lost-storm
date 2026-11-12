@@ -100,6 +100,13 @@ void test('a blocking prop is never moved or swapped onto the hero', (): void =>
   assert.equal(world.zone.props[0]?.prop, 'gate_lantern');
 });
 
+void test('a prop that only appears under a story condition is never swapped or moved', (): void => {
+  const conditional: ZoneProp = { ...placedProp('gate_lantern', 14, 10), when: [{ type: 'quest', quest: 'fallen_in', is: 'done', not: false }] };
+  const world: World = sceneWith(['#######', '.......', '.......', '.......', '#######'], [conditional], { x: 3, z: 10 }, [exitAt(25, 10)]);
+  assert.equal(applyEdit(world, GATE, createRng(8)), false);
+  assert.equal(world.zone.props[0]?.prop, 'gate_lantern');
+});
+
 void test('a gate never shuts across the only way to an exit, but may shut where the hero can walk around it', (): void => {
   const narrow: World = sceneWith(['#######', '.......', '#######'], [placedProp('gate_lantern', 14, 6)], { x: 3, z: 6 }, [exitAt(25, 6)]);
   assert.equal(applyEdit(narrow, GATE, createRng(5)), false);

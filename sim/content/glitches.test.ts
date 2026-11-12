@@ -45,3 +45,10 @@ void test('a stage with no kinds, a hard-cut stage with no edits, no wrong names
   assert.throws((): GlitchDef => parseGlitches({ ...raw, stages: [{ ...first, quietPass: 'true' }] }), ContentError);
   assert.throws((): GlitchDef => parseGlitches({ ...raw, wrongWord: { ...raw.wrongWord, names: [] } }), ContentError);
 });
+
+void test('silhouettes whose far ring is not beyond the near one, or hard cuts with no hero_turn to fall back on, are refused', (): void => {
+  assert.throws((): GlitchDef => parseGlitches({ ...raw, silhouettes: { near: 9, far: 9 } }), ContentError);
+  const first = must(raw.stages[0], 'first stage');
+  const turnless = { ...first, kinds: ['hard_cut'], edits: ['lamp_out'] };
+  assert.throws((): GlitchDef => parseGlitches({ ...raw, edits: raw.edits.filter((entry): boolean => entry.type !== 'hero_turn'), stages: [turnless] }), ContentError);
+});

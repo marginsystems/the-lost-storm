@@ -88,6 +88,7 @@ export function setGlitchesEnabled(world: World, enabled: boolean): void {
 const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
   read: true,
   glitch: false,
+  glitch_setting: false,
   move: true,
   skill: true,
   pickup: true,
@@ -154,7 +155,8 @@ function chooseEdit(world: World, stage: GlitchStage, rng: Rng): { readonly edit
     options.splice(options.indexOf(edit), 1);
     if (applyEdit(world, edit, rng)) return { edit: edit.id, turn: edit.type === 'hero_turn' };
   }
-  return { edit: null, turn: true };
+  const fallback: GlitchEdit | undefined = [...world.glitch.def.edits.values()].find((entry: GlitchEdit): boolean => entry.type === 'hero_turn');
+  return { edit: fallback?.id ?? null, turn: true };
 }
 
 function interruptMonsters(world: World): void {

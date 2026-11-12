@@ -151,6 +151,23 @@ void test('silhouettes stand where the hero once stood in this zone when those s
   for (const shade of start.silhouettes) assert.ok(world.path.entries.some((entry): boolean => entry.x === shade.x && entry.z === shade.z));
 });
 
+void test('a hard cut with nothing else to change still names its one edit: the hero turned', (): void => {
+  const world: World = harmlessFight(14, 1);
+  world.monsters = [];
+  world.zone = { ...world.zone, props: [] };
+  requestGlitch(world, 'hard_cut', 'debug');
+  const start: EventOf<'glitch_start'> = must(ofType(glitchOnly(world, DT, DT), 'glitch_start')[0], 'hard cut');
+  assert.equal(start.edit, 'hero_turn');
+});
+
+void test('the glitch setting reaches the world as a command', (): void => {
+  const world: World = harmlessFight(15, 0);
+  stepWorld(world, [{ type: 'glitch_setting', enabled: false }], DT);
+  assert.equal(world.glitch.enabled, false);
+  stepWorld(world, [{ type: 'glitch_setting', enabled: true }], DT);
+  assert.equal(world.glitch.enabled, true);
+});
+
 void test('a quiet pass starts the cooldown like any other glitch', (): void => {
   const world: World = harmlessFight(5, 4);
   world.glitch.requests.push({ kind: 'quiet_pass', source: 'zone', trigger: null });

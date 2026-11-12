@@ -398,6 +398,7 @@ async function start(): Promise<void> {
     mistZone: content.zones.get(world.glitch.def.mistZone) ?? world.zone,
     settings: glitchSettings,
     hero: () => actors.hero(),
+    send,
     setAmbience: (ambience): void => stage.setAmbience(ambience),
     silence: (): void => {
       audio.stopAmbience();

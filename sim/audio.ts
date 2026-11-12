@@ -179,6 +179,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'use':
     case 'read':
     case 'glitch':
+    case 'glitch_setting':
       break;
   }
   return action;

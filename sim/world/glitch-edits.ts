@@ -102,7 +102,7 @@ function commit(world: World, edited: ZoneDef, mustCheck: boolean): boolean {
 function nearProps(world: World, reach: number, wanted: (prop: string) => boolean): number[] {
   const indices: number[] = [];
   world.zone.props.forEach((placed: ZoneProp, index: number): void => {
-    if (wanted(placed.prop) && distance(placed, world.player.pos) <= reach) indices.push(index);
+    if (placed.when.length === 0 && wanted(placed.prop) && distance(placed, world.player.pos) <= reach) indices.push(index);
   });
   return indices;
 }
