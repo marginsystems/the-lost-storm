@@ -126,6 +126,7 @@ import type { OverlayManager } from './hud/overlays.ts';
 import { readServerUrl } from './backend/server-url.ts';
 import { createTitleSync, followSync } from './title-sync.ts';
 import { createStatusLine, TITLE_NOTICES } from './title-status.ts';
+import { createdOrUnsupported, failureText, probeBrowser, UnsupportedBrowser, unsupportedReason } from './browser-support.ts';
 import { defaultBar } from '../sim/skill-book.ts';
 import type { Bar } from '../sim/skill-book.ts';
 import { shippedKeys, showTitleKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleNames } from './title-keys.ts';
@@ -176,6 +177,8 @@ async function start(): Promise<void> {
     overlayManager.send({ type: 'interrupt', cause: 'endcard' });
   } });
   statusLine.show('Loading…');
+  const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
+  if (unsupported !== null) throw new UnsupportedBrowser(unsupported);
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
@@ -190,7 +193,7 @@ async function start(): Promise<void> {
   };
   drawTitleKeys();
   gameSettings.subscribe(drawTitleKeys);
-  const stage: Stage = createStage(canvas, mobile.quality.tier);
+  const stage: Stage = createdOrUnsupported((): Stage => createStage(canvas, mobile.quality.tier));
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const dresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material);
@@ -651,7 +654,7 @@ start().catch((error: unknown): void => {
   titleLines.current?.freeze();
   const status: HTMLElement | null = document.getElementById('title-status');
   if (status !== null) {
-    status.textContent = error instanceof Error ? `The storm failed to gather: ${error.message}` : 'The storm failed to gather.';
+    status.textContent = failureText(error);
     status.classList.add('failed');
   }
   document.getElementById('title-loader')?.classList.add('done');
