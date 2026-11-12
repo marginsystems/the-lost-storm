@@ -1,98 +1,80 @@
-.hud-flask {
+.globe-beads {
   position: absolute;
-  bottom: calc(14px * var(--hud-s, 1));
-  scale: var(--hud-s, 1);
-  width: 34px;
+  left: 0;
+  right: 0;
+  bottom: 9px;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 2px;
+  gap: 7px;
   pointer-events: none;
+  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.globe-beads.used {
+  transform: translateY(1px);
+}
+
+.globe-bead {
+  --bead-fill: 0;
+  position: relative;
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(240, 226, 206, calc(0.08 + var(--bead-fill) * 0.22));
+  box-shadow: inset 0 0 0 1px rgba(240, 226, 206, 0.32);
   transition:
-    opacity var(--spring-smooth-ms) var(--spring-smooth),
-    transform var(--spring-bouncy-ms) var(--spring-bouncy),
-    scale var(--spring-smooth-ms) var(--spring-smooth),
-    left var(--spring-smooth-ms) var(--spring-smooth),
-    right var(--spring-smooth-ms) var(--spring-smooth),
-    bottom var(--spring-smooth-ms) var(--spring-smooth);
+    width var(--spring-smooth-ms) var(--spring-smooth),
+    height var(--spring-smooth-ms) var(--spring-smooth),
+    background-color var(--spring-smooth-ms) var(--spring-smooth),
+    box-shadow var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-.hud-flask.life {
-  left: calc(154px * var(--hud-s, 1));
-  transform-origin: left bottom;
+.globe-bead.ready {
+  width: 10px;
+  height: 10px;
+  background: rgba(250, 236, 214, 0.92);
+  box-shadow:
+    0 0 6px rgba(250, 236, 214, 0.45),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.25);
 }
 
-.hud-flask.mana {
-  right: calc(154px * var(--hud-s, 1));
-  transform-origin: right bottom;
-}
-
-.hud-flask.used {
-  transform: translateY(-3px) scale(1.06);
-}
-
-.hud-flask.empty {
-  opacity: 0.5;
-}
-
-.hud-flask .flask-picture {
-  width: 34px;
-  height: 53px;
-  overflow: visible;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
-}
-
-.flask-glass {
-  fill: rgba(12, 15, 21, 0.82);
-  stroke: rgba(0, 0, 0, 0.7);
-  stroke-width: 0.8;
-}
-
-.flask-cork {
-  fill: #5a4330;
-}
-
-.flask-lip {
-  fill: #2c3038;
-}
-
-.flask-liquid {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  transform: scaleY(0);
-  transition: transform var(--spring-smooth-ms) var(--spring-smooth), filter var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-.hud-flask.life .flask-liquid {
-  fill: #9a1620;
-}
-
-.hud-flask.mana .flask-liquid {
-  fill: #2263b4;
-}
-
-.hud-flask.cooling .flask-liquid {
-  filter: brightness(0.7);
-}
-
-.flask-notch {
-  stroke: rgba(0, 0, 0, 0.45);
-  stroke-width: 0.7;
-}
-
-.flask-shine {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.22);
-  stroke-width: 1.2;
-  stroke-linecap: round;
-}
-
-.flask-key {
-  font-size: 10px;
-  font-weight: 700;
+.globe-key {
+  position: absolute;
+  bottom: 2px;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
   line-height: 1;
   color: var(--text-dim);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.hud-globe.life .globe-key {
+  right: -4px;
+}
+
+.hud-globe.mana .globe-key {
+  left: -4px;
+}
+
+body.touch .globe-key {
+  display: none;
+}
+
+body.touch .globe-bead {
+  width: 9px;
+  height: 9px;
+}
+
+body.touch .globe-bead.ready {
+  width: 15px;
+  height: 15px;
+}
+
+body.touch .globe-beads {
+  gap: 10px;
 }
 
 .globe-restore {
@@ -113,11 +95,11 @@
 }
 
 .hud-globe.life .globe-restore::before {
-  background: radial-gradient(circle at 50% 75%, rgba(255, 120, 96, 0.34), rgba(255, 120, 96, 0) 70%);
+  background: radial-gradient(circle at 50% 75%, rgba(200, 80, 70, 0.22), rgba(200, 80, 70, 0) 70%);
 }
 
 .hud-globe.mana .globe-restore::before {
-  background: radial-gradient(circle at 50% 75%, rgba(140, 205, 255, 0.34), rgba(140, 205, 255, 0) 70%);
+  background: radial-gradient(circle at 50% 75%, rgba(150, 180, 230, 0.22), rgba(150, 180, 230, 0) 70%);
 }
 
 .hud-globe.restoring .globe-restore {

@@ -28,7 +28,7 @@ export interface HudGauge {
   readonly height: number;
 }
 
-export const GLOBE_GAUGE: HudGauge = { width: 176, height: 144 };
+export const GLOBE_GAUGE: HudGauge = { width: 140, height: 144 };
 
 export interface BandRect {
   readonly x: number;
