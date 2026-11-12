@@ -15,6 +15,7 @@ import type { Ghost } from './ghost.ts';
 import { createGhost } from './ghost.ts';
 import type { GlitchSettings, GlitchSettingsStore, SettingRequest, SettingStep } from './glitch-settings.ts';
 import { settingStep } from './glitch-settings.ts';
+import { SHADOW_OWNERS } from '../render/contact-shadow.ts';
 import glitchCss from './glitch.css?inline';
 
 export const GLITCH_VIEW = {
@@ -104,7 +105,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
     white.style.opacity = opacity.toFixed(3);
   };
 
-  const kept = (object: Object3D): boolean => object === own || object === mist?.group || object === deps.hero() || (object instanceof Light && !(object instanceof PointLight)) || object instanceof Camera;
+  const kept = (object: Object3D): boolean => object === own || object === mist?.group || object === deps.hero() || SHADOW_OWNERS.get(object) === deps.hero() || (object instanceof Light && !(object instanceof PointLight)) || object instanceof Camera;
 
   const sweep = (): void => {
     for (const child of scene.children) {
