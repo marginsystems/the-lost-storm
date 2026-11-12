@@ -4,6 +4,7 @@ import type { Content, SurfaceDef } from '../../sim/content/types.ts';
 import { renderBudget, texturePath } from '../mobile/quality.ts';
 import { shrinkTexture } from '../mobile/textures.ts';
 import { assetUrl } from './character-loader.ts';
+import { withPropLook } from './prop-surface.ts';
 import { wetGround } from './wet-ground.ts';
 
 export const SURFACES = {
@@ -107,6 +108,41 @@ export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse, wet: number = 
   const used: string[] = [def.color, def.normal, def.orm].filter((path: string | null): path is string => path !== null).map((path: string): string => textureKey(path, def.metres));
   materials.set(key, { surface: def.id, material: made, textures: used });
   return made;
+}
+
+export interface PropDressing {
+  readonly wet: number;
+  readonly ground: number;
+}
+
+export function propSurfaceMaterial(def: SurfaceDef, dressing: PropDressing): MeshStandardMaterial {
+  const key: string = `${def.id}:prop:${dressing.wet}:${dressing.ground}`;
+  const cached: Made | undefined = materials.get(key);
+  if (cached !== undefined) return cached.material;
+  const made: MeshStandardMaterial = surfaceMaterial(def, 'solid').clone();
+  made.name = key;
+  withPropLook(made, { tileMetres: def.metres, wet: dressing.wet, ground: dressing.ground });
+  const used: string[] = [def.color, def.normal, def.orm].filter((path: string | null): path is string => path !== null).map((path: string): string => textureKey(path, def.metres));
+  materials.set(key, { surface: def.id, material: made, textures: used });
+  return made;
+}
+
+const ownLooks: WeakMap<MeshStandardMaterial, Map<string, MeshStandardMaterial>> = new WeakMap<MeshStandardMaterial, Map<string, MeshStandardMaterial>>();
+
+export function dressedProp(content: Content, dress: Readonly<Record<string, string>>, material: Material, dressing: PropDressing): Material {
+  const surfaceId: string | undefined = dress[material.name];
+  const def: SurfaceDef | undefined = surfaceId === undefined ? undefined : content.surfaces.get(surfaceId);
+  if (def !== undefined) return propSurfaceMaterial(def, dressing);
+  const plain: Material = matte(material);
+  if (!(plain instanceof MeshStandardMaterial)) return plain;
+  const key: string = `${dressing.wet}:${dressing.ground}`;
+  const known: Map<string, MeshStandardMaterial> = ownLooks.get(plain) ?? new Map<string, MeshStandardMaterial>();
+  ownLooks.set(plain, known);
+  const cached: MeshStandardMaterial | undefined = known.get(key);
+  if (cached !== undefined) return cached;
+  const own: MeshStandardMaterial = withPropLook(plain.clone(), { tileMetres: null, wet: dressing.wet, ground: dressing.ground });
+  known.set(key, own);
+  return own;
 }
 
 export function dressed(content: Content, dress: Readonly<Record<string, string>>, material: Material, wet: number = 0): Material {

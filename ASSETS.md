@@ -282,6 +282,8 @@ sh tools/half-textures.sh
 | `public/textures/silt_color.webp`, `public/textures/silt_normal.webp`, `public/textures/silt_orm.webp`, `public/textures/half/silt_color.webp`, `public/textures/half/silt_normal.webp`, `public/textures/half/silt_orm.webp` | "Aerial Beach 01" (`aerial_beach_01`) | Rob Tuytel | CC0 1.0 |
 | `public/textures/meadow_color.webp`, `public/textures/meadow_normal.webp`, `public/textures/meadow_orm.webp`, `public/textures/half/meadow_color.webp`, `public/textures/half/meadow_normal.webp`, `public/textures/half/meadow_orm.webp` | "Withered Grass" (`withered_grass`) | Charlotte Baglioni | CC0 1.0 |
 | `public/textures/worn_marble_color.webp`, `public/textures/worn_marble_normal.webp`, `public/textures/worn_marble_orm.webp`, `public/textures/half/worn_marble_color.webp`, `public/textures/half/worn_marble_normal.webp`, `public/textures/half/worn_marble_orm.webp` | "Marble 01" (`marble_01`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/dark_stone_color.webp`, `public/textures/dark_stone_normal.webp`, `public/textures/dark_stone_orm.webp`, `public/textures/half/dark_stone_color.webp`, `public/textures/half/dark_stone_normal.webp`, `public/textures/half/dark_stone_orm.webp` | "Dark Rock 02" (`dark_rock_02`) | Amal Kumar | CC0 1.0 |
+| `public/textures/lichen_rock_color.webp`, `public/textures/lichen_rock_normal.webp`, `public/textures/lichen_rock_orm.webp`, `public/textures/half/lichen_rock_color.webp`, `public/textures/half/lichen_rock_normal.webp`, `public/textures/half/lichen_rock_orm.webp` | "Lichen Rock" (`lichen_rock`) | Rico Cilliers | CC0 1.0 |
 
 ## Fonts
 
