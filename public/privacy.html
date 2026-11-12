@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="What The Lost Storm stores about you, and how to remove it." />
+    <title>Privacy · The Lost Storm</title>
+    <style>
+      :root {
+        --serif: "Cinzel", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        --sans: "Alegreya Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        --text: #efe6d6;
+        --storm: #7fd4ff;
+      }
+      html {
+        background: #05070b;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(ellipse at 50% 20%, rgba(22, 34, 52, 0.9), rgba(4, 6, 10, 0.97) 70%) fixed;
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 17px;
+        line-height: 1.55;
+      }
+      main {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 56px 16px 72px;
+      }
+      h1,
+      h2 {
+        font-family: var(--serif);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 30px;
+      }
+      h2 {
+        margin: 34px 0 8px;
+        font-size: 18px;
+        color: rgba(239, 230, 214, 0.86);
+      }
+      p,
+      ul {
+        margin: 0 0 12px;
+        color: rgba(239, 230, 214, 0.74);
+      }
+      ul {
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      a {
+        color: var(--storm);
+        text-decoration: none;
+      }
+      a:hover,
+      a:focus-visible {
+        text-decoration: underline;
+      }
+      .dated,
+      .foot {
+        font-size: 14px;
+        color: rgba(239, 230, 214, 0.45);
+      }
+      .foot {
+        margin-top: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Privacy</h1>
+      <p class="dated">The Lost Storm, as served at theloststorm.com. Last updated 12 November 2026.</p>
+
+      <h2>In short</h2>
+      <p>The game keeps your progress so you can come back to it. It has no ads, no analytics and no trackers, and nothing about you is sold or shared for marketing.</p>
+
+      <h2>If you just play</h2>
+      <p>Your progress is saved in your browser's local storage. The first time the game reaches the server it also creates a guest account so the save can be kept there. For a guest account the server stores:</p>
+      <ul>
+        <li>a random account id and the time it was created;</li>
+        <li>a one-way hash of the guest token. The token itself stays in your browser's local storage;</li>
+        <li>your save: your hero, items and progress, with a revision number and the time it was last written.</li>
+      </ul>
+
+      <h2>If you sign in with Google</h2>
+      <p>Signing in is optional. It attaches your Google account to your save so that you can load it in another browser. The server then also stores:</p>
+      <ul>
+        <li>your Google account id (a number Google assigns to your account);</li>
+        <li>the display name on your Google account, to show who is signed in;</li>
+        <li>a one-way hash of each sign-in session, and the time it started.</li>
+      </ul>
+      <p>The sign-in token Google sends also contains your email address. The server checks the token and does not store the email address, your profile picture or anything else from your Google account. The game asks Google for nothing beyond that basic sign-in.</p>
+      <p>When sign-in is offered, the page loads Google's sign-in script from accounts.google.com, and Google handles the sign-in window under its own privacy policy.</p>
+
+      <h2>IP addresses</h2>
+      <p>The server uses your IP address to limit how fast one address can send requests, and writes it to its request logs, which are used only to run and protect the service. It is not stored with your account or your save. The site is delivered through Cloudflare, which processes requests, including IP addresses, to deliver and protect it.</p>
+
+      <h2>Cookies</h2>
+      <p>The game sets no cookies. It uses your browser's local storage for your save and your token. Google may set its own cookies when you use its sign-in.</p>
+
+      <h2>Removing your data</h2>
+      <ul>
+        <li>"Start over" on the title screen clears your progress.</li>
+        <li>"Sign out" ends your session on the server and returns this browser to a new guest account.</li>
+        <li>Clearing this site's data in your browser removes everything kept on your device.</li>
+        <li>To have an account and its save deleted from the server, ask through the <a href="https://github.com/marginsystems/the-lost-storm/issues">project's issue tracker</a>. Do not post personal details there; you will be told how to identify the account privately.</li>
+      </ul>
+
+      <h2>Open source</h2>
+      <p>The game client is open source under the MIT licence, so you can read exactly what it stores and sends: <a href="https://github.com/marginsystems/the-lost-storm">github.com/marginsystems/the-lost-storm</a>.</p>
+
+      <h2>Changes and contact</h2>
+      <p>If this page changes, the date at the top changes with it. Questions go to the <a href="https://github.com/marginsystems/the-lost-storm/issues">issue tracker</a>.</p>
+
+      <p class="foot"><a href="/">Back to the game</a> · <a href="/terms.html">Terms</a></p>
+    </main>
+  </body>
+</html>
