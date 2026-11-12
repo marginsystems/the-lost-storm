@@ -97,6 +97,7 @@ import type { ParticleSystem } from './render/particles.ts';
 import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
+import { WARM_UP, warmUp, warmUpWithin } from './render/warm-up.ts';
 import type { Weather } from './render/weather.ts';
 import { createWeather } from './render/weather.ts';
 import type { Rain } from './render/rain.ts';
@@ -440,6 +441,7 @@ async function start(): Promise<void> {
     zoneView.setLightBudget(gameSettings.preset().lights);
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
+    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs);
     startZoneAmbience();
     glitches.refresh();
     camera.snap(world.player.pos.x, world.player.pos.z);
@@ -544,6 +546,7 @@ async function start(): Promise<void> {
 
   camera.snap(world.player.pos.x, world.player.pos.z);
   requestAnimationFrame(frame);
+  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns()]);
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library);
     thumbnails = createItemThumbnails(library, shownPieces);
