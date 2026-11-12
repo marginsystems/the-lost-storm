@@ -521,7 +521,7 @@ async function start(): Promise<void> {
     touch.update();
     minimap.update(dt);
     ladder?.noteLevel(world.player.level);
-    launch.update(world, dt, live);
+    launch.update(world, dt, live, hud.choosing());
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     glitches.update(now / 1000, dt, live && hitStop <= 0 && !transition.blocking ? dt : 0);
     stage.render();

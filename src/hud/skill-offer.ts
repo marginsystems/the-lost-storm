@@ -6,6 +6,8 @@ import { slotAction } from '../settings/bindings.ts';
 import type { HudContext } from './context.ts';
 import { el, label, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
+import { markerShown, OFFER_IDLE, stepOffer } from './offer-state.ts';
+import type { OfferUi } from './offer-state.ts';
 
 const OFFER = {
   leaveMs: 420,
@@ -16,15 +18,26 @@ const OFFER = {
 export interface SkillOfferView {
   readonly element: HTMLElement;
   update(): void;
+  close(): boolean;
+  isOpen(): boolean;
 }
 
-export function createSkillOffer(parent: HTMLElement, context: HudContext, track: (element: HTMLElement) => void): SkillOfferView {
-  const element: HTMLDivElement = el('div', 'skill-offer', parent);
+export function createSkillOffer(parent: HTMLElement, context: HudContext, track: (element: HTMLElement) => void, onOpen: () => void): SkillOfferView {
+  const host: HTMLElement = context.api.touch ? (parent.closest<HTMLElement>('.hud') ?? parent) : parent;
+  const element: HTMLDivElement = el('div', 'skill-offer', host);
   track(element);
+  const marker: HTMLButtonElement = el('button', 'skill-offer-mark', host);
+  marker.type = 'button';
+  track(marker);
+  el('span', 'skill-offer-mark-dot', marker);
+  label('skill-offer-mark-text', 'Choose a skill', marker);
   label('skill-offer-title', 'Choose a skill', element);
   const row: HTMLDivElement = el('div', 'skill-offer-row', element);
-  let shown: string | null = null;
-  let leaving: number | null = null;
+  const later: HTMLButtonElement = el('button', 'skill-offer-later', element);
+  later.type = 'button';
+  later.textContent = 'Later';
+  let ui: OfferUi = OFFER_IDLE;
+  let filled: string | null = null;
   let choseAt: number | null = null;
   const keys: Map<string, HTMLElement> = new Map<string, HTMLElement>();
 
@@ -50,7 +63,7 @@ export function createSkillOffer(parent: HTMLElement, context: HudContext, track
       keys.set(id, label('skill-offer-key', keyFor(id), card));
       card.addEventListener('click', (event: MouseEvent): void => {
         event.stopPropagation();
-        if (leaving !== null || choseAt !== null) return;
+        if (!ui.open || choseAt !== null) return;
         choseAt = performance.now();
         card.classList.add('chosen');
         element.classList.add('choosing');
@@ -69,30 +82,54 @@ export function createSkillOffer(parent: HTMLElement, context: HudContext, track
     for (const card of row.querySelectorAll('.chosen')) card.classList.remove('chosen');
   };
 
+  const show = (next: OfferUi): void => {
+    const was: OfferUi = ui;
+    ui = next;
+    marker.classList.toggle('shown', markerShown(ui));
+    if (was.open === ui.open) return;
+    element.classList.toggle('open', ui.open);
+    if (ui.open) {
+      element.classList.remove('choosing');
+      onOpen();
+      return;
+    }
+    choseAt = null;
+    window.setTimeout((): void => {
+      if (!ui.open) element.classList.remove('choosing');
+    }, OFFER.leaveMs);
+  };
+
+  later.addEventListener('click', (event: MouseEvent): void => {
+    event.stopPropagation();
+    show(stepOffer(ui, { type: 'close' }));
+  });
+
+  marker.addEventListener('click', (event: MouseEvent): void => {
+    event.stopPropagation();
+    const open: OpenOffer | null = pendingOffer(context.api.world);
+    if (open === null) return;
+    if (filled !== open.offer.id) {
+      filled = open.offer.id;
+      fill(open);
+    }
+    element.getBoundingClientRect();
+    show(stepOffer(ui, { type: 'open' }));
+  });
+
   return {
     element,
     update(): void {
       const open: OpenOffer | null = pendingOffer(context.api.world);
-      const id: string | null = open === null ? null : open.offer.id;
-      if (id === shown) {
-        if (id !== null && leaving === null) settle();
-        return;
-      }
-      if (shown !== null && leaving === null) {
-        element.classList.remove('open');
-        choseAt = null;
-        leaving = window.setTimeout((): void => {
-          leaving = null;
-          element.classList.remove('choosing');
-          shown = null;
-        }, OFFER.leaveMs);
-        return;
-      }
-      if (leaving !== null || open === null) return;
-      shown = open.offer.id;
-      fill(open);
-      element.getBoundingClientRect();
-      element.classList.add('open');
+      show(stepOffer(ui, { type: 'pending', offer: open === null ? null : open.offer.id }));
+      if (ui.open) settle();
+    },
+    close(): boolean {
+      if (!ui.open) return false;
+      show(stepOffer(ui, { type: 'close' }));
+      return true;
+    },
+    isOpen(): boolean {
+      return ui.open;
     },
   };
 }

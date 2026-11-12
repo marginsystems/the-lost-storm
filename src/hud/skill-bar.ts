@@ -46,6 +46,8 @@ export interface SkillBar {
   press(skillId: string): void;
   learned(slot: number): void;
   closePicker(): boolean;
+  closeOffer(): boolean;
+  choosing(): boolean;
 }
 
 function emptyTooltip(key: string, touch: boolean): HTMLElement {
@@ -56,11 +58,14 @@ function emptyTooltip(key: string, touch: boolean): HTMLElement {
   return root;
 }
 
-export function createSkillBar(parent: HTMLElement, context: HudContext, track: (element: HTMLElement) => void): SkillBar {
+export function createSkillBar(parent: HTMLElement, context: HudContext, track: (element: HTMLElement) => void, onOfferOpen: () => void): SkillBar {
   const element: HTMLDivElement = el('div', 'hud-skillbar', parent);
   track(element);
   const picker: SkillPicker = createSkillPicker(element, context, track);
-  const offer: SkillOfferView = createSkillOffer(element, context, track);
+  const offer: SkillOfferView = createSkillOffer(element, context, track, (): void => {
+    picker.close();
+    onOfferOpen();
+  });
   document.addEventListener('pointerdown', (event: PointerEvent): void => {
     if (!(event.target instanceof Node) || !element.contains(event.target)) picker.close();
   });
@@ -155,6 +160,12 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
     },
     closePicker(): boolean {
       return picker.close();
+    },
+    closeOffer(): boolean {
+      return offer.close();
+    },
+    choosing(): boolean {
+      return offer.isOpen();
     },
     press(skillId: string): void {
       for (const view of slots) {

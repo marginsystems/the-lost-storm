@@ -27,6 +27,7 @@ export interface Hud {
   isPointerOverUi(): boolean;
   togglePanel(panel: HudPanel): void;
   closePanels(): boolean;
+  choosing(): boolean;
   requestMap(wanted: boolean): void;
   showGroundItem(item: ItemInstance, x: number, y: number): void;
   moveGroundItem(x: number, y: number): void;

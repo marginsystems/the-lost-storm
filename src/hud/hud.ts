@@ -133,9 +133,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.insertBefore(grid, root.firstChild);
 
   let latest: HudPanel | null = null;
+  let offerCloser: (() => void) | null = null;
 
   function setOpen(panel: HudPanel, next: boolean): void {
     if (next) for (const other of closedBy(panel, open, root.classList.contains('fit-sheets'))) setOpen(other, false);
+    if (next) offerCloser?.();
     if (next) latest = panel;
     if (open[panel] !== next) api.playUi(next ? 'panel_open' : 'panel_close');
     open[panel] = next;
@@ -172,7 +174,13 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const keyOf = (action: ActionId): string => api.settings.keys().labelOf(action);
   buttons.inventory = createMenuButton(row, 'Inventory', keyOf('inventory'), (): void => toggle('inventory'), track);
   buttons.character = createMenuButton(row, 'Character', keyOf('character'), (): void => toggle('character'), track);
-  const skillBar: SkillBar = createSkillBar(row, context, track);
+  const skillBar: SkillBar = createSkillBar(row, context, track, (): void => {
+    trade.close();
+    for (const panel of HUD_PANELS) if (open[panel]) setOpen(panel, false);
+  });
+  offerCloser = (): void => {
+    skillBar.closeOffer();
+  };
   buttons.tree = createMenuButton(row, 'Chart', keyOf('tree'), (): void => toggle('tree'), track);
   buttons.map = createMenuButton(row, 'Map', keyOf('map'), (): void => toggle('map'), track);
   createVolumeButton(row, api.audio, track, (): void => api.openSettings('sound'));
@@ -358,8 +366,12 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     requestMap(wanted: boolean): void {
       mapWanted = wanted;
     },
+    choosing(): boolean {
+      return skillBar.choosing();
+    },
     closePanels(): boolean {
-      let anyOpen: boolean = skillBar.closePicker();
+      let anyOpen: boolean = skillBar.closeOffer();
+      if (skillBar.closePicker()) anyOpen = true;
       if (trade.close()) anyOpen = true;
       for (const panel of HUD_PANELS) {
         if (open[panel]) {

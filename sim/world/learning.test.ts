@@ -1,10 +1,18 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { arena, ARENA_CENTRE, place } from '../../test/arena-support.ts';
+import { must, worldIn, zoneOf } from '../../test/support.ts';
+import { loadContent } from '../content/content.ts';
+import type { Content } from '../content/types.ts';
+import { readSave, toSave } from '../save.ts';
+import { createWorld } from './create.ts';
+import { enterZone } from './zones.ts';
 import { chooseSkill, learnSkills, pendingOffer } from './learning.ts';
 import { refreshPlayer } from './character.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World } from './types.ts';
+
+const content: Content = loadContent();
 
 const FIGHT = {
   dt: 1 / 30,
@@ -82,4 +90,28 @@ void test('a skill picked from an offer is marked chosen, and one the story gran
   world.events.length = 0;
   chooseSkill(world, open.offer.id, pick);
   assert.deepEqual(world.events.filter((event): boolean => event.type === 'skill_unlocked').map((event): boolean => event.type === 'skill_unlocked' && event.chosen), [true]);
+});
+
+void test('a choice left waiting is still waiting after a zone change and after a save is loaded', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 3);
+  world.flags['first_moment'] = 'cleared';
+  const waiting: string | undefined = pendingOffer(world)?.offer.id;
+  assert.equal(waiting, 'first_moment');
+  enterZone(world, zoneOf(content, 'between'), { type: 'start' });
+  assert.equal(pendingOffer(world)?.offer.id, waiting);
+  const loaded: World = createWorld(content, { seed: 4, save: must(readSave(content, JSON.parse(JSON.stringify(toSave(world)))), 'save') });
+  assert.equal(pendingOffer(loaded)?.offer.id, waiting);
+  assert.deepEqual(pendingOffer(loaded)?.choices, pendingOffer(world)?.choices);
+});
+
+void test('two offers open at once wait in line: only the first is offered, and the second comes once it is chosen', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 5);
+  world.flags['first_moment'] = 'cleared';
+  world.flags['fire_lesson'] = 'given';
+  const first = must(pendingOffer(world), 'first offer');
+  assert.equal(first.offer.id, 'first_moment');
+  chooseSkill(world, first.offer.id, must(first.choices[0], 'choice'));
+  const second = must(pendingOffer(world), 'second offer');
+  assert.equal(second.offer.id, 'fire_lesson');
+  assert.ok(!second.choices.includes(must(first.choices[0], 'choice')));
 });

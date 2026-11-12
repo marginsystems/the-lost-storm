@@ -26,7 +26,7 @@ export interface LaunchOptions {
 
 export interface Launch {
   readonly canSend: boolean;
-  update(world: World, dt: number, playing: boolean): void;
+  update(world: World, dt: number, playing: boolean, choosing: boolean): void;
   note(event: CountedEvent): void;
   open(mode: CardMode): void;
 }
@@ -97,7 +97,7 @@ export function startLaunch(options: LaunchOptions): Launch {
 
   return {
     canSend: loop !== null,
-    update(world: World, dt: number, playing: boolean): void {
+    update(world: World, dt: number, playing: boolean, choosing: boolean): void {
       zone = world.zone.id;
       level = world.player.level;
       if (playing && titleCard?.isOpen === true) titleCard.close();
@@ -105,7 +105,7 @@ export function startLaunch(options: LaunchOptions): Launch {
       played = addPlayed(played, dt);
       unsaved += dt;
       if (unsaved > LAUNCH.saveEvery) savePlayed();
-      if (!endTaken && takeEndCard({ flags: world.flags, ended: endedActs(world) })) {
+      if (!endTaken && !choosing && takeEndCard({ flags: world.flags, ended: endedActs(world) })) {
         endTaken = true;
         card.open('end');
       }
