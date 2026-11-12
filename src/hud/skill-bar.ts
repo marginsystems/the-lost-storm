@@ -6,6 +6,7 @@ import { clamp01, el, label, pulseClass, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
 import type { SkillPicker } from './skill-picker.ts';
 import { createSkillPicker, skillDetails } from './skill-picker.ts';
+import { promptText, use } from './prompts.ts';
 import { attachTooltip } from './tooltip.ts';
 
 const SKILL_BAR = {
@@ -43,11 +44,11 @@ export interface SkillBar {
   closePicker(): boolean;
 }
 
-function emptyTooltip(key: string): HTMLElement {
+function emptyTooltip(key: string, touch: boolean): HTMLElement {
   const root: HTMLDivElement = el('div', 'tip', null);
   label('tip-title', 'Empty slot', root);
   label('tip-sub', key === '' ? 'Skill' : `Skill · ${key}`, root);
-  label('tip-line', 'Click to choose a skill for this slot.', root);
+  label('tip-line', `${promptText(touch, use('choose a skill for this slot'))}.`, root);
   return root;
 }
 
@@ -84,7 +85,7 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
     const cost: HTMLDivElement = el('div', 'slot-cost', root);
     const view: SlotView = { root, icon, cost, cooldown, keyNode, key: null, skill: null, empty: null, iconId: '', angle: -1, cooling: null, dim: null };
     paintKey(view, keyOf(index));
-    attachTooltip(context.tooltip, root, (): HTMLElement | null => (picker.slot !== null ? null : view.skill === null ? emptyTooltip(keyOf(index)) : skillDetails(view.skill, `Skill · ${keyOf(index)} · click to change`, null)));
+    attachTooltip(context.tooltip, root, (): HTMLElement | null => (picker.slot !== null ? null : view.skill === null ? emptyTooltip(keyOf(index), context.api.touch) : skillDetails(view.skill, `Skill · ${keyOf(index)} · click to change`, null)));
     return view;
   };
 

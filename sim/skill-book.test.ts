@@ -52,7 +52,7 @@ void test('new skills fill empty slots as they are learned and stop when the bar
 });
 
 void test('reaching a level that teaches a skill announces it and puts it in an empty slot', (): void => {
-  const world: World = worldIn(content, 'drowned_bastion', 3);
+  const world: World = worldIn(content, 'shallows', 3);
   const events: WorldEvent[] = levelTo(world, 2);
   const learned = events.filter((event: WorldEvent): boolean => event.type === 'skill_unlocked');
   assert.ok(learned.length >= 1);
@@ -62,7 +62,7 @@ void test('reaching a level that teaches a skill announces it and puts it in an 
 });
 
 void test('the slot command places only learned skills, and the choice survives a save', (): void => {
-  const world: World = worldIn(content, 'drowned_bastion', 3);
+  const world: World = worldIn(content, 'shallows', 3);
   stepWorld(world, [{ type: 'slot', slot: 1, skill: 'held_breath' }], 1 / 60);
   assert.equal(world.player.bar[1], 'thunderclap');
   levelTo(world, 7);

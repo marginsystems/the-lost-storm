@@ -4,6 +4,7 @@ import type { PlayerState } from '../../sim/world/types.ts';
 import type { HudContext } from './context.ts';
 import { el, label } from './dom.ts';
 import { iconSvg } from './icons.ts';
+import { promptText, use } from './prompts.ts';
 import { attachTooltip } from './tooltip.ts';
 
 export interface SkillPicker {
@@ -51,7 +52,7 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
     el('span', 'skill-choice-icon', root).innerHTML = iconSvg(skill.icon);
     label('skill-choice-level', `${entry.level}`, root);
     const choice: Choice = { root, entry, skill, state: '' };
-    attachTooltip(context.tooltip, root, (): HTMLElement => skillDetails(skill, choice.state === 'locked' ? 'Not yet learned' : 'Click to place it in this slot', choice.state === 'locked' ? entry.level : null));
+    attachTooltip(context.tooltip, root, (): HTMLElement => skillDetails(skill, choice.state === 'locked' ? 'Not yet learned' : promptText(context.api.touch, use('place it in this slot')), choice.state === 'locked' ? entry.level : null));
     root.addEventListener('click', (event: MouseEvent): void => {
       event.stopPropagation();
       if (slot === null || choice.state === 'locked') return;
