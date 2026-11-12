@@ -9,7 +9,7 @@ import { loadModel } from './character-loader.ts';
 import { additive, disposeObject, glow, pillarMesh } from './effect-shapes.ts';
 
 export const LOOT = {
-  coinModel: 'models/arena/coin_stack_small.glb',
+  coinModel: 'models/world/coins.glb',
   coinScale: 0.85,
   tossTime: 0.42,
   tossHeight: 2.6,

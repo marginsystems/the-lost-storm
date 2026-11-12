@@ -78,7 +78,7 @@ void test('every test file sits beside the file it tests', (): void => {
   }
 });
 
-void test('every shipped model is listed in ASSETS.md', (): void => {
+void test('every shipped model and texture is listed in ASSETS.md', (): void => {
   const assets: string = readFileSync('ASSETS.md', 'utf8');
   const models = (dir: string): string[] =>
     readdirSync(dir).flatMap((name: string): string[] => {
@@ -86,7 +86,7 @@ void test('every shipped model is listed in ASSETS.md', (): void => {
       if (statSync(path).isDirectory()) return models(path);
       return [path];
     });
-  for (const path of models('public/models')) assert.ok(assets.includes(path), `${path} is missing from ASSETS.md`);
+  for (const path of [...models('public/models'), ...models('public/textures')]) assert.ok(assets.includes(path), `${path} is missing from ASSETS.md`);
 });
 
 interface SpokenLine {

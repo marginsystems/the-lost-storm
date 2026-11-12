@@ -35,6 +35,7 @@ import type {
   SkillTreeNodeDef,
   StatBlock,
   StatMod,
+  SurfaceDef,
   TalkDef,
   Triple,
   WearableDef,
@@ -51,6 +52,7 @@ export interface RawContent {
   readonly rigs: unknown;
   readonly attachments: unknown;
   readonly wearables: unknown;
+  readonly surfaces: unknown;
   readonly props: unknown;
   readonly zones: readonly unknown[];
   readonly world: unknown;
@@ -354,6 +356,30 @@ function propLight(value: unknown, where: string): PropLight | null {
   return { color: text(source, 'color', where), intensity: numeric(source, 'intensity', where), distance: numeric(source, 'distance', where), height: numeric(source, 'height', where) };
 }
 
+function surface(value: unknown, where: string): SurfaceDef {
+  const source: Fields = fields(value, where);
+  return {
+    id: text(source, 'id', where),
+    color: text(source, 'color', where),
+    normal: nullableText(source, 'normal', where),
+    orm: nullableText(source, 'orm', where),
+    metres: positive(source, 'metres', where),
+    tint: text(source, 'tint', where),
+    roughness: numeric(source, 'roughness', where),
+    metalness: numeric(source, 'metalness', where),
+    normalScale: numeric(source, 'normalScale', where),
+    spill: numeric(source, 'spill', where),
+  };
+}
+
+function propSurfaces(value: unknown, where: string): Record<string, string> {
+  if (value === undefined) return {};
+  const source: Fields = fields(value, where);
+  const mapped: Record<string, string> = {};
+  for (const key of Object.keys(source)) mapped[key] = text(source, key, where);
+  return mapped;
+}
+
 function prop(value: unknown, where: string): PropDef {
   const source: Fields = fields(value, where);
   return {
@@ -362,6 +388,7 @@ function prop(value: unknown, where: string): PropDef {
     scale: numeric(source, 'scale', where),
     blockRadius: numeric(source, 'blockRadius', where),
     light: propLight(source['light'], `${where}.light`),
+    surfaces: propSurfaces(source['surfaces'], `${where}.surfaces`),
   };
 }
 
@@ -427,6 +454,7 @@ export function parseContent(raw: RawContent): Content {
     rigs: byId(each(raw.rigs, 'rigs', rig), 'rigs'),
     attachments: byId(each(raw.attachments, 'attachments', attachment), 'attachments'),
     wearables: byId(each(raw.wearables, 'wearables', wearable), 'wearables'),
+    surfaces: byId(each(raw.surfaces, 'surfaces', surface), 'surfaces'),
     props: byId(each(raw.props, 'props', prop), 'props'),
     zones: byId(each(raw.zones, 'zones', zone), 'zones'),
     world: worldDef(raw.world, 'world'),
@@ -506,11 +534,15 @@ export function contentProblems(content: Content): string[] {
       if (questDef !== undefined && entry.type === 'objective') need(questDef.objectives.some((candidate: ObjectiveDef): boolean => candidate.id === entry.objective), `${holder} names unknown objective ${entry.quest}.${entry.objective}`);
     }
   };
+  for (const def of content.props.values()) {
+    for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `prop ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
+  }
   need(content.zones.has(content.world.start), `world starts in unknown zone ${content.world.start}`);
   for (const place of content.world.map) need(content.zones.has(place.zone), `world map places unknown zone ${place.zone}`);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;
-    for (const models of Object.values(zoneDef.floors)) for (const model of models) need(content.props.has(model), `${at} floor uses unknown prop ${model}`);
+    for (const floor of Object.values(zoneDef.floors)) need(content.surfaces.has(floor), `${at} floor uses unknown surface ${floor}`);
+    if (zoneDef.outside !== null) need(content.surfaces.has(zoneDef.outside.surface), `${at} outside uses unknown surface ${zoneDef.outside.surface}`);
     for (const model of [...zoneDef.walls.tall, zoneDef.walls.low, zoneDef.walls.corner]) need(content.props.has(model), `${at} wall uses unknown prop ${model}`);
     for (const placed of zoneDef.props) {
       const def: PropDef | undefined = content.props.get(placed.prop);

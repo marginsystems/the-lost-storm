@@ -4,7 +4,7 @@
   "kind": "wild",
   "level": 4,
   "cellSize": 4,
-  "floorHeight": 0.09,
+  "floorHeight": 0,
   "tiles": [
     "   .....          ",
     "  .......         ",
@@ -14,26 +14,25 @@
     "  .......         ",
     "   .....          "
   ],
-  "floors": {
-    ".": ["floor_tile_large"]
-  },
-  "walls": {"tall": ["wall", "wall", "wall_cracked"], "low": "barrier", "corner": "pillar", "halfThickness": 0.5},
+  "floors": {".": "pale_ashlar"},
+  "outside": null,
+  "walls": {"tall": ["pale_wall_a", "pale_wall_a", "pale_wall_b"], "low": "pale_wall_low", "corner": "pale_pier", "halfThickness": 0.5},
   "playerStart": {"x": 65.4, "z": 14},
   "props": [
-    {"prop": "wall_doorway", "x": 11.4, "z": 14, "y": 0, "rotationDegrees": 90},
-    {"prop": "door_candles", "x": 9.6, "z": 14, "y": 0, "rotationDegrees": 90},
-    {"prop": "column", "x": 18, "z": 5, "y": 0, "rotationDegrees": 0},
-    {"prop": "column", "x": 18, "z": 23, "y": 0, "rotationDegrees": 0},
-    {"prop": "column", "x": 28, "z": 5, "y": 0, "rotationDegrees": 0},
-    {"prop": "column", "x": 28, "z": 23, "y": 0, "rotationDegrees": 0},
-    {"prop": "pillar", "x": 58, "z": 9, "y": 0, "rotationDegrees": 0},
-    {"prop": "pillar", "x": 66, "z": 9, "y": 0, "rotationDegrees": 0},
-    {"prop": "pillar", "x": 58, "z": 19, "y": 0, "rotationDegrees": 0},
-    {"prop": "pillar", "x": 66, "z": 19, "y": 0, "rotationDegrees": 0},
-    {"prop": "column", "x": 41.6, "z": 9.6, "y": 0, "rotationDegrees": 0},
-    {"prop": "column", "x": 50.4, "z": 9.6, "y": 0, "rotationDegrees": 0},
-    {"prop": "column", "x": 41.6, "z": 18.4, "y": 0, "rotationDegrees": 0},
-    {"prop": "column", "x": 50.4, "z": 18.4, "y": 0, "rotationDegrees": 0}
+    {"prop": "pale_doorway", "x": 11.4, "z": 14.0, "y": 0, "rotationDegrees": 90},
+    {"prop": "door_candles", "x": 9.6, "z": 14.0, "y": 0, "rotationDegrees": 90},
+    {"prop": "pale_column", "x": 18.0, "z": 5.0, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_column", "x": 18.0, "z": 23.0, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_column", "x": 28.0, "z": 5.0, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_column", "x": 28.0, "z": 23.0, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_pillar", "x": 58.0, "z": 9.0, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_pillar", "x": 66.0, "z": 9.0, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_pillar", "x": 58.0, "z": 19.0, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_pillar", "x": 66.0, "z": 19.0, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_column", "x": 41.6, "z": 9.6, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_column", "x": 50.4, "z": 9.6, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_column", "x": 41.6, "z": 18.4, "y": 0, "rotationDegrees": 0},
+    {"prop": "pale_column", "x": 50.4, "z": 18.4, "y": 0, "rotationDegrees": 0}
   ],
   "packs": [
     {"x": 46.5, "z": 14, "members": [{"monster": "echo", "count": 6}, {"monster": "lamenter", "count": 2}]},
@@ -61,8 +60,8 @@
     "fogFar": 84,
     "skyColor": "#f4f6ff",
     "groundColor": "#7c7870",
-    "skyIntensity": 1.0,
+    "skyIntensity": 1.5,
     "keyColor": "#fff3dc",
-    "keyIntensity": 0.95
+    "keyIntensity": 1.3
   }
 }

@@ -1,527 +1,100 @@
 [
-  {
-    "id": "arch",
-    "model": "models/yard/arch.glb",
-    "scale": 1.25,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "banner_patternA_blue",
-    "model": "models/arena/banner_patternA_blue.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "banner_patternB_red",
-    "model": "models/arena/banner_patternB_red.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "banner_patternC_white",
-    "model": "models/arena/banner_patternC_white.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "banner_shield_blue",
-    "model": "models/arena/banner_shield_blue.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "barrel_large",
-    "model": "models/arena/barrel_large.glb",
-    "scale": 0.65,
-    "blockRadius": 0.62,
-    "light": null
-  },
-  {
-    "id": "barrel_small_stack",
-    "model": "models/arena/barrel_small_stack.glb",
-    "scale": 0.7,
-    "blockRadius": 0.6,
-    "light": null
-  },
-  {
-    "id": "barrier",
-    "model": "models/arena/barrier.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "barrier_column",
-    "model": "models/arena/barrier_column.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "bench",
-    "model": "models/yard/bench.glb",
-    "scale": 1,
-    "blockRadius": 0.7,
-    "light": null
-  },
-  {
-    "id": "box_large",
-    "model": "models/arena/box_large.glb",
-    "scale": 0.75,
-    "blockRadius": 0.72,
-    "light": null
-  },
-  {
-    "id": "box_stacked",
-    "model": "models/arena/box_stacked.glb",
-    "scale": 0.6,
-    "blockRadius": 1.1,
-    "light": null
-  },
-  {
-    "id": "candle_triple",
-    "model": "models/arena/candle_triple.glb",
-    "scale": 1.2,
-    "blockRadius": 0,
-    "light": {
-      "color": "#ffb060",
-      "intensity": 10,
-      "distance": 9,
-      "height": 0.9
-    }
-  },
-  {
-    "id": "chair",
-    "model": "models/arena/chair.glb",
-    "scale": 1,
-    "blockRadius": 0.4,
-    "light": null
-  },
-  {
-    "id": "chest",
-    "model": "models/arena/chest.glb",
-    "scale": 0.9,
-    "blockRadius": 0.8,
-    "light": null
-  },
-  {
-    "id": "coin",
-    "model": "models/arena/coin.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "coin_stack_small",
-    "model": "models/arena/coin_stack_small.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "column",
-    "model": "models/arena/column.glb",
-    "scale": 1,
-    "blockRadius": 0.55,
-    "light": null
-  },
-  {
-    "id": "crates_stacked",
-    "model": "models/arena/crates_stacked.glb",
-    "scale": 0.75,
-    "blockRadius": 1.0,
-    "light": null
-  },
-  {
-    "id": "door_candles",
-    "model": "models/arena/candle_triple.glb",
-    "scale": 1.6,
-    "blockRadius": 0,
-    "light": {
-      "color": "#ffd9a0",
-      "intensity": 150,
-      "distance": 30,
-      "height": 1.6
-    }
-  },
-  {
-    "id": "fence",
-    "model": "models/yard/fence.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "fence_broken",
-    "model": "models/yard/fence_broken.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "fence_pillar",
-    "model": "models/yard/fence_pillar.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "floor_dirt_large",
-    "model": "models/arena/floor_dirt_large.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "floor_dirt_large_rocky",
-    "model": "models/arena/floor_dirt_large_rocky.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "floor_dirt_yard",
-    "model": "models/yard/floor_dirt.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "floor_tile_big_grate",
-    "model": "models/arena/floor_tile_big_grate.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "floor_tile_large",
-    "model": "models/arena/floor_tile_large.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "floor_tile_large_rocks",
-    "model": "models/arena/floor_tile_large_rocks.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "floor_wood_large_dark",
-    "model": "models/arena/floor_wood_large_dark.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "gate_lantern",
-    "model": "models/yard/post_lantern.glb",
-    "scale": 1.3,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "gate_lantern_lit",
-    "model": "models/yard/post_lantern.glb",
-    "scale": 1.3,
-    "blockRadius": 0,
-    "light": {
-      "color": "#ffcf80",
-      "intensity": 60,
-      "distance": 22,
-      "height": 3.64
-    }
-  },
-  {
-    "id": "grave_A",
-    "model": "models/yard/grave_A.glb",
-    "scale": 1,
-    "blockRadius": 0.7,
-    "light": null
-  },
-  {
-    "id": "gravemarker_A",
-    "model": "models/yard/gravemarker_A.glb",
-    "scale": 1,
-    "blockRadius": 0.3,
-    "light": null
-  },
-  {
-    "id": "gravestone",
-    "model": "models/yard/gravestone.glb",
-    "scale": 1,
-    "blockRadius": 0.5,
-    "light": null
-  },
-  {
-    "id": "great_lamp",
-    "model": "models/yard/lantern_standing.glb",
-    "scale": 3.4,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "great_lamp_lit",
-    "model": "models/yard/lantern_standing.glb",
-    "scale": 3.4,
-    "blockRadius": 0,
-    "light": {
-      "color": "#ffcf80",
-      "intensity": 120,
-      "distance": 34,
-      "height": 5.8
-    }
-  },
-  {
-    "id": "keg",
-    "model": "models/arena/keg.glb",
-    "scale": 0.8,
-    "blockRadius": 0.8,
-    "light": null
-  },
-  {
-    "id": "pillar",
-    "model": "models/arena/pillar.glb",
-    "scale": 1,
-    "blockRadius": 1.05,
-    "light": null
-  },
-  {
-    "id": "pillar_decorated",
-    "model": "models/arena/pillar_decorated.glb",
-    "scale": 1,
-    "blockRadius": 1.15,
-    "light": null
-  },
-  {
-    "id": "plinth",
-    "model": "models/arena/floor_foundation_allsides.glb",
-    "scale": 1,
-    "blockRadius": 1.5,
-    "light": null
-  },
-  {
-    "id": "post",
-    "model": "models/yard/post.glb",
-    "scale": 1.15,
-    "blockRadius": 0.3,
-    "light": null
-  },
-  {
-    "id": "post_lantern",
-    "model": "models/yard/post_lantern.glb",
-    "scale": 1.15,
-    "blockRadius": 0.35,
-    "light": null
-  },
-  {
-    "id": "post_lantern_lit",
-    "model": "models/yard/post_lantern.glb",
-    "scale": 1.15,
-    "blockRadius": 0.35,
-    "light": {
-      "color": "#ffc070",
-      "intensity": 26,
-      "distance": 15,
-      "height": 3.2
-    }
-  },
-  {
-    "id": "rubble_half",
-    "model": "models/arena/rubble_half.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "rubble_large",
-    "model": "models/arena/rubble_large.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "shrine_candles",
-    "model": "models/yard/shrine_candles.glb",
-    "scale": 1.2,
-    "blockRadius": 0.7,
-    "light": {
-      "color": "#ffb060",
-      "intensity": 14,
-      "distance": 10,
-      "height": 1.6
-    }
-  },
-  {
-    "id": "stairs",
-    "model": "models/arena/stairs.glb",
-    "scale": 1,
-    "blockRadius": 2.3,
-    "light": null
-  },
-  {
-    "id": "sword_shield_broken",
-    "model": "models/arena/sword_shield_broken.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "table_long",
-    "model": "models/arena/table_long.glb",
-    "scale": 0.9,
-    "blockRadius": 1.3,
-    "light": null
-  },
-  {
-    "id": "table_long_broken",
-    "model": "models/arena/table_long_broken.glb",
-    "scale": 0.9,
-    "blockRadius": 1.3,
-    "light": null
-  },
-  {
-    "id": "torch_lit",
-    "model": "models/arena/torch_lit.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "torch_mounted",
-    "model": "models/arena/torch_mounted.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": {
-      "color": "#ffb060",
-      "intensity": 38,
-      "distance": 17,
-      "height": 0.6
-    }
-  },
-  {
-    "id": "tree_dead_large",
-    "model": "models/yard/tree_dead_large.glb",
-    "scale": 1.5,
-    "blockRadius": 0.7,
-    "light": null
-  },
-  {
-    "id": "tree_dead_medium",
-    "model": "models/yard/tree_dead_medium.glb",
-    "scale": 1.5,
-    "blockRadius": 0.5,
-    "light": null
-  },
-  {
-    "id": "tree_dead_small",
-    "model": "models/yard/tree_dead_small.glb",
-    "scale": 1.4,
-    "blockRadius": 0.4,
-    "light": null
-  },
-  {
-    "id": "trunk_large_A",
-    "model": "models/arena/trunk_large_A.glb",
-    "scale": 0.9,
-    "blockRadius": 0.7,
-    "light": null
-  },
-  {
-    "id": "wall",
-    "model": "models/arena/wall.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_arched",
-    "model": "models/arena/wall_arched.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_archedwindow_gated",
-    "model": "models/arena/wall_archedwindow_gated.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_broken",
-    "model": "models/arena/wall_broken.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_corner",
-    "model": "models/arena/wall_corner.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_cracked",
-    "model": "models/arena/wall_cracked.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_doorway",
-    "model": "models/arena/wall_doorway.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_endcap",
-    "model": "models/arena/wall_endcap.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_gated",
-    "model": "models/arena/wall_gated.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_half",
-    "model": "models/arena/wall_half.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_open_scaffold",
-    "model": "models/arena/wall_open_scaffold.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_pillar",
-    "model": "models/arena/wall_pillar.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  },
-  {
-    "id": "wall_scaffold",
-    "model": "models/arena/wall_scaffold.glb",
-    "scale": 1,
-    "blockRadius": 0,
-    "light": null
-  }
+  {"id": "ashlar_column", "model": "models/world/column.glb", "scale": 1, "blockRadius": 0.55, "light": null, "surfaces": {"stone": "ashlar", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "ashlar_pier", "model": "models/world/pier.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "ashlar", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "ashlar_pillar", "model": "models/world/pillar.glb", "scale": 1, "blockRadius": 1.05, "light": null, "surfaces": {"stone": "ashlar", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "ashlar_plinth", "model": "models/world/plinth.glb", "scale": 1, "blockRadius": 1.5, "light": null, "surfaces": {"stone": "ashlar", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "ashlar_wall_a", "model": "models/world/wall_a.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "ashlar", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "ashlar_wall_low_piers", "model": "models/world/wall_low_piers.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "ashlar", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "ashlar_wall_scaffold", "model": "models/world/wall_scaffold.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "ashlar", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "ashlar_wall_works", "model": "models/world/wall_works.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "ashlar", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "banner_blue", "model": "models/world/banner.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"cloth": "linen_blue", "iron": "iron"}},
+  {"id": "banner_pale", "model": "models/world/banner.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"cloth": "linen_pale", "iron": "iron"}},
+  {"id": "banner_red", "model": "models/world/banner.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"cloth": "linen_red", "iron": "iron"}},
+  {"id": "banner_wide_blue", "model": "models/world/banner_wide.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"cloth": "linen_blue", "iron": "iron"}},
+  {"id": "barrel", "model": "models/props/barrel.glb", "scale": 1.25, "blockRadius": 0.5, "light": null, "surfaces": {}},
+  {"id": "bench", "model": "models/world/bench.glb", "scale": 1, "blockRadius": 0.7, "light": null, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "boulder_1", "model": "models/props/rock_set_1.glb", "scale": 0.95, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "boulder_2", "model": "models/props/rock_set_2.glb", "scale": 0.95, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "boulder_3", "model": "models/props/rock_set_4.glb", "scale": 0.95, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "branches", "model": "models/props/branches.glb", "scale": 1.4, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "brazier", "model": "models/world/brazier.glb", "scale": 1, "blockRadius": 0.55, "light": {"color": "#ff9a48", "intensity": 46, "distance": 18, "height": 1.5}, "surfaces": {"iron": "iron"}},
+  {"id": "bucket", "model": "models/props/bucket.glb", "scale": 1.1, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "candles", "model": "models/world/candles.glb", "scale": 1.2, "blockRadius": 0, "light": {"color": "#ffb060", "intensity": 10, "distance": 9, "height": 0.5}, "surfaces": {"iron": "iron"}},
+  {"id": "castle_column", "model": "models/world/column.glb", "scale": 1, "blockRadius": 0.55, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_column_broken", "model": "models/world/column_broken.glb", "scale": 1, "blockRadius": 0.55, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_doorway", "model": "models/world/doorway.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_loose_blocks", "model": "models/world/loose_blocks.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_pier", "model": "models/world/pier.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_pillar", "model": "models/world/pillar.glb", "scale": 1, "blockRadius": 1.05, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_rubble_large", "model": "models/world/rubble_large.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_rubble_small", "model": "models/world/rubble_small.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_stairs", "model": "models/world/stairs.glb", "scale": 1, "blockRadius": 2.3, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_statue_base", "model": "models/world/statue_base.glb", "scale": 1, "blockRadius": 0.95, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_wall_a", "model": "models/world/wall_a.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_wall_b", "model": "models/world/wall_b.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_wall_low", "model": "models/world/wall_low.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_wall_ruin", "model": "models/world/wall_ruin.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "castle_wall_window", "model": "models/world/wall_window.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "chair", "model": "models/world/chair.glb", "scale": 1, "blockRadius": 0.4, "light": null, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "chest", "model": "models/props/chest.glb", "scale": 1.4, "blockRadius": 0.7, "light": null, "surfaces": {}},
+  {"id": "crate", "model": "models/props/crate_a.glb", "scale": 1.5, "blockRadius": 0.55, "light": null, "surfaces": {}},
+  {"id": "crate_tall", "model": "models/props/crate_b.glb", "scale": 1.3, "blockRadius": 0.5, "light": null, "surfaces": {}},
+  {"id": "dead_log", "model": "models/props/dead_log.glb", "scale": 1.4, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "door_candles", "model": "models/world/candles.glb", "scale": 2, "blockRadius": 0, "light": {"color": "#ffd9a0", "intensity": 150, "distance": 30, "height": 1.2}, "surfaces": {"iron": "iron"}},
+  {"id": "dry_cairn", "model": "models/world/cairn.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "drystone", "wood": "planks", "iron": "iron", "earth": "forest"}},
+  {"id": "dry_doorway", "model": "models/world/doorway.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "drystone", "wood": "planks", "iron": "iron", "earth": "forest"}},
+  {"id": "dry_drystone_a", "model": "models/world/drystone_a.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "drystone", "wood": "planks", "iron": "iron", "earth": "forest"}},
+  {"id": "dry_drystone_b", "model": "models/world/drystone_b.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "drystone", "wood": "planks", "iron": "iron", "earth": "forest"}},
+  {"id": "dry_drystone_gap", "model": "models/world/drystone_gap.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "drystone", "wood": "planks", "iron": "iron", "earth": "forest"}},
+  {"id": "dry_drystone_low", "model": "models/world/drystone_low.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "drystone", "wood": "planks", "iron": "iron", "earth": "forest"}},
+  {"id": "dry_plinth", "model": "models/world/plinth.glb", "scale": 1, "blockRadius": 1.5, "light": null, "surfaces": {"stone": "drystone", "wood": "planks", "iron": "iron", "earth": "forest"}},
+  {"id": "fallen_tree", "model": "models/props/dead_tree_a.glb", "scale": 1.2, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "fire_pit", "model": "models/props/fire_pit.glb", "scale": 1.2, "blockRadius": 0.9, "light": null, "surfaces": {}},
+  {"id": "gate_lantern", "model": "models/world/post_lantern.glb", "scale": 1.3, "blockRadius": 0, "light": null, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "gate_lantern_lit", "model": "models/world/post_lantern_lit.glb", "scale": 1.3, "blockRadius": 0, "light": {"color": "#ffcf80", "intensity": 60, "distance": 22, "height": 3.1}, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "grate", "model": "models/world/grate.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"iron": "iron", "stone": "mossy_wall"}},
+  {"id": "grave_cross", "model": "models/world/grave_cross.glb", "scale": 1, "blockRadius": 0.3, "light": null, "surfaces": {"stone": "drystone"}},
+  {"id": "grave_slab", "model": "models/world/grave_slab.glb", "scale": 1, "blockRadius": 0.9, "light": null, "surfaces": {"stone": "drystone"}},
+  {"id": "gravestone", "model": "models/world/gravestone.glb", "scale": 1, "blockRadius": 0.5, "light": null, "surfaces": {"stone": "drystone"}},
+  {"id": "great_lamp", "model": "models/world/great_lamp.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"iron": "iron"}},
+  {"id": "great_lamp_lit", "model": "models/world/great_lamp_lit.glb", "scale": 1, "blockRadius": 0, "light": {"color": "#ffcf80", "intensity": 120, "distance": 34, "height": 2.6}, "surfaces": {"iron": "iron"}},
+  {"id": "house_a", "model": "models/world/house_a.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "plaster": "plaster", "wood": "planks", "roof": "slates"}},
+  {"id": "house_b", "model": "models/world/house_b.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "plaster": "plaster", "wood": "planks", "roof": "slates"}},
+  {"id": "mason_blocks", "model": "models/world/loose_blocks.glb", "scale": 1.2, "blockRadius": 0.9, "light": null, "surfaces": {"stone": "ashlar"}},
+  {"id": "mossy_column", "model": "models/world/column.glb", "scale": 1, "blockRadius": 0.55, "light": null, "surfaces": {"stone": "mossy_wall", "wood": "planks", "iron": "iron", "earth": "mud"}},
+  {"id": "mossy_pier", "model": "models/world/pier.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "mossy_wall", "wood": "planks", "iron": "iron", "earth": "mud"}},
+  {"id": "mossy_pillar", "model": "models/world/pillar.glb", "scale": 1, "blockRadius": 1.05, "light": null, "surfaces": {"stone": "mossy_wall", "wood": "planks", "iron": "iron", "earth": "mud"}},
+  {"id": "mossy_statue_base", "model": "models/world/statue_base.glb", "scale": 1, "blockRadius": 0.95, "light": null, "surfaces": {"stone": "mossy_wall", "wood": "planks", "iron": "iron", "earth": "mud"}},
+  {"id": "mossy_wall_a", "model": "models/world/wall_a.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "mossy_wall", "wood": "planks", "iron": "iron", "earth": "mud"}},
+  {"id": "mossy_wall_b", "model": "models/world/wall_b.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "mossy_wall", "wood": "planks", "iron": "iron", "earth": "mud"}},
+  {"id": "mossy_wall_low", "model": "models/world/wall_low.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "mossy_wall", "wood": "planks", "iron": "iron", "earth": "mud"}},
+  {"id": "mossy_wall_ruin", "model": "models/world/wall_ruin.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "mossy_wall", "wood": "planks", "iron": "iron", "earth": "mud"}},
+  {"id": "mossy_wall_window", "model": "models/world/wall_window.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "mossy_wall", "wood": "planks", "iron": "iron", "earth": "mud"}},
+  {"id": "pale_column", "model": "models/world/column.glb", "scale": 1, "blockRadius": 0.55, "light": null, "surfaces": {"stone": "pale_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "pale_doorway", "model": "models/world/doorway.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "pale_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "pale_pier", "model": "models/world/pier.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "pale_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "pale_pillar", "model": "models/world/pillar.glb", "scale": 1, "blockRadius": 1.05, "light": null, "surfaces": {"stone": "pale_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "pale_wall_a", "model": "models/world/wall_a.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "pale_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "pale_wall_b", "model": "models/world/wall_b.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "pale_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "pale_wall_low", "model": "models/world/wall_low.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "pale_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
+  {"id": "post", "model": "models/world/post.glb", "scale": 1, "blockRadius": 0.3, "light": null, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "post_lantern", "model": "models/world/post_lantern.glb", "scale": 1, "blockRadius": 0.35, "light": null, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "post_lantern_lit", "model": "models/world/post_lantern_lit.glb", "scale": 1, "blockRadius": 0.35, "light": {"color": "#ffc070", "intensity": 26, "distance": 15, "height": 2.4}, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "rock_1", "model": "models/props/rock_set_1.glb", "scale": 0.42, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "rock_2", "model": "models/props/rock_set_2.glb", "scale": 0.42, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "rock_3", "model": "models/props/rock_set_3.glb", "scale": 0.42, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "rock_4", "model": "models/props/rock_set_4.glb", "scale": 0.42, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "rock_5", "model": "models/props/rock_set_5.glb", "scale": 0.42, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "shrine", "model": "models/world/shrine.glb", "scale": 1, "blockRadius": 0.7, "light": {"color": "#ffb060", "intensity": 14, "distance": 10, "height": 1.0}, "surfaces": {"stone": "drystone"}},
+  {"id": "stall_pale", "model": "models/world/stall.glb", "scale": 1, "blockRadius": 1.3, "light": null, "surfaces": {"wood": "planks", "cloth": "linen_pale"}},
+  {"id": "stall_red", "model": "models/world/stall.glb", "scale": 1, "blockRadius": 1.3, "light": null, "surfaces": {"wood": "planks", "cloth": "linen_red"}},
+  {"id": "statue", "model": "models/props/statue.glb", "scale": 1.25, "blockRadius": 0, "light": null, "surfaces": {}},
+  {"id": "stool", "model": "models/props/stool.glb", "scale": 1.15, "blockRadius": 0.3, "light": null, "surfaces": {}},
+  {"id": "stump", "model": "models/props/stump.glb", "scale": 1, "blockRadius": 0.7, "light": null, "surfaces": {}},
+  {"id": "table_broken", "model": "models/world/table_broken.glb", "scale": 1, "blockRadius": 1.3, "light": null, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "table_long", "model": "models/world/table_long.glb", "scale": 1, "blockRadius": 1.3, "light": null, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "torch", "model": "models/world/torch.glb", "scale": 1, "blockRadius": 0, "light": {"color": "#ffb060", "intensity": 30, "distance": 17, "height": 0.6}, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
+  {"id": "tree_dead_large", "model": "models/world/dead_tree_large.glb", "scale": 1, "blockRadius": 0.7, "light": null, "surfaces": {"bark": "bark"}},
+  {"id": "tree_dead_medium", "model": "models/world/dead_tree_medium.glb", "scale": 1, "blockRadius": 0.5, "light": null, "surfaces": {"bark": "bark"}},
+  {"id": "tree_dead_small", "model": "models/world/dead_tree_small.glb", "scale": 1, "blockRadius": 0.4, "light": null, "surfaces": {"bark": "bark"}}
 ]

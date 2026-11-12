@@ -55,7 +55,7 @@ A change to how damage is rolled, how a skill hits, how a monster decides, what 
 
 ## Content is data
 
-Monsters, skills, items, rarities, affixes, skill-tree nodes, rigs, attachments, props, the world and its zones (`data/zones/`) are JSON files in `data/`. Adding a monster, a skill, an item or a tree node is a data change only.
+Monsters, skills, items, rarities, affixes, skill-tree nodes, rigs, attachments, props, the world and its zones (`data/zones/`) are JSON files in `data/`. A zone's floor is drawn from its tile map: each tile letter names a surface in `data/surfaces.json` (a tiling colour, normal and roughness texture with a size in metres), and `outside` names the surface that runs past the walls. World models in `public/models/world/` carry no textures; a prop's `surfaces` field dresses each of the model's named materials in a surface, so a new look for a wall or a pillar is a new prop entry, not a new model. Adding a monster, a skill, an item or a tree node is a data change only.
 
 If new content cannot be expressed in the data, extend the schema in `sim/content/` and its handling in the engine in a general way (a new delivery type, a new modifier target), then write the content as data. Do not special-case an id in engine or render code. `sim/content/content.test.ts` checks every cross-reference between the data files.
 
@@ -73,7 +73,7 @@ This repository is meant to become public, so every file in it must be redistrib
 
 - Every humanoid shares one rig, so bodies, clips and gear are interchangeable. Do not add a character on a different skeleton without retargeting it to that rig, and never bake a weapon into a character file: held gear is an attachment in `data/attachments.json`.
 - Clothing and armour are wearables: skinned pieces in `public/models/wear/`, listed in `data/wearables.json` and bound to the wearer's skeleton by joint name, so one piece fits every character. Never model clothes into a character file. Convert a new piece to the rig with `blender/build_wearables.py` and look at it on the skeleton in the browser, in every animation, before it ships.
-- Ship only CC0 assets, or CC BY with full attribution. Every file under `public/models` has a row in [ASSETS.md](ASSETS.md) with its source and licence, and the pack's licence text is in `licenses/`. `test/rules.test.ts` fails on a model with no row.
+- Ship only CC0 assets, or CC BY with full attribution. Every file under `public/models` and `public/textures` has a row in [ASSETS.md](ASSETS.md) with its source and licence, and the pack's licence text is in `licenses/`. `test/rules.test.ts` fails on a model or texture with no row.
 - Never commit Mixamo files, Splice samples, Sketchfab downloads without a redistributable licence, or anything ripped from another game. Local-only assets go in `public/models/local/` and `public/audio/local/`, which are git-ignored.
 - Do not copy another game's name, characters, art, music, levels or interface. The Lost Storm is its own world.
 

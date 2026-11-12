@@ -1,0 +1,196 @@
+{
+  "source": "https://polyhaven.com",
+  "license": "CC0",
+  "models": [
+    {
+      "id": "barrel",
+      "asset": "wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "maxTriangles": 1500,
+      "textureSize": 512,
+      "keep": [
+        "wooden_barrels_01_barrel01"
+      ]
+    },
+    {
+      "id": "crate_a",
+      "asset": "wooden_crate_01",
+      "name": "Wooden Crate 01",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "maxTriangles": 800,
+      "textureSize": 512
+    },
+    {
+      "id": "crate_b",
+      "asset": "wooden_crate_02",
+      "name": "Wooden Crate 02",
+      "authors": [
+        "James Ray Cock",
+        "Jurita Burger"
+      ],
+      "maxTriangles": 800,
+      "textureSize": 512
+    },
+    {
+      "id": "bucket",
+      "asset": "wooden_bucket_01",
+      "name": "Wooden Bucket 01",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "maxTriangles": 600,
+      "textureSize": 256
+    },
+    {
+      "id": "stool",
+      "asset": "wooden_stool_01",
+      "name": "Wooden Stool 01",
+      "authors": [
+        "Kuutti Siitonen"
+      ],
+      "maxTriangles": 800,
+      "textureSize": 256
+    },
+    {
+      "id": "chest",
+      "asset": "treasure_chest",
+      "name": "Treasure Chest",
+      "authors": [
+        "Rico Cilliers"
+      ],
+      "maxTriangles": 4000,
+      "textureSize": 512
+    },
+    {
+      "id": "fire_pit",
+      "asset": "stone_fire_pit",
+      "name": "Stone Fire Pit",
+      "authors": [
+        "Sebastian Platen"
+      ],
+      "maxTriangles": 2500,
+      "textureSize": 512
+    },
+    {
+      "id": "rock_set_1",
+      "asset": "rock_moss_set_01",
+      "name": "Rock Moss Set 01",
+      "authors": [
+        "Kless Gyzen"
+      ],
+      "maxTriangles": 900,
+      "textureSize": 512,
+      "keep": [
+        "rock_moss_set_01_rock01"
+      ]
+    },
+    {
+      "id": "rock_set_2",
+      "asset": "rock_moss_set_01",
+      "name": "Rock Moss Set 01",
+      "authors": [
+        "Kless Gyzen"
+      ],
+      "maxTriangles": 900,
+      "textureSize": 512,
+      "keep": [
+        "rock_moss_set_01_rock02"
+      ]
+    },
+    {
+      "id": "rock_set_3",
+      "asset": "rock_moss_set_01",
+      "name": "Rock Moss Set 01",
+      "authors": [
+        "Kless Gyzen"
+      ],
+      "maxTriangles": 900,
+      "textureSize": 512,
+      "keep": [
+        "rock_moss_set_01_rock03"
+      ]
+    },
+    {
+      "id": "rock_set_4",
+      "asset": "rock_moss_set_01",
+      "name": "Rock Moss Set 01",
+      "authors": [
+        "Kless Gyzen"
+      ],
+      "maxTriangles": 900,
+      "textureSize": 512,
+      "keep": [
+        "rock_moss_set_01_rock04"
+      ]
+    },
+    {
+      "id": "rock_set_5",
+      "asset": "rock_moss_set_01",
+      "name": "Rock Moss Set 01",
+      "authors": [
+        "Kless Gyzen"
+      ],
+      "maxTriangles": 900,
+      "textureSize": 512,
+      "keep": [
+        "rock_moss_set_01_rock05"
+      ]
+    },
+    {
+      "id": "dead_tree_a",
+      "asset": "dead_tree_trunk_02",
+      "name": "Dead Tree Trunk 02",
+      "authors": [
+        "Jenelle van Heerden",
+        "Rico Cilliers"
+      ],
+      "maxTriangles": 5000,
+      "textureSize": 512
+    },
+    {
+      "id": "stump",
+      "asset": "tree_stump_01",
+      "name": "Tree Stump 01",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "maxTriangles": 1500,
+      "textureSize": 512
+    },
+    {
+      "id": "dead_log",
+      "asset": "dead_tree_trunk",
+      "name": "Dead Tree Trunk",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "maxTriangles": 2500,
+      "textureSize": 512
+    },
+    {
+      "id": "branches",
+      "asset": "dry_branches_medium_01",
+      "name": "Dry Branches Medium 01",
+      "authors": [
+        "Rico Cilliers"
+      ],
+      "maxTriangles": 1500,
+      "textureSize": 512
+    },
+    {
+      "id": "statue",
+      "asset": "gothic_statue",
+      "name": "Gothic Statue",
+      "authors": [
+        "Benny Weimer"
+      ],
+      "maxTriangles": 6000,
+      "textureSize": 512
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Assets
 
-Every file under `public/models` is listed here with its source and licence. `test/rules.test.ts` fails when a model is added without a row.
+Every file under `public/models` and `public/textures` is listed here with its source and licence. `test/rules.test.ts` fails when a model is added without a row.
 
 Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made for this project. The two fonts are SIL Open Font License 1.1. Nothing here is Mixamo, Splice, or any other licence that forbids redistributing the file.
 
@@ -13,8 +13,7 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 | Universal Animation Library 2 (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary2.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library-2.txt](licenses/Quaternius-Universal-Animation-Library-2.txt) |
 | Modular Character Outfits - Fantasy (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/modularcharacteroutfitsfantasy.html | CC0 1.0 | [licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt](licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt) |
 | MakeHuman community garments (suits02, gloves01) | Donitz, Rehman Polanski, MRT (makehumancommunity.org) | http://www.makehumancommunity.org/clothes.html | CC0 1.0 | [licenses/MakeHuman-community-assets.txt](licenses/MakeHuman-community-assets.txt) |
-| KayKit Dungeon Remastered 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0 | CC0 1.0 | [licenses/KayKit-Dungeon-Remastered-LICENSE.txt](licenses/KayKit-Dungeon-Remastered-LICENSE.txt) |
-| KayKit Halloween Bits 1.0 | Kay Lousberg (kaylousberg.com) | https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0 | CC0 1.0 | [licenses/KayKit-Halloween-Bits-LICENSE.txt](licenses/KayKit-Halloween-Bits-LICENSE.txt) |
+| Poly Haven models and textures | The authors named in the tables below (polyhaven.com) | https://polyhaven.com | CC0 1.0 | [licenses/Poly-Haven-CC0.txt](licenses/Poly-Haven-CC0.txt) |
 
 ## Credit required by CC BY 4.0
 
@@ -96,61 +95,123 @@ Rebuild with the packs unpacked somewhere outside this repository:
 
 The arguments are the manifest, the body whose rig the parts are fitted to, the output folder, a scratch folder for the repacked PNG textures, and one `<pack>=<folder>` per source pack. Parts of a pack with no folder are left as they are. Add `only=<id>,<id>` to rebuild some parts. The build stops with an error when it would build nothing.
 
-## Arena
+## World
 
-Unmodified downloads, renamed to lower case.
+The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and stalls are built from boxes, cylinders and noise by `blender/build_environment.py` (helpers in `blender/environment_kit.py`). They carry no textures of their own: each material in a file has a plain name (`stone`, `wood`, `iron`, `cloth`, `bark`), and `data/props.json` dresses that name in a surface from `data/surfaces.json`, so one wall model serves the town in one stone and the bastion in another.
 
-| File | Original file | Pack | Licence |
+| File | What it is | Source | Licence |
 |---|---|---|---|
-| `public/models/arena/banner_patternA_blue.glb` | `Assets/gltf/banner_patternA_blue.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/banner_shield_blue.glb` | `Assets/gltf/banner_shield_blue.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/barrel_large.glb` | `Assets/gltf/barrel_large.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/barrel_small_stack.glb` | `Assets/gltf/barrel_small_stack.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/barrier.glb` | `Assets/gltf/barrier.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/box_large.glb` | `Assets/gltf/box_large.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/coin.glb` | `Assets/gltf/coin.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/coin_stack_small.glb` | `Assets/gltf/coin_stack_small.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/column.glb` | `Assets/gltf/column.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/crates_stacked.glb` | `Assets/gltf/crates_stacked.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/floor_dirt_large.glb` | `Assets/gltf/floor_dirt_large.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/floor_dirt_large_rocky.glb` | `Assets/gltf/floor_dirt_large_rocky.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/floor_tile_big_grate.glb` | `Assets/gltf/floor_tile_big_grate.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/floor_tile_large.glb` | `Assets/gltf/floor_tile_large.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/floor_tile_large_rocks.glb` | `Assets/gltf/floor_tile_large_rocks.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/pillar.glb` | `Assets/gltf/pillar.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/pillar_decorated.glb` | `Assets/gltf/pillar_decorated.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/rubble_half.glb` | `Assets/gltf/rubble_half.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/rubble_large.glb` | `Assets/gltf/rubble_large.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/sword_shield_broken.glb` | `Assets/gltf/sword_shield_broken.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/torch_lit.glb` | `Assets/gltf/torch_lit.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/torch_mounted.glb` | `Assets/gltf/torch_mounted.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall.glb` | `Assets/gltf/wall.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_archedwindow_gated.glb` | `Assets/gltf/wall_archedwindow_gated.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_broken.glb` | `Assets/gltf/wall_broken.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_corner.glb` | `Assets/gltf/wall_corner.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_cracked.glb` | `Assets/gltf/wall_cracked.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_endcap.glb` | `Assets/gltf/wall_endcap.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_half.glb` | `Assets/gltf/wall_half.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_pillar.glb` | `Assets/gltf/wall_pillar.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/banner_patternB_red.glb` | `Assets/gltf/banner_patternB_red.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/banner_patternC_white.glb` | `Assets/gltf/banner_patternC_white.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/barrier_column.glb` | `Assets/gltf/barrier_column.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/box_stacked.glb` | `Assets/gltf/box_stacked.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/candle_triple.glb` | `Assets/gltf/candle_triple.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/chair.glb` | `Assets/gltf/chair.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/chest.glb` | `Assets/gltf/chest.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/floor_foundation_allsides.glb` | `Assets/gltf/floor_foundation_allsides.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/floor_wood_large_dark.glb` | `Assets/gltf/floor_wood_large_dark.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/keg.glb` | `Assets/gltf/keg.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/stairs.glb` | `Assets/gltf/stairs.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/table_long.glb` | `Assets/gltf/table_long.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/table_long_broken.glb` | `Assets/gltf/table_long_broken.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/trunk_large_A.glb` | `Assets/gltf/trunk_large_A.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_arched.glb` | `Assets/gltf/wall_arched.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_doorway.glb` | `Assets/gltf/wall_doorway.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_gated.glb` | `Assets/gltf/wall_gated.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_open_scaffold.glb` | `Assets/gltf/wall_open_scaffold.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
-| `public/models/arena/wall_scaffold.glb` | `Assets/gltf/wall_scaffold.gltf.glb` | KayKit Dungeon Remastered 1.0 | CC0 1.0 |
+| `public/models/world/banner.glb` | Hanging banner | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/banner_wide.glb` | Wide hanging banner with a boss | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/bench.glb` | Bench | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/brazier.glb` | Iron brazier | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/cairn.glb` | Stacked stone post | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/candles.glb` | Three candles | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/chair.glb` | Chair | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/coins.glb` | Pile of coins (gold drops) | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/column.glb` | Round column | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/column_broken.glb` | Broken column | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/dead_tree_large.glb` | Large dead tree | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/dead_tree_medium.glb` | Dead tree | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/dead_tree_small.glb` | Small dead tree | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/doorway.glb` | Doorway with a shut door | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/drystone_a.glb` | Dry-stone wall | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/drystone_b.glb` | Dry-stone wall | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/drystone_gap.glb` | Collapsed dry-stone wall | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/drystone_low.glb` | Low dry-stone wall | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/grate.glb` | Iron floor grate | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/grave_cross.glb` | Stone cross | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/grave_slab.glb` | Grave slab | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/gravestone.glb` | Headstone | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/great_lamp.glb` | Great lamp, dark | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/great_lamp_lit.glb` | Great lamp, lit | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/house_a.glb` | Timber-framed house | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/house_b.glb` | Tall timber-framed house | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/loose_blocks.glb` | Loose stone blocks | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/pier.glb` | Corner pier | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/pillar.glb` | Square pillar | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/plinth.glb` | Stepped plinth | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/post.glb` | Wooden post with an arm | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/post_lantern.glb` | Post with an unlit lantern | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/post_lantern_lit.glb` | Post with a lit lantern | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/rubble_large.glb` | Large rubble heap | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/rubble_small.glb` | Small rubble heap | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/shrine.glb` | Stone shrine with candles | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/stairs.glb` | Ruined stair | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/stall.glb` | Market stall | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/statue_base.glb` | Statue base | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/table_broken.glb` | Broken trestle table | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/table_long.glb` | Trestle table | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/torch.glb` | Wall torch | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/wall_a.glb` | Wall section | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/wall_b.glb` | Wall section with a buttress | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/wall_low.glb` | Low wall | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/wall_low_piers.glb` | Low wall with piers | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/wall_ruin.glb` | Broken wall section | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/wall_scaffold.glb` | Wall section with scaffolding | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/wall_window.glb` | Wall section with a barred window | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/wall_works.glb` | Unfinished wall with a timber frame | Built by `blender/build_environment.py` | MIT |
+
+Rebuild with:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_environment.py -- "$PWD/public/models/world"
+```
+
+Add `only=<id>,<id>` to rebuild some of them.
+
+## Props from Poly Haven
+
+Scanned models from polyhaven.com, all CC0. `blender/import_polyhaven.py` keeps the objects named in `blender/polyhaven.json`, reduces each to the triangle count given there, moves its origin to the middle of its base, shrinks its textures to 256 or 512 pixels and writes one `.glb` with WebP textures. Scale is unchanged; `data/props.json` sets the size in the game.
+
+| File | Poly Haven asset | Authors | Licence |
+|---|---|---|---|
+| `public/models/props/barrel.glb` | "Wooden Barrels 01" (`wooden_barrels_01`) | James Ray Cock | CC0 1.0 |
+| `public/models/props/crate_a.glb` | "Wooden Crate 01" (`wooden_crate_01`) | James Ray Cock | CC0 1.0 |
+| `public/models/props/crate_b.glb` | "Wooden Crate 02" (`wooden_crate_02`) | James Ray Cock, Jurita Burger | CC0 1.0 |
+| `public/models/props/bucket.glb` | "Wooden Bucket 01" (`wooden_bucket_01`) | James Ray Cock | CC0 1.0 |
+| `public/models/props/stool.glb` | "Wooden Stool 01" (`wooden_stool_01`) | Kuutti Siitonen | CC0 1.0 |
+| `public/models/props/chest.glb` | "Treasure Chest" (`treasure_chest`) | Rico Cilliers | CC0 1.0 |
+| `public/models/props/fire_pit.glb` | "Stone Fire Pit" (`stone_fire_pit`) | Sebastian Platen | CC0 1.0 |
+| `public/models/props/rock_set_1.glb` | "Rock Moss Set 01" (`rock_moss_set_01`) | Kless Gyzen | CC0 1.0 |
+| `public/models/props/rock_set_2.glb` | "Rock Moss Set 01" (`rock_moss_set_01`) | Kless Gyzen | CC0 1.0 |
+| `public/models/props/rock_set_3.glb` | "Rock Moss Set 01" (`rock_moss_set_01`) | Kless Gyzen | CC0 1.0 |
+| `public/models/props/rock_set_4.glb` | "Rock Moss Set 01" (`rock_moss_set_01`) | Kless Gyzen | CC0 1.0 |
+| `public/models/props/rock_set_5.glb` | "Rock Moss Set 01" (`rock_moss_set_01`) | Kless Gyzen | CC0 1.0 |
+| `public/models/props/dead_tree_a.glb` | "Dead Tree Trunk 02" (`dead_tree_trunk_02`) | Jenelle van Heerden, Rico Cilliers | CC0 1.0 |
+| `public/models/props/stump.glb` | "Tree Stump 01" (`tree_stump_01`) | Rob Tuytel | CC0 1.0 |
+| `public/models/props/dead_log.glb` | "Dead Tree Trunk" (`dead_tree_trunk`) | Rob Tuytel | CC0 1.0 |
+| `public/models/props/branches.glb` | "Dry Branches Medium 01" (`dry_branches_medium_01`) | Rico Cilliers | CC0 1.0 |
+| `public/models/props/statue.glb` | "Gothic Statue" (`gothic_statue`) | Benny Weimer | CC0 1.0 |
+
+Rebuild with each asset's 1k glTF download (`https://api.polyhaven.com/files/<asset>` lists the files) unpacked into `<downloads>/<asset>/`:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/import_polyhaven.py -- blender/polyhaven.json <downloads> public/models/props
+```
+
+## Surface textures
+
+Ground, wall, wood, metal and cloth textures from polyhaven.com, all CC0. Each is the 1k JPEG download resized with `cwebp`: colour and normal map at 1024 pixels for ground and walls and 512 for the rest, and the occlusion, roughness and metalness map at 512. `data/surfaces.json` turns them into surfaces with a tile size and a tint.
+
+| Files | Poly Haven asset | Authors | Licence |
+|---|---|---|---|
+| `public/textures/cobble_color.webp`, `public/textures/cobble_normal.webp`, `public/textures/cobble_orm.webp` | "Cobblestone Floor 08" (`cobblestone_floor_08`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/flagstone_color.webp`, `public/textures/flagstone_normal.webp`, `public/textures/flagstone_orm.webp` | "Monastery Stone Floor" (`monastery_stone_floor`) | Amal Kumar | CC0 1.0 |
+| `public/textures/ashlar_color.webp`, `public/textures/ashlar_normal.webp`, `public/textures/ashlar_orm.webp` | "Rock Tile Floor" (`rock_tile_floor`) | Charlotte Baglioni | CC0 1.0 |
+| `public/textures/mud_color.webp`, `public/textures/mud_normal.webp`, `public/textures/mud_orm.webp` | "Brown Mud 03" (`brown_mud_03`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/dirt_color.webp`, `public/textures/dirt_normal.webp`, `public/textures/dirt_orm.webp` | "Brown Mud Rocks 01" (`brown_mud_rocks_01`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/forest_color.webp`, `public/textures/forest_normal.webp`, `public/textures/forest_orm.webp` | "Forest Ground 04" (`forest_ground_04`) | Rob Tuytel, Rico Cilliers | CC0 1.0 |
+| `public/textures/trail_color.webp`, `public/textures/trail_normal.webp`, `public/textures/trail_orm.webp` | "Rocky Trail 02" (`rocky_trail_02`) | Amal Kumar | CC0 1.0 |
+| `public/textures/castle_wall_color.webp`, `public/textures/castle_wall_normal.webp`, `public/textures/castle_wall_orm.webp` | "Castle Wall Slates" (`castle_wall_slates`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/mossy_wall_color.webp`, `public/textures/mossy_wall_normal.webp`, `public/textures/mossy_wall_orm.webp` | "Mossy Stone Wall" (`mossy_stone_wall`) | Amal Kumar | CC0 1.0 |
+| `public/textures/drystone_color.webp`, `public/textures/drystone_normal.webp`, `public/textures/drystone_orm.webp` | "Stacked Stone Wall" (`stacked_stone_wall`) | Dimitrios Savva | CC0 1.0 |
+| `public/textures/planks_color.webp`, `public/textures/planks_normal.webp`, `public/textures/planks_orm.webp` | "Old Planks 02" (`old_planks_02`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/iron_color.webp`, `public/textures/iron_normal.webp`, `public/textures/iron_orm.webp` | "Rusty Metal 02" (`rusty_metal_02`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/linen_color.webp`, `public/textures/linen_normal.webp`, `public/textures/linen_orm.webp` | "Rough Linen" (`rough_linen`) | colormass, Rico Cilliers | CC0 1.0 |
+| `public/textures/plaster_color.webp`, `public/textures/plaster_normal.webp`, `public/textures/plaster_orm.webp` | "Worn Plaster Wall" (`worn_plaster_wall`) | Dimitrios Savva | CC0 1.0 |
+| `public/textures/slates_color.webp`, `public/textures/slates_normal.webp`, `public/textures/slates_orm.webp` | "Roof Slates 02" (`roof_slates_02`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/bark_color.webp`, `public/textures/bark_normal.webp`, `public/textures/bark_orm.webp` | "Bark Brown 02" (`bark_brown_02`) | Rob Tuytel | CC0 1.0 |
 
 ## Fonts
 
@@ -160,35 +221,6 @@ The font files are not committed. They come from npm packages that Vite bundles 
 |---|---|---|---|---|---|
 | Cinzel | Labels, buttons, headings, banners, damage numbers, loot labels | `@fontsource/cinzel` | https://fonts.google.com/specimen/Cinzel (Natanael Gama) | SIL OFL 1.1 | [licenses/Cinzel-OFL-1.1.txt](licenses/Cinzel-OFL-1.1.txt) |
 | Alegreya Sans | Body text, tooltips, numbers | `@fontsource/alegreya-sans` | https://fonts.google.com/specimen/Alegreya+Sans (Juan Pablo del Peral, Huerta Tipográfica) | SIL OFL 1.1 | [licenses/Alegreya-Sans-OFL-1.1.txt](licenses/Alegreya-Sans-OFL-1.1.txt) |
-
-## Roads and yards
-
-From KayKit Halloween Bits 1.0. Each `.gltf` with its `.bin` and texture was packed into one `.glb` by `tools/pack-gltf.ts`; geometry and textures are unchanged.
-
-| File | Original file | Pack | Licence |
-|---|---|---|---|
-| `public/models/yard/arch.glb` | `addons/kaykit_halloween_bits/Assets/gltf/arch.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/bench.glb` | `addons/kaykit_halloween_bits/Assets/gltf/bench.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/fence.glb` | `addons/kaykit_halloween_bits/Assets/gltf/fence.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/fence_broken.glb` | `addons/kaykit_halloween_bits/Assets/gltf/fence_broken.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/fence_pillar.glb` | `addons/kaykit_halloween_bits/Assets/gltf/fence_pillar.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/floor_dirt.glb` | `addons/kaykit_halloween_bits/Assets/gltf/floor_dirt.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/grave_A.glb` | `addons/kaykit_halloween_bits/Assets/gltf/grave_A.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/gravemarker_A.glb` | `addons/kaykit_halloween_bits/Assets/gltf/gravemarker_A.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/gravestone.glb` | `addons/kaykit_halloween_bits/Assets/gltf/gravestone.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/lantern_standing.glb` | `addons/kaykit_halloween_bits/Assets/gltf/lantern_standing.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/post.glb` | `addons/kaykit_halloween_bits/Assets/gltf/post.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/post_lantern.glb` | `addons/kaykit_halloween_bits/Assets/gltf/post_lantern.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/shrine_candles.glb` | `addons/kaykit_halloween_bits/Assets/gltf/shrine_candles.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/tree_dead_large.glb` | `addons/kaykit_halloween_bits/Assets/gltf/tree_dead_large.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/tree_dead_medium.glb` | `addons/kaykit_halloween_bits/Assets/gltf/tree_dead_medium.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-| `public/models/yard/tree_dead_small.glb` | `addons/kaykit_halloween_bits/Assets/gltf/tree_dead_small.gltf` | KayKit Halloween Bits 1.0 | CC0 1.0 |
-
-Rebuild one with:
-
-```bash
-node tools/pack-gltf.ts <pack>/addons/kaykit_halloween_bits/Assets/gltf/fence.gltf public/models/yard/fence.glb
-```
 
 ## Everything else
 

@@ -311,12 +311,26 @@ export interface PropLight {
   readonly height: number;
 }
 
+export interface SurfaceDef {
+  readonly id: string;
+  readonly color: string;
+  readonly normal: string | null;
+  readonly orm: string | null;
+  readonly metres: number;
+  readonly tint: string;
+  readonly roughness: number;
+  readonly metalness: number;
+  readonly normalScale: number;
+  readonly spill: number;
+}
+
 export interface PropDef {
   readonly id: string;
   readonly model: string;
   readonly scale: number;
   readonly blockRadius: number;
   readonly light: PropLight | null;
+  readonly surfaces: Readonly<Record<string, string>>;
 }
 
 export interface ZonePoint {
@@ -358,6 +372,11 @@ export interface SurgeRules {
   readonly delay: number;
   readonly surgesPerExtraMonster: number;
   readonly maxExtraMonsters: number;
+}
+
+export interface ZoneOutside {
+  readonly surface: string;
+  readonly reach: number;
 }
 
 export interface ZoneWalls {
@@ -447,7 +466,8 @@ export interface ZoneDef {
   readonly cellSize: number;
   readonly floorHeight: number;
   readonly tiles: readonly string[];
-  readonly floors: Readonly<Record<string, readonly string[]>>;
+  readonly floors: Readonly<Record<string, string>>;
+  readonly outside: ZoneOutside | null;
   readonly walls: ZoneWalls;
   readonly props: readonly ZoneProp[];
   readonly playerStart: ZonePoint;
@@ -580,6 +600,7 @@ export interface Content {
   readonly rigs: ReadonlyMap<string, RigDef>;
   readonly attachments: ReadonlyMap<string, AttachmentDef>;
   readonly wearables: ReadonlyMap<string, WearableDef>;
+  readonly surfaces: ReadonlyMap<string, SurfaceDef>;
   readonly props: ReadonlyMap<string, PropDef>;
   readonly zones: ReadonlyMap<string, ZoneDef>;
   readonly world: WorldDef;

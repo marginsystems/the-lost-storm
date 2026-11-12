@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFShadowMap, PerspectiveCamera, PointLight, Scene, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
+import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFSoftShadowMap, PerspectiveCamera, PointLight, Scene, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
 import type { ZoneAmbience } from '../../sim/content/types.ts';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
@@ -7,7 +7,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 export const STAGE = {
   maxPixelRatio: 1.5,
-  exposure: 1.08,
+  exposure: 1.22,
   flashBackground: 0x2a3a55,
   stormOffsetX: -16,
   stormOffsetY: 30,
@@ -19,7 +19,7 @@ export const STAGE = {
   heroIntensity: 9,
   heroDistance: 13,
   heroHeight: 4.2,
-  bloomStrength: 0.62,
+  bloomStrength: 0.48,
   bloomRadius: 0.55,
   bloomThreshold: 0.82,
   samples: 4,
@@ -45,7 +45,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = STAGE.exposure;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFShadowMap;
+  renderer.shadowMap.type = PCFSoftShadowMap;
 
   const scene: Scene = new Scene();
   const background: Color = new Color(0x000000);

@@ -16,6 +16,7 @@ import type {
   ZoneDef,
   ZoneExit,
   ZoneNpc,
+  ZoneOutside,
   ZonePack,
   ZonePoint,
   ZoneProp,
@@ -119,11 +120,17 @@ function zoneAmbience(value: unknown, where: string): ZoneAmbience {
   };
 }
 
+function zoneOutside(value: unknown, where: string): ZoneOutside | null {
+  if (value === null || value === undefined) return null;
+  const source: Fields = fields(value, where);
+  return { surface: text(source, 'surface', where), reach: positive(source, 'reach', where) };
+}
+
 export function zone(value: unknown, where: string): ZoneDef {
   const source: Fields = fields(value, where);
   const floorFields: Fields = fields(source['floors'], `${where}.floors`);
-  const floors: Record<string, readonly string[]> = {};
-  for (const key of Object.keys(floorFields)) floors[key] = textList(floorFields, key, `${where}.floors`);
+  const floors: Record<string, string> = {};
+  for (const key of Object.keys(floorFields)) floors[key] = text(floorFields, key, `${where}.floors`);
   const walls: Fields = fields(source['walls'], `${where}.walls`);
   const tiles: string[] = textList(source, 'tiles', where);
   const width: number = tiles[0]?.length ?? 0;
@@ -141,6 +148,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     floorHeight: numeric(source, 'floorHeight', where),
     tiles,
     floors,
+    outside: zoneOutside(source['outside'], `${where}.outside`),
     walls: { tall: textList(walls, 'tall', `${where}.walls`), low: text(walls, 'low', `${where}.walls`), corner: text(walls, 'corner', `${where}.walls`), halfThickness: numeric(walls, 'halfThickness', `${where}.walls`) },
     props: each(source['props'], `${where}.props`, zoneProp),
     playerStart: point(source['playerStart'], `${where}.playerStart`),

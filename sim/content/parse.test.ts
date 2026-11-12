@@ -31,6 +31,7 @@ function zones(...mine: readonly unknown[]): unknown[] {
 }
 
 const shipped: RawContent = RAW_CONTENT;
+const propDefs: readonly unknown[] = Array.isArray(RAW_CONTENT.props) ? RAW_CONTENT.props : [];
 
 const extraSkill = {
   id: 'ember_lash',
@@ -255,7 +256,10 @@ void test('a zone parses with its kind, level, exits, checkpoints, surge rules a
   const secret = must(town.exits.find((exit): boolean => exit.id === 'fallstone'), 'hidden exit');
   assert.equal(secret.hiddenWhenLocked, true);
   assert.equal(must(town.props.find((placed): boolean => placed.when.length > 0), 'conditional prop').when.length, 1);
-  assert.equal(arena.ambience.background, '#06090f');
+  assert.equal(arena.ambience.background, '#05080e');
+  assert.equal(arena.floors['.'], 'flagstone');
+  assert.equal(arena.outside, null);
+  assert.deepEqual(town.outside, { surface: 'dirt', reach: 2 });
   assert.equal(content.world.start, 'stillhold');
   assert.deepEqual(content.world.scaling, { lifePerLevel: 0.22, damagePerLevel: 0.12, xpPerLevel: 0.15 });
   assert.deepEqual(contentProblems(content), []);
@@ -490,11 +494,25 @@ void test('a zone takes spoken lines tied to a place: a voice needs lines, known
 void test('a prop placed with a condition is data only, and one that blocks the way is reported', (): void => {
   const lit = { type: 'objective', quest: 'fallen_in', objective: 'tallier', is: 'done' };
   const placed = (prop: string): RawContent => ({ ...shipped, zones: zones({ ...stillhold, props: [...stillhold.props, { prop, x: 26, z: 30, y: 0, rotationDegrees: 0, when: [lit] }] }, bastion) });
-  const content: Content = parseContent(placed('candle_triple'));
+  const content: Content = parseContent(placed('candles'));
   assert.deepEqual(contentProblems(content), []);
-  assert.deepEqual(must(content.zones.get('stillhold'), 'town').props.at(-1), { prop: 'candle_triple', x: 26, z: 30, y: 0, rotationDegrees: 0, when: [{ ...lit, not: false }] });
-  assert.ok(has(placed('pillar'), 'zone stillhold places prop pillar with a condition, but it blocks the way'));
+  assert.deepEqual(must(content.zones.get('stillhold'), 'town').props.at(-1), { prop: 'candles', x: 26, z: 30, y: 0, rotationDegrees: 0, when: [{ ...lit, not: false }] });
+  assert.ok(has(placed('castle_pillar'), 'zone stillhold places prop castle_pillar with a condition, but it blocks the way'));
   assert.ok(has(placed('no_such_prop'), 'zone stillhold places unknown prop no_such_prop'));
+});
+
+void test('surfaces parse, and a floor, an outside or a prop dressed in an unknown surface is reported', (): void => {
+  const content: Content = parseContent(shipped);
+  const cobble = must(content.surfaces.get('cobble'), 'cobble');
+  assert.equal(cobble.color, 'textures/cobble_color.webp');
+  assert.ok(cobble.metres > 0);
+  assert.equal(must(content.props.get('castle_wall_a'), 'wall').surfaces['stone'], 'castle_wall');
+  const town = (change: object): RawContent => ({ ...shipped, zones: zones({ ...stillhold, ...change }, bastion) });
+  assert.ok(has(town({ floors: { ...stillhold.floors, '.': 'no_such_surface' } }), 'zone stillhold floor uses unknown surface no_such_surface'));
+  assert.ok(has(town({ outside: { surface: 'no_such_surface', reach: 2 } }), 'zone stillhold outside uses unknown surface no_such_surface'));
+  const odd = { id: 'odd_torch', model: 'models/world/torch.glb', scale: 1, blockRadius: 0, light: null, surfaces: { wood: 'no_such_surface' } };
+  assert.ok(has({ ...shipped, props: [...propDefs, odd] }, 'prop odd_torch dresses wood in unknown surface no_such_surface'));
+  assert.throws((): Content => parseContent({ ...shipped, surfaces: [{ ...cobble, metres: 0 }] }), ContentError);
 });
 
 void test('a combo is data: its steps parse, and a combo without steps or with a wrong field is rejected', (): void => {

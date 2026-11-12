@@ -104,3 +104,30 @@ export function wallCorners(zone: ZoneDef): WallCorner[] {
   }
   return corners;
 }
+
+export interface OutsideCell {
+  readonly column: number;
+  readonly row: number;
+}
+
+export function outsideCells(zone: ZoneDef, reach: number): OutsideCell[] {
+  const cells: OutsideCell[] = [];
+  const span: number = Math.max(0, Math.ceil(reach));
+  for (let row: number = -span; row < zoneRows(zone) + span; row += 1) {
+    for (let column: number = -span; column < zoneColumns(zone) + span; column += 1) {
+      if (isFloorCell(zone, column, row)) continue;
+      let near: boolean = false;
+      for (let dr: number = -span; dr <= span && !near; dr += 1) {
+        for (let dc: number = -span; dc <= span && !near; dc += 1) near = isFloorCell(zone, column + dc, row + dr);
+      }
+      if (near) cells.push({ column, row });
+    }
+  }
+  return cells;
+}
+
+export function distanceToCell(x: number, z: number, column: number, row: number, cellSize: number): number {
+  const dx: number = Math.max(column * cellSize - x, 0, x - (column + 1) * cellSize);
+  const dz: number = Math.max(row * cellSize - z, 0, z - (row + 1) * cellSize);
+  return Math.hypot(dx, dz);
+}
