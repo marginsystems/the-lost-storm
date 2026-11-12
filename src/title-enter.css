@@ -30,6 +30,7 @@
   background-color: transparent;
   border: none;
   border-radius: var(--threshold-radius);
+  outline: none;
   box-shadow: var(--threshold-shadow);
   backdrop-filter: blur(6px);
   transition:
