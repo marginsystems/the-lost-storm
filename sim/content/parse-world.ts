@@ -1,6 +1,12 @@
 import type { Fields } from './read.ts';
 import { byId, choice, ContentError, each, fields, flag, numeric, positive, text, textList } from './read.ts';
 import type {
+  ActDef,
+  AtlasDef,
+  AtlasFeature,
+  AtlasLabel,
+  AtlasPoint,
+  AtlasRoad,
   Condition,
   LineDef,
   MapPlace,
@@ -23,7 +29,7 @@ import type {
   ZoneVoice,
   ZoneWaypoint,
 } from './types.ts';
-import { OBJECTIVE_STATES, QUEST_STATES, ZONE_KINDS } from './types.ts';
+import { ATLAS_FEATURE_KINDS, OBJECTIVE_STATES, QUEST_STATES, ZONE_KINDS } from './types.ts';
 
 function point(value: unknown, where: string): ZonePoint {
   const source: Fields = fields(value, where);
@@ -207,6 +213,46 @@ function mapPlace(value: unknown, where: string): MapPlace {
   return { zone: text(source, 'zone', where), x: numeric(source, 'x', where), y: numeric(source, 'y', where) };
 }
 
+function atlasPoint(value: unknown, where: string): AtlasPoint {
+  const source: Fields = fields(value, where);
+  return { x: numeric(source, 'x', where), y: numeric(source, 'y', where) };
+}
+
+function atlasRoad(value: unknown, where: string): AtlasRoad {
+  const source: Fields = fields(value, where);
+  return { from: text(source, 'from', where), to: text(source, 'to', where), via: each(source['via'], `${where}.via`, atlasPoint) };
+}
+
+function atlasFeature(value: unknown, where: string): AtlasFeature {
+  const source: Fields = fields(value, where);
+  const points: AtlasPoint[] = each(source['points'], `${where}.points`, atlasPoint);
+  if (points.length < 2) throw new ContentError(`${where}.points`, 'a map feature needs at least two points');
+  return { kind: choice(source, 'kind', ATLAS_FEATURE_KINDS, where), points };
+}
+
+function atlasLabel(value: unknown, where: string): AtlasLabel {
+  const source: Fields = fields(value, where);
+  return { text: text(source, 'text', where), x: numeric(source, 'x', where), y: numeric(source, 'y', where), size: positive(source, 'size', where), tilt: numeric(source, 'tilt', where) };
+}
+
+function atlas(value: unknown, where: string): AtlasDef {
+  const source: Fields = fields(value, where);
+  return {
+    width: positive(source, 'width', where),
+    height: positive(source, 'height', where),
+    compass: atlasPoint(source['compass'], `${where}.compass`),
+    places: each(source['places'], `${where}.places`, mapPlace),
+    roads: each(source['roads'], `${where}.roads`, atlasRoad),
+    features: each(source['features'], `${where}.features`, atlasFeature),
+    labels: each(source['labels'], `${where}.labels`, atlasLabel),
+  };
+}
+
+function act(value: unknown, where: string): ActDef {
+  const source: Fields = fields(value, where);
+  return { id: text(source, 'id', where), title: text(source, 'title', where), name: text(source, 'name', where), atlas: atlas(source['atlas'], `${where}.atlas`) };
+}
+
 function objective(value: unknown, where: string): ObjectiveDef {
   const source: Fields = fields(value, where);
   const type: ObjectiveDef['type'] = choice(source, 'type', ['talk', 'reach', 'defeat'] as const, where);
@@ -228,7 +274,7 @@ export function worldDef(value: unknown, where: string): WorldDef {
   const source: Fields = fields(value, where);
   const scaling: Fields = fields(source['scaling'], `${where}.scaling`);
   return {
-    map: each(source['map'], `${where}.map`, mapPlace),
+    acts: [...byId(each(source['acts'], `${where}.acts`, act), `${where}.acts`).values()],
     start: text(source, 'start', where),
     scaling: {
       lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),

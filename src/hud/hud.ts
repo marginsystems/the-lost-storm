@@ -1,5 +1,6 @@
 import type { WorldEvent } from '../../sim/world/types.ts';
 import { onWaypoint } from '../../sim/world/waypoints.ts';
+import atlasCss from './atlas.css?inline';
 import { createBanners } from './banners.ts';
 import { createBarkStrip } from './bark-strip.ts';
 import type { BarkStrip } from './bark-strip.ts';
@@ -44,7 +45,7 @@ const PANEL_IDS: readonly HudPanel[] = ['inventory', 'tree', 'map'];
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -77,6 +78,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const open: Record<HudPanel, boolean> = { inventory: false, tree: false, map: false };
   const buttons: Record<HudPanel, MenuButton | null> = { inventory: null, tree: null, map: null };
   const map: MapPanel = createMapPanel(root, context, (): void => setOpen('map', false));
+  root.insertBefore(map.element, bottom);
   const panels: Record<HudPanel, PanelView> = {
     inventory: createInventoryPanel(root, context),
     tree: createTreePanel(root, context),
@@ -136,7 +138,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       quests.update(world);
       bossBar.update(world);
       buttons.tree?.setBadge(world.player.skillPoints);
-      if (open.map) map.update();
+      if (open.map) map.update(dt);
       if (mapWanted && onWaypoint(world)) {
         mapWanted = false;
         if (world.dialogue === null && world.player.alive) setOpen('map', true);

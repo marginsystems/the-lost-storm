@@ -1,7 +1,9 @@
+import { atlasProblems } from './atlas.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { byId, choice, choiceList, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
+  ActDef,
   AffixDef,
   AttachmentDef,
   BossDef,
@@ -541,7 +543,8 @@ export function contentProblems(content: Content): string[] {
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `prop ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }
   need(content.zones.has(content.world.start), `world starts in unknown zone ${content.world.start}`);
-  for (const place of content.world.map) need(content.zones.has(place.zone), `world map places unknown zone ${place.zone}`);
+  need(content.world.acts.length > 0, 'world has no act');
+  for (const problem of atlasProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;
     for (const floor of Object.values(zoneDef.floors)) need(content.surfaces.has(floor), `${at} floor uses unknown surface ${floor}`);
@@ -561,7 +564,7 @@ export function contentProblems(content: Content): string[] {
       known(`${at} pack`, packDef.when);
       for (const member of packDef.members) need(content.monsters.has(member.monster), `${at} pack uses unknown monster ${member.monster}`);
     }
-    need(content.world.map.some((place: MapPlace): boolean => place.zone === zoneDef.id), `${at} has no place on the world map`);
+    need(content.world.acts.filter((act: ActDef): boolean => act.atlas.places.some((place: MapPlace): boolean => place.zone === zoneDef.id)).length === 1, `${at} needs one place on the world map`);
     for (const placed of zoneDef.npcs) {
       need(content.npcs.has(placed.npc), `${at} places unknown npc ${placed.npc}`);
       known(`${at} npc ${placed.npc}`, placed.when);

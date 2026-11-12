@@ -249,10 +249,13 @@ void test('every talk objective has someone to talk to and a conversation of its
   }
 });
 
-void test('every zone has a place on the world map and no two share one', (): void => {
-  const places: string[] = content.world.map.map((place): string => `${place.x},${place.y}`);
-  assert.equal(new Set<string>(places).size, places.length);
-  assert.deepEqual(content.world.map.map((place): string => place.zone).toSorted(), [...content.zones.keys()].toSorted());
+void test('every zone has one place in one act of the world map and no two share one', (): void => {
+  const placed: string[] = content.world.acts.flatMap((act): string[] => act.atlas.places.map((place): string => place.zone));
+  assert.deepEqual(placed.toSorted(), [...content.zones.keys()].toSorted());
+  for (const act of content.world.acts) {
+    const spots: string[] = act.atlas.places.map((place): string => `${place.x},${place.y}`);
+    assert.equal(new Set<string>(spots).size, spots.length, act.id);
+  }
 });
 
 function progressAt(quest: QuestDef, index: number): Record<string, number> {

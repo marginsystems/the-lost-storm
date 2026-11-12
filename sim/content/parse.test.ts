@@ -31,6 +31,7 @@ function zones(...mine: readonly unknown[]): unknown[] {
 }
 
 const shipped: RawContent = RAW_CONTENT;
+const act = must(world.acts[0], 'first act');
 const propDefs: readonly unknown[] = Array.isArray(RAW_CONTENT.props) ? RAW_CONTENT.props : [];
 
 const extraSkill = {
@@ -389,7 +390,7 @@ void test('a quest, its three kinds of objective, conditions, a waypoint and map
   assert.deepEqual(stair.requires, [{ ...gate, not: false }, { type: 'quest', quest: 'fallen_in', is: 'done', not: true }]);
   assert.equal(stair.lockedHint, 'Later');
   assert.deepEqual(town.waypoint, stillhold.waypoint);
-  assert.deepEqual(content.world.map, world.map);
+  assert.deepEqual(content.world.acts, world.acts);
   assert.deepEqual(must(must(content.npcs.get('maren'), 'maren').talks[0], 'talk').when, [{ type: 'objective', quest: 'fallen_in', objective: 'tallier', is: 'current', not: false }]);
 });
 
@@ -409,7 +410,9 @@ void test('malformed quests, conditions and waypoints are rejected', (): void =>
   assert.throws((): Content => parseContent(withZone(noWaypointKey)), (error: unknown): boolean => problem(error, 'zones[1].waypoint'));
   assert.equal(must(parseContent(withZone({ ...bastion, waypoint: null })).zones.get('drowned_bastion'), 'arena').waypoint, null);
   assert.throws((): Content => parseContent(withZone({ ...bastion, waypoint: { x: 1, z: 1, radius: -2 } })), (error: unknown): boolean => problem(error, 'waypoint.radius'));
-  assert.throws((): Content => parseContent({ ...shipped, world: { ...world, map: [{ zone: 'stillhold', x: 0 }] } }), (error: unknown): boolean => problem(error, 'map[0].y'));
+  assert.throws((): Content => parseContent({ ...shipped, world: { ...world, acts: [{ ...act, atlas: { ...act.atlas, places: [{ zone: 'stillhold', x: 0 }] } }] } }), (error: unknown): boolean => problem(error, 'places[0].y'));
+  assert.throws((): Content => parseContent({ ...shipped, world: { ...world, acts: [act, act] } }), (error: unknown): boolean => problem(error, 'duplicate id act_1'));
+  assert.throws((): Content => parseContent({ ...shipped, world: { ...world, acts: [{ ...act, atlas: { ...act.atlas, features: [{ kind: 'volcano', points: [] }] } }] } }), (error: unknown): boolean => problem(error, 'features[0]'));
 });
 
 void test('contentProblems reports dangling quest references', (): void => {
@@ -422,8 +425,19 @@ void test('contentProblems reports dangling quest references', (): void => {
   const gated = (requires: unknown): RawContent => ({ ...shipped, zones: zones(townWithStair({ requires, lockedHint: 'No' }), bastion) });
   assert.ok(has(gated([{ type: 'quest', quest: 'prologue', is: 'done' }]), 'zone stillhold exit bastion_stair names unknown quest prologue'));
   assert.ok(has(gated([{ type: 'objective', quest: 'fallen_in', objective: 'dance', is: 'done' }]), 'zone stillhold exit bastion_stair names unknown objective fallen_in.dance'));
-  assert.ok(has({ ...shipped, world: { ...world, map: [world.map[0]] } }, 'zone drowned_bastion has no place on the world map'));
-  assert.ok(has({ ...shipped, world: { ...world, map: [...world.map, { zone: 'atlantis', x: 4, y: 4 }] } }, 'world map places unknown zone atlantis'));
+  const drawn = (change: Record<string, unknown>): RawContent => ({ ...shipped, world: { ...world, acts: [{ ...act, atlas: { ...act.atlas, ...change } }] } });
+  const [firstPlace, secondPlace] = act.atlas.places;
+  const [firstRoad] = act.atlas.roads;
+  assert.ok(has(drawn({ places: act.atlas.places.filter((place): boolean => place.zone !== 'drowned_bastion') }), 'zone drowned_bastion needs one place on the world map'));
+  assert.ok(has(drawn({ places: [...act.atlas.places, { zone: 'atlantis', x: 4, y: 4 }] }), 'world map places unknown zone atlantis'));
+  assert.ok(has(drawn({ places: [...act.atlas.places, firstPlace] }), 'act act_1 places zone the_still twice'));
+  assert.ok(has(drawn({ places: [firstPlace, { ...secondPlace, x: firstPlace?.x, y: firstPlace?.y }, ...act.atlas.places.slice(2)] }), 'act act_1 puts two zones at 480,520'));
+  assert.ok(has(drawn({ places: [{ ...firstPlace, x: -5 }, ...act.atlas.places.slice(1)] }), 'act act_1 places zone the_still off the map'));
+  assert.ok(has(drawn({ roads: act.atlas.roads.slice(1) }), 'act act_1 draws no road from stillhold to the_still'));
+  assert.ok(has(drawn({ roads: [...act.atlas.roads, firstRoad] }), 'act act_1 road stillhold to the_still is drawn twice'));
+  assert.ok(has(drawn({ roads: [...act.atlas.roads, { from: 'the_still', to: 'dusks_end', via: [] }] }), 'act act_1 road the_still to dusks_end follows no exit'));
+  assert.ok(has(drawn({ roads: [{ ...firstRoad, via: [{ x: 9000, y: 0 }] }, ...act.atlas.roads.slice(1)] }), 'act act_1 road stillhold to the_still leaves the map'));
+  assert.ok(has({ ...shipped, world: { ...world, acts: [] } }, 'world has no act'));
 });
 
 function bossy(change: (block: Record<string, unknown>) => Record<string, unknown>): RawContent {
