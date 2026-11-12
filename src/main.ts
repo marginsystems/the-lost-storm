@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { warnInConsole } from './backend/console-log.ts';
+import { markInput, markPlaying, wireCredits } from './title-screen.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
@@ -207,13 +208,15 @@ async function start(): Promise<void> {
   const vignette: HTMLDivElement = element('vignette', HTMLDivElement);
   const titlePlace: HTMLParagraphElement = element('title-place', HTMLParagraphElement);
 
+  const mobile: MobileBoot = bootMobile();
+  markInput(document.body, mobile.touch);
+  wireCredits(element('title-credits-open', HTMLButtonElement), element('title-credits', HTMLParagraphElement));
   status.textContent = 'Reading the rules…';
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
   const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
   const loadingSave: Promise<SaveData | null> = backend.load();
-  const mobile: MobileBoot = bootMobile();
   const lobby: Lobby | null = createBrowserLobby(import.meta.env.VITE_SERVER_URL, true);
   title.dataset['lobby'] = lobby === null ? 'off' : 'on';
   if (lobby !== null) mountTitleLobby(element('title-lobby', HTMLElement), lobby);
@@ -307,6 +310,7 @@ async function start(): Promise<void> {
       persist();
       backend.flush();
       playing = false;
+      markPlaying(document.body, false);
       audio.stopAmbience();
       enter.textContent = 'Continue';
       reset.hidden = false;
@@ -418,6 +422,7 @@ async function start(): Promise<void> {
   const transition: ZoneTransition = createZoneTransition(element('fade', HTMLDivElement), (error: unknown): void => {
     failed = true;
     playing = false;
+    markPlaying(document.body, false);
     status.textContent = error instanceof Error ? `${world.zone.name} could not be built: ${error.message}` : `${world.zone.name} could not be built.`;
     status.classList.remove('quiet');
     titlePlace.textContent = world.zone.name;
@@ -538,6 +543,7 @@ async function start(): Promise<void> {
     }
     title.classList.add('gone');
     playing = true;
+    markPlaying(document.body, true);
     ladder?.setPlaying(true);
     audio.unlock();
     startZoneAmbience();

@@ -1,0 +1,109 @@
+#hud,
+#overlays,
+.tc {
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s;
+}
+
+body:not(.playing) #hud,
+body:not(.playing) #overlays,
+body:not(.playing) .tc,
+body:not(.playing) .tc-rotate {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+body:not(.playing) #hud *,
+body:not(.playing) .tc * {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.title-controls {
+  display: grid;
+  margin: 30px auto 0;
+}
+
+.title-controls .title-keys {
+  grid-area: 1 / 1;
+  align-self: start;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+body.input-known:not(.touch) .title-keys-desk,
+body.input-known.touch .title-keys-touch {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s;
+}
+
+.title-legal .title-credits-open,
+.title-credits-dot {
+  display: none;
+}
+
+@media (max-width: 600px), (max-height: 520px) {
+  .title-keys {
+    font-size: 13px;
+  }
+
+  .title-keys div {
+    grid-template-columns: minmax(92px, auto) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .title-credits {
+    max-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      max-height var(--spring-smooth-ms) var(--spring-smooth),
+      margin-top var(--spring-smooth-ms) var(--spring-smooth),
+      opacity var(--spring-smooth-ms) var(--spring-smooth);
+  }
+
+  .title-credits.open {
+    max-height: 240px;
+    margin-top: 18px;
+    opacity: 1;
+  }
+
+  .title-legal {
+    margin-top: 18px;
+  }
+
+  .title-card .title-legal .title-credits-open {
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: var(--sans);
+    font-size: 12px;
+    letter-spacing: 0;
+    color: rgba(239, 230, 214, 0.55);
+    transition: color var(--spring-snappy-ms) var(--spring-snappy);
+  }
+
+  .title-card .title-legal .title-credits-open:hover,
+  .title-card .title-legal .title-credits-open[aria-expanded='true'] {
+    color: var(--text);
+    background: none;
+    transform: none;
+  }
+
+  .title-credits-dot {
+    display: inline;
+  }
+}

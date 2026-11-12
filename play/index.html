@@ -32,6 +32,7 @@
     <link rel="stylesheet" href="/src/app.css" />
     <link rel="stylesheet" href="/src/title-account.css" />
     <link rel="stylesheet" href="/src/title-lobby.css" />
+    <link rel="stylesheet" href="/src/title-screen.css" />
   </head>
   <body>
     <div id="app">
@@ -77,20 +78,29 @@
             <p class="title-email-note" id="title-email-note" aria-live="polite"></p>
             <div class="title-turnstile" id="title-turnstile"><div id="title-turnstile-mount"></div></div>
           </div>
-          <dl class="title-keys">
-            <div><dt>Left mouse</dt><dd>Move, attack, pick up</dd></div>
-            <div><dt>Shift + left mouse</dt><dd>Attack in place</dd></div>
-            <div><dt>Q</dt><dd>Thunderclap</dd></div>
-            <div><dt>W or right mouse</dt><dd>Storm Bolt</dd></div>
-            <div><dt>Space</dt><dd>Dodge roll</dd></div>
-            <div><dt>1 · 2</dt><dd>Life flask · Mana flask</dd></div>
-            <div><dt>I · C · T · M · L</dt><dd>Inventory · Character · Skill tree · Map · Ladder</dd></div>
-            <div><dt>Mouse wheel</dt><dd>Zoom</dd></div>
-          </dl>
-          <p class="title-credits">
+          <div class="title-controls" id="title-controls">
+            <dl class="title-keys title-keys-desk">
+              <div><dt>Left mouse</dt><dd>Move, attack, pick up</dd></div>
+              <div><dt>Shift + left mouse</dt><dd>Attack in place</dd></div>
+              <div><dt>Q</dt><dd>Thunderclap</dd></div>
+              <div><dt>W or right mouse</dt><dd>Storm Bolt</dd></div>
+              <div><dt>Space</dt><dd>Dodge roll</dd></div>
+              <div><dt>1 · 2</dt><dd>Life flask · Mana flask</dd></div>
+              <div><dt>I · C · T · M · L</dt><dd>Inventory · Character · Skill tree · Map · Ladder</dd></div>
+              <div><dt>Mouse wheel</dt><dd>Zoom</dd></div>
+            </dl>
+            <dl class="title-keys title-keys-touch">
+              <div><dt>Left thumb</dt><dd>Move</dd></div>
+              <div><dt>Tap</dt><dd>Attack, talk, pick up, travel</dd></div>
+              <div><dt>Right buttons</dt><dd>Attack, skills, dodge, flasks</dd></div>
+              <div><dt>Top buttons</dt><dd>Inventory · Character · Skills · Map · Menu</dd></div>
+              <div><dt>Pinch</dt><dd>Zoom</dd></div>
+            </dl>
+          </div>
+          <p class="title-credits" id="title-credits">
             Skeleton: "Free Pack - Human Skeleton" by PolyOne Studio, CC BY 4.0, modified. Rig and animations: Universal Animation Library by Quaternius, CC0. Clothing and armour: Modular Character Outfits - Fantasy by Quaternius, and MakeHuman community garments by Donitz, Rehman Polanski and MRT, all CC0. World: models and textures from Poly Haven, CC0.
           </p>
-          <p class="title-legal"><a href="/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="/terms.html">Terms</a></p>
+          <p class="title-legal"><button id="title-credits-open" type="button" class="title-credits-open" aria-controls="title-credits" aria-expanded="false">Credits</button><span class="title-credits-dot" aria-hidden="true">·</span><a href="/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="/terms.html">Terms</a></p>
         </div>
         <aside class="title-lobby lobby" id="title-lobby" aria-label="Ladder"></aside>
       </div>

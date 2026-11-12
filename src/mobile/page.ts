@@ -2,7 +2,7 @@ import type { DeviceFacts } from './quality.ts';
 
 export const PAGE = {
   reloadOfferMs: 6000,
-  scrollable: '.hud-panel, .pause-card',
+  scrollable: '.hud-panel, .pause-card, #title',
 } as const;
 
 export function readDeviceFacts(): DeviceFacts {

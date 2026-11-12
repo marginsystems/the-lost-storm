@@ -72,9 +72,15 @@ body {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: safe center;
+  justify-content: safe center;
   gap: 56px;
+  box-sizing: border-box;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   background: radial-gradient(ellipse at 50% 40%, rgba(22, 34, 52, 0.9), rgba(4, 6, 10, 0.97) 70%);
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
@@ -116,7 +122,7 @@ body {
   margin: 0;
   font-family: var(--serif);
   font-weight: 500;
-  font-size: 40px;
+  font-size: clamp(26px, 9vw, 40px);
   letter-spacing: 0.06em;
   white-space: nowrap;
   color: #f4ecdc;
@@ -294,7 +300,7 @@ body {
 }
 
 .title-keys {
-  margin: 30px auto 0;
+  margin: 0 auto;
   display: grid;
   gap: 7px;
   width: fit-content;
