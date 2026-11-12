@@ -5,6 +5,7 @@ import type { Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, distance } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
 import { pickWeighted } from '../rng.ts';
+import { allHold } from './conditions.ts';
 import { dropOnGround } from './ground.ts';
 import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
@@ -72,8 +73,20 @@ function clear(world: World, field: MomentField, def: MomentDef, pos: Vec2): boo
   return world.moments.every((other: MomentState): boolean => distance(other.pos, pos) >= def.radius + other.def.radius + field.clearance.between);
 }
 
+function sureHolds(world: World, field: MomentField | null): boolean {
+  return field !== null && field.combat && field.sure.length > 0 && allHold(world, field.sure);
+}
+
+function canTurn(def: MomentDef): boolean {
+  return def.turnChance > 0 && def.echoes.some((entry: MomentEcho): boolean => entry.turns);
+}
+
 function pickDef(world: World, field: MomentField): MomentDef | null {
-  const entry: WeightedMoment | null = pickWeighted(world.rng, field.table);
+  const fights: WeightedMoment[] = field.table.filter((entry: WeightedMoment): boolean => {
+    const def: MomentDef | undefined = world.content.moments.defs.get(entry.moment);
+    return def !== undefined && canTurn(def);
+  });
+  const entry: WeightedMoment | null = pickWeighted(world.rng, sureHolds(world, field) && fights.length > 0 ? fights : field.table);
   return entry === null ? null : (world.content.moments.defs.get(entry.moment) ?? null);
 }
 
@@ -96,14 +109,21 @@ function echoDef(world: World, entry: MomentEcho): MonsterDef | null {
   return entry.look === null ? echo : { ...echo, rig: entry.look.rig, scale: entry.look.scale, gear: entry.look.gear, wear: entry.look.wear };
 }
 
+function turning(world: World, moment: MomentState): MomentFigure[] {
+  const able: MomentFigure[] = moment.figures.filter((figure: MomentFigure): boolean => moment.def.echoes[figure.echo]?.turns === true);
+  const rolled: MomentFigure[] = able.filter((): boolean => world.rng.chance(moment.def.turnChance));
+  const first: MomentFigure | undefined = able[0];
+  return rolled.length === 0 && first !== undefined && sureHolds(world, fieldOf(world)) ? [first] : rolled;
+}
+
 function turn(world: World, moment: MomentState): number[] {
   if (!moment.combat) return [];
   const packId: number = world.nextPackId;
   world.nextPackId += 1;
   const turned: number[] = [];
-  for (const figure of moment.figures) {
+  for (const figure of turning(world, moment)) {
     const entry: MomentEcho | undefined = moment.def.echoes[figure.echo];
-    if (entry === undefined || !entry.turns || !world.rng.chance(moment.def.turnChance)) continue;
+    if (entry === undefined) continue;
     const def: MonsterDef | null = echoDef(world, entry);
     if (def === null) continue;
     const monster: MonsterState = spawnMonster(world, def, packId, figure.pos, { summonerId: null, scatter: 0, revived: false });
@@ -137,11 +157,12 @@ function removeEchoes(world: World, moment: MomentState, onlyLiving: boolean): v
   world.monsters = world.monsters.filter((monster: MonsterState): boolean => !gone.has(monster.id));
 }
 
-function reward(world: World, moment: MomentState): void {
+function reward(world: World, moment: MomentState, share: number, items: boolean): void {
   const table = moment.def.reward;
   const scale: number = (1 + world.content.world.scaling.xpPerLevel * (moment.level - 1)) * (1 + world.player.stats.goldFind);
-  const gold: number = Math.round(world.rng.int(table.goldMin, table.goldMax) * scale);
+  const gold: number = Math.round(world.rng.int(table.goldMin, table.goldMax) * scale * share);
   if (gold > 0) dropOnGround(world, moment.pos, { kind: 'gold', amount: gold });
+  if (!items) return;
   for (let index: number = 0; index < table.items; index += 1) {
     if (!world.rng.chance(table.itemChance)) continue;
     const item: ItemInstance | null = generateItem(world.content, world.rng, world.nextItemUid, moment.level, null, table.rarity);
@@ -152,8 +173,9 @@ function reward(world: World, moment: MomentState): void {
 }
 
 function end(world: World, moment: MomentState, outcome: MomentOutcome): void {
+  if (outcome === 'played' && moment.combat) reward(world, moment, world.content.moments.playedShare, false);
   if (outcome === 'resolved') {
-    reward(world, moment);
+    reward(world, moment, 1, true);
     setFlags(world, world.content.moments.cleared);
   }
   removeEchoes(world, moment, true);
@@ -260,4 +282,11 @@ export function fightZones(content: Content): string[] {
 export function nearestFight(world: World): MomentState | null {
   const open: MomentState[] = world.moments.filter((moment: MomentState): boolean => moment.combat && moment.phase !== 'fading');
   return open.toSorted((a: MomentState, b: MomentState): number => distance(world.player.pos, a.pos) - distance(world.player.pos, b.pos))[0] ?? null;
+}
+
+export function strikeGround(world: World): StrikeArea | null {
+  const field: MomentField | null = fieldOf(world);
+  if (field === null || !field.combat) return null;
+  const widest: StrikeArea | undefined = field.areas.toSorted((a: StrikeArea, b: StrikeArea): number => b.radius - a.radius)[0];
+  return widest === undefined ? null : { x: widest.x + world.shift.x, z: widest.z + world.shift.z, radius: widest.radius };
 }

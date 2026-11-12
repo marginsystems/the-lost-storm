@@ -166,6 +166,7 @@
     "interval": {"min": 12, "max": 24},
     "start": 1,
     "max": 2,
-    "table": [{"moment": "campfire", "weight": 3}, {"moment": "charge", "weight": 3}, {"moment": "market_street", "weight": 3}, {"moment": "children_at_play", "weight": 1}, {"moment": "funeral", "weight": 1}]
+    "table": [{"moment": "campfire", "weight": 3}, {"moment": "charge", "weight": 3}, {"moment": "market_street", "weight": 3}, {"moment": "children_at_play", "weight": 1}, {"moment": "funeral", "weight": 1}],
+    "sure": [{"type": "flag", "flag": "first_moment", "is": "cleared", "not": true}]
   }
 }

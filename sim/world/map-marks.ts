@@ -2,7 +2,7 @@ import type { Content, ObjectiveDef, PathObjective, ZoneDef, ZoneExit } from '..
 import { objectivePaths } from '../content/road.ts';
 import type { Vec2 } from '../math.ts';
 import { allHold } from './conditions.ts';
-import { fightZones, nearestFight } from './moments.ts';
+import { fightZones, nearestFight, strikeGround } from './moments.ts';
 import { activeQuests, currentObjective } from './quests.ts';
 import type { MonsterState, NpcState, World } from './types.ts';
 
@@ -60,7 +60,7 @@ function pathTarget(world: World, objective: PathObjective): Vec2 | null {
       target = defeatTarget(world, objective.monster);
       break;
     case 'moment':
-      target = nearestFight(world)?.pos ?? null;
+      target = nearestFight(world)?.pos ?? strikeGround(world);
       break;
   }
   return target;

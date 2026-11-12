@@ -1,3 +1,4 @@
+import type { Condition } from './condition-types.ts';
 import type { StoryFlags } from './story-types.ts';
 
 export interface MomentProp {
@@ -57,6 +58,7 @@ export interface MomentLibrary {
   readonly telegraph: number;
   readonly fade: number;
   readonly cleared: StoryFlags;
+  readonly playedShare: number;
   readonly defs: ReadonlyMap<string, MomentDef>;
 }
 
@@ -90,4 +92,5 @@ export interface MomentField {
   readonly start: number;
   readonly max: number;
   readonly table: readonly WeightedMoment[];
+  readonly sure: readonly Condition[];
 }

@@ -5,7 +5,7 @@ import { ContentError } from './read.ts';
 
 const ECHO = { monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0.5 }, turns: true };
 const MOMENT = { id: 'fire', name: 'A campfire', tint: '#ff9a3c', bright: false, radius: 6, lifetime: 40, awake: 15, turnChance: 0.5, props: [{ prop: 'fire_pit', x: 0, z: 0, rotationDegrees: 0 }], echoes: [ECHO], reward: { goldMin: 5, goldMax: 9, items: 1, itemChance: 0.4, rarity: null } };
-const LIBRARY = { faction: 'echoes', hostileTint: '#9fc4ff', telegraph: 1, fade: 2, moments: [MOMENT] };
+const LIBRARY = { faction: 'echoes', hostileTint: '#9fc4ff', telegraph: 1, fade: 2, playedShare: 0.3, moments: [MOMENT] };
 const FIELD = { combat: true, areas: [{ x: 10, z: 10, radius: 8 }], clearance: { hero: 8, exits: 6, between: 4 }, interval: { min: 5, max: 10 }, start: 1, max: 3, table: [{ moment: 'fire', weight: 1 }] };
 
 void test('a moment library reads its moments by id', (): void => {

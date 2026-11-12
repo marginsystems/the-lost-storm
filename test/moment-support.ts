@@ -48,6 +48,7 @@ export const FIELD: MomentField = {
     { moment: 'test_quiet', weight: 1 },
     { moment: 'test_raid', weight: 2 },
   ],
+  sure: [],
 };
 
 export function momentLibrary(defs: readonly MomentDef[] = [QUIET, RAID]): MomentLibrary {

@@ -1,3 +1,4 @@
+import { conditions } from './parse-conditions.ts';
 import { storyFlags } from './parse-story.ts';
 import type { Fields } from './read.ts';
 import { byId, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
@@ -84,6 +85,7 @@ export function momentLibrary(value: unknown, where: string): MomentLibrary {
     telegraph: positive(source, 'telegraph', where),
     fade: positive(source, 'fade', where),
     cleared: storyFlags(source['cleared'], `${where}.cleared`),
+    playedShare: chance(source, 'playedShare', where),
     defs: byId(each(source['moments'], `${where}.moments`, moment), `${where}.moments`),
   };
 }
@@ -121,5 +123,5 @@ export function momentField(value: unknown, where: string): MomentField | null {
   if (areas.length === 0) throw new ContentError(`${where}.areas`, 'a field needs at least one area');
   const table: WeightedMoment[] = each(source['table'], `${where}.table`, weighted);
   if (table.length === 0) throw new ContentError(`${where}.table`, 'a field needs at least one moment');
-  return { combat: flag(source, 'combat', where), areas, clearance: clearance(source['clearance'], `${where}.clearance`), interval: interval(source['interval'], `${where}.interval`), start, max, table };
+  return { combat: flag(source, 'combat', where), areas, clearance: clearance(source['clearance'], `${where}.clearance`), interval: interval(source['interval'], `${where}.interval`), start, max, table, sure: conditions(source, 'sure', where) };
 }

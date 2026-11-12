@@ -3,6 +3,7 @@
   "hostileTint": "#9fc4ff",
   "telegraph": 1.1,
   "fade": 2.4,
+  "playedShare": 0.3,
   "moments": [
     {
       "id": "campfire",

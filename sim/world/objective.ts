@@ -1,8 +1,9 @@
+import type { StrikeArea } from '../content/moment-types.ts';
 import type { ObjectiveDef, PathObjective, QuestDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from '../content/types.ts';
 import { objectivePaths } from '../content/road.ts';
 import type { Vec2 } from '../math.ts';
 import { allHold } from './conditions.ts';
-import { fightZones, nearestFight } from './moments.ts';
+import { fightZones, nearestFight, strikeGround } from './moments.ts';
 import { activeQuests, currentObjective } from './quests.ts';
 import type { MomentState, MonsterState, NpcState, World } from './types.ts';
 
@@ -105,7 +106,9 @@ function pathTarget(world: World, objective: PathObjective): LocalTarget | null 
     }
     case 'moment': {
       const moment: MomentState | null = nearestFight(world);
+      const ground: StrikeArea | null = strikeGround(world);
       if (moment !== null) target = { kind: 'spot', pos: moment.pos, radius: moment.def.radius, name: moment.def.name, objective };
+      else if (ground !== null) target = { kind: 'spot', pos: { x: ground.x, z: ground.z }, radius: ground.radius, name: world.zone.name, objective };
       break;
     }
   }

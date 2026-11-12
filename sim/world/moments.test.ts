@@ -6,7 +6,7 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { parseSaveText, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
-import { forceStrike, momentOfEcho } from './moments.ts';
+import { forceStrike, momentOfEcho, strikeGround } from './moments.ts';
 import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -90,7 +90,7 @@ void test('an untouched bubble fades after its lifetime and is then gone', (): v
   assert.equal(world.moments.includes(moment), false);
 });
 
-void test('stepping inside wakes a bubble, and a peaceful one plays out and fades with no reward', (): void => {
+void test('stepping inside wakes a bubble, and a peaceful one plays out and leaves a share of its gold but no items', (): void => {
   const world: World = fieldWorld(quietField());
   const moment: MomentState = struck(world, QUIET.id);
   standAt(world, moment.pos);
@@ -100,7 +100,31 @@ void test('stepping inside wakes a bubble, and a peaceful one plays out and fade
   assert.equal(world.monsters.length, 0);
   const after: WorldEvent[] = run(world, QUIET.awake);
   assert.equal(moment.outcome, 'played');
-  assert.equal(after.some((event: WorldEvent): boolean => event.type === 'drop'), false);
+  const drops = after.flatMap((event: WorldEvent) => (event.type === 'drop' ? [event.ground.content] : []));
+  assert.ok(drops.length > 0);
+  assert.ok(drops.every((content): boolean => content.kind === 'gold' && content.amount <= Math.ceil(QUIET.reward.goldMax * world.content.moments.playedShare * 2)));
+});
+
+void test('while the field is sure, a waking moment always turns an echo and only moments that can fight strike', (): void => {
+  const shy: MomentDef = { ...RAID, id: 'test_shy', turnChance: 0.0001 };
+  const sure: MomentField = quietField({ table: [{ moment: QUIET.id, weight: 50 }, { moment: shy.id, weight: 1 }], sure: [{ type: 'flag', flag: 'first_moment', is: 'cleared', not: true }] });
+  for (let seed: number = 0; seed < 6; seed += 1) {
+    const world: World = fieldWorld(sure, momentLibrary([QUIET, shy]));
+    for (let skip: number = 0; skip < seed * 7; skip += 1) world.rng.next();
+    const moment: MomentState = must(forceStrike(world, { x: 40, z: 40 }, null), 'strike');
+    assert.equal(moment.def.id, shy.id);
+    run(world, world.content.moments.telegraph + DT * 2);
+    standAt(world, moment.pos);
+    run(world, DT * 2);
+    assert.ok(echoesOf(world, moment).length >= 1, `seed ${seed}`);
+  }
+});
+
+void test('with no bubble up, a fight objective points at the widest strike area', (): void => {
+  const world: World = fieldWorld(quietField());
+  const ground = must(strikeGround(world), 'ground');
+  assert.deepEqual(ground, FIELD.areas[0]);
+  assert.equal(strikeGround(fieldWorld(quietField({ combat: false }))), null);
 });
 
 void test('a bubble that lands on the hero waits for him to step out and back in', (): void => {
