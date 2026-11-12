@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createFakeClock, createFakeTimers } from '../test/backend-support.ts';
 import type { FakeTimers } from '../test/backend-support.ts';
-import { createTitleSync } from './title-sync.ts';
+import type { BackendState } from './backend/backend.ts';
+import { createTitleSync, followSync } from './title-sync.ts';
 import type { TitleLine } from './title-sync.ts';
 
 interface Line extends TitleLine {
@@ -73,4 +74,16 @@ void test('a quick flip away and back ends on the right label, never the one in 
   assert.equal(element.dataset['state'], 'offline');
   assert.ok(element.classes.has('shown'));
   assert.equal(timers.pending(), 0);
+});
+
+void test('the sync line follows the backend only when a server is configured', (): void => {
+  const shown: BackendState[] = [];
+  const listeners: ((state: BackendState) => void)[] = [];
+  const backend: { state(): BackendState; subscribe(listener: (state: BackendState) => void): void } = { state: (): BackendState => 'offline', subscribe: (listener: (state: BackendState) => void): void => void listeners.push(listener) };
+  followSync(backend, (state: BackendState): void => void shown.push(state), false);
+  assert.equal(shown.length, 0);
+  assert.equal(listeners.length, 0);
+  followSync(backend, (state: BackendState): void => void shown.push(state), true);
+  assert.deepEqual(shown, ['offline']);
+  assert.equal(listeners.length, 1);
 });

@@ -2,7 +2,7 @@ export const TITLE_SCREEN = {
   playingClass: 'playing',
   inputKnownClass: 'input-known',
   touchClass: 'touch',
-  creditsOpenClass: 'open',
+  foldOpenClass: 'open',
 } as const;
 
 export const GAME_LAYERS: readonly string[] = ['#hud', '#overlays', '.tc', '.tc-rotate'];
@@ -22,9 +22,9 @@ export function markPlaying(body: ClassTarget, playing: boolean): void {
   body.classList.toggle(TITLE_SCREEN.playingClass, playing);
 }
 
-export function wireCredits(button: HTMLButtonElement, credits: HTMLElement): void {
+export function wireFold(button: HTMLButtonElement, fold: HTMLElement): void {
   button.addEventListener('click', (): void => {
-    const open: boolean = credits.classList.toggle(TITLE_SCREEN.creditsOpenClass);
+    const open: boolean = fold.classList.toggle(TITLE_SCREEN.foldOpenClass);
     button.setAttribute('aria-expanded', String(open));
   });
 }

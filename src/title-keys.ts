@@ -99,3 +99,11 @@ function escaped(text: string): string {
 export function titleKeysHtml(rows: readonly TitleKeyRow[]): string {
   return rows.map((row: TitleKeyRow): string => `<div><dt>${escaped(row.keys)}</dt><dd>${escaped(row.does)}</dd></div>`).join('');
 }
+
+export function showTitleKeys(list: Element | null, rows: readonly TitleKeyRow[]): void {
+  if (list === null) return;
+  const markup: string = titleKeysHtml(rows);
+  if (list.innerHTML === markup) return;
+  list.innerHTML = markup;
+  list.classList.add(TITLE_KEYS.reboundClass);
+}

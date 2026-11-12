@@ -1,4 +1,4 @@
-import type { BackendState, Timers } from './backend/backend.ts';
+import type { Backend, BackendState, Timers } from './backend/backend.ts';
 
 const TITLE_SYNC: { readonly swapMs: number } = { swapMs: 280 };
 
@@ -35,4 +35,10 @@ export function createTitleSync(line: TitleLine, timers: Timers): (state: Backen
     line.classList.remove('shown');
     cancelSwap = timers.after(TITLE_SYNC.swapMs, apply);
   };
+}
+
+export function followSync(backend: Pick<Backend, 'state' | 'subscribe'>, show: (state: BackendState) => void, served: boolean): void {
+  if (!served) return;
+  show(backend.state());
+  backend.subscribe(show);
 }

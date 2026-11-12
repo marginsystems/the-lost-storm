@@ -4,7 +4,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { warnInConsole } from './backend/console-log.ts';
-import { markInput, markPlaying, wireCredits } from './title-screen.ts';
+import { markInput, markPlaying, wireFold } from './title-screen.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
@@ -113,12 +113,12 @@ import type { TurnstileApi, TurnstileGate } from './turnstile.ts';
 import type { GoogleIdentity } from './google-identity.ts';
 import { createTitleAccount } from './title-account.ts';
 import type { TitleAccount } from './title-account.ts';
-import { createTitleSync } from './title-sync.ts';
+import { readServerUrl } from './backend/server-url.ts';
+import { createTitleSync, followSync } from './title-sync.ts';
 import { createStatusLine } from './title-status.ts';
 import { defaultBar } from '../sim/skill-book.ts';
 import type { Bar } from '../sim/skill-book.ts';
-import { shippedKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleKeysHtml, titleNames } from './title-keys.ts';
-import type { TitleKeyRow } from './title-keys.ts';
+import { shippedKeys, showTitleKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleNames } from './title-keys.ts';
 import type { StatusLine } from './title-status.ts';
 import { changesSave } from './save-events.ts';
 import type { ZoneTransition } from './transition.ts';
@@ -137,14 +137,6 @@ const GAME = {
 } as const;
 
 const titleLines: { current: StatusLine | null } = { current: null };
-
-function showTitleKeys(list: Element | null, rows: readonly TitleKeyRow[]): void {
-  if (list === null) return;
-  const markup: string = titleKeysHtml(rows);
-  if (list.innerHTML === markup) return;
-  list.innerHTML = markup;
-  list.classList.add(TITLE_KEYS.reboundClass);
-}
 
 function whenIdle(work: () => void): void {
   if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(work, { timeout: GAME.idleWaitMs });
@@ -255,7 +247,8 @@ async function start(): Promise<void> {
 
   const mobile: MobileBoot = bootMobile();
   markInput(document.body, mobile.touch);
-  wireCredits(element('title-credits-open', HTMLButtonElement), element('title-credits', HTMLParagraphElement));
+  wireFold(element('title-controls-open', HTMLButtonElement), element('title-controls', HTMLDivElement));
+  wireFold(element('title-credits-open', HTMLButtonElement), element('title-credits', HTMLDivElement));
   const launch: Launch = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement) });
   statusLine.show('Reading the rules…');
   const content: Content = loadContent();
@@ -643,8 +636,7 @@ async function start(): Promise<void> {
   status.classList.remove('failed');
   status.classList.add('quiet');
   element('title-loader', HTMLDivElement).classList.add('done');
-  showSync(backend.state());
-  backend.subscribe(showSync);
+  followSync(backend, showSync, readServerUrl(import.meta.env.VITE_SERVER_URL).kind === 'ok');
   if (account !== null) {
     startTitleAccount(account, (busy: boolean): void => {
       enter.disabled = busy;
