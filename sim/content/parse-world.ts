@@ -145,6 +145,7 @@ function zoneVoid(value: unknown, where: string): ZoneVoid {
 function zoneHud(value: unknown, where: string): ZoneHud | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
+  if (!Array.isArray(source['until'])) throw new ContentError(`${where}.until`, 'a HUD rule needs an until list: the conditions that show the HUD again, or [] to hide it for the whole stay');
   return { until: conditions(source, 'until', where) };
 }
 

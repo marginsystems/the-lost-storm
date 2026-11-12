@@ -1,5 +1,6 @@
 import type { Object3D, Scene } from 'three';
 import { Camera, Group, Light, PointLight } from 'three';
+import type { QualityName } from '../mobile/quality.ts';
 import type { GlitchKind } from '../../sim/content/glitches.ts';
 import type { ZoneAmbience, ZoneDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
@@ -35,6 +36,7 @@ export interface GlitchViewDeps {
   readonly scene: Scene;
   readonly app: HTMLElement;
   readonly mistZone: ZoneDef;
+  readonly quality: QualityName;
   readonly settings: GlitchSettingsStore;
   hero(): Object3D;
   send(command: Command): void;
@@ -121,7 +123,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
 
   const showMist = (): void => {
     mist?.dispose();
-    mist = buildVoidView({ ...deps.mistZone, floorHeight: world.zone.floorHeight });
+    mist = buildVoidView({ ...deps.mistZone, floorHeight: world.zone.floorHeight }, deps.quality);
     scene.add(mist.group);
     deps.setAmbience(deps.mistZone.ambience);
     document.body.classList.add(GLITCH_VIEW.mistClass);
@@ -257,7 +259,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
       stepStutter(simDt);
       if (mist !== null) {
         sweep();
-        mist.update(now, dt, world);
+        mist.update(now, dt, world, null);
       }
     },
   };

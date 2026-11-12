@@ -589,3 +589,9 @@ void test('a void recentres around the hero, so it cannot hold npcs, checkpoints
   assert.throws((): unknown => parseContent(voidWith({ waypoint: { x: 80, z: 80 } })), (error: unknown): boolean => problem(error, 'cannot hold a waypoint'));
   assert.doesNotThrow((): unknown => parseContent(voidWith({})));
 });
+
+void test('a HUD rule must say when the HUD comes back, so a typo cannot hide it for good', (): void => {
+  assert.throws((): unknown => parseContent(voidWith({ hud: {} })), (error: unknown): boolean => problem(error, 'needs an until list'));
+  assert.throws((): unknown => parseContent(voidWith({ hud: { untill: [] } })), (error: unknown): boolean => problem(error, 'needs an until list'));
+  assert.doesNotThrow((): unknown => parseContent(voidWith({ hud: { until: [] } })));
+});

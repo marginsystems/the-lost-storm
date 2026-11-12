@@ -1,9 +1,13 @@
 import type { IUniform } from 'three';
-import { BufferAttribute, BufferGeometry, Color, Group, Mesh, PlaneGeometry, Points, ShaderMaterial, UniformsLib, UniformsUtils, Vector2, Vector3 } from 'three';
-import type { ZoneDef } from '../../sim/content/types.ts';
+import { BoxGeometry, BufferAttribute, BufferGeometry, Color, DataTexture, Group, LinearFilter, Mesh, MeshBasicMaterial, PlaneGeometry, Points, RedFormat, RepeatWrapping, ShaderMaterial, UniformsLib, UniformsUtils, Vector2, Vector3, Vector4 } from 'three';
+import type { ZoneDef, ZoneExit } from '../../sim/content/types.ts';
+import { allHold } from '../../sim/world/conditions.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { wakeProgress } from '../../sim/world/wake.ts';
-import type { World } from '../../sim/world/types.ts';
+import type { GroundItem, World } from '../../sim/world/types.ts';
+import type { QualityName } from '../mobile/quality.ts';
+import type { Eddy, MistDrive, MistField } from './mist-field.ts';
+import { createMistDrive, createMistField, MIST, stepDrive, stepField } from './mist-field.ts';
 import { CAMERA } from './iso-camera.ts';
 import type { VoidLight } from './void-light.ts';
 import { createVoidLight } from './void-light.ts';
@@ -25,24 +29,31 @@ export const VOID_VIEW = {
   flashColor: 0xd8e4ff,
   lightColor: 0xfff1d6,
   layers: [
-    { height: 0.35, opacity: 0.42, scale: 0.21, drift: 0.11 },
-    { height: 1.1, opacity: 0.42, scale: 0.17, drift: 0.09 },
-    { height: 2.1, opacity: 0.45, scale: 0.14, drift: 0.075 },
-    { height: 3.3, opacity: 0.48, scale: 0.11, drift: 0.06 },
-    { height: 4.8, opacity: 0.52, scale: 0.085, drift: 0.045 },
+    { height: 0.35, opacity: 0.42, scale: 0.21, drift: 0.11, need: 0.2, tear: 0.5, warp: 1.4, streak: 0.85 },
+    { height: 1.1, opacity: 0.42, scale: 0.17, drift: 0.09, need: 0.28, tear: 0.55, warp: 1.9, streak: 0.4 },
+    { height: 2.1, opacity: 0.45, scale: 0.14, drift: 0.075, need: 0.36, tear: 0.62, warp: 2.4, streak: 0.15 },
+    { height: 3.3, opacity: 0.48, scale: 0.11, drift: 0.06, need: 0.45, tear: 0.7, warp: 2.9, streak: 0 },
+    { height: 4.8, opacity: 0.52, scale: 0.085, drift: 0.045, need: 0.54, tear: 0.78, warp: 3.4, streak: 0 },
   ],
-  clear: 3.3,
+  tiers: {
+    desktop: { cells: 64, layers: [0, 1, 2, 3, 4], octaves: 3, motes: 260 },
+    mobile: { cells: 32, layers: [0, 2, 4], octaves: 2, motes: 110 },
+  },
+  edgeFeather: 0.13,
+  fray: 0.85,
+  feetClear: { inner: 0.7, outer: 1.5 },
+  wallLight: 0.55,
+  glimpseColor: 0x6d747d,
+  glimpseOpacity: 0.75,
+  glimpseRate: 2.4,
+  glimpseShare: 0.86,
+  glimpseStones: [
+    { x: 0, z: 0, width: 1.1, height: 9.5 },
+    { x: 1.6, z: 0.7, width: 0.8, height: 6.2 },
+    { x: -1.3, z: 0.9, width: 0.6, height: 4.4 },
+  ],
   sleepingClear: 0.42,
-  lead: 5.5,
-  behind: 0.8,
-  feather: 0.75,
-  stiffness: 9,
-  damping: 5.2,
-  dirStiffness: 20,
-  dirDamping: 9,
-  springStep: 1 / 120,
   stillBelow: 0.4,
-  leadShare: 0.45,
   openRate: 1.6,
   seedStep: 17.3,
   moteRise: 0.5,
@@ -58,7 +69,6 @@ export const VOID_VIEW = {
   flashDecay: 2.6,
   flickerAt: 0.16,
   flickerPower: 0.65,
-  motes: 260,
   moteBox: { x: 46, y: 7, z: 46 },
   moteSize: 1.7,
   moteColor: 0x3d4248,
@@ -66,11 +76,6 @@ export const VOID_VIEW = {
   moteDrift: 0.35,
   maxPixelRatio: 1.5,
 } as const;
-
-interface Spring {
-  readonly at: Vector2;
-  readonly velocity: Vector2;
-}
 
 interface Lightning {
   wait: number;
@@ -85,19 +90,6 @@ function color(hex: number): IUniform<Color> {
   return { value: new Color(hex) };
 }
 
-function stepSpring(spring: Spring, target: Vector2, stiffness: number, damping: number, dt: number): void {
-  const steps: number = Math.max(1, Math.ceil(dt / VOID_VIEW.springStep));
-  const step: number = dt / steps;
-  for (let index = 0; index < steps; index += 1) {
-    const ax: number = (target.x - spring.at.x) * stiffness - spring.velocity.x * damping;
-    const az: number = (target.y - spring.at.y) * stiffness - spring.velocity.y * damping;
-    spring.velocity.x += ax * step;
-    spring.velocity.y += az * step;
-    spring.at.x += spring.velocity.x * step;
-    spring.at.y += spring.velocity.y * step;
-  }
-}
-
 function viewOffset(): Vector2 {
   const yaw: number = (CAMERA.yawDegrees * Math.PI) / 180;
   const pitch: number = (CAMERA.pitchDegrees * Math.PI) / 180;
@@ -105,8 +97,7 @@ function viewOffset(): Vector2 {
   return new Vector2(Math.sin(yaw) * run, Math.cos(yaw) * run);
 }
 
-function moteGeometry(): BufferGeometry {
-  const count: number = VOID_VIEW.motes;
+function moteGeometry(count: number): BufferGeometry {
   const positions: Float32Array = new Float32Array(count * 3);
   const drifts: Float32Array = new Float32Array(count * 3);
   for (let index: number = 0; index < count; index += 1) {
@@ -123,7 +114,44 @@ function moteGeometry(): BufferGeometry {
   return geometry;
 }
 
-export function buildVoidView(zone: ZoneDef): ZoneView {
+type VoidTier = (typeof VOID_VIEW.tiers)[QualityName];
+
+function eddyUniforms(): Vector4[] {
+  return Array.from({ length: MIST.eddies }, (): Vector4 => new Vector4(0, 0, 0, 0));
+}
+
+function shiftedEddies(eddies: readonly Eddy[], target: Vector4[]): void {
+  target.forEach((slot: Vector4, index: number): void => {
+    const eddy: Eddy | undefined = eddies[index];
+    if (eddy === undefined) slot.set(0, 0, 0, 0);
+    else slot.set(eddy.at.x, eddy.at.z, eddy.spin, Math.max(0, eddy.life));
+  });
+}
+
+function buildGlimpse(floor: number): { readonly group: Group; readonly material: MeshBasicMaterial; readonly geometries: BoxGeometry[] } {
+  const group: Group = new Group();
+  const material: MeshBasicMaterial = new MeshBasicMaterial({ color: VOID_VIEW.glimpseColor, transparent: true, opacity: 0, depthWrite: false });
+  const geometries: BoxGeometry[] = VOID_VIEW.glimpseStones.map((stone): BoxGeometry => {
+    const geometry: BoxGeometry = new BoxGeometry(stone.width, stone.height, stone.width);
+    const mesh: Mesh = new Mesh(geometry, material);
+    mesh.position.set(stone.x, floor + stone.height / 2, stone.z);
+    mesh.renderOrder = 5;
+    group.add(mesh);
+    return geometry;
+  });
+  group.visible = false;
+  return { group, material, geometries };
+}
+
+function findsIn(world: World): Vec2[] {
+  const items: Vec2[] = world.ground.flatMap((ground: GroundItem): Vec2[] => (ground.find === null ? [] : [{ x: ground.pos.x - world.shift.x, z: ground.pos.z - world.shift.z }]));
+  const lights: Vec2[] = world.zone.exits.flatMap((exit: ZoneExit): Vec2[] => (exit.hiddenWhenLocked && allHold(world, exit.requires) ? [{ x: exit.x - world.shift.x, z: exit.z - world.shift.z }] : []));
+  return [...items, ...lights];
+}
+
+export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
+  const tier: VoidTier = VOID_VIEW.tiers[quality];
+  const defines: Record<string, number> = { VOID_OCTAVES: tier.octaves, VOID_EDDIES: MIST.eddies };
   const group: Group = new Group();
   const shift: IUniform<Vector2> = { value: new Vector2() };
   const hero: IUniform<Vector2> = { value: new Vector2() };
@@ -132,17 +160,27 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
   const flashPos: IUniform<Vector2> = { value: new Vector2() };
   const flashReach: IUniform<number> = { value: VOID_VIEW.flashReach };
   const flashColor: IUniform<Color> = color(VOID_VIEW.flashColor);
-  const pocket: IUniform<Vector2> = { value: new Vector2() };
   const dir: IUniform<Vector2> = { value: new Vector2(0, 1) };
-  const size: IUniform<Vector3> = { value: new Vector3(VOID_VIEW.clear, VOID_VIEW.clear, VOID_VIEW.clear) };
-  const feather: IUniform<number> = { value: VOID_VIEW.feather };
   const view: IUniform<Vector2> = { value: viewOffset() };
+  const eddies: IUniform<Vector4[]> = { value: eddyUniforms() };
+  const field: MistField = createMistField(tier.cells);
+  const drive: MistDrive = createMistDrive();
+  const fieldTexture: DataTexture = new DataTexture(field.bytes, tier.cells, tier.cells, RedFormat);
+  fieldTexture.wrapS = RepeatWrapping;
+  fieldTexture.wrapT = RepeatWrapping;
+  fieldTexture.magFilter = LinearFilter;
+  fieldTexture.minFilter = LinearFilter;
+  fieldTexture.needsUpdate = true;
+  const fieldUniform: IUniform<DataTexture> = { value: fieldTexture };
+  const openScale: IUniform<number> = { value: VOID_VIEW.sleepingClear };
   const light: VoidLight = createVoidLight(zone.floorHeight);
   group.add(light.group);
+  const glimpse = buildGlimpse(zone.floorHeight);
+  group.add(glimpse.group);
 
   const groundUniforms: Uniforms = UniformsUtils.merge([UniformsLib.fog]);
   Object.assign(groundUniforms, { uColor: color(VOID_VIEW.groundColor), uShade: color(VOID_VIEW.groundShade), uFlashColor: flashColor, uShift: shift, uHero: hero, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uRipple: { value: VOID_VIEW.ripple }, uShadow: { value: VOID_VIEW.heroShadow } });
-  const groundMaterial: ShaderMaterial = new ShaderMaterial({ uniforms: groundUniforms, vertexShader: GROUND_VERTEX, fragmentShader: GROUND_FRAGMENT, fog: true });
+  const groundMaterial: ShaderMaterial = new ShaderMaterial({ uniforms: groundUniforms, defines, vertexShader: GROUND_VERTEX, fragmentShader: GROUND_FRAGMENT, fog: true });
   const groundGeometry: PlaneGeometry = new PlaneGeometry(VOID_VIEW.groundSize, VOID_VIEW.groundSize);
   const ground: Mesh = new Mesh(groundGeometry, groundMaterial);
   ground.rotation.x = -Math.PI / 2;
@@ -150,9 +188,11 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
   group.add(ground);
 
   const mistGeometry: PlaneGeometry = new PlaneGeometry(VOID_VIEW.mistSize, VOID_VIEW.mistSize);
-  const layers: Mesh[] = VOID_VIEW.layers.map((layer, index: number): Mesh => {
+  const layers: Mesh[] = tier.layers.map((which: number, index: number): Mesh => {
+    const layer = VOID_VIEW.layers[which] ?? VOID_VIEW.layers[0];
     const material: ShaderMaterial = new ShaderMaterial({
-      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uView: view, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: index * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uPocket: pocket, uDir: dir, uSize: size, uFeather: feather, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor) },
+      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uView: view, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: which * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uDir: dir, uSpan: { value: MIST.span }, uNeed: { value: layer.need }, uTear: { value: layer.tear }, uWarp: { value: layer.warp }, uFeather: { value: VOID_VIEW.edgeFeather }, uFray: { value: VOID_VIEW.fray }, uFeet: { value: new Vector2(VOID_VIEW.feetClear.inner, VOID_VIEW.feetClear.outer) }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uStreak: { value: layer.streak }, uWall: { value: VOID_VIEW.wallLight }, uEddyRadius: { value: MIST.eddyRadius }, uEddies: eddies, uField: fieldUniform, uOpen: openScale, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor) },
+      defines,
       vertexShader: MIST_VERTEX,
       fragmentShader: MIST_FRAGMENT,
       transparent: true,
@@ -174,20 +214,18 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
     transparent: true,
     depthWrite: false,
   });
-  const moteGeometryBuilt: BufferGeometry = moteGeometry();
+  const moteGeometryBuilt: BufferGeometry = moteGeometry(tier.motes);
   const motes: Points = new Points(moteGeometryBuilt, moteMaterial);
   motes.frustumCulled = false;
   motes.renderOrder = 9;
   group.add(motes);
 
-  const centre: Spring = { at: new Vector2(), velocity: new Vector2() };
-  const heading: Spring = { at: new Vector2(0, 1), velocity: new Vector2() };
-  const target: Vector2 = new Vector2();
   const lightning: Lightning = { wait: VOID_VIEW.firstFlash, flash: 0, flicker: -1, at: new Vector2() };
   let last: Vec2 | null = null;
   let lastShift: Vec2 = { x: 0, z: 0 };
   let speed: number = 0;
-  let opening: number = VOID_VIEW.sleepingClear;
+  let glimpseAlpha: number = 0;
+  let glimpseFor: MistDrive['gust'] = null;
 
   const strike = (world: World): void => {
     const angle: number = Math.random() * Math.PI * 2;
@@ -210,30 +248,46 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
     flashPos.value.copy(lightning.at);
   };
 
-  const follow = (world: World, dt: number): void => {
+  const stepGlimpse = (world: World, dt: number): void => {
+    const gust: MistDrive['gust'] = drive.gust;
+    if (gust !== null && gust !== glimpseFor && !gust.aimed) {
+      glimpseFor = gust;
+      const reach: number = MIST.gustReach * VOID_VIEW.glimpseShare;
+      glimpse.group.position.set(world.player.pos.x + gust.dir.x * reach, 0, world.player.pos.z + gust.dir.z * reach);
+      glimpse.group.rotation.y = Math.random() * Math.PI;
+    }
+    const wanted: number = gust !== null && !gust.aimed ? gust.strength * VOID_VIEW.glimpseOpacity : 0;
+    glimpseAlpha += (wanted - glimpseAlpha) * Math.min(1, dt * VOID_VIEW.glimpseRate);
+    glimpse.material.opacity = glimpseAlpha;
+    glimpse.group.visible = glimpseAlpha > 0.01;
+  };
+
+  const follow = (world: World, dt: number, look: Vec2 | null): void => {
     const pos: Vec2 = world.player.pos;
     const moved: Vec2 = { x: world.shift.x - lastShift.x, z: world.shift.z - lastShift.z };
     lastShift = { x: world.shift.x, z: world.shift.z };
     lightning.at.x += moved.x;
     lightning.at.y += moved.z;
+    glimpse.group.position.x += moved.x;
+    glimpse.group.position.z += moved.z;
     last ??= { x: pos.x, z: pos.z };
     const stepX: number = pos.x - last.x - moved.x;
     const stepZ: number = pos.z - last.z - moved.z;
     last = { x: pos.x, z: pos.z };
     const instant: number = dt > 0 ? Math.hypot(stepX, stepZ) / dt : 0;
     speed += (instant - speed) * Math.min(1, dt * VOID_VIEW.speedSmoothing);
-    const going: number = Math.min(1, speed / Math.max(world.player.stats.moveSpeed, 1e-3));
-    if (instant > VOID_VIEW.stillBelow) target.set(stepX, stepZ).normalize();
-    else target.copy(heading.at);
-    stepSpring(heading, target, VOID_VIEW.dirStiffness, VOID_VIEW.dirDamping, dt);
-    if (heading.at.lengthSq() > 1e-6) dir.value.copy(heading.at).normalize();
-    target.set(dir.value.x * VOID_VIEW.lead * going * VOID_VIEW.leadShare, dir.value.y * VOID_VIEW.lead * going * VOID_VIEW.leadShare);
-    stepSpring(centre, target, VOID_VIEW.stiffness, VOID_VIEW.damping, dt);
-    pocket.value.set(pos.x + centre.at.x, pos.z + centre.at.y);
+    const moveDir: Vec2 | null = instant > VOID_VIEW.stillBelow ? { x: stepX / (instant * dt), z: stepZ / (instant * dt) } : null;
+    const lookAway: number = look === null ? 0 : Math.hypot(look.x - pos.x, look.z - pos.z);
+    const lookDir: Vec2 | null = look === null || lookAway < VOID_VIEW.stillBelow ? null : { x: (look.x - pos.x) / lookAway, z: (look.z - pos.z) / lookAway };
+    const anchored: Vec2 = { x: pos.x - world.shift.x, z: pos.z - world.shift.z };
+    const lying: boolean = world.wake !== null;
+    stepDrive(drive, { hero: anchored, speed: lying ? 0 : speed, maxSpeed: world.player.stats.moveSpeed, moveDir: lying ? null : moveDir, look: lying ? null : lookDir, finds: findsIn(world), dt, random: Math.random });
+    stepField(field, drive, anchored, dt);
+    fieldTexture.needsUpdate = true;
+    dir.value.set(drive.dir.x, drive.dir.z);
+    shiftedEddies(drive.eddies, eddies.value);
     const wanted: number = world.wake === null ? 1 : VOID_VIEW.sleepingClear + (1 - VOID_VIEW.sleepingClear) * wakeProgress(world.wake);
-    opening += (wanted - opening) * Math.min(1, dt * VOID_VIEW.openRate);
-    const clear: number = VOID_VIEW.clear * opening;
-    size.value.set(clear, clear + VOID_VIEW.lead * going, clear * (1 - (1 - VOID_VIEW.behind) * going));
+    openScale.value += (wanted - openScale.value) * Math.min(1, dt * VOID_VIEW.openRate);
     hero.value.set(pos.x, pos.z);
   };
 
@@ -243,11 +297,12 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
     torches: [],
     lightsVersion: 0,
     setLightBudget(): void {},
-    update(now: number, dt: number, world: World): void {
+    update(now: number, dt: number, world: World, look: Vec2 | null): void {
       time.value = now;
       shift.value.set(world.shift.x, world.shift.z);
-      follow(world, dt);
+      follow(world, dt, look);
       stepLightning(world, dt);
+      stepGlimpse(world, dt);
       light.update(world, now, dt);
       ground.position.set(world.player.pos.x, zone.floorHeight, world.player.pos.z);
       for (const layer of layers) layer.position.set(world.player.pos.x, layer.position.y, world.player.pos.z);
@@ -260,6 +315,9 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
       for (const layer of layers) if (layer.material instanceof ShaderMaterial) layer.material.dispose();
       moteGeometryBuilt.dispose();
       moteMaterial.dispose();
+      fieldTexture.dispose();
+      glimpse.material.dispose();
+      for (const geometry of glimpse.geometries) geometry.dispose();
       light.dispose();
     },
   };

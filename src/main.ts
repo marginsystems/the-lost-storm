@@ -244,7 +244,7 @@ async function start(): Promise<void> {
   });
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
   status.textContent = 'Raising the dead and the walls…';
-  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene)]);
+  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
   status.textContent = 'Waking the world…';
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
@@ -396,6 +396,7 @@ async function start(): Promise<void> {
     scene: stage.scene,
     app: element('hud', HTMLDivElement),
     mistZone: content.zones.get(world.glitch.def.mistZone) ?? world.zone,
+    quality: mobile.quality.tier.name,
     settings: glitchSettings,
     hero: () => actors.hero(),
     send,
@@ -439,7 +440,7 @@ async function start(): Promise<void> {
 
   const refreshZone = async (): Promise<void> => {
     const edited: World['zone'] = world.zone;
-    const next: ZoneView = await buildZoneView(loader, content, edited, stage.scene);
+    const next: ZoneView = await buildZoneView(loader, content, edited, stage.scene, mobile.quality.tier.name);
     if (world.zone !== edited || zoneView.zone.id !== edited.id) {
       next.dispose();
       return;
@@ -457,7 +458,7 @@ async function start(): Promise<void> {
     particles.clear();
     markers.dispose();
     zoneView.dispose();
-    zoneView = await buildZoneView(loader, content, world.zone, stage.scene);
+    zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name);
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
     markers = createZoneMarkers(stage.scene, world.zone);
     stage.setAmbience(world.zone.ambience);
@@ -531,7 +532,7 @@ async function start(): Promise<void> {
     audio.update(dt);
     particles.update(simVisualDt);
     weather.update(simVisualDt);
-    zoneView.update(now / 1000, dt, world);
+    zoneView.update(now / 1000, dt, world, input.look);
     if (zoneView.lightsVersion !== torchVersion) {
       torchVersion = zoneView.lightsVersion;
       effects.setTorches(zoneView.torches);

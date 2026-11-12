@@ -19,28 +19,12 @@ float voidNoise(vec2 p) {
 float voidFbm(vec2 p) {
   float total = 0.0;
   float amplitude = 0.5;
-  for (int octave = 0; octave < 3; octave++) {
+  for (int octave = 0; octave < VOID_OCTAVES; octave++) {
     total += voidNoise(p) * amplitude;
     p = mat2(1.6, 1.2, -1.2, 1.6) * p;
     amplitude *= 0.5;
   }
   return total;
-}
-`;
-
-const POCKET: string = `
-uniform vec2 uPocket;
-uniform vec2 uDir;
-uniform vec3 uSize;
-uniform float uFeather;
-
-float voidOpen(vec2 p) {
-  vec2 d = p - uPocket;
-  float along = dot(d, uDir);
-  float across = dot(d, vec2(-uDir.y, uDir.x));
-  float reach = along > 0.0 ? uSize.y : uSize.z;
-  float r = length(vec2(across / uSize.x, along / reach));
-  return smoothstep(1.0, 1.0 + uFeather, r);
 }
 `;
 
@@ -106,6 +90,7 @@ uniform vec2 uView;
 uniform vec2 uHero;
 uniform vec2 uNear;
 uniform vec2 uFlashPos;
+uniform vec2 uDir;
 uniform float uFlash;
 uniform float uFlashReach;
 uniform float uTime;
@@ -114,22 +99,58 @@ uniform float uOpacity;
 uniform float uSeed;
 uniform float uScale;
 uniform float uDrift;
+uniform float uSpan;
+uniform float uNeed;
+uniform float uTear;
+uniform float uWarp;
+uniform float uFeather;
+uniform float uFray;
+uniform vec2 uFeet;
+uniform float uFieldReach;
+uniform float uStreak;
+uniform float uWall;
+uniform float uEddyRadius;
+uniform vec4 uEddies[VOID_EDDIES];
+uniform sampler2D uField;
+uniform float uOpen;
 uniform vec3 uLight;
 uniform vec3 uLightColor;
 varying vec3 vWorld;
 ${NOISE}
-${POCKET}
+vec2 voidSwirl(vec2 q) {
+  for (int index = 0; index < VOID_EDDIES; index++) {
+    vec4 eddy = uEddies[index];
+    vec2 r = q - eddy.xy;
+    float turn = eddy.z * eddy.w * exp(-dot(r, r) / (uEddyRadius * uEddyRadius));
+    float c = cos(turn);
+    float s = sin(turn);
+    q = eddy.xy + vec2(c * r.x - s * r.y, s * r.x + c * r.y);
+  }
+  return q;
+}
 void main() {
   vec2 p = vWorld.xz - uView * uHeight;
-  vec2 q = vWorld.xz - uShift;
-  float open = voidOpen(p);
-  float away = distance(p, uHero);
-  float near = 1.0 - smoothstep(uNear.x, uNear.y, away);
+  vec2 q = p - uShift;
+  vec2 swirled = voidSwirl(q);
   vec2 roll = vec2(uTime * uDrift, uTime * uDrift * 0.63);
-  vec2 at = q * uScale + roll + uSeed;
+  vec2 side = vec2(-uDir.y, uDir.x);
+  vec2 flow = vec2(dot(swirled, uDir) * mix(1.0, 0.32, uStreak), dot(swirled, side));
+  vec2 at = mix(swirled, flow, uStreak) * uScale + roll + uSeed;
   float body = voidFbm(at);
   float lit = voidFbm(at + vec2(0.35, 0.22));
   float storm = voidFbm(q * uScale * 0.38 - roll * 0.8 + uSeed * 1.7 + vec2(body * 1.6));
+  vec2 warp = vec2(voidFbm(swirled * 0.3 + uSeed + roll * 1.7), voidFbm(swirled * 0.3 - uSeed * 0.7 - roll * 1.3)) - 0.5;
+  float feet = 1.0 - smoothstep(uFeet.x, uFeet.y, distance(p, uHero));
+  vec2 fromCentre = abs(p - uHero);
+  float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
+  float cleared = max(texture2D(uField, (swirled + warp * uWarp) / uSpan).r * inside, feet) * uOpen;
+  float fray = voidFbm(swirled * uFray + roll * 2.2 + uSeed * 3.1);
+  float need = uNeed + (mix(body, fray, 0.55) - 0.5) * uTear;
+  float soft = uFeather * (0.5 + fray);
+  float open = smoothstep(need - soft, need + soft, cleared);
+  float wall = clamp(open * (1.0 - open) * 4.0, 0.0, 1.0) * smoothstep(0.02, 0.2, cleared);
+  float away = distance(p, uHero);
+  float near = 1.0 - smoothstep(uNear.x, uNear.y, away);
   float puff = smoothstep(0.3, 0.58, body);
   vec2 toLight = uLight.xy - uHero;
   float lightAway = max(length(toLight), 0.001);
@@ -140,14 +161,15 @@ void main() {
   float lane = smoothstep(-2.0, 3.0, along) * (1.0 - smoothstep(lightAway + 4.0, lightAway + 9.0, along));
   float width = mix(2.5, 7.0, clamp(along / lightAway, 0.0, 1.0));
   float pull = uLight.z * lane * (1.0 - smoothstep(width, width + 3.5, across));
-  float density = open * (1.0 - pull * 0.7) * mix(1.0, 1.35, uLight.z * (1.0 - pull)) * clamp(0.45 + puff * 0.55 + smoothstep(uNear.y * 0.4, uNear.y * 1.3, away) * 0.5, 0.0, 1.0);
+  float density = (1.0 - open) * (1.0 - pull * 0.7) * mix(1.0, 1.35, uLight.z * (1.0 - pull)) * clamp(0.45 + puff * 0.55 + smoothstep(uNear.y * 0.4, uNear.y * 1.3, away) * 0.5, 0.0, 1.0);
   float shade = clamp(0.5 + (lit - body) * 6.0, 0.0, 1.0);
   vec3 color = mix(uStorm, uMist, near * 0.8 + shade * 0.2);
   color *= 0.82 + shade * 0.28;
-  color = mix(color, uDeep, smoothstep(0.36, 0.58, storm) * (1.0 - near * 0.8) * open);
+  color = mix(color, uDeep, smoothstep(0.36, 0.58, storm) * (1.0 - near * 0.8) * (1.0 - open));
+  color = mix(color, uMist * 1.06, wall * uWall);
   vec2 toFlash = vWorld.xz - uFlashPos;
   float glow = uFlash * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
-  color = mix(color, uFlashColor, clamp(glow * (0.35 + storm * 0.9), 0.0, 1.0));
+  color = mix(color, uFlashColor, clamp(glow * (0.35 + storm * 0.9) + uFlash * wall * 0.6, 0.0, 1.0));
   color = mix(color, uDeep * 0.75, uLight.z * 0.72 * (1.0 - near * 0.55) * (1.0 - pull * 0.8));
   vec2 nearLight = vWorld.xz - uLight.xy;
   color = mix(color, uLightColor, uLight.z * 0.85 * exp(-dot(nearLight, nearLight) / 90.0));
