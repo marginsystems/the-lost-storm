@@ -6,9 +6,9 @@ import { surfaceMaterial } from './surfaces.ts';
 
 export const SHORE_ROCK = {
   size: 30,
-  cells: 30,
-  inner: 5,
-  outer: 13,
+  cells: 60,
+  inner: 1,
+  outer: 3.4,
   lineFrom: -2,
   lineTo: 5,
   lift: 0.015,

@@ -53,7 +53,7 @@ export const VOID_VIEW = {
   pocketShade: { edge: 0.06, inner: 0.05 },
   rockColor: 0x1d2026,
   rockShade: 0x0d0f12,
-  heroPool: { radius: 3.6, strength: 0.22, color: 0x9fb4cc },
+  heroPool: { radius: 1.5, strength: 0.16, color: 0x9fb4cc },
   firePool: { radius: 9, strength: 0.22 },
   shoreFray: 9,
   shoreRate: 0.8,
