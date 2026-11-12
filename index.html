@@ -2,95 +2,106 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>The Lost Storm · Free action RPG in your browser</title>
+    <meta name="description" content="A free hack-and-slash action RPG that runs in your browser. Early alpha. No download, no account needed." />
     <meta name="theme-color" content="#05070b" />
-    <meta name="description" content="The Lost Storm: an isometric action RPG that runs in your browser." />
-    <title>The Lost Storm</title>
-    <script>
-      (function () {
-        function fail() {
-          var status = document.getElementById('title-status');
-          var enter = document.getElementById('title-enter');
-          var loader = document.getElementById('title-loader');
-          if (!status || !enter || !enter.disabled || status.classList.contains('failed')) return;
-          status.textContent = 'Loading failed. Reload the page.';
-          status.classList.add('failed');
-          if (loader) loader.classList.add('done');
-        }
-        window.addEventListener('error', function (event) {
-          var target = event.target;
-          if (target instanceof HTMLScriptElement || target === window) fail();
-        }, true);
-        window.addEventListener('unhandledrejection', fail);
-      })();
-    </script>
-    <link rel="stylesheet" href="/src/app.css" />
-    <link rel="stylesheet" href="/src/title-account.css" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="canonical" href="https://theloststorm.com/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="The Lost Storm" />
+    <meta property="og:url" content="https://theloststorm.com/" />
+    <meta property="og:title" content="The Lost Storm" />
+    <meta property="og:description" content="A free hack-and-slash action RPG that runs in your browser. Early alpha. No download, no account needed." />
+    <meta property="og:image" content="https://theloststorm.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A lightning strike lands on a crowd of monsters in a torchlit stone arena." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="The Lost Storm" />
+    <meta name="twitter:description" content="A free hack-and-slash action RPG that runs in your browser. Early alpha." />
+    <meta name="twitter:image" content="https://theloststorm.com/og.jpg" />
+    <meta name="twitter:image:alt" content="A lightning strike lands on a crowd of monsters in a torchlit stone arena." />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/cinzel/files/cinzel-latin-700-normal.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/alegreya-sans/files/alegreya-sans-latin-400-normal.woff2" />
+    <link rel="stylesheet" href="/src/landing/landing.css" />
   </head>
   <body>
-    <div id="app">
-      <canvas id="scene"></canvas>
-      <div id="overlays"></div>
-      <div id="fade"></div>
-      <div id="hud"></div>
-      <div id="vignette"></div>
-      <div id="title">
-        <div class="title-card">
-          <h1>The Lost Storm</h1>
-          <p class="title-sub" id="title-place"></p>
-          <div class="title-loader" id="title-loader" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <p class="title-status" id="title-status">Gathering the storm…</p>
-          <button id="title-enter" type="button" disabled>Enter</button>
-          <button id="title-reset" type="button" class="title-quiet" hidden>Start over</button>
-          <p class="title-sync" id="title-sync" aria-live="polite"></p>
-          <div class="title-account" id="title-account" data-state="hidden">
-            <div class="title-methods">
-              <div class="title-google" id="title-google" hidden></div>
-              <button id="title-email-open" type="button" class="title-email-open" aria-label="Sign in with email" hidden><span class="title-email-long">Sign in with email</span><span class="title-email-short">Email</span></button>
-            </div>
-            <form class="title-email" id="title-email" data-step="closed" novalidate>
-              <div class="title-email-row title-email-address">
-                <input id="title-email-input" type="email" name="email" autocomplete="email" inputmode="email" spellcheck="false" maxlength="254" placeholder="Email address" aria-label="Email address" />
-                <button id="title-email-send" type="submit" class="title-email-action">Send code</button>
-              </div>
-              <div class="title-email-row title-email-code" id="title-email-code" role="group" aria-label="Six-digit code from the email">
-                <span class="title-email-digits" id="title-email-digits">
-                  <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="Digit 1" />
-                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 2" />
-                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 3" />
-                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 4" />
-                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 5" />
-                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 6" />
-                </span>
-                <button id="title-email-resend" type="button" class="title-email-action">Resend</button>
-              </div>
-              <button id="title-email-back" type="button" class="title-email-back" aria-label="Back">&#x2190;</button>
-            </form>
-            <p class="title-account-line" id="title-account-line" hidden><span class="title-account-method" id="title-account-method"></span><span id="title-account-name"></span><button id="title-signout" type="button" class="title-quiet">Sign out</button></p>
-            <p class="title-account-note" id="title-account-note" aria-live="polite" hidden></p>
-            <p class="title-email-note" id="title-email-note" aria-live="polite"></p>
-            <div class="title-turnstile" id="title-turnstile"><div id="title-turnstile-mount"></div></div>
-          </div>
-          <dl class="title-keys">
-            <div><dt>Left mouse</dt><dd>Move, attack, pick up</dd></div>
-            <div><dt>Shift + left mouse</dt><dd>Attack in place</dd></div>
-            <div><dt>Q</dt><dd>Thunderclap</dd></div>
-            <div><dt>W or right mouse</dt><dd>Storm Bolt</dd></div>
-            <div><dt>Space</dt><dd>Dodge roll</dd></div>
-            <div><dt>1 · 2</dt><dd>Life flask · Mana flask</dd></div>
-            <div><dt>I · C · T · M</dt><dd>Inventory · Character · Skill tree · Map</dd></div>
-            <div><dt>Mouse wheel</dt><dd>Zoom</dd></div>
-          </dl>
-          <p class="title-credits">
-            Skeleton: "Free Pack - Human Skeleton" by PolyOne Studio, CC BY 4.0, modified. Rig and animations: Universal Animation Library by Quaternius, CC0. Clothing and armour: Modular Character Outfits - Fantasy by Quaternius, and MakeHuman community garments by Donitz, Rehman Polanski and MRT, all CC0. World: models and textures from Poly Haven, CC0.
-          </p>
-          <p class="title-legal"><a href="/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="/terms.html">Terms</a></p>
-        </div>
+    <header class="hero">
+      <picture class="hero-art">
+        <source type="image/avif" srcset="/src/landing/images/hero-1280.avif 1280w, /src/landing/images/hero-2400.avif 2400w" sizes="(max-width: 720px) 190vw, 100vw" />
+        <source type="image/webp" srcset="/src/landing/images/hero-1280.webp 1280w, /src/landing/images/hero-2400.webp 2400w" sizes="(max-width: 720px) 190vw, 100vw" />
+        <img src="/src/landing/images/hero-1280.webp" width="2400" height="1350" alt="A lightning strike lands on a crowd of monsters in a torchlit stone arena." fetchpriority="high" decoding="async" />
+      </picture>
+      <div class="hero-shade" aria-hidden="true"></div>
+      <p class="live-chip" id="live-chip" aria-hidden="true"><span class="live-dot"></span><b id="live-chip-online">0</b> playing now</p>
+      <div class="hero-body">
+        <p class="kicker">Free · Early alpha</p>
+        <h1>The Lost Storm</h1>
+        <p class="lede">A hack-and-slash action RPG that runs in your browser. Fight, loot, level up.</p>
+        <a class="play" href="/play/">Play now</a>
+        <p class="fine">No download, no account needed.</p>
       </div>
-    </div>
-    <script type="module" src="/src/main.ts"></script>
+    </header>
+
+    <main>
+      <aside class="live" id="live" aria-live="polite" aria-label="Players and ladder">
+        <p class="live-head"><span class="live-dot" aria-hidden="true"></span><b id="live-online">0</b> playing now</p>
+        <h2>Ladder</h2>
+        <ol class="live-top" id="live-top"></ol>
+        <p class="live-empty" id="live-empty" hidden>No one on the ladder yet. Be the first.</p>
+      </aside>
+      <section class="shots" aria-label="What you do">
+        <figure>
+          <picture>
+            <source type="image/avif" srcset="/src/landing/images/fight-640.avif 640w, /src/landing/images/fight-1200.avif 1200w" sizes="(max-width: 720px) 100vw, 560px" />
+            <source type="image/webp" srcset="/src/landing/images/fight-640.webp 640w, /src/landing/images/fight-1200.webp 1200w" sizes="(max-width: 720px) 100vw, 560px" />
+            <img src="/src/landing/images/fight-640.webp" width="1200" height="675" loading="lazy" decoding="async" alt="The hero fights a pack of undead by a wall, a spell bursting between them." />
+          </picture>
+          <figcaption><b>Fight</b> Click to move and swing. Call lightning onto a crowd, throw bolts at the ones that run.</figcaption>
+        </figure>
+        <figure>
+          <picture>
+            <source type="image/avif" srcset="/src/landing/images/loot-640.avif 640w, /src/landing/images/loot-1200.avif 1200w" sizes="(max-width: 720px) 100vw, 560px" />
+            <source type="image/webp" srcset="/src/landing/images/loot-640.webp 640w, /src/landing/images/loot-1200.webp 1200w" sizes="(max-width: 720px) 100vw, 560px" />
+            <img src="/src/landing/images/loot-640.webp" width="1200" height="675" loading="lazy" decoding="async" alt="A beam of light marks an item dropped on the stone floor after a fight." />
+          </picture>
+          <figcaption><b>Loot</b> Monsters drop gold and gear with random affixes. Pick it up and wear the better piece.</figcaption>
+        </figure>
+        <figure>
+          <picture>
+            <source type="image/avif" srcset="/src/landing/images/build-640.avif 640w, /src/landing/images/build-1200.avif 1200w" sizes="(max-width: 720px) 100vw, 560px" />
+            <source type="image/webp" srcset="/src/landing/images/build-640.webp 640w, /src/landing/images/build-1200.webp 1200w" sizes="(max-width: 720px) 100vw, 560px" />
+            <img src="/src/landing/images/build-640.webp" width="1200" height="675" loading="lazy" decoding="async" alt="The character sheet and inventory: life, damage and speed, each skill's damage per second, and a weapon's stats." />
+          </picture>
+          <figcaption><b>Build</b> Levels bring skill points, gear brings stats. Spend both and the same hero plays differently.</figcaption>
+        </figure>
+        <figure>
+          <picture>
+            <source type="image/avif" srcset="/src/landing/images/explore-640.avif 640w, /src/landing/images/explore-1200.avif 1200w" sizes="(max-width: 720px) 100vw, 560px" />
+            <source type="image/webp" srcset="/src/landing/images/explore-640.webp 640w, /src/landing/images/explore-1200.webp 1200w" sizes="(max-width: 720px) 100vw, 560px" />
+            <img src="/src/landing/images/explore-640.webp" width="1200" height="675" loading="lazy" decoding="async" alt="The world map: a drawn chart of forests, marsh and a river, with roads joining the places you have found." />
+          </picture>
+          <figcaption><b>Explore</b> Roads out of town lead through zones to bosses off the main path. The map fills in as you go.</figcaption>
+        </figure>
+      </section>
+
+      <section class="alpha" aria-labelledby="alpha-title">
+        <h2 id="alpha-title">Early alpha, honestly</h2>
+        <p>In now: a first act with a town, two roads of two zones each, a boss off each road and a last zone behind the town's gate. One hero with two storm skills, a dodge roll and life and mana flasks, loot with affixes, levels and a small skill tree. It takes well under an hour, on a computer or with touch controls on a phone.</p>
+        <p>Progress saves on its own as you play. Close the tab and you pick up where you left off.</p>
+        <p>The game is open source under the MIT licence: read the code or report a bug on <a href="https://github.com/marginsystems/the-lost-storm">GitHub</a>. Models, animations and textures come from free libraries, listed in the <a href="https://github.com/marginsystems/the-lost-storm/blob/main/ASSETS.md">asset credits</a>.</p>
+        <a class="play quiet" href="/play/">Play now</a>
+      </section>
+    </main>
+
+    <footer>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="https://github.com/marginsystems/the-lost-storm">GitHub</a>
+    </footer>
+    <script type="module" src="/src/landing/main.ts"></script>
   </body>
 </html>

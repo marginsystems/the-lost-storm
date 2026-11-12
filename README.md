@@ -2,7 +2,7 @@
 
 A single-player isometric action RPG that runs in the browser. Three.js, TypeScript and Vite, with no game engine on top. The world is a set of zones joined by exits: a safe town (Stillhold) and the Drowned Bastion, an arena of endless surges. One hero, two monster types, loot, levelling and a small skill tree.
 
-**Play it:** [theloststorm.com](https://theloststorm.com)
+**Play it:** [theloststorm.com/play](https://theloststorm.com/play/) (the site's front page, [theloststorm.com](https://theloststorm.com), says what the game is first)
 
 ![The title screen](docs/images/title.webp)
 
@@ -17,7 +17,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5193.
+Open http://localhost:5193/play/ for the game. http://localhost:5193/ is the landing page: a static page with its own small entry (`index.html`, `src/landing/`) that loads no Three.js. The game's page is `play/index.html`. With `VITE_SERVER_URL` set, the landing page shows how many players are online and the top of the ladder from `GET /v1/leaderboard`; without it, it makes no request and shows neither.
 
 | Input | Action |
 |---|---|

@@ -1,0 +1,15 @@
+:root {
+  --spring-snappy: linear(0, 0.051, 0.167, 0.308, 0.449, 0.578, 0.688, 0.777, 0.847, 0.899, 0.937, 0.964, 0.982, 0.994, 1, 1.004, 1.006, 1.006, 1.006, 1.005, 1);
+  --spring-smooth: linear(0, 0.04, 0.13, 0.241, 0.355, 0.463, 0.559, 0.642, 0.713, 0.771, 0.819, 0.857, 0.888, 0.913, 0.932, 0.948, 0.96, 0.969, 0.976, 0.982, 0.986, 0.989, 0.992, 0.994, 1);
+  --spring-bouncy: linear(0, 0.04, 0.141, 0.279, 0.432, 0.586, 0.727, 0.85, 0.95, 1.025, 1.078, 1.109, 1.124, 1.125, 1.117, 1.102, 1.083, 1.064, 1.045, 1.028, 1.013, 1.002, 0.994, 0.988, 0.985, 0.984, 0.984, 0.986, 1);
+  --spring-snappy-ms: 260ms;
+  --spring-smooth-ms: 520ms;
+  --spring-bouncy-ms: 720ms;
+  --drift-ease: linear;
+  --drift-ms: 5200ms;
+  --serif: "Cinzel", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: "Alegreya Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --text: #efe6d6;
+  --storm: #7fd4ff;
+  --ember: #e8b866;
+}
