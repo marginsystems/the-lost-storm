@@ -12,11 +12,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from wearable_fit import SKELETONS, SourceSkeleton, Span, inflate, refit, simplify, trim_faces
 from wearable_makehuman import Garment
 from wearable_makehuman import load as load_makehuman
+from wearable_makehuman import load_body
 from wearable_makehuman import skeleton as makehuman_skeleton
 from wearable_textures import retexture, source_images
 
 WEBP_QUALITY: int = 88
 MAKEHUMAN: str = "makehuman"
+EYE_TEXTURE_SIZE: int = 128
+EYE_SUFFIX: str = "_eyes"
+
+Shape = tuple[tuple[str, float], ...]
 
 
 @dataclass(frozen=True)
@@ -38,6 +43,11 @@ class Part:
     inflate: float
     girth: float | None
     shift: tuple[float, float, float]
+    body: bool
+    eyes: str | None
+    shape: Shape
+    desaturate: float
+    luma: float | None
 
 
 def read_span(raw: object) -> Span | None:
@@ -64,6 +74,11 @@ def read_part(raw: dict[str, object]) -> Part:
         inflate=float(raw.get("inflate", 0.0)),
         girth=None if raw.get("girth") is None else float(raw["girth"]),
         shift=tuple(float(value) for value in raw.get("shift", (0.0, 0.0, 0.0))),
+        body=bool(raw.get("body", False)),
+        eyes=None if raw.get("eyes") is None else str(raw["eyes"]),
+        shape=tuple((str(entry[0]), float(entry[1])) for entry in raw.get("shape", [])),
+        desaturate=float(raw.get("desaturate", 0.0)),
+        luma=None if raw.get("luma") is None else float(raw["luma"]),
     )
 
 
@@ -126,9 +141,10 @@ def bind(obj: Object, rig: Object, name: str) -> None:
     modifier.object = rig
 
 
-def export(obj: Object, rig: Object, path: Path) -> None:
+def export(objects: list[Object], rig: Object, path: Path) -> None:
     bpy.ops.object.select_all(action="DESELECT")
-    obj.select_set(True)
+    for obj in objects:
+        obj.select_set(True)
     rig.select_set(True)
     bpy.context.view_layer.objects.active = rig
     bpy.ops.export_scene.gltf(
@@ -161,9 +177,11 @@ class Source:
     images: dict[str, Image]
     skeleton: SourceSkeleton
     leftovers: list[str]
+    size: int
+    name: str
 
 
-def load_rigged(part: Part, pack: Pack) -> Source:
+def load_rigged(part: Part, pack: Pack) -> list[Source]:
     imported: list[Object] = import_model(pack.root / part.file)
     names: list[str] = [entry.name for entry in imported]
     armature: Object = only_armature(imported, part.id)
@@ -171,15 +189,24 @@ def load_rigged(part: Part, pack: Pack) -> Source:
     for mesh_object, clip in picked:
         trim_faces(mesh_object, part.id, part.drop_materials, clip)
     obj: Object = join_meshes([mesh_object for mesh_object, _ in picked])
-    return Source(obj, joint_heads(armature), source_images(obj, part.drop_materials), SKELETONS[pack.skeleton], names)
+    return [Source(obj, joint_heads(armature), source_images(obj, part.drop_materials), SKELETONS[pack.skeleton], names, part.texture_size, part.id)]
 
 
-def load_garment(part: Part, pack: Pack) -> Source:
+def load_garment(part: Part, pack: Pack) -> list[Source]:
     if pack.rig_root is None:
         raise RuntimeError(f"{part.id}: pack {part.pack} names no rig pack, or that pack has no folder on the command line")
-    garment: Garment = load_makehuman(part.id, pack.root / part.file, pack.rig_root)
-    trim_faces(garment.obj, part.id, (), part.keep_abs_x)
-    return Source(garment.obj, garment.heads, garment.images, makehuman_skeleton(), [])
+    if not part.body:
+        garment: Garment = load_makehuman(part.id, pack.root / part.file, pack.rig_root, part.shape)
+        trim_faces(garment.obj, part.id, (), part.keep_abs_x)
+        return [Source(garment.obj, garment.heads, garment.images, makehuman_skeleton(), [], part.texture_size, part.id)]
+    body: Garment = load_body(part.id, pack.root / part.file, pack.rig_root, part.shape)
+    trim_faces(body.obj, part.id, (), None)
+    made: list[Source] = [Source(body.obj, body.heads, body.images, makehuman_skeleton(), [], part.texture_size, part.id)]
+    if part.eyes is not None:
+        name: str = f"{part.id}{EYE_SUFFIX}"
+        eyes: Garment = load_makehuman(name, pack.root / part.eyes, pack.rig_root, part.shape)
+        made.append(Source(eyes.obj, eyes.heads, eyes.images, makehuman_skeleton(), [], EYE_TEXTURE_SIZE, name))
+    return made
 
 
 def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path) -> None:
@@ -190,20 +217,21 @@ def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path)
         if extra != rig:
             bpy.data.objects.remove(extra)
     target: dict[str, Vector] = joint_heads(rig)
-    source: Source = load_garment(part, pack) if pack.skeleton == MAKEHUMAN else load_rigged(part, pack)
-    obj: Object = source.obj
-    refit(obj, source.skeleton, source.heads, target, pack.girth if part.girth is None else part.girth)
-    obj.data.transform(Matrix.Translation(part.shift))
-    inflate(obj, part.inflate)
-    simplify(obj, part.decimate)
-    retexture(obj, part.id, part.texture_size, source.images, scratch)
-    bind(obj, rig, part.id)
-    for name in source.leftovers:
-        leftover: Object | None = bpy.data.objects.get(name)
-        if leftover is not None and leftover != obj:
-            bpy.data.objects.remove(leftover)
+    sources: list[Source] = load_garment(part, pack) if pack.skeleton == MAKEHUMAN else load_rigged(part, pack)
+    for source in sources:
+        refit(source.obj, source.skeleton, source.heads, target, pack.girth if part.girth is None else part.girth)
+        source.obj.data.transform(Matrix.Translation(part.shift))
+        inflate(source.obj, part.inflate)
+        simplify(source.obj, part.decimate if source.name == part.id else 1.0)
+        retexture(source.obj, source.name, source.size, source.images, scratch, part.desaturate, part.luma if source.name == part.id else None)
+        bind(source.obj, rig, source.name)
+        for name in source.leftovers:
+            leftover: Object | None = bpy.data.objects.get(name)
+            if leftover is not None and leftover != source.obj:
+                bpy.data.objects.remove(leftover)
+    obj: Object = sources[0].obj
     path: Path = out / f"{part.id}.glb"
-    export(obj, rig, path)
+    export([source.obj for source in sources], rig, path)
     triangles: int = sum(len(polygon.vertices) - 2 for polygon in obj.data.polygons)
     print(f"WEARABLE {part.id} vertices={len(obj.data.vertices)} triangles={triangles} bytes={path.stat().st_size}")
 

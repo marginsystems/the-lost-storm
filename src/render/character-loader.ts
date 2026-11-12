@@ -61,6 +61,8 @@ export interface RigInstance {
 export const CHARACTER = {
   flashBoost: 1.9,
   glowBoost: 2.4,
+  metalFrom: 0.5,
+  matteRoughness: 1,
 } as const;
 
 const DEGREES: number = Math.PI / 180;
@@ -146,10 +148,15 @@ async function loadWearable(loader: GLTFLoader, def: WearableDef): Promise<Loade
   return { def, pieces };
 }
 
-async function loadAttachment(loader: GLTFLoader, def: AttachmentDef): Promise<LoadedAttachment> {
+export type Dresser = (dress: Readonly<Record<string, string>>, material: Material) => Material;
+
+async function loadAttachment(loader: GLTFLoader, dresser: Dresser, def: AttachmentDef): Promise<LoadedAttachment> {
   const model: GLTF = await loadModel(loader, def.model);
   model.scene.traverse((object: Object3D): void => {
-    if (object instanceof Mesh) object.castShadow = true;
+    if (!(object instanceof Mesh)) return;
+    object.castShadow = true;
+    const worn: unknown = object.material;
+    if (worn instanceof MeshStandardMaterial) object.material = dresser(def.surfaces, worn);
   });
   return { def, template: model.scene };
 }
@@ -166,10 +173,10 @@ function usedRigs(content: Content): RigDef[] {
   return rigs;
 }
 
-export async function loadCharacters(loader: GLTFLoader, content: Content): Promise<CharacterLibrary> {
+export async function loadCharacters(loader: GLTFLoader, content: Content, dresser: Dresser): Promise<CharacterLibrary> {
   const [rigs, attachments, wearables]: [LoadedRig[], LoadedAttachment[], LoadedWearable[]] = await Promise.all([
     Promise.all(usedRigs(content).map((def: RigDef): Promise<LoadedRig> => loadRig(loader, def))),
-    Promise.all([...content.attachments.values()].map((def: AttachmentDef): Promise<LoadedAttachment> => loadAttachment(loader, def))),
+    Promise.all([...content.attachments.values()].map((def: AttachmentDef): Promise<LoadedAttachment> => loadAttachment(loader, dresser, def))),
     Promise.all([...content.wearables.values()].map((def: WearableDef): Promise<LoadedWearable> => loadWearable(loader, def))),
   ]);
   return {
@@ -192,6 +199,12 @@ function flashing(source: unknown, look: RigLook, flash: IUniform<Color>): MeshS
     if (!(entry instanceof MeshStandardMaterial)) continue;
     const material: MeshStandardMaterial = entry.clone();
     material.color.multiply(new Color(look.tint));
+    if (material.metalness < CHARACTER.metalFrom) {
+      material.roughness = Math.max(material.roughness, CHARACTER.matteRoughness);
+      material.roughnessMap = null;
+      material.metalness = 0;
+      material.metalnessMap = null;
+    }
     recolourEmissiveMap(material, look.glow);
     material.onBeforeCompile = (shader): void => {
       shader.uniforms['uFlash'] = flash;

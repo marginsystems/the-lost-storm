@@ -26,8 +26,8 @@ void test('with nothing equipped a character shows its own clothes', (): void =>
 
 void test('an equipped piece replaces the clothes on the same region and leaves the rest', (): void => {
   const equipped: Equipment = { ...emptyEquipment(), chest: item('drowned_leathers') };
-  const worn: string[] = wornWearables(content, ['dirty_shirt', 'dirty_sleeves', 'dirty_trousers'], equipped);
-  assert.deepEqual(worn.toSorted(), ['dirty_trousers', 'leather_pauldron', 'leather_sleeves', 'leather_vest']);
+  const worn: string[] = wornWearables(content, ['dirty_shirt', 'dirty_trousers'], equipped);
+  assert.deepEqual(worn.toSorted(), ['dirty_trousers', 'leather_vest']);
   const covered: string[] = regions(worn);
   assert.equal(new Set<string>(covered).size, covered.length);
 });
@@ -42,7 +42,7 @@ void test('every slot can dress its own region and unequipping brings the clothe
     feet: item('strider_boots'),
   };
   const worn: string[] = wornWearables(content, content.player.wear, equipped);
-  assert.deepEqual(worn.toSorted(), ['leather_boots', 'leather_bracers', 'leather_hood', 'leather_leggings', 'linen_shirt', 'linen_sleeves']);
+  assert.deepEqual(worn.toSorted(), ['leather_boots', 'leather_bracers', 'leather_hood', 'leather_leggings', 'linen_shirt']);
   const bare: string[] = wornWearables(content, content.player.wear, { ...equipped, chest: null, legs: null });
   assert.ok(bare.includes('dirty_shirt') && bare.includes('dirty_trousers'));
 });
@@ -55,9 +55,9 @@ void test('unknown ids are ignored and a weapon wears nothing', (): void => {
 });
 
 void test('worn pieces name the body parts they hide, each once', (): void => {
-  assert.deepEqual(hiddenBodyParts(content, ['dirty_shirt']), []);
+  assert.deepEqual(hiddenBodyParts(content, ['leather_hood']), []);
   assert.deepEqual(hiddenBodyParts(content, ['worn_boots', 'leather_boots']), ['feet']);
-  assert.deepEqual(hiddenBodyParts(content, ['worn_boots', 'leather_boots', 'leather_vest']).toSorted(), ['feet', 'torso']);
+  assert.deepEqual(hiddenBodyParts(content, ['worn_boots', 'leather_boots', 'leather_vest']).toSorted(), ['arms', 'feet', 'torso']);
   const boots: WearableDef = must(content.wearables.get('leather_boots'), 'leather_boots');
   assert.deepEqual(boots.hides, ['feet']);
 });

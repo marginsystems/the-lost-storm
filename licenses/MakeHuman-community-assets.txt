@@ -1,6 +1,7 @@
-MakeHuman community garments
+MakeHuman community garments and MakeHuman system assets
 http://www.makehumancommunity.org/clothes.html
-Asset packs: http://files2.makehumancommunity.org/asset_packs/ (suits02_cc0.zip, gloves01_cc0.zip)
+Asset packs: http://files2.makehumancommunity.org/asset_packs/ (suits02_cc0.zip, gloves01_cc0.zip,
+shirts01_cc0.zip, pants01_cc0.zip, shoes01_cc0.zip, makehuman_system_assets_cc0.zip)
 
 License: Creative Commons Zero (CC0 1.0)
 https://creativecommons.org/publicdomain/zero/1.0/
@@ -33,6 +34,51 @@ public/models/wear/leather_gloves.glb
   gloves01_cc0.zip, clothes/toigo_gloves_medium/toigo_gloves_medium.mhclo ("Gloves_Medium")
     # author MRT
     # license CC0
+
+public/models/wear/leather_jerkin.glb
+  suits02_cc0.zip, clothes/rehmanpolanski_viking_tunic/rehmanpolanski_viking_tunic.mhclo ("TunicViking")
+    # author Rehman Polanski
+    # license CC0
+
+public/models/wear/hide_boots.glb
+  suits02_cc0.zip, clothes/rehmanpolanski_viking_boots/rehmanpolanski_viking_boots.mhclo
+    # author Rehman Polanski
+    # license CC0
+
+public/models/wear/long_gloves.glb
+  gloves01_cc0.zip, clothes/toigo_gloves_long/toigo_gloves_long.mhclo
+    # author MRT
+    # license CC0
+
+public/models/wear/wool_tunic.glb
+  shirts01_cc0.zip, clothes/toigo_fisherman_sweater/toigo_fisherman_sweater.mhclo
+    # author MRT
+    # license CC0
+
+public/models/wear/wool_trousers.glb
+  pants01_cc0.zip, clothes/toigo_wool_pants/toigo_wool_pants.mhclo
+    # author MRT
+    # license CC0
+
+public/models/wear/tall_boots.glb
+  shoes01_cc0.zip, clothes/culturalibre_male_boots/culturalibre_male_boots.mhclo
+    # author culturalibre
+    # Original by Roachburn
+    # license CC-0
+
+public/models/characters/human_man.glb, human_woman.glb, human_elder.glb
+  The MakeHuman base mesh (makehuman/data/3dobjs/base.obj), the macro shape targets
+  (makehuman/data/targets/macrodetails/caucasian-*.target and universal-*.target), and from
+  makehuman_system_assets_cc0.zip the skins middleage_caucasian_male, middleage_caucasian_female and
+  old_caucasian_male, the low-poly eyes (eyes/low-poly/low-poly.mhclo) and the brown iris
+  (eyes/materials/brown.mhmat). The header of each of those files reads:
+    # This asset was explicitly released as CC0 in september 2020. The license
+    # text for CC0 can be found in the root of this repository.
+    # Copyright (C) 2020 Data Collection AB, https://www.datacollection.se
+    # Copyright (C) 2020 Joel Palmius
+    # Copyright (C) 2020 Jonas Hauquier
+  and LICENSE.md in https://github.com/makehumancommunity/makehuman, section C, says of the bundled
+  assets: "These assets have been released under CC0 1.0 Universal."
 
 Left out of the same packs because their headers do not say CC0: culturalibre_hero-heroine_gloves_1
 (AGPL3).

@@ -1,4 +1,4 @@
-import type { Box3, Scene } from 'three';
+import type { Box3, Material, Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import type { SoundCue } from '../sim/audio.ts';
@@ -51,6 +51,7 @@ import type { Weather } from './render/weather.ts';
 import { createWeather } from './render/weather.ts';
 import type { ZoneMarkers } from './render/zone-markers.ts';
 import { createZoneMarkers } from './render/zone-markers.ts';
+import { dressed } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones } from './render/zone-view.ts';
 import { createBrowserTimers } from './browser-timers.ts';
@@ -144,7 +145,7 @@ async function start(): Promise<void> {
   const stage: Stage = createStage(canvas);
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader();
-  const loadingCharacters: Promise<CharacterLibrary> = loadCharacters(loader, content);
+  const loadingCharacters: Promise<CharacterLibrary> = loadCharacters(loader, content, (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material));
 
   const save: SaveData | null = await loadingSave;
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });

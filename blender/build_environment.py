@@ -470,7 +470,7 @@ def stall(kit: Kit) -> None:
         x: float = -1.56 + index * 0.78
         kit.beam("wood", (x, front - 0.2, 2.03), (x, back + 0.18, 2.6), 0.05, 0.06)
     for index in range(4):
-        kit.sheet("cloth", (-1.6 + index * 0.8, back + 0.2, 2.66), (0.8, 0.0, 0.0), (0.0, front - back - 0.42, -0.6), 4, 6, -0.2 - kit.rng.random() * 0.08)
+        kit.sheet("cloth", (-1.6 + index * 0.8, back + 0.2, 2.66), (0.8, 0.0, 0.0), (0.0, front - back - 0.42, -0.6), 4, 6, 0.2 + kit.rng.random() * 0.08)
     kit.sheet("cloth", (-1.62, front - 0.22, 2.11), (3.24, 0.0, 0.0), (0.0, -0.03, -0.42), 12, 3, 0.03, ragged=0.35, pinned=False)
     kit.sheet("cloth", (-1.45, back + 0.03, 2.5), (2.9, 0.0, 0.0), (0.0, 0.02, -1.5), 8, 6, 0.05, ragged=0.12, pinned=False)
 

@@ -76,7 +76,7 @@ const extraMonster = {
   wear: ['ash_shroud'],
 };
 
-const extraWearable = { id: 'ash_shroud', model: 'models/wear/peasant_shirt.glb', region: 'chest', tint: '#33302c', hides: [] };
+const extraWearable = { id: 'ash_shroud', model: 'models/wear/wool_tunic.glb', region: 'chest', tint: '#33302c', hides: [] };
 
 const extraAttachment = { id: 'ash_brand', model: 'models/weapons/rusted_blade.glb', socket: 'hand_l' };
 
@@ -308,7 +308,7 @@ const extraNpc = {
   id: 'pedlar',
   name: 'Pedlar',
   title: 'The Seller',
-  rig: 'skeleton_townsfolk',
+  rig: 'human_man',
   scale: 1,
   tint: '#ffffff',
   color: '#ffffff',

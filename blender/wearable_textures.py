@@ -11,7 +11,8 @@ PADDING_SHARE: float = 1.0 / 128.0
 MIN_ISLAND_PIXELS: float = 2.0
 PACK_STEPS: int = 28
 FLAT_NORMAL: tuple[float, float, float, float] = (0.5, 0.5, 1.0, 1.0)
-PLAIN_ROUGHNESS: float = 0.88
+PLAIN_ROUGHNESS: float = 1.0
+LUMA: tuple[float, float, float] = (0.2126, 0.7152, 0.0722)
 
 
 @dataclass
@@ -182,7 +183,20 @@ def new_image(name: str, pixels: np.ndarray, colorspace: str, folder: Path) -> I
     return image
 
 
-def retexture(obj: Object, name: str, side: int, images: dict[str, Image], scratch: Path) -> None:
+def toned(pixels: np.ndarray, desaturate: float, luma: float | None) -> np.ndarray:
+    out = pixels.copy()
+    weights = np.array(LUMA, dtype=np.float32)
+    if desaturate > 0.0:
+        grey = (out[..., :3] * weights).sum(axis=2, keepdims=True)
+        out[..., :3] = out[..., :3] * (1.0 - desaturate) + grey * desaturate
+    if luma is not None:
+        mean: float = float((out[..., :3] * weights).sum(axis=2).mean())
+        if mean > 0.0:
+            out[..., :3] = np.clip(out[..., :3] * (luma / mean), 0.0, 1.0)
+    return out
+
+
+def retexture(obj: Object, name: str, side: int, images: dict[str, Image], scratch: Path, desaturate: float = 0.0, luma: float | None = None) -> None:
     padding: float = max(2.0, side * PADDING_SHARE)
     islands: list[Island] = uv_islands(obj)
     scale: float = pack(islands, side, padding)
@@ -193,7 +207,7 @@ def retexture(obj: Object, name: str, side: int, images: dict[str, Image], scrat
     links = made.node_tree.links
     shader = next(node for node in nodes if node.type == "BSDF_PRINCIPLED")
     color = nodes.new("ShaderNodeTexImage")
-    color.image = new_image(f"{name}_color", repacked(images["color"], islands, scale, side, padding, None), "sRGB", scratch)
+    color.image = new_image(f"{name}_color", toned(repacked(images["color"], islands, scale, side, padding, None), desaturate, luma), "sRGB", scratch)
     links.new(color.outputs["Color"], shader.inputs["Base Color"])
     if "orm" in images:
         orm = nodes.new("ShaderNodeTexImage")

@@ -85,6 +85,22 @@ def prong(name: str, angle: float, z: float, made: Material) -> Object:
     return finish(obj, made)
 
 
+def unwrap(mesh: bmesh.types.BMesh) -> None:
+    layer = mesh.loops.layers.uv.verify()
+    for face in mesh.faces:
+        ax: float = abs(face.normal.x)
+        ay: float = abs(face.normal.y)
+        az: float = abs(face.normal.z)
+        for loop in face.loops:
+            co = loop.vert.co
+            if az >= ax and az >= ay:
+                loop[layer].uv = (co.x, co.y)
+            elif ax >= ay:
+                loop[layer].uv = (co.y, co.z)
+            else:
+                loop[layer].uv = (co.x, co.z)
+
+
 def export(name: str, parts: list[Object], directory: str) -> None:
     bpy.ops.object.select_all(action="DESELECT")
     for part in parts:
@@ -97,6 +113,7 @@ def export(name: str, parts: list[Object], directory: str) -> None:
     mesh = bmesh.new()
     mesh.from_mesh(joined.data)
     bmesh.ops.recalc_face_normals(mesh, faces=mesh.faces)
+    unwrap(mesh)
     mesh.to_mesh(joined.data)
     mesh.free()
     bpy.ops.export_scene.gltf(filepath=f"{directory}/{name}.glb", export_format="GLB", use_selection=True, export_apply=True, export_yup=True)

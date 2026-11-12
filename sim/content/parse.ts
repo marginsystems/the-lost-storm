@@ -339,7 +339,7 @@ function rig(value: unknown, where: string): RigDef {
 
 function attachment(value: unknown, where: string): AttachmentDef {
   const source: Fields = fields(value, where);
-  return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where) };
+  return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where), surfaces: dressing(source['surfaces'], `${where}.surfaces`) };
 }
 
 function wearable(value: unknown, where: string): WearableDef {
@@ -375,7 +375,7 @@ function surface(value: unknown, where: string): SurfaceDef {
   };
 }
 
-function propSurfaces(value: unknown, where: string): Record<string, string> {
+function dressing(value: unknown, where: string): Record<string, string> {
   if (value === undefined) return {};
   const source: Fields = fields(value, where);
   const mapped: Record<string, string> = {};
@@ -391,7 +391,7 @@ function prop(value: unknown, where: string): PropDef {
     scale: numeric(source, 'scale', where),
     blockRadius: numeric(source, 'blockRadius', where),
     light: propLight(source['light'], `${where}.light`),
-    surfaces: propSurfaces(source['surfaces'], `${where}.surfaces`),
+    surfaces: dressing(source['surfaces'], `${where}.surfaces`),
   };
 }
 
@@ -541,6 +541,9 @@ export function contentProblems(content: Content): string[] {
   };
   for (const def of content.props.values()) {
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `prop ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
+  }
+  for (const def of content.attachments.values()) {
+    for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `attachment ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }
   need(content.zones.has(content.world.start), `world starts in unknown zone ${content.world.start}`);
   need(content.world.acts.length > 0, 'world has no act');

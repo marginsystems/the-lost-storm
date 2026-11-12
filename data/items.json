@@ -228,8 +228,7 @@
       "minLevel": 1,
       "visual": null,
       "wear": [
-        "linen_shirt",
-        "linen_sleeves"
+        "linen_shirt"
       ],
       "implicit": [
         {
@@ -284,9 +283,7 @@
       "minLevel": 2,
       "visual": null,
       "wear": [
-        "leather_vest",
-        "leather_sleeves",
-        "leather_pauldron"
+        "leather_vest"
       ],
       "implicit": [
         {
@@ -341,8 +338,7 @@
       "minLevel": 6,
       "visual": null,
       "wear": [
-        "squall_hauberk",
-        "leather_pauldron"
+        "squall_hauberk"
       ],
       "implicit": [
         {

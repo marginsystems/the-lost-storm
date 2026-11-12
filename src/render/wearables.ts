@@ -71,9 +71,14 @@ function partOfVertex(mesh: SkinnedMesh, partOfBone: readonly number[], partCoun
       total += weight;
       if (part >= 0) share[part] = (share[part] ?? 0) + weight;
     }
+    let best: number = -1;
+    let owned: number = 0;
     for (let part: number = 0; part < partCount; part += 1) {
-      if (total > 0 && (share[part] ?? 0) / total > WEARABLES.partShare) parts[vertex] = part;
+      const held: number = share[part] ?? 0;
+      owned += held;
+      if (held > (share[best] ?? 0)) best = part;
     }
+    if (best >= 0 && owned / total >= WEARABLES.partShare) parts[vertex] = best;
   }
   return parts;
 }

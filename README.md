@@ -160,19 +160,19 @@ A character is a rig entry in `data/rigs.json`. The loader (`src/render/characte
 - `hiddenNodes` are nodes in the body file that are never shown.
 - `bodyParts` names groups of joints. The body's triangles skinned mostly to a group can be left undrawn while a wearable covers them.
 
-Held gear is an entry in `data/attachments.json`: an id, a model file and the socket it mounts on. An item base's `visual`, the player's `gear` and a monster's `gear` name attachment ids, so a new weapon model is one GLB and one line of data. Weapon models are authored with the grip at the origin and the blade along +Y. `tint` on the player and on each monster recolours the body, so one body file makes several characters. `color` tints that character's effects and its body's emissive map (glowing eyes, runes) when the body has one; a body without an emissive map does not glow.
+Held gear is an entry in `data/attachments.json`: an id, a model file, the socket it mounts on, and `surfaces`, which dresses each of the model's named materials (`steel`, `leather`, `wood`) in a surface from `data/surfaces.json` the way a prop is dressed. An item base's `visual`, the player's `gear` and a monster's `gear` name attachment ids, so a new weapon model is one GLB and one line of data. Weapon models are authored with the grip at the origin and the blade along +Y. `tint` on the player and on each monster recolours the body, so one body file makes several characters. `color` tints that character's effects and its body's emissive map (glowing eyes, runes) when the body has one; a body without an emissive map does not glow.
 
 Clothing and armour are wearables: skinned meshes in `public/models/wear/` that are bound to the wearer's own skeleton by joint name, so each piece is made once, fits every character on the rig and bends with every clip. An entry in `data/wearables.json` has:
 
 ```json
-{ "id": "leather_boots", "model": "models/wear/ranger_boots.glb", "region": "feet", "tint": "#f0e8d8", "hides": ["feet"] }
+{ "id": "leather_boots", "model": "models/wear/tall_boots.glb", "region": "feet", "tint": "#ffffff", "hides": ["feet"] }
 ```
 
 - `region` is the part of the body it covers: `head`, `shoulders`, `chest`, `arms`, `hands`, `legs` or `feet`. A character shows one piece per region. Its own clothes (`wear` on the player or a monster) come first, and each equipped item's pieces replace whatever covers the same region (`sim/wear.ts`).
 - `tint` multiplies the piece's colour, so one model gives a clean shirt, a dirty one and a monster's rags.
 - `hides` lists the wearer's `bodyParts` that are not drawn under it, so bone does not poke through a boot.
 
-New pieces come from outfit packs through `blender/build_wearables.py`, which refits a part to our rig and writes one GLB per part. It reads rigged glTF parts (the Quaternius outfits) and MakeHuman garments. [ASSETS.md](ASSETS.md) has the command.
+New pieces come from outfit packs through `blender/build_wearables.py`, which refits a part to our rig and writes one GLB per part. It reads rigged glTF parts and MakeHuman garments, and builds the human bodies of the townsfolk from the MakeHuman base mesh the same way. [ASSETS.md](ASSETS.md) has the command.
 
 An armour base also names its `material`: `cloth`, `leather`, `mail` or `plate`. Within a slot a heavier material gives more armour, turns up later and less often, and mail and plate slow the wearer; `sim/items.test.ts` holds the data to that.
 

@@ -1,63 +1,64 @@
 [
   {
     "id": "dirty_shirt",
-    "model": "models/wear/peasant_shirt.glb",
+    "model": "models/wear/wool_tunic.glb",
     "region": "chest",
-    "tint": "#c2b89e",
-    "hides": []
-  },
-  {
-    "id": "dirty_sleeves",
-    "model": "models/wear/peasant_sleeves.glb",
-    "region": "arms",
-    "tint": "#c2b89e",
-    "hides": []
+    "tint": "#9c927c",
+    "hides": [
+      "torso",
+      "arms"
+    ]
   },
   {
     "id": "dirty_trousers",
-    "model": "models/wear/peasant_trousers.glb",
+    "model": "models/wear/wool_trousers.glb",
     "region": "legs",
-    "tint": "#c9c2b0",
-    "hides": []
+    "tint": "#8f8676",
+    "hides": [
+      "legs"
+    ]
   },
   {
     "id": "rag_shirt",
-    "model": "models/wear/peasant_shirt.glb",
+    "model": "models/wear/wool_tunic.glb",
     "region": "chest",
-    "tint": "#8f8a78",
-    "hides": []
+    "tint": "#6f6a5c",
+    "hides": [
+      "torso",
+      "arms"
+    ]
   },
   {
     "id": "rag_trousers",
-    "model": "models/wear/peasant_trousers.glb",
+    "model": "models/wear/wool_trousers.glb",
     "region": "legs",
-    "tint": "#9a958a",
-    "hides": []
+    "tint": "#77726a",
+    "hides": [
+      "legs"
+    ]
   },
   {
     "id": "linen_shirt",
-    "model": "models/wear/peasant_shirt.glb",
+    "model": "models/wear/wool_tunic.glb",
     "region": "chest",
-    "tint": "#ffffff",
-    "hides": []
-  },
-  {
-    "id": "linen_sleeves",
-    "model": "models/wear/peasant_sleeves.glb",
-    "region": "arms",
-    "tint": "#ffffff",
-    "hides": []
+    "tint": "#c9c0aa",
+    "hides": [
+      "torso",
+      "arms"
+    ]
   },
   {
     "id": "wool_trousers",
-    "model": "models/wear/peasant_trousers.glb",
+    "model": "models/wear/wool_trousers.glb",
     "region": "legs",
-    "tint": "#ffffff",
-    "hides": []
+    "tint": "#b0a898",
+    "hides": [
+      "legs"
+    ]
   },
   {
     "id": "worn_boots",
-    "model": "models/wear/peasant_boots.glb",
+    "model": "models/wear/hide_boots.glb",
     "region": "feet",
     "tint": "#ffffff",
     "hides": [
@@ -66,53 +67,44 @@
   },
   {
     "id": "leather_hood",
-    "model": "models/wear/ranger_hood.glb",
+    "model": "models/wear/monk_hood.glb",
     "region": "head",
-    "tint": "#e0d6c0",
+    "tint": "#8a6648",
     "hides": []
   },
   {
     "id": "leather_vest",
-    "model": "models/wear/ranger_vest.glb",
+    "model": "models/wear/leather_jerkin.glb",
     "region": "chest",
-    "tint": "#e0d6c0",
+    "tint": "#9a7452",
     "hides": [
-      "torso"
+      "torso",
+      "arms"
     ]
   },
   {
-    "id": "leather_pauldron",
-    "model": "models/wear/ranger_pauldron.glb",
-    "region": "shoulders",
-    "tint": "#ffffff",
-    "hides": []
-  },
-  {
-    "id": "leather_sleeves",
-    "model": "models/wear/ranger_sleeves.glb",
-    "region": "arms",
-    "tint": "#e0d6c0",
-    "hides": []
-  },
-  {
     "id": "leather_bracers",
-    "model": "models/wear/ranger_bracers.glb",
+    "model": "models/wear/long_gloves.glb",
     "region": "hands",
-    "tint": "#f0e8d8",
-    "hides": []
+    "tint": "#7a583e",
+    "hides": [
+      "hands"
+    ]
   },
   {
     "id": "leather_leggings",
-    "model": "models/wear/ranger_trousers.glb",
+    "model": "models/wear/viking_breeches.glb",
     "region": "legs",
-    "tint": "#e0d6c0",
-    "hides": []
+    "tint": "#8a745e",
+    "hides": [
+      "legs"
+    ]
   },
   {
     "id": "leather_boots",
-    "model": "models/wear/ranger_boots.glb",
+    "model": "models/wear/tall_boots.glb",
     "region": "feet",
-    "tint": "#f0e8d8",
+    "tint": "#ffffff",
     "hides": [
       "feet"
     ]
@@ -123,7 +115,9 @@
     "region": "chest",
     "tint": "#ffffff",
     "hides": [
-      "torso"
+      "torso",
+      "arms",
+      "legs"
     ]
   },
   {
@@ -139,7 +133,9 @@
     "region": "chest",
     "tint": "#b79be0",
     "hides": [
-      "torso"
+      "torso",
+      "arms",
+      "legs"
     ]
   },
   {
@@ -155,7 +151,8 @@
     "region": "chest",
     "tint": "#ffffff",
     "hides": [
-      "torso"
+      "torso",
+      "arms"
     ]
   },
   {
@@ -164,7 +161,8 @@
     "region": "chest",
     "tint": "#cfe0f2",
     "hides": [
-      "torso"
+      "torso",
+      "arms"
     ]
   },
   {
@@ -172,7 +170,9 @@
     "model": "models/wear/viking_breeches.glb",
     "region": "legs",
     "tint": "#ffffff",
-    "hides": []
+    "hides": [
+      "legs"
+    ]
   },
   {
     "id": "tanned_gloves",
@@ -188,6 +188,8 @@
     "model": "models/wear/viking_breeches.glb",
     "region": "legs",
     "tint": "#8f8a80",
-    "hides": []
+    "hides": [
+      "legs"
+    ]
   }
 ]

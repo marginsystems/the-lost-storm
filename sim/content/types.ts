@@ -291,6 +291,7 @@ export interface AttachmentDef {
   readonly id: string;
   readonly model: string;
   readonly socket: string;
+  readonly surfaces: Readonly<Record<string, string>>;
 }
 
 export interface RigDef {

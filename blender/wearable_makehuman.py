@@ -11,6 +11,9 @@ from wearable_fit import FINGERS, SIDES, TARGET_CHILD, SourceSkeleton
 
 DECIMETRE: float = 0.1
 BASE_MESH: str = "base.obj"
+BODY_GROUP: str = "body"
+TARGETS: str = "targets"
+TARGET_SUFFIX: str = ".target"
 SKELETON: str = "default.mhskel"
 WEIGHTS: str = "default_weights.mhw"
 THUMB: str = "finger1"
@@ -131,6 +134,16 @@ def read_points(path: Path) -> np.ndarray:
     return np.array(rows, dtype=np.float64)
 
 
+def shaped_base(rig_root: Path, shape: tuple[tuple[str, float], ...]) -> np.ndarray:
+    base: np.ndarray = read_points(rig_root / BASE_MESH)
+    for name, share in shape:
+        for line in (rig_root / TARGETS / f"{name}{TARGET_SUFFIX}").read_text().splitlines():
+            words: list[str] = line.split()
+            if len(words) == 4 and not words[0].startswith("#"):
+                base[int(words[0])] += share * np.array([float(word) for word in words[1:]], dtype=np.float64)
+    return base
+
+
 def read_clothes(path: Path) -> Clothes:
     mesh: str = ""
     material: str = ""
@@ -206,17 +219,20 @@ def joint_heads(rig_root: Path, base: np.ndarray) -> dict[str, Vector]:
     return heads
 
 
-def build_mesh(name: str, path: Path, points: np.ndarray) -> Object:
+def build_mesh(name: str, path: Path, points: np.ndarray, group: str | None = None) -> Object:
     coordinates: list[tuple[float, float]] = []
     faces: list[list[int]] = []
     corners: list[list[int]] = []
+    current: str = ""
     for line in path.read_text().splitlines():
         words: list[str] = line.split()
         if not words:
             continue
-        if words[0] == "vt":
+        if words[0] == "g" and len(words) > 1:
+            current = words[1]
+        elif words[0] == "vt":
             coordinates.append((float(words[1]), float(words[2])))
-        elif words[0] == "f":
+        elif words[0] == "f" and (group is None or current == group):
             pairs: list[list[str]] = [word.split("/") for word in words[1:]]
             face: list[int] = [int(pair[0]) - 1 for pair in pairs]
             if len(set(face)) != len(face):
@@ -238,15 +254,7 @@ def build_mesh(name: str, path: Path, points: np.ndarray) -> Object:
     return obj
 
 
-def load(name: str, clothes_path: Path, rig_root: Path) -> Garment:
-    clothes: Clothes = read_clothes(clothes_path)
-    base: np.ndarray = read_points(rig_root / BASE_MESH)
-    joints: list[str] = sorted(JOINT_AT)
-    skin: np.ndarray = np.einsum("vk,vkj->vj", clothes.share, base_weights(rig_root, joints, len(base))[clothes.bound])
-    count: int = len(read_points(clothes_path.parent / clothes.mesh))
-    if count != len(skin):
-        raise RuntimeError(f"{clothes_path.name} binds {len(skin)} vertices but {clothes.mesh} has {count}")
-    obj: Object = build_mesh(name, clothes_path.parent / clothes.mesh, upright(fitted_points(clothes, base)))
+def skinned(obj: Object, joints: list[str], skin: np.ndarray) -> None:
     for index, joint in enumerate(joints):
         used = np.nonzero(skin[:, index] > MIN_WEIGHT)[0]
         if len(used) == 0:
@@ -254,9 +262,33 @@ def load(name: str, clothes_path: Path, rig_root: Path) -> Garment:
         group = obj.vertex_groups.new(name=joint)
         for vertex in used:
             group.add([int(vertex)], float(skin[vertex, index]), "REPLACE")
-    textures: dict[str, Path] = read_textures(clothes_path.parent / clothes.material)
+
+
+def textured(material: Path) -> dict[str, Image]:
+    textures: dict[str, Path] = read_textures(material)
     images: dict[str, Image] = {key: bpy.data.images.load(str(path)) for key, path in textures.items()}
     images["color"].colorspace_settings.name = "sRGB"
     if "normal" in images:
         images["normal"].colorspace_settings.name = "Non-Color"
-    return Garment(obj, joint_heads(rig_root, base), images)
+    return images
+
+
+def load_body(name: str, material: Path, rig_root: Path, shape: tuple[tuple[str, float], ...]) -> Garment:
+    base: np.ndarray = shaped_base(rig_root, shape)
+    joints: list[str] = sorted(JOINT_AT)
+    obj: Object = build_mesh(name, rig_root / BASE_MESH, upright(base), BODY_GROUP)
+    skinned(obj, joints, base_weights(rig_root, joints, len(base)))
+    return Garment(obj, joint_heads(rig_root, base), textured(material))
+
+
+def load(name: str, clothes_path: Path, rig_root: Path, shape: tuple[tuple[str, float], ...] = ()) -> Garment:
+    clothes: Clothes = read_clothes(clothes_path)
+    base: np.ndarray = shaped_base(rig_root, shape)
+    joints: list[str] = sorted(JOINT_AT)
+    skin: np.ndarray = np.einsum("vk,vkj->vj", clothes.share, base_weights(rig_root, joints, len(base))[clothes.bound])
+    count: int = len(read_points(clothes_path.parent / clothes.mesh))
+    if count != len(skin):
+        raise RuntimeError(f"{clothes_path.name} binds {len(skin)} vertices but {clothes.mesh} has {count}")
+    obj: Object = build_mesh(name, clothes_path.parent / clothes.mesh, upright(fitted_points(clothes, base)))
+    skinned(obj, joints, skin)
+    return Garment(obj, joint_heads(rig_root, base), textured(clothes_path.parent / clothes.material))
