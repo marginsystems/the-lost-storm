@@ -73,6 +73,7 @@ void main() {
     sum = layerColour + sum * (1.0 - layerColour.a);
   }
   vec4 dithered = floor(sum * 255.0 + noise(uvec2(gl_FragCoord.xy)) + 0.5) / 255.0;
+  dithered.a = sum.a * 255.0 > 254.5 ? 1.0 : dithered.a;
   dithered = clamp(dithered, 0.0, 1.0);
   colour = vec4(min(dithered.rgb, vec3(dithered.a)), dithered.a);
 }

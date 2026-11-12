@@ -17,7 +17,8 @@ void test('a fixed ellipse is sized against the box it covers', (): void => {
 });
 
 void test('the uniforms carry pixel shapes, stop positions and premultiplied colours for the shader', (): void => {
-  const uniforms: LayerUniforms = layerUniforms(BACKDROPS.title, { width: 800, height: 600 });
+  const layer: RadialLayer = { centre: { x: 0.5, y: 0.4 }, size: { kind: 'farthest-corner' }, stops: [{ at: 0, colour: rgba(22, 34, 52, 0.9) }, { at: 0.34, colour: rgba(13, 19, 29, 0.93) }, { at: 0.7, colour: rgba(4, 6, 10, 0.97) }] };
+  const uniforms: LayerUniforms = layerUniforms([layer], { width: 800, height: 600 });
   assert.equal(uniforms.count, 1);
   assert.equal(uniforms.stopCounts[0], 3);
   assert.equal(uniforms.shapes[0], 400);
@@ -34,6 +35,10 @@ void test('more layers or stops than the shader holds are cut, never written pas
   assert.equal(uniforms.count, DITHER_LIMITS.layers);
   assert.equal(uniforms.stopCounts[0], DITHER_LIMITS.stops);
   assert.equal(uniforms.colours.length, DITHER_LIMITS.layers * DITHER_LIMITS.stops * 4);
+});
+
+void test('the title backdrop is opaque at every stop, so nothing behind it shows through', (): void => {
+  for (const layer of BACKDROPS.title) for (const entry of layer.stops) assert.equal(entry.colour.a, 1);
 });
 
 void test('every backdrop fits the shader and its stops rise from the centre outward', (): void => {

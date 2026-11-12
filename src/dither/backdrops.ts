@@ -24,7 +24,7 @@ function centred(stops: readonly ColourStop[]): RadialLayer {
 }
 
 export const BACKDROPS: Backdrops = {
-  title: [{ centre: { x: 0.5, y: 0.4 }, size: FAR, stops: [stop(0, rgba(22, 34, 52, 0.9)), stop(0.34, rgba(13, 19, 29, 0.93)), stop(0.7, rgba(4, 6, 10, 0.97))] }],
+  title: [{ centre: { x: 0.5, y: 0.4 }, size: FAR, stops: [stop(0, rgba(22, 34, 52, 1)), stop(0.34, rgba(13, 19, 29, 1)), stop(0.7, rgba(4, 6, 10, 1))] }],
   edge: [centred([stop(0.52, rgba(0, 0, 0, 0)), stop(1, rgba(2, 4, 8, 0.62))])],
   voidEdge: [centred([stop(0.4, rgba(40, 44, 50, 0)), stop(1, rgba(40, 44, 50, 0.38))])],
   voidLit: [centred([stop(0.3, rgba(34, 38, 46, 0)), stop(1, rgba(34, 38, 46, 0.66))])],
