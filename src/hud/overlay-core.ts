@@ -7,6 +7,7 @@ export interface OverlayState {
   readonly phase: Readonly<Record<OverlayId, OverlayPhase>>;
   readonly pending: readonly OverlayId[];
   readonly waiting: readonly QueuedOverlay[];
+  readonly narrow: boolean;
 }
 
 export type OverlayEvent =
@@ -20,7 +21,7 @@ export type OverlayEvent =
   | { readonly type: 'zone' }
   | { readonly type: 'arrive'; readonly id: QueuedOverlay }
   | { readonly type: 'present' }
-  | { readonly type: 'choose' };
+  | { readonly type: 'layout'; readonly narrow: boolean };
 
 export type OverlayOutcome = 'shown' | 'waiting' | 'refused' | 'closing' | 'ignored';
 
@@ -32,10 +33,10 @@ export interface OverlayStep {
 type Phases = Record<OverlayId, OverlayPhase>;
 
 function closedPhases(): Phases {
-  return { character: 'closed', inventory: 'closed', trade: 'closed', chart: 'closed', map: 'closed', ladder: 'closed', choice: 'closed', reader: 'closed', endcard: 'closed', pause: 'closed', death: 'closed' };
+  return { character: 'closed', inventory: 'closed', trade: 'closed', chart: 'closed', map: 'closed', ladder: 'closed', reader: 'closed', endcard: 'closed', pause: 'closed', death: 'closed' };
 }
 
-export const INITIAL_OVERLAYS: OverlayState = { phase: closedPhases(), pending: [], waiting: [] };
+export const INITIAL_OVERLAYS: OverlayState = { phase: closedPhases(), pending: [], waiting: [], narrow: false };
 
 export function isShown(state: OverlayState, id: OverlayId): boolean {
   const phase: OverlayPhase = state.phase[id];
@@ -75,7 +76,7 @@ function withDependents(ids: readonly OverlayId[]): OverlayId[] {
 
 function targetOf(state: OverlayState, id: OverlayId): OverlayId[] {
   const required: OverlayId | null = OVERLAY_TABLE[id].requires;
-  return OVERLAY_IDS.filter((other: OverlayId): boolean => other === id || other === required || (isShown(state, other) && paired(other, id)));
+  return OVERLAY_IDS.filter((other: OverlayId): boolean => other === id || other === required || (isShown(state, other) && paired(other, id, state.narrow)));
 }
 
 function blocked(state: OverlayState, id: OverlayId): boolean {
@@ -83,7 +84,7 @@ function blocked(state: OverlayState, id: OverlayId): boolean {
 }
 
 function settle(state: OverlayState, phase: Phases, pending: readonly OverlayId[], outcome: OverlayOutcome): OverlayStep {
-  return { state: { phase, pending: OVERLAY_IDS.filter((id: OverlayId): boolean => pending.includes(id)), waiting: state.waiting }, outcome };
+  return { state: { ...state, phase, pending: OVERLAY_IDS.filter((id: OverlayId): boolean => pending.includes(id)) }, outcome };
 }
 
 function marking(state: OverlayState, ids: readonly OverlayId[], phase: OverlayPhase): Phases {
@@ -151,6 +152,16 @@ function zone(state: OverlayState): OverlayStep {
   return settle(state, marking(state, out, 'closing'), state.pending.filter((id: OverlayId): boolean => id === 'death'), 'closing');
 }
 
+function layout(state: OverlayState, narrow: boolean): OverlayStep {
+  if (narrow === state.narrow) return { state, outcome: 'ignored' };
+  const near: ReadonlySet<OverlayId> = new Set<OverlayId>([...visibleOverlays(state), ...state.pending]);
+  const crowded: boolean = narrow && near.has('inventory') && near.has('character');
+  const resized: OverlayState = { ...state, narrow };
+  if (!crowded) return { state: resized, outcome: 'ignored' };
+  const out: OverlayId[] = isShown(state, 'character') ? ['character'] : [];
+  return settle(resized, marking(state, out, 'closing'), state.pending.filter((id: OverlayId): boolean => id !== 'character'), 'closing');
+}
+
 function waitingWith(state: OverlayState, waiting: readonly QueuedOverlay[]): OverlayState {
   return { ...state, waiting };
 }
@@ -158,17 +169,10 @@ function waitingWith(state: OverlayState, waiting: readonly QueuedOverlay[]): Ov
 function present(state: OverlayState): OverlayStep {
   if (!state.waiting.includes('endcard') || isShown(state, 'endcard') || liveOverlays(state).length > 0 || state.pending.length > 0) return { state, outcome: 'ignored' };
   const shown: OverlayState = { ...state, phase: marking(state, ['endcard'], 'opening') };
-  return { state: waitingWith(shown, state.waiting.filter((id: QueuedOverlay): boolean => id !== 'endcard')), outcome: 'shown' };
+  return { state: waitingWith(shown, []), outcome: 'shown' };
 }
 
-function choose(state: OverlayState): OverlayStep {
-  if (state.phase.choice !== 'open') return { state, outcome: 'ignored' };
-  const closing: OverlayState = { ...state, phase: marking(state, ['choice'], 'closing') };
-  return { state: waitingWith(closing, state.waiting.filter((id: QueuedOverlay): boolean => id !== 'choice')), outcome: 'closing' };
-}
-
-function requestable(state: OverlayState, id: OverlayId): boolean {
-  if (id === 'choice') return state.waiting.includes('choice');
+function requestable(id: OverlayId): boolean {
   return id !== 'endcard' && id !== 'death';
 }
 
@@ -180,7 +184,7 @@ export function stepOverlays(state: OverlayState, event: OverlayEvent): OverlayS
       else step = isShown(state, event.id) || state.pending.includes(event.id) ? dismiss(state, event.id) : stepOverlays(state, { type: 'open', id: event.id });
       break;
     case 'open':
-      step = requestable(state, event.id) ? request(state, event.id) : { state, outcome: 'ignored' };
+      step = requestable(event.id) ? request(state, event.id) : { state, outcome: 'ignored' };
       break;
     case 'close':
       step = event.id === 'death' ? { state, outcome: 'ignored' } : dismiss(state, event.id);
@@ -210,8 +214,8 @@ export function stepOverlays(state: OverlayState, event: OverlayEvent): OverlayS
     case 'present':
       step = present(state);
       break;
-    case 'choose':
-      step = choose(state);
+    case 'layout':
+      step = layout(state, event.narrow);
       break;
   }
   return step;

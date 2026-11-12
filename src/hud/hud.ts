@@ -64,11 +64,11 @@ import pickerCss from './skill-picker.css?inline';
 import { createTreePanel } from './tree-panel.ts';
 import type { ChartPanel } from './tree-panel.ts';
 import { applyCover, coverOf, HUD_PANELS } from './panel-cover.ts';
+import type { CoverState } from './panel-cover.ts';
+import { chromeHidden } from './overlay-core.ts';
 import { createCloseButton } from './close-button.ts';
 import type { OverlayId } from './overlay-table.ts';
-import { createOverlayManager, durationMs } from './overlays.ts';
 import type { OverlayManager } from './overlays.ts';
-import { createBrowserTimers } from '../browser-timers.ts';
 import { openWith, promptText, use } from './prompts.ts';
 import tradeCss from './trade.css?inline';
 import { createTradeHud } from './trade-hud.ts';
@@ -78,11 +78,6 @@ import { createVolumeButton } from './volume-panel.ts';
 import { markOverlay } from './overlay-mark.ts';
 
 const GROUND_HINT: string = 'pick up';
-
-const HUD_MOTION = {
-  token: '--spring-snappy-ms',
-  fallbackMs: 260,
-} as const;
 
 const PANEL_OVERLAY: Readonly<Record<HudPanel, OverlayId>> = {
   inventory: 'inventory',
@@ -98,10 +93,6 @@ const PANEL_NAME: Readonly<Record<HudPanel, string>> = {
   map: 'Map',
 };
 
-function motionMs(root: HTMLElement): number {
-  const value: number | null = durationMs(getComputedStyle(root).getPropertyValue(HUD_MOTION.token));
-  return value !== null && value > 0 ? value : HUD_MOTION.fallbackMs;
-}
 
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
@@ -142,7 +133,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const xp: XpBar = createXpBar(bottom);
   const row: HTMLDivElement = el('div', 'hud-row', bottom);
 
-  const overlays: OverlayManager = createOverlayManager({ body: document.body, timers: createBrowserTimers(), motionMs: (): number => motionMs(root) });
+  const overlays: OverlayManager = api.overlays;
   const isOpen = (panel: HudPanel): boolean => overlays.shown(PANEL_OVERLAY[panel]);
   const isLive = (panel: HudPanel): boolean => overlays.live(PANEL_OVERLAY[panel]);
   const buttons: Record<HudPanel, MenuButton | null> = { inventory: null, character: null, tree: null, map: null };
@@ -197,10 +188,13 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     });
   }
 
+  if (api.touch) overlays.send({ type: 'layout', narrow: true });
+
   overlays.subscribe((): void => {
     const live: Record<HudPanel, boolean> = { inventory: isLive('inventory'), character: isLive('character'), tree: isLive('tree'), map: isLive('map') };
     grid.classList.toggle('visible', HUD_PANELS.some((panel: HudPanel): boolean => live[panel]));
-    applyCover(root, coverOf(live));
+    const cover: CoverState = coverOf(live);
+    applyCover(root, { side: cover.side, full: cover.full || chromeHidden(overlays.state()) });
   });
 
   const toggle = (panel: HudPanel): void => {
@@ -419,6 +413,5 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       overlays.send({ type: 'escape' });
       return true;
     },
-    overlays,
   };
 }

@@ -20,10 +20,10 @@ export interface HudApi {
   readonly touch: boolean;
   readBook(item: ItemInstance): void;
   qualityTier(): string;
+  readonly overlays: OverlayManager;
 }
 
 export interface Hud {
-  readonly overlays: OverlayManager;
   update(dt: number): void;
   refreshItems(): void;
   handleEvents(events: readonly WorldEvent[]): void;

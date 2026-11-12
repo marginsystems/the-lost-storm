@@ -4,31 +4,33 @@ EXTENDS Naturals, FiniteSets
 CONSTANT CURRENT
 
 Overlays == {"inventory", "character", "trade", "chart", "map", "ladder",
-             "choice", "reader", "endcard", "pause", "death"}
+             "reader", "endcard", "pause", "death"}
 Side == {"inventory", "character", "trade"}
 Full == {"chart", "map", "ladder"}
 Keyed == {"inventory", "character", "chart", "map", "ladder", "pause"}
 Blockers == {"reader", "endcard", "pause", "death"}
-Queued == {"choice", "endcard"}
+Queued == {"endcard"}
 Pairs == {{"inventory", "character"}, {"inventory", "trade"}}
+NarrowPairs == {{"inventory", "trade"}}
 Rank == [o \in Overlays |->
           CASE o = "character" -> 1 [] o = "inventory" -> 2 [] o = "trade" -> 3
             [] o = "chart" -> 4 [] o = "map" -> 5 [] o = "ladder" -> 6
-            [] o = "choice" -> 7 [] o = "reader" -> 8 [] o = "endcard" -> 9
-            [] o = "pause" -> 10 [] o = "death" -> 11]
+            [] o = "reader" -> 7 [] o = "endcard" -> 8
+            [] o = "pause" -> 9 [] o = "death" -> 10]
 Phases == {"closed", "opening", "open", "closing"}
 
 CurrentPanels == {"inventory", "character", "chart", "map"}
 CurrentFull == {"map"}
 
-VARIABLES phase, pending, waiting, chrome, simFlag
-vars == <<phase, pending, waiting, chrome, simFlag>>
+VARIABLES phase, pending, waiting, chrome, simFlag, narrow
+vars == <<phase, pending, waiting, chrome, simFlag, narrow>>
 
 Shown(o) == phase[o] \in {"opening", "open"}
 Visible == {o \in Overlays : Shown(o)}
 Exiting == {o \in Overlays : phase[o] = "closing"}
 Live == {o \in Overlays : phase[o] # "closed"}
-Compatible(S) == Cardinality(S) <= 1 \/ S \in Pairs
+PairsNow == IF narrow THEN NarrowPairs ELSE Pairs
+Compatible(S) == Cardinality(S) <= 1 \/ S \in PairsNow
 Top(S) == CHOOSE o \in S : \A x \in S : Rank[x] <= Rank[o]
 WithDependents(S) == IF "inventory" \in S THEN S \cup {"trade"} ELSE S
 
@@ -44,7 +46,7 @@ Settle(p, q) ==
 
 Target(o) ==
   {o} \cup (IF o = "trade" THEN {"inventory"} ELSE {})
-      \cup {v \in Visible : {v, o} \in Pairs}
+      \cup {v \in Visible : {v, o} \in PairsNow}
 
 Displaced(o) ==
   IF CURRENT
@@ -69,7 +71,7 @@ Accept(o) ==
 Request(o) ==
   /\ ~Shown(o)
   /\ o \notin pending
-  /\ IF Blocked(o) /\ ~CURRENT THEN UNCHANGED vars ELSE Accept(o) /\ UNCHANGED waiting
+  /\ IF Blocked(o) /\ ~CURRENT THEN UNCHANGED vars ELSE Accept(o) /\ UNCHANGED <<waiting, narrow>>
 
 Dismiss(o) ==
   /\ Shown(o) \/ o \in pending
@@ -78,26 +80,26 @@ Dismiss(o) ==
                pending \ WithDependents({o}))
 
 Toggle(o) ==
-  /\ IF Shown(o) \/ o \in pending THEN Dismiss(o) /\ UNCHANGED waiting ELSE Request(o)
+  /\ IF Shown(o) \/ o \in pending THEN Dismiss(o) /\ UNCHANGED <<waiting, narrow>> ELSE Request(o)
 
 CloseButton(o) ==
   /\ o # "death"
   /\ Dismiss(o)
-  /\ UNCHANGED waiting
+  /\ UNCHANGED <<waiting, narrow>>
 
 EscapeTarget ==
   IF CURRENT /\ Shown("ladder") THEN "ladder" ELSE Top(Visible \ {"death"})
 
 Escape ==
   \/ /\ Visible \ {"death"} # {}
-     /\ IF CURRENT /\ ~Shown("ladder") /\ Visible \cap (CurrentPanels \cup {"trade", "choice"}) # {}
-        THEN Settle([x \in Overlays |-> IF x \in Visible \cap (CurrentPanels \cup {"trade", "choice"}) THEN "closing" ELSE phase[x]], pending)
+     /\ IF CURRENT /\ ~Shown("ladder") /\ Visible \cap (CurrentPanels \cup {"trade"}) # {}
+        THEN Settle([x \in Overlays |-> IF x \in Visible \cap (CurrentPanels \cup {"trade"}) THEN "closing" ELSE phase[x]], pending)
         ELSE Dismiss(EscapeTarget)
-     /\ UNCHANGED waiting
+     /\ UNCHANGED <<waiting, narrow>>
   \/ /\ Visible = {}
      /\ pending \ {"death"} # {}
      /\ Settle(phase, pending \cap {"death"})
-     /\ UNCHANGED waiting
+     /\ UNCHANGED <<waiting, narrow>>
   \/ /\ Visible = {}
      /\ pending = {}
      /\ Request("pause")
@@ -105,13 +107,13 @@ Escape ==
 AnimDone(o) ==
   \/ /\ phase[o] = "opening"
      /\ Settle([phase EXCEPT ![o] = "open"], pending)
-     /\ UNCHANGED waiting
+     /\ UNCHANGED <<waiting, narrow>>
   \/ /\ phase[o] = "closing"
      /\ LET done == [phase EXCEPT ![o] = "closed"]
         IN IF Exiting = {o} /\ pending # {}
            THEN Settle([x \in Overlays |-> IF x \in pending THEN "opening" ELSE done[x]], {})
            ELSE Settle(done, pending)
-     /\ UNCHANGED waiting
+     /\ UNCHANGED <<waiting, narrow>>
 
 Death ==
   /\ ~Shown("death")
@@ -121,25 +123,33 @@ Death ==
      ELSE IF Live = {}
           THEN Settle([phase EXCEPT !["death"] = "opening"], {})
           ELSE Settle([x \in Overlays |-> IF x \in Visible THEN "closing" ELSE phase[x]], {"death"})
-  /\ UNCHANGED waiting
+  /\ UNCHANGED <<waiting, narrow>>
 
 Respawn ==
   /\ phase["death"] = "open"
   /\ Dismiss("death")
-  /\ UNCHANGED waiting
+  /\ UNCHANGED <<waiting, narrow>>
 
 ZoneChange ==
   /\ IF CURRENT
      THEN UNCHANGED <<phase, pending, chrome, simFlag>>
      ELSE Settle([x \in Overlays |-> IF x \in Visible \ {"death"} THEN "closing" ELSE phase[x]],
                  pending \cap {"death"})
-  /\ UNCHANGED waiting
+  /\ UNCHANGED <<waiting, narrow>>
 
 Arrive(m) ==
   /\ m \notin waiting
   /\ phase[m] = "closed"
   /\ waiting' = waiting \cup {m}
-  /\ UNCHANGED <<phase, pending, chrome, simFlag>>
+  /\ UNCHANGED <<phase, pending, chrome, simFlag, narrow>>
+
+Layout ==
+  /\ narrow' = ~narrow
+  /\ LET crowded == ~narrow /\ "inventory" \in Visible \cup pending /\ "character" \in Visible \cup pending
+         out == IF crowded THEN Visible \cap {"character"} ELSE {}
+     IN Settle([x \in Overlays |-> IF x \in out THEN "closing" ELSE phase[x]],
+               IF crowded THEN pending \ {"character"} ELSE pending)
+  /\ UNCHANGED waiting
 
 Present ==
   /\ "endcard" \in waiting
@@ -147,15 +157,7 @@ Present ==
   /\ ~Shown("endcard")
   /\ Settle([phase EXCEPT !["endcard"] = "opening"], pending)
   /\ waiting' = waiting \ {"endcard"}
-
-OpenChoice ==
-  /\ "choice" \in waiting
-  /\ Request("choice")
-
-Choose ==
-  /\ phase["choice"] = "open"
-  /\ Settle([phase EXCEPT !["choice"] = "closing"], pending)
-  /\ waiting' = waiting \ {"choice"}
+  /\ UNCHANGED narrow
 
 Init ==
   /\ phase = [o \in Overlays |-> "closed"]
@@ -163,6 +165,7 @@ Init ==
   /\ waiting = {}
   /\ chrome = "shown"
   /\ simFlag = FALSE
+  /\ narrow \in BOOLEAN
 
 Next ==
   \/ \E o \in Keyed : Toggle(o)
@@ -176,8 +179,7 @@ Next ==
   \/ ZoneChange
   \/ \E m \in Queued : Arrive(m)
   \/ Present
-  \/ OpenChoice
-  \/ Choose
+  \/ Layout
 
 Spec == Init /\ [][Next]_vars /\ \A o \in Overlays : WF_vars(AnimDone(o))
 
@@ -187,6 +189,7 @@ TypeOK ==
   /\ waiting \subseteq Queued
   /\ chrome \in {"shown", "hidden"}
   /\ simFlag \in BOOLEAN
+  /\ narrow \in BOOLEAN
 
 OneExclusive == Compatible(Visible)
 
@@ -196,8 +199,6 @@ ExitBeforeEntry ==
 FullHidesChrome == (\E f \in Full : phase[f] # "closed") => chrome = "hidden"
 
 NoIdleGap == pending # {} => Exiting # {}
-
-QueuedOneAtATime == ~(phase["choice"] # "closed" /\ phase["endcard"] # "closed")
 
 DeathAlone == Shown("death") => Live = {"death"}
 

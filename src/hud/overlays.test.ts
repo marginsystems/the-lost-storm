@@ -119,6 +119,20 @@ void test('Escape over the chart closes it and leaves pause for the next press',
   assert.equal(manager.hasTop(), false);
 });
 
+void test('a zone change during an exit drops a waiting reader without showing it, so a later request is not blocked', async (): Promise<void> => {
+  const { manager, fake, probe } = rig(['inventory', 'reader']);
+  manager.send({ type: 'open', id: 'inventory' });
+  await fake.advance(MOTION_MS);
+  assert.equal(manager.send({ type: 'open', id: 'reader' }), 'waiting');
+  assert.deepEqual(manager.state().pending, ['reader']);
+  manager.send({ type: 'zone' });
+  assert.deepEqual(manager.state().pending, []);
+  await fake.advance(MOTION_MS);
+  assert.ok(!probe.log.includes('show reader'));
+  assert.equal(manager.send({ type: 'open', id: 'reader' }), 'shown');
+  assert.equal(probe.log.at(-1), 'show reader');
+});
+
 void test('motion tokens read in milliseconds whether the build writes ms or seconds', (): void => {
   assert.equal(durationMs('260ms'), 260);
   assert.equal(durationMs(' .26s'), 260);

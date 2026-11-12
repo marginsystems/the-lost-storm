@@ -15,6 +15,7 @@ import pauseCss from './pause.css?inline';
 import { mountVolumeSliders } from './volume-panel.ts';
 import type { HurtWatch } from './menu-hurt.ts';
 import { hurtShown, MENU_HURT, watchHurt } from './menu-hurt.ts';
+import type { OverlayManager } from './overlays.ts';
 
 const PAUSE_ROWS: { readonly base: number } = { base: 3 };
 
@@ -29,6 +30,7 @@ export interface PauseHooks {
   onTitle(): void;
   life(): number;
   readonly feedback: (() => void) | null;
+  readonly overlays: OverlayManager;
 }
 
 export interface PauseMenu {
@@ -173,36 +175,50 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
     if (isOpen) event.preventDefault();
   });
 
+  let wanted: SettingsSection | null = null;
+  const showWanted = (): void => {
+    if (wanted !== null) {
+      showSection(wanted);
+      setView('settings');
+    } else {
+      setView('main');
+    }
+  };
+  hooks.overlays.register('pause', {
+    element: overlay,
+    show(): void {
+      isOpen = true;
+      window.dispatchEvent(new Event('blur'));
+      showWanted();
+      overlay.classList.add('open');
+      hurt = { life: hooks.life(), hold: 0 };
+      lastWatch = performance.now();
+      requestAnimationFrame(watch);
+      markOverlay(overlay, true);
+      hooks.onOpen();
+    },
+    hide(): void {
+      controls.cancel();
+      isOpen = false;
+      wanted = null;
+      overlay.classList.remove('open');
+      hurtLine.classList.remove('shown');
+      markOverlay(overlay, false);
+      hooks.onClose();
+    },
+  });
+
   const api: PauseMenu = {
     get isOpen(): boolean {
       return isOpen;
     },
     open(target: SettingsSection | null): void {
-      if (!isOpen) {
-        isOpen = true;
-        window.dispatchEvent(new Event('blur'));
-        overlay.classList.add('open');
-        hurt = { life: hooks.life(), hold: 0 };
-        lastWatch = performance.now();
-        requestAnimationFrame(watch);
-        markOverlay(overlay, true);
-        hooks.onOpen();
-      }
-      if (target !== null) {
-        showSection(target);
-        setView('settings');
-      } else {
-        setView('main');
-      }
+      wanted = target;
+      if (isOpen) showWanted();
+      else if (hooks.overlays.send({ type: 'open', id: 'pause' }) === 'refused') wanted = null;
     },
     close(): void {
-      if (!isOpen) return;
-      controls.cancel();
-      isOpen = false;
-      overlay.classList.remove('open');
-      hurtLine.classList.remove('shown');
-      markOverlay(overlay, false);
-      hooks.onClose();
+      hooks.overlays.send({ type: 'close', id: 'pause' });
     },
   };
   showSection(section);

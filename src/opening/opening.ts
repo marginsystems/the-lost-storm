@@ -18,6 +18,7 @@ import type { NameEcho } from './name-echo.ts';
 import { createNameEcho } from './name-echo.ts';
 import type { Reader } from './reader.ts';
 import { createReader } from './reader.ts';
+import type { OverlayManager } from '../hud/overlays.ts';
 
 export const OPENING = {
   wakeDistance: 46,
@@ -30,6 +31,7 @@ export interface OpeningDeps {
   readonly camera: IsoCamera;
   readonly hud: HTMLElement;
   readonly touch: boolean;
+  readonly overlays: OverlayManager;
   send(command: Command): void;
   nameOf(): string | null;
   fetchVoice(): Promise<SpokenName | null>;
@@ -40,7 +42,7 @@ export interface OpeningDeps {
 
 export interface Opening {
   update(): void;
-  readBook(item: ItemInstance): void;
+  readBook(item: ItemInstance): boolean;
   relight(): void;
 }
 
@@ -63,7 +65,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   let shiftZone: string = world.zone.id;
   let eased: WakeState | null = null;
   let held: WakeState | null = null;
-  const reader: Reader = createReader(hud, deps.touch);
+  const reader: Reader = createReader(hud, deps.touch, deps.overlays);
   const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): Promise<void> => deps.refreshName() });
   let books: Set<number> = carriedBooks(world);
   let shownShore: number = 0;
@@ -75,12 +77,12 @@ export function createOpening(deps: OpeningDeps): Opening {
     if (event.animationName === HUD_GATE.revealAnimation) gate.settle();
   });
 
-  const readBook = (item: ItemInstance): void => {
+  const readBook = (item: ItemInstance): boolean => {
     const book: BookDef | null = bookIn(world, item);
-    if (book === null) return;
+    if (book === null) return true;
     const pages: PageDef[] = readablePages(world, book);
     const name: string | null = echo.spokenName() ?? deps.nameOf();
-    reader.open(
+    return reader.open(
       book,
       pages.map((page: PageDef) => ({ page, name })),
       (): void => {
@@ -91,7 +93,7 @@ export function createOpening(deps: OpeningDeps): Opening {
 
   const noticeBooks = (): void => {
     const now: Set<number> = carriedBooks(world);
-    for (const item of world.player.inventory) if (item !== null && now.has(item.uid) && !books.has(item.uid)) readBook(item);
+    for (const item of world.player.inventory) if (item !== null && now.has(item.uid) && !books.has(item.uid) && !readBook(item)) now.delete(item.uid);
     books = now;
   };
 

@@ -8,16 +8,16 @@ Each overlay is `closed`, `opening`, `open` or `closing`. A request for an overl
 
 | Layer | Overlays | Rule |
 |---|---|---|
-| side | character, inventory, trade | inventory pairs with character or trade; trade needs inventory |
+| side | character, inventory, trade | inventory pairs with character or trade; trade needs inventory; on a narrow (phone) layout only inventory and trade pair |
 | full | chart, map, ladder | hides the minimap, quest tracker, hints, banners and name tags while not `closed` |
-| card | skill choice, end-of-alpha card | queued; the choice opens from its marker, the end card when nothing else is up |
+| card | end-of-alpha card | queued; it enters only when nothing else is up |
 | modal | reader, pause, death | block other requests while up; death closes everything first |
 
-Escape closes the topmost overlay by rank. Only when nothing is up does Escape open pause.
+A layout change to narrow closes the character sheet when it shares the screen with the inventory. Escape closes the topmost overlay by rank. Only when nothing is up does Escape open pause.
 
 Checked properties:
 
-- **Invariants:** one exclusive overlay at a time (`OneExclusive`), exits before entries (`ExitBeforeEntry`), full screens hide the HUD chrome (`FullHidesChrome`), no gap with nothing on screen (`NoIdleGap`), one queued card at a time (`QueuedOneAtATime`), nothing left under death (`DeathAlone`), and the sim's overlay flag equals "any overlay not closed" (`FlagMatches`).
+- **Invariants:** one exclusive overlay at a time (`OneExclusive`), exits before entries (`ExitBeforeEntry`), full screens hide the HUD chrome (`FullHidesChrome`), no gap with nothing on screen (`NoIdleGap`), nothing left under death (`DeathAlone`), and the sim's overlay flag equals "any overlay not closed" (`FlagMatches`).
 - **Action properties:** `EscapeTopFirst`, `EscapeClosesOnlyTop` and `ZoneLeavesNoOrphan`.
 - **Death:** a pending death is never dropped (`DeathNeverDropped`), and its card always enters (`DeathShows`).
 - **Liveness:** every request is eventually shown or superseded (`NothingLost`).
@@ -33,4 +33,4 @@ spec/run-tlc.sh
 spec/run-tlc.sh OverlaysCurrent.cfg
 ```
 
-The first command passes: it finds 697 distinct states, depth 8. The second prints the counterexample. `src/hud/overlay-core.test.ts` walks every state the TypeScript core can reach and checks that there are exactly 697. It also reads this spec's tables and fails if they differ from `overlay-table.ts`, so a change to one without the other fails `npm test`.
+The first command passes: it finds 608 distinct states, depth 7. The second prints the counterexample. `src/hud/overlay-core.test.ts` walks every state the TypeScript core can reach and checks that there are exactly 608. It also reads this spec's tables and fails if they differ from `overlay-table.ts`, so a change to one without the other fails `npm test`.
