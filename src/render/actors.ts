@@ -3,7 +3,7 @@ import { knockTime } from '../../sim/world/movement.ts';
 import { Color } from 'three';
 import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import type { Look } from '../../sim/wear.ts';
-import { lookOf, wornWearables } from '../../sim/wear.ts';
+import { heroBase, lookOf, wornWearables } from '../../sim/wear.ts';
 import { wakeStage } from '../../sim/world/wake.ts';
 import { wakePose } from './wake-pose.ts';
 import type { ActorState, Equipment, MomentState, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
@@ -81,8 +81,6 @@ function npcPose(npc: NpcState): ActorPose {
 }
 
 
-const HERO_BASE_LAYER: readonly string[] = [];
-
 function dress(content: Content, rig: RigInstance, clothes: readonly string[], equipped: Equipment | null): void {
   const look: Look = lookOf(content, clothes, equipped);
   rig.setWear(look.wearables, look.hidden);
@@ -101,7 +99,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
   const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color, ghost: null }), 1, world.player.facing);
   holdEquipped(content, playerView.rig, world.player.equipped);
-  dress(content, playerView.rig, HERO_BASE_LAYER, world.player.equipped);
+  dress(content, playerView.rig, heroBase(content), world.player.equipped);
   scene.add(playerView.rig.root);
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
   const npcs: Map<number, NpcEntry> = new Map<number, NpcEntry>();
@@ -206,7 +204,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     },
     refreshWear(current: World): void {
       holdEquipped(content, playerView.rig, current.player.equipped);
-      dress(content, playerView.rig, HERO_BASE_LAYER, current.player.equipped);
+      dress(content, playerView.rig, heroBase(content), current.player.equipped);
     },
     boundsOf(actorId: number, out: Box3): boolean {
       const view: ActorView | null = viewOf(actorId);
@@ -302,7 +300,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             break;
           case 'character_changed':
             holdEquipped(content, playerView.rig, current.player.equipped);
-            dress(content, playerView.rig, HERO_BASE_LAYER, current.player.equipped);
+            dress(content, playerView.rig, heroBase(content), current.player.equipped);
             break;
           case 'monster_remove': {
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);

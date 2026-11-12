@@ -53,4 +53,5 @@ export interface RigDef {
   readonly hiddenNodes: readonly string[];
   readonly idleRate: number;
   readonly bodyParts: Readonly<Record<string, readonly string[]>>;
+  readonly base: readonly string[];
 }

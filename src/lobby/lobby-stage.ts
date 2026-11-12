@@ -3,7 +3,7 @@ import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Colo
 import type { Object3D } from 'three';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
 import type { Look } from '../../sim/wear.ts';
-import { lookOf } from '../../sim/wear.ts';
+import { heroBase, lookOf } from '../../sim/wear.ts';
 import type { Equipment } from '../../sim/world/types.ts';
 import { instantiateRig, RIM_LIGHT } from '../render/character-loader.ts';
 import type { CharacterLibrary, LoadedRig, RigInstance } from '../render/character-loader.ts';
@@ -319,7 +319,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
     dress(look: LobbyLook): void {
       const rig: RigInstance | null = build();
       if (rig === null) return;
-      const worn: Look = lookOf(content, [], look.equipped);
+      const worn: Look = lookOf(content, heroBase(content), look.equipped);
       const lookKey: string = `${worn.wearables.join('|')}#${worn.held.join('|')}#${library.wearables.size}`;
       if (lookKey === heroKey) return;
       heroKey = lookKey;

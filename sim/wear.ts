@@ -33,6 +33,10 @@ export function hiddenBodyParts(content: Content, wearableIds: readonly string[]
   return [...hidden];
 }
 
+export function heroBase(content: Content): readonly string[] {
+  return content.rigs.get(content.player.rig)?.base ?? [];
+}
+
 export function lookOf(content: Content, base: readonly string[], equipped: Equipment | null): Look {
   const wearables: string[] = wornWearables(content, base, equipped);
   return { wearables, hidden: hiddenBodyParts(content, wearables), held: heldGear(content, equipped) };
@@ -52,7 +56,7 @@ export function heldGear(content: Content, equipped: Equipment | null): string[]
 
 export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Equipment | null): CharacterNeeds {
   const rigs: Set<string> = new Set<string>([content.player.rig]);
-  const look: Look = lookOf(content, [], equipped);
+  const look: Look = lookOf(content, heroBase(content), equipped);
   const wearables: Set<string> = new Set<string>(look.wearables);
   const attachments: Set<string> = new Set<string>(look.held);
   const add = (rig: string, wear: readonly string[], gear: readonly string[]): void => {

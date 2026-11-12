@@ -48,6 +48,7 @@ class Part:
     shape: Shape
     desaturate: float
     luma: float | None
+    cutout: bool
 
 
 def read_span(raw: object) -> Span | None:
@@ -79,6 +80,7 @@ def read_part(raw: dict[str, object]) -> Part:
         shape=tuple((str(entry[0]), float(entry[1])) for entry in raw.get("shape", [])),
         desaturate=float(raw.get("desaturate", 0.0)),
         luma=None if raw.get("luma") is None else float(raw["luma"]),
+        cutout=bool(raw.get("cutout", False)),
     )
 
 
@@ -223,7 +225,7 @@ def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path)
         source.obj.data.transform(Matrix.Translation(part.shift))
         inflate(source.obj, part.inflate)
         simplify(source.obj, part.decimate if source.name == part.id else 1.0)
-        retexture(source.obj, source.name, source.size, source.images, scratch, part.desaturate, part.luma if source.name == part.id else None)
+        retexture(source.obj, source.name, source.size, source.images, scratch, part.desaturate, part.luma if source.name == part.id else None, part.cutout and source.name == part.id)
         bind(source.obj, rig, source.name)
         for name in source.leftovers:
             leftover: Object | None = bpy.data.objects.get(name)

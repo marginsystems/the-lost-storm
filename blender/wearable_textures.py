@@ -172,9 +172,16 @@ def move_uvs(obj: Object, islands: list[Island], scale: float, side: int) -> Non
                 layer[loop].uv = ((island.origin[0] + (uv.x - island.low[0]) * scale) / side, (island.origin[1] + (uv.y - island.low[1]) * scale) / side)
 
 
-def new_image(name: str, pixels: np.ndarray, colorspace: str, folder: Path) -> Image:
+def resampled(image: Image, side: int) -> np.ndarray:
+    source: np.ndarray = reduced(pixels_of(image), image.size[0] / side)
+    centres = (np.arange(side, dtype=np.float32) + 0.5) / side
+    u, v = np.meshgrid(centres, centres)
+    return sample(source, u, v).astype(np.float32)
+
+
+def new_image(name: str, pixels: np.ndarray, colorspace: str, folder: Path, alpha: bool = False) -> Image:
     side: int = pixels.shape[0]
-    image: Image = bpy.data.images.new(name, side, side, alpha=False)
+    image: Image = bpy.data.images.new(name, side, side, alpha=alpha)
     image.colorspace_settings.name = colorspace
     image.pixels.foreach_set(pixels.reshape(-1))
     image.filepath_raw = str(folder / f"{name}.png")
@@ -196,10 +203,13 @@ def toned(pixels: np.ndarray, desaturate: float, luma: float | None) -> np.ndarr
     return out
 
 
-def retexture(obj: Object, name: str, side: int, images: dict[str, Image], scratch: Path, desaturate: float = 0.0, luma: float | None = None) -> None:
+def retexture(obj: Object, name: str, side: int, images: dict[str, Image], scratch: Path, desaturate: float = 0.0, luma: float | None = None, cutout: bool = False) -> None:
     padding: float = max(2.0, side * PADDING_SHARE)
-    islands: list[Island] = uv_islands(obj)
-    scale: float = pack(islands, side, padding)
+    islands: list[Island] = [] if cutout else uv_islands(obj)
+    scale: float = 1.0 if cutout else pack(islands, side, padding)
+
+    def baked(image: Image, fill: tuple[float, float, float, float] | None) -> np.ndarray:
+        return resampled(image, side) if cutout else repacked(image, islands, scale, side, padding, fill)
     made: Material = bpy.data.materials.new(f"M_{name}")
     made.use_nodes = True
     made.use_backface_culling = False
@@ -207,11 +217,16 @@ def retexture(obj: Object, name: str, side: int, images: dict[str, Image], scrat
     links = made.node_tree.links
     shader = next(node for node in nodes if node.type == "BSDF_PRINCIPLED")
     color = nodes.new("ShaderNodeTexImage")
-    color.image = new_image(f"{name}_color", toned(repacked(images["color"], islands, scale, side, padding, None), desaturate, luma), "sRGB", scratch)
+    color.image = new_image(f"{name}_color", toned(baked(images["color"], None), desaturate, luma), "sRGB", scratch, cutout)
     links.new(color.outputs["Color"], shader.inputs["Base Color"])
+    if cutout:
+        clip = nodes.new("ShaderNodeMath")
+        clip.operation = "ROUND"
+        links.new(color.outputs["Alpha"], clip.inputs[0])
+        links.new(clip.outputs["Value"], shader.inputs["Alpha"])
     if "orm" in images:
         orm = nodes.new("ShaderNodeTexImage")
-        orm.image = new_image(f"{name}_orm", repacked(images["orm"], islands, scale, side, padding, None), "Non-Color", scratch)
+        orm.image = new_image(f"{name}_orm", baked(images["orm"], None), "Non-Color", scratch)
         split = nodes.new("ShaderNodeSeparateColor")
         links.new(orm.outputs["Color"], split.inputs["Color"])
         links.new(split.outputs["Green"], shader.inputs["Roughness"])
@@ -221,11 +236,12 @@ def retexture(obj: Object, name: str, side: int, images: dict[str, Image], scrat
         shader.inputs["Metallic"].default_value = 0.0
     if "normal" in images:
         normal = nodes.new("ShaderNodeTexImage")
-        normal.image = new_image(f"{name}_normal", repacked(images["normal"], islands, scale, side, padding, FLAT_NORMAL), "Non-Color", scratch)
+        normal.image = new_image(f"{name}_normal", baked(images["normal"], FLAT_NORMAL), "Non-Color", scratch)
         bump = nodes.new("ShaderNodeNormalMap")
         links.new(normal.outputs["Color"], bump.inputs["Color"])
         links.new(bump.outputs["Normal"], shader.inputs["Normal"])
-    move_uvs(obj, islands, scale, side)
+    if not cutout:
+        move_uvs(obj, islands, scale, side)
     mesh = obj.data
     mesh.materials.clear()
     mesh.materials.append(made)

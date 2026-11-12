@@ -6,7 +6,7 @@ import type { Content, WearableDef } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import type { Look } from './wear.ts';
-import { heldGear, hiddenBodyParts, lookOf, wornWearables, zoneCharacterNeeds } from './wear.ts';
+import { heldGear, heroBase, hiddenBodyParts, lookOf, wornWearables, zoneCharacterNeeds } from './wear.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import type { ItemSlot } from './content/types.ts';
 import type { Equipment, ItemInstance } from './world/types.ts';
@@ -163,4 +163,12 @@ void test('a zone with a moment field needs the bodies, clothes and gear of its 
     for (const id of look.wear) assert.ok(needs.wearables.has(id), id);
     for (const id of look.gear) assert.ok(needs.attachments.has(id), id);
   }
+});
+
+void test('the hero body brings its own hair, and a hood worn on the head takes its place', (): void => {
+  const base: readonly string[] = heroBase(content);
+  assert.deepEqual(regions(base), ['head']);
+  assert.deepEqual(lookOf(content, base, emptyEquipment()).wearables, [...base]);
+  const hooded: readonly string[] = lookOf(content, base, { ...emptyEquipment(), head: item('wayfarer_hood') }).wearables;
+  assert.deepEqual(hooded, ['leather_hood']);
 });

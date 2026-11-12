@@ -110,6 +110,12 @@ MakeHuman community garments come as a mesh fitted to the MakeHuman base body, w
 | `public/models/wear/viking_breeches.glb` | Breeches | "PantsViking" by Rehman Polanski, `suits02_cc0.zip` | CC0 1.0 |
 | `public/models/wear/hide_boots.glb` | Hide boots tied with cord | "BootsViking" by Rehman Polanski, `suits02_cc0.zip` | CC0 1.0 |
 | `public/models/wear/leather_gloves.glb` | Gloves | "Gloves_Medium" by MRT, `gloves01_cc0.zip`, decimated to 50% | CC0 1.0 |
+| `public/models/wear/hair_short.glb` | Short practical hair, the default man | MakeHuman hair `short02` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
+| `public/models/wear/hair_cropped.glb` | Close-cropped hair | MakeHuman hair `short01` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
+| `public/models/wear/hair_swept.glb` | Short swept hair | MakeHuman hair `short04` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
+| `public/models/wear/hair_ponytail.glb` | Long hair tied in a ponytail | MakeHuman hair `ponytail01` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
+| `public/models/wear/hair_braid.glb` | A long braid | MakeHuman hair `braid01` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
+| `public/models/wear/hair_bob.glb` | A short bob | MakeHuman hair `bob02` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
 | `public/models/wear/long_gloves.glb` | Long gloves worn as bracers | "Gloves_Long" by MRT, `gloves01_cc0.zip`, decimated to 50%, colour desaturated | CC0 1.0 |
 | `public/models/wear/wool_tunic.glb` | Knitted wool tunic | "Sweater_Fisherman" by MRT, `shirts01_cc0.zip`, colour desaturated | CC0 1.0 |
 | `public/models/wear/wool_trousers.glb` | Wool trousers | "Pants_Wool" by MRT, `pants01_cc0.zip`, colour partly desaturated | CC0 1.0 |

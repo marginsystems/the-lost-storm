@@ -318,6 +318,7 @@ function rig(value: unknown, where: string): RigDef {
     sockets,
     hiddenNodes: textList(source, 'hiddenNodes', where),
     bodyParts,
+    base: source['base'] === undefined ? [] : textList(source, 'base', where),
   };
 }
 
@@ -518,6 +519,7 @@ export function contentProblems(content: Content): string[] {
       for (const part of worn.hides) need(bodyParts[part] !== undefined, `${holder} wears ${id}, which hides ${part}, but rig ${rigId} has no body part ${part}`);
     }
   };
+  for (const rigDef of content.rigs.values()) wears(`rig ${rigDef.id} base`, rigDef.id, rigDef.base);
   for (const skillDef of content.skills.values()) {
     if (skillDef.delivery.type === 'dash') need(skillDef.windup === skillDef.delivery.duration, `skill ${skillDef.id} is a dash whose windup ${skillDef.windup} differs from its duration ${skillDef.delivery.duration}`);
   }

@@ -163,6 +163,7 @@
   },
   {
     "id": "hero_man",
+    "base": ["hair_short"],
     "url": "models/characters/human_man.glb",
     "clipFolder": "models/animations/clips",
     "scale": 1.2,
