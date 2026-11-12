@@ -19,11 +19,13 @@
   --bead-fill: 0;
   position: relative;
   display: block;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: rgba(240, 226, 206, calc(0.08 + var(--bead-fill) * 0.22));
-  box-shadow: inset 0 0 0 1px rgba(240, 226, 206, 0.32);
+  background: rgba(14, 10, 12, calc(0.62 - var(--bead-fill) * 0.3));
+  box-shadow:
+    0 0 3px 1px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(244, 232, 214, calc(0.58 + var(--bead-fill) * 0.3));
   transition:
     width var(--spring-smooth-ms) var(--spring-smooth),
     height var(--spring-smooth-ms) var(--spring-smooth),
@@ -32,9 +34,9 @@
 }
 
 .globe-bead.ready {
-  width: 10px;
-  height: 10px;
-  background: rgba(250, 236, 214, 0.92);
+  width: 11px;
+  height: 11px;
+  background: rgba(250, 236, 214, 0.94);
   box-shadow:
     0 0 6px rgba(250, 236, 214, 0.45),
     inset 0 -2px 3px rgba(0, 0, 0, 0.25);

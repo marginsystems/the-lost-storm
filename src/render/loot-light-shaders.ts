@@ -136,7 +136,7 @@ void main() {
     motes += exp(-dot(d, d) * ${glsl(S.moteSharpness)}) * smoothstep(0.0, 0.1, y) * (1.0 - smoothstep(0.55, 0.9, y));
   }
   float light = ((body * ${glsl(S.bodyShare)} + core * ${glsl(S.coreShare)}) * breakup * fade + motes * ${glsl(S.moteShare)}) * foot;
-  float shade = body * exp(-h * ${glsl(S.shadeFade)}) * foot * vShade;
+  float shade = body * exp(-h * ${glsl(S.shadeFade)}) * (1.0 - smoothstep(${glsl(S.topFrom)}, 1.0, h)) * foot * vShade;
   gl_FragColor = vec4(vTint * light * vGlow, clamp(shade, 0.0, 1.0));
 ${FINISH}
 }

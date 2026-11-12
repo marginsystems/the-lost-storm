@@ -8,7 +8,7 @@ export const LOOT_LIGHT = {
   capacity: 64,
   renderOrder: 16,
   poolLift: 0.03,
-  shaft: { width: 1.0, height: 2.7, heightPerStep: 0.7, glow: 1.25, glowPerStep: 0.3, shade: 0.62, pool: 2.0, poolPerStep: 0.4, poolGlow: 0.45, poolShade: 0.3 },
+  shaft: { width: 1.0, height: 4.6, heightPerStep: 1.0, glow: 1.25, glowPerStep: 0.3, shade: 0.62, pool: 2.0, poolPerStep: 0.4, poolGlow: 0.45, poolShade: 0.3 },
   bolt: { color: '#d4e3ff', width: 0.9, height: 2.3, glow: 1.5, shade: 0.6, pool: 1.4, poolGlow: 0.7, poolShade: 0.3 },
 } as const;
 
