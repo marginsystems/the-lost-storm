@@ -1,3 +1,5 @@
+import type { GlitchDef } from '../content/glitches.ts';
+import { loadGlitches } from '../content/glitches.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
 import { emptyEquipment, generateItem, slotOf } from '../items.ts';
 import { buildNavGrid } from '../nav/grid.ts';
@@ -10,7 +12,9 @@ import { createFlasks } from './flasks.ts';
 import { decodeExplored, exploredSize, stepExploration } from './exploration.ts';
 import { spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
+import { createGlitchState, storyProgress } from './glitch.ts';
 import { spawnPacks } from './monsters.ts';
+import { emptyPathLog, markStart, readPathLog } from './path-log.ts';
 import { startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
 import { emptyStash } from './trade.ts';
@@ -21,6 +25,7 @@ export interface WorldOptions {
   readonly seed: number;
   readonly save: SaveData | null;
   readonly opening?: boolean;
+  readonly glitches?: GlitchDef;
 }
 
 const PLAYER_ID: number = 1;
@@ -142,6 +147,8 @@ export function createWorld(content: Content, options: WorldOptions): World {
     vendors: save === null ? {} : copyVendors(save.vendors),
     stash: save === null ? emptyStash(content) : [...save.stash],
     tradeZone: zone.id,
+    glitch: createGlitchState(options.glitches ?? loadGlitches(), options.seed, save?.glitch ?? null),
+    path: save === null ? emptyPathLog() : readPathLog(save.path, new Set<string>(content.zones.keys())),
   };
   placePlayer(world);
   beginVoid(world);
@@ -151,6 +158,8 @@ export function createWorld(content: Content, options: WorldOptions): World {
   spawnNpcs(world);
   spawnPacks(world);
   stepExploration(world);
+  world.glitch.progress = storyProgress(world);
+  markStart(world);
   world.events = [];
   return world;
 }

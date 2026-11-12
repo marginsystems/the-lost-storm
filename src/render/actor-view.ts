@@ -66,6 +66,7 @@ export interface ActorView {
   revive(): void;
   lie(progress: number | null): void;
   setHover(hovered: boolean): void;
+  face(facing: number): void;
   bounds(out: Box3): void;
   dispose(): void;
 }
@@ -132,6 +133,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   return {
     rig,
     height: rig.def.height * rig.def.scale * scale,
+    face(heading: number): void {
+      yaw = heading;
+      rig.root.rotation.y = yaw;
+    },
     sync(dt: number, actor: ActorPose, options: SyncOptions): void {
       rig.root.position.set(actor.pos.x, options.floor, actor.pos.z);
       if (dead) {

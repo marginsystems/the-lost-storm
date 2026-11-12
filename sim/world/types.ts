@@ -1,4 +1,6 @@
 import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
+import type { GlitchKind } from '../content/glitches.ts';
+import type { GlitchState, PathAct, PathLog, Silhouette } from './glitch-types.ts';
 import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
 import type { ServiceKind } from '../content/trade-types.ts';
 import type { Vec2 } from '../math.ts';
@@ -394,7 +396,13 @@ export type WorldEvent =
   | { readonly type: 'notice'; readonly reason: NoticeReason }
   | { readonly type: 'flasks_refilled' }
   | { readonly type: 'flask_used'; readonly slot: number; readonly flask: string; readonly resource: FlaskResource; readonly pos: Vec2 }
-  | { readonly type: 'character_changed' };
+  | { readonly type: 'character_changed' }
+  | { readonly type: 'glitch_start'; readonly kind: GlitchKind; readonly duration: number; readonly edit: string | null; readonly silhouettes: readonly Silhouette[] }
+  | { readonly type: 'glitch_end'; readonly kind: GlitchKind }
+  | { readonly type: 'glitch_word'; readonly npc: string; readonly name: string }
+  | { readonly type: 'silence'; readonly duration: number }
+  | { readonly type: 'zone_edited'; readonly zone: string }
+  | { readonly type: 'path_marked'; readonly act: PathAct };
 
 export interface VendorStock {
   stock: (ItemInstance | null)[];
@@ -460,4 +468,6 @@ export interface World {
   vendors: Record<string, VendorStock>;
   stash: (ItemInstance | null)[];
   tradeZone: string;
+  readonly glitch: GlitchState;
+  readonly path: PathLog;
 }

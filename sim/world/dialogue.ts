@@ -1,6 +1,7 @@
 import type { LineDef, NpcDef, TalkDef, ZoneNpc } from '../content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../math.ts';
 import { allHold } from './conditions.ts';
+import { spokenLine } from './glitch-word.ts';
 import type { DialogueState, NpcState, World } from './types.ts';
 
 export const DIALOGUE = {
@@ -42,7 +43,7 @@ export function hasNews(world: World, def: NpcDef): boolean {
 function say(world: World, dialogue: DialogueState): void {
   const line: LineDef | undefined = world.content.lines.get(dialogue.talk.lines[dialogue.index] ?? '');
   if (line === undefined) return;
-  world.events.push({ type: 'dialogue_line', npcId: dialogue.npcId, npc: dialogue.npc.id, talk: dialogue.talk.id, line, index: dialogue.index, last: dialogue.index === dialogue.talk.lines.length - 1 });
+  world.events.push({ type: 'dialogue_line', npcId: dialogue.npcId, npc: dialogue.npc.id, talk: dialogue.talk.id, line: spokenLine(world, line), index: dialogue.index, last: dialogue.index === dialogue.talk.lines.length - 1 });
 }
 
 export function closeDialogue(world: World, finished: boolean): void {

@@ -111,6 +111,12 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'skill_interrupt':
     case 'monster_remove':
     case 'xp':
+    case 'glitch_start':
+    case 'glitch_end':
+    case 'glitch_word':
+    case 'silence':
+    case 'zone_edited':
+    case 'path_marked':
     case 'character_changed':
     case 'explored':
     case 'zone_changed':

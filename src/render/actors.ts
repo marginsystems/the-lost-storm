@@ -1,4 +1,4 @@
-import type { Box3, Scene } from 'three';
+import type { Box3, Object3D, Scene } from 'three';
 import { Color } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import { hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
@@ -35,6 +35,7 @@ export interface Actors {
   refreshWear(world: World): void;
   heightOf(actorId: number): number;
   boundsOf(actorId: number, out: Box3): boolean;
+  hero(): Object3D;
 }
 
 const HIT_WHITE: Color = new Color(0xffffff);
@@ -106,6 +107,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   };
 
   return {
+    hero(): Object3D {
+      return playerView.rig.root;
+    },
     refreshWear(current: World): void {
       dress(content, playerView.rig, content.player.wear, current.player.equipped);
     },
@@ -181,6 +185,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'player_respawn':
             playerView.revive();
             break;
+          case 'glitch_end':
+            playerView.face(current.player.facing);
+            break;
           case 'character_changed':
             playerView.rig.setGear(playerGear(content, current.player));
             dress(content, playerView.rig, content.player.wear, current.player.equipped);
@@ -224,6 +231,11 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'notice':
           case 'hero_step':
           case 'explored':
+          case 'glitch_start':
+          case 'glitch_word':
+          case 'silence':
+          case 'zone_edited':
+          case 'path_marked':
             break;
         }
       }
