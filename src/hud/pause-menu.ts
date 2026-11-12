@@ -87,6 +87,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
     for (const [id, page] of pages) {
       const index: number = SETTINGS_SECTIONS.indexOf(id);
       page.dataset['state'] = index === order ? 'active' : index < order ? 'before' : 'after';
+      page.inert = index !== order;
     }
     for (const [id, tab] of tabButtons) tab.classList.toggle('active', id === next);
     layoutMarker();
@@ -98,6 +99,8 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
     card.dataset['view'] = next;
     main.classList.toggle('active', next === 'main');
     settingsView.classList.toggle('active', next === 'settings');
+    main.inert = next !== 'main';
+    settingsView.inert = next !== 'settings';
     if (next === 'settings') layoutMarker();
   }
 

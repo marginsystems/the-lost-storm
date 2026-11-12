@@ -18,7 +18,7 @@
 .pause-card {
   position: relative;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: clip;
   border-radius: 3px;
   background: rgba(10, 13, 20, 0.94);
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6);
