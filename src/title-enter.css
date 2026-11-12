@@ -197,3 +197,11 @@
     transform: none;
   }
 }
+
+@media (forced-colors: active) {
+  #title-enter:focus-visible,
+  .threshold-button:focus-visible {
+    outline: 1px solid CanvasText;
+    outline-offset: 2px;
+  }
+}
