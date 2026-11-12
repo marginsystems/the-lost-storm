@@ -253,8 +253,6 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             hovered.delete(dialogue.element);
             break;
           case 'quest_started':
-            banners.show(api.world.content.quests.get(event.quest)?.name ?? '', 'New quest', 'quest');
-            break;
           case 'quest_advanced':
             quests.handle(event, api.world);
             break;

@@ -34,4 +34,4 @@ Objective text is plain and carries no names or lore.
 
 ## Old saves
 
-The zones of the earlier first act are listed in `world.retired`. A save standing in one of them, the Shallows and the waystation included, loads at the fire in the Hall of Time with the character intact, and its story is marked `road: rerouted` so the first quest completes there.
+The zones of the earlier first act are listed in `world.retired`. A save standing in one of them, the Shallows and the waystation included, loads in the Hall of Time at its arrival point with the character intact, and its story is marked `road: rerouted` so the first quest completes on reaching the fire.

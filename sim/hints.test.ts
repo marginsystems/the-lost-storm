@@ -102,6 +102,14 @@ void test('a save that has already played skips the first-minute hints', (): voi
   assert.equal(shown(stepHints(defs, world, state, IDLE)), 'death');
 });
 
+void test('a save that has finished a quest skips the first-minute hints even at level one', (): void => {
+  const world: World = fresh();
+  world.quests = { out_of_the_mist: 1 };
+  const state: HintState = createHintState([]);
+  seedVeteran(defs, state, world);
+  assert.ok(defs.hints.filter((hint): boolean => hint.forNewPlayers).every((hint): boolean => state.seen.has(hint.id)));
+});
+
 void test('the low life hint needs a carried item of the named slot', (): void => {
   const world: World = fresh();
   const state: HintState = createHintState(earlyIds());

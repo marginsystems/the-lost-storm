@@ -342,7 +342,7 @@
 
 .banner-title {
   font-family: var(--serif);
-  font-size: 54px;
+  font-size: 40px;
   letter-spacing: 0.22em;
   text-indent: 0.22em;
   text-shadow: 0 0 28px rgba(0, 0, 0, 0.8);
@@ -358,7 +358,12 @@
 
 .banner.zone .banner-title {
   color: var(--text);
-  font-size: 44px;
+  font-size: 36px;
+}
+
+.banner.quest .banner-title {
+  color: var(--ember);
+  font-size: 24px;
 }
 
 .banner.act .banner-title {
@@ -373,7 +378,7 @@
 
 .banner-sub {
   margin-top: 6px;
-  font-size: 16px;
+  font-size: 14px;
   letter-spacing: 0.08em;
   color: var(--text);
   text-shadow: 0 0 14px rgba(0, 0, 0, 0.8);

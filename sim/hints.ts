@@ -3,6 +3,7 @@ import { baseOf, slotOf } from './items.ts';
 import { distance } from './math.ts';
 import type { Vec2 } from './math.ts';
 import { objectiveTarget } from './world/objective.ts';
+import { questState } from './world/conditions.ts';
 import type { ObjectiveTarget } from './world/objective.ts';
 import type { GroundItem, ItemInstance, MonsterState, World, WorldEvent } from './world/types.ts';
 
@@ -36,7 +37,7 @@ export function createHintState(seen: Iterable<string>): HintState {
 }
 
 export function seedVeteran(defs: HintsDef, state: HintState, world: World): void {
-  if (world.player.level <= 1 && world.player.kills === 0) return;
+  if (world.player.level <= 1 && world.player.kills === 0 && !Object.keys(world.quests).some((quest: string): boolean => questState(world, quest) === 'done')) return;
   for (const hint of defs.hints) {
     if (hint.forNewPlayers) state.seen.add(hint.id);
   }

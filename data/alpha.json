@@ -3,6 +3,6 @@
   "milestones": [
     {"event": "picked_journal", "flag": "first_choice", "is": "took_journal"},
     {"event": "reached_shallows", "zone": "hall_of_time"},
-    {"event": "reached_waystation", "flag": "alpha_slice_complete", "is": "reached"}
+    {"event": "reached_waystation", "flag": "camp", "is": "reached"}
   ]
 }

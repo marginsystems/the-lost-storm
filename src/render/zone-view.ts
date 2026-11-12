@@ -58,6 +58,7 @@ interface Source {
 export interface ViewFocus {
   readonly look: Vec2 | null;
   readonly figure: number;
+  readonly flash: number;
 }
 
 export interface ZoneView {
@@ -267,9 +268,9 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       if (abyss.material instanceof MeshStandardMaterial) abyss.material.dispose();
       mistWall?.dispose();
     },
-    update(time: number, dt: number, world: World): void {
+    update(time: number, dt: number, world: World, focus: ViewFocus): void {
       ground.update(world.time);
-      mistWall?.update(time);
+      mistWall?.update(time, focus.flash);
       for (const conditional of conditionals) {
         const wanted: boolean = allHold(world, conditional.placed.when);
         if (conditional.on === null) conditional.shown = wanted ? 1 : 0;

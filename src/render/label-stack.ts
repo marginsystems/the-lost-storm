@@ -6,6 +6,11 @@ export interface LabelBox {
   readonly height: number;
 }
 
+export function clearOfHud(y: number, limit: number | null, height: number): number {
+  if (limit === null) return y;
+  return Math.min(y, limit - height);
+}
+
 function overlaps(a: LabelBox, b: LabelBox, gap: number): boolean {
   return Math.abs(a.x - b.x) < (a.width + b.width) / 2 + gap && a.y > b.y - b.height - gap && a.y - a.height - gap < b.y;
 }

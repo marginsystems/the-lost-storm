@@ -10,7 +10,7 @@ import { pixelRatioFor } from '../mobile/quality.ts';
 
 export const STAGE = {
   exposure: 1.22,
-  flashBackground: 0x2a3a55,
+  flashBackground: 0x4a5f82,
   stormOffsetX: -16,
   stormOffsetY: 30,
   stormOffsetZ: 10,
@@ -25,8 +25,17 @@ export const STAGE = {
   bloomRadius: 0.55,
   bloomThreshold: 0.82,
   samples: 4,
-  flashSky: 2.6,
-  flashStorm: 3.4,
+  flashSky: 7,
+  flashStorm: 6,
+  flashExposure: 0.55,
+  flashFogNear: 50,
+  flashFogFar: 200,
+  rimColor: 0xd6e4ff,
+  rimIntensity: 7,
+  rimBase: 1.4,
+  rimOffsetX: 18,
+  rimOffsetY: 24,
+  rimOffsetZ: -22,
 } as const;
 
 export interface Stage {
@@ -63,6 +72,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   let preset: GraphicsPreset = { pixelRatioCap: tier.maxPixelRatio, shadows: true, shadowSize: STAGE.shadowSize, bloom: true, lights: tier.zoneLights, effectsDensity: 1 };
   let skyIntensity: number = 0;
   let keyIntensity: number = 0;
+  let fogNear: number = 1;
+  let fogFar: number = 2;
 
   const camera: PerspectiveCamera = new PerspectiveCamera(30, 1, 1, 220);
 
@@ -81,6 +92,10 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   storm.shadow.normalBias = 0.04;
   scene.add(storm);
   scene.add(storm.target);
+
+  const rim: DirectionalLight = new DirectionalLight(STAGE.rimColor, STAGE.rimBase);
+  scene.add(rim);
+  scene.add(rim.target);
 
   const hero: PointLight = new PointLight(STAGE.heroColor, STAGE.heroIntensity, STAGE.heroDistance, 1.6);
   scene.add(hero);
@@ -141,8 +156,10 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       background.set(ambience.background);
       shownBackground.copy(background);
       fog.color.copy(background);
-      fog.near = ambience.fogNear;
-      fog.far = ambience.fogFar;
+      fogNear = ambience.fogNear;
+      fogFar = ambience.fogFar;
+      fog.near = fogNear;
+      fog.far = fogFar;
       sky.color.set(ambience.skyColor);
       sky.groundColor.set(ambience.groundColor);
       storm.color.set(ambience.keyColor);
@@ -157,11 +174,17 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       storm.target.position.set(snappedX, 0, snappedZ);
       storm.position.set(snappedX + STAGE.stormOffsetX, STAGE.stormOffsetY, snappedZ + STAGE.stormOffsetZ);
       hero.position.set(x, STAGE.heroHeight, z);
+      rim.target.position.set(x, 0, z);
+      rim.position.set(x + STAGE.rimOffsetX, STAGE.rimOffsetY, z + STAGE.rimOffsetZ);
     },
     setFlash(amount: number): void {
       sky.intensity = skyIntensity + STAGE.flashSky * amount;
       storm.intensity = keyIntensity + STAGE.flashStorm * amount;
       shownBackground.copy(background).lerp(flashBackground, amount);
+      rim.intensity = STAGE.rimBase + STAGE.rimIntensity * amount;
+      fog.near = fogNear + (Math.max(fogNear, STAGE.flashFogNear) - fogNear) * amount;
+      fog.far = fogFar + (Math.max(fogFar, STAGE.flashFogFar) - fogFar) * amount;
+      renderer.toneMappingExposure = STAGE.exposure * (1 + STAGE.flashExposure * amount);
     },
     applyGraphics(next: GraphicsPreset): void {
       preset = next;

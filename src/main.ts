@@ -598,7 +598,7 @@ async function start(): Promise<void> {
     particles.update(simVisualDt);
     weather.update(simVisualDt);
     rain.update(simVisualDt, world.player.pos.x, world.player.pos.z, weather.flash);
-    zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.height(actors.hero(), now / 1000) });
+    zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.height(actors.hero(), now / 1000), flash: weather.flash });
     if (zoneView.lightsVersion !== torchVersion) {
       torchVersion = zoneView.lightsVersion;
       effects.setTorches(zoneView.torches);

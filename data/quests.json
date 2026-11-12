@@ -65,7 +65,7 @@
         "radius": 8,
         "text": "Reach the fire",
         "sets": {
-          "alpha_slice_complete": "reached"
+          "camp": "reached"
         }
       }
     ]
@@ -108,7 +108,8 @@
         "npc": "warden_guide",
         "text": "Ask the Warden Guide about the storm in your hands",
         "sets": {
-          "fire_lesson": "given"
+          "fire_lesson": "given",
+          "alpha_slice_complete": "reached"
         }
       }
     ]

@@ -18,6 +18,7 @@ import type { World, WorldEvent } from '../world/types.ts';
 import { enterZone } from '../world/zones.ts';
 import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, PathObjective, QuestDef, RigDef, SkillTreeNodeDef, TalkDef, WearableDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
 import { fields, items, text } from './read.ts';
+import type { MomentDef, MomentEcho, MomentField, WeightedMoment } from './moment-types.ts';
 
 const content: Content = loadContent();
 
@@ -344,7 +345,16 @@ function pathPlaces(world: World, objective: PathObjective): string[] {
     return zones.filter((zone: ZoneDef): boolean => zone.npcs.some((placed: ZoneNpc): boolean => placed.npc === npc && allHold(world, placed.when))).map((zone: ZoneDef): string => zone.id);
   }
   const monster: string = objective.monster;
-  return zones.filter((zone: ZoneDef): boolean => zone.packs.some((pack: ZonePack): boolean => allHold(world, pack.when) && pack.members.some((member): boolean => member.monster === monster))).map((zone: ZoneDef): string => zone.id);
+  return zones.filter((zone: ZoneDef): boolean => zone.packs.some((pack: ZonePack): boolean => allHold(world, pack.when) && pack.members.some((member): boolean => member.monster === monster)) || strikesTurn(zone, monster)).map((zone: ZoneDef): string => zone.id);
+}
+
+function strikesTurn(zone: ZoneDef, monster: string): boolean {
+  const field: MomentField | null = zone.moments;
+  if (field === null || !field.combat) return false;
+  return field.table.some((entry: WeightedMoment): boolean => {
+    const moment: MomentDef | undefined = content.moments.defs.get(entry.moment);
+    return moment !== undefined && moment.turnChance > 0 && moment.echoes.some((echo: MomentEcho): boolean => echo.turns && echo.monster === monster);
+  });
 }
 
 void test('every objective, taken in quest order, lies in a zone the exits already let the hero into', (): void => {
@@ -404,7 +414,7 @@ void test('no arrival point lies inside an exit, so walking in never sends the h
   }
 });
 
-void test('the hero walks out of the In-Between into the Hall, and on to the fire, without clicking an exit', (): void => {
+void test('the hero walks out of the In-Between into the Hall and on to the fire without clicking an exit, and the Warden ends the slice', (): void => {
   const world: World = createWorld(content, { seed: 5, save: null });
   enterZone(world, zoneOf(content, 'between'), { type: 'start' });
   world.flags['opening'] = 'read';
@@ -416,7 +426,11 @@ void test('the hero walks out of the In-Between into the Hall, and on to the fir
   const exit: ZoneExit = must(zoneOf(content, 'between').exits.find((entry: ZoneExit): boolean => entry.id === 'into_the_hall'), 'into_the_hall');
   walkTo('between', exit, (): boolean => world.zone.id !== 'between');
   assert.equal(world.zone.id, 'hall_of_time');
-  walkTo('hall_of_time', fire, (): boolean => world.flags['alpha_slice_complete'] === 'reached');
+  walkTo('hall_of_time', fire, (): boolean => world.flags['camp'] === 'reached');
   assert.equal(world.zone.id, 'hall_of_time');
+  assert.equal(world.flags['alpha_slice_complete'], undefined);
+  const guide = must(world.npcs.find((npc): boolean => npc.def.id === 'warden_guide'), 'guide npc');
+  for (let step: number = 0; step < 900 && world.dialogue === null; step += 1) stepWorld(world, step === 0 ? [{ type: 'talk', npcId: guide.id }] : [], 1 / 30);
+  for (let guard: number = 0; guard < 40 && world.dialogue !== null; guard += 1) stepWorld(world, [{ type: 'advance' }], 1 / 30);
   assert.equal(world.flags['alpha_slice_complete'], 'reached');
 });

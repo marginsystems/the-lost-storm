@@ -1,7 +1,7 @@
 import type { ZoneLightning } from '../../sim/content/road-types.ts';
 
 export const WEATHER = {
-  lightningDecay: 3.2,
+  lightningDecay: 1.5,
   flickerAt: 0.14,
   flickerPower: 0.7,
 } as const;

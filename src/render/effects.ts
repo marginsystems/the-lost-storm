@@ -4,7 +4,7 @@ import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { Delivery, SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
-import { disposeObject, glow, groundArcs, markerMesh, pillarMesh, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
+import { disposeObject, glow, groundArcs, markerMesh, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
 import type { Telegraph } from './effect-shapes.ts';
 import type { DashTrails } from './dash-trail.ts';
 import { createDashTrails } from './dash-trail.ts';
@@ -29,7 +29,6 @@ export const EFFECTS = {
   boltTime: 0.22,
   arcTime: 0.26,
   markerTime: 0.4,
-  levelTime: 1.1,
   flashLights: 3,
   warmFrames: 3,
   warmDepth: -30,
@@ -283,18 +282,6 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   };
 
   const levelUp = (x: number, z: number): void => {
-    const pillar = pillarMesh(glow(GOLD, 1.6), 1.1, 16);
-    pillar.position.x = x;
-    pillar.position.z = z;
-    add(
-      pillar,
-      EFFECTS.levelTime,
-      (t: number): void => {
-        pillar.scale.set(1 + t * 0.8, 1, 1 + t * 0.8);
-        pillar.material.opacity = 0.55 * (1 - t) * (1 - t);
-      },
-      null,
-    );
     ring(x, z, 6, GOLD, 0.7);
     spray(x, 0.3, z, GOLD, 60, { speed: { min: 0.5, max: 3.5 }, lift: { min: 4, max: 14 }, life: { min: 0.6, max: 1.3 }, size: { min: 0.25, max: 0.6 }, gravity: 3, drag: 1.2, jitter: 1.4 });
     flashLight(x, 3, z, GOLD, 110);

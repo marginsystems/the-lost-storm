@@ -10,7 +10,7 @@ import type { TargetBar } from '../hud/target-bar.ts';
 import { createHealthBars } from './health-bars.ts';
 import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
-import { stackLabels } from './label-stack.ts';
+import { clearOfHud, stackLabels } from './label-stack.ts';
 import type { LabelBox } from './label-stack.ts';
 
 export const OVERLAYS = {
@@ -29,6 +29,8 @@ export const OVERLAYS = {
   exitLift: 2.6,
   npcLift: 0.5,
   npcLeave: 0.52,
+  npcTagHeight: 44,
+  hudSelector: '.hud-bottom',
   waypointId: 'waypoint',
   waypointName: 'Waypoint',
 } as const;
@@ -339,6 +341,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       return labelHoverId;
     },
     update(dt: number, world: World, hoveredId: number | null): void {
+      const bar: Element | null = document.querySelector(OVERLAYS.hudSelector);
+      const hudTop: number | null = bar === null ? null : bar.getBoundingClientRect().top - root.getBoundingClientRect().top;
       if (exitsOf !== world.zone) showExits(world);
       for (const label of exits) {
         const open: boolean = label.open(world);
@@ -356,6 +360,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         }
         label.element.classList.toggle('aimed', label.npc.id === hoveredId);
         camera.project(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z, point);
+        point.y = clearOfHud(point.y, hudTop, OVERLAYS.npcTagHeight);
         place(label.element, point);
       }
       for (const label of leaving) {
