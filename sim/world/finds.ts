@@ -41,5 +41,10 @@ export function walkOnFinds(world: World): void {
   const rules: ZoneVoid | null = world.zone.void;
   if (rules === null || !world.player.alive || world.wake !== null) return;
   const underfoot: GroundItem | null = nearestFind(world, world.player.pos, rules.finds.reach);
-  if (underfoot !== null) pickUp(world, underfoot);
+  if (underfoot === null || !fits(world.player, underfoot)) return;
+  pickUp(world, underfoot);
+}
+
+function fits(player: PlayerState, ground: GroundItem): boolean {
+  return ground.content.kind === 'gold' || player.inventory.includes(null);
 }

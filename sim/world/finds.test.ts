@@ -3,7 +3,9 @@ import { test } from 'node:test';
 import { must } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
+import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
+import { createRng } from '../rng.ts';
 import { createWorld } from './create.ts';
 import { shoreDepth } from './shore.ts';
 import { stepWorld } from './step.ts';
@@ -75,4 +77,17 @@ void test('out on the black shore lies the first blade, and picking it up puts i
   stepUntil(world, (): readonly Command[] => [{ type: 'move', held: true, dest: blade.pos }], (): boolean => world.player.equipped.weapon !== null);
   assert.equal(world.player.equipped.weapon?.base, 'rusted_blade');
   assert.equal(world.flags['first_blade'], 'found');
+});
+
+void test('standing on a find with a full pack leaves it there without a notice every step', (): void => {
+  const world: World = risen(7);
+  walkUntil(world, world.heading, (): boolean => findOf(world, 'journal') !== null);
+  const journal: GroundItem = must(findOf(world, 'journal'), 'journal');
+  const filler = must(generateItem(content, createRng(7), 901, 1, 'rusted_blade', 'common'), 'filler');
+  world.player.inventory.fill(filler);
+  world.player.pos = { x: journal.pos.x, z: journal.pos.z };
+  let notices: number = 0;
+  for (let step: number = 0; step < 30; step += 1) notices += stepWorld(world, [], DT).filter((event): boolean => event.type === 'notice').length;
+  assert.equal(notices, 0);
+  assert.notEqual(findOf(world, 'journal'), null);
 });

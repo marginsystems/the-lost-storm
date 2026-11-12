@@ -2,13 +2,14 @@ import type { Box3, Object3D, Scene } from 'three';
 import { paceAt } from '../../sim/nav/grid.ts';
 import { Color } from 'three';
 import type { Content } from '../../sim/content/types.ts';
-import { heldGear, hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
+import { hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
 import { wakeProgress } from '../../sim/world/wake.ts';
 import type { ActorState, Equipment, MomentState, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { ActorPose, ActorView } from './actor-view.ts';
 import { ACTOR, createActorView } from './actor-view.ts';
 import type { CharacterLibrary, LoadedRig, RigInstance } from './character-loader.ts';
 import { hasWear, instantiateRig } from './character-loader.ts';
+import { holdEquipped } from './hero-gear.ts';
 import type { GhostUniforms } from './ghost-material.ts';
 import { createGhostUniforms } from './ghost-material.ts';
 import { momentOfEcho } from '../../sim/world/moments.ts';
@@ -88,7 +89,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   const playerRig: LoadedRig | undefined = library.rigs.get(content.player.rig);
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
   const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color, ghost: null }), 1, world.player.facing);
-  playerView.rig.setGear(heldGear(content, world.player.equipped));
+  holdEquipped(content, playerView.rig, world.player.equipped);
   dress(content, playerView.rig, content.player.wear, world.player.equipped);
   scene.add(playerView.rig.root);
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
@@ -138,7 +139,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       return playerView.rig.root;
     },
     refreshWear(current: World): void {
-      playerView.rig.setGear(heldGear(content, current.player.equipped));
+      holdEquipped(content, playerView.rig, current.player.equipped);
       dress(content, playerView.rig, content.player.wear, current.player.equipped);
     },
     boundsOf(actorId: number, out: Box3): boolean {
@@ -152,6 +153,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     },
     sync(dt: number, current: World, hoveredId: number | null): void {
       const floor: number = current.zone.floorHeight;
+      holdEquipped(content, playerView.rig, current.player.equipped);
       playerView.lie(current.wake === null ? null : wakeProgress(current.wake));
       playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.stats.moveSpeed * paceAt(current.grid, current.player.pos.x, current.player.pos.z), rise: 1, floor, turnRate: ACTOR.turnRate });
       for (const monster of current.monsters) {
@@ -232,7 +234,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             playerView.face(current.player.facing);
             break;
           case 'character_changed':
-            playerView.rig.setGear(heldGear(content, current.player.equipped));
+            holdEquipped(content, playerView.rig, current.player.equipped);
             dress(content, playerView.rig, content.player.wear, current.player.equipped);
             break;
           case 'monster_remove': {
