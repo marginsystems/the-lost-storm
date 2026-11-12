@@ -16,6 +16,10 @@ export function loaderExitAt(doneAtMs: number, timing: LoaderTiming = LOADER_CYC
   return timing.showDelayMs + cycles * timing.cycleMs;
 }
 
+export function loaderCycles(exitAtMs: number, timing: LoaderTiming = LOADER_CYCLE): number {
+  return Math.max(0, Math.round((exitAtMs - timing.showDelayMs) / timing.cycleMs));
+}
+
 export function loaderPhase(elapsedMs: number, doneAtMs: number | null, timing: LoaderTiming = LOADER_CYCLE): LoaderPhase {
   if (doneAtMs !== null && doneAtMs < timing.showDelayMs && elapsedMs >= doneAtMs) return 'skipped';
   if (elapsedMs < timing.showDelayMs) return 'waiting';

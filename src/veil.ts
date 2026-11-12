@@ -52,6 +52,7 @@ export function createVeil(element: HTMLElement): Veil {
         markStarted = null;
         return;
       }
+      mark.endAfter(exitAt);
       await wait(exitAt - doneAt);
     },
     async lift(): Promise<void> {

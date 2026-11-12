@@ -139,6 +139,7 @@
 }
 
 .title-card #title-reset {
+  position: relative;
   height: 30px;
   margin: 14px auto 0;
   padding: 0 14px;

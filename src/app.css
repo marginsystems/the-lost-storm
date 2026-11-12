@@ -250,6 +250,7 @@ body {
 }
 
 .title-sync {
+  position: relative;
   margin: 14px 0 0;
   min-height: 16px;
   font-size: 12px;

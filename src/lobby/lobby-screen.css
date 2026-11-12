@@ -231,6 +231,7 @@
 }
 
 .lobby-confirm {
+  position: relative;
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
@@ -264,6 +265,7 @@
 }
 
 .lobby-quiet {
+  position: relative;
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 

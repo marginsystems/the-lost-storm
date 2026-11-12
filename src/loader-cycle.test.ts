@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { LoaderPhase, LoaderTiming } from './loader-cycle.ts';
-import { LOADER_CYCLE, loaderExitAt, loaderPhase } from './loader-cycle.ts';
+import { LOADER_CYCLE, loaderCycles, loaderExitAt, loaderPhase } from './loader-cycle.ts';
 
 const TIMING: LoaderTiming = { showDelayMs: 100, cycleMs: 500 };
 
@@ -31,6 +31,13 @@ void test('the mark leaves only on a cycle boundary, the first one after the loa
   assert.equal(loaderExitAt(1430, TIMING), 1600);
   assert.deepEqual(phases(1430, 3000, 10), ['waiting', 'cycling', 'leaving']);
   for (const done of [150, 333, 777, 2049]) assert.equal((loaderExitAt(done, TIMING) - TIMING.showDelayMs) % TIMING.cycleMs, 0);
+});
+
+void test('the mark stops after the cycle it leaves on, so its pixels rest dark through the exit', (): void => {
+  assert.equal(loaderCycles(loaderExitAt(400)), 1);
+  assert.equal(loaderCycles(loaderExitAt(900)), 2);
+  assert.equal(loaderCycles(loaderExitAt(LOADER_CYCLE.showDelayMs + 3 * LOADER_CYCLE.cycleMs)), 3);
+  assert.equal(loaderCycles(loaderExitAt(100)), 0);
 });
 
 void test('while the load runs the mark keeps cycling, never leaving', (): void => {

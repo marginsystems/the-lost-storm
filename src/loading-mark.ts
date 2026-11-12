@@ -1,4 +1,4 @@
-import { LOADER_CYCLE, loaderExitAt } from './loader-cycle.ts';
+import { LOADER_CYCLE, loaderCycles, loaderExitAt } from './loader-cycle.ts';
 import type { LoaderTiming } from './loader-cycle.ts';
 
 export const LOADING_MARK = {
@@ -6,11 +6,13 @@ export const LOADING_MARK = {
   playingClass: 'playing',
   waveSpread: 0.45,
   pixelLitFor: 0.45,
+  cyclesProperty: '--mark-cycles',
 } as const;
 
 export interface LoadingMark {
   readonly element: HTMLElement;
   start(): Promise<number>;
+  endAfter(exitAtMs: number): void;
   stop(): void;
 }
 
@@ -28,9 +30,14 @@ export async function untilCycleEnds(element: HTMLElement, timing: LoaderTiming 
   const doneAt: number = performance.now() - startedAt(element);
   const exitAt: number = loaderExitAt(doneAt, timing);
   if (exitAt <= doneAt) return;
+  endMarkAfter(element, exitAt, timing);
   await new Promise<void>((resolve: () => void): void => {
     window.setTimeout(resolve, exitAt - doneAt);
   });
+}
+
+export function endMarkAfter(element: HTMLElement, exitAtMs: number, timing: LoaderTiming = LOADER_CYCLE): void {
+  element.style.setProperty(LOADING_MARK.cyclesProperty, String(loaderCycles(exitAtMs, timing)));
 }
 
 function startedAt(element: HTMLElement): number {
@@ -53,10 +60,14 @@ export function createLoadingMark(parent: HTMLElement, className: string, timing
   return {
     element,
     async start(): Promise<number> {
+      element.style.removeProperty(LOADING_MARK.cyclesProperty);
       element.classList.add(LOADING_MARK.playingClass);
       await nextFrame();
       await nextFrame();
       return startedAt(element);
+    },
+    endAfter(exitAtMs: number): void {
+      endMarkAfter(element, exitAtMs, timing);
     },
     stop(): void {
       element.classList.remove(LOADING_MARK.playingClass);

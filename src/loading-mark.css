@@ -62,7 +62,7 @@
 }
 
 .loading-mark.playing i {
-  animation: mark-scan var(--mark-cycle) var(--drift-ease) calc(var(--mark-show) + var(--mark-cycle) * var(--mark-phase)) infinite both;
+  animation: mark-scan var(--mark-cycle) var(--drift-ease) calc(var(--mark-show) + var(--mark-cycle) * var(--mark-phase)) var(--mark-cycles, infinite) both;
 }
 
 @keyframes mark-in {
