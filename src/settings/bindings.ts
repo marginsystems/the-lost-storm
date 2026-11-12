@@ -1,4 +1,4 @@
-export const FIXED_ACTIONS = ['inventory', 'character', 'tree', 'map', 'minimap', 'ladder', 'dodge', 'flask1', 'flask2', 'flask3', 'flask4', 'flask5', 'pause'] as const;
+export const FIXED_ACTIONS = ['inventory', 'character', 'tree', 'map', 'minimap', 'ladder', 'flask1', 'flask2', 'flask3', 'flask4', 'flask5', 'pause'] as const;
 export type FixedAction = (typeof FIXED_ACTIONS)[number];
 export const FLASK_ACTIONS: readonly FixedAction[] = ['flask1', 'flask2', 'flask3', 'flask4', 'flask5'];
 export type SkillAction = 'primary' | `skill:${number}`;
@@ -44,7 +44,6 @@ export const BINDING = {
 const RESERVED: ReadonlySet<string> = new Set<string>([BINDING.leftMouse, 'ShiftLeft', 'ShiftRight', 'Enter', 'NumpadEnter']);
 
 const FIXED_DEFS: readonly (Omit<ActionDef, 'locked'> & { readonly group: ActionGroup })[] = [
-  { id: 'dodge', label: 'Dodge', group: 'Combat', defaults: ['Space'] },
   { id: 'flask1', label: 'Flask 1', group: 'Flasks', defaults: ['Digit1'] },
   { id: 'flask2', label: 'Flask 2', group: 'Flasks', defaults: ['Digit2'] },
   { id: 'flask3', label: 'Flask 3', group: 'Flasks', defaults: ['Digit3'] },
@@ -106,31 +105,31 @@ function bindingsFrom(def: ActionDef, overrides: Overrides): readonly string[] {
   return def.defaults.filter((code: string): boolean => !claimed.has(code));
 }
 
-function conflicting(table: readonly ActionDef[], overrides: Overrides): boolean {
+function collisions(table: readonly ActionDef[], overrides: Overrides): number {
   const seen: Set<string> = new Set<string>();
+  let count = 0;
   for (const def of table) {
     for (const code of bindingsFrom(def, overrides)) {
-      if (seen.has(code)) return true;
+      if (seen.has(code)) count += 1;
       seen.add(code);
     }
   }
-  return false;
+  return count;
+}
+
+function allowed(def: ActionDef, list: readonly string[]): boolean {
+  return list.every((code: string): boolean => isBindingCode(code) && !RESERVED.has(code) && (code !== BINDING.escape || def.id === 'pause') && (code !== BINDING.rightMouse || isSkillAction(def.id)));
 }
 
 export function sanitizeOverrides(table: readonly ActionDef[], raw: Overrides): Overrides {
-  const kept: Record<string, readonly string[]> = {};
+  let kept: Overrides = {};
   for (const def of table) {
     const list: readonly string[] | undefined = raw[def.id];
-    if (def.locked || list === undefined || list.length === 0) continue;
-    if (!list.every((code: string): boolean => isBindingCode(code) && !RESERVED.has(code) && (code !== BINDING.escape || def.id === 'pause') && (code !== BINDING.rightMouse || isSkillAction(def.id)))) continue;
-    kept[def.id] = list;
+    if (def.locked || list === undefined || list.length === 0 || !allowed(def, list)) continue;
+    const next: Overrides = { ...kept, [def.id]: list };
+    if (collisions(table, next) <= collisions(table, kept)) kept = next;
   }
-  const clean: Record<string, readonly string[]> = {};
-  for (const [id, list] of Object.entries(kept)) {
-    const others: ReadonlySet<string> = new Set<string>(table.filter((def: ActionDef): boolean => def.id !== id).flatMap((def: ActionDef): readonly string[] => bindingsFrom(def, kept)));
-    if (!list.some((code: string): boolean => others.has(code))) clean[id] = list;
-  }
-  return conflicting(table, clean) ? {} : clean;
+  return kept;
 }
 
 export function resolveKeys(table: readonly ActionDef[], overrides: Overrides): ResolvedKeys {

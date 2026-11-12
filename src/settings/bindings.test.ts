@@ -16,7 +16,7 @@ void test('the table lists every action once with no default conflicts', (): voi
   assert.equal(new Set(ids).size, ids.length);
   const codes: string[] = TABLE.flatMap((def: ActionDef): readonly string[] => def.defaults);
   assert.equal(new Set(codes).size, codes.length);
-  for (const id of ['primary', 'skill:1', 'skill:2', 'inventory', 'character', 'tree', 'map', 'minimap', 'dodge', 'flask1', 'pause']) assert.ok(ids.includes(id), id);
+  for (const id of ['primary', 'skill:1', 'skill:2', 'inventory', 'character', 'tree', 'map', 'minimap', 'flask1', 'pause']) assert.ok(ids.includes(id), id);
 });
 
 void test('slot zero is the move and attack action', (): void => {
@@ -65,7 +65,7 @@ void test('sanitizing drops unknown actions, bad codes and locked actions', (): 
 });
 
 void test('sanitizing drops the overrides that collide and keeps the rest', (): void => {
-  assert.deepEqual(sanitizeOverrides(TABLE, { inventory: ['KeyB'], tree: ['KeyB'] }), {});
+  assert.deepEqual(sanitizeOverrides(TABLE, { inventory: ['KeyB'], tree: ['KeyB'] }), { inventory: ['KeyB'] });
   assert.deepEqual(sanitizeOverrides(TABLE, { inventory: ['KeyB'], map: ['Escape'] }), { inventory: ['KeyB'] });
 });
 

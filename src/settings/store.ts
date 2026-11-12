@@ -12,6 +12,7 @@ export interface SettingsStore {
   setShowFps(show: boolean): void;
   rebind(action: ActionId, code: string): RebindResult;
   resetControls(): void;
+  saved(): boolean;
   subscribe(listener: (settings: Settings) => void): void;
 }
 
@@ -19,11 +20,12 @@ export function createSettingsStore(storage: KeyValueStore, slots: readonly Slot
   const table: readonly ActionDef[] = actionTable(slots, build);
   let settings: Settings = readSettings(storage.read(SETTINGS_KEY), table);
   let keys: ResolvedKeys = resolveKeys(table, settings.controls);
+  let saved = true;
   const listeners: ((settings: Settings) => void)[] = [];
   const commit = (next: Settings): void => {
     settings = next;
     keys = resolveKeys(table, next.controls);
-    storage.write(SETTINGS_KEY, JSON.stringify(next));
+    saved = storage.write(SETTINGS_KEY, JSON.stringify(next));
     for (const listener of listeners) listener(next);
   };
   const setControls = (controls: Overrides): void => {
@@ -56,6 +58,9 @@ export function createSettingsStore(storage: KeyValueStore, slots: readonly Slot
     },
     resetControls(): void {
       if (Object.keys(settings.controls).length > 0) setControls({});
+    },
+    saved(): boolean {
+      return saved;
     },
     subscribe(listener: (next: Settings) => void): void {
       listeners.push(listener);
