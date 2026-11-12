@@ -123,6 +123,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Panel
   const showTip = (view: NodeView): void => {
     hovered = view;
     fillTip(view);
+    tip.getBoundingClientRect();
     tip.classList.add('visible');
   };
 
@@ -160,6 +161,11 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Panel
   });
   viewport.addEventListener('pointermove', (event: PointerEvent): void => {
     if (drag === null || drag.pointer !== event.pointerId) return;
+    if (event.buttons === 0) {
+      drag = null;
+      viewport.classList.remove('dragging');
+      return;
+    }
     const dx: number = event.clientX - drag.startX;
     const dy: number = event.clientY - drag.startY;
     if (!drag.moved && Math.hypot(dx, dy) < TREE.dragThreshold) return;
@@ -180,6 +186,9 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Panel
     viewport.classList.remove('dragging');
   };
   viewport.addEventListener('pointerup', endDrag);
+  viewport.addEventListener('pointerleave', (event: PointerEvent): void => {
+    if (drag !== null && drag.pointer === event.pointerId && !drag.moved) drag = null;
+  });
   viewport.addEventListener('pointercancel', endDrag);
   viewport.addEventListener(
     'click',
@@ -233,6 +242,12 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Panel
     });
     views.push(view);
   }
+
+  window.addEventListener('resize', (): void => {
+    if (!element.classList.contains('open')) return;
+    hideTip();
+    fitViewport();
+  });
 
   new MutationObserver((): void => {
     if (!element.classList.contains('open')) hideTip();

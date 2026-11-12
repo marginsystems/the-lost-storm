@@ -285,14 +285,17 @@
   transform: translateX(-6px);
   transition:
     opacity var(--spring-snappy-ms) var(--spring-snappy),
-    transform var(--spring-smooth-ms) var(--spring-smooth),
-    left var(--spring-snappy-ms) var(--spring-snappy),
-    top var(--spring-snappy-ms) var(--spring-snappy);
+    transform var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .tree-tip.visible {
   opacity: 1;
   transform: translateX(0);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    left var(--spring-snappy-ms) var(--spring-snappy),
+    top var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .tree-tip-body {
