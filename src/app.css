@@ -1,9 +1,29 @@
-@import "@fontsource/cinzel/latin-500.css";
-@import "@fontsource/cinzel/latin-700.css";
 @import "@fontsource/alegreya-sans/latin-400.css";
 @import "@fontsource/alegreya-sans/latin-500.css";
 @import "@fontsource/alegreya-sans/latin-700.css";
+
 @import "./tokens.css";
+
+@font-face {
+  font-family: "Cinzel";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("@fontsource/cinzel/files/cinzel-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Cinzel";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("@fontsource/cinzel/files/cinzel-latin-700-normal.woff2") format("woff2");
+}
+
+html.fonts-wait .title-card,
+html.fonts-wait .title-lobby {
+  animation-play-state: paused;
+}
 
 html,
 body {

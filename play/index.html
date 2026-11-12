@@ -18,6 +18,19 @@
     <title>The Lost Storm</title>
     <script>
       (function () {
+        var root = document.documentElement;
+        if (document.fonts && document.fonts.load) {
+          root.classList.add('fonts-wait');
+          var release = function () {
+            root.classList.remove('fonts-wait');
+          };
+          Promise.race([
+            Promise.all([document.fonts.load('500 1em Cinzel'), document.fonts.load('700 1em Cinzel'), document.fonts.load('400 1em "Alegreya Sans"')]),
+            new Promise(function (resolve) {
+              setTimeout(resolve, 2500);
+            }),
+          ]).then(release, release);
+        }
         function fail() {
           var status = document.getElementById('title-status');
           var enter = document.getElementById('title-enter');
@@ -34,6 +47,9 @@
         window.addEventListener('unhandledrejection', fail);
       })();
     </script>
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/cinzel/files/cinzel-latin-500-normal.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/cinzel/files/cinzel-latin-700-normal.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/alegreya-sans/files/alegreya-sans-latin-400-normal.woff2" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/src/app.css" />
@@ -56,7 +72,7 @@
           <h1>The Lost Storm</h1>
           <p class="title-sub" id="title-place"></p>
           <div class="title-loader" id="title-loader" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <p class="title-status" id="title-status">Gathering the storm…</p>
+          <p class="title-status" id="title-status">Loading…</p>
           <button id="title-enter" type="button" disabled>Enter</button>
           <button id="title-reset" type="button" class="title-quiet" hidden>Start over</button>
           <p class="title-sync" id="title-sync" aria-live="polite"></p>
