@@ -1,0 +1,52 @@
+.name-echo {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 30%;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.name-echo-line {
+  grid-area: 1 / 1;
+  font-family: var(--serif);
+  font-size: clamp(22px, 5vw, 38px);
+  letter-spacing: 0.3em;
+  color: rgba(44, 50, 58, 0.62);
+  white-space: nowrap;
+  opacity: calc(1 - var(--layer) * 0.3);
+  filter: blur(calc(var(--layer) * 1.2px));
+  scale: calc(1 + var(--layer) * 0.12);
+}
+
+.name-echo-line span {
+  display: inline-block;
+  opacity: 0;
+  animation:
+    name-echo-in var(--spring-smooth-ms) var(--spring-smooth) both,
+    name-echo-drift var(--drift-ms) var(--drift-ease) both;
+}
+
+@keyframes name-echo-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes name-echo-drift {
+  0% {
+    translate: 0 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: calc(var(--side) * 9px) -26px;
+  }
+}

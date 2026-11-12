@@ -1,3 +1,5 @@
+import { createEcho } from './echo.ts';
+import type { EchoChain } from './echo.ts';
 import type { SoundCue } from '../../sim/audio.ts';
 import type { AmbienceLoop, AmbienceStinger, ZoneAmbience } from '../../sim/content/audio.ts';
 import type { AmbienceTracker } from './ambience.ts';
@@ -19,6 +21,7 @@ import { warmPaths } from './warm.ts';
 
 const SYSTEM = {
   cacheBytes: 64 * 1024 * 1024,
+  msPerSecond: 1000,
   bytesPerSample: 4,
   latePlaySeconds: 0.6,
   failedRetrySeconds: 30,
@@ -50,6 +53,7 @@ export interface AudioSystem {
   unlock(): void;
   play(cue: SoundCue, place: Placement): void;
   playVoice(lineId: string): Promise<void>;
+  playEcho(audio: ArrayBuffer): Promise<void>;
   warm(ids: readonly string[]): void;
   stopVoice(): void;
   startAmbience(zone: ZoneAmbience): void;
@@ -305,6 +309,32 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
           resolve();
         });
         duck(1);
+        source.start();
+      });
+    },
+    async playEcho(audio: ArrayBuffer): Promise<void> {
+      const current: Graph | null = graph;
+      if (current === null) return;
+      let buffer: AudioBuffer;
+      try {
+        buffer = await current.context.decodeAudioData(audio.slice(0));
+      } catch {
+        return;
+      }
+      const echo: EchoChain = createEcho(current.context, current.voice);
+      const source: AudioBufferSourceNode = current.context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(echo.input);
+      duck(1);
+      await new Promise<void>((resolve: () => void): void => {
+        source.addEventListener('ended', (): void => {
+          window.setTimeout((): void => {
+            source.disconnect();
+            echo.release();
+            duck(-1);
+            resolve();
+          }, echo.tail * SYSTEM.msPerSecond);
+        });
         source.start();
       });
     },

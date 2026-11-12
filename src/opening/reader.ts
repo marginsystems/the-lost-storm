@@ -20,7 +20,7 @@ export interface Reader {
 }
 
 export function addressLine(page: PageDef, name: string | null): string {
-  return name === null ? page.unnamed : page.address.replace(READER.nameSlot, name);
+  return name === null ? page.unnamed : page.address.replace(READER.nameSlot, (): string => name);
 }
 
 function line(parent: HTMLElement, className: string, text: string): HTMLParagraphElement {

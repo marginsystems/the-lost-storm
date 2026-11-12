@@ -53,6 +53,8 @@ import { mountTitleLobby } from './lobby/title-lobby.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Leaderboard } from './backend/api.ts';
+import type { NameVoiceClient, SpokenName } from './backend/name-voice.ts';
+import { createBrowserNameVoice } from './opening/browser-voice.ts';
 import type { Opening } from './opening/opening.ts';
 import { createOpening } from './opening/opening.ts';
 import type { Actors } from './render/actors.ts';
@@ -229,6 +231,7 @@ async function start(): Promise<void> {
   const save: SaveData | null = await loadingSave;
   if (lobby !== null) void lobby.feed.refresh(true);
   let heroName: string | null = null;
+  const nameVoice: NameVoiceClient | null = createBrowserNameVoice(import.meta.env.VITE_SERVER_URL);
   lobby?.feed.subscribe((board: Leaderboard | null): void => {
     if (board?.you) heroName = board.you.name;
   });
@@ -376,7 +379,9 @@ async function start(): Promise<void> {
   const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, openMenu: (): void => {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
-  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), send, nameOf: (): string | null => heroName });
+  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), send, nameOf: (): string | null => heroName, fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), refreshName: (): void => {
+      if (lobby !== null) void lobby.feed.refresh(true);
+    } });
   if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene) };
 
   let playing: boolean = false;
@@ -384,7 +389,7 @@ async function start(): Promise<void> {
   let failed: boolean = false;
   let saveHeld: boolean = false;
   let hitStop: number = 0;
-  let dirty: boolean = false;
+  let dirty: boolean = save === null;
   let sinceSave: number = 0;
   let last: number = performance.now();
 

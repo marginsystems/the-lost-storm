@@ -9,6 +9,9 @@ import { readablePages } from '../../sim/world/story.ts';
 import type { Command, ItemInstance, WakeState, World } from '../../sim/world/types.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import openingCss from './opening.css?inline';
+import type { SpokenName } from '../backend/name-voice.ts';
+import type { NameEcho } from './name-echo.ts';
+import { createNameEcho } from './name-echo.ts';
 import type { Reader } from './reader.ts';
 import { createReader } from './reader.ts';
 
@@ -24,6 +27,9 @@ export interface OpeningDeps {
   readonly hud: HTMLElement;
   send(command: Command): void;
   nameOf(): string | null;
+  fetchVoice(): Promise<SpokenName | null>;
+  refreshName(): void;
+  playVoice(audio: ArrayBuffer): Promise<void>;
 }
 
 export interface Opening {
@@ -50,6 +56,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   let eased: WakeState | null = null;
   let held: WakeState | null = null;
   const reader: Reader = createReader(hud);
+  const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): void => deps.refreshName() });
   let books: Set<number> = carriedBooks(world);
   let hidden: ReadonlySet<HudPart> = new Set<HudPart>(hiddenHudParts(world));
   for (const part of hidden) document.body.classList.add(`hud-hide-${part}`);
@@ -72,7 +79,7 @@ export function createOpening(deps: OpeningDeps): Opening {
     const book: BookDef | null = bookIn(world, item);
     if (book === null) return;
     const pages: PageDef[] = readablePages(world, book);
-    const name: string | null = deps.nameOf();
+    const name: string | null = echo.spokenName() ?? deps.nameOf();
     reader.open(
       book,
       pages.map((page: PageDef) => ({ page, name })),
@@ -108,6 +115,7 @@ export function createOpening(deps: OpeningDeps): Opening {
       }
       showHud();
       noticeBooks();
+      echo.update(world);
     },
   };
 }
