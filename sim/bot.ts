@@ -12,6 +12,7 @@ import { SKILLS } from './world/skills.ts';
 import { choicesOpen } from './world/death.ts';
 import { stepWorld } from './world/step.ts';
 import { fightZones, nearestFight } from './world/moments.ts';
+import { heldIn } from './world/bubble.ts';
 import { playerMayStrike } from './world/factions.ts';
 import type { Command, EchoState, ItemInstance, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
 
@@ -20,6 +21,7 @@ export const BOT = {
   walkLimit: 90,
   talkLimit: 60,
   fightLimit: 300,
+  bubbleKeep: 0.8,
   questLimit: 900,
   arrive: 0.6,
   threat: 9,
@@ -125,8 +127,13 @@ function free(world: World): boolean {
   return world.player.alive && world.player.action === null && world.player.queued === null;
 }
 
+function within(world: World, spot: ReadonlyVec2, share: number): boolean {
+  const bubble: MomentState | null = heldIn(world, world.player.pos);
+  return bubble === null || distance(spot, bubble.pos) <= bubble.def.radius * share;
+}
+
 function threats(world: World): MonsterState[] {
-  return world.monsters.filter((monster: MonsterState): boolean => playerMayStrike(world, monster) && (monster.aggro ? monster.foeId === null || monster.foeId === world.player.id || distance(monster.pos, world.player.pos) <= BOT.threat : monster.def.dormant === null && distance(monster.pos, world.player.pos) <= BOT.threat));
+  return world.monsters.filter((monster: MonsterState): boolean => playerMayStrike(world, monster) && within(world, monster.pos, 1) && (monster.aggro ? monster.foeId === null || monster.foeId === world.player.id || distance(monster.pos, world.player.pos) <= BOT.threat : monster.def.dormant === null && distance(monster.pos, world.player.pos) <= BOT.threat));
 }
 
 function nearest(world: World, monsters: readonly MonsterState[]): MonsterState | null {
@@ -224,7 +231,7 @@ function refuge(world: World): Vec2 | null {
     for (let step: number = 0; step < BOT.dodgeAngles; step += 1) {
       const angle: number = (step / BOT.dodgeAngles) * Math.PI * 2;
       const spot: Vec2 = { x: from.x + Math.cos(angle) * reach, z: from.z + Math.sin(angle) * reach };
-      if (isWalkable(world.grid, spot.x, spot.z) && lineWalkable(world.grid, from, spot) && !botInDanger(world, spot)) return spot;
+      if (isWalkable(world.grid, spot.x, spot.z) && lineWalkable(world.grid, from, spot) && within(world, spot, BOT.bubbleKeep) && !botInDanger(world, spot)) return spot;
     }
   }
   return null;

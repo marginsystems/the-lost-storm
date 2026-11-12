@@ -18,6 +18,10 @@ export function refreshPlayer(world: World): void {
   world.events.push({ type: 'character_changed' });
 }
 
+export function killXp(world: World, xp: number, level: number): number {
+  return Math.round(xp * (1 + world.content.world.scaling.xpPerLevel * (level - 1)));
+}
+
 export function grantXp(world: World, amount: number): void {
   const player: PlayerState = world.player;
   const result: XpResult = applyXp(world.content.player.xp, player.level, player.xp, amount);

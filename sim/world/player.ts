@@ -421,6 +421,7 @@ function emitSteps(world: World, player: PlayerState, travelled: number): void {
 export function stepPlayer(world: World, dt: number): void {
   const player: PlayerState = world.player;
   if (!player.alive) {
+    player.walked = { x: 0, z: 0 };
     player.deadTime += dt;
     stepKnock(world.grid, player, dt);
     return;
@@ -451,6 +452,7 @@ export function stepPlayer(world: World, dt: number): void {
       } else if (player.path.length === 0) player.repathTimer = 0;
     }
   }
+  player.walked = player.moving ? { x: player.pos.x - startX, z: player.pos.z - startZ } : { x: 0, z: 0 };
   player.gait = player.moving && dt > 0 ? Math.hypot(player.pos.x - startX, player.pos.z - startZ) / dt : 0;
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.strideTravel = PLAYER.stride * PLAYER.firstStepFraction;

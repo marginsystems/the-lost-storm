@@ -6,10 +6,11 @@ import { DEGREES_TO_RADIANS, distance } from '../math.ts';
 import { isWalkable, lineWalkable } from '../nav/grid.ts';
 import { pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
+import { grantXp, killXp } from './character.ts';
 import { dropOnGround } from './ground.ts';
 import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
-import type { ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, NpcState, World } from './types.ts';
+import type { EchoState, ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, NpcState, ProjectileState, World } from './types.ts';
 
 export const MOMENTS = {
   placementTries: 40,
@@ -53,6 +54,8 @@ function begin(world: World, def: MomentDef, pos: Vec2, combat: boolean, mark: b
     phaseTime: 0,
     armed: distance(world.player.pos, pos) >= def.radius,
     away: 0,
+    entered: false,
+    bounty: 0,
     outcome: null,
     figures: figuresOf(def, pos),
   };
@@ -148,7 +151,7 @@ function place(world: World, field: MomentField, mark: boolean): MomentState | n
 function echoDef(world: World, entry: MomentEcho): MonsterDef | null {
   const base: MonsterDef | undefined = world.content.monsters.get(entry.monster);
   if (base === undefined) return null;
-  const echo: MonsterDef = { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null };
+  const echo: MonsterDef = { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null, xp: 0 };
   return entry.look === null ? echo : { ...echo, rig: entry.look.rig, scale: entry.look.scale, gear: entry.look.gear, wear: entry.look.wear };
 }
 
@@ -174,6 +177,7 @@ function turn(world: World, moment: MomentState): number[] {
     monster.aggro = true;
     monster.foeId = world.player.id;
     monster.restTime = world.content.moments.rouse + turned.length * world.content.moments.stagger;
+    moment.bounty += killXp(world, world.content.monsters.get(entry.monster)?.xp ?? 0, monster.level);
     world.events.push({ type: 'aggro', monsterId: monster.id });
     figure.turned = true;
     figure.monsterId = monster.id;
@@ -184,12 +188,13 @@ function turn(world: World, moment: MomentState): number[] {
 
 function wake(world: World, moment: MomentState): void {
   moment.phase = 'awake';
+  moment.entered = true;
   moment.timeLeft = moment.def.awake;
   moment.phaseTime = 0;
   world.events.push({ type: 'moment_woke', moment, turned: turn(world, moment) });
 }
 
-function echoMonsters(world: World, moment: MomentState): MonsterState[] {
+export function echoMonsters(world: World, moment: MomentState): MonsterState[] {
   const ids: Set<number> = new Set<number>(moment.figures.flatMap((figure: MomentFigure): number[] => (figure.monsterId === null ? [] : [figure.monsterId])));
   return world.monsters.filter((monster: MonsterState): boolean => ids.has(monster.id));
 }
@@ -199,6 +204,9 @@ function removeEchoes(world: World, moment: MomentState, onlyLiving: boolean): v
   if (gone.size === 0) return;
   for (const id of gone) world.events.push({ type: 'monster_remove', monsterId: id });
   world.monsters = world.monsters.filter((monster: MonsterState): boolean => !gone.has(monster.id));
+  for (const projectile of world.projectiles) if (gone.has(projectile.ownerId)) world.events.push({ type: 'projectile_end', id: projectile.id, pos: { ...projectile.pos }, hit: false, skill: projectile.skill });
+  world.projectiles = world.projectiles.filter((projectile: ProjectileState): boolean => !gone.has(projectile.ownerId));
+  world.echoes = world.echoes.filter((echo: EchoState): boolean => !gone.has(echo.ownerId));
 }
 
 function reward(world: World, moment: MomentState, share: number, items: boolean): void {
@@ -220,8 +228,10 @@ function end(world: World, moment: MomentState, outcome: MomentOutcome): void {
   if (outcome === 'played' && moment.combat) reward(world, moment, world.content.moments.playedShare, false);
   if (outcome === 'resolved') {
     reward(world, moment, 1, true);
+    if (moment.bounty > 0) grantXp(world, moment.bounty);
     setFlags(world, world.content.moments.cleared);
   }
+  if (outcome === 'left' && sureHolds(world, fieldOf(world))) world.strikeTimer = world.content.moments.comeback;
   removeEchoes(world, moment, true);
   moment.phase = 'fading';
   moment.outcome = outcome;
@@ -236,6 +246,14 @@ function stepAwake(world: World, moment: MomentState, dt: number): void {
   if (turned && !fighting) {
     end(world, moment, 'resolved');
     return;
+  }
+  if (world.player.alive) {
+    const inside: boolean = distance(world.player.pos, moment.pos) <= moment.def.radius;
+    if (moment.entered && !inside) {
+      end(world, moment, 'left');
+      return;
+    }
+    moment.entered = inside;
   }
   const present: boolean = world.player.alive && distance(world.player.pos, moment.pos) < moment.def.radius * MOMENTS.presence;
   moment.away = present ? 0 : moment.away + dt;
@@ -318,6 +336,7 @@ export function forceStrike(world: World, at: Vec2, momentId: string | null): Mo
 
 export function restEchoes(world: World): void {
   for (const moment of world.moments) {
+    moment.entered = false;
     echoMonsters(world, moment).forEach((monster: MonsterState, order: number): void => {
       monster.restTime = world.content.moments.rouse + order * world.content.moments.stagger;
     });

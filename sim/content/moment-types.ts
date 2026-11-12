@@ -62,6 +62,7 @@ export interface MomentLibrary {
   readonly cleared: StoryFlags;
   readonly playedShare: number;
   readonly rouse: number;
+  readonly comeback: number;
   readonly stagger: number;
   readonly defs: ReadonlyMap<string, MomentDef>;
 }

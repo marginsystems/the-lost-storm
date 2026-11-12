@@ -156,6 +156,7 @@ export interface PlayerState extends ActorState {
   held: number[];
   invulnerable: number;
   strideTravel: number;
+  walked: Vec2;
   gait: number;
   kills: number;
   flasks: FlaskState[];
@@ -406,7 +407,7 @@ export interface StrikeCommand {
 
 export type MomentPhase = 'mark' | 'dormant' | 'awake' | 'fading';
 
-export type MomentOutcome = 'faded' | 'played' | 'resolved' | 'expired';
+export type MomentOutcome = 'faded' | 'played' | 'resolved' | 'expired' | 'left';
 
 export interface MomentFigure {
   readonly echo: number;
@@ -427,6 +428,8 @@ export interface MomentState {
   phaseTime: number;
   armed: boolean;
   away: number;
+  entered: boolean;
+  bounty: number;
   outcome: MomentOutcome | null;
   readonly figures: MomentFigure[];
 }

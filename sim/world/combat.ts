@@ -5,7 +5,7 @@ import { generateItem } from '../items.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
 import { armourReduction, resolveSkill } from '../stats.ts';
-import { grantXp } from './character.ts';
+import { grantXp, killXp } from './character.ts';
 import { isInvulnerable } from './dash.ts';
 import { closeDialogue } from './dialogue.ts';
 import { mayStrike, provoke, regardOf } from './factions.ts';
@@ -99,7 +99,7 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
   world.player.kills += 1;
   gainFlaskCharges(world.player);
   rollLoot(world, target);
-  grantXp(world, Math.round(target.def.xp * (1 + world.content.world.scaling.xpPerLevel * (target.level - 1))));
+  grantXp(world, killXp(world, target.def.xp, target.level));
 }
 
 export function guardOutcome(target: Actor, skill: SkillDef, direction: ReadonlyVec2): GuardOutcome {

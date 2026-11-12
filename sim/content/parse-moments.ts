@@ -89,6 +89,7 @@ export function momentLibrary(value: unknown, where: string): MomentLibrary {
     cleared: storyFlags(source['cleared'], `${where}.cleared`),
     playedShare: chance(source, 'playedShare', where),
     rouse: source['rouse'] === undefined ? 0 : nonNegative(source, 'rouse', where),
+    comeback: source['comeback'] === undefined ? 0 : nonNegative(source, 'comeback', where),
     stagger: source['stagger'] === undefined ? 0 : nonNegative(source, 'stagger', where),
     defs: byId(each(source['moments'], `${where}.moments`, moment), `${where}.moments`),
   };

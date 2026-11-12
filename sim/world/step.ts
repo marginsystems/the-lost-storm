@@ -14,7 +14,9 @@ import { stepQuests } from './quests.ts';
 import { stepVoices } from './voices.ts';
 import { stepEchoes, stepProjectiles } from './skills.ts';
 import { stepTrade } from './trade.ts';
-import type { Command, World, WorldEvent } from './types.ts';
+import type { Command, MomentState, World, WorldEvent } from './types.ts';
+import type { Vec2 } from '../math.ts';
+import { bindEchoes, heldIn, holdHero } from './bubble.ts';
 import { stepVoid } from './void.ts';
 import { stepMoments } from './moments.ts';
 import { stepDrifts, stepTriggers } from './terrain.ts';
@@ -27,6 +29,8 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   world.time += dt;
   stepDrifts(world);
   for (const command of heldCommands(world, commands)) if (acceptsCommand(world, command)) handleCommand(world, command);
+  const start: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  const bubble: MomentState | null = heldIn(world, start);
   stepPlayer(world, dt);
   stepFlasks(world, dt);
   stepVoid(world, dt);
@@ -37,6 +41,8 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepHazards(world, dt);
   stepEchoes(world, dt);
   stepAreas(world, dt);
+  bindEchoes(world);
+  holdHero(world, start, bubble);
   stepDeath(world, dt);
   for (const ground of world.ground) ground.age += dt;
   removeCorpses(world);

@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
 import type { MomentDef, MomentField, MomentLibrary, StrikeInterval } from '../content/moment-types.ts';
-import type { Content, ZoneDef, ZoneNpc } from '../content/types.ts';
+import type { Content, SkillDef, ZoneDef, ZoneNpc } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { parseSaveText, toSave } from '../save.ts';
 import { cuesForEvent } from '../audio.ts';
 import { loadAudio } from '../content/audio.ts';
 import { createWorld } from './create.ts';
-import { forceStrike, insideAwakeMoment, MOMENTS, momentOfEcho, nearestFight, safeSpots, strikeGround } from './moments.ts';
+import { forceStrike, insideAwakeMoment, MOMENTS, momentOfEcho, nearestFight, restEchoes, safeSpots, strikeGround } from './moments.ts';
 import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -23,6 +23,8 @@ const SHIPPED: MomentLibrary = loadContent().moments;
 const FAR = { x: 150, z: 150 } as const;
 const ROAD_WALK = { speed: 4, within: 4 } as const;
 const SAFE_PROBE = { x: 40, z: 47 } as const;
+const BOUND = { knock: 60, frames: 45 } as const;
+const STONE = { id: 9001, reach: 30 } as const;
 
 function run(world: World, seconds: number): WorldEvent[] {
   const events: WorldEvent[] = [];
@@ -182,17 +184,30 @@ void test('turned echoes are hostile monsters of the echo faction; killing them 
   assert.equal(world.monsters.some((monster: MonsterState): boolean => echoes.includes(monster)), false);
 });
 
-void test('a moment whose hostiles outlive its timer dissolves them and gives nothing', (): void => {
+void test('a moment the hero walks out of before it is cleared dissolves at once and gives nothing: no experience, no drops, no quest credit', (): void => {
   const world: World = fieldWorld(quietField());
+  world.player.invulnerable = 1e9;
   const moment: MomentState = struck(world, RAID.id);
   standAt(world, moment.pos);
   run(world, DT * 2);
+  const echoes: MonsterState[] = echoesOf(world, moment);
+  assert.ok(echoes.length > 1);
+  const before: number = world.player.xp;
+  slay(world, [must(echoes[0], 'an echo')]);
+  const killed: WorldEvent[] = run(world, DT);
+  assert.equal(world.player.xp, before);
+  assert.equal(killed.some((event: WorldEvent): boolean => event.type === 'xp' && event.amount > 0), false);
+  const thrower: MonsterState = must(echoesOf(world, moment).find((monster: MonsterState): boolean => monster.alive), 'a living echo');
+  const stone: SkillDef = must(world.content.skills.get(thrower.def.skill), 'the echo skill');
+  world.projectiles.push({ id: STONE.id, ownerId: thrower.id, team: 'monster', faction: thrower.def.faction, skill: stone, damageMin: 1, damageMax: 1, damagePercent: 0, critChance: 0, critMultiplier: 1, pos: { ...thrower.pos }, direction: { x: 1, z: 0 }, distanceLeft: STONE.reach, pierceLeft: 0, hitIds: [] });
   standAt(world, FAR);
-  const events: WorldEvent[] = run(world, RAID.awake);
-  assert.equal(moment.outcome, 'expired');
-  assert.equal(echoesOf(world, moment).length, 0);
-  assert.ok(events.some((event: WorldEvent): boolean => event.type === 'monster_remove'));
-  assert.equal(events.some((event: WorldEvent): boolean => event.type === 'drop'), false);
+  const events: WorldEvent[] = run(world, DT * 2);
+  assert.equal(moment.outcome, 'left');
+  assert.equal(world.projectiles.some((projectile): boolean => projectile.ownerId === thrower.id), false);
+  assert.equal(echoesOf(world, moment).filter((monster: MonsterState): boolean => monster.alive).length, 0);
+  assert.equal(world.player.xp, before);
+  assert.equal(events.some((event: WorldEvent): boolean => event.type === 'drop' || event.type === 'xp' || event.type === 'chart_point'), false);
+  assert.equal(world.flags['first_moment'] === 'cleared', false);
 });
 
 void test('a field without combat never turns an echo', (): void => {
@@ -339,32 +354,84 @@ void test('brushing the edge of a bubble does not wake it; only stepping well in
   assert.equal(moment.phase, 'awake');
 });
 
-void test('a fight does not run out while the hero stays with it, and runs out once he has been away long enough', (): void => {
+void test('a fight does not run out while the hero stays inside it, and ends the moment he walks out', (): void => {
   const world: World = fieldWorld(quietField());
   world.player.invulnerable = 1e9;
   const moment: MomentState = struck(world, RAID.id);
   standAt(world, moment.pos);
   run(world, RAID.awake + 3);
   assert.equal(moment.phase, 'awake');
+  world.player.path = [{ x: moment.pos.x + RAID.radius * 2, z: moment.pos.z }];
+  run(world, (RAID.radius * 2) / world.player.stats.moveSpeed + 1);
+  assert.equal(moment.outcome, 'left');
+});
+
+void test('a fight whose hero rose elsewhere and never walks back in runs out after the away limit', (): void => {
+  const world: World = fieldWorld(quietField());
+  world.player.invulnerable = 1e9;
+  const moment: MomentState = struck(world, RAID.id);
+  standAt(world, moment.pos);
+  run(world, DT * 2);
+  restEchoes(world);
   standAt(world, FAR);
   run(world, MOMENTS.awayLimit - 1);
   assert.equal(moment.phase, 'awake');
-  run(world, 2);
+  run(world, RAID.awake + 2);
   assert.equal(moment.outcome, 'expired');
 });
 
-void test('while the field is sure, a woken fight never runs out even with the hero away', (): void => {
-  const world: World = fieldWorld(quietField({ sure: [{ type: 'flag', flag: 'first_moment', is: 'cleared', not: true }] }));
+void test('a first fight the hero walks out of ends, and a new one strikes beside him after a short wait', (): void => {
+  const near = { min: 8, max: 11 } as const;
+  const world: World = fieldWorld(quietField({ sure: [{ type: 'flag', flag: 'first_moment', is: 'cleared', not: true }], near }));
   world.player.invulnerable = 1e9;
   const moment: MomentState = struck(world, RAID.id);
   standAt(world, moment.pos);
   run(world, DT * 2);
   standAt(world, FAR);
-  run(world, RAID.awake + MOMENTS.awayLimit * 2);
-  assert.equal(moment.phase, 'awake');
+  run(world, DT * 2);
+  assert.equal(moment.outcome, 'left');
+  const early: WorldEvent[] = run(world, world.content.moments.comeback - 0.5);
+  assert.equal(early.some((event: WorldEvent): boolean => event.type === 'moment_mark'), false);
+  const later: WorldEvent[] = run(world, 1);
+  const mark = must(later.find((event: WorldEvent): boolean => event.type === 'moment_mark'), 'a new strike');
+  assert.ok(mark.type === 'moment_mark');
+  const gap: number = distance(mark.moment.pos, world.player.pos);
+  assert.ok(gap >= near.min - 1e-6 && gap <= near.max + 1e-6, `${gap.toFixed(1)} m`);
 });
 
-void test('a new hero in the Hall gets a grace period, then the first moment strikes on screen beside him as he walks the road', (): void => {
+void test('echoes are bound to their bubble: a hard knock, a chase or a flight ends at the inside of the edge', (): void => {
+  const world: World = fieldWorld(quietField());
+  world.player.invulnerable = 1e9;
+  const moment: MomentState = struck(world, RAID.id);
+  standAt(world, moment.pos);
+  run(world, DT * 2);
+  const echoes: MonsterState[] = echoesOf(world, moment);
+  assert.ok(echoes.length > 0);
+  for (const monster of echoes) {
+    monster.knock.x = BOUND.knock;
+    monster.knock.z = BOUND.knock;
+  }
+  for (let frame: number = 0; frame < BOUND.frames; frame += 1) {
+    run(world, DT);
+    for (const monster of echoesOf(world, moment)) assert.ok(distance(monster.pos, moment.pos) <= RAID.radius - monster.radius + 1e-6, `echo ${monster.id} at ${distance(monster.pos, moment.pos).toFixed(2)} m`);
+  }
+});
+
+void test('a knock on the hero near the edge cannot throw him out of the bubble; only his own walking carries him out', (): void => {
+  const world: World = fieldWorld(quietField());
+  world.player.invulnerable = 1e9;
+  const moment: MomentState = struck(world, RAID.id);
+  standAt(world, moment.pos);
+  run(world, DT * 2);
+  standAt(world, { x: moment.pos.x + RAID.radius - 1, z: moment.pos.z });
+  run(world, DT);
+  world.player.knock.x = BOUND.knock;
+  run(world, 1);
+  assert.equal(moment.phase, 'awake');
+  assert.ok(distance(world.player.pos, moment.pos) <= RAID.radius);
+});
+
+void test('a new hero in the Hall gets a grace period, then the first moment strikes on screen beside him as he walks the road and cuts down whatever wakes', (): void => {
   const shipped: Content = loadContent();
   const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');
   const field: MomentField = must(hall.moments, 'hall field');
@@ -379,6 +446,7 @@ void test('a new hero in the Hall gets a grace period, then the first moment str
     for (let elapsed: number = 0; elapsed < field.grace + ROAD_WALK.within && landed === null; elapsed += DT) {
       const along: number = Math.min(1, (elapsed * ROAD_WALK.speed) / distance(from, east));
       standAt(world, { x: from.x + (east.x - from.x) * along, z: from.z + (east.z - from.z) * along });
+      slay(world, world.monsters.filter((monster: MonsterState): boolean => monster.aggro && monster.def.faction !== world.content.moments.faction));
       for (const event of stepWorld(world, [], DT)) {
         if (event.type === 'moment_mark' && elapsed < field.grace - DT) assert.fail(`seed ${seed}: struck at ${elapsed.toFixed(1)} s, inside the grace`);
         if (event.type === 'moment_mark') landed = { at: elapsed, gap: distance(event.moment.pos, world.player.pos), id: event.moment.def.id };
