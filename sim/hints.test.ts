@@ -98,8 +98,6 @@ void test('a save that has already played skips the first-minute hints', (): voi
   seedVeteran(defs, state, world);
   world.player.skillPoints = 0;
   assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
-  world.player.alive = false;
-  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'death');
 });
 
 void test('the low life hint needs a carried item of the named slot', (): void => {
@@ -122,25 +120,27 @@ void test('the equip hint waits until the bag holds something to wear', (): void
   const world: World = fresh();
   world.player.skillPoints = 0;
   world.player.inventory.fill(null);
-  const state: HintState = createHintState(allBut('equip', 'death'));
+  const state: HintState = createHintState(allBut('equip'));
   placeInBag(world, 'worn_journal');
   assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
   placeInBag(world, 'rusted_blade');
   assert.equal(shown(stepHints(defs, world, state, IDLE)), 'equip');
 });
 
-void test('dying puts the active hint aside for the death hint and keeps it for later', (): void => {
+void test('dying puts the active hint aside and keeps it for later', (): void => {
   const world: World = fresh();
   world.player.skillPoints = 0;
   world.player.inventory.fill(null);
   placeInBag(world, 'rusted_blade');
-  const state: HintState = createHintState(allBut('equip', 'death'));
+  const state: HintState = createHintState(allBut('equip'));
   assert.equal(shown(stepHints(defs, world, state, IDLE)), 'equip');
   world.player.alive = false;
   const aside: HintChange[] = stepHints(defs, world, state, IDLE);
   assert.deepEqual(aside.map((change: HintChange): string => change.type), ['hide']);
   assert.equal(state.seen.has('equip'), false);
-  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'death');
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+  world.player.alive = true;
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'equip');
 });
 
 void test('swapping the worn weapon for one from the bag completes the equip hint', (): void => {
@@ -149,7 +149,7 @@ void test('swapping the worn weapon for one from the bag completes the equip hin
   world.player.inventory.fill(null);
   assert.notEqual(world.player.equipped.weapon, null);
   placeInBag(world, 'rusted_blade');
-  const state: HintState = createHintState(allBut('equip', 'death'));
+  const state: HintState = createHintState(allBut('equip'));
   assert.equal(shown(stepHints(defs, world, state, IDLE)), 'equip');
   stepWorld(world, [{ type: 'equip', inventoryIndex: world.player.inventory.findIndex((item: ItemInstance | null): boolean => item !== null) }], 0.05);
   const done: HintChange[] = stepHints(defs, world, state, IDLE);
@@ -161,7 +161,7 @@ void test('the inventory hint waits for something to wear, not for any pickup', 
   const world: World = fresh();
   world.player.skillPoints = 0;
   world.player.inventory.fill(null);
-  const state: HintState = createHintState(allBut('inventory', 'equip', 'death'));
+  const state: HintState = createHintState(allBut('inventory', 'equip'));
   placeInBag(world, 'worn_journal');
   assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
   placeInBag(world, 'rusted_blade');
@@ -174,7 +174,21 @@ void test('a hint the player leaves alone steps aside after a short while and do
   assert.equal(shown(stepHints(defs, world, state, IDLE)), 'move');
   world.time += HINTS.maxShowSeconds;
   const aside: HintChange[] = stepHints(defs, world, state, IDLE);
-  assert.deepEqual(aside.map((change: HintChange): string => change.type), ['hide']);
+  assert.deepEqual(aside.map((change: HintChange): boolean => change.type === 'hide' && change.done), [true]);
   assert.ok(state.seen.has('move'));
   assert.notEqual(shown(stepHints(defs, world, state, IDLE)), 'move');
+});
+
+void test('time spent in a conversation does not count toward a hint stepping aside', (): void => {
+  const world: World = fresh();
+  const state: HintState = createHintState([]);
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'move');
+  const npc = must(content.npcs.values().next().value, 'an npc');
+  world.dialogue = { npcId: 0, npc, talk: must(npc.talks[0], 'a talk'), index: 0 };
+  world.time += HINTS.maxShowSeconds * 2;
+  assert.deepEqual(stepHints(defs, world, state, IDLE), []);
+  world.dialogue = null;
+  world.time += HINTS.maxShowSeconds / 2;
+  assert.deepEqual(stepHints(defs, world, state, IDLE), []);
+  assert.equal(state.active, 'move');
 });

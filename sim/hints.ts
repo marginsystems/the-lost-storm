@@ -19,7 +19,8 @@ export interface HintState {
   allocatedBase: number;
   equippedUids: ReadonlySet<number>;
   started: boolean;
-  shownAt: number;
+  visibleFor: number;
+  lastTime: number;
 }
 
 export interface HintInput {
@@ -35,7 +36,7 @@ function wornUids(world: World): number[] {
 }
 
 export function createHintState(seen: Iterable<string>): HintState {
-  return { seen: new Set<string>(seen), active: null, anchor: { x: 0, z: 0 }, talked: false, zoneChanged: false, pickedUp: false, skillsUsed: new Set<string>(), allocatedBase: 0, equippedUids: new Set<number>(), started: false, shownAt: 0 };
+  return { seen: new Set<string>(seen), active: null, anchor: { x: 0, z: 0 }, talked: false, zoneChanged: false, pickedUp: false, skillsUsed: new Set<string>(), allocatedBase: 0, equippedUids: new Set<number>(), started: false, visibleFor: 0, lastTime: 0 };
 }
 
 export function seedVeteran(defs: HintsDef, state: HintState, world: World): void {
@@ -165,7 +166,8 @@ function begin(state: HintState, world: World, hint: HintDef): void {
   state.skillsUsed = new Set<string>();
   state.allocatedBase = world.player.allocated.length;
   state.equippedUids = new Set<number>(wornUids(world));
-  state.shownAt = world.time;
+  state.visibleFor = 0;
+  state.lastTime = world.time;
 }
 
 export function stepHints(defs: HintsDef, world: World, state: HintState, input: HintInput): HintChange[] {
@@ -173,14 +175,16 @@ export function stepHints(defs: HintsDef, world: World, state: HintState, input:
   observe(state, world, input.events);
   const current: HintDef | undefined = defs.hints.find((hint: HintDef): boolean => hint.id === state.active);
   if (current !== undefined) {
+    if (world.dialogue === null) state.visibleFor += world.time - state.lastTime;
+    state.lastTime = world.time;
     if (finished(current.done, world, state, input.open)) {
       state.seen.add(current.id);
       state.active = null;
       changes.push({ type: 'hide', hint: current, done: true });
-    } else if (world.time - state.shownAt >= HINTS.maxShowSeconds) {
+    } else if (state.visibleFor >= HINTS.maxShowSeconds) {
       state.seen.add(current.id);
       state.active = null;
-      changes.push({ type: 'hide', hint: current, done: false });
+      changes.push({ type: 'hide', hint: current, done: true });
     } else if (!input.enabled || (!world.player.alive && current.trigger.type !== 'player_dead')) {
       state.active = null;
       changes.push({ type: 'hide', hint: current, done: false });
