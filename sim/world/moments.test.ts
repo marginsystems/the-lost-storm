@@ -6,7 +6,7 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { parseSaveText, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
-import { forceStrike, momentOfEcho, strikeGround } from './moments.ts';
+import { forceStrike, MOMENTS, momentOfEcho, strikeGround } from './moments.ts';
 import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -75,6 +75,17 @@ void test('strikes keep their distance from the hero, the exits and each other',
     }
     for (const a of world.moments) for (const b of world.moments) if (a !== b) assert.ok(distance(a.pos, b.pos) >= a.def.radius + b.def.radius + field.clearance.between - 1e-9);
   }
+});
+
+void test('a bubble that forms around the hero wakes after a short beat without him stepping out', (): void => {
+  const world: World = fieldWorld(quietField());
+  const at = { x: 40, z: 40 };
+  standAt(world, at);
+  const moment: MomentState = must(forceStrike(world, at, QUIET.id), 'forced strike');
+  run(world, world.content.moments.telegraph + DT * 2);
+  assert.equal(moment.phase, 'dormant');
+  run(world, MOMENTS.settle);
+  assert.equal(moment.phase, 'awake');
 });
 
 void test('an untouched bubble fades after its lifetime and is then gone', (): void => {

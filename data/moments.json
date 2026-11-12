@@ -155,7 +155,7 @@
       ],
       "echoes": [
         {
-          "monster": "unfinished_brute",
+          "monster": "first_brute",
           "x": 0.65,
           "z": 2.1,
           "facingDegrees": -163,
@@ -178,7 +178,7 @@
           }
         },
         {
-          "monster": "unfinished_thrower",
+          "monster": "first_thrower",
           "x": 1.49,
           "z": -1.62,
           "facingDegrees": -42,
@@ -219,7 +219,7 @@
           }
         },
         {
-          "monster": "unfinished_thrower",
+          "monster": "first_thrower",
           "x": -1.6,
           "z": 1.9,
           "facingDegrees": 140,

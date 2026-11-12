@@ -15,6 +15,7 @@ export const MOMENTS = {
   placementTries: 14,
   startLifeMin: 0.35,
   startLifeMax: 1,
+  settle: 1.2,
 } as const;
 
 const NO_LOOT = { goldChance: 0, goldMin: 0, goldMax: 0, itemChance: 0 } as const;
@@ -212,7 +213,7 @@ function stepMoment(world: World, moment: MomentState, dt: number): boolean {
       return true;
     case 'dormant':
       if (!inside) moment.armed = true;
-      if (inside && moment.armed) wake(world, moment);
+      if (inside && (moment.armed || moment.phaseTime >= MOMENTS.settle)) wake(world, moment);
       else if (moment.timeLeft <= 0) end(world, moment, 'faded');
       return true;
     case 'awake':
