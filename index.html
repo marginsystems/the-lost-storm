@@ -27,6 +27,7 @@
     <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/cinzel/files/cinzel-latin-700-normal.woff2" />
     <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/alegreya-sans/files/alegreya-sans-latin-400-normal.woff2" />
     <link rel="stylesheet" href="/src/landing/landing.css" />
+    <link rel="stylesheet" href="/src/landing/socials.css" />
   </head>
   <body>
     <header class="hero">
@@ -38,11 +39,14 @@
       <div class="hero-shade" aria-hidden="true"></div>
       <p class="live-chip" id="live-chip" aria-hidden="true"><span class="live-dot"></span><b id="live-chip-online">0</b> playing now</p>
       <div class="hero-body">
-        <p class="kicker">Free · Early alpha</p>
+        <p class="kicker">Free <span class="alpha-tag">Alpha</span></p>
         <h1>The Lost Storm</h1>
         <p class="lede">A hack-and-slash action RPG that runs in your browser. Fight, loot, level up.</p>
-        <a class="play" href="/play/">Play now</a>
-        <p class="fine">No download, no account needed.</p>
+        <div class="actions">
+          <a class="play" href="/play/">Play now</a>
+          <a class="play quiet" data-link="discord">Join the Discord</a>
+        </div>
+        <p class="fine">No download, no account needed. Progress may be reset during the alpha.</p>
       </div>
     </header>
 
@@ -91,16 +95,24 @@
       <section class="alpha" aria-labelledby="alpha-title">
         <h2 id="alpha-title">Early alpha, honestly</h2>
         <p>In now: a first act with a town, two roads of two zones each, a boss off each road and a last zone behind the town's gate. One hero with two storm skills, a dodge roll and life and mana flasks, loot with affixes, levels and a small skill tree. It takes well under an hour, on a computer or with touch controls on a phone.</p>
-        <p>Progress saves on its own as you play. Close the tab and you pick up where you left off.</p>
+        <p>Progress saves on its own as you play. Close the tab and you pick up where you left off. While the game is in alpha, progress may be reset.</p>
+        <p>Tell us what you think: the game asks at the end of the alpha, and Feedback in the pause menu works any time.</p>
         <p>The game is open source under the MIT licence: read the code or report a bug on <a href="https://github.com/marginsystems/the-lost-storm">GitHub</a>. Models, animations and textures come from free libraries, listed in the <a href="https://github.com/marginsystems/the-lost-storm/blob/main/ASSETS.md">asset credits</a>.</p>
         <a class="play quiet" href="/play/">Play now</a>
       </section>
     </main>
 
     <footer>
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-      <a href="https://github.com/marginsystems/the-lost-storm">GitHub</a>
+      <nav class="socials" aria-label="Elsewhere">
+        <a data-link="discord">Discord</a>
+        <a data-link="github">GitHub</a>
+        <a data-link="x">X</a>
+        <button class="copy" type="button" data-copy="%LINK_SITE%"><span class="copy-idle">Copy link</span><span class="copy-done" aria-hidden="true">Copied</span></button>
+      </nav>
+      <nav class="legal" aria-label="Legal">
+        <a href="/privacy.html">Privacy</a>
+        <a href="/terms.html">Terms</a>
+      </nav>
     </footer>
     <script type="module" src="/src/landing/main.ts"></script>
   </body>

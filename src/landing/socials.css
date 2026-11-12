@@ -1,0 +1,96 @@
+.kicker .alpha-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px 0;
+  border-radius: 2px;
+  background: rgba(232, 184, 102, 0.16);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  vertical-align: 1px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.actions .play.quiet {
+  background: rgba(239, 230, 214, 0.08);
+  color: var(--text);
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.actions .play.quiet:hover,
+.actions .play.quiet:focus-visible {
+  background: rgba(239, 230, 214, 0.14);
+  color: var(--text);
+  box-shadow: none;
+}
+
+footer {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  row-gap: 12px;
+}
+
+footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+}
+
+footer a:hover,
+footer a:focus-visible,
+.copy:hover,
+.copy:focus-visible {
+  outline: none;
+  color: var(--text);
+}
+
+footer a {
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.copy {
+  display: inline-grid;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.copy > span {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.copy .copy-done {
+  opacity: 0;
+  transform: translateY(6px);
+  color: var(--ember);
+}
+
+.copy.copied .copy-idle {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.copy.copied .copy-done {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 720px) {
+  .actions {
+    flex-direction: column;
+  }
+}

@@ -60,3 +60,22 @@ const server: ServerUrl = readServerUrl(import.meta.env.VITE_SERVER_URL);
 const panel: HTMLElement | null = element('live', HTMLElement);
 if (server.kind === 'ok' && panel !== null) watch(panel, server.url);
 wireLeave();
+
+const COPY: { readonly shownMs: number } = { shownMs: 1800 };
+
+function wireCopy(button: HTMLButtonElement): void {
+  const link: string = button.dataset['copy'] ?? '';
+  if (link === '') return;
+  let reset: number = 0;
+  const copy = async (): Promise<void> => {
+    await navigator.clipboard.writeText(link);
+    button.classList.add('copied');
+    window.clearTimeout(reset);
+    reset = window.setTimeout((): void => button.classList.remove('copied'), COPY.shownMs);
+  };
+  button.addEventListener('click', (): void => {
+    copy().catch((): void => undefined);
+  });
+}
+
+for (const button of document.querySelectorAll<HTMLButtonElement>('button[data-copy]')) wireCopy(button);

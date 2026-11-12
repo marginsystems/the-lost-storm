@@ -9,6 +9,8 @@ import type { Backend, KeyValueStore, Logger, Timers } from '../src/backend/back
 import { createBackend } from '../src/backend/create.ts';
 import { epochOf, SAVE_EPOCH } from '../src/backend/epoch.ts';
 import { localSaveText } from '../src/backend/local.ts';
+import { answerCount, answerFeedback } from './fake-feedback.ts';
+import type { FakeAnswer, StoredFeedback } from './fake-feedback.ts';
 
 export const content: Content = loadContent();
 
@@ -156,6 +158,8 @@ export interface FakeServer {
   count(method: string, path: string): number;
   epoch(): number;
   wipe(epoch?: number): void;
+  readonly feedback: StoredFeedback[];
+  readonly counted: unknown[];
 }
 
 export const BAD_TURNSTILE_TOKEN: string = 'turnstile-refused';
@@ -222,6 +226,8 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   const cooldowns: Map<string, number> = new Map();
   let lost: { readonly method: string; readonly path: string } | null = null;
   let epoch: number = SAVE_EPOCH;
+  const feedback: StoredFeedback[] = [];
+  const counted: unknown[] = [];
   const signIn = (owner: ServerAccount, credential: unknown): Response => {
     const [scheme, subject, nonce, name]: readonly string[] = typeof credential === 'string' ? credential.split('|') : [];
     const expected: string | null = owner.nonce;
@@ -292,6 +298,16 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     const planIndex: number = planned.findIndex((entry: Planned): boolean => entry.method === null || entry.method === method);
     const plan: Planned | undefined = planIndex < 0 ? undefined : planned.splice(planIndex, 1)[0];
     if (plan !== undefined) return json(plan.status, { error: { code: 'planned', message: 'planned' } }, plan.headers);
+    if (method === 'POST' && path === '/v1/feedback') {
+      const answer: FakeAnswer = answerFeedback(body);
+      if (answer.status === 201) feedback.push({ token, body });
+      return json(answer.status, answer.body);
+    }
+    if (method === 'POST' && path === '/v1/counts') {
+      const answer: FakeAnswer = answerCount(body);
+      if (answer.status === 200) counted.push(body);
+      return json(answer.status, answer.body);
+    }
     if (method === 'POST' && path === '/v1/guest') {
       created += 1;
       const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, email: null, method: null, name: null, nonce: null, character: null };
@@ -401,6 +417,8 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     },
     count: (method: string, path: string): number => requests.filter((request: RecordedRequest): boolean => request.method === method && request.path === path).length,
     epoch: (): number => epoch,
+    feedback,
+    counted,
     wipe: (next: number = SAVE_EPOCH): void => {
       epoch = next;
       for (const account of accounts) {

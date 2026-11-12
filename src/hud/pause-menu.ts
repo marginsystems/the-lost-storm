@@ -3,12 +3,17 @@ import type { SettingsSection } from '../settings/settings.ts';
 import { SETTINGS_SECTIONS } from '../settings/settings.ts';
 import type { GlitchSettingsStore } from '../glitch/glitch-settings.ts';
 import type { SettingsStore } from '../settings/store.ts';
+import { LINKS } from '../launch/data.ts';
+import { outboundLinks } from '../launch/links.ts';
+import type { OutboundLink } from '../launch/links.ts';
 import { el, label } from './dom.ts';
 import { mountControls } from './settings-controls.ts';
 import type { ControlsPage } from './settings-controls.ts';
 import { mountGraphics } from './settings-graphics.ts';
 import pauseCss from './pause.css?inline';
 import { mountVolumeSliders } from './volume-panel.ts';
+
+const PAUSE_ROWS: { readonly base: number } = { base: 3 };
 
 const SECTION_LABELS: Readonly<Record<SettingsSection, string>> = { graphics: 'Graphics', sound: 'Sound', controls: 'Controls' };
 
@@ -19,6 +24,7 @@ export interface PauseHooks {
   onOpen(): void;
   onClose(): void;
   onTitle(): void;
+  readonly feedback: (() => void) | null;
 }
 
 export interface PauseMenu {
@@ -108,10 +114,28 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
 
   button(main, 'pause-btn', 'Resume', resume);
   button(main, 'pause-btn', 'Settings', (): void => setView('settings'));
+  const feedback: (() => void) | null = hooks.feedback;
+  if (feedback !== null) {
+    button(main, 'pause-btn', 'Feedback', (): void => {
+      api.close();
+      feedback();
+    });
+  }
   button(main, 'pause-btn', 'Return to title', (): void => {
     api.close();
     hooks.onTitle();
   });
+  const links: readonly OutboundLink[] = outboundLinks(LINKS);
+  const linkRow: HTMLParagraphElement = el('p', 'pause-links', main);
+  for (const link of links) {
+    const anchor: HTMLAnchorElement = el('a', 'pause-link', linkRow);
+    anchor.href = link.href;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener';
+    anchor.textContent = link.label;
+  }
+  card.style.setProperty('--pause-rows', String(feedback === null ? PAUSE_ROWS.base : PAUSE_ROWS.base + 1));
+  card.classList.toggle('with-links', links.length > 0);
 
   const onKey = (event: KeyboardEvent): void => {
     if (!isOpen) return;

@@ -14,7 +14,7 @@ interface Mount {
 
 const FAINT_LIMIT: number = 0.5;
 
-const ALLOWED_IN_A_HIDDEN_HUD: readonly string[] = ['ctx-notice', 'glitch-white', 'hud-fps', 'name-echo', 'pause', 'reader-veil', 'tc-stick'];
+const ALLOWED_IN_A_HIDDEN_HUD: readonly string[] = ['ctx-notice', 'fb', 'glitch-white', 'hud-fps', 'name-echo', 'pause', 'reader-veil', 'tc-stick'];
 
 const MOUNT_SITES: Readonly<Record<string, string>> = {
   'src/mobile/touch-ui.ts:canvas.after(layer)': '.tc',
@@ -55,7 +55,7 @@ function body(): HudGateTarget {
   return { dataset: {} };
 }
 
-void test('only the name letters, the note, the faint joystick, the glitch white-out and the menus survive a hidden HUD', (): void => {
+void test('only the name letters, the note, the faint joystick, the glitch white-out, the menus and the feedback card survive a hidden HUD', (): void => {
   assert.deepEqual([...HUD_GATE.keep].toSorted(), [...ALLOWED_IN_A_HIDDEN_HUD]);
   assert.equal(HUD_GATE.faint, 'tc-stick');
   const faint: readonly number[] = [HUD_GATE.faintIdle, HUD_GATE.faintHeld];

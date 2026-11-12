@@ -23,7 +23,7 @@
   background: rgba(10, 13, 20, 0.94);
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6);
   width: 200px;
-  height: 168px;
+  height: calc(var(--pause-chrome) + var(--pause-rows, 3) * var(--pause-row));
   opacity: 0;
   transform: translateY(14px) scale(0.97);
   transition:
@@ -36,6 +36,35 @@
 .pause.open .pause-card {
   opacity: 1;
   transform: none;
+}
+
+.pause-card {
+  --pause-chrome: 60px;
+  --pause-row: 36px;
+}
+
+.pause-card.with-links:not([data-view='settings']) {
+  height: calc(var(--pause-chrome) + var(--pause-rows, 3) * var(--pause-row) + 28px);
+}
+
+.pause-links {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+
+.pause-link {
+  color: rgba(239, 230, 214, 0.55);
+  text-decoration: none;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.pause-link:hover,
+.pause-link:focus-visible {
+  outline: none;
+  color: var(--text);
 }
 
 .pause-card[data-view='settings'] {

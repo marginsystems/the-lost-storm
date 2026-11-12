@@ -1,0 +1,8 @@
+{
+  "completeAct": "act_1",
+  "milestones": [
+    {"event": "picked_journal", "flag": "first_choice", "is": "took_journal"},
+    {"event": "reached_shallows", "zone": "shallows"},
+    {"event": "reached_waystation", "zone": "waystation"}
+  ]
+}
