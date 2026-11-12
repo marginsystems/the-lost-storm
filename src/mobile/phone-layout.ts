@@ -6,10 +6,6 @@ export const PHONE = {
   globeNatural: 132,
   goldNatural: 21,
   globeZoom: 0.42,
-  flaskNaturalWidth: 34,
-  flaskNaturalHeight: 53,
-  flaskZoom: 0.6,
-  flaskGap: 6,
   menuButton: 44,
   menuGap: 2,
   minimapPortrait: 96,
@@ -81,8 +77,6 @@ export interface MenuPlacement {
 export interface PhoneLayout {
   readonly life: Rect;
   readonly mana: Rect;
-  readonly lifeFlask: Rect;
-  readonly manaFlask: Rect;
   readonly menu: MenuPlacement;
   readonly zone: Rect;
   readonly minimap: Rect;
@@ -191,18 +185,14 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const globe: number = PHONE.globeNatural * PHONE.globeZoom;
   const life: Rect = { x: left, y: top, w: globe, h: globe };
   const mana: Rect = { x: right(life) + PHONE.gap, y: top, w: globe, h: (PHONE.globeNatural + PHONE.goldNatural) * PHONE.globeZoom };
-  const flaskW: number = PHONE.flaskNaturalWidth * PHONE.flaskZoom;
-  const flaskH: number = PHONE.flaskNaturalHeight * PHONE.flaskZoom;
-  const lifeFlask: Rect = { x: right(mana) + PHONE.gap, y: top, w: flaskW, h: flaskH };
-  const manaFlask: Rect = { x: right(lifeFlask) + PHONE.flaskGap, y: top, w: flaskW, h: flaskH };
-  const clusterBottom: number = Math.max(bottom(life), bottom(mana), bottom(lifeFlask));
+  const clusterBottom: number = Math.max(bottom(life), bottom(mana));
 
   const menuWidth: number = counts.menu * PHONE.menuButton + Math.max(0, counts.menu - 1) * PHONE.menuGap;
   const mapSize: number = Math.max(PHONE.minimapMin, Math.min(landscape ? PHONE.minimapLandscape : PHONE.minimapPortrait, rightEdge - left - menuWidth - PHONE.gap));
-  const zoneWidth: number = Math.max(mapSize, Math.min(PHONE.zoneWidth, rightEdge - right(manaFlask) - PHONE.gap));
+  const zoneWidth: number = Math.max(mapSize, Math.min(PHONE.zoneWidth, rightEdge - right(mana) - PHONE.gap));
   const zone: Rect = { x: rightEdge - zoneWidth, y: top, w: zoneWidth, h: PHONE.zoneLabel };
   const minimap: Rect = { x: rightEdge - mapSize, y: bottom(zone), w: mapSize, h: mapSize };
-  const menu: MenuPlacement = placeMenu(counts.menu, top, right(manaFlask) + PHONE.gap, zone.x - PHONE.gap, minimap.x - PHONE.gap, Math.ceil(clusterBottom + PHONE.gap), left);
+  const menu: MenuPlacement = placeMenu(counts.menu, top, right(mana) + PHONE.gap, zone.x - PHONE.gap, minimap.x - PHONE.gap, Math.ceil(clusterBottom + PHONE.gap), left);
 
   const xpWidth: number = Math.min(rightEdge - left, PHONE.xpMaxWidth);
   const xpBottom: number = height - safe.bottom - PHONE.xpLift;
@@ -251,20 +241,18 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const questTop: number = Math.max(bottom(minimap), sharesColumn ? bottom(menu.rect) : 0) + PHONE.gap;
   const quests: Rect | null = questsRect(column, questTop, below, height);
 
-  const taken: readonly Rect[] = [life, mana, lifeFlask, manaFlask, menu.rect, zone, minimap, hint, toast, dialogue, ...controls, ...(quests === null ? [] : [quests])];
+  const taken: readonly Rect[] = [life, mana, menu.rect, zone, minimap, hint, toast, dialogue, ...controls, ...(quests === null ? [] : [quests])];
   const underCluster: number = Math.ceil(Math.max(clusterBottom, bottom(menu.rect)) + PHONE.gap);
   const banner: Rect = freeRow([underCluster, top], PHONE.bannerHeight, PHONE.bannerMinWidth, PHONE.bannerMaxWidth, left, rightEdge, taken);
   const target: Rect = freeRow([top, underCluster, bottom(banner) + PHONE.gap], PHONE.targetHeight, PHONE.targetMinWidth, PHONE.targetMaxWidth, left, rightEdge, [...taken.filter((rect: Rect): boolean => rect !== dialogue), banner]);
 
-  return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, toast, dialogue, card, banner, target, xp, stick, attack, skills, flasks };
+  return { life, mana, menu, zone, minimap, quests, hint, toast, dialogue, card, banner, target, xp, stick, attack, skills, flasks };
 }
 
 export function layoutRects(layout: PhoneLayout): NamedRect[] {
   const named: NamedRect[] = [
     { name: 'life', rect: layout.life },
     { name: 'mana', rect: layout.mana },
-    { name: 'lifeFlask', rect: layout.lifeFlask },
-    { name: 'manaFlask', rect: layout.manaFlask },
     { name: 'menu', rect: layout.menu.rect },
     { name: 'zone', rect: layout.zone },
     { name: 'minimap', rect: layout.minimap },

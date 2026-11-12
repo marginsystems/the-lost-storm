@@ -107,7 +107,7 @@ void test('the zone name gets its own width above the minimap, clear of the menu
   for (const screen of SCREENS) {
     const layout = phoneLayout(screen, { skills: 1, flasks: 2, menu: 5 });
     assert.ok(layout.zone.w >= (screen.width >= PHONE.zoneRoomyWidth ? PHONE.zoneWidth : layout.minimap.w), label(screen, 1, 2));
-    assert.ok(layout.zone.x >= layout.manaFlask.x + layout.manaFlask.w + PHONE.gap, label(screen, 1, 2));
+    assert.ok(layout.zone.x >= layout.mana.x + layout.mana.w + PHONE.gap, label(screen, 1, 2));
     assert.equal(layout.zone.x + layout.zone.w, layout.minimap.x + layout.minimap.w);
     assert.equal(overlaps(layout.zone, layout.menu.rect), false, label(screen, 1, 2));
   }
@@ -118,7 +118,7 @@ void test('while someone speaks the dialogue box owns the space above the xp bar
     const layout = phoneLayout(screen, { skills: 5, flasks: 2, menu: 5 });
     assert.ok(inside(layout.dialogue, screen), label(screen, 5, 2));
     assert.ok(layout.dialogue.h >= PHONE.toastHeight, label(screen, 5, 2));
-    const staying: Rect[] = [layout.life, layout.mana, layout.lifeFlask, layout.manaFlask, layout.menu.rect, layout.zone, layout.minimap, layout.xp, layout.attack];
+    const staying: Rect[] = [layout.life, layout.mana, layout.menu.rect, layout.zone, layout.minimap, layout.xp, layout.attack];
     for (const rect of staying) assert.equal(overlaps(layout.dialogue, rect), false, label(screen, 5, 2));
   }
 });
@@ -146,6 +146,6 @@ void test('the target plate gets its own stretch, clear of the globes, flasks, m
     const layout = phoneLayout(screen, { skills: 5, flasks: 2, menu: 5 });
     assert.ok(inside(layout.target, screen), label(screen, 5, 2));
     assert.ok(layout.target.w >= PHONE.targetMinWidth, label(screen, 5, 2));
-    for (const rect of [layout.life, layout.mana, layout.lifeFlask, layout.manaFlask, layout.menu.rect, layout.zone, layout.minimap, layout.banner, ...(layout.quests === null ? [] : [layout.quests])]) assert.equal(overlaps(layout.target, rect), false, label(screen, 5, 2));
+    for (const rect of [layout.life, layout.mana, layout.menu.rect, layout.zone, layout.minimap, layout.banner, ...(layout.quests === null ? [] : [layout.quests])]) assert.equal(overlaps(layout.target, rect), false, label(screen, 5, 2));
   }
 });

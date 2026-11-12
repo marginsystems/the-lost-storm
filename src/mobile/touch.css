@@ -412,26 +412,6 @@ body.touch .hud.ph-no-quests > .hud-quests {
     visibility 0s linear var(--spring-snappy-ms);
 }
 
-body.touch .hud-flask {
-  zoom: var(--ph-flask-zoom);
-  bottom: auto;
-}
-
-body.touch .hud-flask.life {
-  left: var(--ph-lflask-x);
-  top: var(--ph-lflask-y);
-}
-
-body.touch .hud-flask.mana {
-  left: var(--ph-mflask-x);
-  top: var(--ph-mflask-y);
-  right: auto;
-}
-
-body.touch .flask-key {
-  display: none;
-}
-
 body.touch .hud-dialogue {
   touch-action: pan-y;
   left: var(--ph-dialogue-x);

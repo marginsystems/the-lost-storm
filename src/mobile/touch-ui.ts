@@ -80,16 +80,11 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   const vars: CSSStyleDeclaration = target.style;
   const set = (name: string, value: number): void => vars.setProperty(name, `${value.toFixed(1)}px`);
   vars.setProperty('--ph-globe-zoom', String(PHONE.globeZoom));
-  vars.setProperty('--ph-flask-zoom', String(PHONE.flaskZoom));
   vars.setProperty('--ph-quests-zoom', String(PHONE.questZoom));
   set('--ph-life-x', layout.life.x / PHONE.globeZoom);
   set('--ph-life-y', layout.life.y / PHONE.globeZoom);
   set('--ph-mana-x', layout.mana.x / PHONE.globeZoom);
   set('--ph-mana-y', layout.mana.y / PHONE.globeZoom);
-  set('--ph-lflask-x', layout.lifeFlask.x / PHONE.flaskZoom);
-  set('--ph-lflask-y', layout.lifeFlask.y / PHONE.flaskZoom);
-  set('--ph-mflask-x', layout.manaFlask.x / PHONE.flaskZoom);
-  set('--ph-mflask-y', layout.manaFlask.y / PHONE.flaskZoom);
   set('--ph-menu-x', layout.menu.rect.x);
   set('--ph-menu-y', layout.menu.rect.y);
   set('--ph-menu-btn', layout.menu.button);
