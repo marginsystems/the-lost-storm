@@ -38,4 +38,5 @@ export interface ChartDef {
   readonly paths: readonly ChartPath[];
   readonly groups: readonly ChartGroup[];
   readonly grants: readonly PointGrant[];
+  readonly twist: number;
 }
