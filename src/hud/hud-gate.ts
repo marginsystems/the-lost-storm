@@ -2,6 +2,8 @@ import type { HudPart, HudView } from '../../sim/world/hud.ts';
 import { HUD_PARTS, hudHidden, hudView } from '../../sim/world/hud.ts';
 import type { World } from '../../sim/world/types.ts';
 import type { HudPanel } from './hud-api.ts';
+import { EARNABLE_OVERLAYS } from './overlay-table.ts';
+import type { OverlayId } from './overlay-table.ts';
 
 export const HUD_GATE = {
   roots: ['#hud', '.tc'],
@@ -72,6 +74,12 @@ const PANEL_PARTS: Readonly<Record<HudPanel, HudPart>> = { inventory: 'inventory
 
 export function panelPart(panel: HudPanel): HudPart {
   return PANEL_PARTS[panel];
+}
+
+const OVERLAY_PARTS: Readonly<Partial<Record<OverlayId, HudPart>>> = { inventory: 'inventory', character: 'character', chart: 'chart', map: 'map' };
+
+export function earnedOverlays(view: HudView): OverlayId[] {
+  return EARNABLE_OVERLAYS.filter((id: OverlayId): boolean => view.parts.some((part: HudPart): boolean => OVERLAY_PARTS[id] === part));
 }
 
 export function tagPart(element: HTMLElement, part: HudPart): void {

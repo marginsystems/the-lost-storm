@@ -67,6 +67,8 @@ import type { ChartPanel } from './tree-panel.ts';
 import { applyCover, coverOf, HUD_PANELS } from './panel-cover.ts';
 import type { CoverState } from './panel-cover.ts';
 import { chromeHidden } from './overlay-core.ts';
+import { earnedOverlays } from './hud-gate.ts';
+import { hudView } from '../../sim/world/hud.ts';
 import { createCloseButton } from './close-button.ts';
 import type { OverlayId } from './overlay-table.ts';
 import type { OverlayManager } from './overlays.ts';
@@ -247,6 +249,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     },
     update(dt: number): void {
       const world = api.world;
+      overlays.send({ type: 'earned', ids: earnedOverlays(hudView(world)) });
       fps.frame(performance.now());
       globes.update(world.player, dt);
       flasks.update(world.player);

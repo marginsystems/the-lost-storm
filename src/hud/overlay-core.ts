@@ -1,4 +1,4 @@
-import { dependentsOf, OVERLAY_IDS, OVERLAY_TABLE, paired } from './overlay-table.ts';
+import { dependentsOf, EARNABLE_OVERLAYS, OVERLAY_IDS, OVERLAY_TABLE, paired } from './overlay-table.ts';
 import type { OverlayId, QueuedOverlay } from './overlay-table.ts';
 
 export type OverlayPhase = 'closed' | 'opening' | 'open' | 'closing';
@@ -12,6 +12,7 @@ export interface OverlayState {
   readonly pending: readonly OverlayId[];
   readonly waiting: readonly QueuedOverlay[];
   readonly narrow: boolean;
+  readonly earned: readonly OverlayId[];
 }
 
 export type OverlayEvent =
@@ -25,7 +26,8 @@ export type OverlayEvent =
   | { readonly type: 'interrupt'; readonly cause: WorldInterrupt }
   | { readonly type: 'arrive'; readonly id: QueuedOverlay }
   | { readonly type: 'present' }
-  | { readonly type: 'layout'; readonly narrow: boolean };
+  | { readonly type: 'layout'; readonly narrow: boolean }
+  | { readonly type: 'earned'; readonly ids: readonly OverlayId[] };
 
 export type OverlayOutcome = 'shown' | 'waiting' | 'refused' | 'closing' | 'ignored';
 
@@ -40,7 +42,7 @@ function closedPhases(): Phases {
   return { character: 'closed', inventory: 'closed', trade: 'closed', chart: 'closed', map: 'closed', ladder: 'closed', reader: 'closed', endcard: 'closed', pause: 'closed', death: 'closed' };
 }
 
-export const INITIAL_OVERLAYS: OverlayState = { phase: closedPhases(), pending: [], waiting: [], narrow: false };
+export const INITIAL_OVERLAYS: OverlayState = { phase: closedPhases(), pending: [], waiting: [], narrow: false, earned: [] };
 
 export function dropped(previous: OverlayState, next: OverlayState, id: OverlayId): boolean {
   return previous.pending.includes(id) && !next.pending.includes(id) && !isShown(next, id);
@@ -115,10 +117,26 @@ function accept(state: OverlayState, id: OverlayId): OverlayStep {
   return settle(state, leaving, entering, 'waiting');
 }
 
+export function unearned(state: OverlayState, id: OverlayId): boolean {
+  return EARNABLE_OVERLAYS.includes(id) && !state.earned.includes(id);
+}
+
+function unneeded(state: OverlayState, pending: readonly OverlayId[]): OverlayId[] {
+  const carried: boolean = pending.includes('trade');
+  return pending.filter((id: OverlayId): boolean => !unearned(state, id) || (carried && id === 'inventory'));
+}
+
+function earn(state: OverlayState, ids: readonly OverlayId[]): OverlayStep {
+  const earned: OverlayId[] = EARNABLE_OVERLAYS.filter((id: OverlayId): boolean => ids.includes(id));
+  if (earned.length === state.earned.length && earned.every((id: OverlayId): boolean => state.earned.includes(id))) return { state, outcome: 'ignored' };
+  const lost: OverlayId[] = withDependents(state.earned.filter((id: OverlayId): boolean => !earned.includes(id)));
+  return { state: { ...state, earned, pending: state.pending.filter((id: OverlayId): boolean => !lost.includes(id)) }, outcome: 'ignored' };
+}
+
 function request(state: OverlayState, id: OverlayId): OverlayStep {
   if (isShown(state, id)) return { state, outcome: 'shown' };
   if (state.pending.includes(id)) return { state, outcome: 'waiting' };
-  if (blocked(state, id)) return { state, outcome: 'refused' };
+  if (blocked(state, id) || unearned(state, id)) return { state, outcome: 'refused' };
   return accept(state, id);
 }
 
@@ -126,7 +144,7 @@ function dismiss(state: OverlayState, id: OverlayId): OverlayStep {
   if (!isShown(state, id) && !state.pending.includes(id)) return { state, outcome: 'ignored' };
   const gone: OverlayId[] = withDependents([id]);
   const out: OverlayId[] = gone.filter((other: OverlayId): boolean => isShown(state, other));
-  return settle(state, marking(state, out, 'closing'), state.pending.filter((other: OverlayId): boolean => !gone.includes(other)), 'closing');
+  return settle(state, marking(state, out, 'closing'), unneeded(state, state.pending.filter((other: OverlayId): boolean => !gone.includes(other))), 'closing');
 }
 
 function escape(state: OverlayState): OverlayStep {
@@ -224,6 +242,9 @@ export function stepOverlays(state: OverlayState, event: OverlayEvent): OverlayS
       break;
     case 'layout':
       step = layout(state, event.narrow);
+      break;
+    case 'earned':
+      step = earn(state, event.ids);
       break;
   }
   return step;

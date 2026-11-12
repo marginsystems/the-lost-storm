@@ -1,19 +1,27 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { anyOverlay, chromeHidden, exitingOverlays, INITIAL_OVERLAYS, isShown, liveOverlays, stepOverlays, visibleOverlays, WORLD_INTERRUPTS } from './overlay-core.ts';
+import { anyOverlay, chromeHidden, exitingOverlays, INITIAL_OVERLAYS, isShown, liveOverlays, stepOverlays, unearned, visibleOverlays, WORLD_INTERRUPTS } from './overlay-core.ts';
 import type { OverlayEvent, OverlayState, OverlayStep, WorldInterrupt } from './overlay-core.ts';
-import { NARROW_PAIRS, OVERLAY_IDS, OVERLAY_PAIRS, OVERLAY_TABLE, overlayZ, paired, PLAY_OVERLAYS, QUEUED_OVERLAYS } from './overlay-table.ts';
+import { EARNABLE_OVERLAYS, NARROW_PAIRS, OVERLAY_IDS, OVERLAY_PAIRS, OVERLAY_TABLE, overlayZ, paired, PLAY_OVERLAYS, QUEUED_OVERLAYS } from './overlay-table.ts';
 import type { OverlayId } from './overlay-table.ts';
 
 const SPEC = {
   path: '../../spec/Overlays.tla',
-  reachable: 608,
+  reachable: 8160,
   seeds: 200,
   length: 60,
 } as const;
 
+const PLAYING: OverlayState = { ...INITIAL_OVERLAYS, earned: EARNABLE_OVERLAYS };
+
 const KEYED: readonly OverlayId[] = ['inventory', 'character', 'chart', 'map', 'ladder', 'pause'];
+
+function earnedSets(): OverlayId[][] {
+  let sets: OverlayId[][] = [[]];
+  for (const id of EARNABLE_OVERLAYS) sets = sets.concat(sets.map((set: OverlayId[]): OverlayId[] => [...set, id]));
+  return sets;
+}
 
 function allEvents(): OverlayEvent[] {
   return [
@@ -32,11 +40,12 @@ function allEvents(): OverlayEvent[] {
     { type: 'present' },
     { type: 'layout', narrow: true },
     { type: 'layout', narrow: false },
+    ...earnedSets().map((ids: readonly OverlayId[]): OverlayEvent => ({ type: 'earned', ids })),
   ];
 }
 
 function keyOf(state: OverlayState): string {
-  return JSON.stringify([OVERLAY_IDS.map((id: OverlayId): string => state.phase[id]), state.pending, state.waiting.toSorted(), state.narrow]);
+  return JSON.stringify([OVERLAY_IDS.map((id: OverlayId): string => state.phase[id]), state.pending, state.waiting.toSorted(), state.narrow, state.earned]);
 }
 
 function assertInvariants(state: OverlayState, trail: string): void {
@@ -48,6 +57,8 @@ function assertInvariants(state: OverlayState, trail: string): void {
   if (OVERLAY_IDS.some((id: OverlayId): boolean => OVERLAY_TABLE[id].layer === 'full' && state.phase[id] !== 'closed')) assert.ok(chromeHidden(state), trail);
   if (state.pending.length > 0) assert.ok(exitingOverlays(state).length > 0, `idle gap after ${trail}`);
   if (isShown(state, 'death')) assert.deepEqual(liveOverlays(state), ['death'], `orphan under death after ${trail}`);
+  const carried: OverlayId[] = state.pending.includes('trade') ? ['inventory'] : [];
+  assert.ok(state.pending.every((id: OverlayId): boolean => !unearned(state, id) || carried.includes(id)), `unearned panel waiting after ${trail}`);
   if (isShown(state, 'death') || state.pending.includes('death')) assert.ok(noPlay(state), `a panel is up while dead after ${trail}`);
   assert.equal(anyOverlay(state), liveOverlays(state).length > 0);
 }
@@ -115,6 +126,9 @@ void test('every state the core can reach keeps the spec invariants, and there a
       }
       if (state.pending.includes('death')) assert.ok(next.state.pending.includes('death') || isShown(next.state, 'death'), `${JSON.stringify(event)} dropped death from ${keyOf(state)}`);
       if (clearsPlay(event) && next.outcome !== 'ignored') assert.ok(noPlay(next.state), `${JSON.stringify(event)} left a panel in ${keyOf(next.state)}`);
+      if ((event.type === 'toggle' || event.type === 'open') && unearned(state, event.id) && !isShown(state, event.id) && !state.pending.includes(event.id)) {
+        assert.ok(!isShown(next.state, event.id) && !next.state.pending.includes(event.id), `${event.id} opened unearned from ${keyOf(state)}`);
+      }
       if (event.type === 'respawn' && next.outcome !== 'ignored') assert.deepEqual([liveOverlays(next.state).filter((id: OverlayId): boolean => id !== 'death'), next.state.pending], [[], []], `respawn left ${keyOf(next.state)}`);
       const key: string = keyOf(next.state);
       if (!seen.has(key)) {
@@ -130,7 +144,7 @@ void test('random event sequences keep every invariant, and every request ends s
   const events: OverlayEvent[] = allEvents();
   for (let seed: number = 1; seed <= SPEC.seeds; seed += 1) {
     let random: number = seed;
-    let state: OverlayState = INITIAL_OVERLAYS;
+    let state: OverlayState = PLAYING;
     const trail: string[] = [];
     for (let step: number = 0; step < SPEC.length; step += 1) {
       random = (random * 1103515245 + 12345) % 2147483648;
@@ -151,7 +165,7 @@ void test('random event sequences keep every invariant, and every request ends s
 });
 
 void test('T then I: the chart leaves first, then the inventory enters', (): void => {
-  const chart: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'chart' }).state);
+  const chart: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'toggle', id: 'chart' }).state);
   assert.ok(chromeHidden(chart));
   const asked: OverlayStep = stepOverlays(chart, { type: 'toggle', id: 'inventory' });
   assert.equal(asked.outcome, 'waiting');
@@ -165,7 +179,7 @@ void test('T then I: the chart leaves first, then the inventory enters', (): voi
 });
 
 void test('I then T: the inventory leaves, then the chart enters and hides the chrome', (): void => {
-  const bag: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'inventory' }).state);
+  const bag: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'toggle', id: 'inventory' }).state);
   const asked: OverlayStep = stepOverlays(bag, { type: 'toggle', id: 'chart' });
   assert.equal(asked.state.phase.inventory, 'closing');
   assert.ok(!isShown(asked.state, 'chart'));
@@ -175,7 +189,7 @@ void test('I then T: the inventory leaves, then the chart enters and hides the c
 });
 
 void test('the bag stays open beside the character sheet and beside a shop', (): void => {
-  const both: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'toggle', id: 'inventory' }, { type: 'toggle', id: 'character' }]));
+  const both: OverlayState = settleAll(apply(PLAYING, [{ type: 'toggle', id: 'inventory' }, { type: 'toggle', id: 'character' }]));
   assert.deepEqual(visibleOverlays(both), ['character', 'inventory']);
   const shop: OverlayState = settleAll(stepOverlays(both, { type: 'open', id: 'trade' }).state);
   assert.deepEqual(visibleOverlays(shop), ['inventory', 'trade']);
@@ -184,7 +198,7 @@ void test('the bag stays open beside the character sheet and beside a shop', ():
 });
 
 void test('Escape closes the chart, and only the next Escape opens pause', (): void => {
-  const chart: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'chart' }).state);
+  const chart: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'toggle', id: 'chart' }).state);
   const first: OverlayState = stepOverlays(chart, { type: 'escape' }).state;
   assert.equal(first.phase.chart, 'closing');
   assert.equal(first.phase.pause, 'closed');
@@ -193,7 +207,7 @@ void test('Escape closes the chart, and only the next Escape opens pause', (): v
 });
 
 void test('Escape walks down a stack one overlay at a time', (): void => {
-  const stack: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'toggle', id: 'character' }, { type: 'toggle', id: 'inventory' }]));
+  const stack: OverlayState = settleAll(apply(PLAYING, [{ type: 'toggle', id: 'character' }, { type: 'toggle', id: 'inventory' }]));
   const one: OverlayState = settleAll(stepOverlays(stack, { type: 'escape' }).state);
   assert.deepEqual(visibleOverlays(one), ['character']);
   const two: OverlayState = settleAll(stepOverlays(one, { type: 'escape' }).state);
@@ -202,7 +216,7 @@ void test('Escape walks down a stack one overlay at a time', (): void => {
 });
 
 void test('the end card closes the open panels and enters once they are gone', (): void => {
-  const bag: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'inventory' }).state);
+  const bag: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'toggle', id: 'inventory' }).state);
   const arrived: OverlayState = stepOverlays(bag, { type: 'arrive', id: 'endcard' }).state;
   assert.deepEqual(exitingOverlays(arrived), ['inventory']);
   assert.equal(stepOverlays(arrived, { type: 'present' }).outcome, 'ignored');
@@ -214,19 +228,19 @@ void test('the end card closes the open panels and enters once they are gone', (
 });
 
 void test('death closes every panel before its card enters; a world interrupt leaves nothing open', (): void => {
-  const busy: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'toggle', id: 'inventory' }, { type: 'toggle', id: 'character' }]));
+  const busy: OverlayState = settleAll(apply(PLAYING, [{ type: 'toggle', id: 'inventory' }, { type: 'toggle', id: 'character' }]));
   const dying: OverlayState = stepOverlays(busy, { type: 'death' }).state;
   assert.deepEqual(exitingOverlays(dying), ['character', 'inventory']);
   assert.deepEqual(dying.pending, ['death']);
   assert.deepEqual(liveOverlays(settleAll(dying)), ['death']);
   assert.equal(stepOverlays(settleAll(dying), { type: 'toggle', id: 'map' }).outcome, 'refused');
-  const map: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'map' }).state);
+  const map: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'toggle', id: 'map' }).state);
   for (const cause of WORLD_INTERRUPTS) assert.deepEqual(visibleOverlays(stepOverlays(map, { type: 'interrupt', cause }).state), [], cause);
 });
 
 void test('the playtest case: chart or bag open, the hero dies and respawns at the checkpoint with nothing open', (): void => {
   for (const id of ['chart', 'inventory', 'character', 'map', 'pause'] as const) {
-    const open: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id }).state);
+    const open: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'toggle', id }).state);
     const dying: OverlayState = stepOverlays(open, { type: 'death' }).state;
     assert.equal(dying.phase[id], 'closing', id);
     const dead: OverlayState = settleAll(dying);
@@ -239,7 +253,7 @@ void test('the playtest case: chart or bag open, the hero dies and respawns at t
 });
 
 void test('Escape while death waits behind a closing panel keeps death, and its card still enters', (): void => {
-  const bag: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'inventory' }).state);
+  const bag: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'toggle', id: 'inventory' }).state);
   const dying: OverlayState = stepOverlays(bag, { type: 'death' }).state;
   const escaped: OverlayState = stepOverlays(dying, { type: 'escape' }).state;
   assert.deepEqual(escaped.pending, ['death']);
@@ -249,20 +263,48 @@ void test('Escape while death waits behind a closing panel keeps death, and its 
 });
 
 void test('death leaves only through respawn: toggle and close are ignored', (): void => {
-  const dead: OverlayState = settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'death' }).state);
+  const dead: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'death' }).state);
   assert.equal(stepOverlays(dead, { type: 'toggle', id: 'death' }).outcome, 'ignored');
   assert.equal(stepOverlays(dead, { type: 'close', id: 'death' }).outcome, 'ignored');
   assert.equal(stepOverlays(dead, { type: 'escape' }).outcome, 'ignored');
-  const pending: OverlayState = stepOverlays(settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'map' }).state), { type: 'death' }).state;
+  const pending: OverlayState = stepOverlays(settleAll(stepOverlays(PLAYING, { type: 'toggle', id: 'map' }).state), { type: 'death' }).state;
   assert.deepEqual(stepOverlays(pending, { type: 'toggle', id: 'death' }).state.pending, ['death']);
 });
 
 void test('on a narrow layout the character sheet replaces the bag instead of sharing the screen, and narrowing splits a pair', (): void => {
-  const phone: OverlayState = { ...INITIAL_OVERLAYS, narrow: true };
+  const phone: OverlayState = { ...PLAYING, narrow: true };
   const sheet: OverlayState = settleAll(stepOverlays(phone, { type: 'toggle', id: 'character' }).state);
   const bag: OverlayState = settleAll(stepOverlays(sheet, { type: 'toggle', id: 'inventory' }).state);
   assert.deepEqual(visibleOverlays(bag), ['inventory']);
-  const wide: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'toggle', id: 'character' }, { type: 'toggle', id: 'inventory' }]));
+  const wide: OverlayState = settleAll(apply(PLAYING, [{ type: 'toggle', id: 'character' }, { type: 'toggle', id: 'inventory' }]));
   const narrowed: OverlayState = settleAll(stepOverlays(wide, { type: 'layout', narrow: true }).state);
   assert.deepEqual(visibleOverlays(narrowed), ['inventory']);
+});
+
+void test('a panel the hero has not earned stays shut by key, but one already open still closes', (): void => {
+  for (const id of EARNABLE_OVERLAYS) {
+    assert.equal(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id }).outcome, 'refused', id);
+    assert.equal(stepOverlays(INITIAL_OVERLAYS, { type: 'open', id }).outcome, 'refused', id);
+  }
+  const map: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'toggle', id: 'map' }).state);
+  const lost: OverlayState = stepOverlays(map, { type: 'earned', ids: [] }).state;
+  assert.ok(isShown(lost, 'map'));
+  assert.equal(stepOverlays(lost, { type: 'toggle', id: 'map' }).state.phase.map, 'closing');
+  const chartOnly: OverlayState = stepOverlays(INITIAL_OVERLAYS, { type: 'earned', ids: ['chart'] }).state;
+  assert.equal(stepOverlays(chartOnly, { type: 'toggle', id: 'chart' }).outcome, 'shown');
+  assert.equal(stepOverlays(chartOnly, { type: 'toggle', id: 'inventory' }).outcome, 'refused');
+  assert.equal(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'pause' }).outcome, 'shown');
+});
+
+void test('a waiting panel the hero loses, or one the shop brought and then left, never enters', (): void => {
+  const ladder: OverlayState = settleAll(stepOverlays(PLAYING, { type: 'toggle', id: 'ladder' }).state);
+  const asked: OverlayState = stepOverlays(ladder, { type: 'toggle', id: 'map' }).state;
+  assert.deepEqual(asked.pending, ['map']);
+  assert.deepEqual(settleAll(stepOverlays(asked, { type: 'earned', ids: ['inventory'] }).state).phase.map, 'closed');
+  const bare: OverlayState = settleAll(stepOverlays({ ...INITIAL_OVERLAYS, earned: [] }, { type: 'toggle', id: 'ladder' }).state);
+  const shop: OverlayState = stepOverlays(bare, { type: 'open', id: 'trade' }).state;
+  assert.deepEqual(shop.pending, ['inventory', 'trade']);
+  const left: OverlayState = stepOverlays(shop, { type: 'close', id: 'trade' }).state;
+  assert.deepEqual(left.pending, []);
+  assert.equal(settleAll(left).phase.inventory, 'closed');
 });

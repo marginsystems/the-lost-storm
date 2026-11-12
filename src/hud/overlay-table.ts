@@ -42,6 +42,8 @@ export const OVERLAY_IDS: readonly OverlayId[] = ['character', 'inventory', 'tra
 
 export const PLAY_OVERLAYS: readonly OverlayId[] = OVERLAY_IDS.filter((id: OverlayId): boolean => id !== 'death' && id !== 'endcard');
 
+export const EARNABLE_OVERLAYS: readonly OverlayId[] = ['character', 'inventory', 'chart', 'map'];
+
 export function overlayZ(id: OverlayId): number {
   return OVERLAY_Z.base + OVERLAY_TABLE[id].rank;
 }

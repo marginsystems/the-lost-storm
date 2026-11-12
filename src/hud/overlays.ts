@@ -119,11 +119,11 @@ export function createOverlayManager(options: OverlayDriverOptions): OverlayMana
     const step: OverlayStep = stepOverlays(state, event);
     const previous: OverlayState = state;
     state = step.state;
-    follow(previous);
+    if (state !== previous) follow(previous);
     for (let next: OverlayEvent | undefined = queue.shift(); next !== undefined; next = queue.shift()) {
       const before: OverlayState = state;
       state = stepOverlays(state, next).state;
-      follow(before);
+      if (state !== before) follow(before);
     }
     running = false;
     return step.outcome;

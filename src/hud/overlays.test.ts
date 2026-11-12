@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createFakeClock, createFakeTimers } from '../../test/backend-support.ts';
 import type { FakeClock, FakeTimers } from '../../test/backend-support.ts';
-import { overlayZ } from './overlay-table.ts';
+import { EARNABLE_OVERLAYS, overlayZ } from './overlay-table.ts';
 import type { OverlayId } from './overlay-table.ts';
 import { createOverlayManager, durationMs, OVERLAY_BODY, whenDropped } from './overlays.ts';
 import type { OverlayBody, OverlayManager, OverlaySurface } from './overlays.ts';
@@ -26,6 +26,7 @@ function rig(ids: readonly OverlayId[]): Rig {
   const fake: FakeTimers = createFakeTimers(clock);
   const body: OverlayBody = { dataset: {} };
   const manager: OverlayManager = createOverlayManager({ body, timers: fake.timers, motionMs: (): number => MOTION_MS });
+  manager.send({ type: 'earned', ids: EARNABLE_OVERLAYS });
   const probe: Probe = { log: [], surfaces: new Map<OverlayId, OverlaySurface>() };
   for (const id of ids) {
     const surface: OverlaySurface = { style: { zIndex: '' } };
@@ -157,6 +158,19 @@ void test('a request parked behind an exit and then dropped is reported once, an
   assert.equal(manager.send({ type: 'open', id: 'reader' }), 'shown');
   await fake.advance(MOTION_MS);
   assert.deepEqual(drops, ['reader', 'pause']);
+});
+
+void test('an event that changes nothing wakes no listener', (): void => {
+  const { manager } = rig(['inventory']);
+  let calls: number = 0;
+  manager.subscribe((): void => {
+    calls += 1;
+  });
+  for (let frame: number = 0; frame < 3; frame += 1) manager.send({ type: 'earned', ids: EARNABLE_OVERLAYS });
+  manager.send({ type: 'close', id: 'inventory' });
+  assert.equal(calls, 0);
+  manager.send({ type: 'earned', ids: [] });
+  assert.equal(calls, 1);
 });
 
 void test('motion tokens read in milliseconds whether the build writes ms or seconds', (): void => {

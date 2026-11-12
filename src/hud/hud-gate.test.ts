@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { GAME_LAYERS } from '../title-screen.ts';
-import { createHudGate, followWorld, HUD_GATE, hudGateCss, panelPart, shownData } from './hud-gate.ts';
+import { createHudGate, earnedOverlays, followWorld, HUD_GATE, hudGateCss, panelPart, shownData } from './hud-gate.ts';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content } from '../../sim/content/types.ts';
 import { createWorld } from '../../sim/world/create.ts';
@@ -173,4 +173,10 @@ void test('picking up the journal in the mist opens the gate on the life globe a
   assert.notEqual(gate.state(), 'closed');
   assert.equal(page.dataset['hudShow'], 'life inventory');
   assert.equal(page.dataset['hudSlots'], '');
+});
+
+void test('the overlay manager hears of exactly the earned panels: bag, sheet, chart and map', (): void => {
+  assert.deepEqual(earnedOverlays({ parts: [], slots: [] }), []);
+  assert.deepEqual(earnedOverlays({ parts: ['life', 'gold', 'quests', 'minimap'], slots: [0] }), []);
+  assert.deepEqual(earnedOverlays({ parts: ['map', 'inventory', 'chart', 'character', 'xp'], slots: [] }), ['character', 'inventory', 'chart', 'map']);
 });
