@@ -9,11 +9,13 @@ import type { Content, ZoneExit } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { readSave, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
-import { glitchBlock, heldCommands, requestGlitch, setGlitchesEnabled, stageOf, stepGlitch, storyProgress } from './glitch.ts';
+import { CALM, glitchBlock, heldCommands, requestGlitch, setGlitchesEnabled, stageOf, stepGlitch, storyProgress } from './glitch.ts';
+import { pendingOffer } from './learning.ts';
+import { forceStrike } from './moments.ts';
 import { attacksHeld } from './glitch-hold.ts';
 import type { GlitchRequest } from './glitch-types.ts';
 import { stepWorld } from './step.ts';
-import type { MonsterState, World, WorldEvent } from './types.ts';
+import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { travelThrough } from './zones.ts';
 
 const content: Content = loadContent();
@@ -68,20 +70,64 @@ function harmlessFight(seed: number, progress: number): World {
   return world;
 }
 
-void test('a hard cut mid-fight never costs the hero life, and no blow lands during it or its grace', (): void => {
+void test('a hard cut never hides a fight, not even when asked for directly', (): void => {
   const { world } = fight(1);
-  const start: number = world.player.life;
+  assert.equal(glitchBlock(world, { kind: 'hard_cut', source: 'debug', trigger: null }), 'fight');
+  assert.equal(glitchBlock(world, combat('quiet_pass')), 'fight');
+  assert.equal(glitchBlock(world, { kind: 'quiet_pass', source: 'zone', trigger: null }), 'fight');
+  assert.equal(glitchBlock(world, combat('stutter')), null);
   requestGlitch(world, 'hard_cut', 'debug');
-  const events: WorldEvent[] = [];
-  let lowest: number = start;
-  const started: EventOf<'glitch_start'> = must(ofType(stepWorld(world, [], DT), 'glitch_start')[0], 'hard cut');
-  for (let step: number = 0; step < Math.round((started.duration + world.glitch.def.rules.grace) / DT); step += 1) {
-    events.push(...stepWorld(world, [], DT));
-    lowest = Math.min(lowest, world.player.life);
-  }
-  assert.ok(lowest >= start);
-  assert.equal(ofType(events, 'damage').filter((event): boolean => event.targetTeam === 'player').length, 0);
-  assert.equal(ofType(events, 'glitch_end').length, 1);
+  assert.equal(ofType(run(world, 1), 'glitch_start').length, 0);
+});
+
+void test('the seconds after a blow still count as a fight', (): void => {
+  const world: World = harmlessFight(11, 4);
+  world.monsters = [];
+  world.time = CALM.arrival + 1;
+  world.events = [{ type: 'damage', targetId: world.player.id, sourceId: 0, targetTeam: 'player', amount: 1, crit: false, killed: false, pos: world.player.pos, direction: { x: 1, z: 0 }, skill: must(content.skills.get('cleave'), 'cleave') }];
+  stepGlitch(world, 0);
+  assert.equal(glitchBlock(world, { kind: 'hard_cut', source: 'story', trigger: null }), 'fight');
+  world.time += CALM.fightQuiet + 0.1;
+  assert.equal(glitchBlock(world, { kind: 'hard_cut', source: 'story', trigger: null }), null);
+});
+
+void test('a hard cut waits out the first minute in a zone, never comes soon after another, and never lasts long', (): void => {
+  const world: World = harmlessFight(12, 4);
+  world.monsters = [];
+  const story: GlitchRequest = { kind: 'hard_cut', source: 'story', trigger: null };
+  const zone: GlitchRequest = { kind: 'hard_cut', source: 'zone', trigger: null };
+  assert.equal(glitchBlock(world, story), 'arrival');
+  assert.equal(glitchBlock(world, zone), 'arrival');
+  world.time = CALM.arrival + 1;
+  assert.equal(glitchBlock(world, story), null);
+  requestGlitch(world, 'hard_cut', 'story');
+  const start: EventOf<'glitch_start'> = must(ofType(glitchOnly(world, DT, DT), 'glitch_start')[0], 'hard cut');
+  assert.ok(start.duration <= CALM.mistCap);
+  glitchOnly(world, start.duration + 1, DT);
+  world.time = world.glitch.readyAt;
+  assert.equal(glitchBlock(world, story), 'spacing');
+  assert.equal(glitchBlock(world, zone), 'spacing');
+  world.time = world.glitch.lastMist + CALM.mistGap;
+  assert.equal(glitchBlock(world, story), null);
+});
+
+void test('a hard cut waits while a moment fight is awake or a skill choice is open', (): void => {
+  const world: World = harmlessFight(13, 4);
+  const thrall: MonsterState = must(world.monsters[0], 'thrall');
+  thrall.aggro = false;
+  thrall.pos = { x: ARENA_CENTRE.x + 40, z: ARENA_CENTRE.z };
+  world.time = CALM.arrival + 1;
+  const story: GlitchRequest = { kind: 'hard_cut', source: 'story', trigger: null };
+  assert.equal(glitchBlock(world, story), null);
+  const def = must([...content.moments.defs.values()][0], 'a moment');
+  const moment: MomentState = must(forceStrike(world, thrall.pos, def.id), 'moment');
+  moment.phase = 'awake';
+  moment.figures.splice(0, moment.figures.length, { echo: 0, pos: thrall.pos, facing: 0, turned: true, monsterId: thrall.id });
+  assert.equal(glitchBlock(world, story), 'fight');
+  world.moments = [];
+  world.flags['first_moment'] = 'cleared';
+  assert.notEqual(pendingOffer(world), null);
+  assert.equal(glitchBlock(world, story), 'choice');
 });
 
 void test('monster attacks wait out the glitch and its grace, then resume', (): void => {
@@ -105,7 +151,7 @@ void test('a glitch waits while the hero is below the life threshold or a lethal
   world.player.life = world.player.maxLife;
   for (let step: number = 0; step < 200 && thrall.action?.phase !== 'windup'; step += 1) stepWorld(world, [], DT);
   assert.equal(thrall.action?.phase, 'windup');
-  assert.equal(glitchBlock(world, combat('hard_cut')), null);
+  assert.equal(glitchBlock(world, combat('stutter')), null);
   world.player.life = thrall.damageMax;
   assert.equal(glitchBlock(world, combat('hard_cut')), 'telegraph');
   requestGlitch(world, 'hard_cut', 'debug');
@@ -171,6 +217,7 @@ void test('the glitch setting reaches the world as a command', (): void => {
 
 void test('a quiet pass starts the cooldown like any other glitch', (): void => {
   const world: World = harmlessFight(5, 4);
+  world.monsters = [];
   world.glitch.requests.push({ kind: 'quiet_pass', source: 'zone', trigger: null });
   glitchOnly(world, world.glitch.def.quietPass + DT * 3, DT);
   assert.equal(world.glitch.active, null);
@@ -190,11 +237,7 @@ void test('the story decides how often glitches come and which kinds, and the sa
   assert.ok(early.length > 0, `early ${early.length} late ${late.length}`);
   assert.ok(late.length > early.length, `early ${early.length} late ${late.length}`);
   assert.deepEqual(again, late);
-  const earlyKinds: Set<string> = new Set<string>(ofType(early, 'glitch_start').map((event): string => event.kind));
-  assert.equal(earlyKinds.has('hard_cut'), false);
-  assert.ok(ofType(late, 'glitch_start').some((event): boolean => event.kind === 'hard_cut'));
-  const long: number = Math.max(...ofType(late, 'glitch_start').filter((event): boolean => event.kind === 'hard_cut').map((event): number => event.duration));
-  assert.ok(long > stageOf(world0().glitch.def, 0).mist.max);
+  assert.equal(ofType(late, 'glitch_start').some((event): boolean => event.kind === 'hard_cut' || event.kind === 'quiet_pass'), false);
 });
 
 function world0(): World {
@@ -236,9 +279,10 @@ void test('story progress comes from quests, never falls, and travels in the sav
 void test('a story trigger waits for its moment, fires once, and stays fired after a save', (): void => {
   const world: World = harmlessFight(7, 0);
   world.quests = { to_the_waystation: must(content.quests.get('to_the_waystation'), 'quest').objectives.length };
-  for (const monster of world.monsters) monster.aggro = false;
-  assert.equal(ofType(glitchOnly(world, 2, DT), 'glitch_start').length, 0);
   for (const monster of world.monsters) monster.aggro = true;
+  assert.equal(ofType(glitchOnly(world, 2, DT), 'glitch_start').length, 0);
+  for (const monster of world.monsters) monster.aggro = false;
+  world.time = CALM.arrival + 1;
   const fired: EventOf<'glitch_start'>[] = ofType(glitchOnly(world, DT, DT), 'glitch_start');
   assert.equal(fired[0]?.kind, 'hard_cut');
   assert.deepEqual(world.glitch.fired, ['first_seam']);
@@ -279,6 +323,7 @@ void test('early in the story a zone change stays clear of the mist', (): void =
 
 void test('in the mist the hero stands still and worldly commands are dropped', (): void => {
   const { world } = fight(9);
+  world.monsters = [];
   requestGlitch(world, 'hard_cut', 'debug');
   stepWorld(world, [], DT);
   const before = { ...world.player.pos };

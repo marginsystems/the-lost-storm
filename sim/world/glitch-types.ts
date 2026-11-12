@@ -35,6 +35,9 @@ export interface GlitchState {
   holdUntil: number;
   readyAt: number;
   combatTime: number;
+  lastFight: number;
+  lastMist: number;
+  zoneSince: number;
   requests: GlitchRequest[];
   wrongWord: number | null;
 }

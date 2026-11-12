@@ -128,6 +128,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     view.rig.setGear(def.gear);
     dress(content, view.rig, def.wear, null);
     view.rig.setOpacity(ACTORS.echoOpacity);
+    if (echo !== null) view.setShadowOpacity(ACTORS.echoOpacity);
     return view;
   };
 
@@ -234,6 +235,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         echo.age += dt;
         echo.ghost.dissolve.value = Math.min(1, echo.age / ACTORS.leaveTime);
         echo.entry.view.rig.setOpacity(ACTORS.echoOpacity * (1 - echo.ghost.dissolve.value));
+        echo.entry.view.setShadowOpacity(ACTORS.echoOpacity * (1 - echo.ghost.dissolve.value));
         if (echo.age < ACTORS.leaveTime) continue;
         echo.entry.view.dispose();
         leaving.splice(index, 1);
