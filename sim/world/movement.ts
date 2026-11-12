@@ -12,12 +12,43 @@ const MOVEMENT = {
   separationPasses: 2,
 } as const;
 
-export function turnToward(current: number, target: number, maxStep: number): number {
+export interface Steering {
+  readonly maxTurnRate: number;
+  readonly minTurnRate: number;
+  readonly turnGain: number;
+  readonly fullSpeedAngle: number;
+  readonly sharpAngle: number;
+  readonly sharpSpeed: number;
+  readonly passRadius: number;
+  readonly settleRadius: number;
+}
+
+export function angleBetween(current: number, target: number): number {
   let delta: number = (target - current) % (Math.PI * 2);
   if (delta > Math.PI) delta -= Math.PI * 2;
   if (delta < -Math.PI) delta += Math.PI * 2;
+  return delta;
+}
+
+export function turnToward(current: number, target: number, maxStep: number): number {
+  const delta: number = angleBetween(current, target);
   if (Math.abs(delta) <= maxStep) return target;
   return current + Math.sign(delta) * maxStep;
+}
+
+export function steerHeading(current: number, target: number, dt: number, steering: Steering): number {
+  const delta: number = angleBetween(current, target);
+  const rate: number = Math.max(steering.minTurnRate, Math.min(steering.maxTurnRate, steering.turnGain * Math.abs(delta)));
+  return turnToward(current, target, rate * dt);
+}
+
+export function alignedSpeed(misalignment: number, steering: Steering): number {
+  const off: number = Math.abs(misalignment);
+  if (off <= steering.fullSpeedAngle) return 1;
+  if (off >= steering.sharpAngle) return steering.sharpSpeed;
+  const along: number = (off - steering.fullSpeedAngle) / (steering.sharpAngle - steering.fullSpeedAngle);
+  const eased: number = along * along * (3 - 2 * along);
+  return 1 + (steering.sharpSpeed - 1) * eased;
 }
 
 export function faceToward(actor: ActorState, direction: Vec2, maxStep: number): void {
@@ -77,6 +108,44 @@ export function followPath(grid: NavGrid, actor: ActorState, path: Vec2[], trave
   const ahead: Vec2 | undefined = path[0];
   if (ahead !== undefined) faceToward(actor, { x: ahead.x - actor.pos.x, z: ahead.z - actor.pos.z }, maxTurn);
   return moved;
+}
+
+export interface SteerStep {
+  readonly moved: number;
+  readonly tried: number;
+}
+
+const NO_STEP: SteerStep = { moved: 0, tried: 0 };
+
+export function steerAlong(grid: NavGrid, actor: ActorState, path: Vec2[], travel: number, dt: number, steering: Steering): SteerStep {
+  while (path.length > 1) {
+    const passed: Vec2 | undefined = path[0];
+    if (passed === undefined || distance(actor.pos, passed) > steering.passRadius) break;
+    path.shift();
+  }
+  const next: Vec2 | undefined = path[0];
+  if (next === undefined) return NO_STEP;
+  const dx: number = next.x - actor.pos.x;
+  const dz: number = next.z - actor.pos.z;
+  const gap: number = Math.hypot(dx, dz);
+  if (gap <= MOVEMENT.arrive) {
+    path.shift();
+    return NO_STEP;
+  }
+  const settling: boolean = path.length === 1 && gap <= steering.settleRadius;
+  const wanted: number = facingOf({ x: dx, z: dz });
+  if (!settling) actor.facing = steerHeading(actor.facing, wanted, dt, steering);
+  const reach: number = travel * paceAt(grid, actor.pos.x, actor.pos.z) * (settling ? 1 : alignedSpeed(angleBetween(actor.facing, wanted), steering));
+  const fromX: number = actor.pos.x;
+  const fromZ: number = actor.pos.z;
+  if (gap <= reach || settling) {
+    const share: number = Math.min(1, reach / gap);
+    moveWithCollision(grid, actor.pos, dx * share, dz * share);
+    if (distance(actor.pos, next) <= MOVEMENT.arrive) path.shift();
+  } else {
+    moveWithCollision(grid, actor.pos, Math.sin(actor.facing) * reach, Math.cos(actor.facing) * reach);
+  }
+  return { moved: Math.hypot(actor.pos.x - fromX, actor.pos.z - fromZ), tried: Math.min(gap, reach) };
 }
 
 function pushApart(grid: NavGrid, a: ActorState, b: ActorState, shareA: number): void {

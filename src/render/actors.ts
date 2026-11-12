@@ -217,7 +217,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       const floor: number = current.zone.floorHeight;
       holdEquipped(content, playerView.rig, current.player.equipped);
       playerView.lie(current.wake === null ? null : wakeProgress(current.wake));
-      playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.stats.moveSpeed * paceAt(current.grid, current.player.pos.x, current.player.pos.z), rise: 1, floor, turnRate: ACTOR.turnRate });
+      playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.gait, rise: 1, floor, turnRate: ACTOR.turnRate });
       for (const monster of current.monsters) {
         const entry: MonsterEntry | null = entryFor(current, monster);
         if (entry === null) continue;

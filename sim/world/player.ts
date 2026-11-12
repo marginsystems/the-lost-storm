@@ -2,7 +2,7 @@ import type { SkillDef, ZoneExit } from '../content/types.ts';
 import { forceStrike } from './moments.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { findPath } from '../nav/path.ts';
+import { directPath, findPath } from '../nav/path.ts';
 import { allocateNode, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
@@ -10,7 +10,8 @@ import { respawnPlayer } from './death.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc } from './dialogue.ts';
 import { aimedFind, pickUp } from './finds.ts';
 import { useFlask } from './flasks.ts';
-import { followPath, stepKnock, stepTimers } from './movement.ts';
+import type { Steering, SteerStep } from './movement.ts';
+import { steerAlong, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
 import { blockedReason, startSkill, steerAction, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
@@ -28,18 +29,38 @@ const PLAYER = {
   goldDelay: 0.45,
   stride: 2.5,
   firstStepFraction: 0.6,
-  turnRate: 16,
   stuckStep: 1e-4,
 } as const;
+
+const STEERING: Steering = {
+  maxTurnRate: 24,
+  minTurnRate: 2,
+  turnGain: 24,
+  fullSpeedAngle: 0.35,
+  sharpAngle: 0.9,
+  sharpSpeed: 0,
+  passRadius: 0.45,
+  settleRadius: 0.3,
+};
 
 function setDestination(world: World, dest: Vec2): void {
   world.player.path = findPath(world.grid, world.player.pos, dest);
   world.player.repathTimer = PLAYER.repathInterval;
 }
 
+function heldPath(world: World, dest: Vec2): Vec2[] | null {
+  const player: PlayerState = world.player;
+  const direct: Vec2[] | null = directPath(world.grid, player.pos, dest);
+  if (direct !== null) return direct;
+  if (player.repathTimer > 0) return player.path.length > 0 ? player.path : null;
+  player.repathTimer = PLAYER.repathInterval;
+  return findPath(world.grid, player.pos, dest);
+}
+
 function startMove(world: World, dest: Vec2, held: boolean): void {
   const player: PlayerState = world.player;
-  const path: Vec2[] = findPath(world.grid, player.pos, dest);
+  const path: Vec2[] | null = held ? heldPath(world, dest) : findPath(world.grid, player.pos, dest);
+  if (path === null) return;
   const goal: Vec2 = path.at(-1) ?? player.pos;
   const reach: number = distance(player.pos, goal);
   const standing: boolean = player.path.length === 0;
@@ -53,7 +74,7 @@ function startMove(world: World, dest: Vec2, held: boolean): void {
   }
   player.intent = { type: 'move', dest };
   player.path = path;
-  player.repathTimer = PLAYER.repathInterval;
+  if (!held) player.repathTimer = PLAYER.repathInterval;
 }
 
 function fire(world: World, skill: SkillDef, aim: Vec2, slot: number): boolean {
@@ -272,8 +293,10 @@ function stepIntent(world: World, dt: number): void {
   const intent = player.intent;
   switch (intent.type) {
     case 'idle':
+      player.repathTimer -= dt;
       return;
     case 'move':
+      player.repathTimer -= dt;
       if (player.path.length === 0) player.intent = { type: 'idle' };
       return;
     case 'attack': {
@@ -419,14 +442,16 @@ export function stepPlayer(world: World, dt: number): void {
   if (player.action === null) {
     stepIntent(world, dt);
     if (!isBusy(player) && player.root <= 0 && player.tempo > 0 && player.path.length > 0) {
-      const moved: number = followPath(world.grid, player, player.path, player.stats.moveSpeed * player.tempo * dt, PLAYER.turnRate * dt);
-      player.moving = moved > PLAYER.stuckStep;
-      if (!player.moving) {
+      const step: SteerStep = steerAlong(world.grid, player, player.path, player.stats.moveSpeed * player.tempo * dt, dt, STEERING);
+      const stuck: boolean = step.tried > PLAYER.stuckStep && step.moved <= PLAYER.stuckStep;
+      player.moving = !stuck && (player.path.length > 0 || step.moved > PLAYER.stuckStep);
+      if (stuck) {
         player.path = [];
         player.repathTimer = PLAYER.repathInterval;
       } else if (player.path.length === 0) player.repathTimer = 0;
     }
   }
+  player.gait = player.moving && dt > 0 ? Math.hypot(player.pos.x - startX, player.pos.z - startZ) / dt : 0;
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.strideTravel = PLAYER.stride * PLAYER.firstStepFraction;
   collectGold(world);

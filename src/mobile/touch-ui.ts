@@ -471,7 +471,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
         stopPending = false;
         commands.push({ type: 'stop' });
       }
-      if (direction !== null && (tick || !moving)) {
+      if (direction !== null) {
         const move = stickMove(player.pos, direction, moving);
         if (move !== null) commands.push(move);
         moving = true;
