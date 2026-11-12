@@ -1,6 +1,7 @@
 import type { Material, Object3D, WebGLRenderTarget } from 'three';
 import { ACESFilmicToneMapping, Box3, Color, DirectionalLight, Group, Mesh, MeshStandardMaterial, OrthographicCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import type { Timers } from '../backend/backend.ts';
 import type { CharacterLibrary, LoadedWearable } from './character-loader.ts';
 
 export const THUMBNAIL = {
@@ -25,9 +26,36 @@ export const THUMBNAIL = {
   wornTurn: -0.5,
   wornTilt: 0.12,
   wideFrom: 2,
+  gapMs: 0,
 } as const;
 
 export type ItemThumbnails = ReadonlyMap<string, string>;
+
+interface Shot {
+  readonly name: string;
+  readonly posed: Group;
+  readonly frame: (model: Group) => Box3;
+}
+
+export function oneAtATime<T>(items: readonly T[], timers: Timers, ms: number, work: (item: T) => Promise<void>): Promise<void> {
+  return items.reduce(
+    (previous: Promise<void>, item: T): Promise<void> =>
+      previous
+        .then((): Promise<void> => new Promise<void>((resolve: () => void): void => {
+          timers.after(ms, resolve);
+        }))
+        .then((): Promise<void> => work(item)),
+    Promise.resolve(),
+  );
+}
+
+function encode(canvas: HTMLCanvasElement): Promise<string | null> {
+  return new Promise<string | null>((resolve: (url: string | null) => void): void => {
+    canvas.toBlob((blob: Blob | null): void => {
+      resolve(blob === null ? null : URL.createObjectURL(blob));
+    }, 'image/png');
+  });
+}
 
 export function wornImageKey(wearableId: string): string {
   return `worn:${wearableId}`;
@@ -74,7 +102,7 @@ function oneSleeve(posed: Group): Box3 {
   return half.applyMatrix4(posed.matrixWorld);
 }
 
-export function createItemThumbnails(library: CharacterLibrary, wearableIds: readonly string[]): ItemThumbnails {
+export async function createItemThumbnails(library: CharacterLibrary, wearableIds: readonly string[], timers: Timers): Promise<ItemThumbnails> {
   const renderer: WebGLRenderer = new WebGLRenderer({ alpha: true, antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(THUMBNAIL.size, THUMBNAIL.size, false);
@@ -98,10 +126,22 @@ export function createItemThumbnails(library: CharacterLibrary, wearableIds: rea
   const camera: OrthographicCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, THUMBNAIL.distance * 2);
   camera.position.set(0, 0, THUMBNAIL.distance);
 
+  const made: Material[] = [];
+  const shots: Shot[] = [...library.attachments.values()].map((attachment): Shot => ({ name: attachment.def.id, posed: pose(attachment.template), frame: boundsOf }));
+  for (const id of wearableIds) {
+    const wearable: LoadedWearable | undefined = library.wearables.get(id);
+    if (wearable !== undefined) shots.push({ name: wornImageKey(id), posed: dressed(wearable, made), frame: oneSleeve });
+  }
+
+  for (const shot of shots) scene.add(shot.posed);
+  await renderer.compileAsync(scene, camera).catch((): Object3D => scene);
+  for (const shot of shots) shot.posed.removeFromParent();
+
   const images: Map<string, string> = new Map<string, string>();
-  const shoot = (name: string, posed: Group, frame: (model: Group) => Box3): void => {
+  await oneAtATime(shots, timers, THUMBNAIL.gapMs, async (shot: Shot): Promise<void> => {
+    const { posed } = shot;
     scene.add(posed);
-    const bounds: Box3 = frame(posed);
+    const bounds: Box3 = shot.frame(posed);
     posed.position.sub(bounds.getCenter(new Vector3()));
     const size: Vector3 = bounds.getSize(new Vector3());
     const half: number = (Math.max(size.x, size.y) / 2) * (1 + THUMBNAIL.padding);
@@ -111,15 +151,11 @@ export function createItemThumbnails(library: CharacterLibrary, wearableIds: rea
     camera.bottom = -half;
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);
-    images.set(name, renderer.domElement.toDataURL('image/png'));
+    const encoded: Promise<string | null> = encode(renderer.domElement);
     posed.removeFromParent();
-  };
-  for (const attachment of library.attachments.values()) shoot(attachment.def.id, pose(attachment.template), boundsOf);
-  const made: Material[] = [];
-  for (const id of wearableIds) {
-    const wearable: LoadedWearable | undefined = library.wearables.get(id);
-    if (wearable !== undefined) shoot(wornImageKey(id), dressed(wearable, made), oneSleeve);
-  }
+    const url: string | null = await encoded;
+    if (url !== null) images.set(shot.name, url);
+  });
   for (const material of made) material.dispose();
 
   reflections.dispose();
