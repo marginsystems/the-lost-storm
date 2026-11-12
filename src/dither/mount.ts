@@ -26,6 +26,14 @@ export function titleClosed(end: TitleEnd): boolean {
   return end.name === 'opacity' && !end.running.includes(MOUNT.openAnimation);
 }
 
+export interface PlayingAnimation {
+  readonly playState: string;
+}
+
+export function unfinishedNames(animations: readonly PlayingAnimation[]): string[] {
+  return animations.filter((animation: PlayingAnimation): boolean => animation.playState !== 'finished').map((animation: PlayingAnimation): string => ('animationName' in animation && typeof animation.animationName === 'string' ? animation.animationName : ''));
+}
+
 function keepWhileShown(title: HTMLElement, backdrop: DitherLayer): void {
   const close = (end: TitleEnd): void => {
     if (title.classList.contains(MOUNT.goneClass) && titleClosed(end)) backdrop.release();
@@ -34,7 +42,7 @@ function keepWhileShown(title: HTMLElement, backdrop: DitherLayer): void {
     if (event.target === title) close({ kind: 'animation', name: event.animationName });
   });
   title.addEventListener('transitionend', (event: TransitionEvent): void => {
-    if (event.target === title) close({ kind: 'transition', name: event.propertyName, running: title.getAnimations().filter((animation: Animation): boolean => animation.playState !== 'finished').map((animation: Animation): string => (animation instanceof CSSAnimation ? animation.animationName : '')) });
+    if (event.target === title) close({ kind: 'transition', name: event.propertyName, running: unfinishedNames(title.getAnimations()) });
   });
   new MutationObserver((): void => {
     if (!title.classList.contains(MOUNT.goneClass)) backdrop.paint();
