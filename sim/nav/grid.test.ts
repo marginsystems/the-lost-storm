@@ -5,12 +5,12 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, lineOfSight, linePace, lineWalkable, moveWithCollision, nearestWalkable, paceAt, setDriftOpen } from './grid.ts';
 import type { DriftCells, NavGrid } from './grid.ts';
-import { ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts';
-import { must, zoneOf } from '../../test/support.ts';
+import { OUTPOST_ZONE, ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts';
+import { must } from '../../test/support.ts';
 import { findPath } from './path.ts';
 
 const content: Content = loadContent();
-const grid: NavGrid = buildNavGrid(zoneOf(content, 'drowned_bastion'), content.props, content.surfaces, content.player.radius);
+const grid: NavGrid = buildNavGrid(OUTPOST_ZONE, content.props, content.surfaces, content.player.radius);
 
 void test('open floor is walkable and void tiles, the outside and wall margins are not', (): void => {
   assert.ok(isWalkable(grid, 28, 22));

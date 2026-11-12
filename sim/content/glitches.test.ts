@@ -20,8 +20,8 @@ void test('the shipped glitches read cleanly and every prop and quest they name 
 });
 
 void test('glitches that name a missing prop or quest are reported', (): void => {
-  const def: GlitchDef = parseGlitches({ ...raw, mistZone: 'stillhold', triggers: [{ id: 'x', kind: 'stutter', during: 'any', when: [{ type: 'quest', quest: 'no_quest', is: 'done' }] }], edits: [...raw.edits, { id: 'odd', type: 'prop_shift', weight: 1, reach: 2, distance: 1, props: ['no_prop'] }] });
-  assert.deepEqual(glitchProblems(def, glitchKnownOf(content)), ['glitches.edits.odd: unknown prop no_prop', 'glitches: unknown quest no_quest', 'glitches.mistZone: stillhold is not a void zone']);
+  const def: GlitchDef = parseGlitches({ ...raw, mistZone: 'waystation', triggers: [{ id: 'x', kind: 'stutter', during: 'any', when: [{ type: 'quest', quest: 'no_quest', is: 'done' }] }], edits: [...raw.edits, { id: 'odd', type: 'prop_shift', weight: 1, reach: 2, distance: 1, props: ['no_prop'] }] });
+  assert.deepEqual(glitchProblems(def, glitchKnownOf(content)), ['glitches.edits.odd: unknown prop no_prop', 'glitches: unknown quest no_quest', 'glitches.mistZone: waystation is not a void zone']);
 });
 
 void test('stages out of order, an unknown edit, a bad template or a bad kind are refused', (): void => {

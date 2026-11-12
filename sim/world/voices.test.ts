@@ -12,7 +12,7 @@ import type { World, WorldEvent } from './types.ts';
 
 const shipped: Content = loadContent();
 const DT: number = 1 / 60;
-const town: ZoneDef = zoneOf(shipped, shipped.world.start);
+const town: ZoneDef = zoneOf(shipped, shipped.world.town);
 const well: ZoneWaypoint = must(town.waypoint, 'town waypoint');
 const SPOT: Vec2 = { x: well.x, z: well.z };
 const AWAY: Vec2 = town.playerStart;
@@ -22,7 +22,7 @@ const opening: QuestDef = must([...shipped.quests.values()].find((quest: QuestDe
 function staged(when: readonly Condition[]): Content {
   const voice: ZoneVoice = { id: 'whisper', x: SPOT.x, z: SPOT.z, radius: 2, lines: WORDS, when };
   const zone: ZoneDef = { ...town, voices: [voice] };
-  return { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [zone.id, zone]]) };
+  return { ...shipped, world: { ...shipped.world, start: zone.id }, zones: new Map<string, ZoneDef>([...shipped.zones, [zone.id, zone]]) };
 }
 
 function standing(world: World, at: Vec2): WorldEvent[] {

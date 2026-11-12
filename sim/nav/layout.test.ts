@@ -1,13 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loadContent } from '../content/content.ts';
-import type { Content, ZoneDef } from '../content/types.ts';
+import type { ZoneDef } from '../content/types.ts';
 import { distanceToCell, isFloorCell, outsideCells } from './layout.ts';
 import type { OutsideCell } from './layout.ts';
-import { zoneOf } from '../../test/support.ts';
+import { roadZone } from '../../test/road-support.ts';
 
-const content: Content = loadContent();
-const road: ZoneDef = zoneOf(content, 'duskway');
+const road: ZoneDef = roadZone({ tiles: ['   w   ', '   w   ', '  www  ', ' wwwww ', '  www  ', '   w   '], outside: { surface: 'silt', reach: 3 } });
 
 void test('outside cells ring the floor within the reach and never overlap it', (): void => {
   const ring: OutsideCell[] = outsideCells(road, 1);

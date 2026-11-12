@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { roadContent, roadZone } from '../test/road-support.ts';
 import { must, worldIn } from '../test/support.ts';
-import { loadContent } from './content/content.ts';
 import type { Content, ZoneDef, ZoneVoice } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
@@ -10,7 +10,14 @@ import type { SaveData } from './save.ts';
 import { createWorld } from './world/create.ts';
 import type { ItemInstance, World } from './world/types.ts';
 
-const content: Content = loadContent();
+const OUTPOST: ZoneDef = roadZone({
+  id: 'outpost',
+  waypoint: { x: 21, z: 8, radius: 1.8 },
+  playerStart: { x: 28, z: 12 },
+  exits: [{ id: 'stair', x: 28, z: 14.4, radius: 1.5, to: 'waystation', toExit: 'west_gate', arrival: { x: 28, z: 12 }, requires: [], lockedHint: '', hiddenWhenLocked: false }],
+  packs: [{ x: 12, z: 6, members: [{ monster: 'mended', count: 2, mods: [] }], when: [] }],
+});
+const content: Content = roadContent(OUTPOST);
 
 function made(base: string, rarity: string, uid: number): ItemInstance {
   return must(generateItem(content, createRng(uid), uid, 3, base, rarity), base);
@@ -56,7 +63,7 @@ void test('a save survives JSON and rebuilds the same character', (): void => {
   assert.equal(player.inventory.length, content.player.inventorySize);
   assert.equal(player.life, player.maxLife);
   assert.ok(player.stats.maxLife >= 100 + 12 * 3 + 30);
-  assert.ok(restored.monsters.every((monster): boolean => monster.level === 3));
+  assert.ok(restored.monsters.every((monster): boolean => monster.level === restored.zone.level));
 });
 
 void test('a restored world does not hand out the starting items again', (): void => {
@@ -178,80 +185,81 @@ void test('loot that was never part of a save is not carried by it', (): void =>
 });
 
 void test('the zone, the respawn point and the zones visited survive a save', (): void => {
-  const world: World = worldIn(content, 'drowned_bastion', 3);
+  const world: World = worldIn(content, 'outpost', 3);
   world.respawn = { type: 'exit', exit: 'stair' };
   const save: SaveData = roundTrip(world);
-  assert.equal(save.zone, 'drowned_bastion');
+  assert.equal(save.zone, 'outpost');
   assert.deepEqual(save.respawn, { type: 'exit', exit: 'stair' });
-  assert.deepEqual(save.visited, ['stillhold', 'drowned_bastion']);
+  assert.deepEqual(save.visited, ['shallows', 'outpost']);
   const restored: World = createWorld(content, { seed: 4, save });
-  assert.equal(restored.zone.id, 'drowned_bastion');
+  assert.equal(restored.zone.id, 'outpost');
   assert.deepEqual(restored.respawn, { type: 'exit', exit: 'stair' });
-  assert.deepEqual(restored.player.pos, { x: 28, z: 37 });
-  assert.deepEqual(restored.visited, ['stillhold', 'drowned_bastion']);
+  assert.deepEqual(restored.player.pos, { x: 28, z: 12 });
+  assert.deepEqual(restored.visited, ['shallows', 'outpost']);
   assert.ok(restored.monsters.length > 0);
 });
 
-void test('a version 1 save, which has no zone, loads into the start zone with its character intact', (): void => {
+void test('a version 1 save, which has no zone, loads into the town with its character intact', (): void => {
   const { zone: _zone, respawn: _respawn, visited: _visited, ...old } = toSave(played());
   const save: SaveData = must(readSave(content, JSON.parse(JSON.stringify({ ...old, version: 1 }))), 'save');
-  assert.equal(save.zone, content.world.start);
+  assert.equal(save.zone, content.world.town);
   assert.deepEqual(save.respawn, { type: 'start' });
-  assert.deepEqual(save.visited, [content.world.start]);
+  assert.deepEqual(save.visited, [content.world.town]);
   assert.equal(save.level, 4);
   assert.equal(save.surge, 3);
   const restored: World = createWorld(content, { seed: 5, save });
-  assert.equal(restored.zone.id, content.world.start);
+  assert.equal(restored.zone.id, content.world.town);
   assert.equal(restored.player.level, 4);
   assert.equal(restored.player.equipped.weapon?.base, 'stormsteel_sword');
   assert.equal(restored.monsters.length, 0);
 });
 
 void test('an unknown zone or respawn id in a save falls back to the start', (): void => {
-  const base: SaveData = toSave(worldIn(content, 'drowned_bastion', 6));
-  const lostZone: SaveData = must(readSave(content, { ...base, zone: 'atlantis', respawn: { type: 'exit', exit: 'stair' }, visited: ['atlantis', 'stillhold', 7] }), 'save');
+  const base: SaveData = toSave(worldIn(content, 'outpost', 6));
+  const lostZone: SaveData = must(readSave(content, { ...base, zone: 'atlantis', respawn: { type: 'exit', exit: 'stair' }, visited: ['atlantis', 'shallows', 7] }), 'save');
   assert.equal(lostZone.zone, content.world.start);
   assert.deepEqual(lostZone.respawn, { type: 'start' });
-  assert.deepEqual(lostZone.visited, ['stillhold']);
+  assert.deepEqual(lostZone.visited, ['shallows']);
   const lostExit: SaveData = must(readSave(content, { ...base, respawn: { type: 'exit', exit: 'trapdoor' } }), 'save');
   const world: World = createWorld(content, { seed: 7, save: lostExit });
-  assert.equal(world.zone.id, 'drowned_bastion');
+  assert.equal(world.zone.id, 'outpost');
   assert.deepEqual(world.respawn, { type: 'start' });
-  assert.deepEqual(world.player.pos, { x: 28, z: 37 });
+  assert.deepEqual(world.player.pos, { x: 28, z: 12 });
   const oddRespawn: SaveData = must(readSave(content, { ...base, respawn: { type: 'checkpoint' }, visited: 'everywhere' }), 'save');
   assert.deepEqual(oddRespawn.respawn, { type: 'start' });
-  assert.deepEqual(oddRespawn.visited, ['drowned_bastion']);
+  assert.deepEqual(oddRespawn.visited, ['outpost']);
 });
 
 void test('the conversations and the voices of a place already heard survive a save, and unknown ones are dropped', (): void => {
-  const voice: string = 'test_whisper';
-  const whisper: ZoneVoice = { id: voice, x: 0, z: 0, radius: 1, lines: [], when: [] };
-  const voiced: Content = { ...content, zones: new Map<string, ZoneDef>([...content.zones].map(([id, zone]: [string, ZoneDef]): [string, ZoneDef] => [id, { ...zone, voices: [...zone.voices, whisper] }])) };
+  const town: ZoneDef = must(content.zones.get('waystation'), 'town');
+  const whisper: ZoneVoice = { id: 'well_whisper', x: 36, z: 24, radius: 2, lines: ['warden_trader_first_1'], when: [] };
+  const voiced: Content = { ...content, zones: new Map<string, ZoneDef>([...content.zones, [town.id, { ...town, voices: [whisper] }]]) };
+  const voice: string = must([...voiced.zones.values()].flatMap((zone: ZoneDef): readonly ZoneVoice[] => zone.voices)[0], 'a zone voice').id;
   const world: World = createWorld(voiced, { seed: 8, save: null });
-  world.heard = ['maren_wake', 'hale_first', voice];
+  world.heard = ['warden_trader_talk', 'warden_guide_talk', voice];
   const save: SaveData = must(parseSaveText(voiced, JSON.stringify(toSave(world))), 'save');
-  assert.deepEqual(save.heard, ['maren_wake', 'hale_first', voice]);
-  assert.deepEqual(createWorld(voiced, { seed: 9, save }).heard, ['maren_wake', 'hale_first', voice]);
+  assert.deepEqual(save.heard, ['warden_trader_talk', 'warden_guide_talk', voice]);
+  assert.deepEqual(createWorld(voiced, { seed: 9, save }).heard, ['warden_trader_talk', 'warden_guide_talk', voice]);
   const { heard: _heard, ...older } = toSave(world);
   assert.deepEqual(must(readSave(voiced, older), 'save').heard, []);
-  assert.deepEqual(must(readSave(voiced, { ...toSave(world), heard: ['maren_wake', 'a_rumour', 4] }), 'save').heard, ['maren_wake']);
+  assert.deepEqual(must(readSave(voiced, { ...toSave(world), heard: ['warden_trader_talk', 'a_rumour', 4] }), 'save').heard, ['warden_trader_talk']);
   assert.deepEqual(must(readSave(voiced, { ...toSave(world), heard: 'everything' }), 'save').heard, []);
 });
 
 void test('quest progress and unlocked waypoints survive a save, and bad entries are cleaned', (): void => {
   const world: World = createWorld(content, { seed: 10, save: null });
-  world.quests = { fallen_in: 1 };
-  world.waypoints = ['stillhold', 'drowned_bastion'];
+  world.quests = { out_of_the_mist: 1, to_the_waystation: 0 };
+  world.waypoints = ['waystation', 'outpost'];
   const save: SaveData = roundTrip(world);
-  assert.deepEqual(save.quests, { fallen_in: 1 });
-  assert.deepEqual(save.waypoints, ['stillhold', 'drowned_bastion']);
+  assert.deepEqual(save.quests, { out_of_the_mist: 1, to_the_waystation: 0 });
+  assert.deepEqual(save.waypoints, ['waystation', 'outpost']);
   const restored: World = createWorld(content, { seed: 11, save });
-  assert.deepEqual(restored.quests, { fallen_in: 1 });
-  assert.deepEqual(restored.waypoints, ['stillhold', 'drowned_bastion']);
-  const messy: SaveData = must(readSave(content, { ...toSave(world), quests: { fallen_in: 99, a_rumour: 1, also: 'no' }, waypoints: ['stillhold', 'atlantis', 7] }), 'save');
-  assert.deepEqual(messy.quests, { fallen_in: must(content.quests.get('fallen_in'), 'quest').objectives.length });
-  assert.deepEqual(messy.waypoints, ['stillhold']);
-  assert.deepEqual(must(readSave(content, { ...toSave(world), quests: { fallen_in: -1 } }), 'save').quests, {});
+  assert.deepEqual(restored.quests, { out_of_the_mist: 1, to_the_waystation: 0 });
+  assert.deepEqual(restored.waypoints, ['waystation', 'outpost']);
+  const messy: SaveData = must(readSave(content, { ...toSave(world), quests: { out_of_the_mist: 99, a_rumour: 1, also: 'no' }, waypoints: ['waystation', 'atlantis', 7] }), 'save');
+  assert.deepEqual(messy.quests, { out_of_the_mist: must(content.quests.get('out_of_the_mist'), 'quest').objectives.length });
+  assert.deepEqual(messy.waypoints, ['waystation']);
+  assert.deepEqual(must(readSave(content, { ...toSave(world), quests: { out_of_the_mist: -1 } }), 'save').quests, {});
 });
 
 void test('a save from before quests keeps the hero and starts the quests from the beginning', (): void => {
@@ -261,13 +269,13 @@ void test('a save from before quests keeps the hero and starts the quests from t
   assert.deepEqual(save.waypoints, []);
   assert.equal(save.level, 4);
   const world: World = createWorld(content, { seed: 12, save });
-  assert.deepEqual(world.quests, { fallen_in: 0 });
+  assert.deepEqual(world.quests, { out_of_the_mist: 0 });
   assert.equal(world.player.level, 4);
   assert.equal(readSave(content, { ...older, version: SAVE_VERSION + 1 }), null);
 });
 
 void test('a hero who teleported keeps the waypoint as the place to return to after a reload', (): void => {
-  const world: World = worldIn(content, 'drowned_bastion', 14);
+  const world: World = worldIn(content, 'outpost', 14);
   world.respawn = { type: 'waypoint' };
   const save: SaveData = roundTrip(world);
   assert.deepEqual(save.respawn, { type: 'waypoint' });

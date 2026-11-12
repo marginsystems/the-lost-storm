@@ -22,6 +22,9 @@ export const GROUND = {
   outsideLift: -0.015,
   overlayLift: 0.012,
   driftSink: 0.35,
+  driftBedDepth: 0.03,
+  openEdgeOverlap: 0.08,
+  driftBedShade: 0.7,
 } as const;
 
 interface Batch {
@@ -106,6 +109,7 @@ function nearest(zone: ZoneDef, x: number, z: number, span: number, wanted: (col
 function shadeAt(zone: ZoneDef, x: number, z: number): number {
   const macro: number = 1 - GROUND.macroDepth * noise(x * GROUND.macroScale, z * GROUND.macroScale);
   const detail: number = 1 - GROUND.detailDepth * noise(x * GROUND.detailScale + 31.7, z * GROUND.detailScale + 11.3);
+  if (zone.walls === null) return macro * detail;
   const toWall: number = nearest(zone, x, z, 1, (column: number, row: number): boolean => !isFloorCell(zone, column, row));
   const toFloor: number = nearest(zone, x, z, 1, (column: number, row: number): boolean => isFloorCell(zone, column, row));
   const edge: number = Math.max(toWall, toFloor);
@@ -123,14 +127,16 @@ function emit(batch: Batch, corners: readonly [Corner, Corner, Corner, Corner], 
   batch.indices.push(base, base + 2, base + 1, base + 1, base + 2, base + 3);
 }
 
-function cover(zone: ZoneDef, batch: Batch, column: number, row: number, y: number, tone: number, alphaAt: ((x: number, z: number) => number) | null): void {
+function cover(zone: ZoneDef, batch: Batch, column: number, row: number, y: number, tone: number, alphaAt: ((x: number, z: number) => number) | null, grow: number = 0): void {
   const step: number = zone.cellSize / GROUND.divisions;
   const corner = (x: number, z: number): Corner => ({ x, z, shade: shadeAt(zone, x, z) * tone, alpha: alphaAt === null ? 1 : alphaAt(x, z) });
   for (let j: number = 0; j < GROUND.divisions; j += 1) {
     for (let i: number = 0; i < GROUND.divisions; i += 1) {
-      const x: number = column * zone.cellSize + i * step;
-      const z: number = row * zone.cellSize + j * step;
-      const corners: [Corner, Corner, Corner, Corner] = [corner(x, z), corner(x + step, z), corner(x, z + step), corner(x + step, z + step)];
+      const x: number = column * zone.cellSize + i * step - (i === 0 ? grow : 0);
+      const z: number = row * zone.cellSize + j * step - (j === 0 ? grow : 0);
+      const right: number = column * zone.cellSize + (i + 1) * step + (i === GROUND.divisions - 1 ? grow : 0);
+      const bottom: number = row * zone.cellSize + (j + 1) * step + (j === GROUND.divisions - 1 ? grow : 0);
+      const corners: [Corner, Corner, Corner, Corner] = [corner(x, z), corner(right, z), corner(x, bottom), corner(right, bottom)];
       if (corners.every((entry: Corner): boolean => entry.alpha <= 0)) continue;
       emit(batch, corners, y);
     }
@@ -189,10 +195,13 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
     if (drift !== null) {
       const batches: Map<string, Batch> = drifting.get(drift) ?? new Map<string, Batch>();
       drifting.set(drift, batches);
-      cover(zone, batchFor(batches, own.id), cell.column, cell.row, floorY, 1, null);
+      const grow: number = zone.walls === null ? GROUND.openEdgeOverlap : 0;
+      cover(zone, batchFor(batches, own.id), cell.column, cell.row, floorY, 1, null, grow);
+      const bed: string = zone.outside?.surface ?? own.id;
+      cover(zone, batchFor(solid, bed), cell.column, cell.row, floorY - GROUND.driftBedDepth, GROUND.driftBedShade, null, grow);
       continue;
     }
-    cover(zone, batchFor(solid, own.id), cell.column, cell.row, floorY, 1, null);
+    cover(zone, batchFor(solid, own.id), cell.column, cell.row, floorY, 1, null, zone.walls === null ? GROUND.openEdgeOverlap : 0);
     for (const other of fringes(content, zone, cell, own)) {
       const alphaAt = (x: number, z: number): number => {
         const distance: number = nearest(zone, x, z, 1, (column: number, row: number): boolean => spillOf(content, zone, column, row)?.id === other.id);

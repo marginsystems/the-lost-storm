@@ -6,9 +6,9 @@ import type { Leaderboard, LeaderboardResult, NameResult } from './api.ts';
 import { createLobbyApi, LOBBY_LIMITS, readLeaderboard } from './lobby-api.ts';
 
 const URL_A: string = 'http://localhost:8787';
-const ROW: Readonly<Record<string, unknown>> = { rank: 1, name: 'Grey Heron', level: 7, furthest: 'The Still', online: true };
+const ROW: Readonly<Record<string, unknown>> = { rank: 1, name: 'Grey Heron', level: 7, furthest: 'The Shallows', online: true };
 const BOARD: Readonly<Record<string, unknown>> = {
-  top: [ROW, { rank: 2, name: 'Ashen Wolf', level: 5, furthest: 'Duskway', online: false }],
+  top: [ROW, { rank: 2, name: 'Ashen Wolf', level: 5, furthest: 'The Shallows', online: false }],
   you: { ...ROW, chosen: true },
   online: 3,
   characters: 40,
@@ -31,7 +31,7 @@ void test('a well-formed answer reads into a leaderboard and keeps only the know
 });
 
 void test('a name that appears twice on the board is kept once, so rows stay one per character', (): void => {
-  const board: Leaderboard | null = readLeaderboard({ ...BOARD, top: [ROW, { ...ROW, rank: 2, name: 'grey heron' }, { rank: 3, name: 'Ashen Wolf', level: 5, furthest: 'Duskway', online: false }] });
+  const board: Leaderboard | null = readLeaderboard({ ...BOARD, top: [ROW, { ...ROW, rank: 2, name: 'grey heron' }, { rank: 3, name: 'Ashen Wolf', level: 5, furthest: 'The Shallows', online: false }] });
   assert.deepEqual(board?.top.map((row): string => row.name), ['Grey Heron', 'Ashen Wolf']);
 });
 

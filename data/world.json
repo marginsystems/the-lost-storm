@@ -1,55 +1,149 @@
 {
-  "start": "stillhold",
+  "start": "shallows",
   "opening": "between",
-  "legacyFlags": {"opening": "skipped"},
-  "town": "stillhold",
-  "scaling": {"lifePerLevel": 0.22, "damagePerLevel": 0.12, "xpPerLevel": 0.15},
+  "legacyFlags": {
+    "opening": "skipped"
+  },
+  "town": "waystation",
+  "scaling": {
+    "lifePerLevel": 0.22,
+    "damagePerLevel": 0.12,
+    "xpPerLevel": 0.15
+  },
   "acts": [
     {
       "id": "act_1",
       "title": "Act I",
-      "name": "The Stillhold Marches",
+      "name": "The Road East",
       "atlas": {
         "width": 1600,
         "height": 1000,
-        "compass": {"x": 1425, "y": 850},
+        "compass": {
+          "x": 1425,
+          "y": 850
+        },
         "places": [
-          {"zone": "the_still", "x": 480, "y": 520},
-          {"zone": "stillhold", "x": 800, "y": 540},
-          {"zone": "the_spill", "x": 1040, "y": 590},
-          {"zone": "the_coursework", "x": 1285, "y": 480},
-          {"zone": "duskway", "x": 805, "y": 360},
-          {"zone": "dusks_end", "x": 850, "y": 185},
-          {"zone": "drowned_bastion", "x": 775, "y": 745}
+          {
+            "zone": "shallows",
+            "x": 260,
+            "y": 560
+          },
+          {
+            "zone": "waystation",
+            "x": 520,
+            "y": 520
+          }
         ],
         "roads": [
-          {"from": "stillhold", "to": "the_still", "via": [{"x": 640, "y": 498}]},
-          {"from": "stillhold", "to": "the_spill", "via": [{"x": 925, "y": 540}]},
-          {"from": "the_spill", "to": "the_coursework", "via": [{"x": 1170, "y": 570}]},
-          {"from": "stillhold", "to": "duskway", "via": [{"x": 782, "y": 450}]},
-          {"from": "duskway", "to": "dusks_end", "via": [{"x": 798, "y": 268}]},
-          {"from": "stillhold", "to": "drowned_bastion", "via": [{"x": 815, "y": 645}]}
+          {
+            "from": "shallows",
+            "to": "waystation",
+            "via": [
+              {
+                "x": 390,
+                "y": 548
+              }
+            ]
+          }
         ],
         "features": [
-          {"kind": "coast", "points": [{"x": -120, "y": -120}, {"x": 1720, "y": -120}, {"x": 1720, "y": 360}, {"x": 1570, "y": 420}, {"x": 1500, "y": 520}, {"x": 1535, "y": 615}, {"x": 1440, "y": 690}, {"x": 1300, "y": 705}, {"x": 1185, "y": 765}, {"x": 1065, "y": 745}, {"x": 965, "y": 805}, {"x": 865, "y": 795}, {"x": 800, "y": 835}, {"x": 720, "y": 805}, {"x": 600, "y": 865}, {"x": 460, "y": 845}, {"x": 340, "y": 905}, {"x": 200, "y": 885}, {"x": 80, "y": 945}, {"x": -120, "y": 935}]},
-          {"kind": "ridge", "points": [{"x": 470, "y": 170}, {"x": 600, "y": 120}, {"x": 740, "y": 95}, {"x": 960, "y": 100}, {"x": 1080, "y": 140}, {"x": 1200, "y": 215}]},
-          {"kind": "ridge", "points": [{"x": 660, "y": 250}, {"x": 628, "y": 340}, {"x": 634, "y": 440}]},
-          {"kind": "ridge", "points": [{"x": 628, "y": 580}, {"x": 600, "y": 680}, {"x": 560, "y": 770}]},
-          {"kind": "ridge", "points": [{"x": 1400, "y": 200}, {"x": 1450, "y": 300}, {"x": 1440, "y": 380}]},
-          {"kind": "river", "points": [{"x": 1330, "y": 60}, {"x": 1350, "y": 220}, {"x": 1300, "y": 380}, {"x": 1250, "y": 520}, {"x": 1150, "y": 600}, {"x": 1060, "y": 650}, {"x": 1030, "y": 730}, {"x": 1040, "y": 800}]},
-          {"kind": "river", "points": [{"x": 300, "y": 300}, {"x": 360, "y": 450}, {"x": 330, "y": 620}, {"x": 390, "y": 760}, {"x": 380, "y": 880}]},
-          {"kind": "forest", "points": [{"x": 680, "y": 250}, {"x": 770, "y": 215}, {"x": 900, "y": 250}, {"x": 950, "y": 360}, {"x": 905, "y": 455}, {"x": 720, "y": 445}, {"x": 665, "y": 370}]},
-          {"kind": "forest", "points": [{"x": 1090, "y": 300}, {"x": 1200, "y": 290}, {"x": 1230, "y": 390}, {"x": 1150, "y": 450}, {"x": 1070, "y": 400}]},
-          {"kind": "forest", "points": [{"x": 150, "y": 150}, {"x": 300, "y": 120}, {"x": 380, "y": 220}, {"x": 290, "y": 290}, {"x": 170, "y": 260}]},
-          {"kind": "marsh", "points": [{"x": 940, "y": 620}, {"x": 1010, "y": 600}, {"x": 1130, "y": 625}, {"x": 1160, "y": 700}, {"x": 1060, "y": 735}, {"x": 960, "y": 720}]},
-          {"kind": "marsh", "points": [{"x": 380, "y": 440}, {"x": 560, "y": 430}, {"x": 600, "y": 560}, {"x": 520, "y": 640}, {"x": 400, "y": 610}]}
+          {
+            "kind": "marsh",
+            "points": [
+              {
+                "x": 120,
+                "y": 470
+              },
+              {
+                "x": 300,
+                "y": 440
+              },
+              {
+                "x": 400,
+                "y": 520
+              },
+              {
+                "x": 360,
+                "y": 640
+              },
+              {
+                "x": 200,
+                "y": 660
+              },
+              {
+                "x": 110,
+                "y": 590
+              }
+            ]
+          },
+          {
+            "kind": "ridge",
+            "points": [
+              {
+                "x": 560,
+                "y": 300
+              },
+              {
+                "x": 760,
+                "y": 250
+              },
+              {
+                "x": 980,
+                "y": 270
+              },
+              {
+                "x": 1200,
+                "y": 220
+              }
+            ]
+          },
+          {
+            "kind": "river",
+            "points": [
+              {
+                "x": 700,
+                "y": 120
+              },
+              {
+                "x": 720,
+                "y": 380
+              },
+              {
+                "x": 780,
+                "y": 600
+              },
+              {
+                "x": 760,
+                "y": 900
+              }
+            ]
+          }
         ],
         "labels": [
-          {"text": "The Drowned Sea", "x": 1130, "y": 905, "size": 30, "tilt": -5},
-          {"text": "Dusk Hills", "x": 1010, "y": 68, "size": 20, "tilt": 4},
-          {"text": "The Still Reach", "x": 250, "y": 560, "size": 20, "tilt": -8}
+          {
+            "text": "The Shallows",
+            "x": 220,
+            "y": 720,
+            "size": 20,
+            "tilt": -4
+          }
         ]
       }
     }
-  ]
+  ],
+  "retired": {
+    "zones": [
+      "stillhold",
+      "duskway",
+      "dusks_end",
+      "the_spill",
+      "the_coursework",
+      "drowned_bastion",
+      "the_still"
+    ],
+    "to": "waystation",
+    "flags": {
+      "road": "rerouted"
+    }
+  }
 }

@@ -1,16 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must, worldIn } from '../../test/support.ts';
-import { loadContent } from '../content/content.ts';
-import type { Content } from '../content/types.ts';
+import { must } from '../../test/support.ts';
 import type { Vec2 } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
 import { followPath, separateActors, turnToward } from './movement.ts';
 import type { MonsterState, World } from './types.ts';
 import { spawnPacks } from './monsters.ts';
 import { roadWorld, roadZone } from '../../test/road-support.ts';
-
-const content: Content = loadContent();
 
 void test('turnToward turns by at most the step and takes the short way round', (): void => {
   assert.equal(turnToward(0, 0.1, 0.5), 0.1);
@@ -20,7 +16,7 @@ void test('turnToward turns by at most the step and takes the short way round', 
 });
 
 void test('followPath spends the whole step across waypoints and faces the next one', (): void => {
-  const world: World = worldIn(content, 'drowned_bastion', 1);
+  const world: World = roadWorld(roadZone({ tiles: ['wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww'] }));
   const player = world.player;
   player.pos = { x: 28, z: 22 };
   player.facing = 0;
@@ -33,17 +29,16 @@ void test('followPath spends the whole step across waypoints and faces the next 
 });
 
 void test('followPath reports no progress when the way is blocked', (): void => {
-  const world: World = worldIn(content, 'drowned_bastion', 1);
+  const world: World = roadWorld(roadZone({ tiles: ['wwww www', 'wwww www', 'wwww www', 'wwww www'] }));
   const player = world.player;
   const path: Vec2[] = [{ x: 20, z: 14 }];
-  player.pos = { x: 21.6, z: 14 };
+  player.pos = { x: 20.6, z: 14 };
   const moved: number = followPath(world.grid, player, path, 0.2, 0.1);
   assert.equal(moved, 0);
 });
 
 void test('separating a crowd never pushes anyone into a wall', (): void => {
-  const world: World = worldIn(content, 'drowned_bastion', 2);
-  world.monsters = [];
+  const world: World = roadWorld(roadZone({ tiles: ['wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww'] }));
   world.zone = { ...world.zone, packs: [{ x: 2, z: 22, members: [{ monster: 'mended', count: 6, mods: [] }], when: [] }] };
   spawnPacks(world);
   for (const monster of world.monsters) monster.pos = { x: 1.1, z: 22 };

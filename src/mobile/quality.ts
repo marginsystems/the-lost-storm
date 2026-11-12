@@ -15,7 +15,7 @@ export interface QualityTier {
   readonly particleCapacity: number;
   readonly maxTextureSize: number;
   readonly maxModelTextureSize: number;
-  readonly preloadAllZones: boolean;
+  readonly preloadNearZones: boolean;
   readonly halfTextures: boolean;
   readonly releaseOtherZones: boolean;
 }
@@ -36,7 +36,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     particleCapacity: 2400,
     maxTextureSize: 4096,
     maxModelTextureSize: 4096,
-    preloadAllZones: true,
+    preloadNearZones: true,
     halfTextures: false,
     releaseOtherZones: false,
   },
@@ -55,7 +55,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     particleCapacity: 700,
     maxTextureSize: 512,
     maxModelTextureSize: 256,
-    preloadAllZones: false,
+    preloadNearZones: false,
     halfTextures: true,
     releaseOtherZones: true,
   },

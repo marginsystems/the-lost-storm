@@ -79,11 +79,11 @@ void test('a new game opens in the void, with the town quest held back and the H
   assert.equal(world.zone.id, opening.id);
   assert.notEqual(world.wake, null);
   assert.equal(world.flags['opening'], 'begun');
-  assert.equal(questState(world, 'fallen_in'), 'locked');
+  assert.equal(questState(world, 'out_of_the_mist'), 'locked');
   assert.equal(hudHidden(world), true);
   const plain: World = createWorld(content, { seed: 1, save: null });
   assert.equal(plain.zone.id, content.world.start);
-  assert.equal(questState(plain, 'fallen_in'), 'active');
+  assert.equal(questState(plain, 'out_of_the_mist'), 'active');
 });
 
 void test('walking any way finds the journal ahead after twenty to forty seconds', (): void => {
@@ -108,7 +108,7 @@ void test('turning away from the journal brings it back in front of the hero', (
   assert.equal(world.ground.filter((ground: GroundItem): boolean => ground.find !== null).length, 1);
 });
 
-void test('taking the journal is the first choice; reading it shows the light, starts the quest and the HUD, and the light leads to town', (): void => {
+void test('taking the journal is the first choice; reading it shows the light, starts the quest and the HUD, and the light leads to the shallows', (): void => {
   const world: World = fresh(4);
   walkUntil(world, { x: 0, z: 1 }, (): boolean => found(world) !== null);
   const journal: GroundItem = must(found(world), 'journal');
@@ -116,21 +116,21 @@ void test('taking the journal is the first choice; reading it shows the light, s
   for (let step: number = 0; step < WALK.limit / DT && !carriesJournal(world); step += 1) stepWorld(world, [], DT);
   assert.ok(carriesJournal(world));
   assert.equal(world.flags['first_choice'], 'took_journal');
-  assert.equal(questState(world, 'follow_the_light'), 'locked');
+  assert.equal(questState(world, 'out_of_the_mist'), 'locked');
   assert.equal(hudHidden(world), true);
   const page: string = must(must(content.books.get('journal'), 'journal book').pages[0], 'page').id;
   stepWorld(world, [{ type: 'read', book: 'journal', page }], DT);
   assert.equal(world.flags['opening'], 'read');
-  assert.equal(questState(world, 'follow_the_light'), 'active');
-  assert.equal(questState(world, 'fallen_in'), 'locked');
+  assert.equal(questState(world, 'out_of_the_mist'), 'active');
+  assert.equal(questState(world, 'to_the_waystation'), 'locked');
   assert.equal(hudHidden(world), false);
   stepWorld(world, [], DT);
   assert.ok(distance(lightExit(world), world.player.pos) > lightExit(world).radius);
   walkTo(world, (): Vec2 => (world.zone.id === opening.id ? lightExit(world) : world.player.pos), (): boolean => world.zone.id !== opening.id);
-  assert.equal(world.zone.id, content.world.town);
+  assert.equal(world.zone.id, content.world.start);
   stepWorld(world, [], DT);
-  assert.equal(questState(world, 'follow_the_light'), 'done');
-  assert.equal(questState(world, 'fallen_in'), 'active');
+  assert.equal(questState(world, 'out_of_the_mist'), 'done');
+  assert.equal(questState(world, 'to_the_waystation'), 'active');
 });
 
 void test('reading needs the book in the pack, and an unknown page does nothing', (): void => {

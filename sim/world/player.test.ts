@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { MotionSample, TestScene } from '../../test/motion-support.ts';
 import { MOTION_DT, motionProblems, placedProp, sampleOf, sceneZone } from '../../test/motion-support.ts';
-import { worldIn, zoneOf } from '../../test/support.ts';
+import { SCENE_BASE } from '../../test/road-support.ts';
+import { worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -13,7 +14,7 @@ import type { Command, World } from './types.ts';
 import { enterZone } from './zones.ts';
 
 const content: Content = loadContent();
-const base: ZoneDef = zoneOf(content, 'drowned_bastion');
+const base: ZoneDef = SCENE_BASE;
 
 const LIMITS = {
   turnRate: 18,
@@ -34,7 +35,7 @@ const SCENES: readonly HeroScene[] = [
 ];
 
 function walk(scene: HeroScene): { world: World; samples: MotionSample[] } {
-  const world: World = worldIn(content, base.id, 5);
+  const world: World = worldIn(content, content.world.start, 5);
   enterZone(world, sceneZone(base, `test_${scene.name}`, scene), { type: 'start' });
   world.monsters = [];
   const samples: MotionSample[] = [];

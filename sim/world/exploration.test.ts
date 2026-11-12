@@ -22,7 +22,7 @@ void test('a fresh world has the ground around the hero explored and nothing far
 });
 
 void test('walking reveals new ground and bumps the revision only when something new is seen', (): void => {
-  const world: World = worldIn(content, 'stillhold', 2);
+  const world: World = worldIn(content, content.world.start, 2);
   const before: number = world.exploredRevision;
   assert.equal(revealAround(world, world.player.pos), false);
   assert.equal(world.exploredRevision, before);
@@ -35,30 +35,30 @@ void test('walking reveals new ground and bumps the revision only when something
 });
 
 void test('each zone keeps its own explored ground across zone changes', (): void => {
-  const world: World = worldIn(content, 'stillhold', 3);
-  const townSpot = { ...world.player.pos };
-  enterZone(world, zoneOf(content, 'duskway'), { type: 'start' });
+  const world: World = worldIn(content, content.world.start, 3);
+  const homeSpot = { ...world.player.pos };
+  enterZone(world, zoneOf(content, 'waystation'), { type: 'start' });
   stepWorld(world, [], DT);
   assert.ok(isExplored(world, world.player.pos.x, world.player.pos.z));
-  enterZone(world, zoneOf(content, 'stillhold'), { type: 'start' });
-  assert.ok(isExplored(world, townSpot.x, townSpot.z));
-  assert.ok(world.explored['duskway'] !== undefined);
+  enterZone(world, zoneOf(content, content.world.start), { type: 'start' });
+  assert.ok(isExplored(world, homeSpot.x, homeSpot.z));
+  assert.ok(world.explored['waystation'] !== undefined);
 });
 
 void test('explored ground survives a save and a broken record is dropped', (): void => {
-  const world: World = worldIn(content, 'duskway', 4);
+  const world: World = worldIn(content, 'shallows', 4);
   stepWorld(world, [], DT);
   const save = must(parseSaveText(content, JSON.stringify(toSave(world))), 'save');
   const restored: World = createWorld(content, { seed: 5, save });
-  assert.deepEqual(restored.explored['duskway'], world.explored['duskway']);
-  const broken = must(parseSaveText(content, JSON.stringify({ ...toSave(world), explored: { duskway: '3.4', atlantis: '1', stillhold: 7 } })), 'save');
+  assert.deepEqual(restored.explored['shallows'], world.explored['shallows']);
+  const broken = must(parseSaveText(content, JSON.stringify({ ...toSave(world), explored: { shallows: '3.4', atlantis: '1', waystation: 7 } })), 'save');
   assert.deepEqual(broken.explored, {});
   const older = must(parseSaveText(content, JSON.stringify({ ...toSave(world), explored: undefined })), 'save');
   assert.deepEqual(older.explored, {});
 });
 
 void test('run-length encoding round-trips and rejects the wrong size', (): void => {
-  const size: number = exploredSize(zoneOf(content, 'stillhold'));
+  const size: number = exploredSize(zoneOf(content, 'waystation'));
   const cells: Uint8Array = new Uint8Array(size);
   cells.fill(1, 10, 40);
   cells[size - 1] = 1;

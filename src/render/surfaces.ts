@@ -108,8 +108,8 @@ export function dressed(content: Content, dress: Readonly<Record<string, string>
   return def === undefined ? matte(material) : surfaceMaterial(def, 'solid');
 }
 
-export async function preloadSurfaces(content: Content): Promise<void> {
-  for (const def of content.surfaces.values()) surfaceMaterial(def, 'solid');
+export async function preloadSurfaces(content: Content, ids: ReadonlySet<string>): Promise<void> {
+  for (const def of content.surfaces.values()) if (ids.has(def.id)) surfaceMaterial(def, 'solid');
   await Promise.all([...textures.values()].map((loading: Loading): Promise<void> => loading.done));
 }
 
