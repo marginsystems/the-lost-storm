@@ -41,6 +41,9 @@ export const PHONE = {
   bannerHeight: 24,
   bannerMaxWidth: 360,
   bannerMinWidth: 140,
+  targetHeight: 28,
+  targetMaxWidth: 320,
+  targetMinWidth: 140,
 } as const;
 
 export interface Rect {
@@ -89,6 +92,7 @@ export interface PhoneLayout {
   readonly dialogue: Rect;
   readonly card: Rect;
   readonly banner: Rect;
+  readonly target: Rect;
   readonly xp: Rect;
   readonly stick: Rect;
   readonly attack: Rect;
@@ -165,6 +169,18 @@ function widestFree(from: number, to: number, blockers: readonly Rect[]): Span {
   return best;
 }
 
+function freeRow(ys: readonly number[], height: number, minWidth: number, maxWidth: number, left: number, rightEdge: number, taken: readonly Rect[]): Rect {
+  const rows: readonly BannerRow[] = ys.map((y: number): BannerRow => {
+    const row: Rect = { x: left, y, w: rightEdge - left, h: height };
+    return { y, span: widestFree(left, rightEdge, taken.filter((rect: Rect): boolean => overlaps(rect, row))) };
+  });
+  const roomOf = (row: BannerRow): number => row.span.to - row.span.from;
+  const first: BannerRow = rows[0] ?? { y: left, span: { from: left, to: rightEdge } };
+  const chosen: BannerRow = rows.find((row: BannerRow): boolean => roomOf(row) >= minWidth) ?? rows.reduce((a: BannerRow, b: BannerRow): BannerRow => (roomOf(b) > roomOf(a) ? b : a), first);
+  const width: number = Math.min(maxWidth, roomOf(chosen));
+  return { x: Math.round(chosen.span.from + (roomOf(chosen) - width) / 2), y: chosen.y, w: width, h: height };
+}
+
 export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayout {
   const { width, height, safe } = screen;
   const left: number = safe.left + PHONE.margin;
@@ -236,16 +252,11 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const quests: Rect | null = questsRect(column, questTop, below, height);
 
   const taken: readonly Rect[] = [life, mana, lifeFlask, manaFlask, menu.rect, zone, minimap, hint, toast, dialogue, ...controls, ...(quests === null ? [] : [quests])];
-  const rows: readonly BannerRow[] = [Math.ceil(Math.max(clusterBottom, bottom(menu.rect)) + PHONE.gap), top].map((y: number): BannerRow => {
-    const row: Rect = { x: left, y, w: rightEdge - left, h: PHONE.bannerHeight };
-    return { y, span: widestFree(left, rightEdge, taken.filter((rect: Rect): boolean => overlaps(rect, row))) };
-  });
-  const roomOf = (row: BannerRow): number => row.span.to - row.span.from;
-  const chosen: BannerRow = rows.find((row: BannerRow): boolean => roomOf(row) >= PHONE.bannerMinWidth) ?? rows.reduce((a: BannerRow, b: BannerRow): BannerRow => (roomOf(b) > roomOf(a) ? b : a));
-  const bannerWidth: number = Math.min(PHONE.bannerMaxWidth, roomOf(chosen));
-  const banner: Rect = { x: Math.round(chosen.span.from + (roomOf(chosen) - bannerWidth) / 2), y: chosen.y, w: bannerWidth, h: PHONE.bannerHeight };
+  const underCluster: number = Math.ceil(Math.max(clusterBottom, bottom(menu.rect)) + PHONE.gap);
+  const banner: Rect = freeRow([underCluster, top], PHONE.bannerHeight, PHONE.bannerMinWidth, PHONE.bannerMaxWidth, left, rightEdge, taken);
+  const target: Rect = freeRow([top, underCluster, bottom(banner) + PHONE.gap], PHONE.targetHeight, PHONE.targetMinWidth, PHONE.targetMaxWidth, left, rightEdge, [...taken.filter((rect: Rect): boolean => rect !== dialogue), banner]);
 
-  return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, toast, dialogue, card, banner, xp, stick, attack, skills, flasks };
+  return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, toast, dialogue, card, banner, target, xp, stick, attack, skills, flasks };
 }
 
 export function layoutRects(layout: PhoneLayout): NamedRect[] {
@@ -260,6 +271,7 @@ export function layoutRects(layout: PhoneLayout): NamedRect[] {
     { name: 'hint', rect: layout.hint },
     { name: 'toast', rect: layout.toast },
     { name: 'banner', rect: layout.banner },
+    { name: 'target', rect: layout.target },
     { name: 'xp', rect: layout.xp },
     { name: 'stick', rect: layout.stick },
     { name: 'attack', rect: layout.attack },

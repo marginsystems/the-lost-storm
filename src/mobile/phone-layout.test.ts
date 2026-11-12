@@ -140,3 +140,12 @@ void test('the banner line sits near the top, clear of the menu row, the dialogu
     for (const rect of [layout.menu.rect, layout.dialogue, layout.hint, layout.stick, layout.attack, ...layout.skills, ...layout.flasks]) assert.ok(!overlaps(layout.banner, rect), label(screen, 6, 2));
   }
 });
+
+void test('the target plate gets its own stretch, clear of the globes, flasks, menu, zone, minimap and banner', (): void => {
+  for (const screen of SCREENS) {
+    const layout = phoneLayout(screen, { skills: 5, flasks: 2, menu: 5 });
+    assert.ok(inside(layout.target, screen), label(screen, 5, 2));
+    assert.ok(layout.target.w >= PHONE.targetMinWidth, label(screen, 5, 2));
+    for (const rect of [layout.life, layout.mana, layout.lifeFlask, layout.manaFlask, layout.menu.rect, layout.zone, layout.minimap, layout.banner, ...(layout.quests === null ? [] : [layout.quests])]) assert.equal(overlaps(layout.target, rect), false, label(screen, 5, 2));
+  }
+});

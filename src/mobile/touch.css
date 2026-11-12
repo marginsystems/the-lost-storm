@@ -452,6 +452,7 @@ body.touch.ph-talking .tc-btn.skill,
 body.touch.ph-talking .tc-btn.flask,
 body.touch.ph-talking .hud-hint,
 body.touch.ph-talking .tc-rotate,
+body.touch.ph-talking .hud-target,
 body.touch.ph-talking .hud > .hud-quests {
   opacity: 0;
   pointer-events: none;
@@ -491,6 +492,17 @@ body.touch .hud > .hud-banners {
   right: auto;
   top: var(--ph-banner-y);
   width: var(--ph-banner-w);
+}
+
+body.touch .hud-target {
+  top: var(--ph-target-y);
+  left: var(--ph-target-x);
+  width: var(--ph-target-w);
+  transform: translateY(-10px);
+}
+
+body.touch .hud-target.visible {
+  transform: none;
 }
 
 body.touch .hud .banner {

@@ -13,7 +13,7 @@ import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import { createLootTip } from './loot-tip.ts';
 import type { LootTip, TipCheck } from './loot-tip.ts';
-import { anchorInView } from './label-edge.ts';
+import { anchorInView, keepBelowTop, keepInside } from './label-edge.ts';
 import type { ViewSize } from './label-edge.ts';
 import { clearOfRects, stackLabels } from './label-stack.ts';
 import type { ScreenRect } from './label-stack.ts';
@@ -468,6 +468,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           label.height = inner.offsetHeight;
         }
         camera.project(label.ground.pos.x, OVERLAYS.labelLift, label.ground.pos.z, point);
+        point.set(keepInside(point.x, label.width, view), keepBelowTop(point.y, label.height, view));
         if (shown) boxes.push({ id, x: point.x, y: point.y, width: label.width, height: label.height });
         else place(label.element, point);
       }
