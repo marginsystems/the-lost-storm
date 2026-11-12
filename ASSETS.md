@@ -21,7 +21,7 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 
 ## Interface icons
 
-The Discord, GitHub and X marks in the title screen's footer (`play/index.html`) are the SVG paths from [Simple Icons](https://simpleicons.org) 13.21.0, CC0 1.0, licence text in [licenses/Simple-Icons-CC0.txt](licenses/Simple-Icons-CC0.txt). The marks are the trademarks of their owners and are used only to link to this game's pages on those services. The feedback speech bubble was drawn for this project.
+The Discord, GitHub and X marks in the footers of the title screen (`play/index.html`) and the landing page (`index.html`) are the SVG paths from [Simple Icons](https://simpleicons.org) 13.21.0, CC0 1.0, licence text in [licenses/Simple-Icons-CC0.txt](licenses/Simple-Icons-CC0.txt). The marks are the trademarks of their owners and are used only to link to this game's pages on those services. The feedback speech bubble was drawn for this project.
 
 ## Credit required by CC BY 4.0
 

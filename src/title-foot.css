@@ -185,3 +185,13 @@ body:not(.touch) .title-foot .title-keys-touch,
 body.touch .title-foot .title-keys-desk {
   display: none;
 }
+
+@media (max-width: 359px) {
+  .title-foot-icons {
+    gap: 0;
+  }
+
+  .title-icon-link {
+    width: 26px;
+  }
+}

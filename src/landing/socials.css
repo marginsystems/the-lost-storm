@@ -33,14 +33,32 @@
 footer {
   flex-wrap: wrap;
   justify-content: space-between;
-  row-gap: 12px;
+  align-items: center;
+  row-gap: 8px;
 }
 
 footer nav {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px 24px;
+}
+
+footer .legal {
+  gap: 7px;
+  font-size: 13px;
+  color: rgba(239, 230, 214, 0.28);
+}
+
+footer .legal a {
+  color: rgba(239, 230, 214, 0.48);
+}
+
+footer .socials {
+  gap: 4px;
+}
+
+footer .socials .copy {
+  margin-right: 10px;
+  font-size: 14px;
 }
 
 footer a:hover,
@@ -53,6 +71,28 @@ footer a:focus-visible,
 
 footer a {
   transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.icon-link {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  transition:
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.icon-link:hover,
+.icon-link:focus-visible {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.icon-link .icon {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .copy {
