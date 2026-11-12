@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
 import { packMods } from './parse-combat.ts';
-import { byId, choice, ContentError, each, fields, flag, numeric, positive, text, textList } from './read.ts';
+import { byId, choice, choiceList, ContentError, each, fields, flag, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
   AtlasDef,
@@ -22,6 +22,7 @@ import type {
   ZoneCheckpoint,
   ZoneDef,
   ZoneExit,
+  ZoneHud,
   ZoneNpc,
   ZoneOutside,
   ZonePack,
@@ -31,6 +32,8 @@ import type {
   ZoneWaypoint,
 } from './types.ts';
 import { service } from './parse-trade.ts';
+import type { ZoneVoid, ZoneWake } from './story-types.ts';
+import { HUD_PARTS } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, OBJECTIVE_STATES, QUEST_STATES, ZONE_KINDS } from './types.ts';
 
 function point(value: unknown, where: string): ZonePoint {
@@ -128,6 +131,25 @@ function zoneAmbience(value: unknown, where: string): ZoneAmbience {
   };
 }
 
+function zoneWake(value: unknown, where: string): ZoneWake | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { lie: positive(source, 'lie', where), rise: positive(source, 'rise', where) };
+}
+
+function zoneVoid(value: unknown, where: string): ZoneVoid {
+  const source: Fields = fields(value, where);
+  return { span: positive(source, 'span', where), wake: zoneWake(source['wake'], `${where}.wake`) };
+}
+
+function zoneHud(value: unknown, where: string): ZoneHud | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  const hide: ZoneHud['hide'] = choiceList(source, 'hide', HUD_PARTS, where);
+  if (hide.length === 0) throw new ContentError(`${where}.hide`, 'a HUD rule hides at least one part');
+  return { hide, until: conditions(source, 'until', where) };
+}
+
 function zoneOutside(value: unknown, where: string): ZoneOutside | null {
   if (value === null || value === undefined) return null;
   const source: Fields = fields(value, where);
@@ -147,6 +169,10 @@ export function zone(value: unknown, where: string): ZoneDef {
   const packs: ZonePack[] = each(source['packs'], `${where}.packs`, pack);
   const surge: SurgeRules | null = surgeRules(source['surge'], `${where}.surge`);
   if (kind === 'town' && (packs.length > 0 || surge !== null)) throw new ContentError(where, 'a town is safe: it cannot have packs or surges');
+  if (kind === 'void' && (packs.length > 0 || surge !== null)) throw new ContentError(where, 'a void is empty: it cannot have packs or surges');
+  if (kind === 'void' && [source['npcs'], source['checkpoints']].some((list: unknown): boolean => Array.isArray(list) && list.length > 0)) throw new ContentError(where, 'a void recentres around the hero: it cannot hold npcs or checkpoints');
+  if (kind === 'void' && source['waypoint'] !== null && source['waypoint'] !== undefined) throw new ContentError(`${where}.waypoint`, 'a void recentres around the hero: it cannot hold a waypoint');
+  if ((kind === 'void') !== (source['void'] !== undefined && source['void'] !== null)) throw new ContentError(`${where}.void`, kind === 'void' ? 'a void zone needs its void rules' : 'only a void zone has void rules');
   return {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
@@ -168,6 +194,8 @@ export function zone(value: unknown, where: string): ZoneDef {
     npcs: each(source['npcs'], `${where}.npcs`, zoneNpc),
     voices: source['voices'] === undefined ? [] : [...byId(each(source['voices'], `${where}.voices`, zoneVoice), `${where}.voices`).values()],
     ambience: zoneAmbience(source['ambience'], `${where}.ambience`),
+    void: kind === 'void' ? zoneVoid(source['void'], `${where}.void`) : null,
+    hud: zoneHud(source['hud'], `${where}.hud`),
   };
 }
 
@@ -279,6 +307,7 @@ export function worldDef(value: unknown, where: string): WorldDef {
   return {
     acts: [...byId(each(source['acts'], `${where}.acts`, act), `${where}.acts`).values()],
     start: text(source, 'start', where),
+    town: text(source, 'town', where),
     scaling: {
       lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),
       damagePerLevel: numeric(scaling, 'damagePerLevel', `${where}.scaling`),

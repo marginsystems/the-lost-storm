@@ -223,8 +223,8 @@ export interface ItemDrop {
 
 export interface GroundItem {
   readonly id: number;
-  readonly pos: Vec2;
-  readonly from: Vec2;
+  pos: Vec2;
+  from: Vec2;
   readonly content: GoldDrop | ItemDrop;
   age: number;
   kept: boolean;
@@ -401,6 +401,12 @@ export interface OpenService {
   readonly anchor: Vec2;
 }
 
+export interface WakeState {
+  elapsed: number;
+  readonly lie: number;
+  readonly rise: number;
+}
+
 export interface World {
   readonly content: Content;
   zone: ZoneDef;
@@ -428,6 +434,8 @@ export interface World {
   nextPackId: number;
   surge: number;
   surgeTimer: number | null;
+  wake: WakeState | null;
+  shift: Vec2;
   events: WorldEvent[];
   service: OpenService | null;
   vendors: Record<string, VendorStock>;

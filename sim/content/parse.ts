@@ -311,7 +311,7 @@ function rigClips(value: unknown, where: string): RigClips {
   const death: string[] = textList(source, 'death', where);
   if (hit.length === 0) throw new ContentError(`${where}.hit`, 'a rig needs at least one hit clip');
   if (death.length === 0) throw new ContentError(`${where}.death`, 'a rig needs at least one death clip');
-  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, death, actions };
+  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, death, rise: source['rise'] === undefined ? null : nullableText(source, 'rise', where), actions };
 }
 
 function triple(source: Fields, key: string, where: string): Triple {
@@ -572,6 +572,7 @@ export function contentProblems(content: Content): string[] {
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `attachment ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }
   need(content.zones.has(content.world.start), `world starts in unknown zone ${content.world.start}`);
+  need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
   for (const problem of combatProblems(content)) problems.push(problem);
@@ -594,7 +595,10 @@ export function contentProblems(content: Content): string[] {
       known(`${at} pack`, packDef.when);
       for (const member of packDef.members) need(content.monsters.has(member.monster), `${at} pack uses unknown monster ${member.monster}`);
     }
-    need(content.world.acts.filter((act: ActDef): boolean => act.atlas.places.some((place: MapPlace): boolean => place.zone === zoneDef.id)).length === 1, `${at} needs one place on the world map`);
+    const places: number = content.world.acts.filter((act: ActDef): boolean => act.atlas.places.some((place: MapPlace): boolean => place.zone === zoneDef.id)).length;
+    if (zoneDef.kind === 'void') need(places === 0, `${at} is a void: it has no place on the world map`);
+    else need(places === 1, `${at} needs one place on the world map`);
+    if (zoneDef.hud !== null) known(`${at} hud`, zoneDef.hud.until);
     for (const placed of zoneDef.npcs) {
       need(content.npcs.has(placed.npc), `${at} places unknown npc ${placed.npc}`);
       known(`${at} npc ${placed.npc}`, placed.when);
@@ -603,7 +607,7 @@ export function contentProblems(content: Content): string[] {
       known(`${at} exit ${exit.id}`, exit.requires);
       const far: ZoneExit | undefined = content.zones.get(exit.to)?.exits.find((candidate: ZoneExit): boolean => candidate.id === exit.toExit);
       need(far !== undefined, `${at} exit ${exit.id} leads to unknown exit ${exit.to}.${exit.toExit}`);
-      if (far !== undefined) need(far.to === zoneDef.id && far.toExit === exit.id, `${at} exit ${exit.id} is not matched by ${exit.to}.${exit.toExit}`);
+      if (far !== undefined && zoneDef.kind !== 'void') need(far.to === zoneDef.id && far.toExit === exit.id, `${at} exit ${exit.id} is not matched by ${exit.to}.${exit.toExit}`);
     }
   }
   for (const def of content.npcs.values()) {

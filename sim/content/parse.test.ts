@@ -12,6 +12,7 @@ import skillTree from '../../data/skill-tree.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
 import world from '../../data/world.json' with { type: 'json' };
+import between from '../../data/zones/between.json' with { type: 'json' };
 import bastion from '../../data/zones/drowned_bastion.json' with { type: 'json' };
 import stillhold from '../../data/zones/stillhold.json' with { type: 'json' };
 import { must, worldIn } from '../../test/support.ts';
@@ -574,4 +575,16 @@ void test('a rig lists its hit and death clips and names its action clips, and a
   const rest: unknown[] = skills.filter((entry: { readonly id: string }): boolean => entry.id !== 'cleave');
   const chained: string[] = contentProblems(parseContent({ ...shipped, skills: [...rest, Object.assign({}, cleave, { combo: { window: 0.5, steps: [step] } })] }));
   assert.ok(chained.includes('skill bar uses skill cleave, but rig skeleton_hero has no action clip backflip'));
+});
+
+function voidWith(change: Readonly<Record<string, unknown>>): RawContent {
+  const changed: unknown = { ...between, ...change };
+  return { ...shipped, zones: RAW_CONTENT.zones.map((zone: unknown): unknown => (zone === between ? changed : zone)) };
+}
+
+void test('a void recentres around the hero, so it cannot hold npcs, checkpoints or a waypoint', (): void => {
+  const checkpoint = { id: 'stone', x: 80, z: 80, radius: 2 };
+  assert.throws((): unknown => parseContent(voidWith({ checkpoints: [checkpoint] })), (error: unknown): boolean => problem(error, 'cannot hold npcs or checkpoints'));
+  assert.throws((): unknown => parseContent(voidWith({ waypoint: { x: 80, z: 80 } })), (error: unknown): boolean => problem(error, 'cannot hold a waypoint'));
+  assert.doesNotThrow((): unknown => parseContent(voidWith({})));
 });

@@ -51,6 +51,8 @@ import type { GameBoard } from './lobby/game-board.ts';
 import { mountTitleLobby } from './lobby/title-lobby.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
+import type { Opening } from './opening/opening.ts';
+import { createOpening } from './opening/opening.ts';
 import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
 import type { CharacterLibrary, Dresser } from './render/character-loader.ts';
@@ -364,6 +366,7 @@ async function start(): Promise<void> {
   const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, openMenu: (): void => {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
+  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement) });
   if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene) };
 
   let playing: boolean = false;
@@ -459,6 +462,7 @@ async function start(): Promise<void> {
       const simDt: number = live && hitStop <= 0 ? dt : 0;
       actors.sync(simDt, world, input.hoveredId);
       loot.sync(world);
+      opening.update();
       camera.update(dt, world.player.pos.x, world.player.pos.z);
       effects.update(simVisualDt, world);
       ward.update(simVisualDt, world);

@@ -2,7 +2,7 @@ import type { DeathPenalty } from '../content/types.ts';
 import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
 import type { MonsterState, PlayerState, RespawnChoice, World, WorldEvent } from './types.ts';
-import { enterZone, placePlayer, startZone } from './zones.ts';
+import { enterZone, placePlayer, townZone } from './zones.ts';
 
 export function choicesOpen(world: World): boolean {
   return !world.player.alive && world.death !== null && world.death.elapsed >= world.content.player.respawnDelay;
@@ -48,7 +48,7 @@ function revive(world: World): void {
 
 export function respawnPlayer(world: World, choice: RespawnChoice): void {
   if (!choicesOpen(world)) return;
-  const town = world.zone.kind === 'town' ? world.zone : startZone(world.content);
+  const town = world.zone.kind === 'town' ? world.zone : townZone(world.content);
   const away: boolean = choice === 'town' && town.id !== world.zone.id;
   if (choice === 'town' && !away) world.respawn = { type: 'start' };
   revive(world);

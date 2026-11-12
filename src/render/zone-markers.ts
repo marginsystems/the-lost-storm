@@ -77,7 +77,7 @@ export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
 
   const exitLit = (exit: ZoneExit): ((world: World) => number) => (world: World): number => (allHold(world, exit.requires) ? 1 : exit.hiddenWhenLocked ? 0 : MARKERS.locked);
   const checkpointLit = (checkpoint: ZoneCheckpoint): ((world: World) => number) => (world: World): number => (world.respawn.type === 'checkpoint' && world.respawn.checkpoint === checkpoint.id ? 1 : MARKERS.idle);
-  for (const exit of zone.exits) build(exit.x, exit.z, exit.radius, MARKERS.exitColor, MARKERS.exitLight, exitLit(exit));
+  for (const exit of zone.kind === 'void' ? [] : zone.exits) build(exit.x, exit.z, exit.radius, MARKERS.exitColor, MARKERS.exitLight, exitLit(exit));
   for (const checkpoint of zone.checkpoints) build(checkpoint.x, checkpoint.z, checkpoint.radius, MARKERS.checkpointColor, MARKERS.checkpointLight, checkpointLit(checkpoint));
   if (zone.waypoint !== null) build(zone.waypoint.x, zone.waypoint.z, zone.waypoint.radius, MARKERS.waypointColor, MARKERS.waypointLight, (world: World): number => (world.waypoints.includes(zone.id) ? 1 : MARKERS.idle));
   scene.add(group);

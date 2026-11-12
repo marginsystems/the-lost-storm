@@ -1,6 +1,8 @@
 import type { FlaskDef } from './flasks.ts';
 import type { GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, SkillLeap, StalkerBehaviour, SummonDef } from './combat-types.ts';
 import type { ServiceKind, TradeDef } from './trade-types.ts';
+import type { Condition } from './condition-types.ts';
+import type { HudPart, ZoneVoid } from './story-types.ts';
 
 export const STAT_IDS = [
   'maxLife',
@@ -293,6 +295,7 @@ export interface RigClips {
   readonly run: string;
   readonly hit: readonly string[];
   readonly death: readonly string[];
+  readonly rise: string | null;
   readonly actions: Readonly<Record<string, RigActionClip>>;
 }
 
@@ -411,31 +414,16 @@ export interface ZoneWalls {
   readonly halfThickness: number;
 }
 
-export const ZONE_KINDS = ['town', 'wild'] as const;
+export const ZONE_KINDS = ['town', 'wild', 'void'] as const;
 export type ZoneKind = (typeof ZONE_KINDS)[number];
 
-export const QUEST_STATES = ['locked', 'active', 'done'] as const;
-export type QuestState = (typeof QUEST_STATES)[number];
+export { OBJECTIVE_STATES, QUEST_STATES } from './condition-types.ts';
+export type { Condition, ObjectiveCondition, ObjectiveState, QuestCondition, QuestState } from './condition-types.ts';
 
-export const OBJECTIVE_STATES = ['pending', 'current', 'done'] as const;
-export type ObjectiveState = (typeof OBJECTIVE_STATES)[number];
-
-export interface QuestCondition {
-  readonly type: 'quest';
-  readonly quest: string;
-  readonly is: QuestState;
-  readonly not: boolean;
+export interface ZoneHud {
+  readonly hide: readonly HudPart[];
+  readonly until: readonly Condition[];
 }
-
-export interface ObjectiveCondition {
-  readonly type: 'objective';
-  readonly quest: string;
-  readonly objective: string;
-  readonly is: ObjectiveState;
-  readonly not: boolean;
-}
-
-export type Condition = QuestCondition | ObjectiveCondition;
 
 export interface ZoneExit {
   readonly id: string;
@@ -504,6 +492,8 @@ export interface ZoneDef {
   readonly npcs: readonly ZoneNpc[];
   readonly voices: readonly ZoneVoice[];
   readonly ambience: ZoneAmbience;
+  readonly void: ZoneVoid | null;
+  readonly hud: ZoneHud | null;
 }
 
 export interface LineDef {
@@ -624,6 +614,7 @@ export interface ActDef {
 
 export interface WorldDef {
   readonly start: string;
+  readonly town: string;
   readonly scaling: MonsterScaling;
   readonly acts: readonly ActDef[];
 }

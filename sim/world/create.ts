@@ -14,6 +14,7 @@ import { spawnPacks } from './monsters.ts';
 import { startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
 import { emptyStash } from './trade.ts';
+import { beginVoid } from './void.ts';
 import { placePlayer, respawnExists, startZone } from './zones.ts';
 
 export interface WorldOptions {
@@ -127,6 +128,8 @@ export function createWorld(content: Content, options: WorldOptions): World {
     nextPackId: 1,
     surge: save?.surge ?? 1,
     surgeTimer: null,
+    wake: null,
+    shift: { x: 0, z: 0 },
     events: [],
     service: null,
     vendors: save === null ? {} : copyVendors(save.vendors),
@@ -134,6 +137,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     tradeZone: zone.id,
   };
   placePlayer(world);
+  beginVoid(world);
   if (save === null) giveStartingItems(world);
   for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   startQuests(world);
