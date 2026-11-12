@@ -9,6 +9,7 @@ export interface Backend {
   flush(): void;
   state(): BackendState;
   subscribe(listener: (state: BackendState) => void): void;
+  freshStart(): boolean;
 }
 
 export interface KeyValueStore {

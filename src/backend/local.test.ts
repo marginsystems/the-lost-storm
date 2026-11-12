@@ -63,3 +63,19 @@ void test('reset removes the save and the local backend is always offline and ha
   backend.flush();
   backend.subscribe((): void => undefined);
 });
+
+void test('loading says a fresh start only when it dropped a save from an older epoch, such as one from epoch 2', async (): Promise<void> => {
+  const empty = createLocalBackend(content, createMemoryStore(), createEpochs(SAVE_EPOCH));
+  assert.equal(await empty.load(), null);
+  assert.equal(empty.freshStart(), false);
+  const kept = createMemoryStore();
+  kept.write(SAVE_KEY, storedLocal(makeSave(4, 0), SAVE_EPOCH));
+  const current = createLocalBackend(content, kept, createEpochs(SAVE_EPOCH));
+  assert.deepEqual(await current.load(), makeSave(4, 0));
+  assert.equal(current.freshStart(), false);
+  const old = createMemoryStore();
+  old.write(SAVE_KEY, storedLocal(makeSave(9, 500), 2));
+  const dropped = createLocalBackend(content, old, createEpochs(SAVE_EPOCH));
+  assert.equal(await dropped.load(), null);
+  assert.equal(dropped.freshStart(), true);
+});

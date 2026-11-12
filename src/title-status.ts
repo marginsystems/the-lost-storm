@@ -9,6 +9,10 @@ export const STATUS_LINE = {
   settleMs: 700,
 } as const;
 
+export const TITLE_NOTICES = {
+  freshStart: 'A new storm has begun.',
+} as const;
+
 export interface LineEnd {
   readonly animationName: string;
 }

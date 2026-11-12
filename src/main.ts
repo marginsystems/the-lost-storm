@@ -112,7 +112,7 @@ import { neighbourZones } from './render/zone-assets.ts';
 import { createBrowserTimers } from './browser-timers.ts';
 import { readServerUrl } from './backend/server-url.ts';
 import { createTitleSync, followSync } from './title-sync.ts';
-import { createStatusLine } from './title-status.ts';
+import { createStatusLine, TITLE_NOTICES } from './title-status.ts';
 import { defaultBar } from '../sim/skill-book.ts';
 import type { Bar } from '../sim/skill-book.ts';
 import { shippedKeys, showTitleKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleNames } from './title-keys.ts';
@@ -382,7 +382,7 @@ async function start(): Promise<void> {
   let failed: boolean = false;
   let saveHeld: boolean = false;
   let hitStop: number = 0;
-  let dirty: boolean = save === null;
+  let dirty: boolean = false;
   let sinceSave: number = 0;
   let last: number = performance.now();
 
@@ -568,7 +568,8 @@ async function start(): Promise<void> {
   };
 
   status.classList.remove('failed');
-  status.classList.add('quiet');
+  if (backend.freshStart()) statusLine.show(TITLE_NOTICES.freshStart);
+  else status.classList.add('quiet');
   element('title-loader', HTMLDivElement).classList.add('done');
   followSync(backend, showSync, readServerUrl(import.meta.env.VITE_SERVER_URL).kind === 'ok');
   if (account !== null) {
@@ -589,6 +590,7 @@ async function start(): Promise<void> {
   reset.hidden = save === null;
   title.classList.add('ready');
   const begin = (): void => {
+    dirty = dirty || save === null;
     title.classList.add('gone');
     launch.note('pressed_enter');
     playing = true;

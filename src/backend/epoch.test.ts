@@ -139,6 +139,7 @@ void test('a server epoch above the one this build knows makes a save stamped wi
   const backend: Backend = harness.open();
   assert.equal(await backend.load(), null);
   assert.equal(harness.store.read(SAVE_KEY), null);
+  assert.equal(backend.freshStart(), true);
   backend.save(makeSave(1, 2));
   await harness.timers.advance(TIMING.pushGapMs);
   assert.equal(account(harness).save?.level, 1);
@@ -215,4 +216,11 @@ void test('after a stale retry a Start over made before the wipe does not overwr
   assert.deepEqual([account(first).save?.level, account(first).save?.xp], [9, 40]);
   assert.ok(first.warns.some((line: string): boolean => line.includes('keeping the cloud save')));
   assert.equal(lastPut(first).baseRevision, 0);
+});
+
+void test('a player with nothing saved anywhere is not told about a fresh start', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = harness.open();
+  assert.equal(await backend.load(), null);
+  assert.equal(backend.freshStart(), false);
 });

@@ -37,6 +37,7 @@ export function createLocalBackend(content: Content, store: KeyValueStore, epoch
       const stored: LocalCopy | null = readLocalSave(content, store.read(SAVE_KEY));
       if (stored === null) return Promise.resolve(null);
       if (stored.epoch >= epochs.current()) return Promise.resolve(stored.save);
+      epochs.drop();
       store.remove(SAVE_KEY);
       return Promise.resolve(null);
     },
@@ -48,5 +49,6 @@ export function createLocalBackend(content: Content, store: KeyValueStore, epoch
     flush: (): void => undefined,
     state: (): BackendState => 'offline',
     subscribe: (): void => undefined,
+    freshStart: (): boolean => epochs.dropped(),
   };
 }

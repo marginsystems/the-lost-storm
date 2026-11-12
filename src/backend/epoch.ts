@@ -1,11 +1,13 @@
 import type { Fields } from '../../sim/content/read.ts';
 
 export const LEGACY_EPOCH: number = 1;
-export const SAVE_EPOCH: number = 2;
+export const SAVE_EPOCH: number = 3;
 
 export interface Epochs {
   current(): number;
   raise(epoch: number): boolean;
+  drop(): void;
+  dropped(): boolean;
 }
 
 export function isEpoch(value: unknown): value is number {
@@ -19,8 +21,13 @@ export function epochOf(source: Fields, key: string): number | null {
 
 export function createEpochs(minimum: number): Epochs {
   let current: number = minimum;
+  let dropped: boolean = false;
   return {
     current: (): number => current,
+    drop(): void {
+      dropped = true;
+    },
+    dropped: (): boolean => dropped,
     raise(epoch: number): boolean {
       if (epoch <= current) return false;
       current = epoch;

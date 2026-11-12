@@ -200,6 +200,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
 
   const dropStale = (current: number): void => {
     epochs.raise(current);
+    epochs.drop();
     log.warn('every save was reset on the server, so this save from before the reset was dropped. Reload to start a new character.');
     void local.reset();
     if (record !== null) keep({ ...record, pending: false, overwriteCloud: false });
@@ -322,6 +323,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     restarted = restarted || held.overwriteCloud;
     if (held.overwriteCloud) restamp(localSave, reached.cloud.epoch);
     else if (epochs.raise(reached.cloud.epoch)) localSave = await local.load();
+    if (reached.cloud.epoch < epochs.current() && reached.cloud.save !== null) epochs.drop();
     const cloud: CloudState = reached.cloud.epoch < epochs.current() ? { save: null, revision: reached.cloud.revision, updatedAt: reached.cloud.updatedAt, epoch: reached.cloud.epoch } : reached.cloud;
     setState('cloud');
     if (held.overwriteCloud) {
@@ -354,6 +356,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
 
   return {
     load,
+    freshStart: (): boolean => epochs.dropped(),
     save(save: SaveData): boolean {
       if (frozen) return true;
       const written: boolean = local.save(save);
