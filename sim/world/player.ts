@@ -6,12 +6,14 @@ import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, un
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
 import { respawnPlayer } from './death.ts';
-import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, openDialogue } from './dialogue.ts';
+import { advanceDialogue, closeDialogue, DIALOGUE, findNpc } from './dialogue.ts';
 import { removeGround } from './ground.ts';
 import { followPath, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
+import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './trade.ts';
+import type { Station } from './trade.ts';
 import { stepWaypoints, teleport } from './waypoints.ts';
 import { findExit, stepCheckpoints, travelThrough } from './zones.ts';
 
@@ -136,6 +138,14 @@ function act(world: World, command: Command): void {
     case 'teleport':
       teleport(world, command.zone);
       return;
+    case 'use': {
+      const station: Station | null = stationAt(world, command.prop);
+      if (station === null) return;
+      player.intent = { type: 'use', prop: station.index };
+      setDestination(world, station.placed);
+      return;
+    }
+    case 'trade':
     case 'advance':
     case 'equip':
     case 'unequip':
@@ -173,6 +183,10 @@ export function handleCommand(world: World, command: Command): void {
     case 'respawn':
       respawnPlayer(world, command.choice);
       return;
+    case 'trade':
+      handleTrade(world, command.action);
+      return;
+    case 'use':
     case 'move':
     case 'stop':
     case 'pickup':
@@ -282,10 +296,26 @@ function stepIntent(world: World, dt: number): void {
       if (distance(player.pos, npc.pos) <= DIALOGUE.reach) {
         player.intent = { type: 'idle' };
         player.path = [];
-        openDialogue(world, npc);
+        meetNpc(world, npc);
         return;
       }
       pursue(world, npc.pos, dt);
+      return;
+    }
+    case 'use': {
+      const station: Station | null = stationAt(world, intent.prop);
+      if (station === null) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        return;
+      }
+      if (distance(player.pos, station.placed) <= stationReach(world, station)) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        openStation(world, station);
+        return;
+      }
+      pursue(world, station.placed, dt);
       return;
     }
   }

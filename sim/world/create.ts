@@ -11,6 +11,7 @@ import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
 import { startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
+import { emptyStash } from './trade.ts';
 import { placePlayer, respawnExists, startZone } from './zones.ts';
 
 export interface WorldOptions {
@@ -122,6 +123,10 @@ export function createWorld(content: Content, options: WorldOptions): World {
     surge: save?.surge ?? 1,
     surgeTimer: null,
     events: [],
+    service: null,
+    vendors: {},
+    stash: save === null ? emptyStash(content) : [...save.stash],
+    tradeZone: zone.id,
   };
   placePlayer(world);
   if (save === null) giveStartingItems(world);

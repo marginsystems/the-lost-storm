@@ -1,6 +1,7 @@
 import { atlasProblems } from './atlas.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
+import { service, trade, tradeProblems } from './parse-trade.ts';
 import { byId, choice, choiceList, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
@@ -62,6 +63,7 @@ export interface RawContent {
   readonly lines: unknown;
   readonly quests: unknown;
   readonly player: unknown;
+  readonly trade: unknown;
 }
 
 function statMod(value: unknown, where: string): StatMod {
@@ -393,6 +395,7 @@ function prop(value: unknown, where: string): PropDef {
     blockRadius: numeric(source, 'blockRadius', where),
     light: propLight(source['light'], `${where}.light`),
     surfaces: dressing(source['surfaces'], `${where}.surfaces`),
+    service: service(source, where),
   };
 }
 
@@ -469,6 +472,7 @@ export function parseContent(raw: RawContent): Content {
     lines: byId(each(raw.lines, 'lines', line), 'lines'),
     quests: byId(each(raw.quests, 'quests', quest), 'quests'),
     player: player(raw.player, 'player'),
+    trade: trade(raw.trade, 'trade'),
   };
 }
 
@@ -641,5 +645,6 @@ export function contentProblems(content: Content): string[] {
       }
     }
   }
+  problems.push(...tradeProblems(content));
   return problems;
 }

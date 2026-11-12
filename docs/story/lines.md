@@ -68,6 +68,17 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 | `pell_done_1` | It's stopped. Huh. Quiet. | Conversation, any talk after the Mason is dead. |
 | `pell_done_2` | I'll miss the tapping. Don't tell anyone that, either. | Same conversation. |
 
+## Odric Vane, the Chandler (`odric`)
+
+| Id | Line | When |
+|---|---|---|
+| `odric_first_1` | Odric Vane. I keep the stall, and the stall keeps me. | Conversation, first talk, at his stall in Stillhold. |
+| `odric_first_2` | What the Storm drops out there, bring it here. I pay in gold, and gold still spends in Stillhold. | Same conversation. |
+| `odric_first_3` | Sold me something you miss? I hold the last few a while. Same price back, no questions. | Same conversation. |
+| `odric_shop_1` | Back with your pockets full, I hope. | Spoken as a bark when his stall opens; one of the three, at random. |
+| `odric_shop_2` | Fresh stock since you left. Have a look. | Spoken as a bark when his stall opens; one of the three, at random. |
+| `odric_shop_3` | Gold first, then the blade. That's the order of things. | Spoken as a bark when his stall opens; one of the three, at random. |
+
 ## The One Before (`one_before`)
 
 | Id | Line | When |

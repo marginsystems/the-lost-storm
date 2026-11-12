@@ -3,6 +3,8 @@ import { Box3, Vector2, Vector3 } from 'three';
 import type { SkillDef, ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { allHold } from '../sim/world/conditions.ts';
+import { stationNear } from '../sim/world/trade.ts';
+import type { Station } from '../sim/world/trade.ts';
 import type { Command, MonsterState, NpcState, World } from '../sim/world/types.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { PickCandidate, ScreenRect } from './pick.ts';
@@ -169,6 +171,11 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     return Math.hypot(waypoint.x - ground.x, waypoint.z - ground.z) <= waypoint.radius;
   };
 
+  const stationAt = (ground: Vec2 | null): Station | null => {
+    if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
+    return stationNear(world, ground);
+  };
+
   const ready = (skill: SkillDef | undefined): boolean => {
     if (skill === undefined) return false;
     const player = world.player;
@@ -189,8 +196,9 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       const ground: Vec2 | null = groundHit === null ? null : { x: groundHit.x, z: groundHit.z };
       const exit: ZoneExit | null = target === null && person === null ? exitAt(ground) : null;
       hooks.aimExit(exit?.id ?? null);
-      const marked: boolean = target === null && person === null && exit === null && onWaypointMark(ground);
-      canvas.style.cursor = target !== null ? 'crosshair' : exit !== null || person !== null || marked ? 'pointer' : 'default';
+      const station: Station | null = target === null && person === null && exit === null ? stationAt(ground) : null;
+      const marked: boolean = target === null && person === null && exit === null && station === null && onWaypointMark(ground);
+      canvas.style.cursor = target !== null ? 'crosshair' : exit !== null || person !== null || station !== null || marked ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       holdTimer -= dt;
@@ -213,6 +221,11 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
           commands.push({ type: 'skill', slot: leftSlot, aim: ground, targetId: null });
         } else if (person !== null) {
           if (leftFresh) commands.push({ type: 'talk', npcId: person.id });
+        } else if (station !== null) {
+          if (leftFresh) {
+            commands.push({ type: 'use', prop: station.index });
+            hooks.clickMarker(station.placed.x, station.placed.z, false);
+          }
         } else if (exit !== null) {
           if (leftFresh) {
             commands.push({ type: 'travel', exit: exit.id });
