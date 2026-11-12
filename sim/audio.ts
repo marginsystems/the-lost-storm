@@ -101,6 +101,9 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'player_respawn':
       found = worldCues(audio, 'player_respawn', null);
       break;
+    case 'flask_used':
+      found = worldCues(audio, 'flask_used', event.pos);
+      break;
     case 'skill_interrupt':
     case 'monster_remove':
     case 'xp':
@@ -155,6 +158,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'talk':
     case 'advance':
     case 'teleport':
+    case 'flask':
       break;
   }
   return action;

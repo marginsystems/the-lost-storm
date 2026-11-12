@@ -12,6 +12,9 @@ const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
   no_mana: 'Not enough mana',
   on_cooldown: 'Not ready yet',
   inventory_full: 'Inventory is full',
+  flask_empty: 'The flask is empty',
+  life_full: 'Life is already full',
+  mana_full: 'Mana is already full',
 };
 
 export interface Notices {

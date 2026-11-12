@@ -1,3 +1,4 @@
+import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { approach, clamp01, el, label, pulseClass, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
@@ -21,6 +22,7 @@ interface GlobeView {
 export interface Globes {
   update(player: PlayerState, dt: number): void;
   flashLife(): void;
+  setRestoring(resource: FlaskResource, on: boolean): void;
 }
 
 function buildGlobe(parent: HTMLElement, kind: 'life' | 'mana'): GlobeView {
@@ -33,6 +35,7 @@ function buildGlobe(parent: HTMLElement, kind: 'life' | 'mana'): GlobeView {
   const front: HTMLDivElement = el('div', 'globe-wave', liquid);
   front.innerHTML = WAVE;
   el('div', 'globe-flash', glass);
+  el('div', 'globe-restore', glass);
   el('div', 'globe-gloss', glass);
   const readout: HTMLDivElement = label('globe-readout', '', glass);
   return { globe, liquid, readout, fill: -1 };
@@ -68,6 +71,9 @@ export function createGlobes(root: HTMLElement): Globes {
     },
     flashLife(): void {
       pulseClass(life.globe, 'hit', GLOBES.hitMs);
+    },
+    setRestoring(resource: FlaskResource, on: boolean): void {
+      (resource === 'life' ? life : mana).globe.classList.toggle('restoring', on);
     },
   };
 }
