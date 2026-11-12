@@ -3,6 +3,8 @@ export const LEAVE = {
   leavingClass: 'leaving',
   durationToken: '--spring-snappy-ms',
   fallbackMs: 260,
+  abandonKey: 'Escape',
+  abandonEvent: 'navigateerror',
 } as const;
 
 export interface LeaveClick {
@@ -34,7 +36,15 @@ export function wireLeave(): void {
     const ms: number = leaveMs(getComputedStyle(document.documentElement).getPropertyValue(LEAVE.durationToken));
     window.setTimeout((): void => window.location.assign(link.href), ms);
   });
+  const restore = (): void => {
+    document.body.classList.remove(LEAVE.leavingClass);
+  };
   window.addEventListener('pageshow', (event: PageTransitionEvent): void => {
-    if (event.persisted) document.body.classList.remove(LEAVE.leavingClass);
+    if (event.persisted) restore();
   });
+  window.addEventListener('keydown', (event: KeyboardEvent): void => {
+    if (event.key === LEAVE.abandonKey) restore();
+  });
+  const navigation: unknown = Reflect.get(window, 'navigation');
+  if (navigation instanceof EventTarget) navigation.addEventListener(LEAVE.abandonEvent, restore);
 }

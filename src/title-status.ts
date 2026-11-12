@@ -3,6 +3,7 @@ import type { Timers } from './backend/backend.ts';
 export const STATUS_LINE = {
   textClass: 'title-line',
   leavingClass: 'leaving',
+  failedClass: 'failed',
   leaveAnimation: 'line-out',
   dwellMs: 320,
   settleMs: 700,
@@ -19,16 +20,19 @@ export interface LineNode {
   setAttribute(name: string, value: string): void;
   addEventListener(type: 'animationend', listener: (event: LineEnd) => void): void;
   remove(): void;
+  readonly isConnected: boolean;
 }
 
 export interface LineRoot<N extends LineNode> {
   readonly textContent: string | null;
+  readonly classList: { contains(token: string): boolean };
   append(node: N): void;
   replaceChildren(): void;
 }
 
 export interface StatusLine {
   show(text: string): void;
+  freeze(): void;
   current(): string;
 }
 
@@ -37,6 +41,7 @@ export function createStatusLine<N extends LineNode>(root: LineRoot<N>, make: ()
   let shown: string = wanted;
   let line: N | null = null;
   let holding: boolean = false;
+  let frozen: boolean = false;
 
   const leave = (node: N): void => {
     let gone: boolean = false;
@@ -62,7 +67,8 @@ export function createStatusLine<N extends LineNode>(root: LineRoot<N>, make: ()
   };
 
   const apply = (): void => {
-    if (wanted === shown && line !== null) return;
+    frozen = frozen || root.classList.contains(STATUS_LINE.failedClass) || (line !== null && !line.isConnected);
+    if (frozen || (wanted === shown && line !== null)) return;
     if (line !== null) leave(line);
     else root.replaceChildren();
     shown = wanted;
@@ -84,6 +90,9 @@ export function createStatusLine<N extends LineNode>(root: LineRoot<N>, make: ()
     show(text: string): void {
       wanted = text;
       if (!holding) apply();
+    },
+    freeze(): void {
+      frozen = true;
     },
     current: (): string => wanted,
   };

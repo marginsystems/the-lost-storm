@@ -1,7 +1,7 @@
 @import "./page-transition.css";
 
 :root {
-  --arrive-step: 70ms;
+  --arrive-step: calc(var(--spring-snappy-ms) / 4);
   --arrive-rise: 8px;
   --line-shift: 7px;
 }
@@ -112,5 +112,10 @@ body.playing .tc {
   .title-loader.done,
   #title.gone .title-card {
     transform: none;
+  }
+
+  .title-card,
+  #title.ready .title-lobby {
+    animation-name: line-fade;
   }
 }

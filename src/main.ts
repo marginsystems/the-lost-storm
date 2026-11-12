@@ -127,6 +127,8 @@ const GAME = {
   titleArrivalMs: 1000,
 } as const;
 
+const titleLines: { current: StatusLine | null } = { current: null };
+
 function whenIdle(work: () => void): void {
   if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(work, { timeout: GAME.idleWaitMs });
   else window.setTimeout(work, GAME.idleWaitMs);
@@ -231,6 +233,7 @@ async function start(): Promise<void> {
   const vignette: HTMLDivElement = element('vignette', HTMLDivElement);
   const titlePlace: HTMLParagraphElement = element('title-place', HTMLParagraphElement);
   const statusLine: StatusLine = createStatusLine<HTMLSpanElement>(status, (): HTMLSpanElement => document.createElement('span'), createBrowserTimers());
+  titleLines.current = statusLine;
   const placeLine: StatusLine = createStatusLine<HTMLSpanElement>(titlePlace, (): HTMLSpanElement => document.createElement('span'), createBrowserTimers());
 
   const mobile: MobileBoot = bootMobile();
@@ -653,6 +656,7 @@ async function start(): Promise<void> {
 }
 
 start().catch((error: unknown): void => {
+  titleLines.current?.freeze();
   const status: HTMLElement | null = document.getElementById('title-status');
   if (status !== null) {
     status.textContent = error instanceof Error ? `The storm failed to gather: ${error.message}` : 'The storm failed to gather.';

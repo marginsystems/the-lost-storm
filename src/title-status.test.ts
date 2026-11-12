@@ -12,7 +12,9 @@ interface FakeNode extends LineNode {
 
 interface FakeRoot extends LineRoot<FakeNode> {
   readonly children: FakeNode[];
+  readonly classes: Set<string>;
   textContent: string | null;
+  overwrite(text: string): void;
 }
 
 function fakeNode(root: FakeRoot): FakeNode {
@@ -20,6 +22,9 @@ function fakeNode(root: FakeRoot): FakeNode {
   const attributes: Map<string, string> = new Map<string, string>();
   const ended: ((event: LineEnd) => void)[] = [];
   const node: FakeNode = {
+    get isConnected(): boolean {
+      return root.children.includes(node);
+    },
     textContent: null,
     className: '',
     classes,
@@ -48,8 +53,13 @@ function fakeNode(root: FakeRoot): FakeNode {
 
 function fakeRoot(text: string): FakeRoot {
   const children: FakeNode[] = [];
+  const classes: Set<string> = new Set<string>();
   const root: FakeRoot = {
     children,
+    classes,
+    classList: {
+      contains: (token: string): boolean => classes.has(token),
+    },
     textContent: text,
     append: (node: FakeNode): void => {
       children.push(node);
@@ -57,6 +67,10 @@ function fakeRoot(text: string): FakeRoot {
     replaceChildren: (): void => {
       children.length = 0;
       root.textContent = '';
+    },
+    overwrite: (written: string): void => {
+      children.length = 0;
+      root.textContent = written;
     },
   };
   return root;
@@ -167,4 +181,44 @@ void test('showing the same text again changes nothing, and an empty text leaves
   line.show('');
   assert.deepEqual(texts(root), ['Ready (leaving)']);
   assert.equal(line.current(), '');
+});
+
+void test('a frozen line takes no more texts, and a line held for its dwell is not added after the freeze', (): void => {
+  const root: FakeRoot = fakeRoot('One');
+  const timers: StepTimers = fakeTimers();
+  const line = createStatusLine(root, maker(root), timers);
+  line.show('Two');
+  line.show('Three');
+  line.freeze();
+  line.show('Four');
+  timers.advance(STATUS_LINE.settleMs);
+  assert.deepEqual(texts(root), ['Two']);
+});
+
+void test('once the page has marked the status as failed, the line adds nothing more, even a text held for its dwell', (): void => {
+  const root: FakeRoot = fakeRoot('One');
+  const timers: StepTimers = fakeTimers();
+  const line = createStatusLine(root, maker(root), timers);
+  line.show('Two');
+  line.show('Three');
+  root.classes.add(STATUS_LINE.failedClass);
+  timers.advance(STATUS_LINE.settleMs);
+  line.show('Four');
+  assert.deepEqual(texts(root), ['Two']);
+});
+
+void test('a failure text written over the line stops it for good, even after the failed class is cleared before a held line is due', (): void => {
+  const root: FakeRoot = fakeRoot('One');
+  const timers: StepTimers = fakeTimers();
+  const line = createStatusLine(root, maker(root), timers);
+  line.show('Two');
+  line.show('Three');
+  root.overwrite('Loading failed. Reload the page.');
+  root.classes.add(STATUS_LINE.failedClass);
+  root.classes.delete(STATUS_LINE.failedClass);
+  timers.advance(STATUS_LINE.settleMs);
+  line.show('Four');
+  timers.advance(STATUS_LINE.settleMs);
+  assert.deepEqual(texts(root), []);
+  assert.equal(root.textContent, 'Loading failed. Reload the page.');
 });
