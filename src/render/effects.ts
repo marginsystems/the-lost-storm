@@ -15,6 +15,8 @@ import type { BurstOptions, ParticleSystem } from './particles.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import type { AbilityCues } from './ability-cues.ts';
 import { createAbilityCues, novaLook } from './ability-cues.ts';
+import type { HurtWash } from './hurt-wash.ts';
+import { CALM_WASH, stepWash, washHit } from './hurt-wash.ts';
 import type { NovaLook } from './ability-cues.ts';
 
 export const EFFECTS = {
@@ -45,7 +47,6 @@ export const EFFECTS = {
   warmDepth: -30,
   warmScale: 0.001,
   flashDecay: 9,
-  hurtDecay: 2.6,
   projectileHeight: 1.25,
   killStop: 0.03,
   critStop: 1.6,
@@ -133,7 +134,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   const lights: PointLight[] = [];
   let nextLight: number = 0;
   let hitStop: number = 0;
-  let hurt: number = 0;
+  let wash: HurtWash = CALM_WASH;
   let emberTimer: number = 0;
   const dashTrails: DashTrails = createDashTrails(scene, particles);
 
@@ -369,7 +370,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   const onDamage = (event: Extract<WorldEvent, { type: 'damage' }>): void => {
     const skillColor: Color = colorOf(event.skill.vfx.color);
     if (event.targetTeam === 'player') {
-      hurt = 1;
+      wash = washHit(wash);
       camera.addTrauma(Math.max(EFFECTS.hurtShake, event.skill.shake));
       hitStop = Math.min(EFFECTS.maxStop, Math.max(hitStop, event.skill.hitStop));
       if (event.skill.root > 0 && !event.killed) {
@@ -454,7 +455,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
 
   return {
     get hurt(): number {
-      return hurt;
+      return wash.level;
     },
     takeHitStop(): number {
       const pending: number = hitStop;
@@ -626,7 +627,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         if (warmFrames === 0) for (const keeper of keepers) keeper.visible = false;
       }
       for (const light of lights) light.intensity *= Math.exp(-EFFECTS.flashDecay * dt);
-      hurt = Math.max(0, hurt - EFFECTS.hurtDecay * dt);
+      wash = stepWash(wash, world.player.maxLife > 0 ? world.player.life / world.player.maxLife : 1, dt);
       emberTimer -= dt;
       if (emberTimer <= 0 && torches.length > 0) {
         emberTimer = EFFECTS.emberEvery;
