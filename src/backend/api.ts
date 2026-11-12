@@ -72,7 +72,7 @@ export interface Api {
   signOut(token: string, signal: AbortSignal): Promise<SignOutResult>;
 }
 
-interface Answer {
+export interface Answer {
   readonly status: number;
   readonly retryAfter: string | null;
   readonly body: unknown;
@@ -151,7 +151,7 @@ export function readSession(value: unknown): Session | null {
   return { accountId, token, outcome, name };
 }
 
-async function exchange(fetchFn: FetchFn, url: string, init: RequestInit): Promise<Answer | null> {
+export async function exchange(fetchFn: FetchFn, url: string, init: RequestInit): Promise<Answer | null> {
   try {
     const response: Response = await fetchFn(url, init);
     const raw: string = await response.text();
@@ -167,7 +167,7 @@ async function exchange(fetchFn: FetchFn, url: string, init: RequestInit): Promi
   }
 }
 
-function failureOf(answer: Answer | null): Failure {
+export function failureOf(answer: Answer | null): Failure {
   if (answer === null) return { kind: 'retry', afterMs: null };
   if (answer.status === 401) return { kind: 'unauthorized' };
   if (answer.status === 429) return { kind: 'retry', afterMs: retryAfterMs(answer.retryAfter) };
@@ -175,11 +175,11 @@ function failureOf(answer: Answer | null): Failure {
   return { kind: 'refused', status: answer.status };
 }
 
-function succeeded(answer: Answer | null): answer is Answer {
+export function succeeded(answer: Answer | null): answer is Answer {
   return answer !== null && answer.status >= 200 && answer.status < 300;
 }
 
-function headers(token: string): Record<string, string> {
+export function headers(token: string): Record<string, string> {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 

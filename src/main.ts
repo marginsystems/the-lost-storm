@@ -29,6 +29,11 @@ import { createHud } from './hud/hud.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
 import { createInput } from './input.ts';
+import { createBrowserLobby } from './lobby/compact.ts';
+import type { Lobby } from './lobby/compact.ts';
+import { mountGameBoard } from './lobby/game-board.ts';
+import type { GameBoard } from './lobby/game-board.ts';
+import { mountTitleLobby } from './lobby/title-lobby.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Actors } from './render/actors.ts';
@@ -146,12 +151,15 @@ async function start(): Promise<void> {
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
   const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
   const loadingSave: Promise<SaveData | null> = backend.load();
+  const lobby: Lobby | null = createBrowserLobby(import.meta.env.VITE_SERVER_URL, true);
+  if (lobby !== null) mountTitleLobby(element('title-lobby', HTMLElement), lobby);
   const stage: Stage = createStage(canvas);
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader();
   const loadingCharacters: Promise<CharacterLibrary> = loadCharacters(loader, content, (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material));
 
   const save: SaveData | null = await loadingSave;
+  if (lobby !== null) void lobby.feed.refresh(true);
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
   status.textContent = 'Raising the dead and the walls…';
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadingCharacters, buildZoneView(loader, content, world.zone, stage.scene)]);
@@ -233,6 +241,7 @@ async function start(): Promise<void> {
       hud.requestMap(true);
     },
   });
+  const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby);
   const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile) });
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),
@@ -295,6 +304,7 @@ async function start(): Promise<void> {
     titlePlace.textContent = world.zone.name;
     enter.textContent = 'Reload';
     reset.hidden = true;
+    ladder?.setPlaying(false);
     title.classList.remove('gone');
   });
 
@@ -345,6 +355,7 @@ async function start(): Promise<void> {
     stage.setFlash(weather.flash);
     hud.update(dt);
     minimap.update(dt);
+    ladder?.noteLevel(world.player.level);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     stage.render();
 
@@ -389,6 +400,7 @@ async function start(): Promise<void> {
     }
     title.classList.add('gone');
     playing = true;
+    ladder?.setPlaying(true);
     audio.unlock();
     startZoneAmbience();
   });
