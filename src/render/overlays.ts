@@ -13,7 +13,8 @@ import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import { anchorInView } from './label-edge.ts';
 import type { ViewSize } from './label-edge.ts';
-import { clearOfHud, stackLabels } from './label-stack.ts';
+import { clearOfRects, stackLabels } from './label-stack.ts';
+import type { ScreenRect } from './label-stack.ts';
 import type { LabelBox } from './label-stack.ts';
 
 export const OVERLAYS = {
@@ -33,7 +34,8 @@ export const OVERLAYS = {
   npcLift: 0.5,
   npcLeave: 0.52,
   npcHudGap: 8,
-  hudSelector: '.hud-bottom',
+  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.hud-flask', '.hud-xp', '.tc-btn', '.tc-stick'],
+  hudReadSeconds: 0.25,
   waypointId: 'waypoint',
   waypointName: 'Waypoint',
 } as const;
@@ -98,11 +100,25 @@ export interface Overlays {
   labelHover(): number | null;
 }
 
+function blockersIn(root: HTMLElement): ScreenRect[] {
+  const origin: DOMRect = root.getBoundingClientRect();
+  const rects: ScreenRect[] = [];
+  for (const selector of OVERLAYS.hudBlockers) {
+    for (const element of document.querySelectorAll(selector)) {
+      const box: DOMRect = element.getBoundingClientRect();
+      if (box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== 'hidden') rects.push({ left: box.left - origin.left, top: box.top - origin.top, right: box.right - origin.left, bottom: box.bottom - origin.top });
+    }
+  }
+  return rects;
+}
+
 function place(element: HTMLElement, point: Vector2): void {
   element.style.transform = `translate3d(${point.x.toFixed(1)}px, ${point.y.toFixed(1)}px, 0)`;
 }
 
 export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: OverlayHooks): Overlays {
+  let hudRects: ScreenRect[] = [];
+  let sinceHudRead: number = Infinity;
   const numbers: FloatingNumber[] = [];
   const labels: Map<number, LootLabel> = new Map<number, LootLabel>();
   let exits: ExitLabel[] = [];
@@ -119,6 +135,10 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   let peopleZone: ZoneDef | null = null;
   let leaving: LeavingLabel[] = [];
   const point: Vector2 = new Vector2();
+  const keepClear = (element: HTMLElement): void => {
+    const tag: Element | null = element.firstElementChild;
+    if (tag instanceof HTMLElement) point.y = clearOfRects({ id: 0, x: point.x, y: point.y, width: tag.offsetWidth, height: tag.offsetHeight }, hudRects, OVERLAYS.npcHudGap);
+  };
   const labelLayer: HTMLDivElement = document.createElement('div');
   const numberLayer: HTMLDivElement = document.createElement('div');
   for (const layer of [labelLayer, numberLayer]) {
@@ -348,8 +368,11 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       return labelHoverId;
     },
     update(dt: number, world: World, hoveredId: number | null): void {
-      const bar: Element | null = document.querySelector(OVERLAYS.hudSelector);
-      const hudTop: number | null = bar === null ? null : bar.getBoundingClientRect().top - root.getBoundingClientRect().top;
+      sinceHudRead += dt;
+      if (sinceHudRead >= OVERLAYS.hudReadSeconds) {
+        hudRects = blockersIn(root);
+        sinceHudRead = 0;
+      }
       if (exitsOf !== world.zone) showExits(world);
       for (const label of exits) {
         const open: boolean = label.open(world);
@@ -357,6 +380,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         label.element.classList.toggle('secret', !open && label.secret);
         camera.project(label.x, OVERLAYS.exitLift, label.z, point);
         label.element.classList.toggle('edge', !anchorInView(point.x, point.y, view));
+        keepClear(label.element);
         place(label.element, point);
       }
       if (peopleOf !== world.npcs) showPeople(world);
@@ -368,7 +392,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         }
         label.element.classList.toggle('aimed', label.npc.id === hoveredId);
         camera.project(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z, point);
-        point.y = clearOfHud(point.y, hudTop, OVERLAYS.npcHudGap);
+        keepClear(label.element);
         place(label.element, point);
       }
       for (const label of leaving) {
