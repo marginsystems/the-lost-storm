@@ -254,7 +254,7 @@ void test('quest progress and unlocked waypoints survive a save, and bad entries
   assert.deepEqual(save.quests, { out_of_the_mist: 1, to_the_waystation: 0 });
   assert.deepEqual(save.waypoints, ['hall_of_time', 'outpost']);
   const restored: World = createWorld(content, { seed: 11, save });
-  assert.deepEqual(restored.quests, { out_of_the_mist: 1, to_the_waystation: 0 });
+  assert.deepEqual(restored.quests, { out_of_the_mist: 1, to_the_waystation: 0, the_first_taker: 0 });
   assert.deepEqual(restored.waypoints, ['hall_of_time', 'outpost']);
   const messy: SaveData = must(readSave(content, { ...toSave(world), quests: { out_of_the_mist: 99, a_rumour: 1, also: 'no' }, waypoints: ['hall_of_time', 'atlantis', 7] }), 'save');
   assert.deepEqual(messy.quests, { out_of_the_mist: must(content.quests.get('out_of_the_mist'), 'quest').objectives.length });
