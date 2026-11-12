@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { BoxGeometry, Group, Mesh } from 'three';
+import { BoxGeometry, Group, Mesh, Object3D } from 'three';
 import { clampFigure, clampReach, createFigureGauge, FIGURE_GAUGE } from './figure-gauge.ts';
 
 function near(actual: number, expected: number): void {
@@ -56,4 +56,31 @@ void test('an empty or absurd figure falls back to a person-sized height', (): v
   assert.equal(clampFigure(0.3), FIGURE_GAUGE.min);
   assert.equal(clampReach(Number.NaN), 0);
   assert.equal(clampReach(40), FIGURE_GAUGE.maxReach);
+});
+
+void test('a figure with a head and feet reports where they rest on the ground, every frame', (): void => {
+  const gauge = createFigureGauge();
+  const figure: Group = lyingOf(1.8);
+  const head: Object3D = new Object3D();
+  head.name = FIGURE_GAUGE.head;
+  head.position.set(1.7, 0.2, 0);
+  figure.add(head);
+  for (const [index, name] of FIGURE_GAUGE.feet.entries()) {
+    const foot: Object3D = new Object3D();
+    foot.name = name;
+    foot.position.set(0.1, 0.1, index === 0 ? -0.1 : 0.1);
+    figure.add(foot);
+  }
+  figure.updateMatrixWorld(true);
+  const first = gauge.measure(figure, 0).span;
+  assert.ok(first !== null);
+  near(first.head.x, 1.7);
+  near(first.feet.x, 0.1);
+  near(first.feet.z, 0);
+  head.position.x = 0.2;
+  figure.updateMatrixWorld(true);
+  const moved = gauge.measure(figure, FIGURE_GAUGE.everySeconds / 4).span;
+  assert.ok(moved !== null);
+  near(moved.head.x, 0.2);
+  assert.equal(gauge.measure(figureOf(1.7), 1).span, null);
 });

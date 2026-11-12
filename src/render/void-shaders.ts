@@ -67,8 +67,15 @@ uniform vec3 uLight;
 uniform vec3 uLightColor;
 uniform vec4 uLift;
 uniform vec3 uLiftColor;
+uniform vec4 uBody;
+uniform vec4 uBed;
 varying vec3 vWorld;
 ${NOISE}
+float bodyDistance(vec2 p) {
+  vec2 span = uBody.xy - uBody.zw;
+  float t = clamp(dot(p - uBody.zw, span) / max(dot(span, span), 0.0001), 0.0, 1.0);
+  return distance(p, uBody.zw + span * t);
+}
 void main() {
   vec2 q = vWorld.xz - uShift;
   float warp = voidFbm(q * 0.11);
@@ -79,6 +86,12 @@ void main() {
   color *= 1.0 - uRipple * (ripple * 0.7 + fine * 0.3);
   vec2 toHero = vWorld.xz - uHero - vec2(-0.25, 0.1);
   color *= 1.0 - uShadow * exp(-dot(toHero, toHero) / 0.9);
+  float bedAway = distance(vWorld.xz, uHero) + (mottle - 0.5) * uBed.y * 0.5 + (warp - 0.5) * 0.8;
+  float bed = uBed.x * (1.0 - smoothstep(uBed.y * 0.3, uBed.y, bedAway));
+  vec3 bedStone = mix(uRockShade, uShade, 0.22 + mottle * 0.4) * (0.75 + fine * 0.35 + ripple * 0.15);
+  color = mix(color, bedStone, bed * 0.75);
+  float touch = bodyDistance(vWorld.xz);
+  color *= 1.0 - uBed.x * uBed.z * (1.0 - smoothstep(0.05, uBed.w, touch)) * (0.75 + fine * 0.25);
   float ashore = dot(q - uShore.xy, uShore.zw) + (voidFbm(q * 0.09 + 3.0) - 0.5) * uShoreLook.z;
   float rock = uShoreLook.y * smoothstep(-2.0, 5.0, ashore);
   vec3 stone = mix(uRockShade, uRock, 0.55 + mottle * 0.45) * (0.82 + fine * 0.18 + ripple * 0.08);
@@ -116,7 +129,8 @@ uniform vec2 uGraze;
 uniform vec3 uRim;
 uniform vec2 uBodyClear;
 uniform float uThick;
-uniform vec2 uThickness;
+uniform vec4 uThickness;
+uniform vec4 uBody;
 uniform vec2 uHero;
 uniform vec2 uNear;
 uniform vec2 uFlashPos;
@@ -209,7 +223,7 @@ void main() {
   float figure = 1.0 - smoothstep(uFigure.y * reachOut, uFigure.z * reachOut, figureDistance(p, uHero, head));
   vec2 fromCentre = abs(p - uHero);
   float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
-  float aroundBody = 1.0 - smoothstep(uBodyClear.x * reachOut, uBodyClear.y * reachOut, distance(vWorld.xz, uHero));
+  float aroundBody = 1.0 - smoothstep(uBodyClear.x * reachOut, uBodyClear.y * reachOut, figureDistance(vWorld.xz, uBody.zw, uBody.xy));
   float cleared = max(max(fieldAt((swirled + warp * uWarp) / uSpan) * inside, figure), aroundBody);
   float fray = voidFbm(swirled * uFray + roll * 2.2 + uSeed * 3.1);
   float still = 1.0 - uMotion;
@@ -230,7 +244,8 @@ void main() {
   float width = mix(2.5, 7.0, clamp(along / lightAway, 0.0, 1.0));
   float pull = uLight.z * lane * (1.0 - smoothstep(width, width + 3.5, across));
   float density = (1.0 - open) * (1.0 - pull * 0.7) * mix(1.0, 1.35, uLight.z * (1.0 - pull)) * clamp(0.45 + puff * 0.55 + smoothstep(uNear.y * 0.4, uNear.y * 1.3, away) * 0.5, 0.0, 1.0);
-  density = max(density, (1.0 - open) * uThick * uThickness.x);
+  float veil = uThick * (1.0 - smoothstep(uThickness.z, uThickness.w, away));
+  density = max(density, (1.0 - open) * veil * uThickness.x);
   float rimAt = uRim.x * (1.0 + (fray - 0.5) * 0.3 + (body - 0.5) * 0.25);
   float rimOff = (away - rimAt) / uRim.z;
   float rim = uRim.y * exp(-rimOff * rimOff) * (1.0 - max(aroundBody, figure));
@@ -253,7 +268,7 @@ void main() {
   color = mix(color, uLightColor, uLight.z * 0.85 * exp(-dot(nearLight, nearLight) / 90.0));
   float eye = smoothstep(uEyeFade.x, uEyeFade.y, distance(vWorld, cameraPosition)) * smoothstep(0.0, uEyeFade.z, cameraPosition.y - vWorld.y) * smoothstep(uGraze.x, uGraze.y, abs(normalize(vWorld - cameraPosition).y));
   float grain = voidDither(gl_FragCoord.xy + uSeed * 7.0) * uDither;
-  gl_FragColor = vec4(color + grain, clamp(density * uOpacity * (1.0 + uThick * uThickness.y) * eye + grain, 0.0, 1.0));
+  gl_FragColor = vec4(color + grain, clamp(density * uOpacity * (1.0 + veil * uThickness.y) * eye + grain, 0.0, 1.0));
 }
 `;
 
