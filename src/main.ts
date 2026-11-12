@@ -2,6 +2,7 @@ import type { Box3, Material, Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
+import { warnInConsole } from './backend/console-log.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
@@ -520,7 +521,9 @@ async function start(): Promise<void> {
   }
   enter.disabled = false;
   whenIdle((): void => {
-    void loadTheRest();
+    loadTheRest().catch((error: unknown): void => {
+      warnInConsole(`Loading the remaining characters failed: ${String(error)}`);
+    });
   });
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = save === null;

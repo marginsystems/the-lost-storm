@@ -224,7 +224,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     }
     for (const [id, track] of tracks) {
       if (track.kind !== 'stick' || !joinsPinch(track.moved, now - track.at)) continue;
-      tracks.set(id, { kind: 'world', ox: track.ox, oy: track.oy, at: track.at, x: track.ox, y: track.oy });
+      tracks.set(id, { kind: 'world', ox: track.ox, oy: track.oy, at: Number.NEGATIVE_INFINITY, x: track.ox, y: track.oy });
       restStick();
     }
     tracks.set(event.pointerId, { kind: 'world', ox: event.clientX, oy: event.clientY, at: now, x: event.clientX, y: event.clientY });

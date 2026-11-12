@@ -12,3 +12,7 @@ export function createConsoleLogger(): Logger {
     },
   };
 }
+
+export function warnInConsole(message: string): void {
+  console.warn(message);
+}

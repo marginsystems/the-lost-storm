@@ -27,12 +27,13 @@ interface CellView {
   readonly cell: HTMLElement;
   readonly item: HTMLElement;
   current: ItemInstance | null;
+  image: string | null;
 }
 
 function buildCell(cellParent: HTMLElement, className: string): CellView {
   const cell: HTMLDivElement = el('div', className, cellParent);
   const item: HTMLDivElement = el('div', 'cell-item', cell);
-  return { cell, item, current: null };
+  return { cell, item, current: null, image: null };
 }
 
 export function createInventoryPanel(parent: HTMLElement, context: HudContext): PanelView {
@@ -47,17 +48,19 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
 
   const setItem = (view: CellView, item: ItemInstance | null): boolean => {
     if (item === null && view.current === null) return false;
-    if (item !== null && view.current !== null && item.uid === view.current.uid) {
+    const image: string | null = item === null ? null : context.api.itemImage(item);
+    if (item !== null && view.current !== null && item.uid === view.current.uid && image === view.image) {
       view.current = item;
       return false;
     }
     view.current = item;
+    view.image = image;
     if (item === null) {
       view.item.classList.remove('filled');
       return true;
     }
     const base: ItemBaseDef | null = baseOf(context.api.world.content, item);
-    setPicture(view.item, context.api.itemImage(item), base === null ? '' : base.icon);
+    setPicture(view.item, image, base === null ? '' : base.icon);
     view.item.style.setProperty('--rarity', rarityOf(context.api.world.content, item).color);
     view.item.classList.add('filled');
     retrigger(view.item, 'pop');
