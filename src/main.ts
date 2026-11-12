@@ -649,7 +649,7 @@ async function start(): Promise<void> {
     reset.disabled = true;
     enter.disabled = true;
     createHintStore(createBrowserStore()).clear();
-    createBrowserStore().remove(PLAYED_KEY);
+    launch.forgetPlayed();
     await Promise.all([backend.reset(), fadePageOut()]);
     window.location.reload();
   };

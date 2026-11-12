@@ -30,6 +30,7 @@ export interface Launch {
   update(world: World, dt: number, playing: boolean): void;
   note(event: CountedEvent): void;
   open(mode: CardMode): void;
+  forgetPlayed(): void;
 }
 
 const LAUNCH = { observeEvery: 1, saveEvery: 30, requestMs: 8000, secondsPerMinute: 60 } as const;
@@ -118,5 +119,10 @@ export function startLaunch(options: LaunchOptions): Launch {
     },
     note: (event: CountedEvent): void => loop?.note(event),
     open: (mode: CardMode): void => card.open(mode),
+    forgetPlayed: (): void => {
+      played = 0;
+      unsaved = 0;
+      store.remove(PLAYED_KEY);
+    },
   };
 }
