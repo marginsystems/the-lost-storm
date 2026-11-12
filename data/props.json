@@ -127,5 +127,5 @@
   {"id": "crag_b", "model": "models/props/rock_set_2.glb", "scale": 2.8, "blockRadius": 3.0, "light": null, "surfaces": {}, "tint": "#8e98a6"},
   {"id": "crag_spire", "model": "models/props/rock_set_4.glb", "scale": 3.0, "blockRadius": 2.4, "light": null, "surfaces": {}, "tint": "#8e98a6"},
   {"id": "crag_low", "model": "models/props/rock_set_5.glb", "scale": 2.0, "blockRadius": 1.5, "light": null, "surfaces": {}, "tint": "#8e98a6"},
-  {"id": "campfire", "model": "models/props/fire_pit.glb", "scale": 1.6, "blockRadius": 1.2, "light": {"color": "#ff8a3a", "intensity": 80, "distance": 28, "height": 1.2}, "surfaces": {}}
+  {"id": "campfire", "model": "models/props/fire_pit.glb", "scale": 1.6, "blockRadius": 1.2, "light": {"color": "#ff8a3a", "intensity": 60, "distance": 26, "height": 2}, "surfaces": {}, "tint": "#6e5d52"}
 ]
