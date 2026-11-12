@@ -112,3 +112,13 @@
     transform: translateY(3px);
   }
 }
+
+.name-step-field.nudge {
+  animation: name-step-nudge var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+@keyframes name-step-nudge {
+  from {
+    transform: translateX(5px);
+  }
+}
