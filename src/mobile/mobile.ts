@@ -31,6 +31,7 @@ export interface MobileSetup {
 
 export interface Mobile {
   readonly lost: boolean;
+  fault(): void;
   collect(dt: number): Command[];
   update(): void;
 }
@@ -48,7 +49,7 @@ export function bootMobile(): MobileBoot {
 export function startMobile(boot: MobileBoot, setup: MobileSetup): Mobile {
   const { canvas, stage } = setup;
   boot.quality.subscribe((tier: QualityTier): void => stage.applyQuality(tier));
-  const context: ContextWatch = watchContext(canvas, setup.hudRoot, (): boolean => stage.renderer.getContext().isContextLost(), (): void => stage.resize());
+  const context: ContextWatch = watchContext(canvas, canvas.parentElement ?? setup.hudRoot, (): boolean => stage.renderer.getContext().isContextLost(), (): void => stage.resize());
   const controls: TouchControls | null = boot.touch
     ? createTouchControls({
         canvas,
@@ -66,6 +67,9 @@ export function startMobile(boot: MobileBoot, setup: MobileSetup): Mobile {
   return {
     get lost(): boolean {
       return context.lost;
+    },
+    fault(): void {
+      context.fault();
     },
     collect(dt: number): Command[] {
       return controls === null ? [] : controls.collect(dt);

@@ -4,6 +4,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { noteInConsole, warnInConsole } from './backend/console-log.ts';
+import { runFrames } from './frame-loop.ts';
 import { element } from './dom-element.ts';
 import { startTitleAccount } from './title-signin.ts';
 import { fadePageOut } from './landing/leave.ts';
@@ -555,7 +556,6 @@ async function start(): Promise<void> {
 
     sinceSave += dt;
     if (sinceSave > GAME.saveEvery) persist();
-    requestAnimationFrame(frame);
   };
 
   window.addEventListener('resize', (): void => stage.resize());
@@ -570,7 +570,14 @@ async function start(): Promise<void> {
   });
 
   camera.snap(world.player.pos.x, world.player.pos.z);
-  requestAnimationFrame(frame);
+  runFrames(
+    frame,
+    (error: unknown): void => {
+      warnInConsole(`A frame failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
+      touch.fault();
+    },
+    { request: (callback: (now: number) => void): void => void requestAnimationFrame(callback) },
+  );
   void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns()]);
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library);

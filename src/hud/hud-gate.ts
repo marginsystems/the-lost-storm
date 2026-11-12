@@ -7,6 +7,7 @@ export const HUD_GATE = {
   roots: ['#hud', '#hud > .hud-bottom', '.tc'],
   loose: ['.tc-rotate'],
   open: ['#overlays'],
+  above: ['.ctx-notice'],
   keep: ['pause', 'hud-fps', 'ctx-notice', 'name-echo', 'reader-veil', 'tc-stick', 'glitch-white', 'fb', 'hud-bottom', 'hud-hint'],
   faint: 'tc-stick',
   faintIdle: 0.12,

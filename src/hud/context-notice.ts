@@ -1,15 +1,22 @@
 import type { ContextPhase, ContextSignal } from './context-phase.ts';
-import { contextNoticeShown, contextReloadOffered, contextWaits, nextContextPhase } from './context-phase.ts';
+import { contextNoticeShown, contextPolls, contextReloadOffered, contextWaits, nextContextPhase } from './context-phase.ts';
 import { el, label } from './dom.ts';
 
 export const CONTEXT_NOTICE = {
   reloadOfferMs: 6000,
   restoring: 'Restoring graphics…',
   failed: 'Graphics stopped.',
+  faulted: 'Something went wrong.',
 } as const;
 
 export interface ContextWatch {
   readonly lost: boolean;
+  fault(): void;
+}
+
+function noticeText(phase: ContextPhase): string {
+  if (phase === 'faulted') return CONTEXT_NOTICE.faulted;
+  return phase === 'failed' ? CONTEXT_NOTICE.failed : CONTEXT_NOTICE.restoring;
 }
 
 export function watchContext(canvas: HTMLCanvasElement, parent: HTMLElement, isLost: () => boolean, onRestored: () => void): ContextWatch {
@@ -29,12 +36,12 @@ export function watchContext(canvas: HTMLCanvasElement, parent: HTMLElement, isL
     note.classList.toggle('on', contextNoticeShown(phase));
     note.classList.toggle('failed', contextReloadOffered(phase));
     reload.tabIndex = contextReloadOffered(phase) ? 0 : -1;
-    text.textContent = contextReloadOffered(phase) ? CONTEXT_NOTICE.failed : CONTEXT_NOTICE.restoring;
+    text.textContent = noticeText(phase);
   };
 
   const poll = (): void => {
     signal({ type: 'frame', contextLost: isLost() });
-    if (phase === 'live') polling = false;
+    if (!contextPolls(phase)) polling = false;
     else window.requestAnimationFrame(poll);
   };
 
@@ -44,7 +51,7 @@ export function watchContext(canvas: HTMLCanvasElement, parent: HTMLElement, isL
     if (phase === was) return;
     window.clearTimeout(offer);
     if (contextWaits(phase)) offer = window.setTimeout((): void => signal({ type: 'timeout' }), CONTEXT_NOTICE.reloadOfferMs);
-    if (phase !== 'live' && !polling) {
+    if (contextPolls(phase) && !polling) {
       polling = true;
       window.requestAnimationFrame(poll);
     }
@@ -62,6 +69,9 @@ export function watchContext(canvas: HTMLCanvasElement, parent: HTMLElement, isL
   return {
     get lost(): boolean {
       return phase === 'lost' || phase === 'failed';
+    },
+    fault(): void {
+      signal({ type: 'fault' });
     },
   };
 }

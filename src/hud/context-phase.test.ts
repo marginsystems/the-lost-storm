@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ContextPhase } from './context-phase.ts';
-import { contextNoticeShown, contextReloadOffered, contextWaits, nextContextPhase } from './context-phase.ts';
+import { contextNoticeShown, contextPolls, contextReloadOffered, contextWaits, nextContextPhase } from './context-phase.ts';
 
 const drawn = { type: 'frame', contextLost: false } as const;
 const blank = { type: 'frame', contextLost: true } as const;
@@ -48,4 +48,18 @@ void test('a lost event the renderer contradicts clears on the next drawn frame'
 
 void test('a context found lost without an event raises the notice', (): void => {
   assert.equal(nextContextPhase('live', blank), 'lost');
+});
+
+void test('a fault in the frame loop offers a reload at once and nothing clears it', (): void => {
+  for (const from of ['live', 'lost', 'restoring', 'failed'] as const) {
+    const faulted: ContextPhase = nextContextPhase(from, { type: 'fault' });
+    assert.equal(faulted, 'faulted');
+    assert.equal(contextNoticeShown(faulted), true);
+    assert.equal(contextReloadOffered(faulted), true);
+    assert.equal(contextWaits(faulted), false);
+    assert.equal(contextPolls(faulted), false);
+    for (const later of [drawn, blank, { type: 'restored' } as const, { type: 'lost' } as const, { type: 'timeout' } as const]) assert.equal(nextContextPhase(faulted, later), 'faulted');
+  }
+  assert.equal(contextPolls('lost'), true);
+  assert.equal(contextPolls('live'), false);
 });
