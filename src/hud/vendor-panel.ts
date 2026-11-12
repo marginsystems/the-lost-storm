@@ -34,6 +34,7 @@ function showPriced(context: HudContext, cell: PricedCell, item: ItemInstance | 
 
 export function createVendorPanel(parent: HTMLElement, context: HudContext): PanelView {
   const element: HTMLDivElement = el('div', 'hud-panel right beside trade-panel', parent);
+  element.dataset['tab'] = 'Shop';
   element.addEventListener('contextmenu', (event: MouseEvent): void => {
     event.preventDefault();
   });

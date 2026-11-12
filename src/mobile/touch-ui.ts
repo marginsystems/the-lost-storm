@@ -138,6 +138,15 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   canvas.after(layer);
   const stick: HTMLDivElement = el('div', 'tc-stick', layer);
   const knob: HTMLElement = el('i', 'tc-knob', stick);
+  const moveHint: HTMLElement = el('span', 'tc-stick-hint', stick);
+  moveHint.textContent = TOUCH.moveHint;
+  const learnStore: KeyValueStore = createBrowserStore();
+  stick.classList.toggle('intro', learnStore.read(TOUCH.moveLearnedKey) === null);
+  const learnedMove = (): void => {
+    if (!stick.classList.contains('intro')) return;
+    stick.classList.remove('intro');
+    learnStore.write(TOUCH.moveLearnedKey, '1');
+  };
   const actions: HTMLDivElement = el('div', 'tc-actions', layer);
 
   const menu: HTMLDivElement = el('div', 'tc-menu', hudRoot);
@@ -163,8 +172,36 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   close.addEventListener('click', (): void => {
     hud.closePanels();
   });
+  const tabs: HTMLDivElement = el('div', 'tc-tabs', hudRoot);
+  const tradeTab: HTMLButtonElement = el('button', 'tc-tab', tabs);
+  tradeTab.type = 'button';
+  const bagTab: HTMLButtonElement = el('button', 'tc-tab', tabs);
+  bagTab.type = 'button';
+  bagTab.textContent = TOUCH.bagTab;
+  let bagShown: boolean = false;
+  const syncTabs = (): void => {
+    const trade: HTMLElement | null = hudRoot.querySelector<HTMLElement>('.hud-panel.trade-panel.open');
+    const paired: boolean = trade !== null && hudRoot.querySelector('.hud-panel.inventory-panel.open') !== null;
+    if (!paired) bagShown = false;
+    const label: string = trade?.dataset['tab'] ?? '';
+    if (label !== '' && tradeTab.textContent !== label) tradeTab.textContent = label;
+    tabs.classList.toggle('on', paired);
+    hudRoot.classList.toggle('tc-trade', paired && !bagShown);
+    hudRoot.classList.toggle('tc-bag', paired && bagShown);
+    tradeTab.classList.toggle('active', !bagShown);
+    bagTab.classList.toggle('active', bagShown);
+  };
+  tradeTab.addEventListener('click', (): void => {
+    bagShown = false;
+    syncTabs();
+  });
+  bagTab.addEventListener('click', (): void => {
+    bagShown = true;
+    syncTabs();
+  });
   const syncClose = (): void => {
     close.classList.toggle('on', hudRoot.querySelector('.hud-panel.open') !== null);
+    syncTabs();
   };
   new MutationObserver(syncClose).observe(hudRoot, { attributes: true, attributeFilter: ['class'], subtree: true });
 
@@ -275,6 +312,13 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     stick.classList.remove('on');
   };
 
+  let walking: number | null = null;
+  const endWalk = (): void => {
+    if (walking === null) return;
+    walking = null;
+    input.releaseHold();
+  };
+
   const release = (pointerId: number, x: number, y: number, cancelled: boolean): void => {
     const track: Track | undefined = tracks.get(pointerId);
     if (track === undefined) return;
@@ -288,7 +332,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
         restStick();
         return;
       case 'world':
-        if (!cancelled && pinch === null && isTap(x - track.ox, y - track.oy, now - track.at)) input.tap(x, y);
+        if (pointerId === walking) endWalk();
         if (worldTracks().length < 2) pinch = null;
         return;
       case 'button': {
@@ -328,7 +372,15 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     tracks.set(event.pointerId, { kind: 'world', ox: event.clientX, oy: event.clientY, at: now, x: event.clientX, y: event.clientY });
     const fingers = worldTracks();
     const [a, b] = fingers;
-    if (fingers.length === 2 && a !== undefined && b !== undefined) pinch = Math.hypot(a.x - b.x, a.y - b.y);
+    if (fingers.length === 1 && pinch === null && world.dialogue === null) {
+      walking = event.pointerId;
+      input.holdAt(event.clientX, event.clientY);
+      learnedMove();
+    }
+    if (fingers.length === 2 && a !== undefined && b !== undefined) {
+      endWalk();
+      pinch = Math.hypot(a.x - b.x, a.y - b.y);
+    }
   });
 
   layer.addEventListener('pointermove', (event: PointerEvent): void => {
@@ -340,12 +392,16 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       const knobAt: Vec2 = clampKnob(dx, dy);
       knob.style.transform = `translate(${knobAt.x.toFixed(1)}px,${knobAt.z.toFixed(1)}px)`;
       track.reading = readStick(dx, dy);
-      if (track.reading.magnitude >= TOUCH.deadzone) track.moved = true;
+      if (track.reading.magnitude >= TOUCH.deadzone) {
+        track.moved = true;
+        learnedMove();
+      }
       return;
     }
     if (track.kind !== 'world') return;
     track.x = event.clientX;
     track.y = event.clientY;
+    if (event.pointerId === walking) input.moveHold(event.clientX, event.clientY);
     const [a, b] = worldTracks();
     if (pinch === null || a === undefined || b === undefined) return;
     const spread: number = Math.hypot(a.x - b.x, a.y - b.y);
@@ -366,6 +422,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     }
     tracks.clear();
     fresh.clear();
+    endWalk();
     pinch = null;
     if (moving) stopPending = true;
     moving = false;

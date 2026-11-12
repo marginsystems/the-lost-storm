@@ -106,7 +106,7 @@ void test('the rotate toast and both globes stay whole and clear of every other 
 void test('the zone name gets its own width above the minimap, clear of the menu', (): void => {
   for (const screen of SCREENS) {
     const layout = phoneLayout(screen, { skills: 1, flasks: 2, menu: 5 });
-    if (screen.width >= PHONE.zoneRoomyWidth) assert.ok(layout.zone.w >= PHONE.zoneWidth, label(screen, 1, 2));
+    assert.ok(layout.zone.w >= (screen.width >= PHONE.zoneRoomyWidth ? PHONE.zoneWidth : layout.minimap.w), label(screen, 1, 2));
     assert.ok(layout.zone.x >= layout.manaFlask.x + layout.manaFlask.w + PHONE.gap, label(screen, 1, 2));
     assert.equal(layout.zone.x + layout.zone.w, layout.minimap.x + layout.minimap.w);
     assert.equal(overlaps(layout.zone, layout.menu.rect), false, label(screen, 1, 2));
