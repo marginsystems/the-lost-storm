@@ -182,9 +182,9 @@
     {"prop": "grave_slab", "x": 50.2, "z": 61.9, "y": -0.05, "rotationDegrees": 210}
   ],
   "packs": [
-    {"x": 26, "z": 26, "members": [{"monster": "roadbound", "count": 4}, {"monster": "lamenter", "count": 2}]},
-    {"x": 38, "z": 18, "members": [{"monster": "roadbound", "count": 3}, {"monster": "lamenter", "count": 3}]},
-    {"x": 44.5, "z": 5.5, "members": [{"monster": "roadbound", "count": 4}, {"monster": "lamenter", "count": 1}]},
+    {"x": 26, "z": 26, "members": [{"monster": "gnawer", "count": 3}, {"monster": "spearwife", "count": 2}]},
+    {"x": 38, "z": 18, "members": [{"monster": "roadbound", "count": 3}, {"monster": "lamenter", "count": 1}, {"monster": "gnawer", "count": 1}, {"monster": "gnawer", "count": 1, "mods": ["swift"]}]},
+    {"x": 44.5, "z": 5.5, "members": [{"monster": "roadbound", "count": 3}, {"monster": "sodden", "count": 1, "mods": ["volatile"]}]},
     {"x": 12, "z": 28, "members": [{"monster": "one_before", "count": 1}], "when": [{"type": "objective", "quest": "north_lamp", "objective": "before", "is": "current"}]}
   ],
   "surge": null,

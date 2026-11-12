@@ -35,8 +35,7 @@ function burst(world: World, hazard: HazardState): void {
     const gap: number = Math.hypot(offset.x, offset.z);
     if (gap > hazard.radius + target.radius) continue;
     const away: Vec2 = gap > 0 ? { x: offset.x / gap, z: offset.z / gap } : { x: 0, z: 1 };
-    applyHit(world, { sourceId: hazard.ownerId, ...hazard }, target, hazard.skill, away);
-    hits += 1;
+    if (applyHit(world, { sourceId: hazard.ownerId, ...hazard }, target, hazard.skill, away)) hits += 1;
   }
   world.events.push({ type: 'hazard', hazard, burst: true, hits });
 }

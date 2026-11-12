@@ -65,6 +65,25 @@ void test('a hero who walks out of the mark before it bursts takes nothing', ():
   assert.equal(hero.life, life);
 });
 
+void test('a burst on a warded hero counts no hit', (): void => {
+  const world: World = arena(2);
+  place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z });
+  const hero = world.player;
+  run(world, 0.45, (): void => {
+    hero.pos = { ...ARENA_CENTRE };
+  });
+  assert.equal(world.hazards.length, 1);
+  const life: number = hero.life;
+  const events: WorldEvent[] = run(world, 1.3, (): void => {
+    hero.pos = { ...ARENA_CENTRE };
+    hero.invulnerable = 1;
+  });
+  const burst = events.find((event: WorldEvent): boolean => event.type === 'hazard' && event.burst);
+  assert.ok(burst !== undefined && burst.type === 'hazard');
+  assert.equal(burst.hits, 0);
+  assert.equal(hero.life, life);
+});
+
 void test('a volatile elite leaves a burst where it fell, and it goes off after its delay', (): void => {
   const world: World = arena(3);
   const thrall: MonsterState = place(world, 'bone_thrall', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z }, ['test_volatile']);

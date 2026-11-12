@@ -47,10 +47,13 @@ node tools/retarget-clips.ts public/models/animations/humanoid.glb <UAL2_Standar
 
 | File | Source | Author | Licence |
 |---|---|---|---|
+| `public/models/weapons/bone_javelin.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/greatsword.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/hex_staff.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/rusted_blade.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/sword_1h.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
+| `public/models/weapons/tower_shield.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
+| `public/models/weapons/war_maul.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 
 Rebuild with:
 

@@ -129,8 +129,7 @@ function resolveImpact(world: World, actor: Actor, action: ActionState): void {
         if (gap > delivery.reach + target.radius) continue;
         const toward: Vec2 = normalize(offset, direction);
         if (gap > target.radius && dot(toward, direction) < minDot) continue;
-        applyHit(world, offence, target, skill, toward);
-        hits += 1;
+        if (applyHit(world, offence, target, skill, toward)) hits += 1;
       }
       break;
     }
@@ -138,8 +137,7 @@ function resolveImpact(world: World, actor: Actor, action: ActionState): void {
       for (const target of targetsOf(world, offence.team)) {
         const offset: Vec2 = { x: target.pos.x - actor.pos.x, z: target.pos.z - actor.pos.z };
         if (Math.hypot(offset.x, offset.z) > delivery.radius + target.radius) continue;
-        applyHit(world, offence, target, skill, normalize(offset, direction));
-        hits += 1;
+        if (applyHit(world, offence, target, skill, normalize(offset, direction))) hits += 1;
       }
       break;
     }
@@ -155,6 +153,14 @@ function resolveImpact(world: World, actor: Actor, action: ActionState): void {
   world.events.push({ type: 'skill_impact', actorId: actor.id, team: teamOf(actor), skill, origin: { x: actor.pos.x, z: actor.pos.z }, direction: { x: direction.x, z: direction.z }, hits });
 }
 
+function land(world: World, actor: Actor, action: ActionState): void {
+  const target: Vec2 | null = action.target;
+  if (target === null || !isWalkable(world.grid, target.x, target.z)) return;
+  actor.pos.x = target.x;
+  actor.pos.z = target.z;
+  action.travelLeft = 0;
+}
+
 export function stepAction(world: World, actor: Actor, dt: number): void {
   const action = actor.action;
   if (action === null) return;
@@ -166,6 +172,7 @@ export function stepAction(world: World, actor: Actor, dt: number): void {
     action.travelLeft -= step;
   }
   if (action.phase === 'windup' && action.timeLeft <= 0) {
+    if (action.travelSpeed > 0) land(world, actor, action);
     action.phase = 'recovery';
     action.timeLeft += action.recovery;
     resolveImpact(world, actor, action);

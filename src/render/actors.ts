@@ -164,7 +164,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           }
           case 'guarded': {
             const monster: MonsterState | undefined = current.monsters.find((candidate: MonsterState): boolean => candidate.id === event.monsterId);
-            const played: boolean = viewOf(event.monsterId)?.startAction(event.broken ? 'guard_break' : 'block', 0, event.broken ? (monster?.stagger ?? ACTORS.blockTime) : ACTORS.blockTime) ?? false;
+            const midSwing: boolean = monster?.action?.phase === 'windup';
+            const played: boolean = !midSwing && (viewOf(event.monsterId)?.startAction(event.broken ? 'guard_break' : 'block', 0, event.broken ? (monster?.stagger ?? ACTORS.blockTime) : ACTORS.blockTime) ?? false);
             if (played || !event.broken) guarded.add(event.monsterId);
             break;
           }

@@ -16,6 +16,7 @@ LEATHER: Color = (0.13, 0.08, 0.05)
 WOOD: Color = (0.17, 0.11, 0.07)
 BONE: Color = (0.62, 0.58, 0.47)
 HEX: Color = (0.62, 0.3, 1.0)
+SHIELD_OFFSET: float = 0.07
 
 
 def material(name: str, color: Color, metallic: float, roughness: float, emission: float = 0.0) -> Material:
@@ -53,8 +54,8 @@ def blade(name: str, base: float, length: float, width: float, tip_width: float,
     return finish(obj, made)
 
 
-def box(name: str, size: tuple[float, float, float], z: float, made: Material) -> Object:
-    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, z))
+def box(name: str, size: tuple[float, float, float], z: float, made: Material, x: float = 0.0, y: float = 0.0) -> Object:
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(x, y, z))
     obj: Object = bpy.context.active_object
     obj.name = name
     obj.scale = size
@@ -68,8 +69,8 @@ def rod(name: str, radius: float, top_radius: float, depth: float, z: float, mad
     return finish(obj, made)
 
 
-def ball(name: str, radius: float, z: float, made: Material, squash: float = 1.0) -> Object:
-    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=radius, location=(0.0, 0.0, z))
+def ball(name: str, radius: float, z: float, made: Material, squash: float = 1.0, y: float = 0.0) -> Object:
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=radius, location=(0.0, y, z))
     obj: Object = bpy.context.active_object
     obj.name = name
     obj.scale = (1.0, 1.0, squash)
@@ -171,6 +172,43 @@ def build(directory: str) -> None:
             prong("prong_c", 4.188, 1.16, bone),
             ball("crystal", 0.06, 1.2, hex_glow, 1.5),
             ball("ferrule", 0.028, -0.67, dark, 1.0),
+        ],
+        directory,
+    )
+    export(
+        "war_maul",
+        [
+            rod("shaft", 0.024, 0.022, 1.25, 0.4, wood, 8),
+            box("head", (0.34, 0.17, 0.2), 0.98, dark),
+            box("face_a", (0.03, 0.19, 0.22), 0.98, rust, 0.17),
+            box("face_b", (0.03, 0.19, 0.22), 0.98, rust, -0.17),
+            box("band", (0.07, 0.19, 0.06), 0.98, bronze),
+            ball("cap", 0.035, 1.09, dark, 0.7),
+            rod("wrap", 0.028, 0.028, 0.28, -0.05, leather),
+            ball("butt", 0.032, -0.23, dark, 1.0),
+        ],
+        directory,
+    )
+    export(
+        "tower_shield",
+        [
+            box("board", (0.62, 0.05, 1.02), 0.12, wood, 0.0, SHIELD_OFFSET),
+            box("rim_top", (0.66, 0.062, 0.05), 0.63, dark, 0.0, SHIELD_OFFSET),
+            box("rim_bottom", (0.66, 0.062, 0.05), -0.39, dark, 0.0, SHIELD_OFFSET),
+            box("rim_left", (0.05, 0.062, 1.07), 0.12, dark, -0.305, SHIELD_OFFSET),
+            box("rim_right", (0.05, 0.062, 1.07), 0.12, dark, 0.305, SHIELD_OFFSET),
+            box("brace", (0.56, 0.058, 0.06), 0.12, rust, 0.0, SHIELD_OFFSET),
+            ball("boss", 0.11, 0.12, dark, 1.0, SHIELD_OFFSET * 1.4),
+            rod("grip", 0.016, 0.016, 0.2, 0.0, leather),
+        ],
+        directory,
+    )
+    export(
+        "bone_javelin",
+        [
+            rod("shaft", 0.014, 0.012, 1.5, 0.35, wood, 6),
+            rod("point", 0.03, 0.002, 0.3, 1.25, bone, 6),
+            box("binding", (0.04, 0.04, 0.06), 1.09, leather),
         ],
         directory,
     )

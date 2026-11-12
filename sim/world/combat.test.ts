@@ -81,6 +81,16 @@ void test('a grab roots the hero in place for its root time, then the hero walks
   assert.ok(distance(start, world.player.pos) > 1, 'the hero walks on once the root ends');
 });
 
+void test('a grab never roots a monster, and a hit on a warded hero does not land', (): void => {
+  const world: World = arena(4);
+  const shambler: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 1.4 });
+  assert.equal(applyHit(world, offenceOf(world.player), shambler, grab, { x: 0, z: 1 }), true);
+  assert.equal(shambler.root, 0);
+  world.player.invulnerable = 1;
+  assert.equal(applyHit(world, offenceOf(shambler), world.player, grab, { x: 0, z: -1 }), false);
+  assert.equal(world.player.root, 0);
+});
+
 void test('poise scales the knockback a monster takes', (): void => {
   const world: World = arena(5);
   const steady: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 3, z: ARENA_CENTRE.z });

@@ -35,7 +35,7 @@
     {"prop": "pale_column", "x": 50.4, "z": 18.4, "y": 0, "rotationDegrees": 0}
   ],
   "packs": [
-    {"x": 46.5, "z": 14, "members": [{"monster": "echo", "count": 6}, {"monster": "lamenter", "count": 2}]},
+    {"x": 46.5, "z": 14, "members": [{"monster": "echo", "count": 4}, {"monster": "chanter", "count": 1, "mods": ["gravecalling"]}, {"monster": "lamenter", "count": 1}, {"monster": "gnawer", "count": 2}]},
     {"x": 20, "z": 14, "members": [{"monster": "welcome", "count": 1}], "when": [{"type": "objective", "quest": "the_gate", "objective": "welcome", "is": "current"}]}
   ],
   "surge": null,

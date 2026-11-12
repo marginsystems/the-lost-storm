@@ -137,10 +137,10 @@
     {"prop": "rock_3", "x": 59.3, "z": 37.4, "y": -0.05, "rotationDegrees": 345}
   ],
   "packs": [
-    {"x": 46, "z": 5, "members": [{"monster": "misbuilt", "count": 3}, {"monster": "hodman", "count": 2}]},
+    {"x": 46, "z": 5, "members": [{"monster": "misbuilt", "count": 2}, {"monster": "chanter", "count": 2}]},
     {"x": 44, "z": 13.5, "members": [{"monster": "misbuilt", "count": 4}, {"monster": "hodman", "count": 1}]},
-    {"x": 41, "z": 25, "members": [{"monster": "misbuilt", "count": 3}, {"monster": "hodman", "count": 3}]},
-    {"x": 14, "z": 23.5, "members": [{"monster": "misbuilt", "count": 3}, {"monster": "hodman", "count": 2}]}
+    {"x": 41, "z": 25, "members": [{"monster": "sodden", "count": 3}, {"monster": "chanter", "count": 1}, {"monster": "hodman", "count": 1}]},
+    {"x": 14, "z": 23.5, "members": [{"monster": "misbuilt", "count": 2}, {"monster": "bearer", "count": 1}, {"monster": "hodman", "count": 2}]}
   ],
   "surge": null,
   "exits": [

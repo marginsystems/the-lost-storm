@@ -147,5 +147,5 @@ void test('a leap toward a wall plans its landing short of the wall, and lands w
   const landing: Vec2 = must(ghoul.action?.target, 'landing point');
   assert.ok(landing.x > 0, `the landing stays on the floor (${landing.x.toFixed(2)})`);
   for (let step: number = 0; step < Math.round((pounce.windup + 0.05) / DT); step += 1) stepWorld(world, [], DT);
-  assert.ok(distance(landing, ghoul.pos) < 0.3, `it landed at the mark (${distance(landing, ghoul.pos).toFixed(2)} away)`);
+  assert.ok(distance(landing, ghoul.pos) < 0.01, `it landed at the mark (${distance(landing, ghoul.pos).toFixed(2)} away)`);
 });

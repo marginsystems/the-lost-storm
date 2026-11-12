@@ -191,5 +191,87 @@
     "hides": [
       "legs"
     ]
+  },
+  {
+    "id": "sodden_shirt",
+    "model": "models/wear/wool_tunic.glb",
+    "region": "chest",
+    "tint": "#4f5a52",
+    "hides": [
+      "torso",
+      "arms"
+    ]
+  },
+  {
+    "id": "sodden_trousers",
+    "model": "models/wear/wool_trousers.glb",
+    "region": "legs",
+    "tint": "#4a5048",
+    "hides": [
+      "legs"
+    ]
+  },
+  {
+    "id": "marsh_hood",
+    "model": "models/wear/monk_hood.glb",
+    "region": "head",
+    "tint": "#5a5a46",
+    "hides": []
+  },
+  {
+    "id": "marsh_jerkin",
+    "model": "models/wear/leather_jerkin.glb",
+    "region": "chest",
+    "tint": "#6a5a44",
+    "hides": [
+      "torso",
+      "arms"
+    ]
+  },
+  {
+    "id": "marsh_breeches",
+    "model": "models/wear/viking_breeches.glb",
+    "region": "legs",
+    "tint": "#5e5446",
+    "hides": [
+      "legs"
+    ]
+  },
+  {
+    "id": "chanter_robe",
+    "model": "models/wear/monk_robe.glb",
+    "region": "chest",
+    "tint": "#5d767a",
+    "hides": [
+      "torso",
+      "arms",
+      "legs"
+    ]
+  },
+  {
+    "id": "chanter_cowl",
+    "model": "models/wear/monk_hood.glb",
+    "region": "head",
+    "tint": "#4e676b",
+    "hides": []
+  },
+  {
+    "id": "bearer_mail",
+    "model": "models/wear/mail_tunic.glb",
+    "region": "chest",
+    "tint": "#9a9a94",
+    "hides": [
+      "torso",
+      "arms"
+    ]
+  },
+  {
+    "id": "bearer_gloves",
+    "model": "models/wear/long_gloves.glb",
+    "region": "hands",
+    "tint": "#4e3e30",
+    "hides": [
+      "hands"
+    ]
   }
 ]

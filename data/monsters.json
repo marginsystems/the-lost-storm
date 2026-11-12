@@ -512,5 +512,189 @@
         ]
       }
     }
+  },
+  {
+    "id": "sodden",
+    "name": "Sodden",
+    "rig": "drowned_man",
+    "scale": 1.12,
+    "radius": 0.5,
+    "life": 80,
+    "damageMin": 6,
+    "damageMax": 9,
+    "moveSpeed": 2.4,
+    "xp": 12,
+    "aggroRadius": 9,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "sodden_grab",
+    "loot": {
+      "goldChance": 0.6,
+      "goldMin": 3,
+      "goldMax": 9,
+      "itemChance": 0.2
+    },
+    "color": "#8fd0a0",
+    "tint": "#9aa89a",
+    "gear": [],
+    "wear": [
+      "sodden_shirt",
+      "sodden_trousers"
+    ],
+    "boss": null,
+    "poise": {
+      "knockback": 0.35,
+      "stagger": 0.4
+    }
+  },
+  {
+    "id": "gnawer",
+    "name": "Gnawer",
+    "rig": "gaunt_ghoul",
+    "scale": 0.94,
+    "radius": 0.5,
+    "life": 24,
+    "damageMin": 5,
+    "damageMax": 8,
+    "moveSpeed": 6.8,
+    "xp": 11,
+    "aggroRadius": 10,
+    "behaviour": {
+      "type": "stalker",
+      "orbitRange": 5.5
+    },
+    "skill": "gnawer_pounce",
+    "loot": {
+      "goldChance": 0.5,
+      "goldMin": 2,
+      "goldMax": 7,
+      "itemChance": 0.16
+    },
+    "color": "#ffb090",
+    "tint": "#c8bcb0",
+    "gear": [],
+    "wear": [
+      "thrall_breeches"
+    ],
+    "boss": null
+  },
+  {
+    "id": "spearwife",
+    "name": "Spearwife",
+    "rig": "marsh_thrower",
+    "scale": 1.0,
+    "radius": 0.5,
+    "life": 34,
+    "damageMin": 6,
+    "damageMax": 9,
+    "moveSpeed": 4.4,
+    "xp": 13,
+    "aggroRadius": 10,
+    "behaviour": {
+      "type": "ranged",
+      "preferredRange": 10,
+      "retreatRange": 5
+    },
+    "skill": "spearwife_throw",
+    "loot": {
+      "goldChance": 0.6,
+      "goldMin": 3,
+      "goldMax": 9,
+      "itemChance": 0.2
+    },
+    "color": "#e8dcc0",
+    "tint": "#ffffff",
+    "gear": [
+      "bone_javelin"
+    ],
+    "wear": [
+      "marsh_hood",
+      "marsh_jerkin",
+      "marsh_breeches",
+      "worn_boots"
+    ],
+    "boss": null
+  },
+  {
+    "id": "chanter",
+    "name": "Tide Chanter",
+    "rig": "tide_chanter",
+    "scale": 1.04,
+    "radius": 0.5,
+    "life": 32,
+    "damageMin": 7,
+    "damageMax": 11,
+    "moveSpeed": 3.6,
+    "xp": 16,
+    "aggroRadius": 10,
+    "behaviour": {
+      "type": "ranged",
+      "preferredRange": 10,
+      "retreatRange": 5
+    },
+    "skill": "chanter_tide",
+    "loot": {
+      "goldChance": 0.7,
+      "goldMin": 4,
+      "goldMax": 11,
+      "itemChance": 0.24
+    },
+    "color": "#6fc8bc",
+    "tint": "#ffffff",
+    "gear": [
+      "hex_staff"
+    ],
+    "wear": [
+      "chanter_robe",
+      "chanter_cowl"
+    ],
+    "boss": null
+  },
+  {
+    "id": "bearer",
+    "name": "Shieldbearer",
+    "rig": "shield_bearer",
+    "scale": 1.28,
+    "radius": 0.5,
+    "life": 130,
+    "damageMin": 8,
+    "damageMax": 12,
+    "moveSpeed": 3.3,
+    "xp": 22,
+    "aggroRadius": 10,
+    "behaviour": {
+      "type": "chaser"
+    },
+    "skill": "bearer_slam",
+    "loot": {
+      "goldChance": 0.7,
+      "goldMin": 5,
+      "goldMax": 12,
+      "itemChance": 0.28
+    },
+    "color": "#e0c090",
+    "tint": "#ffffff",
+    "gear": [
+      "war_maul",
+      "tower_shield"
+    ],
+    "wear": [
+      "bearer_mail",
+      "marsh_breeches",
+      "leather_boots",
+      "bearer_gloves"
+    ],
+    "boss": null,
+    "poise": {
+      "knockback": 0.25,
+      "stagger": 0.3
+    },
+    "guard": {
+      "arcDegrees": 150,
+      "damageTaken": 0.15,
+      "breakStagger": 0.45,
+      "breakTime": 1.6
+    }
   }
 ]

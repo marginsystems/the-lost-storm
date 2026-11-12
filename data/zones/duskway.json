@@ -197,9 +197,9 @@
     {"prop": "fallen_tree", "x": 26.9, "z": 77.4, "y": -0.05, "rotationDegrees": 210}
   ],
   "packs": [
-    {"x": 18, "z": 51.5, "members": [{"monster": "roadbound", "count": 4}]},
-    {"x": 6.5, "z": 42, "members": [{"monster": "roadbound", "count": 3}, {"monster": "lamenter", "count": 2}]},
-    {"x": 18, "z": 21.5, "members": [{"monster": "roadbound", "count": 4}, {"monster": "lamenter", "count": 2}]},
+    {"x": 18, "z": 51.5, "members": [{"monster": "roadbound", "count": 2}, {"monster": "sodden", "count": 2}]},
+    {"x": 6.5, "z": 42, "members": [{"monster": "roadbound", "count": 2}, {"monster": "spearwife", "count": 2}]},
+    {"x": 18, "z": 21.5, "members": [{"monster": "roadbound", "count": 3}, {"monster": "sodden", "count": 1}, {"monster": "lamenter", "count": 2}]},
     {"x": 9, "z": 18.5, "members": [{"monster": "roadbound", "count": 3}, {"monster": "lamenter", "count": 2}]},
     {"x": 27, "z": 18, "members": [{"monster": "roadbound", "count": 4}, {"monster": "lamenter", "count": 1}]}
   ],

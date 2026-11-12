@@ -3,6 +3,11 @@
   "skillStart": {
     "cleave": [{ "sound": "sword_swing_light", "volume": 0.9, "maxVoices": 3 }],
     "dodge_roll": [{ "sound": "footstep_stone", "volume": 0.8, "maxVoices": 2 }],
+    "sodden_grab": [{ "sound": "sword_swing_heavy", "volume": 0.45, "maxVoices": 3 }],
+    "gnawer_pounce": [{ "sound": "sword_swing_light", "volume": 0.7, "maxVoices": 3 }],
+    "spearwife_throw": [{ "sound": "sword_swing_light", "volume": 0.6, "maxVoices": 3 }],
+    "chanter_tide": [{ "sound": "hex_charge", "volume": 0.7, "maxVoices": 2 }],
+    "bearer_slam": [{ "sound": "sword_swing_heavy", "volume": 0.9, "maxVoices": 2 }],
     "thunderclap": [{ "sound": "electric_crackle", "volume": 0.8, "maxVoices": 2 }],
     "storm_bolt": [{ "sound": "bolt_zap", "volume": 0.85, "maxVoices": 3 }],
     "thrall_claw": [{ "sound": "sword_swing_heavy", "volume": 0.5, "maxVoices": 3 }],
@@ -24,6 +29,9 @@
     "welcome_embrace": [{ "sound": "electric_crackle", "volume": 1, "maxVoices": 1 }]
   },
   "skillImpact": {
+    "chanter_tide": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 2 }],
+    "volatile_burst": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 2 }],
+    "bearer_slam": [{ "sound": "ground_boom", "volume": 0.7, "maxVoices": 2 }],
     "thunderclap": [
       { "sound": "ground_boom", "volume": 1, "maxVoices": 2 },
       { "sound": "thunder_crack", "volume": 0.75, "maxVoices": 2 }

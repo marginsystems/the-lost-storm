@@ -120,8 +120,8 @@ function staggerOf(target: MonsterState, skill: SkillDef, guard: GuardOutcome): 
   return 0;
 }
 
-export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): void {
-  if (!target.alive || (target.kind === 'player' && target.invulnerable > 0)) return;
+export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): boolean {
+  if (!target.alive || (target.kind === 'player' && target.invulnerable > 0)) return false;
   const guard: GuardOutcome = guardOutcome(target, skill, direction);
   const guarded: number = guard === 'blocked' && target.kind === 'monster' ? (target.def.guard?.damageTaken ?? 1) : 1;
   const weapon: number = world.rng.range(offence.damageMin, offence.damageMax) * (1 + offence.damagePercent) * skill.damage.weaponPercent;
@@ -133,7 +133,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const poise: number = steadiness(target) * (guard === 'blocked' ? COMBAT.guardedKnockback : 1);
   target.knock.x += direction.x * skill.knockback * poise;
   target.knock.z += direction.z * skill.knockback * poise;
-  if (skill.root > 0) target.root = Math.max(target.root, skill.root);
+  if (skill.root > 0 && target.kind === 'player') target.root = Math.max(target.root, skill.root);
   if (target.kind === 'monster') {
     const stagger: number = staggerOf(target, skill, guard);
     if (stagger > 0) {
@@ -164,4 +164,5 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     skill,
   });
   if (killed) kill(world, target, direction);
+  return true;
 }
