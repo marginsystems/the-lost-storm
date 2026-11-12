@@ -7,7 +7,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 6.4,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Sword_Idle",
       "run": "Jog_Fwd_Loop",
@@ -15,6 +24,7 @@
         "Hit_Chest",
         "Hit_Head"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -161,7 +171,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 6.4,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Idle_Loop",
       "run": "Jog_Fwd_Loop",
@@ -169,6 +188,7 @@
         "Hit_Chest",
         "Hit_Head"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -332,7 +352,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 6.4,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Idle_Loop",
       "run": "Walk_Loop",
@@ -340,6 +369,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -477,7 +507,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 6.4,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Idle_Loop",
       "run": "Walk_Loop",
@@ -485,6 +524,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -622,7 +662,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 6.4,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Idle_Loop",
       "run": "Walk_Loop",
@@ -630,6 +679,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -767,7 +817,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 2.5,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Zombie_Idle_Loop",
       "run": "Walk_Loop",
@@ -775,6 +834,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -905,7 +965,20 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 8.0,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      },
+      {
+        "clip": "Sprint_Loop",
+        "groundSpeed": 10.3
+      }
+    ],
     "clips": {
       "idle": "Zombie_Idle_Loop",
       "run": "Sprint_Loop",
@@ -913,6 +986,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1035,7 +1109,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 5.4,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Zombie_Idle_Loop",
       "run": "Jog_Fwd_Loop",
@@ -1043,6 +1126,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1161,7 +1245,12 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 1.7,
+    "gaits": [
+      {
+        "clip": "Zombie_Walk_Loop",
+        "groundSpeed": 1.18
+      }
+    ],
     "clips": {
       "idle": "Idle_Loop",
       "run": "Zombie_Walk_Loop",
@@ -1169,6 +1258,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1287,7 +1377,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 3.2,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Idle_Loop",
       "run": "Walk_Loop",
@@ -1295,6 +1394,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1413,7 +1513,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 3.0,
+    "gaits": [
+      {
+        "clip": "Zombie_Walk_Loop",
+        "groundSpeed": 1.18
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Zombie_Idle_Loop",
       "run": "Zombie_Walk_Loop",
@@ -1421,6 +1530,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1539,7 +1649,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 3.4,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Sword_Idle",
       "run": "Walk_Loop",
@@ -1547,6 +1666,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1677,7 +1797,16 @@
     "yawOffsetDegrees": 0,
     "height": 1.85,
     "rootMotionBone": null,
-    "runSpeed": 4.0,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
     "clips": {
       "idle": "Idle_Torch_Loop",
       "run": "Walk_Loop",
@@ -1685,6 +1814,7 @@
         "Hit_Head",
         "Hit_Chest"
       ],
+      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",

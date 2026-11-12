@@ -60,6 +60,8 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     alive: true,
     deadTime: 0,
     moving: false,
+    motion: 'still',
+    gait: 0,
     mana: stats.maxMana,
     stats,
     bar,
@@ -81,7 +83,6 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     invulnerable: 0,
     strideTravel: 0,
     walked: { x: 0, z: 0 },
-    gait: 0,
     kills: save?.kills ?? 0,
     flasks: createFlasks(content, save?.flasks ?? null),
   };

@@ -2,7 +2,7 @@ import type { AnimationClip, IUniform, Object3D } from 'three';
 import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import type { AttachmentDef, Content, RigActionClip, RigDef, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
+import type { AttachmentDef, Content, RigActionClip, RigDef, RigGait, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
@@ -16,6 +16,11 @@ export interface ActionClip {
   readonly impactTime: number;
 }
 
+export interface GaitClip {
+  readonly clip: AnimationClip;
+  readonly groundSpeed: number;
+}
+
 export interface UnarmedClipSet {
   readonly idle: AnimationClip;
   readonly actions: ReadonlyMap<string, ActionClip>;
@@ -24,7 +29,9 @@ export interface UnarmedClipSet {
 export interface RigClipSet {
   readonly idle: AnimationClip;
   readonly run: AnimationClip;
+  readonly gaits: readonly GaitClip[];
   readonly hit: readonly AnimationClip[];
+  readonly stagger: AnimationClip;
   readonly death: readonly AnimationClip[];
   readonly rise: AnimationClip | null;
   readonly actions: ReadonlyMap<string, ActionClip>;
@@ -195,7 +202,9 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
     clips: {
       idle: clip('idle', def.clips.idle),
       run: clip('run', def.clips.run),
+      gaits: def.gaits.map((gait: RigGait): GaitClip => ({ clip: clip('gait', gait.clip), groundSpeed: gait.groundSpeed })),
       hit: def.clips.hit.map((wanted: string): AnimationClip => clip('hit', wanted)),
+      stagger: clip('stagger', def.clips.stagger),
       death: def.clips.death.map((wanted: string): AnimationClip => clip('death', wanted)),
       rise: def.clips.rise === null ? null : clip('rise', def.clips.rise),
       actions,

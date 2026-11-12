@@ -272,6 +272,7 @@ function land(world: World, actor: Actor, action: ActionState): void {
   if (target === null || !isWalkable(world.grid, target.x, target.z) || !lineOfSight(world.grid, actor.pos, target)) return;
   actor.pos.x = target.x;
   actor.pos.z = target.z;
+  actor.motion = 'lunge';
   action.travelLeft = 0;
 }
 
@@ -321,6 +322,7 @@ export function stepAction(world: World, actor: Actor, dt: number): void {
   if (action.phase === 'windup' && action.travelLeft > 0 && action.timeLeft < action.travelLeft / action.travelSpeed + dt) {
     const step: number = Math.min(action.travelLeft, action.travelSpeed * dt);
     moveWithCollision(world.grid, actor.pos, action.direction.x * step, action.direction.z * step);
+    actor.motion = 'lunge';
     action.travelLeft -= step;
   }
   if (action.phase === 'windup' && action.timeLeft <= 0) {

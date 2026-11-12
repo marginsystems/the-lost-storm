@@ -604,12 +604,14 @@ void test('a rig lists its hit and death clips and names its action clips, and a
   const parsed: Content = parseContent(shipped);
   const hero = must(parsed.rigs.get(parsed.player.rig), 'hero rig');
   assert.ok(hero.clips.death.length >= 2);
-  assert.ok(hero.runSpeed > 0);
+  assert.ok(hero.gaits.length >= 2 && hero.gaits.every((gait): boolean => gait.groundSpeed > 0));
   assert.ok(must(hero.clips.actions['attack'], 'attack clip').impactFraction > 0);
   assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, death: [] } }] }), /clips\.death: a rig needs at least one death clip/);
   assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, hit: [] } }] }), /clips\.hit: a rig needs at least one hit clip/);
   assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, actions: { attack: { clip: 'Sword_Attack', impactFraction: 1 } } } }] }), /impactFraction/);
-  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, runSpeed: 0 }] }), /runSpeed/);
+  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, gaits: [{ clip: 'Walk_Loop', groundSpeed: 0 }] }] }), /groundSpeed/);
+  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, gaits: [] }] }), /gaits: a rig needs at least one gait/);
+  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, gaits: [{ clip: 'Jog_Fwd_Loop', groundSpeed: 7 }, { clip: 'Walk_Loop', groundSpeed: 1 }] }] }), /gaits run from the slowest to the fastest/);
   const lost: string[] = contentProblems(parseContent({ ...shipped, skills: [...skills, { ...extraSkill, animation: 'pirouette' }], monsters: [...monsters, { ...extraMonster, gear: [], wear: [] }] }));
   assert.ok(lost.includes('monster ash_wraith uses skill ember_lash, but rig human_man has no action clip pirouette'));
   const step = { animation: 'backflip', windup: 0.2, recovery: 0.2, damageScale: 1, areaScale: 1, knockbackScale: 1, stagger: 0, shake: 0, hitStop: 0 };

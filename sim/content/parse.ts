@@ -40,6 +40,7 @@ import type {
   StatCap,
   RigActionClip,
   RigClips,
+  RigGait,
   RigDef,
   RigSocket,
   RigUnarmedClips,
@@ -314,6 +315,16 @@ function unarmedClips(value: unknown, where: string): RigUnarmedClips | null {
   return { idle: text(source, 'idle', where), actions: actionClips(source['actions'], `${where}.actions`) };
 }
 
+function rigGaits(value: unknown, where: string): RigGait[] {
+  const gaits: RigGait[] = each(value, where, (entry: unknown, entryWhere: string): RigGait => {
+    const source: Fields = fields(entry, entryWhere);
+    return { clip: text(source, 'clip', entryWhere), groundSpeed: positive(source, 'groundSpeed', entryWhere) };
+  });
+  if (gaits.length === 0) throw new ContentError(where, 'a rig needs at least one gait');
+  if (gaits.some((gait: RigGait, index: number): boolean => index > 0 && gait.groundSpeed <= (gaits[index - 1]?.groundSpeed ?? 0))) throw new ContentError(where, 'gaits run from the slowest to the fastest');
+  return gaits;
+}
+
 function rigClips(value: unknown, where: string): RigClips {
   const source: Fields = fields(value, where);
   const actions: Record<string, RigActionClip> = actionClips(source['actions'], `${where}.actions`);
@@ -321,7 +332,7 @@ function rigClips(value: unknown, where: string): RigClips {
   const death: string[] = textList(source, 'death', where);
   if (hit.length === 0) throw new ContentError(`${where}.hit`, 'a rig needs at least one hit clip');
   if (death.length === 0) throw new ContentError(`${where}.death`, 'a rig needs at least one death clip');
-  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, death, rise: source['rise'] === undefined ? null : nullableText(source, 'rise', where), actions, unarmed: unarmedClips(source['unarmed'], `${where}.unarmed`) };
+  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, stagger: text(source, 'stagger', where), death, rise: source['rise'] === undefined ? null : nullableText(source, 'rise', where), actions, unarmed: unarmedClips(source['unarmed'], `${where}.unarmed`) };
 }
 
 function triple(source: Fields, key: string, where: string): Triple {
@@ -355,7 +366,7 @@ function rig(value: unknown, where: string): RigDef {
     yawOffsetDegrees: numeric(source, 'yawOffsetDegrees', where),
     height: numeric(source, 'height', where),
     rootMotionBone: nullableText(source, 'rootMotionBone', where),
-    runSpeed: positive(source, 'runSpeed', where),
+    gaits: rigGaits(source['gaits'], `${where}.gaits`),
     idleRate: source['idleRate'] === undefined ? 1 : numeric(source, 'idleRate', where),
     clips: rigClips(source['clips'], `${where}.clips`),
     sockets,

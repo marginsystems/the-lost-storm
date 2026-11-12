@@ -2,14 +2,15 @@ import { attacksHeld } from './glitch-hold.ts';
 import type { StalkerBehaviour, SummonDef } from '../content/combat-types.ts';
 import type { MonsterDef, RangedBehaviour, SkillDef, SurgeRules } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { clamp, directionOf, distance, normalize, rotate } from '../math.ts';
-import { lineOfSight, lineWalkable, moveWithCollision, paceAt } from '../nav/grid.ts';
+import { clamp, directionOf, distance, facingOf, normalize, rotate } from '../math.ts';
+import { lineOfSight, lineWalkable } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { lifePhase, pickBossSkill } from './boss.ts';
 import { aggroPack } from './combat.ts';
 import { allHold } from './conditions.ts';
 import { modsNamed, withMods } from './elites.ts';
-import { faceToward, followPath, stepKnock, stepTimers } from './movement.ts';
+import type { Steering, SteerStep } from './movement.ts';
+import { beingKnocked, faceToward, steerAlong, steerToward, stepKnock, stepTimers } from './movement.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
 import { SPAWN, spawnMonster } from './spawn.ts';
 import { mayStrike } from './factions.ts';
@@ -41,6 +42,8 @@ const MONSTERS = {
   feudReach: 1.5,
 } as const;
 
+const STEERING: Steering = { maxTurnRate: 11.5, minTurnRate: 2, turnGain: 20, fullSpeedAngle: 0.25, sharpAngle: 1, sharpSpeed: 0.3, passRadius: 0.45, settleRadius: 0.2 };
+
 function towardOf(monster: MonsterState, target: Vec2): Vec2 {
   return normalize({ x: target.x - monster.pos.x, z: target.z - monster.pos.z }, directionOf(monster.facing));
 }
@@ -51,12 +54,9 @@ function face(monster: MonsterState, target: Vec2, dt: number): void {
 
 function travel(world: World, monster: MonsterState, direction: Vec2, speed: number, dt: number): void {
   if (monster.root > 0) return;
-  const fromX: number = monster.pos.x;
-  const fromZ: number = monster.pos.z;
-  const paced: number = speed * paceAt(world.grid, monster.pos.x, monster.pos.z);
-  moveWithCollision(world.grid, monster.pos, direction.x * paced * dt, direction.z * paced * dt);
-  monster.lastTravel = paced * dt;
-  monster.moving = Math.hypot(monster.pos.x - fromX, monster.pos.z - fromZ) > MONSTERS.stillStep || monster.stuckTime < MONSTERS.blockedGrace;
+  const step: SteerStep = steerToward(world.grid, monster, facingOf(direction), speed * dt, dt, STEERING);
+  monster.lastTravel = step.tried;
+  monster.moving = step.moved > MONSTERS.stillStep || (step.tried > 0 && monster.stuckTime < MONSTERS.blockedGrace);
 }
 
 function approach(world: World, monster: MonsterState, target: Vec2, dt: number): void {
@@ -76,10 +76,10 @@ function approach(world: World, monster: MonsterState, target: Vec2, dt: number)
     face(monster, target, dt);
     return;
   }
-  const moved: number = followPath(world.grid, monster, monster.path, monster.def.moveSpeed * dt, MONSTERS.turnRate * dt);
+  const step: SteerStep = steerAlong(world.grid, monster, monster.path, monster.def.moveSpeed * dt, dt, STEERING);
   if (monster.path.length === 0) monster.repathTimer = 0;
-  monster.lastTravel = monster.def.moveSpeed * paceAt(world.grid, monster.pos.x, monster.pos.z) * dt;
-  monster.moving = moved > MONSTERS.stillStep || monster.stuckTime < MONSTERS.blockedGrace;
+  monster.lastTravel = step.tried;
+  monster.moving = step.moved > MONSTERS.stillStep || (step.tried > 0 && monster.stuckTime < MONSTERS.blockedGrace);
 }
 
 function attack(world: World, monster: MonsterState, skill: SkillDef, foe: Actor): boolean {
@@ -137,7 +137,6 @@ function keepRange(world: World, monster: MonsterState, behaviour: RangedBehavio
       return;
     case 'retreat':
       travel(world, monster, { x: -toward.x, z: -toward.z }, monster.def.moveSpeed * MONSTERS.retreatSpeed, dt);
-      face(monster, foe.pos, dt);
       return;
     case 'hold':
       if (lostSight) {
@@ -145,7 +144,6 @@ function keepRange(world: World, monster: MonsterState, behaviour: RangedBehavio
         monster.restTime = MONSTERS.restTime;
       }
       travel(world, monster, rotate(toward, MONSTERS.strafeAngle * monster.strafeSign), monster.def.moveSpeed * MONSTERS.strafeSpeed, dt);
-      face(monster, foe.pos, dt);
       return;
   }
 }
@@ -163,7 +161,6 @@ function stalk(world: World, monster: MonsterState, behaviour: StalkerBehaviour,
   const pull: number = clamp((gap - behaviour.orbitRange) / MONSTERS.orbitBand, -1, 1);
   const heading: Vec2 = rotate(towardOf(monster, foe.pos), (Math.PI / 2 - pull * MONSTERS.orbitPull) * monster.strafeSign);
   travel(world, monster, heading, monster.def.moveSpeed * MONSTERS.orbitSpeed, dt);
-  faceToward(monster, heading, MONSTERS.turnRate * dt);
 }
 
 function summonOf(world: World, monster: MonsterState, summon: SummonDef, dt: number): void {
@@ -253,6 +250,7 @@ function support(world: World, monster: MonsterState): boolean {
 }
 
 export function stepMonster(world: World, monster: MonsterState, dt: number): void {
+  monster.motion = 'still';
   stepKnock(world.grid, monster, dt);
   monster.moving = false;
   if (!monster.alive) {
@@ -261,6 +259,7 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   }
   stepTimers(monster, dt);
   if (monster.spawnTime > 0) {
+    monster.motion = 'rising';
     monster.spawnTime = Math.max(0, monster.spawnTime - dt);
     return;
   }
@@ -270,7 +269,7 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   if (local <= 0) return;
   const foe: Actor | null = monster.aggro ? foeOf(world, monster) : null;
   if (foe !== null && monster.summonerId === null && monster.def.summon !== null) summonOf(world, monster, monster.def.summon, local);
-  if (monster.action !== null || monster.stagger > 0) return;
+  if (monster.action !== null || monster.stagger > 0 || beingKnocked(monster)) return;
   if (!monster.aggro) {
     wake(world, monster);
     return;

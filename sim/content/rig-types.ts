@@ -12,10 +12,16 @@ export interface RigClips {
   readonly idle: string;
   readonly run: string;
   readonly hit: readonly string[];
+  readonly stagger: string;
   readonly death: readonly string[];
   readonly rise: string | null;
   readonly actions: Readonly<Record<string, RigActionClip>>;
   readonly unarmed: RigUnarmedClips | null;
+}
+
+export interface RigGait {
+  readonly clip: string;
+  readonly groundSpeed: number;
 }
 
 export type Triple = readonly [number, number, number];
@@ -42,7 +48,7 @@ export interface RigDef {
   readonly yawOffsetDegrees: number;
   readonly height: number;
   readonly rootMotionBone: string | null;
-  readonly runSpeed: number;
+  readonly gaits: readonly RigGait[];
   readonly clips: RigClips;
   readonly sockets: Readonly<Record<string, RigSocket>>;
   readonly hiddenNodes: readonly string[];

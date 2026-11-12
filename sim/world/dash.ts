@@ -42,5 +42,6 @@ export function stepDash(grid: NavGrid, actor: ActorState, action: ActionState, 
     const step: number = Math.min(travel, DASH.step);
     travel -= step;
     moveWithCollision(grid, actor.pos, action.direction.x * step, action.direction.z * step);
+    actor.motion = 'dash';
   }
 }

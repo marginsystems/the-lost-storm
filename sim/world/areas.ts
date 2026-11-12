@@ -51,6 +51,7 @@ function pull(world: World, area: AreaState, delivery: AreaDelivery, dt: number)
     const step: number = Math.min(delivery.pull * dt, gap - AREAS.pullStop);
     if (step <= 0) continue;
     moveWithCollision(world.grid, target.pos, (offset.x / gap) * step, (offset.z / gap) * step);
+    target.motion = 'pulled';
   }
 }
 

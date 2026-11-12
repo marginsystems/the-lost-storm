@@ -75,6 +75,8 @@ export interface ComboState {
   timeLeft: number;
 }
 
+export type Motion = 'still' | 'stride' | 'knocked' | 'pulled' | 'dash' | 'lunge' | 'rising';
+
 export interface ActorState {
   readonly id: number;
   pos: Vec2;
@@ -95,6 +97,8 @@ export interface ActorState {
   alive: boolean;
   deadTime: number;
   moving: boolean;
+  motion: Motion;
+  gait: number;
 }
 
 export interface IdleIntent {
@@ -157,7 +161,6 @@ export interface PlayerState extends ActorState {
   invulnerable: number;
   strideTravel: number;
   walked: Vec2;
-  gait: number;
   kills: number;
   flasks: FlaskState[];
 }

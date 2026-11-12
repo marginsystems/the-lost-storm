@@ -6,7 +6,8 @@ import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
 import { damageTakenScale, resolveSkill } from '../stats.ts';
 import { grantXp, killXp } from './character.ts';
-import { isInvulnerable } from './dash.ts';
+import { isDashing, isInvulnerable } from './dash.ts';
+import { knockTime, readablePush } from './movement.ts';
 import { closeDialogue } from './dialogue.ts';
 import { mayStrike, provoke, regardOf } from './factions.ts';
 import { gainFlaskCharges } from './flask-charges.ts';
@@ -127,6 +128,14 @@ function staggerOf(target: MonsterState, skill: SkillDef, guard: GuardOutcome): 
   return 0;
 }
 
+function knockBack(target: Actor, push: ReadonlyVec2): void {
+  if (target.action !== null && !isDashing(target)) return;
+  const knock: ReadonlyVec2 = { x: target.knock.x + push.x, z: target.knock.z + push.z };
+  if (!readablePush(knock) && knockTime(target) <= 0) return;
+  target.knock.x = knock.x;
+  target.knock.z = knock.z;
+}
+
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): boolean {
   if (!target.alive || (target.kind === 'player' && (target.invulnerable > 0 || attacksHeld(world)))) return false;
   const guard: GuardOutcome = guardOutcome(target, skill, direction);
@@ -138,8 +147,6 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const amount: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation * guarded));
   target.life -= amount;
   const poise: number = steadiness(target) * (guard === 'blocked' ? COMBAT.guardedKnockback : 1);
-  target.knock.x += direction.x * skill.knockback * poise;
-  target.knock.z += direction.z * skill.knockback * poise;
   if (skill.root > 0 && target.kind === 'player' && target.rootGrace <= 0) {
     target.root = Math.max(target.root, skill.root);
     target.rootGrace = target.root + world.content.player.rootGrace;
@@ -162,6 +169,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     }
     aggroPack(world, target);
   }
+  knockBack(target, { x: direction.x * skill.knockback * poise, z: direction.z * skill.knockback * poise });
   const killed: boolean = target.life <= 0;
   world.events.push({
     type: 'damage',

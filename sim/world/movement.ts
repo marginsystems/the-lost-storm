@@ -1,15 +1,18 @@
 import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
-import { moveWithCollision, paceAt } from '../nav/grid.ts';
+import { isWalkable, lineWalkable, moveWithCollision, paceAt } from '../nav/grid.ts';
 import { isDashing } from './dash.ts';
 import type { ActorState, World } from './types.ts';
 
 const MOVEMENT = {
   knockFriction: 9,
   knockRest: 0.08,
+  readablePush: 0.05,
   arrive: 1e-4,
   separationPasses: 2,
+  slideAlong: 0.7,
+  wallLean: 0.2,
 } as const;
 
 export interface Steering {
@@ -75,6 +78,20 @@ export function stepTimers(actor: ActorState, dt: number): void {
   if (actor.combo.timeLeft <= 0) actor.combo = null;
 }
 
+export function pushDistance(knock: Vec2): number {
+  return Math.hypot(knock.x, knock.z) / MOVEMENT.knockFriction;
+}
+
+export function readablePush(knock: Vec2): boolean {
+  return pushDistance(knock) >= MOVEMENT.readablePush;
+}
+
+export function knockTime(actor: ActorState): number {
+  const speed: number = Math.hypot(actor.knock.x, actor.knock.z);
+  if (speed < MOVEMENT.knockRest) return 0;
+  return Math.log(speed / MOVEMENT.knockRest) / MOVEMENT.knockFriction;
+}
+
 export function stepKnock(grid: NavGrid, actor: ActorState, dt: number): void {
   if (Math.hypot(actor.knock.x, actor.knock.z) < MOVEMENT.knockRest) {
     actor.knock.x = 0;
@@ -82,32 +99,20 @@ export function stepKnock(grid: NavGrid, actor: ActorState, dt: number): void {
     return;
   }
   moveWithCollision(grid, actor.pos, actor.knock.x * dt, actor.knock.z * dt);
+  actor.motion = 'knocked';
   const decay: number = Math.exp(-MOVEMENT.knockFriction * dt);
   actor.knock.x *= decay;
   actor.knock.z *= decay;
 }
 
-export function followPath(grid: NavGrid, actor: ActorState, path: Vec2[], travel: number, maxTurn: number): number {
-  let remaining: number = travel * paceAt(grid, actor.pos.x, actor.pos.z);
-  let moved: number = 0;
-  while (remaining > MOVEMENT.arrive) {
-    const next: Vec2 | undefined = path[0];
-    if (next === undefined) break;
-    const gap: number = distance(actor.pos, next);
-    const share: number = gap <= remaining ? 1 : remaining / Math.max(gap, MOVEMENT.arrive);
-    const fromX: number = actor.pos.x;
-    const fromZ: number = actor.pos.z;
-    moveWithCollision(grid, actor.pos, (next.x - fromX) * share, (next.z - fromZ) * share);
-    const step: number = Math.hypot(actor.pos.x - fromX, actor.pos.z - fromZ);
-    moved += step;
-    remaining -= step;
-    if (share < 1) break;
-    if (distance(actor.pos, next) > MOVEMENT.arrive) break;
-    path.shift();
-  }
-  const ahead: Vec2 | undefined = path[0];
-  if (ahead !== undefined) faceToward(actor, { x: ahead.x - actor.pos.x, z: ahead.z - actor.pos.z }, maxTurn);
-  return moved;
+export function beingKnocked(actor: ActorState): boolean {
+  return actor.motion === 'knocked';
+}
+
+export function settleGait(actor: ActorState, from: Vec2, dt: number): Vec2 {
+  const step: Vec2 = { x: actor.pos.x - from.x, z: actor.pos.z - from.z };
+  actor.gait = actor.motion === 'stride' && dt > 0 ? Math.hypot(step.x, step.z) / dt : 0;
+  return step;
 }
 
 export interface SteerStep {
@@ -117,10 +122,53 @@ export interface SteerStep {
 
 const NO_STEP: SteerStep = { moved: 0, tried: 0 };
 
+function strideWithCollision(grid: NavGrid, pos: Vec2, dx: number, dz: number): void {
+  const length: number = Math.hypot(dx, dz);
+  if (length <= MOVEMENT.arrive) return;
+  if (isWalkable(grid, pos.x + dx, pos.z + dz)) {
+    pos.x += dx;
+    pos.z += dz;
+    return;
+  }
+  const alongX: number = Math.abs(dx) / length;
+  const alongZ: number = Math.abs(dz) / length;
+  const slideX: boolean = alongX >= MOVEMENT.slideAlong && isWalkable(grid, pos.x + dx, pos.z);
+  const slideZ: boolean = alongZ >= MOVEMENT.slideAlong && isWalkable(grid, pos.x, pos.z + dz);
+  if (slideX && (!slideZ || alongX >= alongZ)) pos.x += dx;
+  else if (slideZ) pos.z += dz;
+}
+
+function aroundWall(grid: NavGrid, pos: Vec2, wanted: number, probe: number): number {
+  const dx: number = Math.sin(wanted);
+  const dz: number = Math.cos(wanted);
+  if (probe <= MOVEMENT.arrive || isWalkable(grid, pos.x + dx * probe, pos.z + dz * probe)) return wanted;
+  const alongX: number = Math.abs(dx) >= MOVEMENT.wallLean ? Math.sign(dx) * probe : 0;
+  const alongZ: number = Math.abs(dz) >= MOVEMENT.wallLean ? Math.sign(dz) * probe : 0;
+  const openX: boolean = alongX !== 0 && isWalkable(grid, pos.x + alongX, pos.z);
+  const openZ: boolean = alongZ !== 0 && isWalkable(grid, pos.x, pos.z + alongZ);
+  if (openX && (!openZ || Math.abs(dx) >= Math.abs(dz))) return facingOf({ x: alongX, z: 0 });
+  if (openZ) return facingOf({ x: 0, z: alongZ });
+  return wanted;
+}
+
+export function steerToward(grid: NavGrid, actor: ActorState, wanted: number, travel: number, dt: number, steering: Steering): SteerStep {
+  const pace: number = travel * paceAt(grid, actor.pos.x, actor.pos.z);
+  const heading: number = aroundWall(grid, actor.pos, wanted, pace);
+  actor.facing = steerHeading(actor.facing, heading, dt, steering);
+  const reach: number = pace * alignedSpeed(angleBetween(actor.facing, heading), steering);
+  const fromX: number = actor.pos.x;
+  const fromZ: number = actor.pos.z;
+  strideWithCollision(grid, actor.pos, Math.sin(actor.facing) * reach, Math.cos(actor.facing) * reach);
+  const moved: number = Math.hypot(actor.pos.x - fromX, actor.pos.z - fromZ);
+  if (moved > MOVEMENT.arrive) actor.motion = 'stride';
+  return { moved, tried: reach };
+}
+
 export function steerAlong(grid: NavGrid, actor: ActorState, path: Vec2[], travel: number, dt: number, steering: Steering): SteerStep {
   while (path.length > 1) {
     const passed: Vec2 | undefined = path[0];
-    if (passed === undefined || distance(actor.pos, passed) > steering.passRadius) break;
+    const after: Vec2 | undefined = path[1];
+    if (passed === undefined || after === undefined || distance(actor.pos, passed) > steering.passRadius || !lineWalkable(grid, actor.pos, after)) break;
     path.shift();
   }
   const next: Vec2 | undefined = path[0];
@@ -133,9 +181,10 @@ export function steerAlong(grid: NavGrid, actor: ActorState, path: Vec2[], trave
     return NO_STEP;
   }
   const settling: boolean = path.length === 1 && gap <= steering.settleRadius;
-  const wanted: number = facingOf({ x: dx, z: dz });
+  const pace: number = travel * paceAt(grid, actor.pos.x, actor.pos.z);
+  const wanted: number = settling ? facingOf({ x: dx, z: dz }) : aroundWall(grid, actor.pos, facingOf({ x: dx, z: dz }), Math.min(pace, gap));
   if (!settling) actor.facing = steerHeading(actor.facing, wanted, dt, steering);
-  const reach: number = travel * paceAt(grid, actor.pos.x, actor.pos.z) * (settling ? 1 : alignedSpeed(angleBetween(actor.facing, wanted), steering));
+  const reach: number = pace * (settling ? 1 : alignedSpeed(angleBetween(actor.facing, wanted), steering));
   const fromX: number = actor.pos.x;
   const fromZ: number = actor.pos.z;
   if (gap <= reach || settling) {
@@ -143,13 +192,45 @@ export function steerAlong(grid: NavGrid, actor: ActorState, path: Vec2[], trave
     moveWithCollision(grid, actor.pos, dx * share, dz * share);
     if (distance(actor.pos, next) <= MOVEMENT.arrive) path.shift();
   } else {
-    moveWithCollision(grid, actor.pos, Math.sin(actor.facing) * reach, Math.cos(actor.facing) * reach);
+    strideWithCollision(grid, actor.pos, Math.sin(actor.facing) * reach, Math.cos(actor.facing) * reach);
   }
-  return { moved: Math.hypot(actor.pos.x - fromX, actor.pos.z - fromZ), tried: Math.min(gap, reach) };
+  const moved: number = Math.hypot(actor.pos.x - fromX, actor.pos.z - fromZ);
+  if (moved > MOVEMENT.arrive) actor.motion = 'stride';
+  return { moved, tried: Math.min(gap, reach) };
 }
 
-function pushApart(grid: NavGrid, a: ActorState, b: ActorState, shareA: number): void {
-  if (isDashing(a) || isDashing(b)) return;
+function movable(actor: ActorState): boolean {
+  return actor.motion !== 'still' && !isDashing(actor);
+}
+
+export type Strides = ReadonlyMap<ActorState, Vec2>;
+
+interface Yield {
+  readonly dt: number;
+  readonly strides: Strides;
+  readonly left: Map<ActorState, number>;
+}
+
+function yieldTo(grid: NavGrid, budget: Yield, actor: ActorState, wanted: number, awayX: number, awayZ: number): void {
+  if (actor.motion !== 'stride') {
+    moveWithCollision(grid, actor.pos, awayX * wanted, awayZ * wanted);
+    return;
+  }
+  const step: Vec2 = budget.strides.get(actor) ?? { x: 0, z: 0 };
+  const length: number = Math.hypot(step.x, step.z);
+  if (length <= MOVEMENT.arrive) return;
+  const into: number = -(step.x * awayX + step.z * awayZ) / length;
+  if (into <= 0) return;
+  const left: number = budget.left.get(actor) ?? length;
+  const back: number = Math.min(wanted / into, left);
+  budget.left.set(actor, left - back);
+  moveWithCollision(grid, actor.pos, (-step.x / length) * back, (-step.z / length) * back);
+}
+
+function pushApart(grid: NavGrid, a: ActorState, b: ActorState, shareA: number, budget: Yield): void {
+  const aMoves: boolean = movable(a);
+  const bMoves: boolean = movable(b);
+  if (!aMoves && !bMoves) return;
   const dx: number = b.pos.x - a.pos.x;
   const dz: number = b.pos.z - a.pos.z;
   const gap: number = Math.hypot(dx, dz);
@@ -157,21 +238,23 @@ function pushApart(grid: NavGrid, a: ActorState, b: ActorState, shareA: number):
   if (overlap <= 0) return;
   const nx: number = gap > MOVEMENT.arrive ? dx / gap : 1;
   const nz: number = gap > MOVEMENT.arrive ? dz / gap : 0;
-  moveWithCollision(grid, a.pos, -nx * overlap * shareA, -nz * overlap * shareA);
-  moveWithCollision(grid, b.pos, nx * overlap * (1 - shareA), nz * overlap * (1 - shareA));
+  const share: number = !bMoves ? 1 : !aMoves ? 0 : shareA;
+  if (share > 0) yieldTo(grid, budget, a, overlap * share, -nx, -nz);
+  if (share < 1) yieldTo(grid, budget, b, overlap * (1 - share), nx, nz);
 }
 
-export function separateActors(world: World): void {
+export function separateActors(world: World, dt: number, strides: Strides): void {
   const living: ActorState[] = world.monsters.filter((monster: ActorState): boolean => monster.alive);
+  const budget: Yield = { dt, strides, left: new Map<ActorState, number>() };
   for (let pass: number = 0; pass < MOVEMENT.separationPasses; pass += 1) {
     for (let first: number = 0; first < living.length; first += 1) {
       const a: ActorState | undefined = living[first];
       if (a === undefined) continue;
       for (let second: number = first + 1; second < living.length; second += 1) {
         const b: ActorState | undefined = living[second];
-        if (b !== undefined) pushApart(world.grid, a, b, 0.5);
+        if (b !== undefined) pushApart(world.grid, a, b, 0.5, budget);
       }
-      if (world.player.alive) pushApart(world.grid, world.player, a, 0);
+      if (world.player.alive) pushApart(world.grid, world.player, a, 0, budget);
     }
   }
 }

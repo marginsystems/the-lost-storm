@@ -25,7 +25,9 @@ const attachmentDef: AttachmentDef = must(content.attachments.get(visual), 'blad
 const clips: RigClipSet = {
   idle: new AnimationClip('armed_idle', 1, []),
   run: new AnimationClip('run', 1, []),
+  gaits: [{ clip: new AnimationClip('walk', 1, []), groundSpeed: 1 }],
   hit: [],
+  stagger: new AnimationClip('stagger', 1, []),
   death: [],
   rise: null,
   actions: new Map(),
@@ -68,7 +70,7 @@ function armedWorld(): World {
 }
 
 function idlePlaying(view: ActorView, clip: AnimationClip): boolean {
-  view.sync(0.5, { pos: { x: 0, z: 0 }, facing: 0, moving: false, busy: false, deadTime: 0 }, { moveSpeed: 0, rise: 1, floor: 0, turnRate: 10 });
+  view.sync(0.5, { pos: { x: 0, z: 0 }, facing: 0, motion: 'still', gait: 0, knockTime: 0, busy: false, deadTime: 0 }, { rise: 1, floor: 0, turnRate: 10 });
   return view.rig.mixer.existingAction(clip)?.isRunning() ?? false;
 }
 

@@ -2,7 +2,10 @@ import type { AnimationAction, AnimationClip } from 'three';
 import type { Box3, Mesh, Object3D } from 'three';
 import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial } from 'three';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
-import type { ActionClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
+import type { Motion } from '../../sim/world/types.ts';
+import type { ActionClip, GaitClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
+import type { ClipKind, GaitChoice } from './locomotion.ts';
+import { chooseGait, clipKindOf, flinches, staggerRate } from './locomotion.ts';
 import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
 
 export const ACTOR = {
@@ -29,8 +32,6 @@ export const ACTOR = {
   sinkSpeed: 1.1,
   sinkLimit: 0.35,
   riseDepth: 2.4,
-  minRunSpeed: 0.7,
-  maxRunSpeed: 1.7,
   standFade: 0.45,
 } as const;
 
@@ -44,13 +45,14 @@ interface FollowThrough {
 export interface ActorPose {
   readonly pos: ReadonlyVec2;
   readonly facing: number;
-  readonly moving: boolean;
+  readonly motion: Motion;
+  readonly gait: number;
+  readonly knockTime: number;
   readonly busy: boolean;
   readonly deadTime: number;
 }
 
 export interface SyncOptions {
-  readonly moveSpeed: number;
   readonly rise: number;
   readonly floor: number;
   readonly turnRate: number;
@@ -110,6 +112,8 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let punch: number = 0;
   let hover: boolean = false;
   let yaw: number = facing;
+  let gaitIndex: number = -1;
+  let lastKind: ClipKind = 'idle';
   const flashColor: Color = new Color(0xffffff);
   const hoverColor: Color = new Color(hoverTint);
   const mixed: Color = new Color();
@@ -146,6 +150,28 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     oneShot = ACTOR.hitTime;
   };
 
+  const reel = (actor: ActorPose): void => {
+    if (actor.motion === 'knocked' && flinches(actor.knockTime)) {
+      react();
+      return;
+    }
+    const rate: number = actor.motion === 'knocked' ? staggerRate(actor.knockTime) : 1;
+    play(rig.clips.stagger, ACTOR.hitFade, rate, true, true);
+    follow = null;
+    oneShot = rig.clips.stagger.duration / rate;
+  };
+
+  const locomote = (actor: ActorPose): void => {
+    const choice: GaitChoice | null = chooseGait(rig.clips.gaits, scale, actor.gait, gaitIndex);
+    const gait: GaitClip | undefined = choice === null ? undefined : rig.clips.gaits[choice.index];
+    if (choice === null || gait === undefined) {
+      play(idleClip(rig), ACTOR.locomotionFade, 1, false, false);
+      return;
+    }
+    gaitIndex = choice.index;
+    play(gait.clip, ACTOR.locomotionFade, choice.rate, false, false);
+  };
+
   return {
     rig,
     height: rig.def.height * rig.def.scale * scale,
@@ -165,9 +191,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         rig.root.position.y = options.floor - (1 - options.rise) * ACTOR.riseDepth;
         yaw = turnToward(yaw, actor.facing, options.turnRate * dt);
         rig.root.rotation.y = yaw;
+        const kind: ClipKind = clipKindOf(actor.motion);
         if (oneShot > 0) {
           oneShot -= dt;
-          if (!actor.busy && actor.moving) oneShot = 0;
+          if (!actor.busy && kind === 'gait') oneShot = 0;
         }
         if (follow !== null) {
           follow.left -= dt;
@@ -176,11 +203,9 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
             follow = null;
           }
         }
-        if (oneShot <= 0) {
-          const run: boolean = actor.moving;
-          const speed: number = run ? clamped(options.moveSpeed / rig.def.runSpeed, ACTOR.minRunSpeed, ACTOR.maxRunSpeed) : 1;
-          play(run ? rig.clips.run : idleClip(rig), ACTOR.locomotionFade, speed, false, false);
-        }
+        if (kind === 'stagger' && (lastKind !== 'stagger' || oneShot <= 0)) reel(actor);
+        lastKind = kind;
+        if (oneShot <= 0) locomote(actor);
       }
       flash = Math.max(0, flash - ACTOR.flashDecay * dt);
       punch = Math.max(0, punch - ACTOR.punchDecay * dt);
