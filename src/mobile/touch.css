@@ -221,13 +221,13 @@ body.touch .tc-close svg {
 
 .tc-rotate {
   position: fixed;
-  left: 16px;
-  right: 16px;
-  top: calc(16px + env(safe-area-inset-top, 0px));
+  left: var(--ph-toast-x, 16px);
+  top: var(--ph-toast-y, 50%);
   z-index: 60;
-  width: fit-content;
-  margin: auto;
+  width: var(--ph-toast-w, 300px);
+  box-sizing: border-box;
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -237,7 +237,7 @@ body.touch .tc-close svg {
   font: 14px/1.35 var(--sans);
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-12px);
+  transform: translateY(12px);
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-bouncy-ms) var(--spring-bouncy),
@@ -366,6 +366,14 @@ body.touch .minimap {
   --minimap-size: var(--ph-map-size);
   --minimap-top: var(--ph-map-top);
   --minimap-right: var(--ph-map-right);
+}
+
+body.touch .minimap-zone {
+  align-self: flex-end;
+  margin-left: 0;
+  max-width: var(--ph-zone-w);
+  font-size: 11px;
+  letter-spacing: 0.06em;
 }
 
 body.touch .hud > .hud-quests {

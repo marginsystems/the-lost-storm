@@ -87,3 +87,25 @@ void test('skill buttons sit on a grid with a gap between neighbours', (): void 
     assert.equal(Math.abs(first.y - rect.y) % pitch, 0);
   }
 });
+
+void test('the rotate toast and both globes stay whole and clear of every other piece', (): void => {
+  for (const screen of SCREENS) {
+    const layout = phoneLayout(screen, { skills: 5, flasks: 2, menu: 5 });
+    const others = layoutRects(layout).filter(({ name }): boolean => !['toast', 'life', 'mana'].includes(name));
+    for (const piece of [layout.toast, layout.life, layout.mana]) {
+      assert.ok(inside(piece, screen), label(screen, 5, 2));
+      for (const { name, rect } of others) assert.equal(overlaps(piece, rect), false, `${name} at ${label(screen, 5, 2)}`);
+    }
+    assert.equal(overlaps(layout.toast, layout.life) || overlaps(layout.toast, layout.mana), false, label(screen, 5, 2));
+    assert.ok(layout.toast.w >= PHONE.hintMinWidth, label(screen, 5, 2));
+  }
+});
+
+void test('the zone name gets its own width above the minimap, clear of the menu', (): void => {
+  for (const screen of SCREENS) {
+    const layout = phoneLayout(screen, { skills: 1, flasks: 2, menu: 5 });
+    assert.ok(layout.zone.w >= PHONE.zoneWidth, label(screen, 1, 2));
+    assert.equal(layout.zone.x + layout.zone.w, layout.minimap.x + layout.minimap.w);
+    assert.equal(overlaps(layout.zone, layout.menu.rect), false, label(screen, 1, 2));
+  }
+});

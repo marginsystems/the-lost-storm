@@ -1,14 +1,16 @@
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import type { Command, FlaskState, MonsterState, World } from '../../sim/world/types.ts';
+import type { KeyValueStore } from '../backend/backend.ts';
 import { el } from '../hud/dom.ts';
 import type { Hud, HudPanel } from '../hud/hud-api.ts';
 import { iconSvg } from '../hud/icons.ts';
 import { PANEL_ICONS } from '../hud/key-labels.ts';
 import type { Input } from '../input.ts';
 import { INPUT } from '../input.ts';
+import { createBrowserStore } from '../storage.ts';
 import { TITLE_SCREEN } from '../title-screen.ts';
-import type { Candidate, FlaskEntry, StickReading, TouchButton } from './touch-map.ts';
+import type { Candidate, FlaskEntry, SkillBarEntry, StickReading, TouchButton } from './touch-map.ts';
 import { aimedSkill, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, pinchWheelDelta, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 import type { PhoneLayout, Rect, SafeInsets } from './phone-layout.ts';
 import { PHONE, phoneLayout } from './phone-layout.ts';
@@ -107,6 +109,10 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   set('--ph-xp-x', layout.xp.x);
   set('--ph-xp-w', layout.xp.w);
   set('--ph-xp-bottom', height - xpBottom);
+  set('--ph-toast-x', layout.toast.x);
+  set('--ph-toast-y', layout.toast.y);
+  set('--ph-toast-w', layout.toast.w);
+  set('--ph-zone-w', layout.zone.w);
   set('--ph-hint-left', layout.hint.x - layout.xp.x);
   set('--ph-hint-right', layout.xp.x + layout.xp.w - layout.hint.x - layout.hint.w);
   set('--ph-hint-bottom', xpBottom - layout.hint.y - layout.hint.h);
@@ -163,12 +169,14 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   rotate.innerHTML = ROTATE_HTML;
   const portrait: MediaQueryList = window.matchMedia('(orientation: portrait)');
   let portraitSince: number = performance.now();
-  let rotateDismissed: boolean = false;
+  const seenStore: KeyValueStore = createBrowserStore();
+  let rotateDismissed: boolean = seenStore.read(TOUCH.rotateSeenKey) !== null;
   let rotateTimer: number | undefined;
   const showRotate = (): void => {
     const shownFor: number = performance.now() - portraitSince;
     const on: boolean = rotateHintShows(portrait.matches, shownFor, rotateDismissed, document.body.classList.contains(TITLE_SCREEN.playingClass));
     rotate.classList.toggle('on', on);
+    if (on) seenStore.write(TOUCH.rotateSeenKey, '1');
     window.clearTimeout(rotateTimer);
     if (on) rotateTimer = window.setTimeout(showRotate, TOUCH.rotateHintMs - shownFor);
   };
@@ -237,7 +245,8 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   };
 
   const refreshButtons = (): void => {
-    const specs: TouchButton[] = touchButtons(world.content.player.skillBar, INPUT.leftBinding, world.player.flasks.map((flask: FlaskState): FlaskEntry => flask.def));
+    const bar: SkillBarEntry[] = world.content.player.skillBar.map((entry: { readonly bindings: readonly string[] }, slot: number): SkillBarEntry => ({ bindings: entry.bindings, filled: (world.player.skills[slot] ?? null) !== null }));
+    const specs: TouchButton[] = touchButtons(bar, INPUT.leftBinding, world.player.flasks.map((flask: FlaskState): FlaskEntry => flask.def));
     const next: string = `${signature(specs)}#${world.player.bar.join(',')}`;
     if (next === shownSignature) return;
     shownSignature = next;

@@ -15,6 +15,7 @@ export const PHONE = {
   minimapPortrait: 96,
   minimapLandscape: 104,
   zoneLabel: 20,
+  zoneWidth: 160,
   questWidth: 150,
   questZoom: 0.72,
   questMinHeight: 40,
@@ -30,6 +31,8 @@ export const PHONE = {
   hintMinWidth: 220,
   hintMaxWidth: 480,
   hintHeight: 48,
+  toastMaxWidth: 340,
+  toastHeight: 64,
 } as const;
 
 export interface Rect {
@@ -74,6 +77,7 @@ export interface PhoneLayout {
   readonly minimap: Rect;
   readonly quests: Rect | null;
   readonly hint: Rect;
+  readonly toast: Rect;
   readonly xp: Rect;
   readonly stick: Rect;
   readonly attack: Rect;
@@ -93,11 +97,11 @@ export function overlaps(a: Rect, b: Rect): boolean {
   return a.x < right(b) && b.x < right(a) && a.y < bottom(b) && b.y < bottom(a);
 }
 
-function placeMenu(count: number, top: number, spanLeft: number, spanRight: number, belowTop: number, left: number): MenuPlacement {
+function placeMenu(count: number, top: number, spanLeft: number, spanRight: number, belowRight: number, belowTop: number, left: number): MenuPlacement {
   const width = (button: number): number => count * button + Math.max(0, count - 1) * PHONE.menuGap;
   const full: number = width(PHONE.menuButton);
   if (full <= spanRight - spanLeft) return { rect: { x: Math.round(spanLeft + (spanRight - spanLeft - full) / 2), y: top, w: full, h: PHONE.menuButton }, button: PHONE.menuButton, gap: PHONE.menuGap };
-  const room: number = spanRight - left;
+  const room: number = belowRight - left;
   const button: number = Math.min(PHONE.menuButton, Math.floor((room - Math.max(0, count - 1) * PHONE.menuGap) / Math.max(1, count)));
   return { rect: { x: left, y: belowTop, w: width(button), h: button }, button, gap: PHONE.menuGap };
 }
@@ -145,9 +149,10 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const clusterBottom: number = Math.max(bottom(life), bottom(mana), bottom(lifeFlask));
 
   const mapSize: number = landscape ? PHONE.minimapLandscape : PHONE.minimapPortrait;
-  const zone: Rect = { x: rightEdge - mapSize, y: top, w: mapSize, h: PHONE.zoneLabel };
-  const minimap: Rect = { x: zone.x, y: bottom(zone), w: mapSize, h: mapSize };
-  const menu: MenuPlacement = placeMenu(counts.menu, top, right(manaFlask) + PHONE.gap, minimap.x - PHONE.gap, Math.ceil(clusterBottom + PHONE.gap), left);
+  const zoneWidth: number = Math.max(mapSize, PHONE.zoneWidth);
+  const zone: Rect = { x: rightEdge - zoneWidth, y: top, w: zoneWidth, h: PHONE.zoneLabel };
+  const minimap: Rect = { x: rightEdge - mapSize, y: bottom(zone), w: mapSize, h: mapSize };
+  const menu: MenuPlacement = placeMenu(counts.menu, top, right(manaFlask) + PHONE.gap, zone.x - PHONE.gap, minimap.x - PHONE.gap, Math.ceil(clusterBottom + PHONE.gap), left);
 
   const xpWidth: number = Math.min(rightEdge - left, PHONE.xpMaxWidth);
   const xpBottom: number = height - safe.bottom - PHONE.xpLift;
@@ -179,11 +184,14 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const hintBottom: number = inBand ? baseline : Math.min(...controls.map((rect: Rect): number => rect.y)) - PHONE.gap;
   const hint: Rect = { x: Math.round(bandLeft + (bandRight - bandLeft - hintWidth) / 2), y: hintBottom - PHONE.hintHeight, w: hintWidth, h: PHONE.hintHeight };
 
+  const toastWidth: number = Math.min(bandRight - bandLeft, PHONE.toastMaxWidth);
+  const toast: Rect = { x: Math.round(bandLeft + (bandRight - bandLeft - toastWidth) / 2), y: hint.y - PHONE.gap - PHONE.toastHeight, w: toastWidth, h: PHONE.toastHeight };
+
   const column: Rect = { x: rightEdge - PHONE.questWidth, y: 0, w: PHONE.questWidth, h: height };
-  const below: number = Math.min(height, ...[hint, ...controls].filter((rect: Rect): boolean => rect.x < right(column) && column.x < right(rect)).map((rect: Rect): number => rect.y));
+  const below: number = Math.min(height, ...[toast, hint, ...controls].filter((rect: Rect): boolean => rect.x < right(column) && column.x < right(rect)).map((rect: Rect): number => rect.y));
   const quests: Rect | null = questsRect(column, bottom(minimap) + PHONE.gap, below, height);
 
-  return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, xp, stick, attack, skills, flasks };
+  return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, toast, xp, stick, attack, skills, flasks };
 }
 
 export function layoutRects(layout: PhoneLayout): NamedRect[] {
@@ -196,6 +204,7 @@ export function layoutRects(layout: PhoneLayout): NamedRect[] {
     { name: 'zone', rect: layout.zone },
     { name: 'minimap', rect: layout.minimap },
     { name: 'hint', rect: layout.hint },
+    { name: 'toast', rect: layout.toast },
     { name: 'xp', rect: layout.xp },
     { name: 'stick', rect: layout.stick },
     { name: 'attack', rect: layout.attack },

@@ -11,6 +11,7 @@ export const TOUCH = {
   repeatSeconds: 0.09,
   moveSideShare: 0.45,
   rotateHintMs: 5200,
+  rotateSeenKey: 'the-lost-storm.rotate-hint.v1',
   fullTurn: 360,
   tapSlopPx: 12,
   tapMs: 320,
@@ -36,6 +37,7 @@ export type TouchButton =
 
 export interface SkillBarEntry {
   readonly bindings: readonly string[];
+  readonly filled: boolean;
 }
 
 export interface FlaskEntry {
@@ -108,7 +110,8 @@ export function aimedSkill(slot: number, from: Vec2, ahead: Vec2, target: Candid
 export function touchButtons(skillBar: readonly SkillBarEntry[], attackBinding: string, flasks: readonly FlaskEntry[]): TouchButton[] {
   const buttons: TouchButton[] = [];
   skillBar.forEach((entry: SkillBarEntry, slot: number): void => {
-    buttons.push(entry.bindings.includes(attackBinding) ? { kind: 'attack', slot } : { kind: 'skill', slot });
+    if (entry.bindings.includes(attackBinding)) buttons.push({ kind: 'attack', slot });
+    else if (entry.filled) buttons.push({ kind: 'skill', slot });
   });
   buttons.sort((a: TouchButton, b: TouchButton): number => (a.kind === 'attack' ? 0 : 1) - (b.kind === 'attack' ? 0 : 1));
   flasks.forEach((flask: FlaskEntry, slot: number): void => {

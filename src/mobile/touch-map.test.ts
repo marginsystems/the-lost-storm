@@ -67,7 +67,7 @@ void test('an aimed skill targets the enemy, or swings ahead at full range when 
 });
 
 void test('buttons put the left click skill first as the attack, then every other slot, then the flasks', (): void => {
-  const buttons = touchButtons([{ bindings: ['KeyQ'] }, { bindings: ['mouse_left'] }, { bindings: ['KeyW', 'mouse_right'] }], 'mouse_left', [{ name: 'Life Flask' }]);
+  const buttons = touchButtons([{ bindings: ['KeyQ'], filled: true }, { bindings: ['mouse_left'], filled: true }, { bindings: ['KeyW', 'mouse_right'], filled: true }], 'mouse_left', [{ name: 'Life Flask' }]);
   assert.deepEqual(buttons, [
     { kind: 'attack', slot: 1 },
     { kind: 'skill', slot: 0 },
@@ -120,4 +120,13 @@ void test('a still stick finger joins a second finger that lands soon after as a
   assert.equal(joinsPinch(false, TOUCH.pinchJoinMs - 1), true);
   assert.equal(joinsPinch(true, 10), false);
   assert.equal(joinsPinch(false, TOUCH.pinchJoinMs + 1), false);
+});
+
+void test('only bar slots that hold a skill get a button, and the attack always does', (): void => {
+  const bar = [{ bindings: ['mouse_left'], filled: false }, { bindings: ['KeyQ'], filled: false }, { bindings: ['KeyW'], filled: true }];
+  assert.deepEqual(touchButtons(bar, 'mouse_left', []), [
+    { kind: 'attack', slot: 0 },
+    { kind: 'skill', slot: 2 },
+  ]);
+  assert.deepEqual(touchButtons(bar.slice(0, 2), 'mouse_left', []), [{ kind: 'attack', slot: 0 }]);
 });
