@@ -18,7 +18,7 @@
     "            "
   ],
   "floors": {"s": "black_ledge", "r": "black_rock", "p": "ruined_road"},
-  "outside": {"surface": "crag_ground", "reach": 6},
+  "outside": {"surface": "crag_ground", "reach": 6, "edge": {"props": ["boulder_2", "rock_4", "crag_low", "boulder_2", "rock_5"], "gap": 0.3, "exitClear": 4}},
   "walls": null,
   "playerStart": {"x": 8, "z": 20},
   "props": [

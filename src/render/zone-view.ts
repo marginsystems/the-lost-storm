@@ -19,6 +19,7 @@ import type { PropDressing } from './surfaces.ts';
 import { dressedProp, preloadSurfaces, releaseSurfaces } from './surfaces.ts';
 import type { PropLook } from './prop-surface.ts';
 import { lookOf, withPropLook } from './prop-surface.ts';
+import { edgeRocks } from './zone-edge.ts';
 import { momentSurfaces, zoneModels, zoneSurfaces } from './zone-assets.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
@@ -168,6 +169,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     if (variant !== undefined) place(variant, edge.x, 0, edge.z, alongZ ? Math.PI / 2 : 0, true);
   }
   if (walls !== null) for (const corner of wallCorners(zone)) place(walls.corner, corner.x, 0, corner.z, 0, true);
+  for (const rock of edgeRocks(content, zone)) place(rock.prop, rock.x, 0, rock.z, rock.yaw, true);
   for (const prop of zone.props) {
     if (prop.when.length === 0) {
       place(prop.prop, prop.x, prop.y, prop.z, prop.rotationDegrees * DEGREES, true);

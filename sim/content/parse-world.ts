@@ -25,6 +25,7 @@ import type {
   ExitLook,
   ZoneExit,
   ZoneNpc,
+  ZoneEdge,
   ZoneOutside,
   ZonePack,
   ZonePoint,
@@ -173,7 +174,13 @@ function zoneVoid(value: unknown, where: string): ZoneVoid {
 function zoneOutside(value: unknown, where: string): ZoneOutside | null {
   if (value === null || value === undefined) return null;
   const source: Fields = fields(value, where);
-  return { surface: text(source, 'surface', where), reach: positive(source, 'reach', where) };
+  return { surface: text(source, 'surface', where), reach: positive(source, 'reach', where), edge: zoneEdge(source['edge'], `${where}.edge`) };
+}
+
+function zoneEdge(value: unknown, where: string): ZoneEdge | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { props: textList(source, 'props', where), gap: numeric(source, 'gap', where), exitClear: numeric(source, 'exitClear', where) };
 }
 
 function zoneWalls(value: unknown, where: string): ZoneWalls | null {

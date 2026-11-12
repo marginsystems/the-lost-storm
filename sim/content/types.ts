@@ -325,9 +325,16 @@ export interface SurgeRules {
   readonly maxExtraMonsters: number;
 }
 
+export interface ZoneEdge {
+  readonly props: readonly string[];
+  readonly gap: number;
+  readonly exitClear: number;
+}
+
 export interface ZoneOutside {
   readonly surface: string;
   readonly reach: number;
+  readonly edge: ZoneEdge | null;
 }
 
 export interface ZoneWalls {

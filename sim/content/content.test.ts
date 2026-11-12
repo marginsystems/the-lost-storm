@@ -111,6 +111,12 @@ void test('every zone prop a metre or more across blocks over its ground outline
   }
 });
 
+void test('every rock a zone scatters along its edge is a known prop with a measured footprint', (): void => {
+  for (const zone of content.zones.values()) {
+    for (const id of zone.outside?.edge?.props ?? []) assert.ok((content.props.get(id)?.footprint.length ?? 0) >= 3, `${zone.id} edges with ${id}, which is not a solid prop`);
+  }
+});
+
 void test('every clip a rig names has its own file in the rig clip folder, and the hero dies in more than one way', (): void => {
   for (const rig of content.rigs.values()) {
     for (const clip of rigClipNames(rig)) {
