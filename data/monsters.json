@@ -1,7 +1,7 @@
 [
   {
     "id": "unfinished_brute",
-    "name": "Unfinished Brute",
+    "name": "Echo",
     "rig": "unfinished_heavy",
     "faction": "unfinished",
     "scale": 1.3,
@@ -40,7 +40,7 @@
   },
   {
     "id": "unfinished_taker",
-    "name": "Unfinished Taker",
+    "name": "Echo",
     "rig": "unfinished_taker",
     "faction": "unfinished",
     "scale": 1.0,
@@ -72,7 +72,7 @@
   },
   {
     "id": "unfinished_thrower",
-    "name": "Unfinished Thrower",
+    "name": "Echo",
     "rig": "unfinished_thrower",
     "faction": "unfinished",
     "scale": 1.0,

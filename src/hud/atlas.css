@@ -508,6 +508,10 @@
   max-width: calc(100% - 36px);
 }
 
+.atlas-title:empty {
+  display: none;
+}
+
 .hud.fit-sheets .atlas-title {
   font-size: 18px;
 }

@@ -171,7 +171,7 @@ async function start(): Promise<void> {
   wireFold(element('title-controls-open', HTMLButtonElement), element('title-controls', HTMLDivElement));
   wireFold(element('title-credits-open', HTMLButtonElement), element('title-credits', HTMLDivElement));
   const launch: Launch = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement) });
-  statusLine.show('Reading the rules…');
+  statusLine.show('Loading…');
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
@@ -204,9 +204,7 @@ async function start(): Promise<void> {
     if (board !== null) heroName = spokenName(board);
   });
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
-  statusLine.show('Raising the dead and the walls…');
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
-  statusLine.show('Waking the world…');
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
   let thumbnails: ItemThumbnails = new Map<string, string>();

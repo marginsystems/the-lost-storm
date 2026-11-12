@@ -11,7 +11,7 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 | Id | Line | When |
 |---|---|---|
 | `warden_guide_lesson` | You carry the storm and swing it like a stick. Hold it so, and throw. There. It goes where you look. | Conversation, once, while The Warden's Lesson asks you to talk to the Guide; teaches Storm Bolt. |
-| `warden_guide_road` | Stay on the road. It holds while we walk it. | Conversation, any talk. |
+| `warden_guide_road` | Stay close. | Conversation, any talk. |
 
 ## Warden Trader (`warden_trader`)
 
@@ -19,13 +19,13 @@ The trader keeps the stall by the fire at the edge of the Hall of Time.
 
 | Id | Line | When |
 |---|---|---|
-| `warden_trader_goods` | Whatever the road gives me, I carry. Not much today. | Conversation, any talk. |
+| `warden_trader_goods` | Not much today. | Conversation, any talk. |
 
 ## Warden Lookout (`warden_lookout`)
 
 | Id | Line | When |
 |---|---|---|
-| `warden_lookout_ahead` | Unfinished on the road ahead. Keep your eyes open. | Conversation, any talk. |
+| `warden_lookout_ahead` | Keep your eyes open. | Conversation, any talk. |
 
 ## Unfinished Borrower (`unfinished_borrower`)
 

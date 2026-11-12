@@ -16,7 +16,7 @@ interface ChoiceButton {
 
 const CHOICES: readonly ChoiceButton[] = [
   { choice: 'checkpoint', text: 'Return to checkpoint', hint: 'Enter' },
-  { choice: 'town', text: 'Return to town', hint: '' },
+  { choice: 'town', text: 'Return to the fire', hint: '' },
 ];
 
 function causeText(world: World): string {
