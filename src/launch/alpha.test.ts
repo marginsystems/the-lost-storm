@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { afterCount, afterFeedback, ALPHA, cleanBuild, cleanText, codePoints, EMPTY_STATE, feedbackBody, markEndShown, noteEvent, outcomeOf, queueFeedback, reachedEvents, readAlphaRules, readLaunchState, retryDelay, serializeLaunchState, shouldShowEnd } from './alpha.ts';
+import { afterCount, afterFeedback, ALPHA, cleanBuild, cleanText, codePoints, EMPTY_STATE, feedbackBody, markEndShown, noteEvent, outcomeOf, queueFeedback, reachedEvents, readAlphaRules, readLaunchState, retryDelay, serializeLaunchState, shouldShowEnd, takeEnd } from './alpha.ts';
 import type { AlphaRules, FeedbackBody, FeedbackContext, LaunchState } from './alpha.ts';
 
 const RULES: AlphaRules = readAlphaRules({
@@ -105,4 +105,13 @@ void test('the stored state survives a round trip and anything malformed is drop
   assert.deepEqual(readLaunchState('[]'), EMPTY_STATE);
   const messy: LaunchState = readLaunchState(JSON.stringify({ endShown: 'yes', counted: ['died', 'won', 'died'], pending: ['died', 'opened_game'], outbox: [{ rating: 'meh' }, { rating: 'up', text: 'ok', context: CONTEXT }] }));
   assert.deepEqual(messy, { endShown: false, counted: ['died'], pending: ['opened_game'], outbox: [{ rating: 'up', text: 'ok', context: CONTEXT }] });
+});
+
+void test('the end is taken once, from the stored state alone', (): void => {
+  const reached = { flags: { alpha_slice_complete: 'yes' }, ended: new Set<string>() };
+  assert.equal(takeEnd(EMPTY_STATE, RULES, { flags: {}, ended: new Set<string>() }), null);
+  const taken: LaunchState | null = takeEnd(EMPTY_STATE, RULES, reached);
+  assert.ok(taken !== null);
+  assert.equal(taken.endShown, true);
+  assert.equal(takeEnd(readLaunchState(serializeLaunchState(taken)), RULES, reached), null);
 });

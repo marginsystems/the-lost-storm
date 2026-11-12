@@ -180,6 +180,10 @@ export function shouldShowEnd(state: LaunchState, rules: AlphaRules, progress: P
   return !state.endShown && isSliceComplete(rules, progress);
 }
 
+export function takeEnd(state: LaunchState, rules: AlphaRules, progress: Progress): LaunchState | null {
+  return shouldShowEnd(state, rules, progress) ? markEndShown(state) : null;
+}
+
 export function markEndShown(state: LaunchState): LaunchState {
   return state.endShown ? state : { ...state, endShown: true };
 }

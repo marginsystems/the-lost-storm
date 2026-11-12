@@ -10,7 +10,7 @@ export type CardMode = 'end' | 'ask';
 export interface CardHooks {
   readonly links: readonly OutboundLink[];
   readonly site: string;
-  readonly send: (rating: Rating, text: string) => Promise<SendResult>;
+  readonly send: ((rating: Rating, text: string) => Promise<SendResult>) | null;
 }
 
 export interface FeedbackCard {
@@ -74,7 +74,8 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
   card.setAttribute('role', 'dialog');
   card.setAttribute('aria-modal', 'false');
   card.setAttribute('aria-labelledby', `fb-title-${name}`);
-  card.dataset['step'] = 'ask';
+  card.dataset['step'] = hooks.send === null ? 'thanks' : 'ask';
+  if (hooks.send === null) card.classList.add('fb-links-only');
   const close: HTMLButtonElement = el('button', 'fb-close', card);
   close.type = 'button';
   close.setAttribute('aria-label', 'Close');
@@ -149,7 +150,7 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
     down.setAttribute('aria-pressed', 'false');
     input.value = '';
     sendButton.disabled = true;
-    card.dataset['step'] = 'ask';
+    card.dataset['step'] = hooks.send === null ? 'thanks' : 'ask';
     copy.classList.remove('copied');
   };
 
@@ -174,8 +175,8 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
     },
   };
 
-  const deliver = async (chosen: Rating): Promise<void> => {
-    const result: SendResult = await hooks.send(chosen, input.value);
+  const deliver = async (send: (rating: Rating, text: string) => Promise<SendResult>, chosen: Rating): Promise<void> => {
+    const result: SendResult = await send(chosen, input.value);
     sending = false;
     thanksLine.textContent = THANKS[result];
     card.dataset['step'] = 'thanks';
@@ -183,10 +184,10 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
 
   ask.addEventListener('submit', (event: SubmitEvent): void => {
     event.preventDefault();
-    if (rating === null || sending) return;
+    if (rating === null || sending || hooks.send === null) return;
     sending = true;
     sendButton.disabled = true;
-    void deliver(rating);
+    void deliver(hooks.send, rating);
   });
   close.addEventListener('click', (): void => api.close());
   done.addEventListener('click', (): void => api.close());

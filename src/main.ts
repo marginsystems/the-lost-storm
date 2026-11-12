@@ -248,7 +248,7 @@ async function start(): Promise<void> {
   const mobile: MobileBoot = bootMobile();
   markInput(document.body, mobile.touch);
   wireCredits(element('title-credits-open', HTMLButtonElement), element('title-credits', HTMLParagraphElement));
-  const launch: Launch | null = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement) });
+  const launch: Launch = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement) });
   statusLine.show('Reading the rules…');
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
@@ -348,7 +348,7 @@ async function start(): Promise<void> {
     settings: gameSettings,
     glitches: glitchSettings,
     audio: controls,
-    feedback: launch === null ? null : (): void => launch.open('ask'),
+    feedback: launch.canSend ? (): void => launch.open('ask') : null,
     onOpen: (): void => playUi('panel_open'),
     onClose: (): void => playUi('panel_close'),
     onTitle: (): void => {
@@ -585,7 +585,7 @@ async function start(): Promise<void> {
     touch.update();
     minimap.update(dt);
     ladder?.noteLevel(world.player.level);
-    launch?.update(world, dt, live);
+    launch.update(world, dt, live);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     glitches.update(now / 1000, dt, live && hitStop <= 0 && !transition.blocking ? dt : 0);
     stage.render();
@@ -643,7 +643,7 @@ async function start(): Promise<void> {
       return;
     }
     title.classList.add('gone');
-    launch?.note('pressed_enter');
+    launch.note('pressed_enter');
     playing = true;
     markPlaying(document.body, true);
     ladder?.setPlaying(true);

@@ -1,6 +1,6 @@
 import type { FetchFn } from '../backend/api.ts';
 import type { KeyValueStore, Timers } from '../backend/backend.ts';
-import { afterCount, afterFeedback, LAUNCH_KEY, markEndShown, noteEvent, outcomeOf, queueFeedback, reachedEvents, readLaunchState, retryDelay, serializeLaunchState, shouldShowEnd } from './alpha.ts';
+import { afterCount, afterFeedback, LAUNCH_KEY, noteEvent, outcomeOf, queueFeedback, reachedEvents, readLaunchState, retryDelay, serializeLaunchState, takeEnd } from './alpha.ts';
 import type { AlphaRules, CountedEvent, Device, FeedbackBody, LaunchState, Outcome, Progress, Snapshot } from './alpha.ts';
 
 export type SendResult = 'sent' | 'queued' | 'rejected';
@@ -105,8 +105,9 @@ export function createLaunchLoop(deps: LaunchDeps): LaunchLoop {
       for (const event of reachedEvents(deps.rules, snapshot)) loop.note(event);
     },
     takeEndCard(progress: Progress): boolean {
-      if (!shouldShowEnd(state, deps.rules, progress)) return false;
-      keep(markEndShown(state));
+      const next: LaunchState | null = takeEnd(state, deps.rules, progress);
+      if (next === null) return false;
+      keep(next);
       return true;
     },
     async send(body: FeedbackBody): Promise<SendResult> {
