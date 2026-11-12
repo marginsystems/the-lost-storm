@@ -476,13 +476,13 @@ body {
 .loot-label span {
   display: block;
   transform: translate(-50%, -100%);
-  padding: 2px 8px 3px;
-  border-radius: 4px;
-  background: rgba(8, 10, 16, 0.8);
-  font-family: var(--serif);
+  padding: 1px 8px 2px;
+  border-radius: 3px;
+  background: rgba(6, 8, 12, 0.6);
+  font-family: var(--sans);
   font-weight: 500;
-  font-size: 12px;
-  letter-spacing: 0.06em;
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   animation: loot-in var(--spring-bouncy-ms) var(--spring-bouncy) both;
   transition:
@@ -500,7 +500,7 @@ body {
 }
 
 .loot-label:hover span {
-  background: rgba(30, 40, 58, 0.95);
+  background: rgba(16, 20, 28, 0.78);
   scale: 1.06;
 }
 
