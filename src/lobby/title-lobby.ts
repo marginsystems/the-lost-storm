@@ -106,6 +106,8 @@ export function mountTitleLobby(root: HTMLElement, lobby: Lobby): TitleLobby {
         failed = false;
         field.value = '';
         setText(lineName, outcome.name, false);
+        setMode('line');
+        tell('', false);
         await lobby.feed.refresh(true);
         return;
       case 'invalid':

@@ -36,17 +36,24 @@ export function createLobbyFeed(service: LobbyService, timers: Timers, clock: Cl
     const previous: Leaderboard | null = board;
     const next: Leaderboard | null = await service.read();
     if (next !== null) board = next;
-    try {
-      for (const listener of listeners) listener(next, previous);
-    } finally {
-      schedule();
+    const failures: unknown[] = [];
+    for (const listener of listeners) {
+      try {
+        listener(next, previous);
+      } catch (error: unknown) {
+        failures.push(error);
+      }
     }
+    schedule();
+    const [first] = failures;
+    if (first !== undefined) throw first instanceof Error ? first : new Error('A ladder listener failed', { cause: first });
   };
 
   const refresh = async (force: boolean): Promise<void> => {
     if (inFlight !== null) {
       if (!force) return inFlight;
-      queued ??= inFlight.then(async (): Promise<void> => {
+      const settled: Promise<void> = inFlight.catch((): void => undefined);
+      queued ??= settled.then(async (): Promise<void> => {
         queued = null;
         return refresh(true);
       });

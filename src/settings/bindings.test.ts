@@ -9,7 +9,7 @@ const SLOTS: readonly SlotDefault[] = [
   { name: 'Storm Bolt', bindings: ['KeyW', 'mouse_right'] },
 ];
 
-const TABLE: readonly ActionDef[] = actionTable(SLOTS, 2);
+const TABLE: readonly ActionDef[] = actionTable(SLOTS, { flasks: 2, ladder: true });
 
 void test('the table lists every action once with no default conflicts', (): void => {
   const ids: string[] = TABLE.map((def: ActionDef): string => def.id);
@@ -94,11 +94,19 @@ void test('the first five flask slots each have a key action and later slots hav
   assert.deepEqual(resolveKeys(TABLE, {}).bindingsOf('flask2'), ['Digit2']);
 });
 
+void test('the ladder key is in the table only when the build has a ladder', (): void => {
+  const without: readonly ActionDef[] = actionTable(SLOTS, { flasks: 2, ladder: false });
+  assert.equal(without.some((def: ActionDef): boolean => def.id === 'ladder'), false);
+  assert.equal(resolveKeys(without, {}).actionOf('KeyL'), null);
+  assert.equal(rebind(without, {}, 'inventory', 'KeyL').kind, 'ok');
+  assert.equal(resolveKeys(TABLE, {}).actionOf('KeyL'), 'ladder');
+});
+
 void test('the table offers a key for each flask the game has and no more', (): void => {
-  const ids = (flasks: number): string[] => actionTable(SLOTS, flasks).map((def: ActionDef): string => def.id).filter((id: string): boolean => id.startsWith('flask'));
+  const ids = (flasks: number): string[] => actionTable(SLOTS, { flasks, ladder: true }).map((def: ActionDef): string => def.id).filter((id: string): boolean => id.startsWith('flask'));
   assert.deepEqual(ids(2), ['flask1', 'flask2']);
   assert.deepEqual(ids(0), []);
   assert.deepEqual(ids(9), ['flask1', 'flask2', 'flask3', 'flask4', 'flask5']);
-  assert.equal(resolveKeys(actionTable(SLOTS, 2), {}).actionOf('Digit3'), null);
-  assert.equal(rebind(actionTable(SLOTS, 2), {}, 'inventory', 'Digit3').kind, 'ok');
+  assert.equal(resolveKeys(actionTable(SLOTS, { flasks: 2, ladder: true }), {}).actionOf('Digit3'), null);
+  assert.equal(rebind(actionTable(SLOTS, { flasks: 2, ladder: true }), {}, 'inventory', 'Digit3').kind, 'ok');
 });

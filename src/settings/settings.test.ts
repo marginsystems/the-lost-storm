@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS, describePreset, mergeSettings, PRESETS, readSettings 
 const TABLE: readonly ActionDef[] = actionTable([
   { name: 'Cleave', bindings: ['mouse_left'] },
   { name: 'Thunderclap', bindings: ['KeyQ'] },
-], 2);
+], { flasks: 2, ladder: true });
 
 void test('missing or broken text reads as the defaults', (): void => {
   assert.deepEqual(readSettings(null, TABLE), DEFAULT_SETTINGS);

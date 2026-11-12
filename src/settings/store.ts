@@ -1,5 +1,5 @@
 import type { KeyValueStore } from '../backend/backend.ts';
-import type { ActionDef, ActionId, Overrides, RebindResult, ResolvedKeys, SlotDefault } from './bindings.ts';
+import type { ActionDef, ActionId, Overrides, RebindResult, ResolvedKeys, SlotDefault, Shipped } from './bindings.ts';
 import { actionTable, rebind, resolveKeys } from './bindings.ts';
 import type { GraphicsPreset, GraphicsSettings, Quality, Settings } from './settings.ts';
 import { mergeSettings, PRESETS, readSettings, SETTINGS_KEY } from './settings.ts';
@@ -15,8 +15,8 @@ export interface SettingsStore {
   subscribe(listener: (settings: Settings) => void): void;
 }
 
-export function createSettingsStore(storage: KeyValueStore, slots: readonly SlotDefault[], flasks: number): SettingsStore {
-  const table: readonly ActionDef[] = actionTable(slots, flasks);
+export function createSettingsStore(storage: KeyValueStore, slots: readonly SlotDefault[], build: Shipped): SettingsStore {
+  const table: readonly ActionDef[] = actionTable(slots, build);
   let settings: Settings = readSettings(storage.read(SETTINGS_KEY), table);
   let keys: ResolvedKeys = resolveKeys(table, settings.controls);
   const listeners: ((settings: Settings) => void)[] = [];

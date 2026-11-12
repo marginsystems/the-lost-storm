@@ -29,18 +29,18 @@ function memory(initial: string | null): KeyValueStore & { readonly data: Map<st
 
 void test('changes persist and read back in a new store', (): void => {
   const storage = memory(null);
-  const store: SettingsStore = createSettingsStore(storage, SLOTS, 2);
+  const store: SettingsStore = createSettingsStore(storage, SLOTS, { flasks: 2, ladder: true });
   store.setQuality('low');
   store.setShowFps(true);
   assert.equal(store.rebind('inventory', 'KeyB').kind, 'ok');
-  const again: SettingsStore = createSettingsStore(storage, SLOTS, 2);
+  const again: SettingsStore = createSettingsStore(storage, SLOTS, { flasks: 2, ladder: true });
   assert.equal(again.get().graphics.quality, 'low');
   assert.equal(again.get().graphics.showFps, true);
   assert.equal(again.keys().actionOf('KeyB'), 'inventory');
 });
 
 void test('listeners hear every change once and a repeat is silent', (): void => {
-  const store: SettingsStore = createSettingsStore(memory(null), SLOTS, 2);
+  const store: SettingsStore = createSettingsStore(memory(null), SLOTS, { flasks: 2, ladder: true });
   let heard = 0;
   store.subscribe((): void => {
     heard += 1;
@@ -52,14 +52,14 @@ void test('listeners hear every change once and a repeat is silent', (): void =>
 
 void test('a refused rebind changes nothing and writes nothing', (): void => {
   const storage = memory(null);
-  const store: SettingsStore = createSettingsStore(storage, SLOTS, 2);
+  const store: SettingsStore = createSettingsStore(storage, SLOTS, { flasks: 2, ladder: true });
   assert.equal(store.rebind('inventory', 'KeyQ').kind, 'conflict');
   assert.equal(store.keys().actionOf('KeyI'), 'inventory');
   assert.equal(storage.data.size, 0);
 });
 
 void test('reset returns every key to its default', (): void => {
-  const store: SettingsStore = createSettingsStore(memory(null), SLOTS, 2);
+  const store: SettingsStore = createSettingsStore(memory(null), SLOTS, { flasks: 2, ladder: true });
   store.rebind('inventory', 'KeyB');
   store.resetControls();
   assert.equal(store.keys().actionOf('KeyI'), 'inventory');
@@ -67,7 +67,7 @@ void test('reset returns every key to its default', (): void => {
 });
 
 void test('the preset follows the quality', (): void => {
-  const store: SettingsStore = createSettingsStore(memory(null), SLOTS, 2);
+  const store: SettingsStore = createSettingsStore(memory(null), SLOTS, { flasks: 2, ladder: true });
   store.setQuality('low');
   assert.equal(store.preset().shadows, false);
 });

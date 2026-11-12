@@ -71,19 +71,25 @@ export function slotAction(slot: number): SkillAction {
   return slot === 0 ? 'primary' : `skill:${slot}`;
 }
 
-function shipped(def: ActionDef, flasks: number): boolean {
-  const index: number = FLASK_ACTIONS.findIndex((action: FixedAction): boolean => action === def.id);
-  return index < 0 || index < flasks;
+export interface Shipped {
+  readonly flasks: number;
+  readonly ladder: boolean;
 }
 
-export function actionTable(slots: readonly SlotDefault[], flasks: number): readonly ActionDef[] {
+function shipped(def: ActionDef, build: Shipped): boolean {
+  if (def.id === 'ladder') return build.ladder;
+  const index: number = FLASK_ACTIONS.findIndex((action: FixedAction): boolean => action === def.id);
+  return index < 0 || index < build.flasks;
+}
+
+export function actionTable(slots: readonly SlotDefault[], build: Shipped): readonly ActionDef[] {
   const skills: ActionDef[] = slots.map(
     (slot: SlotDefault, index: number): ActionDef =>
       index === 0
         ? { id: 'primary', label: 'Move / attack', group: 'Combat', defaults: [BINDING.leftMouse], locked: true }
         : { id: slotAction(index), label: slot.name, group: 'Combat', defaults: slot.bindings, locked: false },
   );
-  const fixed: ActionDef[] = FIXED_DEFS.map((def): ActionDef => Object.assign({ locked: false }, def)).filter((def: ActionDef): boolean => shipped(def, flasks));
+  const fixed: ActionDef[] = FIXED_DEFS.map((def): ActionDef => Object.assign({ locked: false }, def)).filter((def: ActionDef): boolean => shipped(def, build));
   const combat: ActionDef[] = [...skills, ...fixed.filter((def: ActionDef): boolean => def.group === 'Combat')];
   return [...combat, ...fixed.filter((def: ActionDef): boolean => def.group !== 'Combat')];
 }

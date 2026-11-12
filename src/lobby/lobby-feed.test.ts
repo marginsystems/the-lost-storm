@@ -82,6 +82,38 @@ void test('a listener that throws does not stop the interval', async (): Promise
   assert.ok(calls.count > before);
 });
 
+void test('every listener hears a read even when an earlier one throws', async (): Promise<void> => {
+  const { feed, seen } = setup();
+  const unsubscribe: () => void = feed.subscribe((): void => {
+    throw new Error('panel broke');
+  });
+  const later: number[] = [];
+  feed.subscribe((next: Leaderboard | null): void => {
+    later.push(next?.online ?? 0);
+  });
+  await assert.rejects(feed.refresh(true));
+  unsubscribe();
+  assert.deepEqual(later, [1]);
+  assert.equal(seen.length, 1);
+});
+
+void test('a forced refresh queued behind a failing read still reads', async (): Promise<void> => {
+  const { feed, calls } = setup();
+  let broken: boolean = true;
+  feed.subscribe((): void => {
+    if (!broken) return;
+    broken = false;
+    throw new Error('panel broke');
+  });
+  const first: Promise<void> = feed.refresh(true);
+  const second: Promise<void> = feed.refresh(true);
+  await assert.rejects(first);
+  await second;
+  assert.equal(calls.count, 2);
+  await feed.refresh(true);
+  assert.equal(calls.count, 3);
+});
+
 void test('focus refreshes are spaced out, forced ones are not', async (): Promise<void> => {
   const { feed, calls, clock } = setup();
   await feed.refresh(false);

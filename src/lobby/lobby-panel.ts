@@ -39,6 +39,7 @@ function createTicker(parent: HTMLElement): Ticker {
   const when: HTMLSpanElement = el('span', 'lobby-ticker-when', line);
   let notes: readonly LevelUpNote[] = [];
   let index: number = 0;
+  let painted: boolean = false;
   let timer: number | null = null;
 
   const paint = (): void => {
@@ -64,8 +65,9 @@ function createTicker(parent: HTMLElement): Ticker {
   return {
     show(next: readonly LevelUpNote[]): void {
       const trimmed: readonly LevelUpNote[] = next.slice(0, LOBBY_PANEL.tickerLines);
-      const changed: boolean = trimmed.map(levelUpText).join('|') !== notes.map(levelUpText).join('|');
+      const changed: boolean = !painted || trimmed.map(levelUpText).join('|') !== notes.map(levelUpText).join('|');
       notes = trimmed;
+      painted = true;
       if (!changed) {
         const note: LevelUpNote | undefined = notes[index % Math.max(1, notes.length)];
         if (note !== undefined) when.textContent = agoText(note.minutesAgo);
