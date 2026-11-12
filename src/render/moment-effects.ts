@@ -9,7 +9,11 @@ export const MOMENT_EFFECTS = {
   missWarning: 3,
 } as const;
 
-export async function momentEffects(effects: Effects, deps: MomentViewDeps, renderer: WebGLRenderer, camera: Camera): Promise<Effects> {
+export interface MomentEffects extends Effects {
+  showWarm(x: number, z: number): () => void;
+}
+
+export async function momentEffects(effects: Effects, deps: MomentViewDeps, renderer: WebGLRenderer, camera: Camera): Promise<MomentEffects> {
   const moments: MomentView = createMomentView(deps);
   await moments.prepare(renderer, camera);
   let warned: number = 0;
@@ -38,6 +42,9 @@ export async function momentEffects(effects: Effects, deps: MomentViewDeps, rend
     clear(): void {
       effects.clear();
       moments.clear();
+    },
+    showWarm(x: number, z: number): () => void {
+      return moments.showWarm(x, z);
     },
     get hurt(): number {
       return effects.hurt;

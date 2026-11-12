@@ -143,6 +143,7 @@ export interface MomentView {
   handle(events: readonly WorldEvent[]): void;
   update(dt: number, world: World): void;
   prepare(renderer: WebGLRenderer, camera: Camera): Promise<void>;
+  showWarm(x: number, z: number): () => void;
   clear(): void;
 }
 
@@ -248,6 +249,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
   const floorGeometry: CircleGeometry = new CircleGeometry(1, MOMENT_VIEW.floorSegments);
   const entries: Map<number, MomentEntry> = new Map<number, MomentEntry>();
   let kept: MomentEntry[] = [];
+  let keptStrike: readonly Object3D[] = [];
   let warmed: WarmTarget | null = null;
   let warmedRigs: number = 0;
   let warming: boolean = false;
@@ -555,7 +557,25 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       bolt.visible = false;
       arcs.visible = false;
       for (const entry of kept) dispose(entry);
+      for (const old of keptStrike) old.removeFromParent();
       kept = warm;
+      keptStrike = [bolt, arcs];
+    },
+    showWarm(x: number, z: number): () => void {
+      const shown: Object3D[] = [...kept.map((entry: MomentEntry): Object3D => entry.group), ...keptStrike];
+      const before: { readonly object: Object3D; readonly x: number; readonly z: number }[] = shown.map((object: Object3D): { readonly object: Object3D; readonly x: number; readonly z: number } => ({ object, x: object.position.x, z: object.position.z }));
+      for (const object of shown) {
+        object.position.x = x;
+        object.position.z = z;
+        object.visible = true;
+      }
+      return (): void => {
+        for (const entry of before) {
+          entry.object.position.x = entry.x;
+          entry.object.position.z = entry.z;
+          entry.object.visible = false;
+        }
+      };
     },
     clear,
   };
