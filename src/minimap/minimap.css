@@ -12,6 +12,7 @@
 .hud.hud-covered-full .minimap {
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transition:
     opacity var(--spring-snappy-ms) var(--spring-snappy),
     visibility 0s linear var(--spring-snappy-ms);
@@ -69,7 +70,9 @@
     height var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-.minimap.overlay .minimap-frame {
+.minimap.overlay .minimap-frame,
+.hud.hud-covered-side .minimap-frame,
+.hud.hud-covered-full .minimap-frame {
   pointer-events: none;
 }
 
@@ -112,6 +115,7 @@
 .hud.hud-covered-full > .hud-quests {
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transition:
     top var(--spring-bouncy-ms) var(--spring-bouncy),
     width var(--spring-smooth-ms) var(--spring-smooth),

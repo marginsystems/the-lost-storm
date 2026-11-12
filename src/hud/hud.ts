@@ -59,7 +59,7 @@ import { createTooltip } from './tooltip.ts';
 import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
 import { createTreePanel } from './tree-panel.ts';
-import { applyCover, coverOf, HUD_PANELS } from './panel-cover.ts';
+import { applyCover, closedBy, coverOf, HUD_PANELS } from './panel-cover.ts';
 import tradeCss from './trade.css?inline';
 import { createTradeHud } from './trade-hud.ts';
 import type { TradeHud } from './trade-hud.ts';
@@ -128,6 +128,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.insertBefore(grid, root.firstChild);
 
   function setOpen(panel: HudPanel, next: boolean): void {
+    if (next) for (const other of closedBy(panel, open)) setOpen(other, false);
     if (open[panel] !== next) api.playUi(next ? 'panel_open' : 'panel_close');
     open[panel] = next;
     const view: PanelView = panels[panel];

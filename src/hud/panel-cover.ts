@@ -26,6 +26,11 @@ export function coverOf(open: Readonly<Record<HudPanel, boolean>>): CoverState {
   return { side: covers.has('side'), full: covers.has('full') };
 }
 
+export function closedBy(panel: HudPanel, open: Readonly<Record<HudPanel, boolean>>): HudPanel[] {
+  const opening: PanelCover = PANEL_COVER[panel];
+  return HUD_PANELS.filter((other: HudPanel): boolean => other !== panel && open[other] && (opening === 'full' || PANEL_COVER[other] === 'full'));
+}
+
 export function applyCover(root: HTMLElement, cover: CoverState): void {
   root.classList.toggle(COVER_CLASS.side, cover.side);
   root.classList.toggle(COVER_CLASS.full, cover.full);

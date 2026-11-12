@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { HudPanel } from './hud-api.ts';
-import { COVER_CLASS, coverOf, HUD_PANELS, PANEL_COVER } from './panel-cover.ts';
+import { closedBy, COVER_CLASS, coverOf, HUD_PANELS, PANEL_COVER } from './panel-cover.ts';
 import type { CoverState } from './panel-cover.ts';
 
 const CLOSED: Readonly<Record<HudPanel, boolean>> = { inventory: false, character: false, tree: false, map: false };
@@ -11,13 +11,17 @@ function css(path: string): string {
   return readFileSync(new URL(path, import.meta.url), 'utf8');
 }
 
-function hides(sheet: string, cover: string, target: string): boolean {
+function ruleFor(sheet: string, cover: string, target: string, declaration: RegExp): boolean {
   const rules: RegExpMatchArray[] = [...sheet.matchAll(/([^{}]+)\{([^}]*)\}/g)];
   return rules.some((rule: RegExpMatchArray): boolean => {
     const selectors: readonly string[] = (rule[1] ?? '').split(',').map((part: string): string => part.trim());
     const body: string = rule[2] ?? '';
-    return selectors.some((selector: string): boolean => selector.includes(`.${cover}`) && selector.endsWith(target)) && /opacity:\s*0;/.test(body);
+    return selectors.some((selector: string): boolean => selector.includes(`.${cover}`) && selector.endsWith(target)) && declaration.test(body);
   });
+}
+
+function hides(sheet: string, cover: string, target: string): boolean {
+  return ruleFor(sheet, cover, target, /opacity:\s*0;/);
 }
 
 void test('every HUD panel is listed once in the panel order', (): void => {
@@ -50,4 +54,18 @@ void test('the minimap and the quest tracker give way under every cover', (): vo
 
 void test('the objective arrow gives way under the full map', (): void => {
   assert.ok(hides(css('../objective/objective.css'), COVER_CLASS.full, '.objective-arrow.visible'));
+});
+
+void test('covered corner pieces stop taking clicks at once, the minimap frame included', (): void => {
+  const minimap: string = css('../minimap/minimap.css');
+  for (const cover of Object.values(COVER_CLASS)) {
+    for (const target of ['.minimap', '.minimap-frame', '.hud-quests']) assert.ok(ruleFor(minimap, cover, target, /pointer-events:\s*none;/), `${cover} ${target}`);
+  }
+});
+
+void test('the full map closes the other panels and they close it', (): void => {
+  const all: Readonly<Record<HudPanel, boolean>> = { inventory: true, character: true, tree: true, map: false };
+  assert.deepEqual(closedBy('map', all), ['inventory', 'character', 'tree']);
+  assert.deepEqual(closedBy('inventory', { ...CLOSED, map: true }), ['map']);
+  assert.deepEqual(closedBy('tree', { ...CLOSED, inventory: true, character: true }), []);
 });
