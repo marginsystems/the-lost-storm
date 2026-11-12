@@ -76,6 +76,7 @@ export interface RigInstance {
   setGear(attachmentIds: readonly string[]): void;
   armed(): boolean;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
+  stepWear(dt: number): void;
   setFlash(color: Color, amount: number): void;
   setOpacity(opacity: number): void;
   dispose(): void;
@@ -88,6 +89,47 @@ export const CHARACTER = {
   matteRoughness: 0.86,
   rimPower: 4,
 } as const;
+
+export const WEAR_FADE = {
+  stiffness: 240,
+  damping: 31,
+  settle: 0.004,
+  longestStep: 1 / 30,
+  overshoot: 1.2,
+} as const;
+
+interface HeldPiece {
+  readonly holder: Group;
+  readonly size: number;
+  readonly materials: MeshStandardMaterial[];
+  value: number;
+  velocity: number;
+  target: number;
+}
+
+interface Springy {
+  value: number;
+  velocity: number;
+  target: number;
+}
+
+function springTo(piece: Springy, step: number, ceiling: number): boolean {
+  if (piece.value === piece.target && piece.velocity === 0) return false;
+  piece.velocity += (WEAR_FADE.stiffness * (piece.target - piece.value) - WEAR_FADE.damping * piece.velocity) * step;
+  const next: number = Math.min(ceiling, Math.max(0, piece.value + piece.velocity * step));
+  const settled: boolean = Math.abs(piece.target - next) < WEAR_FADE.settle && Math.abs(piece.velocity) < WEAR_FADE.settle * WEAR_FADE.stiffness;
+  piece.value = settled ? piece.target : next;
+  if (settled) piece.velocity = 0;
+  return !settled;
+}
+
+interface WornPiece {
+  readonly meshes: SkinnedMesh[];
+  readonly materials: MeshStandardMaterial[];
+  value: number;
+  velocity: number;
+  target: number;
+}
 
 export const RIM_LIGHT: IUniform<Color> = { value: new Color(0x000000) };
 
@@ -385,13 +427,66 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   }
 
   const mixer: AnimationMixer = new AnimationMixer(model);
-  const held: Group[] = [];
+  const held: Map<string, HeldPiece> = new Map<string, HeldPiece>();
+  const lettingGo: HeldPiece[] = [];
   let heldKey: string = '';
+  let gearDressed: boolean = false;
   const bodies: BodyMesh[] = skinnedMeshes(model).flatMap((mesh: SkinnedMesh): BodyMesh[] => (Array.isArray(mesh.material) ? [] : [{ mesh, skin: mesh.material }]));
   const anchor: SkinnedMesh | undefined = bodies[0]?.mesh;
-  const worn: SkinnedMesh[] = [];
-  const wornMaterials: MeshStandardMaterial[] = [];
-  const heldMaterials: MeshStandardMaterial[] = [];
+  const worn: Map<string, WornPiece> = new Map<string, WornPiece>();
+  const leaving: WornPiece[] = [];
+  let shownParts: readonly string[] = [];
+  let finalParts: readonly string[] = [];
+  const wornMaterials = (): MeshStandardMaterial[] => [...worn.values(), ...leaving].flatMap((piece: WornPiece): MeshStandardMaterial[] => piece.materials);
+  const hide = (parts: readonly string[]): void => {
+    shownParts = parts;
+    for (const body of bodies) {
+      body.mesh.material = parts.length === 0 ? body.skin : [body.skin, ...rig.bodyParts.map((part: string): Material => (parts.includes(part) ? UNSEEN : body.skin))];
+    }
+  };
+  const fade = (piece: WornPiece, value: number): void => {
+    piece.value = value;
+    for (const material of piece.materials) {
+      const see: boolean = value < 1 || look.ghost !== null;
+      if (material.transparent !== see) {
+        material.transparent = see;
+        material.needsUpdate = true;
+      }
+      if (look.ghost === null) material.opacity = value;
+    }
+  };
+  const drop = (piece: WornPiece): void => {
+    for (const mesh of piece.meshes) mesh.removeFromParent();
+    for (const material of piece.materials) material.dispose();
+  };
+  const build = (id: string, skinAnchor: SkinnedMesh): WornPiece | null => {
+    const wearable: LoadedWearable | undefined = library.wearables.get(id);
+    if (wearable === undefined) return null;
+    const piece: WornPiece = { meshes: [], materials: [], value: 1, velocity: 0, target: 1 };
+    const geometries: readonly BufferGeometry[] = fittedPieces(rig, wearable, skinAnchor);
+    wearable.pieces.forEach((source: SkinnedMesh, index: number): void => {
+      const geometry: BufferGeometry | undefined = geometries[index];
+      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost }, flash);
+      const first: MeshStandardMaterial | undefined = cloned[0];
+      if (geometry === undefined || first === undefined) return;
+      const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
+      mesh.castShadow = true;
+      mesh.frustumCulled = false;
+      mesh.position.copy(skinAnchor.position);
+      mesh.quaternion.copy(skinAnchor.quaternion);
+      mesh.scale.copy(skinAnchor.scale);
+      mesh.bind(skinAnchor.skeleton, skinAnchor.bindMatrix);
+      (skinAnchor.parent ?? model).add(mesh);
+      piece.meshes.push(mesh);
+      piece.materials.push(...cloned);
+    });
+    return piece;
+  };
+  const heldMaterials = (): MeshStandardMaterial[] => [...held.values(), ...lettingGo].flatMap((piece: HeldPiece): MeshStandardMaterial[] => piece.materials);
+  const release = (piece: HeldPiece): void => {
+    piece.holder.removeFromParent();
+    for (const material of piece.materials) material.dispose();
+  };
   let wornKey: string = '';
 
   return {
@@ -403,9 +498,19 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       const key: string = attachmentIds.join('|');
       if (key === heldKey) return;
       heldKey = attachmentIds.every((id: string): boolean => library.attachments.has(id)) ? key : '';
-      for (const holder of held.splice(0, held.length)) holder.removeFromParent();
-      for (const material of heldMaterials.splice(0, heldMaterials.length)) material.dispose();
+      const instant: boolean = !gearDressed || look.ghost !== null;
+      gearDressed = true;
+      for (const [id, piece] of held) {
+        if (attachmentIds.includes(id)) continue;
+        held.delete(id);
+        if (instant) release(piece);
+        else {
+          piece.target = 0;
+          lettingGo.push(piece);
+        }
+      }
       for (const id of attachmentIds) {
+        if (held.has(id)) continue;
         const attachment: LoadedAttachment | undefined = library.attachments.get(id);
         const socket: RigSocket | undefined = attachment === undefined ? undefined : def.sockets[attachment.def.socket];
         const bone: Object3D | undefined = socket === undefined ? undefined : findNode(model, socket.bone);
@@ -413,59 +518,77 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const holder: Group = new Group();
         holder.position.set(socket.position[0], socket.position[1], socket.position[2]);
         holder.rotation.set(socket.rotationDegrees[0] * DEGREES, socket.rotationDegrees[1] * DEGREES, socket.rotationDegrees[2] * DEGREES);
-        holder.scale.setScalar(socket.scale);
+        const piece: HeldPiece = { holder, size: socket.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
+        holder.scale.setScalar(socket.scale * piece.value);
         const copy: Object3D = attachment.template.clone(true);
-        if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, flash, heldMaterials));
+        if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, flash, piece.materials));
         holder.add(copy);
         bone.add(holder);
-        held.push(holder);
+        held.set(id, piece);
       }
     },
     armed(): boolean {
-      return held.length > 0;
+      return held.size > 0;
     },
     setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void {
       const key: string = `${wearableIds.join('|')}#${hiddenParts.join('|')}#${library.wearables.size}`;
       if (key === wornKey || anchor === undefined) return;
+      const instant: boolean = wornKey === '' || look.ghost !== null;
       wornKey = key;
-      for (const piece of worn.splice(0, worn.length)) piece.removeFromParent();
-      for (const material of wornMaterials.splice(0, wornMaterials.length)) material.dispose();
+      for (const [id, piece] of worn) {
+        if (wearableIds.includes(id)) continue;
+        worn.delete(id);
+        if (instant) drop(piece);
+        else {
+          piece.target = 0;
+          leaving.push(piece);
+        }
+      }
       for (const id of wearableIds) {
-        const wearable: LoadedWearable | undefined = library.wearables.get(id);
-        if (wearable === undefined) continue;
-        const geometries: readonly BufferGeometry[] = fittedPieces(rig, wearable, anchor);
-        wearable.pieces.forEach((piece: SkinnedMesh, index: number): void => {
-          const geometry: BufferGeometry | undefined = geometries[index];
-          const cloned: MeshStandardMaterial[] = flashing(piece.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost }, flash);
-          const first: MeshStandardMaterial | undefined = cloned[0];
-          if (geometry === undefined || first === undefined) return;
-          const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
-          mesh.castShadow = true;
-          mesh.frustumCulled = false;
-          mesh.position.copy(anchor.position);
-          mesh.quaternion.copy(anchor.quaternion);
-          mesh.scale.copy(anchor.scale);
-          mesh.bind(anchor.skeleton, anchor.bindMatrix);
-          (anchor.parent ?? model).add(mesh);
-          worn.push(mesh);
-          wornMaterials.push(...cloned);
-        });
+        if (worn.has(id)) continue;
+        const piece: WornPiece | null = build(id, anchor);
+        if (piece === null) continue;
+        worn.set(id, piece);
+        if (!instant) fade(piece, 0);
+        else fade(piece, 1);
       }
-      for (const body of bodies) {
-        body.mesh.material = hiddenParts.length === 0 ? body.skin : [body.skin, ...rig.bodyParts.map((part: string): Material => (hiddenParts.includes(part) ? UNSEEN : body.skin))];
+      finalParts = [...hiddenParts];
+      hide(instant ? finalParts : shownParts.filter((part: string): boolean => hiddenParts.includes(part)));
+    },
+    stepWear(dt: number): void {
+      const step: number = Math.min(dt, WEAR_FADE.longestStep);
+      let moving: boolean = false;
+      for (const piece of [...worn.values(), ...leaving]) {
+        if (piece.value === piece.target && piece.velocity === 0) continue;
+        if (springTo(piece, step, 1)) moving = true;
+        fade(piece, piece.value);
       }
+      for (const piece of [...held.values(), ...lettingGo]) {
+        if (piece.value === piece.target && piece.velocity === 0) continue;
+        springTo(piece, step, WEAR_FADE.overshoot);
+        piece.holder.scale.setScalar(piece.size * piece.value);
+      }
+      for (const piece of lettingGo.filter((candidate: HeldPiece): boolean => candidate.value === 0 && candidate.velocity === 0)) {
+        release(piece);
+        lettingGo.splice(lettingGo.indexOf(piece), 1);
+      }
+      for (const piece of leaving.filter((candidate: WornPiece): boolean => candidate.value === 0 && candidate.velocity === 0)) {
+        drop(piece);
+        leaving.splice(leaving.indexOf(piece), 1);
+      }
+      if (!moving && shownParts.join('|') !== finalParts.join('|')) hide(finalParts);
     },
     setFlash(color: Color, amount: number): void {
       flash.value.copy(color).multiplyScalar(amount * CHARACTER.flashBoost);
     },
     setOpacity(opacity: number): void {
       if (look.ghost === null) return;
-      for (const material of [...materials, ...wornMaterials, ...heldMaterials]) material.opacity = opacity;
+      for (const material of [...materials, ...wornMaterials(), ...heldMaterials()]) material.opacity = opacity;
     },
     dispose(): void {
       mixer.stopAllAction();
       mixer.uncacheRoot(model);
-      for (const material of [...materials, ...wornMaterials, ...heldMaterials]) material.dispose();
+      for (const material of [...materials, ...wornMaterials(), ...heldMaterials()]) material.dispose();
     },
   };
 }

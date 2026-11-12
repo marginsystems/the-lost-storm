@@ -270,6 +270,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       mixed.copy(hoverColor).lerp(flashColor, flash > 0 ? 1 : 0);
       rig.setFlash(mixed, Math.max(flash, hoverAmount));
       rig.mixer.update(dt);
+      rig.stepWear(dt);
       if (lying && woke !== null) layerWake(woke);
     },
     startAction(animation: string, windup: number, recovery: number): boolean {

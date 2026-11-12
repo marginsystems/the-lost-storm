@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content.ts';
-import { itemProblems, linesFor } from './item-rules.ts';
+import { basesWithoutLook, itemProblems, linesFor } from './item-rules.ts';
 import type { AffixDef, Content, ItemBaseDef } from './types.ts';
 import { ITEM_STATS } from './types.ts';
 
@@ -29,4 +29,13 @@ void test('a base with a stat outside the nine, a line that rolls backwards or a
   assert.ok(problems.some((problem: string): boolean => problem.includes('rusted_blade has goldFind')));
   assert.ok(problems.some((problem: string): boolean => problem.includes('line backwards')));
   assert.ok(problems.some((problem: string): boolean => problem.includes('rarity huge wants 9 lines but a weapon')));
+});
+
+void test('every base that can be worn or held has a look, so the hero wears exactly what is equipped', (): void => {
+  assert.deepEqual(basesWithoutLook(content), []);
+  const blade: ItemBaseDef | undefined = content.itemBases.get('rusted_blade');
+  const coat: ItemBaseDef | undefined = content.itemBases.get('traveller_coat');
+  assert.ok(blade !== undefined && coat !== undefined);
+  const bases: Map<string, ItemBaseDef> = new Map<string, ItemBaseDef>([...content.itemBases, ['bare_blade', { ...blade, id: 'bare_blade', visual: null }], ['bare_coat', { ...coat, id: 'bare_coat', wear: [] }]]);
+  assert.deepEqual(basesWithoutLook({ ...content, itemBases: bases }), ['bare_blade', 'bare_coat']);
 });

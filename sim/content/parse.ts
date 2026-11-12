@@ -479,12 +479,12 @@ function player(value: unknown, where: string): PlayerDef {
     skillBook: each(source['skillBook'], `${where}.skillBook`, skillUnlock),
     xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`) },
     startingItems: textList(source, 'startingItems', where),
+    dressedFlag: text(source, 'dressedFlag', where),
     unarmedVisual: nullableText(source, 'unarmedVisual', where),
     manaShows: choice(source, 'manaShows', MANA_SHOWS, where),
     tint: text(source, 'tint', where),
     color: text(source, 'color', where),
     gear: textList(source, 'gear', where),
-    wear: textList(source, 'wear', where),
     inventorySize: numeric(source, 'inventorySize', where),
     pickupRadius: numeric(source, 'pickupRadius', where),
     pickupAim: numeric(source, 'pickupAim', where),
@@ -578,7 +578,6 @@ export function contentProblems(content: Content): string[] {
   }
   need(content.rigs.has(content.player.rig), `player uses unknown rig ${content.player.rig}`);
   for (const held of content.player.gear) fits('player', content.player.rig, held);
-  wears('player', content.player.rig, content.player.wear);
   if (content.player.unarmedVisual !== null) fits('player', content.player.rig, content.player.unarmedVisual);
   for (const base of content.itemBases.values()) {
     if (base.visual !== null) fits(`item ${base.id}`, content.player.rig, base.visual);

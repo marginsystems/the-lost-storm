@@ -571,11 +571,11 @@ export interface PlayerDef {
   readonly skillBook: readonly SkillUnlock[];
   readonly xp: XpCurve;
   readonly startingItems: readonly string[];
+  readonly dressedFlag: string;
   readonly unarmedVisual: string | null;
   readonly tint: string;
   readonly color: string;
   readonly gear: readonly string[];
-  readonly wear: readonly string[];
   readonly inventorySize: number;
   readonly pickupRadius: number;
   readonly pickupAim: number;

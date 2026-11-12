@@ -1,7 +1,8 @@
 import type { AnimationClip, WebGLRenderer } from 'three';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, DirectionalLight, DodecahedronGeometry, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, Vector2 } from 'three';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
-import { heldGear, hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
+import type { Look } from '../../sim/wear.ts';
+import { lookOf } from '../../sim/wear.ts';
 import type { Equipment } from '../../sim/world/types.ts';
 import { instantiateRig, RIM_LIGHT } from '../render/character-loader.ts';
 import type { CharacterLibrary, LoadedRig, RigInstance } from '../render/character-loader.ts';
@@ -241,13 +242,12 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
     dress(look: LobbyLook): void {
       const rig: RigInstance | null = build();
       if (rig === null) return;
-      const worn: string[] = wornWearables(content, content.player.wear, look.equipped);
-      const held: string[] = heldGear(content, look.equipped);
-      const lookKey: string = `${worn.join('|')}#${held.join('|')}#${library.wearables.size}`;
+      const worn: Look = lookOf(content, [], look.equipped);
+      const lookKey: string = `${worn.wearables.join('|')}#${worn.held.join('|')}#${library.wearables.size}`;
       if (lookKey === heroKey) return;
       heroKey = lookKey;
-      rig.setWear(worn, hiddenBodyParts(content, worn));
-      rig.setGear(held);
+      rig.setWear(worn.wearables, worn.hidden);
+      rig.setGear(worn.held);
       rig.mixer.stopAllAction();
       rig.mixer.clipAction(idleClip(rig, look.equipped)).play();
     },
@@ -260,6 +260,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
       });
       if (hero !== null) {
         hero.mixer.update(dt);
+        hero.stepWear(dt);
         hero.root.rotation.y = LOBBY_STAGE.facing + Math.sin(time * LOBBY_STAGE.swayRate) * LOBBY_STAGE.sway + Math.sin(time * LOBBY_STAGE.driftRate) * LOBBY_STAGE.drift;
       }
       renderer.getSize(size);
