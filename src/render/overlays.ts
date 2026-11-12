@@ -15,7 +15,7 @@ import { createLootTip } from './loot-tip.ts';
 import type { LootTip, TipCheck } from './loot-tip.ts';
 import { anchorInView, placeTag } from './label-edge.ts';
 import type { ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
-import { clearOfRects, stackLabels } from './label-stack.ts';
+import { stackLabels } from './label-stack.ts';
 import type { ScreenRect } from './label-stack.ts';
 import type { LabelBox } from './label-stack.ts';
 
@@ -37,7 +37,6 @@ export const OVERLAYS = {
   exitLift: 2.6,
   npcLift: 0.5,
   npcLeave: 0.52,
-  npcHudGap: 8,
   hudBlockers: ['.hud-bottom', '.hud-globe-group', '.hud-xp', '.tc-btn', '.tc-stick', '.tc-menu', '.minimap-corner', '.hud-quests', '.hud-target.visible', '.hud-hint.visible', '.hud > .hud-banners'],
   hudReadSeconds: 0.25,
   waypointId: 'waypoint',
@@ -147,7 +146,9 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const point: Vector2 = new Vector2();
   const keepClear = (element: HTMLElement): void => {
     const tag: Element | null = element.firstElementChild;
-    if (tag instanceof HTMLElement) point.y = clearOfRects({ id: 0, x: point.x, y: point.y, width: tag.offsetWidth, height: tag.offsetHeight }, hudRects, OVERLAYS.npcHudGap);
+    if (!(tag instanceof HTMLElement) || tag.offsetWidth === 0) return;
+    const spot: TagPlace = placeTag(point.x, point.y, tag.offsetWidth, tag.offsetHeight, view, hudRects);
+    point.set(spot.x, spot.y);
   };
   const labelLayer: HTMLDivElement = document.createElement('div');
   const numberLayer: HTMLDivElement = document.createElement('div');

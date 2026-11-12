@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { clearOfRects, stackLabels } from './label-stack.ts';
+import { stackLabels } from './label-stack.ts';
 import type { LabelBox } from './label-stack.ts';
 
 function box(id: number, x: number, y: number): LabelBox {
@@ -29,14 +29,4 @@ void test('the lowest label on screen keeps its place', (): void => {
   const lifts: Map<number, number> = stackLabels([box(1, 50, 100), box(2, 50, 90)], 2);
   assert.equal(lifts.get(1), 0);
   assert.ok((lifts.get(2) ?? 0) < 0);
-});
-
-void test('a name tag that would enter a control sits just above it, and one beside or above it stays put', (): void => {
-  const roll = { left: 300, top: 760, right: 348, bottom: 808 };
-  const attack = { left: 312, top: 700, right: 376, bottom: 750 };
-  const tag = { id: 1, x: 320, y: 790, width: 110, height: 24 };
-  assert.equal(clearOfRects(tag, [roll], 8), 752);
-  assert.equal(clearOfRects(tag, [roll, attack], 8), 692);
-  assert.equal(clearOfRects({ ...tag, x: 100 }, [roll, attack], 8), 790);
-  assert.equal(clearOfRects({ ...tag, y: 400 }, [roll, attack], 8), 400);
 });

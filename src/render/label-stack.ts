@@ -13,20 +13,6 @@ export interface ScreenRect {
   readonly bottom: number;
 }
 
-function enters(box: LabelBox, rect: ScreenRect, gap: number): boolean {
-  return box.x + box.width / 2 > rect.left - gap && box.x - box.width / 2 < rect.right + gap && box.y > rect.top - gap && box.y - box.height < rect.bottom + gap;
-}
-
-export function clearOfRects(box: LabelBox, rects: readonly ScreenRect[], gap: number): number {
-  let y: number = box.y;
-  for (let pass = 0; pass <= rects.length; pass++) {
-    const blocker: ScreenRect | undefined = rects.find((rect: ScreenRect): boolean => enters({ ...box, y }, rect, gap));
-    if (blocker === undefined) return y;
-    y = blocker.top - gap;
-  }
-  return y;
-}
-
 function overlaps(a: LabelBox, b: LabelBox, gap: number): boolean {
   return Math.abs(a.x - b.x) < (a.width + b.width) / 2 + gap && a.y > b.y - b.height - gap && a.y - a.height - gap < b.y;
 }
