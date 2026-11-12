@@ -293,6 +293,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'monster_remove':
           case 'aggro':
           case 'drop':
+          case 'field':
+          case 'chain':
+          case 'beam':
+          case 'blink':
+          case 'brand':
           case 'xp':
           case 'surge_cleared':
           case 'player_respawn':

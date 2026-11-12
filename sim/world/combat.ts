@@ -2,27 +2,19 @@ import type { SkillDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
-import { armourReduction } from '../stats.ts';
+import { armourReduction, resolveSkill } from '../stats.ts';
 import { grantXp } from './character.ts';
 import { isInvulnerable } from './dash.ts';
 import { closeDialogue } from './dialogue.ts';
 import { gainFlaskCharges } from './flask-charges.ts';
 import { dropOnGround } from './ground.ts';
-import type { Actor, GuardOutcome, ItemInstance, MonsterState, Team, World } from './types.ts';
+import type { Actor, BrandState, GuardOutcome, ItemInstance, MonsterState, Offence, Team, World } from './types.ts';
 
 export const COMBAT = {
   guardedKnockback: 0.2,
 } as const;
 
-export interface Offence {
-  readonly sourceId: number;
-  readonly team: Team;
-  readonly damageMin: number;
-  readonly damageMax: number;
-  readonly damagePercent: number;
-  readonly critChance: number;
-  readonly critMultiplier: number;
-}
+export type { Offence } from './types.ts';
 
 export function teamOf(actor: Actor): Team {
   return actor.kind;
@@ -164,5 +156,32 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     skill,
   });
   if (killed) kill(world, target, direction);
+  brandStrike(world, offence, target, skill);
   return true;
+}
+
+function burstBrand(world: World, target: Actor, brand: BrandState): void {
+  const delivery = brand.burst.delivery;
+  if (delivery.type !== 'nova') return;
+  const at: ReadonlyVec2 = { x: target.pos.x, z: target.pos.z };
+  world.events.push({ type: 'brand', targetId: target.id, skill: brand.burst, pos: { x: at.x, z: at.z }, burst: true });
+  for (const other of targetsOf(world, brand.offence.team)) {
+    const offset: ReadonlyVec2 = { x: other.pos.x - at.x, z: other.pos.z - at.z };
+    const gap: number = Math.hypot(offset.x, offset.z);
+    if (gap > delivery.radius + other.radius) continue;
+    applyHit(world, brand.offence, other, brand.burst, gap > 0 ? { x: offset.x / gap, z: offset.z / gap } : { x: 0, z: 1 });
+  }
+}
+
+function brandStrike(world: World, offence: Offence, target: Actor, skill: SkillDef): void {
+  const held: BrandState | null = target.brand;
+  if (held !== null && held.source !== skill.id) {
+    target.brand = null;
+    burstBrand(world, target, held);
+  }
+  if (skill.brand === null || !target.alive) return;
+  const burst: SkillDef | undefined = world.content.skills.get(skill.brand.burst);
+  if (burst === undefined) return;
+  target.brand = { source: skill.id, burst: offence.team === 'player' ? resolveSkill(world.content, burst, world.player.allocated) : burst, offence, timeLeft: skill.brand.duration };
+  world.events.push({ type: 'brand', targetId: target.id, skill, pos: { x: target.pos.x, z: target.pos.z }, burst: false });
 }

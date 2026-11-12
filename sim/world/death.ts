@@ -1,4 +1,5 @@
 import type { DeathPenalty } from '../content/types.ts';
+import { clearFields } from './fields.ts';
 import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
 import type { MonsterState, PlayerState, RespawnChoice, World, WorldEvent } from './types.ts';
@@ -60,6 +61,7 @@ export function respawnPlayer(world: World, choice: RespawnChoice): void {
     placePlayer(world);
     clearProjectiles(world);
     clearHazards(world);
+    clearFields(world);
     for (const monster of world.monsters) if (monster.alive) resetMonster(monster);
   }
   world.events.push({ type: 'player_respawn' });

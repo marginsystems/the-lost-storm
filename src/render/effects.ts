@@ -329,6 +329,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       case 'dash':
         if (event.skill.vfx.style === 'roll') dashTrails.land(event.origin, event.direction, color);
         break;
+      case 'field':
+      case 'chain':
+      case 'beam':
+      case 'blink':
+        break;
     }
     if (event.team !== 'player') return;
     const landed: boolean = event.hits > 0 || delivery.type === 'nova';
@@ -511,6 +516,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'monster_remove':
           case 'aggro':
           case 'drop':
+          case 'field':
+          case 'chain':
+          case 'beam':
+          case 'blink':
+          case 'brand':
           case 'xp':
           case 'surge_cleared':
           case 'notice':

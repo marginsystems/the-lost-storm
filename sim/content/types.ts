@@ -1,5 +1,6 @@
 import type { FlaskDef } from './flasks.ts';
-import type { GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, SkillLeap, StalkerBehaviour, SummonDef } from './combat-types.ts';
+import type { GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, StalkerBehaviour, SummonDef } from './combat-types.ts';
+import type { BeamDelivery, BlinkDelivery, ChainDelivery, FieldDelivery, SkillShape } from './shape-types.ts';
 import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { BookDef, StoryFlags, ZoneHud, ZoneVoid } from './story-types.ts';
@@ -72,7 +73,7 @@ export interface DashDelivery {
   readonly invulnerable: number;
 }
 
-export type Delivery = ArcDelivery | NovaDelivery | ProjectileDelivery | DashDelivery | MarkDelivery;
+export type Delivery = ArcDelivery | NovaDelivery | ProjectileDelivery | DashDelivery | MarkDelivery | ChainDelivery | FieldDelivery | BlinkDelivery | BeamDelivery;
 
 export interface SkillDamage {
   readonly weaponPercent: number;
@@ -102,7 +103,7 @@ export interface SkillCombo {
   readonly steps: readonly ComboStep[];
 }
 
-export interface SkillDef {
+export interface SkillDef extends SkillShape {
   readonly id: string;
   readonly name: string;
   readonly description: string;
@@ -122,8 +123,6 @@ export interface SkillDef {
   readonly hitStop: number;
   readonly vfx: SkillVfx;
   readonly combo: SkillCombo | null;
-  readonly leap: SkillLeap | null;
-  readonly root: number;
 }
 
 export interface ChaserBehaviour {

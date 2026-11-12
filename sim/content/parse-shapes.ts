@@ -1,0 +1,84 @@
+import type { Fields } from './read.ts';
+import { choice, ContentError, fields, fraction, nonNegative, positive, text } from './read.ts';
+import type { BeamDelivery, BlinkDelivery, BrandDef, ChainDelivery, FieldDelivery, HoldDef } from './shape-types.ts';
+import { FIELD_ANCHORS } from './shape-types.ts';
+import type { Content, SkillDef } from './types.ts';
+
+export const SHAPE_TYPES = ['chain', 'field', 'blink', 'beam'] as const;
+export type ShapeType = (typeof SHAPE_TYPES)[number];
+export type ShapeDelivery = ChainDelivery | FieldDelivery | BlinkDelivery | BeamDelivery;
+
+function whole(source: Fields, key: string, where: string): number {
+  const value: number = nonNegative(source, key, where);
+  if (!Number.isInteger(value)) throw new ContentError(`${where}.${key}`, 'expected a whole number');
+  return value;
+}
+
+function field(source: Fields, where: string): FieldDelivery {
+  const duration: number = positive(source, 'duration', where);
+  const pulse: number = nonNegative(source, 'pulse', where);
+  if (pulse > duration) throw new ContentError(`${where}.pulse`, `expected at most the duration ${duration}`);
+  return {
+    type: 'field',
+    range: nonNegative(source, 'range', where),
+    radius: positive(source, 'radius', where),
+    duration,
+    pulse,
+    pull: nonNegative(source, 'pull', where),
+    slow: fraction(source, 'slow', where),
+    anchor: choice(source, 'anchor', FIELD_ANCHORS, where),
+  };
+}
+
+export function shapeDelivery(type: ShapeType, source: Fields, where: string): ShapeDelivery {
+  switch (type) {
+    case 'chain':
+      return { type, range: positive(source, 'range', where), jumps: whole(source, 'jumps', where), jumpRange: positive(source, 'jumpRange', where), falloff: fraction(source, 'falloff', where) };
+    case 'field':
+      return field(source, where);
+    case 'blink':
+      return { type, range: positive(source, 'range', where), radius: nonNegative(source, 'radius', where) };
+    case 'beam':
+      return { type, range: positive(source, 'range', where), width: positive(source, 'width', where) };
+  }
+  return { type: 'beam', range: 1, width: 1 };
+}
+
+function hold(value: unknown, where: string): HoldDef | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  const type: HoldDef['type'] = choice(source, 'type', ['charge', 'channel'] as const, where);
+  if (type === 'channel') return { type, interval: positive(source, 'interval', where), max: positive(source, 'max', where) };
+  return { type, max: positive(source, 'max', where), damageScale: positive(source, 'damageScale', where), areaScale: positive(source, 'areaScale', where) };
+}
+
+function brand(value: unknown, where: string): BrandDef | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { duration: positive(source, 'duration', where), burst: text(source, 'burst', where) };
+}
+
+export interface SkillHolds {
+  readonly hold: HoldDef | null;
+  readonly brand: BrandDef | null;
+}
+
+export function skillHolds(source: Fields, where: string): SkillHolds {
+  return { hold: hold(source['hold'], `${where}.hold`), brand: brand(source['brand'], `${where}.brand`) };
+}
+
+export function shapeProblems(content: Content): string[] {
+  const problems: string[] = [];
+  const need = (ok: boolean, problem: string): void => {
+    if (!ok) problems.push(problem);
+  };
+  for (const used of content.skills.values()) {
+    if (used.hold !== null) need(used.delivery.type !== 'dash' && used.delivery.type !== 'blink', `skill ${used.id} moves the caster, so it cannot be held`);
+    if (used.hold?.type === 'channel') need(used.combo === null && used.leap === null, `skill ${used.id} is channelled, so it cannot combo or leap`);
+    if (used.brand === null) continue;
+    const burst: SkillDef | undefined = content.skills.get(used.brand.burst);
+    need(burst !== undefined, `skill ${used.id} brands with unknown burst skill ${used.brand.burst}`);
+    if (burst !== undefined) need(burst.delivery.type === 'nova' && burst.brand === null, `skill ${used.id} brands with ${burst.id}, which must be a nova that brands nothing itself`);
+  }
+  return problems;
+}

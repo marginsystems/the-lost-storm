@@ -109,6 +109,11 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       break;
     case 'guarded':
     case 'skill_interrupt':
+    case 'field':
+    case 'chain':
+    case 'beam':
+    case 'blink':
+    case 'brand':
     case 'monster_remove':
     case 'xp':
     case 'character_changed':
@@ -172,6 +177,8 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'flask':
     case 'use':
     case 'read':
+    case 'hold':
+    case 'steer':
       break;
   }
   return action;

@@ -216,6 +216,11 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'aggro':
           case 'drop':
           case 'pickup':
+          case 'field':
+          case 'chain':
+          case 'beam':
+          case 'blink':
+          case 'brand':
           case 'xp':
           case 'level_up':
           case 'surge':
