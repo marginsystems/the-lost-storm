@@ -74,6 +74,28 @@
   transform: none;
 }
 
+.title-card .title-email-open.title-signin {
+  --signin-text: rgba(239, 230, 214, 0.78);
+  background: rgba(8, 13, 22, 0.55);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+  border-radius: 2px;
+  backdrop-filter: blur(6px);
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.title-card .title-email-open.title-signin:not(:disabled):hover,
+.title-card .title-email-open.title-signin:focus-visible,
+.title-card .title-account.emailing .title-email-open.title-signin {
+  color: #f4ecdc;
+  background: rgba(18, 28, 44, 0.72);
+}
+
+.title-email-open .title-signin-face {
+  font-family: var(--sans);
+}
+
 .title-signin-face {
   display: flex;
   align-items: center;

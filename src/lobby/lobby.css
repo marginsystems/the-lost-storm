@@ -228,16 +228,21 @@
 }
 
 .lobby-ticker {
-  height: 20px;
-  margin: 8px 2px 0;
+  height: 0;
+  margin: 0 2px;
   overflow: hidden;
   font-size: 12px;
   line-height: 20px;
   opacity: 0;
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    height var(--spring-smooth-ms) var(--spring-smooth),
+    margin-top var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .lobby-ticker.shown {
+  height: 20px;
+  margin-top: 8px;
   opacity: 1;
 }
 
