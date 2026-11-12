@@ -7,6 +7,7 @@ void test('the shipped links have the site, the game and the repository', (): vo
   assert.equal(LINKS.site, 'https://theloststorm.com');
   assert.equal(LINKS.play, 'https://theloststorm.com/play/');
   assert.match(LINKS.github, /^https:\/\/github\.com\//);
+  assert.equal(LINKS.discord, 'https://discord.gg/XTRePF4HJs');
 });
 
 void test('every page names only links the data knows', (): void => {
