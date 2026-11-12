@@ -567,6 +567,7 @@ export interface OpenService {
 export interface EncounterState {
   readonly id: string;
   walked: number;
+  moving: number;
   pos: Vec2 | null;
   off: number;
   groundId: number | null;

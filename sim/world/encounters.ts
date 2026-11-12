@@ -49,8 +49,8 @@ function layItem(world: World, met: ZoneEncounter, state: EncounterState, base: 
   state.groundId = ground.id;
 }
 
-function place(world: World, met: ZoneEncounter, state: EncounterState): void {
-  const pos: Vec2 = { x: world.player.pos.x + world.heading.x * met.ahead, z: world.player.pos.z + world.heading.z * met.ahead };
+function place(world: World, met: ZoneEncounter, state: EncounterState, ahead: number): void {
+  const pos: Vec2 = { x: world.player.pos.x + world.heading.x * ahead, z: world.player.pos.z + world.heading.z * ahead };
   state.pos = pos;
   state.off = 0;
   switch (met.find.type) {
@@ -86,15 +86,22 @@ function stepOne(world: World, rules: ZoneVoid, met: ZoneEncounter, travelled: n
     world.encounters.splice(index, 1);
     return;
   }
-  const state: EncounterState = existing ?? { id: met.id, walked: 0, pos: null, off: 0, groundId: null };
+  const state: EncounterState = existing ?? { id: met.id, walked: 0, moving: 0, pos: null, off: 0, groundId: null };
   if (existing === undefined) world.encounters.push(state);
   state.walked += travelled;
+  if (travelled > 0) state.moving += dt;
+  const late: boolean = met.latest !== null && state.moving >= met.latest;
   if (state.pos === null) {
-    if (state.walked >= met.after) place(world, met, state);
+    if (late) place(world, met, state, 0);
+    else if (state.walked >= met.after) place(world, met, state, met.ahead);
     return;
   }
   if (met.find.type === 'item' && groundOf(world, state) === null) return;
-  if (wandered(world, rules, met, state, state.pos, travelled, dt)) place(world, met, state);
+  if (late) {
+    if (distance(state.pos, world.player.pos) > 0) place(world, met, state, 0);
+    return;
+  }
+  if (wandered(world, rules, met, state, state.pos, travelled, dt)) place(world, met, state, met.ahead);
 }
 
 function wieldFound(world: World, item: ItemInstance): void {

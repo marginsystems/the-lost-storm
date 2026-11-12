@@ -27,6 +27,7 @@ export interface ZoneEncounter {
   readonly when: readonly Condition[];
   readonly after: number;
   readonly ahead: number;
+  readonly latest: number | null;
   readonly find: EncounterFind;
 }
 

@@ -142,3 +142,84 @@ void test('reading needs the book in the pack, and an unknown page does nothing'
   stepWorld(world, [{ type: 'read', book: 'journal', page: 'do_not' }], DT);
   assert.equal(world.flags['opening'], 'begun');
 });
+
+const HELD = {
+  idle: 5,
+  hold: 5,
+  release: 0.3,
+  tick: 0.09,
+  legs: 40,
+  mouse: { x: 4.6, z: -1.4 },
+  near: 1.5,
+  circle: { radius: 3, turn: 1.6 },
+} as const;
+
+function tookJournal(world: World): boolean {
+  return world.flags['first_choice'] !== undefined;
+}
+
+function holdFor(world: World, seconds: number, aim: (at: number) => Vec2, start: number): number {
+  let clock: number = start;
+  let next: number = start;
+  for (let spent: number = 0; spent < seconds && !tookJournal(world); spent += DT) {
+    const commands: Command[] = [];
+    if (clock >= next) {
+      commands.push({ type: 'move', held: true, dest: aim(clock) });
+      next = clock + HELD.tick;
+    }
+    stepWorld(world, commands, DT);
+    clock += DT;
+  }
+  return clock;
+}
+
+function idleFor(world: World, seconds: number, start: number): number {
+  for (let spent: number = 0; spent < seconds; spent += DT) stepWorld(world, [], DT);
+  return start + seconds;
+}
+
+function beside(world: World, offset: Vec2): () => Vec2 {
+  return (): Vec2 => ({ x: world.player.pos.x + offset.x, z: world.player.pos.z + offset.z });
+}
+
+void test('holding the button at one screen point, in five-second legs, finds the journal', (): void => {
+  const world: World = fresh(31);
+  let clock: number = idleFor(world, HELD.idle, 0);
+  for (let leg: number = 0; leg < HELD.legs && !tookJournal(world); leg += 1) {
+    clock = holdFor(world, HELD.hold, beside(world, HELD.mouse), clock);
+    clock = idleFor(world, HELD.release, clock);
+  }
+  assert.ok(tookJournal(world));
+  assert.ok(clock < HELD.idle + must(journalFind.latest, 'journal latest') + HELD.hold * 2);
+});
+
+void test('walking in a small circle still finds the journal once he has moved long enough', (): void => {
+  const world: World = fresh(32);
+  const around = (at: number): Vec2 => ({ x: world.player.pos.x + Math.cos(at * HELD.circle.turn) * HELD.circle.radius, z: world.player.pos.z + Math.sin(at * HELD.circle.turn) * HELD.circle.radius });
+  const clock: number = holdFor(world, must(journalFind.latest, 'journal latest') + HELD.hold, around, 0);
+  assert.ok(tookJournal(world));
+  assert.ok(clock <= must(journalFind.latest, 'journal latest') + 1);
+});
+
+void test('holding a point right beside the hero still finds the journal', (): void => {
+  const world: World = fresh(33);
+  holdFor(world, must(journalFind.latest, 'journal latest') + HELD.hold, beside(world, { x: HELD.near, z: 0 }), 0);
+  assert.ok(tookJournal(world));
+});
+
+void test('a hero who never walks onto the light is brought to it after its latest time of movement', (): void => {
+  const world: World = fresh(34);
+  world.flags['opening'] = 'read';
+  world.flags['first_choice'] = 'took_journal';
+  world.flags['first_blade'] = 'found';
+  const around = (at: number): Vec2 => ({ x: world.player.pos.x + Math.cos(at * HELD.circle.turn) * HELD.circle.radius, z: world.player.pos.z + Math.sin(at * HELD.circle.turn) * HELD.circle.radius });
+  let clock: number = 0;
+  let next: number = 0;
+  for (; clock < must(lightFind.latest, 'light latest') + HELD.hold && world.zone.id === opening.id; clock += DT) {
+    const commands: Command[] = clock >= next ? [{ type: 'move', held: true, dest: around(clock) }] : [];
+    if (commands.length > 0) next = clock + HELD.tick;
+    stepWorld(world, commands, DT);
+  }
+  assert.notEqual(world.zone.id, opening.id);
+  assert.deepEqual(world.shift, { x: 0, z: 0 });
+});

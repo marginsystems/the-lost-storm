@@ -90,6 +90,7 @@
         "when": [{"type": "flag", "flag": "first_choice", "not": true}],
         "after": 170,
         "ahead": 16,
+        "latest": 50,
         "find": {"type": "item", "item": "worn_journal", "sets": {"first_choice": "took_journal"}}
       },
       {
@@ -97,6 +98,7 @@
         "when": [{"type": "flag", "flag": "first_blade", "not": true}, {"type": "shore", "depth": 0.3}],
         "after": 0,
         "ahead": 9,
+        "latest": 30,
         "find": {"type": "item", "item": "rusted_blade", "sets": {"first_blade": "found"}, "equip": true}
       },
       {
@@ -104,6 +106,7 @@
         "when": [{"type": "flag", "flag": "opening", "is": "read"}],
         "after": 0,
         "ahead": 60,
+        "latest": 60,
         "find": {"type": "exit", "exit": "into_the_hall"}
       }
     ]
