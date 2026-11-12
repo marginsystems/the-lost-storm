@@ -1,7 +1,6 @@
 {
   "testRoots": ["sim", "src", "test", "tools"],
   "graphRoots": ["sim", "src", "test", "tools", "data"],
-  "fullSuite": ["sim/**/*.test.ts", "src/**/*.test.ts", "test/**/*.test.ts", "tools/**/*.test.ts"],
   "alwaysRun": ["test/rules.test.ts"],
   "rules": [
     {

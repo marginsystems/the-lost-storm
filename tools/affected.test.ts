@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { AFFECTED, buildImportGraph, dependents, globToRegExp, matchesAny, parseArgs, readRepository, resolveSpecifier, selectTests, specifiersOf, testCommand } from './affected.ts';
+import { AFFECTED, buildImportGraph, countOf, defaultJobs, dependents, filesToRun, globToRegExp, matchesAny, parseArgs, readRepository, resolveSpecifier, selectTests, shard, specifiersOf, testCommand } from './affected.ts';
 import type { AffectedConfig, AffectedRule, ImportGraph, Selection, SourceText } from './affected.ts';
 import { readConfig, readRule } from './affected.ts';
 
@@ -45,7 +45,7 @@ const RULES: readonly AffectedRule[] = [
   { kind: 'only', paths: [glob('**', '*.md'), glob('public', '**')], run: [] },
 ];
 
-const CONFIG: AffectedConfig = { testRoots: ['sim', 'src', 'test'], graphRoots: ['sim', 'src', 'test', 'data'], fullSuite: [], alwaysRun: ['test/rules.test.ts'], rules: RULES };
+const CONFIG: AffectedConfig = { testRoots: ['sim', 'src', 'test'], graphRoots: ['sim', 'src', 'test', 'data'], alwaysRun: ['test/rules.test.ts'], rules: RULES };
 
 function testsOf(selection: Selection, what: string): readonly string[] {
   switch (selection.kind) {
@@ -131,11 +131,40 @@ void test('config, shared support, an unmapped path or no diff at all run everyt
   for (const changed of [['package.json'], ['src/hud/bar.css', 'test/support.ts'], ['scripts/new.sh'], []]) assert.equal(selectTests(changed, GRAPH, TESTS, CONFIG).kind, 'everything', changed.join(', '));
 });
 
-void test('arguments name the base, the head, a run, and explicit files', (): void => {
-  assert.deepEqual(parseArgs([]), { run: false, base: 'origin/main', head: 'HEAD', files: null });
-  assert.deepEqual(parseArgs(['--run', '--base', 'abc', '--head', 'def']), { run: true, base: 'abc', head: 'def', files: null });
-  assert.deepEqual(parseArgs(['--', 'sim/rng.ts', '--run']), { run: false, base: 'origin/main', head: 'HEAD', files: ['sim/rng.ts', '--run'] });
-  assert.throws((): unknown => parseArgs(['--fast']));
+void test('arguments name the base, the head, a run, every test, the jobs and explicit files', (): void => {
+  assert.deepEqual(parseArgs([], 8), { run: false, all: false, jobs: 4, base: 'origin/main', head: 'HEAD', files: null });
+  assert.deepEqual(parseArgs(['--run', '--all', '--base', 'abc', '--head', 'def', '--jobs', '2'], 8), { run: true, all: true, jobs: 2, base: 'abc', head: 'def', files: null });
+  assert.deepEqual(parseArgs(['--', 'sim/rng.ts', '--run'], 8), { run: false, all: false, jobs: 4, base: 'origin/main', head: 'HEAD', files: ['sim/rng.ts', '--run'] });
+  assert.throws((): unknown => parseArgs(['--fast'], 8));
+  assert.throws((): unknown => parseArgs(['--jobs', '0'], 8));
+  assert.throws((): unknown => parseArgs(['--base'], 8));
+});
+
+void test('jobs leave a core free and stop at four', (): void => {
+  assert.equal(defaultJobs(1), 1);
+  assert.equal(defaultJobs(3), 2);
+  assert.equal(defaultJobs(16), 4);
+});
+
+void test('files split round robin into at most the asked number of shards', (): void => {
+  assert.deepEqual(shard(['a', 'b', 'c', 'd', 'e'], 2), [['a', 'c', 'e'], ['b', 'd']]);
+  assert.deepEqual(shard(['a'], 4), [['a']]);
+  assert.deepEqual(shard([], 4), []);
+});
+
+void test('everything runs every test file, a selection only its own', (): void => {
+  assert.deepEqual(filesToRun({ kind: 'everything', reason: 'x' }, ['a.test.ts', 'b.test.ts']), ['a.test.ts', 'b.test.ts']);
+  assert.deepEqual(filesToRun({ kind: 'some', tests: ['b.test.ts'] }, ['a.test.ts', 'b.test.ts']), ['b.test.ts']);
+});
+
+void test('each shard runs its files in one process with the spec reporter', (): void => {
+  assert.deepEqual(testCommand(['a.test.ts']), ['--test', '--experimental-test-isolation=none', '--test-reporter=spec', 'a.test.ts']);
+});
+
+void test('the totals add up across every shard', (): void => {
+  const output: string = 'ℹ tests 3\nℹ pass 3\nℹ fail 0\nℹ tests 2\nℹ pass 1\nℹ fail 1\n';
+  assert.equal(countOf(output, 'tests'), 5);
+  assert.equal(countOf(output, 'fail'), 1);
 });
 
 void test('the rules file reads into typed rules and refuses an unknown kind', (): void => {
@@ -143,11 +172,6 @@ void test('the rules file reads into typed rules and refuses an unknown kind', (
   assert.throws((): unknown => readRule({ kind: 'some', paths: [] }, 'r'), /not everything, importers or only/);
   assert.throws((): unknown => readConfig({ testRoots: [] }));
   assert.ok(AFFECTED.rules.length > 0);
-});
-
-void test('the run command keeps every file in one process', (): void => {
-  assert.deepEqual(testCommand({ kind: 'some', tests: ['a.test.ts'] }, AFFECTED), ['--test', '--experimental-test-isolation=none', 'a.test.ts']);
-  assert.ok(testCommand({ kind: 'everything', reason: 'x' }, AFFECTED).includes(glob('tools', '**', '*.test.ts')));
 });
 
 const REPO = readRepository('.', AFFECTED);

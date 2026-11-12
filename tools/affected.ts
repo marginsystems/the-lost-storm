@@ -1,5 +1,6 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { dirname, join, normalize, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { each, fields, text, textList } from '../sim/content/read.ts';
@@ -14,7 +15,6 @@ export type AffectedRule =
 export interface AffectedConfig {
   readonly testRoots: readonly string[];
   readonly graphRoots: readonly string[];
-  readonly fullSuite: readonly string[];
   readonly alwaysRun: readonly string[];
   readonly rules: readonly AffectedRule[];
 }
@@ -33,8 +33,15 @@ export type Selection =
   | { readonly kind: 'everything'; readonly reason: string }
   | { readonly kind: 'some'; readonly tests: readonly string[] };
 
+export interface ShardResult {
+  readonly code: number;
+  readonly output: string;
+}
+
 export interface CliOptions {
   readonly run: boolean;
+  readonly all: boolean;
+  readonly jobs: number;
   readonly base: string;
   readonly head: string;
   readonly files: readonly string[] | null;
@@ -45,6 +52,8 @@ const CLI = {
   defaultHead: 'HEAD',
   testSuffix: '.test.ts',
   isolation: '--experimental-test-isolation=none',
+  reporter: '--test-reporter=spec',
+  maxJobs: 4,
 } as const;
 
 const SPECIFIERS: readonly RegExp[] = [
@@ -70,7 +79,6 @@ export function readConfig(value: unknown): AffectedConfig {
   return {
     testRoots: textList(source, 'testRoots', where),
     graphRoots: textList(source, 'graphRoots', where),
-    fullSuite: textList(source, 'fullSuite', where),
     alwaysRun: textList(source, 'alwaysRun', where),
     rules: each(source['rules'], `${where}.rules`, readRule),
   };
@@ -207,29 +215,36 @@ export function changedFiles(root: string, base: string, head: string): string[]
   return [...new Set<string>([...committed, ...staged, ...untracked])].toSorted();
 }
 
-export function parseArgs(argv: readonly string[]): CliOptions {
+export function defaultJobs(cores: number): number {
+  return Math.max(1, Math.min(CLI.maxJobs, cores - 1));
+}
+
+export function parseArgs(argv: readonly string[], cores: number = availableParallelism()): CliOptions {
   let run: boolean = false;
+  let all: boolean = false;
+  let jobs: number = defaultJobs(cores);
   let base: string = CLI.defaultBase;
   let head: string = CLI.defaultHead;
   let files: string[] | null = null;
   for (let index: number = 0; index < argv.length; index += 1) {
     const arg: string = argv[index] ?? '';
+    const value: string | undefined = argv[index + 1];
     if (files !== null) files.push(arg);
     else if (arg === '--run') run = true;
-    else if (arg === '--base') {
-      base = argv[index + 1] ?? base;
-      index += 1;
-    } else if (arg === '--head') {
-      head = argv[index + 1] ?? head;
-      index += 1;
-    } else if (arg === '--') files = [];
-    else throw new Error(`unknown argument ${arg}`);
+    else if (arg === '--all') all = true;
+    else if (arg === '--') files = [];
+    else if (value === undefined) throw new Error(`${arg} needs a value or is unknown`);
+    else if (arg === '--base') base = value;
+    else if (arg === '--head') head = value;
+    else if (arg === '--jobs' && /^[1-9]\d*$/.test(value)) jobs = Number(value);
+    else throw new Error(`unknown argument ${arg} ${value}`);
+    if (arg === '--base' || arg === '--head' || arg === '--jobs') index += 1;
   }
-  return { run, base, head, files };
+  return { run, all, jobs, base, head, files };
 }
 
-export function testCommand(selection: Selection, config: AffectedConfig): string[] {
-  let files: readonly string[] = config.fullSuite;
+export function filesToRun(selection: Selection, testFiles: readonly string[]): readonly string[] {
+  let files: readonly string[] = testFiles;
   switch (selection.kind) {
     case 'everything':
       break;
@@ -237,24 +252,64 @@ export function testCommand(selection: Selection, config: AffectedConfig): strin
       files = selection.tests;
       break;
   }
-  return ['--test', CLI.isolation, ...files];
+  return files;
 }
 
-function main(): number {
+export function shard(files: readonly string[], jobs: number): string[][] {
+  const shards: string[][] = Array.from({ length: Math.max(1, jobs) }, (): string[] => []);
+  files.forEach((file: string, index: number): void => {
+    shards[index % shards.length]?.push(file);
+  });
+  return shards.filter((group: readonly string[]): boolean => group.length > 0);
+}
+
+export function testCommand(files: readonly string[]): string[] {
+  return ['--test', CLI.isolation, CLI.reporter, ...files];
+}
+
+export function countOf(output: string, label: string): number {
+  return [...output.matchAll(new RegExp(`^\\S+ ${label} (\\d+)$`, 'gm'))].reduce((sum: number, match: RegExpExecArray): number => sum + Number(match[1] ?? '0'), 0);
+}
+
+function runShard(root: string, files: readonly string[]): Promise<ShardResult> {
+  return new Promise<ShardResult>((resolve: (result: ShardResult) => void): void => {
+    const child = spawn(process.execPath, testCommand(files), { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
+    const chunks: string[] = [];
+    child.stdout.on('data', (chunk: Buffer): void => {
+      chunks.push(chunk.toString('utf8'));
+    });
+    child.stderr.on('data', (chunk: Buffer): void => {
+      chunks.push(chunk.toString('utf8'));
+    });
+    child.on('close', (code: number | null): void => {
+      const output: string = chunks.join('');
+      process.stdout.write(output);
+      resolve({ code: code ?? 1, output });
+    });
+  });
+}
+
+async function main(): Promise<number> {
   const root: string = process.cwd();
   const options: CliOptions = parseArgs(process.argv.slice(2));
-  const changed: string[] | null = options.files === null ? changedFiles(root, options.base, options.head) : [...options.files];
   const { graph, testFiles } = readRepository(root, AFFECTED);
-  const selection: Selection = changed === null ? { kind: 'everything', reason: `git could not diff ${options.base}...${options.head}` } : selectTests(changed, graph, testFiles, AFFECTED);
+  const changed: string[] | null = options.files === null ? changedFiles(root, options.base, options.head) : [...options.files];
+  const everything: Selection | null = options.all ? { kind: 'everything', reason: 'asked for every test' } : changed === null ? { kind: 'everything', reason: `git could not diff ${options.base}...${options.head}` } : null;
+  const selection: Selection = everything ?? selectTests(changed ?? [], graph, testFiles, AFFECTED);
+  const files: readonly string[] = filesToRun(selection, testFiles);
+  const why: string = selection.kind === 'everything' ? `every test file (${selection.reason})` : `${files.length} of ${testFiles.length} test files`;
   if (!options.run) {
-    if (selection.kind === 'everything') console.log(testFiles.join('\n'));
-    else console.log(selection.tests.join('\n'));
-    console.error(selection.kind === 'everything' ? `affected: every test (${selection.reason})` : `affected: ${selection.tests.length} of ${testFiles.length} test files`);
+    console.log(files.join('\n'));
+    console.error(`affected: ${why}`);
     return 0;
   }
-  console.error(selection.kind === 'everything' ? `affected: running every test (${selection.reason})` : `affected: running ${selection.tests.length} of ${testFiles.length} test files`);
-  const result = spawnSync(process.execPath, testCommand(selection, AFFECTED), { cwd: root, stdio: 'inherit' });
-  return result.status ?? 1;
+  const shards: string[][] = shard(files, options.jobs);
+  console.log(`affected: running ${why} in ${shards.length} process${shards.length === 1 ? '' : 'es'}`);
+  const results: ShardResult[] = await Promise.all(shards.map((group: readonly string[]): Promise<ShardResult> => runShard(root, group)));
+  const output: string = results.map((result: ShardResult): string => result.output).join('\n');
+  const failed: number = results.filter((result: ShardResult): boolean => result.code !== 0).length;
+  console.log(`affected: ${countOf(output, 'tests')} tests, ${countOf(output, 'pass')} passed, ${countOf(output, 'fail')} failed${failed > 0 ? `, ${failed} process${failed === 1 ? '' : 'es'} exited non-zero` : ''}`);
+  return failed > 0 ? 1 : 0;
 }
 
-if (relative(process.cwd(), process.argv[1] ?? '') === relative(process.cwd(), fileURLToPath(import.meta.url))) process.exitCode = main();
+if (relative(process.cwd(), process.argv[1] ?? '') === relative(process.cwd(), fileURLToPath(import.meta.url))) process.exitCode = await main();
