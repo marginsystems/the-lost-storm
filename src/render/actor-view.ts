@@ -277,6 +277,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       rig.setFlash(flashColor, flash);
       rig.setHover(hoverColor, Math.max(0, hoverLevel.value));
       rig.mixer.update(dt);
+      rig.relaxHands();
       rig.stepWear(dt);
       if (lying && woke !== null) layerWake(woke);
     },

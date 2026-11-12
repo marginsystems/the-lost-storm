@@ -345,6 +345,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       if (hero !== null) {
         settlePose(posed);
         hero.mixer.update(dt);
+        hero.relaxHands();
         turnPose(posed);
         hero.stepWear(dt);
         hero.root.rotation.y = LOBBY_STAGE.facing + Math.sin(time * LOBBY_STAGE.swayRate) * LOBBY_STAGE.sway + Math.sin(time * LOBBY_STAGE.driftRate) * LOBBY_STAGE.drift;

@@ -14,6 +14,8 @@ import { makeGhost } from './ghost-material.ts';
 import { createBrowserTimers } from '../browser-timers.ts';
 import { STALL, withStallLimit } from './stall-limit.ts';
 import { addBoxUvs } from './box-uv.ts';
+import { idleWeight, relaxHands, restHands } from './rest-hands.ts';
+import type { RestHand } from './rest-hands.ts';
 
 export interface ActionClip {
   readonly clip: AnimationClip;
@@ -81,6 +83,7 @@ export interface RigInstance {
   armed(): boolean;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   stepWear(dt: number): void;
+  relaxHands(): void;
   setFlash(color: Color, amount: number): void;
   setHover(color: Color, amount: number): void;
   setOpacity(opacity: number): void;
@@ -448,6 +451,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     if (node !== undefined) node.visible = false;
   }
 
+  const hands: readonly RestHand[] = restHands(model, def);
+  const idles: readonly AnimationClip[] = rig.clips.unarmed === null ? [rig.clips.idle] : [rig.clips.idle, rig.clips.unarmed.idle];
   const mixer: AnimationMixer = new AnimationMixer(model);
   const held: Map<string, HeldPiece> = new Map<string, HeldPiece>();
   const lettingGo: HeldPiece[] = [];
@@ -600,6 +605,14 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         leaving.splice(leaving.indexOf(piece), 1);
       }
       if (!moving && shownParts.join('|') !== finalParts.join('|')) hide(finalParts);
+    },
+    relaxHands(): void {
+      const holding: Set<string> = new Set<string>();
+      for (const id of held.keys()) {
+        const socket: string | undefined = library.attachments.get(id)?.def.socket;
+        if (socket !== undefined) holding.add(socket);
+      }
+      relaxHands(hands, idleWeight(mixer, idles), holding);
     },
     setFlash(color: Color, amount: number): void {
       glow.flash.value.copy(color).multiplyScalar(amount * CHARACTER.flashBoost);
