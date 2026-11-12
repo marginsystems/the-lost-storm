@@ -1,3 +1,4 @@
+import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { ItemSlot } from '../../sim/content/types.ts';
 import { slotOf } from '../../sim/items.ts';
 import type { ItemInstance, WorldEvent } from '../../sim/world/types.ts';
@@ -11,6 +12,7 @@ import type { BossBar } from './boss-bar.ts';
 import bossCss from './boss.css?inline';
 import type { Banners } from './banners.ts';
 import type { ActionId } from '../settings/bindings.ts';
+import { flaskAction } from '../settings/bindings.ts';
 import characterCss from './character.css?inline';
 import { createCharacterPanel } from './character-panel.ts';
 import type { CharacterPanel } from './character-panel.ts';
@@ -23,6 +25,9 @@ import type { DialogueBox } from './dialogue-box.ts';
 import { el } from './dom.ts';
 import type { FpsReadout } from './fps.ts';
 import { createFpsReadout } from './fps.ts';
+import { createFlaskBelt } from './flask-belt.ts';
+import type { FlaskBelt } from './flask-belt.ts';
+import flasksCss from './flasks.css?inline';
 import { createGlobes } from './globes.ts';
 import type { Globes } from './globes.ts';
 import hudCss from './hud.css?inline';
@@ -54,7 +59,7 @@ const PANEL_IDS: readonly HudPanel[] = ['inventory', 'character', 'tree', 'map']
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -68,6 +73,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const tooltip: Tooltip = createTooltip(root);
   const context: HudContext = { api, tooltip };
   const globes: Globes = createGlobes(root);
+  const flaskKey = (slot: number): string => {
+    const action: ActionId | null = flaskAction(slot);
+    return action === null ? '' : api.settings.keys().labelOf(action);
+  };
+  const flasks: FlaskBelt = createFlaskBelt(root, api.world.player.flasks, flaskKey, (resource: FlaskResource, on: boolean): void => globes.setRestoring(resource, on));
   const fps: FpsReadout = createFpsReadout(root);
   const surge: WorldStatus = createSurgeStatus(root);
   const banners: Banners = createBanners(root);
@@ -135,6 +145,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     buttons.tree?.setKey(keyOf('tree'));
     buttons.map?.setKey(keyOf('map'));
     skillBar.refreshKeys();
+    flasks.refreshKeys();
     fps.setVisible(api.settings.get().graphics.showFps);
   };
   api.settings.subscribe(showKeys);
@@ -155,6 +166,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       const world = api.world;
       fps.frame(performance.now());
       globes.update(world.player, dt);
+      flasks.update(world.player);
       skillBar.update(world.player);
       xp.update(world.player, world.content);
       surge.update(world);
@@ -224,6 +236,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'notice':
             notices.show(event.reason);
             break;
+          case 'flask_used':
+            flasks.used(event.slot);
+            break;
           case 'character_changed':
             refreshOpen('inventory');
             refreshOpen('character');
@@ -247,6 +262,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'hero_step':
           case 'explored':
           case 'boss_phase':
+          case 'flasks_refilled':
             break;
         }
       }

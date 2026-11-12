@@ -1,5 +1,6 @@
 export const FIXED_ACTIONS = ['inventory', 'character', 'tree', 'map', 'minimap', 'dodge', 'flask1', 'flask2', 'flask3', 'flask4', 'flask5', 'pause'] as const;
 export type FixedAction = (typeof FIXED_ACTIONS)[number];
+export const FLASK_ACTIONS: readonly FixedAction[] = ['flask1', 'flask2', 'flask3', 'flask4', 'flask5'];
 export type SkillAction = 'primary' | `skill:${number}`;
 export type ActionId = FixedAction | SkillAction;
 
@@ -59,6 +60,10 @@ const FIXED_DEFS: readonly (Omit<ActionDef, 'locked'> & { readonly group: Action
 
 export function isSkillAction(action: ActionId): boolean {
   return action === 'primary' || action.startsWith('skill:');
+}
+
+export function flaskAction(slot: number): FixedAction | null {
+  return FLASK_ACTIONS[slot] ?? null;
 }
 
 export function slotAction(slot: number): SkillAction {

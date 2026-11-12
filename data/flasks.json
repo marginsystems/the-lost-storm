@@ -1,0 +1,24 @@
+[
+  {
+    "id": "life_flask",
+    "name": "Life Flask",
+    "resource": "life",
+    "amount": 70,
+    "duration": 2.4,
+    "cooldown": 0.6,
+    "maxCharges": 30,
+    "chargesPerUse": 10,
+    "chargesPerKill": 3
+  },
+  {
+    "id": "mana_flask",
+    "name": "Mana Flask",
+    "resource": "mana",
+    "amount": 45,
+    "duration": 3,
+    "cooldown": 0.6,
+    "maxCharges": 30,
+    "chargesPerUse": 8,
+    "chargesPerKill": 3
+  }
+]

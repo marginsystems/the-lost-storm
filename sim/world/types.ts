@@ -1,3 +1,4 @@
+import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
 import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
@@ -27,6 +28,18 @@ export interface ActionState {
   readonly windup: number;
   readonly recovery: number;
   readonly direction: Vec2;
+}
+
+export interface FlaskDose {
+  readonly rate: number;
+  timeLeft: number;
+}
+
+export interface FlaskState {
+  readonly def: FlaskDef;
+  charges: number;
+  cooldown: number;
+  doses: FlaskDose[];
 }
 
 export interface ComboState {
@@ -103,6 +116,7 @@ export interface PlayerState extends ActorState {
   invulnerable: number;
   strideTravel: number;
   kills: number;
+  flasks: FlaskState[];
 }
 
 export type MonsterStance = 'approach' | 'engage' | 'hold' | 'retreat';
@@ -242,6 +256,11 @@ export interface AdvanceCommand {
   readonly type: 'advance';
 }
 
+export interface FlaskCommand {
+  readonly type: 'flask';
+  readonly slot: number;
+}
+
 export interface TeleportCommand {
   readonly type: 'teleport';
   readonly zone: string;
@@ -260,7 +279,7 @@ export interface DeathState {
   elapsed: number;
 }
 
-export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand;
+export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -282,7 +301,7 @@ export interface WaypointRespawn {
 
 export type RespawnPoint = StartRespawn | ExitRespawn | CheckpointRespawn | WaypointRespawn;
 
-export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full';
+export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full';
 
 export type WorldEvent =
   | { readonly type: 'skill_start'; readonly actorId: number; readonly skill: SkillDef; readonly direction: Vec2; readonly windup: number; readonly recovery: number }
@@ -316,6 +335,8 @@ export type WorldEvent =
   | { readonly type: 'boss_phase'; readonly monsterId: number; readonly phase: number }
   | { readonly type: 'bark'; readonly speaker: string; readonly line: LineDef }
   | { readonly type: 'notice'; readonly reason: NoticeReason }
+  | { readonly type: 'flasks_refilled' }
+  | { readonly type: 'flask_used'; readonly slot: number; readonly flask: string; readonly resource: FlaskResource; readonly pos: Vec2 }
   | { readonly type: 'character_changed' };
 
 export interface World {

@@ -16,6 +16,8 @@ export const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['
   'waypoint_unlocked',
   'bark',
   'explored',
+  'flask_used',
+  'flasks_refilled',
 ]);
 
 export function changesSave(events: readonly WorldEvent[]): boolean {

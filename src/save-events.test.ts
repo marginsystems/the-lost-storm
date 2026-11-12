@@ -7,7 +7,9 @@ import type { Content, ZoneDef } from '../sim/content/types.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { stepWorld } from '../sim/world/step.ts';
+import { enterZone } from '../sim/world/zones.ts';
 import type { World, WorldEvent } from '../sim/world/types.ts';
+import { must } from '../test/support.ts';
 import { changesSave } from './save-events.ts';
 
 const content: Content = loadContent();
@@ -49,4 +51,21 @@ void test('through a whole play of the act, every step that changes what a save 
 
 void test('a respawn asks for a save because it can cost experience', (): void => {
   assert.equal(changesSave([{ type: 'player_respawn' }]), true);
+});
+
+void test('drinking a flask and refilling flasks each ask for a save', (): void => {
+  const world: World = createWorld(content, { seed: PLAY.seed, save: null });
+  enterZone(world, must(content.zones.get('duskway'), 'duskway'), { type: 'start' });
+  world.monsters = [];
+  world.player.life = 1;
+  const before: string = kept(world);
+  const drink: WorldEvent[] = stepWorld(world, [{ type: 'flask', slot: 0 }], PLAY.dt);
+  assert.notEqual(kept(world), before);
+  assert.equal(changesSave(drink), true);
+  enterZone(world, must(content.zones.get(content.world.start), 'start'), { type: 'start' });
+  const spent: string = kept(world);
+  const refill: WorldEvent[] = stepWorld(world, [], PLAY.dt);
+  assert.notEqual(kept(world), spent);
+  assert.equal(changesSave(refill), true);
+  assert.equal(changesSave(stepWorld(world, [], PLAY.dt)), false);
 });

@@ -9,7 +9,7 @@ import type { PickCandidate, ScreenRect } from './pick.ts';
 import { pickActor } from './pick.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import type { ActionId } from './settings/bindings.ts';
-import { slotAction } from './settings/bindings.ts';
+import { flaskAction, slotAction } from './settings/bindings.ts';
 import type { SettingsStore } from './settings/store.ts';
 
 export const INPUT = {
@@ -200,6 +200,10 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
         if (fresh.has(INPUT.leftBinding) || INPUT.advanceKeys.some((key: string): boolean => fresh.has(key))) commands.push({ type: 'advance' });
         return commands;
       }
+      world.player.flasks.forEach((_flask, slot: number): void => {
+        const action: ActionId | null = flaskAction(slot);
+        if (action !== null && settings.keys().bindingsOf(action).some((binding: string): boolean => fresh.has(binding))) commands.push({ type: 'flask', slot });
+      });
       if (aim === null || ground === null) return commands;
 
       const leftSlot: number = slotFor(INPUT.leftBinding);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { ActionDef, ResolvedKeys, SlotDefault } from './bindings.ts';
-import { actionTable, keyLabel, rebind, resolveKeys, sanitizeOverrides, slotAction } from './bindings.ts';
+import { actionTable, flaskAction, keyLabel, rebind, resolveKeys, sanitizeOverrides, slotAction } from './bindings.ts';
 
 const SLOTS: readonly SlotDefault[] = [
   { name: 'Cleave', bindings: ['mouse_left'] },
@@ -76,4 +76,11 @@ void test('labels read plainly', (): void => {
   assert.equal(keyLabel('Escape'), 'Esc');
   assert.equal(keyLabel('Numpad4'), 'Num 4');
   assert.equal(keyLabel('F5'), 'F5');
+});
+
+void test('the first five flask slots each have a key action and later slots have none', (): void => {
+  assert.equal(flaskAction(0), 'flask1');
+  assert.equal(flaskAction(4), 'flask5');
+  assert.equal(flaskAction(5), null);
+  assert.deepEqual(resolveKeys(TABLE, {}).bindingsOf('flask2'), ['Digit2']);
 });
