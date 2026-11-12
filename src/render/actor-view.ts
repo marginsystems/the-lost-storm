@@ -26,6 +26,7 @@ export const ACTOR = {
   deathSpeed: 1.25,
   sinkDelay: 3.4,
   sinkSpeed: 1.1,
+  sinkLimit: 0.35,
   riseDepth: 2.4,
   minRunSpeed: 0.7,
   maxRunSpeed: 1.7,
@@ -131,7 +132,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     sync(dt: number, actor: ActorPose, options: SyncOptions): void {
       rig.root.position.set(actor.pos.x, options.floor, actor.pos.z);
       if (dead) {
-        const sunk: number = Math.max(0, actor.deadTime - ACTOR.sinkDelay) * ACTOR.sinkSpeed;
+        const sunk: number = Math.min(ACTOR.sinkLimit, Math.max(0, actor.deadTime - ACTOR.sinkDelay) * ACTOR.sinkSpeed);
         rig.root.position.y = options.floor - sunk;
       } else {
         rig.root.position.y = options.floor - (1 - options.rise) * ACTOR.riseDepth;

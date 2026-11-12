@@ -8,9 +8,14 @@ export function onWaypoint(world: World): boolean {
   return waypoint !== null && world.player.alive && distance(world.player.pos, waypoint) <= waypoint.radius;
 }
 
+function insideCheckpoint(world: World): boolean {
+  const respawn = world.respawn;
+  return respawn.type === 'checkpoint' && world.zone.checkpoints.some((checkpoint): boolean => checkpoint.id === respawn.checkpoint && distance(world.player.pos, checkpoint) <= checkpoint.radius);
+}
+
 export function stepWaypoints(world: World): void {
   if (!onWaypoint(world)) return;
-  if (world.respawn.type !== 'waypoint') world.respawn = { type: 'waypoint' };
+  if (world.respawn.type !== 'waypoint' && !insideCheckpoint(world)) world.respawn = { type: 'waypoint' };
   if (world.waypoints.includes(world.zone.id)) return;
   world.waypoints.push(world.zone.id);
   world.events.push({ type: 'waypoint_unlocked', zone: world.zone.id });

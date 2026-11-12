@@ -51,7 +51,7 @@ export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus 
   }
 
   window.addEventListener('keydown', (event: KeyboardEvent): void => {
-    if (!visible || event.repeat || event.target instanceof HTMLButtonElement || !DEATH_PANEL.confirmKeys.includes(event.code)) return;
+    if (!visible || event.repeat || (event.target instanceof HTMLButtonElement && buttons.includes(event.target)) || !DEATH_PANEL.confirmKeys.includes(event.code)) return;
     event.preventDefault();
     choose('checkpoint');
   });
