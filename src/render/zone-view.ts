@@ -1,7 +1,7 @@
 import type { Object3D, Scene } from 'three';
 import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { Content, PropDef, PropLight, ZoneDef, ZoneProp } from '../../sim/content/types.ts';
+import type { Content, PropDef, PropLight, ZoneDef, ZoneProp, ZoneWalls } from '../../sim/content/types.ts';
 import { wallCorners, wallEdges, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
@@ -131,12 +131,13 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
 
   const ground: Ground = buildGround(content, zone);
   for (const mesh of ground.meshes) group.add(mesh);
-  for (const edge of wallEdges(zone)) {
+  const walls: ZoneWalls | null = zone.walls;
+  for (const edge of walls === null ? [] : wallEdges(zone)) {
     const alongZ: boolean = edge.side === 'west' || edge.side === 'east';
-    const variant: string | undefined = edge.tall ? zone.walls.tall[Math.floor(hash(edge.column, edge.row, alongZ ? 7 : 9) * zone.walls.tall.length)] : zone.walls.low;
+    const variant: string | undefined = walls === null ? undefined : edge.tall ? walls.tall[Math.floor(hash(edge.column, edge.row, alongZ ? 7 : 9) * walls.tall.length)] : walls.low;
     if (variant !== undefined) place(variant, edge.x, 0, edge.z, alongZ ? Math.PI / 2 : 0, true);
   }
-  for (const corner of wallCorners(zone)) place(zone.walls.corner, corner.x, 0, corner.z, 0, true);
+  if (walls !== null) for (const corner of wallCorners(zone)) place(walls.corner, corner.x, 0, corner.z, 0, true);
   for (const prop of zone.props) {
     if (prop.when.length === 0) {
       place(prop.prop, prop.x, prop.y, prop.z, prop.rotationDegrees * DEGREES, true);
@@ -256,6 +257,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       if (abyss.material instanceof MeshStandardMaterial) abyss.material.dispose();
     },
     update(time: number, dt: number, world: World): void {
+      ground.update(world.time);
       for (const conditional of conditionals) {
         const wanted: boolean = allHold(world, conditional.placed.when);
         if (conditional.on === null) conditional.shown = wanted ? 1 : 0;

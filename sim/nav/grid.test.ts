@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
-import type { Content } from '../content/types.ts';
+import type { Content, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, lineOfSight, lineWalkable, moveWithCollision, nearestWalkable } from './grid.ts';
-import type { NavGrid } from './grid.ts';
+import { buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, lineOfSight, linePace, lineWalkable, moveWithCollision, nearestWalkable, paceAt, setDriftOpen } from './grid.ts';
+import type { DriftCells, NavGrid } from './grid.ts';
+import { ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts';
 import { must, zoneOf } from '../../test/support.ts';
 import { findPath } from './path.ts';
 
 const content: Content = loadContent();
-const grid: NavGrid = buildNavGrid(zoneOf(content, 'drowned_bastion'), content.props, content.player.radius);
+const grid: NavGrid = buildNavGrid(zoneOf(content, 'drowned_bastion'), content.props, content.surfaces, content.player.radius);
 
 void test('open floor is walkable and void tiles, the outside and wall margins are not', (): void => {
   assert.ok(isWalkable(grid, 28, 22));
@@ -108,7 +109,7 @@ function reachableFrom(zoneGrid: NavGrid, start: Vec2): Uint8Array {
 }
 
 for (const zone of content.zones.values()) {
-  const zoneGrid: NavGrid = buildNavGrid(zone, content.props, content.player.radius);
+  const zoneGrid: NavGrid = buildNavGrid(zone, content.props, content.surfaces, content.player.radius);
 
   void test(`${zone.id}: paths around every blocking prop keep a walker's body out of its footprint`, (): void => {
     const problems: string[] = [];
@@ -163,3 +164,24 @@ for (const zone of content.zones.values()) {
     assert.deepEqual(problems, []);
   });
 }
+
+void test('the ground sets each cell\'s pace, and a zone without walls has no corner pillars', (): void => {
+  const zone: ZoneDef = roadZone({ tiles: ['wwss', 'wwss'] });
+  const local: NavGrid = buildNavGrid(zone, ROAD_CONTENT.props, roadContent(zone).surfaces, ROAD_CONTENT.player.radius);
+  assert.equal(paceAt(local, 2, 2), 1);
+  assert.equal(paceAt(local, 14, 2), 0.5);
+  assert.equal(isWalkable(local, 8, 4), true);
+  assert.equal(linePace(local, { x: 2, z: 2 }, { x: 14, z: 2 }), 0.5);
+});
+
+void test('a closed drift takes its cells out of the walkable grid and puts them back when it opens', (): void => {
+  const zone: ZoneDef = roadZone({ drifts: [{ id: 'patch', column: 2, row: 0, columns: 1, rows: 4, period: 10, open: 0.5, offset: 0, fade: 1 }] });
+  const local: NavGrid = buildNavGrid(zone, ROAD_CONTENT.props, roadContent(zone).surfaces, ROAD_CONTENT.player.radius);
+  const patch: DriftCells = must(local.drifts[0], 'patch');
+  assert.equal(isWalkable(local, 10, 8), true);
+  setDriftOpen(local, patch, false);
+  assert.equal(isWalkable(local, 10, 8), false);
+  assert.equal(isWalkable(local, 6, 8), true);
+  setDriftOpen(local, patch, true);
+  assert.equal(isWalkable(local, 10, 8), true);
+});

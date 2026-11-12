@@ -119,6 +119,8 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'dialogue_closed':
     case 'quest_started':
     case 'quest_advanced':
+    case 'act_ended':
+    case 'triggered':
     case 'quest_completed':
     case 'waypoint_unlocked':
     case 'exit_locked':

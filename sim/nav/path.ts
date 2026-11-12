@@ -1,6 +1,6 @@
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import type { NavGrid } from './grid.ts';
-import { cellCenter, cellIndex, lineWalkable, nearestWalkable } from './grid.ts';
+import { cellCenter, cellIndex, linePace, lineWalkable, nearestWalkable, paceAt } from './grid.ts';
 
 interface Step {
   readonly dc: number;
@@ -110,7 +110,7 @@ function searchCells(grid: NavGrid, start: number, goal: number): number[] | nul
       const next: number = nextRow * grid.columns + nextColumn;
       if (grid.walkable[next] !== 1 || closed[next] === 1) continue;
       if (step.dc !== 0 && step.dr !== 0 && (grid.walkable[row * grid.columns + nextColumn] !== 1 || grid.walkable[nextRow * grid.columns + column] !== 1)) continue;
-      const nextCost: number = (cost[current] ?? Infinity) + step.cost;
+      const nextCost: number = (cost[current] ?? Infinity) + step.cost / (grid.pace[next] ?? 1);
       if (nextCost >= (cost[next] ?? Infinity)) continue;
       cost[next] = nextCost;
       parent[next] = current;
@@ -123,6 +123,15 @@ function searchCells(grid: NavGrid, start: number, goal: number): number[] | nul
   return cells;
 }
 
+function slowest(grid: NavGrid, anchor: ReadonlyVec2, points: readonly Vec2[], from: number, to: number): number {
+  let pace: number = paceAt(grid, anchor.x, anchor.z);
+  for (let index: number = from; index <= to; index += 1) {
+    const point: Vec2 | undefined = points[index];
+    if (point !== undefined) pace = Math.min(pace, paceAt(grid, point.x, point.z));
+  }
+  return pace;
+}
+
 function smooth(grid: NavGrid, from: ReadonlyVec2, points: readonly Vec2[]): Vec2[] {
   const result: Vec2[] = [];
   let anchor: ReadonlyVec2 = from;
@@ -131,7 +140,7 @@ function smooth(grid: NavGrid, from: ReadonlyVec2, points: readonly Vec2[]): Vec
     let reach: number = index;
     for (let candidate: number = points.length - 1; candidate > index; candidate -= 1) {
       const point: Vec2 | undefined = points[candidate];
-      if (point !== undefined && lineWalkable(grid, anchor, point)) {
+      if (point !== undefined && lineWalkable(grid, anchor, point) && linePace(grid, anchor, point) >= slowest(grid, anchor, points, index, candidate)) {
         reach = candidate;
         break;
       }
@@ -149,7 +158,7 @@ export function findPath(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): V
   const start: Vec2 | null = nearestWalkable(grid, from, PATH.snapRadius);
   const goal: Vec2 | null = nearestWalkable(grid, to, PATH.snapRadius);
   if (start === null || goal === null) return [];
-  if (lineWalkable(grid, start, goal)) return [goal];
+  if (lineWalkable(grid, start, goal) && linePace(grid, start, goal) >= Math.min(paceAt(grid, start.x, start.z), paceAt(grid, goal.x, goal.z))) return [goal];
   const startCell: number = cellIndex(grid, start.x, start.z);
   const goalCell: number = cellIndex(grid, goal.x, goal.z);
   if (startCell < 0 || goalCell < 0) return [];

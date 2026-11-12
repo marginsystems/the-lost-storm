@@ -1,5 +1,6 @@
 import type { BookDef, ZoneEncounter } from './story-types.ts';
 import type { Content, ItemBaseDef, ZoneDef } from './types.ts';
+import { roadFlagNames } from './road.ts';
 
 export function storyFlagNames(content: Content): ReadonlySet<string> {
   const names: Set<string> = new Set<string>(Object.keys(content.world.legacyFlags));
@@ -7,6 +8,7 @@ export function storyFlagNames(content: Content): ReadonlySet<string> {
     for (const met of zone.void?.encounters ?? []) if (met.find.type === 'item') for (const key of Object.keys(met.find.sets)) names.add(key);
   }
   for (const book of content.books.values()) for (const page of book.pages) for (const key of Object.keys(page.sets)) names.add(key);
+  for (const key of roadFlagNames(content)) names.add(key);
   return names;
 }
 

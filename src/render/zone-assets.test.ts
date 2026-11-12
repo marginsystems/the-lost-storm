@@ -15,7 +15,7 @@ function anyZone(): ZoneDef {
 void test('a zone lists its wall pieces and placed props, and the models they use', (): void => {
   const zone: ZoneDef = anyZone();
   const props: string[] = zoneProps(zone);
-  assert.ok(props.includes(zone.walls.low));
+  if (zone.walls !== null) assert.ok(props.includes(zone.walls.low));
   for (const placed of zone.props) assert.ok(props.includes(placed.prop));
   const models: Set<string> = zoneModels(content, zone);
   for (const propId of props) {

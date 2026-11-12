@@ -13,6 +13,7 @@ import type {
   MapPlace,
   NpcDef,
   ObjectiveDef,
+  PathObjective,
   PackMember,
   QuestDef,
   SurgeRules,
@@ -28,6 +29,7 @@ import type {
   ZonePoint,
   ZoneProp,
   ZoneVoice,
+  ZoneWalls,
   ZoneWaypoint,
 } from './types.ts';
 import { service } from './parse-trade.ts';
@@ -36,6 +38,7 @@ import { HUD_PARTS } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
+import { actEnd, drifts, retiredZones, triggers } from './parse-road.ts';
 
 function point(value: unknown, where: string): ZonePoint {
   const source: Fields = fields(value, where);
@@ -154,12 +157,17 @@ function zoneOutside(value: unknown, where: string): ZoneOutside | null {
   return { surface: text(source, 'surface', where), reach: positive(source, 'reach', where) };
 }
 
+function zoneWalls(value: unknown, where: string): ZoneWalls | null {
+  if (value === null) return null;
+  const walls: Fields = fields(value, where);
+  return { tall: textList(walls, 'tall', where), low: text(walls, 'low', where), corner: text(walls, 'corner', where), halfThickness: numeric(walls, 'halfThickness', where) };
+}
+
 export function zone(value: unknown, where: string): ZoneDef {
   const source: Fields = fields(value, where);
   const floorFields: Fields = fields(source['floors'], `${where}.floors`);
   const floors: Record<string, string> = {};
   for (const key of Object.keys(floorFields)) floors[key] = text(floorFields, key, `${where}.floors`);
-  const walls: Fields = fields(source['walls'], `${where}.walls`);
   const tiles: string[] = textList(source, 'tiles', where);
   const width: number = tiles[0]?.length ?? 0;
   if (width === 0 || tiles.some((row: string): boolean => row.length !== width)) throw new ContentError(`${where}.tiles`, 'every row must have the same length');
@@ -181,7 +189,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     tiles,
     floors,
     outside: zoneOutside(source['outside'], `${where}.outside`),
-    walls: { tall: textList(walls, 'tall', `${where}.walls`), low: text(walls, 'low', `${where}.walls`), corner: text(walls, 'corner', `${where}.walls`), halfThickness: numeric(walls, 'halfThickness', `${where}.walls`) },
+    walls: zoneWalls(source['walls'], `${where}.walls`),
     props: each(source['props'], `${where}.props`, zoneProp),
     playerStart: point(source['playerStart'], `${where}.playerStart`),
     packs,
@@ -194,6 +202,8 @@ export function zone(value: unknown, where: string): ZoneDef {
     ambience: zoneAmbience(source['ambience'], `${where}.ambience`),
     void: kind === 'void' ? zoneVoid(source['void'], `${where}.void`) : null,
     hud: zoneHud(source['hud'], `${where}.hud`),
+    drifts: drifts(source['drifts'], `${where}.drifts`),
+    triggers: triggers(source['triggers'], `${where}.triggers`),
   };
 }
 
@@ -279,17 +289,27 @@ function atlas(value: unknown, where: string): AtlasDef {
 
 function act(value: unknown, where: string): ActDef {
   const source: Fields = fields(value, where);
-  return { id: text(source, 'id', where), title: text(source, 'title', where), name: text(source, 'name', where), atlas: atlas(source['atlas'], `${where}.atlas`) };
+  return { id: text(source, 'id', where), title: text(source, 'title', where), name: text(source, 'name', where), atlas: atlas(source['atlas'], `${where}.atlas`), end: actEnd(source['end'], `${where}.end`) };
+}
+
+function pathObjective(value: unknown, where: string): PathObjective {
+  const source: Fields = fields(value, where);
+  const type: PathObjective['type'] = choice(source, 'type', ['talk', 'reach', 'defeat'] as const, where);
+  const id: string = text(source, 'id', where);
+  const shown: string = text(source, 'text', where);
+  const when: Condition[] = conditions(source, 'when', where);
+  const sets: Record<string, string> = storyFlags(source['sets'], `${where}.sets`);
+  if (type === 'talk') return { type, id, text: shown, when, sets, npc: text(source, 'npc', where) };
+  if (type === 'defeat') return { type, id, text: shown, when, sets, monster: text(source, 'monster', where) };
+  return { type, id, text: shown, when, sets, zone: text(source, 'zone', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
 }
 
 function objective(value: unknown, where: string): ObjectiveDef {
   const source: Fields = fields(value, where);
-  const type: ObjectiveDef['type'] = choice(source, 'type', ['talk', 'reach', 'defeat'] as const, where);
-  const id: string = text(source, 'id', where);
-  const shown: string = text(source, 'text', where);
-  if (type === 'talk') return { type, id, text: shown, npc: text(source, 'npc', where) };
-  if (type === 'defeat') return { type, id, text: shown, monster: text(source, 'monster', where) };
-  return { type, id, text: shown, zone: text(source, 'zone', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
+  if (source['type'] !== 'either') return pathObjective(value, where);
+  const paths: PathObjective[] = [...byId(each(source['paths'], `${where}.paths`, pathObjective), `${where}.paths`).values()];
+  if (paths.length < 2) throw new ContentError(`${where}.paths`, 'an either objective needs at least two paths');
+  return { type: 'either', id: text(source, 'id', where), text: text(source, 'text', where), when: conditions(source, 'when', where), sets: storyFlags(source['sets'], `${where}.sets`), paths };
 }
 
 export function quest(value: unknown, where: string): QuestDef {
@@ -308,6 +328,7 @@ export function worldDef(value: unknown, where: string): WorldDef {
     town: text(source, 'town', where),
     opening: nullableText(source, 'opening', where),
     legacyFlags: storyFlags(source['legacyFlags'], `${where}.legacyFlags`),
+    retired: retiredZones(source['retired'], `${where}.retired`),
     scaling: {
       lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),
       damagePerLevel: numeric(scaling, 'damagePerLevel', `${where}.scaling`),

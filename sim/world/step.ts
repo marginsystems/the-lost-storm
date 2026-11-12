@@ -12,6 +12,7 @@ import { stepProjectiles } from './skills.ts';
 import { stepTrade } from './trade.ts';
 import type { Command, World, WorldEvent } from './types.ts';
 import { stepVoid } from './void.ts';
+import { stepDrifts, stepTriggers } from './terrain.ts';
 import { acceptsCommand } from './wake.ts';
 
 export const MAX_STEP: number = 1 / 30;
@@ -19,6 +20,7 @@ export const MAX_STEP: number = 1 / 30;
 export function stepWorld(world: World, commands: readonly Command[], dt: number): WorldEvent[] {
   world.events = [];
   world.time += dt;
+  stepDrifts(world);
   for (const command of commands) if (acceptsCommand(world, command)) handleCommand(world, command);
   stepPlayer(world, dt);
   stepFlasks(world, dt);
@@ -34,6 +36,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepSurge(world, dt);
   stepBosses(world);
   stepVoices(world);
+  stepTriggers(world);
   stepQuests(world);
   stepTrade(world);
   return world.events;

@@ -9,13 +9,14 @@ import { findPath } from '../nav/path.ts';
 import { clipUrl, rigClipNames } from './clips.ts';
 import { loadContent } from './content.ts';
 import { contentProblems } from './parse.ts';
+import { objectivePaths } from './road.ts';
 import { allHold } from '../world/conditions.ts';
 import { createWorld } from '../world/create.ts';
 import { nextTalk } from '../world/dialogue.ts';
 import { stepWorld } from '../world/step.ts';
 import type { World, WorldEvent } from '../world/types.ts';
 import { enterZone } from '../world/zones.ts';
-import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, QuestDef, SkillTreeNodeDef, TalkDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
+import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, PathObjective, QuestDef, SkillTreeNodeDef, TalkDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
 import { fields, items, text } from './read.ts';
 
 const content: Content = loadContent();
@@ -121,7 +122,7 @@ void test('every zone file under data/zones is loaded under its own name', (): v
 
 void test('in every zone the start, packs, exits, arrival points, checkpoints and npcs are walkable and reachable on foot', (): void => {
   for (const zone of content.zones.values()) {
-    const grid: NavGrid = buildNavGrid(zone, content.props, content.player.radius);
+    const grid: NavGrid = buildNavGrid(zone, content.props, content.surfaces, content.player.radius);
     const start: Vec2 = zone.playerStart;
     assert.ok(isWalkable(grid, start.x, start.z), `${zone.id} player start`);
     for (const pack of zone.packs) assert.ok(reaches(grid, start, pack), `${zone.id} pack at ${pack.x},${pack.z}`);
@@ -305,7 +306,11 @@ function openZones(world: World): Set<string> {
   return reached;
 }
 
-function placesOf(world: World, objective: ObjectiveDef): string[] {
+function placesOf(world: World, goal: ObjectiveDef): string[] {
+  return objectivePaths(goal).flatMap((path: PathObjective): string[] => pathPlaces(world, path));
+}
+
+function pathPlaces(world: World, objective: PathObjective): string[] {
   if (objective.type === 'reach') return [objective.zone];
   const zones: ZoneDef[] = [...content.zones.values()];
   if (objective.type === 'talk') {

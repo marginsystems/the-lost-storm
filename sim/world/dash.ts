@@ -1,7 +1,7 @@
 import type { DashDelivery } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
-import { moveWithCollision } from '../nav/grid.ts';
+import { moveWithCollision, paceAt } from '../nav/grid.ts';
 import type { ActionState, ActorState } from './types.ts';
 
 export const DASH = {
@@ -37,7 +37,7 @@ export function dashAim(actor: ActorState, aim: Vec2, path: readonly Vec2[]): Ve
 export function stepDash(grid: NavGrid, actor: ActorState, action: ActionState, dt: number): void {
   const dash: DashDelivery | null = dashOf(action);
   if (dash === null || action.phase !== 'windup' || action.windup <= 0) return;
-  let travel: number = (dash.distance * Math.min(dt, Math.max(0, action.timeLeft))) / action.windup;
+  let travel: number = (dash.distance * paceAt(grid, actor.pos.x, actor.pos.z) * Math.min(dt, Math.max(0, action.timeLeft))) / action.windup;
   while (travel > 0) {
     const step: number = Math.min(travel, DASH.step);
     travel -= step;

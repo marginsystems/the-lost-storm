@@ -1,5 +1,5 @@
 import type { FlaskResource } from '../../sim/content/flasks.ts';
-import type { ItemSlot } from '../../sim/content/types.ts';
+import type { ActDef, ItemSlot } from '../../sim/content/types.ts';
 import { slotOf } from '../../sim/items.ts';
 import type { ItemInstance, WorldEvent } from '../../sim/world/types.ts';
 import { HINT_PANELS, loadHints } from '../../sim/content/hints.ts';
@@ -245,6 +245,13 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'quest_completed':
             banners.show(api.world.content.quests.get(event.quest)?.name ?? '', 'Quest complete', 'quest');
+            break;
+          case 'act_ended': {
+            const act: ActDef | undefined = api.world.content.world.acts.find((candidate: ActDef): boolean => candidate.id === event.act);
+            if (act !== undefined) banners.show(`${act.title} complete`, act.end?.line ?? null, 'act');
+            break;
+          }
+          case 'triggered':
             break;
           case 'waypoint_unlocked':
             banners.show('Waypoint', `Open the map with ${keyOf('map')} to travel between waypoints`, 'checkpoint');

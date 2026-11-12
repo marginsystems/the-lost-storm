@@ -393,3 +393,17 @@ void test('a save from before story flags is a returning hero: the legacy flags 
   const current: SaveData = must(readSave(content, { ...older, version: SAVE_VERSION, flags: {} }), 'current save');
   assert.deepEqual(current.flags, {});
 });
+
+void test('a save in a retired zone loads where the retired zones lead, with the hero and the retirement flags', (): void => {
+  const to: string = content.world.town;
+  const retiring: Content = { ...content, world: { ...content.world, retired: { zones: ['gone_road'], to, flags: { rerouted: 'yes' } } } };
+  const saved: SaveData = toSave(played());
+  const moved: SaveData = must(readSave(retiring, { ...saved, zone: 'gone_road', respawn: { type: 'checkpoint', checkpoint: 'old' } }), 'retired save');
+  assert.equal(moved.zone, to);
+  assert.deepEqual(moved.respawn, { type: 'start' });
+  assert.equal(moved.flags['rerouted'], 'yes');
+  assert.equal(moved.level, saved.level);
+  assert.deepEqual(moved.inventory, saved.inventory);
+  const elsewhere: SaveData = must(readSave(retiring, { ...saved, zone: 'never_was' }), 'unknown save');
+  assert.equal(elsewhere.flags['rerouted'], undefined);
+});

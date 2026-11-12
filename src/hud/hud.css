@@ -353,6 +353,11 @@
   font-size: 44px;
 }
 
+.banner.act .banner-title {
+  color: var(--text);
+  font-size: 48px;
+}
+
 .banner.checkpoint .banner-title {
   color: var(--ember);
   font-size: 30px;

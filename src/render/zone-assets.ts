@@ -1,7 +1,8 @@
 import type { Content, PropDef, ZoneDef } from '../../sim/content/types.ts';
 
 export function zoneProps(zone: ZoneDef): string[] {
-  return [...zone.walls.tall, zone.walls.low, zone.walls.corner, ...zone.props.map((placed): string => placed.prop)];
+  const walls: string[] = zone.walls === null ? [] : [...zone.walls.tall, zone.walls.low, zone.walls.corner];
+  return [...walls, ...zone.props.map((placed): string => placed.prop)];
 }
 
 export function zoneModels(content: Content, zone: ZoneDef): Set<string> {

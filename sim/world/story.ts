@@ -3,16 +3,16 @@ import type { ItemBaseDef } from '../content/types.ts';
 import { bookOf } from '../content/story.ts';
 import { allHold } from './conditions.ts';
 import { startQuests } from './quests.ts';
+import { writeFlags } from './flags.ts';
+import { refreshNpcs } from './dialogue.ts';
+import { spawnPacks } from './monsters.ts';
 import type { ItemInstance, World } from './types.ts';
 
 export function setFlags(world: World, sets: StoryFlags): void {
-  const keys: string[] = Object.keys(sets);
-  if (keys.length === 0) return;
-  for (const key of keys) {
-    const value: string | undefined = sets[key];
-    if (value !== undefined) world.flags[key] = value;
-  }
+  if (!writeFlags(world, sets)) return;
   startQuests(world);
+  refreshNpcs(world);
+  spawnPacks(world);
 }
 
 export function carriedBook(world: World, bookId: string): BookDef | null {

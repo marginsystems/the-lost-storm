@@ -80,7 +80,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   world.ground = [];
   world.surgeTimer = null;
   world.zone = zone;
-  world.grid = buildNavGrid(zone, world.content.props, world.content.player.radius);
+  world.grid = buildNavGrid(zone, world.content.props, world.content.surfaces, world.content.player.radius);
   world.respawn = respawn;
   if (!world.visited.includes(zone.id)) world.visited.push(zone.id);
   placePlayer(world);

@@ -1,4 +1,5 @@
-import type { Content, ObjectiveDef, ZoneDef, ZoneExit } from '../content/types.ts';
+import type { Content, ObjectiveDef, PathObjective, ZoneDef, ZoneExit } from '../content/types.ts';
+import { objectivePaths } from '../content/road.ts';
 import type { Vec2 } from '../math.ts';
 import { allHold } from './conditions.ts';
 import { activeQuests, currentObjective } from './quests.ts';
@@ -14,7 +15,7 @@ function zonesWith(content: Content, has: (zone: ZoneDef) => boolean): string[] 
   return [...content.zones.values()].filter(has).map((zone: ZoneDef): string => zone.id);
 }
 
-function targetZones(world: World, objective: ObjectiveDef): string[] {
+function pathZones(world: World, objective: PathObjective): string[] {
   let zones: string[];
   switch (objective.type) {
     case 'talk':
@@ -42,7 +43,7 @@ function defeatTarget(world: World, monsterId: string): Vec2 | null {
   return pack === undefined ? null : { x: pack.x, z: pack.z };
 }
 
-function localTarget(world: World, objective: ObjectiveDef): Vec2 | null {
+function pathTarget(world: World, objective: PathObjective): Vec2 | null {
   let target: Vec2 | null;
   switch (objective.type) {
     case 'talk':
@@ -80,6 +81,22 @@ export function firstExitToward(world: World, goals: readonly string[]): ZoneExi
       }
     }
     frontier = next;
+  }
+  return null;
+}
+
+function openPaths(world: World, objective: ObjectiveDef): PathObjective[] {
+  return objectivePaths(objective).filter((path: PathObjective): boolean => allHold(world, path.when));
+}
+
+function targetZones(world: World, objective: ObjectiveDef): string[] {
+  return openPaths(world, objective).flatMap((path: PathObjective): string[] => pathZones(world, path));
+}
+
+function localTarget(world: World, objective: ObjectiveDef): Vec2 | null {
+  for (const path of openPaths(world, objective)) {
+    const target: Vec2 | null = pathTarget(world, path);
+    if (target !== null) return target;
   }
   return null;
 }

@@ -2,14 +2,15 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
-import type { Content } from '../content/types.ts';
+import type { Content, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { buildNavGrid, isWalkable, lineWalkable } from './grid.ts';
+import { buildNavGrid, isWalkable, lineWalkable, paceAt } from './grid.ts';
+import { ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts';
 import type { NavGrid } from './grid.ts';
 import { findPath } from './path.ts';
 
 const content: Content = loadContent();
-const grid: NavGrid = buildNavGrid(zoneOf(content, 'drowned_bastion'), content.props, content.player.radius);
+const grid: NavGrid = buildNavGrid(zoneOf(content, 'drowned_bastion'), content.props, content.surfaces, content.player.radius);
 
 function follow(from: Vec2, path: readonly Vec2[]): number {
   let length: number = 0;
@@ -59,4 +60,14 @@ void test('paths exist between distant corners of the arena', (): void => {
   const path: Vec2[] = findPath(grid, from, goal);
   assert.deepEqual(must(path.at(-1), 'goal'), goal);
   follow(from, path);
+});
+
+void test('a path takes the firm way round rather than wading straight across slow ground', (): void => {
+  const zone: ZoneDef = roadZone({ tiles: ['wwwwwwww', 'wsssssww', 'wsssssww', 'wsssssww', 'wwwwwwww'] });
+  const local: NavGrid = buildNavGrid(zone, ROAD_CONTENT.props, roadContent(zone).surfaces, ROAD_CONTENT.player.radius);
+  const path: Vec2[] = findPath(local, { x: 2, z: 10 }, { x: 26, z: 10 });
+  assert.ok(path.length > 1);
+  const wading: number = path.filter((point: Vec2): boolean => paceAt(local, point.x, point.z) < 1).length;
+  assert.equal(wading, 0);
+  assert.ok(path.some((point: Vec2): boolean => point.z < 4 || point.z > 16));
 });

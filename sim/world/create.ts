@@ -107,7 +107,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   const world: World = {
     content,
     zone,
-    grid: buildNavGrid(zone, content.props, content.player.radius),
+    grid: buildNavGrid(zone, content.props, content.surfaces, content.player.radius),
     respawn,
     death: null,
     visited,

@@ -1,6 +1,7 @@
 import { atlasProblems } from './atlas.ts';
 import { books } from './parse-story.ts';
 import { storyFlagNames, storyProblems } from './story.ts';
+import { conditionProblems, roadProblems } from './road.ts';
 import { parseFlasks } from './flasks.ts';
 import { combatProblems, markDelivery, monsterMod, monsterTraits, skillMotion } from './parse-combat.ts';
 import type { Fields } from './read.ts';
@@ -25,11 +26,9 @@ import type {
   MonsterBehaviour,
   MonsterDef,
   NpcDef,
-  ObjectiveDef,
   PlayerDef,
   PropDef,
   PropLight,
-  QuestDef,
   RarityDef,
   RigActionClip,
   RigClips,
@@ -392,6 +391,7 @@ function surface(value: unknown, where: string): SurfaceDef {
     metalness: numeric(source, 'metalness', where),
     normalScale: numeric(source, 'normalScale', where),
     spill: numeric(source, 'spill', where),
+    pace: source['pace'] === undefined ? 1 : positive(source, 'pace', where),
   };
 }
 
@@ -563,17 +563,11 @@ export function contentProblems(content: Content): string[] {
     for (const required of node.requires) need(nodeIds.has(required), `tree node ${node.id} requires unknown node ${required}`);
     for (const mod of node.skillMods) need(content.skills.has(mod.skill), `tree node ${node.id} modifies unknown skill ${mod.skill}`);
   }
+  const flagNames: ReadonlySet<string> = storyFlagNames(content);
   const known = (holder: string, list: readonly Condition[]): void => {
-    for (const entry of list) {
-      if (entry.type === 'flag') {
-        need(storyFlagNames(content).has(entry.flag), `${holder} names flag ${entry.flag}, which nothing sets`);
-        continue;
-      }
-      const questDef: QuestDef | undefined = content.quests.get(entry.quest);
-      need(questDef !== undefined, `${holder} names unknown quest ${entry.quest}`);
-      if (questDef !== undefined && entry.type === 'objective') need(questDef.objectives.some((candidate: ObjectiveDef): boolean => candidate.id === entry.objective), `${holder} names unknown objective ${entry.quest}.${entry.objective}`);
-    }
+    problems.push(...conditionProblems(content, flagNames, holder, list));
   };
+  problems.push(...roadProblems(content, flagNames));
   for (const def of content.props.values()) {
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `prop ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }
@@ -591,7 +585,7 @@ export function contentProblems(content: Content): string[] {
     const at: string = `zone ${zoneDef.id}`;
     for (const floor of Object.values(zoneDef.floors)) need(content.surfaces.has(floor), `${at} floor uses unknown surface ${floor}`);
     if (zoneDef.outside !== null) need(content.surfaces.has(zoneDef.outside.surface), `${at} outside uses unknown surface ${zoneDef.outside.surface}`);
-    for (const model of [...zoneDef.walls.tall, zoneDef.walls.low, zoneDef.walls.corner]) need(content.props.has(model), `${at} wall uses unknown prop ${model}`);
+    for (const model of zoneDef.walls === null ? [] : [...zoneDef.walls.tall, zoneDef.walls.low, zoneDef.walls.corner]) need(content.props.has(model), `${at} wall uses unknown prop ${model}`);
     for (const placed of zoneDef.props) {
       const def: PropDef | undefined = content.props.get(placed.prop);
       need(def !== undefined, `${at} places unknown prop ${placed.prop}`);
@@ -664,20 +658,6 @@ export function contentProblems(content: Content): string[] {
   for (const questDef of content.quests.values()) {
     known(`quest ${questDef.id}`, questDef.when);
     for (const required of questDef.requires) need(content.quests.has(required) && required !== questDef.id, `quest ${questDef.id} requires unknown quest ${required}`);
-    for (const goal of questDef.objectives) {
-      const at: string = `quest ${questDef.id} objective ${goal.id}`;
-      switch (goal.type) {
-        case 'talk':
-          need(content.npcs.has(goal.npc), `${at} names unknown npc ${goal.npc}`);
-          break;
-        case 'reach':
-          need(content.zones.has(goal.zone), `${at} names unknown zone ${goal.zone}`);
-          break;
-        case 'defeat':
-          need(content.monsters.has(goal.monster), `${at} names unknown monster ${goal.monster}`);
-          break;
-      }
-    }
   }
   problems.push(...tradeProblems(content));
   return problems;

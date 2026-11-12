@@ -394,13 +394,13 @@ void test('a quest, its three kinds of objective, conditions, a waypoint and map
   assert.deepEqual(contentProblems(content), []);
   const errand: QuestDef = must(content.quests.get('errand'), 'errand');
   assert.deepEqual(errand.requires, ['fallen_in']);
-  assert.deepEqual(errand.objectives, extraQuest.objectives);
+  assert.deepEqual(errand.objectives, extraQuest.objectives.map((goal: object): object => ({ ...goal, when: [], sets: {} })));
   const town: ZoneDef = must(content.zones.get('stillhold'), 'town');
   const stair = must(town.exits.find((exit): boolean => exit.id === 'bastion_stair'), 'town stair');
   assert.deepEqual(stair.requires, [{ ...gate, not: false }, { type: 'quest', quest: 'fallen_in', is: 'done', not: true }]);
   assert.equal(stair.lockedHint, 'Later');
   assert.deepEqual(town.waypoint, stillhold.waypoint);
-  assert.deepEqual(content.world.acts, world.acts);
+  assert.deepEqual(content.world.acts, world.acts.map((entry: object): object => ({ ...entry, end: null })));
   assert.deepEqual(must(must(content.npcs.get('maren'), 'maren').talks[0], 'talk').when, [{ type: 'objective', quest: 'fallen_in', objective: 'tallier', is: 'current', not: false }]);
 });
 

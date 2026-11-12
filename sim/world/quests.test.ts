@@ -11,6 +11,7 @@ import { activeQuests, currentObjective } from './quests.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, NpcState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
+import { roadWorld, roadZone } from '../../test/road-support.ts';
 
 const shipped: Content = loadContent();
 const DT: number = 1 / 60;
@@ -28,13 +29,13 @@ const errand: QuestDef = {
   requires: [],
   when: [],
   objectives: [
-    { id: 'ask', type: 'talk', npc: 'maren', text: 'Ask' },
-    { id: 'go', type: 'reach', zone: 'stillhold', x: 30, z: 20, radius: 1.5, text: 'Go' },
-    { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill' },
+    { id: 'ask', type: 'talk', npc: 'maren', text: 'Ask', when: [], sets: {} },
+    { id: 'go', type: 'reach', zone: 'stillhold', x: 30, z: 20, radius: 1.5, text: 'Go', when: [], sets: {} },
+    { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill', when: [], sets: {} },
   ],
 };
 
-const sequel: QuestDef = { id: 'sequel', name: 'After', requires: ['errand'], when: [], objectives: [{ id: 'tell', type: 'talk', npc: 'hale', text: 'Tell' }] };
+const sequel: QuestDef = { id: 'sequel', name: 'After', requires: ['errand'], when: [], objectives: [{ id: 'tell', type: 'talk', npc: 'hale', text: 'Tell', when: [], sets: {} }] };
 
 function during(objective: string): Condition[] {
   return [{ type: 'objective', quest: 'errand', objective, is: 'current', not: false }];
@@ -250,8 +251,8 @@ function hunted(): Content {
     name: 'A Hunt',
     requires: [], when: [],
     objectives: [
-      { id: 'go', type: 'reach', zone: bastion.id, x: bastion.playerStart.x, z: bastion.playerStart.z, radius: 2, text: 'Go' },
-      { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill' },
+      { id: 'go', type: 'reach', zone: bastion.id, x: bastion.playerStart.x, z: bastion.playerStart.z, radius: 2, text: 'Go', when: [], sets: {} },
+      { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill', when: [], sets: {} },
     ],
   };
   const lair: ZoneDef = { ...bastion, packs: [{ x: den.x, z: den.z, members: [{ monster: 'hex_caller', count: 1, mods: [] }], when: during('kill') }] };
@@ -275,4 +276,49 @@ void test('a pack whose condition starts to hold while the hero is in the zone a
   world.quests = { errand: 2 };
   enterZone(world, zoneOf(content, 'drowned_bastion'), { type: 'start' });
   assert.equal(world.monsters.length, 0);
+});
+
+const crossing: QuestDef = {
+  id: 'crossing',
+  name: 'The Crossing',
+  requires: [],
+  when: [],
+  objectives: [
+    {
+      id: 'through',
+      type: 'either',
+      text: 'Get through',
+      when: [],
+      sets: { crossed: 'yes' },
+      paths: [
+        { id: 'fight', type: 'reach', zone: 'road_test', x: 28, z: 8, radius: 2, text: 'Fight through', when: [], sets: { crossing: 'fought' } },
+        { id: 'quiet', type: 'reach', zone: 'road_test', x: 4, z: 14, radius: 2, text: 'Go quietly', when: [{ type: 'flag', flag: 'token', is: 'carried', not: false }], sets: { crossing: 'quiet' } },
+      ],
+    },
+    { id: 'after', type: 'reach', zone: 'road_test', x: 16, z: 8, radius: 2, text: 'After', when: [], sets: {} },
+  ],
+};
+
+function crossingWorld(): World {
+  return roadWorld(roadZone({}), { quests: new Map<string, QuestDef>([[crossing.id, crossing]]) });
+}
+
+void test('an either objective is done by whichever path is met first, and sets that path\'s flags', (): void => {
+  const world: World = crossingWorld();
+  world.player.pos = { x: 28, z: 8 };
+  stepWorld(world, [], DT);
+  assert.equal(currentObjective(world, crossing)?.id, 'after');
+  assert.equal(world.flags['crossing'], 'fought');
+  assert.equal(world.flags['crossed'], 'yes');
+});
+
+void test('a path with a condition cannot be met until the condition holds', (): void => {
+  const world: World = crossingWorld();
+  world.player.pos = { x: 4, z: 14 };
+  stepWorld(world, [], DT);
+  assert.equal(currentObjective(world, crossing)?.id, 'through');
+  world.flags['token'] = 'carried';
+  stepWorld(world, [], DT);
+  assert.equal(currentObjective(world, crossing)?.id, 'after');
+  assert.equal(world.flags['crossing'], 'quiet');
 });

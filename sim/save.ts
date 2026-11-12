@@ -1,6 +1,7 @@
 import type { Fields } from './content/read.ts';
 import { isFields } from './content/read.ts';
 import type { StoryFlags } from './content/story-types.ts';
+import type { RetiredZones } from './content/road-types.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
@@ -251,7 +252,8 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const savedZone: unknown = value['zone'];
   const known: boolean = typeof savedZone === 'string' && content.zones.has(savedZone);
   const legacy: boolean = typeof value['version'] !== 'number' || value['version'] < FLAGGED_VERSION;
-  const zone: string = typeof savedZone === 'string' && known ? savedZone : legacy ? content.world.town : content.world.start;
+  const retired: RetiredZones | null = typeof savedZone === 'string' && !known && content.world.retired?.zones.includes(savedZone) === true ? content.world.retired : null;
+  const zone: string = typeof savedZone === 'string' && known ? savedZone : retired !== null ? retired.to : legacy ? content.world.town : content.world.start;
   const slots: (ItemInstance | null)[] = Array.from({ length: size }, (_: unknown, index: number): ItemInstance | null => readItem(content, inventoryList[index]));
   const worn: Worn = readEquipped(content, value['equipped'], slots);
   const spilled: unknown = value['spilled'];
@@ -281,7 +283,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     flasks: readFlasks(content, value['flasks']),
     stash: stashed.stash,
     vendors: readVendors(content, value['vendors']),
-    flags: readFlags(content, value['flags'], legacy),
+    flags: { ...readFlags(content, value['flags'], legacy), ...retired?.flags },
   };
 }
 

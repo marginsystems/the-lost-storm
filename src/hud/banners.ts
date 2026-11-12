@@ -2,10 +2,11 @@ import { el, label } from './dom.ts';
 
 const BANNERS = {
   holdMs: 1700,
+  actHoldMs: 5200,
   removeMs: 900,
 } as const;
 
-export type BannerTone = 'surge' | 'level' | 'zone' | 'checkpoint' | 'quest';
+export type BannerTone = 'surge' | 'level' | 'zone' | 'checkpoint' | 'quest' | 'act';
 
 export interface Banners {
   show(title: string, subtitle: string | null, tone: BannerTone): void;
@@ -26,7 +27,7 @@ export function createBanners(root: HTMLElement): Banners {
         window.setTimeout((): void => {
           banner.remove();
         }, BANNERS.removeMs);
-      }, BANNERS.holdMs);
+      }, tone === 'act' ? BANNERS.actHoldMs : BANNERS.holdMs);
     },
   };
 }

@@ -1,7 +1,7 @@
 import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
-import { moveWithCollision } from '../nav/grid.ts';
+import { moveWithCollision, paceAt } from '../nav/grid.ts';
 import { isDashing } from './dash.ts';
 import type { ActorState, World } from './types.ts';
 
@@ -50,7 +50,7 @@ export function stepKnock(grid: NavGrid, actor: ActorState, dt: number): void {
 }
 
 export function followPath(grid: NavGrid, actor: ActorState, path: Vec2[], travel: number, maxTurn: number): number {
-  let remaining: number = travel;
+  let remaining: number = travel * paceAt(grid, actor.pos.x, actor.pos.z);
   let moved: number = 0;
   while (remaining > MOVEMENT.arrive) {
     const next: Vec2 | undefined = path[0];

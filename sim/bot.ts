@@ -1,8 +1,9 @@
-import type { ObjectiveDef, QuestDef, SkillDef, ZoneDef, ZoneExit } from './content/types.ts';
+import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, ZoneDef, ZoneExit } from './content/types.ts';
 import type { ReadonlyVec2, Vec2 } from './math.ts';
 import { DEGREES_TO_RADIANS, distance, dot, normalize, rotate } from './math.ts';
 import { isWalkable, lineWalkable } from './nav/grid.ts';
 import { allHold, questState } from './world/conditions.ts';
+import { objectivePaths } from './content/road.ts';
 import { currentObjective } from './world/quests.ts';
 import { SKILLS } from './world/skills.ts';
 import { choicesOpen } from './world/death.ts';
@@ -288,9 +289,11 @@ function zoneOfMonster(world: World, monsterId: string): string | null {
   return null;
 }
 
-export function botObjective(bot: Bot, quest: QuestDef, objective: ObjectiveDef): boolean {
+export function botObjective(bot: Bot, quest: QuestDef, goal: ObjectiveDef): boolean {
   const world: World = bot.world;
-  const done = (): boolean => currentObjective(world, quest)?.id !== objective.id;
+  const objective: PathObjective | undefined = objectivePaths(goal).find((path: PathObjective): boolean => allHold(world, path.when));
+  if (objective === undefined) return false;
+  const done = (): boolean => currentObjective(world, quest)?.id !== goal.id;
   let finished: boolean;
   switch (objective.type) {
     case 'talk': {

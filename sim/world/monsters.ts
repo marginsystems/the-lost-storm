@@ -2,7 +2,7 @@ import type { StalkerBehaviour, SummonDef } from '../content/combat-types.ts';
 import type { MonsterDef, MonsterScaling, RangedBehaviour, SkillDef, SurgeRules } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { clamp, directionOf, distance, normalize, rotate } from '../math.ts';
-import { lineOfSight, lineWalkable, moveWithCollision, nearestWalkable } from '../nav/grid.ts';
+import { lineOfSight, lineWalkable, moveWithCollision, nearestWalkable, paceAt } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { lifePhase, pickBossSkill } from './boss.ts';
 import { aggroPack } from './combat.ts';
@@ -53,7 +53,8 @@ function travel(world: World, monster: MonsterState, direction: Vec2, speed: num
   if (monster.root > 0) return;
   const fromX: number = monster.pos.x;
   const fromZ: number = monster.pos.z;
-  moveWithCollision(world.grid, monster.pos, direction.x * speed * dt, direction.z * speed * dt);
+  const paced: number = speed * paceAt(world.grid, monster.pos.x, monster.pos.z);
+  moveWithCollision(world.grid, monster.pos, direction.x * paced * dt, direction.z * paced * dt);
   monster.lastTravel = speed * dt;
   monster.moving = Math.hypot(monster.pos.x - fromX, monster.pos.z - fromZ) > MONSTERS.stillStep || monster.stuckTime < MONSTERS.blockedGrace;
 }

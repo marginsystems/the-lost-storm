@@ -3,6 +3,7 @@ import type { GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, SkillLeap, St
 import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { BookDef, StoryFlags, ZoneHud, ZoneVoid } from './story-types.ts';
+import type { ActEnd, RetiredZones, ZoneDrift, ZoneTrigger } from './road-types.ts';
 
 export const STAT_IDS = [
   'maxLife',
@@ -349,6 +350,7 @@ export interface SurfaceDef {
   readonly metalness: number;
   readonly normalScale: number;
   readonly spill: number;
+  readonly pace: number;
 }
 
 export interface PropDef {
@@ -477,7 +479,7 @@ export interface ZoneDef {
   readonly tiles: readonly string[];
   readonly floors: Readonly<Record<string, string>>;
   readonly outside: ZoneOutside | null;
-  readonly walls: ZoneWalls;
+  readonly walls: ZoneWalls | null;
   readonly props: readonly ZoneProp[];
   readonly playerStart: ZonePoint;
   readonly packs: readonly ZonePack[];
@@ -490,6 +492,8 @@ export interface ZoneDef {
   readonly ambience: ZoneAmbience;
   readonly void: ZoneVoid | null;
   readonly hud: ZoneHud | null;
+  readonly drifts: readonly ZoneDrift[];
+  readonly triggers: readonly ZoneTrigger[];
 }
 
 export interface LineDef {
@@ -505,31 +509,39 @@ export interface TalkDef {
   readonly lines: readonly string[];
 }
 
-export interface TalkObjective {
-  readonly type: 'talk';
+export interface ObjectiveBase {
   readonly id: string;
   readonly text: string;
+  readonly when: readonly Condition[];
+  readonly sets: StoryFlags;
+}
+
+export interface TalkObjective extends ObjectiveBase {
+  readonly type: 'talk';
   readonly npc: string;
 }
 
-export interface ReachObjective {
+export interface ReachObjective extends ObjectiveBase {
   readonly type: 'reach';
-  readonly id: string;
-  readonly text: string;
   readonly zone: string;
   readonly x: number;
   readonly z: number;
   readonly radius: number;
 }
 
-export interface DefeatObjective {
+export interface DefeatObjective extends ObjectiveBase {
   readonly type: 'defeat';
-  readonly id: string;
-  readonly text: string;
   readonly monster: string;
 }
 
-export type ObjectiveDef = TalkObjective | ReachObjective | DefeatObjective;
+export type PathObjective = TalkObjective | ReachObjective | DefeatObjective;
+
+export interface EitherObjective extends ObjectiveBase {
+  readonly type: 'either';
+  readonly paths: readonly PathObjective[];
+}
+
+export type ObjectiveDef = PathObjective | EitherObjective;
 
 export interface QuestDef {
   readonly id: string;
@@ -607,6 +619,7 @@ export interface ActDef {
   readonly title: string;
   readonly name: string;
   readonly atlas: AtlasDef;
+  readonly end: ActEnd | null;
 }
 
 export interface WorldDef {
@@ -616,6 +629,7 @@ export interface WorldDef {
   readonly legacyFlags: StoryFlags;
   readonly scaling: MonsterScaling;
   readonly acts: readonly ActDef[];
+  readonly retired: RetiredZones | null;
 }
 
 export interface SkillBinding {

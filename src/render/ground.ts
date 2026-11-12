@@ -1,4 +1,6 @@
-import { BufferGeometry, Float32BufferAttribute, Mesh } from 'three';
+import { BufferGeometry, Float32BufferAttribute, Mesh, MeshStandardMaterial } from 'three';
+import type { ZoneDrift } from '../../sim/content/road-types.ts';
+import { driftShown } from '../../sim/nav/drift.ts';
 import type { Content, SurfaceDef, ZoneDef } from '../../sim/content/types.ts';
 import { distanceToCell, floorCells, isFloorCell, outsideCells, tileAtCell } from '../../sim/nav/layout.ts';
 import type { FloorCell, OutsideCell } from '../../sim/nav/layout.ts';
@@ -19,6 +21,7 @@ export const GROUND = {
   outsideShade: 0.8,
   outsideLift: -0.015,
   overlayLift: 0.012,
+  driftSink: 0.35,
 } as const;
 
 interface Batch {
@@ -35,9 +38,36 @@ interface Corner {
   readonly alpha: number;
 }
 
+export interface DriftGround {
+  readonly drift: ZoneDrift;
+  readonly meshes: readonly Mesh[];
+  readonly materials: readonly MeshStandardMaterial[];
+}
+
 export interface Ground {
   readonly meshes: readonly Mesh[];
+  readonly drifts: readonly DriftGround[];
+  update(time: number): void;
   dispose(): void;
+}
+
+function driftAt(zone: ZoneDef, column: number, row: number): ZoneDrift | null {
+  return zone.drifts.find((drift: ZoneDrift): boolean => column >= drift.column && column < drift.column + drift.columns && row >= drift.row && row < drift.row + drift.rows) ?? null;
+}
+
+function driftGround(content: Content, drift: ZoneDrift, batches: ReadonlyMap<string, Batch>): DriftGround {
+  const meshes: Mesh[] = [];
+  const materials: MeshStandardMaterial[] = [];
+  for (const [surfaceId, batch] of batches) {
+    const mesh: Mesh | null = toMesh(content, surfaceId, 'ground', batch);
+    if (mesh === null || !(mesh.material instanceof MeshStandardMaterial)) continue;
+    const own: MeshStandardMaterial = mesh.material.clone();
+    own.transparent = true;
+    mesh.material = own;
+    meshes.push(mesh);
+    materials.push(own);
+  }
+  return { drift, meshes, materials };
 }
 
 function lattice(x: number, z: number): number {
@@ -151,9 +181,17 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
   const overlay: Map<string, Batch> = new Map<string, Batch>();
   const floorY: number = zone.floorHeight;
 
+  const drifting: Map<ZoneDrift, Map<string, Batch>> = new Map<ZoneDrift, Map<string, Batch>>();
   for (const cell of floorCells(zone)) {
     const own: SurfaceDef | null = spillOf(content, zone, cell.column, cell.row);
     if (own === null) continue;
+    const drift: ZoneDrift | null = driftAt(zone, cell.column, cell.row);
+    if (drift !== null) {
+      const batches: Map<string, Batch> = drifting.get(drift) ?? new Map<string, Batch>();
+      drifting.set(drift, batches);
+      cover(zone, batchFor(batches, own.id), cell.column, cell.row, floorY, 1, null);
+      continue;
+    }
     cover(zone, batchFor(solid, own.id), cell.column, cell.row, floorY, 1, null);
     for (const other of fringes(content, zone, cell, own)) {
       const alphaAt = (x: number, z: number): number => {
@@ -186,10 +224,26 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
     const mesh: Mesh | null = toMesh(content, surfaceId, 'overlay', batch);
     if (mesh !== null) meshes.push(mesh);
   }
+  const drifts: DriftGround[] = [...drifting].map(([drift, batches]: [ZoneDrift, Map<string, Batch>]): DriftGround => driftGround(content, drift, batches));
   return {
-    meshes,
+    meshes: [...meshes, ...drifts.flatMap((entry: DriftGround): readonly Mesh[] => entry.meshes)],
+    drifts,
+    update(time: number): void {
+      for (const entry of drifts) {
+        const shown: number = driftShown(entry.drift, time);
+        for (const material of entry.materials) material.opacity = shown;
+        for (const mesh of entry.meshes) {
+          mesh.visible = shown > 0;
+          mesh.position.y = -GROUND.driftSink * (1 - shown);
+        }
+      }
+    },
     dispose(): void {
       for (const mesh of meshes) mesh.geometry.dispose();
+      for (const entry of drifts) {
+        for (const mesh of entry.meshes) mesh.geometry.dispose();
+        for (const material of entry.materials) material.dispose();
+      }
     },
   };
 }

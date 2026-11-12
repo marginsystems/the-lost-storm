@@ -263,7 +263,7 @@ void test('the lane a bolt is read by reaches as far as the bolt does', (): void
 });
 
 void test('a pack whose condition fails does not spawn, so a beaten boss is not handed out again', (): void => {
-  const hunt: QuestDef = { id: 'hunt', name: 'Hunt', requires: [], when: [], objectives: [{ id: 'slay', type: 'defeat', monster: 'mason', text: 'Slay' }] };
+  const hunt: QuestDef = { id: 'hunt', name: 'Hunt', requires: [], when: [], objectives: [{ id: 'slay', type: 'defeat', monster: 'mason', text: 'Slay', when: [], sets: {} }] };
   const during: Condition[] = [{ type: 'objective', quest: 'hunt', objective: 'slay', is: 'current', not: false }];
   const content: Content = { ...room('mason', during), quests: new Map<string, QuestDef>([[hunt.id, hunt]]) };
   const world: World = worldIn(content, ROOM, 10);

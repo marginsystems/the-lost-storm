@@ -1,4 +1,5 @@
-import type { ObjectiveDef, QuestDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from '../content/types.ts';
+import type { ObjectiveDef, PathObjective, QuestDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from '../content/types.ts';
+import { objectivePaths } from '../content/road.ts';
 import type { Vec2 } from '../math.ts';
 import { allHold } from './conditions.ts';
 import { activeQuests, currentObjective } from './quests.ts';
@@ -25,7 +26,7 @@ function zonesWhere(world: World, has: (zone: ZoneDef) => boolean): string[] {
   return [...world.content.zones.values()].filter(has).map((zone: ZoneDef): string => zone.id);
 }
 
-function destinations(world: World, objective: ObjectiveDef): readonly string[] {
+function pathDestinations(world: World, objective: PathObjective): readonly string[] {
   let ids: readonly string[];
   switch (objective.type) {
     case 'reach':
@@ -39,6 +40,14 @@ function destinations(world: World, objective: ObjectiveDef): readonly string[] 
       break;
   }
   return ids;
+}
+
+function openPaths(world: World, objective: ObjectiveDef): readonly PathObjective[] {
+  return objectivePaths(objective).filter((path: PathObjective): boolean => allHold(world, path.when));
+}
+
+function destinations(world: World, objective: ObjectiveDef): readonly string[] {
+  return openPaths(world, objective).flatMap((path: PathObjective): readonly string[] => pathDestinations(world, path));
 }
 
 export function exitToward(world: World, goals: readonly string[]): ZoneExit | null {
@@ -69,39 +78,48 @@ interface LocalTarget {
   readonly pos: Vec2;
   readonly radius: number;
   readonly name: string;
+  readonly objective: PathObjective;
 }
 
-function localTarget(world: World, objective: ObjectiveDef): LocalTarget | null {
+function pathTarget(world: World, objective: PathObjective): LocalTarget | null {
   let target: LocalTarget | null = null;
   switch (objective.type) {
     case 'reach':
-      if (world.zone.id === objective.zone) target = { kind: 'spot', pos: { x: objective.x, z: objective.z }, radius: objective.radius, name: world.zone.name };
+      if (world.zone.id === objective.zone) target = { kind: 'spot', pos: { x: objective.x, z: objective.z }, radius: objective.radius, name: world.zone.name, objective };
       break;
     case 'talk': {
       const person: NpcState | undefined = world.npcs.find((npc: NpcState): boolean => npc.def.id === objective.npc);
-      if (person !== undefined) target = { kind: 'person', pos: person.pos, radius: MARK.personRadius, name: person.def.name };
+      if (person !== undefined) target = { kind: 'person', pos: person.pos, radius: MARK.personRadius, name: person.def.name, objective };
       break;
     }
     case 'defeat': {
       const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.alive && candidate.def.id === objective.monster);
       const pack: ZonePack | undefined = world.zone.packs.find((candidate: ZonePack): boolean => allHold(world, candidate.when) && candidate.members.some((member): boolean => member.monster === objective.monster));
-      if (monster !== undefined) target = { kind: 'monster', pos: monster.pos, radius: MARK.monsterRadius, name: monster.def.name };
-      else if (pack !== undefined) target = { kind: 'spot', pos: { x: pack.x, z: pack.z }, radius: MARK.monsterRadius * 2, name: world.content.monsters.get(objective.monster)?.name ?? '' };
+      if (monster !== undefined) target = { kind: 'monster', pos: monster.pos, radius: MARK.monsterRadius, name: monster.def.name, objective };
+      else if (pack !== undefined) target = { kind: 'spot', pos: { x: pack.x, z: pack.z }, radius: MARK.monsterRadius * 2, name: world.content.monsters.get(objective.monster)?.name ?? '', objective };
       break;
     }
   }
   return target;
 }
 
+function localTarget(world: World, objective: ObjectiveDef): LocalTarget | null {
+  for (const path of openPaths(world, objective)) {
+    const target: LocalTarget | null = pathTarget(world, path);
+    if (target !== null) return target;
+  }
+  return null;
+}
+
 export function questTarget(world: World, quest: QuestDef): ObjectiveTarget | null {
   const objective: ObjectiveDef | null = currentObjective(world, quest);
   if (objective === null) return null;
   const here = localTarget(world, objective);
-  if (here !== null) return { ...here, quest, objective, zone: world.zone };
+  if (here !== null) return { ...here, quest, zone: world.zone };
   const exit: ZoneExit | null = exitToward(world, destinations(world, objective));
   if (exit === null) return null;
   const to: string = world.content.zones.get(exit.to)?.name ?? '';
-  return { kind: 'exit', pos: { x: exit.x, z: exit.z }, radius: exit.radius, quest, objective, zone: world.zone, name: to };
+  return { kind: 'exit', pos: { x: exit.x, z: exit.z }, radius: exit.radius, quest, objective: openPaths(world, objective)[0] ?? objective, zone: world.zone, name: to };
 }
 
 export function objectiveTarget(world: World): ObjectiveTarget | null {

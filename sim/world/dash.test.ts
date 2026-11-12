@@ -13,6 +13,7 @@ import { spawnPacks } from './monsters.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
+import { roadWorld, roadZone } from '../../test/road-support.ts';
 
 const content: Content = loadContent();
 const base: ZoneDef = zoneOf(content, 'drowned_bastion');
@@ -205,4 +206,12 @@ void test('a monster whose skill is a dash rolls with the same code', (): void =
   assert.ok(isDashing(roller));
   for (let step: number = 0; step < 60 && isDashing(roller); step += 1) stepWorld(world, [], MOTION_DT);
   assert.ok(Math.hypot(roller.pos.x - origin.x, roller.pos.z - origin.z) > dash.distance - 1);
+});
+
+void test('a roll through deep water covers only the water\'s share of its distance', (): void => {
+  const world: World = roadWorld(roadZone({ tiles: ['ssssssss', 'ssssssss', 'ssssssss', 'ssssssss'], playerStart: { x: 4, z: 8 } }));
+  const from: Vec2 = { ...world.player.pos };
+  stepWorld(world, [rollToward({ x: from.x + 10, z: from.z })], MOTION_DT);
+  finish(world);
+  assert.ok(Math.abs(world.player.pos.x - from.x - dash.distance * 0.5) < LIMITS.tolerance, `${world.player.pos.x - from.x}`);
 });

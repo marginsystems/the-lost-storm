@@ -1,4 +1,5 @@
 import type { Box3, Scene } from 'three';
+import { paceAt } from '../../sim/nav/grid.ts';
 import { Color } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import { heldGear, hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
@@ -117,12 +118,12 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     sync(dt: number, current: World, hoveredId: number | null): void {
       const floor: number = current.zone.floorHeight;
       playerView.lie(current.wake === null ? null : wakeProgress(current.wake));
-      playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.stats.moveSpeed, rise: 1, floor, turnRate: ACTOR.turnRate });
+      playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.stats.moveSpeed * paceAt(current.grid, current.player.pos.x, current.player.pos.z), rise: 1, floor, turnRate: ACTOR.turnRate });
       for (const monster of current.monsters) {
         const entry: MonsterEntry | null = entryFor(monster);
         if (entry === null) continue;
         entry.view.setHover(monster.id === hoveredId);
-        entry.view.sync(dt, poseOf(monster), { moveSpeed: monster.def.moveSpeed, rise: 1 - monster.spawnTime / entry.spawnTime, floor, turnRate: ACTOR.turnRate });
+        entry.view.sync(dt, poseOf(monster), { moveSpeed: monster.def.moveSpeed * paceAt(current.grid, monster.pos.x, monster.pos.z), rise: 1 - monster.spawnTime / entry.spawnTime, floor, turnRate: ACTOR.turnRate });
       }
       const sameZone: boolean = npcZone === current.zone;
       npcZone = current.zone;
@@ -200,6 +201,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'dialogue_closed':
           case 'quest_started':
           case 'quest_advanced':
+          case 'act_ended':
+          case 'triggered':
           case 'quest_completed':
           case 'waypoint_unlocked':
           case 'exit_locked':

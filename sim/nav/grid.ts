@@ -1,6 +1,7 @@
-import type { ZoneDef, PropDef } from '../content/types.ts';
+import type { ZoneDef, PropDef, SurfaceDef } from '../content/types.ts';
+import type { ZoneDrift } from '../content/road-types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
-import { CORNER_PILLAR_RADIUS, isFloorCell, wallCorners } from './layout.ts';
+import { CORNER_PILLAR_RADIUS, isFloorCell, tileAtCell, wallCorners } from './layout.ts';
 
 export interface NavGrid {
   readonly cellSize: number;
@@ -8,6 +9,15 @@ export interface NavGrid {
   readonly rows: number;
   readonly walkable: Uint8Array;
   readonly solid: Uint8Array;
+  readonly pace: Float32Array;
+  readonly drifts: readonly DriftCells[];
+}
+
+export interface DriftCells {
+  readonly drift: ZoneDrift;
+  readonly cells: Int32Array;
+  readonly walkable: Uint8Array;
+  open: boolean;
 }
 
 interface Blocker {
@@ -29,7 +39,7 @@ function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[]
     const radius: number = props.get(placed.prop)?.blockRadius ?? 0;
     if (radius > 0) list.push({ x: placed.x, z: placed.z, radius });
   }
-  for (const corner of wallCorners(zone)) list.push({ x: corner.x, z: corner.z, radius: CORNER_PILLAR_RADIUS });
+  if (zone.walls !== null) for (const corner of wallCorners(zone)) list.push({ x: corner.x, z: corner.z, radius: CORNER_PILLAR_RADIUS });
   return list;
 }
 
@@ -57,7 +67,7 @@ function insideFloor(zone: ZoneDef, x: number, z: number, margin: number): boole
 
 function fill(zone: ZoneDef, obstacles: readonly Blocker[], columns: number, rows: number, agentRadius: number): Uint8Array {
   const cells: Uint8Array = new Uint8Array(columns * rows);
-  const margin: number = zone.walls.halfThickness + agentRadius;
+  const margin: number = (zone.walls?.halfThickness ?? 0) + agentRadius;
   for (let row: number = 0; row < rows; row += 1) {
     for (let column: number = 0; column < columns; column += 1) {
       const x: number = (column + 0.5) * NAV.cellSize;
@@ -69,13 +79,56 @@ function fill(zone: ZoneDef, obstacles: readonly Blocker[], columns: number, row
   return cells;
 }
 
-export function buildNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, agentRadius: number): NavGrid {
+function paceOf(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, columns: number, rows: number): Float32Array {
+  const pace: Float32Array = new Float32Array(columns * rows).fill(1);
+  for (let row: number = 0; row < rows; row += 1) {
+    for (let column: number = 0; column < columns; column += 1) {
+      const surfaceId: string | undefined = zone.floors[tileAtCell(zone, Math.floor(((column + 0.5) * NAV.cellSize) / zone.cellSize), Math.floor(((row + 0.5) * NAV.cellSize) / zone.cellSize))];
+      pace[row * columns + column] = surfaceId === undefined ? 1 : (surfaces.get(surfaceId)?.pace ?? 1);
+    }
+  }
+  return pace;
+}
+
+function driftCells(zone: ZoneDef, drift: ZoneDrift, walkable: Uint8Array, columns: number, rows: number): DriftCells {
+  const cells: number[] = [];
+  const fromX: number = drift.column * zone.cellSize;
+  const fromZ: number = drift.row * zone.cellSize;
+  const toX: number = (drift.column + drift.columns) * zone.cellSize;
+  const toZ: number = (drift.row + drift.rows) * zone.cellSize;
+  for (let row: number = 0; row < rows; row += 1) {
+    const z: number = (row + 0.5) * NAV.cellSize;
+    if (z < fromZ || z >= toZ) continue;
+    for (let column: number = 0; column < columns; column += 1) {
+      const x: number = (column + 0.5) * NAV.cellSize;
+      if (x >= fromX && x < toX) cells.push(row * columns + column);
+    }
+  }
+  const indices: Int32Array = Int32Array.from(cells);
+  return { drift, cells: indices, walkable: Uint8Array.from(indices, (index: number): number => walkable[index] ?? 0), open: true };
+}
+
+export function buildNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
   const columns: number = Math.ceil(((zone.tiles[0]?.length ?? 0) * zone.cellSize) / NAV.cellSize);
   const rows: number = Math.ceil((zone.tiles.length * zone.cellSize) / NAV.cellSize);
   const obstacles: Blocker[] = blockers(zone, props);
   const open: Uint8Array = fill(zone, obstacles, columns, rows, 0);
   const solid: Uint8Array = open.map((value: number): number => 1 - value);
-  return { cellSize: NAV.cellSize, columns, rows, walkable: fill(zone, obstacles, columns, rows, agentRadius), solid };
+  const walkable: Uint8Array = fill(zone, obstacles, columns, rows, agentRadius);
+  const drifts: DriftCells[] = zone.drifts.map((drift: ZoneDrift): DriftCells => driftCells(zone, drift, walkable, columns, rows));
+  return { cellSize: NAV.cellSize, columns, rows, walkable, solid, pace: paceOf(zone, surfaces, columns, rows), drifts };
+}
+
+export function paceAt(grid: NavGrid, x: number, z: number): number {
+  const index: number = cellIndex(grid, x, z);
+  return index < 0 ? 1 : (grid.pace[index] ?? 1);
+}
+
+export function setDriftOpen(grid: NavGrid, patch: DriftCells, open: boolean): void {
+  patch.open = open;
+  patch.cells.forEach((index: number, at: number): void => {
+    grid.walkable[index] = open ? (patch.walkable[at] ?? 0) : 0;
+  });
 }
 
 export function cellIndex(grid: NavGrid, x: number, z: number): number {
@@ -112,6 +165,15 @@ function lineOpen(from: ReadonlyVec2, to: ReadonlyVec2, open: (x: number, z: num
 
 export function lineWalkable(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): boolean {
   return lineOpen(from, to, (x: number, z: number): boolean => isWalkable(grid, x, z));
+}
+
+export function linePace(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): number {
+  let pace: number = Number.POSITIVE_INFINITY;
+  lineOpen(from, to, (x: number, z: number): boolean => {
+    pace = Math.min(pace, paceAt(grid, x, z));
+    return true;
+  });
+  return pace;
 }
 
 export function lineOfSight(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): boolean {

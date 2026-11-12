@@ -8,6 +8,7 @@ import { isWalkable } from '../nav/grid.ts';
 import { followPath, separateActors, turnToward } from './movement.ts';
 import type { MonsterState, World } from './types.ts';
 import { spawnPacks } from './monsters.ts';
+import { roadWorld, roadZone } from '../../test/road-support.ts';
 
 const content: Content = loadContent();
 
@@ -51,4 +52,13 @@ void test('separating a crowd never pushes anyone into a wall', (): void => {
   for (const monster of world.monsters) assert.ok(isWalkable(world.grid, monster.pos.x, monster.pos.z), `monster at ${monster.pos.x},${monster.pos.z}`);
   const first: MonsterState = must(world.monsters[0], 'first');
   assert.ok(first.pos.z !== 22 || first.pos.x !== 1.1);
+});
+
+void test('slow ground cuts the distance a step covers by its pace', (): void => {
+  const world: World = roadWorld(roadZone({ tiles: ['wwwwssss', 'wwwwssss', 'wwwwssss', 'wwwwssss'] }));
+  const player = world.player;
+  player.pos = { x: 4, z: 8 };
+  assert.ok(Math.abs(followPath(world.grid, player, [{ x: 12, z: 8 }], 1, Math.PI) - 1) < 1e-9);
+  player.pos = { x: 20, z: 8 };
+  assert.ok(Math.abs(followPath(world.grid, player, [{ x: 28, z: 8 }], 1, Math.PI) - 0.5) < 1e-9);
 });
