@@ -1,6 +1,7 @@
 import type { Leaderboard } from '../backend/api.ts';
 import type { RenameOutcome } from '../backend/lobby.ts';
 import { el, label, setText } from '../hud/dom.ts';
+import { markOverlay } from '../hud/overlay-mark.ts';
 import type { Lobby } from './compact.ts';
 import type { KeyValueStore } from '../backend/backend.ts';
 import { keepHeroName, pendingRename, readHeroName, stepWanted } from './hero-name.ts';
@@ -71,6 +72,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
     state = next;
     step.dataset['state'] = next;
     step.toggleAttribute('aria-busy', next === 'busy');
+    markOverlay(step, next === 'open' || next === 'busy');
     enter.disabled = next === 'busy';
     choose.disabled = next === 'busy' || limited;
     const reachable: number = next === 'open' || next === 'busy' ? 0 : -1;

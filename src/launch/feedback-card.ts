@@ -1,4 +1,5 @@
 import { el } from '../hud/dom.ts';
+import { markOverlay } from '../hud/overlay-mark.ts';
 import type { Rating } from './alpha.ts';
 import { ALPHA } from './alpha.ts';
 import type { OutboundLink } from './links.ts';
@@ -166,11 +167,13 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
       card.dataset['mode'] = mode;
       isOpen = true;
       card.classList.add('open');
+      markOverlay(card, true);
     },
     close(): void {
       if (!isOpen) return;
       isOpen = false;
       card.classList.remove('open');
+      markOverlay(card, false);
       if (document.activeElement instanceof HTMLElement && card.contains(document.activeElement)) document.activeElement.blur();
     },
   };

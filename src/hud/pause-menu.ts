@@ -7,6 +7,7 @@ import { LINKS } from '../launch/data.ts';
 import { outboundLinks } from '../launch/links.ts';
 import type { OutboundLink } from '../launch/links.ts';
 import { el, label } from './dom.ts';
+import { markOverlay } from './overlay-mark.ts';
 import { mountControls } from './settings-controls.ts';
 import type { ControlsPage } from './settings-controls.ts';
 import { mountGraphics } from './settings-graphics.ts';
@@ -168,6 +169,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
         isOpen = true;
         window.dispatchEvent(new Event('blur'));
         overlay.classList.add('open');
+        markOverlay(overlay, true);
         hooks.onOpen();
       }
       if (target !== null) {
@@ -182,6 +184,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
       controls.cancel();
       isOpen = false;
       overlay.classList.remove('open');
+      markOverlay(overlay, false);
       hooks.onClose();
     },
   };

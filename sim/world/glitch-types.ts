@@ -38,6 +38,8 @@ export interface GlitchState {
   lastFight: number;
   lastMist: number;
   zoneSince: number;
+  overlay: boolean;
+  overlayShut: number;
   requests: GlitchRequest[];
   wrongWord: number | null;
 }

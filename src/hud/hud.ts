@@ -70,6 +70,7 @@ import { createTradeHud } from './trade-hud.ts';
 import type { TradeHud } from './trade-hud.ts';
 import volumeCss from './volume.css?inline';
 import { createVolumeButton } from './volume-panel.ts';
+import { markOverlay } from './overlay-mark.ts';
 
 const GROUND_HINT: string = 'pick up';
 
@@ -142,6 +143,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     open[panel] = next;
     const view: PanelView = panels[panel];
     view.element.classList.toggle('open', next);
+    markOverlay(view.element, next);
     grid.classList.toggle('visible', HUD_PANELS.some((id: HudPanel): boolean => open[id]));
     applyCover(root, coverOf(open));
     buttons[panel]?.setActive(next);

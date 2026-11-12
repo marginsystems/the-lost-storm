@@ -20,6 +20,7 @@ export function wakeProgress(wake: WakeState): number {
 
 export function acceptsCommand(world: World, command: Command): boolean {
   if (command.type === 'hold' && !command.down) return true;
+  if (command.type === 'overlay') return true;
   if (world.wake !== null) return false;
   return !(world.zone.kind === 'void' && command.type === 'skill');
 }

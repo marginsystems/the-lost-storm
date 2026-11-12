@@ -17,7 +17,7 @@ import { blockedReason, startSkill, steerAction, stepAction } from './skills.ts'
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './trade.ts';
 import type { Station } from './trade.ts';
-import { requestGlitch, setGlitchesEnabled } from './glitch.ts';
+import { requestGlitch, setGlitchesEnabled, setOverlay } from './glitch.ts';
 import { readPage } from './story.ts';
 import { stepWaypoints, teleport } from './waypoints.ts';
 import { findExit, stepCheckpoints, travelThrough } from './zones.ts';
@@ -166,6 +166,7 @@ function act(world: World, command: Command): void {
     case 'read':
     case 'glitch':
     case 'glitch_setting':
+    case 'overlay':
     case 'strike':
     case 'advance':
     case 'equip':
@@ -226,6 +227,9 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'glitch_setting':
       setGlitchesEnabled(world, command.enabled);
+      return;
+    case 'overlay':
+      setOverlay(world, command.open);
       return;
     case 'strike':
       forceStrike(world, command.at, command.moment);

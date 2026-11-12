@@ -6,6 +6,7 @@ import { slotAction } from '../settings/bindings.ts';
 import type { HudContext } from './context.ts';
 import { el, label, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
+import { markOverlay } from './overlay-mark.ts';
 
 const OFFER = {
   leaveMs: 420,
@@ -84,6 +85,7 @@ export function createSkillOffer(parent: HTMLElement, context: HudContext, track
         leaving = window.setTimeout((): void => {
           leaving = null;
           element.classList.remove('choosing');
+          markOverlay(element, false);
           shown = null;
         }, OFFER.leaveMs);
         return;
@@ -93,6 +95,7 @@ export function createSkillOffer(parent: HTMLElement, context: HudContext, track
       fill(open);
       element.getBoundingClientRect();
       element.classList.add('open');
+      markOverlay(element, true);
     },
   };
 }

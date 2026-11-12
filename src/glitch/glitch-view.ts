@@ -7,6 +7,8 @@ import type { Vec2 } from '../../sim/math.ts';
 import { isMist } from '../../sim/world/glitch.ts';
 import type { Silhouette } from '../../sim/world/glitch-types.ts';
 import type { Command, World, WorldEvent } from '../../sim/world/types.ts';
+import { createOverlayWatch } from '../hud/overlay-mark.ts';
+import type { OverlayWatch } from '../hud/overlay-mark.ts';
 import { buildVoidView } from '../render/void-view.ts';
 import type { FigureGauge } from '../render/figure-gauge.ts';
 import { createFigureGauge } from '../render/figure-gauge.ts';
@@ -73,6 +75,7 @@ interface Stutter {
 export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   const figureGauge: FigureGauge = createFigureGauge();
   const { world, scene, app, settings } = deps;
+  const overlayWatch: OverlayWatch = createOverlayWatch(document, (command: Command): void => deps.send(command));
   const style: HTMLStyleElement = document.createElement('style');
   style.textContent = glitchCss;
   app.append(style);
@@ -259,6 +262,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
     },
     update(now: number, dt: number, simDt: number): void {
       apply(settings.get());
+      overlayWatch.update(world, simDt);
       record(simDt);
       stepPhase(dt);
       stepStutter(simDt);

@@ -18,9 +18,10 @@ export const CALM = {
   arrival: 60,
   mistGap: 150,
   mistCap: 1.6,
+  overlayQuiet: 4,
 } as const;
 
-export type GlitchBlock = 'off' | 'dead' | 'active' | 'cooldown' | 'low_life' | 'telegraph' | 'busy' | 'fight' | 'choice' | 'arrival' | 'spacing';
+export type GlitchBlock = 'off' | 'dead' | 'active' | 'cooldown' | 'low_life' | 'telegraph' | 'busy' | 'fight' | 'overlay' | 'choice' | 'arrival' | 'spacing';
 
 export function createGlitchState(def: GlitchDef, seed: number, save: GlitchSave | null): GlitchState {
   return {
@@ -36,6 +37,8 @@ export function createGlitchState(def: GlitchDef, seed: number, save: GlitchSave
     lastFight: -Infinity,
     lastMist: -Infinity,
     zoneSince: 0,
+    overlay: false,
+    overlayShut: -Infinity,
     requests: [],
     wrongWord: null,
   };
@@ -95,6 +98,7 @@ export function fighting(world: World): boolean {
 function calmBlock(world: World, request: GlitchRequest): GlitchBlock | null {
   const state: GlitchState = world.glitch;
   if (fighting(world)) return 'fight';
+  if (state.overlay || world.time - state.overlayShut < CALM.overlayQuiet) return 'overlay';
   if (pendingOffer(world) !== null) return 'choice';
   if (request.source === 'debug' || (request.source === 'zone' && request.kind === 'quiet_pass')) return null;
   if (world.time - state.zoneSince < CALM.arrival) return 'arrival';
@@ -113,6 +117,14 @@ export function requestGlitch(world: World, kind: GlitchKind, source: GlitchSour
   world.glitch.requests.push({ kind, source, trigger: null });
 }
 
+export function setOverlay(world: World, open: boolean): void {
+  const state: GlitchState = world.glitch;
+  if (state.overlay && !open) state.overlayShut = world.time;
+  state.overlay = open;
+  const active: ActiveGlitch | null = state.active;
+  if (open && active !== null && isMist(active.kind)) finish(world, active);
+}
+
 export function setGlitchesEnabled(world: World, enabled: boolean): void {
   world.glitch.enabled = enabled;
   if (!enabled) {
@@ -125,6 +137,7 @@ const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
   read: true,
   glitch: false,
   glitch_setting: false,
+  overlay: false,
   strike: false,
   move: true,
   skill: true,

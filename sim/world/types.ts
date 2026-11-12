@@ -469,7 +469,12 @@ export interface GlitchSettingCommand {
   readonly enabled: boolean;
 }
 
-export type Command = StrikeCommand | SlotCommand | ChooseCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export interface OverlayCommand {
+  readonly type: 'overlay';
+  readonly open: boolean;
+}
+
+export type Command = StrikeCommand | SlotCommand | ChooseCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';

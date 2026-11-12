@@ -5,6 +5,7 @@ import { everySkill } from '../../sim/skill-book.ts';
 import type { HudContext } from './context.ts';
 import { el, label } from './dom.ts';
 import { iconSvg } from './icons.ts';
+import { markOverlay } from './overlay-mark.ts';
 import { promptText, use } from './prompts.ts';
 import { attachTooltip } from './tooltip.ts';
 
@@ -74,12 +75,14 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
       const at: DOMRect = anchor.getBoundingClientRect();
       element.style.setProperty('--picker-x', `${(at.left + at.width / 2 - bar.left).toFixed(1)}px`);
       element.classList.add('open');
+      markOverlay(element, true);
       picker.refresh(context.api.world.player);
     },
     close(): boolean {
       if (slot === null) return false;
       slot = null;
       element.classList.remove('open');
+      markOverlay(element, false);
       context.tooltip.hide();
       return true;
     },

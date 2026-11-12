@@ -16,6 +16,7 @@ import { attacksHeld } from './glitch-hold.ts';
 import type { GlitchRequest } from './glitch-types.ts';
 import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
+import { acceptsCommand } from './wake.ts';
 import { travelThrough } from './zones.ts';
 
 const content: Content = loadContent();
@@ -109,6 +110,41 @@ void test('a hard cut waits out the first minute in a zone, never comes soon aft
   assert.equal(glitchBlock(world, zone), 'spacing');
   world.time = world.glitch.lastMist + CALM.mistGap;
   assert.equal(glitchBlock(world, story), null);
+});
+
+void test('no hard cut or quiet pass plays under an open overlay, nor for a few seconds after it closes', (): void => {
+  const world: World = harmlessFight(14, 4);
+  world.monsters = [];
+  world.time = CALM.arrival + 1;
+  const story: GlitchRequest = { kind: 'hard_cut', source: 'story', trigger: null };
+  const pass: GlitchRequest = { kind: 'quiet_pass', source: 'zone', trigger: null };
+  stepWorld(world, [{ type: 'overlay', open: true }], DT);
+  assert.equal(glitchBlock(world, story), 'overlay');
+  assert.equal(glitchBlock(world, pass), 'overlay');
+  assert.equal(glitchBlock(world, { kind: 'hard_cut', source: 'debug', trigger: null }), 'overlay');
+  assert.equal(glitchBlock(world, combat('stutter')), null);
+  requestGlitch(world, 'hard_cut', 'story');
+  assert.equal(ofType(run(world, 2), 'glitch_start').length, 0);
+  stepWorld(world, [{ type: 'overlay', open: false }], DT);
+  assert.equal(glitchBlock(world, story), 'overlay');
+  const quiet: number = world.glitch.overlayShut + CALM.overlayQuiet;
+  run(world, quiet - world.time - 0.2);
+  assert.equal(world.glitch.active, null);
+  const start: EventOf<'glitch_start'> = must(ofType(run(world, 0.4), 'glitch_start')[0], 'the waiting hard cut');
+  assert.equal(start.kind, 'hard_cut');
+});
+
+void test('a panel opened during a hard cut ends it, and the panel is heard even while the hero wakes', (): void => {
+  const world: World = harmlessFight(15, 4);
+  world.monsters = [];
+  world.time = CALM.arrival + 1;
+  requestGlitch(world, 'hard_cut', 'story');
+  const start: EventOf<'glitch_start'> = must(ofType(run(world, DT * 2), 'glitch_start')[0], 'hard cut');
+  assert.equal(start.kind, 'hard_cut');
+  const events: WorldEvent[] = stepWorld(world, [{ type: 'overlay', open: true }], DT);
+  assert.equal(world.glitch.active, null);
+  assert.equal(ofType(events, 'glitch_end').length, 1);
+  assert.equal(acceptsCommand({ ...world, wake: { elapsed: 0, lie: 1, rise: 1 } }, { type: 'overlay', open: false }), true);
 });
 
 void test('a hard cut waits while a moment fight is awake or a skill choice is open', (): void => {

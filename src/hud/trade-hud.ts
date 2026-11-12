@@ -1,5 +1,6 @@
 import type { ServiceKind } from '../../sim/content/trade-types.ts';
 import type { HudContext, PanelView } from './context.ts';
+import { markOverlay } from './overlay-mark.ts';
 import { createStashPanel } from './stash-panel.ts';
 import { createVendorPanel } from './vendor-panel.ts';
 
@@ -32,7 +33,10 @@ export function createTradeHud(root: HTMLElement, context: HudContext, track: (e
   let closing: boolean = false;
 
   const show = (next: ServiceKind | null): void => {
-    if (shown !== null) panels[shown].element.classList.remove('open');
+    if (shown !== null) {
+      panels[shown].element.classList.remove('open');
+      markOverlay(panels[shown].element, false);
+    }
     if (next === null) {
       context.tooltip.hide();
       if (openedInventory && inventory.isOpen()) inventory.setOpen(false);
@@ -48,6 +52,7 @@ export function createTradeHud(root: HTMLElement, context: HudContext, track: (e
       view.element.style.setProperty('--beside-right', `${TRADE_HUD.edge + inventory.element.offsetWidth + TRADE_HUD.gap}px`);
       view.refresh();
       view.element.classList.add('open');
+      markOverlay(view.element, true);
     }
     shown = next;
   };
