@@ -24,7 +24,6 @@
         "Hit_Chest",
         "Hit_Head"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -188,7 +187,6 @@
         "Hit_Chest",
         "Hit_Head"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -369,7 +367,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -524,7 +521,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -679,7 +675,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -834,7 +829,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -986,7 +980,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1126,7 +1119,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1258,7 +1250,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1394,7 +1385,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1530,7 +1520,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1666,7 +1655,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",
@@ -1814,7 +1802,6 @@
         "Hit_Head",
         "Hit_Chest"
       ],
-      "stagger": "Shield_Break",
       "death": [
         "Death01",
         "Death_Knockback",

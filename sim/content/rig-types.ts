@@ -12,7 +12,6 @@ export interface RigClips {
   readonly idle: string;
   readonly run: string;
   readonly hit: readonly string[];
-  readonly stagger: string;
   readonly death: readonly string[];
   readonly rise: string | null;
   readonly actions: Readonly<Record<string, RigActionClip>>;

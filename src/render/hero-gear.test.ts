@@ -27,7 +27,6 @@ const clips: RigClipSet = {
   run: new AnimationClip('run', 1, []),
   gaits: [{ clip: new AnimationClip('walk', 1, []), groundSpeed: 1 }],
   hit: [],
-  stagger: new AnimationClip('stagger', 1, []),
   death: [],
   rise: null,
   actions: new Map(),

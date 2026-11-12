@@ -5,7 +5,7 @@ import type { Content, MonsterDef, RigDef } from '../../sim/content/types.ts';
 import type { Motion } from '../../sim/world/types.ts';
 import { must } from '../../test/support.ts';
 import type { ClipKind, GaitChoice } from './locomotion.ts';
-import { chooseGait, clipKindOf, flinches, LOCOMOTION, staggerRate } from './locomotion.ts';
+import { chooseGait, clipKindOf, knockPose, LOCOMOTION } from './locomotion.ts';
 
 const MOTIONS: readonly Motion[] = ['still', 'stride', 'knocked', 'pulled', 'dash', 'lunge', 'rising'];
 
@@ -19,7 +19,7 @@ const content: Content = loadContent();
 
 void test('every way a character can move maps to a clip that explains it, and only standing still maps to the idle clip', (): void => {
   const kinds: Map<Motion, ClipKind> = new Map<Motion, ClipKind>(MOTIONS.map((motion: Motion): [Motion, ClipKind] => [motion, clipKindOf(motion)]));
-  assert.deepEqual(Object.fromEntries(kinds), { still: 'idle', stride: 'gait', knocked: 'stagger', pulled: 'stagger', dash: 'action', lunge: 'action', rising: 'rise' });
+  assert.deepEqual(Object.fromEntries(kinds), { still: 'idle', stride: 'gait', knocked: 'knock', pulled: 'knock', dash: 'action', lunge: 'action', rising: 'rise' });
   assert.deepEqual(MOTIONS.filter((motion: Motion): boolean => clipKindOf(motion) === 'idle'), ['still']);
 });
 
@@ -44,13 +44,15 @@ void test('the gait picks the clip nearest its natural pace, sooner slowed than 
   assert.equal(must(chooseGait(gaits, 1, crossing * 0.95, 1), 'held jog').index, 1);
 });
 
-void test('a knockback reels for as long as the push lasts, and a push too short to read is a flinch', (): void => {
-  assert.ok(flinches(LOCOMOTION.flinchTime / 2));
-  assert.ok(!flinches(LOCOMOTION.flinchTime * 2));
-  assert.ok(Math.abs(staggerRate(LOCOMOTION.staggerReel) - 1) < 1e-9);
-  assert.ok(staggerRate(0.2) > staggerRate(0.4));
-  assert.equal(staggerRate(100), LOCOMOTION.minStaggerRate);
-  assert.equal(staggerRate(1e-3), LOCOMOTION.maxStaggerRate);
+void test('a knockback is a short hop back: it lifts and leans from nothing, peaks halfway through the push and lands as the push ends', (): void => {
+  const span: number = LOCOMOTION.fullHopTime;
+  assert.deepEqual(knockPose(span, span), { lift: 0, lean: 0 });
+  assert.ok(knockPose(span, 0).lift < 1e-9 && knockPose(span, 0).lean < 1e-9);
+  const peak = knockPose(span, span / 2);
+  assert.ok(Math.abs(peak.lift - LOCOMOTION.hop) < 1e-9 && Math.abs(peak.lean - LOCOMOTION.tilt) < 1e-9);
+  assert.ok(knockPose(span, span / 4).lift < peak.lift);
+  assert.ok(knockPose(span / 4, span / 8).lift < peak.lift);
+  assert.deepEqual(knockPose(0, 0), { lift: 0, lean: 0 });
 });
 
 void test('every monster walks, strafes, backs off and circles at speeds its rig has a gait for, without racing or crawling the clip', (): void => {

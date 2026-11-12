@@ -52,8 +52,11 @@ function face(monster: MonsterState, target: Vec2, dt: number): void {
   faceToward(monster, { x: target.x - monster.pos.x, z: target.z - monster.pos.z }, MONSTERS.turnRate * dt);
 }
 
-function travel(world: World, monster: MonsterState, direction: Vec2, speed: number, dt: number): void {
-  if (monster.root > 0) return;
+function travel(world: World, monster: MonsterState, direction: Vec2, speed: number, foe: Vec2, dt: number): void {
+  if (monster.root > 0) {
+    face(monster, foe, dt);
+    return;
+  }
   const step: SteerStep = steerToward(world.grid, monster, facingOf(direction), speed * dt, dt, STEERING);
   monster.lastTravel = step.tried;
   monster.moving = step.moved > MONSTERS.stillStep || (step.tried > 0 && monster.stuckTime < MONSTERS.blockedGrace);
@@ -136,14 +139,14 @@ function keepRange(world: World, monster: MonsterState, behaviour: RangedBehavio
       approach(world, monster, foe.pos, dt);
       return;
     case 'retreat':
-      travel(world, monster, { x: -toward.x, z: -toward.z }, monster.def.moveSpeed * MONSTERS.retreatSpeed, dt);
+      travel(world, monster, { x: -toward.x, z: -toward.z }, monster.def.moveSpeed * MONSTERS.retreatSpeed, foe.pos, dt);
       return;
     case 'hold':
       if (lostSight) {
         monster.strafeSign = -monster.strafeSign;
         monster.restTime = MONSTERS.restTime;
       }
-      travel(world, monster, rotate(toward, MONSTERS.strafeAngle * monster.strafeSign), monster.def.moveSpeed * MONSTERS.strafeSpeed, dt);
+      travel(world, monster, rotate(toward, MONSTERS.strafeAngle * monster.strafeSign), monster.def.moveSpeed * MONSTERS.strafeSpeed, foe.pos, dt);
       return;
   }
 }
@@ -160,7 +163,7 @@ function stalk(world: World, monster: MonsterState, behaviour: StalkerBehaviour,
   monster.stance = 'hold';
   const pull: number = clamp((gap - behaviour.orbitRange) / MONSTERS.orbitBand, -1, 1);
   const heading: Vec2 = rotate(towardOf(monster, foe.pos), (Math.PI / 2 - pull * MONSTERS.orbitPull) * monster.strafeSign);
-  travel(world, monster, heading, monster.def.moveSpeed * MONSTERS.orbitSpeed, dt);
+  travel(world, monster, heading, monster.def.moveSpeed * MONSTERS.orbitSpeed, foe.pos, dt);
 }
 
 function summonOf(world: World, monster: MonsterState, summon: SummonDef, dt: number): void {

@@ -4,13 +4,12 @@ export const LOCOMOTION = {
   minSpeed: 0.15,
   switchMargin: 0.25,
   hurryCost: 1.5,
-  flinchTime: 0.12,
-  staggerReel: 0.32,
-  minStaggerRate: 0.5,
-  maxStaggerRate: 2.2,
+  hop: 0.22,
+  fullHopTime: 0.35,
+  tilt: 0.2,
 } as const;
 
-export type ClipKind = 'idle' | 'gait' | 'stagger' | 'action' | 'rise';
+export type ClipKind = 'idle' | 'gait' | 'knock' | 'action' | 'rise';
 
 export function clipKindOf(motion: Motion): ClipKind {
   switch (motion) {
@@ -20,7 +19,7 @@ export function clipKindOf(motion: Motion): ClipKind {
       return 'gait';
     case 'knocked':
     case 'pulled':
-      return 'stagger';
+      return 'knock';
     case 'dash':
     case 'lunge':
       return 'action';
@@ -58,11 +57,14 @@ export function chooseGait(gaits: readonly GaitSpeed[], scale: number, speed: nu
   return chosen === undefined ? null : { index, rate: speed / (chosen.groundSpeed * scale) };
 }
 
-export function staggerRate(knockTime: number): number {
-  if (knockTime <= 0) return 1;
-  return Math.min(LOCOMOTION.maxStaggerRate, Math.max(LOCOMOTION.minStaggerRate, LOCOMOTION.staggerReel / knockTime));
+export interface KnockPose {
+  readonly lift: number;
+  readonly lean: number;
 }
 
-export function flinches(knockTime: number): boolean {
-  return knockTime < LOCOMOTION.flinchTime;
+export function knockPose(span: number, left: number): KnockPose {
+  if (span <= 0) return { lift: 0, lean: 0 };
+  const arc: number = Math.sin(Math.PI * Math.min(1, Math.max(0, 1 - left / span)));
+  const size: number = Math.min(1, span / LOCOMOTION.fullHopTime);
+  return { lift: LOCOMOTION.hop * size * arc, lean: LOCOMOTION.tilt * size * arc };
 }

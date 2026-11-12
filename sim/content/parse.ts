@@ -332,7 +332,7 @@ function rigClips(value: unknown, where: string): RigClips {
   const death: string[] = textList(source, 'death', where);
   if (hit.length === 0) throw new ContentError(`${where}.hit`, 'a rig needs at least one hit clip');
   if (death.length === 0) throw new ContentError(`${where}.death`, 'a rig needs at least one death clip');
-  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, stagger: text(source, 'stagger', where), death, rise: source['rise'] === undefined ? null : nullableText(source, 'rise', where), actions, unarmed: unarmedClips(source['unarmed'], `${where}.unarmed`) };
+  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, death, rise: source['rise'] === undefined ? null : nullableText(source, 'rise', where), actions, unarmed: unarmedClips(source['unarmed'], `${where}.unarmed`) };
 }
 
 function triple(source: Fields, key: string, where: string): Triple {

@@ -109,10 +109,16 @@ export function beingKnocked(actor: ActorState): boolean {
   return actor.motion === 'knocked';
 }
 
-export function settleGait(actor: ActorState, from: Vec2, dt: number): Vec2 {
-  const step: Vec2 = { x: actor.pos.x - from.x, z: actor.pos.z - from.z };
-  actor.gait = actor.motion === 'stride' && dt > 0 ? Math.hypot(step.x, step.z) / dt : 0;
-  return step;
+export function strideOf(actor: ActorState, from: Vec2): Vec2 {
+  return { x: actor.pos.x - from.x, z: actor.pos.z - from.z };
+}
+
+export function settleGaits(starts: ReadonlyMap<ActorState, Vec2>, dt: number): void {
+  for (const [actor, from] of starts) {
+    const moved: number = Math.hypot(actor.pos.x - from.x, actor.pos.z - from.z);
+    if (actor.motion === 'stride' && moved <= MOVEMENT.arrive) actor.motion = 'still';
+    actor.gait = actor.motion === 'stride' && dt > 0 ? moved / dt : 0;
+  }
 }
 
 export interface SteerStep {

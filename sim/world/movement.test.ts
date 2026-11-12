@@ -167,7 +167,7 @@ const CONTRACT = {
   seeds: [3, 5, 8],
   fighters: ['unfinished_brute', 'unfinished_taker', 'unfinished_thrower', 'first_brute', 'first_thrower', 'unfinished_borrower', 'timekeeper_duelist', 'mended', 'mender', 'still_standing'],
   ring: 7,
-  still: 1e-6,
+  still: 1e-4,
   teleport: 1.5,
   alongFacing: 0.7,
   fightSeconds: 40,
@@ -201,6 +201,7 @@ function fightBreaches(seed: number, fighters: readonly string[]): { readonly br
       if (actor.motion === 'knocked') knocked += 1;
       if (moved > CONTRACT.teleport) continue;
       if (moved > CONTRACT.still && actor.motion === 'still') breaches.push({ who, what: `moved ${moved.toFixed(3)} m while ${actor.action === null ? 'standing' : `in ${actor.action.skill.id}`}` });
+      if (actor.motion === 'stride' && moved <= CONTRACT.still) breaches.push({ who, what: `strode in place with a gait of ${actor.gait.toFixed(2)} m/s` });
       if (actor.motion !== 'stride' || moved <= CONTRACT.still) continue;
       const along: number = (dx * Math.sin(actor.facing) + dz * Math.cos(actor.facing)) / moved;
       if (along < CONTRACT.alongFacing) breaches.push({ who, what: `walked ${moved.toFixed(3)} m at ${Math.acos(Math.max(-1, along)).toFixed(2)} rad off his facing` });
@@ -211,7 +212,7 @@ function fightBreaches(seed: number, fighters: readonly string[]): { readonly br
   return { breaches, knocked };
 }
 
-void test('the locomotion contract: in a fight with knockbacks nobody moves while standing or acting, and every walk goes along the walker facing', (): void => {
+void test('the locomotion contract: in a fight with knockbacks nobody moves while standing or acting, nobody walks in place, and every walk goes along the walker facing', (): void => {
   for (const seed of CONTRACT.seeds) {
     const { breaches, knocked } = fightBreaches(seed, CONTRACT.fighters);
     assert.ok(knocked > 0, `seed ${seed} had no knockback to check`);

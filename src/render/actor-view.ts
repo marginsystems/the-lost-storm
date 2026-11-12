@@ -4,8 +4,8 @@ import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial } from 'three';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { Motion } from '../../sim/world/types.ts';
 import type { ActionClip, GaitClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
-import type { ClipKind, GaitChoice } from './locomotion.ts';
-import { chooseGait, clipKindOf, flinches, staggerRate } from './locomotion.ts';
+import type { ClipKind, GaitChoice, KnockPose } from './locomotion.ts';
+import { chooseGait, clipKindOf, knockPose } from './locomotion.ts';
 import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
 
 export const ACTOR = {
@@ -114,10 +114,13 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let yaw: number = facing;
   let gaitIndex: number = -1;
   let lastKind: ClipKind = 'idle';
+  let knockSpan: number = 0;
+  let knockLeft: number = 0;
   const flashColor: Color = new Color(0xffffff);
   const hoverColor: Color = new Color(hoverTint);
   const mixed: Color = new Color();
   rig.root.scale.setScalar(scale);
+  rig.root.rotation.order = 'YXZ';
   rig.root.rotation.y = yaw;
   const shadow: Mesh = contactShadow();
   SHADOW_OWNERS.set(shadow, rig.root);
@@ -151,14 +154,13 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   };
 
   const reel = (actor: ActorPose): void => {
-    if (actor.motion === 'knocked' && flinches(actor.knockTime)) {
+    const fresh: boolean = lastKind !== 'knock' || actor.knockTime > knockLeft;
+    knockLeft = actor.knockTime;
+    if (fresh) {
+      knockSpan = actor.knockTime;
       react();
-      return;
     }
-    const rate: number = actor.motion === 'knocked' ? staggerRate(actor.knockTime) : 1;
-    play(rig.clips.stagger, ACTOR.hitFade, rate, true, true);
-    follow = null;
-    oneShot = rig.clips.stagger.duration / rate;
+    oneShot = Math.max(oneShot, ACTOR.hitTime, actor.knockTime);
   };
 
   const locomote = (actor: ActorPose): void => {
@@ -203,7 +205,11 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
             follow = null;
           }
         }
-        if (kind === 'stagger' && (lastKind !== 'stagger' || oneShot <= 0)) reel(actor);
+        if (kind === 'knock') reel(actor);
+        else knockSpan = 0;
+        const knocked: KnockPose = knockPose(knockSpan, actor.knockTime);
+        rig.root.position.y += knocked.lift;
+        rig.root.rotation.x = -knocked.lean;
         lastKind = kind;
         if (oneShot <= 0) locomote(actor);
       }

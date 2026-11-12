@@ -130,8 +130,9 @@ function settled(world: World, track: Track): boolean {
   return inRange || still;
 }
 
-function answersTheStep(at: number): boolean {
-  return at >= LIMITS.callerClear && at - LIMITS.callerClear < LIMITS.flickerGap;
+function answersTheStep(switches: readonly number[], index: number): boolean {
+  const at: number | undefined = switches[index];
+  return at !== undefined && at >= LIMITS.callerClear && at - LIMITS.callerClear < LIMITS.flickerGap && switches.findIndex((other: number): boolean => other >= LIMITS.callerClear) === index;
 }
 
 function retreating(monster: MonsterState): boolean {
@@ -247,7 +248,7 @@ void test('a ranged monster backs off from a hero who closes in and holds once c
     stance = caller.stance;
   }
   assert.ok(retreated, 'it backed off');
-  const flickers: number[] = switches.filter((at: number, index: number): boolean => at > LIMITS.settleTime / 4 && index > 0 && !answersTheStep(at) && at - (switches[index - 1] ?? 0) < LIMITS.flickerGap);
+  const flickers: number[] = switches.filter((at: number, index: number): boolean => at > LIMITS.settleTime / 4 && index > 0 && !answersTheStep(switches, index) && at - (switches[index - 1] ?? 0) < LIMITS.flickerGap);
   assert.deepEqual(flickers, [], `stance changed at ${switches.map((at: number): string => at.toFixed(2)).join(', ')}`);
 });
 
