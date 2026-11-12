@@ -24,8 +24,11 @@ export const MOMENT_VIEW = {
   groundLift: 0.02,
   groundSegments: 40,
   phoneGroundSegments: 20,
-  groundRings: 6,
-  groundFadeFrom: 0.72,
+  groundRings: 12,
+  groundFade: 0.16,
+  groundJag: 0.22,
+  groundCrumble: 0.55,
+  stillMix: 0.45,
   groundOffset: -2,
   lensWhite: 0.75,
   domeAlpha: 0.07,
@@ -57,6 +60,7 @@ export const MOMENT_VIEW = {
 } as const;
 
 const WHITE: Color = new Color(0xffffff);
+const STILL: Color = new Color(0xdde1e8);
 const STRIKE_WHITE: Color = new Color(0xe8f2ff);
 const MARK: Color = new Color(0xb8d2ff);
 
@@ -157,16 +161,39 @@ function fadeOf(moment: MomentState, world: World): number {
   return moment.phase === 'fading' ? Math.min(1, moment.phaseTime / world.content.moments.fade) : 0;
 }
 
-function groundGeometry(radius: number, segments: number): BufferGeometry {
+function hashOf(text: string): number {
+  let hash: number = 0;
+  for (let index: number = 0; index < text.length; index += 1) hash = (hash * 31 + text.charCodeAt(index)) % 100_003;
+  return hash;
+}
+
+function grain(value: number): number {
+  const wave: number = Math.sin(value * 12.9898) * 43_758.5453;
+  return wave - Math.floor(wave);
+}
+
+function edgeAt(angle: number, seed: number): number {
+  const wobble: number = 0.5 * Math.sin(3 * angle + seed) + 0.3 * Math.sin(7 * angle + seed * 2) + 0.2 * Math.sin(13 * angle + seed * 3);
+  return 1 - MOMENT_VIEW.groundJag * (0.5 + 0.5 * wobble);
+}
+
+function groundAlpha(reach: number, angle: number, seed: number, vertex: number): number {
+  const edge: number = edgeAt(angle, seed);
+  const inside: number = Math.min(1, Math.max(0, (edge - reach) / MOMENT_VIEW.groundFade));
+  if (inside >= 1) return 1;
+  return inside * (1 - MOMENT_VIEW.groundCrumble * grain(vertex + seed));
+}
+
+function groundGeometry(radius: number, segments: number, seed: number): BufferGeometry {
   const positions: number[] = [0, 0, 0];
   const uvs: number[] = [0, 0];
   const colours: number[] = [1, 1, 1, 1];
   const index: number[] = [];
   for (let ring: number = 1; ring <= MOMENT_VIEW.groundRings; ring += 1) {
-    const reach: number = ring / MOMENT_VIEW.groundRings;
-    const alpha: number = reach <= MOMENT_VIEW.groundFadeFrom ? 1 : 1 - (reach - MOMENT_VIEW.groundFadeFrom) / (1 - MOMENT_VIEW.groundFadeFrom);
+    const reach: number = Math.sqrt(ring / MOMENT_VIEW.groundRings);
     for (let step: number = 0; step < segments; step += 1) {
       const angle: number = (step / segments) * Math.PI * 2;
+      const alpha: number = groundAlpha(reach, angle, seed, ring * segments + step);
       const x: number = Math.cos(angle) * reach * radius;
       const z: number = Math.sin(angle) * reach * radius;
       positions.push(x, 0, z);
@@ -220,12 +247,12 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
   const models: Map<string, GLTF> = new Map<string, GLTF>();
   const lights: PointLight[] = [];
   const zeroFlash: IUniform<Color> = { value: new Color(0, 0, 0) };
-  const grounds: Map<number, BufferGeometry> = new Map<number, BufferGeometry>();
-  const groundOf = (radius: number): BufferGeometry => {
-    const known: BufferGeometry | undefined = grounds.get(radius);
+  const grounds: Map<string, BufferGeometry> = new Map<string, BufferGeometry>();
+  const groundOf = (def: MomentDef): BufferGeometry => {
+    const known: BufferGeometry | undefined = grounds.get(def.id);
     if (known !== undefined) return known;
-    const made: BufferGeometry = groundGeometry(radius, phone ? MOMENT_VIEW.phoneGroundSegments : MOMENT_VIEW.groundSegments);
-    grounds.set(radius, made);
+    const made: BufferGeometry = groundGeometry(def.radius, phone ? MOMENT_VIEW.phoneGroundSegments : MOMENT_VIEW.groundSegments, hashOf(def.id));
+    grounds.set(def.id, made);
     return made;
   };
   let clock: number = 0;
@@ -280,7 +307,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     const gear: readonly string[] = echo.look?.gear ?? monster.gear;
     const loaded: LoadedRig | undefined = library.rigs.get(rigId);
     if (loaded === undefined || !hasWear(library, wornWearables(content, wear, null), gear)) return null;
-    const ghost: GhostUniforms = createGhostUniforms(entry.tint, MOMENT_VIEW.echoMix);
+    const ghost: GhostUniforms = createGhostUniforms(STILL, MOMENT_VIEW.echoMix);
     const rig: RigInstance = instantiateRig(loaded, library, { tint: '#ffffff', glow: '#ffffff', ghost });
     rig.setGear(gear);
     const worn: string[] = wornWearables(content, wear, null);
@@ -318,10 +345,10 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     const group: Group = new Group();
     group.position.set(moment.pos.x, 0, moment.pos.z);
     const props: Group = new Group();
-    const propGhost: GhostUniforms = createGhostUniforms(tint, 0);
+    const propGhost: GhostUniforms = createGhostUniforms(STILL, 0);
     propGhost.rim.value = 0;
     const surface: SurfaceDef | undefined = content.surfaces.get(moment.def.ground);
-    const ground: Mesh<BufferGeometry, MeshStandardMaterial> | null = surface === undefined ? null : new Mesh(groundOf(moment.def.radius), groundMaterial(surface));
+    const ground: Mesh<BufferGeometry, MeshStandardMaterial> | null = surface === undefined ? null : new Mesh(groundOf(moment.def), groundMaterial(surface));
     if (ground !== null) {
       makeGhost(ground.material, zeroFlash, propGhost);
       ground.material.depthWrite = false;
@@ -404,6 +431,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     entry.floorUniforms.uTime.value = clock * MOMENT_VIEW.shimmerSpeed;
     entry.dome.scale.setScalar(moment.def.radius * (0.6 + 0.4 * entry.shown));
     entry.propGhost.dissolve.value = marking ? 1 : Math.max(1 - entry.shown, fade);
+    entry.propGhost.mix.value = MOMENT_VIEW.stillMix * (1 - entry.awake);
     entry.group.position.set(moment.pos.x, 0, moment.pos.z);
     if (entry.light === null && !marking) entry.light = freeLights.pop() ?? null;
     if (entry.light !== null) {
@@ -420,6 +448,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       view.rig.mixer.update(dt);
       view.rig.setOpacity((MOMENT_VIEW.echoOpacity + (MOMENT_VIEW.awakeOpacity - MOMENT_VIEW.echoOpacity) * entry.awake) * view.shown * (1 - fade * 0.5));
       view.ghost.dissolve.value = Math.max(fade, 1 - view.shown);
+      view.ghost.mix.value = MOMENT_VIEW.echoMix + MOMENT_VIEW.stillMix * (1 - entry.awake);
       view.ghost.rim.value = MOMENT_VIEW.echoRim + entry.awake * MOMENT_VIEW.echoRimAwake;
       view.rig.root.visible = view.shown > 0;
       if (figure !== undefined) view.rig.root.position.set(figure.pos.x - moment.pos.x, 0, figure.pos.z - moment.pos.z);

@@ -50,7 +50,7 @@ export const EFFECTS = {
   telegraphHeight: 0.09,
   telegraphStart: 0.45,
   telegraphFaint: 0.07,
-  telegraphStrong: 0.24,
+  telegraphStrong: 0.2,
   telegraphEdge: 0.5,
   telegraphEdgeIn: 6,
   phaseRing: 9,

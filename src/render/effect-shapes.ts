@@ -19,7 +19,8 @@ export const SHAPES = {
   telegraphInner: 0.35,
   telegraphEdge: 0.985,
   telegraphFill: 0.07,
-  telegraphLine: 0.34,
+  telegraphLine: 0.5,
+  telegraphCore: 0,
   laneStart: 0.7,
 } as const;
 
@@ -206,6 +207,24 @@ function telegraphPart(geometry: BufferGeometry, color: Color, opacity: number, 
   return mesh;
 }
 
+function gradientFill(geometry: BufferGeometry, color: Color, inner: (vertex: number) => boolean): TelegraphPart {
+  const count: number = geometry.getAttribute('position').count;
+  const colours: Float32Array = new Float32Array(count * 4);
+  for (let vertex: number = 0; vertex < count; vertex += 1) colours.set([1, 1, 1, inner(vertex) ? SHAPES.telegraphCore : 1], vertex * 4);
+  geometry.setAttribute('color', new BufferAttribute(colours, 4));
+  const part: TelegraphPart = telegraphPart(geometry, color, SHAPES.telegraphFill, 5);
+  part.material.vertexColors = true;
+  return part;
+}
+
+function sectorInner(vertex: number): boolean {
+  return vertex % 2 === 0;
+}
+
+function laneNear(vertex: number): boolean {
+  return vertex < 2;
+}
+
 function laneGeometry(halfWidth: number, length: number): BufferGeometry {
   const geometry: BufferGeometry = new BufferGeometry();
   const near: number = SHAPES.laneStart;
@@ -221,7 +240,7 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
   switch (delivery.type) {
     case 'arc': {
       const arc: number = (delivery.arcDegrees * Math.PI) / 180;
-      fills.push(telegraphPart(sectorGeometry(arc, SHAPES.telegraphInner, delivery.reach), color, SHAPES.telegraphFill, 5));
+      fills.push(gradientFill(sectorGeometry(arc, SHAPES.telegraphInner, delivery.reach), color, sectorInner));
       edges.push(telegraphPart(sectorGeometry(arc, delivery.reach * SHAPES.telegraphEdge, delivery.reach), color, SHAPES.telegraphLine, 6));
       break;
     }
@@ -230,26 +249,26 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
     case 'field':
     case 'area':
     case 'blink':
-      fills.push(telegraphPart(sectorGeometry(Math.PI * 2, 0, delivery.radius), color, SHAPES.telegraphFill, 5));
+      fills.push(gradientFill(sectorGeometry(Math.PI * 2, 0, delivery.radius), color, sectorInner));
       edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.radius * SHAPES.telegraphEdge, delivery.radius), color, SHAPES.telegraphLine, 6));
       break;
     case 'projectile': {
       const count: number = Math.max(1, Math.round(delivery.count));
       for (let index: number = 0; index < count; index += 1) {
-        const lane: TelegraphPart = telegraphPart(laneGeometry(delivery.radius, delivery.range + SKILLS.projectileOrigin + delivery.radius), color, SHAPES.telegraphFill, 5);
+        const lane: TelegraphPart = gradientFill(laneGeometry(delivery.radius, delivery.range + SKILLS.projectileOrigin + delivery.radius), color, laneNear);
         lane.rotation.y = count === 1 ? 0 : ((index - (count - 1) / 2) * delivery.spreadDegrees * Math.PI) / 180;
         fills.push(lane);
       }
       break;
     }
     case 'dash':
-      fills.push(telegraphPart(laneGeometry(SHAPES.dashLane, delivery.distance), color, SHAPES.telegraphFill, 5));
+      fills.push(gradientFill(laneGeometry(SHAPES.dashLane, delivery.distance), color, laneNear));
       break;
     case 'beam':
-      fills.push(telegraphPart(laneGeometry(delivery.width / 2, delivery.range), color, SHAPES.telegraphFill, 5));
+      fills.push(gradientFill(laneGeometry(delivery.width / 2, delivery.range), color, laneNear));
       break;
     case 'chain':
-      fills.push(telegraphPart(sectorGeometry(Math.PI * 2, 0, delivery.range), color, SHAPES.telegraphFill, 5));
+      fills.push(gradientFill(sectorGeometry(Math.PI * 2, 0, delivery.range), color, sectorInner));
       edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.range * SHAPES.telegraphEdge, delivery.range), color, SHAPES.telegraphLine, 6));
       break;
     case 'revive':
