@@ -52,6 +52,7 @@ export function mountGameBoard(hud: HTMLElement, lobby: Lobby, options: GameBoar
   const pinRank: HTMLSpanElement = el('span', 'board-rank', pinned);
   el('span', 'board-dot on', pinned);
   const pinName: HTMLSpanElement = el('span', 'board-name', pinned);
+  const pinPlace: HTMLSpanElement = el('span', 'board-place', pinned);
   const pinLevel: HTMLSpanElement = el('span', 'board-level', pinned);
   const toasts: HTMLDivElement = el('div', 'lobby-toasts', hud);
   let playing: boolean = false;
@@ -73,6 +74,7 @@ export function mountGameBoard(hud: HTMLElement, lobby: Lobby, options: GameBoar
     const mine: YourRow | null = board.you;
     setText(pinRank, mine === null ? '' : rankText(mine.rank), true);
     setText(pinName, mine === null ? GAME_BOARD.unnamed : mine.name, false);
+    setText(pinPlace, mine === null ? '' : mine.furthest, true);
     setText(pinLevel, mine === null ? '' : String(mine.level), true);
   };
 

@@ -95,8 +95,8 @@ body {
 
 #title.gone {
   transition:
-    opacity var(--spring-snappy-ms) var(--spring-smooth),
-    visibility 0s linear var(--spring-snappy-ms);
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
 }
 
 body.playing #hud,
