@@ -16,6 +16,12 @@ void test('a rig names each of its clips once, idle and run among them', (): voi
   for (const clip of hero.clips.death) assert.ok(names.includes(clip));
 });
 
+void test('a rig that rises loads its rise clip even when no other list names it', (): void => {
+  const hero: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
+  const rising: RigDef = { ...hero, clips: { ...hero.clips, death: [], rise: 'Jump_Land' } };
+  assert.ok(rigClipNames(rising).includes('Jump_Land'));
+});
+
 void test('a clip lives in its own file in the rig clip folder', (): void => {
   const hero: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
   assert.equal(clipUrl(hero, 'Sword_Idle'), `${hero.clipFolder}/Sword_Idle.glb`);

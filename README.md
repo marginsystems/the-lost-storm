@@ -165,8 +165,8 @@ A character is a rig entry in `data/rigs.json`. The loader (`src/render/characte
 }
 ```
 
-- `url` is the body. `animationUrls` lists GLB files whose clips are merged in, so one animation file serves every body on the same rig.
-- `clips` names the clips in those files. `idle` and `run` are one clip each. `hit` and `death` are lists, and one is picked at random each time, so a pack does not fall the same way. `actions` is the set of attack clips this rig can play, under names of your choosing: a skill's `animation` (and each combo step's) is one of those names, and the content check reports a skill given to a character whose rig lacks it. `impactFraction` is the point in the clip where the blow lands; the game speeds the clip up or down so that point meets the skill's `windup`, then plays the rest over the `recovery`. If a clip name is wrong, the error lists the clips the files do contain.
+- `url` is the body. `clipFolder` is the folder that holds one GLB per clip, named after the clip, so one set of clip files serves every body on the same rig and only the clips a rig names are loaded.
+- `clips` names the clips in that folder. `idle` and `run` are one clip each. `hit` and `death` are lists, and one is picked at random each time, so a pack does not fall the same way. `actions` is the set of attack clips this rig can play, under names of your choosing: a skill's `animation` (and each combo step's) is one of those names, and the content check reports a skill given to a character whose rig lacks it. `impactFraction` is the point in the clip where the blow lands; the game speeds the clip up or down so that point meets the skill's `windup`, then plays the rest over the `recovery`. If a clip name is wrong, the error lists the clips the files do contain.
 - `runSpeed` is the ground speed the `run` clip matches at normal playback, so feet do not slide when a character is slower or faster.
 - `rootMotionBone` pins that bone's horizontal movement so a clip with root motion plays in place.
 - `sockets` are named mounting points: a bone plus an offset, rotation and scale.

@@ -364,7 +364,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     setGear(attachmentIds: readonly string[]): void {
       const key: string = attachmentIds.join('|');
       if (key === heldKey) return;
-      heldKey = key;
+      heldKey = attachmentIds.every((id: string): boolean => library.attachments.has(id)) ? key : '';
       for (const holder of held.splice(0, held.length)) holder.removeFromParent();
       for (const id of attachmentIds) {
         const attachment: LoadedAttachment | undefined = library.attachments.get(id);

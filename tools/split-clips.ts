@@ -2,6 +2,7 @@ import type { Accessor, Animation, AnimationChannel, Document, Node } from '@glt
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { prune } from '@gltf-transform/functions';
+import { MeshoptDecoder, MeshoptEncoder } from 'meshoptimizer';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -75,7 +76,8 @@ async function main(): Promise<void> {
     process.exit(2);
   }
   mkdirSync(folder, { recursive: true });
-  const io: NodeIO = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+  await Promise.all([MeshoptEncoder.ready, MeshoptDecoder.ready]);
+  const io: NodeIO = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
   const written: string[][] = await Promise.all(sources.map((source: string): Promise<string[]> => split(io, source, folder)));
   sources.forEach((source: string, index: number): void => {
     console.log(`${source}: ${written[index]?.length ?? 0} clips into ${folder}`);
