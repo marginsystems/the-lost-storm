@@ -115,6 +115,136 @@
       }
     },
     {
+      "id": "first_fire",
+      "name": "A campfire",
+      "tint": "#ff8a3c",
+      "bright": false,
+      "radius": 6,
+      "lifetime": 50,
+      "awake": 40,
+      "turnChance": 1,
+      "props": [
+        {
+          "prop": "fire_pit",
+          "x": 0,
+          "z": 0,
+          "rotationDegrees": 0
+        },
+        {
+          "prop": "dead_log",
+          "x": -0.2,
+          "z": -2.6,
+          "rotationDegrees": 80
+        },
+        {
+          "prop": "stool",
+          "x": 2.3,
+          "z": 1.2,
+          "rotationDegrees": 30
+        },
+        {
+          "prop": "pot",
+          "x": 0.7,
+          "z": 0.5,
+          "rotationDegrees": 0
+        }
+      ],
+      "echoes": [
+        {
+          "monster": "unfinished_brute",
+          "x": 0.65,
+          "z": 2.1,
+          "facingDegrees": -163,
+          "pose": {
+            "clip": "idle",
+            "at": 0.2
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [
+              "raider_maul"
+            ],
+            "wear": [
+              "leather_vest",
+              "wool_trousers",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "unfinished_thrower",
+          "x": 1.49,
+          "z": -1.62,
+          "facingDegrees": -42,
+          "pose": {
+            "clip": "cast",
+            "at": 0.3
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_woman",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "linen_shirt",
+              "rag_trousers",
+              "worn_boots"
+            ]
+          }
+        },
+        {
+          "monster": "mender",
+          "x": -2.09,
+          "z": -0.68,
+          "facingDegrees": 72,
+          "pose": {
+            "clip": "idle",
+            "at": 0.6
+          },
+          "turns": false,
+          "look": {
+            "rig": "human_elder",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "sackcloth_robe",
+              "sackcloth_cowl"
+            ]
+          }
+        },
+        {
+          "monster": "unfinished_thrower",
+          "x": -1.6,
+          "z": 1.9,
+          "facingDegrees": 140,
+          "pose": {
+            "clip": "cast",
+            "at": 0.3
+          },
+          "turns": true,
+          "look": {
+            "rig": "human_man",
+            "scale": 1.0,
+            "gear": [],
+            "wear": [
+              "linen_shirt",
+              "rag_trousers",
+              "worn_boots"
+            ]
+          }
+        }
+      ],
+      "reward": {
+        "goldMin": 8,
+        "goldMax": 16,
+        "items": 1,
+        "itemChance": 0.5,
+        "rarity": null
+      }
+    },
+    {
       "id": "market_street",
       "name": "A market street",
       "tint": "#f2c14e",

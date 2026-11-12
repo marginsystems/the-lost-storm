@@ -70,6 +70,7 @@ function clear(world: World, field: MomentField, def: MomentDef, pos: Vec2): boo
   if (!isWalkable(world.grid, pos.x, pos.z)) return false;
   if (distance(world.player.pos, pos) < def.radius + field.clearance.hero) return false;
   if (world.zone.exits.some((exit): boolean => distance(exit, pos) < def.radius + field.clearance.exits)) return false;
+  if (field.avoid.some((keep: StrikeArea): boolean => distance({ x: keep.x + world.shift.x, z: keep.z + world.shift.z }, pos) < def.radius + keep.radius)) return false;
   return world.moments.every((other: MomentState): boolean => distance(other.pos, pos) >= def.radius + other.def.radius + field.clearance.between);
 }
 
@@ -86,7 +87,8 @@ function pickDef(world: World, field: MomentField): MomentDef | null {
     const def: MomentDef | undefined = world.content.moments.defs.get(entry.moment);
     return def !== undefined && canTurn(def);
   });
-  const entry: WeightedMoment | null = pickWeighted(world.rng, sureHolds(world, field) && fights.length > 0 ? fights : field.table);
+  const sure: boolean = sureHolds(world, field);
+  const entry: WeightedMoment | null = pickWeighted(world.rng, sure && field.first.length > 0 ? field.first : sure && fights.length > 0 ? fights : field.table);
   return entry === null ? null : (world.content.moments.defs.get(entry.moment) ?? null);
 }
 
@@ -246,7 +248,7 @@ export function clearMoments(world: World): void {
 export function startMoments(world: World): void {
   clearMoments(world);
   const field: MomentField | null = fieldOf(world);
-  world.strikeTimer = field === null ? 0 : nextInterval(world, field);
+  world.strikeTimer = field === null ? 0 : Math.max(field.grace, nextInterval(world, field));
   if (field === null) return;
   for (let index: number = 0; index < field.start; index += 1) place(world, field, false);
 }

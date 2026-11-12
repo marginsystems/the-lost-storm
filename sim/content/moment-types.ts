@@ -93,4 +93,7 @@ export interface MomentField {
   readonly max: number;
   readonly table: readonly WeightedMoment[];
   readonly sure: readonly Condition[];
+  readonly first: readonly WeightedMoment[];
+  readonly grace: number;
+  readonly avoid: readonly StrikeArea[];
 }

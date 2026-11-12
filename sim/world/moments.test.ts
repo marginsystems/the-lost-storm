@@ -305,9 +305,25 @@ void test('a hero who walked the In-Between still sees strikes land in the Hall,
   const field: MomentField = must(hall.moments, 'hall field');
   enterZone(world, hall, { type: 'start' });
   assert.deepEqual(world.shift, { x: 0, z: 0 });
-  assert.ok(world.moments.length > 0);
+  assert.equal(world.moments.length, field.start);
   const events: WorldEvent[] = run(world, field.interval.max + world.content.moments.telegraph + 1);
   assert.ok(events.some((event: WorldEvent): boolean => event.type === 'moment_strike'));
   assert.equal(world.strikeMisses, 0);
   for (const moment of world.moments) assert.ok(isWalkable(world.grid, moment.pos.x, moment.pos.z));
+});
+
+void test('a new hero in the Hall gets a grace period, and the first moment is a fixed fight away from the arrival and the road to the fire', (): void => {
+  const shipped: Content = loadContent();
+  const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');
+  const field: MomentField = must(hall.moments, 'hall field');
+  for (let seed: number = 1; seed <= 8; seed += 1) {
+    const world: World = createWorld(shipped, { seed, save: null });
+    enterZone(world, hall, { type: 'start' });
+    const early: WorldEvent[] = run(world, field.grace - 0.5);
+    assert.equal(early.some((event: WorldEvent): boolean => event.type === 'moment_mark'), false, `seed ${seed}`);
+    run(world, field.interval.max - field.grace + 1);
+    const first: MomentState = must(world.moments[0], `seed ${seed} first moment`);
+    assert.equal(first.def.id, must(field.first[0], 'first entry').moment);
+    for (const keep of field.avoid) assert.ok(distance(first.pos, keep) >= first.def.radius + keep.radius, `seed ${seed}`);
+  }
 });
