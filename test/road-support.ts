@@ -22,6 +22,7 @@ export function roadZone(patch: Partial<ZoneDef>): ZoneDef {
     outside: null,
     walls: null,
     props: [],
+    scatter: [],
     packs: [],
     npcs: [],
     exits: [],

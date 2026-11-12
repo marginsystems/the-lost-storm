@@ -3,7 +3,7 @@ import { withCutaway } from './prop-cutaway.ts';
 import type { Material, Object3D, Scene } from 'three';
 import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { Content, PropDef, PropLight, ZoneDef, ZoneProp, ZoneWalls } from '../../sim/content/types.ts';
+import type { Content, PropDef, PropLight, ZoneDef, ZoneProp, ZoneScatter, ZoneWalls } from '../../sim/content/types.ts';
 import { wallCorners, wallEdges, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
@@ -16,10 +16,11 @@ import type { Vec2 } from '../../sim/math.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Ground } from './ground.ts';
 import type { PropDressing } from './surfaces.ts';
-import { dressedProp, preloadSurfaces, propDressing, releaseSurfaces } from './surfaces.ts';
+import { dressedProp, looseDressing, preloadSurfaces, propDressing, releaseSurfaces } from './surfaces.ts';
 import type { PropLook } from './prop-surface.ts';
 import { lookOf, withPropLook } from './prop-surface.ts';
 import { edgeRocks } from './zone-edge.ts';
+import { scatterStones } from './zone-scatter.ts';
 import { momentSurfaces, zoneModels, zoneSurfaces } from './zone-assets.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
@@ -142,6 +143,8 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   let lightsVersion: number = 0;
 
   const dressing: PropDressing = propDressing(zone);
+  const loose: PropDressing = looseDressing(zone);
+  const scattered: Set<string> = new Set<string>(zone.scatter.flatMap((rule: ZoneScatter): readonly string[] => rule.props));
   const finish = (def: PropDef | undefined, material: Material): Material => {
     if (def === undefined || def.tint === null || !(material instanceof MeshStandardMaterial)) return material;
     const own: MeshStandardMaterial = carryLook(material, material.clone());
@@ -150,11 +153,11 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     return own;
   };
 
-  const place = (propId: string, x: number, y: number, z: number, yaw: number, castShadow: boolean): void => {
+  const place = (propId: string, x: number, y: number, z: number, yaw: number, castShadow: boolean, size: number = 1): void => {
     const def: PropDef | undefined = content.props.get(propId);
     if (def === undefined) return;
     const list: Placement[] = placements.get(propId) ?? [];
-    list.push({ matrix: transform(x, y, z, yaw, def.scale), castShadow });
+    list.push({ matrix: transform(x, y, z, yaw, def.scale * size), castShadow });
     placements.set(propId, list);
     if (def.light === null) return;
     sources.push({ point: lightPoint(def.light, x, y, z, yaw), color: new Color(def.light.color), intensity: def.light.intensity, distance: def.light.distance, phase: hash(x, z, 1) * 40, conditional: null, score: 0 });
@@ -170,6 +173,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   }
   if (walls !== null) for (const corner of wallCorners(zone)) place(walls.corner, corner.x, 0, corner.z, 0, true);
   for (const rock of edgeRocks(content, zone)) place(rock.prop, rock.x, 0, rock.z, rock.yaw, true);
+  for (const stone of scatterStones(content, zone)) place(stone.prop, stone.x, 0, stone.z, stone.yaw, false, stone.size);
   for (const prop of zone.props) {
     if (prop.when.length === 0) {
       place(prop.prop, prop.x, prop.y, prop.z, prop.rotationDegrees * DEGREES, true);
@@ -208,7 +212,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       const geometry: unknown = object.geometry;
       const material: unknown = object.material;
       if (!(material instanceof MeshStandardMaterial) || !isGeometry(geometry)) return;
-      const instanced: InstancedMesh = new InstancedMesh(geometry, withCutaway(finish(content.props.get(propId), dressedProp(content, dress, material, dressing))), list.length);
+      const instanced: InstancedMesh = new InstancedMesh(geometry, withCutaway(finish(content.props.get(propId), dressedProp(content, dress, material, scattered.has(propId) ? loose : dressing))), list.length);
       list.forEach((placement: Placement, index: number): void => {
         instanced.setMatrixAt(index, new Matrix4().multiplyMatrices(placement.matrix, object.matrixWorld));
       });

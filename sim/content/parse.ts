@@ -522,6 +522,14 @@ export function contentProblems(content: Content): string[] {
       known(`${at} prop ${placed.prop}`, placed.when);
       if (def !== undefined && placed.when.length > 0) need(def.blockRadius === 0, `${at} places prop ${placed.prop} with a condition, but it blocks the way; a prop that comes and goes cannot block`);
     }
+    for (const scatter of zoneDef.scatter) {
+      for (const id of scatter.props) {
+        const def: PropDef | undefined = content.props.get(id);
+        need(def !== undefined, `${at} scatters unknown prop ${id}`);
+        if (def !== undefined) need(def.blockRadius === 0 && def.light === null, `${at} scatters ${id}, which blocks or glows; scatter is loose ground cover`);
+      }
+      if (scatter.type === 'around') for (const anchor of scatter.anchors) need(content.props.has(anchor), `${at} scatters around unknown prop ${anchor}`);
+    }
     for (const voice of zoneDef.voices) {
       known(`${at} voice ${voice.id}`, voice.when);
       for (const lineId of voice.lines) need(content.lines.has(lineId), `${at} voice ${voice.id} uses unknown line ${lineId}`);

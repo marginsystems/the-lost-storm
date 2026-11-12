@@ -635,6 +635,7 @@ void test('a void recentres around the hero, so it cannot hold npcs, checkpoints
   const checkpoint = { id: 'stone', x: 80, z: 80, radius: 2 };
   assert.throws((): unknown => parseContent(voidWith({ checkpoints: [checkpoint] })), (error: unknown): boolean => problem(error, 'cannot hold npcs, checkpoints or props'));
   assert.throws((): unknown => parseContent(voidWith({ props: [{ prop: 'castle_pier', x: 80, z: 80 }] })), (error: unknown): boolean => problem(error, 'or props'));
+  assert.throws((): unknown => parseContent(voidWith({ scatter: [{ type: 'open', props: ['pebble_flat'], count: 4, clump: 1, spread: 0, size: { least: 1, most: 1 }, clear: 0 }] })), (error: unknown): boolean => problem(error, 'or props'));
   assert.throws((): unknown => parseContent(voidWith({ waypoint: { x: 80, z: 80 } })), (error: unknown): boolean => problem(error, 'cannot hold a waypoint'));
   assert.doesNotThrow((): unknown => parseContent(voidWith({})));
 });
