@@ -59,7 +59,7 @@
 
 .target-chip {
   background: rgba(240, 214, 184, 0.62);
-  transition: transform var(--spring-smooth-ms) var(--spring-smooth) 180ms;
+  transition: transform var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .target-track.snap .target-fill,

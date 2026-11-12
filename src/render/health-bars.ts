@@ -41,7 +41,7 @@ export function barWanted(monster: Pick<MonsterState, 'alive' | 'life' | 'maxLif
 export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBars {
   const canvas: HTMLCanvasElement = document.createElement('canvas');
   canvas.className = 'health-canvas';
-  root.append(canvas);
+  root.prepend(canvas);
   const context: CanvasRenderingContext2D | null = canvas.getContext('2d');
   const states: Map<number, BarState> = new Map<number, BarState>();
   const point: Vector2 = new Vector2();
