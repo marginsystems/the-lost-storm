@@ -36,6 +36,10 @@ export function createTooltip(root: HTMLElement): Tooltip {
   };
   window.addEventListener('keydown', compare);
   window.addEventListener('keyup', compare);
+  window.addEventListener('blur', (): void => {
+    shifted = false;
+    node.classList.remove('compare');
+  });
 
   return {
     show(content: HTMLElement, x: number, y: number): void {

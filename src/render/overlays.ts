@@ -44,6 +44,7 @@ interface LootLabel {
   readonly element: HTMLDivElement;
   readonly ground: GroundItem;
   leaving: number;
+  hovered: boolean;
   rank: number;
   width: number;
   height: number;
@@ -151,12 +152,20 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       if (event.button === 0) hooks.onPickup(ground.id);
     });
     const item: ItemInstance = ground.content.item;
-    element.addEventListener('pointerenter', (event: PointerEvent): void => hooks.onLootEnter(item, event.clientX, event.clientY));
+    element.addEventListener('pointerenter', (event: PointerEvent): void => {
+      const label: LootLabel | undefined = labels.get(ground.id);
+      if (label !== undefined) label.hovered = true;
+      hooks.onLootEnter(item, event.clientX, event.clientY);
+    });
     element.addEventListener('pointermove', (event: PointerEvent): void => hooks.onLootMove(event.clientX, event.clientY));
-    element.addEventListener('pointerleave', (): void => hooks.onLootLeave());
+    element.addEventListener('pointerleave', (): void => {
+      const label: LootLabel | undefined = labels.get(ground.id);
+      if (label !== undefined) label.hovered = false;
+      hooks.onLootLeave();
+    });
     labelLayer.append(element);
     const rank: number = world.content.rarities.findIndex((rarity): boolean => rarity.id === item.rarity);
-    labels.set(ground.id, { element, ground, leaving: -1, rank, width: OVERLAYS.labelWidth, height: OVERLAYS.labelHeight, shown: true });
+    labels.set(ground.id, { element, ground, leaving: -1, hovered: false, rank, width: OVERLAYS.labelWidth, height: OVERLAYS.labelHeight, shown: true });
   };
 
   const showExits = (world: World): void => {
@@ -364,7 +373,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         } else if (!world.ground.includes(label.ground)) {
           label.leaving = OVERLAYS.labelExit;
           label.element.classList.add('taken');
-          hooks.onLootLeave();
+          if (label.hovered) hooks.onLootLeave();
         }
         const near: boolean = Math.hypot(label.ground.pos.x - world.player.pos.x, label.ground.pos.z - world.player.pos.z) <= OVERLAYS.labelNear;
         const shown: boolean = showAll || near || label.rank >= OVERLAYS.labelShownRank;
