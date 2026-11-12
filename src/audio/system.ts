@@ -8,6 +8,8 @@ import type { BufferLoader, LoadOptions } from './buffers.ts';
 import { createBufferLoader, LOOP_LOAD, PLAY_LOAD, WARM_LOAD } from './buffers.ts';
 import type { BufferCache } from './cache.ts';
 import { createBufferCache } from './cache.ts';
+import type { LoadHealth } from './load-health.ts';
+import { createLoadHealth } from './load-health.ts';
 import { createManifestLoader } from './manifest-loader.ts';
 import type { ManifestLoader } from './manifest-loader.ts';
 import type { AssetManifest } from './manifest.ts';
@@ -53,6 +55,7 @@ export interface Trigger {
 export interface AudioSystem {
   readonly controls: AudioControls;
   readonly configured: boolean;
+  readonly health: LoadHealth;
   unlock(): void;
   play(cue: SoundCue, place: Placement): void;
   playVoice(lineId: string): Promise<void>;
@@ -98,6 +101,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   const cache: BufferCache<AudioBuffer> = createBufferCache<AudioBuffer>(SYSTEM.cacheBytes, (buffer: AudioBuffer): number => buffer.length * buffer.numberOfChannels * SYSTEM.bytesPerSample);
   const lastVariant: Map<string, number> = new Map<string, number>();
   const listeners: ((trigger: Trigger) => void)[] = [];
+  const health: LoadHealth = createLoadHealth();
   const loops: Running[] = [];
   let timers: StingerTimer[] = [];
   const loader: ManifestLoader = createManifestLoader({
@@ -155,6 +159,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       if (graph === null) return Promise.reject(new Error('no audio graph'));
       return graph.context.decodeAudioData(bytes);
     },
+    onOutcome: (ok: boolean): void => health.note(ok),
   });
   const load = (path: string, how: LoadOptions = PLAY_LOAD): Promise<AudioBuffer | null> => buffers.load(path, how);
 
@@ -262,7 +267,9 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     Promise.all(Array.from({ length: SYSTEM.warmLanes }, lane)).catch((): void => undefined);
   };
 
+  loader.onFailed((): void => health.note(false));
   loader.onLoaded((): void => {
+    health.note(true);
     attemptLoops();
     startWarm();
   });
@@ -270,6 +277,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   return {
     controls,
     configured: base !== null,
+    health,
     unlock(): void {
       if (base === null || graph !== null) return;
       try {

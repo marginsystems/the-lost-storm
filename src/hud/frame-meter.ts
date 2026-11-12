@@ -56,7 +56,7 @@ export function createFrameMeter(): FrameMeter {
       const budgetMs: number = displayBudget(kept.map((sample: Sample): number => sample.ms));
       return {
         fps: (recent.length * 1000) / spent,
-        worstMs: Math.max(...recent.map((sample: Sample): number => sample.ms)),
+        worstMs: Math.max(...kept.map((sample: Sample): number => sample.ms)),
         longFrames: kept.filter((sample: Sample): boolean => sample.ms > budgetMs * FRAME_METER.longOver).length,
         budgetMs,
       };

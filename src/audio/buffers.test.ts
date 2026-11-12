@@ -204,3 +204,24 @@ void test('a play that joined a failing play does not fetch again, and a warm-up
   assert.deepEqual(await Promise.all([first, second, warm]), [null, null, null]);
   assert.equal(eleven.urls.length, 1);
 });
+
+void test('every finished load reports whether the sound file arrived', async (): Promise<void> => {
+  const outcomes: boolean[] = [];
+  const answers: Promise<ArrayBuffer>[] = [Promise.reject(new Error('503')), Promise.resolve(new ArrayBuffer(4))];
+  const loader: BufferLoader<string> = createBufferLoader<string>({
+    base: 'http://localhost:5210/',
+    clock: (): number => 0,
+    cache: createBufferCache<string>(1000, (value: string): number => value.length),
+    failedRetrySeconds: 30,
+    timeoutMs: 30,
+    ready: (): boolean => true,
+    fetchBytes: (): Promise<ArrayBuffer> => answers.shift() ?? Promise.resolve(new ArrayBuffer(4)),
+    decode: (bytes: ArrayBuffer): Promise<string> => Promise.resolve(`decoded${bytes.byteLength}`),
+    onOutcome: (ok: boolean): void => {
+      outcomes.push(ok);
+    },
+  });
+  assert.equal(await loader.load('a.ogg'), null);
+  assert.equal(await loader.load('b.ogg'), 'decoded4');
+  assert.deepEqual(outcomes, [false, true]);
+});

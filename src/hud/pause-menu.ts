@@ -1,3 +1,4 @@
+import type { LoadHealth } from '../audio/load-health.ts';
 import type { AudioControls } from '../audio/settings.ts';
 import type { SettingsSection } from '../settings/settings.ts';
 import { SETTINGS_SECTIONS } from '../settings/settings.ts';
@@ -25,6 +26,7 @@ export interface PauseHooks {
   readonly settings: SettingsStore;
   readonly glitches: GlitchSettingsStore;
   readonly audio: AudioControls;
+  readonly soundHealth: LoadHealth;
   onOpen(): void;
   onClose(): void;
   onTitle(): void;
@@ -92,7 +94,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
   const controlsPage: HTMLDivElement | undefined = pages.get('controls');
   if (graphicsPage === undefined || soundPage === undefined || controlsPage === undefined) throw new Error('Settings pages are missing');
   mountGraphics(graphicsPage, hooks.settings, hooks.glitches);
-  mountVolumeSliders(soundPage, hooks.audio);
+  mountVolumeSliders(soundPage, hooks.audio, hooks.soundHealth);
   const controls: ControlsPage = mountControls(controlsPage, hooks.settings);
 
   const layoutMarker = (): void => {

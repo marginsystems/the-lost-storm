@@ -292,6 +292,7 @@ async function start(): Promise<void> {
     settings: gameSettings,
     glitches: glitchSettings,
     audio: controls,
+    soundHealth: audio.health,
     feedback: launch.canSend ? (): void => launch.open('ask') : null,
     onOpen: (): void => playUi('panel_open'),
     onClose: (): void => playUi('panel_close'),

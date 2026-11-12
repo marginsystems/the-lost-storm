@@ -1,3 +1,4 @@
+import type { LoadHealth } from '../audio/load-health.ts';
 import type { AudioCategory, AudioControls, AudioSettings } from '../audio/settings.ts';
 import { AUDIO_CATEGORIES } from '../audio/settings.ts';
 import { el, label, setText } from './dom.ts';
@@ -6,6 +7,7 @@ const VOLUME = {
   step: 0.01,
   percent: 100,
   svgNamespace: 'http://www.w3.org/2000/svg',
+  troubleText: 'Sound files could not be loaded',
 } as const;
 
 const LABELS: Readonly<Record<AudioCategory, string>> = {
@@ -44,7 +46,7 @@ function sliderRow(parent: HTMLElement, category: AudioCategory, controls: Audio
   return { category, input, fill, value };
 }
 
-export function mountVolumeSliders(parent: HTMLElement, controls: AudioControls): void {
+export function mountVolumeSliders(parent: HTMLElement, controls: AudioControls, health: LoadHealth): void {
   const head: HTMLDivElement = el('div', 'volume-head', parent);
   label('volume-mute-label', 'Mute all sound', head);
   const mute: HTMLButtonElement = el('button', 'set-switch', head);
@@ -52,6 +54,13 @@ export function mountVolumeSliders(parent: HTMLElement, controls: AudioControls)
   mute.setAttribute('role', 'switch');
   mute.setAttribute('aria-label', 'Mute all sound');
   el('span', 'set-switch-knob', mute);
+  const trouble: HTMLDivElement = label('volume-trouble', VOLUME.troubleText, parent);
+  const showTrouble = (failing: boolean): void => {
+    trouble.classList.toggle('shown', failing);
+    trouble.setAttribute('aria-hidden', String(!failing));
+  };
+  health.subscribe(showTrouble);
+  showTrouble(health.failing);
   const sliders: SliderView[] = AUDIO_CATEGORIES.map((category: AudioCategory): SliderView => sliderRow(parent, category, controls));
 
   const render = (settings: AudioSettings): void => {

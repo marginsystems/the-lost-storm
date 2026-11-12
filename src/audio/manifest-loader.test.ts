@@ -168,3 +168,19 @@ void test('the request is aborted when it times out', async (): Promise<void> =>
   await loader.ready();
   assert.equal(signals[0]?.aborted, true);
 });
+
+void test('a manifest that cannot be fetched or read tells failure listeners each time', async (): Promise<void> => {
+  const failing: Rig = rig('http://localhost:5210/');
+  let failures: number = 0;
+  failing.loader.onFailed((): void => {
+    failures += 1;
+  });
+  failing.answers.push((): Promise<unknown> => Promise.reject(new Error('refused')), (): Promise<unknown> => Promise.resolve({ nonsense: true }));
+  failing.loader.ensure();
+  await failing.loader.ready();
+  failing.advance(10);
+  failing.loader.ensure();
+  await failing.loader.ready();
+  assert.equal(failures, 2);
+  assert.equal(failing.loader.current(), null);
+});

@@ -40,17 +40,18 @@ void test('a steady 60 Hz second reads 60 fps, a 17 ms worst frame and no long f
   assert.equal(Math.round(reading.budgetMs), 17);
 });
 
-void test('one 100 ms hitch shows as the worst frame for a second and counts as long for ten', (): void => {
+void test('one 100 ms hitch stays the worst frame and counts as long for ten seconds, so a glance after it still sees it', (): void => {
   const fake: FakeClock = clock();
   fake.run(1000 / 60, 120);
   fake.run(100, 1);
   fake.run(1000 / 60, 30);
   assert.equal(Math.round(read(fake).worstMs), 100);
   assert.equal(read(fake).longFrames, 1);
-  fake.run(1000 / 60, 70);
-  assert.equal(Math.round(read(fake).worstMs), 17);
+  fake.run(1000 / 60, 8 * 60);
+  assert.equal(Math.round(read(fake).worstMs), 100);
   assert.equal(read(fake).longFrames, 1);
-  fake.run(1000 / 60, 9 * 60);
+  fake.run(1000 / 60, 2 * 60);
+  assert.equal(Math.round(read(fake).worstMs), 17);
   assert.equal(read(fake).longFrames, 0);
 });
 

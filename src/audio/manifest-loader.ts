@@ -17,28 +17,35 @@ export interface ManifestLoader {
   ready(): Promise<void>;
   ensure(): void;
   onLoaded(listener: (manifest: AssetManifest) => void): void;
+  onFailed(listener: () => void): void;
 }
 
 export function createManifestLoader(options: ManifestLoaderOptions): ManifestLoader {
   const url: string | null = options.base === null ? null : assetUrl(options.base, MANIFEST_NAME);
   const listeners: ((manifest: AssetManifest) => void)[] = [];
+  const failures: (() => void)[] = [];
   let manifest: AssetManifest | null = null;
   let loading: boolean = false;
   let failedAt: number | null = null;
   let running: Promise<void> = Promise.resolve();
 
+  const fail = (): void => {
+    failedAt = options.clock();
+    for (const listener of failures) listener();
+  };
+
   const run = async (target: string): Promise<void> => {
     try {
       const parsed: AssetManifest | null = parseManifest(await within(options.timeoutMs, (signal: AbortSignal): Promise<unknown> => options.fetchJson(target, signal)));
       if (parsed === null) {
-        failedAt = options.clock();
+        fail();
       } else {
         manifest = parsed;
         failedAt = null;
         for (const listener of listeners) listener(parsed);
       }
     } catch {
-      failedAt = options.clock();
+      fail();
     } finally {
       loading = false;
     }
@@ -59,6 +66,9 @@ export function createManifestLoader(options: ManifestLoaderOptions): ManifestLo
     },
     onLoaded(listener: (loaded: AssetManifest) => void): void {
       listeners.push(listener);
+    },
+    onFailed(listener: () => void): void {
+      failures.push(listener);
     },
   };
 }

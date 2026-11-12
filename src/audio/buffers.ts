@@ -20,6 +20,7 @@ export interface BufferLoaderOptions<T> {
   readonly ready: () => boolean;
   readonly fetchBytes: (url: string, signal: AbortSignal) => Promise<ArrayBuffer>;
   readonly decode: (bytes: ArrayBuffer) => Promise<T>;
+  readonly onOutcome?: (ok: boolean) => void;
 }
 
 interface PendingLoad<T> {
@@ -50,9 +51,11 @@ export function createBufferLoader<T>(options: BufferLoaderOptions<T>): BufferLo
       try {
         const decoded: T = await within(options.timeoutMs, async (signal: AbortSignal): Promise<T> => options.decode(await options.fetchBytes(url, signal)));
         if (how.keep) options.cache.set(path, decoded);
+        options.onOutcome?.(true);
         return decoded;
       } catch {
         if (how.remember) failed.set(path, options.clock());
+        options.onOutcome?.(false);
         return null;
       }
     })();
