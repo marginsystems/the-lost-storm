@@ -162,12 +162,56 @@ void test('a refused credential changes nothing and comes back with a fresh nonc
   assert.deepEqual(await service.signIn(credential(result.kind === 'failed' ? result.state : { kind: 'hidden' }, 'ada')), { kind: 'reload' });
 });
 
-void test('a sign-in that cannot be stored is a failure, not a reload', async (): Promise<void> => {
-  const { harness, service } = await browser();
+void test('a sign-in to another account that cannot be stored is a failure, not a reload', async (): Promise<void> => {
+  const first: Browser = await browser();
+  assert.deepEqual(await signInAs(first.service, 'ada'), { kind: 'reload' });
+  const harness: Harness = createSecondBrowser(first.harness);
+  await harness.open().load();
+  const service: AccountService = serviceFor(harness);
   const state: AccountState = await service.load();
   harness.store.failWrites = true;
   const result: SignInResult = await service.signIn(credential(state, 'ada'));
   assert.equal(result.kind, 'failed');
+});
+
+void test('a sign-in whose answer never arrives still signs this browser in, because the server linked the account it holds', async (): Promise<void> => {
+  const { harness, service } = await browser(makeSave(4, 10));
+  const before: SyncRecord = record(harness);
+  const state: AccountState = await service.load();
+  harness.server.loseNextAnswer('POST', '/v1/auth/google');
+  assert.deepEqual(await service.signIn(credential(state, 'ada')), { kind: 'reload' });
+  assert.deepEqual(record(harness), before);
+  assert.equal(owner(harness, 0).google, 'ada');
+  assert.deepEqual(await service.load(), { kind: 'signed-in', name: 'Ada' });
+  const reloaded: SaveData | null = await harness.open().load();
+  assert.equal(reloaded?.level, 4);
+  assert.equal(harness.server.accounts.length, 1);
+});
+
+void test('a lost answer for a sign-in to another account leaves this browser a guest with a fresh nonce', async (): Promise<void> => {
+  const first: Browser = await browser();
+  assert.deepEqual(await signInAs(first.service, 'ada'), { kind: 'reload' });
+  const harness: Harness = createSecondBrowser(first.harness);
+  await harness.open().load();
+  const service: AccountService = serviceFor(harness);
+  const state: AccountState = await service.load();
+  harness.server.loseNextAnswer('POST', '/v1/auth/google');
+  const result: SignInResult = await service.signIn(credential(state, 'ada'));
+  assert.ok(result.kind === 'failed' && result.state.kind === 'guest');
+  assert.deepEqual(await service.signIn(credential(result.state, 'ada')), { kind: 'reload' });
+  assert.deepEqual(await service.load(), { kind: 'signed-in', name: 'Ada' });
+});
+
+void test('a browser left on its guest token after a lost answer can sign out, and that token stops working', async (): Promise<void> => {
+  const { harness, service } = await browser();
+  const state: AccountState = await service.load();
+  harness.server.loseNextAnswer('POST', '/v1/auth/google');
+  assert.deepEqual(await service.signIn(credential(state, 'ada')), { kind: 'reload' });
+  const token: string = record(harness).token;
+  assert.equal(await service.signOut(), 'reload');
+  assert.equal(owner(harness, 0).guestRetired, true);
+  assert.equal(harness.store.read(SYNC_KEY), null);
+  assert.equal(token, owner(harness, 0).token);
 });
 
 void test('signing out ends the session, forgets the token and the local save, and the next start is a new guest', async (): Promise<void> => {

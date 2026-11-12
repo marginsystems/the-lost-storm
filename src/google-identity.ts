@@ -13,9 +13,10 @@ interface IdentityApi {
   readonly renderButton: (mount: HTMLElement, options: unknown) => void;
 }
 
-export const GOOGLE_IDENTITY: { readonly script: string; readonly loadMs: number; readonly buttonWidth: number; readonly locale: string } = {
+export const GOOGLE_IDENTITY: { readonly script: string; readonly attempts: number; readonly retryMs: number; readonly buttonWidth: number; readonly locale: string } = {
   script: 'https://accounts.google.com/gsi/client',
-  loadMs: 8000,
+  attempts: 4,
+  retryMs: 1500,
   buttonWidth: 220,
   locale: 'en',
 };
@@ -55,22 +56,38 @@ export function readIdentityApi(globals: unknown): GoogleIdentity | null {
   };
 }
 
-export function loadGoogleIdentity(): Promise<GoogleIdentity | null> {
-  const ready: GoogleIdentity | null = readIdentityApi(window);
-  if (ready !== null) return Promise.resolve(ready);
+function fetchScript(): Promise<GoogleIdentity | null> {
   return new Promise<GoogleIdentity | null>((resolve: (identity: GoogleIdentity | null) => void): void => {
     const script: HTMLScriptElement = document.createElement('script');
-    const giveUp: number = window.setTimeout((): void => {
-      resolve(null);
-    }, GOOGLE_IDENTITY.loadMs);
-    const finish = (): void => {
-      window.clearTimeout(giveUp);
-      resolve(readIdentityApi(window));
-    };
     script.src = GOOGLE_IDENTITY.script;
     script.async = true;
-    script.addEventListener('load', finish);
-    script.addEventListener('error', finish);
+    script.addEventListener('load', (): void => {
+      resolve(readIdentityApi(window));
+    });
+    script.addEventListener('error', (): void => {
+      script.remove();
+      resolve(null);
+    });
     document.head.append(script);
   });
+}
+
+function pause(ms: number): Promise<void> {
+  return new Promise<void>((resolve: () => void): void => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+async function loadWithin(attemptsLeft: number): Promise<GoogleIdentity | null> {
+  const ready: GoogleIdentity | null = readIdentityApi(window);
+  if (ready !== null) return ready;
+  if (attemptsLeft <= 0) return null;
+  const loaded: GoogleIdentity | null = await fetchScript();
+  if (loaded !== null) return loaded;
+  await pause(GOOGLE_IDENTITY.retryMs);
+  return loadWithin(attemptsLeft - 1);
+}
+
+export function loadGoogleIdentity(): Promise<GoogleIdentity | null> {
+  return loadWithin(GOOGLE_IDENTITY.attempts);
 }

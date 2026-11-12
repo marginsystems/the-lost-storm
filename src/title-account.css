@@ -5,12 +5,11 @@
   transform: translateY(6px);
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
-    transform var(--spring-smooth-ms) var(--spring-smooth),
-    min-height var(--spring-smooth-ms) var(--spring-smooth),
-    margin var(--spring-smooth-ms) var(--spring-smooth);
+    transform var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-.title-account.reserved {
+.title-account.reserved,
+.title-account[data-cloud^="http"] {
   margin: 12px 0 0;
   min-height: 60px;
 }
@@ -21,9 +20,24 @@
 }
 
 .title-google {
-  display: flex;
-  justify-content: center;
-  min-height: 32px;
+  width: 220px;
+  height: 32px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.title-google iframe {
+  animation: title-google-in var(--spring-smooth-ms) var(--spring-smooth) both;
+}
+
+@keyframes title-google-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .title-google[hidden],

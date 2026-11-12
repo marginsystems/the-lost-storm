@@ -168,3 +168,14 @@ void test('the title is held while a sign-in or a sign-out is in flight, and rel
   await unsynced.flow.signOut();
   assert.deepEqual(unsynced.busy, [true, false]);
 });
+
+void test('a sign-in that fails with the server out of reach says so and keeps the button for another try', async (): Promise<void> => {
+  const { flow, shown, buttons, reloads } = stage({ initial: GUEST, signIn: { kind: 'failed', state: { kind: 'hidden' } } });
+  await flow.start();
+  buttons[0]?.press('lost');
+  await settle();
+  assert.equal(reloads(), 0);
+  assert.deepEqual(shown.at(-1), { view: { kind: 'guest' }, note: ACCOUNT_NOTES.failed });
+  assert.equal(buttons.length, 2);
+  assert.equal(buttons.at(-1)?.nonce, 'nonce-1');
+});

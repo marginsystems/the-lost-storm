@@ -25,7 +25,7 @@ export interface AccountOptions {
   readonly store: KeyValueStore;
 }
 
-export const ACCOUNT_TIMING: { readonly requestMs: number } = { requestMs: 8000 };
+export const ACCOUNT_TIMING: { readonly requestMs: number; readonly signInMs: number } = { requestMs: 8000, signInMs: 30_000 };
 
 const HIDDEN: AccountState = { kind: 'hidden' };
 
@@ -60,10 +60,11 @@ export function createAccountService(options: AccountOptions): AccountService {
     async signIn(credential: string): Promise<SignInResult> {
       const asked: SyncRecord | null = held();
       if (asked === null) return { kind: 'failed', state: HIDDEN };
-      const result: SessionResult = await api.googleSignIn(asked.token, credential, timeout());
+      const result: SessionResult = await api.googleSignIn(asked.token, credential, AbortSignal.timeout(ACCOUNT_TIMING.signInMs));
       const current: SyncRecord | null = held();
       if (result.kind === 'ok' && current?.token === asked.token && store.write(SYNC_KEY, serializeSyncRecord(recordAfterSignIn(current, result.session)))) return { kind: 'reload' };
-      return { kind: 'failed', state: await load() };
+      const state: AccountState = await load();
+      return state.kind === 'signed-in' ? { kind: 'reload' } : { kind: 'failed', state };
     },
     async signOut(): Promise<SignOutResult> {
       const asked: SyncRecord | null = held();

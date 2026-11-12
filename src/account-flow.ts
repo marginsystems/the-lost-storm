@@ -59,7 +59,7 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
       return;
     }
     hold(false);
-    await present(result.state, ACCOUNT_NOTES.failed);
+    await present(result.state.kind === 'hidden' && current.kind === 'guest' ? current : result.state, ACCOUNT_NOTES.failed);
   };
 
   function onCredential(credential: string): void {
