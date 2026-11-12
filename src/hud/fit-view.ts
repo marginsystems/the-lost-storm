@@ -1,5 +1,5 @@
-import type { HudFit } from './hud-fit.ts';
-import { hudFit } from './hud-fit.ts';
+import type { HudFit, HudGauge } from './hud-fit.ts';
+import { GLOBE_GAUGE, hudFit } from './hud-fit.ts';
 
 export const FIT_VIEW = {
   touchClass: 'touch',
@@ -28,12 +28,12 @@ export interface FitWatch {
   onSheets(listener: () => void): void;
 }
 
-export function watchFit(root: HTMLElement): FitWatch {
+export function watchFit(root: HTMLElement, gauge: HudGauge = GLOBE_GAUGE): FitWatch {
   const listeners: (() => void)[] = [];
   let sheets: boolean = false;
   const update = (): void => {
     const touch: boolean = document.body.classList.contains(FIT_VIEW.touchClass);
-    const fit: HudFit | null = touch ? null : hudFit(root.clientWidth, root.clientHeight);
+    const fit: HudFit | null = touch ? null : hudFit(root.clientWidth, root.clientHeight, gauge);
     applyFit(root, fit);
     const next: boolean = fit?.sheets === true;
     if (next && !sheets) for (const listener of listeners) listener();
