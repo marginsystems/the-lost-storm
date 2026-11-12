@@ -46,12 +46,17 @@ export function createDialogueBox(root: HTMLElement, context: HudContext): Dialo
       const world = context.api.world;
       const speaker: NpcDef | undefined = world.content.npcs.get(event.line.speaker);
       const total: number = world.dialogue?.talk.lines.length ?? event.index + 1;
+      const shownSpeaker: string | null = name.textContent;
       setText(name, speaker?.name ?? event.line.speaker, false);
       setText(title, speaker?.title ?? '', false);
       setText(count, `${event.index + 1} / ${total}`, false);
       setText(hint, dialogueHint(event.last, context.api.touch), false);
       text.textContent = event.line.text;
       retrigger(text, 'line');
+      if (open) {
+        retrigger(foot, 'tick');
+        if (name.textContent !== shownSpeaker) retrigger(head, 'tick');
+      }
       if (!open) {
         open = true;
         element.classList.add('open');
