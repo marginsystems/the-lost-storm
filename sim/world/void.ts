@@ -1,7 +1,6 @@
-import type { VoidShore, ZoneVoid } from '../content/story-types.ts';
+import type { ZoneVoid } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { allHold } from './conditions.ts';
 import { moveExit, stepEncounters } from './encounters.ts';
 import { shiftMoments } from './moments.ts';
 import type { Command, Intent, PlayerState, WakeState, World } from './types.ts';
@@ -29,18 +28,10 @@ export function shiftWorld(world: World, by: Vec2): void {
     ground.from = moved(ground.from, by);
   }
   for (const state of world.encounters) if (state.pos !== null) state.pos = moved(state.pos, by);
-  if (world.shore !== null) world.shore = { at: moved(world.shore.at, by), facing: world.shore.facing };
   for (const exit of world.zone.exits) moveExit(world, exit.id, moved(exit, by));
   shiftMoments(world, by);
   world.trail = moved(world.trail, by);
   world.shift = moved(world.shift, by);
-}
-
-function placeShore(world: World, rules: ZoneVoid): void {
-  const shore: VoidShore | null = rules.shore;
-  if (shore === null || world.shore !== null || world.wake !== null || !allHold(world, shore.when)) return;
-  const facing: Vec2 = { x: world.heading.x, z: world.heading.z };
-  world.shore = { at: { x: world.player.pos.x + facing.x * shore.ahead, z: world.player.pos.z + facing.z * shore.ahead }, facing };
 }
 
 function steer(world: World, rules: ZoneVoid, dt: number): number {
@@ -67,7 +58,6 @@ export function stepVoid(world: World, dt: number): void {
   if (rules === null) return;
   const zone: string = world.zone.id;
   stepEncounters(world, rules, steer(world, rules, dt), dt);
-  placeShore(world, rules);
   if (world.zone.id !== zone) return;
   const home: Vec2 = world.zone.playerStart;
   const offX: number = world.player.pos.x - home.x;

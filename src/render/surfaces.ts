@@ -4,6 +4,7 @@ import type { Content, SurfaceDef } from '../../sim/content/types.ts';
 import { renderBudget, texturePath } from '../mobile/quality.ts';
 import { shrinkTexture } from '../mobile/textures.ts';
 import { assetUrl } from './character-loader.ts';
+import { wetGround } from './wet-ground.ts';
 
 export const SURFACES = {
   anisotropy: 4,
@@ -95,6 +96,7 @@ export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse, wet: number = 
     metalness: metal ? def.metalness : 0,
     vertexColors: use !== 'solid',
   });
+  if (use !== 'solid') wetGround(made, wet);
   if (use === 'overlay') {
     made.transparent = true;
     made.depthWrite = false;

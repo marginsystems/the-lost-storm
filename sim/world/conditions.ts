@@ -1,5 +1,4 @@
 import type { Condition, ObjectiveDef, ObjectiveState, QuestDef, QuestState } from '../content/types.ts';
-import { shoreDepth } from './shore.ts';
 import type { World } from './types.ts';
 
 export function questState(world: World, questId: string): QuestState {
@@ -28,9 +27,6 @@ export function holds(world: World, condition: Condition): boolean {
       break;
     case 'flag':
       held = condition.is === null ? world.flags[condition.flag] !== undefined : world.flags[condition.flag] === condition.is;
-      break;
-    case 'shore':
-      held = shoreDepth(world) >= condition.depth;
       break;
   }
   return held !== condition.not;

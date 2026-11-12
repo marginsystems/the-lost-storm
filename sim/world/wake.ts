@@ -10,7 +10,6 @@ export function beginVoid(world: World): void {
   world.trail = { x: world.player.pos.x, z: world.player.pos.z };
   world.heading = { x: Math.sin(world.player.facing), z: Math.cos(world.player.facing) };
   world.encounters = [];
-  world.shore = null;
   for (const [key, value] of Object.entries(rules.sets)) world.flags[key] ??= value;
 }
 

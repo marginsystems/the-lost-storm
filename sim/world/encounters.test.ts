@@ -8,7 +8,6 @@ import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { questState } from './conditions.ts';
 import { createWorld } from './create.ts';
-import { shoreDepth } from './shore.ts';
 import { hudHidden } from './hud.ts';
 import { stepWorld } from './step.ts';
 import type { Command, GroundItem, ItemInstance, World } from './types.ts';
@@ -109,7 +108,7 @@ void test('turning away from the journal brings it back in front of the hero', (
   assert.equal(world.ground.filter((ground: GroundItem): boolean => ground.find !== null).length, 1);
 });
 
-void test('taking the journal is the first choice; reading it shows the light and starts the quest, the black shore brings the HUD back, and the light leads on', (): void => {
+void test('taking the journal is the first choice; reading it shows the light, starts the quest and the HUD, and the light leads to the shallows', (): void => {
   const world: World = fresh(4);
   walkUntil(world, { x: 0, z: 1 }, (): boolean => found(world) !== null);
   const journal: GroundItem = must(found(world), 'journal');
@@ -124,12 +123,9 @@ void test('taking the journal is the first choice; reading it shows the light an
   assert.equal(world.flags['opening'], 'read');
   assert.equal(questState(world, 'out_of_the_mist'), 'active');
   assert.equal(questState(world, 'to_the_waystation'), 'locked');
-  assert.equal(hudHidden(world), true);
+  assert.equal(hudHidden(world), false);
   stepWorld(world, [], DT);
   assert.ok(distance(lightExit(world), world.player.pos) > lightExit(world).radius);
-  walkTo(world, (): Vec2 => lightExit(world), (): boolean => shoreDepth(world) >= 1 || world.zone.id !== opening.id);
-  assert.equal(world.zone.id, opening.id);
-  assert.equal(hudHidden(world), false);
   walkTo(world, (): Vec2 => (world.zone.id === opening.id ? lightExit(world) : world.player.pos), (): boolean => world.zone.id !== opening.id);
   assert.equal(world.zone.id, content.world.start);
   stepWorld(world, [], DT);
