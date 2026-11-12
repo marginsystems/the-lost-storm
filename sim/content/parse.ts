@@ -1,6 +1,7 @@
 import { atlasProblems } from './atlas.ts';
-import { affix, itemBase, rarity } from './parse-items.ts';
+import { affix, family, itemBase, rarity } from './parse-items.ts';
 import { itemProblems } from './item-rules.ts';
+import { powerRuleProblems } from './power-rules.ts';
 import { books } from './parse-story.ts';
 import { storyFlagNames, storyProblems } from './story.ts';
 import { conditionProblems, roadProblems } from './road.ts';
@@ -468,6 +469,7 @@ export function parseContent(raw: RawContent): Content {
     factions: byId(each(raw.factions, 'factions', faction), 'factions'),
     rarities: each(itemFields['rarities'], 'items.rarities', rarity),
     itemBases: byId(each(itemFields['bases'], 'items.bases', itemBase), 'items.bases'),
+    families: byId(each(itemFields['families'] ?? [], 'items.families', family), 'items.families'),
     affixes: byId(each(itemFields['affixes'], 'items.affixes', affix), 'items.affixes'),
     itemScaling: { implicitPerLevel: numeric(scaling, 'implicitPerLevel', 'items.scaling') },
     skillTree: each(raw.skillTree, 'skillTree', treeNode),
@@ -549,6 +551,7 @@ export function contentProblems(content: Content): string[] {
   for (const base of content.player.startingItems) need(content.itemBases.has(base), `starting item ${base} is unknown`);
   need(content.rarities.length > 0, 'items need at least one rarity');
   problems.push(...itemProblems(content));
+  problems.push(...powerRuleProblems(content));
   problems.push(...chartProblems(content));
   const flagNames: ReadonlySet<string> = storyFlagNames(content);
   const known = (holder: string, list: readonly Condition[]): void => {

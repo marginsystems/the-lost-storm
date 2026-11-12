@@ -7,6 +7,8 @@ import { isSolid, isWalkable, lineOfSight, moveWithCollision } from '../nav/grid
 import type { Offence } from './combat.ts';
 import { applyHit, offenceOf, targetsOf, teamOf } from './combat.ts';
 import { stepDash } from './dash.ts';
+import { refreshPlayer } from './character.ts';
+import { firePowers } from '../powers.ts';
 import { effectiveAttackSpeed } from '../stats.ts';
 import { placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard } from './hazards.ts';
@@ -300,6 +302,7 @@ function stepChannel(world: World, actor: Actor, action: ActionState): void {
     }
     action.timeLeft += hold.interval;
     resolveImpact(world, actor, action, action.skill);
+    if (actor.kind === 'player' && firePowers(world, { on: 'pulse', skill: action.skill, target: null, at: actor.pos })) refreshPlayer(world);
   }
 }
 

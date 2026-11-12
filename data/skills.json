@@ -1121,6 +1121,28 @@
     "vfx": { "style": "slash", "color": "#d6ecff", "cue": "blade" }
   },
   {
+    "id": "cleave_millwheel",
+    "name": "Millwheel",
+    "description": "Hold Cleave to keep turning: it strikes all around you on every turn and drains mana while you spin.",
+    "icon": "cleave",
+    "animation": "attack",
+    "manaCost": 3,
+    "cooldown": 0,
+    "windup": 0.18,
+    "recovery": 0.24,
+    "scalesWithAttackSpeed": true,
+    "engageRange": 2.2,
+    "delivery": { "type": "nova", "radius": 3.2 },
+    "damage": { "weaponPercent": 0.75, "flatMin": 0, "flatMax": 0 },
+    "knockback": 4,
+    "stagger": 0.16,
+    "shake": 0.12,
+    "hitStop": 0.025,
+    "category": "channel",
+    "vfx": { "style": "slash", "color": "#d6ecff", "cue": "blade" },
+    "press": { "type": "channel", "interval": 0.3, "max": 6 }
+  },
+  {
     "id": "thunderhead_leap",
     "name": "Thunder Leap",
     "description": "Thunderhead becomes a leap: you come down where you aim and the storm comes down with you.",

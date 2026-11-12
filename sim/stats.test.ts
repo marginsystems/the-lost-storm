@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { CLASSIC_BAR, must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
-import type { Content, SkillDef, SkillMod, StatBlock } from './content/types.ts';
+import type { Content, PowerDef, SkillDef, SkillMod, StatBlock } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
@@ -195,4 +195,47 @@ void test('attack speed, critical chance and movement speed stop at their caps f
   const stats: StatBlock = computeStats({ ...content, player: { ...content.player, baseStats: { ...content.player.baseStats, attackSpeed: 9, critChance: 0.9, moveSpeed: 99 } } }, 1, bare, []);
   for (const cap of content.player.caps) assert.equal(stats[cap.stat], cap.max);
   assert.equal(armourReduction(100000, content.player.resistance.armourCap), content.player.resistance.armourCap);
+});
+
+function legendary(base: string): ItemInstance {
+  return must(generateItem(content, createRng(7), 7, 5, base, null), base);
+}
+
+function wornPowerDefs(...bases: string[]): readonly PowerDef[] {
+  return bases.map((base: string): PowerDef => must(content.itemBases.get(base)?.power, base));
+}
+
+void test('a power can pull: knockbackPercent below −1 turns the push around, and other percents keep their floor', (): void => {
+  const cleave: SkillDef = skillOf('cleave');
+  const pulled: SkillDef = resolveSkill(content, cleave, [], wornPowerDefs('gyre_stitched_breeches'));
+  assert.ok(pulled.knockback < 0);
+  assert.ok(Math.abs(pulled.knockback - cleave.knockback * -0.6) < 1e-9);
+  const pull: SkillMod = { target: { type: 'skill', skill: 'cleave' }, field: 'damagePercent', value: -3 };
+  const floored: SkillDef = resolveSkill(content, cleave, [], [{ family: 'millwheel', text: '', skillMods: [pull], variants: [], triggers: [] }]);
+  assert.equal(floored.damage.weaponPercent, 0);
+});
+
+void test('the Lantern adds two chains and turns the falloff into a gain on every lightning chain', (): void => {
+  const fork: SkillDef = skillOf('forkline');
+  const lit: SkillDef = resolveSkill(content, fork, [], wornPowerDefs('lantern_of_second_sounds'));
+  assert.ok(fork.delivery.type === 'chain' && lit.delivery.type === 'chain');
+  assert.equal(lit.delivery.jumps, fork.delivery.jumps + 2);
+  assert.ok(lit.delivery.falloff > 1);
+  assert.equal(resolveSkill(content, skillOf('cleave'), [], wornPowerDefs('lantern_of_second_sounds')), skillOf('cleave'));
+});
+
+void test('the Millwheel turns Cleave into its held form, which keeps the Cleave id so Cleave powers still count it', (): void => {
+  const bar: (SkillDef | null)[] = resolveSkillBar(content, ['cleave'], [], wornPowerDefs('the_millwheel'));
+  const spun: SkillDef = must(bar[0], 'cleave');
+  assert.equal(spun.id, 'cleave');
+  assert.equal(spun.press?.type, 'channel');
+  assert.ok(spun.manaCost > 0);
+  assert.equal(must(resolveSkillBar(content, ['cleave'], [])[0], 'plain').press, null);
+});
+
+void test('buff mods add on top of everything else', (): void => {
+  const plain: StatBlock = computeStats(content, 1, bare, []);
+  const quick: StatBlock = computeStats(content, 1, bare, [], [{ stat: 'attackSpeed', op: 'add', value: 0.12 }]);
+  assert.ok(Math.abs(quick.attackSpeed - plain.attackSpeed - 0.12) < 1e-9);
+  assert.equal(legendary('the_millwheel').rarity, 'stormtouched');
 });

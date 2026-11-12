@@ -11,7 +11,7 @@ export interface ItemLine {
   readonly source: 'implicit' | 'affix';
 }
 
-const FALLBACK_RARITY: RarityDef = { id: 'unknown', name: 'Unknown', color: '#9aa3ad', marker: 'none', weight: 0, affixMin: 0, affixMax: 0 };
+const FALLBACK_RARITY: RarityDef = { id: 'unknown', name: 'Unknown', color: '#9aa3ad', marker: 'none', weight: 0, affixMin: 0, affixMax: 0, powers: false, wornLimit: null };
 
 export function emptyEquipment(): Equipment {
   return { weapon: null, head: null, chest: null, hands: null, legs: null, feet: null, charm: null };
@@ -98,11 +98,45 @@ function rollAffixes(content: Content, rng: Rng, base: ItemBaseDef, rarity: Rari
   return rolled;
 }
 
+function droppable(level: number, powered: boolean): (base: ItemBaseDef) => boolean {
+  return (base: ItemBaseDef): boolean => base.minLevel <= level && base.dropWeight > 0 && (base.power !== null) === powered;
+}
+
+function pickBase(rng: Rng, bases: readonly ItemBaseDef[]): ItemBaseDef | null {
+  return pickWeighted(rng, bases.map((base: ItemBaseDef): { weight: number; base: ItemBaseDef } => ({ weight: base.dropWeight, base })))?.base ?? null;
+}
+
+function plainRarity(content: Content): RarityDef | null {
+  return content.rarities.findLast((rarity: RarityDef): boolean => !rarity.powers) ?? null;
+}
+
+function poweredRarity(content: Content): RarityDef | null {
+  return content.rarities.find((rarity: RarityDef): boolean => rarity.powers) ?? null;
+}
+
+interface Pick {
+  readonly base: ItemBaseDef;
+  readonly rarity: RarityDef;
+}
+
+function settle(content: Content, rng: Rng, level: number, base: ItemBaseDef, rarity: RarityDef, forced: boolean): Pick | null {
+  if (base.power !== null) {
+    const powered: RarityDef | null = poweredRarity(content);
+    return powered === null ? null : { base, rarity: powered };
+  }
+  if (!rarity.powers) return { base, rarity };
+  const named: ItemBaseDef | null = forced ? null : pickBase(rng, [...content.itemBases.values()].filter(droppable(level, true)));
+  if (named !== null) return { base: named, rarity };
+  const plain: RarityDef | null = plainRarity(content);
+  return plain === null ? null : { base, rarity: plain };
+}
+
 export function generateItem(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, forcedRarity: string | null): ItemInstance | null {
-  const bases: ItemBaseDef[] = [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.minLevel <= level && base.dropWeight > 0);
-  const pickedBase: ItemBaseDef | null = pickWeighted(rng, bases.map((base: ItemBaseDef): { weight: number; base: ItemBaseDef } => ({ weight: base.dropWeight, base })))?.base ?? null;
+  const pickedBase: ItemBaseDef | null = pickBase(rng, [...content.itemBases.values()].filter(droppable(level, false)));
   const base: ItemBaseDef | null = forcedBase === null ? pickedBase : (content.itemBases.get(forcedBase) ?? null);
   const rarity: RarityDef | null = forcedRarity === null ? pickWeighted(rng, content.rarities) : (content.rarities.find((candidate: RarityDef): boolean => candidate.id === forcedRarity) ?? null);
   if (base === null || rarity === null) return null;
-  return { uid, base: base.id, rarity: rarity.id, level, affixes: rollAffixes(content, rng, base, rarity, level) };
+  const pick: Pick | null = settle(content, rng, level, base, rarity, forcedBase !== null);
+  if (pick === null) return null;
+  return { uid, base: pick.base.id, rarity: pick.rarity.id, level, affixes: rollAffixes(content, rng, pick.base, pick.rarity, level) };
 }

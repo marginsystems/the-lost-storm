@@ -1,4 +1,4 @@
-import type { ChartGroup, Content, DamageType, Delivery, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { ChartGroup, Content, DamageType, Delivery, PowerDef, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, SkillVariant, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS, STAT_IDS } from './content/types.ts';
 import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
@@ -22,7 +22,7 @@ export function allocatedNodes(content: Content, allocated: readonly string[]): 
   return content.skillTree.filter((node: SkillTreeNodeDef): boolean => allocated.includes(node.id));
 }
 
-export function computeStats(content: Content, level: number, equipped: Equipment, allocated: readonly string[]): StatBlock {
+export function computeStats(content: Content, level: number, equipped: Equipment, allocated: readonly string[], extra: readonly StatMod[] = []): StatBlock {
   const mods: StatMod[] = [];
   for (const mod of content.player.perLevel) mods.push({ ...mod, value: mod.value * (level - 1) });
   for (const slot of ITEM_SLOTS) {
@@ -30,6 +30,7 @@ export function computeStats(content: Content, level: number, equipped: Equipmen
     if (item !== null) mods.push(...itemMods(content, item));
   }
   for (const node of allocatedNodes(content, allocated)) mods.push(...node.statMods);
+  mods.push(...extra);
   const stats: StatBlock = applyMods(content.player.baseStats, mods);
   stats.damageMax = Math.max(stats.damageMax, stats.damageMin);
   for (const cap of content.player.caps) stats[cap.stat] = Math.min(stats[cap.stat], cap.max);
@@ -47,6 +48,7 @@ interface DeliveryScale {
   readonly projectiles: number;
   readonly pierce: number;
   readonly chains: number;
+  readonly falloff: number;
 }
 
 function scaledDelivery(delivery: Delivery, scale: DeliveryScale): Delivery {
@@ -75,7 +77,7 @@ function scaledDelivery(delivery: Delivery, scale: DeliveryScale): Delivery {
       scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range, duration: delivery.duration * duration };
       break;
     case 'chain':
-      scaled = { ...delivery, jumpRange: delivery.jumpRange * area, range: delivery.range * range, jumps: Math.max(0, delivery.jumps + scale.chains) };
+      scaled = { ...delivery, jumpRange: delivery.jumpRange * area, range: delivery.range * range, jumps: Math.max(0, delivery.jumps + scale.chains), falloff: Math.max(0, delivery.falloff + scale.falloff) };
       break;
     case 'area':
       scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range, duration: delivery.duration * duration };
@@ -99,10 +101,12 @@ export function modTargets(content: Content, mod: SkillMod, skill: string): bool
   return target.type === 'skill' ? target.skill === skill : inGroup(content, target.group, skill);
 }
 
-export function chosenVariant(content: Content, skill: SkillDef, allocated: readonly string[]): SkillDef {
-  for (const node of allocatedNodes(content, allocated)) {
-    if (node.variant === null || node.variant.skill !== skill.id) continue;
-    const variant: SkillDef | undefined = content.skills.get(node.variant.becomes);
+export function chosenVariant(content: Content, skill: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = []): SkillDef {
+  const fromTree: SkillVariant[] = allocatedNodes(content, allocated).flatMap((node: SkillTreeNodeDef): SkillVariant[] => (node.variant === null ? [] : [node.variant]));
+  const fromPowers: SkillVariant[] = powers.flatMap((power: PowerDef): readonly SkillVariant[] => power.variants);
+  for (const chosen of [...fromPowers, ...fromTree]) {
+    if (chosen.skill !== skill.id) continue;
+    const variant: SkillDef | undefined = content.skills.get(chosen.becomes);
     if (variant !== undefined) return { ...variant, id: skill.id };
   }
   return skill;
@@ -112,11 +116,9 @@ function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
   return Math.max(0, 1 + sumSkillMod(mods, field));
 }
 
-export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[]): SkillDef {
-  const skill: SkillDef = chosenVariant(content, base, allocated);
-  const mods: SkillMod[] = allocatedNodes(content, allocated)
-    .flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods)
-    .filter((mod: SkillMod): boolean => modTargets(content, mod, skill.id));
+export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = []): SkillDef {
+  const skill: SkillDef = chosenVariant(content, base, allocated, powers);
+  const mods: SkillMod[] = [...allocatedNodes(content, allocated).flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, skill.id));
   if (mods.length === 0) return skill;
   const delivery: Delivery = scaledDelivery(skill.delivery, {
     area: scaleOf(mods, 'areaPercent'),
@@ -125,6 +127,7 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
     projectiles: sumSkillMod(mods, 'projectiles'),
     pierce: sumSkillMod(mods, 'pierce'),
     chains: sumSkillMod(mods, 'chains'),
+    falloff: sumSkillMod(mods, 'chainFalloff'),
   });
   const damageScale: number = scaleOf(mods, 'damagePercent');
   return {
@@ -133,15 +136,15 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
     damage: { type: skill.damage.type, weaponPercent: skill.damage.weaponPercent * damageScale, flatMin: skill.damage.flatMin * damageScale, flatMax: skill.damage.flatMax * damageScale },
     cooldown: skill.cooldown * scaleOf(mods, 'cooldownPercent'),
     manaCost: Math.round(skill.manaCost * scaleOf(mods, 'manaCostPercent')),
-    knockback: skill.knockback * scaleOf(mods, 'knockbackPercent'),
+    knockback: skill.knockback * (1 + sumSkillMod(mods, 'knockbackPercent')),
     stagger: skill.stagger * scaleOf(mods, 'staggerPercent'),
   };
 }
 
-export function resolveSkillBar(content: Content, bar: readonly (string | null)[], allocated: readonly string[]): (SkillDef | null)[] {
+export function resolveSkillBar(content: Content, bar: readonly (string | null)[], allocated: readonly string[], powers: readonly PowerDef[] = []): (SkillDef | null)[] {
   return bar.map((id: string | null): SkillDef | null => {
     const skill: SkillDef | undefined = id === null ? undefined : content.skills.get(id);
-    return skill === undefined ? null : resolveSkill(content, skill, allocated);
+    return skill === undefined ? null : resolveSkill(content, skill, allocated, powers);
   });
 }
 

@@ -4,14 +4,15 @@ import { applyXp, canAllocate, canRefund, findNode, refundCost } from '../progre
 import type { XpResult } from '../progression.ts';
 import { assignSlot, chartSkills } from '../skill-book.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
+import { buffMods, wornPowers, wouldPassLimit } from '../powers.ts';
 import { dropOnGround } from './ground.ts';
 import { forget, learn } from './learn.ts';
 import type { ItemInstance, PlayerState, World } from './types.ts';
 
 export function refreshPlayer(world: World): void {
   const player: PlayerState = world.player;
-  player.stats = computeStats(world.content, player.level, player.equipped, player.allocated);
-  player.skills = resolveSkillBar(world.content, player.bar, player.allocated);
+  player.stats = computeStats(world.content, player.level, player.equipped, player.allocated, buffMods(player.powers));
+  player.skills = resolveSkillBar(world.content, player.bar, player.allocated, wornPowers(world.content, player.equipped));
   player.maxLife = player.stats.maxLife;
   player.life = Math.min(player.life, player.maxLife);
   player.mana = Math.min(player.mana, player.stats.maxMana);
@@ -51,6 +52,10 @@ export function equipFromInventory(world: World, inventoryIndex: number): void {
   if (item === null) return;
   const slot: ItemSlot | null = slotOf(world.content, item);
   if (slot === null) return;
+  if (wouldPassLimit(world.content, player.equipped, item)) {
+    world.events.push({ type: 'notice', reason: 'legendary_limit' });
+    return;
+  }
   player.inventory[inventoryIndex] = player.equipped[slot];
   player.equipped[slot] = item;
   refreshPlayer(world);

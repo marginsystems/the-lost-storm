@@ -50,7 +50,7 @@ void test('bases respect their minimum level', (): void => {
   for (const id of low) assert.equal(must(content.itemBases.get(id), id).minLevel, 1);
   assert.ok(!low.has('squall_plate'));
   const high: Set<string> = new Set<string>(rolls(4, 6).map((item: ItemInstance): string => item.base));
-  assert.equal(high.size, [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.dropWeight > 0).length);
+  assert.equal(high.size, [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.dropWeight > 0 && base.power === null).length);
 });
 
 void test('generation is deterministic for a seed and honours forced choices', (): void => {
@@ -138,7 +138,7 @@ function implicitOf(base: ItemBaseDef, stat: StatId): number {
 }
 
 function armourBases(slot: ItemSlot, material: ArmourMaterial): ItemBaseDef[] {
-  return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === slot && base.material === material);
+  return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === slot && base.material === material && base.power === null);
 }
 
 function tiers(slot: ItemSlot): [ItemBaseDef[], ItemBaseDef[]][] {
@@ -213,7 +213,7 @@ function bonusStats(base: ItemBaseDef): string {
 }
 
 void test('no two weapons hit the same way', (): void => {
-  const weapons: ItemBaseDef[] = [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === 'weapon');
+  const weapons: ItemBaseDef[] = [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === 'weapon' && base.power === null);
   assert.ok(weapons.length >= 4);
   assert.equal(new Set<string>(weapons.map(bonusStats)).size, weapons.length);
   const hits: number[] = weapons.map((base: ItemBaseDef): number => (implicitOf(base, 'damageMin') + implicitOf(base, 'damageMax')) / 2);
@@ -222,4 +222,27 @@ void test('no two weapons hit the same way', (): void => {
     assert.ok(implicitOf(base, 'damageMax') > implicitOf(base, 'damageMin'), base.id);
     assert.ok(bonusStats(base).length > 0, `${base.id} has a bonus besides damage`);
   }
+});
+
+void test('the Legendary rarity rolls only bases with a power, and no other rarity ever does', (): void => {
+  const generous: Content = { ...content, rarities: content.rarities.map((rarity: RarityDef): RarityDef => (rarity.powers ? { ...rarity, weight: 40 } : rarity)) };
+  const rng: Rng = createRng(11);
+  let powered: number = 0;
+  for (let uid: number = 0; uid < 400; uid += 1) {
+    const made: ItemInstance = must(generateItem(generous, rng, uid, 6, null, null), 'roll');
+    const base: ItemBaseDef = must(generous.itemBases.get(made.base), made.base);
+    assert.equal(base.power !== null, made.rarity === 'stormtouched', made.base);
+    if (base.power !== null) powered += 1;
+  }
+  assert.ok(powered > 40);
+});
+
+void test('a Legendary roll with no powered base in reach comes out as the top plain rarity', (): void => {
+  const out: Content = {
+    ...content,
+    itemBases: new Map<string, ItemBaseDef>([...content.itemBases].map(([id, base]: [string, ItemBaseDef]): [string, ItemBaseDef] => [id, base.power === null ? base : { ...base, minLevel: 99 }])),
+  };
+  const made: ItemInstance = must(generateItem(out, createRng(4), 1, 5, null, 'stormtouched'), 'roll');
+  assert.equal(made.rarity, 'rare');
+  assert.equal(must(out.itemBases.get(made.base), made.base).power, null);
 });

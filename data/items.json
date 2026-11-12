@@ -35,7 +35,19 @@
       "marker": "shaft",
       "weight": 0,
       "affixMin": 3,
-      "affixMax": 3
+      "affixMax": 3,
+      "powers": true,
+      "wornLimit": 3
+    }
+  ],
+  "families": [
+    {
+      "id": "forkweather",
+      "name": "Forkweather"
+    },
+    {
+      "id": "millwheel",
+      "name": "Millwheel"
     }
   ],
   "bases": [
@@ -832,6 +844,316 @@
       "visual": null,
       "wear": [],
       "implicit": []
+    },
+    {
+      "id": "wirethread_gloves",
+      "name": "Wirethread Gloves",
+      "slot": "hands",
+      "material": "leather",
+      "icon": "gloves",
+      "dropWeight": 1,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "warden_gloves"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 4
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.03
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "keep": "left",
+        "scale": 1.8,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "forkweather",
+        "text": "An echo you kill releases a Forkline from where it stood.",
+        "triggers": [
+          {
+            "on": "kill",
+            "target": "echo",
+            "effect": {
+              "type": "cast",
+              "skill": "forkline",
+              "at": "target"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "lantern_of_second_sounds",
+      "name": "Lantern of Second Sounds",
+      "slot": "charm",
+      "material": null,
+      "icon": "charm",
+      "dropWeight": 1,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 14
+        },
+        {
+          "stat": "stormResist",
+          "op": "add",
+          "value": 0.06
+        }
+      ],
+      "ground": {
+        "model": "pouch",
+        "scale": 1,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "forkweather",
+        "text": "Lightning chains +2. Each hop hits harder instead of weaker.",
+        "skillMods": [
+          {
+            "group": "lightning",
+            "field": "chains",
+            "value": 2
+          },
+          {
+            "group": "lightning",
+            "field": "chainFalloff",
+            "value": 0.35
+          }
+        ]
+      }
+    },
+    {
+      "id": "crown_of_the_struck_hour",
+      "name": "Crown of the Struck Hour",
+      "slot": "head",
+      "material": "leather",
+      "icon": "helm",
+      "dropWeight": 1,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "keeper_hood"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 6
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.02
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.3,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "forkweather",
+        "text": "Storm Bolt splits into a Forkline on its first hit.",
+        "triggers": [
+          {
+            "on": "hit",
+            "skill": {
+              "skill": "storm_bolt"
+            },
+            "cooldown": 0.4,
+            "effect": {
+              "type": "cast",
+              "skill": "forkline",
+              "at": "target"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "the_millwheel",
+      "name": "The Millwheel",
+      "slot": "weapon",
+      "material": null,
+      "icon": "greatsword",
+      "dropWeight": 1,
+      "minLevel": 1,
+      "visual": "greatsword",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 10
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 18
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": -0.18
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.15
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "millwheel",
+        "text": "Whirling Cleave can be held. It drains mana while you spin.",
+        "variants": [
+          {
+            "skill": "cleave",
+            "becomes": "cleave_millwheel"
+          }
+        ]
+      }
+    },
+    {
+      "id": "grinders_bracers",
+      "name": "Grinder's Bracers",
+      "slot": "hands",
+      "material": "leather",
+      "icon": "gloves",
+      "dropWeight": 1,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "leather_bracers"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 4
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.03
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "keep": "left",
+        "scale": 1.8,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "millwheel",
+        "text": "Each enemy a Cleave form hits gives +4% attack speed for 3 s (stacks 10).",
+        "triggers": [
+          {
+            "on": "hit",
+            "skill": {
+              "skill": "cleave"
+            },
+            "effect": {
+              "type": "buff",
+              "stat": "attackSpeed",
+              "op": "add",
+              "value": 0.04,
+              "duration": 3,
+              "stacks": 10
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "gyre_stitched_breeches",
+      "name": "Gyre-Stitched Breeches",
+      "slot": "legs",
+      "material": "leather",
+      "icon": "legs",
+      "dropWeight": 1,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "warden_breeches"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 9
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 10
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.02
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "flatten": 0.35,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      },
+      "power": {
+        "family": "millwheel",
+        "text": "While spinning you pull enemies in, and every third turn lets out a Thunderclap.",
+        "skillMods": [
+          {
+            "skill": "cleave",
+            "field": "knockbackPercent",
+            "value": -1.6
+          }
+        ],
+        "triggers": [
+          {
+            "on": "pulse",
+            "skill": {
+              "skill": "cleave"
+            },
+            "every": 3,
+            "effect": {
+              "type": "cast",
+              "skill": "thunderclap",
+              "at": "caster"
+            }
+          }
+        ]
+      }
     }
   ],
   "affixes": [

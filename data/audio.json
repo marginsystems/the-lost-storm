@@ -146,7 +146,8 @@
     "life_full": [{ "sound": "ui_error", "volume": 0.5, "maxVoices": 1, "cooldown": 0.2 }],
     "mana_full": [{ "sound": "ui_error", "volume": 0.5, "maxVoices": 1, "cooldown": 0.2 }],
     "no_gold": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }],
-    "stash_full": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }]
+    "stash_full": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }],
+    "legendary_limit": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }]
   },
   "world": {
     "hero_step": [{ "sound": "footstep_stone", "volume": 0.7, "maxVoices": 2 }],

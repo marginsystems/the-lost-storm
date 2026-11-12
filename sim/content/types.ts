@@ -1,4 +1,4 @@
-import type { AffixDef, ItemBaseDef, ItemScaling, RarityDef } from './item-types.ts';
+import type { AffixDef, FamilyDef, ItemBaseDef, ItemScaling, RarityDef } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
 import type { AttachmentDef, RigDef } from './rig-types.ts';
 import type { DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, StalkerBehaviour, SummonDef } from './combat-types.ts';
@@ -42,7 +42,7 @@ export interface StatMod {
   readonly value: number;
 }
 
-export const SKILL_MOD_FIELDS = ['damagePercent', 'areaPercent', 'rangePercent', 'durationPercent', 'cooldownPercent', 'manaCostPercent', 'knockbackPercent', 'staggerPercent', 'projectiles', 'pierce', 'chains'] as const;
+export const SKILL_MOD_FIELDS = ['damagePercent', 'areaPercent', 'rangePercent', 'durationPercent', 'cooldownPercent', 'manaCostPercent', 'knockbackPercent', 'staggerPercent', 'projectiles', 'pierce', 'chains', 'chainFalloff'] as const;
 export type SkillModField = (typeof SKILL_MOD_FIELDS)[number];
 
 export interface SkillMod {
@@ -250,8 +250,8 @@ export interface WearableDef {
   readonly hides: readonly string[];
 }
 
-export { ARMOUR_MATERIALS, GROUND_KEEPS, GROUND_MODELS, ITEM_STATS, RARITY_MARKERS } from './item-types.ts';
-export type { AffixDef, ArmourMaterial, GroundKeep, GroundLook, GroundModel, ItemBaseDef, ItemScaling, ItemStat, RarityDef, RarityMarker } from './item-types.ts';
+export { ARMOUR_MATERIALS, CAST_ORIGINS, GROUND_KEEPS, GROUND_MODELS, ITEM_STATS, POWER_TARGETS, POWER_TRIGGERS, RARITY_MARKERS } from './item-types.ts';
+export type { AffixDef, ArmourMaterial, BuffEffect, CastEffect, CastOrigin, FamilyDef, GroundKeep, GroundLook, GroundModel, ItemBaseDef, ItemScaling, ItemStat, PowerDef, PowerEffect, PowerTarget, PowerTrigger, PowerTriggerDef, RarityDef, RarityMarker } from './item-types.ts';
 
 export const REQUIRE_MODES = ['all', 'any'] as const;
 export type RequireMode = (typeof REQUIRE_MODES)[number];
@@ -616,6 +616,7 @@ export interface Content {
   readonly factions: ReadonlyMap<string, FactionDef>;
   readonly rarities: readonly RarityDef[];
   readonly itemBases: ReadonlyMap<string, ItemBaseDef>;
+  readonly families: ReadonlyMap<string, FamilyDef>;
   readonly affixes: ReadonlyMap<string, AffixDef>;
   readonly itemScaling: ItemScaling;
   readonly skillTree: readonly SkillTreeNodeDef[];

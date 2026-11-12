@@ -23,7 +23,7 @@ void test('a base with a stat outside the nine, a line that rolls backwards or a
     ...content,
     itemBases: new Map<string, ItemBaseDef>([...content.itemBases, [odd.id, odd]]),
     affixes: new Map<string, AffixDef>([...content.affixes, [backwards.id, backwards]]),
-    rarities: [...content.rarities, { id: 'huge', name: 'Huge', color: '#ffffff', marker: 'none', weight: 1, affixMin: 9, affixMax: 9 }],
+    rarities: [...content.rarities, { id: 'huge', name: 'Huge', color: '#ffffff', marker: 'none', weight: 1, affixMin: 9, affixMax: 9, powers: false, wornLimit: null }],
   };
   const problems: string[] = itemProblems(broken);
   assert.ok(problems.some((problem: string): boolean => problem.includes('rusted_blade has goldFind')));
@@ -32,7 +32,7 @@ void test('a base with a stat outside the nine, a line that rolls backwards or a
 });
 
 void test('every wearable base lies on the ground as a real model except the ones listed here, which still use a generic bundle or pouch', (): void => {
-  assert.deepEqual(groundGenerics(content), ['gale_charm', 'ember_charm']);
+  assert.deepEqual(groundGenerics(content), ['gale_charm', 'ember_charm', 'lantern_of_second_sounds']);
   const blade: ItemBaseDef | undefined = content.itemBases.get('rusted_blade');
   assert.ok(blade !== undefined);
   const unheld: ItemBaseDef = { ...blade, visual: null };

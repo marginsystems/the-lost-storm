@@ -165,3 +165,12 @@ void test('a storm hit on the hero is cut by storm resistance, and a deeper stor
   assert.equal(stormHitTaken(0.5, 1), 28);
   assert.equal(stormHitTaken(0.9, 0), 10);
 });
+
+void test('a hit with negative knockback pulls the target toward the striker', (): void => {
+  const world: World = arena(1);
+  const target: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 2.5, z: ARENA_CENTRE.z });
+  const pull: SkillDef = { ...light, knockback: -8 };
+  const away: Vec2 = toward(world.player.pos, target.pos);
+  applyHit(world, { ...offenceOf(world.player), damageMin: 1, damageMax: 1, critChance: 0 }, target, pull, away);
+  assert.ok(target.knock.x * away.x + target.knock.z * away.z < 0);
+});

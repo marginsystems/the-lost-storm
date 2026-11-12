@@ -18,6 +18,7 @@ const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
   mana_full: 'Mana is already full',
   no_gold: 'Not enough gold',
   stash_full: 'Stash is full',
+  legendary_limit: 'Three Legendary items are already worn',
 };
 
 export interface Notices {

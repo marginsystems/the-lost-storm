@@ -21,6 +21,8 @@ import { stepVoid } from './void.ts';
 import { stepMoments } from './moments.ts';
 import { stepDrifts, stepTriggers } from './terrain.ts';
 import { acceptsCommand, hurryWake } from './wake.ts';
+import { stepPowerState } from '../powers.ts';
+import { refreshPlayer } from './character.ts';
 
 export const MAX_STEP: number = 1 / 30;
 
@@ -39,6 +41,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepPlayer(world, dt);
   strides.set(world.player, strideOf(world.player, start));
   stepFlasks(world, dt);
+  if (stepPowerState(world.player.powers, dt)) refreshPlayer(world);
   stepVoid(world, dt);
   stepExploration(world);
   for (const monster of world.monsters) {

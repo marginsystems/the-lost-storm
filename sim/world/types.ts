@@ -1,7 +1,7 @@
 import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
 import type { GlitchKind } from '../content/glitches.ts';
 import type { GlitchState, PathAct, PathLog, Silhouette } from './glitch-types.ts';
-import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
+import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, StatMod, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
 import type { ServiceKind } from '../content/trade-types.ts';
 import type { MomentDef } from '../content/moment-types.ts';
 import type { ZoneWake } from '../content/story-types.ts';
@@ -164,6 +164,7 @@ export interface PlayerState extends ActorState {
   walked: Vec2;
   kills: number;
   flasks: FlaskState[];
+  powers: PowerState;
 }
 
 export type MonsterStance = 'approach' | 'engage' | 'hold' | 'retreat';
@@ -264,6 +265,19 @@ export interface EchoState {
   readonly critChance: number;
   readonly critMultiplier: number;
   timeLeft: number;
+}
+
+export interface BuffState {
+  readonly key: string;
+  readonly mod: StatMod;
+  stacks: number;
+  timeLeft: number;
+}
+
+export interface PowerState {
+  buffs: BuffState[];
+  cooldowns: Record<string, number>;
+  counts: Record<string, number>;
 }
 
 export interface AreaState {
@@ -502,7 +516,7 @@ export type RespawnPoint = StartRespawn | ExitRespawn | CheckpointRespawn | Wayp
 
 export type AreaStage = 'start' | 'pulse' | 'end';
 
-export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full';
+export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full' | 'legendary_limit';
 
 export type WorldEvent =
   | { readonly type: 'skill_start'; readonly actorId: number; readonly skill: SkillDef; readonly direction: Vec2; readonly windup: number; readonly recovery: number }

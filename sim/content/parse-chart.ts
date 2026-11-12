@@ -12,7 +12,7 @@ export function statMod(value: unknown, where: string): StatMod {
   return { stat: choice(source, 'stat', STAT_IDS, where), op: choice(source, 'op', MOD_OPS, where), value: numeric(source, 'value', where) };
 }
 
-function skillTarget(source: Fields, where: string): SkillTarget {
+export function skillTarget(source: Fields, where: string): SkillTarget {
   const skill: unknown = source['skill'];
   const group: unknown = source['group'];
   if (typeof skill === 'string' && group === undefined) return { type: 'skill', skill };

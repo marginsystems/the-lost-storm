@@ -5,7 +5,8 @@ import { generateItem } from '../items.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
 import { damageTakenScale, resolveSkill } from '../stats.ts';
-import { grantXp, killXp } from './character.ts';
+import { grantXp, killXp, refreshPlayer } from './character.ts';
+import { firePowers } from '../powers.ts';
 import { isDashing, isInvulnerable } from './dash.ts';
 import { knockTime, readablePush } from './movement.ts';
 import { closeDialogue } from './dialogue.ts';
@@ -180,8 +181,16 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     skill,
   });
   if (killed) kill(world, target, direction);
+  if (offence.sourceId === world.player.id && target.kind === 'monster') powersOnHit(world, target, skill, killed);
   brandStrike(world, offence, target, skill);
   return true;
+}
+
+function powersOnHit(world: World, target: Actor, skill: SkillDef, killed: boolean): void {
+  const at: ReadonlyVec2 = { x: target.pos.x, z: target.pos.z };
+  const hit: boolean = firePowers(world, { on: 'hit', skill, target, at });
+  const slain: boolean = killed && firePowers(world, { on: 'kill', skill, target, at });
+  if (hit || slain) refreshPlayer(world);
 }
 
 function burstBrand(world: World, target: Actor, brand: BrandState): void {

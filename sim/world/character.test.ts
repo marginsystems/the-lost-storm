@@ -3,11 +3,13 @@ import { test } from 'node:test';
 import { armed, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
+import { generateItem } from '../items.ts';
 import { xpToNextLevel } from '../progression.ts';
+import { createRng } from '../rng.ts';
 import { refundCost } from '../progression.ts';
 import { grantXp } from './character.ts';
 import { stepWorld } from './step.ts';
-import type { Command, World, WorldEvent } from './types.ts';
+import type { Command, ItemInstance, World, WorldEvent } from './types.ts';
 
 const content: Content = loadContent();
 
@@ -55,4 +57,23 @@ void test('a full respec returns every point and costs gold for each, and withou
   assert.deepEqual(world.player.allocated, []);
   assert.equal(world.player.skillPoints, 5);
   assert.equal(world.player.gold, 0);
+});
+
+void test('a fourth Legendary stays in the bag with a notice, and the three worn stay on', (): void => {
+  const world: World = armed(worldIn(content, 'hall_of_time', 1));
+  const roll = (base: string): ItemInstance => {
+    const made: ItemInstance | null = generateItem(content, createRng(world.nextItemUid), world.nextItemUid, 5, base, null);
+    world.nextItemUid += 1;
+    if (made === null) throw new Error(base);
+    return made;
+  };
+  world.player.inventory = world.player.inventory.map((): null => null);
+  ['wirethread_gloves', 'lantern_of_second_sounds', 'crown_of_the_struck_hour', 'the_millwheel'].forEach((base: string, index: number): void => {
+    world.player.inventory[index] = roll(base);
+  });
+  for (const index of [0, 1, 2]) send(world, { type: 'equip', inventoryIndex: index });
+  const events: WorldEvent[] = send(world, { type: 'equip', inventoryIndex: 3 });
+  assert.ok(events.some((event: WorldEvent): boolean => event.type === 'notice' && event.reason === 'legendary_limit'));
+  assert.equal(world.player.inventory[3]?.base, 'the_millwheel');
+  assert.deepEqual([world.player.equipped.hands?.base, world.player.equipped.charm?.base, world.player.equipped.head?.base], ['wirethread_gloves', 'lantern_of_second_sounds', 'crown_of_the_struck_hour']);
 });
