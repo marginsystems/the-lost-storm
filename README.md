@@ -87,6 +87,7 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 | `src/hud/` | DOM HUD: globes, skill bar, inventory, skill tree, volume panel, tooltips, the dialogue box, the quest tracker, the world map, the boss bar and the subtitle strip for lines spoken in a fight |
 | `src/minimap/` | The minimap and the Tab overlay map: the zone's explored layout from the nav grid, turned to the camera, with markers for the hero, monsters, people, exits, the waypoint, loot and the current quest. Exploration itself is world state in `sim/world/exploration.ts` |
 | `sim/bot.ts` | A scripted player for tests: walks, travels between zones, talks, fights and steps out of telegraphed attacks. `sim/bot.test.ts` uses it to play the whole act from a fresh save and checks how long it takes |
+| `tools/simulate.ts` | The balance simulator: `npm run simulate -- <scenario>` runs many seeded bot players through `sim/` in worker threads and reports progression, deaths, loot and fight numbers. Bot skill and build policies are in `tools/simulate-policies.json`, the measurement stream it reads is `sim/measure.ts`. See [docs/simulate.md](docs/simulate.md) |
 | `src/audio/` | Web Audio: loads sounds from the asset server, plays them with variation, distance and panning, keeps volumes, plays one voice line at a time |
 | `src/voice.ts` | The voice hook the dialogue box calls for each line; `main.ts` connects it to the audio system |
 | `docs/story/` | The story notes and every spoken line. They give the whole plot away; each file says so at the top |
