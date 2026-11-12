@@ -2,6 +2,7 @@ import type { Box3 as Box3Type } from 'three';
 import { Box3, Vector2, Vector3 } from 'three';
 import type { ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
+import { allHold } from '../sim/world/conditions.ts';
 import { exitUnder } from '../sim/world/exits.ts';
 import { aimedItem } from '../sim/world/finds.ts';
 import { readyToRepeat } from '../sim/world/skills.ts';
@@ -12,6 +13,7 @@ import { waypointAt } from '../sim/world/waypoints.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { PickCandidate, ScreenRect } from './pick.ts';
 import { pickActor } from './pick.ts';
+import { exitPress } from './exit-press.ts';
 import type { ItemPress } from './item-press.ts';
 import { itemPress } from './item-press.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
@@ -309,10 +311,9 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
             hooks.clickMarker(station.placed.x, station.placed.z, false);
           }
         } else if (exit !== null) {
-          if (leftFresh) {
-            commands.push({ type: 'travel', exit: exit.id });
-            hooks.clickMarker(exit.x, exit.z, false);
-          }
+          const through: Command | null = exitPress(exit.id, { fresh: leftFresh, tick: leftTick, open: allHold(world, exit.requires), ground });
+          if (through !== null) commands.push(through);
+          if (leftFresh) hooks.clickMarker(exit.x, exit.z, false);
         } else {
           commands.push({ type: 'move', held: !leftFresh, dest: ground });
           if (leftFresh) hooks.clickMarker(ground.x, ground.z, false);
