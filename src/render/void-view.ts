@@ -222,7 +222,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
 
   const lightning: Lightning = { wait: VOID_VIEW.firstFlash, flash: 0, flicker: -1, at: new Vector2() };
   let last: Vec2 | null = null;
-  let lastShift: Vec2 = { x: 0, z: 0 };
+  let lastShift: Vec2 | null = null;
   let speed: number = 0;
   let glimpseAlpha: number = 0;
   let glimpseFor: MistDrive['gust'] = null;
@@ -264,7 +264,8 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
 
   const follow = (world: World, dt: number, look: Vec2 | null): void => {
     const pos: Vec2 = world.player.pos;
-    const moved: Vec2 = { x: world.shift.x - lastShift.x, z: world.shift.z - lastShift.z };
+    const before: Vec2 = lastShift ?? world.shift;
+    const moved: Vec2 = { x: world.shift.x - before.x, z: world.shift.z - before.z };
     lastShift = { x: world.shift.x, z: world.shift.z };
     lightning.at.x += moved.x;
     lightning.at.y += moved.z;
