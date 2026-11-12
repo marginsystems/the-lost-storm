@@ -109,7 +109,7 @@
   },
   {
     "id": "unfinished_borrower",
-    "name": "Unfinished Borrower",
+    "name": "Echo",
     "rig": "unfinished_heavy",
     "faction": "unfinished",
     "scale": 1.45,
@@ -156,7 +156,7 @@
   },
   {
     "id": "unfinished_colossus",
-    "name": "Unfinished Colossus",
+    "name": "Echo",
     "rig": "unfinished_heavy",
     "faction": "unfinished",
     "scale": 1.75,
