@@ -10,12 +10,8 @@
   padding: 3px 10px;
   border-radius: 4px;
   background: var(--legible-plate);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  flex-wrap: wrap;
-  row-gap: 3px;
+  display: block;
+  line-height: 1.55;
   font-size: 14px;
   color: var(--text-dim);
   text-shadow: var(--legible-shadow);
@@ -45,6 +41,7 @@
 }
 
 .hint-icon {
+  vertical-align: -4px;
   display: inline-grid;
   place-items: center;
   width: 20px;
