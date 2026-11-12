@@ -1,5 +1,6 @@
-import type { BuffEffect, CastEffect, Content, ItemBaseDef, ItemSlot, PowerDef, PowerTrigger, PowerTriggerDef, RarityDef, SkillDef, SkillTarget, StatMod } from './content/types.ts';
+import type { BuffEffect, CastEffect, Content, FamilyDef, ItemBaseDef, ItemSlot, PowerDef, PowerTrigger, PowerTriggerDef, RarityDef, SkillDef, SkillTarget, StatMod } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
+import { familyPieces } from './content/power-rules.ts';
 import { baseOf, rarityOf } from './items.ts';
 import type { ReadonlyVec2 } from './math.ts';
 import { directionOf } from './math.ts';
@@ -143,4 +144,29 @@ export function stepPowerState(state: PowerState, dt: number): boolean {
   for (const held of state.buffs) held.timeLeft -= dt;
   state.buffs = state.buffs.filter((held: BuffState): boolean => held.timeLeft > 0);
   return state.buffs.length !== before;
+}
+
+export interface FamilyPiece {
+  readonly name: string;
+  readonly worn: boolean;
+}
+
+export interface FamilyReading {
+  readonly name: string;
+  readonly text: string;
+  readonly count: number;
+  readonly pieces: readonly FamilyPiece[];
+}
+
+export function familyReading(content: Content, item: ItemInstance, equipped: Equipment): FamilyReading | null {
+  const power: PowerDef | null = baseOf(content, item)?.power ?? null;
+  if (power === null) return null;
+  const family: FamilyDef | undefined = content.families.get(power.family);
+  if (family === undefined) return null;
+  const worn: ReadonlySet<string> = new Set<string>([item.base, ...ITEM_SLOTS.flatMap((slot: ItemSlot): string[] => {
+    const held: ItemInstance | null = equipped[slot];
+    return held === null ? [] : [held.base];
+  })]);
+  const pieces: FamilyPiece[] = familyPieces(content, family.id).map((base: ItemBaseDef): FamilyPiece => ({ name: base.name, worn: worn.has(base.id) }));
+  return { name: family.name, text: power.text, count: pieces.filter((piece: FamilyPiece): boolean => piece.worn).length, pieces };
 }

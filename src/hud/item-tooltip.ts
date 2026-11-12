@@ -2,6 +2,8 @@ import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, RarityDef } from '
 import { itemVerdict, readItem, readingLines, verdictParts } from '../../sim/item-reading.ts';
 import type { Headline, ItemReading, ReadingRow, Verdict, VerdictKind } from '../../sim/item-reading.ts';
 import { baseOf, itemName, rarityOf, slotOf } from '../../sim/items.ts';
+import { familyReading } from '../../sim/powers.ts';
+import type { FamilyPiece, FamilyReading } from '../../sim/powers.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
 import { el, label } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
@@ -69,6 +71,16 @@ function appendReading(parent: HTMLElement, reading: ItemReading): void {
   for (const line of readingLines(reading)) appendRow(parent, line.row, line.lost ? 'lost' : 'own');
 }
 
+function appendPower(parent: HTMLElement, family: FamilyReading): void {
+  const block: HTMLDivElement = el('div', 'tip-power', parent);
+  label('tip-power-text', family.text, block);
+  const line: HTMLDivElement = el('div', 'tip-family', parent);
+  label('tip-family-name', `${family.name} ${family.count}/${family.pieces.length}`, line);
+  family.pieces.forEach((piece: FamilyPiece): void => {
+    label(piece.worn ? 'tip-family-piece worn' : 'tip-family-piece', piece.name, line);
+  });
+}
+
 function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null, compare: boolean, hint: string | null, className: string): HTMLElement {
   const content: Content = api.world.content;
   const root: HTMLDivElement = el('div', className, null);
@@ -88,6 +100,8 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   label('tip-sub', `Item level ${item.level}`, heading);
   el('div', 'tip-sep', root);
   appendReading(root, readItem(content, item, equipped));
+  const family: FamilyReading | null = familyReading(content, item, api.world.player.equipped);
+  if (family !== null) appendPower(root, family);
   if (compare) {
     const verdict: Verdict | null = itemVerdict(content, api.world.player, api.world.zone, item);
     if (verdict !== null) appendVerdict(root, verdict);

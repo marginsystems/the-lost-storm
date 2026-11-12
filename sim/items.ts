@@ -64,9 +64,10 @@ function rolledLines(content: Content, item: ItemInstance): { readonly affix: Af
 }
 
 export function itemName(content: Content, item: ItemInstance): string {
-  const base: string = baseOf(content, item)?.name ?? item.base;
+  const def: ItemBaseDef | null = baseOf(content, item);
+  const base: string = def?.name ?? item.base;
   const top: AffixDef | undefined = rolledLines(content, item)[0]?.affix;
-  return top === undefined ? base : `${top.label} ${base}`;
+  return top === undefined || (def?.power ?? null) !== null ? base : `${top.label} ${base}`;
 }
 
 export function itemLines(content: Content, item: ItemInstance): ItemLine[] {

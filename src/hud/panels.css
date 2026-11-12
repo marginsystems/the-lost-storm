@@ -338,6 +338,41 @@
   color: #e0645a;
 }
 
+.tip-power {
+  margin-top: 8px;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: rgba(255, 154, 74, 0.07);
+  animation: hud-tip var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tip-power-text {
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.4;
+  color: #f2d2b4;
+}
+
+.tip-family {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.tip-family-name {
+  flex-basis: 100%;
+  font-weight: 700;
+  color: #e7b48a;
+}
+
+.tip-family-piece.worn {
+  color: #ff9a4a;
+}
+
 .tip-verdict {
   display: flex;
   align-items: baseline;

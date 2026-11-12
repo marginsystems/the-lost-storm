@@ -246,3 +246,8 @@ void test('a Legendary roll with no powered base in reach comes out as the top p
   assert.equal(made.rarity, 'rare');
   assert.equal(must(out.itemBases.get(made.base), made.base).power, null);
 });
+
+void test('a Legendary keeps its own name whatever lines it rolled', (): void => {
+  const mill: ItemInstance = { uid: 1, base: 'the_millwheel', rarity: 'stormtouched', level: 9, affixes: [{ affix: 'honed', value: 0.2 }] };
+  assert.equal(itemName(content, mill), 'The Millwheel');
+});

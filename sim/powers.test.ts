@@ -4,7 +4,7 @@ import { ARENA_CENTRE, ARENA_CONTENT, arena, place } from '../test/arena-support
 import { must } from '../test/support.ts';
 import type { Content, MonsterDef, SkillDef } from './content/types.ts';
 import { generateItem, slotOf } from './items.ts';
-import { buffMods, emptyPowerState, firePowers, stepPowerState, wornPowers, wouldPassLimit } from './powers.ts';
+import { buffMods, emptyPowerState, familyReading, firePowers, stepPowerState, wornPowers, wouldPassLimit } from './powers.ts';
 import { createRng } from './rng.ts';
 import { applyHit, offenceOf } from './world/combat.ts';
 import type { EchoState, ItemInstance, MonsterState, PowerState, World } from './world/types.ts';
@@ -128,4 +128,18 @@ void test('cooldowns run out and are removed', (): void => {
   assert.ok((state.cooldowns['crown:0'] ?? 0) > 0);
   stepPowerState(state, 0.2);
   assert.deepEqual(state.cooldowns, {});
+});
+
+void test('a Legendary reads its power and its family, counting the pieces worn with it', (): void => {
+  const world: World = hero();
+  const crown: ItemInstance = item('crown_of_the_struck_hour', 40);
+  const alone = must(familyReading(content, crown, world.player.equipped), 'reading');
+  assert.equal(alone.name, 'Forkweather');
+  assert.equal(alone.text, 'Storm Bolt splits into a Forkline on its first hit.');
+  assert.equal(alone.count, 1);
+  assert.deepEqual(alone.pieces.map((piece): string => `${piece.name}${piece.worn ? '*' : ''}`), ['Wirethread Gloves', 'Lantern of Second Sounds', 'Crown of the Struck Hour*']);
+  wear(world, 'wirethread_gloves');
+  wear(world, 'the_millwheel');
+  assert.equal(familyReading(content, crown, world.player.equipped)?.count, 2);
+  assert.equal(familyReading(content, item('stormsteel_sword', 41), world.player.equipped), null);
 });
