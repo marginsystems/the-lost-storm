@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: node_modules
-          key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+          key: modules-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - id: install
         if: steps.modules.outputs.cache-hit != 'true'
         continue-on-error: ${{ vars.CI_GATE != 'on' }}
@@ -94,7 +94,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: node_modules
-          key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+          key: modules-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - id: install
         if: steps.modules.outputs.cache-hit != 'true'
         continue-on-error: ${{ vars.CI_GATE != 'on' }}

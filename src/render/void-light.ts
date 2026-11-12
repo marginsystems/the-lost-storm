@@ -1,5 +1,5 @@
 import type { BufferGeometry, IUniform } from 'three';
-import { AdditiveBlending, Color, DoubleSide, Group, Mesh, PlaneGeometry, ShaderMaterial, Vector3 } from 'three';
+import { AdditiveBlending, Color, DoubleSide, Group, Mesh, PlaneGeometry, PointLight, ShaderMaterial, Vector3 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ZoneExit } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
@@ -20,6 +20,10 @@ export const VOID_LIGHT = {
   flicker: 0.1,
   flickerRates: [5.3, 8.9],
   renderOrder: 20,
+  fireIntensity: 40,
+  fireDistance: 36,
+  fireDecay: 1.2,
+  fireHeight: 3,
 } as const;
 
 export interface VoidLight {
@@ -118,8 +122,11 @@ export function createVoidLight(floor: number): VoidLight {
   const pool: Mesh = new Mesh(poolGeometry, poolMaterial);
   pool.position.y = floor + 0.02;
   pool.renderOrder = VOID_LIGHT.renderOrder;
-  group.add(column, pool);
-  group.visible = false;
+  const fire: PointLight = new PointLight(tint, 0, VOID_LIGHT.fireDistance, VOID_LIGHT.fireDecay);
+  fire.position.y = floor + VOID_LIGHT.fireHeight;
+  group.add(column, pool, fire);
+  column.visible = false;
+  pool.visible = false;
   const uniform: IUniform<Vector3> = { value: new Vector3() };
   let strength: number = 0;
 
@@ -139,7 +146,9 @@ export function createVoidLight(floor: number): VoidLight {
       const lit: number = strength * firelight(now);
       columnUniforms.uOpacity.value = VOID_LIGHT.pillarOpacity * lit;
       poolUniforms.uOpacity.value = VOID_LIGHT.glowOpacity * lit;
-      group.visible = strength > 1e-3;
+      column.visible = strength > 1e-3;
+      pool.visible = column.visible;
+      fire.intensity = VOID_LIGHT.fireIntensity * lit;
     },
     dispose(): void {
       group.removeFromParent();

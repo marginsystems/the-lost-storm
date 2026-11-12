@@ -41,6 +41,7 @@ export interface VoidShore {
   readonly when: readonly Condition[];
   readonly ahead: number;
   readonly thin: number;
+  readonly surface: string | null;
   readonly ambience: ZoneAmbience;
 }
 

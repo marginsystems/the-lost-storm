@@ -323,6 +323,42 @@ void test('a hero who walked the In-Between still sees strikes land in the Hall,
   for (const moment of world.moments) assert.ok(isWalkable(world.grid, moment.pos.x, moment.pos.z));
 });
 
+void test('brushing the edge of a bubble does not wake it; only stepping well inside does', (): void => {
+  const world: World = fieldWorld(quietField());
+  const moment: MomentState = struck(world, QUIET.id);
+  standAt(world, { x: moment.pos.x + QUIET.radius * 0.9, z: moment.pos.z });
+  run(world, 3);
+  assert.equal(moment.phase, 'dormant');
+  standAt(world, { x: moment.pos.x + QUIET.radius * MOMENTS.wakeDepth * 0.8, z: moment.pos.z });
+  run(world, DT * 2);
+  assert.equal(moment.phase, 'awake');
+});
+
+void test('a fight does not run out while the hero stays with it, and runs out once he has been away long enough', (): void => {
+  const world: World = fieldWorld(quietField());
+  world.player.invulnerable = 1e9;
+  const moment: MomentState = struck(world, RAID.id);
+  standAt(world, moment.pos);
+  run(world, RAID.awake + 3);
+  assert.equal(moment.phase, 'awake');
+  standAt(world, FAR);
+  run(world, MOMENTS.awayLimit - 1);
+  assert.equal(moment.phase, 'awake');
+  run(world, 2);
+  assert.equal(moment.outcome, 'expired');
+});
+
+void test('while the field is sure, a woken fight never runs out even with the hero away', (): void => {
+  const world: World = fieldWorld(quietField({ sure: [{ type: 'flag', flag: 'first_moment', is: 'cleared', not: true }] }));
+  world.player.invulnerable = 1e9;
+  const moment: MomentState = struck(world, RAID.id);
+  standAt(world, moment.pos);
+  run(world, DT * 2);
+  standAt(world, FAR);
+  run(world, RAID.awake + MOMENTS.awayLimit * 2);
+  assert.equal(moment.phase, 'awake');
+});
+
 void test('a new hero in the Hall gets a grace period, and the first moment is a fixed fight away from the arrival and the road to the fire', (): void => {
   const shipped: Content = loadContent();
   const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');

@@ -430,6 +430,7 @@ export interface MomentState {
   timeLeft: number;
   phaseTime: number;
   armed: boolean;
+  away: number;
   outcome: MomentOutcome | null;
   readonly figures: MomentFigure[];
 }

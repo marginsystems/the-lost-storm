@@ -7,6 +7,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import type { QualityTier } from '../mobile/quality.ts';
 import { pixelRatioFor } from '../mobile/quality.ts';
+import { frameGuardPass } from './frame-guard.ts';
 
 export const STAGE = {
   exposure: 1.22,
@@ -96,6 +97,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
     const target: WebGLRenderTarget = new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: Math.min(STAGE.samples, tier.msaaSamples) });
     const made: EffectComposer = new EffectComposer(renderer, target);
     made.addPass(new RenderPass(scene, camera));
+    made.addPass(frameGuardPass());
     made.addPass(new UnrealBloomPass(new Vector2(1, 1), STAGE.bloomStrength, STAGE.bloomRadius, STAGE.bloomThreshold));
     made.addPass(new OutputPass());
     return made;
