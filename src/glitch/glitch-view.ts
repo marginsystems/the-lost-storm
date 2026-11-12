@@ -3,9 +3,9 @@ import { Camera, Group, Light, PointLight } from 'three';
 import type { GlitchKind } from '../../sim/content/glitches.ts';
 import type { ZoneAmbience, ZoneDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
-import { isMist } from '../../sim/world/glitch.ts';
+import { isMist, setGlitchesEnabled } from '../../sim/world/glitch.ts';
 import type { Silhouette } from '../../sim/world/glitch-types.ts';
-import type { Command, World, WorldEvent } from '../../sim/world/types.ts';
+import type { World, WorldEvent } from '../../sim/world/types.ts';
 import { buildVoidView } from '../render/void-view.ts';
 import type { ZoneView } from '../render/zone-view.ts';
 import type { Ghost } from './ghost.ts';
@@ -36,7 +36,6 @@ export interface GlitchViewDeps {
   readonly mistZone: ZoneDef;
   readonly settings: GlitchSettingsStore;
   hero(): Object3D;
-  send(command: Command): void;
   setAmbience(ambience: ZoneAmbience): void;
   silence(): void;
   resume(): void;
@@ -83,15 +82,8 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   let stutter: Stutter | null = null;
   let clock: number = 0;
 
-  let asked: boolean | null = null;
   const apply = (next: GlitchSettings): void => {
-    if (world.glitch.enabled === next.glitches) {
-      asked = null;
-      return;
-    }
-    if (asked === next.glitches) return;
-    asked = next.glitches;
-    deps.send({ type: 'glitch_setting', enabled: next.glitches });
+    setGlitchesEnabled(world, next.glitches);
   };
   apply(settings.get());
   settings.subscribe(apply);
@@ -245,7 +237,6 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
       }
     },
     refresh(): void {
-      asked = null;
       if (phase.type === 'idle') return;
       deps.silence();
       if (mist !== null) deps.setAmbience(deps.mistZone.ambience);
@@ -254,7 +245,6 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
       return phase.type !== 'idle' || events.some((event: WorldEvent): boolean => event.type === 'silence');
     },
     update(now: number, dt: number, simDt: number): void {
-      apply(settings.get());
       record(simDt);
       stepPhase(dt);
       stepStutter(simDt);

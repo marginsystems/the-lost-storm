@@ -81,7 +81,6 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   let enrolRetries: number = 0;
   let cancelEnrol: (() => void) | null = null;
   let unsent: SaveData | null = null;
-  let restarted: boolean = false;
 
   const now = (): string => new Date(clock()).toISOString();
   const setState = (next: BackendState): void => {
@@ -208,11 +207,6 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     setState('cloud');
   };
 
-  const restamp = (save: SaveData | null, current: number): void => {
-    epochs.raise(current);
-    if (save !== null) local.save(save);
-  };
-
   const handle = (sending: SaveData, held: SyncRecord, result: WriteResult): void => {
     switch (result.kind) {
       case 'ok':
@@ -228,13 +222,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
         schedule(failures > TIMING.maxQuickRetries ? backoffMs(failures) : 0);
         return;
       case 'stale':
-        if (!restarted) {
-          dropStale(result.epoch);
-          return;
-        }
-        restamp(latest, result.epoch);
-        log.info('the save epoch moved on since Start over; this new character is kept and sent again under the new epoch.');
-        schedule(0);
+        dropStale(result.epoch);
         return;
       case 'refused':
         blocked = true;
@@ -276,14 +264,10 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     }
     keep({ ...held, revision: cloud.revision, updatedAt: cloud.updatedAt });
     latest = localSave ?? freshSave();
-    if (result.kind === 'stale') {
-      restamp(localSave, result.epoch);
-      schedule(0);
-      return;
-    }
-    if (result.kind === 'refused') {
+    if (result.kind === 'stale') epochs.raise(result.epoch);
+    if (result.kind === 'refused' || result.kind === 'stale') {
       blocked = true;
-      log.warn(`the cloud save refused the replacement for a reset (status ${result.status}); it will try again after the next save`);
+      log.warn(`the cloud save refused the replacement for a reset (${result.kind === 'stale' ? 'the save epoch moved on' : `status ${result.status}`}); it will try again after the next save`);
       return;
     }
     fail(result.kind === 'retry' ? result.afterMs : null);
@@ -304,7 +288,6 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     let localSave: SaveData | null = await local.load();
     const signal: AbortSignal = timeout(TIMING.loadMs);
     const tokenBefore: string | null = record?.token ?? null;
-    restarted = restarted || record?.overwriteCloud === true;
     const reached = await reachCloud(signal, false);
     if (reached === null) {
       setState('offline');
@@ -317,9 +300,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       return localSave;
     }
     const { held } = reached;
-    restarted = restarted || held.overwriteCloud;
-    if (held.overwriteCloud) restamp(localSave, reached.cloud.epoch);
-    else if (epochs.raise(reached.cloud.epoch)) localSave = await local.load();
+    if (epochs.raise(reached.cloud.epoch)) localSave = await local.load();
     const cloud: CloudState = reached.cloud.epoch < epochs.current() ? { save: null, revision: reached.cloud.revision, updatedAt: reached.cloud.updatedAt, epoch: reached.cloud.epoch } : reached.cloud;
     setState('cloud');
     if (held.overwriteCloud) {
@@ -366,7 +347,6 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     },
     async reset(): Promise<void> {
       epoch += 1;
-      restarted = true;
       cancelTimer?.();
       cancelTimer = null;
       latest = null;

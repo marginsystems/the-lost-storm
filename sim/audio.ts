@@ -104,18 +104,6 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'flask_used':
       found = worldCues(audio, 'flask_used', event.pos);
       break;
-    case 'quest_started':
-      found = worldCues(audio, 'quest_started', null);
-      break;
-    case 'quest_advanced':
-      found = worldCues(audio, 'quest_advanced', null);
-      break;
-    case 'quest_completed':
-      found = worldCues(audio, 'quest_completed', null);
-      break;
-    case 'waypoint_unlocked':
-      found = worldCues(audio, 'waypoint_unlocked', null);
-      break;
     case 'hazard':
       if (event.burst) found = cues(audio.skillImpact, event.hazard.skill.id, event.hazard.pos);
       break;
@@ -135,8 +123,12 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'checkpoint':
     case 'dialogue_line':
     case 'dialogue_closed':
+    case 'quest_started':
+    case 'quest_advanced':
     case 'act_ended':
     case 'triggered':
+    case 'quest_completed':
+    case 'waypoint_unlocked':
     case 'exit_locked':
     case 'boss_phase':
     case 'bark':
@@ -187,7 +179,6 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'use':
     case 'read':
     case 'glitch':
-    case 'glitch_setting':
       break;
   }
   return action;

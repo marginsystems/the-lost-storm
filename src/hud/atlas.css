@@ -453,6 +453,7 @@
   position: absolute;
   left: 18px;
   top: 14px;
+  max-width: calc(100% - 180px);
   pointer-events: none;
   text-shadow: var(--legible-shadow);
 }
@@ -469,6 +470,7 @@
 .atlas-title {
   font-family: var(--serif);
   font-size: 22px;
+  transition: font-size var(--spring-smooth-ms) var(--spring-smooth);
   font-weight: 700;
   letter-spacing: 0.06em;
   line-height: 1.2;
@@ -495,6 +497,19 @@
   flex-direction: column;
   pointer-events: none;
   text-shadow: var(--legible-shadow);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.hud.fit-sheets .atlas-legend {
+  opacity: 0;
+}
+
+.hud.fit-sheets .atlas-head {
+  max-width: calc(100% - 36px);
+}
+
+.hud.fit-sheets .atlas-title {
+  font-size: 18px;
 }
 
 .atlas-key {

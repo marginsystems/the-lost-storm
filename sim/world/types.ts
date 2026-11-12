@@ -341,12 +341,7 @@ export interface GlitchCommand {
   readonly kind: GlitchKind;
 }
 
-export interface GlitchSettingCommand {
-  readonly type: 'glitch_setting';
-  readonly enabled: boolean;
-}
-
-export type Command = GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export type Command = GlitchCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';

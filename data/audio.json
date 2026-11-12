@@ -2,10 +2,7 @@
   "defaults": { "volume": 1, "maxVoices": 4, "cooldown": 0 },
   "skillStart": {
     "cleave": [{ "sound": "sword_swing_light", "volume": 0.9, "maxVoices": 3 }],
-    "dodge_roll": [
-      { "sound": "dodge_whoosh", "volume": 0.75, "maxVoices": 2 },
-      { "sound": "footstep_stone", "volume": 0.6, "maxVoices": 2 }
-    ],
+    "dodge_roll": [{ "sound": "footstep_stone", "volume": 0.8, "maxVoices": 2 }],
     "sodden_grab": [{ "sound": "sword_swing_heavy", "volume": 0.45, "maxVoices": 3 }],
     "gnawer_pounce": [{ "sound": "sword_swing_light", "volume": 0.7, "maxVoices": 3 }],
     "spearwife_throw": [{ "sound": "sword_swing_light", "volume": 0.6, "maxVoices": 3 }],
@@ -34,10 +31,7 @@
   "skillImpact": {
     "chanter_tide": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 2 }],
     "volatile_burst": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 2 }],
-    "bearer_slam": [
-      { "sound": "ground_boom", "volume": 0.7, "maxVoices": 2 },
-      { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }
-    ],
+    "bearer_slam": [{ "sound": "ground_boom", "volume": 0.7, "maxVoices": 2 }],
     "thunderclap": [
       { "sound": "ground_boom", "volume": 1, "maxVoices": 2 },
       { "sound": "thunder_crack", "volume": 0.75, "maxVoices": 2 }
@@ -46,10 +40,7 @@
       { "sound": "ground_boom", "volume": 0.9, "maxVoices": 1 },
       { "sound": "thunder_crack", "volume": 0.6, "maxVoices": 1 }
     ],
-    "mason_slam": [
-      { "sound": "ground_boom", "volume": 1, "maxVoices": 1 },
-      { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }
-    ],
+    "mason_slam": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 1 }],
     "welcome_ring": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 1 }],
     "welcome_embrace": [
       { "sound": "ground_boom", "volume": 1, "maxVoices": 1 },
@@ -71,64 +62,20 @@
   "hit": {
     "bone_thrall": [{ "sound": "bone_hit", "volume": 0.9, "maxVoices": 4 }],
     "hex_caller": [{ "sound": "bone_hit", "volume": 0.8, "maxVoices": 4 }],
-    "player": [{ "sound": "hero_hurt", "volume": 0.85, "maxVoices": 2, "cooldown": 0.3 }],
-    "sodden": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "gnawer": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "spearwife": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "hodman": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "roadbound": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "misbuilt": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "chanter": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "lamenter": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "one_before": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "welcome": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "echo": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "mason": [{ "sound": "hit_flesh", "volume": 0.85, "maxVoices": 3 }],
-    "bearer": [{ "sound": "hit_shield", "volume": 0.9, "maxVoices": 3 }]
+    "player": [{ "sound": "hero_hurt", "volume": 0.85, "maxVoices": 2, "cooldown": 0.3 }]
   },
   "critHit": {
     "bone_thrall": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
     "hex_caller": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "player": [{ "sound": "hero_hurt", "volume": 1, "maxVoices": 2, "cooldown": 0.3 }],
-    "sodden": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "gnawer": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "spearwife": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "hodman": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "roadbound": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "misbuilt": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "chanter": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "lamenter": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "one_before": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "welcome": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "echo": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "mason": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "bearer": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }]
+    "player": [{ "sound": "hero_hurt", "volume": 1, "maxVoices": 2, "cooldown": 0.3 }]
   },
   "death": {
     "bone_thrall": [{ "sound": "bones_collapse", "volume": 1, "maxVoices": 3 }],
     "hex_caller": [{ "sound": "bones_collapse", "volume": 0.9, "maxVoices": 3 }],
-    "player": [{ "sound": "hero_death", "volume": 1, "maxVoices": 1 }],
-    "sodden": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "gnawer": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "spearwife": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "hodman": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "roadbound": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "misbuilt": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "chanter": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "lamenter": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "one_before": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "welcome": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "echo": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "mason": [{ "sound": "body_fall", "volume": 0.8, "maxVoices": 2 }],
-    "bearer": [{ "sound": "body_fall", "volume": 0.9, "maxVoices": 2 }]
+    "player": [{ "sound": "hero_death", "volume": 1, "maxVoices": 1 }]
   },
   "aggro": {
-    "bone_thrall": [{ "sound": "bones_rattle", "volume": 0.65, "maxVoices": 2, "cooldown": 1.5 }],
-    "misbuilt": [{ "sound": "unfinished_breath", "volume": 0.7, "maxVoices": 2, "cooldown": 2 }],
-    "hodman": [{ "sound": "unfinished_breath", "volume": 0.65, "maxVoices": 2, "cooldown": 2 }],
-    "mason": [{ "sound": "unfinished_growl", "volume": 0.7, "maxVoices": 1, "cooldown": 3 }],
-    "roadbound": [{ "sound": "still_exhale", "volume": 0.6, "maxVoices": 2, "cooldown": 2 }],
-    "lamenter": [{ "sound": "still_creak", "volume": 0.5, "maxVoices": 1, "cooldown": 3 }]
+    "bone_thrall": [{ "sound": "bones_rattle", "volume": 0.65, "maxVoices": 2, "cooldown": 1.5 }]
   },
   "drop": {
     "gold": [{ "sound": "coin_drop", "volume": 0.7, "maxVoices": 3, "cooldown": 0.05 }],
@@ -158,32 +105,21 @@
     "hero_step": [{ "sound": "footstep_stone", "volume": 0.7, "maxVoices": 2 }],
     "level_up": [{ "sound": "level_up", "volume": 1, "maxVoices": 1 }],
     "surge": [{ "sound": "wave_arrival", "volume": 0.9, "maxVoices": 1 }],
-    "monster_spawn": [{ "sound": "monsters_rising", "volume": 0.7, "maxVoices": 1, "cooldown": 4 }],
-    "flask_used": [
-      { "sound": "potion_uncork", "volume": 0.75, "maxVoices": 2 },
-      { "sound": "potion_drink", "volume": 0.6, "maxVoices": 2 }
-    ],
-    "player_respawn": [{ "sound": "swell_slow", "volume": 0.8, "maxVoices": 1 }],
-    "surge_cleared": [{ "sound": "shimmer_faint", "volume": 0.5, "maxVoices": 1 }],
-    "quest_started": [{ "sound": "page_turn", "volume": 0.8, "maxVoices": 2 }],
-    "quest_advanced": [{ "sound": "quest_update", "volume": 0.7, "maxVoices": 1 }],
-    "quest_completed": [{ "sound": "quest_update", "volume": 0.9, "maxVoices": 1 }],
-    "waypoint_unlocked": [{ "sound": "shimmer_faint", "volume": 0.6, "maxVoices": 1 }]
+    "monster_spawn": [{ "sound": "monsters_rising", "volume": 0.7, "maxVoices": 1, "cooldown": 4 }]
   },
   "ui": {
-    "click": [{ "sound": "ui_tap", "volume": 0.8, "maxVoices": 3 }],
+    "click": [{ "sound": "ui_click", "volume": 0.7, "maxVoices": 3 }],
     "panel_open": [{ "sound": "ui_panel", "volume": 0.75, "maxVoices": 2 }],
     "panel_close": [{ "sound": "ui_panel", "volume": 0.55, "maxVoices": 2 }],
     "error": [{ "sound": "ui_error", "volume": 0.7, "maxVoices": 1 }],
     "skill_point": [{ "sound": "ui_skill_point", "volume": 0.9, "maxVoices": 2 }],
-    "equip": [{ "sound": "leather_move", "volume": 0.8, "maxVoices": 2 }]
+    "equip": [{ "sound": "item_metal", "volume": 0.75, "maxVoices": 2 }]
   },
   "ambience": {
     "stillhold": {
       "loops": [
         { "sound": "ambience_wind_storm", "volume": 0.55 },
-        { "sound": "ambience_torch_fire", "volume": 0.5 },
-        { "sound": "ambience_wind_low", "volume": 0.25 }
+        { "sound": "ambience_torch_fire", "volume": 0.5 }
       ],
       "stingers": [{ "sound": "thunder_distant", "volume": 0.6, "minDelay": 30, "maxDelay": 70 }]
     },
@@ -195,11 +131,10 @@
       "stingers": [{ "sound": "thunder_distant", "volume": 0.7, "minDelay": 20, "maxDelay": 50 }]
     },
     "duskway": {
-      "loops": [{ "sound": "ambience_wind_storm", "volume": 0.5 }],
-      "stingers": [
-        { "sound": "thunder_distant", "volume": 0.5, "minDelay": 30, "maxDelay": 70 },
-        { "sound": "crow_call", "volume": 0.3, "minDelay": 50, "maxDelay": 130 }
-      ]
+      "loops": [
+        { "sound": "ambience_wind_storm", "volume": 0.5 }
+      ],
+      "stingers": [{ "sound": "thunder_distant", "volume": 0.5, "minDelay": 30, "maxDelay": 70 }]
     },
     "dusks_end": {
       "loops": [
@@ -210,36 +145,22 @@
     },
     "the_spill": {
       "loops": [
-        { "sound": "ambience_wind_cave", "volume": 0.7 },
-        { "sound": "ambience_reeds", "volume": 0.4 }
+        { "sound": "ambience_wind_cave", "volume": 0.7 }
       ],
-      "stingers": [{ "sound": "crow_call", "volume": 0.3, "minDelay": 45, "maxDelay": 120 }]
+      "stingers": []
     },
     "the_coursework": {
       "loops": [
         { "sound": "ambience_wind_cave", "volume": 0.5 },
-        { "sound": "ambience_torch_fire", "volume": 0.5 },
-        { "sound": "clock_tick_loop", "volume": 0.25 }
-      ],
-      "stingers": [{ "sound": "bell_chime", "volume": 0.4, "minDelay": 40, "maxDelay": 100 }]
-    },
-    "the_still": {
-      "loops": [
-        { "sound": "ambience_wind_cave", "volume": 0.18 },
-        { "sound": "ambience_drone_low", "volume": 0.1 }
+        { "sound": "ambience_torch_fire", "volume": 0.5 }
       ],
       "stingers": []
     },
-    "between": {
+    "the_still": {
       "loops": [
-        { "sound": "ambience_mist_air", "volume": 0.6 },
-        { "sound": "ambience_wind_hollow", "volume": 0.3 },
-        { "sound": "ambience_drone_low", "volume": 0.25 }
+        { "sound": "ambience_wind_cave", "volume": 0.18 }
       ],
-      "stingers": [
-        { "sound": "thunder_rumble", "volume": 0.35, "minDelay": 40, "maxDelay": 90 },
-        { "sound": "breath_whisper", "volume": 0.3, "minDelay": 30, "maxDelay": 80 }
-      ]
+      "stingers": []
     }
   }
 }
