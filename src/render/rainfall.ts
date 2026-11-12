@@ -134,7 +134,7 @@ export function createRainfall(stage: Stage, quality: Quality, settings: LensSet
       applyDensity();
     },
     update(dt: number, focusX: number, focusZ: number, flash: number, lights: LightSources): void {
-      time = (time + dt) % RAIN.timeWrap;
+      time += dt;
       const strength: number = density();
       if (strength <= 0) return;
       shared.uTime.value = time;

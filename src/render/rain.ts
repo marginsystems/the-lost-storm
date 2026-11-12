@@ -4,7 +4,6 @@ import type { RainBudget } from '../mobile/quality.ts';
 import { RAIN_LIGHTS, STREAK_FRAGMENT, STREAK_VERTEX } from './rain-shaders.ts';
 
 export const RAIN = {
-  timeWrap: 2048,
   windX: 0.85,
   windZ: 0.53,
   windSpeed: 3.1,

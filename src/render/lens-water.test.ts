@@ -82,5 +82,9 @@ void test('the pass reads the drops into fixed uniforms without growing them', (
   lens.update(state, 16 / 9, 1);
   const drops: unknown = lens.pass.uniforms['uDrops']?.value;
   assert.ok(Array.isArray(drops) && drops.length === LENS.drops);
+  assert.equal(lens.pass.uniforms['uAspect']?.value, 16 / 9);
+  assert.equal(lens.pass.uniforms['uGlint']?.value, LENS.glint + LENS.flashGlint);
+  const stretch: unknown = lens.pass.uniforms['uStretch']?.value;
+  assert.ok(Array.isArray(stretch) && stretch.length === LENS.drops);
   lens.dispose();
 });

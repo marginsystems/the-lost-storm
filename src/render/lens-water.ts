@@ -1,5 +1,5 @@
 import type { IUniform } from 'three';
-import { Vector4 } from 'three';
+import { ShaderMaterial, Vector4 } from 'three';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 export const LENS = {
@@ -190,7 +190,7 @@ export function createLensPass(): LensPass {
   const stretch: number[] = Array.from({ length: LENS.drops }, (): number => 1);
   const aspect: IUniform<number> = { value: 1 };
   const glint: IUniform<number> = { value: LENS.glint };
-  const pass: ShaderPass = new ShaderPass({
+  const material: ShaderMaterial = new ShaderMaterial({
     uniforms: {
       tDiffuse: { value: null },
       uDrops: { value: drops },
@@ -203,6 +203,7 @@ export function createLensPass(): LensPass {
     vertexShader: LENS_VERTEX,
     fragmentShader: LENS_FRAGMENT,
   });
+  const pass: ShaderPass = new ShaderPass(material);
   return {
     pass,
     update(state: LensState, ratio: number, flash: number): void {
@@ -217,6 +218,7 @@ export function createLensPass(): LensPass {
     },
     dispose(): void {
       pass.dispose();
+      material.dispose();
     },
   };
 }
