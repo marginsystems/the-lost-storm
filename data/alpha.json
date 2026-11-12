@@ -2,7 +2,9 @@
   "complete": {"flag": "alpha_slice_complete"},
   "milestones": [
     {"event": "picked_journal", "flag": "first_choice", "is": "took_journal"},
-    {"event": "reached_shallows", "zone": "hall_of_time"},
-    {"event": "reached_waystation", "flag": "alpha_slice_complete", "is": "reached"}
+    {"event": "left_mist", "flag": "roll_taught", "is": "yes"},
+    {"event": "reached_hall", "zone": "hall_of_time"},
+    {"event": "cleared_moment", "flag": "first_moment", "is": "cleared"},
+    {"event": "reached_fire", "flag": "alpha_slice_complete", "is": "reached"}
   ]
 }

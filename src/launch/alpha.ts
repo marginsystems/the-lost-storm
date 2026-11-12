@@ -3,10 +3,10 @@ import type { Fields } from '../../sim/content/read.ts';
 
 export type Device = 'desktop' | 'phone';
 export type Rating = 'up' | 'down';
-export type CountedEvent = 'opened_game' | 'pressed_enter' | 'picked_journal' | 'reached_shallows' | 'reached_waystation' | 'sent_feedback' | 'died';
+export type CountedEvent = 'opened_game' | 'pressed_enter' | 'picked_journal' | 'left_mist' | 'reached_hall' | 'cleared_moment' | 'reached_fire' | 'sent_feedback' | 'died';
 export type Outcome = 'sent' | 'rejected' | 'retry';
 
-export const COUNTED_EVENTS: readonly CountedEvent[] = ['opened_game', 'pressed_enter', 'picked_journal', 'reached_shallows', 'reached_waystation', 'sent_feedback', 'died'];
+export const COUNTED_EVENTS: readonly CountedEvent[] = ['opened_game', 'pressed_enter', 'picked_journal', 'left_mist', 'reached_hall', 'cleared_moment', 'reached_fire', 'sent_feedback', 'died'];
 
 export type Milestone =
   | { readonly kind: 'flag'; readonly event: CountedEvent; readonly flag: string; readonly is: string | null }

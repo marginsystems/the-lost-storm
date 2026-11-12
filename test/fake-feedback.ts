@@ -10,7 +10,7 @@ export interface StoredFeedback {
   readonly body: unknown;
 }
 
-const EVENTS: ReadonlySet<string> = new Set<string>(['opened_game', 'pressed_enter', 'picked_journal', 'reached_shallows', 'reached_waystation', 'sent_feedback', 'died']);
+const EVENTS: ReadonlySet<string> = new Set<string>(['opened_game', 'pressed_enter', 'picked_journal', 'left_mist', 'reached_hall', 'cleared_moment', 'reached_fire', 'sent_feedback', 'died', 'reached_shallows', 'reached_waystation']);
 const BODY_KEYS: readonly string[] = ['rating', 'text', 'context'];
 const CONTEXT_KEYS: readonly string[] = ['zone', 'level', 'minutes', 'device', 'build'];
 const ZONE_ID: RegExp = /^[A-Za-z0-9_-]{1,64}$/;

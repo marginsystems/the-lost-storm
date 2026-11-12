@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { loadContent } from '../../sim/content/content.ts';
+import type { Content } from '../../sim/content/types.ts';
 import { ALPHA_RULES, LINKS } from './data.ts';
 
 void test('the shipped links have the site, the game and the repository', (): void => {
@@ -19,10 +21,13 @@ void test('every page names only links the data knows', (): void => {
 
 void test('the slice ends on the alpha flag', (): void => {
   assert.deepEqual(ALPHA_RULES.complete, { kind: 'flag', flag: 'alpha_slice_complete' });
-  assert.ok(ALPHA_RULES.milestones.some((milestone) => milestone.event === 'reached_waystation'));
+  assert.deepEqual(
+    ALPHA_RULES.milestones.map((milestone) => milestone.event),
+    ['picked_journal', 'left_mist', 'reached_hall', 'cleared_moment', 'reached_fire'],
+  );
 });
 
-void test('every milestone zone is a zone in the world', (): void => {
-  const zones: ReadonlySet<string> = new Set<string>(readdirSync('data/zones').map((file: string): string => file.replace(/\.json$/, '')));
+void test('every milestone zone is a zone the world loads', (): void => {
+  const zones: Content['zones'] = loadContent().zones;
   for (const milestone of ALPHA_RULES.milestones) if (milestone.kind === 'zone') assert.ok(zones.has(milestone.zone), `no zone ${milestone.zone}`);
 });

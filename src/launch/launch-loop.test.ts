@@ -52,7 +52,7 @@ void test('events are counted once, with the device class and nothing else', asy
   assert.deepEqual(server.counted, [
     { event: 'opened_game', device: 'phone' },
     { event: 'picked_journal', device: 'phone' },
-    { event: 'reached_shallows', device: 'phone' },
+    { event: 'reached_hall', device: 'phone' },
   ]);
   assert.ok(server.requests.filter((request) => request.path === '/v1/counts').every((request) => request.token === null));
 });
