@@ -7,6 +7,7 @@ const GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
   ['cleave', '<path d="M3.5 20C4.5 11 11 4.8 20.5 3.5 14.2 7.2 9.8 12.2 8.4 20.5z" fill="currentColor" stroke="none"/><path d="M11.5 20.5c1.1-4.4 4-7.9 9-10.2-3.3 2.9-5.2 5.9-6.1 10.2z" fill="currentColor" stroke="none" opacity="0.5"/>'],
   ['thunderclap', '<path d="M13.6 1.8 7.2 11.6h3.9L9.3 19l7.5-10.4h-4z" fill="currentColor" stroke="none"/><path d="M2.8 21h5.4M15.8 21h5.4"/><path d="M4.6 16.4l2.3 1.7M19.4 16.4l-2.3 1.7" opacity="0.55"/>'],
   ['storm_bolt', '<path d="M21.2 2.8 12.4 9.4l2.3 1.7L6.2 17.6l3.5-5.8-2.3-1.7 6.9-5z" fill="currentColor" stroke="none"/><path d="M2.8 21.2l2.6-2.6M7.4 21.6l1.6-1.6" opacity="0.55"/>'],
+  ['dodge_roll', '<circle cx="14" cy="10.5" r="5.2"/><path d="M14 5.3a5.2 5.2 0 0 1 4.2 8.3" fill="none" stroke-width="2.2"/><path d="M2.5 19.5h5M4.5 15.5h4.5M7 11.5h2" opacity="0.6"/><path d="M10.5 20.5h10" />'],
   ['sword', '<path d="M20 4 9 15"/><path d="M20 4h-4M20 4v4"/><path d="M7 13l4 4"/><path d="M9 15 5 19"/><circle cx="4.3" cy="19.7" r="1.2"/>'],
   ['greatsword', '<path d="M19 3l2 2-11 11-2-2z" fill="currentColor"/><path d="M5 12l7 7"/><path d="M8 16 4 20"/>'],
   ['axe', '<path d="M5 20 14 8"/><path d="M11 4l7-1 3 4-7 4z" fill="currentColor"/>'],

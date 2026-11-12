@@ -4,6 +4,7 @@ import { DEGREES_TO_RADIANS, directionOf, dot, facingOf, normalize, rotate } fro
 import { isSolid } from '../nav/grid.ts';
 import type { Offence } from './combat.ts';
 import { applyHit, offenceOf, targetsOf, teamOf } from './combat.ts';
+import { stepDash } from './dash.ts';
 import type { Actor, NoticeReason, ProjectileState, World } from './types.ts';
 import { effectiveAttackSpeed } from '../stats.ts';
 
@@ -52,7 +53,7 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   const skill: SkillDef = chainedSkill(actor, requested);
   const speed: number = actor.kind === 'player' && skill.scalesWithAttackSpeed ? effectiveAttackSpeed(actor.stats) : 1;
   const aim: Vec2 = normalize(direction, directionOf(actor.facing));
-  const windup: number = skill.windup / speed;
+  const windup: number = skill.delivery.type === 'dash' ? skill.delivery.duration : skill.windup / speed;
   const recovery: number = skill.recovery / speed;
   if (actor.kind === 'player') actor.mana -= skill.manaCost;
   actor.cooldowns[skill.id] = skill.cooldown;
@@ -120,6 +121,8 @@ function resolveImpact(world: World, actor: Actor, skill: SkillDef, direction: R
     case 'projectile':
       spawnProjectiles(world, actor, skill, delivery, direction, offence);
       break;
+    case 'dash':
+      break;
   }
   world.events.push({ type: 'skill_impact', actorId: actor.id, team: teamOf(actor), skill, origin: { x: actor.pos.x, z: actor.pos.z }, direction: { x: direction.x, z: direction.z }, hits });
 }
@@ -127,6 +130,7 @@ function resolveImpact(world: World, actor: Actor, skill: SkillDef, direction: R
 export function stepAction(world: World, actor: Actor, dt: number): void {
   const action = actor.action;
   if (action === null) return;
+  stepDash(world.grid, actor, action, dt);
   action.timeLeft -= dt;
   if (action.phase === 'windup' && action.timeLeft <= 0) {
     action.phase = 'recovery';

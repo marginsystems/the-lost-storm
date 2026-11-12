@@ -405,5 +405,25 @@
     "shake": 0.8,
     "hitStop": 0,
     "vfx": { "style": "shockwave", "color": "#ffd9a0" }
+  },
+  {
+    "id": "dodge_roll",
+    "name": "Dodge Roll",
+    "description": "Throw yourself into a roll toward the cursor. You cannot be hit for the first moments of it, you pass between enemies, and it cuts short the follow-through of an attack.",
+    "icon": "dodge_roll",
+    "animation": "roll",
+    "manaCost": 0,
+    "cooldown": 1.1,
+    "windup": 0.36,
+    "recovery": 0.12,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 6,
+    "delivery": { "type": "dash", "distance": 5.5, "duration": 0.36, "invulnerable": 0.24 },
+    "damage": { "weaponPercent": 0, "flatMin": 0, "flatMax": 0 },
+    "knockback": 0,
+    "stagger": 0,
+    "shake": 0,
+    "hitStop": 0,
+    "vfx": { "style": "roll", "color": "#8a7a62" }
   }
 ]

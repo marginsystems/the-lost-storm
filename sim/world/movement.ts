@@ -2,6 +2,7 @@ import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { moveWithCollision } from '../nav/grid.ts';
+import { isDashing } from './dash.ts';
 import type { ActorState, World } from './types.ts';
 
 const MOVEMENT = {
@@ -71,6 +72,7 @@ export function followPath(grid: NavGrid, actor: ActorState, path: Vec2[], trave
 }
 
 function pushApart(grid: NavGrid, a: ActorState, b: ActorState, shareA: number): void {
+  if (isDashing(a) || isDashing(b)) return;
   const dx: number = b.pos.x - a.pos.x;
   const dz: number = b.pos.z - a.pos.z;
   const gap: number = Math.hypot(dx, dz);

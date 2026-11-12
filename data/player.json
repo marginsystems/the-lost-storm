@@ -60,6 +60,13 @@
         "mouse_right"
       ],
       "label": "W"
+    },
+    {
+      "skill": "dodge_roll",
+      "bindings": [
+        "Space"
+      ],
+      "label": "Space"
     }
   ],
   "xp": {

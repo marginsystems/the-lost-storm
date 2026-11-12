@@ -76,7 +76,8 @@ function skillMod(value: unknown, where: string): SkillMod {
 
 function delivery(value: unknown, where: string): Delivery {
   const source: Fields = fields(value, where);
-  const type: Delivery['type'] = choice(source, 'type', ['arc', 'nova', 'projectile'] as const, where);
+  const type: Delivery['type'] = choice(source, 'type', ['arc', 'nova', 'projectile', 'dash'] as const, where);
+  if (type === 'dash') return { type, distance: positive(source, 'distance', where), duration: positive(source, 'duration', where), invulnerable: numeric(source, 'invulnerable', where) };
   if (type === 'arc') return { type, reach: numeric(source, 'reach', where), arcDegrees: numeric(source, 'arcDegrees', where) };
   if (type === 'nova') return { type, radius: numeric(source, 'radius', where) };
   return {
@@ -497,6 +498,9 @@ export function contentProblems(content: Content): string[] {
       for (const part of worn.hides) need(bodyParts[part] !== undefined, `${holder} wears ${id}, which hides ${part}, but rig ${rigId} has no body part ${part}`);
     }
   };
+  for (const skillDef of content.skills.values()) {
+    if (skillDef.delivery.type === 'dash') need(skillDef.windup === skillDef.delivery.duration, `skill ${skillDef.id} is a dash whose windup ${skillDef.windup} differs from its duration ${skillDef.delivery.duration}`);
+  }
   const animates = (holder: string, rigId: string, skillId: string): void => {
     const used: SkillDef | undefined = content.skills.get(skillId);
     const actions: RigClips['actions'] | undefined = content.rigs.get(rigId)?.clips.actions;

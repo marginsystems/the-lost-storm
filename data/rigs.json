@@ -51,6 +51,10 @@
         "cast": {
           "clip": "Spell_Simple_Shoot",
           "impactFraction": 0.35
+        },
+        "roll": {
+          "clip": "Roll",
+          "impactFraction": 0.6
         }
       }
     },

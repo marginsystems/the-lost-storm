@@ -2,6 +2,7 @@
   "defaults": { "volume": 1, "maxVoices": 4, "cooldown": 0 },
   "skillStart": {
     "cleave": [{ "sound": "sword_swing_light", "volume": 0.9, "maxVoices": 3 }],
+    "dodge_roll": [{ "sound": "footstep_stone", "volume": 0.8, "maxVoices": 2 }],
     "thunderclap": [{ "sound": "electric_crackle", "volume": 0.8, "maxVoices": 2 }],
     "storm_bolt": [{ "sound": "bolt_zap", "volume": 0.85, "maxVoices": 3 }],
     "thrall_claw": [{ "sound": "sword_swing_heavy", "volume": 0.5, "maxVoices": 3 }],

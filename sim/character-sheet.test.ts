@@ -88,7 +88,8 @@ void test('the sheet agrees with the stats the world fights with', (): void => {
     { life: sheet.figures.maxLife.total, mana: sheet.figures.maxMana.total, armour: sheet.figures.armour.total, crit: sheet.figures.critChance.total },
     { life: world.player.stats.maxLife, mana: world.player.stats.maxMana, armour: world.player.stats.armour, crit: world.player.stats.critChance },
   );
-  assert.equal(sheet.skills.length, world.player.skills.length);
+  assert.equal(sheet.skills.length, world.player.skills.filter((owned): boolean => owned.delivery.type !== 'dash').length);
+  assert.ok(sheet.skills.every((entry: SkillOffence): boolean => entry.id !== 'dodge_roll'));
 });
 
 void test('flat skill damage is multiplied by critical hits like combat does', (): void => {

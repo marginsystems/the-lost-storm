@@ -34,7 +34,7 @@ export interface SkillMod {
   readonly value: number;
 }
 
-export const VFX_STYLES = ['slash', 'claw', 'shockwave', 'bolt', 'orb'] as const;
+export const VFX_STYLES = ['slash', 'claw', 'shockwave', 'bolt', 'orb', 'roll'] as const;
 export type VfxStyle = (typeof VFX_STYLES)[number];
 
 export interface ArcDelivery {
@@ -58,7 +58,14 @@ export interface ProjectileDelivery {
   readonly spreadDegrees: number;
 }
 
-export type Delivery = ArcDelivery | NovaDelivery | ProjectileDelivery;
+export interface DashDelivery {
+  readonly type: 'dash';
+  readonly distance: number;
+  readonly duration: number;
+  readonly invulnerable: number;
+}
+
+export type Delivery = ArcDelivery | NovaDelivery | ProjectileDelivery | DashDelivery;
 
 export interface SkillDamage {
   readonly weaponPercent: number;

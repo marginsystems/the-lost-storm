@@ -5,6 +5,8 @@ import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
 import { disposeObject, glow, groundArcs, markerMesh, pillarMesh, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
 import type { Telegraph } from './effect-shapes.ts';
+import type { DashTrails } from './dash-trail.ts';
+import { createDashTrails } from './dash-trail.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import type { BurstOptions, ParticleSystem } from './particles.ts';
 
@@ -95,6 +97,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   let hitStop: number = 0;
   let hurt: number = 0;
   let emberTimer: number = 0;
+  const dashTrails: DashTrails = createDashTrails(scene, particles);
 
   for (let index: number = 0; index < EFFECTS.flashLights; index += 1) {
     const light: PointLight = new PointLight(0xffffff, 0, 16, 1.6);
@@ -272,6 +275,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   };
 
   const onSkillStart = (event: Extract<WorldEvent, { type: 'skill_start' }>, world: World): void => {
+    if (event.skill.vfx.style === 'roll') {
+      const roller: { readonly pos: { readonly x: number; readonly z: number } } | undefined = event.actorId === world.player.id ? world.player : world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
+      if (roller !== undefined) dashTrails.start(event.actorId, roller.pos, event.direction, colorOf(event.skill.vfx.color));
+    }
     if (event.actorId === world.player.id) return;
     const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
     if (monster === undefined) return;
@@ -293,6 +300,9 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       case 'projectile':
         spray(event.origin.x + event.direction.x, EFFECTS.projectileHeight, event.origin.z + event.direction.z, color, 10, { dirX: event.direction.x, dirZ: event.direction.z, spread: 0.9, speed: { min: 3, max: 9 }, lift: { min: -1, max: 2 }, gravity: 2 });
         if (event.team === 'player') flashLight(event.origin.x, 2, event.origin.z, color, 40);
+        break;
+      case 'dash':
+        if (event.skill.vfx.style === 'roll') dashTrails.land(event.origin, event.direction, color);
         break;
     }
     if (event.team !== 'player') return;
@@ -471,8 +481,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       for (const view of projectiles.values()) disposeObject(view.mesh);
       projectiles.clear();
       for (const light of lights) light.intensity = 0;
+      dashTrails.clear();
     },
     update(dt: number, world: World): void {
+      dashTrails.update(dt, world);
       for (const transient of transients) {
         transient.age += dt;
         if (transient.age < transient.duration) transient.tick(transient.age / transient.duration);

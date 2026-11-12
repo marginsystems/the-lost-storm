@@ -4,6 +4,7 @@ import { distance } from '../math.ts';
 import { findPath } from '../nav/path.ts';
 import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, unequip } from './character.ts';
 import { findActor } from './combat.ts';
+import { canDash, dashAim } from './dash.ts';
 import { respawnPlayer } from './death.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, openDialogue } from './dialogue.ts';
 import { removeGround } from './ground.ts';
@@ -71,6 +72,10 @@ function useSkill(world: World, command: SkillCommand): void {
   const player: PlayerState = world.player;
   const skill: SkillDef | undefined = player.skills[command.slot];
   if (skill === undefined) return;
+  if (skill.delivery.type === 'dash') {
+    if (canDash(player)) fire(world, skill, dashAim(player, command.aim, player.path));
+    return;
+  }
   const target: Actor | null = command.targetId === null ? null : findActor(world, command.targetId);
   if (target === null || !target.alive) {
     fire(world, skill, command.aim);
@@ -141,6 +146,12 @@ function act(world: World, command: Command): void {
   }
 }
 
+function cutsRecovery(player: PlayerState, command: Command | null): boolean {
+  if (command?.type !== 'skill' || player.action?.phase !== 'recovery') return false;
+  const skill: SkillDef | undefined = player.skills[command.slot];
+  return skill !== undefined && skill.delivery.type === 'dash' && canDash(player) && blockedReason(player, skill) === null;
+}
+
 export function handleCommand(world: World, command: Command): void {
   const player: PlayerState = world.player;
   switch (command.type) {
@@ -171,6 +182,7 @@ export function handleCommand(world: World, command: Command): void {
     case 'teleport':
       if (!player.alive) return;
       if (command.type !== 'skill') closeDialogue(world, false);
+      if (cutsRecovery(player, command)) player.action = null;
       if (player.action !== null) {
         player.queued = command;
         return;
@@ -314,6 +326,7 @@ export function stepPlayer(world: World, dt: number): void {
   player.moving = false;
   const startX: number = player.pos.x;
   const startZ: number = player.pos.z;
+  if (cutsRecovery(player, player.queued)) player.action = null;
   if (player.action === null && player.queued !== null) {
     const queued: Command = player.queued;
     player.queued = null;

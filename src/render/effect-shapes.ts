@@ -5,6 +5,7 @@ import { SKILLS } from '../../sim/world/skills.ts';
 
 export const SHAPES = {
   sectorSegments: 28,
+  dashLane: 0.6,
   boltSegments: 9,
   boltHeight: 30,
   boltJitter: 1.5,
@@ -236,9 +237,12 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
       }
       break;
     }
+    case 'dash':
+      fills.push(telegraphPart(laneGeometry(SHAPES.dashLane, delivery.distance), color, SHAPES.telegraphFill, 5));
+      break;
   }
   for (const part of [...fills, ...edges]) object.add(part);
-  return { object, fills, edges, lanes: delivery.type === 'projectile' };
+  return { object, fills, edges, lanes: delivery.type === 'projectile' || delivery.type === 'dash' };
 }
 
 export function pillarMesh(color: Color, radius: number, height: number): Mesh<CylinderGeometry, MeshBasicMaterial> {

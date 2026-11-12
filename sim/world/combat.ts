@@ -3,6 +3,7 @@ import { generateItem } from '../items.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { armourReduction } from '../stats.ts';
 import { grantXp } from './character.ts';
+import { isInvulnerable } from './dash.ts';
 import { closeDialogue } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import type { Actor, ItemInstance, MonsterState, Team, World } from './types.ts';
@@ -37,8 +38,8 @@ export function offenceOf(actor: Actor): Offence {
 }
 
 export function targetsOf(world: World, team: Team): Actor[] {
-  if (team === 'monster') return world.player.alive ? [world.player] : [];
-  return world.monsters.filter((monster: MonsterState): boolean => monster.alive);
+  if (team === 'monster') return world.player.alive && !isInvulnerable(world.player) ? [world.player] : [];
+  return world.monsters.filter((monster: MonsterState): boolean => monster.alive && !isInvulnerable(monster));
 }
 
 export function findActor(world: World, id: number): Actor | null {

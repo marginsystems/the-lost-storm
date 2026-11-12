@@ -39,18 +39,20 @@ function sumSkillMod(mods: readonly SkillMod[], field: SkillMod['field']): numbe
   return mods.filter((mod: SkillMod): boolean => mod.field === field).reduce((sum: number, mod: SkillMod): number => sum + mod.value, 0);
 }
 
+function scaledDelivery(delivery: SkillDef['delivery'], area: number, mods: readonly SkillMod[]): SkillDef['delivery'] {
+  if (delivery.type === 'arc') return { ...delivery, reach: delivery.reach * area };
+  if (delivery.type === 'nova') return { ...delivery, radius: delivery.radius * area };
+  if (delivery.type === 'projectile') return { ...delivery, count: delivery.count + sumSkillMod(mods, 'projectiles'), pierce: delivery.pierce + sumSkillMod(mods, 'pierce') };
+  return delivery;
+}
+
 export function resolveSkill(content: Content, skill: SkillDef, allocated: readonly string[]): SkillDef {
   const mods: SkillMod[] = allocatedNodes(content, allocated)
     .flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods)
     .filter((mod: SkillMod): boolean => mod.skill === skill.id);
   if (mods.length === 0) return skill;
   const area: number = 1 + sumSkillMod(mods, 'areaPercent');
-  const delivery: SkillDef['delivery'] =
-    skill.delivery.type === 'arc'
-      ? { ...skill.delivery, reach: skill.delivery.reach * area }
-      : skill.delivery.type === 'nova'
-        ? { ...skill.delivery, radius: skill.delivery.radius * area }
-        : { ...skill.delivery, count: skill.delivery.count + sumSkillMod(mods, 'projectiles'), pierce: skill.delivery.pierce + sumSkillMod(mods, 'pierce') };
+  const delivery: SkillDef['delivery'] = scaledDelivery(skill.delivery, area, mods);
   const damageScale: number = 1 + sumSkillMod(mods, 'damagePercent');
   return {
     ...skill,

@@ -128,6 +128,9 @@ function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reac
       }
       break;
     }
+    case 'dash':
+      inside = false;
+      break;
   }
   return inside;
 }
