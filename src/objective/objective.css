@@ -13,6 +13,10 @@
   opacity: 0.85;
 }
 
+.hud.hud-covered-full .objective-arrow.visible {
+  opacity: 0;
+}
+
 .objective-arrow-head {
   position: absolute;
   left: -14px;

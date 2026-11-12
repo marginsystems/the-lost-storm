@@ -58,6 +58,7 @@ import { createTooltip } from './tooltip.ts';
 import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
 import { createTreePanel } from './tree-panel.ts';
+import { applyCover, coverOf, HUD_PANELS } from './panel-cover.ts';
 import tradeCss from './trade.css?inline';
 import { createTradeHud } from './trade-hud.ts';
 import type { TradeHud } from './trade-hud.ts';
@@ -65,7 +66,6 @@ import volumeCss from './volume.css?inline';
 import { createVolumeButton } from './volume-panel.ts';
 
 const GROUND_HINT: string = 'Click to pick up';
-const PANEL_IDS: readonly HudPanel[] = ['inventory', 'character', 'tree', 'map'];
 
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
@@ -130,7 +130,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     open[panel] = next;
     const view: PanelView = panels[panel];
     view.element.classList.toggle('open', next);
-    grid.classList.toggle('visible', PANEL_IDS.some((id: HudPanel): boolean => open[id]));
+    grid.classList.toggle('visible', HUD_PANELS.some((id: HudPanel): boolean => open[id]));
+    applyCover(root, coverOf(open));
     buttons[panel]?.setActive(next);
     if (next) {
       view.refresh();
@@ -144,7 +145,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     setOpen(panel, !open[panel]);
   };
 
-  for (const panel of PANEL_IDS) track(panels[panel].element);
+  for (const panel of HUD_PANELS) track(panels[panel].element);
   const trade: TradeHud = createTradeHud(root, context, track, {
     element: panels.inventory.element,
     isOpen: (): boolean => open.inventory,
@@ -334,7 +335,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     closePanels(): boolean {
       let anyOpen: boolean = false;
       if (trade.close()) anyOpen = true;
-      for (const panel of PANEL_IDS) {
+      for (const panel of HUD_PANELS) {
         if (open[panel]) {
           anyOpen = true;
           setOpen(panel, false);

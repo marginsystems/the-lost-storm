@@ -3,6 +3,18 @@
   --minimap-top: 12px;
   --minimap-right: 16px;
   --minimap-label: 20px;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s;
+}
+
+.hud.hud-covered-side .minimap,
+.hud.hud-covered-full .minimap {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-snappy-ms);
 }
 
 .minimap-corner {
@@ -77,7 +89,20 @@
 
 .hud > .hud-quests {
   top: 236px;
-  transition: top var(--spring-bouncy-ms) var(--spring-bouncy);
+  transition:
+    top var(--spring-bouncy-ms) var(--spring-bouncy),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s;
+}
+
+.hud.hud-covered-side > .hud-quests,
+.hud.hud-covered-full > .hud-quests {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    top var(--spring-bouncy-ms) var(--spring-bouncy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-snappy-ms);
 }
 
 .hud.minimap-overlaid > .hud-quests {

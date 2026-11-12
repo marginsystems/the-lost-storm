@@ -12,7 +12,6 @@ const CHARACTER = {
   refreshInterval: 0.2,
   inventoryGap: 8,
   edge: 16,
-  minimapClearance: 212,
 } as const;
 
 interface Column {
@@ -203,7 +202,7 @@ export function createCharacterPanel(parent: HTMLElement, context: HudContext, i
 
   const place = (): void => {
     const shifted: boolean = inventory.classList.contains('open');
-    element.style.right = `${shifted ? inventory.offsetWidth + CHARACTER.edge + CHARACTER.inventoryGap : CHARACTER.minimapClearance}px`;
+    element.style.right = `${shifted ? inventory.offsetWidth + CHARACTER.edge + CHARACTER.inventoryGap : CHARACTER.edge}px`;
   };
 
   return {
