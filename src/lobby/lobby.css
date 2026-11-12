@@ -1,0 +1,394 @@
+.lobby {
+  --lobby-row: 24px;
+  --lobby-bg: rgba(10, 14, 21, 0.72);
+  --lobby-edge: rgba(255, 255, 255, 0.045);
+  --lobby-dim: rgba(239, 230, 214, 0.42);
+  --lobby-soft: rgba(239, 230, 214, 0.72);
+  --lobby-live: rgba(132, 214, 160, 0.9);
+  --lobby-mine: rgba(127, 212, 255, 0.09);
+  font-family: var(--sans);
+  color: var(--text, #efe6d6);
+  text-align: left;
+}
+
+.lobby-panel {
+  position: relative;
+  box-sizing: border-box;
+  padding: 10px 10px 8px;
+  border-radius: 4px;
+  background: var(--lobby-bg);
+  box-shadow: inset 0 0 0 1px var(--lobby-edge), 0 12px 36px rgba(0, 0, 0, 0.38);
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.lobby-panel[data-state='ready'],
+.lobby-panel[data-state='unreachable'] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lobby-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  height: 20px;
+  margin: 0 2px 6px;
+}
+
+.lobby-title {
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: var(--lobby-soft);
+}
+
+.lobby-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--lobby-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.lobby-online-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--lobby-live);
+}
+
+.lobby-board {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 30px 10px minmax(0, 1fr) 30px;
+  align-items: center;
+  height: var(--lobby-row);
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 13px;
+  line-height: var(--lobby-row);
+  box-sizing: border-box;
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.board-row.flip {
+  transition: none;
+}
+
+.board-row.entering {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.board-row.leaving {
+  position: absolute;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.board-row.blank::before {
+  content: "";
+  grid-column: 3;
+  height: 1px;
+  background: rgba(239, 230, 214, 0.06);
+}
+
+.board-row.blank.filled {
+  display: none;
+}
+
+.board-row.you {
+  background: var(--lobby-mine);
+}
+
+.board-rank {
+  color: var(--lobby-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.board-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--lobby-live);
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.board-dot.on {
+  opacity: 1;
+}
+
+.board-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--lobby-soft);
+}
+
+.board-row.you .board-name {
+  color: var(--storm, #7fd4ff);
+}
+
+.board-level {
+  text-align: right;
+  color: var(--ember, #e8b866);
+  font-variant-numeric: tabular-nums;
+}
+
+.lobby .tick {
+  animation: lobby-tick var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+@keyframes lobby-tick {
+  from {
+    opacity: 0.2;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.board-rank.tick,
+.board-level.tick {
+  display: inline-block;
+}
+
+.lobby-note {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 40px;
+  font-size: 12px;
+  color: var(--lobby-dim);
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+  pointer-events: none;
+}
+
+.lobby-panel[data-state='unreachable'] .lobby-note {
+  opacity: 1;
+}
+
+.lobby-ticker {
+  height: 20px;
+  margin: 8px 2px 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.lobby-ticker-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  white-space: nowrap;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.lobby-ticker-line.out {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.lobby-ticker-what {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--lobby-soft);
+}
+
+.lobby-ticker-when {
+  flex: none;
+  color: var(--lobby-dim);
+}
+
+.lobby-you {
+  display: grid;
+  grid-template-rows: 28px 18px;
+  height: 52px;
+  margin-top: 8px;
+  padding-top: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.lobby-you-line,
+.lobby-name {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+.lobby-you[data-mode='line'] .lobby-you-line,
+.lobby-you[data-mode='ask'] .lobby-name {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear 0s;
+}
+
+.lobby-name {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+}
+
+.lobby-name-field {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: none;
+  border-radius: 3px;
+  outline: none;
+  font: 13px var(--sans);
+  color: var(--text, #efe6d6);
+  background: rgba(255, 255, 255, 0.05);
+  user-select: text;
+  -webkit-user-select: text;
+  transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.lobby-name-field::placeholder {
+  color: var(--lobby-dim);
+}
+
+.lobby-name-field:focus {
+  background: rgba(255, 255, 255, 0.085);
+}
+
+.lobby .lobby-name-save {
+  flex: none;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 3px;
+  font: 500 12px var(--sans);
+  letter-spacing: 0.06em;
+  color: var(--text, #efe6d6);
+  background: rgba(127, 212, 255, 0.14);
+  cursor: pointer;
+  transform: none;
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.lobby .lobby-name-save:hover:not(:disabled) {
+  background: rgba(127, 212, 255, 0.22);
+  transform: none;
+}
+
+.lobby .lobby-name-save:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.lobby-name-note {
+  grid-area: 2 / 1;
+  margin: 3px 2px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  line-height: 15px;
+  color: var(--lobby-dim);
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.lobby-name-note.problem {
+  color: rgba(255, 186, 150, 0.85);
+}
+
+.game-lobby {
+  position: absolute;
+  left: 16px;
+  top: 32px;
+  width: 248px;
+  pointer-events: none;
+}
+
+.game-lobby .lobby-panel {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-24px);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+.game-lobby.open .lobby-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  pointer-events: auto;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear 0s;
+}
+
+.lobby-pinned {
+  margin-top: 6px;
+}
+
+.lobby-toasts {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 12%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.lobby-toast {
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  color: var(--text, #efe6d6);
+  background: rgba(10, 14, 21, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.lobby-toast.in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}

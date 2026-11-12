@@ -1,0 +1,16 @@
+.title-lobby {
+  flex: none;
+  width: 264px;
+  height: 392px;
+  animation: title-rise var(--spring-smooth-ms) var(--spring-smooth) both;
+}
+
+#title:not([data-lobby^='http']) .title-lobby {
+  display: none;
+}
+
+@media (max-width: 860px), (max-height: 520px) {
+  .title-lobby {
+    display: none;
+  }
+}
