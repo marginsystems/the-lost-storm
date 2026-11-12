@@ -111,6 +111,8 @@ import { createTitleAccount } from './title-account.ts';
 import type { TitleAccount } from './title-account.ts';
 import { createTitleSync } from './title-sync.ts';
 import { createStatusLine } from './title-status.ts';
+import { defaultBar } from '../sim/skill-book.ts';
+import type { Bar } from '../sim/skill-book.ts';
 import { shippedKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleKeysHtml, titleNames } from './title-keys.ts';
 import type { TitleKeyRow } from './title-keys.ts';
 import type { StatusLine } from './title-status.ts';
@@ -261,16 +263,22 @@ async function start(): Promise<void> {
   title.dataset['lobby'] = lobby === null ? 'off' : 'on';
   if (lobby !== null) mountTitleLobby(element('title-lobby', HTMLElement), lobby);
   const gameSettings: SettingsStore = createGameSettings(createBrowserStore(), skillSlots(content), shippedKeys(content, lobby !== null));
-  showTitleKeys(
-    document.querySelector(`.${TITLE_KEYS.listClass}`),
-    titleKeyRows(gameSettings.keys(), titleNames(content)),
-  );
+  const titleBar: { current: Bar } = { current: defaultBar(content) };
+  const drawTitleKeys = (): void => {
+    showTitleKeys(document.querySelector(`.${TITLE_KEYS.listClass}`), titleKeyRows(gameSettings.keys(), titleNames(content, titleBar.current)));
+  };
+  drawTitleKeys();
+  gameSettings.subscribe(drawTitleKeys);
   const stage: Stage = createStage(canvas, mobile.quality.tier);
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const dresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material);
 
   const save: SaveData | null = await loadingSave;
+  if (save !== null) {
+    titleBar.current = save.bar;
+    drawTitleKeys();
+  }
   if (lobby !== null) void lobby.feed.refresh(true);
   let heroName: string | null = null;
   const nameVoice: NameVoiceClient | null = createBrowserNameVoice(import.meta.env.VITE_SERVER_URL);

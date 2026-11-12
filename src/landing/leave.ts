@@ -27,6 +27,7 @@ export function leaveMs(token: string): number {
 }
 
 export function wireLeave(): void {
+  let pending: number | null = null;
   document.addEventListener('click', (event: MouseEvent): void => {
     const target: EventTarget | null = event.target;
     const link: Element | null = target instanceof Element ? target.closest(LEAVE.linkSelector) : null;
@@ -34,9 +35,15 @@ export function wireLeave(): void {
     event.preventDefault();
     document.body.classList.add(LEAVE.leavingClass);
     const ms: number = leaveMs(getComputedStyle(document.documentElement).getPropertyValue(LEAVE.durationToken));
-    window.setTimeout((): void => window.location.assign(link.href), ms);
+    if (pending !== null) window.clearTimeout(pending);
+    pending = window.setTimeout((): void => {
+      pending = null;
+      window.location.assign(link.href);
+    }, ms);
   });
   const restore = (): void => {
+    if (pending !== null) window.clearTimeout(pending);
+    pending = null;
     document.body.classList.remove(LEAVE.leavingClass);
   };
   window.addEventListener('pageshow', (event: PageTransitionEvent): void => {

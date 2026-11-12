@@ -6,6 +6,7 @@ import { readServerUrl } from './src/backend/server-url.ts';
 import { readLinks } from './src/launch/links.ts';
 import { loadContent } from './sim/content/content.ts';
 import { buildPage } from './src/launch/page-html.ts';
+import { defaultBar } from './sim/skill-book.ts';
 import { defaultKeys, titleKeyRows, titleKeysHtml, titleNames } from './src/title-keys.ts';
 
 const ROOT: string = import.meta.dirname;
@@ -19,7 +20,7 @@ function pageLinks(): Plugin {
     },
     transformIndexHtml(html: string): string {
       const content = loadContent();
-      const keys: string = titleKeysHtml(titleKeyRows(defaultKeys(content, hasServer), titleNames(content)));
+      const keys: string = titleKeysHtml(titleKeyRows(defaultKeys(content, hasServer), titleNames(content, defaultBar(content))));
       return buildPage(html, readLinks(links), hasServer, keys);
     },
   };

@@ -1,4 +1,5 @@
 import type { Content } from '../sim/content/types.ts';
+import type { Bar } from '../sim/skill-book.ts';
 import type { ActionDef, ResolvedKeys, Shipped, SlotDefault } from './settings/bindings.ts';
 import { actionTable, BINDING, isSkillAction, keyLabel, resolveKeys, slotName } from './settings/bindings.ts';
 
@@ -16,7 +17,6 @@ export const TITLE_KEYS = {
   primary: { keys: 'Left mouse', does: 'Move, attack, pick up' },
   inPlace: { keys: 'Shift + left mouse', does: 'Attack in place' },
   zoom: { keys: 'Mouse wheel', does: 'Zoom' },
-  openSlots: 'Skill slots',
   panelsPerRow: 3,
   or: ' or ',
   joiner: ' · ',
@@ -29,10 +29,14 @@ export function skillSlots(content: Content): readonly SlotDefault[] {
   return content.player.skillBar.map((entry, slot: number): SlotDefault => ({ name: slotName(slot), bindings: entry.bindings }));
 }
 
-export function titleNames(content: Content): TitleNames {
+function nameOfSkill(content: Content, skill: string | null): string | null {
+  return skill === null ? null : (content.skills.get(skill)?.name ?? null);
+}
+
+export function titleNames(content: Content, bar: Bar): TitleNames {
   return {
     flasks: content.flasks.map((flask): string => flask.name),
-    skills: content.player.skillBar.map((entry): string | null => (entry.skill === null ? null : (content.skills.get(entry.skill)?.name ?? null))),
+    skills: content.player.skillBar.map((_entry, slot: number): string | null => nameOfSkill(content, bar[slot] ?? null)),
   };
 }
 
@@ -74,19 +78,17 @@ export function titleKeyRows(keys: ResolvedKeys, names: TitleNames): readonly Ti
   const skills: readonly ActionDef[] = keys.table.filter((def: ActionDef): boolean => isSkillAction(def.id) && def.id !== 'primary');
   const skillName = (def: ActionDef): string => names.skills[slotIndex(def, skills)] ?? def.label;
   const named: readonly ActionDef[] = skills.filter((def: ActionDef): boolean => names.skills[slotIndex(def, skills)] !== null && names.skills[slotIndex(def, skills)] !== undefined);
-  const open: readonly ActionDef[] = skills.filter((def: ActionDef): boolean => !named.includes(def));
   const skillRows: readonly TitleKeyRow[] = named.flatMap((def: ActionDef): readonly TitleKeyRow[] => {
     const row: TitleKeyRow | null = joined(keys, [def], skillName);
     return row === null ? [] : [row];
   });
-  const openRow: TitleKeyRow | null = joined(keys, open, labelOf);
   const flasks: readonly ActionDef[] = keys.table.filter((def: ActionDef): boolean => def.group === 'Flasks');
   const panels: readonly ActionDef[] = keys.table.filter((def: ActionDef): boolean => def.group === 'Panels');
   const system: readonly ActionDef[] = keys.table.filter((def: ActionDef): boolean => def.group === 'System');
   const flaskRow: TitleKeyRow | null = joined(keys, flasks, (def: ActionDef): string => names.flasks[flasks.indexOf(def)] ?? def.label);
   const bound: readonly ActionDef[] = panels.filter((def: ActionDef): boolean => keys.bindingsOf(def.id).length > 0);
   const panelRows: readonly (TitleKeyRow | null)[] = Array.from({ length: Math.ceil(bound.length / TITLE_KEYS.panelsPerRow) }, (_unused: unknown, row: number): TitleKeyRow | null => joined(keys, bound.slice(row * TITLE_KEYS.panelsPerRow, (row + 1) * TITLE_KEYS.panelsPerRow), labelOf));
-  const grouped: readonly (TitleKeyRow | null)[] = [openRow === null ? null : { keys: openRow.keys, does: TITLE_KEYS.openSlots }, flaskRow, ...panelRows, joined(keys, system, labelOf)];
+  const grouped: readonly (TitleKeyRow | null)[] = [flaskRow, ...panelRows, joined(keys, system, labelOf)];
   return [TITLE_KEYS.primary, TITLE_KEYS.inPlace, ...skillRows, ...grouped.filter((row: TitleKeyRow | null): row is TitleKeyRow => row !== null), TITLE_KEYS.zoom];
 }
 
