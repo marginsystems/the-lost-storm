@@ -67,7 +67,7 @@ The title screen shows "Cloud save on" or "Offline". Without the variable it alw
 
 ## Checks
 
-CI runs typecheck, lint and the affected tests on every pull request, and the whole suite in the merge queue and on `main`. Run this before every pull request; it must pass with zero errors:
+CI runs typecheck, lint and the affected tests on every pull request, and the whole suite in the merge queue and on `main`. It reports without blocking unless the repository variable `CI_GATE` is `on`. Run this before every pull request; it must pass with zero errors:
 
 ```bash
 npm run check

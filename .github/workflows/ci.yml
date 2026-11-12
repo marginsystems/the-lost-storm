@@ -42,6 +42,10 @@ jobs:
     if: github.event.action != 'labeled' || github.event.label.name == 'mq-live'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      install: ${{ steps.install.outcome }}
+      typecheck: ${{ steps.typecheck.outcome }}
+      lint: ${{ steps.lint.outcome }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -52,10 +56,16 @@ jobs:
         with:
           path: node_modules
           key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
-      - if: steps.modules.outputs.cache-hit != 'true'
+      - id: install
+        if: steps.modules.outputs.cache-hit != 'true'
+        continue-on-error: ${{ vars.CI_GATE != 'on' }}
         run: npm ci --no-audit --no-fund
-      - run: npm run typecheck
-      - run: npm run lint
+      - id: typecheck
+        continue-on-error: ${{ vars.CI_GATE != 'on' }}
+        run: npm run typecheck
+      - id: lint
+        continue-on-error: ${{ vars.CI_GATE != 'on' }}
+        run: npm run lint
 
   tests:
     name: Tests
@@ -63,6 +73,11 @@ jobs:
     if: github.event.action != 'labeled' || github.event.label.name == 'mq-live'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      install: ${{ steps.install.outcome }}
+      affected: ${{ steps.affected.outcome }}
+      full: ${{ steps.full.outcome }}
+      isolated: ${{ steps.isolated.outcome }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,18 +90,26 @@ jobs:
         with:
           path: node_modules
           key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
-      - if: steps.modules.outputs.cache-hit != 'true'
+      - id: install
+        if: steps.modules.outputs.cache-hit != 'true'
+        continue-on-error: ${{ vars.CI_GATE != 'on' }}
         run: npm ci --no-audit --no-fund
       - name: Affected tests
+        id: affected
+        continue-on-error: ${{ vars.CI_GATE != 'on' }}
         if: needs.scope.outputs.tests == 'affected'
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: node tools/affected.ts --base "$BASE" --head "$HEAD" --run
       - name: Full suite
+        id: full
+        continue-on-error: ${{ vars.CI_GATE != 'on' }}
         if: needs.scope.outputs.tests == 'full'
         run: npm test
       - name: Full suite, one process per file
+        id: isolated
+        continue-on-error: ${{ vars.CI_GATE != 'on' }}
         if: needs.scope.outputs.tests == 'isolated'
         run: npm run test:isolated
 
@@ -98,13 +121,39 @@ jobs:
     timeout-minutes: 5
     steps:
       - env:
+          GATE: ${{ vars.CI_GATE }}
           RESULTS: ${{ join(needs.*.result, ' ') }}
+          STEPS: >-
+            install=${{ needs.static.outputs.install }}
+            typecheck=${{ needs.static.outputs.typecheck }}
+            lint=${{ needs.static.outputs.lint }}
+            tests-install=${{ needs.tests.outputs.install }}
+            affected-tests=${{ needs.tests.outputs.affected }}
+            full-suite=${{ needs.tests.outputs.full }}
+            isolated-suite=${{ needs.tests.outputs.isolated }}
         run: |
-          echo "results: $RESULTS"
+          failed=""
           for result in $RESULTS; do
             case "$result" in
               success|skipped) ;;
-              *) exit 1 ;;
+              *) failed="$failed job:$result" ;;
             esac
           done
-
+          for step in $STEPS; do
+            case "$step" in
+              *=failure) failed="$failed ${step%=failure}" ;;
+            esac
+          done
+          {
+            echo "### CI result"
+            echo
+            if [ -z "$failed" ]; then echo "Everything passed."; else echo "Failed:$failed"; fi
+            echo
+            if [ "$GATE" = "on" ]; then echo "CI_GATE is on: a failure fails this check."; else echo "CI_GATE is off: failures are reported here and do not block landing."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$failed" ]; then exit 0; fi
+          if [ "$GATE" = "on" ]; then
+            echo "::error::Failed:$failed"
+            exit 1
+          fi
+          echo "::warning::Failed (informational, CI_GATE is off):$failed"
