@@ -10,6 +10,8 @@ import { createBackend } from '../src/backend/create.ts';
 import { epochOf, SAVE_EPOCH } from '../src/backend/epoch.ts';
 import { localSaveText } from '../src/backend/local.ts';
 import { answerCount, answerFeedback } from './fake-feedback.ts';
+import { createFakeLedger } from './fake-ledger.ts';
+import type { FakeLedger, FakeLedgerAnswer } from './fake-ledger.ts';
 import type { FakeAnswer, StoredFeedback } from './fake-feedback.ts';
 
 export const content: Content = loadContent();
@@ -160,6 +162,7 @@ export interface FakeServer {
   wipe(epoch?: number): void;
   readonly feedback: StoredFeedback[];
   readonly counted: unknown[];
+  readonly ledger: FakeLedger;
 }
 
 export const BAD_TURNSTILE_TOKEN: string = 'turnstile-refused';
@@ -228,6 +231,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   let epoch: number = SAVE_EPOCH;
   const feedback: StoredFeedback[] = [];
   const counted: unknown[] = [];
+  const ledger: FakeLedger = createFakeLedger(content);
   const signIn = (owner: ServerAccount, credential: unknown): Response => {
     const [scheme, subject, nonce, name]: readonly string[] = typeof credential === 'string' ? credential.split('|') : [];
     const expected: string | null = owner.nonce;
@@ -323,6 +327,8 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     if (method === 'GET' && path === '/v1/leaderboard') return json(200, ladder(accounts, owner));
     if (method === 'GET' && path === '/v1/tallies/journal') return tally(owner);
     if (owner === undefined) return json(401, { error: { code: 'unauthorized', message: 'no' } });
+    const ledgerAnswer: FakeLedgerAnswer | null = ledger.answer(owner.accountId, method, path, body, clock.now);
+    if (ledgerAnswer !== null) return json(ledgerAnswer.status, ledgerAnswer.body);
     if (method === 'POST' && path === '/v1/tallies/journal') {
       tallied.add(owner.accountId);
       return tally(owner);
@@ -426,6 +432,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     epoch: (): number => epoch,
     feedback,
     counted,
+    ledger,
     wipe: (next: number = SAVE_EPOCH): void => {
       epoch = next;
       for (const account of accounts) {

@@ -138,5 +138,5 @@ export function generateItem(content: Content, rng: Rng, uid: number, level: num
   if (base === null || rarity === null) return null;
   const pick: Pick | null = settle(content, rng, level, base, rarity, forcedBase !== null);
   if (pick === null) return null;
-  return { uid, base: pick.base.id, rarity: pick.rarity.id, level, affixes: rollAffixes(content, rng, pick.base, pick.rarity, level) };
+  return { uid, base: pick.base.id, rarity: pick.rarity.id, level, affixes: rollAffixes(content, rng, pick.base, pick.rarity, level), ledger: null };
 }
