@@ -54,6 +54,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
   enter.before(step);
   const refused: Set<string> = new Set<string>();
   let state: StepState = 'closed';
+  let limited: boolean = false;
 
   const setState = (next: StepState): void => {
     state = next;
@@ -92,6 +93,10 @@ export function createNameStep(parts: NameStepParts): NameStep {
       refused.add(wanted);
       return refuse(outcome.reason);
     }
+    if (outcome.kind === 'limited') {
+      limited = true;
+      return refuse('limited');
+    }
     if (outcome.kind === 'named') await lobby.feed.refresh(true);
     return true;
   };
@@ -102,7 +107,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
     if (picked === null) return refuse('name_taken');
     field.value = picked;
     if (await name(picked)) return true;
-    return chooseForMe(tries + 1);
+    return limited ? false : chooseForMe(tries + 1);
   };
 
   const pick = async (): Promise<void> => {
@@ -135,7 +140,24 @@ export function createNameStep(parts: NameStepParts): NameStep {
         field.focus({ preventScroll: true });
         return false;
       }
-      return name(field.value);
+      return limited || name(field.value);
     },
   };
+}
+
+export interface EnterWiring {
+  readonly enter: HTMLButtonElement;
+  readonly step: NameStep | null;
+  readonly failed: () => boolean;
+  readonly begin: () => void;
+}
+
+export function wireEnter(wiring: EnterWiring): void {
+  const press = async (): Promise<void> => {
+    if (wiring.step === null || (await wiring.step.enter())) wiring.begin();
+  };
+  wiring.enter.addEventListener('click', (): void => {
+    if (wiring.failed()) window.location.reload();
+    else void press();
+  });
 }

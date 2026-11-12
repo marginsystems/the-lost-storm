@@ -231,8 +231,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.lobby-you-line,
-.lobby-name {
+.lobby-you-line {
   grid-area: 1 / 1;
   opacity: 0;
   visibility: hidden;
@@ -243,8 +242,7 @@
     visibility 0s linear var(--spring-smooth-ms);
 }
 
-.lobby-you[data-mode='line'] .lobby-you-line,
-.lobby-you[data-mode='ask'] .lobby-name {
+.lobby-you[data-mode='line'] .lobby-you-line {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -252,80 +250,6 @@
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s linear 0s;
-}
-
-.lobby-name {
-  display: flex;
-  gap: 6px;
-  margin: 0;
-}
-
-.lobby-name-field {
-  flex: 1;
-  min-width: 0;
-  height: 28px;
-  box-sizing: border-box;
-  padding: 0 8px;
-  border: none;
-  border-radius: 3px;
-  outline: none;
-  font: 13px var(--sans);
-  color: var(--text, #efe6d6);
-  background: rgba(255, 255, 255, 0.05);
-  user-select: text;
-  -webkit-user-select: text;
-  transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
-}
-
-.lobby-name-field::placeholder {
-  color: var(--lobby-dim);
-}
-
-.lobby-name-field:focus {
-  background: rgba(255, 255, 255, 0.085);
-}
-
-.lobby .lobby-name-save {
-  flex: none;
-  height: 28px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 3px;
-  font: 500 12px var(--sans);
-  letter-spacing: 0.06em;
-  color: var(--text, #efe6d6);
-  background: rgba(127, 212, 255, 0.14);
-  cursor: pointer;
-  transform: none;
-  transition:
-    background-color var(--spring-snappy-ms) var(--spring-snappy),
-    opacity var(--spring-snappy-ms) var(--spring-snappy);
-}
-
-.lobby .lobby-name-save:hover:not(:disabled) {
-  background: rgba(127, 212, 255, 0.22);
-  transform: none;
-}
-
-.lobby .lobby-name-save:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.lobby-name-note {
-  grid-area: 2 / 1;
-  margin: 3px 2px 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 11.5px;
-  line-height: 15px;
-  color: var(--lobby-dim);
-  transition: color var(--spring-snappy-ms) var(--spring-snappy);
-}
-
-.lobby-name-note.problem {
-  color: rgba(255, 186, 150, 0.85);
 }
 
 .game-lobby {

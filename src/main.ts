@@ -54,8 +54,7 @@ import { mountGameBoard } from './lobby/game-board.ts';
 import type { GameBoard } from './lobby/game-board.ts';
 import { mountTitleLobby } from './lobby/title-lobby.ts';
 import { spokenName } from './lobby/lobby-model.ts';
-import { createNameStep } from './lobby/name-step.ts';
-import type { NameStep } from './lobby/name-step.ts';
+import { createNameStep, wireEnter } from './lobby/name-step.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Leaderboard } from './backend/api.ts';
@@ -288,7 +287,7 @@ async function start(): Promise<void> {
   let heroName: string | null = null;
   const nameVoice: NameVoiceClient | null = createBrowserNameVoice(import.meta.env.VITE_SERVER_URL);
   lobby?.feed.subscribe((board: Leaderboard | null): void => {
-    heroName = spokenName(board);
+    if (board !== null) heroName = spokenName(board);
   });
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
   statusLine.show('Raising the dead and the walls…');
@@ -673,14 +672,7 @@ async function start(): Promise<void> {
     startZoneAmbience();
     preloadNearZones();
   };
-  const nameStep: NameStep | null = lobby === null || save !== null ? null : createNameStep({ card: enter.parentElement ?? title, enter, lobby, random: Math.random, begin });
-  const press = async (): Promise<void> => {
-    if (nameStep === null || (await nameStep.enter())) begin();
-  };
-  enter.addEventListener('click', (): void => {
-    if (failed) window.location.reload();
-    else void press();
-  });
+  wireEnter({ enter, begin, failed: (): boolean => failed, step: lobby === null ? null : createNameStep({ card: enter.parentElement ?? title, enter, lobby, random: Math.random, begin }) });
   const startOver = async (): Promise<void> => {
     dirty = false;
     reset.disabled = true;
