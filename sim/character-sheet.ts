@@ -60,6 +60,8 @@ function figures(total: StatBlock, base: StatBlock, treeOnly: StatBlock): Record
     moveSpeed: figure('moveSpeed'),
     armour: figure('armour'),
     goldFind: figure('goldFind'),
+    stormResist: figure('stormResist'),
+    frostResist: figure('frostResist'),
   };
 }
 

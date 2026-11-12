@@ -47,6 +47,6 @@ void test('costs read as mana and a cooldown in whole tenths, and damage reads b
   const base: SkillDef = skill('storm_bolt');
   assert.equal(costWords({ ...base, manaCost: 12, cooldown: 2.25 }), '12 mana · 2.3s cooldown');
   assert.equal(costWords({ ...base, manaCost: 0, cooldown: 0 }), 'No mana');
-  assert.equal(damageWord({ ...base, damage: { weaponPercent: 1, flatMin: 0, flatMax: 0 } }), 'Weapon damage');
-  assert.equal(damageWord({ ...base, damage: { weaponPercent: 0, flatMin: 0, flatMax: 0 } }), 'No damage');
+  assert.equal(damageWord({ ...base, damage: { type: 'physical', weaponPercent: 1, flatMin: 0, flatMax: 0 } }), 'Weapon damage');
+  assert.equal(damageWord({ ...base, damage: { type: 'physical', weaponPercent: 0, flatMin: 0, flatMax: 0 } }), 'No damage');
 });

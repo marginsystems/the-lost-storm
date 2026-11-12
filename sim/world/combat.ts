@@ -4,7 +4,7 @@ import type { SkillDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
-import { armourReduction, resolveSkill } from '../stats.ts';
+import { damageTakenScale, resolveSkill } from '../stats.ts';
 import { grantXp } from './character.ts';
 import { isInvulnerable } from './dash.ts';
 import { closeDialogue } from './dialogue.ts';
@@ -134,7 +134,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const weapon: number = world.rng.range(offence.damageMin, offence.damageMax) * (1 + offence.damagePercent) * skill.damage.weaponPercent;
   const flat: number = world.rng.range(skill.damage.flatMin, skill.damage.flatMax);
   const crit: boolean = world.rng.chance(offence.critChance);
-  const mitigation: number = target.kind === 'player' ? 1 - armourReduction(target.stats.armour) : 1;
+  const mitigation: number = target.kind === 'player' ? damageTakenScale(target.stats, skill.damage.type, world.content.player.resistance, world.zone.stormTier) : 1;
   const amount: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation * guarded));
   target.life -= amount;
   const poise: number = steadiness(target) * (guard === 'blocked' ? COMBAT.guardedKnockback : 1);

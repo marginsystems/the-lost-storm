@@ -40,6 +40,18 @@ export const DEFENCE_ROWS: readonly SheetRow[] = [
     read: (sheet: CharacterSheet, source: Source): readonly number[] => (source === 'total' ? [sheet.armourReduction] : [0]),
     format: percent,
   },
+  {
+    name: 'Storm resistance',
+    note: 'Cuts storm hits, up to the cap. Deeper storm tiers take some of it away.',
+    read: (sheet: CharacterSheet, source: Source): readonly number[] => [stat(sheet, 'stormResist', source)],
+    format: percent,
+  },
+  {
+    name: 'Frost resistance',
+    note: 'Cuts frost hits, up to the cap. Deeper storm tiers take some of it away.',
+    read: (sheet: CharacterSheet, source: Source): readonly number[] => [stat(sheet, 'frostResist', source)],
+    format: percent,
+  },
   single('Movement speed', 'moveSpeed', tenths),
 ];
 

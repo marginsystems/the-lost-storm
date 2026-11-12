@@ -1,4 +1,4 @@
-import type { ChartGroup, Content, Delivery, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { ChartGroup, Content, DamageType, Delivery, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS, STAT_IDS } from './content/types.ts';
 import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
@@ -129,7 +129,7 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
   return {
     ...skill,
     delivery,
-    damage: { weaponPercent: skill.damage.weaponPercent * damageScale, flatMin: skill.damage.flatMin * damageScale, flatMax: skill.damage.flatMax * damageScale },
+    damage: { type: skill.damage.type, weaponPercent: skill.damage.weaponPercent * damageScale, flatMin: skill.damage.flatMin * damageScale, flatMax: skill.damage.flatMax * damageScale },
     cooldown: skill.cooldown * scaleOf(mods, 'cooldownPercent'),
     manaCost: Math.round(skill.manaCost * scaleOf(mods, 'manaCostPercent')),
     knockback: skill.knockback * scaleOf(mods, 'knockbackPercent'),
@@ -147,6 +147,23 @@ export function resolveSkillBar(content: Content, bar: readonly (string | null)[
 export function armourReduction(armour: number): number {
   const effective: number = Math.max(0, armour);
   return effective / (effective + ARMOUR_HALF_POINT);
+}
+
+export function resistanceOf(stats: StatBlock, type: ResistedType, rules: ResistanceRules, stormTier: number): number {
+  const raw: number = type === 'storm' ? stats.stormResist : stats.frostResist;
+  return Math.min(rules.cap, Math.max(rules.floor, raw - rules.tierPenalty * stormTier));
+}
+
+export function damageTakenScale(stats: StatBlock, type: DamageType, rules: ResistanceRules, stormTier: number): number {
+  const armour: number = 1 - armourReduction(stats.armour);
+  switch (type) {
+    case 'physical':
+      return armour;
+    case 'storm':
+    case 'frost':
+      return armour * (1 - resistanceOf(stats, type, rules, stormTier));
+  }
+  return armour;
 }
 
 export function averageHit(stats: StatBlock): number {

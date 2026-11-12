@@ -13,7 +13,7 @@ export const SHAPES = {
 
 export function scaledDamage(skill: SkillDef, scale: number): SkillDef {
   if (scale === 1) return skill;
-  return { ...skill, damage: { weaponPercent: skill.damage.weaponPercent * scale, flatMin: skill.damage.flatMin * scale, flatMax: skill.damage.flatMax * scale } };
+  return { ...skill, damage: { ...skill.damage, weaponPercent: skill.damage.weaponPercent * scale, flatMin: skill.damage.flatMin * scale, flatMax: skill.damage.flatMax * scale } };
 }
 
 function gapTo(from: ReadonlyVec2, target: Actor): number {

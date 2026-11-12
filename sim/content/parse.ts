@@ -35,6 +35,7 @@ import type {
   PropDef,
   PropLight,
   RarityDef,
+  ResistanceRules,
   RigActionClip,
   RigClips,
   RigDef,
@@ -52,7 +53,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, RARITY_MARKERS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { AFFIX_POSITIONS, ARMOUR_MATERIALS, DAMAGE_TYPES, ITEM_SLOTS, MOD_OPS, RARITY_MARKERS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -154,7 +155,7 @@ function skill(value: unknown, where: string): SkillDef {
     scalesWithAttackSpeed: flag(source, 'scalesWithAttackSpeed', where),
     engageRange: numeric(source, 'engageRange', where),
     delivery: delivery(source['delivery'], `${where}.delivery`),
-    damage: { weaponPercent: numeric(damage, 'weaponPercent', where), flatMin: numeric(damage, 'flatMin', where), flatMax: numeric(damage, 'flatMax', where) },
+    damage: { type: damage['type'] === undefined ? 'physical' : choice(damage, 'type', DAMAGE_TYPES, `${where}.damage`), weaponPercent: numeric(damage, 'weaponPercent', where), flatMin: numeric(damage, 'flatMin', where), flatMax: numeric(damage, 'flatMax', where) },
     knockback: numeric(source, 'knockback', where),
     stagger: numeric(source, 'stagger', where),
     shake: numeric(source, 'shake', where),
@@ -441,12 +442,22 @@ function statBlock(value: unknown, where: string): StatBlock {
     moveSpeed: read('moveSpeed'),
     armour: read('armour'),
     goldFind: read('goldFind'),
+    stormResist: read('stormResist'),
+    frostResist: read('frostResist'),
   };
 }
 
 function skillBinding(value: unknown, where: string): SkillBinding {
   const source: Fields = fields(value, where);
   return { skill: nullableText(source, 'skill', where), bindings: textList(source, 'bindings', where), label: text(source, 'label', where) };
+}
+
+function resistanceRules(value: unknown, where: string): ResistanceRules {
+  const source: Fields = fields(value, where);
+  const cap: number = fraction(source, 'cap', where);
+  const floor: number = numeric(source, 'floor', where);
+  if (floor > 0 || floor < -1) throw new ContentError(`${where}.floor`, 'expected a number from -1 to 0');
+  return { cap, floor, tierPenalty: fraction(source, 'tierPenalty', where) };
 }
 
 function player(value: unknown, where: string): PlayerDef {
@@ -474,6 +485,7 @@ function player(value: unknown, where: string): PlayerDef {
     respawnDelay: numeric(source, 'respawnDelay', where),
     respawnInvulnerability: numeric(source, 'respawnInvulnerability', where),
     deathPenalty: { minLevel: positive(penalty, 'minLevel', `${where}.deathPenalty`), xpPercent: fraction(penalty, 'xpPercent', `${where}.deathPenalty`) },
+    resistance: resistanceRules(source['resistance'], `${where}.resistance`),
   };
 }
 

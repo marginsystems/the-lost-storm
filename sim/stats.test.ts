@@ -6,7 +6,7 @@ import type { Content, SkillDef, SkillMod, StatBlock } from './content/types.ts'
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
-import { applyMods, armourReduction, averageHit, computeStats, damagePerSecond, resolveSkill, resolveSkillBar } from './stats.ts';
+import { applyMods, armourReduction, averageHit, computeStats, damagePerSecond, damageTakenScale, resistanceOf, resolveSkill, resolveSkillBar } from './stats.ts';
 import type { Equipment, ItemInstance } from './world/types.ts';
 
 const content: Content = loadContent();
@@ -171,4 +171,22 @@ void test('every equipment slot adds its item to the stats', (): void => {
     const without: StatBlock = computeStats(content, 1, { ...dressed, [slot]: null }, []);
     assert.notDeepEqual(without, after, slot);
   }
+});
+
+void test('a resistance is capped, lowered by each storm tier, and never falls below the floor', (): void => {
+  const rules = content.player.resistance;
+  const stats: StatBlock = { ...computeStats(content, 1, bare, []), stormResist: 0.9, frostResist: 0.3 };
+  assert.equal(resistanceOf(stats, 'storm', rules, 0), rules.cap);
+  assert.equal(resistanceOf(stats, 'frost', rules, 0), 0.3);
+  assert.ok(Math.abs(resistanceOf(stats, 'frost', rules, 1) - (0.3 - rules.tierPenalty)) < 1e-9);
+  assert.equal(resistanceOf(stats, 'frost', rules, 50), rules.floor);
+});
+
+void test('armour cuts every hit, and storm and frost hits are cut again by their own resistance', (): void => {
+  const rules = content.player.resistance;
+  const stats: StatBlock = { ...computeStats(content, 1, bare, []), armour: 100, stormResist: 0.5, frostResist: 0 };
+  assert.equal(damageTakenScale(stats, 'physical', rules, 0), 1 - armourReduction(100));
+  assert.equal(damageTakenScale(stats, 'storm', rules, 0), (1 - armourReduction(100)) * 0.5);
+  assert.equal(damageTakenScale(stats, 'frost', rules, 0), 1 - armourReduction(100));
+  assert.ok(damageTakenScale(stats, 'frost', rules, 1) > 1 - armourReduction(100));
 });

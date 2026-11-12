@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
 import { packMods } from './parse-combat.ts';
-import { byId, choice, ContentError, each, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
+import { byId, choice, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
   AtlasDef,
@@ -207,6 +207,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     name: text(source, 'name', where),
     kind,
     level: positive(source, 'level', where),
+    stormTier: source['stormTier'] === undefined ? 0 : nonNegative(source, 'stormTier', where),
     cellSize: positive(source, 'cellSize', where),
     floorHeight: numeric(source, 'floorHeight', where),
     tiles,

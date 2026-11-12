@@ -25,6 +25,8 @@ export const STAT_IDS = [
   'moveSpeed',
   'armour',
   'goldFind',
+  'stormResist',
+  'frostResist',
 ] as const;
 export type StatId = (typeof STAT_IDS)[number];
 export type StatBlock = Record<StatId, number>;
@@ -87,7 +89,12 @@ export interface DashDelivery {
 
 export type Delivery = ArcDelivery | NovaDelivery | ProjectileDelivery | DashDelivery | MarkDelivery | ReviveDelivery | FieldDelivery | ChainDelivery | AreaDelivery | BlinkDelivery | BeamDelivery;
 
+export const DAMAGE_TYPES = ['physical', 'storm', 'frost'] as const;
+export type DamageType = (typeof DAMAGE_TYPES)[number];
+export type ResistedType = Exclude<DamageType, 'physical'>;
+
 export interface SkillDamage {
+  readonly type: DamageType;
   readonly weaponPercent: number;
   readonly flatMin: number;
   readonly flatMax: number;
@@ -453,6 +460,7 @@ export interface ZoneDef {
   readonly name: string;
   readonly kind: ZoneKind;
   readonly level: number;
+  readonly stormTier: number;
   readonly cellSize: number;
   readonly floorHeight: number;
   readonly tiles: readonly string[];
@@ -650,6 +658,13 @@ export interface PlayerDef {
   readonly respawnDelay: number;
   readonly respawnInvulnerability: number;
   readonly deathPenalty: DeathPenalty;
+  readonly resistance: ResistanceRules;
+}
+
+export interface ResistanceRules {
+  readonly cap: number;
+  readonly floor: number;
+  readonly tierPenalty: number;
 }
 
 export interface DeathPenalty {

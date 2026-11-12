@@ -48,7 +48,7 @@ export function chainedSkill(actor: Actor, skill: SkillDef): SkillDef {
     windup: step.windup,
     recovery: step.recovery,
     delivery: widened(skill.delivery, step.areaScale),
-    damage: { weaponPercent: skill.damage.weaponPercent * step.damageScale, flatMin: skill.damage.flatMin * step.damageScale, flatMax: skill.damage.flatMax * step.damageScale },
+    damage: { ...skill.damage, weaponPercent: skill.damage.weaponPercent * step.damageScale, flatMin: skill.damage.flatMin * step.damageScale, flatMax: skill.damage.flatMax * step.damageScale },
     knockback: skill.knockback * step.knockbackScale,
     stagger: step.stagger,
     shake: step.shake,
@@ -115,7 +115,7 @@ export function chargedSkill(skill: SkillDef, charge: number): SkillDef {
   return {
     ...skill,
     delivery: widened(skill.delivery, 1 + (hold.areaScale - 1) * charge),
-    damage: { weaponPercent: skill.damage.weaponPercent * power, flatMin: skill.damage.flatMin * power, flatMax: skill.damage.flatMax * power },
+    damage: { ...skill.damage, weaponPercent: skill.damage.weaponPercent * power, flatMin: skill.damage.flatMin * power, flatMax: skill.damage.flatMax * power },
     knockback: skill.knockback * weight,
     stagger: skill.stagger * weight,
     shake: skill.shake * weight,
