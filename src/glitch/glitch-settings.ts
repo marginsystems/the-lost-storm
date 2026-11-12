@@ -11,6 +11,22 @@ export interface GlitchSettingsStore {
   subscribe(listener: (settings: GlitchSettings) => void): void;
 }
 
+export interface SettingRequest {
+  readonly enabled: boolean;
+  readonly at: number;
+}
+
+export interface SettingStep {
+  readonly send: boolean;
+  readonly asked: SettingRequest | null;
+}
+
+export function settingStep(current: boolean, wanted: boolean, asked: SettingRequest | null, time: number): SettingStep {
+  if (current === wanted) return { send: false, asked: null };
+  if (asked !== null && asked.enabled === wanted && time <= asked.at) return { send: false, asked };
+  return { send: true, asked: { enabled: wanted, at: time } };
+}
+
 export const GLITCH_SETTINGS_KEY: string = 'the-lost-storm.glitches.v1';
 export const DEFAULT_GLITCH_SETTINGS: GlitchSettings = { glitches: true, reduceFlashes: false };
 

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { KeyValueStore } from '../backend/backend.ts';
-import type { GlitchSettings } from './glitch-settings.ts';
-import { createGlitchSettings, DEFAULT_GLITCH_SETTINGS, GLITCH_SETTINGS_KEY, readGlitchSettings } from './glitch-settings.ts';
+import type { GlitchSettings, SettingStep } from './glitch-settings.ts';
+import { createGlitchSettings, DEFAULT_GLITCH_SETTINGS, GLITCH_SETTINGS_KEY, readGlitchSettings, settingStep } from './glitch-settings.ts';
 
 function memory(): KeyValueStore & { readonly data: Map<string, string> } {
   const data: Map<string, string> = new Map<string, string>();
@@ -37,4 +37,13 @@ void test('a change is kept, stored and told to every listener', (): void => {
   assert.deepEqual(heard, [{ glitches: false, reduceFlashes: false }]);
   assert.deepEqual(createGlitchSettings(store).get(), { glitches: false, reduceFlashes: false });
   assert.equal(store.data.has(GLITCH_SETTINGS_KEY), true);
+});
+
+void test('a setting the world has not taken is sent once per world step until it takes', (): void => {
+  const first: SettingStep = settingStep(true, false, null, 1);
+  assert.equal(first.send, true);
+  assert.equal(settingStep(true, false, first.asked, 1).send, false);
+  const dropped: SettingStep = settingStep(true, false, first.asked, 1.5);
+  assert.equal(dropped.send, true);
+  assert.deepEqual(settingStep(false, false, dropped.asked, 2), { send: false, asked: null });
 });

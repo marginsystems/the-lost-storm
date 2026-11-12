@@ -10,7 +10,8 @@ import { buildVoidView } from '../render/void-view.ts';
 import type { ZoneView } from '../render/zone-view.ts';
 import type { Ghost } from './ghost.ts';
 import { createGhost } from './ghost.ts';
-import type { GlitchSettings, GlitchSettingsStore } from './glitch-settings.ts';
+import type { GlitchSettings, GlitchSettingsStore, SettingRequest, SettingStep } from './glitch-settings.ts';
+import { settingStep } from './glitch-settings.ts';
 import glitchCss from './glitch.css?inline';
 
 export const GLITCH_VIEW = {
@@ -83,15 +84,11 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   let stutter: Stutter | null = null;
   let clock: number = 0;
 
-  let asked: boolean | null = null;
+  let asked: SettingRequest | null = null;
   const apply = (next: GlitchSettings): void => {
-    if (world.glitch.enabled === next.glitches) {
-      asked = null;
-      return;
-    }
-    if (asked === next.glitches) return;
-    asked = next.glitches;
-    deps.send({ type: 'glitch_setting', enabled: next.glitches });
+    const step: SettingStep = settingStep(world.glitch.enabled, next.glitches, asked, world.time);
+    asked = step.asked;
+    if (step.send) deps.send({ type: 'glitch_setting', enabled: next.glitches });
   };
   apply(settings.get());
   settings.subscribe(apply);
