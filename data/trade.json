@@ -1,0 +1,23 @@
+{
+  "stashSize": 96,
+  "stockSize": 12,
+  "buybackSize": 6,
+  "reach": 2.6,
+  "price": {
+    "base": 24,
+    "perLevel": 0.16,
+    "perAffix": 0.35,
+    "sellRatio": 0.2,
+    "rarity": {
+      "common": 1,
+      "magic": 2.2,
+      "rare": 5,
+      "stormtouched": 12
+    }
+  },
+  "stockRarities": [
+    {"rarity": "common", "weight": 55},
+    {"rarity": "magic", "weight": 35},
+    {"rarity": "rare", "weight": 10}
+  ]
+}

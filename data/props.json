@@ -44,6 +44,7 @@
   {"id": "castle_wall_window", "model": "models/world/wall_window.glb", "scale": 1, "blockRadius": 0, "light": null, "surfaces": {"stone": "castle_wall", "wood": "planks", "iron": "iron", "earth": "dirt"}},
   {"id": "chair", "model": "models/props/chair.glb", "scale": 1.1, "blockRadius": 0.4, "light": null, "surfaces": {"painted_wooden_chair_01": "planks"}},
   {"id": "chest", "model": "models/props/chest.glb", "scale": 1.4, "blockRadius": 0.7, "light": null, "surfaces": {}},
+  {"id": "stash_chest", "model": "models/props/chest.glb", "scale": 1.4, "blockRadius": 0.7, "light": null, "surfaces": {}, "service": "stash"},
   {"id": "crate", "model": "models/props/crate_a.glb", "scale": 1.5, "blockRadius": 0.55, "light": null, "surfaces": {}},
   {"id": "crate_tall", "model": "models/props/crate_b.glb", "scale": 1.3, "blockRadius": 0.5, "light": null, "surfaces": {}},
   {"id": "dead_log", "model": "models/props/dead_log.glb", "scale": 1.4, "blockRadius": 0, "light": null, "surfaces": {}},

@@ -7,9 +7,9 @@ import { el, label, retrigger } from './dom.ts';
 import { setPicture } from './item-picture.ts';
 import { itemTooltip } from './item-tooltip.ts';
 import { attachTooltip } from './tooltip.ts';
+import { inventoryCommand, inventoryHint } from './trade-actions.ts';
 
 const INVENTORY = {
-  hintInventory: 'Click to equip · Right click to drop',
   hintEquipped: 'Click to unequip',
 } as const;
 
@@ -91,17 +91,17 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       const content = context.api.world.content;
       const slot: ItemSlot | null = slotOf(content, item);
       const equipped: ItemInstance | null = slot === null ? null : context.api.world.player.equipped[slot];
-      return itemTooltip(context.api, item, equipped, INVENTORY.hintInventory);
+      return itemTooltip(context.api, item, equipped, inventoryHint(context.api.world, item));
     });
-    view.cell.addEventListener('click', (): void => {
+    view.cell.addEventListener('click', (event: MouseEvent): void => {
       if (view.current === null) return;
       context.tooltip.hide();
-      context.api.send({ type: 'equip', inventoryIndex: index });
+      context.api.send(inventoryCommand(context.api.world, index, event.ctrlKey || event.metaKey ? 'ctrl' : 'click'));
     });
     view.cell.addEventListener('contextmenu', (): void => {
       if (view.current === null) return;
       context.tooltip.hide();
-      context.api.send({ type: 'drop', inventoryIndex: index });
+      context.api.send(inventoryCommand(context.api.world, index, 'right'));
     });
   }
 

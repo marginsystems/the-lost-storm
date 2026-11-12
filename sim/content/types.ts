@@ -245,6 +245,31 @@ export interface ItemScaling {
   readonly implicitPerLevel: number;
 }
 
+export const SERVICE_KINDS = ['vendor', 'stash'] as const;
+export type ServiceKind = (typeof SERVICE_KINDS)[number];
+
+export interface TradePricing {
+  readonly base: number;
+  readonly perLevel: number;
+  readonly perAffix: number;
+  readonly sellRatio: number;
+  readonly rarity: Readonly<Record<string, number>>;
+}
+
+export interface StockRarity {
+  readonly rarity: string;
+  readonly weight: number;
+}
+
+export interface TradeDef {
+  readonly stashSize: number;
+  readonly stockSize: number;
+  readonly buybackSize: number;
+  readonly reach: number;
+  readonly price: TradePricing;
+  readonly stockRarities: readonly StockRarity[];
+}
+
 export const REQUIRE_MODES = ['all', 'any'] as const;
 export type RequireMode = (typeof REQUIRE_MODES)[number];
 
@@ -336,6 +361,7 @@ export interface PropDef {
   readonly blockRadius: number;
   readonly light: PropLight | null;
   readonly surfaces: Readonly<Record<string, string>>;
+  readonly service: ServiceKind | null;
 }
 
 export interface ZonePoint {
@@ -543,6 +569,7 @@ export interface NpcDef {
   readonly gear: readonly string[];
   readonly wear: readonly string[];
   readonly talks: readonly TalkDef[];
+  readonly service: ServiceKind | null;
 }
 
 export interface MonsterScaling {
@@ -664,4 +691,5 @@ export interface Content {
   readonly lines: ReadonlyMap<string, LineDef>;
   readonly quests: ReadonlyMap<string, QuestDef>;
   readonly player: PlayerDef;
+  readonly trade: TradeDef;
 }
