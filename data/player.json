@@ -14,7 +14,9 @@
     "critMultiplier": 1.6,
     "moveSpeed": 7.6,
     "armour": 0,
-    "goldFind": 0
+    "goldFind": 0,
+    "stormResist": 0,
+    "frostResist": 0
   },
   "perLevel": [
     {
@@ -65,6 +67,7 @@
   "respawnDelay": 1.4,
   "respawnInvulnerability": 3,
   "deathPenalty": {"minLevel": 5, "xpPercent": 0.1},
+  "resistance": {"cap": 0.75, "floor": -1, "tierPenalty": 0.2},
   "tint": "#e8d2bd",
   "color": "#8fdcff",
   "gear": [],

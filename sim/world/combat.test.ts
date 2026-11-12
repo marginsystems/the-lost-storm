@@ -147,3 +147,21 @@ void test('a brand fades when its time runs out', (): void => {
   run(world, 5.5);
   assert.equal(branded.brand, null);
 });
+
+function stormHitTaken(stormResist: number, stormTier: number): number {
+  const world: World = arena(3);
+  const attacker: MonsterState = brute(world);
+  world.zone = { ...world.zone, stormTier };
+  world.player.stats = { ...world.player.stats, armour: 0, stormResist };
+  world.player.life = world.player.maxLife;
+  const storm: SkillDef = { ...light, damage: { ...light.damage, type: 'storm', weaponPercent: 0, flatMin: 40, flatMax: 40 } };
+  applyHit(world, { ...offenceOf(attacker), critChance: 0 }, world.player, storm, toward(attacker.pos, world.player.pos));
+  return world.player.maxLife - world.player.life;
+}
+
+void test('a storm hit on the hero is cut by storm resistance, and a deeper storm tier takes resistance away', (): void => {
+  assert.equal(stormHitTaken(0, 0), 40);
+  assert.equal(stormHitTaken(0.5, 0), 20);
+  assert.equal(stormHitTaken(0.5, 1), 28);
+  assert.equal(stormHitTaken(0.9, 0), 10);
+});

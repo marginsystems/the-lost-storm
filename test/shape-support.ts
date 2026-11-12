@@ -8,7 +8,7 @@ import { must } from './support.ts';
 export const SHAPE_DT: number = 1 / 60;
 
 const strike: SkillDef = must(ARENA_CONTENT.skills.get('cleave'), 'cleave');
-const plain: SkillDef = { ...strike, manaCost: 0, cooldown: 0, windup: 0.1, recovery: 0.1, scalesWithAttackSpeed: false, combo: null, knockback: 0, stagger: 0, damage: { weaponPercent: 0, flatMin: 10, flatMax: 10 } };
+const plain: SkillDef = { ...strike, manaCost: 0, cooldown: 0, windup: 0.1, recovery: 0.1, scalesWithAttackSpeed: false, combo: null, knockback: 0, stagger: 0, damage: { type: 'physical', weaponPercent: 0, flatMin: 10, flatMax: 10 } };
 
 export const SHAPE_SKILLS: readonly SkillDef[] = [
   { ...plain, id: 'test_fork', delivery: { type: 'chain', range: 10, jumps: 2, jumpRange: 5, falloff: 0.5 } },
@@ -19,7 +19,7 @@ export const SHAPE_SKILLS: readonly SkillDef[] = [
   { ...plain, id: 'test_wire', manaCost: 2, delivery: { type: 'beam', range: 10, width: 1 }, press: { type: 'channel', interval: 0.2, max: 2 } },
   { ...plain, id: 'test_heave', delivery: { type: 'arc', reach: 3, arcDegrees: 120 }, press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.5 } },
   { ...plain, id: 'test_brander', delivery: { type: 'arc', reach: 3, arcDegrees: 120 }, brand: { duration: 5, burst: 'test_brand_burst' } },
-  { ...plain, id: 'test_brand_burst', delivery: { type: 'nova', radius: 3 }, damage: { weaponPercent: 0, flatMin: 50, flatMax: 50 } },
+  { ...plain, id: 'test_brand_burst', delivery: { type: 'nova', radius: 3 }, damage: { type: 'physical', weaponPercent: 0, flatMin: 50, flatMax: 50 } },
 ];
 
 export const SHAPE_CONTENT: Content = { ...ARENA_CONTENT, skills: new Map<string, SkillDef>([...ARENA_CONTENT.skills, ...SHAPE_SKILLS.map((def: SkillDef): [string, SkillDef] => [def.id, def])]) };

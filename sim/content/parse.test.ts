@@ -630,3 +630,21 @@ void test('a skill effect with no cue or light gets no cue and full light, and a
   const blinding: RawContent = { ...shipped, skills: [{ ...extraSkill, vfx: { style: 'slash', color: '#ff8844', light: -1 } }] };
   assert.throws((): Content => parseContent(blinding), (error: unknown): boolean => problem(error, 'skills[0].vfx'));
 });
+
+void test('a skill hits for physical damage unless its data names storm or frost, and an unknown type is refused', (): void => {
+  const content: Content = parseContent(shipped);
+  assert.equal(must(content.skills.get('cleave'), 'cleave').damage.type, 'physical');
+  assert.equal(must(content.skills.get('rival_bolt'), 'rival_bolt').damage.type, 'storm');
+  assert.equal(must(content.skills.get('still_grasp'), 'still_grasp').damage.type, 'frost');
+  const first = must(skills[0], 'skill');
+  const broken: RawContent = { ...shipped, skills: [{ ...first, damage: { ...first.damage, type: 'hush' } }] };
+  assert.throws((): Content => parseContent(broken), (error: unknown): boolean => problem(error, 'skills[0].damage.type'));
+});
+
+void test('a zone with no storm tier is tier 0, and the hero resists up to a cap from data', (): void => {
+  const content: Content = parseContent(shipped);
+  assert.ok([...content.zones.values()].every((zone): boolean => zone.stormTier === 0));
+  assert.deepEqual(content.player.resistance, { cap: 0.75, floor: -1, tierPenalty: 0.2 });
+  const broken: RawContent = { ...shipped, player: { ...player, resistance: { cap: 0.75, floor: 0.5, tierPenalty: 0.2 } } };
+  assert.throws((): Content => parseContent(broken), (error: unknown): boolean => problem(error, 'player.resistance.floor'));
+});

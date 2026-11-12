@@ -1,6 +1,6 @@
 import type { ModOp, StatId, StatMod } from './content/types.ts';
 
-const RATIO_STATS: ReadonlySet<StatId> = new Set<StatId>(['damagePercent', 'attackSpeed', 'critChance', 'critMultiplier', 'goldFind']);
+const RATIO_STATS: ReadonlySet<StatId> = new Set<StatId>(['damagePercent', 'attackSpeed', 'critChance', 'critMultiplier', 'goldFind', 'stormResist', 'frostResist']);
 const DECIMAL_STATS: ReadonlySet<StatId> = new Set<StatId>(['lifeRegen', 'manaRegen']);
 
 const STAT_LABELS: Readonly<Record<StatId, string>> = {
@@ -17,6 +17,8 @@ const STAT_LABELS: Readonly<Record<StatId, string>> = {
   moveSpeed: 'Movement Speed',
   armour: 'Armour',
   goldFind: 'Gold Found',
+  stormResist: 'Storm Resistance',
+  frostResist: 'Frost Resistance',
 };
 
 export function statLabel(stat: StatId): string {
