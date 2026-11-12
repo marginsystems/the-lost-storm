@@ -86,8 +86,10 @@ body {
 #title {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 56px;
   background: radial-gradient(ellipse at 50% 40%, rgba(22, 34, 52, 0.9), rgba(4, 6, 10, 0.97) 70%);
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),

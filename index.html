@@ -29,6 +29,7 @@
     </script>
     <link rel="stylesheet" href="/src/app.css" />
     <link rel="stylesheet" href="/src/title-account.css" />
+    <link rel="stylesheet" href="/src/title-lobby.css" />
   </head>
   <body>
     <div id="app">
@@ -37,7 +38,7 @@
       <div id="fade"></div>
       <div id="hud"></div>
       <div id="vignette"></div>
-      <div id="title">
+      <div id="title" data-lobby="%VITE_SERVER_URL%">
         <div class="title-card">
           <h1>The Lost Storm</h1>
           <p class="title-sub" id="title-place"></p>
@@ -81,7 +82,7 @@
             <div><dt>W or right mouse</dt><dd>Storm Bolt</dd></div>
             <div><dt>Space</dt><dd>Dodge roll</dd></div>
             <div><dt>1 · 2</dt><dd>Life flask · Mana flask</dd></div>
-            <div><dt>I · C · T · M</dt><dd>Inventory · Character · Skill tree · Map</dd></div>
+            <div><dt>I · C · T · M · L</dt><dd>Inventory · Character · Skill tree · Map · Ladder</dd></div>
             <div><dt>Mouse wheel</dt><dd>Zoom</dd></div>
           </dl>
           <p class="title-credits">
@@ -89,6 +90,7 @@
           </p>
           <p class="title-legal"><a href="/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="/terms.html">Terms</a></p>
         </div>
+        <aside class="title-lobby lobby" id="title-lobby" aria-label="Ladder"></aside>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

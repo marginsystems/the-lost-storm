@@ -112,6 +112,7 @@ export interface ServerAccount {
   method: 'google' | 'email' | null;
   name: string | null;
   nonce: string | null;
+  character: string | null;
 }
 
 export interface SentCode {
@@ -150,6 +151,35 @@ const EMAIL_SHAPE: RegExp = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/;
 const EMAIL_RESEND_MS: number = 60_000;
 const EMAIL_CODE_MS: number = 600_000;
 const EMAIL_ATTEMPTS: number = 5;
+
+const FAKE_NAME: RegExp = /^[A-Za-z0-9 ]+$/;
+
+function characterKey(name: string): string {
+  return name.toLowerCase().replaceAll(' ', '');
+}
+
+function ladder(accounts: readonly ServerAccount[], viewer: ServerAccount | undefined): unknown {
+  const ranked: ServerAccount[] = accounts
+    .filter((account: ServerAccount): boolean => account.save !== null || account.character !== null)
+    .toSorted((left: ServerAccount, right: ServerAccount): number => {
+      const byLevel: number = (right.save?.level ?? 1) - (left.save?.level ?? 1);
+      return byLevel === 0 ? (right.save?.xp ?? 0) - (left.save?.xp ?? 0) : byLevel;
+    });
+  const rankOf = (account: ServerAccount): number => 1 + ranked.filter((other: ServerAccount): boolean => (other.save?.level ?? 1) > (account.save?.level ?? 1) || ((other.save?.level ?? 1) === (account.save?.level ?? 1) && (other.save?.xp ?? 0) > (account.save?.xp ?? 0))).length;
+  const row = (account: ServerAccount): Record<string, unknown> => ({ rank: rankOf(account), name: account.character ?? `Guest ${account.accountId.replace('account-', '')}`, level: account.save?.level ?? 1, furthest: 'Stillhold', online: account === viewer });
+  const you: unknown = viewer === undefined || !ranked.includes(viewer) ? null : { ...row(viewer), chosen: viewer.character !== null };
+  return { top: ranked.slice(0, 25).map(row), you, online: viewer === undefined ? 0 : 1, characters: ranked.length, levelUps: [] };
+}
+
+function nameRefusal(accounts: readonly ServerAccount[], owner: ServerAccount, raw: unknown): string | null {
+  if (typeof raw !== 'string') return 'bad_request';
+  const name: string = raw.trim();
+  if (name.length < 3 || name.length > 16) return 'name_length';
+  if (!FAKE_NAME.test(name)) return 'name_characters';
+  if (characterKey(name).includes('admin')) return 'name_blocked';
+  const taken: boolean = accounts.some((account: ServerAccount): boolean => account !== owner && account.character !== null && characterKey(account.character) === characterKey(name));
+  return taken ? 'name_taken' : null;
+}
 
 function json(status: number, body: unknown, headers: Readonly<Record<string, string>> = {}): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...headers } });
@@ -251,7 +281,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     if (plan !== undefined) return json(plan.status, { error: { code: 'planned', message: 'planned' } }, plan.headers);
     if (method === 'POST' && path === '/v1/guest') {
       created += 1;
-      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, email: null, method: null, name: null, nonce: null };
+      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, email: null, method: null, name: null, nonce: null, character: null };
       accounts.push(account);
       return json(201, { accountId: account.accountId, token: account.token });
     }
@@ -259,7 +289,15 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       return json(200, { google: googleClientId === null ? null : { clientId: googleClientId }, email: emailSiteKey === null ? null : { turnstileSiteKey: emailSiteKey } });
     }
     const owner: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => token !== null && ((account.token === token && !account.guestRetired) || account.sessions.includes(token)));
+    if (method === 'GET' && path === '/v1/leaderboard') return json(200, ladder(accounts, owner));
     if (owner === undefined) return json(401, { error: { code: 'unauthorized', message: 'no' } });
+    if (method === 'PUT' && path === '/v1/character/name') {
+      const raw: unknown = isFields(body) ? body['name'] : null;
+      const refusal: string | null = nameRefusal(accounts, owner, raw);
+      if (refusal !== null) return json(refusal === 'name_taken' ? 409 : 400, { error: { code: refusal, message: 'no' } });
+      owner.character = typeof raw === 'string' ? raw.trim() : null;
+      return json(200, { name: owner.character, chosen: true });
+    }
     if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.method ?? 'guest', name: owner.name, createdAt: stamp() });
     if (path.startsWith('/v1/auth/google') && googleClientId === null) return json(503, { error: { code: 'sign_in_unavailable', message: 'no' } });
     if (method === 'POST' && path === '/v1/auth/google/nonce') {

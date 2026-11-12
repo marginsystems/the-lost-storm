@@ -64,9 +64,11 @@ void test('sanitizing drops unknown actions, bad codes and locked actions', (): 
   assert.deepEqual(clean, { inventory: ['KeyB'] });
 });
 
-void test('sanitizing drops every override when they would collide', (): void => {
+void test('sanitizing drops the overrides that collide and keeps the rest', (): void => {
   assert.deepEqual(sanitizeOverrides(TABLE, { inventory: ['KeyB'], tree: ['KeyB'] }), {});
   assert.deepEqual(sanitizeOverrides(TABLE, { inventory: ['KeyQ'] }), {});
+  assert.deepEqual(sanitizeOverrides(TABLE, { inventory: ['KeyB'], map: ['KeyL'] }), { inventory: ['KeyB'] });
+  assert.deepEqual(sanitizeOverrides(TABLE, { inventory: ['KeyM'], map: ['KeyI'] }), { inventory: ['KeyM'], map: ['KeyI'] });
 });
 
 void test('labels read plainly', (): void => {

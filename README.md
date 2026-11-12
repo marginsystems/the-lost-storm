@@ -56,6 +56,8 @@ With the variable set:
 
 If the server offers Sign in with Google, the title screen shows Google's sign-in button under the cloud line. Signing in as a guest keeps the character: the server links Google to the same account. Signing in on another browser switches that browser to the account, and the account's cloud save is loaded there (a browser whose account has no cloud save yet uploads its own). "Sign out" forgets the account and this browser's copy of the save and starts a fresh guest; it waits until the latest progress has reached the cloud. The page reloads after signing in or out. Google's script is loaded only when the server says sign-in is on, and nothing from Google is requested otherwise.
 
+With a server the title screen also shows the ladder beside the title: the top ten characters (rank, name, level, a dot for players online now), how many are online, the latest level-ups, and the player's own line. A player without a chosen name is asked for one there; until then the server gives a generated two-word name. In game, L opens the same ladder with the player's row pinned, and a short note appears when the player passes someone. The ladder refreshes every 30 seconds on the title screen, every minute in game and when the tab regains focus; it never stops the game when the server is away. Its protocol types are in `src/backend/api.ts` with the others, and its readers in `src/backend/lobby-api.ts`. To show the compact ladder on another page, call `mountCompactLeaderboard(root)` from `src/lobby/compact.ts`.
+
 The title screen shows "Cloud save on" or "Offline". Without the variable it always says "Offline". The requests the client makes, and the answers it accepts, are the types in `src/backend/api.ts`.
 
 ## Checks
