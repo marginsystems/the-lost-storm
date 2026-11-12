@@ -664,3 +664,36 @@ void test('a server epoch above the one this build knows makes a save stamped wi
   assert.equal(account(harness).save?.level, 1);
   assert.deepEqual(readLocalSave(content, harness.store.read(SAVE_KEY))?.epoch, SAVE_EPOCH + 1);
 });
+
+void test('a character made after Start over with the cloud out of reach is kept and sent again when the epoch moved on meanwhile', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 4);
+  harness.server.goDown();
+  await backend.reset();
+  harness.server.wipe(SAVE_EPOCH + 1);
+  backend.save(makeSave(2, 7));
+  harness.server.comeUp();
+  await harness.timers.advance(TIMING.retryMaxMs);
+  await harness.timers.advance(0);
+  await harness.timers.advance(0);
+  await harness.timers.advance(0);
+  assert.deepEqual(harness.server.requests.filter((request: RecordedRequest): boolean => request.method === 'PUT').map((request: RecordedRequest): unknown => (isFields(request.body) ? request.body['epoch'] : null)).slice(-3), [SAVE_EPOCH, SAVE_EPOCH + 1, SAVE_EPOCH + 1]);
+  assert.deepEqual([account(harness).save?.level, account(harness).save?.xp], [2, 7]);
+  assert.deepEqual(readLocalSave(content, harness.store.read(SAVE_KEY))?.epoch, SAVE_EPOCH + 1);
+  assert.ok(!harness.warns.some((line: string): boolean => line.includes('every save was reset')));
+});
+
+void test('a Start over that never reached the cloud keeps its new character on the next load even after the epoch moved on', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const first: Backend = await synced(harness, 4);
+  harness.server.goDown();
+  await first.reset();
+  first.save(makeSave(3, 1));
+  harness.server.comeUp();
+  harness.server.wipe(SAVE_EPOCH + 1);
+  const next: Backend = harness.open();
+  assert.equal((await next.load())?.level, 3);
+  assert.equal(account(harness).save?.level, 3);
+  assert.equal(record(harness).overwriteCloud, false);
+  assert.deepEqual(readLocalSave(content, harness.store.read(SAVE_KEY))?.epoch, SAVE_EPOCH + 1);
+});

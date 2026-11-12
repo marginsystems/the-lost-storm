@@ -87,8 +87,9 @@ void test('a 409 hands back the current copy, read through the game rules', asyn
 void test('a 409 stale_epoch names the epoch now in force, and one without a readable epoch is a refusal', async (): Promise<void> => {
   const { client } = api((): Response => reply(409, { error: { code: 'stale_epoch', message: 'x' }, epoch: 3 }));
   assert.deepEqual(await client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'stale', epoch: 3 });
-  const broken = api((): Response => reply(409, { error: { code: 'stale_epoch', message: 'x' }, epoch: 'three' }));
-  assert.deepEqual(await broken.client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'refused', status: 409 });
+  const answers: readonly unknown[] = ['three', null, 2, 1, undefined];
+  const results = await Promise.all(answers.map((epoch: unknown): Promise<unknown> => api((): Response => reply(409, { error: { code: 'stale_epoch', message: 'x' }, epoch })).client.writeSave('tok', SAVE, 1, 2, SIGNAL)));
+  assert.deepEqual(results, answers.map((): unknown => ({ kind: 'refused', status: 409 })));
 });
 
 void test('a cloud answer without an epoch is from before epochs and counts as epoch 1; a bad epoch is unreadable', async (): Promise<void> => {
