@@ -631,8 +631,8 @@ async function start(): Promise<void> {
   requestAnimationFrame(frame);
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library);
-    thumbnails = createItemThumbnails(library, shownPieces);
     actors.refreshWear(world);
+    thumbnails = await createItemThumbnails(library, shownPieces, createBrowserTimers());
     hud.refreshItems();
   };
 
