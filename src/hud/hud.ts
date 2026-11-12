@@ -45,7 +45,6 @@ import type { Hints } from './hints.ts';
 import { createInventoryPanel } from './inventory-panel.ts';
 import { createMapPanel } from './map-panel.ts';
 import type { MapPanel } from './map-panel.ts';
-import type { FitWatch } from './fit-view.ts';
 import { watchFit } from './fit-view.ts';
 import { createMenuButton } from './menu.ts';
 import type { MenuButton } from './menu.ts';
@@ -64,7 +63,12 @@ import chartPlacesCss from './chart-places.css?inline';
 import pickerCss from './skill-picker.css?inline';
 import { createTreePanel } from './tree-panel.ts';
 import type { ChartPanel } from './tree-panel.ts';
-import { applyCover, closedBy, coverOf, HUD_PANELS, sheetOverflow } from './panel-cover.ts';
+import { applyCover, coverOf, HUD_PANELS } from './panel-cover.ts';
+import { createCloseButton } from './close-button.ts';
+import type { OverlayId } from './overlay-table.ts';
+import { createOverlayManager, durationMs } from './overlays.ts';
+import type { OverlayManager } from './overlays.ts';
+import { createBrowserTimers } from '../browser-timers.ts';
 import { openWith, promptText, use } from './prompts.ts';
 import tradeCss from './trade.css?inline';
 import { createTradeHud } from './trade-hud.ts';
@@ -75,10 +79,34 @@ import { markOverlay } from './overlay-mark.ts';
 
 const GROUND_HINT: string = 'pick up';
 
+const HUD_MOTION = {
+  token: '--spring-snappy-ms',
+  fallbackMs: 260,
+} as const;
+
+const PANEL_OVERLAY: Readonly<Record<HudPanel, OverlayId>> = {
+  inventory: 'inventory',
+  character: 'character',
+  tree: 'chart',
+  map: 'map',
+};
+
+const PANEL_NAME: Readonly<Record<HudPanel, string>> = {
+  inventory: 'Inventory',
+  character: 'Character',
+  tree: 'Storm Chart',
+  map: 'Map',
+};
+
+function motionMs(root: HTMLElement): number {
+  const value: number | null = durationMs(getComputedStyle(root).getPropertyValue(HUD_MOTION.token));
+  return value !== null && value > 0 ? value : HUD_MOTION.fallbackMs;
+}
+
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  const fit: FitWatch = watchFit(root);
+  watchFit(root);
   style.textContent = `${hudCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}\n${pickerCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
@@ -114,13 +142,19 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const xp: XpBar = createXpBar(bottom);
   const row: HTMLDivElement = el('div', 'hud-row', bottom);
 
-  const open: Record<HudPanel, boolean> = { inventory: false, character: false, tree: false, map: false };
+  const overlays: OverlayManager = createOverlayManager({ body: document.body, timers: createBrowserTimers(), motionMs: (): number => motionMs(root) });
+  const isOpen = (panel: HudPanel): boolean => overlays.shown(PANEL_OVERLAY[panel]);
+  const isLive = (panel: HudPanel): boolean => overlays.live(PANEL_OVERLAY[panel]);
   const buttons: Record<HudPanel, MenuButton | null> = { inventory: null, character: null, tree: null, map: null };
-  const map: MapPanel = createMapPanel(root, context, (): void => setOpen('map', false));
+  const map: MapPanel = createMapPanel(root, context, (): void => {
+    overlays.send({ type: 'close', id: 'map' });
+  });
   root.insertBefore(map.element, bottom);
   const inventoryPanel: PanelView = createInventoryPanel(root, context);
   const characterPanel: CharacterPanel = createCharacterPanel(root, context, inventoryPanel.element);
-  const chartPanel: ChartPanel = createTreePanel(root, context, (): void => setOpen('tree', false));
+  const chartPanel: ChartPanel = createTreePanel(root, context, (): void => {
+    overlays.send({ type: 'close', id: 'chart' });
+  });
   const panels: Record<HudPanel, PanelView> = {
     inventory: inventoryPanel,
     character: characterPanel,
@@ -129,49 +163,57 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   };
   let mapWanted: boolean = false;
 
-  const hints: Hints = createHints(bottom, loadHints(api.world.content), createHintStore(createBrowserStore()), (): ResolvedKeys => api.settings.keys(), (): ReadonlySet<HintPanel> => new Set<HintPanel>(HINT_PANELS.filter((id: HintPanel): boolean => open[id])), api.touch);
+  const hints: Hints = createHints(bottom, loadHints(api.world.content), createHintStore(createBrowserStore()), (): ResolvedKeys => api.settings.keys(), (): ReadonlySet<HintPanel> => new Set<HintPanel>(HINT_PANELS.filter((id: HintPanel): boolean => isOpen(id))), api.touch);
   const pending: WorldEvent[] = [];
 
   const grid: HTMLDivElement = el('div', 'hud-grid', null);
   root.insertBefore(grid, root.firstChild);
 
-  let latest: HudPanel | null = null;
-
-  function setOpen(panel: HudPanel, next: boolean): void {
-    if (next) for (const other of closedBy(panel, open, root.classList.contains('fit-sheets'))) setOpen(other, false);
-    if (next) latest = panel;
-    if (open[panel] !== next) api.playUi(next ? 'panel_open' : 'panel_close');
-    open[panel] = next;
+  for (const panel of HUD_PANELS) {
     const view: PanelView = panels[panel];
-    view.element.classList.toggle('open', next);
-    markOverlay(view.element, next);
-    grid.classList.toggle('visible', HUD_PANELS.some((id: HudPanel): boolean => open[id]));
-    applyCover(root, coverOf(open));
-    buttons[panel]?.setActive(next);
-    if (next) {
-      view.refresh();
-    } else {
-      tooltip.hide();
-      hovered.delete(view.element);
+    const id: OverlayId = PANEL_OVERLAY[panel];
+    if (panel !== 'tree') {
+      createCloseButton(view.element, PANEL_NAME[panel], (): void => {
+        overlays.send({ type: 'close', id });
+      });
     }
+    overlays.register(id, {
+      element: view.element,
+      show(): void {
+        api.playUi('panel_open');
+        view.refresh();
+        view.element.classList.add('open');
+        markOverlay(view.element, true);
+        buttons[panel]?.setActive(true);
+      },
+      hide(): void {
+        api.playUi('panel_close');
+        view.element.classList.remove('open');
+        markOverlay(view.element, false);
+        buttons[panel]?.setActive(false);
+        tooltip.hide();
+        hovered.delete(view.element);
+      },
+    });
   }
 
-  fit.onSheets((): void => {
-    for (const panel of sheetOverflow(open, latest)) setOpen(panel, false);
+  overlays.subscribe((): void => {
+    const live: Record<HudPanel, boolean> = { inventory: isLive('inventory'), character: isLive('character'), tree: isLive('tree'), map: isLive('map') };
+    grid.classList.toggle('visible', HUD_PANELS.some((panel: HudPanel): boolean => live[panel]));
+    applyCover(root, coverOf(live));
   });
 
   const toggle = (panel: HudPanel): void => {
-    setOpen(panel, !open[panel]);
+    overlays.send({ type: 'toggle', id: PANEL_OVERLAY[panel] });
   };
 
   for (const panel of HUD_PANELS) track(panels[panel].element);
-  const trade: TradeHud = createTradeHud(root, context, track, {
-    element: panels.inventory.element,
-    isOpen: (): boolean => open.inventory,
-    setOpen: (next: boolean): void => setOpen('inventory', next),
-    besideOpen: (): boolean => open.character,
-    closeBeside: (): void => setOpen('character', false),
-  });
+  const trade: TradeHud = createTradeHud(root, context, track, overlays, panels.inventory.element);
+  for (const view of trade.panels) {
+    createCloseButton(view.element, 'Trade', (): void => {
+      overlays.send({ type: 'close', id: 'trade' });
+    });
+  }
 
   const keyOf = (action: ActionId): string => api.settings.keys().labelOf(action);
   buttons.inventory = createMenuButton(row, 'inventory', 'Inventory', keyOf('inventory'), (): void => toggle('inventory'), track);
@@ -199,8 +241,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   });
 
   const refreshOpen = (panel: HudPanel): void => {
-    if (open[panel]) panels[panel].refresh();
+    if (isOpen(panel)) panels[panel].refresh();
   };
+  let alive: boolean = api.world.player.alive;
 
   return {
     refreshItems(): void {
@@ -220,13 +263,17 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       hints.update(world, pending.splice(0, pending.length));
       bossBar.update(world);
       buttons.tree?.setBadge(world.player.skillPoints);
-      if (open.map) map.update(dt);
-      if (open.tree) chartPanel.update(dt);
-      if (open.character) characterPanel.update(dt);
+      if (isLive('map')) map.update(dt);
+      if (isLive('tree')) chartPanel.update(dt);
+      if (isLive('character')) characterPanel.update(dt);
+      if (world.player.alive !== alive) {
+        alive = world.player.alive;
+        overlays.send({ type: alive ? 'respawn' : 'death' });
+      }
       trade.update();
       if (mapWanted && onWaypoint(world)) {
         mapWanted = false;
-        if (world.dialogue === null && world.player.alive) setOpen('map', true);
+        if (world.dialogue === null && world.player.alive) overlays.send({ type: 'open', id: 'map' });
       } else if (mapWanted && (world.player.intent.type !== 'move' || world.player.action !== null)) {
         mapWanted = false;
       }
@@ -246,6 +293,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'zone_changed':
             banners.show(api.world.zone.name, null, 'zone');
+            overlays.send({ type: 'zone' });
             mapWanted = false;
             barks.clear();
             break;
@@ -366,15 +414,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       mapWanted = wanted;
     },
     closePanels(): boolean {
-      let anyOpen: boolean = skillBar.closePicker();
-      if (trade.close()) anyOpen = true;
-      for (const panel of HUD_PANELS) {
-        if (open[panel]) {
-          anyOpen = true;
-          setOpen(panel, false);
-        }
-      }
-      return anyOpen;
+      if (skillBar.closePicker()) return true;
+      if (!overlays.hasTop()) return false;
+      overlays.send({ type: 'escape' });
+      return true;
     },
+    overlays,
   };
 }
