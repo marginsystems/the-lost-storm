@@ -50,7 +50,7 @@ interface ButtonView {
 const MENU: readonly { readonly panel: HudPanel; readonly label: string; readonly icon: string }[] = [
   { panel: 'inventory', label: 'Inventory', icon: PANEL_ICONS.inventory },
   { panel: 'character', label: 'Character', icon: PANEL_ICONS.character },
-  { panel: 'tree', label: 'Skills', icon: PANEL_ICONS.tree },
+  { panel: 'tree', label: 'Chart', icon: PANEL_ICONS.tree },
   { panel: 'map', label: 'Map', icon: PANEL_ICONS.map },
 ];
 

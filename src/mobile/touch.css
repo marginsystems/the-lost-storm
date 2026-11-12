@@ -311,6 +311,20 @@ body.touch .tc-close svg {
   body.touch .hud-panel.open {
     transform: none;
   }
+
+  body.touch .hud-panel.tree-panel {
+    height: auto;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  body.touch .chart-card {
+    width: min(210px, calc(100% - 20px));
+  }
+
+  body.touch .chart-card-inner {
+    font-size: 10.5px;
+  }
 }
 
 body.touch .hud-row,
