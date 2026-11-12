@@ -7,7 +7,7 @@ import { loadContent } from './content/content.ts';
 import type { Content } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
-import { resolveSkillBar } from './stats.ts';
+import { computeStats, resolveSkillBar, skillCycle } from './stats.ts';
 import type { World } from './world/types.ts';
 
 const content: Content = loadContent();
@@ -89,4 +89,20 @@ void test('the sheet agrees with the stats the world fights with', (): void => {
     { life: world.player.stats.maxLife, mana: world.player.stats.maxMana, armour: world.player.stats.armour, crit: world.player.stats.critChance },
   );
   assert.equal(sheet.skills.length, world.player.skills.length);
+});
+
+void test('flat skill damage is multiplied by critical hits like combat does', (): void => {
+  const sheet: CharacterSheet = characterSheet(content, subject(1, [], false));
+  near(skill(sheet, 'thunderclap').perSecond, ((3 * 1.5 + 6) * (1 + 0.06 * 0.6)) / 4);
+});
+
+void test('attack speed below the floor is clamped the way combat clamps it', (): void => {
+  const slowed: SheetSubject = subject(1, [], false);
+  const stats = computeStats(content, 1, slowed.equipped, []);
+  near(skillCycle({ ...stats, attackSpeed: -1 }, must(content.skills.get('cleave'), 'cleave')), 0.34 / 0.2);
+});
+
+void test('a character at the level cap is flagged as maxed', (): void => {
+  const sheet: CharacterSheet = characterSheet(content, subject(content.player.xp.maxLevel, [], false));
+  assert.equal(sheet.atMaxLevel, true);
 });

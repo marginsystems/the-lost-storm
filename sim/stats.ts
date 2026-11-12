@@ -4,6 +4,8 @@ import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
 
 export const ARMOUR_HALF_POINT: number = 100;
+export const MIN_ATTACK_SPEED: number = 0.2;
+const MIN_CYCLE: number = 0.05;
 
 export function applyMods(base: StatBlock, mods: readonly StatMod[]): StatBlock {
   const flat: StatBlock = { ...base };
@@ -79,8 +81,18 @@ export function averageHit(stats: StatBlock): number {
   return base * (1 + Math.min(1, stats.critChance) * (stats.critMultiplier - 1));
 }
 
+export function effectiveAttackSpeed(stats: StatBlock): number {
+  return Math.max(MIN_ATTACK_SPEED, stats.attackSpeed);
+}
+
+export function skillCycle(stats: StatBlock, skill: SkillDef): number {
+  const speed: number = skill.scalesWithAttackSpeed ? effectiveAttackSpeed(stats) : 1;
+  return Math.max((skill.windup + skill.recovery) / speed, skill.cooldown, MIN_CYCLE);
+}
+
 export function damagePerSecond(stats: StatBlock, skill: SkillDef): number {
-  const speed: number = skill.scalesWithAttackSpeed ? stats.attackSpeed : 1;
-  const cycle: number = Math.max((skill.windup + skill.recovery) / speed, skill.cooldown, 0.05);
-  return (averageHit(stats) * skill.damage.weaponPercent + (skill.damage.flatMin + skill.damage.flatMax) / 2) / cycle;
+  const weapon: number = ((stats.damageMin + stats.damageMax) / 2) * (1 + stats.damagePercent) * skill.damage.weaponPercent;
+  const flat: number = (skill.damage.flatMin + skill.damage.flatMax) / 2;
+  const crit: number = 1 + Math.min(1, stats.critChance) * (stats.critMultiplier - 1);
+  return ((weapon + flat) * crit) / skillCycle(stats, skill);
 }

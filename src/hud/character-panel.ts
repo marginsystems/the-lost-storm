@@ -76,7 +76,7 @@ function line(parent: HTMLElement, name: string, value: string): void {
 
 function signed(row: SheetRow, values: readonly number[]): string {
   const negative: boolean = values.every((value: number): boolean => value < 0);
-  return `${negative ? '−' : '+'}${row.format(values.map((value: number): number => Math.abs(value)))}`;
+  return `${negative ? '−' : '+'}${row.format(values.map((value: number): number => Math.abs(value))).replace(/^\+/, '')}`;
 }
 
 function rowTip(row: SheetRow, sheet: CharacterSheet): HTMLElement {
@@ -98,7 +98,7 @@ function skillTip(skill: SkillOffence): HTMLElement {
   line(tip, 'Weapon damage', `${Math.round(skill.weaponPercent * 100)}%`);
   line(tip, 'Time per use', `${skill.cycle.toFixed(2)}s`);
   if (skill.manaCost > 0) line(tip, 'Mana cost', String(skill.manaCost));
-  label('cs-tip-note', 'Damage per second counts critical hits.', tip);
+  label('cs-tip-note', 'Per second counts critical hits and the opening blow of a combo.', tip);
   return tip;
 }
 
@@ -109,7 +109,7 @@ export function createCharacterPanel(parent: HTMLElement, context: HudContext, i
 
   const head: HTMLDivElement = el('div', 'cs-head', element);
   const levelView: Animated = animated(label('cs-level', '', head), (values: readonly number[]): string => `Level ${Math.round(values[0] ?? 0)}`);
-  const xpView: Animated = animated(label('cs-xp', '', head), (values: readonly number[]): string => `${Math.round(values[0] ?? 0)} / ${Math.round(values[1] ?? 0)} XP`);
+  const xpView: Animated = animated(label('cs-xp', '', head), (values: readonly number[]): string => (sheet.atMaxLevel ? 'Max level' : `${Math.round(values[0] ?? 0)} / ${Math.round(values[1] ?? 0)} XP`));
   const track: HTMLDivElement = el('div', 'cs-track', element);
   const fill: HTMLDivElement = el('div', 'cs-fill', track);
   views.push(levelView, xpView);
@@ -174,7 +174,7 @@ export function createCharacterPanel(parent: HTMLElement, context: HudContext, i
       aim(pair.hit, [skill.hitMin, skill.hitMax]);
       aim(pair.rate, [skill.perSecond]);
     });
-    fill.style.transform = `scaleX(${sheet.xpToNext > 0 ? Math.min(1, sheet.xp / sheet.xpToNext) : 0})`;
+    fill.style.transform = `scaleX(${sheet.atMaxLevel ? 1 : sheet.xpToNext > 0 ? Math.min(1, sheet.xp / sheet.xpToNext) : 0})`;
   };
 
   let since: number = 0;

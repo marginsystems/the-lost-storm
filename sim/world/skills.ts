@@ -5,6 +5,7 @@ import { isSolid } from '../nav/grid.ts';
 import type { Offence } from './combat.ts';
 import { applyHit, offenceOf, targetsOf, teamOf } from './combat.ts';
 import type { Actor, NoticeReason, ProjectileState, World } from './types.ts';
+import { effectiveAttackSpeed } from '../stats.ts';
 
 export const SKILLS = {
   projectileOrigin: 0.9,
@@ -49,7 +50,7 @@ export function chainedSkill(actor: Actor, skill: SkillDef): SkillDef {
 export function startSkill(world: World, actor: Actor, requested: SkillDef, direction: ReadonlyVec2): void {
   const hits: number = comboHits(actor, requested);
   const skill: SkillDef = chainedSkill(actor, requested);
-  const speed: number = actor.kind === 'player' && skill.scalesWithAttackSpeed ? Math.max(0.2, actor.stats.attackSpeed) : 1;
+  const speed: number = actor.kind === 'player' && skill.scalesWithAttackSpeed ? effectiveAttackSpeed(actor.stats) : 1;
   const aim: Vec2 = normalize(direction, directionOf(actor.facing));
   const windup: number = skill.windup / speed;
   const recovery: number = skill.recovery / speed;

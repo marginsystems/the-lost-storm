@@ -2,7 +2,7 @@ import type { Content, SkillDef, SkillMod, StatBlock, StatId, StatMod } from './
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, itemMods } from './items.ts';
 import { describeMod } from './stat-text.ts';
-import { armourReduction, computeStats, damagePerSecond } from './stats.ts';
+import { armourReduction, computeStats, damagePerSecond, skillCycle } from './stats.ts';
 import { xpToNextLevel } from './progression.ts';
 import type { Equipment, PlayerState } from './world/types.ts';
 
@@ -43,8 +43,6 @@ export interface CharacterSheet {
 }
 
 export type SheetSubject = Pick<PlayerState, 'level' | 'xp' | 'equipped' | 'allocated' | 'skills'>;
-
-const MIN_CYCLE: number = 0.05;
 
 function figures(total: StatBlock, base: StatBlock, treeOnly: StatBlock): Record<StatId, Figure> {
   const figure = (stat: StatId): Figure => ({ total: total[stat], base: base[stat], gear: total[stat] - treeOnly[stat], tree: treeOnly[stat] - base[stat] });
@@ -99,13 +97,12 @@ function treeBonuses(content: Content, allocated: readonly string[]): SheetBonus
 
 export function skillOffence(stats: StatBlock, skill: SkillDef): SkillOffence {
   const scale: number = 1 + stats.damagePercent;
-  const speed: number = skill.scalesWithAttackSpeed ? stats.attackSpeed : 1;
   return {
     id: skill.id,
     name: skill.name,
     hitMin: stats.damageMin * scale * skill.damage.weaponPercent + skill.damage.flatMin,
     hitMax: stats.damageMax * scale * skill.damage.weaponPercent + skill.damage.flatMax,
-    cycle: Math.max((skill.windup + skill.recovery) / speed, skill.cooldown, MIN_CYCLE),
+    cycle: skillCycle(stats, skill),
     manaCost: skill.manaCost,
     perSecond: damagePerSecond(stats, skill),
     weaponPercent: skill.damage.weaponPercent,
