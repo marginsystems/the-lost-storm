@@ -4,7 +4,6 @@ import type { ZoneAmbience } from '../../sim/content/types.ts';
 import type { SkyFlash } from './weather.ts';
 import type { GraphicsPreset } from '../settings/settings.ts';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import type { Pass } from 'three/addons/postprocessing/Pass.js';
@@ -13,6 +12,7 @@ import { pixelRatioFor } from '../mobile/quality.ts';
 import { frameGuardPass } from './frame-guard.ts';
 import { RIM_LIGHT } from './character-loader.ts';
 import { aimCutaway } from './prop-cutaway.ts';
+import { ditheredOutputPass } from './output-dither.ts';
 
 export const STAGE = {
   exposure: 1.22,
@@ -185,7 +185,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       made.addPass(new UnrealBloomPass(new Vector2(1, 1), STAGE.bloomStrength, STAGE.bloomRadius, STAGE.bloomThreshold));
     }
     if (builtFinish !== null) made.addPass(builtFinish);
-    made.addPass(new OutputPass());
+    made.addPass(ditheredOutputPass());
     return made;
   };
 
@@ -223,7 +223,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
     }
     builtBloom = bloom;
     builtFinish = finish;
-    if (composer === null && (bloom || finish !== null)) composer = buildComposer();
+    composer ??= buildComposer();
     resize();
   };
   apply();
