@@ -1,5 +1,6 @@
 import type { DitherLayer } from './layer.ts';
 import { mountDither } from './layer.ts';
+import { mountDitherImage } from './image.ts';
 import { BACKDROPS } from './backdrops.ts';
 
 const MOUNT = {
@@ -12,6 +13,9 @@ const MOUNT = {
   goneClass: 'gone',
   voidKind: 'void',
   zoneKindAttribute: 'data-zone-kind',
+  bloomPseudo: '::after',
+  bloomProperty: '--threshold-bloom',
+  bloomPainted: 'bloomed',
 } as const;
 
 function keepWhileShown(title: HTMLElement, backdrop: DitherLayer): void {
@@ -23,9 +27,15 @@ function keepWhileShown(title: HTMLElement, backdrop: DitherLayer): void {
   }).observe(title, { attributes: true, attributeFilter: ['class'] });
 }
 
+export function mountThresholdBloom(button: HTMLElement): void {
+  mountDitherImage(button, { pseudo: MOUNT.bloomPseudo, property: MOUNT.bloomProperty, marks: MOUNT.bloomPainted, layers: BACKDROPS.thresholdBloom, maxRatio: MOUNT.sharp });
+}
+
 export function mountBackdrops(): void {
   const title: HTMLElement | null = document.getElementById('title');
   if (title !== null) keepWhileShown(title, mountDither(title, { className: 'title-backdrop', layers: BACKDROPS.title, eager: true, marks: MOUNT.painted, maxRatio: MOUNT.sharp }));
+  const enter: HTMLElement | null = document.getElementById('title-enter');
+  if (enter !== null) mountThresholdBloom(enter);
   const fade: HTMLElement | null = document.getElementById('fade');
   if (fade !== null) mountDither(fade, { className: 'veil-mist', layers: BACKDROPS.veilMist, eager: true, marks: MOUNT.painted, maxRatio: MOUNT.soft });
   const vignette: HTMLElement | null = document.getElementById('vignette');

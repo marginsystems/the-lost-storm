@@ -1,3 +1,4 @@
+import { mountThresholdBloom } from '../dither/mount.ts';
 import { el, label, setText } from '../hud/dom.ts';
 import type { Lobby } from './compact.ts';
 import type { LobbyHero, LobbyStat } from './lobby-sheet.ts';
@@ -106,6 +107,7 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
 
   const dock: HTMLDivElement = el('div', 'lobby-dock', root);
   const primary: HTMLButtonElement = button(dock, 'lobby-primary threshold-button', LOBBY_SCREEN.enterNew, (): void => actions.primary());
+  mountThresholdBloom(primary);
   const quiet: HTMLDivElement = el('div', 'lobby-quiet', dock);
   const reset: HTMLButtonElement = button(quiet, 'lobby-link', LOBBY_SCREEN.startOver, (): void => {
     dock.classList.add(LOBBY_SCREEN.confirmClass);

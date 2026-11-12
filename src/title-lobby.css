@@ -10,7 +10,7 @@
   display: none;
 }
 
-@media (min-width: 1200px) {
+@media (width >= 1200px) {
   #title {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -29,7 +29,7 @@
   }
 }
 
-@media (max-width: 1199px) and (min-height: 521px) {
+@media (width < 1200px) and (min-height: 521px) {
   #title {
     flex-direction: column;
     gap: 28px;
@@ -47,7 +47,7 @@
   }
 }
 
-@media (max-width: 1199px) and (max-height: 620px) {
+@media (width < 1200px) and (max-height: 620px) {
   .title-lobby .lobby-board > li:nth-child(n + 4) {
     display: none;
   }

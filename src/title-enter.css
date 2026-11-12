@@ -11,9 +11,11 @@
   --threshold-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
   --threshold-sink: 2px;
   --threshold-gather: 1.18;
+  --threshold-reach-x: 0.3;
+  --threshold-reach-y: 0.9;
+  --threshold-radius: 2px;
   position: relative;
   isolation: isolate;
-  overflow: hidden;
   min-width: 216px;
   height: 50px;
   padding: 0 46px;
@@ -27,7 +29,7 @@
   background: var(--threshold-plate);
   background-color: transparent;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--threshold-radius);
   box-shadow: var(--threshold-shadow);
   backdrop-filter: blur(6px);
   transition:
@@ -43,7 +45,7 @@
 .threshold-button::after {
   content: '';
   position: absolute;
-  inset: -90% -30%;
+  inset: calc(var(--threshold-reach-y) * -100%) calc(var(--threshold-reach-x) * -100%);
   z-index: -1;
   pointer-events: none;
   background: var(--dither), radial-gradient(ellipse 40% 34% at 50% 50%, var(--threshold-light), transparent 100%);
@@ -52,6 +54,7 @@
 
 #title-enter::before,
 .threshold-button::before {
+  clip-path: inset(calc(var(--threshold-reach-y) / (1 + 2 * var(--threshold-reach-y)) * 100%) calc(var(--threshold-reach-x) / (1 + 2 * var(--threshold-reach-x)) * 100%) round var(--threshold-radius));
   opacity: 0.35;
   animation: threshold-breath var(--drift-ms) var(--drift-ease) infinite;
 }
@@ -65,6 +68,11 @@
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+#title-enter.bloomed::after,
+.threshold-button.bloomed::after {
+  background: var(--threshold-bloom) center / 100% 100% no-repeat;
 }
 
 @keyframes threshold-breath {

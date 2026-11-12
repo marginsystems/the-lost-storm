@@ -40,7 +40,7 @@ const PAINT = {
   minimumRadius: 1e-6,
   channels: 4,
   maxLayers: 2,
-  maxStops: 4,
+  maxStops: 8,
 } as const;
 
 export function transparent(): Rgba {

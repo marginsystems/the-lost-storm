@@ -29,7 +29,7 @@ void test('the uniforms carry pixel shapes, stop positions and premultiplied col
 });
 
 void test('more layers or stops than the shader holds are cut, never written past its arrays', (): void => {
-  const many: RadialLayer = { centre: { x: 0.5, y: 0.5 }, size: { kind: 'farthest-corner' }, stops: [0, 0.2, 0.4, 0.6, 0.8, 1].map((at: number) => ({ at, colour: rgba(10, 10, 10, at) })) };
+  const many: RadialLayer = { centre: { x: 0.5, y: 0.5 }, size: { kind: 'farthest-corner' }, stops: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map((at: number) => ({ at, colour: rgba(10, 10, 10, at) })) };
   const uniforms: LayerUniforms = layerUniforms([many, many, many], { width: 10, height: 10 });
   assert.equal(uniforms.count, DITHER_LIMITS.layers);
   assert.equal(uniforms.stopCounts[0], DITHER_LIMITS.stops);
@@ -37,7 +37,7 @@ void test('more layers or stops than the shader holds are cut, never written pas
 });
 
 void test('every backdrop fits the shader and its stops rise from the centre outward', (): void => {
-  const all: readonly (readonly RadialLayer[])[] = [BACKDROPS.title, BACKDROPS.edge, BACKDROPS.voidEdge, BACKDROPS.voidLit, BACKDROPS.hurt, BACKDROPS.death, BACKDROPS.veilMist];
+  const all: readonly (readonly RadialLayer[])[] = Object.values(BACKDROPS);
   for (const layers of all) {
     assert.ok(layers.length >= 1 && layers.length <= DITHER_LIMITS.layers);
     for (const layer of layers) {
