@@ -1,3 +1,4 @@
+import type { FigureSize } from './figure-gauge.ts';
 import type { Object3D, Scene } from 'three';
 import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -57,7 +58,7 @@ interface Source {
 
 export interface ViewFocus {
   readonly look: Vec2 | null;
-  readonly figure: number;
+  readonly figure: FigureSize;
 }
 
 export interface ZoneView {

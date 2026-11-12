@@ -167,7 +167,7 @@ void main() {
   float figure = 1.0 - smoothstep(uFigure.y * reachOut, uFigure.z * reachOut, figureDistance(p, uHero, head));
   vec2 fromCentre = abs(p - uHero);
   float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
-  float cleared = max(texture2D(uField, (swirled + warp * uWarp) / uSpan).r * inside, figure) * uOpen;
+  float cleared = max(texture2D(uField, (swirled + warp * uWarp) / uSpan).r * inside * uOpen, figure);
   float fray = voidFbm(swirled * uFray + roll * 2.2 + uSeed * 3.1);
   float still = 1.0 - uMotion;
   float need = uNeed + (mix(body, fray, 0.55) - 0.5) * uTear * mix(1.0, uRest.x, still);

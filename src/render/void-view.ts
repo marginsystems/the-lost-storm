@@ -42,7 +42,7 @@ export const VOID_VIEW = {
   },
   edgeFeather: 0.13,
   fray: 0.85,
-  figureClear: { inner: 1.15, outer: 2.7 },
+  figureClear: { inner: 1.15, outer: 2.7, margin: 0.45 },
   rest: { tear: 1.8, feather: 1.7, breathe: 0.3, curl: 0.24 },
   restWall: 0.2,
   motionRate: 2.2,
@@ -310,7 +310,8 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
     update(now: number, dt: number, world: World, focus: ViewFocus): void {
       time.value = now;
       shift.value.set(world.shift.x, world.shift.z);
-      figure.value.x = focus.figure;
+      const inner: number = Math.max(VOID_VIEW.figureClear.inner, focus.figure.reach + VOID_VIEW.figureClear.margin);
+      figure.value.set(focus.figure.height, inner, inner + VOID_VIEW.figureClear.outer - VOID_VIEW.figureClear.inner);
       follow(world, dt, focus.look);
       stepLightning(world, dt);
       stepGlimpse(world, dt);
