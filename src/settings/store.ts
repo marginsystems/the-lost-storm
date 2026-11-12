@@ -15,8 +15,8 @@ export interface SettingsStore {
   subscribe(listener: (settings: Settings) => void): void;
 }
 
-export function createSettingsStore(storage: KeyValueStore, slots: readonly SlotDefault[]): SettingsStore {
-  const table: readonly ActionDef[] = actionTable(slots);
+export function createSettingsStore(storage: KeyValueStore, slots: readonly SlotDefault[], flasks: number): SettingsStore {
+  const table: readonly ActionDef[] = actionTable(slots, flasks);
   let settings: Settings = readSettings(storage.read(SETTINGS_KEY), table);
   let keys: ResolvedKeys = resolveKeys(table, settings.controls);
   const listeners: ((settings: Settings) => void)[] = [];

@@ -20,3 +20,9 @@ void test('bad flask definitions are rejected with where they went wrong', (): v
   assert.throws((): FlaskDef[] => parseFlasks({}, 'flasks'), ContentError);
 });
 
+
+void test('flask charges are whole numbers, since a save keeps whole charges', (): void => {
+  assert.throws((): FlaskDef[] => parseFlasks([{ ...GOOD, chargesPerKill: 0.5 }], 'flasks'), /chargesPerKill: expected a whole number/);
+  assert.throws((): FlaskDef[] => parseFlasks([{ ...GOOD, maxCharges: 20.5 }], 'flasks'), /maxCharges: expected a whole number/);
+  assert.throws((): FlaskDef[] => parseFlasks([{ ...GOOD, chargesPerUse: 2.5 }], 'flasks'), /chargesPerUse: expected a whole number/);
+});

@@ -9,7 +9,7 @@ const SLOTS: readonly SlotDefault[] = [
   { name: 'Storm Bolt', bindings: ['KeyW', 'mouse_right'] },
 ];
 
-const TABLE: readonly ActionDef[] = actionTable(SLOTS);
+const TABLE: readonly ActionDef[] = actionTable(SLOTS, 2);
 
 void test('the table lists every action once with no default conflicts', (): void => {
   const ids: string[] = TABLE.map((def: ActionDef): string => def.id);
@@ -83,4 +83,13 @@ void test('the first five flask slots each have a key action and later slots hav
   assert.equal(flaskAction(4), 'flask5');
   assert.equal(flaskAction(5), null);
   assert.deepEqual(resolveKeys(TABLE, {}).bindingsOf('flask2'), ['Digit2']);
+});
+
+void test('the table offers a key for each flask the game has and no more', (): void => {
+  const ids = (flasks: number): string[] => actionTable(SLOTS, flasks).map((def: ActionDef): string => def.id).filter((id: string): boolean => id.startsWith('flask'));
+  assert.deepEqual(ids(2), ['flask1', 'flask2']);
+  assert.deepEqual(ids(0), []);
+  assert.deepEqual(ids(9), ['flask1', 'flask2', 'flask3', 'flask4', 'flask5']);
+  assert.equal(resolveKeys(actionTable(SLOTS, 2), {}).actionOf('Digit3'), null);
+  assert.equal(rebind(actionTable(SLOTS, 2), {}, 'inventory', 'Digit3').kind, 'ok');
 });

@@ -273,6 +273,7 @@ async function start(): Promise<void> {
   const gameSettings: SettingsStore = createGameSettings(
     createBrowserStore(),
     content.player.skillBar.map((entry, slot: number) => ({ name: slot === 0 ? 'Move / attack' : (content.skills.get(entry.skill)?.name ?? entry.skill), bindings: entry.bindings })),
+    content.flasks.length,
   );
   const pauseMenu: PauseMenu = createPauseMenu(element('hud', HTMLDivElement), {
     settings: gameSettings,

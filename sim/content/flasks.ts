@@ -21,6 +21,9 @@ function flask(value: unknown, where: string): FlaskDef {
   const maxCharges: number = positive(source, 'maxCharges', where);
   const chargesPerUse: number = positive(source, 'chargesPerUse', where);
   const chargesPerKill: number = numeric(source, 'chargesPerKill', where);
+  for (const [key, charges] of Object.entries({ maxCharges, chargesPerUse, chargesPerKill })) {
+    if (!Number.isInteger(charges)) throw new ContentError(`${where}.${key}`, 'expected a whole number');
+  }
   const cooldown: number = numeric(source, 'cooldown', where);
   if (chargesPerUse > maxCharges) throw new ContentError(`${where}.chargesPerUse`, 'expected at most maxCharges');
   if (chargesPerKill < 0) throw new ContentError(`${where}.chargesPerKill`, 'expected zero or more');
