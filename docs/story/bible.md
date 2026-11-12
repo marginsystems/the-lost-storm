@@ -58,10 +58,10 @@ A second one, quieter, for anyone who notices: the only witness to the town's ar
 | `maren` | Maren Sedge, the Tallier | Stillhold, by the stone where things fall in | A woman past middle age. Dry, exact, unhurried. Short declarative sentences. Counts things instead of saying what she feels. | To finish an entry: to see one of the ones who go looking come back. |
 | `hale` | Hale Orrin, the Lampwright | Stillhold, by the lamps | An older man. Warm, slow, a little hoarse, fond of small practical things. Talks about oil, wicks and knees. | To be told he has kept the lamps well. |
 | `pell` | Pell | The Spill, at a camp among the rubble | A young woman. Quick, amused, irreverent, laughs at her own remarks. The laugh sometimes stops short. | Nothing much. To keep the lovely wrong things. Not to hurt anyone by being right. |
-| `one_before` | The One Before | Dusk's End, at the Empty Frame | Hoarse, worn thin, possessive. Speaks as if to someone who has taken something from them. | The door, which they are sure stood here and was theirs alone. |
-| `welcome` | The Welcome | The Still, at the door | Soft, patient, many voices as one. Never angry. Says "we". | Every lost piece to come back in. |
+| `stormcaller_rival` | Stormcaller Rival | Dusk's End | Silent. Fights with the hero's own skills and sheds the storm as it moves. | The north wick. |
+| `timekeeper_gatekeeper` | Timekeeper Gatekeeper | The Still, at the gate | Silent. Replays its blows where they first fell. | To keep the gate shut. |
 
-The Mason (the east mini-boss) never speaks. It is a thing that fell together able to build and unable to ask why. Its silence is the point.
+The Unfinished Colossus (the east mini-boss) never speaks. It fell together able to build and unable to ask why.
 
 ## Names
 

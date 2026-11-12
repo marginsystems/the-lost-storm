@@ -132,7 +132,7 @@
       "warden_lantern"
     ],
     "regards": {
-      "player": "friendly",
+      "player": "neutral",
       "unfinished": "hostile",
       "menders": "hostile"
     }

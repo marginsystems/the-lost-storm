@@ -16,16 +16,16 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 | `maren_wake_4` | A road at dusk. A lit door at the end. Someone inside, calling you in. | Same conversation. She is reading back what she wrote. |
 | `maren_wake_5` | Yes. I have it down. | Same conversation. |
 | `maren_wake_6` | If it's a door you want, see Hale, by the lamps. He likes to think things are somewhere. | Same conversation. |
-| `maren_idle_1` | The stair by the south wall goes down to the Drowned Bastion. Clear it and it falls together again, a little worse. | Conversation, any later talk until the One Before is dead or both lamps are lit. |
+| `maren_idle_1` | The stair by the south wall goes down to the Drowned Bastion. Clear it and it falls together again, a little worse. | Conversation, any later talk until the Stormcaller Rival is dead or both lamps are lit. |
 | `maren_idle_2` | I stopped counting those. Go on. The roads don't shorten. | Same conversation. |
-| `maren_ledger_1` | You met him on the north road. I can tell. | Conversation, once, after the One Before is dead. |
+| `maren_ledger_1` | You met him on the north road. I can tell. | Conversation, once, after the Stormcaller Rival is dead. |
 | `maren_ledger_2` | A road at dusk. A lit door. A voice. I have written that down nine times. You are the tenth. | Same conversation. |
 | `maren_ledger_3` | It's the commonest thing that falls in. Commoner than cartwheels. | Same conversation. |
 | `maren_ledger_4` | I told the first one. He sat down on the stone where you woke. By evening there was nothing left to count. | Same conversation. |
 | `maren_ledger_5` | So I stopped telling. Be angry later. There are lamps to light. | Same conversation. |
-| `maren_gate_1` | Both lamps. I saw. I've written it in. | Conversation, once, after both lamps are lit and before the Welcome is dead. She comes to the Gate to say it, and waits there until the hero has reached the hall in the Still; after that she is back at the Fallstone. |
+| `maren_gate_1` | Both lamps. I saw. I've written it in. | Conversation, once, after both lamps are lit and before the Timekeeper Gatekeeper is dead. She comes to the Gate to say it, and waits there until the hero has reached the hall in the Still; after that she is back at the Fallstone. |
 | `maren_gate_2` | Nine went looking for that door. I never got to finish an entry. I'd like to finish yours. | Same conversation. |
-| `maren_end_1` | You came back. Nobody comes back. | Conversation, once, after the Welcome is dead. |
+| `maren_end_1` | You came back. Nobody comes back. | Conversation, once, after the Timekeeper Gatekeeper is dead. |
 | `maren_end_2` | Then I write this one differently. Not "fell in". "Went. Chose. Came back." | Same conversation. |
 | `maren_end_3` | First thing in this book that was done on purpose. | Same conversation. |
 | `maren_after_1` | The Bastion still surges. The roads still fill. It doesn't stop because you understood it. | Conversation, any talk after the act is complete. |
@@ -46,8 +46,8 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 | `hale_gate_1` | Both burning. Felt like being young again. Or like remembering it, anyhow. | Conversation, once, when both lamps are lit. |
 | `hale_gate_2` | The Gate's open. Go and ask about your door. | Same conversation. |
 | `hale_gate_3` | And ask one thing for me. Ask if I've kept them well. | Same conversation. |
-| `hale_wait_1` | Go on. The Gate won't stay patient, and neither will I. | Conversation, any talk after the Gate is open and before the Welcome is dead. |
-| `hale_still_1` | So this is the Still. There's no one here. Not even a chair. I always pictured a chair. | Conversation, once, in the Still after the Welcome is dead. |
+| `hale_wait_1` | Go on. The Gate won't stay patient, and neither will I. | Conversation, any talk after the Gate is open and before the Timekeeper Gatekeeper is dead. |
+| `hale_still_1` | So this is the Still. There's no one here. Not even a chair. I always pictured a chair. | Conversation, once, in the Still after the Timekeeper Gatekeeper is dead. |
 | `hale_still_2` | Nobody set the table, then. Hm. | Same conversation. |
 | `hale_still_3` | Well. Lamps want lighting all the same. More than before, I'd say. I'd best get back to it. | Same conversation. |
 | `hale_after_1` | Nobody's watching, you say. Then it's only us to see they're lit. Hand me that oil. | Conversation, any talk in Stillhold after the act is complete. |
@@ -63,9 +63,9 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 | `pell_first_5` | Forty years, he says. This coat's older than that town. | Same conversation. |
 | `pell_first_6` | Don't tell them. I did, once. They were so kind about it. | Same conversation. |
 | `pell_first_7` | Course, maybe I only fell in this morning, remembering all that. Ha! ... Ha. | Same conversation. The second laugh is small. |
-| `pell_first_8` | Your wick's with the Mason, past the walls. It doesn't talk. It only builds. Don't stand where it's building. | Same conversation. |
-| `pell_idle_1` | Still tapping, hear it? Stone on stone. It never asks what the wall's for. | Conversation, any later talk while the Mason is alive. |
-| `pell_done_1` | It's stopped. Huh. Quiet. | Conversation, any talk after the Mason is dead. |
+| `pell_first_8` | Your wick's with the big one past the walls. It doesn't talk. It only builds. Don't stand where it's building. | Same conversation. |
+| `pell_idle_1` | Still tapping, hear it? Stone on stone. It never asks what the wall's for. | Conversation, any later talk while the Unfinished Colossus is alive. |
+| `pell_done_1` | It's stopped. Huh. Quiet. | Conversation, any talk after the Unfinished Colossus is dead. |
 | `pell_done_2` | I'll miss the tapping. Don't tell anyone that, either. | Same conversation. |
 
 ## Odric Vane, the Chandler (`odric`)

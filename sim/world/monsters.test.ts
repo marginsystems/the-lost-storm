@@ -267,3 +267,26 @@ void test('a summoned minion never summons in turn, even when its kind can', ():
   assert.equal(world.monsters.length, 1 + summon.limit);
   assert.ok(world.monsters.every((monster: MonsterState): boolean => monster.summonerId === null || monster.summonerId === breeder.id));
 });
+
+function stillAt(world: World, kind: string, at: Vec2): MonsterState {
+  const figure: MonsterState = place(world, kind, at);
+  figure.aggro = false;
+  return figure;
+}
+
+function stepFor(world: World, seconds: number, done: () => boolean): void {
+  for (let elapsed: number = 0; elapsed < seconds && !done(); elapsed += MOTION_DT) stepWorld(world, [], MOTION_DT);
+}
+
+void test('a dormant figure ignores the hero walking past but wakes when a fight is loud nearby, whatever its spawn order', (): void => {
+  const world: World = arena(7);
+  const waking: MonsterState = stillAt(world, 'still_waking', { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 3 });
+  const standing: MonsterState = stillAt(world, 'still_standing', { x: ARENA_CENTRE.x - 3, z: ARENA_CENTRE.z });
+  stepFor(world, 2, (): boolean => false);
+  assert.equal(waking.aggro, false);
+  assert.equal(standing.aggro, false);
+  place(world, 'mended', { x: ARENA_CENTRE.x + 1.2, z: ARENA_CENTRE.z });
+  stepFor(world, 6, (): boolean => waking.aggro);
+  assert.equal(waking.aggro, true);
+  assert.equal(standing.aggro, false);
+});

@@ -235,10 +235,7 @@ function fighting(actor: Actor): boolean {
 }
 
 function wake(world: World, monster: MonsterState): void {
-  if (monster.def.dormant !== null) {
-    if (heard(world, monster, monster.def.dormant.noiseRadius)) rouse(world, monster);
-    return;
-  }
+  if (monster.def.dormant !== null) return;
   const seen: boolean = [world.player, ...world.monsters].some((actor: Actor): boolean => fighting(actor) && distance(monster.pos, actor.pos) <= monster.def.aggroRadius && strikes(world, monster, actor) && lineOfSight(world.grid, monster.pos, actor.pos));
   if (seen) rouse(world, monster);
 }
@@ -250,6 +247,13 @@ function support(world: World, monster: MonsterState): boolean {
   if (fallen === undefined) return false;
   startSkill(world, monster, skill, { x: fallen.pos.x - monster.pos.x, z: fallen.pos.z - monster.pos.z });
   return true;
+}
+
+export function rouseDormant(world: World): void {
+  for (const monster of world.monsters) {
+    if (!monster.alive || monster.aggro || monster.spawnTime > 0 || monster.def.dormant === null) continue;
+    if (heard(world, monster, monster.def.dormant.noiseRadius)) rouse(world, monster);
+  }
 }
 
 export function stepMonster(world: World, monster: MonsterState, dt: number): void {

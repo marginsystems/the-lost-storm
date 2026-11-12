@@ -1,7 +1,7 @@
 import { stepBosses } from './boss.ts';
 import { stepDeath } from './death.ts';
 import { stepHazards } from './hazards.ts';
-import { removeCorpses, stepMonster, stepSurge } from './monsters.ts';
+import { removeCorpses, rouseDormant, stepMonster, stepSurge } from './monsters.ts';
 import { stepExploration } from './exploration.ts';
 import { stepFlasks } from './flasks.ts';
 import { heldCommands, stepGlitch } from './glitch.ts';
@@ -28,11 +28,12 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepFlasks(world, dt);
   stepVoid(world, dt);
   stepExploration(world);
+  stepEchoes(world, dt);
   for (const monster of world.monsters) stepMonster(world, monster, dt);
   separateActors(world);
   stepProjectiles(world, dt);
   stepHazards(world, dt);
-  stepEchoes(world, dt);
+  rouseDormant(world);
   stepDeath(world, dt);
   for (const ground of world.ground) ground.age += dt;
   removeCorpses(world);
