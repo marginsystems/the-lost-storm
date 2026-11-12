@@ -113,7 +113,7 @@ uniform vec3 uStorm;
 uniform vec3 uDeep;
 uniform vec3 uFlashColor;
 uniform vec2 uShift;
-uniform vec2 uView;
+uniform vec3 uEyeFade;
 uniform vec2 uHero;
 uniform vec2 uNear;
 uniform vec2 uFlashPos;
@@ -155,6 +155,9 @@ float figureDistance(vec2 p, vec2 feet, vec2 head) {
   float t = clamp(dot(p - feet, span) / max(dot(span, span), 0.0001), 0.0, 1.0);
   return distance(p, feet + span * t);
 }
+vec2 toGround(vec2 at, float height) {
+  return at + (at - cameraPosition.xz) * height / max(cameraPosition.y - height, uEyeFade.z);
+}
 vec2 voidSwirl(vec2 q) {
   for (int index = 0; index < VOID_EDDIES; index++) {
     vec4 eddy = uEddies[index];
@@ -167,7 +170,7 @@ vec2 voidSwirl(vec2 q) {
   return q;
 }
 void main() {
-  vec2 p = vWorld.xz - uView * uHeight;
+  vec2 p = toGround(vWorld.xz, uHeight);
   vec2 q = p - uShift;
   vec2 swirled = voidSwirl(q);
   vec2 roll = vec2(uTime * uDrift, uTime * uDrift * 0.63);
@@ -182,7 +185,7 @@ void main() {
   float breathe = voidFbm(rel * 0.42 + vec2(uTime * 0.06, -uTime * 0.045) + uSeed * 0.31);
   float curl = voidNoise(rel * 1.3 - vec2(uTime * 0.11, uTime * 0.08) + uSeed);
   float reachOut = 1.0 + (breathe - 0.5) * uRest.z * 2.0 + (curl - 0.5) * uRest.w + sin(uTime * 0.55 + uSeed) * 0.04;
-  vec2 head = uHero - uView * min(uFigure.x, uHeight);
+  vec2 head = toGround(uHero, min(uFigure.x, uHeight));
   float figure = 1.0 - smoothstep(uFigure.y * reachOut, uFigure.z * reachOut, figureDistance(p, uHero, head));
   vec2 fromCentre = abs(p - uHero);
   float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
@@ -221,7 +224,8 @@ void main() {
   color = mix(color, uDeep * 0.75, uLight.z * 0.72 * (1.0 - near * 0.55) * (1.0 - pull * 0.8));
   vec2 nearLight = vWorld.xz - uLight.xy;
   color = mix(color, uLightColor, uLight.z * 0.85 * exp(-dot(nearLight, nearLight) / 90.0));
-  gl_FragColor = vec4(color, clamp(density * uOpacity, 0.0, 1.0));
+  float eye = smoothstep(uEyeFade.x, uEyeFade.y, distance(vWorld, cameraPosition)) * smoothstep(0.0, uEyeFade.z, cameraPosition.y - vWorld.y);
+  gl_FragColor = vec4(color, clamp(density * uOpacity * eye, 0.0, 1.0));
 }
 `;
 

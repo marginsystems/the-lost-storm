@@ -75,8 +75,12 @@
   "void": {
     "span": 48,
     "wake": {
-      "lie": 1.4,
-      "rise": 3.0
+      "still": 2.0,
+      "stir": 1.2,
+      "rise": 3.8,
+      "front": 0.18,
+      "settle": 3.0,
+      "hurry": 1.2
     },
     "heading": 1.5,
     "wander": {"degrees": 70, "seconds": 4, "farther": 1.6},

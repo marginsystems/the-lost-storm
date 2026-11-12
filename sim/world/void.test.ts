@@ -7,7 +7,7 @@ import { distance } from '../math.ts';
 import { stepWorld } from './step.ts';
 import type { Command, World } from './types.ts';
 import { shiftWorld } from './void.ts';
-import { acceptsCommand, beginVoid, wakeProgress } from './wake.ts';
+import { acceptsCommand, beginVoid, wakeLength, wakeProgress } from './wake.ts';
 
 const content: Content = loadContent();
 const DT: number = 1 / 60;
@@ -18,25 +18,28 @@ function run(world: World, seconds: number, commands: () => readonly Command[] =
 }
 
 function wakeSeconds(zone: ZoneDef): number {
-  const wake = must(zone.void?.wake, 'wake');
-  return wake.lie + wake.rise;
+  return wakeLength(must(zone.void?.wake, 'wake'));
 }
 
 void test('a hero who arrives in a void lies down and ignores orders until he is up', (): void => {
   const world: World = worldIn(content, voidZone.id, 3);
-  assert.notEqual(world.wake, null);
+  const wake = must(world.wake, 'wake');
   const start = { ...world.player.pos };
   const away: Command = { type: 'move', held: false, dest: { x: start.x + 10, z: start.z } };
-  run(world, wakeSeconds(voidZone) * 0.9, (): readonly Command[] => [away]);
+  run(world, wake.plan.still * 0.9, (): readonly Command[] => [away]);
   assert.equal(distance(world.player.pos, start), 0);
-  run(world, wakeSeconds(voidZone) * 0.2);
+  assert.equal(wake.rate, 1);
+  run(world, wakeSeconds(voidZone) * 0.95 - wake.plan.still * 0.9);
+  assert.notEqual(world.wake, null);
+  assert.equal(distance(world.player.pos, start), 0);
+  run(world, wakeSeconds(voidZone) * 0.1);
   assert.equal(world.wake, null);
   run(world, 0.5, (): readonly Command[] => [away]);
   assert.ok(distance(world.player.pos, start) > 1);
 });
 
 void test('the wake rises from lying to standing over its rise time', (): void => {
-  const wake = { elapsed: 0, lie: 2, rise: 4 };
+  const wake = { elapsed: 0, rate: 1, plan: { still: 1, stir: 1, rise: 4, front: 0.25, settle: 1, hurry: 1 } };
   assert.equal(wakeProgress(wake), 0);
   assert.equal(wakeProgress({ ...wake, elapsed: 2 }), 0);
   assert.equal(wakeProgress({ ...wake, elapsed: 4 }), 0.5);

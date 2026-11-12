@@ -628,6 +628,7 @@ async function start(): Promise<void> {
     markPlaying(document.body, true);
     ladder?.setPlaying(true);
     audio.unlock();
+    playUi('title_gone');
     startZoneAmbience();
     preloadNearZones();
   };

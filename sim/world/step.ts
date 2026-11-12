@@ -20,7 +20,7 @@ import { bindEchoes, heldIn, holdHero } from './bubble.ts';
 import { stepVoid } from './void.ts';
 import { stepMoments } from './moments.ts';
 import { stepDrifts, stepTriggers } from './terrain.ts';
-import { acceptsCommand } from './wake.ts';
+import { acceptsCommand, hurryWake } from './wake.ts';
 
 export const MAX_STEP: number = 1 / 30;
 
@@ -28,7 +28,10 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   world.events = [];
   world.time += dt;
   stepDrifts(world);
-  for (const command of heldCommands(world, commands)) if (acceptsCommand(world, command)) handleCommand(world, command);
+  for (const command of heldCommands(world, commands)) {
+    if (acceptsCommand(world, command)) handleCommand(world, command);
+    else hurryWake(world, command);
+  }
   const start: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
   const bubble: MomentState | null = heldIn(world, start);
   stepPlayer(world, dt);

@@ -14,3 +14,21 @@ body[data-zone-kind='void'] #vignette:not(.dithered)::before {
 body[data-zone-kind='void'][data-void-light='on'] #vignette:not(.dithered)::before {
   opacity: 1;
 }
+
+body[data-waking='on'] .tc-stick,
+body[data-waking='on'] .hud-hint {
+  opacity: 0 !important;
+  visibility: hidden;
+}
+
+.vignette-wake {
+  opacity: var(--wake-soft, 0);
+}
+
+body:not([data-zone-kind='void']) .vignette-wake {
+  visibility: hidden;
+}
+
+body[data-zone-kind='void'] .vignette-edge {
+  opacity: calc(1 - var(--wake-soft, 0));
+}

@@ -5,7 +5,8 @@ import { allHold } from './conditions.ts';
 import { stepEncounters } from './encounters.ts';
 import { moveExit } from './exits.ts';
 import { shiftMoments } from './moments.ts';
-import type { Command, Intent, PlayerState, WakeState, World } from './types.ts';
+import type { Command, Intent, PlayerState, World } from './types.ts';
+import { stepWake } from './wake.ts';
 
 function moved(point: Vec2, by: Vec2): Vec2 {
   return { x: point.x + by.x, z: point.z + by.z };
@@ -59,11 +60,7 @@ function steer(world: World, rules: ZoneVoid, dt: number): number {
 }
 
 export function stepVoid(world: World, dt: number): void {
-  const wake: WakeState | null = world.wake;
-  if (wake !== null) {
-    wake.elapsed += dt;
-    if (wake.elapsed >= wake.lie + wake.rise) world.wake = null;
-  }
+  stepWake(world, dt);
   const rules: ZoneVoid | null = world.zone.void;
   if (rules === null) return;
   const zone: string = world.zone.id;

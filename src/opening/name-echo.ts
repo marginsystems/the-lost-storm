@@ -4,7 +4,7 @@ import type { SpokenName } from '../backend/name-voice.ts';
 import echoCss from './name-echo.css?inline';
 
 export const NAME_ECHO = {
-  afterRise: 3,
+  afterRise: 0.35,
   voiceWait: 2.5,
   nearFind: 9,
   layers: 3,

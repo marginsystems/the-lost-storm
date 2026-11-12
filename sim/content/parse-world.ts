@@ -144,7 +144,9 @@ function zoneAmbience(value: unknown, where: string): ZoneAmbience {
 function zoneWake(value: unknown, where: string): ZoneWake | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
-  return { lie: positive(source, 'lie', where), rise: positive(source, 'rise', where) };
+  const front: number = positive(source, 'front', where);
+  if (front > 1) throw new ContentError(`${where}.front`, 'expected a share of the rise, at most 1');
+  return { still: positive(source, 'still', where), stir: positive(source, 'stir', where), rise: positive(source, 'rise', where), front, settle: positive(source, 'settle', where), hurry: positive(source, 'hurry', where) };
 }
 
 function voidShore(value: unknown, where: string): VoidShore | null {

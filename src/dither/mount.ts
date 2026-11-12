@@ -28,6 +28,7 @@ export function mountBackdrops(): void {
   if (vignette === null) return;
   const edge: DitherLayer = mountDither(vignette, { className: 'vignette-edge', layers: edgeFor(document.body.dataset['zoneKind']), eager: true, marksHost: true, maxRatio: MOUNT.soft });
   const lit: DitherLayer = mountDither(vignette, { className: 'vignette-lit', layers: BACKDROPS.voidLit, eager: false, marksHost: false, maxRatio: MOUNT.soft });
+  const wake: DitherLayer = mountDither(vignette, { className: 'vignette-wake', layers: BACKDROPS.wakeSoft, eager: false, marksHost: false, maxRatio: MOUNT.soft });
   mountDither(vignette, { className: 'vignette-hurt', layers: BACKDROPS.hurt, eager: true, marksHost: false, maxRatio: MOUNT.soft });
   let kind: string | undefined = document.body.dataset['zoneKind'];
   new MutationObserver((): void => {
@@ -35,7 +36,11 @@ export function mountBackdrops(): void {
     if (next === kind) return;
     kind = next;
     edge.show(edgeFor(next));
-    if (next === MOUNT.voidKind) lit.paint();
+    if (next !== MOUNT.voidKind) return;
+    lit.paint();
+    wake.paint();
   }).observe(document.body, { attributes: true, attributeFilter: [MOUNT.zoneKindAttribute] });
-  if (kind === MOUNT.voidKind) lit.paint();
+  if (kind !== MOUNT.voidKind) return;
+  lit.paint();
+  wake.paint();
 }

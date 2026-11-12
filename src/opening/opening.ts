@@ -13,6 +13,8 @@ import type { HudGate } from '../hud/hud-gate.ts';
 import { createHudGate, followWorld, HUD_GATE, hudGateCss } from '../hud/hud-gate.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import openingCss from './opening.css?inline';
+import type { WakeFrame } from './wake-shot.ts';
+import { wakeFrame } from './wake-shot.ts';
 import type { SpokenName } from '../backend/name-voice.ts';
 import type { NameEcho } from './name-echo.ts';
 import { createNameEcho } from './name-echo.ts';
@@ -21,8 +23,6 @@ import { createReader } from './reader.ts';
 import type { OverlayManager } from '../hud/overlays.ts';
 
 export const OPENING = {
-  wakeDistance: 46,
-  wakeRate: 0.45,
   ambienceStep: 0.004,
 } as const;
 
@@ -63,7 +63,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   hud.append(style);
   let shift: Vec2 = { x: world.shift.x, z: world.shift.z };
   let shiftZone: string = world.zone.id;
-  let eased: WakeState | null = null;
+  let framed: boolean = false;
   let held: WakeState | null = null;
   const reader: Reader = createReader(hud, deps.touch, deps.overlays);
   const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): Promise<void> => deps.refreshName() });
@@ -117,12 +117,18 @@ export function createOpening(deps: OpeningDeps): Opening {
       if (wake !== null && wake !== held) {
         held = wake;
         deps.overlays.send({ type: 'interrupt', cause: 'wake' });
-        camera.hold(OPENING.wakeDistance);
       }
-      if (wake !== null && wake !== eased && wake.elapsed > 0) {
-        eased = wake;
-        camera.ease(OPENING.wakeRate);
+      if (wake !== null) {
+        const frame: WakeFrame = wakeFrame(wake.plan, wake.elapsed);
+        camera.frame(frame.shot);
+        document.body.style.setProperty('--wake-soft', frame.soft.toFixed(3));
+        framed = true;
+      } else if (framed) {
+        camera.frame(null);
+        document.body.style.setProperty('--wake-soft', '0');
+        framed = false;
       }
+      document.body.dataset['waking'] = wake === null ? 'off' : 'on';
       const shore: VoidShore | null = world.zone.void?.shore ?? null;
       const depth: number = shore === null ? 0 : shoreEase(shoreDepth(world));
       if (shore !== null && (Math.abs(depth - shownShore) >= OPENING.ambienceStep || (depth !== shownShore && (depth === 0 || depth === 1)))) {

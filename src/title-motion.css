@@ -1,8 +1,14 @@
 @import "./page-transition.css";
 
+@property --title-open {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
 :root {
   --arrive-step: calc(var(--spring-snappy-ms) / 4);
-  --leave-lead: calc(var(--spring-snappy-ms) / 2);
+  --leave-lead: var(--spring-snappy-ms);
   --arrive-rise: 8px;
   --line-shift: 7px;
 }
@@ -120,13 +126,22 @@ body {
 }
 
 #title.gone {
+  mask-image: radial-gradient(ellipse 70% 64% at 50% 48%, transparent calc(var(--title-open) - 46%), #000 var(--title-open));
+  animation: title-open var(--spring-smooth-ms) var(--spring-smooth) var(--leave-lead) both;
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth) var(--leave-lead),
     visibility 0s linear calc(var(--spring-smooth-ms) + var(--leave-lead));
 }
 
+@keyframes title-open {
+  to {
+    --title-open: 150%;
+  }
+}
+
 #title.gone .title-card,
-#title.gone .title-lobby {
+#title.gone .title-lobby,
+#title.gone .title-foot {
   animation: title-leave var(--spring-snappy-ms) var(--spring-snappy) both;
 }
 

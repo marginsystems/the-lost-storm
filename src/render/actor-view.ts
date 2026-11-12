@@ -1,6 +1,8 @@
 import type { AnimationAction, AnimationClip } from 'three';
 import type { Box3, Mesh, Object3D } from 'three';
-import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial } from 'three';
+import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial, Quaternion, Vector3 } from 'three';
+import type { WakePose } from './wake-pose.ts';
+import { WAKE_POSE } from './wake-pose.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { ActionClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
 import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
@@ -32,7 +34,23 @@ export const ACTOR = {
   minRunSpeed: 0.7,
   maxRunSpeed: 1.7,
   standFade: 0.45,
+  head: 'DEF-head',
+  neck: 'DEF-neck',
+  fingers: ['DEF-f_index.01.R', 'DEF-f_index.02.R', 'DEF-thumb.01.R', 'DEF-f_index.01.L', 'DEF-f_index.02.L'],
 } as const;
+
+const UP: Vector3 = new Vector3(0, 1, 0);
+const SIDE: Vector3 = new Vector3(1, 0, 0);
+
+function turnInWorld(bone: Object3D, axis: Vector3, angle: number, spare: { readonly q: Quaternion; readonly turn: Quaternion; readonly v: Vector3 }): void {
+  const parent: Object3D | null = bone.parent;
+  if (parent === null || angle === 0) return;
+  parent.updateWorldMatrix(true, false);
+  parent.getWorldQuaternion(spare.q);
+  spare.v.copy(axis).applyQuaternion(spare.q.invert()).normalize();
+  spare.turn.setFromAxisAngle(spare.v, angle);
+  bone.quaternion.premultiply(spare.turn);
+}
 
 export type Chance = () => number;
 
@@ -67,7 +85,7 @@ export interface ActorView {
   die(): void;
   revive(): void;
   detach(): void;
-  lie(progress: number | null): void;
+  wake(pose: WakePose | null): void;
   setHover(hovered: boolean): void;
   face(facing: number): void;
   bounds(out: Box3): void;
@@ -106,6 +124,27 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let oneShot: number = 0;
   let dead: boolean = false;
   let lying: boolean = false;
+  let woke: WakePose | null = null;
+  let risen: boolean = false;
+  const spare = { q: new Quaternion(), turn: new Quaternion(), v: new Vector3() };
+  const side: Vector3 = new Vector3();
+  const head: Object3D | undefined = rig.root.getObjectByName(ACTOR.head);
+  const neck: Object3D | undefined = rig.root.getObjectByName(ACTOR.neck);
+  const fingers: Object3D[] = ACTOR.fingers.flatMap((name: string): Object3D[] => {
+    const bone: Object3D | undefined = rig.root.getObjectByName(name);
+    return bone === undefined ? [] : [bone];
+  });
+
+  const layerWake = (pose: WakePose): void => {
+    const turn: number = (pose.turn * WAKE_POSE.turnDegrees * Math.PI) / 180;
+    if (neck !== undefined) turnInWorld(neck, UP, turn * WAKE_POSE.neckShare, spare);
+    if (head !== undefined) turnInWorld(head, UP, turn * (1 - WAKE_POSE.neckShare), spare);
+    if (head !== undefined && pose.dip > 0) {
+      side.copy(SIDE).applyAxisAngle(UP, rig.root.rotation.y);
+      turnInWorld(head, side, pose.dip, spare);
+    }
+    if (pose.curl > 0) for (const finger of fingers) finger.rotateX(pose.curl / fingers.length);
+  };
   let flash: number = 0;
   let punch: number = 0;
   let hover: boolean = false;
@@ -196,6 +235,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       mixed.copy(hoverColor).lerp(flashColor, flash > 0 ? 1 : 0);
       rig.setFlash(mixed, Math.max(flash, hoverAmount));
       rig.mixer.update(dt);
+      if (lying && woke !== null) layerWake(woke);
     },
     startAction(animation: string, windup: number, recovery: number): boolean {
       const entry: ActionClip | undefined = actionClip(rig, animation);
@@ -227,19 +267,25 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       oneShot = 0;
       play(idleClip(rig), ACTOR.locomotionFade, 1, false, true);
     },
-    lie(progress: number | null): void {
+    wake(pose: WakePose | null): void {
       const clip: AnimationClip | null = rig.clips.rise;
-      if (progress === null || clip === null || dead) {
-        if (lying) play(idleClip(rig), ACTOR.standFade, 1, false, true);
+      woke = pose;
+      if (pose === null || clip === null || dead) {
+        if (lying && !risen) play(idleClip(rig), ACTOR.standFade, 1, false, true);
         lying = false;
+        risen = false;
         return;
       }
       if (!lying) {
         play(clip, ACTOR.locomotionFade, 0, true, true);
         lying = true;
+        risen = false;
       }
-      const eased: number = progress * progress * (3 - 2 * progress);
-      current.time = clip.duration * (1 - eased);
+      if (pose.standing && !risen) {
+        play(idleClip(rig), ACTOR.standFade, 1, false, true);
+        risen = true;
+      }
+      if (!risen) current.time = clip.duration * (1 - pose.share);
     },
     setHover(hovered: boolean): void {
       hover = hovered;

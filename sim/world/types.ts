@@ -4,6 +4,7 @@ import type { GlitchState, PathAct, PathLog, Silhouette } from './glitch-types.t
 import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
 import type { ServiceKind } from '../content/trade-types.ts';
 import type { MomentDef } from '../content/moment-types.ts';
+import type { ZoneWake } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
 import type { GridStamp, NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
@@ -531,6 +532,7 @@ export type WorldEvent =
   | { readonly type: 'zone_changed'; readonly from: string; readonly to: string }
   | { readonly type: 'checkpoint'; readonly checkpoint: string; readonly pos: Vec2 }
   | { readonly type: 'hero_step'; readonly pos: Vec2 }
+  | { readonly type: 'wake'; readonly beat: WakeBeat }
   | { readonly type: 'explored'; readonly zone: string }
   | { readonly type: 'dialogue_line'; readonly npcId: number; readonly npc: string; readonly talk: string; readonly line: LineDef; readonly index: number; readonly last: boolean }
   | { readonly type: 'dialogue_closed'; readonly npcId: number; readonly npc: string; readonly talk: string; readonly finished: boolean }
@@ -580,10 +582,12 @@ export interface EncounterState {
   groundId: number | null;
 }
 
+export type WakeBeat = 'stir' | 'front' | 'standing';
+
 export interface WakeState {
   elapsed: number;
-  readonly lie: number;
-  readonly rise: number;
+  rate: number;
+  readonly plan: ZoneWake;
 }
 
 export interface ShoreState {

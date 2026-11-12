@@ -4,8 +4,12 @@ import type { Condition } from './condition-types.ts';
 export type StoryFlags = Readonly<Record<string, string>>;
 
 export interface ZoneWake {
-  readonly lie: number;
+  readonly still: number;
+  readonly stir: number;
   readonly rise: number;
+  readonly front: number;
+  readonly settle: number;
+  readonly hurry: number;
 }
 
 export const FIND_MARKERS = ['none', 'bolt'] as const;

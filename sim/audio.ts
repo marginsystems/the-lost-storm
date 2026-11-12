@@ -1,7 +1,7 @@
 import type { AudioDef, CueDef, CueTable, UiAction, WorldSoundEvent } from './content/audio.ts';
 import { GOLD_KEY, PLAYER_KEY } from './content/audio.ts';
 import type { Vec2 } from './math.ts';
-import type { Command, GroundItem, MonsterState, World, WorldEvent } from './world/types.ts';
+import type { Command, GroundItem, MonsterState, WakeBeat, World, WorldEvent } from './world/types.ts';
 
 export interface SoundCue extends CueDef {
   readonly position: Vec2 | null;
@@ -36,6 +36,8 @@ function targetKey(world: World, team: 'player' | 'monster', id: number): string
 function groundKey(ground: GroundItem): string {
   return ground.content.kind === 'gold' ? GOLD_KEY : ground.content.item.rarity;
 }
+
+const WAKE_SOUNDS: Readonly<Record<WakeBeat, WorldSoundEvent>> = { stir: 'wake_stir', front: 'wake_front', standing: 'wake_standing' };
 
 function worldCues(audio: AudioDef, event: WorldSoundEvent, position: Vec2 | null): readonly SoundCue[] {
   return cues(audio.world, event, position);
@@ -118,6 +120,9 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       break;
     case 'moment_woke':
       found = worldCues(audio, event.turned.length > 0 ? 'moment_hostile' : 'moment_calm', event.moment.pos);
+      break;
+    case 'wake':
+      found = worldCues(audio, WAKE_SOUNDS[event.beat], positionOf(world, world.player.id));
       break;
     case 'hazard':
       if (event.burst) found = cues(audio.skillImpact, event.hazard.skill.id, event.hazard.pos);

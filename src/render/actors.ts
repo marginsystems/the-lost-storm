@@ -3,7 +3,8 @@ import { paceAt } from '../../sim/nav/grid.ts';
 import { Color } from 'three';
 import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import { hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
-import { wakeProgress } from '../../sim/world/wake.ts';
+import { wakeStage } from '../../sim/world/wake.ts';
+import { wakePose } from './wake-pose.ts';
 import type { ActorState, Equipment, MomentState, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { ActorPose, ActorView } from './actor-view.ts';
 import { ACTOR, createActorView } from './actor-view.ts';
@@ -216,7 +217,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     sync(dt: number, current: World, hoveredId: number | null): void {
       const floor: number = current.zone.floorHeight;
       holdEquipped(content, playerView.rig, current.player.equipped);
-      playerView.lie(current.wake === null ? null : wakeProgress(current.wake));
+      playerView.wake(current.wake === null ? null : wakePose(wakeStage(current.wake.plan, current.wake.elapsed)));
       playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.gait, rise: 1, floor, turnRate: ACTOR.turnRate });
       for (const monster of current.monsters) {
         const entry: MonsterEntry | null = entryFor(current, monster);
@@ -349,6 +350,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'surge_cleared':
           case 'notice':
           case 'hero_step':
+          case 'wake':
           case 'revive':
           case 'explored':
           case 'glitch_start':

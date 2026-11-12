@@ -143,7 +143,7 @@ void test('a panel opened during a hard cut ends it, and the panel is heard even
   const events: WorldEvent[] = stepWorld(world, [{ type: 'overlay', open: true }], DT);
   assert.equal(world.glitch.active, null);
   assert.equal(ofType(events, 'glitch_end').length, 1);
-  assert.equal(acceptsCommand({ ...world, wake: { elapsed: 0, lie: 1, rise: 1 } }, { type: 'overlay', open: false }), true);
+  assert.equal(acceptsCommand({ ...world, wake: { elapsed: 0, rate: 1, plan: { still: 1, stir: 1, rise: 1, front: 0.5, settle: 1, hurry: 1 } } }, { type: 'overlay', open: false }), true);
 });
 
 void test('a hard cut waits while a moment fight is awake or a skill choice is open', (): void => {

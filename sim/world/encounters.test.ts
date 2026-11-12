@@ -11,6 +11,7 @@ import { createWorld } from './create.ts';
 import { shoreDepth } from './shore.ts';
 import { hudHidden } from './hud.ts';
 import { stepWorld } from './step.ts';
+import { wakeLength } from './wake.ts';
 import type { Command, GroundItem, ItemInstance, World } from './types.ts';
 
 const content: Content = loadContent();
@@ -35,7 +36,7 @@ const WALK = {
 function fresh(seed: number): World {
   const world: World = createWorld(content, { seed, save: null, opening: true });
   const wake = must(world.wake, 'wake');
-  for (let step: number = 0; step < Math.ceil((wake.lie + wake.rise) / DT) + 1; step += 1) stepWorld(world, [], DT);
+  for (let step: number = 0; step < Math.ceil(wakeLength(wake.plan) / DT) + 1; step += 1) stepWorld(world, [], DT);
   return world;
 }
 

@@ -22,12 +22,26 @@ export const CAMERA = {
   settled: 0.05,
 } as const;
 
+export interface ShotPose {
+  readonly distance: number;
+  readonly pitchDegrees: number;
+  readonly yawDegrees: number;
+  readonly lookHeight: number;
+  readonly fitWidth: number;
+}
+
+export interface CameraShot {
+  readonly pose: ShotPose;
+  readonly blend: number;
+  readonly swayX: number;
+  readonly swayY: number;
+}
+
 export interface IsoCamera {
   update(dt: number, targetX: number, targetZ: number): void;
   snap(targetX: number, targetZ: number): void;
   shift(byX: number, byZ: number): void;
-  hold(atDistance: number): void;
-  ease(rate: number): void;
+  frame(shot: CameraShot | null): void;
   zoomBy(wheelDelta: number): void;
   addTrauma(amount: number): void;
   punch(dirX: number, dirZ: number, amount: number): void;
@@ -42,10 +56,8 @@ function noise(time: number, seed: number): number {
 
 export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasElement): IsoCamera {
   const size: ElementSize = watchSize(canvas);
-  const yaw: number = (CAMERA.yawDegrees * Math.PI) / 180;
-  const pitch: number = (CAMERA.pitchDegrees * Math.PI) / 180;
-  const offset: Vector3 = new Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
-  const right: Vector3 = new Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+  const offset: Vector3 = new Vector3();
+  const right: Vector3 = new Vector3();
   const focus: Vector3 = new Vector3();
   const punchOffset: Vector3 = new Vector3();
   const ground: Plane = new Plane(new Vector3(0, 1, 0), 0);
@@ -60,17 +72,47 @@ export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasEle
   let trauma: number = 0;
   let zoomRate: number = CAMERA.zoomRate;
   let time: number = 0;
+  let shot: CameraShot | null = null;
+  let lookHeight: number = CAMERA.lookHeight;
+  let swayX: number = 0;
+  let swayY: number = 0;
+
+  const aim = (yawDegrees: number, pitchDegrees: number): void => {
+    const yaw: number = (yawDegrees * Math.PI) / 180;
+    const pitch: number = (pitchDegrees * Math.PI) / 180;
+    offset.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+    right.set(Math.cos(yaw), 0, -Math.sin(yaw));
+  };
+
+  const pose = (): number => {
+    if (shot === null) {
+      aim(CAMERA.yawDegrees, CAMERA.pitchDegrees);
+      lookHeight = CAMERA.lookHeight;
+      swayX = 0;
+      swayY = 0;
+      return distance;
+    }
+    const t: number = shot.blend;
+    aim(shot.pose.yawDegrees + (CAMERA.yawDegrees - shot.pose.yawDegrees) * t, shot.pose.pitchDegrees + (CAMERA.pitchDegrees - shot.pose.pitchDegrees) * t);
+    lookHeight = shot.pose.lookHeight + (CAMERA.lookHeight - shot.pose.lookHeight) * t;
+    swayX = shot.swayX;
+    swayY = shot.swayY;
+    const halfWide: number = Math.atan(Math.tan((camera.fov * Math.PI) / 360) * camera.aspect);
+    const close: number = Math.max(shot.pose.distance, shot.pose.fitWidth / (2 * Math.tan(halfWide)));
+    return Math.exp(Math.log(close) + (Math.log(wantedDistance) - Math.log(close)) * t);
+  };
   camera.fov = CAMERA.fov;
   camera.updateProjectionMatrix();
 
   const place = (): void => {
+    const reach: number = pose();
     const shake: number = trauma * trauma;
-    const shakeX: number = noise(time * CAMERA.shakeFrequency, 1) * shake * CAMERA.shakeDistance;
-    const shakeY: number = noise(time * CAMERA.shakeFrequency, 2) * shake * CAMERA.shakeDistance;
+    const shakeX: number = noise(time * CAMERA.shakeFrequency, 1) * shake * CAMERA.shakeDistance + swayX;
+    const shakeY: number = noise(time * CAMERA.shakeFrequency, 2) * shake * CAMERA.shakeDistance + swayY;
     const lookX: number = focus.x + punchOffset.x + right.x * shakeX;
-    const lookY: number = CAMERA.lookHeight + shakeY;
+    const lookY: number = lookHeight + shakeY;
     const lookZ: number = focus.z + punchOffset.z + right.z * shakeX;
-    camera.position.set(lookX + offset.x * distance, lookY + offset.y * distance, lookZ + offset.z * distance);
+    camera.position.set(lookX + offset.x * reach, lookY + offset.y * reach, lookZ + offset.z * reach);
     camera.up.set(0, 1, 0);
     camera.lookAt(lookX, lookY, lookZ);
     camera.rotateZ(noise(time * CAMERA.shakeFrequency, 3) * shake * CAMERA.shakeRoll);
@@ -98,13 +140,10 @@ export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasEle
       focus.z += byZ;
       place();
     },
-    hold(atDistance: number): void {
-      distance = atDistance;
-      zoomRate = 0;
+    frame(next: CameraShot | null): void {
+      if (next === null && shot !== null) distance = wantedDistance;
+      shot = next;
       place();
-    },
-    ease(rate: number): void {
-      zoomRate = rate;
     },
     zoomBy(wheelDelta: number): void {
       zoomRate = CAMERA.zoomRate;
