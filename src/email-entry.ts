@@ -121,8 +121,12 @@ export interface Placed {
   readonly focus: number;
 }
 
-export function typedText(value: string, inputType: string, data: string | null): string {
-  return inputType === 'insertText' && data !== null ? data : value;
+export type Typed = { readonly kind: 'place'; readonly text: string } | { readonly kind: 'keep' };
+
+export function typedText(value: string, inputType: string, data: string | null): Typed {
+  if (inputType !== 'insertText' || data === null) return { kind: 'place', text: value };
+  if (digitsOf(data) === '') return { kind: 'keep' };
+  return { kind: 'place', text: data };
 }
 
 export function placeDigits(current: readonly string[], at: number, typed: string): Placed {

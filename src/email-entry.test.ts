@@ -106,11 +106,18 @@ void test('a code is complete only with six digits', (): void => {
 });
 
 void test('a key typed into a filled box places only the new digit, while a paste or autofill places the whole value', (): void => {
-  assert.equal(typedText('19', 'insertText', '9'), '9');
-  assert.equal(typedText('4', 'insertText', '4'), '4');
-  assert.equal(typedText('042917', 'insertFromPaste', null), '042917');
-  assert.equal(typedText('042917', 'insertReplacementText', null), '042917');
-  assert.equal(typedText('', 'deleteContentBackward', null), '');
+  assert.deepEqual(typedText('19', 'insertText', '9'), { kind: 'place', text: '9' });
+  assert.deepEqual(typedText('4', 'insertText', '4'), { kind: 'place', text: '4' });
+  assert.deepEqual(typedText('042917', 'insertFromPaste', null), { kind: 'place', text: '042917' });
+  assert.deepEqual(typedText('042917', 'insertReplacementText', null), { kind: 'place', text: '042917' });
+  assert.deepEqual(typedText('', 'deleteContentBackward', null), { kind: 'place', text: '' });
   const filled: readonly string[] = ['1', '2', '3', '4', '5', '6'];
-  assert.deepEqual(placeDigits(filled, 2, typedText('39', 'insertText', '9')), { digits: ['1', '2', '9', '4', '5', '6'], focus: 3 });
+  assert.deepEqual(placeDigits(filled, 2, '9'), { digits: ['1', '2', '9', '4', '5', '6'], focus: 3 });
+});
+
+void test('a typed key with no digit keeps what the box held, while Backspace and Delete still clear it', (): void => {
+  assert.deepEqual(typedText('3x', 'insertText', 'x'), { kind: 'keep' });
+  assert.deepEqual(typedText('a', 'insertText', 'a'), { kind: 'keep' });
+  assert.deepEqual(typedText('', 'deleteContentBackward', null), { kind: 'place', text: '' });
+  assert.deepEqual(typedText('', 'deleteContentForward', null), { kind: 'place', text: '' });
 });

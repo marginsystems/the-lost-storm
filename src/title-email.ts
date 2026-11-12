@@ -1,7 +1,7 @@
 import type { EmailOffer, EmailStartResult, EmailVerifyResult } from './backend/account.ts';
 import type { Clock, Timers } from './backend/backend.ts';
 import { afterStart, afterVerify, canCheck, canResend, checkingEntry, cleanAddress, closedEntry, completeCode, EMAIL_ENTRY, EMAIL_NOTES, invalidEntry, openEntry, placeDigits, sendingEntry, typedText } from './email-entry.ts';
-import type { EmailEntry, Placed } from './email-entry.ts';
+import type { EmailEntry, Placed, Typed } from './email-entry.ts';
 import type { TurnstileGate } from './turnstile.ts';
 
 export interface TitleEmailParts {
@@ -60,9 +60,13 @@ export function createTitleEmail(options: TitleEmailOptions): TitleEmail {
 
   const values = (): readonly string[] => parts.digits.map((digit: HTMLInputElement): string => digit.value);
 
+  const held: string[] = parts.digits.map((): string => '');
+
   const fill = (placed: Placed): void => {
     parts.digits.forEach((digit: HTMLInputElement, index: number): void => {
-      digit.value = placed.digits[index] ?? '';
+      const value: string = placed.digits[index] ?? '';
+      digit.value = value;
+      held[index] = value;
     });
   };
 
@@ -126,7 +130,7 @@ export function createTitleEmail(options: TitleEmailOptions): TitleEmail {
       return;
     }
     const waitNote: () => void = timers.after(TITLE_EMAIL.noteSwapMs * 4, (): void => {
-      showNote(EMAIL_NOTES.checking, false);
+      if (entry === sending) showNote(EMAIL_NOTES.checking, false);
     });
     const token: string | null = await ready.token();
     waitNote();
@@ -208,7 +212,12 @@ export function createTitleEmail(options: TitleEmailOptions): TitleEmail {
 
   parts.digits.forEach((digit: HTMLInputElement, index: number): void => {
     digit.addEventListener('input', (event: Event): void => {
-      place(index, event instanceof InputEvent ? typedText(digit.value, event.inputType, event.data) : digit.value);
+      const typed: Typed = event instanceof InputEvent ? typedText(digit.value, event.inputType, event.data) : { kind: 'place', text: digit.value };
+      if (typed.kind === 'keep') {
+        digit.value = held[index] ?? '';
+        return;
+      }
+      place(index, typed.text);
     });
     digit.addEventListener('paste', (event: ClipboardEvent): void => {
       event.preventDefault();
@@ -220,6 +229,7 @@ export function createTitleEmail(options: TitleEmailOptions): TitleEmail {
       const previous: HTMLInputElement | undefined = parts.digits[index - 1];
       if (previous === undefined) return;
       previous.value = '';
+      held[index - 1] = '';
       previous.focus();
     });
   });
