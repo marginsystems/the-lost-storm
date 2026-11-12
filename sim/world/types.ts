@@ -155,6 +155,7 @@ export interface PlayerState extends ActorState {
   held: number[];
   invulnerable: number;
   strideTravel: number;
+  gait: number;
   kills: number;
   flasks: FlaskState[];
 }

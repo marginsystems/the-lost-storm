@@ -79,6 +79,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     held: [],
     invulnerable: 0,
     strideTravel: 0,
+    gait: 0,
     kills: save?.kills ?? 0,
     flasks: createFlasks(content, save?.flasks ?? null),
   };

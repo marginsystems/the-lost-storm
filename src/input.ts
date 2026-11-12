@@ -273,12 +273,14 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       const leftFresh: boolean = fresh.has(INPUT.leftBinding);
       if (leftFresh) hud.requestMap(marked && !shift);
       const leftRepeats: boolean = leftFresh || (world.player.skills[leftSlot]?.press ?? null) === null;
-      if (leftFresh || (held.has(INPUT.leftBinding) && holdTick)) {
+      const leftHeld: boolean = held.has(INPUT.leftBinding);
+      const leftTick: boolean = leftFresh || (leftHeld && holdTick);
+      if (leftFresh || leftHeld) {
         if (target !== null) {
-          if (leftRepeats) commands.push({ type: 'skill', slot: leftSlot, aim, targetId: target.id });
+          if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim, targetId: target.id });
           if (leftFresh) hooks.clickMarker(target.pos.x, target.pos.z, true);
         } else if (shift) {
-          if (leftRepeats) commands.push({ type: 'skill', slot: leftSlot, aim: ground, targetId: null });
+          if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim: ground, targetId: null });
         } else if (person !== null) {
           if (leftFresh) commands.push({ type: 'talk', npcId: person.id });
         } else if (station !== null) {
