@@ -134,6 +134,11 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'glitch_word':
     case 'silence':
     case 'zone_edited':
+    case 'moment_mark':
+    case 'moment_strike':
+    case 'moment_woke':
+    case 'moment_ended':
+    case 'moment_gone':
     case 'path_marked':
     case 'character_changed':
     case 'explored':
@@ -196,6 +201,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'read':
     case 'glitch':
     case 'glitch_setting':
+    case 'strike':
     case 'hold':
     case 'steer':
       break;

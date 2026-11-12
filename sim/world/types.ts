@@ -3,6 +3,7 @@ import type { GlitchKind } from '../content/glitches.ts';
 import type { GlitchState, PathAct, PathLog, Silhouette } from './glitch-types.ts';
 import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
 import type { ServiceKind } from '../content/trade-types.ts';
+import type { MomentDef } from '../content/moment-types.ts';
 import type { Vec2 } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
@@ -385,6 +386,38 @@ export interface DeathState {
   elapsed: number;
 }
 
+export interface StrikeCommand {
+  readonly type: 'strike';
+  readonly at: Vec2;
+  readonly moment: string | null;
+}
+
+export type MomentPhase = 'mark' | 'dormant' | 'awake' | 'fading';
+
+export type MomentOutcome = 'faded' | 'played' | 'resolved' | 'expired';
+
+export interface MomentFigure {
+  readonly echo: number;
+  pos: Vec2;
+  readonly facing: number;
+  turned: boolean;
+  monsterId: number | null;
+}
+
+export interface MomentState {
+  readonly id: number;
+  readonly def: MomentDef;
+  readonly combat: boolean;
+  readonly level: number;
+  pos: Vec2;
+  phase: MomentPhase;
+  timeLeft: number;
+  phaseTime: number;
+  armed: boolean;
+  outcome: MomentOutcome | null;
+  readonly figures: MomentFigure[];
+}
+
 export interface UseCommand {
   readonly type: 'use';
   readonly prop: number;
@@ -419,7 +452,7 @@ export interface GlitchSettingCommand {
   readonly enabled: boolean;
 }
 
-export type Command = SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export type Command = StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -496,7 +529,12 @@ export type WorldEvent =
   | { readonly type: 'glitch_word'; readonly npc: string; readonly name: string }
   | { readonly type: 'silence'; readonly duration: number }
   | { readonly type: 'zone_edited'; readonly zone: string }
-  | { readonly type: 'path_marked'; readonly act: PathAct };
+  | { readonly type: 'path_marked'; readonly act: PathAct }
+  | { readonly type: 'moment_mark'; readonly moment: MomentState }
+  | { readonly type: 'moment_strike'; readonly moment: MomentState }
+  | { readonly type: 'moment_woke'; readonly moment: MomentState; readonly turned: readonly number[] }
+  | { readonly type: 'moment_ended'; readonly moment: MomentState; readonly outcome: MomentOutcome }
+  | { readonly type: 'moment_gone'; readonly momentId: number };
 
 export interface VendorStock {
   stock: (ItemInstance | null)[];
@@ -566,4 +604,6 @@ export interface World {
   tradeZone: string;
   readonly glitch: GlitchState;
   readonly path: PathLog;
+  moments: MomentState[];
+  strikeTimer: number;
 }

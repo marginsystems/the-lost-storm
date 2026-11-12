@@ -15,6 +15,7 @@ import { spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import { createGlitchState, storyProgress } from './glitch.ts';
 import { spawnPacks } from './monsters.ts';
+import { startMoments } from './moments.ts';
 import { emptyPathLog, markStart, readPathLog } from './path-log.ts';
 import { startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
@@ -159,6 +160,8 @@ export function createWorld(content: Content, options: WorldOptions): World {
     tradeZone: zone.id,
     glitch: createGlitchState(options.glitches ?? loadGlitches(), options.seed, save?.glitch ?? null),
     path: save === null ? emptyPathLog() : readPathLog(save.path, new Set<string>(content.zones.keys())),
+    moments: [],
+    strikeTimer: 0,
   };
   placePlayer(world);
   beginVoid(world);
@@ -167,6 +170,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   startQuests(world);
   spawnNpcs(world);
   spawnPacks(world);
+  startMoments(world);
   stepExploration(world);
   world.glitch.progress = storyProgress(world);
   markStart(world);

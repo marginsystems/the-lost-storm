@@ -5,6 +5,7 @@ import flasks from '../../data/flasks.json' with { type: 'json' };
 import items from '../../data/items.json' with { type: 'json' };
 import lines from '../../data/lines.json' with { type: 'json' };
 import monsterMods from '../../data/monster-mods.json' with { type: 'json' };
+import moments from '../../data/moments.json' with { type: 'json' };
 import monsters from '../../data/monsters.json' with { type: 'json' };
 import npcs from '../../data/npcs.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
@@ -25,7 +26,7 @@ import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [between, shallows, waystation], world, npcs, lines, quests, player, flasks, trade, books };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [between, shallows, waystation], world, npcs, lines, quests, player, flasks, trade, books, moments };
 
 export function loadContent(): Content {
   const content: Content = parseContent(RAW_CONTENT);

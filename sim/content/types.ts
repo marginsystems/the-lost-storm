@@ -6,6 +6,7 @@ import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { BookDef, StoryFlags, ZoneHud, ZoneVoid } from './story-types.ts';
 import type { ActEnd, RetiredZones, ZoneDrift, ZoneTrigger } from './road-types.ts';
+import type { MomentField, MomentLibrary } from './moment-types.ts';
 
 export const STAT_IDS = [
   'maxLife',
@@ -458,6 +459,7 @@ export interface ZoneDef {
   readonly hud: ZoneHud | null;
   readonly drifts: readonly ZoneDrift[];
   readonly triggers: readonly ZoneTrigger[];
+  readonly moments: MomentField | null;
 }
 
 export interface LineDef {
@@ -660,4 +662,5 @@ export interface Content {
   readonly player: PlayerDef;
   readonly flasks: readonly FlaskDef[];
   readonly trade: TradeDef;
+  readonly moments: MomentLibrary;
 }

@@ -16,6 +16,7 @@ import { stepEchoes, stepProjectiles } from './skills.ts';
 import { stepTrade } from './trade.ts';
 import type { Command, World, WorldEvent } from './types.ts';
 import { stepVoid } from './void.ts';
+import { stepMoments } from './moments.ts';
 import { stepDrifts, stepTriggers } from './terrain.ts';
 import { acceptsCommand } from './wake.ts';
 
@@ -40,6 +41,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   for (const ground of world.ground) ground.age += dt;
   removeCorpses(world);
   stepSurge(world, dt);
+  stepMoments(world, dt);
   stepBosses(world);
   stepVoices(world);
   stepTriggers(world);

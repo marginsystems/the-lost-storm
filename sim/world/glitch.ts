@@ -89,6 +89,7 @@ const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
   read: true,
   glitch: false,
   glitch_setting: false,
+  strike: false,
   move: true,
   skill: true,
   hold: false,

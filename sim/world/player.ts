@@ -1,4 +1,5 @@
 import type { SkillDef, ZoneExit } from '../content/types.ts';
+import { forceStrike } from './moments.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { findPath } from '../nav/path.ts';
@@ -156,6 +157,7 @@ function act(world: World, command: Command): void {
     case 'read':
     case 'glitch':
     case 'glitch_setting':
+    case 'strike':
     case 'advance':
     case 'equip':
     case 'unequip':
@@ -207,6 +209,9 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'glitch_setting':
       setGlitchesEnabled(world, command.enabled);
+      return;
+    case 'strike':
+      forceStrike(world, command.at, command.moment);
       return;
     case 'slot':
       slotSkill(world, command.slot, command.skill);

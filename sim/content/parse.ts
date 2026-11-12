@@ -5,6 +5,8 @@ import { conditionProblems, roadProblems } from './road.ts';
 import { parseFlasks } from './flasks.ts';
 import { combatProblems, fieldDelivery, markDelivery, monsterMod, monsterTraits, reviveDelivery, skillMotion } from './parse-combat.ts';
 import { faction, factionProblems } from './parse-factions.ts';
+import { momentLibrary } from './parse-moments.ts';
+import { momentProblems } from './moments.ts';
 import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
@@ -73,6 +75,7 @@ export interface RawContent {
   readonly flasks: unknown;
   readonly trade: unknown;
   readonly books: unknown;
+  readonly moments: unknown;
 }
 
 function statMod(value: unknown, where: string): StatMod {
@@ -503,6 +506,7 @@ export function parseContent(raw: RawContent): Content {
     flasks: parseFlasks(raw.flasks, 'flasks'),
     trade: trade(raw.trade, 'trade'),
     books: books(raw.books, 'books'),
+    moments: momentLibrary(raw.moments, 'moments'),
   };
 }
 
@@ -671,5 +675,6 @@ export function contentProblems(content: Content): string[] {
     for (const required of questDef.requires) need(content.quests.has(required) && required !== questDef.id, `quest ${questDef.id} requires unknown quest ${required}`);
   }
   problems.push(...tradeProblems(content));
+  problems.push(...momentProblems(content));
   return problems;
 }

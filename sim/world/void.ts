@@ -2,6 +2,7 @@ import type { ZoneVoid } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { moveExit, stepEncounters } from './encounters.ts';
+import { shiftMoments } from './moments.ts';
 import type { Command, Intent, PlayerState, WakeState, World } from './types.ts';
 
 function moved(point: Vec2, by: Vec2): Vec2 {
@@ -28,6 +29,7 @@ export function shiftWorld(world: World, by: Vec2): void {
   }
   for (const state of world.encounters) if (state.pos !== null) state.pos = moved(state.pos, by);
   for (const exit of world.zone.exits) moveExit(world, exit.id, moved(exit, by));
+  shiftMoments(world, by);
   world.trail = moved(world.trail, by);
   world.shift = moved(world.shift, by);
 }

@@ -11,6 +11,7 @@ import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
 import type { GroundItem, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
 import { beginVoid } from './wake.ts';
+import { clearMoments, startMoments } from './moments.ts';
 
 export function startZone(content: Content): ZoneDef {
   const zone: ZoneDef | undefined = content.zones.get(content.world.start);
@@ -72,6 +73,7 @@ export function placePlayer(world: World): void {
 
 export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): void {
   closeDialogue(world, false);
+  clearMoments(world);
   clearProjectiles(world);
   clearHazards(world);
   clearAreas(world);
@@ -90,6 +92,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   for (const item of carried) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   spawnNpcs(world);
   spawnPacks(world);
+  startMoments(world);
 }
 
 export function travelThrough(world: World, exit: ZoneExit): void {

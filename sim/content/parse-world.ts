@@ -38,6 +38,7 @@ import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
 import { actEnd, drifts, retiredZones, triggers } from './parse-road.ts';
+import { momentField } from './parse-moments.ts';
 
 function point(value: unknown, where: string): ZonePoint {
   const source: Fields = fields(value, where);
@@ -204,6 +205,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     hud: zoneHud(source['hud'], `${where}.hud`),
     drifts: drifts(source['drifts'], `${where}.drifts`),
     triggers: triggers(source['triggers'], `${where}.triggers`),
+    moments: momentField(source['moments'], `${where}.moments`),
   };
 }
 

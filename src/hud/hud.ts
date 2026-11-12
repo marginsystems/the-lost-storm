@@ -305,6 +305,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'glitch_word':
           case 'silence':
           case 'zone_edited':
+          case 'moment_mark':
+          case 'moment_strike':
+          case 'moment_woke':
+          case 'moment_ended':
+          case 'moment_gone':
           case 'path_marked':
           case 'skill_impact':
           case 'hazard':

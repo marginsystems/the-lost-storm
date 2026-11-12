@@ -161,5 +161,21 @@
       "menders": "wary",
       "timekeepers": "wary"
     }
+  },
+  {
+    "id": "echoes",
+    "name": "Echoes",
+    "description": "Figures inside a moment that is not the hero's.",
+    "palette": {
+      "tints": [
+        "#ffffff"
+      ],
+      "glow": "#ffffff"
+    },
+    "wearables": [],
+    "weapons": [],
+    "regards": {
+      "player": "hostile"
+    }
   }
 ]
