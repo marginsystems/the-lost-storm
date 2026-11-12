@@ -1,5 +1,5 @@
 import type { BossDef, BossPhase, BossSkill, LineDef, SkillDef } from '../content/types.ts';
-import { generateItem } from '../items.ts';
+import { rollDrop } from './loot.ts';
 import { dropOnGround } from './ground.ts';
 import type { ItemInstance, MonsterState, World, WorldEvent } from './types.ts';
 
@@ -43,9 +43,8 @@ export function bark(world: World, lineIds: readonly string[]): void {
 
 function reward(world: World, monster: MonsterState, boss: BossDef): void {
   for (let dropped: number = 0; dropped < boss.drop.items; dropped += 1) {
-    const item: ItemInstance | null = generateItem(world.content, world.rng, world.nextItemUid, Math.max(monster.level, world.player.level), null, boss.drop.rarity);
+    const item: ItemInstance | null = rollDrop(world, Math.max(monster.level, world.player.level), boss.drop.rarity);
     if (item === null) continue;
-    world.nextItemUid += 1;
     dropOnGround(world, monster.pos, { kind: 'item', item });
   }
   if (boss.drop.goldMax > 0) dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, Math.round(world.rng.int(boss.drop.goldMin, boss.drop.goldMax) * (1 + world.player.stats.goldFind))) });

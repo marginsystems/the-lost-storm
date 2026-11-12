@@ -1,6 +1,6 @@
 import type { MomentDef, MomentEcho, MomentField, MomentLibrary, StrikeArea, StrikeInterval, WeightedMoment } from '../content/moment-types.ts';
 import type { Content, MonsterDef, PropDef, ZoneDef } from '../content/types.ts';
-import { generateItem } from '../items.ts';
+import { rollDrop } from './loot.ts';
 import type { Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, distance } from '../math.ts';
 import { isWalkable, lineWalkable } from '../nav/grid.ts';
@@ -221,9 +221,8 @@ function reward(world: World, moment: MomentState, share: number, items: boolean
   if (!items) return;
   for (let index: number = 0; index < table.items; index += 1) {
     if (!world.rng.chance(table.itemChance)) continue;
-    const item: ItemInstance | null = generateItem(world.content, world.rng, world.nextItemUid, moment.level, null, table.rarity);
+    const item: ItemInstance | null = rollDrop(world, moment.level, table.rarity);
     if (item === null) continue;
-    world.nextItemUid += 1;
     dropOnGround(world, moment.pos, { kind: 'item', item });
   }
 }

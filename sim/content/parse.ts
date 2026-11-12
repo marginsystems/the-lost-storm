@@ -33,6 +33,7 @@ import type {
   MonsterBehaviour,
   MonsterDef,
   NpcDef,
+  FirstDropDef,
   PlayerDef,
   PropDef,
   PropLight,
@@ -425,6 +426,11 @@ function resistanceRules(value: unknown, where: string): ResistanceRules {
   return { armourCap: fraction(source, 'armourCap', where), cap, floor, tierPenalty: fraction(source, 'tierPenalty', where) };
 }
 
+function firstDrop(value: unknown, where: string): FirstDropDef {
+  const source: Fields = fields(value, where);
+  return { flag: text(source, 'flag', where), rarity: text(source, 'rarity', where) };
+}
+
 function player(value: unknown, where: string): PlayerDef {
   const source: Fields = fields(value, where);
   const xp: Fields = fields(source['xp'], `${where}.xp`);
@@ -439,6 +445,7 @@ function player(value: unknown, where: string): PlayerDef {
     xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`) },
     startingItems: textList(source, 'startingItems', where),
     dressedFlag: text(source, 'dressedFlag', where),
+    firstDrop: firstDrop(source['firstDrop'], `${where}.firstDrop`),
     unarmedVisual: nullableText(source, 'unarmedVisual', where),
     manaShows: choice(source, 'manaShows', MANA_SHOWS, where),
     tint: text(source, 'tint', where),

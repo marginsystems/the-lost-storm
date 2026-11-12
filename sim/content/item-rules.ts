@@ -1,4 +1,4 @@
-import type { AffixDef, ItemBaseDef } from './item-types.ts';
+import type { AffixDef, ItemBaseDef, RarityDef } from './item-types.ts';
 import { ITEM_STATS } from './item-types.ts';
 import type { Content, ItemSlot, StatId } from './types.ts';
 import { ITEM_SLOTS } from './types.ts';
@@ -26,8 +26,28 @@ export function basesWithoutLook(content: Content): string[] {
     .map((base: ItemBaseDef): string => base.id);
 }
 
+export function handedBases(content: Content): ReadonlySet<string> {
+  const handed: Set<string> = new Set<string>(content.player.startingItems);
+  for (const zone of content.zones.values()) {
+    for (const met of zone.void?.encounters ?? []) if (met.find.type === 'item') handed.add(met.find.item);
+  }
+  return handed;
+}
+
+function handedProblems(content: Content): string[] {
+  const problems: string[] = [];
+  for (const id of handedBases(content)) {
+    if ((content.itemBases.get(id)?.dropWeight ?? 0) > 0) problems.push(`item ${id} is handed to the player, so it cannot also drop at random`);
+  }
+  const rarity: RarityDef | undefined = content.rarities.find((candidate: RarityDef): boolean => candidate.id === content.player.firstDrop.rarity);
+  if (rarity === undefined) problems.push(`the first drop names unknown rarity ${content.player.firstDrop.rarity}`);
+  else if (rarity.powers) problems.push(`the first drop names ${rarity.id}, which only powered bases carry`);
+  return problems;
+}
+
 export function itemProblems(content: Content): string[] {
   const problems: string[] = basesWithoutLook(content).map((id: string): string => `item ${id} has no look: give it a wear or a visual`);
+  problems.push(...handedProblems(content));
   for (const base of content.itemBases.values()) {
     for (const id of base.wear) {
       const region: string | undefined = content.wearables.get(id)?.region;

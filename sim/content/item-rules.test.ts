@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content.ts';
-import { basesWithoutLook, groundGenerics, itemProblems, linesFor } from './item-rules.ts';
+import { basesWithoutLook, groundGenerics, handedBases, itemProblems, linesFor } from './item-rules.ts';
 import type { AffixDef, Content, ItemBaseDef } from './types.ts';
 import { ITEM_STATS } from './types.ts';
+import { must } from '../../test/support.ts';
 
 const content: Content = loadContent();
 
@@ -50,4 +51,21 @@ void test('every base that can be worn or held has a look, so the hero wears exa
   assert.ok(blade !== undefined && coat !== undefined);
   const bases: Map<string, ItemBaseDef> = new Map<string, ItemBaseDef>([...content.itemBases, ['bare_blade', { ...blade, id: 'bare_blade', visual: null }], ['bare_coat', { ...coat, id: 'bare_coat', wear: [] }]]);
   assert.deepEqual(basesWithoutLook({ ...content, itemBases: bases }), ['bare_blade', 'bare_coat']);
+});
+
+void test('a base handed to the player cannot also drop at random, and the first drop names a plain rarity', (): void => {
+  const handed: ReadonlySet<string> = handedBases(content);
+  assert.ok(handed.has('rusted_blade'));
+  assert.ok(handed.has('traveller_coat'));
+  for (const id of handed) assert.equal(must(content.itemBases.get(id), id).dropWeight, 0, id);
+  const blade: ItemBaseDef = must(content.itemBases.get('rusted_blade'), 'blade');
+  const dropping: Content = {
+    ...content,
+    itemBases: new Map<string, ItemBaseDef>([...content.itemBases, [blade.id, { ...blade, dropWeight: 10 }]]),
+    player: { ...content.player, firstDrop: { flag: 'first_drop', rarity: 'stormtouched' } },
+  };
+  assert.deepEqual(itemProblems(dropping).filter((problem: string): boolean => problem.includes('handed') || problem.includes('first drop')), [
+    'item rusted_blade is handed to the player, so it cannot also drop at random',
+    'the first drop names stormtouched, which only powered bases carry',
+  ]);
 });

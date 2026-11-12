@@ -57,7 +57,7 @@
       "slot": "weapon",
       "material": null,
       "icon": "sword",
-      "dropWeight": 10,
+      "dropWeight": 0,
       "minLevel": 1,
       "visual": "rusted_blade",
       "wear": [],

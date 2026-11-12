@@ -569,6 +569,11 @@ export interface XpCurve {
   readonly maxLevel: number;
 }
 
+export interface FirstDropDef {
+  readonly flag: string;
+  readonly rarity: string;
+}
+
 export interface PlayerDef {
   readonly rig: string;
   readonly radius: number;
@@ -579,6 +584,7 @@ export interface PlayerDef {
   readonly xp: XpCurve;
   readonly startingItems: readonly string[];
   readonly dressedFlag: string;
+  readonly firstDrop: FirstDropDef;
   readonly unarmedVisual: string | null;
   readonly tint: string;
   readonly color: string;
