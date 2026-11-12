@@ -1,26 +1,30 @@
 import type { ChartPath, SkillTreeNodeDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { canRefund, refundCost } from '../../sim/progression.ts';
-import { ATLAS_VIEW, atRest, clampView, minScale, panBy, stepMotion, still, toScreen, zoomAt } from './atlas-view.ts';
+import { ATLAS_VIEW, atRest, stepMotion, still, toScreen } from './atlas-view.ts';
 import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-view.ts';
-import { chartBounds, chartFocus, chartMatches, pathLabels, pathTint } from './chart-model.ts';
-import type { ChartBounds, ChartPoint } from './chart-model.ts';
+import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
+import { clampChart, openChart, panChart, pinLabel, spreadLabels, zoomChart } from './chart-view.ts';
+import type { LabelBox, PinnedLabel } from './chart-view.ts';
+import type { ChartBounds, ChartPoint, PathLabel } from './chart-model.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
 import { treeGlyph } from './tree-glyphs.ts';
-import { requirementLine, statusLine, treeNodeStatus } from './tree-status.ts';
+import { statusLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
 
 const CHART = {
   unit: 46,
-  margin: 3,
+  margin: 4,
   dragThreshold: 5,
   velocityBlend: 0.35,
   wheelLine: 32,
   zoomStep: 360,
-  findZoom: 1.7,
+  findZoom: 1.2,
   confirmMs: 3200,
   hoverGraceMs: 700,
+  cardGap: 26,
+  cardEdge: 10,
   svgNamespace: 'http://www.w3.org/2000/svg',
 } as const;
 
@@ -37,8 +41,14 @@ interface NodeView {
 
 interface LinkView {
   readonly path: SVGLineElement;
+  readonly track: SVGLineElement;
   readonly from: string;
   readonly to: string;
+}
+
+interface NameView {
+  readonly element: HTMLDivElement;
+  readonly at: ChartPoint;
 }
 
 interface Drag {
@@ -102,13 +112,6 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
   svg.setAttribute('class', 'tree-links');
   svg.setAttribute('viewBox', `0 0 ${mapWidth} ${mapHeight}`);
   board.appendChild(svg);
-  for (const entry of pathLabels(content)) {
-    const at: ChartPoint = place(entry.at);
-    const name: HTMLDivElement = label('chart-path-name', entry.path.name, board);
-    name.style.left = `${at.x}px`;
-    name.style.top = `${at.y}px`;
-    name.style.setProperty('--tint', entry.path.tint);
-  }
 
   const byId: ReadonlyMap<string, SkillTreeNodeDef> = new Map<string, SkillTreeNodeDef>(nodes.map((node: SkillTreeNodeDef): [string, SkillTreeNodeDef] => [node.id, node]));
   const links: LinkView[] = [];
@@ -117,11 +120,19 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
       const from: SkillTreeNodeDef | undefined = byId.get(requiredId);
       if (from === undefined) continue;
       const tint: string = pathTint(content, node.path === from.path ? node.path : from.path);
-      line(svg, centreOf(from), centreOf(node), 'tree-track', tint);
-      links.push({ path: line(svg, centreOf(from), centreOf(node), 'tree-flow', tint), from: requiredId, to: node.id });
+      const track: SVGLineElement = line(svg, centreOf(from), centreOf(node), 'tree-track', tint);
+      links.push({ track, path: line(svg, centreOf(from), centreOf(node), 'tree-flow', tint), from: requiredId, to: node.id });
     }
   }
 
+  const names: NameView[] = pathLabels(content).map((entry: PathLabel): NameView => {
+    const name: HTMLDivElement = label('chart-path-name', entry.path.name, viewport);
+    name.style.setProperty('--tint', entry.path.tint);
+    return { element: name, at: place(entry.at) };
+  });
+  const here: HTMLDivElement = el('div', 'chart-here', board);
+  el('span', 'chart-here-ring', here);
+  label('chart-here-word', 'You are here', here);
   const card: HTMLDivElement = el('div', 'chart-card', viewport);
   const cardBody: HTMLDivElement = el('div', 'chart-card-body', card);
   const action: HTMLButtonElement = el('button', 'chart-action', card);
@@ -136,14 +147,37 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
   let shownCard: string = '';
   let unhover: number | undefined;
 
+  const costLine = (node: SkillTreeNodeDef, status: TreeNodeStatus): string => {
+    if (status.kind === 'allocated') return canRefund(content, player().allocated, node.id) ? 'Taken' : 'Taken · places after it hold on to it';
+    const steps: number = chartRoute(content, player().allocated, node.id).length;
+    if (status.kind === 'available') return `${statusLine(status, context.api.touch)} · ${TREE_NODE_COST} point`;
+    if (status.kind === 'no_points') return `Needs ${TREE_NODE_COST} point · you have none`;
+    return steps > 0 ? `${steps * TREE_NODE_COST} points along the lit route` : statusLine(status, context.api.touch);
+  };
+
+  const showRoute = (target: string | null): void => {
+    const route: ReadonlySet<string> = new Set<string>(target === null ? [] : chartRoute(content, player().allocated, target));
+    const taken: readonly string[] = player().allocated;
+    viewport.classList.toggle('routing', route.size > 0);
+    for (const view of views) view.button.classList.toggle('route', route.has(view.def.id));
+    for (const link of links) {
+      const onRoute: boolean = (route.has(link.from) || taken.includes(link.from)) && (route.has(link.to) || taken.includes(link.to)) && (route.has(link.from) || route.has(link.to));
+      link.track.classList.toggle('route', onRoute);
+    }
+  };
+
   const fillCard = (): void => {
     const view: NodeView | null = hovered ?? selected;
     card.classList.toggle('visible', view !== null);
-    if (view === null) return;
+    if (view === null) {
+      showRoute(null);
+      return;
+    }
     const node: SkillTreeNodeDef = view.def;
     const status: TreeNodeStatus = statusOf(node);
     const refundable: boolean = status.kind === 'allocated' && canRefund(content, player().allocated, node.id);
-    const key: string = `${node.id}:${status.kind}:${refundable ? goldFor(1) : -1}`;
+    const key: string = `${node.id}:${status.kind}:${refundable ? goldFor(1) : -1}:${player().skillPoints}`;
+    showRoute(node.id);
     card.style.setProperty('--tint', pathTint(content, node.path));
     action.classList.toggle('shown', refundable);
     if (refundable) setText(action, `Give back · ${goldFor(1)} gold`, false);
@@ -155,11 +189,9 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
     label('chart-card-path', path === undefined ? node.kind : `${path.name}${node.kind === 'minor' ? '' : ` · ${node.kind === 'keystone' ? 'keystone' : node.variant === null ? 'named place' : 'changes a skill'}`}`, body);
     label('tree-tip-name', node.name, body);
     label('tree-tip-effect', node.description, body);
-    const requirement: string | null = requirementLine(content, node);
-    if (requirement !== null && status.kind !== 'locked') label('tree-tip-requires', requirement, body);
-    if (status.kind === 'allocated' && !refundable) label('tree-tip-requires', 'Places taken after it hold on to it', body);
-    label(`tree-tip-status ${status.kind}`, statusLine(status, context.api.touch), body);
+    label(`tree-tip-status ${status.kind}`, costLine(node, status), body);
     cardBody.replaceChildren(body);
+    placeCard();
   };
 
   const leaveHover = (): void => {
@@ -219,10 +251,34 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
   const measure = (): void => {
     frame = { width: Math.max(1, viewport.clientWidth), height: Math.max(1, viewport.clientHeight), mapWidth, mapHeight };
   };
+  const placeCard = (): void => {
+    const view: NodeView | null = hovered ?? selected;
+    if (view === null) return;
+    const at: ScreenPoint = toScreen(motion.view, frame, centreOf(view.def));
+    const width: number = card.offsetWidth;
+    const height: number = card.offsetHeight;
+    const right: boolean = at.x + CHART.cardGap + width + CHART.cardEdge <= frame.width;
+    const x: number = right ? at.x + CHART.cardGap : Math.max(CHART.cardEdge, at.x - CHART.cardGap - width);
+    const y: number = Math.min(Math.max(CHART.cardEdge, at.y - height / 2), frame.height - height - CHART.cardEdge);
+    card.style.left = `${Math.round(x)}px`;
+    card.style.top = `${Math.round(y)}px`;
+  };
   const apply = (): void => {
+    placeCard();
     const corner: ScreenPoint = toScreen(motion.view, frame, { x: 0, y: 0 });
     board.style.transform = `translate(${corner.x}px, ${corner.y}px) scale(${motion.view.scale})`;
     viewport.style.setProperty('--zoom', String(motion.view.scale));
+    const pins: readonly PinnedLabel[] = names.map((name: NameView): PinnedLabel => pinLabel(toScreen(motion.view, frame, name.at), name.element.offsetWidth / 2, name.element.offsetHeight / 2, frame));
+    const boxes: readonly LabelBox[] = spreadLabels(
+      pins.map((pin: PinnedLabel, index: number): LabelBox => ({ x: pin.x, y: pin.y, halfWidth: (names[index]?.element.offsetWidth ?? 0) / 2, halfHeight: (names[index]?.element.offsetHeight ?? 0) / 2 })),
+      frame,
+    );
+    names.forEach((name: NameView, index: number): void => {
+      const box: LabelBox | undefined = boxes[index];
+      if (box === undefined) return;
+      name.element.style.transform = `translate(${Math.round(box.x)}px, ${Math.round(box.y)}px) translate(-50%, -50%)`;
+      name.element.classList.toggle('pinned', pins[index]?.pinned ?? false);
+    });
   };
   const local = (event: MouseEvent): ScreenPoint => {
     const box: DOMRect = viewport.getBoundingClientRect();
@@ -251,7 +307,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
       const [first, second] = [...pointers.values()];
       if (first === undefined || second === undefined || now <= 0) return;
       const middle: ScreenPoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
-      target = zoomAt(target, frame, middle, -Math.log(now / pinch) / ATLAS_VIEW.wheelRate);
+      target = zoomChart(target, frame, middle, -Math.log(now / pinch) / ATLAS_VIEW.wheelRate);
       motion = still(target);
       pinch = now;
       suppressClick = true;
@@ -275,8 +331,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
       hovered = null;
       fillCard();
     }
-    target = panBy(target, frame, dx, dy);
-    motion = { ...motion, view: panBy(motion.view, frame, dx, dy) };
+    target = panChart(target, frame, dx, dy);
+    motion = { ...motion, view: panChart(motion.view, frame, dx, dy) };
     apply();
   });
   const release = (event: PointerEvent): void => {
@@ -289,7 +345,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
     if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
     if (ended.travelled < CHART.dragThreshold) return;
     suppressClick = true;
-    target = panBy(target, frame, ended.vx * ATLAS_VIEW.flingSeconds, ended.vy * ATLAS_VIEW.flingSeconds);
+    target = panChart(target, frame, ended.vx * ATLAS_VIEW.flingSeconds, ended.vy * ATLAS_VIEW.flingSeconds);
   };
   viewport.addEventListener('pointerup', release);
   viewport.addEventListener('pointercancel', release);
@@ -307,12 +363,12 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
     (event: WheelEvent): void => {
       event.preventDefault();
       event.stopPropagation();
-      target = zoomAt(target, frame, local(event), event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * CHART.wheelLine : event.deltaY);
+      target = zoomChart(target, frame, local(event), event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * CHART.wheelLine : event.deltaY);
     },
     { passive: false },
   );
   const zoomBy = (delta: number): void => {
-    target = zoomAt(target, frame, { x: frame.width / 2, y: frame.height / 2 }, delta);
+    target = zoomChart(target, frame, { x: frame.width / 2, y: frame.height / 2 }, delta);
   };
   zoomIn.addEventListener('click', (): void => zoomBy(-CHART.zoomStep));
   zoomOut.addEventListener('click', (): void => zoomBy(CHART.zoomStep));
@@ -383,7 +439,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
     if (next === undefined) return;
     findIndex += 1;
     const at: ChartPoint = centreOf(next.def);
-    target = clampView({ x: at.x, y: at.y, scale: Math.max(target.scale, minScale(frame) * CHART.findZoom) }, frame);
+    target = clampChart({ x: at.x, y: at.y, scale: Math.max(target.scale, CHART.findZoom) }, frame);
     selected?.button.classList.remove('selected');
     selected = next;
     next.button.classList.add('selected');
@@ -394,14 +450,16 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
   new ResizeObserver((): void => {
     if (!element.classList.contains('open')) return;
     measure();
-    target = clampView(target, frame);
-    motion = still(clampView(motion.view, frame));
+    target = clampChart(target, frame);
+    motion = still(clampChart(motion.view, frame));
     apply();
   }).observe(viewport);
 
   let wasOpen: boolean = false;
   new MutationObserver((): void => {
-    if (element.classList.contains('open')) return;
+    const open: boolean = element.classList.contains('open');
+    parent.classList.toggle('chart-open', open);
+    if (open) return;
     wasOpen = false;
     hovered = null;
     fillCard();
@@ -418,6 +476,12 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
       const status: TreeNodeStatus = statusOf(view.def);
       for (const name of STATUS_CLASSES) view.button.classList.toggle(name, name === status.kind);
     }
+    const at: string | null = chartHere(content, you.allocated);
+    const hereNode: SkillTreeNodeDef | undefined = at === null ? undefined : byId.get(at);
+    const spot: ChartPoint = hereNode === undefined ? { x: mapWidth / 2, y: mapHeight / 2 } : centreOf(hereNode);
+    here.style.left = `${spot.x}px`;
+    here.style.top = `${spot.y}px`;
+    here.classList.toggle('start', hereNode === undefined);
     for (const link of links) {
       const fromTaken: boolean = you.allocated.includes(link.from);
       const toTaken: boolean = you.allocated.includes(link.to);
@@ -433,8 +497,9 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
       const open: boolean = element.classList.contains('open');
       if (open && !wasOpen) {
         measure();
-        const focus: ChartPoint = place(chartFocus(content, player().allocated));
-        target = clampView({ x: focus.x, y: focus.y, scale: minScale(frame) }, frame);
+        const at: string | null = chartHere(content, player().allocated);
+        const node: SkillTreeNodeDef | undefined = at === null ? undefined : byId.get(at);
+        target = openChart(frame, node === undefined ? { x: mapWidth / 2, y: mapHeight / 2 } : centreOf(node));
         motion = still(target);
         apply();
       }

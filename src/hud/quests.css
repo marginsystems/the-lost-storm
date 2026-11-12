@@ -7,6 +7,7 @@
   flex-direction: column;
   gap: 10px;
   text-align: right;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), visibility 0s;
 }
 
 .quest {

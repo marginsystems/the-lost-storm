@@ -313,7 +313,8 @@ body.touch .tc-close svg {
     transform: none;
   }
 
-  body.touch .hud-panel.tree-panel {
+  body.touch .hud .hud-panel.hud-panel.tree-panel.tree-panel {
+    bottom: 0;
     height: auto;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -477,7 +478,10 @@ body.touch .fb.open {
 body.touch:has(.fb.open) .tc-stick,
 body.touch:has(.fb.open) .tc-btn,
 body.touch:has(.fb.open) .hud-hint,
-body.touch:has(.fb.open) .tc-rotate {
+body.touch:has(.fb.open) .tc-rotate,
+body.touch:has(.hud.chart-open) .tc-stick,
+body.touch:has(.hud.chart-open) .tc-btn,
+body.touch:has(.hud.chart-open) .tc-rotate {
   opacity: 0;
   pointer-events: none;
 }

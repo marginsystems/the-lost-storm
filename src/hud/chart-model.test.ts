@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content } from '../../sim/content/types.ts';
-import { chartBounds, chartFocus, chartMatches, pathLabels, pathTint } from './chart-model.ts';
+import { chartBounds, chartFocus, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
 
 const content: Content = loadContent();
 
@@ -32,4 +32,20 @@ void test('every path is named past its farthest place, in its own tint', (): vo
     assert.ok(Math.hypot(label.at.x, label.at.y) > 14);
     assert.equal(pathTint(content, label.path.id), label.path.tint);
   }
+});
+
+void test('the route to a place starts beside what is taken and ends on the place, and a taken place needs none', (): void => {
+  assert.deepEqual(chartRoute(content, [], 'stormcallers_focus'), ['stormcallers_focus']);
+  assert.deepEqual(chartRoute(content, ['stormcallers_focus'], 'stormcallers_focus'), []);
+  const far: string[] = chartRoute(content, ['stormcallers_focus'], 'storm_2');
+  assert.equal(far.at(-1), 'storm_2');
+  assert.ok(!far.includes('stormcallers_focus'));
+  const first: string | undefined = far[0];
+  assert.ok(first !== undefined && content.skillTree.find((node) => node.id === first)?.requires.includes('stormcallers_focus') === true);
+});
+
+void test('you are at the last place you took, and nowhere before the first', (): void => {
+  assert.equal(chartHere(content, []), null);
+  assert.equal(chartHere(content, ['stormcallers_focus', 'storm_1']), 'storm_1');
+  assert.equal(chartHere(content, ['storm_1', 'gone_place']), 'storm_1');
 });

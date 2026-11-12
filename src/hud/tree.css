@@ -1,7 +1,7 @@
 .hud-panel.tree-panel {
-  --socket: 30px;
-  --notable: 38px;
-  --keystone: 46px;
+  --socket: 28px;
+  --notable: 42px;
+  --keystone: 56px;
   --tree-lit: #8fd8ff;
   --tree-well: #090c12;
 }
@@ -9,16 +9,44 @@
 .hud-panel.tree-panel {
   display: flex;
   flex-direction: column;
-  width: min(940px, calc(100vw - 32px));
-  height: calc(100% - 58px - var(--hud-cluster-h, 168px));
   padding: 0;
   overflow: hidden;
   border: 0;
-  border-radius: 4px;
   background:
-    radial-gradient(ellipse at 50% 40%, rgba(46, 70, 96, 0.22), rgba(8, 10, 15, 0) 70%),
-    rgba(8, 10, 15, 0.9);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    radial-gradient(1px 1px at 18px 24px, rgba(200, 225, 255, 0.5), transparent 1.5px),
+    radial-gradient(1px 1px at 92px 71px, rgba(200, 225, 255, 0.32), transparent 1.5px),
+    radial-gradient(1.5px 1.5px at 141px 133px, rgba(220, 235, 255, 0.4), transparent 2px),
+    radial-gradient(1px 1px at 57px 168px, rgba(200, 225, 255, 0.26), transparent 1.5px),
+    radial-gradient(ellipse at 50% 46%, rgba(40, 62, 92, 0.34), rgba(5, 7, 11, 0) 68%),
+    #05070b;
+  background-size: 190px 190px, 190px 190px, 190px 190px, 190px 190px, 100% 100%, 100% 100%;
+  box-shadow: none;
+}
+
+.hud .hud-panel.hud-panel.tree-panel.tree-panel {
+  top: 0;
+  left: 0;
+  right: 0;
+  width: auto;
+  height: calc(100% - var(--hud-cluster-h, 168px));
+  max-height: none;
+  border-radius: 0;
+  transform: scale(0.985);
+}
+
+.hud .hud-panel.hud-panel.tree-panel.tree-panel.open {
+  transform: none;
+}
+
+.hud.chart-open .hud-quests,
+.hud.chart-open .minimap,
+.hud.chart-open .hud-hint {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-snappy-ms);
 }
 
 .tree-head {
@@ -89,8 +117,16 @@
 }
 
 .tree-track {
-  stroke: color-mix(in srgb, var(--tint) 22%, transparent);
+  stroke: color-mix(in srgb, var(--tint) 16%, transparent);
   stroke-width: 3;
+  transition:
+    stroke var(--spring-smooth-ms) var(--spring-smooth),
+    stroke-width var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-track.route {
+  stroke: color-mix(in srgb, var(--ember) 70%, transparent);
+  stroke-width: 4;
 }
 
 .tree-flow {
@@ -206,6 +242,15 @@
   height: 22px;
 }
 
+.tree-socket.locked {
+  opacity: 0.55;
+}
+
+.tree-socket.route {
+  opacity: 1;
+  color: color-mix(in srgb, var(--ember) 80%, transparent);
+}
+
 .tree-socket.no_points {
   color: rgba(232, 184, 102, 0.42);
 }
@@ -283,15 +328,71 @@
 
 .chart-path-name {
   position: absolute;
-  transform: translate(-50%, -50%);
+  left: 0;
+  top: 0;
+  z-index: 1;
   white-space: nowrap;
   font-family: var(--serif);
   font-size: 15px;
-  letter-spacing: 0.22em;
+  font-weight: 700;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--tint);
-  opacity: 0.5;
+  color: color-mix(in srgb, var(--tint) 80%, #ffffff);
+  text-shadow: 0 0 10px #05070b, 0 0 3px #05070b;
+  opacity: 0.85;
   pointer-events: none;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.chart-path-name.pinned {
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .chart-path-name {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+  }
+}
+
+.chart-here {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transition:
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    top var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.chart-here-ring {
+  position: absolute;
+  left: -36px;
+  top: -36px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 184, 102, 0) 52%, rgba(232, 184, 102, 0.26) 62%, rgba(232, 184, 102, 0) 74%);
+  animation: chart-breathe var(--drift-ms) var(--drift-ease) infinite;
+}
+
+.chart-here-word {
+  position: absolute;
+  right: 40px;
+  top: 0;
+  z-index: 1;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(5, 7, 11, 0.78);
+  transform: translateY(-50%) scale(calc(1 / min(var(--zoom, 1), 1.4)));
+  transform-origin: 100% 50%;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ember);
+  text-shadow: 0 0 6px #05070b, 0 0 2px #05070b;
 }
 
 .chart-search {
@@ -366,9 +467,10 @@
 
 .chart-card {
   position: absolute;
-  left: 10px;
-  bottom: 10px;
-  width: min(260px, calc(100% - 20px));
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: min(250px, calc(100% - 20px));
   padding: 8px 10px 9px;
   border-radius: 4px;
   background: rgba(7, 9, 14, 0.94);
