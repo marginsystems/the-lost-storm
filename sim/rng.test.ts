@@ -67,3 +67,7 @@ void test('pickWeighted returns null with nothing to pick', (): void => {
   assert.equal(pickWeighted(rng, []), null);
   assert.equal(pickWeighted(rng, [{ weight: 0 }]), null);
 });
+
+void test('trial failure', (): void => {
+  assert.equal(1, 2);
+});
