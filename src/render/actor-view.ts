@@ -1,8 +1,9 @@
 import type { AnimationAction, AnimationClip } from 'three';
-import type { Box3 } from 'three';
+import type { Box3, Mesh, Object3D } from 'three';
 import { Color, LoopOnce, LoopRepeat } from 'three';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { ActionClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
+import { CONTACT_SHADOW, contactShadow } from './contact-shadow.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -112,6 +113,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   const mixed: Color = new Color();
   rig.root.scale.setScalar(scale);
   rig.root.rotation.y = yaw;
+  const shadow: Mesh = contactShadow();
   current.play();
 
   const play = (clip: AnimationClip, fade: number, speed: number, once: boolean, restart: boolean): void => {
@@ -181,6 +183,11 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       const squash: number = punch * ACTOR.punchSquash;
       const grow: number = 0.35 + 0.65 * options.rise;
       rig.root.scale.set(scale * grow * (1 + squash), scale * grow * (1 - squash), scale * grow * (1 + squash));
+      const parent: Object3D | null = rig.root.parent;
+      if (parent !== null && shadow.parent !== parent) parent.add(shadow);
+      shadow.position.set(rig.root.position.x, rig.root.position.y + CONTACT_SHADOW.lift, rig.root.position.z);
+      shadow.scale.setScalar(scale * grow);
+      shadow.visible = rig.root.visible;
       const hoverAmount: number = hover && !dead ? ACTOR.hoverGlow : 0;
       mixed.copy(hoverColor).lerp(flashColor, flash > 0 ? 1 : 0);
       rig.setFlash(mixed, Math.max(flash, hoverAmount));
@@ -237,6 +244,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       out.setFromObject(rig.root);
     },
     dispose(): void {
+      shadow.removeFromParent();
       rig.root.removeFromParent();
       rig.dispose();
     },
