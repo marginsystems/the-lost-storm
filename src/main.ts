@@ -102,6 +102,8 @@ import type { GoogleIdentity } from './google-identity.ts';
 import { createTitleAccount } from './title-account.ts';
 import type { TitleAccount } from './title-account.ts';
 import { createTitleSync } from './title-sync.ts';
+import { createStatusLine } from './title-status.ts';
+import type { StatusLine } from './title-status.ts';
 import { changesSave } from './save-events.ts';
 import type { ZoneTransition } from './transition.ts';
 import type { VoicePlayer } from './voice.ts';
@@ -113,6 +115,7 @@ const GAME = {
   soundLogLength: 300,
   millisecondsPerSecond: 1000,
   idleWaitMs: 1500,
+  titleArrivalMs: 1000,
 } as const;
 
 function whenIdle(work: () => void): void {
@@ -217,11 +220,13 @@ async function start(): Promise<void> {
   const reset: HTMLButtonElement = element('title-reset', HTMLButtonElement);
   const vignette: HTMLDivElement = element('vignette', HTMLDivElement);
   const titlePlace: HTMLParagraphElement = element('title-place', HTMLParagraphElement);
+  const statusLine: StatusLine = createStatusLine<HTMLSpanElement>(status, (): HTMLSpanElement => document.createElement('span'), createBrowserTimers());
+  const placeLine: StatusLine = createStatusLine<HTMLSpanElement>(titlePlace, (): HTMLSpanElement => document.createElement('span'), createBrowserTimers());
 
   const mobile: MobileBoot = bootMobile();
   markInput(document.body, mobile.touch);
   wireCredits(element('title-credits-open', HTMLButtonElement), element('title-credits', HTMLParagraphElement));
-  status.textContent = 'Reading the rules…';
+  statusLine.show('Reading the rules…');
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
@@ -243,16 +248,16 @@ async function start(): Promise<void> {
     if (board?.you) heroName = board.you.name;
   });
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
-  status.textContent = 'Raising the dead and the walls…';
+  statusLine.show('Raising the dead and the walls…');
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
-  status.textContent = 'Waking the world…';
+  statusLine.show('Waking the world…');
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
   let thumbnails: ItemThumbnails = new Map<string, string>();
   let zoneView: ZoneView = firstView;
   let markers: ZoneMarkers = createZoneMarkers(stage.scene, world.zone);
   stage.setAmbience(world.zone.ambience);
-  titlePlace.textContent = world.zone.name;
+  placeLine.show(world.zone.name);
 
   const audioDef: AudioDef = loadAudio(content);
   const controls: AudioControls = createSettingsStore(browserSettingsStorage());
@@ -478,9 +483,9 @@ async function start(): Promise<void> {
     failed = true;
     playing = false;
     markPlaying(document.body, false);
-    status.textContent = error instanceof Error ? `${world.zone.name} could not be built: ${error.message}` : `${world.zone.name} could not be built.`;
+    statusLine.show(error instanceof Error ? `${world.zone.name} could not be built: ${error.message}` : `${world.zone.name} could not be built.`);
     status.classList.remove('quiet');
-    titlePlace.textContent = world.zone.name;
+    placeLine.show(world.zone.name);
     enter.textContent = 'Reload';
     reset.hidden = true;
     ladder?.setPlaying(false);
@@ -586,13 +591,16 @@ async function start(): Promise<void> {
     });
   }
   enter.disabled = false;
-  whenIdle((): void => {
-    loadTheRest().catch((error: unknown): void => {
-      warnInConsole(`Loading the remaining characters failed: ${String(error)}`);
+  window.setTimeout((): void => {
+    whenIdle((): void => {
+      loadTheRest().catch((error: unknown): void => {
+        warnInConsole(`Loading the remaining characters failed: ${String(error)}`);
+      });
     });
-  });
+  }, GAME.titleArrivalMs);
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = save === null;
+  title.classList.add('ready');
   enter.addEventListener('click', (): void => {
     if (failed) {
       window.location.reload();

@@ -1,0 +1,22 @@
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+}
+
+body {
+  transition: opacity var(--spring-snappy-ms) var(--spring-smooth);
+}
+
+body.leaving {
+  opacity: 0;
+}

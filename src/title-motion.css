@@ -1,0 +1,116 @@
+@import "./page-transition.css";
+
+:root {
+  --arrive-step: 70ms;
+  --arrive-rise: 8px;
+  --line-shift: 7px;
+}
+
+.title-status,
+.title-sub {
+  display: grid;
+}
+
+body {
+  animation: page-in var(--spring-smooth-ms) var(--spring-smooth) backwards;
+}
+
+.title-line {
+  grid-area: 1 / 1;
+  animation: line-in var(--spring-snappy-ms) var(--spring-smooth) both;
+}
+
+.title-line.leaving {
+  animation: line-out var(--spring-snappy-ms) var(--spring-smooth) both;
+}
+
+@keyframes line-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--line-shift));
+  }
+}
+
+@keyframes line-out {
+  to {
+    opacity: 0;
+    transform: translateY(calc(var(--line-shift) * -1));
+  }
+}
+
+.title-status.failed {
+  animation: line-fade var(--spring-snappy-ms) var(--spring-smooth) both;
+}
+
+@keyframes line-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.title-loader {
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.title-loader.done {
+  transform: scale(0.86);
+}
+
+#title:not(.ready) #title-enter,
+#title:not(.ready) #title-reset,
+#title:not(.ready) .title-lobby {
+  visibility: hidden;
+  animation: none;
+}
+
+#title.ready #title-enter,
+#title.ready #title-reset {
+  animation: arrive var(--spring-smooth-ms) var(--spring-smooth) backwards;
+}
+
+#title.ready #title-reset {
+  animation-delay: var(--arrive-step);
+}
+
+#title.ready .title-account.shown {
+  transition-delay: calc(var(--arrive-step) * 2);
+}
+
+#title.ready .title-lobby {
+  animation: title-rise var(--spring-smooth-ms) var(--spring-smooth) calc(var(--arrive-step) * 3) backwards;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(var(--arrive-rise));
+  }
+}
+
+#title.gone {
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-snappy-ms);
+}
+
+body.playing #hud,
+body.playing #overlays,
+body.playing .tc {
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth) var(--spring-snappy-ms),
+    visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --arrive-rise: 0px;
+    --line-shift: 0px;
+  }
+
+  .title-loader.done,
+  #title.gone .title-card {
+    transform: none;
+  }
+}

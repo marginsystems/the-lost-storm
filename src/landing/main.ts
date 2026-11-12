@@ -2,6 +2,7 @@ import { readServerUrl } from '../backend/server-url.ts';
 import type { ServerUrl } from '../backend/server-url.ts';
 import type { BoardRow, Leaderboard, LeaderboardResult } from '../backend/api.ts';
 import { createLobbyApi } from '../backend/lobby-api.ts';
+import { wireLeave } from './leave.ts';
 import type { LobbyApi } from '../backend/lobby-api.ts';
 
 const LIVE: { readonly refreshMs: number; readonly rows: number; readonly timeoutMs: number } = { refreshMs: 30_000, rows: 10, timeoutMs: 4000 };
@@ -58,3 +59,4 @@ function watch(panel: HTMLElement, serverUrl: string): void {
 const server: ServerUrl = readServerUrl(import.meta.env.VITE_SERVER_URL);
 const panel: HTMLElement | null = element('live', HTMLElement);
 if (server.kind === 'ok' && panel !== null) watch(panel, server.url);
+wireLeave();
