@@ -12,7 +12,7 @@ import { placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard } from './hazards.ts';
 import { raiseFallen } from './revive.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
-import type { ActionState, Actor, EchoState, NoticeReason, ProjectileState, Team, World } from './types.ts';
+import type { ActionState, Actor, EchoState, NoticeReason, PlayerState, ProjectileState, Team, World } from './types.ts';
 
 export const SKILLS = {
   projectileOrigin: 0.9,
@@ -24,6 +24,11 @@ export function blockedReason(actor: Actor, skill: SkillDef): NoticeReason | nul
   if ((actor.cooldowns[skill.id] ?? 0) > 0) return 'on_cooldown';
   if (actor.kind === 'player' && actor.mana < skill.manaCost) return 'no_mana';
   return null;
+}
+
+export function readyToRepeat(player: PlayerState, skill: SkillDef | null | undefined): boolean {
+  if (skill === undefined || skill === null || skill.press !== null) return false;
+  return player.action === null && player.queued === null && blockedReason(player, skill) === null;
 }
 
 function widened(delivery: Delivery, scale: number): Delivery {

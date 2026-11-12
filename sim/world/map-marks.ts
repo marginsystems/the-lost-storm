@@ -2,6 +2,7 @@ import type { Content, ObjectiveDef, PathObjective, ZoneDef, ZoneExit } from '..
 import { objectivePaths } from '../content/road.ts';
 import type { Vec2 } from '../math.ts';
 import { allHold } from './conditions.ts';
+import { exitShown } from './exits.ts';
 import { fightZones, nearestFight, strikeGround } from './moments.ts';
 import { activeQuests, currentObjective } from './quests.ts';
 import type { MonsterState, NpcState, World } from './types.ts';
@@ -66,15 +67,11 @@ function pathTarget(world: World, objective: PathObjective): Vec2 | null {
   return target;
 }
 
-function shown(world: World, exit: ZoneExit): boolean {
-  return !(exit.hiddenWhenLocked && !allHold(world, exit.requires));
-}
-
 export function firstExitToward(world: World, goals: readonly string[]): ZoneExit | null {
   const wanted: ReadonlySet<string> = new Set<string>(goals);
   const seen: Set<string> = new Set<string>([world.zone.id]);
   let frontier: { readonly zone: string; readonly first: ZoneExit }[] = world.zone.exits
-    .filter((exit: ZoneExit): boolean => shown(world, exit))
+    .filter((exit: ZoneExit): boolean => exitShown(world, exit))
     .map((exit: ZoneExit): { readonly zone: string; readonly first: ZoneExit } => ({ zone: exit.to, first: exit }));
   while (frontier.length > 0) {
     const found = frontier.find((step): boolean => wanted.has(step.zone));
@@ -84,7 +81,7 @@ export function firstExitToward(world: World, goals: readonly string[]): ZoneExi
       if (seen.has(step.zone)) continue;
       seen.add(step.zone);
       for (const exit of world.content.zones.get(step.zone)?.exits ?? []) {
-        if (!seen.has(exit.to) && shown(world, exit)) next.push({ zone: exit.to, first: step.first });
+        if (!seen.has(exit.to) && exitShown(world, exit)) next.push({ zone: exit.to, first: step.first });
       }
     }
     frontier = next;

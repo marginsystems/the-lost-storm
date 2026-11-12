@@ -7,7 +7,7 @@ import { createWorld } from './create.ts';
 import { stepWorld } from './step.ts';
 import { choicesOpen } from './death.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
-import { canTeleport, onWaypoint } from './waypoints.ts';
+import { canTeleport, onWaypoint, waypointAt } from './waypoints.ts';
 import { enterZone } from './zones.ts';
 
 const outpostZone: ZoneDef = roadZone({
@@ -114,4 +114,13 @@ void test('the dead cannot teleport', (): void => {
   world.player.alive = false;
   stepWorld(world, [{ type: 'teleport', zone: outpost.id }], DT);
   assert.equal(world.zone.id, town.id);
+});
+
+void test('a point inside the waypoint circle is on it, one outside is not, and a zone with no waypoint has none', (): void => {
+  const world: World = createWorld(content, { seed: 9, save: null });
+  enterZone(world, outpostZone, { type: 'start' });
+  assert.equal(waypointAt(world, { x: 22, z: 8.5 }), true);
+  assert.equal(waypointAt(world, { x: 23, z: 8 }), false);
+  world.zone = { ...world.zone, waypoint: null };
+  assert.equal(waypointAt(world, { x: 21, z: 8 }), false);
 });

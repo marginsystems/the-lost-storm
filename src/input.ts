@@ -1,12 +1,14 @@
 import type { Box3 as Box3Type } from 'three';
 import { Box3, Vector2, Vector3 } from 'three';
-import type { SkillDef, ZoneExit } from '../sim/content/types.ts';
+import type { ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
-import { allHold } from '../sim/world/conditions.ts';
+import { exitUnder } from '../sim/world/exits.ts';
 import { aimedItem } from '../sim/world/finds.ts';
+import { readyToRepeat } from '../sim/world/skills.ts';
 import { stationNear } from '../sim/world/trade.ts';
 import type { Station } from '../sim/world/trade.ts';
 import type { Command, GroundItem, MonsterState, NpcState, World } from '../sim/world/types.ts';
+import { waypointAt } from '../sim/world/waypoints.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { PickCandidate, ScreenRect } from './pick.ts';
 import { pickActor } from './pick.ts';
@@ -189,7 +191,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
 
   const exitAt = (ground: Vec2 | null): ZoneExit | null => {
     if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
-    return world.zone.exits.find((exit: ZoneExit): boolean => Math.hypot(exit.x - ground.x, exit.z - ground.z) <= exit.radius && !(exit.hiddenWhenLocked && !allHold(world, exit.requires))) ?? null;
+    return exitUnder(world, ground);
   };
 
   const itemAt = (ground: Vec2 | null): GroundItem | null => {
@@ -200,18 +202,12 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   const onWaypointMark = (ground: Vec2 | null): boolean => {
     const waypoint = world.zone.waypoint;
     if (ground === null || waypoint === null || !pointerInside || hud.isPointerOverUi()) return false;
-    return Math.hypot(waypoint.x - ground.x, waypoint.z - ground.z) <= waypoint.radius;
+    return waypointAt(world, ground);
   };
 
   const stationAt = (ground: Vec2 | null): Station | null => {
     if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
     return stationNear(world, ground);
-  };
-
-  const ready = (skill: SkillDef | null | undefined): boolean => {
-    if (skill === undefined || skill === null || skill.press !== null) return false;
-    const player = world.player;
-    return player.action === null && player.queued === null && (player.cooldowns[skill.id] ?? 0) <= 0 && player.mana >= skill.manaCost;
   };
 
   return {
@@ -326,7 +322,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
         for (const binding of settings.keys().bindingsOf(slotAction(slot))) {
           if (binding === INPUT.leftBinding) continue;
           const isFresh: boolean = fresh.has(binding);
-          if (!isFresh && !(held.has(binding) && ready(world.player.skills[slot]))) continue;
+          if (!isFresh && !(held.has(binding) && readyToRepeat(world.player, world.player.skills[slot]))) continue;
           commands.push({ type: 'skill', slot, aim, targetId: null });
           return;
         }

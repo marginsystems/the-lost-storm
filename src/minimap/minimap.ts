@@ -7,7 +7,8 @@ import { el, setText } from '../hud/dom.ts';
 import { CAMERA } from '../render/iso-camera.ts';
 import type { MapLayer } from './layer.ts';
 import { createMapLayer } from './layer.ts';
-import { drawMarks, exitAt } from './marks.ts';
+import { drawMarks } from './marks.ts';
+import { exitUnder } from '../../sim/world/exits.ts';
 import minimapCss from './minimap.css?inline';
 import type { MapMatrix } from './projection.ts';
 import { mapMatrix, toWorld } from './projection.ts';
@@ -132,7 +133,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
     if (lastPointer === null || world.dialogue !== null) return;
     const spot: Vec2 | null = pointAt(lastPointer.x, lastPointer.y);
     if (spot === null) return;
-    const exit: ZoneExit | null = exitAt(world, spot.x, spot.z);
+    const exit: ZoneExit | null = exitUnder(world, spot);
     if (exit !== null) {
       dragging = null;
       if (held) return;

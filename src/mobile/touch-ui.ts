@@ -4,6 +4,7 @@ import { hudView } from '../../sim/world/hud.ts';
 import { panelPart, tagPart } from '../hud/hud-gate.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
+import { readyToRepeat } from '../../sim/world/skills.ts';
 import type { Command, FlaskState, MonsterState, World } from '../../sim/world/types.ts';
 import type { KeyValueStore } from '../backend/backend.ts';
 import { el } from '../hud/dom.ts';
@@ -492,7 +493,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
           case 'skill': {
             const skill: SkillDef | undefined = player.skills[view.spec.slot] ?? undefined;
             if (isFresh) commands.push({ type: 'hold', slot: view.spec.slot, down: true });
-            const ready: boolean = skill !== undefined && skill.press === null && player.action === null && player.queued === null && (player.cooldowns[skill.id] ?? 0) <= 0 && player.mana >= skill.manaCost;
+            const ready: boolean = readyToRepeat(player, skill);
             if (isFresh || (isHeld && tick && ready)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)));
             return;
           }

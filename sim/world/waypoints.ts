@@ -1,11 +1,17 @@
 import type { ZoneDef, ZoneWaypoint } from '../content/types.ts';
 import { distance } from '../math.ts';
+import type { Vec2 } from '../math.ts';
 import type { World } from './types.ts';
 import { enterZone } from './zones.ts';
 
 export function onWaypoint(world: World): boolean {
   const waypoint: ZoneWaypoint | null = world.zone.waypoint;
   return waypoint !== null && world.player.alive && distance(world.player.pos, waypoint) <= waypoint.radius;
+}
+
+export function waypointAt(world: World, point: Vec2): boolean {
+  const waypoint: ZoneWaypoint | null = world.zone.waypoint;
+  return waypoint !== null && distance(point, waypoint) <= waypoint.radius;
 }
 
 function insideCheckpoint(world: World): boolean {

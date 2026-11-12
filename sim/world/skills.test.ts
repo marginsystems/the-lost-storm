@@ -7,7 +7,7 @@ import type { ComboStep, Content, SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { cellIndex } from '../nav/grid.ts';
-import { chainedSkill, chargedSkill, comboHits, startSkill } from './skills.ts';
+import { chainedSkill, chargedSkill, comboHits, readyToRepeat, startSkill } from './skills.ts';
 import { damageTo, dummy, offset, run, SHAPE_CONTENT, shapeArena, shapeSkill } from '../../test/shape-support.ts';
 import { resolveSkill } from '../stats.ts';
 import { stepWorld } from './step.ts';
@@ -266,4 +266,25 @@ void test('every changed form the chart offers lands on an enemy when cast at it
     assert.ok(hits.length > 0, `${node.id} lands`);
     if (changed.echo > 0) assert.ok(hits.length >= 2, `${node.id} echoes`);
   }
+});
+
+void test('a held skill repeats only when the hero is free, it is off cooldown, he has the mana and it is not a press skill', (): void => {
+  const world: World = fresh();
+  const bolt: SkillDef = must(content.skills.get('storm_bolt'), 'storm_bolt');
+  const pressed: SkillDef = must(content.skills.get('thunderhead'), 'thunderhead');
+  world.player.mana = bolt.manaCost;
+  assert.equal(readyToRepeat(world.player, bolt), true);
+  assert.equal(readyToRepeat(world.player, null), false);
+  assert.equal(readyToRepeat(world.player, undefined), false);
+  assert.equal(readyToRepeat(world.player, pressed), false);
+  world.player.mana = bolt.manaCost - 1;
+  assert.equal(readyToRepeat(world.player, bolt), false);
+  world.player.mana = bolt.manaCost;
+  world.player.cooldowns[bolt.id] = 0.5;
+  assert.equal(readyToRepeat(world.player, bolt), false);
+  world.player.cooldowns[bolt.id] = 0;
+  swingOnce(world);
+  stepWorld(world, [swing], DT);
+  assert.notEqual(world.player.action, null);
+  assert.equal(readyToRepeat(world.player, bolt), false);
 });

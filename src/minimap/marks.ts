@@ -1,5 +1,6 @@
-import type { RarityDef, ZoneExit } from '../../sim/content/types.ts';
+import type { RarityDef } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
+import { exitShown } from '../../sim/world/exits.ts';
 import { isExplored } from '../../sim/world/exploration.ts';
 import type { QuestMark } from '../../sim/world/map-marks.ts';
 import { questMarks } from '../../sim/world/map-marks.ts';
@@ -134,8 +135,8 @@ export function drawMarks(context: CanvasRenderingContext2D, matrix: MapMatrix, 
   const zone = world.zone;
   for (const exit of zone.exits) {
     if (!isExplored(world, exit.x, exit.z)) continue;
+    if (!exitShown(world, exit)) continue;
     const open: boolean = allHold(world, exit.requires);
-    if (!open && exit.hiddenWhenLocked) continue;
     const at: MapPoint = toMap(matrix, exit.x, exit.z);
     if (visible(at, options, MARKS.exit * unit)) gate(context, at, MARKS.exit * unit, open ? MARKS.exitColour : MARKS.lockedExitColour);
   }
@@ -179,8 +180,4 @@ function drawQuest(context: CanvasRenderingContext2D, matrix: MapMatrix, mark: Q
     return;
   }
   arrow(context, pinned, pinned.angle, MARKS.questArrow * unit, MARKS.questColour);
-}
-
-export function exitAt(world: World, x: number, z: number): ZoneExit | null {
-  return world.zone.exits.find((exit: ZoneExit): boolean => Math.hypot(exit.x - x, exit.z - z) <= exit.radius && !(exit.hiddenWhenLocked && !allHold(world, exit.requires))) ?? null;
 }
