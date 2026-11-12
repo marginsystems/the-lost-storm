@@ -83,7 +83,7 @@
     "sets": {"opening": "begun"},
     "finds": {"reach": 1.4, "aim": 2.8},
     "emptyHanded": true,
-    "shore": {"when": [{"type": "flag", "flag": "opening", "is": "read"}], "ahead": 22, "thin": 14, "ambience": {"background": "#06080d", "abyss": "#040508", "fogNear": 20, "fogFar": 70, "skyColor": "#4a5c7c", "groundColor": "#100d0b", "skyIntensity": 1.1, "keyColor": "#9fb3d6", "keyIntensity": 0.7}},
+    "shore": {"when": [{"type": "flag", "flag": "opening", "is": "read"}], "ahead": 22, "thin": 14, "surface": "black_rock", "ambience": {"background": "#06080d", "abyss": "#040508", "fogNear": 20, "fogFar": 70, "skyColor": "#6a7e9e", "groundColor": "#2a2420", "skyIntensity": 1.7, "keyColor": "#b4c6e4", "keyIntensity": 1.9}},
     "encounters": [
       {
         "id": "journal",

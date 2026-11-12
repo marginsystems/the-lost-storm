@@ -1,6 +1,6 @@
 import type { IUniform } from 'three';
 import { BoxGeometry, BufferAttribute, BufferGeometry, Color, DataTexture, Group, LinearFilter, Mesh, MeshBasicMaterial, PlaneGeometry, Points, RedFormat, RepeatWrapping, ShaderMaterial, UniformsLib, UniformsUtils, Vector2, Vector3, Vector4 } from 'three';
-import type { ZoneDef, ZoneExit } from '../../sim/content/types.ts';
+import type { SurfaceDef, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { wakeProgress } from '../../sim/world/wake.ts';
@@ -12,6 +12,8 @@ import { createMistDrive, createMistField, MIST, stepDrive, stepField } from './
 import { CAMERA } from './iso-camera.ts';
 import type { VoidLight } from './void-light.ts';
 import { createVoidLight, VOID_LIGHT } from './void-light.ts';
+import type { ShoreRock } from './shore-rock.ts';
+import { createShoreRock } from './shore-rock.ts';
 import { GROUND_FRAGMENT, GROUND_VERTEX, MIST_FRAGMENT, MIST_VERTEX, MOTE_FRAGMENT, MOTE_VERTEX } from './void-shaders.ts';
 import type { ViewFocus, ZoneView } from './zone-view.ts';
 import { FIGURE_GAUGE } from './figure-gauge.ts';
@@ -51,7 +53,7 @@ export const VOID_VIEW = {
   pocketShade: { edge: 0.06, inner: 0.05 },
   rockColor: 0x1d2026,
   rockShade: 0x0d0f12,
-  heroPool: { radius: 3.2, strength: 0.16, color: 0x9fb4cc },
+  heroPool: { radius: 3.6, strength: 0.22, color: 0x9fb4cc },
   firePool: { radius: 9, strength: 0.22 },
   shoreFray: 9,
   shoreRate: 0.8,
@@ -162,7 +164,7 @@ function findsIn(world: World): Vec2[] {
   return [...items, ...lights];
 }
 
-export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
+export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: SurfaceDef | null): ZoneView {
   const tier: VoidTier = VOID_VIEW.tiers[quality];
   const defines: Record<string, number> = { VOID_OCTAVES: tier.octaves, VOID_EDDIES: MIST.eddies };
   const group: Group = new Group();
@@ -194,6 +196,8 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
   group.add(light.group);
   const glimpse = buildGlimpse(zone.floorHeight);
   group.add(glimpse.group);
+  const rock: ShoreRock | null = rockSurface === null ? null : createShoreRock(rockSurface);
+  if (rock !== null) group.add(rock.mesh);
 
   const groundUniforms: Uniforms = UniformsUtils.merge([UniformsLib.fog]);
   Object.assign(groundUniforms, { uColor: color(VOID_VIEW.groundColor), uShade: color(VOID_VIEW.groundShade), uFlashColor: flashColor, uShift: shift, uHero: hero, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uRipple: { value: VOID_VIEW.ripple }, uShadow: { value: VOID_VIEW.heroShadow }, uField: fieldUniform, uSpan: { value: MIST.span }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uOpen: openScale, uGroundClear: { value: new Vector2(VOID_VIEW.groundClear.inner, VOID_VIEW.groundClear.outer) }, uPocketShade: { value: new Vector2(VOID_VIEW.pocketShade.edge, VOID_VIEW.pocketShade.inner) }, uShore: shoreLine, uShoreLook: shoreLook, uRock: color(VOID_VIEW.rockColor), uRockShade: color(VOID_VIEW.rockShade), uLight: light.uniform, uLightColor: color(VOID_LIGHT.color), uLift: { value: new Vector4(VOID_VIEW.heroPool.radius, VOID_VIEW.heroPool.strength, VOID_VIEW.firePool.strength, VOID_VIEW.firePool.radius) }, uLiftColor: color(VOID_VIEW.heroPool.color) });
@@ -316,6 +320,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
     const shoreOn: number = shore !== null && rules !== null ? 1 : 0;
     shoreLook.value.y += (shoreOn - shoreLook.value.y) * Math.min(1, dt * VOID_VIEW.shoreRate);
     hero.value.set(pos.x, pos.z);
+    rock?.update(shore === null ? null : { hero: pos, shift: world.shift, at: shore.at, facing: shore.facing, shown: shoreLook.value.y }, zone.floorHeight);
   };
 
   return {
@@ -348,6 +353,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
       glimpse.material.dispose();
       for (const geometry of glimpse.geometries) geometry.dispose();
       light.dispose();
+      rock?.dispose();
     },
   };
 }

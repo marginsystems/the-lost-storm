@@ -118,7 +118,8 @@ function standardMaterials(value: unknown): MeshStandardMaterial[] {
 
 export async function buildZoneView(loader: GLTFLoader, content: Content, zone: ZoneDef, scene: Scene, quality: QualityName): Promise<ZoneView> {
   if (zone.kind === 'void') {
-    const empty: ZoneView = buildVoidView(zone, quality);
+    const rockId: string | null = zone.void?.shore?.surface ?? null;
+    const empty: ZoneView = buildVoidView(zone, quality, rockId === null ? null : (content.surfaces.get(rockId) ?? null));
     scene.add(empty.group);
     return empty;
   }
