@@ -10,6 +10,13 @@ export interface EchoPose {
   readonly at: number;
 }
 
+export interface EchoLook {
+  readonly rig: string;
+  readonly scale: number;
+  readonly gear: readonly string[];
+  readonly wear: readonly string[];
+}
+
 export interface MomentEcho {
   readonly monster: string;
   readonly x: number;
@@ -17,6 +24,7 @@ export interface MomentEcho {
   readonly facingDegrees: number;
   readonly pose: EchoPose;
   readonly turns: boolean;
+  readonly look: EchoLook | null;
 }
 
 export interface MomentReward {

@@ -90,7 +90,9 @@ function place(world: World, field: MomentField, mark: boolean): MomentState | n
 
 function echoDef(world: World, entry: MomentEcho): MonsterDef | null {
   const base: MonsterDef | undefined = world.content.monsters.get(entry.monster);
-  return base === undefined ? null : { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null };
+  if (base === undefined) return null;
+  const echo: MonsterDef = { ...base, faction: world.content.moments.faction, loot: NO_LOOT, summon: null, boss: null };
+  return entry.look === null ? echo : { ...echo, rig: entry.look.rig, scale: entry.look.scale, gear: entry.look.gear, wear: entry.look.wear };
 }
 
 function turn(world: World, moment: MomentState): number[] {
