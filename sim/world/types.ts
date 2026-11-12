@@ -1,4 +1,4 @@
-import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
+import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, ServiceKind, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
@@ -82,7 +82,12 @@ export interface TalkIntent {
   readonly npcId: number;
 }
 
-export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent | TravelIntent | TalkIntent;
+export interface UseIntent {
+  readonly type: 'use';
+  readonly prop: number;
+}
+
+export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent | TravelIntent | TalkIntent | UseIntent;
 
 export interface PlayerState extends ActorState {
   readonly kind: 'player';
@@ -247,7 +252,25 @@ export interface TeleportCommand {
   readonly zone: string;
 }
 
-export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand;
+export interface UseCommand {
+  readonly type: 'use';
+  readonly prop: number;
+}
+
+export type TradeAction =
+  | { readonly type: 'buy'; readonly index: number }
+  | { readonly type: 'sell'; readonly inventoryIndex: number }
+  | { readonly type: 'buy_back'; readonly index: number }
+  | { readonly type: 'stash'; readonly inventoryIndex: number }
+  | { readonly type: 'unstash'; readonly index: number }
+  | { readonly type: 'close' };
+
+export interface TradeCommand {
+  readonly type: 'trade';
+  readonly action: TradeAction;
+}
+
+export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -269,7 +292,7 @@ export interface WaypointRespawn {
 
 export type RespawnPoint = StartRespawn | ExitRespawn | CheckpointRespawn | WaypointRespawn;
 
-export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full';
+export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full' | 'no_gold' | 'stash_full';
 
 export type WorldEvent =
   | { readonly type: 'skill_start'; readonly actorId: number; readonly skill: SkillDef; readonly direction: Vec2; readonly windup: number; readonly recovery: number }
@@ -305,6 +328,18 @@ export type WorldEvent =
   | { readonly type: 'notice'; readonly reason: NoticeReason }
   | { readonly type: 'character_changed' };
 
+export interface VendorStock {
+  stock: (ItemInstance | null)[];
+  buyback: ItemInstance[];
+  stale: boolean;
+}
+
+export interface OpenService {
+  readonly kind: ServiceKind;
+  readonly owner: string;
+  readonly anchor: Vec2;
+}
+
 export interface World {
   readonly content: Content;
   zone: ZoneDef;
@@ -331,4 +366,8 @@ export interface World {
   surge: number;
   surgeTimer: number | null;
   events: WorldEvent[];
+  service: OpenService | null;
+  vendors: Record<string, VendorStock>;
+  stash: (ItemInstance | null)[];
+  tradeZone: string;
 }

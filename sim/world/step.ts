@@ -6,6 +6,7 @@ import { handleCommand, stepPlayer } from './player.ts';
 import { stepQuests } from './quests.ts';
 import { stepVoices } from './voices.ts';
 import { stepProjectiles } from './skills.ts';
+import { stepTrade } from './trade.ts';
 import type { Command, World, WorldEvent } from './types.ts';
 
 export const MAX_STEP: number = 1 / 30;
@@ -25,5 +26,6 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepBosses(world);
   stepVoices(world);
   stepQuests(world);
+  stepTrade(world);
   return world.events;
 }

@@ -27,6 +27,9 @@ Open http://localhost:5193.
 | Q | Thunderclap (area hit around you) |
 | W or right mouse | Storm Bolt (projectile) |
 | I / C / T / M | Inventory / character sheet / skill tree / world map |
+| Left mouse on the Chandler or the stash chest in Stillhold | Open his stall or your stash beside the inventory. Walk away or press Escape to close |
+| Left mouse on an item at the stall | Buy it, or buy back one you sold |
+| Left mouse, right mouse or Ctrl + left mouse on an inventory item while the stall or stash is open | Sell it, or put it in the stash; click a stash item to take it back |
 | Tab | Corner minimap / large map laid over the game (clicks still reach the game) |
 | Left mouse on the minimap | Walk there; on an exit, travel through it. Hold to keep going |
 | Mouse wheel over the minimap | Minimap zoom |

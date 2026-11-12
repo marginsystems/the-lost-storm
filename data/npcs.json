@@ -333,5 +333,44 @@
         ]
       }
     ]
+  },
+  {
+    "id": "odric",
+    "name": "Odric Vane",
+    "title": "The Chandler",
+    "rig": "human_man",
+    "scale": 1.0,
+    "tint": "#ffffff",
+    "color": "#c9b48a",
+    "gear": [],
+    "wear": [
+      "linen_shirt",
+      "rough_breeches",
+      "leather_boots",
+      "tanned_gloves"
+    ],
+    "talks": [
+      {
+        "id": "odric_first",
+        "once": true,
+        "when": [],
+        "lines": [
+          "odric_first_1",
+          "odric_first_2",
+          "odric_first_3"
+        ]
+      },
+      {
+        "id": "odric_shop",
+        "once": false,
+        "when": [],
+        "lines": [
+          "odric_shop_1",
+          "odric_shop_2",
+          "odric_shop_3"
+        ]
+      }
+    ],
+    "service": "vendor"
   }
 ]

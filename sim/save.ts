@@ -6,8 +6,8 @@ import { findNode } from './progression.ts';
 import { decodeExplored, encodeExplored, exploredSize } from './world/exploration.ts';
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, World } from './world/types.ts';
 
-export const SAVE_VERSION: number = 2;
-const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, SAVE_VERSION]);
+export const SAVE_VERSION: number = 3;
+const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, SAVE_VERSION]);
 
 export interface SaveData {
   readonly version: number;
@@ -29,6 +29,7 @@ export interface SaveData {
   readonly quests: Readonly<Record<string, number>>;
   readonly waypoints: readonly string[];
   readonly explored: Readonly<Record<string, string>>;
+  readonly stash: readonly (ItemInstance | null)[];
 }
 
 interface Worn {
@@ -58,6 +59,7 @@ export function toSave(world: World): SaveData {
     quests: { ...world.quests },
     waypoints: [...world.waypoints],
     explored: Object.fromEntries(Object.entries(world.explored).map(([zone, cells]: [string, Uint8Array]): [string, string] => [zone, encodeExplored(cells)])),
+    stash: [...world.stash],
   };
 }
 
@@ -160,6 +162,21 @@ function readExplored(content: Content, value: unknown): Record<string, string> 
   return explored;
 }
 
+interface Stashed {
+  readonly stash: (ItemInstance | null)[];
+  readonly overflow: ItemInstance[];
+}
+
+function readStash(content: Content, value: unknown): Stashed {
+  const list: readonly unknown[] = Array.isArray(value) ? value : [];
+  const stash: (ItemInstance | null)[] = Array.from({ length: content.trade.stashSize }, (_: unknown, index: number): ItemInstance | null => readItem(content, list[index]));
+  const overflow: ItemInstance[] = list
+    .slice(content.trade.stashSize)
+    .map((entry: unknown): ItemInstance | null => readItem(content, entry))
+    .filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
+  return { stash, overflow };
+}
+
 export function readSave(content: Content, value: unknown): SaveData | null {
   if (!isFields(value) || !READABLE_VERSIONS.has(value['version'])) return null;
   const level: number | null = count(value, 'level', 1);
@@ -183,6 +200,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const worn: Worn = readEquipped(content, value['equipped'], slots);
   const spilled: unknown = value['spilled'];
   const spilledList: readonly unknown[] = Array.isArray(spilled) ? spilled : [];
+  const stashed: Stashed = readStash(content, value['stash']);
   const kept: ItemInstance[] = spilledList.map((entry: unknown): ItemInstance | null => readItem(content, entry)).filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
   return {
     version: SAVE_VERSION,
@@ -194,7 +212,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     allocated: allocatedList.filter((node: unknown): node is string => typeof node === 'string' && findNode(content, node) !== null),
     inventory: slots,
     equipped: worn.equipped,
-    spilled: [...kept, ...worn.spilled],
+    spilled: [...kept, ...worn.spilled, ...stashed.overflow],
     surge: Math.floor(surge),
     nextItemUid: Math.floor(nextItemUid),
     zone,
@@ -204,6 +222,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     quests: readQuests(content, value['quests']),
     waypoints: readWaypoints(content, value['waypoints']),
     explored: readExplored(content, value['explored']),
+    stash: stashed.stash,
   };
 }
 

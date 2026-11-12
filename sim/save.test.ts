@@ -274,3 +274,41 @@ void test('a hero who teleported keeps the waypoint as the place to return to af
   const waypoint = must(restored.zone.waypoint, 'waypoint');
   assert.deepEqual(restored.player.pos, { x: waypoint.x, z: waypoint.z });
 });
+
+void test('the stash survives a save slot for slot', (): void => {
+  const world: World = played();
+  const kept: ItemInstance = made('stormsteel_sword', 'rare', 60);
+  world.stash[5] = kept;
+  world.stash[content.trade.stashSize - 1] = made('gale_charm', 'magic', 61);
+  const save: SaveData = roundTrip(world);
+  assert.equal(save.stash.length, content.trade.stashSize);
+  const restored: World = createWorld(content, { seed: 8, save });
+  assert.deepEqual(restored.stash, world.stash);
+  assert.deepEqual(restored.stash[5], kept);
+});
+
+void test('a version 2 save, which has no stash, loads as the current version with an empty stash', (): void => {
+  const current: SaveData = toSave(played());
+  const older: Record<string, unknown> = { ...current, version: 2 };
+  delete older['stash'];
+  const save: SaveData = must(readSave(content, older), 'save');
+  assert.equal(save.version, SAVE_VERSION);
+  assert.equal(SAVE_VERSION, 3);
+  assert.equal(save.stash.length, content.trade.stashSize);
+  assert.ok(save.stash.every((item: ItemInstance | null): boolean => item === null));
+  assert.deepEqual(save.inventory, current.inventory);
+  assert.equal(save.gold, current.gold);
+  assert.deepEqual(createWorld(content, { seed: 4, save }).stash, save.stash);
+});
+
+void test('stash entries that are not items are emptied, and items past the stash size are spilled at the hero', (): void => {
+  const extra: ItemInstance = made('drowned_leathers', 'magic', 70);
+  const first: ItemInstance = made('stormsteel_sword', 'common', 71);
+  const stash: unknown[] = [first, 'junk', { uid: 3 }, ...Array.from({ length: content.trade.stashSize - 3 }, (): null => null), extra];
+  const save: SaveData = must(readSave(content, { ...toSave(played()), stash }), 'save');
+  assert.deepEqual(save.stash[0], first);
+  assert.equal(save.stash[1], null);
+  assert.equal(save.stash[2], null);
+  assert.equal(save.stash.length, content.trade.stashSize);
+  assert.ok(save.spilled.some((item: ItemInstance): boolean => item.uid === extra.uid));
+});

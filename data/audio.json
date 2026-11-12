@@ -85,7 +85,9 @@
   "notice": {
     "no_mana": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }],
     "on_cooldown": [{ "sound": "ui_error", "volume": 0.6, "maxVoices": 1, "cooldown": 0.2 }],
-    "inventory_full": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }]
+    "inventory_full": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }],
+    "no_gold": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }],
+    "stash_full": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }]
   },
   "world": {
     "hero_step": [{ "sound": "footstep_stone", "volume": 0.7, "maxVoices": 2 }],

@@ -12,6 +12,8 @@ const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
   no_mana: 'Not enough mana',
   on_cooldown: 'Not ready yet',
   inventory_full: 'Inventory is full',
+  no_gold: 'Not enough gold',
+  stash_full: 'Stash is full',
 };
 
 export interface Notices {
