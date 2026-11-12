@@ -148,6 +148,7 @@ export interface MomentView {
   handle(events: readonly WorldEvent[]): void;
   update(dt: number, world: World): void;
   prepare(renderer: WebGLRenderer, camera: Camera): Promise<void>;
+  warm(renderer: WebGLRenderer, camera: Camera): Promise<void>;
   showWarm(x: number, z: number): () => void;
   clear(): void;
 }
@@ -492,15 +493,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       }
     },
     update(dt: number, world: World): void {
-      if (warmed !== null && !warming && library.rigs.size !== warmedRigs) {
-        warming = true;
-        view
-          .prepare(warmed.renderer, warmed.camera)
-          .catch((): void => undefined)
-          .finally((): void => {
-            warming = false;
-          });
-      }
+      if (warmed !== null && !warming && library.rigs.size !== warmedRigs) void view.warm(warmed.renderer, warmed.camera);
       clock += dt;
       const live: Set<number> = new Set<number>();
       for (const moment of world.moments) {
@@ -568,6 +561,15 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       for (const old of keptStrike) old.removeFromParent();
       kept = warm;
       keptStrike = [bolt, arcs];
+    },
+    warm(renderer: WebGLRenderer, camera: Camera): Promise<void> {
+      warming = true;
+      return view
+        .prepare(renderer, camera)
+        .catch((): void => undefined)
+        .finally((): void => {
+          warming = false;
+        });
     },
     showWarm(x: number, z: number): () => void {
       const shown: Object3D[] = [...kept.map((entry: MomentEntry): Object3D => entry.group), ...keptStrike];

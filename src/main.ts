@@ -278,7 +278,7 @@ async function start(): Promise<void> {
     rain.setWeather(zone.weather);
   };
   applyWeather(world.zone);
-  const effects: MomentEffects = await momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.pulse(power)), { scene: stage.scene, loader, content, library, dresser: propDresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
+  const effects: MomentEffects = momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.pulse(power)), { scene: stage.scene, loader, content, library, dresser: propDresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene, mobile.quality.tier.name === 'mobile');
   const actors: Actors = createActors(stage.scene, library, world);
@@ -662,7 +662,7 @@ async function start(): Promise<void> {
   const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped }), view: (): LobbyView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered }), begin: (): void => {
     entered = true;
     begin();
-  }, startOver: (): void => void startOver(), openSettings: (): void => pauseMenu.open('graphics') });
+  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), openSettings: (): void => pauseMenu.open('graphics') });
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();
