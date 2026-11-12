@@ -1,4 +1,4 @@
-import type { Box3, Material, Scene } from 'three';
+import type { Box3, Material } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
@@ -20,7 +20,8 @@ import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { insideAwakeMoment } from '../sim/world/moments.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
-import type { MeasureRecorder } from './measure-recorder.ts';
+import type { DebugHooks } from './debug-handle.ts';
+import { attachDebug } from './debug-handle.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../sim/world/types.ts';
 import type { Listener } from './audio/listener.ts';
 import { createListener } from './audio/listener.ts';
@@ -55,9 +56,7 @@ import { createObjectiveMarker } from './objective/objective-marker.ts';
 import { createBrowserStore } from './storage.ts';
 import type { Mobile, MobileBoot } from './mobile/mobile.ts';
 import { bootMobile, startMobile } from './mobile/mobile.ts';
-import type { MemoryReport } from './mobile/memory.ts';
 import type { QualityName } from './mobile/quality.ts';
-import { measureMemory } from './mobile/memory.ts';
 import { createBrowserLobby } from './lobby/compact.ts';
 import type { Lobby } from './lobby/compact.ts';
 import { mountGameBoard } from './lobby/game-board.ts';
@@ -88,7 +87,6 @@ import type { GlitchView } from './glitch/glitch-view.ts';
 import { createGlitchView } from './glitch/glitch-view.ts';
 import { createGlitchSettings } from './glitch/glitch-settings.ts';
 import type { GlitchSettingsStore } from './glitch/glitch-settings.ts';
-import type { GlitchKind } from '../sim/content/glitches.ts';
 import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
 import type { CharacterLibrary, Dresser } from './render/character-loader.ts';
@@ -154,23 +152,6 @@ const titleLines: { current: StatusLine | null } = { current: null };
 function whenIdle(work: () => void): void {
   if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(work, { timeout: GAME.idleWaitMs });
   else window.setTimeout(work, GAME.idleWaitMs);
-}
-
-export interface DebugHandle {
-  readonly world: World;
-  readonly scene: Scene;
-  readonly audio: AudioSystem;
-  readonly sounds: readonly Trigger[];
-  send(command: Command): void;
-  memory(): MemoryReport;
-  glitch(kind: GlitchKind): void;
-  saveMeasurements(): void;
-}
-
-declare global {
-  interface Window {
-    storm?: DebugHandle;
-  }
 }
 
 async function start(): Promise<void> {
@@ -404,17 +385,7 @@ async function start(): Promise<void> {
   });
   const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(import.meta.env.VITE_SERVER_URL);
   const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore(), onScreen: (): boolean => playing && !pauseMenu.isOpen });
-  let recorder: MeasureRecorder | null = null;
-  if (import.meta.env.DEV) {
-    const attachRecorder = async (): Promise<void> => {
-      const module = await import('./measure-recorder.ts');
-      const made: MeasureRecorder = module.createRecorder(world, import.meta.env.VITE_BUILD_ID ?? 'dev');
-      recorder = made;
-      if (window.storm !== undefined) window.storm = { ...window.storm, saveMeasurements: (): void => module.saveRecording(made) };
-    };
-    void attachRecorder();
-    window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }), saveMeasurements: (): void => undefined };
-  }
+  const debug: DebugHooks = attachDebug({ world, scene: stage.scene, renderer: stage.renderer, audio, sounds, send });
 
   let playing: boolean = false;
   let lobbyFlow: LobbyFlow | null = null;
@@ -539,7 +510,7 @@ async function start(): Promise<void> {
         }
       }
     }
-    recorder?.record(events);
+    debug.record(events);
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
