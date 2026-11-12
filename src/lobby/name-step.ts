@@ -2,7 +2,9 @@ import type { Leaderboard } from '../backend/api.ts';
 import type { RenameOutcome } from '../backend/lobby.ts';
 import { el, label, setText } from '../hud/dom.ts';
 import type { Lobby } from './compact.ts';
-import { asksForName, chooseName, NAME_MESSAGES, NAME_RULES, nameProblem, tidyName } from './lobby-model.ts';
+import type { KeyValueStore } from '../backend/backend.ts';
+import { keepHeroName, pendingRename, readHeroName, stepWanted } from './hero-name.ts';
+import { chooseName, NAME_MESSAGES, NAME_RULES, nameProblem, tidyName } from './lobby-model.ts';
 import type { NameProblem } from './lobby-model.ts';
 import stepCss from './name-step.css?inline';
 
@@ -20,12 +22,19 @@ export interface NameStep {
 export interface NameStepParts {
   readonly card: HTMLElement;
   readonly enter: HTMLButtonElement;
-  readonly lobby: Lobby;
+  readonly lobby: Lobby | null;
+  readonly fresh: boolean;
+  readonly store: KeyValueStore;
   readonly random: () => number;
   readonly begin: () => void;
 }
 
 type StepState = 'closed' | 'open' | 'busy';
+
+async function sendKept(lobby: Lobby, kept: string): Promise<void> {
+  const outcome: RenameOutcome = await lobby.service.rename(kept);
+  if (outcome.kind === 'named') await lobby.feed.refresh(true);
+}
 
 export function createNameStep(parts: NameStepParts): NameStep {
   const { card, enter, lobby } = parts;
@@ -72,10 +81,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
     setText(note, text, true);
   };
 
-  const needed = (): boolean => {
-    const board: Leaderboard | null = lobby.feed.current();
-    return board !== null && lobby.service.hasAccount() && asksForName(board);
-  };
+  const needed = (): boolean => stepWanted(parts.fresh, lobby === null ? null : lobby.feed.current(), lobby !== null && lobby.service.hasAccount());
 
   const refuse = (problem: NameProblem): boolean => {
     setState('open');
@@ -87,6 +93,8 @@ export function createNameStep(parts: NameStepParts): NameStep {
     const wanted: string = tidyName(raw);
     const local: NameProblem | null = nameProblem(wanted);
     if (local !== null) return refuse(local);
+    keepHeroName(parts.store, wanted);
+    if (lobby === null || !lobby.service.hasAccount()) return true;
     setState('busy');
     const outcome: RenameOutcome = await lobby.service.rename(wanted);
     if (outcome.kind === 'invalid') {
@@ -114,6 +122,14 @@ export function createNameStep(parts: NameStepParts): NameStep {
     if (await chooseForMe(0)) parts.begin();
   };
 
+  let sentKept: boolean = false;
+  lobby?.feed.subscribe((board: Leaderboard | null): void => {
+    const kept: string | null = pendingRename(readHeroName(parts.store), board, lobby.service.hasAccount());
+    if (kept === null || sentKept || state !== 'closed') return;
+    sentKept = true;
+    void sendKept(lobby, kept);
+  });
+
   step.addEventListener('submit', (event: SubmitEvent): void => {
     event.preventDefault();
     enter.click();
@@ -137,6 +153,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
       if (state === 'closed') {
         if (!needed()) return true;
         setState('open');
+        field.value = readHeroName(parts.store) ?? '';
         field.focus({ preventScroll: true });
         return false;
       }

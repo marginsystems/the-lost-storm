@@ -56,6 +56,7 @@ import type { GameBoard } from './lobby/game-board.ts';
 import { mountTitleLobby } from './lobby/title-lobby.ts';
 import { spokenName } from './lobby/lobby-model.ts';
 import { createNameStep, wireEnter } from './lobby/name-step.ts';
+import { readHeroName } from './lobby/hero-name.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Leaderboard } from './backend/api.ts';
@@ -436,7 +437,7 @@ async function start(): Promise<void> {
   const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, openMenu: (): void => {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
-  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, send, nameOf: (): string | null => heroName, fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), refreshName: (): void => {
+  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, send, nameOf: (): string | null => heroName ?? readHeroName(createBrowserStore()), fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), refreshName: (): void => {
       if (lobby !== null) void lobby.feed.refresh(true);
     } });
   const glitches: GlitchView = createGlitchView({
@@ -666,7 +667,7 @@ async function start(): Promise<void> {
     startZoneAmbience();
     preloadNearZones();
   };
-  wireEnter({ enter, begin, failed: (): boolean => failed, step: lobby === null ? null : createNameStep({ card: enter.parentElement ?? title, enter, lobby, random: Math.random, begin }) });
+  wireEnter({ enter, begin, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), random: Math.random, begin }) });
   const startOver = async (): Promise<void> => {
     dirty = false;
     reset.disabled = true;
