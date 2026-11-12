@@ -44,6 +44,18 @@ void test('the route to a place starts beside what is taken and ends on the plac
   assert.ok(first !== undefined && content.skillTree.find((node) => node.id === first)?.requires.includes('stormcallers_focus') === true);
 });
 
+void test('a route only walks forward along what each place requires, and an entrance is reached directly', (): void => {
+  assert.deepEqual(chartRoute(content, ['stormcallers_focus', 'storm_1'], 'heavy_hands'), ['heavy_hands']);
+  const route: string[] = chartRoute(content, ['stormcallers_focus'], 'forked_bolt');
+  assert.deepEqual(route, ['storm_1', 'forked_bolt']);
+  const taken: string[] = ['stormcallers_focus'];
+  for (const id of chartRoute(content, ['stormcallers_focus'], 'storm_lance')) {
+    const node = content.skillTree.find((entry) => entry.id === id);
+    assert.ok(node !== undefined && node.requires.some((required: string): boolean => taken.includes(required)), id);
+    taken.push(id);
+  }
+});
+
 void test('you are at the last place you took, and nowhere before the first', (): void => {
   assert.equal(chartHere(content, []), null);
   assert.equal(chartHere(content, ['stormcallers_focus', 'storm_1']), 'storm_1');

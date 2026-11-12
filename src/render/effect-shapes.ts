@@ -464,6 +464,12 @@ export function discMesh(color: Color, radius: number, opacity: number): Mesh<Bu
   return mesh;
 }
 
+export function bandMesh(color: Color, inner: number, outer: number, opacity: number): Mesh<BufferGeometry, MeshBasicMaterial> {
+  const mesh: Mesh<BufferGeometry, MeshBasicMaterial> = new Mesh(sectorGeometry(Math.PI * 2, inner, outer), additive(color, opacity));
+  mesh.renderOrder = 4;
+  return mesh;
+}
+
 export function groundArcs(color: Color, radius: number): Mesh<BufferGeometry, MeshBasicMaterial> {
   const positions: number[] = [];
   const indices: number[] = [];

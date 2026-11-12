@@ -74,7 +74,7 @@ function line(svg: SVGSVGElement, from: ChartPoint, to: ChartPoint, className: s
   return shape;
 }
 
-export function createTreePanel(parent: HTMLElement, context: HudContext): ChartPanel {
+export function createTreePanel(parent: HTMLElement, context: HudContext, close: () => void): ChartPanel {
   const content = context.api.world.content;
   const element: HTMLDivElement = el('div', 'hud-panel left tree-panel', parent);
   const head: HTMLDivElement = el('div', 'tree-head', element);
@@ -96,6 +96,14 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
   zoomIn.setAttribute('aria-label', 'Zoom in');
   const restart: HTMLButtonElement = el('button', 'chart-restart', head);
   restart.type = 'button';
+  const shut: HTMLButtonElement = el('button', 'chart-close', head);
+  shut.type = 'button';
+  shut.textContent = '×';
+  shut.setAttribute('aria-label', 'Close the chart');
+  shut.addEventListener('click', (event: MouseEvent): void => {
+    event.stopPropagation();
+    close();
+  });
 
   const nodes: readonly SkillTreeNodeDef[] = content.skillTree;
   const bounds: ChartBounds = chartBounds(nodes);
@@ -170,6 +178,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
     const view: NodeView | null = hovered ?? selected;
     card.classList.toggle('visible', view !== null);
     if (view === null) {
+      shownCard = '';
       showRoute(null);
       return;
     }
@@ -182,7 +191,10 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
     action.classList.toggle('shown', refundable);
     if (refundable) setText(action, `Give back · ${goldFor(1)} gold`, false);
     action.classList.toggle('short', refundable && player().gold < goldFor(1));
-    if (key === shownCard) return;
+    if (key === shownCard) {
+      placeCard();
+      return;
+    }
     shownCard = key;
     const body: HTMLDivElement = el('div', 'chart-card-inner', null);
     const path: ChartPath | undefined = content.chart.paths.find((entry: ChartPath): boolean => entry.id === node.path);
@@ -259,7 +271,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext): Chart
     const height: number = card.offsetHeight;
     const right: boolean = at.x + CHART.cardGap + width + CHART.cardEdge <= frame.width;
     const x: number = right ? at.x + CHART.cardGap : Math.max(CHART.cardEdge, at.x - CHART.cardGap - width);
-    const y: number = Math.min(Math.max(CHART.cardEdge, at.y - height / 2), frame.height - height - CHART.cardEdge);
+    const y: number = Math.max(CHART.cardEdge, Math.min(at.y - height / 2, frame.height - height - CHART.cardEdge));
     card.style.left = `${Math.round(x)}px`;
     card.style.top = `${Math.round(y)}px`;
   };

@@ -444,6 +444,47 @@
   transform: scale(0.94);
 }
 
+.chart-close {
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 19px;
+  line-height: 1;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition:
+    background var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.chart-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.chart-close:active {
+  transform: scale(0.92);
+}
+
+body.touch .chart-close {
+  display: none;
+}
+
+#overlays {
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), visibility 0s;
+}
+
+body:has(.hud.chart-open) #overlays {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-snappy-ms);
+}
+
 .chart-restart {
   margin-left: auto;
   opacity: 0;

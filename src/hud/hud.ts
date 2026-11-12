@@ -119,7 +119,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.insertBefore(map.element, bottom);
   const inventoryPanel: PanelView = createInventoryPanel(root, context);
   const characterPanel: CharacterPanel = createCharacterPanel(root, context, inventoryPanel.element);
-  const chartPanel: ChartPanel = createTreePanel(root, context);
+  const chartPanel: ChartPanel = createTreePanel(root, context, (): void => setOpen('tree', false));
   const panels: Record<HudPanel, PanelView> = {
     inventory: inventoryPanel,
     character: characterPanel,

@@ -75,22 +75,15 @@ export function pathTint(content: Content, pathId: string): string {
   return content.chart.paths.find((path: ChartPath): boolean => path.id === pathId)?.tint ?? '#8fd8ff';
 }
 
-function neighbours(nodes: readonly SkillTreeNodeDef[]): ReadonlyMap<string, readonly string[]> {
+function dependents(nodes: readonly SkillTreeNodeDef[]): ReadonlyMap<string, readonly string[]> {
   const links: Map<string, string[]> = new Map<string, string[]>(nodes.map((node: SkillTreeNodeDef): [string, string[]] => [node.id, []]));
   for (const node of nodes) {
-    for (const required of node.requires) {
-      links.get(node.id)?.push(required);
-      links.get(required)?.push(node.id);
-    }
+    for (const required of node.requires) links.get(required)?.push(node.id);
   }
   return links;
 }
 
-export function chartRoute(content: Content, allocated: readonly string[], target: string): string[] {
-  if (allocated.includes(target)) return [];
-  const nodes: readonly SkillTreeNodeDef[] = content.skillTree;
-  const starts: readonly string[] = allocated.length > 0 ? allocated : nodes.filter((node: SkillTreeNodeDef): boolean => node.requires.length === 0).map((node: SkillTreeNodeDef): string => node.id);
-  const links: ReadonlyMap<string, readonly string[]> = neighbours(nodes);
+function walk(links: ReadonlyMap<string, readonly string[]>, starts: readonly string[], allocated: readonly string[], target: string): string[] | null {
   const cameFrom: Map<string, string | null> = new Map<string, string | null>(starts.map((id: string): [string, string | null] => [id, null]));
   const queue: string[] = [...starts];
   for (let index: number = 0; index < queue.length; index += 1) {
@@ -102,7 +95,7 @@ export function chartRoute(content: Content, allocated: readonly string[], targe
       queue.push(next);
     }
   }
-  if (!cameFrom.has(target)) return [];
+  if (!cameFrom.has(target)) return null;
   const route: string[] = [];
   let step: string | null = target;
   while (step !== null && !allocated.includes(step)) {
@@ -110,6 +103,15 @@ export function chartRoute(content: Content, allocated: readonly string[], targe
     step = cameFrom.get(step) ?? null;
   }
   return route;
+}
+
+export function chartRoute(content: Content, allocated: readonly string[], target: string): string[] {
+  if (allocated.includes(target)) return [];
+  const nodes: readonly SkillTreeNodeDef[] = content.skillTree;
+  const roots: readonly string[] = nodes.filter((node: SkillTreeNodeDef): boolean => node.requires.length === 0).map((node: SkillTreeNodeDef): string => node.id);
+  if (roots.includes(target)) return [target];
+  const links: ReadonlyMap<string, readonly string[]> = dependents(nodes);
+  return walk(links, allocated, allocated, target) ?? walk(links, [...allocated, ...roots], allocated, target) ?? [];
 }
 
 export function chartHere(content: Content, allocated: readonly string[]): string | null {

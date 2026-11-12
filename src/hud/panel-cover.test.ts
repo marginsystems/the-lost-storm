@@ -67,20 +67,25 @@ void test('the full map closes the other panels and they close it', (): void => 
   const all: Readonly<Record<HudPanel, boolean>> = { inventory: true, character: true, tree: true, map: false };
   assert.deepEqual(closedBy('map', all, false), ['inventory', 'character', 'tree']);
   assert.deepEqual(closedBy('inventory', { ...CLOSED, map: true }, false), ['map']);
-  assert.deepEqual(closedBy('tree', { ...CLOSED, inventory: true, character: true }, false), []);
+  assert.deepEqual(closedBy('character', { ...CLOSED, inventory: true }, false), []);
+});
+
+void test('the Storm Chart is never on screen with another panel: opening it closes them and opening one closes it', (): void => {
+  assert.deepEqual(closedBy('tree', { ...CLOSED, inventory: true, character: true, map: true }, false), ['inventory', 'character', 'map']);
+  for (const other of ['inventory', 'character', 'map'] as const) assert.deepEqual(closedBy(other, { ...CLOSED, tree: true }, false), ['tree']);
+  assert.deepEqual(closedBy('inventory', { ...CLOSED, tree: true }, true), ['tree']);
 });
 
 void test('as sheets, a panel shares the screen only with the inventory', (): void => {
-  assert.deepEqual(closedBy('tree', { ...CLOSED, inventory: true, character: true }, true), ['character']);
-  assert.deepEqual(closedBy('character', { ...CLOSED, inventory: true, tree: true }, true), ['tree']);
+  assert.deepEqual(closedBy('character', { ...CLOSED, inventory: true }, true), []);
   assert.deepEqual(closedBy('inventory', { ...CLOSED, character: true }, true), []);
 });
 
 void test('turning into sheets keeps the latest panel beside the inventory and closes the rest', (): void => {
-  const crowded: Readonly<Record<HudPanel, boolean>> = { ...CLOSED, inventory: true, character: true, tree: true };
-  assert.deepEqual(sheetOverflow(crowded, 'tree'), ['character']);
-  assert.deepEqual(sheetOverflow(crowded, 'character'), ['tree']);
-  assert.deepEqual(sheetOverflow(crowded, 'inventory'), ['tree']);
-  assert.deepEqual(sheetOverflow(crowded, null), ['tree']);
-  assert.deepEqual(sheetOverflow({ ...CLOSED, inventory: true, tree: true }, 'tree'), []);
+  const crowded: Readonly<Record<HudPanel, boolean>> = { ...CLOSED, inventory: true, character: true, map: true };
+  assert.deepEqual(sheetOverflow(crowded, 'map'), ['character']);
+  assert.deepEqual(sheetOverflow(crowded, 'character'), ['map']);
+  assert.deepEqual(sheetOverflow(crowded, 'inventory'), ['map']);
+  assert.deepEqual(sheetOverflow(crowded, null), ['map']);
+  assert.deepEqual(sheetOverflow({ ...CLOSED, inventory: true, character: true }, 'character'), []);
 });

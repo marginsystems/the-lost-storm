@@ -7,7 +7,7 @@ export type PanelCover = 'side' | 'full' | 'none';
 export const PANEL_COVER: Readonly<Record<HudPanel, PanelCover>> = {
   inventory: 'side',
   character: 'side',
-  tree: 'none',
+  tree: 'full',
   map: 'full',
 };
 

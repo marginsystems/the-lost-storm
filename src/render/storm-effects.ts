@@ -7,7 +7,7 @@ import type { Vec2 } from '../../sim/math.ts';
 import { areaOf } from '../../sim/world/areas.ts';
 import { chargeOf } from '../../sim/world/skills.ts';
 import type { AreaState, MonsterState, World, WorldEvent } from '../../sim/world/types.ts';
-import { disposeObject, discMesh, glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
+import { bandMesh, disposeObject, discMesh, glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
 import type { BurstOptions } from './particles.ts';
 
 export const STORM_EFFECTS = {
@@ -26,6 +26,7 @@ export const STORM_EFFECTS = {
   areaFadeOut: 0.25,
   areaEdgeWidth: 0.06,
   gapFill: 0.07,
+  areaBandInner: 0.7,
   windSpin: 2.6,
   windMotes: 3,
   stormMotes: 1,
@@ -141,8 +142,8 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const delivery: AreaDelivery | null = areaOf(area.skill);
     if (delivery === null) return;
     const color: Color = areaColor(area);
-    const disc = discMesh(color, delivery.radius, 0);
-    const edge = discMesh(color, delivery.radius, 0);
+    const disc = bandMesh(color, delivery.radius * STORM_EFFECTS.areaBandInner, delivery.radius, 0);
+    const edge = bandMesh(color, delivery.radius * (1 - STORM_EFFECTS.areaEdgeWidth), delivery.radius, 0);
     edge.scale.setScalar(1);
     disc.position.set(area.pos.x, 0.07, area.pos.z);
     edge.position.set(area.pos.x, 0.075, area.pos.z);
