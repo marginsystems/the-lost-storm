@@ -8,6 +8,8 @@ import { isMist } from '../../sim/world/glitch.ts';
 import type { Silhouette } from '../../sim/world/glitch-types.ts';
 import type { Command, World, WorldEvent } from '../../sim/world/types.ts';
 import { buildVoidView } from '../render/void-view.ts';
+import type { FigureGauge } from '../render/figure-gauge.ts';
+import { createFigureGauge } from '../render/figure-gauge.ts';
 import type { ZoneView } from '../render/zone-view.ts';
 import type { Ghost } from './ghost.ts';
 import { createGhost } from './ghost.ts';
@@ -67,6 +69,7 @@ interface Stutter {
 }
 
 export function createGlitchView(deps: GlitchViewDeps): GlitchView {
+  const figureGauge: FigureGauge = createFigureGauge();
   const { world, scene, app, settings } = deps;
   const style: HTMLStyleElement = document.createElement('style');
   style.textContent = glitchCss;
@@ -259,7 +262,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
       stepStutter(simDt);
       if (mist !== null) {
         sweep();
-        mist.update(now, dt, world, null);
+        mist.update(now, dt, world, { look: null, figure: figureGauge.height(deps.hero(), now) });
       }
     },
   };

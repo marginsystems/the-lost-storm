@@ -118,6 +118,8 @@ import { changesSave } from './save-events.ts';
 import type { ZoneTransition } from './transition.ts';
 import type { VoicePlayer } from './voice.ts';
 import { createZoneTransition } from './transition.ts';
+import type { FigureGauge } from './render/figure-gauge.ts';
+import { createFigureGauge } from './render/figure-gauge.ts';
 
 const GAME = {
   maxFrame: 0.1,
@@ -328,6 +330,7 @@ async function start(): Promise<void> {
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene);
   const actors: Actors = createActors(stage.scene, library, world);
+  const figureGauge: FigureGauge = createFigureGauge();
   const itemImage = (item: ItemInstance): string | null => {
     const base: ItemBaseDef | null = baseOf(content, item);
     if (base === null) return null;
@@ -573,7 +576,7 @@ async function start(): Promise<void> {
     audio.update(dt);
     particles.update(simVisualDt);
     weather.update(simVisualDt);
-    zoneView.update(now / 1000, dt, world, input.look);
+    zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.height(actors.hero(), now / 1000) });
     if (zoneView.lightsVersion !== torchVersion) {
       torchVersion = zoneView.lightsVersion;
       effects.setTorches(zoneView.torches);

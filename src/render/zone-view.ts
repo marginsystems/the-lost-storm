@@ -53,13 +53,18 @@ interface Source {
   score: number;
 }
 
+export interface ViewFocus {
+  readonly look: Vec2 | null;
+  readonly figure: number;
+}
+
 export interface ZoneView {
   readonly zone: ZoneDef;
   readonly group: Group;
   readonly torches: readonly Vector3[];
   readonly lightsVersion: number;
   setLightBudget(count: number): void;
-  update(time: number, dt: number, world: World, look: Vec2 | null): void;
+  update(time: number, dt: number, world: World, focus: ViewFocus): void;
   dispose(): void;
 }
 

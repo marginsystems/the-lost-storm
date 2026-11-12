@@ -12,7 +12,8 @@ import { CAMERA } from './iso-camera.ts';
 import type { VoidLight } from './void-light.ts';
 import { createVoidLight } from './void-light.ts';
 import { GROUND_FRAGMENT, GROUND_VERTEX, MIST_FRAGMENT, MIST_VERTEX, MOTE_FRAGMENT, MOTE_VERTEX } from './void-shaders.ts';
-import type { ZoneView } from './zone-view.ts';
+import type { ViewFocus, ZoneView } from './zone-view.ts';
+import { FIGURE_GAUGE } from './figure-gauge.ts';
 
 export const VOID_VIEW = {
   groundSize: 240,
@@ -41,7 +42,12 @@ export const VOID_VIEW = {
   },
   edgeFeather: 0.13,
   fray: 0.85,
-  feetClear: { inner: 0.7, outer: 1.5 },
+  figureClear: { inner: 1.15, outer: 2.7 },
+  rest: { tear: 1.8, feather: 1.7, breathe: 0.3, curl: 0.24 },
+  restWall: 0.2,
+  motionRate: 2.2,
+  groundClear: { inner: 1.4, outer: 2.6 },
+  pocketShade: { edge: 0.06, inner: 0.05 },
   wallLight: 0.55,
   glimpseColor: 0x6d747d,
   glimpseOpacity: 0.75,
@@ -173,13 +179,15 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
   fieldTexture.needsUpdate = true;
   const fieldUniform: IUniform<DataTexture> = { value: fieldTexture };
   const openScale: IUniform<number> = { value: VOID_VIEW.sleepingClear };
+  const figure: IUniform<Vector3> = { value: new Vector3(FIGURE_GAUGE.fallback, VOID_VIEW.figureClear.inner, VOID_VIEW.figureClear.outer) };
+  const motion: IUniform<number> = { value: 0 };
   const light: VoidLight = createVoidLight(zone.floorHeight);
   group.add(light.group);
   const glimpse = buildGlimpse(zone.floorHeight);
   group.add(glimpse.group);
 
   const groundUniforms: Uniforms = UniformsUtils.merge([UniformsLib.fog]);
-  Object.assign(groundUniforms, { uColor: color(VOID_VIEW.groundColor), uShade: color(VOID_VIEW.groundShade), uFlashColor: flashColor, uShift: shift, uHero: hero, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uRipple: { value: VOID_VIEW.ripple }, uShadow: { value: VOID_VIEW.heroShadow } });
+  Object.assign(groundUniforms, { uColor: color(VOID_VIEW.groundColor), uShade: color(VOID_VIEW.groundShade), uFlashColor: flashColor, uShift: shift, uHero: hero, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uRipple: { value: VOID_VIEW.ripple }, uShadow: { value: VOID_VIEW.heroShadow }, uField: fieldUniform, uSpan: { value: MIST.span }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uOpen: openScale, uGroundClear: { value: new Vector2(VOID_VIEW.groundClear.inner, VOID_VIEW.groundClear.outer) }, uPocketShade: { value: new Vector2(VOID_VIEW.pocketShade.edge, VOID_VIEW.pocketShade.inner) } });
   const groundMaterial: ShaderMaterial = new ShaderMaterial({ uniforms: groundUniforms, defines, vertexShader: GROUND_VERTEX, fragmentShader: GROUND_FRAGMENT, fog: true });
   const groundGeometry: PlaneGeometry = new PlaneGeometry(VOID_VIEW.groundSize, VOID_VIEW.groundSize);
   const ground: Mesh = new Mesh(groundGeometry, groundMaterial);
@@ -191,7 +199,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
   const layers: Mesh[] = tier.layers.map((which: number, index: number): Mesh => {
     const layer = VOID_VIEW.layers[which] ?? VOID_VIEW.layers[0];
     const material: ShaderMaterial = new ShaderMaterial({
-      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uView: view, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: which * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uDir: dir, uSpan: { value: MIST.span }, uNeed: { value: layer.need }, uTear: { value: layer.tear }, uWarp: { value: layer.warp }, uFeather: { value: VOID_VIEW.edgeFeather }, uFray: { value: VOID_VIEW.fray }, uFeet: { value: new Vector2(VOID_VIEW.feetClear.inner, VOID_VIEW.feetClear.outer) }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uStreak: { value: layer.streak }, uWall: { value: VOID_VIEW.wallLight }, uEddyRadius: { value: MIST.eddyRadius }, uEddies: eddies, uField: fieldUniform, uOpen: openScale, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor) },
+      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uView: view, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: which * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uDir: dir, uSpan: { value: MIST.span }, uNeed: { value: layer.need }, uTear: { value: layer.tear }, uWarp: { value: layer.warp }, uFeather: { value: VOID_VIEW.edgeFeather }, uFray: { value: VOID_VIEW.fray }, uFigure: figure, uRest: { value: new Vector4(VOID_VIEW.rest.tear, VOID_VIEW.rest.feather, VOID_VIEW.rest.breathe, VOID_VIEW.rest.curl) }, uMotion: motion, uRestWall: { value: VOID_VIEW.restWall }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uStreak: { value: layer.streak }, uWall: { value: VOID_VIEW.wallLight }, uEddyRadius: { value: MIST.eddyRadius }, uEddies: eddies, uField: fieldUniform, uOpen: openScale, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor) },
       defines,
       vertexShader: MIST_VERTEX,
       fragmentShader: MIST_FRAGMENT,
@@ -263,6 +271,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
   };
 
   const follow = (world: World, dt: number, look: Vec2 | null): void => {
+    motion.value += (drive.momentum - motion.value) * Math.min(1, dt * VOID_VIEW.motionRate);
     const pos: Vec2 = world.player.pos;
     const before: Vec2 = lastShift ?? world.shift;
     const moved: Vec2 = { x: world.shift.x - before.x, z: world.shift.z - before.z };
@@ -298,10 +307,11 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
     torches: [],
     lightsVersion: 0,
     setLightBudget(): void {},
-    update(now: number, dt: number, world: World, look: Vec2 | null): void {
+    update(now: number, dt: number, world: World, focus: ViewFocus): void {
       time.value = now;
       shift.value.set(world.shift.x, world.shift.z);
-      follow(world, dt, look);
+      figure.value.x = focus.figure;
+      follow(world, dt, focus.look);
       stepLightning(world, dt);
       stepGlimpse(world, dt);
       light.update(world, now, dt);

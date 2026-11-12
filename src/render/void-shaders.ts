@@ -52,10 +52,19 @@ uniform float uFlash;
 uniform float uFlashReach;
 uniform float uRipple;
 uniform float uShadow;
+uniform sampler2D uField;
+uniform float uSpan;
+uniform float uFieldReach;
+uniform float uOpen;
+uniform vec2 uGroundClear;
+uniform vec2 uPocketShade;
 varying vec3 vWorld;
 ${NOISE}
 void main() {
   vec2 q = vWorld.xz - uShift;
+  vec2 fromCentre = abs(vWorld.xz - uHero);
+  float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
+  float pocket = max(texture2D(uField, q / uSpan).r * inside, 1.0 - smoothstep(uGroundClear.x, uGroundClear.y, distance(vWorld.xz, uHero))) * uOpen;
   float warp = voidFbm(q * 0.11);
   float ripple = sin(dot(q, vec2(0.83, 0.55)) * 2.4 + warp * 9.0) * 0.5 + 0.5;
   float fine = voidNoise(q * 1.7);
@@ -64,6 +73,8 @@ void main() {
   color *= 1.0 - uRipple * (ripple * 0.7 + fine * 0.3);
   vec2 toHero = vWorld.xz - uHero - vec2(-0.25, 0.1);
   color *= 1.0 - uShadow * exp(-dot(toHero, toHero) / 0.9);
+  color *= 1.0 - uPocketShade.x * clamp(pocket * (1.0 - pocket) * 4.0, 0.0, 1.0);
+  color *= mix(1.0 - uPocketShade.y, 1.0, smoothstep(0.15, 1.0, pocket));
   vec2 toFlash = vWorld.xz - uFlashPos;
   color += uFlashColor * uFlash * 0.18 * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
   gl_FragColor = vec4(color, 1.0);
@@ -105,7 +116,10 @@ uniform float uTear;
 uniform float uWarp;
 uniform float uFeather;
 uniform float uFray;
-uniform vec2 uFeet;
+uniform vec3 uFigure;
+uniform vec4 uRest;
+uniform float uMotion;
+uniform float uRestWall;
 uniform float uFieldReach;
 uniform float uStreak;
 uniform float uWall;
@@ -117,6 +131,11 @@ uniform vec3 uLight;
 uniform vec3 uLightColor;
 varying vec3 vWorld;
 ${NOISE}
+float figureDistance(vec2 p, vec2 feet, vec2 head) {
+  vec2 span = head - feet;
+  float t = clamp(dot(p - feet, span) / max(dot(span, span), 0.0001), 0.0, 1.0);
+  return distance(p, feet + span * t);
+}
 vec2 voidSwirl(vec2 q) {
   for (int index = 0; index < VOID_EDDIES; index++) {
     vec4 eddy = uEddies[index];
@@ -140,15 +159,21 @@ void main() {
   float lit = voidFbm(at + vec2(0.35, 0.22));
   float storm = voidFbm(q * uScale * 0.38 - roll * 0.8 + uSeed * 1.7 + vec2(body * 1.6));
   vec2 warp = vec2(voidFbm(swirled * 0.3 + uSeed + roll * 1.7), voidFbm(swirled * 0.3 - uSeed * 0.7 - roll * 1.3)) - 0.5;
-  float feet = 1.0 - smoothstep(uFeet.x, uFeet.y, distance(p, uHero));
+  vec2 rel = p - uHero;
+  float breathe = voidFbm(rel * 0.42 + vec2(uTime * 0.06, -uTime * 0.045) + uSeed * 0.31);
+  float curl = voidNoise(rel * 1.3 - vec2(uTime * 0.11, uTime * 0.08) + uSeed);
+  float reachOut = 1.0 + (breathe - 0.5) * uRest.z * 2.0 + (curl - 0.5) * uRest.w + sin(uTime * 0.55 + uSeed) * 0.04;
+  vec2 head = uHero - uView * min(uFigure.x, uHeight);
+  float figure = 1.0 - smoothstep(uFigure.y * reachOut, uFigure.z * reachOut, figureDistance(p, uHero, head));
   vec2 fromCentre = abs(p - uHero);
   float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
-  float cleared = max(texture2D(uField, (swirled + warp * uWarp) / uSpan).r * inside, feet) * uOpen;
+  float cleared = max(texture2D(uField, (swirled + warp * uWarp) / uSpan).r * inside, figure) * uOpen;
   float fray = voidFbm(swirled * uFray + roll * 2.2 + uSeed * 3.1);
-  float need = uNeed + (mix(body, fray, 0.55) - 0.5) * uTear;
-  float soft = uFeather * (0.5 + fray);
+  float still = 1.0 - uMotion;
+  float need = uNeed + (mix(body, fray, 0.55) - 0.5) * uTear * mix(1.0, uRest.x, still);
+  float soft = uFeather * (0.5 + fray) * mix(1.0, uRest.y, still);
   float open = smoothstep(need - soft, need + soft, cleared);
-  float wall = clamp(open * (1.0 - open) * 4.0, 0.0, 1.0) * smoothstep(0.02, 0.2, cleared);
+  float wall = clamp(open * (1.0 - open) * 4.0, 0.0, 1.0) * smoothstep(0.02, 0.2, cleared) * mix(1.0, uRestWall, still);
   float away = distance(p, uHero);
   float near = 1.0 - smoothstep(uNear.x, uNear.y, away);
   float puff = smoothstep(0.3, 0.58, body);
