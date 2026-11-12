@@ -10,6 +10,8 @@ import type { IsoCamera } from '../render/iso-camera.ts';
 import { arrowToward } from './arrow-geometry.ts';
 import type { ArrowPlacement, Point, Rect } from './arrow-geometry.ts';
 import css from './objective.css?inline';
+import type { LabelGlide } from '../render/label-glide.ts';
+import { createGlide, glideToward } from '../render/label-glide.ts';
 
 export const OBJECTIVE = {
   color: 0xe8b866,
@@ -61,6 +63,7 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
   let sinceRead: number = Infinity;
   let previous: ObjectiveTarget | null = null;
   let level: number = 0;
+  const glide: LabelGlide = createGlide();
 
   return {
     update(dt: number, time: number, world: World): void {
@@ -85,7 +88,11 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
         placement = arrowToward(project, world.player.pos, target.pos, world.zone.floorHeight, { width: window.innerWidth, height: window.innerHeight, margin: OBJECTIVE.screenMargin, gap: OBJECTIVE.hudGap, blockers });
       }
       arrow.classList.toggle('visible', placement !== null);
-      if (placement !== null) arrow.style.transform = `translate(${placement.x.toFixed(1)}px, ${placement.y.toFixed(1)}px) rotate(${placement.angle.toFixed(3)}rad)`;
+      if (placement === null) glide.started = false;
+      else {
+        glideToward(glide, placement.x, placement.y, dt);
+        arrow.style.transform = `translate(${glide.x.toFixed(2)}px, ${glide.y.toFixed(2)}px) rotate(${placement.angle.toFixed(3)}rad)`;
+      }
     },
   };
 }
