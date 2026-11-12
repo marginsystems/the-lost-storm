@@ -26,7 +26,7 @@
     "name": "The North Lamp",
     "requires": ["fallen_in"],
     "objectives": [
-      {"id": "before", "type": "defeat", "monster": "one_before", "text": "Find what took the north wick, past the end of Duskway"},
+      {"id": "before", "type": "defeat", "monster": "stormcaller_rival", "text": "Find what took the north wick, past the end of Duskway"},
       {"id": "light", "type": "reach", "zone": "dusks_end", "x": 38, "z": 9.6, "radius": 2.4, "text": "Light the North Lamp"},
       {"id": "tell", "type": "talk", "npc": "maren", "text": "Tell the Tallier what you met on the road"}
     ]
@@ -37,7 +37,7 @@
     "requires": ["fallen_in"],
     "objectives": [
       {"id": "scavenger", "type": "talk", "npc": "pell", "text": "Ask the scavenger in the Spill about the east wick"},
-      {"id": "mason", "type": "defeat", "monster": "mason", "text": "Take the east wick from the Mason, in the Coursework"},
+      {"id": "mason", "type": "defeat", "monster": "unfinished_colossus", "text": "Take the east wick from the Unfinished Colossus, in the Coursework"},
       {"id": "light", "type": "reach", "zone": "the_coursework", "x": 46.6, "z": 20, "radius": 2.4, "text": "Light the East Lamp"}
     ]
   },
@@ -48,7 +48,7 @@
     "objectives": [
       {"id": "lampwright", "type": "talk", "npc": "hale", "text": "Tell the Lampwright both lamps are lit"},
       {"id": "door", "type": "reach", "zone": "the_still", "x": 30, "z": 14, "radius": 3, "text": "Pass the Gate and cross the Still"},
-      {"id": "welcome", "type": "defeat", "monster": "welcome", "text": "Stand your ground"},
+      {"id": "welcome", "type": "defeat", "monster": "timekeeper_gatekeeper", "text": "Stand your ground"},
       {"id": "hale_still", "type": "talk", "npc": "hale", "text": "Speak to the Lampwright"},
       {"id": "tallier_end", "type": "talk", "npc": "maren", "text": "Go back to the Tallier"}
     ]

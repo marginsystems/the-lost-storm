@@ -229,6 +229,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'surge_cleared':
           case 'notice':
           case 'hero_step':
+          case 'revive':
           case 'explored':
           case 'glitch_start':
           case 'glitch_word':

@@ -67,6 +67,8 @@ export interface ActorState {
   stagger: number;
   combo: ComboState | null;
   root: number;
+  tempo: number;
+  tempoTime: number;
   alive: boolean;
   deadTime: number;
   moving: boolean;
@@ -156,6 +158,8 @@ export interface MonsterState extends ActorState {
   nextSkill: SkillDef | null;
   readonly summonerId: number | null;
   summonTimer: number;
+  foeId: number | null;
+  readonly revived: boolean;
 }
 
 export type Actor = PlayerState | MonsterState;
@@ -182,6 +186,7 @@ export interface ProjectileState {
   readonly id: number;
   readonly ownerId: number;
   readonly team: Team;
+  readonly faction: string | null;
   readonly skill: SkillDef;
   readonly damageMin: number;
   readonly damageMax: number;
@@ -199,10 +204,27 @@ export interface HazardState {
   readonly id: number;
   readonly ownerId: number;
   readonly team: Team;
+  readonly faction: string | null;
   readonly skill: SkillDef;
   readonly pos: Vec2;
   readonly radius: number;
   readonly delay: number;
+  readonly damageMin: number;
+  readonly damageMax: number;
+  readonly damagePercent: number;
+  readonly critChance: number;
+  readonly critMultiplier: number;
+  timeLeft: number;
+}
+
+export interface EchoState {
+  readonly ownerId: number;
+  readonly team: Team;
+  readonly faction: string | null;
+  readonly skill: SkillDef;
+  readonly origin: Vec2;
+  readonly direction: Vec2;
+  readonly target: Vec2 | null;
   readonly damageMin: number;
   readonly damageMax: number;
   readonly damagePercent: number;
@@ -367,7 +389,8 @@ export type NoticeReason = 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask
 
 export type WorldEvent =
   | { readonly type: 'skill_start'; readonly actorId: number; readonly skill: SkillDef; readonly direction: Vec2; readonly windup: number; readonly recovery: number }
-  | { readonly type: 'skill_impact'; readonly actorId: number; readonly team: Team; readonly skill: SkillDef; readonly origin: Vec2; readonly direction: Vec2; readonly hits: number }
+  | { readonly type: 'skill_impact'; readonly actorId: number; readonly team: Team; readonly skill: SkillDef; readonly origin: Vec2; readonly direction: Vec2; readonly hits: number; readonly echo: boolean }
+  | { readonly type: 'revive'; readonly monsterId: number; readonly corpseId: number; readonly by: number }
   | { readonly type: 'skill_interrupt'; readonly actorId: number }
   | { readonly type: 'projectile_spawn'; readonly projectile: ProjectileState }
   | { readonly type: 'projectile_end'; readonly id: number; readonly pos: Vec2; readonly hit: boolean; readonly skill: SkillDef }
@@ -458,6 +481,7 @@ export interface World {
   exploredRevision: number;
   projectiles: ProjectileState[];
   hazards: HazardState[];
+  echoes: EchoState[];
   ground: GroundItem[];
   nextId: number;
   nextItemUid: number;

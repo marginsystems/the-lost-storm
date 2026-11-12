@@ -65,11 +65,11 @@
     {"prop": "brazier", "x": 35.4, "z": 23.4, "y": 0, "rotationDegrees": 0}
   ],
   "packs": [
-    { "x": 12, "z": 12, "members": [{ "monster": "bone_thrall", "count": 4 }] },
-    { "x": 44, "z": 12, "members": [{ "monster": "bone_thrall", "count": 3 }, { "monster": "hex_caller", "count": 2 }] },
-    { "x": 28, "z": 15, "members": [{"monster": "bone_thrall", "count": 2}, {"monster": "sodden", "count": 3}] },
-    { "x": 7, "z": 23, "members": [{"monster": "sodden", "count": 1, "mods": ["gravecalling"]}, {"monster": "bone_thrall", "count": 1}, {"monster": "hex_caller", "count": 1}] },
-    { "x": 49, "z": 25, "members": [{ "monster": "bone_thrall", "count": 4 }, { "monster": "hex_caller", "count": 1 }] }
+    {"x": 12, "z": 12, "members": [{"monster": "mended", "count": 4}]},
+    {"x": 44, "z": 12, "members": [{"monster": "mended", "count": 3}, {"monster": "mender", "count": 2}]},
+    {"x": 28, "z": 15, "members": [{"monster": "mended", "count": 2}, {"monster": "unfinished_taker", "count": 2}]},
+    {"x": 7, "z": 23, "members": [{"monster": "unfinished_brute", "count": 1, "mods": ["gravecalling"]}, {"monster": "mended", "count": 1}, {"monster": "mender", "count": 1}]},
+    {"x": 49, "z": 25, "members": [{"monster": "mended", "count": 4}, {"monster": "mender", "count": 1}]}
   ],
   "surge": { "delay": 5, "surgesPerExtraMonster": 2, "maxExtraMonsters": 3 },
   "exits": [{ "id": "stair", "x": 28, "z": 41.6, "radius": 1.5, "to": "stillhold", "toExit": "bastion_stair", "arrival": { "x": 28, "z": 37 } }],

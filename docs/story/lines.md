@@ -79,33 +79,38 @@ A **conversation** opens the dialogue box and advances on a click. A **bark** is
 | `odric_shop_2` | Fresh stock since you left. Have a look. | Spoken as a bark when his stall opens; one of the three, at random. |
 | `odric_shop_3` | Gold first, then the blade. That's the order of things. | Spoken as a bark when his stall opens; one of the three, at random. |
 
-## The One Before (`one_before`)
+## Warden Guide (`warden_guide`)
 
 | Id | Line | When |
 |---|---|---|
-| `one_before_sight_1` | You know this road. I can see it on you. | Bark, when the boss first notices the hero. |
-| `one_before_sight_2` | The door stood here. It called for me. For me. | Bark, straight after. |
-| `one_before_half_1` | What name did it call you? Say it. ... You can't hear it either. | Bark, when the boss falls below half life. |
-| `one_before_death_1` | Then who was it calling? | Bark, when the boss dies. |
+| `warden_guide_road` | Stay on the road. It holds while we walk it. | Conversation, any talk. |
 
-## The Welcome (`welcome`)
+## Warden Trader (`warden_trader`)
 
 | Id | Line | When |
 |---|---|---|
-| `welcome_near_1` | There you are. Come in. You've been out so long. | Bark, when the hero comes within sight of the door. |
-| `welcome_near_2` | You remember us. The light, the voice. That was never a house. That was us, calling. | Bark, straight after. |
-| `welcome_near_3` | You are a piece of us that wandered off and grew a shape. Come back in. | Bark, straight after. |
-| `welcome_near_4` | And the one behind you, the one who moves you. It may come too. It is ours as well, though it thinks not. | Bark, straight after. |
-| `welcome_fight_1` | No? Then we will carry you. | Bark, when the fight starts. |
-| `welcome_two_1` | Holding a shape is such work. Aren't you tired? | Bark, at two thirds life. |
-| `welcome_three_1` | We never said a name. There are no names in here. | Bark, at one third life. |
-| `welcome_death_1` | Stay out, then. Be someone. Be cold. | Bark, when the boss falls. |
-| `welcome_death_2` | The door does not close. We are patient. We are all there is. | Bark, straight after. |
+| `warden_trader_goods` | Whatever the road gives me, I carry. Not much today. | Conversation, any talk. |
+
+## Warden Lookout (`warden_lookout`)
+
+| Id | Line | When |
+|---|---|---|
+| `warden_lookout_ahead` | Unfinished on the road ahead. Keep your eyes open. | Conversation, any talk. |
+
+## Unfinished Borrower (`unfinished_borrower`)
+
+Placeholder sentences borrowed from other people's lives; the owner decides the final words.
+
+| Id | Line | When |
+|---|---|---|
+| `unfinished_borrower_said_1` | Mind the step. It was always loose. | Bark, one of these at random when it first notices a foe. |
+| `unfinished_borrower_said_2` | I left the bread on the sill. Someone should take it in. | Bark, one of these at random when it first notices a foe. |
+| `unfinished_borrower_said_3` | Tell her I will be home before dark. | Bark, one of these at random when it first notices a foe. |
+| `unfinished_borrower_said_4` | That is my coat. I know that coat. | Bark, one of these at random when it first notices a foe. |
+| `unfinished_borrower_said_5` | Who let the dog out? | Bark, one of these at random when it first notices a foe. |
 
 ## Voice direction
 
 - **Maren**: low, dry, level. She never raises her voice. `maren_wake_5` is flat on purpose; she is hiding something. `maren_end_3` is the only line where she sounds moved, and only slightly.
 - **Hale**: warm, slow, a smile in it. `hale_gate_3` is shy. `hale_still_2` is a long breath out; `hale_still_3` is him picking himself up.
 - **Pell**: quick and bright. `pell_first_6` drops for a moment. `pell_first_7`: the first "Ha!" is real, the second is not.
-- **The One Before**: hoarse, close to the microphone, exhausted rather than loud. `one_before_death_1` is a real question.
-- **The Welcome**: soft, kind, unhurried. Never a threat in the voice, least of all in `welcome_fight_1`.

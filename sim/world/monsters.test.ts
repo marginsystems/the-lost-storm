@@ -72,7 +72,7 @@ const SCENES: readonly Scene[] = [
   { name: 'target pacing behind a wall edge', tiles: CORNER, props: [], start: { x: 6, z: 16 }, monsters: [{ x: 21, z: 9 }], pace: [{ x: 9, z: 15 }, { x: 4, z: 18 }] },
 ];
 
-const KINDS: readonly string[] = ['bone_thrall', 'hex_caller', 'one_before', 'mason', 'hodman'];
+const KINDS: readonly string[] = ['mended', 'mender', 'stormcaller_rival', 'unfinished_colossus', 'unfinished_thrower'];
 
 function spawn(world: World, kind: string, at: Vec2): MonsterState {
   world.zone = { ...world.zone, packs: [{ x: at.x, z: at.z, members: [{ monster: kind, count: 1, mods: [] }], when: [] }] };
@@ -147,7 +147,7 @@ void test('a caster backed against a wall stops instead of running in place', ()
   const world: World = worldIn(content, base.id, 3);
   enterZone(world, sceneZone(base, 'test_blocked', { tiles: OPEN, props: [], start: { x: 4, z: 14 } }), { type: 'start' });
   world.monsters = [];
-  const caster: MonsterState = spawn(world, 'hex_caller', { x: 1.2, z: 14 });
+  const caster: MonsterState = spawn(world, 'mender', { x: 1.2, z: 14 });
   caster.stance = 'retreat';
   const samples: MotionSample[] = [];
   for (let step: number = 0; step < Math.round(LIMITS.blockedSeconds / MOTION_DT); step += 1) {
@@ -164,7 +164,7 @@ void test('a monster pinned against a prop stops its run within a tenth of a sec
   const world: World = worldIn(content, base.id, 4);
   enterZone(world, sceneZone(base, 'test_pinned', { tiles: OPEN, props: [placedProp('mossy_pillar', 14, 14)], start: { x: 14, z: 3 } }), { type: 'start' });
   world.monsters = [];
-  const thrall: MonsterState = spawn(world, 'bone_thrall', { x: 14, z: 16.2 });
+  const thrall: MonsterState = spawn(world, 'mended', { x: 14, z: 16.2 });
   let blockedSteps: number = 0;
   let runningWhileBlocked: number = 0;
   for (let step: number = 0; step < Math.round(1 / MOTION_DT); step += 1) {
@@ -239,7 +239,7 @@ void test('a ranged monster backs off from a hero who closes in and holds once c
 
 void test('a summoner calls its own kind to its side, aggroed, and never more than its limit', (): void => {
   const world: World = arena(10);
-  const mother: MonsterState = place(world, 'bone_thrall', { x: ARENA_CENTRE.x + 6, z: ARENA_CENTRE.z }, ['test_brood']);
+  const mother: MonsterState = place(world, 'mended', { x: ARENA_CENTRE.x + 6, z: ARENA_CENTRE.z }, ['test_brood']);
   const summon = must(mother.def.summon, 'summon');
   for (let step: number = 0; step < Math.round((summon.cooldown * 3 + 1) / MOTION_DT); step += 1) {
     world.player.life = world.player.maxLife;

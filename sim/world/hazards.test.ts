@@ -86,7 +86,7 @@ void test('a burst on a warded hero counts no hit', (): void => {
 
 void test('a volatile elite leaves a burst where it fell, and it goes off after its delay', (): void => {
   const world: World = arena(3);
-  const thrall: MonsterState = place(world, 'bone_thrall', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z }, ['test_volatile']);
+  const thrall: MonsterState = place(world, 'mended', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z }, ['test_volatile']);
   assert.equal(thrall.def.deathSkill, 'test_burst');
   thrall.life = 1;
   applyHit(world, offenceOf(world.player), thrall, must(world.player.skills[0], 'basic attack'), { x: 1, z: 0 });

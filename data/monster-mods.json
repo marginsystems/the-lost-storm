@@ -50,7 +50,7 @@
     "color": "#9adf8a",
     "deathSkill": null,
     "summon": {
-      "monster": "sodden",
+      "monster": "mended",
       "count": 2,
       "cooldown": 8,
       "limit": 4

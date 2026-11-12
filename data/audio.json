@@ -3,79 +3,73 @@
   "skillStart": {
     "cleave": [{ "sound": "sword_swing_light", "volume": 0.9, "maxVoices": 3 }],
     "dodge_roll": [{ "sound": "footstep_stone", "volume": 0.8, "maxVoices": 2 }],
-    "sodden_grab": [{ "sound": "sword_swing_heavy", "volume": 0.45, "maxVoices": 3 }],
-    "gnawer_pounce": [{ "sound": "sword_swing_light", "volume": 0.7, "maxVoices": 3 }],
-    "spearwife_throw": [{ "sound": "sword_swing_light", "volume": 0.6, "maxVoices": 3 }],
-    "chanter_tide": [{ "sound": "hex_charge", "volume": 0.7, "maxVoices": 2 }],
-    "bearer_slam": [{ "sound": "sword_swing_heavy", "volume": 0.9, "maxVoices": 2 }],
+    "taker_snatch": [{ "sound": "sword_swing_heavy", "volume": 0.45, "maxVoices": 3 }],
+    "thrower_stone": [{ "sound": "sword_swing_light", "volume": 0.6, "maxVoices": 3 }],
+    "keeper_field": [{ "sound": "hex_charge", "volume": 0.7, "maxVoices": 2 }],
+    "brute_haymaker": [{ "sound": "sword_swing_heavy", "volume": 0.9, "maxVoices": 2 }],
     "thunderclap": [{ "sound": "electric_crackle", "volume": 0.8, "maxVoices": 2 }],
     "storm_bolt": [{ "sound": "bolt_zap", "volume": 0.85, "maxVoices": 3 }],
-    "thrall_claw": [{ "sound": "sword_swing_heavy", "volume": 0.5, "maxVoices": 3 }],
-    "hex_bolt": [{ "sound": "hex_charge", "volume": 0.75, "maxVoices": 2 }],
-    "before_sweep": [{ "sound": "sword_swing_heavy", "volume": 0.8, "maxVoices": 2 }],
-    "before_bolts": [{ "sound": "bolt_zap", "volume": 0.8, "maxVoices": 2 }],
-    "before_ring": [{ "sound": "electric_crackle", "volume": 0.9, "maxVoices": 1 }],
-    "mason_hammer": [{ "sound": "sword_swing_heavy", "volume": 1, "maxVoices": 2 }],
-    "mason_stone": [{ "sound": "sword_swing_heavy", "volume": 0.7, "maxVoices": 2 }],
-    "mason_slam": [{ "sound": "sword_swing_heavy", "volume": 1, "maxVoices": 1 }],
-    "roadbound_reach": [{ "sound": "sword_swing_heavy", "volume": 0.5, "maxVoices": 3 }],
-    "lament": [{ "sound": "hex_charge", "volume": 0.7, "maxVoices": 2 }],
-    "misbuilt_slam": [{ "sound": "sword_swing_heavy", "volume": 0.7, "maxVoices": 3 }],
-    "hod_stone": [{ "sound": "sword_swing_light", "volume": 0.6, "maxVoices": 2 }],
-    "echo_touch": [{ "sound": "sword_swing_light", "volume": 0.5, "maxVoices": 3 }],
-    "welcome_ring": [{ "sound": "electric_crackle", "volume": 0.9, "maxVoices": 1 }],
-    "welcome_lance": [{ "sound": "bolt_zap", "volume": 0.9, "maxVoices": 2 }],
-    "welcome_fan": [{ "sound": "hex_charge", "volume": 0.9, "maxVoices": 1 }],
-    "welcome_embrace": [{ "sound": "electric_crackle", "volume": 1, "maxVoices": 1 }]
+    "mended_rhythm": [{ "sound": "sword_swing_heavy", "volume": 0.5, "maxVoices": 3 }],
+    "mender_needle": [{ "sound": "hex_charge", "volume": 0.75, "maxVoices": 2 }],
+    "rival_cleave": [{ "sound": "sword_swing_heavy", "volume": 0.8, "maxVoices": 2 }],
+    "rival_bolt": [{ "sound": "bolt_zap", "volume": 0.8, "maxVoices": 2 }],
+    "rival_clap": [{ "sound": "electric_crackle", "volume": 0.9, "maxVoices": 1 }],
+    "colossus_hammer": [{ "sound": "sword_swing_heavy", "volume": 1, "maxVoices": 2 }],
+    "colossus_stone": [{ "sound": "sword_swing_heavy", "volume": 0.7, "maxVoices": 2 }],
+    "colossus_slam": [{ "sound": "sword_swing_heavy", "volume": 1, "maxVoices": 1 }],
+    "warden_sweep": [{ "sound": "sword_swing_heavy", "volume": 0.5, "maxVoices": 3 }],
+    "borrower_cleave": [{ "sound": "sword_swing_heavy", "volume": 0.7, "maxVoices": 3 }],
+    "still_grasp": [{ "sound": "sword_swing_light", "volume": 0.5, "maxVoices": 3 }],
+    "gate_ring": [{ "sound": "electric_crackle", "volume": 0.9, "maxVoices": 1 }],
+    "keeper_bind": [{ "sound": "bolt_zap", "volume": 0.9, "maxVoices": 2 }],
+    "mender_stitch": [{ "sound": "hex_charge", "volume": 0.9, "maxVoices": 1 }],
+    "keeper_replay": [{ "sound": "sword_swing_light", "volume": 0.7, "maxVoices": 2 }],
+    "gate_replay": [{ "sound": "sword_swing_heavy", "volume": 0.9, "maxVoices": 1 }]
   },
   "skillImpact": {
-    "chanter_tide": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 2 }],
+    "keeper_field": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 2 }],
     "volatile_burst": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 2 }],
-    "bearer_slam": [{ "sound": "ground_boom", "volume": 0.7, "maxVoices": 2 }],
+    "brute_haymaker": [{ "sound": "ground_boom", "volume": 0.7, "maxVoices": 2 }],
     "thunderclap": [
       { "sound": "ground_boom", "volume": 1, "maxVoices": 2 },
       { "sound": "thunder_crack", "volume": 0.75, "maxVoices": 2 }
     ],
-    "before_ring": [
+    "rival_clap": [
       { "sound": "ground_boom", "volume": 0.9, "maxVoices": 1 },
       { "sound": "thunder_crack", "volume": 0.6, "maxVoices": 1 }
     ],
-    "mason_slam": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 1 }],
-    "welcome_ring": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 1 }],
-    "welcome_embrace": [
-      { "sound": "ground_boom", "volume": 1, "maxVoices": 1 },
-      { "sound": "thunder_crack", "volume": 0.7, "maxVoices": 1 }
-    ]
+    "colossus_slam": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 1 }],
+    "gate_ring": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 1 }]
   },
   "projectileSpawn": {
     "storm_bolt": [{ "sound": "bolt_whoosh", "volume": 0.6, "maxVoices": 3 }],
-    "hex_bolt": [{ "sound": "hex_orb_launch", "volume": 0.7, "maxVoices": 2 }]
+    "mender_needle": [{ "sound": "hex_orb_launch", "volume": 0.7, "maxVoices": 2 }]
   },
   "projectileExpire": {
     "storm_bolt": [{ "sound": "electric_crackle", "volume": 0.45, "maxVoices": 2, "cooldown": 0.1 }]
   },
   "skillHit": {
     "storm_bolt": [{ "sound": "bolt_impact", "volume": 0.9, "maxVoices": 3 }],
-    "hex_bolt": [{ "sound": "hex_impact", "volume": 0.8, "maxVoices": 2 }],
+    "mender_needle": [{ "sound": "hex_impact", "volume": 0.8, "maxVoices": 2 }],
     "thunderclap": [{ "sound": "bolt_impact", "volume": 0.55, "maxVoices": 3, "cooldown": 0.04 }]
   },
   "hit": {
-    "bone_thrall": [{ "sound": "bone_hit", "volume": 0.9, "maxVoices": 4 }],
-    "hex_caller": [{ "sound": "bone_hit", "volume": 0.8, "maxVoices": 4 }],
+    "mended": [{ "sound": "bone_hit", "volume": 0.9, "maxVoices": 4 }],
+    "mender": [{ "sound": "bone_hit", "volume": 0.8, "maxVoices": 4 }],
     "player": [{ "sound": "hero_hurt", "volume": 0.85, "maxVoices": 2, "cooldown": 0.3 }]
   },
   "critHit": {
-    "bone_thrall": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
-    "hex_caller": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
+    "mended": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
+    "mender": [{ "sound": "crit_hit", "volume": 0.95, "maxVoices": 3 }],
     "player": [{ "sound": "hero_hurt", "volume": 1, "maxVoices": 2, "cooldown": 0.3 }]
   },
   "death": {
-    "bone_thrall": [{ "sound": "bones_collapse", "volume": 1, "maxVoices": 3 }],
-    "hex_caller": [{ "sound": "bones_collapse", "volume": 0.9, "maxVoices": 3 }],
+    "mended": [{ "sound": "bones_collapse", "volume": 1, "maxVoices": 3 }],
+    "mender": [{ "sound": "bones_collapse", "volume": 0.9, "maxVoices": 3 }],
     "player": [{ "sound": "hero_death", "volume": 1, "maxVoices": 1 }]
   },
   "aggro": {
-    "bone_thrall": [{ "sound": "bones_rattle", "volume": 0.65, "maxVoices": 2, "cooldown": 1.5 }]
+    "mended": [{ "sound": "bones_rattle", "volume": 0.65, "maxVoices": 2, "cooldown": 1.5 }]
   },
   "drop": {
     "gold": [{ "sound": "coin_drop", "volume": 0.7, "maxVoices": 3, "cooldown": 0.05 }],

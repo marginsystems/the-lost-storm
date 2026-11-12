@@ -196,6 +196,14 @@ void test('every line has a known speaker, is spoken in exactly one conversation
       used.set(lineId, monster.id);
     }
   }
+  for (const monster of content.monsters.values()) {
+    for (const lineId of monster.barks) {
+      const line = must(content.lines.get(lineId), `line ${lineId}`);
+      assert.equal(line.speaker, monster.id, `${lineId} speaker`);
+      assert.equal(used.get(lineId), undefined, `${lineId} is used twice`);
+      used.set(lineId, monster.id);
+    }
+  }
   for (const zone of content.zones.values()) {
     for (const voice of zone.voices) {
       for (const lineId of voice.lines) {

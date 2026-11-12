@@ -40,11 +40,11 @@ function ground(payload: GroundItem['content']): GroundItem {
 
 void test('a skill starting plays its start sound where the actor stands', (): void => {
   const world: World = fresh();
-  const thrall: MonsterState = monster(world, 'bone_thrall');
+  const thrall: MonsterState = monster(world, 'mended');
   const own: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'skill_start', actorId: world.player.id, skill: skill('cleave'), direction: AWAY, windup: 0.1, recovery: 0.1 });
   assert.deepEqual(sounds(own), ['sword_swing_light']);
   assert.deepEqual(own[0]?.position, world.player.pos);
-  const theirs: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'skill_start', actorId: thrall.id, skill: skill('thrall_claw'), direction: AWAY, windup: 0.1, recovery: 0.1 });
+  const theirs: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'skill_start', actorId: thrall.id, skill: skill('mended_rhythm'), direction: AWAY, windup: 0.1, recovery: 0.1 });
   assert.deepEqual(sounds(theirs), ['sword_swing_heavy']);
   assert.deepEqual(theirs[0]?.position, thrall.pos);
 });
@@ -52,19 +52,19 @@ void test('a skill starting plays its start sound where the actor stands', (): v
 void test('Thunderclap landing plays a boom and a crack at the origin', (): void => {
   const world: World = fresh();
   const origin: Vec2 = { x: 10, z: 12 };
-  const cues: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'skill_impact', actorId: world.player.id, team: 'player', skill: skill('thunderclap'), origin, direction: AWAY, hits: 0 });
+  const cues: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'skill_impact', actorId: world.player.id, team: 'player', skill: skill('thunderclap'), origin, direction: AWAY, hits: 0, echo: false });
   assert.deepEqual(sounds(cues), ['ground_boom', 'thunder_crack']);
   assert.ok(cues.every((cue: SoundCue): boolean => cue.position?.x === 10 && cue.position.z === 12));
 });
 
 void test('a hit plays what the skill and the target sound like, and a crit the crit sound', (): void => {
   const world: World = fresh();
-  const thrall: MonsterState = monster(world, 'bone_thrall');
+  const thrall: MonsterState = monster(world, 'mended');
   const base = { type: 'damage', targetId: thrall.id, sourceId: world.player.id, targetTeam: 'monster', amount: 5, killed: false, pos: thrall.pos, direction: AWAY } as const;
   assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: false, skill: skill('cleave') })), ['bone_hit']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: true, skill: skill('cleave') })), ['crit_hit']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: false, skill: skill('storm_bolt') })), ['bolt_impact', 'bone_hit']);
-  const hurt: readonly SoundCue[] = cuesForEvent(audio, world, { ...base, targetId: world.player.id, targetTeam: 'player', crit: false, skill: skill('hex_bolt') });
+  const hurt: readonly SoundCue[] = cuesForEvent(audio, world, { ...base, targetId: world.player.id, targetTeam: 'player', crit: false, skill: skill('mender_needle') });
   assert.deepEqual(sounds(hurt), ['hex_impact', 'hero_hurt']);
 });
 
@@ -76,7 +76,7 @@ void test('a hit on a monster that is already gone still plays the skill sound o
 
 void test('deaths play by who died', (): void => {
   const world: World = fresh();
-  const thrall: MonsterState = monster(world, 'bone_thrall');
+  const thrall: MonsterState = monster(world, 'mended');
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'death', actorId: thrall.id, team: 'monster', pos: thrall.pos, direction: AWAY })), ['bones_collapse']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'death', actorId: world.player.id, team: 'player', pos: world.player.pos, direction: AWAY })), ['hero_death']);
   assert.deepEqual(cuesForEvent(audio, world, { type: 'death', actorId: 99999, team: 'monster', pos: AWAY, direction: AWAY }), []);
@@ -87,7 +87,7 @@ void test('projectiles sound when they spawn and when they run out, not when the
   const bolt: SkillDef = skill('storm_bolt');
   const spawned: readonly SoundCue[] = cuesForEvent(audio, world, {
     type: 'projectile_spawn',
-    projectile: { id: 1, ownerId: world.player.id, team: 'player', skill: bolt, damageMin: 1, damageMax: 2, damagePercent: 0, critChance: 0, critMultiplier: 1.5, pos: { x: 1, z: 2 }, direction: { x: 0, z: 1 }, distanceLeft: 10, pierceLeft: 0, hitIds: [] },
+    projectile: { id: 1, ownerId: world.player.id, team: 'player', faction: null, skill: bolt, damageMin: 1, damageMax: 2, damagePercent: 0, critChance: 0, critMultiplier: 1.5, pos: { x: 1, z: 2 }, direction: { x: 0, z: 1 }, distanceLeft: 10, pierceLeft: 0, hitIds: [] },
   });
   assert.deepEqual(sounds(spawned), ['bolt_whoosh']);
   assert.deepEqual(cuesForEvent(audio, world, { type: 'projectile_end', id: 1, pos: AWAY, hit: true, skill: bolt }), []);
@@ -116,7 +116,7 @@ void test('level ups, surges, notices and footsteps have sounds, and bookkeeping
   const step: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'hero_step', pos: AWAY });
   assert.deepEqual(sounds(step), ['footstep_stone']);
   assert.deepEqual(step[0]?.position, AWAY);
-  const thrall: MonsterState = monster(world, 'bone_thrall');
+  const thrall: MonsterState = monster(world, 'mended');
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'aggro', monsterId: thrall.id })), ['bones_rattle']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'monster_spawn', monsterId: thrall.id })), ['monsters_rising']);
   for (const event of [{ type: 'xp', amount: 4 }, { type: 'character_changed' }, { type: 'skill_interrupt', actorId: 1 }, { type: 'monster_remove', monsterId: 1 }, { type: 'surge_cleared', surge: 1, delay: 3 }, { type: 'player_respawn' }] as const) {
@@ -126,7 +126,7 @@ void test('level ups, surges, notices and footsteps have sounds, and bookkeeping
 
 void test('cues carry the tuning of their data entry', (): void => {
   const world: World = fresh();
-  const cue: SoundCue = must(cuesForEvent(audio, world, { type: 'monster_spawn', monsterId: monster(world, 'bone_thrall').id })[0], 'monster_spawn cue');
+  const cue: SoundCue = must(cuesForEvent(audio, world, { type: 'monster_spawn', monsterId: monster(world, 'mended').id })[0], 'monster_spawn cue');
   assert.equal(cue.cooldown, 4);
   assert.equal(cue.maxVoices, 1);
   assert.equal(cue.volume, 0.7);

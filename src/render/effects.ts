@@ -1,7 +1,7 @@
 import type { Group, Scene, Vector3 } from 'three';
 import { Color, Mesh, MeshBasicMaterial, PointLight, SphereGeometry } from 'three';
 import type { FlaskResource } from '../../sim/content/flasks.ts';
-import type { SkillDef } from '../../sim/content/types.ts';
+import type { Delivery, SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
 import { disposeObject, glow, groundArcs, markerMesh, pillarMesh, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
@@ -302,9 +302,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     if (event.actorId === world.player.id) return;
     const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
     if (monster === undefined) return;
-    const casts: boolean = event.skill.delivery.type === 'projectile' || event.skill.delivery.type === 'mark';
+    const type: Delivery['type'] = event.skill.delivery.type;
+    const casts: boolean = type === 'projectile' || type === 'mark' || type === 'field' || type === 'revive';
     const lands: { readonly x: number; readonly z: number } = event.skill.leap === null ? monster.pos : (monster.action?.target ?? monster.pos);
-    if (event.skill.delivery.type !== 'mark') telegraph(monster.id, lands.x, lands.z, event.direction, event.skill, event.windup);
+    if (!casts || type === 'projectile') telegraph(monster.id, lands.x, lands.z, event.direction, event.skill, event.windup);
     if (casts) spray(monster.pos.x + event.direction.x * 0.6, 1.7, monster.pos.z + event.direction.z * 0.6, colorOf(event.skill.vfx.color), 16, { speed: { min: 0.3, max: 1.6 }, lift: { min: 0.3, max: 2.2 }, life: { min: 0.3, max: event.windup + 0.1 }, gravity: -1, size: { min: 0.25, max: 0.55 } });
   };
 
@@ -320,6 +321,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         shockwave(event.origin.x, event.origin.z, delivery.radius, color);
         break;
       case 'mark':
+      case 'field':
         spray(event.origin.x + event.direction.x * EFFECTS.castReach, EFFECTS.castLift, event.origin.z + event.direction.z * EFFECTS.castReach, color, 12, { speed: { min: 1, max: 4 }, lift: { min: 0.5, max: 3 }, life: { min: 0.2, max: 0.5 } });
         break;
       case 'projectile':
@@ -328,6 +330,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         break;
       case 'dash':
         if (event.skill.vfx.style === 'roll') dashTrails.land(event.origin, event.direction, color);
+        break;
+      case 'revive':
         break;
     }
     if (event.team !== 'player') return;
@@ -453,6 +457,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             break;
           case 'skill_interrupt':
             cancelOwned(event.actorId);
+            break;
+          case 'revive':
             break;
           case 'hazard':
             onHazard(event);

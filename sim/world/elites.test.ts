@@ -7,7 +7,7 @@ import type { MonsterDef } from '../content/types.ts';
 import { modsNamed, withMods } from './elites.ts';
 import type { MonsterState, World } from './types.ts';
 
-const thrall: MonsterDef = must(ARENA_CONTENT.monsters.get('bone_thrall'), 'thrall');
+const thrall: MonsterDef = must(ARENA_CONTENT.monsters.get('mended'), 'thrall');
 const swift: MonsterModDef = must(ARENA_CONTENT.monsterMods.get('test_swift'), 'swift');
 const brood: MonsterModDef = must(ARENA_CONTENT.monsterMods.get('test_brood'), 'brood');
 const volatile: MonsterModDef = must(ARENA_CONTENT.monsterMods.get('test_volatile'), 'volatile');
@@ -43,7 +43,7 @@ void test('unknown modifier names are skipped', (): void => {
 
 void test('a pack member spawns with the modifiers its zone gives it', (): void => {
   const world: World = arena(11);
-  const elite: MonsterState = place(world, 'bone_thrall', ARENA_CENTRE, ['test_swift']);
+  const elite: MonsterState = place(world, 'mended', ARENA_CENTRE, ['test_swift']);
   assert.deepEqual(elite.def.mods, ['test_swift']);
   assert.equal(elite.maxLife, Math.round(thrall.life * swift.lifeScale * (1 + world.content.world.scaling.lifePerLevel * (elite.level - 1))));
   assert.ok(elite.radius > thrall.radius * thrall.scale);
