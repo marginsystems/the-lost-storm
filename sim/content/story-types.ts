@@ -8,9 +8,13 @@ export interface ZoneWake {
   readonly rise: number;
 }
 
+export const FIND_MARKERS = ['none', 'bolt'] as const;
+export type FindMarker = (typeof FIND_MARKERS)[number];
+
 export interface ItemFind {
   readonly type: 'item';
   readonly item: string;
+  readonly marker: FindMarker;
   readonly sets: StoryFlags;
   readonly equip: boolean;
 }

@@ -1,0 +1,104 @@
+.loot-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  will-change: transform;
+}
+
+.loot-label span {
+  display: block;
+  transform: translate(-50%, -100%);
+  padding: 1px 8px 2px;
+  border-radius: 3px;
+  background: rgba(6, 8, 12, 0.6);
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  animation: loot-in var(--spring-bouncy-ms) var(--spring-bouncy) both;
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.loot-label {
+  transition: opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.loot-label.dim {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loot-label:hover span {
+  background: rgba(16, 20, 28, 0.78);
+  scale: 1.06;
+}
+
+.loot-arrow {
+  position: absolute;
+  left: 0;
+  top: var(--tag-mid, -10px);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+  rotate: var(--tag-turn, 0rad);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.loot-arrow::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--tag-reach, 40px));
+  top: -4px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid rgba(8, 10, 16, 0.8);
+}
+
+.loot-label.away .loot-arrow {
+  opacity: 1;
+}
+
+.loot-label.taken span {
+  animation: loot-out var(--spring-smooth-ms) var(--spring-smooth) both;
+}
+
+.loot-label.folded {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.loot-label span[data-more]::after {
+  content: '+' attr(data-more);
+  margin-left: 6px;
+  color: rgba(214, 220, 230, 0.62);
+  font-weight: 400;
+}
+
+@keyframes loot-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+}
+
+@keyframes loot-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -170%) scale(0.85);
+  }
+}

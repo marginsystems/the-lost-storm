@@ -7,18 +7,15 @@ export const SHAFT_MOTION = {
 } as const;
 
 export interface Presence {
-  readonly value: number;
-  readonly velocity: number;
+  value: number;
+  velocity: number;
 }
 
-export interface FloorPoint {
-  readonly x: number;
-  readonly z: number;
+export function hidden(): Presence {
+  return { value: 0, velocity: 0 };
 }
 
-export const HIDDEN: Presence = { value: 0, velocity: 0 };
-
-export function settle(presence: Presence, target: number, dt: number): Presence {
+export function settle(presence: Presence, target: number, dt: number): void {
   const damping: number = 2 * Math.sqrt(SHAFT_MOTION.stiffness);
   let value: number = presence.value;
   let velocity: number = presence.velocity;
@@ -29,20 +26,25 @@ export function settle(presence: Presence, target: number, dt: number): Presence
     value += velocity * step;
     left -= step;
   }
-  if (Math.abs(target - value) < SHAFT_MOTION.rest && Math.abs(velocity) < SHAFT_MOTION.rest) return { value: target, velocity: 0 };
-  return { value: Math.min(1, Math.max(0, value)), velocity };
+  if (Math.abs(target - value) < SHAFT_MOTION.rest && Math.abs(velocity) < SHAFT_MOTION.rest) {
+    presence.value = target;
+    presence.velocity = 0;
+    return;
+  }
+  presence.value = Math.min(1, Math.max(0, value));
+  presence.velocity = velocity;
 }
 
-export function crowdShares(points: readonly FloorPoint[]): number[] {
+export function crowdShare(xs: ArrayLike<number>, zs: ArrayLike<number>, count: number, index: number): number {
   const reach: number = SHAFT_MOTION.crowdRadius * SHAFT_MOTION.crowdRadius;
-  return points.map((point: FloorPoint, index: number): number => {
-    let near: number = 0;
-    points.forEach((other: FloorPoint, otherIndex: number): void => {
-      if (otherIndex === index) return;
-      const dx: number = other.x - point.x;
-      const dz: number = other.z - point.z;
-      if (dx * dx + dz * dz < reach) near += 1;
-    });
-    return 1 / Math.sqrt(1 + SHAFT_MOTION.crowdDim * near);
-  });
+  const x: number = xs[index] ?? 0;
+  const z: number = zs[index] ?? 0;
+  let near: number = 0;
+  for (let other: number = 0; other < count; other += 1) {
+    if (other === index) continue;
+    const dx: number = (xs[other] ?? 0) - x;
+    const dz: number = (zs[other] ?? 0) - z;
+    if (dx * dx + dz * dz < reach) near += 1;
+  }
+  return 1 / Math.sqrt(1 + SHAFT_MOTION.crowdDim * near);
 }

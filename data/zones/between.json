@@ -91,7 +91,7 @@
         "after": 170,
         "ahead": 16,
         "latest": 50,
-        "find": {"type": "item", "item": "worn_journal", "sets": {"first_choice": "took_journal"}}
+        "find": {"type": "item", "item": "worn_journal", "marker": "bolt", "sets": {"first_choice": "took_journal"}}
       },
       {
         "id": "blade",
@@ -99,7 +99,7 @@
         "after": 34,
         "ahead": 9,
         "latest": 30,
-        "find": {"type": "item", "item": "rusted_blade", "sets": {"first_blade": "found"}, "equip": true}
+        "find": {"type": "item", "item": "rusted_blade", "marker": "bolt", "sets": {"first_blade": "found"}, "equip": true}
       },
       {
         "id": "light",

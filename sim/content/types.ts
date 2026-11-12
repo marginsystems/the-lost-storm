@@ -241,10 +241,14 @@ export interface WearableDef {
   readonly hides: readonly string[];
 }
 
+export const RARITY_MARKERS = ['none', 'shaft'] as const;
+export type RarityMarker = (typeof RARITY_MARKERS)[number];
+
 export interface RarityDef {
   readonly id: string;
   readonly name: string;
   readonly color: string;
+  readonly marker: RarityMarker;
   readonly weight: number;
   readonly affixMin: number;
   readonly affixMax: number;

@@ -52,7 +52,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { AFFIX_POSITIONS, ARMOUR_MATERIALS, ITEM_SLOTS, MOD_OPS, RARITY_MARKERS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -255,6 +255,7 @@ function rarity(value: unknown, where: string): RarityDef {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
     color: text(source, 'color', where),
+    marker: source['marker'] === undefined ? 'none' : choice(source, 'marker', RARITY_MARKERS, where),
     weight: numeric(source, 'weight', where),
     affixMin: numeric(source, 'affixMin', where),
     affixMax: numeric(source, 'affixMax', where),

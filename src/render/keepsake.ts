@@ -1,6 +1,4 @@
-import type { BufferGeometry } from 'three';
-import { AdditiveBlending, BoxGeometry, CircleGeometry, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry } from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { BoxGeometry, Color, Group, Mesh, MeshStandardMaterial } from 'three';
 
 export const KEEPSAKE = {
   cover: 0x4b3a2b,
@@ -10,28 +8,11 @@ export const KEEPSAKE = {
   thickness: 0.09,
   pageInset: 0.03,
   yaw: 0.5,
-  beamColor: 0xf6efe0,
-  beamWidth: 0.42,
-  beamHeight: 9,
-  beamOpacity: 0.28,
-  haloRadius: 1.1,
-  haloOpacity: 0.22,
-  renderOrder: 8,
 } as const;
 
 export interface Keepsake {
   readonly group: Group;
   dispose(): void;
-}
-
-function beamGeometry(): BufferGeometry {
-  const planes: BufferGeometry[] = [0, Math.PI / 2].map((yaw: number): BufferGeometry => {
-    const plane: PlaneGeometry = new PlaneGeometry(KEEPSAKE.beamWidth, KEEPSAKE.beamHeight);
-    plane.rotateY(yaw);
-    plane.translate(0, KEEPSAKE.beamHeight / 2, 0);
-    return plane;
-  });
-  return mergeGeometries(planes);
 }
 
 export function createKeepsake(): Keepsake {
@@ -48,23 +29,13 @@ export function createKeepsake(): Keepsake {
   const book: Group = new Group();
   book.add(cover, pages);
   book.rotation.y = KEEPSAKE.yaw;
-  const beam: BufferGeometry = beamGeometry();
-  const glowMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: new Color(KEEPSAKE.beamColor), transparent: true, opacity: KEEPSAKE.beamOpacity, depthWrite: false, side: DoubleSide, blending: AdditiveBlending });
-  const beamMesh: Mesh = new Mesh(beam, glowMaterial);
-  beamMesh.renderOrder = KEEPSAKE.renderOrder;
-  const haloGeometry: CircleGeometry = new CircleGeometry(KEEPSAKE.haloRadius, 28);
-  haloGeometry.rotateX(-Math.PI / 2);
-  const haloMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: new Color(KEEPSAKE.beamColor), transparent: true, opacity: KEEPSAKE.haloOpacity, depthWrite: false, blending: AdditiveBlending });
-  const halo: Mesh = new Mesh(haloGeometry, haloMaterial);
-  halo.position.y = 0.01;
-  halo.renderOrder = KEEPSAKE.renderOrder;
-  group.add(book, beamMesh, halo);
+  group.add(book);
   return {
     group,
     dispose(): void {
       group.removeFromParent();
-      for (const geometry of [coverGeometry, pageGeometry, beam, haloGeometry]) geometry.dispose();
-      for (const material of [coverMaterial, pageMaterial, glowMaterial, haloMaterial]) material.dispose();
+      for (const geometry of [coverGeometry, pageGeometry]) geometry.dispose();
+      for (const material of [coverMaterial, pageMaterial]) material.dispose();
     },
   };
 }

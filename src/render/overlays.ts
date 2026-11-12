@@ -15,19 +15,20 @@ import { createLootTip } from './loot-tip.ts';
 import type { LootTip, TipCheck } from './loot-tip.ts';
 import { anchorInView, placeTag } from './label-edge.ts';
 import type { ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
-import { stackLabels } from './label-stack.ts';
+import { foldPiles, stackLabels } from './label-stack.ts';
 import type { LabelGlide } from './label-glide.ts';
 import { createGlide, glideToward } from './label-glide.ts';
-import type { ScreenRect } from './label-stack.ts';
-import type { LabelBox } from './label-stack.ts';
+import type { Folding, RankedBox, ScreenRect } from './label-stack.ts';
 
 export const OVERLAYS = {
   numberLife: 1,
   numberDrift: 26,
   labelLift: 1.35,
-  labelExit: 0.26,
+  labelExit: 0.52,
   labelNear: 9,
   labelGap: 2,
+  pileKeep: 3,
+  pileReach: 36,
   labelHeight: 20,
   labelWidth: 90,
   labelShownRank: 1,
@@ -55,7 +56,10 @@ interface FloatingNumber {
 
 interface LootLabel {
   readonly element: HTMLDivElement;
+  readonly inner: HTMLSpanElement;
   readonly ground: GroundItem;
+  folded: boolean;
+  more: number;
   leaving: number;
   rank: number;
   width: number;
@@ -192,6 +196,17 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     numbers.push({ element, x, y, z, age: 0 });
   };
 
+  const foldLabel = (label: LootLabel, folded: boolean, more: number): void => {
+    if (folded !== label.folded) {
+      label.folded = folded;
+      label.element.classList.toggle('folded', folded);
+    }
+    if (more === label.more) return;
+    label.more = more;
+    if (more > 0) label.inner.dataset['more'] = String(more);
+    else delete label.inner.dataset['more'];
+  };
+
   const labelFor = (world: World, ground: GroundItem): void => {
     if (ground.content.kind !== 'item' || labels.has(ground.id)) return;
     const element: HTMLDivElement = document.createElement('div');
@@ -222,7 +237,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     });
     labelLayer.append(element);
     const rank: number = world.content.rarities.findIndex((rarity): boolean => rarity.id === item.rarity);
-    labels.set(ground.id, { element, ground, leaving: -1, rank, width: OVERLAYS.labelWidth, height: OVERLAYS.labelHeight, shown: true, glide: createGlide() });
+    labels.set(ground.id, { element, inner, ground, folded: false, more: 0, leaving: -1, rank, width: OVERLAYS.labelWidth, height: OVERLAYS.labelHeight, shown: true, glide: createGlide() });
   };
 
   const showExits = (world: World): void => {
@@ -465,7 +480,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         };
       });
       for (const ground of world.ground) labelFor(world, ground);
-      const boxes: LabelBox[] = [];
+      const boxes: RankedBox[] = [];
+      const settled: RankedBox[] = [];
       const items: Map<number, ItemPoint> = new Map<number, ItemPoint>();
       const moved: Set<number> = new Set<number>();
       for (const [id, label] of labels) {
@@ -496,14 +512,18 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           const first: TagPlace = placeTag(point.x, point.y, label.width, label.height, view, hudRects);
           items.set(id, { x: point.x, y: point.y });
           if (first.away) moved.add(id);
-          boxes.push({ id, x: first.x, y: first.y, width: label.width, height: label.height });
+          const box: RankedBox = { id, x: first.x, y: first.y, width: label.width, height: label.height, rank: label.rank };
+          boxes.push(box);
+          if (label.leaving < 0) settled.push(box);
         }
         else {
           anchor.copy(point);
           glidePlace(label.element, label.glide, anchor, point, dt);
         }
       }
-      const lifts: Map<number, number> = stackLabels(boxes, OVERLAYS.labelGap);
+      const folding: Folding = foldPiles(showAll ? [] : settled, OVERLAYS.pileReach, OVERLAYS.pileKeep);
+      for (const [id, label] of labels) foldLabel(label, folding.folded.has(id), folding.more.get(id) ?? 0);
+      const lifts: Map<number, number> = stackLabels(boxes.filter((box: RankedBox): boolean => !folding.folded.has(box.id)), OVERLAYS.labelGap);
       for (const box of boxes) {
         const label: LootLabel | undefined = labels.get(box.id);
         const item: ItemPoint | undefined = items.get(box.id);

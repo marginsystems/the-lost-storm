@@ -9,7 +9,7 @@ export interface ItemLine {
   readonly source: 'implicit' | 'affix';
 }
 
-const FALLBACK_RARITY: RarityDef = { id: 'unknown', name: 'Unknown', color: '#9aa3ad', weight: 0, affixMin: 0, affixMax: 0, statScale: 1 };
+const FALLBACK_RARITY: RarityDef = { id: 'unknown', name: 'Unknown', color: '#9aa3ad', marker: 'none', weight: 0, affixMin: 0, affixMax: 0, statScale: 1 };
 
 export function emptyEquipment(): Equipment {
   return { weapon: null, head: null, chest: null, hands: null, legs: null, feet: null, charm: null };
