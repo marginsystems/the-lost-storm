@@ -331,6 +331,7 @@ body.touch .tc-close svg {
     inset: 0;
     height: auto;
     transform: none;
+    background: #05070b;
     padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   }
 

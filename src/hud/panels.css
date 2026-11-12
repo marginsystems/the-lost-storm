@@ -429,6 +429,7 @@ body[data-overlay-full='on'] .hud-hint,
 body[data-overlay-full='on'] .hud-banners,
 body[data-overlay-full='on'] .world-layer,
 body[data-overlay-full='on'] .hud-bark,
+body[data-overlay-full='on'] .name-echo,
 body[data-overlay-full='on'] .menu-badge {
   animation: overlay-chrome-yield var(--spring-snappy-ms) var(--spring-snappy) both;
   pointer-events: none;
@@ -438,6 +439,7 @@ body[data-overlay-full='off'] .hud-hint,
 body[data-overlay-full='off'] .hud-banners,
 body[data-overlay-full='off'] .world-layer,
 body[data-overlay-full='off'] .hud-bark,
+body[data-overlay-full='off'] .name-echo,
 body[data-overlay-full='off'] .menu-badge {
   animation: overlay-chrome-return var(--spring-smooth-ms) var(--spring-smooth) both;
 }
