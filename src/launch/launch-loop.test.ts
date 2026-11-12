@@ -169,3 +169,11 @@ void test('counts still go out while a feedback body keeps failing', async (): P
   assert.deepEqual(server.counted, [{ event: 'opened_game', device: 'desktop' }]);
   assert.equal(loop.state().outbox.length, 1);
 });
+
+void test('the sent_feedback count goes out with the send that earned it', async (): Promise<void> => {
+  const { server, open } = rig();
+  const loop: LaunchLoop = open();
+  assert.equal(await loop.send(body('counted too')), 'sent');
+  assert.deepEqual(server.counted, [{ event: 'sent_feedback', device: 'phone' }]);
+  assert.deepEqual(loop.state().pending, []);
+});

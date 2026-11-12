@@ -89,7 +89,8 @@ export function createLaunchLoop(deps: LaunchDeps): LaunchLoop {
 
   const drain = async (): Promise<void> => {
     const [feedbackClear, countsClear]: readonly [boolean, boolean] = await Promise.all([drainFeedback(), drainCounts()]);
-    if (feedbackClear && countsClear) failures = 0;
+    const countsLeftClear: boolean = countsClear && (await drainCounts());
+    if (feedbackClear && countsLeftClear) failures = 0;
     else schedule();
   };
 
