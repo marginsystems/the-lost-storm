@@ -524,3 +524,43 @@ void test('a save made while the account request is in flight does not create a 
   assert.equal(harness.server.accounts.length, 1);
   assert.equal(account(harness).save?.level, 3);
 });
+
+void test('a save on this device is sent to an account created in a load whose save read then failed', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  harness.store.write(SAVE_KEY, JSON.stringify(makeSave(7, 0)));
+  harness.server.plan(503, {}, 'GET');
+  const backend: Backend = harness.open();
+  assert.equal((await backend.load())?.level, 7);
+  assert.equal(harness.server.accounts.length, 1);
+  assert.equal(record(harness).pending, true);
+  assert.equal(account(harness).save, null);
+  await harness.timers.advance(TIMING.retryBaseMs);
+  assert.equal(account(harness).save?.level, 7);
+  assert.equal(record(harness).pending, false);
+  assert.equal(harness.server.accounts.length, 1);
+});
+
+void test('a save on this device is sent to the account that replaces one the server no longer knows, when the save read then failed', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  await synced(harness, 5);
+  harness.server.plan(401, {}, 'GET');
+  harness.server.plan(503, {}, 'GET');
+  const backend: Backend = harness.open();
+  assert.equal((await backend.load())?.level, 5);
+  assert.equal(harness.server.accounts.length, 2);
+  await harness.timers.advance(TIMING.retryBaseMs);
+  assert.equal(account(harness, 1).save?.level, 5);
+});
+
+void test('when the save read is refused for an account created in that load, the device save waits for the next save', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  harness.store.write(SAVE_KEY, JSON.stringify(makeSave(7, 0)));
+  harness.server.plan(400, {}, 'GET');
+  const backend: Backend = harness.open();
+  assert.equal((await backend.load())?.level, 7);
+  assert.equal(harness.timers.pending(), 0);
+  assert.equal(harness.server.count('PUT', '/v1/save'), 0);
+  backend.save(makeSave(7, 5));
+  await harness.timers.advance(TIMING.pushGapMs);
+  assert.equal(account(harness).save?.xp, 5);
+});

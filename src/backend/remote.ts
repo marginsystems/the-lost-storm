@@ -271,10 +271,12 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   const load = async (): Promise<SaveData | null> => {
     const localSave: SaveData | null = await local.load();
     const signal: AbortSignal = timeout(TIMING.loadMs);
+    const tokenBefore: string | null = record?.token ?? null;
     const reached = await reachCloud(signal, false);
     if (reached === null) {
       setState('offline');
       announceOffline();
+      if (record !== null && record.token !== tokenBefore && localSave !== null) keep({ ...record, pending: true, savedAt: now() });
       if (record?.pending === true && localSave !== null) latest = localSave;
       if (record === null) unsent = localSave;
       schedule(TIMING.retryBaseMs);
