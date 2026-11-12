@@ -1,5 +1,6 @@
 import type { Box3, Material, Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { warnInConsole } from './backend/console-log.ts';
@@ -225,7 +226,7 @@ async function start(): Promise<void> {
   if (lobby !== null) mountTitleLobby(element('title-lobby', HTMLElement), lobby);
   const stage: Stage = createStage(canvas, mobile.quality.tier);
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
-  const loader: GLTFLoader = new GLTFLoader();
+  const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const dresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material);
 
   const save: SaveData | null = await loadingSave;
@@ -241,7 +242,7 @@ async function start(): Promise<void> {
   status.textContent = 'Waking the world…';
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
-  let thumbnails: ItemThumbnails = createItemThumbnails(library, shownPieces);
+  let thumbnails: ItemThumbnails = new Map<string, string>();
   let zoneView: ZoneView = firstView;
   let markers: ZoneMarkers = createZoneMarkers(stage.scene, world.zone);
   stage.setAmbience(world.zone.ambience);
@@ -522,7 +523,7 @@ async function start(): Promise<void> {
   camera.snap(world.player.pos.x, world.player.pos.z);
   requestAnimationFrame(frame);
   const loadTheRest = async (): Promise<void> => {
-    await loadRemainingCharacters(loader, content, library);
+    await loadRemainingCharacters(loader, content, dresser, library);
     thumbnails = createItemThumbnails(library, shownPieces);
     actors.refreshWear(world);
     hud.refreshItems();

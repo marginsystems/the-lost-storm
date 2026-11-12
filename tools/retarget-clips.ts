@@ -100,13 +100,22 @@ function parentOf(node: Node): Node | null {
   return node.getParentNode();
 }
 
+function numbersOf(accessor: Accessor | null): number[] | null {
+  if (accessor === null) return null;
+  const numbers: number[] = [];
+  const element: number[] = [];
+  for (let index: number = 0; index < accessor.getCount(); index += 1) {
+    accessor.getElement(index, element);
+    numbers.push(...element);
+  }
+  return numbers;
+}
+
 function trackOf(sampler: AnimationSampler, width: number): Track | null {
-  const input: Accessor | null = sampler.getInput();
-  const output: Accessor | null = sampler.getOutput();
-  const times: ArrayLike<number> | null = input?.getArray() ?? null;
-  const values: ArrayLike<number> | null = output?.getArray() ?? null;
+  const times: number[] | null = numbersOf(sampler.getInput());
+  const values: number[] | null = numbersOf(sampler.getOutput());
   if (times === null || values === null) return null;
-  return { times: Array.from(times), values: Array.from(values), width };
+  return { times, values, width };
 }
 
 function readClip(animation: Animation): SourceClip {

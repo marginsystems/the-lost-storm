@@ -30,24 +30,33 @@ export function hiddenBodyParts(content: Content, wearableIds: readonly string[]
 export interface CharacterNeeds {
   readonly rigs: ReadonlySet<string>;
   readonly wearables: ReadonlySet<string>;
+  readonly attachments: ReadonlySet<string>;
+}
+
+export function heldGear(content: Content, equipped: Equipment | null): string[] {
+  const weapon = equipped?.weapon ?? null;
+  const held: string | null = weapon === null ? content.player.unarmedVisual : (content.itemBases.get(weapon.base)?.visual ?? content.player.unarmedVisual);
+  return held === null ? [...content.player.gear] : [...content.player.gear, held];
 }
 
 export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Equipment | null): CharacterNeeds {
   const rigs: Set<string> = new Set<string>([content.player.rig]);
   const wearables: Set<string> = new Set<string>(wornWearables(content, content.player.wear, equipped));
-  const add = (rig: string, wear: readonly string[]): void => {
+  const attachments: Set<string> = new Set<string>(heldGear(content, equipped));
+  const add = (rig: string, wear: readonly string[], gear: readonly string[]): void => {
     rigs.add(rig);
     for (const id of wornWearables(content, wear, null)) wearables.add(id);
+    for (const id of gear) attachments.add(id);
   };
   for (const placed of zone.npcs) {
     const npc: NpcDef | undefined = content.npcs.get(placed.npc);
-    if (npc !== undefined) add(npc.rig, npc.wear);
+    if (npc !== undefined) add(npc.rig, npc.wear, npc.gear);
   }
   for (const pack of zone.packs) {
     for (const member of pack.members) {
       const monster: MonsterDef | undefined = content.monsters.get(member.monster);
-      if (monster !== undefined) add(monster.rig, monster.wear);
+      if (monster !== undefined) add(monster.rig, monster.wear, monster.gear);
     }
   }
-  return { rigs, wearables };
+  return { rigs, wearables, attachments };
 }

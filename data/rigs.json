@@ -2,10 +2,7 @@
   {
     "id": "skeleton_hero",
     "url": "models/characters/skeleton.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -159,10 +156,7 @@
   {
     "id": "skeleton_thrall",
     "url": "models/characters/skeleton.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -307,10 +301,7 @@
   {
     "id": "skeleton_caster",
     "url": "models/characters/skeleton.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -451,10 +442,7 @@
   {
     "id": "human_man",
     "url": "models/characters/human_man.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -599,10 +587,7 @@
   {
     "id": "human_woman",
     "url": "models/characters/human_woman.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -747,10 +732,7 @@
   {
     "id": "human_elder",
     "url": "models/characters/human_elder.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -895,10 +877,7 @@
   {
     "id": "drowned_man",
     "url": "models/characters/human_man.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -1023,10 +1002,7 @@
   {
     "id": "gaunt_ghoul",
     "url": "models/characters/human_elder.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -1155,10 +1131,7 @@
   {
     "id": "marsh_thrower",
     "url": "models/characters/human_woman.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -1283,10 +1256,7 @@
   {
     "id": "tide_chanter",
     "url": "models/characters/human_elder.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,
@@ -1415,10 +1385,7 @@
   {
     "id": "shield_bearer",
     "url": "models/characters/human_man.glb",
-    "animationUrls": [
-      "models/animations/humanoid.glb",
-      "models/animations/combat.glb"
-    ],
+    "clipFolder": "models/animations/clips",
     "scale": 1.2,
     "yawOffsetDegrees": 0,
     "height": 1.85,

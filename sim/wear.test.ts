@@ -5,7 +5,7 @@ import { loadContent } from './content/content.ts';
 import type { Content, WearableDef } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
-import { hiddenBodyParts, wornWearables, zoneCharacterNeeds } from './wear.ts';
+import { heldGear, hiddenBodyParts, wornWearables, zoneCharacterNeeds } from './wear.ts';
 import type { Equipment, ItemInstance } from './world/types.ts';
 
 const content: Content = loadContent();
@@ -80,7 +80,13 @@ void test('a zone needs the hero, its people and its packs, dressed as they are,
       assert.ok(needs.rigs.has(npc.rig), zone.id);
       for (const id of npc.wear) assert.ok(needs.wearables.has(id), `${zone.id} ${id}`);
     }
-    for (const member of zone.packs.flatMap((pack) => pack.members)) assert.ok(needs.rigs.has(must(content.monsters.get(member.monster), member.monster).rig), zone.id);
+    for (const member of zone.packs.flatMap((pack) => pack.members)) {
+      const monster = must(content.monsters.get(member.monster), member.monster);
+      assert.ok(needs.rigs.has(monster.rig), zone.id);
+      for (const id of monster.gear) assert.ok(needs.attachments.has(id), `${zone.id} ${id}`);
+    }
+    for (const placed of zone.npcs) for (const id of must(content.npcs.get(placed.npc), placed.npc).gear) assert.ok(needs.attachments.has(id), `${zone.id} ${id}`);
+    for (const id of heldGear(content, emptyEquipment())) assert.ok(needs.attachments.has(id), zone.id);
   }
   const town = [...content.zones.values()].find((zone) => zone.packs.length === 0);
   if (town !== undefined) assert.ok(zoneCharacterNeeds(content, town, null).wearables.size < content.wearables.size);
@@ -91,4 +97,12 @@ void test('the equipped pieces are needed too', (): void => {
   const equipped: Equipment = { ...emptyEquipment(), chest: item('drowned_leathers') };
   const needs = zoneCharacterNeeds(content, zone, equipped);
   for (const id of wornWearables(content, content.player.wear, equipped)) assert.ok(needs.wearables.has(id));
+});
+
+void test('the hero holds his weapon, or his bare-handed gear without one', (): void => {
+  assert.deepEqual(heldGear(content, null), content.player.unarmedVisual === null ? [...content.player.gear] : [...content.player.gear, content.player.unarmedVisual]);
+  for (const base of content.itemBases.values()) {
+    if (base.visual === null || base.slot !== 'weapon') continue;
+    assert.ok(heldGear(content, { ...emptyEquipment(), weapon: item(base.id) }).includes(base.visual), base.id);
+  }
 });

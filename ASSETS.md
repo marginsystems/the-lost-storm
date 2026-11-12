@@ -32,7 +32,6 @@ Every humanoid uses one rig, the Universal Animation Library rig (53 `DEF-*` joi
 | `public/models/characters/skeleton.glb` | The skeleton body used by the hero, the townsfolk and every monster | "Free Pack - Human Skeleton" by PolyOne Studio, fitted to the rig, decimated and repainted for Movement Lab (`blender/variant_skeleton.py` in that repository); lower-detail copies stripped here by `tools/build-characters.ts` | CC BY 4.0 |
 | `public/models/characters/human_man.glb`, `public/models/characters/human_woman.glb`, `public/models/characters/human_elder.glb` | The townsfolk: a broad middle-aged man, a middle-aged woman and a gaunt old man, each a skinned body with eyes on the shared rig | MakeHuman base mesh (`base.obj`, the `body` group) shaped with the MakeHuman `caucasian-*` and `universal-*` macro targets, with the MakeHuman skins `middleage_caucasian_male`, `middleage_caucasian_female` and `old_caucasian_male` and the low-poly eyes with the brown iris, from `makehuman_system_assets_cc0.zip`; skinned through the MakeHuman default rig, refitted to this rig and decimated to 50% by `blender/build_wearables.py` (parts with `"body": true` in `blender/wearables.json`) | CC0 1.0 |
 | `public/models/animations/humanoid.glb` | The rig and 15 clips (idle, walk, jog, sprint, sword attack, punches, spell, hits, death, roll, landing) | Universal Animation Library (Standard) by Quaternius, Godot Asset Store build; the clips are picked out by `tools/build-characters.ts` | CC0 1.0 |
-
 | `public/models/animations/combat.glb` | 22 combat clips on the same rig: a three-swing sword chain, heavy slams, a sweep, a lunge, a dash, blocks, a shield bash, a claw lunge, a throw, a chop, a leap, a zombie idle, walk and scratch, and two more deaths | Universal Animation Library 2 (Standard) by Quaternius, `Unreal-Godot/UAL2_Standard.glb`, moved onto this rig by `tools/retarget-clips.ts` | CC0 1.0 |
 
 Rebuild the first two with:
@@ -51,6 +50,26 @@ After either rebuild, drop the keyframes that a straight line between their neig
 
 ```bash
 node tools/resample-clips.ts public/models/animations/humanoid.glb public/models/animations/combat.glb
+```
+
+The game loads one file per clip, so a character fetches only the clips its rig plays, and the hero's clips arrive without the combat clips of every monster. The two files above are the sources; the split files are what ships:
+
+| File | What it is | Source | Licence |
+|---|---|---|---|
+| `public/models/animations/clips/Death01.glb`, `public/models/animations/clips/Hit_Chest.glb`, `public/models/animations/clips/Hit_Head.glb`, `public/models/animations/clips/Idle_Loop.glb`, `public/models/animations/clips/Idle_Torch_Loop.glb`, `public/models/animations/clips/Jog_Fwd_Loop.glb`, `public/models/animations/clips/Jump_Land.glb`, `public/models/animations/clips/Punch_Cross.glb`, `public/models/animations/clips/Punch_Jab.glb`, `public/models/animations/clips/Roll.glb`, `public/models/animations/clips/Spell_Simple_Shoot.glb`, `public/models/animations/clips/Sprint_Loop.glb`, `public/models/animations/clips/Sword_Attack.glb`, `public/models/animations/clips/Sword_Idle.glb`, `public/models/animations/clips/Walk_Loop.glb` | The 15 clips of `humanoid.glb`, one clip per file | Split from `public/models/animations/humanoid.glb` by `tools/split-clips.ts` | CC0 1.0 |
+| `public/models/animations/clips/Sword_Combo_A.glb`, `public/models/animations/clips/Sword_Combo_B.glb`, `public/models/animations/clips/Sword_Combo_C.glb`, `public/models/animations/clips/Sword_Slam.glb`, `public/models/animations/clips/Sword_Slam_Charged.glb`, `public/models/animations/clips/Sword_Lunge.glb`, `public/models/animations/clips/Sword_Sweep.glb`, `public/models/animations/clips/Sword_Dash.glb`, `public/models/animations/clips/Sword_Block.glb`, `public/models/animations/clips/Shield_Idle_Loop.glb`, `public/models/animations/clips/Shield_Bash.glb`, `public/models/animations/clips/Shield_Block.glb`, `public/models/animations/clips/Shield_Break.glb`, `public/models/animations/clips/Claw_Lunge.glb`, `public/models/animations/clips/Throw.glb`, `public/models/animations/clips/Chop.glb`, `public/models/animations/clips/Leap.glb`, `public/models/animations/clips/Zombie_Idle_Loop.glb`, `public/models/animations/clips/Zombie_Walk_Loop.glb`, `public/models/animations/clips/Zombie_Scratch.glb`, `public/models/animations/clips/Death_Knockback.glb`, `public/models/animations/clips/Death_Collapse.glb` | The 22 clips of `combat.glb`, one clip per file | Split from `public/models/animations/combat.glb` by `tools/split-clips.ts` | CC0 1.0 |
+
+Split them after any rebuild, drop the tracks that never leave a joint's rest pose, and compress the result:
+
+```bash
+node tools/split-clips.ts public/models/animations/humanoid.glb public/models/animations/combat.glb public/models/animations/clips
+node tools/compress-models.ts public/models/animations/clips/*.glb
+```
+
+Every model under `public/models` is compressed by `tools/compress-models.ts`: textures become WebP, vertices are reordered for the meshopt codec, normals, tangents, skin weights and colours are quantised (positions and texture coordinates are not, so wearables still bind to any body and dressed materials keep their UVs), and the buffers are written with `EXT_meshopt_compression`. Run it on any new or rebuilt model before it ships:
+
+```bash
+node tools/compress-models.ts public/models/props/new_prop.glb
 ```
 
 ## Weapons

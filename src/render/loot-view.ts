@@ -205,6 +205,10 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       for (const ground of world.ground) {
         seen.add(ground.id);
         let entry: LootEntry | undefined = entries.get(ground.id);
+        if (entry?.kind === 'gem' && attachmentFor(world, ground) !== undefined) {
+          release(entry);
+          entry = undefined;
+        }
         if (entry === undefined) {
           entry = build(world, ground);
           entries.set(ground.id, entry);

@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { must, zoneOf } from '../../test/support.ts';
 import type { Vec2 } from '../math.ts';
 import { buildNavGrid, isWalkable } from '../nav/grid.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
+import { clipUrl, rigClipNames } from './clips.ts';
 import { loadContent } from './content.ts';
 import { contentProblems } from './parse.ts';
 import { allHold } from '../world/conditions.ts';
@@ -47,11 +48,13 @@ function clipNames(path: string): string[] {
   return items(fields(parsed, path)['animations'], `${path}.animations`).map((entry: unknown): string => text(fields(entry, path), 'name', path));
 }
 
-void test('every clip a rig names is in the animation files it loads, and the hero dies in more than one way', (): void => {
+void test('every clip a rig names has its own file in the rig clip folder, and the hero dies in more than one way', (): void => {
   for (const rig of content.rigs.values()) {
-    const shipped: Set<string> = new Set<string>(rig.animationUrls.flatMap((url: string): string[] => clipNames(`public/${url}`)));
-    const named: string[] = [rig.clips.idle, rig.clips.run, ...rig.clips.hit, ...rig.clips.death, ...Object.values(rig.clips.actions).map((entry: { readonly clip: string }): string => entry.clip)];
-    for (const clip of named) assert.ok(shipped.has(clip), `${rig.id} names clip ${clip}, which is not in ${rig.animationUrls.join(', ')}`);
+    for (const clip of rigClipNames(rig)) {
+      const path: string = `public/${clipUrl(rig, clip)}`;
+      assert.ok(existsSync(path), `${rig.id} names clip ${clip}, but ${path} is missing`);
+      assert.deepEqual(clipNames(path), [clip], path);
+    }
   }
   const hero = must(content.rigs.get(content.player.rig), 'hero rig');
   assert.ok(new Set<string>(hero.clips.death).size >= 2);

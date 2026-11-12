@@ -94,7 +94,7 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 | `public/models/` | GLB models. Every file is listed in [ASSETS.md](ASSETS.md) |
 | `public/textures/` | Colour, normal and roughness maps for the surfaces in `data/surfaces.json`. Every file is listed in [ASSETS.md](ASSETS.md) |
 | `blender/` | Blender scripts that build models: weapons, clothing and armour converted from outfit packs to the shared rig, the walls, lamps, furniture and houses of the world (`build_environment.py`), and props converted from Poly Haven scans (`import_polyhaven.py`) |
-| `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file, `retarget-clips.ts` moves clips from a rig with other joint names onto the shared rig (`combat-clips.json` lists which), `pack-gltf.ts` packs a `.gltf` with its buffers and textures into one `.glb`, `resample-clips.ts` drops redundant keyframes from the shared clip files, `half-textures.sh` writes the half-size surface textures the mobile tier loads |
+| `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file, `retarget-clips.ts` moves clips from a rig with other joint names onto the shared rig (`combat-clips.json` lists which), `pack-gltf.ts` packs a `.gltf` with its buffers and textures into one `.glb`, `resample-clips.ts` drops redundant keyframes from the shared clip files, `split-clips.ts` writes one file per clip from the shared clip files, `compress-models.ts` compresses a model with meshopt and WebP, `half-textures.sh` writes the half-size surface textures the mobile tier loads |
 | `test/rules.test.ts` | Repository rules: no comments, no type escape hatches, `sim/` stays free of rendering code, every model is credited |
 
 The renderer reads the world and the events `stepWorld` returns, and sends commands back. It never changes world state.
@@ -133,7 +133,7 @@ A character is a rig entry in `data/rigs.json`. The loader (`src/render/characte
 {
   "id": "skeleton_hero",
   "url": "models/characters/skeleton.glb",
-  "animationUrls": ["models/animations/humanoid.glb", "models/animations/combat.glb"],
+  "clipFolder": "models/animations/clips",
   "scale": 1.2,
   "yawOffsetDegrees": 0,
   "height": 1.85,

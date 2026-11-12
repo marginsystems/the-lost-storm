@@ -1,9 +1,9 @@
 import type { Box3, Scene } from 'three';
 import { Color } from 'three';
 import type { Content } from '../../sim/content/types.ts';
-import { hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
+import { heldGear, hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
 import { wakeProgress } from '../../sim/world/wake.ts';
-import type { ActorState, Equipment, MonsterState, NpcState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
+import type { ActorState, Equipment, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { ActorPose, ActorView } from './actor-view.ts';
 import { ACTOR, createActorView } from './actor-view.ts';
 import type { CharacterLibrary, LoadedRig, RigInstance } from './character-loader.ts';
@@ -48,11 +48,6 @@ function npcPose(npc: NpcState): ActorPose {
   return { pos: npc.pos, facing: npc.facing, moving: false, busy: false, deadTime: 0 };
 }
 
-function playerGear(content: Content, player: PlayerState): string[] {
-  const weapon = player.equipped.weapon;
-  const held: string | null = weapon === null ? content.player.unarmedVisual : (content.itemBases.get(weapon.base)?.visual ?? content.player.unarmedVisual);
-  return held === null ? [...content.player.gear] : [...content.player.gear, held];
-}
 
 function dress(content: Content, rig: RigInstance, clothes: readonly string[], equipped: Equipment | null): void {
   const worn: string[] = wornWearables(content, clothes, equipped);
@@ -64,7 +59,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   const playerRig: LoadedRig | undefined = library.rigs.get(content.player.rig);
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
   const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color }), 1, world.player.facing);
-  playerView.rig.setGear(playerGear(content, world.player));
+  playerView.rig.setGear(heldGear(content, world.player.equipped));
   dress(content, playerView.rig, content.player.wear, world.player.equipped);
   scene.add(playerView.rig.root);
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
@@ -75,7 +70,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     const existing: NpcEntry | undefined = npcs.get(npc.id);
     if (existing !== undefined) return existing;
     const rig: LoadedRig | undefined = library.rigs.get(npc.def.rig);
-    if (rig === undefined || !hasWear(library, wornWearables(content, npc.def.wear, null))) return null;
+    if (rig === undefined || !hasWear(library, wornWearables(content, npc.def.wear, null), npc.def.gear)) return null;
     const view: ActorView = createActorView(instantiateRig(rig, library, { tint: npc.def.tint, glow: npc.def.color }), npc.def.scale, npc.facing, ACTOR.friendlyHover);
     view.rig.setGear(npc.def.gear);
     dress(content, view.rig, npc.def.wear, null);
@@ -89,7 +84,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     const existing: MonsterEntry | undefined = monsters.get(monster.id);
     if (existing !== undefined) return existing;
     const rig: LoadedRig | undefined = library.rigs.get(monster.def.rig);
-    if (rig === undefined || !hasWear(library, wornWearables(content, monster.def.wear, null))) return null;
+    if (rig === undefined || !hasWear(library, wornWearables(content, monster.def.wear, null), monster.def.gear)) return null;
     const view: ActorView = createActorView(instantiateRig(rig, library, { tint: monster.def.tint, glow: monster.def.color }), monster.def.scale, monster.facing);
     view.rig.setGear(monster.def.gear);
     dress(content, view.rig, monster.def.wear, null);
@@ -107,6 +102,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
 
   return {
     refreshWear(current: World): void {
+      playerView.rig.setGear(heldGear(content, current.player.equipped));
       dress(content, playerView.rig, content.player.wear, current.player.equipped);
     },
     boundsOf(actorId: number, out: Box3): boolean {
@@ -182,7 +178,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             playerView.revive();
             break;
           case 'character_changed':
-            playerView.rig.setGear(playerGear(content, current.player));
+            playerView.rig.setGear(heldGear(content, current.player.equipped));
             dress(content, playerView.rig, content.player.wear, current.player.equipped);
             break;
           case 'monster_remove': {

@@ -344,7 +344,7 @@ function rig(value: unknown, where: string): RigDef {
   return {
     id: text(source, 'id', where),
     url: text(source, 'url', where),
-    animationUrls: textList(source, 'animationUrls', where),
+    clipFolder: text(source, 'clipFolder', where),
     scale: numeric(source, 'scale', where),
     yawOffsetDegrees: numeric(source, 'yawOffsetDegrees', where),
     height: numeric(source, 'height', where),

@@ -319,7 +319,7 @@ export interface AttachmentDef {
 export interface RigDef {
   readonly id: string;
   readonly url: string;
-  readonly animationUrls: readonly string[];
+  readonly clipFolder: string;
   readonly scale: number;
   readonly yawOffsetDegrees: number;
   readonly height: number;

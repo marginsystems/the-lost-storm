@@ -4,6 +4,7 @@ import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import type { AttachmentDef, Content, RigDef, RigSocket, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
+import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
 import { fitToSkeleton, groupBodyParts, skinnedMeshes } from './wearables.ts';
@@ -42,7 +43,7 @@ export interface LoadedWearable {
 
 export interface CharacterLibrary {
   readonly rigs: Map<string, LoadedRig>;
-  readonly attachments: ReadonlyMap<string, LoadedAttachment>;
+  readonly attachments: Map<string, LoadedAttachment>;
   readonly wearables: Map<string, LoadedWearable>;
 }
 
@@ -156,7 +157,7 @@ function pickClip(def: RigDef, key: string, wanted: string, available: readonly 
 
 async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   const main: GLTF = await loadKeptModel(loader, def.url);
-  const extras: GLTF[] = await Promise.all(def.animationUrls.map((url: string): Promise<GLTF> => loadKeptModel(loader, url)));
+  const extras: GLTF[] = await Promise.all(rigClipNames(def).map((clip: string): Promise<GLTF> => loadKeptModel(loader, clipUrl(def, clip))));
   const available: AnimationClip[] = [...main.animations, ...extras.flatMap((extra: GLTF): AnimationClip[] => extra.animations)];
   const clip = (key: string, wanted: string): AnimationClip => pickClip(def, key, wanted, available);
   const actions: Map<string, ActionClip> = new Map<string, ActionClip>();
@@ -221,6 +222,15 @@ function rigDefs(content: Content, ids: Iterable<string>): RigDef[] {
   return rigs;
 }
 
+function attachmentDefs(content: Content, ids: Iterable<string>): AttachmentDef[] {
+  const defs: AttachmentDef[] = [];
+  for (const id of ids) {
+    const def: AttachmentDef | undefined = content.attachments.get(id);
+    if (def !== undefined) defs.push(def);
+  }
+  return defs;
+}
+
 function wearableDefs(content: Content, ids: Iterable<string>): WearableDef[] {
   const defs: WearableDef[] = [];
   for (const id of ids) {
@@ -233,7 +243,7 @@ function wearableDefs(content: Content, ids: Iterable<string>): WearableDef[] {
 export async function loadCharacters(loader: GLTFLoader, content: Content, dresser: Dresser, needs: CharacterNeeds): Promise<CharacterLibrary> {
   const [rigs, attachments, wearables]: [LoadedRig[], LoadedAttachment[], LoadedWearable[]] = await Promise.all([
     Promise.all(rigDefs(content, needs.rigs).map((def: RigDef): Promise<LoadedRig> => loadRig(loader, def))),
-    Promise.all([...content.attachments.values()].map((def: AttachmentDef): Promise<LoadedAttachment> => loadAttachment(loader, dresser, def))),
+    Promise.all(attachmentDefs(content, needs.attachments).map((def: AttachmentDef): Promise<LoadedAttachment> => loadAttachment(loader, dresser, def))),
     Promise.all(wearableDefs(content, needs.wearables).map((def: WearableDef): Promise<LoadedWearable> => loadWearable(loader, def))),
   ]);
   return {
@@ -243,7 +253,8 @@ export async function loadCharacters(loader: GLTFLoader, content: Content, dress
   };
 }
 
-export async function loadRemainingCharacters(loader: GLTFLoader, content: Content, library: CharacterLibrary): Promise<void> {
+export async function loadRemainingCharacters(loader: GLTFLoader, content: Content, dresser: Dresser, library: CharacterLibrary): Promise<void> {
+  const heldIds: string[] = [...content.attachments.keys()].filter((id: string): boolean => !library.attachments.has(id));
   const rigIds: string[] = [...usedRigs(content)].filter((id: string): boolean => !library.rigs.has(id));
   const wearIds: string[] = [...content.wearables.keys()].filter((id: string): boolean => !library.wearables.has(id));
   await Promise.all([
@@ -253,11 +264,14 @@ export async function loadRemainingCharacters(loader: GLTFLoader, content: Conte
     ...wearableDefs(content, wearIds).map(async (def: WearableDef): Promise<void> => {
       library.wearables.set(def.id, await loadWearable(loader, def));
     }),
+    ...attachmentDefs(content, heldIds).map(async (def: AttachmentDef): Promise<void> => {
+      library.attachments.set(def.id, await loadAttachment(loader, dresser, def));
+    }),
   ]);
 }
 
-export function hasWear(library: CharacterLibrary, wearableIds: readonly string[]): boolean {
-  return wearableIds.every((id: string): boolean => library.wearables.has(id));
+export function hasWear(library: CharacterLibrary, wearableIds: readonly string[], gear: readonly string[]): boolean {
+  return wearableIds.every((id: string): boolean => library.wearables.has(id)) && gear.every((id: string): boolean => library.attachments.has(id));
 }
 
 function recolourEmissiveMap(material: MeshStandardMaterial, glow: string): void {
