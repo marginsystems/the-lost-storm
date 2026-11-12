@@ -2,6 +2,14 @@
 
 A single-player isometric action RPG that runs in the browser. Three.js, TypeScript and Vite, with no game engine on top. The world is a set of zones joined by exits: a safe town (Stillhold) and the Drowned Bastion, an arena of endless surges. One hero, two monster types, loot, levelling and a small skill tree.
 
+**Play it:** [theloststorm.com](https://theloststorm.com)
+
+![The title screen](docs/images/title.webp)
+
+![Stillhold, the town where the game starts](docs/images/town.webp)
+
+![The skill tree open over the town](docs/images/skills.webp)
+
 ## Run it
 
 ```bash
