@@ -1,6 +1,7 @@
 import type { Camera, Object3D } from 'three';
 import { Color, CustomToneMapping, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFShadowMap, PerspectiveCamera, PointLight, Scene, ShaderChunk, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
 import type { ZoneAmbience } from '../../sim/content/types.ts';
+import type { SkyFlash } from './weather.ts';
 import type { GraphicsPreset } from '../settings/settings.ts';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
@@ -38,6 +39,12 @@ export const STAGE = {
   rimStrength: 0.4,
   rimFlash: 1.6,
   rimFalloff: 4,
+  flashCool: 0xb3b6ff,
+  flashWarm: 0xffe0c2,
+  flashWarmth: 0.45,
+  flashDip: 0.1,
+  flashSheetSky: 0.6,
+  flashSwing: 34,
 } as const;
 
 export const GRADE = {
@@ -91,7 +98,7 @@ export interface Stage {
   readonly camera: PerspectiveCamera;
   setAmbience(ambience: ZoneAmbience): void;
   follow(x: number, z: number): void;
-  setFlash(amount: number): void;
+  setFlash(light: SkyFlash): void;
   applyGraphics(preset: GraphicsPreset): void;
   resize(): void;
   render(): void;
@@ -113,6 +120,18 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   const scene: Scene = new Scene();
   const background: Color = new Color(0x000000);
   const flashBackground: Color = new Color(STAGE.flashBackground);
+  const flashCool: Color = new Color(STAGE.flashCool);
+  const flashWarm: Color = new Color(STAGE.flashWarm);
+  const keyColor: Color = new Color(0xffffff);
+  const skyColor: Color = new Color(0xffffff);
+  const flashTint: Color = new Color(0xffffff);
+  let swing: number = 0;
+  let swingX: number = 0;
+  let swingZ: number = 0;
+
+  const placeStorm = (): void => {
+    storm.position.set(storm.target.position.x + STAGE.stormOffsetX + (swingX - STAGE.stormOffsetX) * swing, STAGE.stormOffsetY, storm.target.position.z + STAGE.stormOffsetZ + (swingZ - STAGE.stormOffsetZ) * swing);
+  };
   const shownBackground: Color = background.clone();
   const fog: Fog = new Fog(background, 1, 2);
   scene.background = shownBackground;
@@ -219,6 +238,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       sky.color.set(ambience.skyColor);
       sky.groundColor.set(ambience.groundColor);
       storm.color.set(ambience.keyColor);
+      keyColor.copy(storm.color);
+      skyColor.copy(sky.color);
       skyIntensity = ambience.skyIntensity;
       keyIntensity = ambience.keyIntensity;
       sky.intensity = skyIntensity;
@@ -230,16 +251,25 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       const snappedX: number = Math.round(x / texel) * texel;
       const snappedZ: number = Math.round(z / texel) * texel;
       storm.target.position.set(snappedX, 0, snappedZ);
-      storm.position.set(snappedX + STAGE.stormOffsetX, STAGE.stormOffsetY, snappedZ + STAGE.stormOffsetZ);
+      placeStorm();
       hero.position.set(x, STAGE.heroHeight, z);
     },
-    setFlash(amount: number): void {
-      sky.intensity = skyIntensity + STAGE.flashSky * amount;
-      storm.intensity = keyIntensity + STAGE.flashStorm * amount;
+    setFlash(light: SkyFlash): void {
+      const amount: number = light.amount;
+      const aimed: number = amount * (1 - light.sheet);
+      flashTint.copy(flashWarm).lerp(flashCool, light.cool);
+      sky.color.copy(skyColor).lerp(flashTint, Math.min(1, amount));
+      storm.color.copy(keyColor).lerp(flashTint, Math.min(1, aimed) * (light.cool + (1 - light.cool) * STAGE.flashWarmth));
+      sky.intensity = skyIntensity + STAGE.flashSky * amount * (1 - (1 - STAGE.flashSheetSky) * light.sheet);
+      storm.intensity = keyIntensity + STAGE.flashStorm * aimed;
+      swing = Math.min(1, aimed * 2);
+      swingX = light.dirX * STAGE.flashSwing;
+      swingZ = light.dirZ * STAGE.flashSwing;
+      placeStorm();
       shownBackground.copy(background).lerp(flashBackground, amount);
       fog.near = fogNear + (Math.max(fogNear, STAGE.flashFogNear) - fogNear) * amount;
       fog.far = fogFar + (Math.max(fogFar, STAGE.flashFogFar) - fogFar) * amount;
-      renderer.toneMappingExposure = STAGE.exposure * (1 + STAGE.flashExposure * amount);
+      renderer.toneMappingExposure = STAGE.exposure * (1 + STAGE.flashExposure * amount - STAGE.flashDip * light.dip);
       RIM_LIGHT.value.copy(rimBase).multiplyScalar(1 + STAGE.rimFlash * amount);
     },
     applyGraphics(next: GraphicsPreset): void {

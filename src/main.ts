@@ -101,8 +101,8 @@ import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
 import { WARM_UP, warmUp, warmUpWithin } from './render/warm-up.ts';
-import type { Weather } from './render/weather.ts';
-import { createWeather } from './render/weather.ts';
+import type { Sky } from './render/sky-weather.ts';
+import { createSky } from './render/sky-weather.ts';
 import type { Rainfall } from './render/rainfall.ts';
 import { createRainfall } from './render/rainfall.ts';
 import type { ZoneMarkers } from './render/zone-markers.ts';
@@ -253,14 +253,14 @@ async function start(): Promise<void> {
     if (action !== null) playUi(action);
   };
   const particles: ParticleSystem = createParticles(stage.scene);
-  const weather: Weather = createWeather();
+  const weather: Sky = createSky(stage.scene);
   const rain: Rainfall = createRainfall(stage, mobile.quality, gameSettings);
   const applyWeather = (zone: World['zone']): void => {
     weather.setLightning(zone.weather.lightning);
     rain.setWeather(zone.weather);
   };
   applyWeather(world.zone);
-  const effects: Effects = await momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.strike(power)), { scene: stage.scene, loader, content, library, dresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
+  const effects: Effects = await momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.pulse(power)), { scene: stage.scene, loader, content, library, dresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene, mobile.quality.tier.name === 'mobile');
   const actors: Actors = createActors(stage.scene, library, world);
@@ -517,7 +517,7 @@ async function start(): Promise<void> {
     }
     audio.update(dt);
     particles.update(dt);
-    weather.update(dt);
+    weather.update(dt, world.player.pos.x, world.player.pos.z, glitchSettings.get().reduceFlashes);
     rain.update(dt, world.player.pos.x, world.player.pos.z, weather.flash, zoneView);
     zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.measure(actors.hero(), now / 1000), flash: weather.flash });
     if (zoneView.lightsVersion !== torchVersion) {
@@ -526,7 +526,7 @@ async function start(): Promise<void> {
     }
     markers.update(dt, now / 1000, world);
     objectiveMarker.update(dt, now / 1000, world);
-    stage.setFlash(weather.flash);
+    stage.setFlash(weather.light);
     hud.update(dt);
     touch.update();
     minimap.update(dt);

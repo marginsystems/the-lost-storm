@@ -33,10 +33,25 @@ export interface RetiredZones {
   readonly flags: StoryFlags;
 }
 
+export interface LightningCluster {
+  readonly chance: number;
+  readonly most: number;
+  readonly min: number;
+  readonly max: number;
+}
+
+export interface LightningKinds {
+  readonly sheet: number;
+  readonly near: number;
+  readonly fork: number;
+}
+
 export interface ZoneLightning {
   readonly first: number;
   readonly min: number;
   readonly max: number;
+  readonly cluster: LightningCluster;
+  readonly kinds: LightningKinds;
 }
 
 export interface ZoneMistWall {
