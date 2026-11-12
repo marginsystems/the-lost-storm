@@ -131,7 +131,7 @@ Read the `level 5` line under `levels`. On the baseline it took 6:04 for careful
 ~/Dev/ops/lanes/lane test -- npm run simulate -- farm --minutes 60 --runs 16 --skill average
 ```
 
-Read `drops / hour` for the top rarity (stormtouched today). `top rarity by` then gives the share of runs that saw one within 10, 30 and 60 minutes. On the baseline, an average player saw 2.4 stormtouched drops an hour. One came within 10 minutes in 25% of runs, within 30 in 75% and within 60 in 94%. A rare or better came within 10 minutes in 69% of runs.
+Read `drops / hour` for the top rarity (`stormtouched`, shown as Legendary). `top rarity by` then gives the share of runs that saw one within 10, 30 and 60 minutes. On the baseline, an average player saw 2.4 stormtouched drops an hour. One came within 10 minutes in 25% of runs, within 30 in 75% and within 60 in 94%. A rare or better came within 10 minutes in 69% of runs.
 
 ### Is the Echo path weaker than the Edge?
 

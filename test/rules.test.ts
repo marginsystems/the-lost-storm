@@ -133,3 +133,28 @@ void test('every spoken line is written down in the story notes with the same wo
     assert.ok(story.includes(`| \`${line.id}\` | ${line.text} |`), `${line.id} is missing from docs/story/lines.md or its words differ`);
   }
 });
+
+const SHOWN_ROOTS: readonly string[] = ['src', 'data', 'play', 'public'];
+const SHOWN: RegExp = /\.(ts|css|html|json)$/;
+const RETIRED_RARITY_WORD: RegExp = new RegExp(joined('Storm', 'touched'));
+
+function shownFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((name: string): string[] => {
+    const path: string = join(dir, name);
+    if (statSync(path).isDirectory()) return name === 'local' || name === 'models' || name === 'textures' ? [] : shownFiles(path);
+    return SHOWN.test(name) ? [path] : [];
+  });
+}
+
+void test('no player-facing text calls the top rarity anything but Legendary', (): void => {
+  const paths: readonly string[] = ['index.html', 'README.md', ...SHOWN_ROOTS.flatMap(shownFiles)];
+  for (const path of paths) {
+    readFileSync(path, 'utf8').split('\n').forEach((line: string, index: number): void => {
+      assert.ok(!RETIRED_RARITY_WORD.test(line), `${path}:${index + 1} shows the retired rarity name`);
+    });
+  }
+  const items: unknown = JSON.parse(readFileSync('data/items.json', 'utf8'));
+  assert.ok(typeof items === 'object' && items !== null && 'rarities' in items && Array.isArray(items.rarities));
+  const names: readonly unknown[] = items.rarities.map((rarity: unknown): unknown => (typeof rarity === 'object' && rarity !== null && 'name' in rarity ? rarity.name : null));
+  assert.equal(names.at(-1), 'Legendary');
+});
