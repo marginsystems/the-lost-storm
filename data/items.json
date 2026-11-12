@@ -532,6 +532,81 @@
       ]
     },
     {
+      "id": "traveller_coat",
+      "name": "Traveller's Coat",
+      "slot": "chest",
+      "material": "cloth",
+      "icon": "armour",
+      "dropWeight": 0,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "traveller_coat"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 3
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "id": "traveller_trousers",
+      "name": "Traveller's Trousers",
+      "slot": "legs",
+      "material": "cloth",
+      "icon": "legs",
+      "dropWeight": 0,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "traveller_trousers"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 2
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "traveller_boots",
+      "name": "Traveller's Boots",
+      "slot": "feet",
+      "material": "cloth",
+      "icon": "boots",
+      "dropWeight": 0,
+      "minLevel": 1,
+      "visual": null,
+      "wear": [
+        "traveller_boots"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 1
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 2
+        }
+      ]
+    },
+    {
       "id": "gale_charm",
       "name": "Gale Charm",
       "slot": "charm",

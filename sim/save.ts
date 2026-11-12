@@ -147,6 +147,26 @@ function readEquipped(content: Content, value: unknown, inventory: (ItemInstance
   return { equipped, spilled };
 }
 
+interface Dressed {
+  readonly flags: StoryFlags;
+  readonly nextItemUid: number;
+}
+
+function dressOnce(content: Content, equipped: Equipment, flags: StoryFlags, nextItemUid: number): Dressed {
+  if (flags[content.player.dressedFlag] !== undefined) return { flags, nextItemUid };
+  const common: string | null = content.rarities[0]?.id ?? null;
+  let uid: number = nextItemUid;
+  for (const id of content.player.startingItems) {
+    const base = content.itemBases.get(id);
+    if (base === undefined || base.slot === null || base.wear.length === 0 || equipped[base.slot] !== null) continue;
+    const item: ItemInstance | null = generateItem(content, createRng(uid), uid, 1, id, common);
+    if (item === null) continue;
+    equipped[base.slot] = item;
+    uid += 1;
+  }
+  return { flags: { ...flags, [content.player.dressedFlag]: 'yes' }, nextItemUid: uid };
+}
+
 function readRespawn(value: unknown): RespawnPoint {
   if (!isFields(value)) return { type: 'start' };
   const exit: unknown = value['exit'];
@@ -287,6 +307,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const adopted: AdoptedPlaces = adoptLearned(content, value['learned'], standing);
   const taken: string[] = [...adopted.allocated];
   const learned: string[] = readLearned(content, value['learned'], taken);
+  const dressed: Dressed = dressOnce(content, worn.equipped, { ...readFlags(content, value['flags'], legacy), ...retired?.flags }, Math.floor(nextItemUid));
   return {
     version: SAVE_VERSION,
     level: reached,
@@ -302,7 +323,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     equipped: worn.equipped,
     spilled: [...kept, ...worn.spilled, ...stashed.overflow],
     surge: Math.floor(surge),
-    nextItemUid: Math.floor(nextItemUid),
+    nextItemUid: dressed.nextItemUid,
     zone,
     respawn: known ? readRespawn(value['respawn']) : { type: 'start' },
     visited: readVisited(content, value['visited'], zone),
@@ -313,7 +334,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     flasks: readFlasks(content, value['flasks']),
     stash: stashed.stash,
     vendors: readVendors(content, value['vendors']),
-    flags: { ...readFlags(content, value['flags'], legacy), ...retired?.flags },
+    flags: dressed.flags,
     glitch: readGlitchSave(value['glitch']),
     path: value['version'] === SAVE_VERSION ? pathToSave(readPathLog(value['path'], new Set<string>(content.zones.keys()))) : pathToSave(emptyPathLog()),
   };

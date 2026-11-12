@@ -14,8 +14,10 @@ export interface HudView {
   readonly slots: readonly number[];
 }
 
-function present(item: ItemInstance | null): boolean {
-  return item !== null;
+function earnedGear(world: World, item: ItemInstance | null): boolean {
+  if (item === null) return false;
+  const starter: boolean = world.content.player.startingItems.includes(item.base);
+  return !starter || (world.content.itemBases.get(item.base)?.wear.length ?? 0) === 0;
 }
 
 export function usable(player: PlayerState, skill: SkillDef): boolean {
@@ -53,7 +55,8 @@ export function hudView(world: World): HudView {
 
 export function hudBegun(world: World): boolean {
   const player: PlayerState = world.player;
-  const owns: boolean = player.inventory.some(present) || Object.values(player.equipped).some(present);
+  const found = (item: ItemInstance | null): boolean => earnedGear(world, item);
+  const owns: boolean = player.inventory.some(found) || Object.values(player.equipped).some(found);
   return owns || player.xp > 0 || player.level > 1 || player.gold > 0 || world.visited.length > 1 || activeQuests(world).length > 0 || filledSlots(player).length > 0;
 }
 

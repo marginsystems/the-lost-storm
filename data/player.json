@@ -58,8 +58,12 @@
     "maxLevel": 30
   },
   "startingItems": [
-    "rusted_blade"
+    "rusted_blade",
+    "traveller_coat",
+    "traveller_trousers",
+    "traveller_boots"
   ],
+  "dressedFlag": "traveller_dressed",
   "unarmedVisual": null,
   "inventorySize": 24,
   "pickupRadius": 1.6, "pickupAim": 2.8, "rootGrace": 1.6,
@@ -76,6 +80,5 @@
   "manaShows": "costly_skill",
   "tint": "#e8d2bd",
   "color": "#8fdcff",
-  "gear": [],
-  "wear": ["traveller_coat", "traveller_trousers", "traveller_boots"]
+  "gear": []
 }

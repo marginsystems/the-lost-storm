@@ -88,10 +88,12 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
   };
 }
 
-function giveStartingItems(world: World): void {
+function giveStartingItems(world: World, emptyHanded: boolean): void {
   const commonRarity: string | null = world.content.rarities[0]?.id ?? null;
   for (const baseId of world.content.player.startingItems) {
-    const item: ItemInstance | null = generateItem(world.content, world.rng, world.nextItemUid, 1, baseId, commonRarity);
+    if (emptyHanded && (world.content.itemBases.get(baseId)?.visual ?? null) !== null) continue;
+    const worn: boolean = (world.content.itemBases.get(baseId)?.wear.length ?? 0) > 0;
+    const item: ItemInstance | null = generateItem(world.content, worn ? createRng(world.nextItemUid) : world.rng, world.nextItemUid, 1, baseId, commonRarity);
     if (item === null) continue;
     world.nextItemUid += 1;
     const slot = slotOf(world.content, item);
@@ -99,6 +101,9 @@ function giveStartingItems(world: World): void {
     else addToInventory(world.player, item);
   }
   world.player.stats = computeStats(world.content, world.player.level, world.player.equipped, world.player.allocated);
+  world.player.maxLife = world.player.stats.maxLife;
+  world.player.life = world.player.stats.maxLife;
+  world.player.mana = world.player.stats.maxMana;
 }
 
 function savedZone(content: Content, save: SaveData | null, opening: boolean): ZoneDef {
@@ -158,7 +163,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     heading: { x: 0, z: 1 },
     encounters: [],
     shore: null,
-    flags: save === null ? {} : { ...save.flags },
+    flags: save === null ? { [content.player.dressedFlag]: 'yes' } : { ...save.flags },
     events: [],
     service: null,
     vendors: save === null ? {} : copyVendors(save.vendors),
@@ -172,7 +177,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   };
   placePlayer(world);
   beginVoid(world, 'first');
-  if (save === null && world.zone.void?.emptyHanded !== true) giveStartingItems(world);
+  if (save === null) giveStartingItems(world, world.zone.void?.emptyHanded === true);
   for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   startQuests(world);
   spawnNpcs(world);

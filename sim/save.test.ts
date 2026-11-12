@@ -411,7 +411,7 @@ void test('story flags survive a save, and bad entries are dropped', (): void =>
   const save: SaveData = roundTrip(world);
   assert.equal(save.flags['first_choice'], 'took_journal');
   const dirty: SaveData = must(readSave(content, { ...toSave(world), flags: { first_choice: 'took_journal', broken: 7 } }), 'dirty save');
-  assert.deepEqual(dirty.flags, { first_choice: 'took_journal' });
+  assert.deepEqual(dirty.flags, { first_choice: 'took_journal', [content.player.dressedFlag]: 'yes' });
   assert.deepEqual(createWorld(content, { seed: 3, save }).flags, save.flags);
 });
 
@@ -419,11 +419,11 @@ void test('a save from before story flags is a returning hero: the legacy flags 
   const { flags: _dropped, ...older } = toSave(played());
   const migrated: SaveData = must(readSave(content, JSON.parse(JSON.stringify({ ...older, version: 4 }))), 'version 4 save');
   assert.equal(migrated.version, SAVE_VERSION);
-  assert.deepEqual(migrated.flags, content.world.legacyFlags);
+  assert.deepEqual(migrated.flags, { ...content.world.legacyFlags, [content.player.dressedFlag]: 'yes' });
   const lost: SaveData = must(readSave(content, { ...older, version: 4, zone: 'nowhere' }), 'lost save');
   assert.equal(lost.zone, content.world.town);
   const current: SaveData = must(readSave(content, { ...older, version: SAVE_VERSION, flags: {} }), 'current save');
-  assert.deepEqual(current.flags, {});
+  assert.deepEqual(current.flags, { [content.player.dressedFlag]: 'yes' });
 });
 
 void test('a save in a retired zone loads where the retired zones lead, with the hero and the retirement flags', (): void => {
@@ -438,4 +438,34 @@ void test('a save in a retired zone loads where the retired zones lead, with the
   assert.deepEqual(moved.inventory, saved.inventory);
   const elsewhere: SaveData = must(readSave(retiring, { ...saved, zone: 'never_was' }), 'unknown save');
   assert.equal(elsewhere.flags['rerouted'], undefined);
+});
+
+void test('a save from before the traveller clothes were items gets them once, in its empty slots only', (): void => {
+  const world: World = played();
+  const kept: ItemInstance = made('drowned_leathers', 'magic', 90);
+  world.player.equipped = { ...emptyEquipment(), chest: kept };
+  const { [content.player.dressedFlag]: _given, ...older } = world.flags;
+  const before: Record<string, unknown> = { ...toSave(world), flags: older };
+  const save: SaveData = must(readSave(content, before), 'old save');
+  assert.deepEqual(save.equipped.chest, kept);
+  assert.equal(save.equipped.head, null);
+  assert.equal(save.equipped.legs?.base, 'traveller_trousers');
+  assert.equal(save.equipped.feet?.base, 'traveller_boots');
+  assert.equal(save.equipped.weapon, null);
+  assert.equal(save.equipped.hands, null);
+  assert.equal(save.flags[content.player.dressedFlag], 'yes');
+  const uids: number[] = [save.equipped.legs, save.equipped.feet].map((item: ItemInstance | null): number => must(item, 'starter').uid);
+  assert.deepEqual(uids, [world.nextItemUid, world.nextItemUid + 1]);
+  assert.equal(save.nextItemUid, world.nextItemUid + 2);
+  const undressed: World = createWorld(content, { seed: 5, save });
+  undressed.player.equipped = emptyEquipment();
+  const again: SaveData = must(readSave(content, JSON.parse(JSON.stringify(toSave(undressed)))), 'second load');
+  assert.deepEqual(again.equipped, emptyEquipment());
+});
+
+void test('a new hero starts bareheaded in the traveller coat, trousers and boots with the blade, already marked as dressed', (): void => {
+  const world: World = createWorld(content, { seed: 9, save: null });
+  assert.deepEqual([world.player.equipped.head?.base, world.player.equipped.chest?.base, world.player.equipped.legs?.base, world.player.equipped.feet?.base, world.player.equipped.weapon?.base], [undefined, 'traveller_coat', 'traveller_trousers', 'traveller_boots', 'rusted_blade']);
+  assert.equal(world.flags[content.player.dressedFlag], 'yes');
+  assert.ok(world.player.inventory.every((item: ItemInstance | null): boolean => item === null));
 });

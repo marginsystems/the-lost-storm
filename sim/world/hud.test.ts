@@ -143,3 +143,19 @@ void test('a returning character shows exactly what that character has earned', 
   const back: World = createWorld(real, { seed: 3, save: toSave(world), opening: true });
   assert.deepEqual(hudView(back), hudView(world));
 });
+
+void test('the traveller clothes he wakes in do not count as an item: the HUD stays hidden until he finds one', (): void => {
+  const world: World = newHero();
+  assert.ok(world.player.equipped.chest !== null);
+  assert.equal(world.player.equipped.weapon, null);
+  assert.equal(hudHidden(world), true);
+});
+
+void test('taking the traveller clothes off into the bag does not count as finding an item either', (): void => {
+  const world: World = newHero();
+  const coat: ItemInstance | null = world.player.equipped.chest;
+  assert.ok(coat !== null);
+  world.player.equipped.chest = null;
+  world.player.inventory[0] = coat;
+  assert.equal(hudHidden(world), true);
+});

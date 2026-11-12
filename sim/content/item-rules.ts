@@ -14,8 +14,26 @@ function distinctStats(lines: readonly AffixDef[]): number {
   return new Set<StatId>(lines.map((line: AffixDef): StatId => line.stat)).size;
 }
 
+const WORN_LOOK_SLOTS: ReadonlySet<ItemSlot> = new Set<ItemSlot>(['head', 'chest', 'hands', 'legs', 'feet']);
+
+export function basesWithoutLook(content: Content): string[] {
+  return [...content.itemBases.values()]
+    .filter((base: ItemBaseDef): boolean => {
+      if (base.slot === null) return false;
+      if (base.slot === 'weapon') return base.visual === null;
+      return WORN_LOOK_SLOTS.has(base.slot) && base.wear.length === 0;
+    })
+    .map((base: ItemBaseDef): string => base.id);
+}
+
 export function itemProblems(content: Content): string[] {
-  const problems: string[] = [];
+  const problems: string[] = basesWithoutLook(content).map((id: string): string => `item ${id} has no look: give it a wear or a visual`);
+  for (const base of content.itemBases.values()) {
+    for (const id of base.wear) {
+      const region: string | undefined = content.wearables.get(id)?.region;
+      if (region !== undefined && region !== base.slot) problems.push(`item ${base.id} in slot ${base.slot ?? 'none'} wears ${id}, which covers ${region}`);
+    }
+  }
   for (const base of content.itemBases.values()) {
     for (const mod of base.implicit) {
       if (!ITEM_STAT_SET.has(mod.stat) && !BASE_DAMAGE.has(mod.stat)) problems.push(`item ${base.id} has ${mod.stat}, which is not one of the item stats`);

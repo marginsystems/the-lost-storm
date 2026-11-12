@@ -2,6 +2,12 @@ import type { Content, ItemBaseDef, MonsterDef, NpcDef, WearableDef, WearRegion,
 import { ITEM_SLOTS } from './content/types.ts';
 import type { Equipment } from './world/types.ts';
 
+export interface Look {
+  readonly wearables: readonly string[];
+  readonly hidden: readonly string[];
+  readonly held: readonly string[];
+}
+
 export function wornWearables(content: Content, clothes: readonly string[], equipped: Equipment | null): string[] {
   const worn: Map<WearRegion, string> = new Map<WearRegion, string>();
   const put = (id: string): void => {
@@ -27,6 +33,11 @@ export function hiddenBodyParts(content: Content, wearableIds: readonly string[]
   return [...hidden];
 }
 
+export function lookOf(content: Content, base: readonly string[], equipped: Equipment | null): Look {
+  const wearables: string[] = wornWearables(content, base, equipped);
+  return { wearables, hidden: hiddenBodyParts(content, wearables), held: heldGear(content, equipped) };
+}
+
 export interface CharacterNeeds {
   readonly rigs: ReadonlySet<string>;
   readonly wearables: ReadonlySet<string>;
@@ -41,8 +52,9 @@ export function heldGear(content: Content, equipped: Equipment | null): string[]
 
 export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Equipment | null): CharacterNeeds {
   const rigs: Set<string> = new Set<string>([content.player.rig]);
-  const wearables: Set<string> = new Set<string>(wornWearables(content, content.player.wear, equipped));
-  const attachments: Set<string> = new Set<string>(heldGear(content, equipped));
+  const look: Look = lookOf(content, [], equipped);
+  const wearables: Set<string> = new Set<string>(look.wearables);
+  const attachments: Set<string> = new Set<string>(look.held);
   const add = (rig: string, wear: readonly string[], gear: readonly string[]): void => {
     rigs.add(rig);
     for (const id of wornWearables(content, wear, null)) wearables.add(id);

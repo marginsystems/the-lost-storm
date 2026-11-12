@@ -2,7 +2,8 @@ import type { Box3, Object3D, Scene } from 'three';
 import { knockTime } from '../../sim/world/movement.ts';
 import { Color } from 'three';
 import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
-import { hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
+import type { Look } from '../../sim/wear.ts';
+import { lookOf, wornWearables } from '../../sim/wear.ts';
 import { wakeStage } from '../../sim/world/wake.ts';
 import { wakePose } from './wake-pose.ts';
 import type { ActorState, Equipment, MomentState, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
@@ -71,7 +72,7 @@ function poseOf(actor: ActorState): ActorPose {
   return { pos: actor.pos, facing: actor.facing, motion: actor.motion, gait: actor.gait, knockTime: knockTime(actor), busy: actor.action !== null, deadTime: actor.deadTime };
 }
 
-function lookOf(def: MonsterDef): string {
+function monsterKey(def: MonsterDef): string {
   return `${def.id}|${def.rig}|${def.tint}|${def.color}|${def.scale}`;
 }
 
@@ -80,9 +81,11 @@ function npcPose(npc: NpcState): ActorPose {
 }
 
 
+const HERO_BASE_LAYER: readonly string[] = [];
+
 function dress(content: Content, rig: RigInstance, clothes: readonly string[], equipped: Equipment | null): void {
-  const worn: string[] = wornWearables(content, clothes, equipped);
-  rig.setWear(worn, hiddenBodyParts(content, worn));
+  const look: Look = lookOf(content, clothes, equipped);
+  rig.setWear(look.wearables, look.hidden);
 }
 
 function echoLook(current: World, monster: MonsterState): EchoLook | null {
@@ -98,7 +101,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
   const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color, ghost: null }), 1, world.player.facing);
   holdEquipped(content, playerView.rig, world.player.equipped);
-  dress(content, playerView.rig, content.player.wear, world.player.equipped);
+  dress(content, playerView.rig, HERO_BASE_LAYER, world.player.equipped);
   scene.add(playerView.rig.root);
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
   const npcs: Map<number, NpcEntry> = new Map<number, NpcEntry>();
@@ -134,7 +137,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   };
 
   const monsterView = (def: MonsterDef, facing: number, echo: EchoLook | null): ActorView | null => {
-    const pooled: ActorView | undefined = echo === null ? pool.get(lookOf(def))?.pop() : undefined;
+    const pooled: ActorView | undefined = echo === null ? pool.get(monsterKey(def))?.pop() : undefined;
     if (pooled === undefined) return makeMonsterView(def, facing, echo);
     pooled.face(facing);
     pooled.revive();
@@ -143,13 +146,13 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
 
   const keep = (def: MonsterDef, view: ActorView): void => {
     view.detach();
-    const kept: ActorView[] = pool.get(lookOf(def)) ?? [];
+    const kept: ActorView[] = pool.get(monsterKey(def)) ?? [];
     if (kept.length >= ACTORS.pooledPerKind) {
       view.dispose();
       return;
     }
     kept.push(view);
-    pool.set(lookOf(def), kept);
+    pool.set(monsterKey(def), kept);
   };
 
   const retire = (entry: MonsterEntry): void => {
@@ -184,7 +187,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         const def: MonsterDef | undefined = content.monsters.get(id);
         return def === undefined ? [] : [def];
       });
-      const wanted: Set<string> = new Set<string>(defs.map(lookOf));
+      const wanted: Set<string> = new Set<string>(defs.map(monsterKey));
       const unwanted: ActorView[] = [];
       for (const [look, views] of pool) {
         if (wanted.has(look)) continue;
@@ -193,9 +196,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       }
       const made: ActorView[] = [];
       for (const def of defs) {
-        const view: ActorView | null = pool.get(lookOf(def))?.[0] ?? makeMonsterView(def, 0, null);
+        const view: ActorView | null = pool.get(monsterKey(def))?.[0] ?? makeMonsterView(def, 0, null);
         if (view === null) continue;
-        if (!(pool.get(lookOf(def))?.includes(view) ?? false)) keep(def, view);
+        if (!(pool.get(monsterKey(def))?.includes(view) ?? false)) keep(def, view);
         made.push(view);
       }
       for (const view of unwanted) view.dispose();
@@ -203,7 +206,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     },
     refreshWear(current: World): void {
       holdEquipped(content, playerView.rig, current.player.equipped);
-      dress(content, playerView.rig, content.player.wear, current.player.equipped);
+      dress(content, playerView.rig, HERO_BASE_LAYER, current.player.equipped);
     },
     boundsOf(actorId: number, out: Box3): boolean {
       const view: ActorView | null = viewOf(actorId);
@@ -299,7 +302,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             break;
           case 'character_changed':
             holdEquipped(content, playerView.rig, current.player.equipped);
-            dress(content, playerView.rig, content.player.wear, current.player.equipped);
+            dress(content, playerView.rig, HERO_BASE_LAYER, current.player.equipped);
             break;
           case 'monster_remove': {
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);

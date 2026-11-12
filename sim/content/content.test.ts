@@ -37,12 +37,12 @@ void test('the shipped data loads and has no dangling references', (): void => {
   assert.ok(content.skills.size >= 5);
 });
 
-void test('the hero is a dressed human: a human body, and starting clothes that exist and leave the head bare', (): void => {
+void test('the hero is a dressed human: a human body, and starting clothes that are items for the chest, legs and feet, and a bare head', (): void => {
   const rig: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
   assert.match(rig.url, /^models\/characters\/human_/);
-  assert.ok(content.player.wear.length > 0);
-  const worn: WearableDef[] = content.player.wear.map((id: string): WearableDef => must(content.wearables.get(id), id));
-  assert.ok(worn.every((piece: WearableDef): boolean => piece.region !== 'head'));
+  const worn: WearableDef[] = content.player.startingItems.flatMap((id: string): readonly string[] => must(content.itemBases.get(id), id).wear).map((id: string): WearableDef => must(content.wearables.get(id), id));
+  assert.deepEqual(worn.map((piece: WearableDef): string => piece.region).toSorted(), ['chest', 'feet', 'legs']);
+  assert.ok(!content.player.startingItems.some((id: string): boolean => content.itemBases.get(id)?.slot === 'head'));
 });
 
 void test('every monster has its skill and rig, and every rig has every animation', (): void => {
