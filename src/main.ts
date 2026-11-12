@@ -137,6 +137,7 @@ import { createZoneTransition, describeTransition, veilColour } from './transiti
 import { createVeil } from './veil.ts';
 import type { FigureGauge } from './render/figure-gauge.ts';
 import { createFigureGauge } from './render/figure-gauge.ts';
+import { untilCycleEnds } from './loading-mark.ts';
 
 const GAME = {
   maxFrame: 0.1,
@@ -608,7 +609,9 @@ async function start(): Promise<void> {
   status.classList.remove('failed');
   if (backend.freshStart()) statusLine.show(TITLE_NOTICES.freshStart);
   else status.classList.add('quiet');
-  element('title-loader', HTMLDivElement).classList.add('done');
+  const titleLoader: HTMLDivElement = element('title-loader', HTMLDivElement);
+  await untilCycleEnds(titleLoader);
+  titleLoader.classList.add('done');
   followSync(backend, showSync, readServerUrl(import.meta.env.VITE_SERVER_URL).kind === 'ok');
   if (account !== null) {
     startTitleAccount(account, (busy: boolean): void => {

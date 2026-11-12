@@ -158,70 +158,23 @@ body {
 }
 
 .title-loader {
-  display: grid;
-  grid-template-columns: repeat(5, 7px);
-  gap: 4px;
   width: fit-content;
   margin: 0 auto 12px;
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-.title-loader.done {
+.title-loader.loading-mark {
+  grid-template-columns: repeat(5, 7px);
+  gap: 4px;
+}
+
+.title-loader.loading-mark.done {
   opacity: 0;
 }
 
-.title-loader i {
+.title-loader.loading-mark i {
   width: 7px;
   height: 7px;
-  border-radius: 1px;
-  background: var(--storm);
-  opacity: 0.12;
-  animation: loader-scan calc(var(--drift-ms) / 4) var(--drift-ease) infinite;
-}
-
-.title-loader i:nth-child(5n + 1) {
-  animation-delay: 0ms;
-}
-
-.title-loader i:nth-child(5n + 2) {
-  animation-delay: calc(var(--drift-ms) / 40);
-}
-
-.title-loader i:nth-child(5n + 3) {
-  animation-delay: calc(var(--drift-ms) / 20);
-}
-
-.title-loader i:nth-child(5n + 4) {
-  animation-delay: calc(var(--drift-ms) * 3 / 40);
-}
-
-.title-loader i:nth-child(5n) {
-  animation-delay: calc(var(--drift-ms) / 10);
-}
-
-.title-loader i:nth-child(n + 6) {
-  animation-duration: calc(var(--drift-ms) / 4 + 90ms);
-}
-
-.title-loader i:nth-child(n + 16) {
-  animation-duration: calc(var(--drift-ms) / 4 + 170ms);
-}
-
-@keyframes loader-scan {
-  0%,
-  100% {
-    opacity: 0.1;
-    transform: scale(0.8);
-  }
-  30% {
-    opacity: 1;
-    transform: scale(1);
-    box-shadow: 0 0 8px rgba(127, 212, 255, 0.7);
-  }
-  60% {
-    opacity: 0.25;
-    transform: scale(0.9);
-  }
 }
 
 .title-status.failed {

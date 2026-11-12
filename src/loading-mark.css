@@ -1,4 +1,7 @@
 .loading-mark {
+  --mark-cycle: 720ms;
+  --mark-show: 150ms;
+  --mark-step: 0.05625;
   display: grid;
   grid-template-columns: repeat(5, 5px);
   gap: 3px;
@@ -15,6 +18,41 @@
   opacity: 0.12;
   transform: scale(0.8);
   will-change: opacity, transform;
+  --mark-row: 0;
+  --mark-col: 0;
+  --mark-phase: calc((var(--mark-row) + var(--mark-col)) * var(--mark-step));
+}
+
+.loading-mark i:nth-child(n + 6) {
+  --mark-row: 1;
+}
+
+.loading-mark i:nth-child(n + 11) {
+  --mark-row: 2;
+}
+
+.loading-mark i:nth-child(n + 16) {
+  --mark-row: 3;
+}
+
+.loading-mark i:nth-child(n + 21) {
+  --mark-row: 4;
+}
+
+.loading-mark i:nth-child(5n + 2) {
+  --mark-col: 1;
+}
+
+.loading-mark i:nth-child(5n + 3) {
+  --mark-col: 2;
+}
+
+.loading-mark i:nth-child(5n + 4) {
+  --mark-col: 3;
+}
+
+.loading-mark i:nth-child(5n) {
+  --mark-col: 4;
 }
 
 .loading-mark.playing {

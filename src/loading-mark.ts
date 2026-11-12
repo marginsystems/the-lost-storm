@@ -1,4 +1,4 @@
-import { LOADER_CYCLE } from './loader-cycle.ts';
+import { LOADER_CYCLE, loaderExitAt } from './loader-cycle.ts';
 import type { LoaderTiming } from './loader-cycle.ts';
 
 export const LOADING_MARK = {
@@ -24,6 +24,15 @@ function nextFrame(): Promise<void> {
   });
 }
 
+export async function untilCycleEnds(element: HTMLElement, timing: LoaderTiming = LOADER_CYCLE): Promise<void> {
+  const doneAt: number = performance.now() - startedAt(element);
+  const exitAt: number = loaderExitAt(doneAt, timing);
+  if (exitAt <= doneAt) return;
+  await new Promise<void>((resolve: () => void): void => {
+    window.setTimeout(resolve, exitAt - doneAt);
+  });
+}
+
 function startedAt(element: HTMLElement): number {
   for (const animation of element.getAnimations({ subtree: true })) {
     const start: CSSNumberish | null = animation.startTime;
@@ -38,13 +47,8 @@ export function createLoadingMark(parent: HTMLElement, className: string, timing
   element.setAttribute('aria-hidden', 'true');
   element.style.setProperty('--mark-cycle', `${timing.cycleMs}ms`);
   element.style.setProperty('--mark-show', `${timing.showDelayMs}ms`);
-  for (let row: number = 0; row < LOADING_MARK.size; row += 1) {
-    for (let column: number = 0; column < LOADING_MARK.size; column += 1) {
-      const pixel: HTMLElement = document.createElement('i');
-      pixel.style.setProperty('--mark-phase', String(markPhase(row, column)));
-      element.append(pixel);
-    }
-  }
+  element.style.setProperty('--mark-step', String(markPhase(0, 1)));
+  for (let pixel: number = 0; pixel < LOADING_MARK.size * LOADING_MARK.size; pixel += 1) element.append(document.createElement('i'));
   parent.append(element);
   return {
     element,
