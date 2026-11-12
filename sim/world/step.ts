@@ -19,6 +19,7 @@ import { stepVoid } from './void.ts';
 import { stepMoments } from './moments.ts';
 import { stepDrifts, stepTriggers } from './terrain.ts';
 import { acceptsCommand } from './wake.ts';
+import { revealHud } from './hud.ts';
 
 export const MAX_STEP: number = 1 / 30;
 
@@ -50,5 +51,6 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepTrade(world);
   stepGlitch(world, dt);
   recordPath(world, dt);
+  revealHud(world);
   return world.events;
 }

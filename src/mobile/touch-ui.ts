@@ -1,3 +1,4 @@
+import { panelPart, tagPart } from '../hud/hud-gate.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import type { Command, FlaskState, MonsterState, World } from '../../sim/world/types.ts';
@@ -11,7 +12,7 @@ import { INPUT } from '../input.ts';
 import { createBrowserStore } from '../storage.ts';
 import { TITLE_SCREEN } from '../title-screen.ts';
 import type { Candidate, FlaskEntry, SkillBarEntry, StickReading, TouchButton } from './touch-map.ts';
-import { aimedSkill, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, pinchWheelDelta, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import { aimedSkill, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, pinchWheelDelta, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons, touchPart } from './touch-map.ts';
 import type { PhoneLayout, Rect, SafeInsets } from './phone-layout.ts';
 import { PHONE, phoneLayout } from './phone-layout.ts';
 import touchCss from './touch.css?inline';
@@ -158,6 +159,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   const menu: HTMLDivElement = el('div', 'tc-menu', hudRoot);
   for (const item of MENU) {
     const button: HTMLButtonElement = el('button', 'tc-menu-btn', menu);
+    tagPart(button, panelPart(item.panel));
     button.type = 'button';
     button.setAttribute('aria-label', item.label);
     button.innerHTML = iconSvg(item.icon);
@@ -279,6 +281,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     views = specs.map((spec: TouchButton, index: number): ButtonView => {
       const root: HTMLDivElement = el('div', `tc-btn ${spec.kind}`, actions);
       root.dataset['index'] = String(index);
+      tagPart(root, touchPart(spec.kind));
       root.setAttribute('role', 'button');
       const ringEl: HTMLElement = el('i', 'tc-cd', root);
       const icon: HTMLElement = el('span', 'tc-icon', root);

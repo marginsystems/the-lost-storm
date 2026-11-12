@@ -1,3 +1,4 @@
+import type { HudPart } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import type { MoveCommand, SkillCommand } from '../../sim/world/types.ts';
 
@@ -40,6 +41,12 @@ export type TouchButton =
   | { readonly kind: 'attack'; readonly slot: number }
   | { readonly kind: 'skill'; readonly slot: number }
   | { readonly kind: 'flask'; readonly slot: number; readonly label: string };
+
+const TOUCH_PARTS: Readonly<Record<TouchButton['kind'], HudPart>> = { attack: 'attack', skill: 'skills', flask: 'flasks' };
+
+export function touchPart(kind: TouchButton['kind']): HudPart {
+  return TOUCH_PARTS[kind];
+}
 
 export interface SkillBarEntry {
   readonly bindings: readonly string[];

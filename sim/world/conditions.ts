@@ -1,6 +1,6 @@
-import type { Condition, ObjectiveDef, ObjectiveState, QuestDef, QuestState } from '../content/types.ts';
+import type { Condition, ObjectiveDef, ObjectiveState, QuestDef, QuestState, SkillDef } from '../content/types.ts';
 import { shoreDepth } from './shore.ts';
-import type { World } from './types.ts';
+import type { ItemInstance, World } from './types.ts';
 
 export function questState(world: World, questId: string): QuestState {
   const quest: QuestDef | undefined = world.content.quests.get(questId);
@@ -31,6 +31,21 @@ export function holds(world: World, condition: Condition): boolean {
       break;
     case 'shore':
       held = shoreDepth(world) >= condition.depth;
+      break;
+    case 'visited':
+      held = world.visited.includes(condition.zone);
+      break;
+    case 'points':
+      held = world.player.skillPoints > 0;
+      break;
+    case 'spender':
+      held = world.player.skills.some((skill: SkillDef | null): boolean => skill !== null && skill.manaCost > 0);
+      break;
+    case 'hurt':
+      held = world.player.life < world.player.maxLife;
+      break;
+    case 'carrying':
+      held = world.player.inventory.filter((item: ItemInstance | null): boolean => item !== null).length >= condition.count;
       break;
   }
   return held !== condition.not;

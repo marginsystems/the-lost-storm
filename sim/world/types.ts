@@ -1,7 +1,7 @@
 import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
 import type { GlitchKind } from '../content/glitches.ts';
 import type { GlitchState, PathAct, PathLog, Silhouette } from './glitch-types.ts';
-import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
+import type { Content, HudPart, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
 import type { ServiceKind } from '../content/trade-types.ts';
 import type { MomentDef } from '../content/moment-types.ts';
 import type { Vec2 } from '../math.ts';
@@ -585,6 +585,17 @@ export interface WakeState {
   readonly rise: number;
 }
 
+export interface HudAll {
+  readonly kind: 'all';
+}
+
+export interface HudStaged {
+  readonly kind: 'staged';
+  readonly parts: HudPart[];
+}
+
+export type HudShown = HudAll | HudStaged;
+
 export interface ShoreState {
   readonly at: Vec2;
   readonly facing: Vec2;
@@ -636,4 +647,5 @@ export interface World {
   moments: MomentState[];
   strikeTimer: number;
   strikeMisses: number;
+  hud: HudShown;
 }

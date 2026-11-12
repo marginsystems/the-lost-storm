@@ -1,3 +1,4 @@
+import { tagPart } from '../hud/hud-gate.ts';
 import type { ZoneExit } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { nearestWalkable } from '../../sim/nav/grid.ts';
@@ -78,8 +79,10 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   const corner: HTMLDivElement = el('div', 'minimap-corner', holder);
   const zoneName: HTMLDivElement = el('div', 'minimap-zone', corner);
   const frame: HTMLDivElement = el('div', 'minimap-frame', corner);
+  tagPart(frame, 'minimap');
   const cornerSurface: Surface = surface(el('canvas', 'minimap-canvas', frame));
   const overlay: HTMLDivElement = el('div', 'minimap-overlay', holder);
+  tagPart(overlay, 'minimap');
   const overlaySurface: Surface = surface(el('canvas', 'minimap-canvas', overlay));
   const layer: MapLayer = createMapLayer();
   const world: World = hooks.world;

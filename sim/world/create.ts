@@ -165,6 +165,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     moments: [],
     strikeTimer: 0,
     strikeMisses: 0,
+    hud: save === null && options.opening === true ? { kind: 'staged', parts: [] } : { kind: 'all' },
   };
   placePlayer(world);
   beginVoid(world, 'first');

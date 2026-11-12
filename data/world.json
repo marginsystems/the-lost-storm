@@ -142,5 +142,105 @@
     "flags": {
       "road": "rerouted"
     }
-  }
+  },
+  "hudReveal": [
+    {
+      "part": "life",
+      "when": [
+        {
+          "type": "flag",
+          "flag": "first_blade",
+          "is": "found"
+        }
+      ]
+    },
+    {
+      "part": "attack",
+      "when": [
+        {
+          "type": "flag",
+          "flag": "first_blade",
+          "is": "found"
+        }
+      ]
+    },
+    {
+      "part": "xp",
+      "when": [
+        {
+          "type": "flag",
+          "flag": "first_blade",
+          "is": "found"
+        }
+      ]
+    },
+    {
+      "part": "mana",
+      "when": [
+        {
+          "type": "spender"
+        }
+      ]
+    },
+    {
+      "part": "skills",
+      "when": [
+        {
+          "type": "points"
+        }
+      ]
+    },
+    {
+      "part": "chart",
+      "when": [
+        {
+          "type": "points"
+        }
+      ]
+    },
+    {
+      "part": "flasks",
+      "when": [
+        {
+          "type": "hurt"
+        }
+      ]
+    },
+    {
+      "part": "inventory",
+      "when": [
+        {
+          "type": "carrying",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "part": "character",
+      "when": [
+        {
+          "type": "carrying",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "part": "map",
+      "when": [
+        {
+          "type": "visited",
+          "zone": "hall_of_time"
+        }
+      ]
+    },
+    {
+      "part": "minimap",
+      "when": [
+        {
+          "type": "visited",
+          "zone": "hall_of_time"
+        }
+      ]
+    }
+  ]
 }

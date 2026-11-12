@@ -598,6 +598,14 @@ export interface ActDef {
   readonly end: ActEnd | null;
 }
 
+export const HUD_PARTS = ['life', 'attack', 'skills', 'xp', 'mana', 'flasks', 'inventory', 'character', 'chart', 'map', 'minimap'] as const;
+export type HudPart = (typeof HUD_PARTS)[number];
+
+export interface HudReveal {
+  readonly part: HudPart;
+  readonly when: readonly Condition[];
+}
+
 export interface WorldDef {
   readonly start: string;
   readonly town: string;
@@ -606,6 +614,7 @@ export interface WorldDef {
   readonly scaling: MonsterScaling;
   readonly acts: readonly ActDef[];
   readonly retired: RetiredZones | null;
+  readonly hudReveal: readonly HudReveal[];
 }
 
 export interface SkillBinding {

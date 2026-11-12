@@ -32,4 +32,31 @@ export interface ShoreCondition {
   readonly not: boolean;
 }
 
-export type Condition = QuestCondition | ObjectiveCondition | FlagCondition | ShoreCondition;
+export interface VisitedCondition {
+  readonly type: 'visited';
+  readonly zone: string;
+  readonly not: boolean;
+}
+
+export interface PointsCondition {
+  readonly type: 'points';
+  readonly not: boolean;
+}
+
+export interface SpenderCondition {
+  readonly type: 'spender';
+  readonly not: boolean;
+}
+
+export interface HurtCondition {
+  readonly type: 'hurt';
+  readonly not: boolean;
+}
+
+export interface CarryingCondition {
+  readonly type: 'carrying';
+  readonly count: number;
+  readonly not: boolean;
+}
+
+export type Condition = QuestCondition | ObjectiveCondition | FlagCondition | ShoreCondition | VisitedCondition | PointsCondition | SpenderCondition | HurtCondition | CarryingCondition;

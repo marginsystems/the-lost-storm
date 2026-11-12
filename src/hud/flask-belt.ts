@@ -1,3 +1,4 @@
+import { tagPart } from './hud-gate.ts';
 import type { FlaskResource } from '../../sim/content/flasks.ts';
 import { isRestoring } from '../../sim/world/flasks.ts';
 import type { FlaskState, PlayerState } from '../../sim/world/types.ts';
@@ -53,7 +54,11 @@ export function beadStates(flask: BeadCharges): BeadState[] {
 
 function buildFlask(hosts: FlaskHosts, flask: FlaskState): FlaskView {
   const host: HTMLElement = hosts.beads(flask.def.resource);
-  const beads: BeadView[] = beadStates({ charges: flask.charges, chargesPerUse: flask.def.chargesPerUse, maxCharges: flask.def.maxCharges }).map((): BeadView => ({ element: el('i', 'globe-bead', host), ready: null, fill: -1 }));
+  const beads: BeadView[] = beadStates({ charges: flask.charges, chargesPerUse: flask.def.chargesPerUse, maxCharges: flask.def.maxCharges }).map((): BeadView => {
+    const element: HTMLElement = el('i', 'globe-bead', host);
+    tagPart(element, 'flasks');
+    return { element, ready: null, fill: -1 };
+  });
   return { beads, resource: flask.def.resource };
 }
 

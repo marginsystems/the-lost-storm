@@ -19,6 +19,7 @@ import type {
   SurgeRules,
   TalkDef,
   WorldDef,
+  HudReveal,
   ZoneAmbience,
   ZoneCheckpoint,
   ZoneDef,
@@ -35,7 +36,7 @@ import type {
 } from './types.ts';
 import { service } from './parse-trade.ts';
 import type { VoidFinds, VoidShore, ZoneHud, ZoneVoid, ZoneWake } from './story-types.ts';
-import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
+import { ATLAS_FEATURE_KINDS, HUD_PARTS, ZONE_KINDS } from './types.ts';
 import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
 import { actEnd, drifts, retiredZones, triggers } from './parse-road.ts';
@@ -353,6 +354,11 @@ export function quest(value: unknown, where: string): QuestDef {
   return { id: text(source, 'id', where), name: text(source, 'name', where), requires: textList(source, 'requires', where), when: conditions(source, 'when', where), objectives };
 }
 
+function hudReveal(value: unknown, where: string): HudReveal {
+  const source: Fields = fields(value, where);
+  return { part: choice(source, 'part', HUD_PARTS, where), when: conditions(source, 'when', where) };
+}
+
 export function worldDef(value: unknown, where: string): WorldDef {
   const source: Fields = fields(value, where);
   const scaling: Fields = fields(source['scaling'], `${where}.scaling`);
@@ -363,6 +369,7 @@ export function worldDef(value: unknown, where: string): WorldDef {
     opening: nullableText(source, 'opening', where),
     legacyFlags: storyFlags(source['legacyFlags'], `${where}.legacyFlags`),
     retired: retiredZones(source['retired'], `${where}.retired`),
+    hudReveal: source['hudReveal'] === undefined ? [] : each(source['hudReveal'], `${where}.hudReveal`, hudReveal),
     scaling: {
       lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),
       damagePerLevel: numeric(scaling, 'damagePerLevel', `${where}.scaling`),

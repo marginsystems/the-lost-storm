@@ -3,7 +3,9 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { GAME_LAYERS } from '../title-screen.ts';
-import { createHudGate, HUD_GATE, hudGateCss } from './hud-gate.ts';
+import { createHudGate, HUD_GATE, hudGateCss, panelPart, stageParts } from './hud-gate.ts';
+import type { PartStage } from './hud-gate.ts';
+import { HUD_PARTS } from '../../sim/content/types.ts';
 import type { HudGate, HudGateTarget } from './hud-gate.ts';
 
 interface Mount {
@@ -102,4 +104,42 @@ void test('the gate closes at once and opens with a reveal that settles', (): vo
   gate.set(true);
   assert.equal(target.dataset['hudGate'], 'closed');
   assert.equal(createHudGate(body(), false).state(), 'open');
+});
+
+void test('a held HUD part is hidden and unclickable, and every part has its rule', (): void => {
+  const css: string = hudGateCss();
+  for (const part of HUD_PARTS) {
+    assert.ok(css.includes(`body[data-hud-hold~='${part}'] [${HUD_GATE.partAttribute}~='${part}']`), part);
+    assert.ok(css.includes(`body[data-hud-fresh~='${part}'] [${HUD_GATE.partAttribute}~='${part}']`), part);
+  }
+  assert.ok(css.includes(`animation: ${HUD_GATE.partAnimation} var(--spring-bouncy-ms) var(--spring-bouncy)`));
+});
+
+void test('a part springs in once when it is let go, and the reveal ends after its time', (): void => {
+  const start: PartStage = stageParts({ held: ['life', 'mana'], fresh: new Map() }, ['life', 'mana'], 0);
+  assert.deepEqual([...start.fresh.keys()], []);
+  const freed: PartStage = stageParts(start, ['mana'], 100);
+  assert.deepEqual(freed.held, ['mana']);
+  assert.deepEqual([...freed.fresh.keys()], ['life']);
+  const later: PartStage = stageParts(freed, ['mana'], 100 + HUD_GATE.freshMs);
+  assert.deepEqual([...later.fresh.keys()], []);
+});
+
+void test('the gate writes the held and fresh parts to the page, and a returning hero holds nothing', (): void => {
+  const page: HudGateTarget = { dataset: {} };
+  const gate: HudGate = createHudGate(page, false);
+  gate.hold(['life', 'chart'], 0);
+  assert.equal(page.dataset['hudHold'], 'life chart');
+  assert.equal(page.dataset['hudFresh'], '');
+  gate.hold(['chart'], 50);
+  assert.equal(page.dataset['hudHold'], 'chart');
+  assert.equal(page.dataset['hudFresh'], 'life');
+  const back: HudGateTarget = { dataset: {} };
+  createHudGate(back, false).hold([], 0);
+  assert.equal(back.dataset['hudHold'], '');
+});
+
+void test('each menu panel button belongs to its own HUD part', (): void => {
+  assert.equal(panelPart('tree'), 'chart');
+  assert.equal(panelPart('inventory'), 'inventory');
 });

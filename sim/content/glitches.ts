@@ -223,7 +223,7 @@ function editProps(entry: GlitchEdit): readonly string[] {
 }
 
 function conditionQuests(list: readonly Condition[]): string[] {
-  return list.flatMap((entry: Condition): string[] => (entry.type === 'flag' || entry.type === 'shore' ? [] : [entry.quest]));
+  return list.flatMap((entry: Condition): string[] => (entry.type === 'quest' || entry.type === 'objective' ? [entry.quest] : []));
 }
 
 function check(def: GlitchDef): void {
