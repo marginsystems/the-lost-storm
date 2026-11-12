@@ -7,7 +7,8 @@ import type { ComboStep, Content, SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { cellIndex } from '../nav/grid.ts';
-import { chainedSkill, comboHits, startSkill } from './skills.ts';
+import { chainedSkill, chargedSkill, comboHits, startSkill } from './skills.ts';
+import { damageTo, dummy, offset, run, shapeArena, shapeSkill } from '../../test/shape-support.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 
@@ -166,4 +167,67 @@ void test('a leap never lands through a wall raised across its path', (): void =
   }
   for (let step: number = 0; step < Math.round((pounce.windup + 0.05) / DT); step += 1) stepWorld(world, [], DT);
   assert.ok(ghoul.pos.x > wallX, `it stayed on its own side of the wall (${ghoul.pos.x.toFixed(2)} against ${wallX.toFixed(2)})`);
+});
+
+void test('a charged skill waits while its key is held and hits harder and wider the longer it was held', (): void => {
+  const quick: World = shapeArena(['test_heave']);
+  const tapped: MonsterState = dummy(quick, offset(2, 0));
+  const tapEvents: WorldEvent[] = [...stepWorld(quick, [{ type: 'skill', slot: 0, aim: offset(2, 0), targetId: null }], DT), ...run(quick, 0.4)];
+  const held: World = shapeArena(['test_heave']);
+  const struck: MonsterState = dummy(held, offset(2, 0));
+  stepWorld(held, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(2, 0), targetId: null }], DT);
+  const waiting: WorldEvent[] = run(held, 0.7);
+  assert.equal(damageTo(waiting, struck.id).length, 0);
+  assert.equal(held.player.action?.phase, 'windup');
+  const released: WorldEvent[] = [...stepWorld(held, [{ type: 'hold', slot: 0, down: false }], DT), ...run(held, 0.3)];
+  const light: number = must(damageTo(tapEvents, tapped.id)[0], 'tap hit');
+  const heavy: number = must(damageTo(released, struck.id)[0], 'held hit');
+  assert.ok(heavy > light * 2);
+  const full = chargedSkill(shapeSkill('test_heave'), 1).delivery;
+  assert.equal(full.type === 'arc' ? full.reach : 0, 4.5);
+});
+
+void test('a charge held past its limit releases on its own', (): void => {
+  const world: World = shapeArena(['test_heave']);
+  const struck: MonsterState = dummy(world, offset(2, 0));
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(2, 0), targetId: null }], DT);
+  const events: WorldEvent[] = run(world, 1.4);
+  assert.equal(damageTo(events, struck.id).length, 1);
+});
+
+void test('a channelled skill keeps striking while held, pays each tick, and stops on release', (): void => {
+  const world: World = shapeArena(['test_wire']);
+  const struck: MonsterState = dummy(world, offset(0, 5));
+  world.player.stats = { ...world.player.stats, manaRegen: 0 };
+  const mana: number = world.player.mana;
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 5), targetId: null }], DT);
+  const during: WorldEvent[] = run(world, 1.05);
+  assert.equal(world.player.action?.phase, 'channel');
+  const ticks: number = damageTo(during, struck.id).length;
+  assert.ok(ticks >= 5 && ticks <= 6);
+  assert.equal(world.player.mana, mana - 2 * ticks);
+  const after: WorldEvent[] = [...stepWorld(world, [{ type: 'hold', slot: 0, down: false }], DT), ...run(world, 0.6)];
+  assert.ok(damageTo(after, struck.id).length <= 1);
+  assert.equal(world.player.action, null);
+});
+
+void test('a channel can be steered while held', (): void => {
+  const world: World = shapeArena(['test_wire']);
+  const ahead: MonsterState = dummy(world, offset(0, 5));
+  const beside: MonsterState = dummy(world, offset(5, 0));
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 5), targetId: null }], DT);
+  run(world, 0.3);
+  const steered: WorldEvent[] = run(world, 0.6, [{ type: 'steer', aim: offset(5, 0) }]);
+  assert.ok(damageTo(steered, beside.id).length >= 2);
+  assert.ok(damageTo(steered, ahead.id).length <= 1);
+});
+
+void test('a channel ends when mana runs out', (): void => {
+  const world: World = shapeArena(['test_wire']);
+  world.player.mana = 5;
+  world.player.stats = { ...world.player.stats, manaRegen: 0 };
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 5), targetId: null }], DT);
+  const events: WorldEvent[] = run(world, 1.5);
+  assert.equal(world.player.action, null);
+  assert.ok(events.some((event: WorldEvent): boolean => event.type === 'notice' && event.reason === 'no_mana'));
 });

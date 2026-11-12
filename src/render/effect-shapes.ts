@@ -226,6 +226,8 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
     }
     case 'nova':
     case 'mark':
+    case 'field':
+    case 'blink':
       fills.push(telegraphPart(sectorGeometry(Math.PI * 2, 0, delivery.radius), color, SHAPES.telegraphFill, 5));
       edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.radius * SHAPES.telegraphEdge, delivery.radius), color, SHAPES.telegraphLine, 6));
       break;
@@ -241,9 +243,15 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
     case 'dash':
       fills.push(telegraphPart(laneGeometry(SHAPES.dashLane, delivery.distance), color, SHAPES.telegraphFill, 5));
       break;
+    case 'beam':
+      fills.push(telegraphPart(laneGeometry(delivery.width / 2, delivery.range), color, SHAPES.telegraphFill, 5));
+      break;
+    case 'chain':
+      fills.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.range * SHAPES.telegraphEdge, delivery.range), color, SHAPES.telegraphFill, 5));
+      break;
   }
   for (const part of [...fills, ...edges]) object.add(part);
-  return { object, fills, edges, lanes: delivery.type === 'projectile' || delivery.type === 'dash' };
+  return { object, fills, edges, lanes: delivery.type === 'projectile' || delivery.type === 'dash' || delivery.type === 'beam' };
 }
 
 export function pillarMesh(color: Color, radius: number, height: number): Mesh<CylinderGeometry, MeshBasicMaterial> {

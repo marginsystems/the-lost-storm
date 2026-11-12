@@ -135,6 +135,20 @@ function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reac
       }
       break;
     }
+    case 'field': {
+      const centre: ReadonlyVec2 = delivery.anchor === 'caster' ? monster.pos : (action.target ?? monster.pos);
+      inside = delivery.pulse > 0 && Math.hypot(pos.x - centre.x, pos.z - centre.z) <= delivery.radius + reach;
+      break;
+    }
+    case 'beam': {
+      const along: number = dot(offset, action.direction);
+      inside = along >= 0 && along <= delivery.range + reach && Math.abs(offset.x * action.direction.z - offset.z * action.direction.x) <= delivery.width / 2 + reach;
+      break;
+    }
+    case 'chain':
+      inside = gap <= delivery.range + reach;
+      break;
+    case 'blink':
     case 'dash':
       inside = false;
       break;

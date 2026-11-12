@@ -11,7 +11,7 @@ import { removeGround } from './ground.ts';
 import { useFlask } from './flasks.ts';
 import { followPath, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
-import { blockedReason, startSkill, stepAction } from './skills.ts';
+import { blockedReason, startSkill, steerAction, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './trade.ts';
 import type { Station } from './trade.ts';
@@ -55,7 +55,7 @@ function startMove(world: World, dest: Vec2, held: boolean): void {
   player.repathTimer = PLAYER.repathInterval;
 }
 
-function fire(world: World, skill: SkillDef, aim: Vec2): boolean {
+function fire(world: World, skill: SkillDef, aim: Vec2, slot: number): boolean {
   const player: PlayerState = world.player;
   const reason: NoticeReason | null = blockedReason(player, skill);
   if (reason !== null) {
@@ -65,7 +65,7 @@ function fire(world: World, skill: SkillDef, aim: Vec2): boolean {
   closeDialogue(world, false);
   player.intent = { type: 'idle' };
   player.path = [];
-  startSkill(world, player, skill, { x: aim.x - player.pos.x, z: aim.z - player.pos.z });
+  startSkill(world, player, skill, { x: aim.x - player.pos.x, z: aim.z - player.pos.z }, slot);
   return true;
 }
 
@@ -78,16 +78,16 @@ function useSkill(world: World, command: SkillCommand): void {
   const skill: SkillDef | undefined = player.skills[command.slot];
   if (skill === undefined) return;
   if (skill.delivery.type === 'dash') {
-    if (canDash(player)) fire(world, skill, dashAim(player, command.aim, player.path));
+    if (canDash(player)) fire(world, skill, dashAim(player, command.aim, player.path), command.slot);
     return;
   }
   const target: Actor | null = command.targetId === null ? null : findActor(world, command.targetId);
   if (target === null || !target.alive) {
-    fire(world, skill, command.aim);
+    fire(world, skill, command.aim, command.slot);
     return;
   }
   if (inEngageRange(player, target, skill)) {
-    fire(world, skill, target.pos);
+    fire(world, skill, target.pos, command.slot);
     return;
   }
   const reason: NoticeReason | null = blockedReason(player, skill);
@@ -149,6 +149,8 @@ function act(world: World, command: Command): void {
       return;
     }
     case 'flask':
+    case 'hold':
+    case 'steer':
     case 'trade':
     case 'read':
     case 'glitch':
@@ -200,6 +202,12 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'glitch':
       requestGlitch(world, command.kind, 'debug');
+      return;
+    case 'hold':
+      player.held = command.down ? [...player.held.filter((slot: number): boolean => slot !== command.slot), command.slot] : player.held.filter((slot: number): boolean => slot !== command.slot);
+      return;
+    case 'steer':
+      if (player.alive) steerAction(player, command.aim);
       return;
     case 'use':
     case 'move':
@@ -258,7 +266,7 @@ function stepIntent(world: World, dt: number): void {
         return;
       }
       if (inEngageRange(player, target, skill)) {
-        if (!fire(world, skill, target.pos)) {
+        if (!fire(world, skill, target.pos, intent.slot)) {
           player.intent = { type: 'idle' };
           player.path = [];
         }
