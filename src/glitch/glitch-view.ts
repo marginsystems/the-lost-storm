@@ -262,7 +262,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
       stepStutter(simDt);
       if (mist !== null) {
         sweep();
-        mist.update(now, dt, world, { look: null, figure: figureGauge.measure(deps.hero(), now) });
+        mist.update(now, dt, world, { look: null, figure: figureGauge.measure(deps.hero(), now), flash: 0 });
       }
     },
   };

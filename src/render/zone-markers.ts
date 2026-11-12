@@ -4,7 +4,7 @@ import type { MeshBasicMaterial } from 'three';
 import type { ZoneCheckpoint, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
-import { additive, glow, pillarMesh } from './effect-shapes.ts';
+import { additive, glow } from './effect-shapes.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
 export const MARKERS = {
@@ -20,9 +20,6 @@ export const MARKERS = {
   ringOpacity: 0.5,
   pulseSpeed: 2.1,
   pulseDepth: 0.35,
-  beamHeight: 3.2,
-  beamRadius: 0.5,
-  beamOpacity: 0.06,
   lightHeight: 1.4,
   lightDistance: 9,
   exitLight: 7,
@@ -35,12 +32,11 @@ export const MARKERS = {
 interface Marker {
   readonly ring: MeshBasicMaterial;
   readonly core: MeshBasicMaterial;
-  readonly beam: MeshBasicMaterial;
   readonly light: PointLight;
   readonly lightPower: number;
   readonly phase: number;
   readonly lit: (world: World) => number;
-  level: number;
+  level: number | null;
 }
 
 export interface ZoneMarkers {
@@ -64,15 +60,10 @@ export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
       group.add(flat);
       meshes.push(flat);
     }
-    const beam = pillarMesh(color, radius * MARKERS.beamRadius, MARKERS.beamHeight);
-    beam.material.opacity = MARKERS.beamOpacity;
-    beam.position.set(x, zone.floorHeight + MARKERS.beamHeight / 2, z);
-    group.add(beam);
-    meshes.push(beam);
     const light: PointLight = new PointLight(color, lightPower, MARKERS.lightDistance, 1.8);
     light.position.set(x, MARKERS.lightHeight, z);
     if (renderBudget().markerLights) group.add(light);
-    markers.push({ ring: ring.material, core: core.material, beam: beam.material, light, lightPower, phase: x * 0.37 + z * 0.61, lit, level: MARKERS.idle });
+    markers.push({ ring: ring.material, core: core.material, light, lightPower, phase: x * 0.37 + z * 0.61, lit, level: null });
   };
 
   const exitLit = (exit: ZoneExit): ((world: World) => number) => (world: World): number => (allHold(world, exit.requires) ? 1 : exit.hiddenWhenLocked ? 0 : MARKERS.locked);
@@ -85,12 +76,13 @@ export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
   return {
     update(dt: number, time: number, world: World): void {
       for (const marker of markers) {
-        marker.level += (marker.lit(world) - marker.level) * (1 - Math.exp(-MARKERS.ease * dt));
+        const target: number = marker.lit(world);
+        const level: number = marker.level === null ? target : marker.level + (target - marker.level) * (1 - Math.exp(-MARKERS.ease * dt));
+        marker.level = level;
         const pulse: number = 1 - MARKERS.pulseDepth * (0.5 + 0.5 * Math.sin(time * MARKERS.pulseSpeed + marker.phase));
-        marker.ring.opacity = MARKERS.ringOpacity * marker.level * pulse;
-        marker.core.opacity = MARKERS.coreOpacity * marker.level;
-        marker.beam.opacity = MARKERS.beamOpacity * marker.level * pulse;
-        marker.light.intensity = marker.lightPower * marker.level * pulse;
+        marker.ring.opacity = MARKERS.ringOpacity * level * pulse;
+        marker.core.opacity = MARKERS.coreOpacity * level;
+        marker.light.intensity = marker.lightPower * level * pulse;
       }
     },
     dispose(): void {

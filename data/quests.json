@@ -65,7 +65,7 @@
         "radius": 8,
         "text": "Reach the fire",
         "sets": {
-          "alpha_slice_complete": "reached"
+          "camp": "reached"
         }
       }
     ]
@@ -92,7 +92,8 @@
     "id": "wardens_lesson",
     "name": "The Warden's Lesson",
     "requires": [
-      "to_the_waystation"
+      "to_the_waystation",
+      "the_first_taker"
     ],
     "objectives": [
       {
@@ -101,7 +102,8 @@
         "npc": "warden_guide",
         "text": "Talk to the Warden Guide",
         "sets": {
-          "fire_lesson": "given"
+          "fire_lesson": "given",
+          "alpha_slice_complete": "reached"
         }
       }
     ]

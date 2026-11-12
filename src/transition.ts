@@ -38,10 +38,13 @@ export function createZoneTransition(element: HTMLElement, onError: (error: unkn
 
   const run = async (swap: () => Promise<void>): Promise<void> => {
     element.classList.add(TRANSITION.activeClass);
-    await faded(element);
-    await swap();
-    blocking = false;
-    element.classList.remove(TRANSITION.activeClass);
+    try {
+      await faded(element);
+      await swap();
+    } finally {
+      blocking = false;
+      element.classList.remove(TRANSITION.activeClass);
+    }
   };
 
   return {

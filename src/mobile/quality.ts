@@ -13,6 +13,7 @@ export interface QualityTier {
   readonly flashLights: number;
   readonly markerLights: boolean;
   readonly particleCapacity: number;
+  readonly mistLayers: number;
   readonly maxTextureSize: number;
   readonly maxModelTextureSize: number;
   readonly preloadNearZones: boolean;
@@ -35,6 +36,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     flashLights: 3,
     markerLights: true,
     particleCapacity: 2400,
+    mistLayers: 5,
     maxTextureSize: 4096,
     maxModelTextureSize: 4096,
     preloadNearZones: true,
@@ -55,6 +57,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     flashLights: 1,
     markerLights: false,
     particleCapacity: 700,
+    mistLayers: 2,
     maxTextureSize: 512,
     maxModelTextureSize: 256,
     preloadNearZones: false,

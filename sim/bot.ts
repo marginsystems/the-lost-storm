@@ -356,7 +356,7 @@ export function botPlay(bot: Bot): BotReport {
   const limit: number = world.time + BOT.questLimit * world.content.quests.size;
   let stuck: string | null = null;
   while (stuck === null && world.time < limit) {
-    const quest: QuestDef | undefined = [...world.content.quests.values()].find((candidate: QuestDef): boolean => questState(world, candidate.id) === 'active');
+    const quest: QuestDef | undefined = [...world.content.quests.values()].find((candidate: QuestDef): boolean => questState(world, candidate.id) === 'active' && allHold(world, currentObjective(world, candidate)?.when ?? []));
     if (quest === undefined) break;
     const objective: ObjectiveDef | null = currentObjective(world, quest);
     if (objective === null) break;

@@ -25,8 +25,12 @@ const ACT = {
   maxDeaths: 1,
 } as const;
 
+function waitsOnFlag(conditions: readonly Condition[]): boolean {
+  return conditions.some((condition: Condition): boolean => condition.type === 'flag' && !condition.not);
+}
+
 void test('the bot plays the whole act from a fresh save: every quest, in the time and at the level it is tuned for', (): void => {
-  const townQuests: string[] = [...content.quests.values()].filter((quest: QuestDef): boolean => !quest.when.some((condition: Condition): boolean => condition.type === 'flag' && !condition.not)).map((quest: QuestDef): string => quest.id).toSorted();
+  const townQuests: string[] = [...content.quests.values()].filter((quest: QuestDef): boolean => !waitsOnFlag(quest.when) && !quest.objectives.some((objective): boolean => waitsOnFlag(objective.when))).map((quest: QuestDef): string => quest.id).toSorted();
   const needed: string[] = [...content.zones.values()].filter((zone): boolean => zone.kind !== 'void').map((zone): string => zone.id).toSorted();
   for (const seed of ACT.seeds) {
     const world: World = createWorld(content, { seed, save: null });

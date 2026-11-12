@@ -26,6 +26,7 @@ void test('the mobile tier is lighter than desktop in every budget', (): void =>
   assert.equal(mobile.shadows, false);
   assert.ok(mobile.zoneLights < desktop.zoneLights);
   assert.ok(mobile.particleCapacity < desktop.particleCapacity);
+  assert.ok(mobile.mistLayers < desktop.mistLayers);
   assert.ok(mobile.maxTextureSize < desktop.maxTextureSize);
   assert.ok(mobile.maxModelTextureSize <= mobile.maxTextureSize);
 });
