@@ -317,13 +317,12 @@
   left: 0;
   right: 0;
   top: 22%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
+  display: grid;
+  justify-items: center;
 }
 
 .banner {
+  grid-area: 1 / 1;
   text-align: center;
   opacity: 0;
   transform: scale(0.7);
@@ -342,7 +341,7 @@
 
 .banner-title {
   font-family: var(--serif);
-  font-size: 54px;
+  font-size: 36px;
   letter-spacing: 0.22em;
   text-indent: 0.22em;
   text-shadow: 0 0 28px rgba(0, 0, 0, 0.8);
@@ -358,22 +357,22 @@
 
 .banner.zone .banner-title {
   color: var(--text);
-  font-size: 44px;
+  font-size: 30px;
 }
 
 .banner.act .banner-title {
   color: var(--text);
-  font-size: 48px;
+  font-size: 34px;
 }
 
 .banner.checkpoint .banner-title {
   color: var(--ember);
-  font-size: 30px;
+  font-size: 22px;
 }
 
 .banner-sub {
-  margin-top: 6px;
-  font-size: 16px;
+  margin-top: 4px;
+  font-size: 14px;
   letter-spacing: 0.08em;
   color: var(--text);
   text-shadow: 0 0 14px rgba(0, 0, 0, 0.8);
