@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
-import { neighbourZones, zoneModels, zoneProps, zoneSurfaces } from './zone-assets.ts';
+import { momentSurfaces, neighbourZones, zoneModels, zoneProps, zoneSurfaces } from './zone-assets.ts';
 
 const content: Content = loadContent();
 
@@ -39,5 +39,14 @@ void test('the zones next to a zone are the ones its exits lead to, without itse
     const near: readonly ZoneDef[] = neighbourZones(content, zone);
     const targets: Set<string> = new Set<string>(zone.exits.map((exit: ZoneExit): string => exit.to).filter((id: string): boolean => id !== zone.id));
     assert.deepEqual(new Set<string>(near.map((found: ZoneDef): string => found.id)), targets);
+  }
+});
+
+void test('every moment ground and every surface its props are dressed in is kept through a zone release', (): void => {
+  const kept: Set<string> = momentSurfaces(content);
+  assert.ok(content.moments.defs.size > 0);
+  for (const def of content.moments.defs.values()) {
+    assert.ok(kept.has(def.ground), def.ground);
+    for (const placed of def.props) for (const id of Object.values(content.props.get(placed.prop)?.surfaces ?? {})) assert.ok(kept.has(id), id);
   }
 });

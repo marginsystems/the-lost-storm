@@ -8,7 +8,7 @@ import { wornWearables, hiddenBodyParts } from '../../sim/wear.ts';
 import type { MomentFigure, MomentState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { QualityTier } from '../mobile/quality.ts';
 import type { CharacterLibrary, Dresser, LoadedRig, RigInstance } from './character-loader.ts';
-import { hasWear, instantiateRig, loadModel } from './character-loader.ts';
+import { hasWear, instantiateRig, loadKeptModel } from './character-loader.ts';
 import { disposeObject, groundArcs, skyBolt } from './effect-shapes.ts';
 import type { GhostUniforms } from './ghost-material.ts';
 import { createGhostUniforms, makeGhost } from './ghost-material.ts';
@@ -280,7 +280,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       if (prop !== undefined && !models.has(prop.model)) wanted.add(prop.model);
     }
     await Promise.all([...wanted].map(async (model: string): Promise<void> => {
-      const gltf: GLTF | null = await loadModel(deps.loader, model).catch((): null => null);
+      const gltf: GLTF | null = await loadKeptModel(deps.loader, model).catch((): null => null);
       if (gltf !== null) models.set(model, gltf);
     }));
   };

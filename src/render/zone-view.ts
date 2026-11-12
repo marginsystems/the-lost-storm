@@ -19,7 +19,7 @@ import type { PropDressing } from './surfaces.ts';
 import { dressedProp, preloadSurfaces, releaseSurfaces } from './surfaces.ts';
 import type { PropLook } from './prop-surface.ts';
 import { lookOf, withPropLook } from './prop-surface.ts';
-import { zoneModels, zoneSurfaces } from './zone-assets.ts';
+import { momentSurfaces, zoneModels, zoneSurfaces } from './zone-assets.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
 export const ZONE_VIEW = {
@@ -102,7 +102,7 @@ export async function preloadZones(loader: GLTFLoader, content: Content, zones: 
 }
 
 export function releaseOtherZones(content: Content, kept: ZoneDef): void {
-  releaseSurfaces(zoneSurfaces(content, kept));
+  releaseSurfaces(new Set<string>([...zoneSurfaces(content, kept), ...momentSurfaces(content)]));
   const keep: Set<string> = zoneModels(content, kept);
   for (const zone of content.zones.values()) {
     if (zone.id === kept.id) continue;

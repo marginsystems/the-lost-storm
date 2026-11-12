@@ -27,6 +27,18 @@ export function zoneSurfaces(content: Content, zone: ZoneDef): Set<string> {
   return ids;
 }
 
+export function momentSurfaces(content: Content): Set<string> {
+  const ids: Set<string> = new Set<string>();
+  for (const def of content.moments.defs.values()) {
+    ids.add(def.ground);
+    for (const placed of def.props) {
+      const prop: PropDef | undefined = content.props.get(placed.prop);
+      if (prop !== undefined) for (const id of Object.values(prop.surfaces)) ids.add(id);
+    }
+  }
+  return ids;
+}
+
 export function neighbourZones(content: Content, zone: ZoneDef): ZoneDef[] {
   const ids: Set<string> = new Set<string>(zone.exits.map((exit: ZoneExit): string => exit.to));
   ids.delete(zone.id);
