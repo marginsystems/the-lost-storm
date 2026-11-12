@@ -1,4 +1,4 @@
-export const FIXED_ACTIONS = ['inventory', 'character', 'tree', 'map', 'minimap', 'dodge', 'flask1', 'flask2', 'flask3', 'flask4', 'flask5', 'pause'] as const;
+export const FIXED_ACTIONS = ['inventory', 'character', 'tree', 'map', 'minimap', 'ladder', 'dodge', 'flask1', 'flask2', 'flask3', 'flask4', 'flask5', 'pause'] as const;
 export type FixedAction = (typeof FIXED_ACTIONS)[number];
 export const FLASK_ACTIONS: readonly FixedAction[] = ['flask1', 'flask2', 'flask3', 'flask4', 'flask5'];
 export type SkillAction = 'primary' | `skill:${number}`;
@@ -55,6 +55,7 @@ const FIXED_DEFS: readonly (Omit<ActionDef, 'locked'> & { readonly group: Action
   { id: 'tree', label: 'Skill tree', group: 'Panels', defaults: ['KeyT'] },
   { id: 'map', label: 'World map', group: 'Panels', defaults: ['KeyM'] },
   { id: 'minimap', label: 'Minimap', group: 'Panels', defaults: ['Tab'] },
+  { id: 'ladder', label: 'Ladder', group: 'Panels', defaults: ['KeyL'] },
   { id: 'pause', label: 'Pause menu', group: 'System', defaults: [BINDING.escape] },
 ];
 
