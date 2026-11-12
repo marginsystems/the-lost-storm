@@ -1,7 +1,7 @@
 import type { Content } from '../../sim/content/types.ts';
 import { xpToNextLevel } from '../../sim/progression.ts';
 import type { NoticeReason, PlayerState, World } from '../../sim/world/types.ts';
-import { clamp01, el, label, setText } from './dom.ts';
+import { clamp01, el, setText } from './dom.ts';
 
 const STATUS = {
   noticeMs: 1800,
@@ -90,24 +90,6 @@ export function createSurgeStatus(parent: HTMLElement): WorldStatus {
       if (active !== gathering) {
         gathering = active;
         gather.classList.toggle('visible', active);
-      }
-    },
-  };
-}
-
-export function createDeathOverlay(parent: HTMLElement): WorldStatus {
-  const element: HTMLDivElement = el('div', 'hud-death', parent);
-  label('death-title', 'You fell', element);
-  const sub: HTMLDivElement = el('div', 'death-sub', element);
-  let dead: boolean | null = null;
-  return {
-    update(world: World): void {
-      const player: PlayerState = world.player;
-      const isDead: boolean = !player.alive;
-      if (isDead) setText(sub, `The storm returns you in ${Math.max(0, Math.ceil(player.respawnTimer))}…`, false);
-      if (isDead !== dead) {
-        dead = isDead;
-        element.classList.toggle('visible', isDead);
       }
     },
   };

@@ -360,36 +360,6 @@
   text-shadow: 0 0 14px rgba(0, 0, 0, 0.8);
 }
 
-.hud-death {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: radial-gradient(ellipse at center, rgba(8, 2, 6, 0.5) 0%, rgba(6, 2, 6, 0.93) 100%);
-  opacity: 0;
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-.hud-death.visible {
-  opacity: 1;
-}
-
-.death-title {
-  font-family: var(--serif);
-  font-size: 56px;
-  letter-spacing: 0.2em;
-  text-indent: 0.2em;
-  color: #c9484e;
-}
-
-.death-sub {
-  font-size: 16px;
-  color: var(--text-dim);
-}
-
 .hud-bottom {
   position: absolute;
   left: 50%;

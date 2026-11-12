@@ -423,6 +423,7 @@ function skillBinding(value: unknown, where: string): SkillBinding {
 function player(value: unknown, where: string): PlayerDef {
   const source: Fields = fields(value, where);
   const xp: Fields = fields(source['xp'], `${where}.xp`);
+  const penalty: Fields = fields(source['deathPenalty'], `${where}.deathPenalty`);
   return {
     rig: text(source, 'rig', where),
     radius: numeric(source, 'radius', where),
@@ -440,6 +441,8 @@ function player(value: unknown, where: string): PlayerDef {
     pickupRadius: numeric(source, 'pickupRadius', where),
     goldMagnetRadius: numeric(source, 'goldMagnetRadius', where),
     respawnDelay: numeric(source, 'respawnDelay', where),
+    respawnInvulnerability: numeric(source, 'respawnInvulnerability', where),
+    deathPenalty: { minLevel: numeric(penalty, 'minLevel', `${where}.deathPenalty`), xpPercent: numeric(penalty, 'xpPercent', `${where}.deathPenalty`) },
   };
 }
 

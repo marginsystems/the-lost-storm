@@ -9,7 +9,9 @@ export function onWaypoint(world: World): boolean {
 }
 
 export function stepWaypoints(world: World): void {
-  if (world.waypoints.includes(world.zone.id) || !onWaypoint(world)) return;
+  if (!onWaypoint(world)) return;
+  if (world.respawn.type !== 'waypoint') world.respawn = { type: 'waypoint' };
+  if (world.waypoints.includes(world.zone.id)) return;
   world.waypoints.push(world.zone.id);
   world.events.push({ type: 'waypoint_unlocked', zone: world.zone.id });
 }

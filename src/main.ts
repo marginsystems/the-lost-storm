@@ -37,6 +37,8 @@ import type { CharacterLibrary } from './render/character-loader.ts';
 import { loadCharacters } from './render/character-loader.ts';
 import type { Effects } from './render/effects.ts';
 import { createEffects } from './render/effects.ts';
+import type { Ward } from './render/ward.ts';
+import { createWard } from './render/ward.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import { createIsoCamera } from './render/iso-camera.ts';
 import type { ItemThumbnails } from './render/item-thumbnails.ts';
@@ -201,6 +203,7 @@ async function start(): Promise<void> {
   const weather: Weather = createWeather();
   const effects: Effects = createEffects(stage.scene, particles, camera, (power: number): void => weather.strike(power));
   effects.setTorches(zoneView.torches);
+  const ward: Ward = createWard(stage.scene);
   const actors: Actors = createActors(stage.scene, library, world);
   const itemImage = (item: ItemInstance): string | null => {
     const base: ItemBaseDef | null = baseOf(content, item);
@@ -326,6 +329,7 @@ async function start(): Promise<void> {
       loot.sync(world);
       camera.update(dt, world.player.pos.x, world.player.pos.z);
       effects.update(dt, world);
+      ward.update(dt, world);
       stage.follow(world.player.pos.x, world.player.pos.z);
       overlays.update(dt, world, input.hoveredId);
     }

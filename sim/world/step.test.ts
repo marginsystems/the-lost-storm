@@ -498,47 +498,10 @@ void test('a full inventory refuses an unequip with a notice', (): void => {
   assert.equal(world.player.equipped.weapon?.base, 'rusted_blade');
 });
 
-void test('the player dies, lies dead until the respawn delay passes, then returns whole at the start', (): void => {
-  const world: World = fresh();
-  const thrall: MonsterState = must(monstersOf(world, 'bone_thrall')[0], 'thrall');
-  isolate(world, thrall);
-  world.player.pos = { x: 28, z: 25 };
-  put(thrall, { x: 28, z: 27 });
-  world.player.life = 1;
-  world.player.stats.lifeRegen = 0;
-  const events: WorldEvent[] = [];
-  let diedAt: number = -1;
-  let respawnedAt: number = -1;
-  for (let step: number = 0; step < 900; step += 1) {
-    const fresher: WorldEvent[] = stepWorld(world, [], DT);
-    events.push(...fresher);
-    if (diedAt < 0 && ofType(fresher, 'death').some((death): boolean => death.team === 'player')) {
-      diedAt = world.time;
-      assert.equal(world.player.alive, false);
-      assert.equal(world.player.life, 0);
-    }
-    if (respawnedAt < 0 && ofType(fresher, 'player_respawn').length > 0) {
-      respawnedAt = world.time;
-      break;
-    }
-  }
-  assert.ok(diedAt > 0);
-  assert.ok(respawnedAt > diedAt);
-  assert.ok(Math.abs(respawnedAt - diedAt - content.player.respawnDelay) < 0.1, `delay ${respawnedAt - diedAt}`);
-  assert.equal(world.player.alive, true);
-  assert.equal(world.player.life, world.player.maxLife);
-  assert.equal(world.player.mana, world.player.stats.maxMana);
-  assert.deepEqual(world.player.pos, START);
-  assert.deepEqual(thrall.pos, thrall.home);
-  assert.equal(thrall.aggro, false);
-  assert.equal(ofType(events, 'damage').filter((hit): boolean => hit.targetTeam === 'player').length >= 1, true);
-});
-
 void test('commands are ignored while the player is dead', (): void => {
   const world: World = fresh();
   isolate(world, must(monstersOf(world, 'bone_thrall')[0], 'thrall'));
   world.player.alive = false;
-  world.player.respawnTimer = 10;
   const events: WorldEvent[] = advance(world, 0.3, [{ type: 'move', held: false, dest: { x: 28, z: 20 } }]);
   assert.deepEqual(world.player.pos, START);
   assert.equal(ofType(events, 'skill_start').length, 0);

@@ -100,7 +100,7 @@ export interface PlayerState extends ActorState {
   path: Vec2[];
   repathTimer: number;
   queued: Command | null;
-  respawnTimer: number;
+  invulnerable: number;
   strideTravel: number;
   kills: number;
 }
@@ -247,7 +247,20 @@ export interface TeleportCommand {
   readonly zone: string;
 }
 
-export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand;
+export type RespawnChoice = 'checkpoint' | 'town';
+
+export interface RespawnCommand {
+  readonly type: 'respawn';
+  readonly choice: RespawnChoice;
+}
+
+export interface DeathState {
+  readonly killer: string;
+  readonly skill: string;
+  elapsed: number;
+}
+
+export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -310,6 +323,7 @@ export interface World {
   zone: ZoneDef;
   grid: NavGrid;
   respawn: RespawnPoint;
+  death: DeathState | null;
   visited: string[];
   readonly rng: Rng;
   time: number;

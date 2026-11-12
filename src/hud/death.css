@@ -1,0 +1,95 @@
+.death-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(8, 2, 4, 0) 0%, rgba(8, 2, 4, 0.55) 100%);
+  backdrop-filter: saturate(1) brightness(1);
+  opacity: 0;
+  transition: opacity calc(var(--spring-smooth-ms) * 2) var(--spring-smooth), backdrop-filter calc(var(--spring-smooth-ms) * 2) var(--spring-smooth);
+}
+
+.death-screen.visible {
+  pointer-events: auto;
+  opacity: 1;
+  backdrop-filter: saturate(0.12) brightness(0.42);
+}
+
+.death-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 250px;
+  padding: 16px 20px 18px;
+  border-radius: 2px;
+  background: rgba(10, 8, 10, 0.78);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(14px) scale(0.97);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.death-screen.visible .death-panel {
+  opacity: 1;
+  transform: none;
+  transition-delay: 640ms;
+}
+
+.death-title {
+  font-family: var(--serif);
+  font-size: 26px;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  color: #b5403f;
+}
+
+.death-cause {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.death-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.death-button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 2px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), background-color var(--spring-snappy-ms) var(--spring-snappy), transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.death-screen.ready .death-button {
+  opacity: 1;
+}
+
+.death-screen.ready .death-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.death-screen.ready .death-button:active {
+  transform: scale(0.985);
+}
+
+.death-button-hint {
+  font-size: 12px;
+  color: var(--text-dim);
+}

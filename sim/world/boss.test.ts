@@ -8,6 +8,7 @@ import type { BossDef, Condition, Content, MonsterDef, QuestDef, ZoneDef, ZonePa
 import { phaseAt, pickBossSkill } from './boss.ts';
 import { applyHit, offenceOf } from './combat.ts';
 import { stepWorld } from './step.ts';
+import { choicesOpen } from './death.ts';
 import type { MonsterState, World, WorldEvent } from './types.ts';
 import { SKILLS } from './skills.ts';
 import { enterZone } from './zones.ts';
@@ -209,7 +210,7 @@ void test('a boss that outlives the hero starts the next attempt from its first 
   world.player.stats.lifeRegen = 0;
   world.player.pos = { x: boss.pos.x, z: boss.pos.z + 2 };
   const events: WorldEvent[] = [];
-  for (let step: number = 0; step < 900 && ofType(events, 'player_respawn').length === 0; step += 1) events.push(...stepWorld(world, [], DT));
+  for (let step: number = 0; step < 900 && ofType(events, 'player_respawn').length === 0; step += 1) events.push(...stepWorld(world, choicesOpen(world) ? [{ type: 'respawn', choice: 'checkpoint' }] : [], DT));
   assert.equal(ofType(events, 'player_respawn').length, 1);
   assert.equal(boss.life, boss.maxLife);
   assert.equal(boss.phase, 0);
