@@ -56,6 +56,26 @@ export function refundCost(content: Content, level: number, points: number): num
   return Math.round(points * (content.chart.respec.goldPerPoint + content.chart.respec.goldPerLevel * level));
 }
 
+export interface ChartHolder {
+  readonly allocated: readonly string[];
+  readonly gold: number;
+  readonly level: number;
+}
+
+export type ChartChange = 'ready' | 'not_allowed' | 'no_gold';
+
+function affordable(content: Content, holder: ChartHolder, points: number): ChartChange {
+  return holder.gold < refundCost(content, holder.level, points) ? 'no_gold' : 'ready';
+}
+
+export function refundState(content: Content, holder: ChartHolder, nodeId: string): ChartChange {
+  return canRefund(content, holder.allocated, nodeId) ? affordable(content, holder, 1) : 'not_allowed';
+}
+
+export function respecState(content: Content, holder: ChartHolder): ChartChange {
+  return holder.allocated.length > 0 ? affordable(content, holder, holder.allocated.length) : 'not_allowed';
+}
+
 export function reachablePlaces(content: Content, allocated: readonly string[]): string[] {
   const kept: Set<string> = new Set<string>();
   let grew: boolean = true;

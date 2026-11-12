@@ -1,6 +1,7 @@
 import type { ItemSlot } from '../content/types.ts';
 import { slotOf } from '../items.ts';
-import { applyXp, canAllocate, canRefund, findNode, refundCost } from '../progression.ts';
+import { applyXp, canAllocate, findNode, refundCost, refundState, respecState } from '../progression.ts';
+import type { ChartChange } from '../progression.ts';
 import type { XpResult } from '../progression.ts';
 import { assignSlot, chartSkills } from '../skill-book.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
@@ -100,20 +101,16 @@ export function allocateNode(world: World, nodeId: string): void {
   refreshPlayer(world);
 }
 
-function pay(world: World, points: number): boolean {
-  const player: PlayerState = world.player;
-  const cost: number = refundCost(world.content, player.level, points);
-  if (player.gold < cost) {
-    world.events.push({ type: 'notice', reason: 'no_gold' });
-    return false;
-  }
-  player.gold -= cost;
+function pay(world: World, change: ChartChange, points: number): boolean {
+  if (change === 'no_gold') world.events.push({ type: 'notice', reason: 'no_gold' });
+  if (change !== 'ready') return false;
+  world.player.gold -= refundCost(world.content, world.player.level, points);
   return true;
 }
 
 export function refundNode(world: World, nodeId: string): void {
   const player: PlayerState = world.player;
-  if (!canRefund(world.content, player.allocated, nodeId) || !pay(world, 1)) return;
+  if (!pay(world, refundState(world.content, player, nodeId), 1)) return;
   player.allocated = player.allocated.filter((id: string): boolean => id !== nodeId);
   player.skillPoints += 1;
   const unlock: string | null = findNode(world.content, nodeId)?.unlock ?? null;
@@ -124,7 +121,7 @@ export function refundNode(world: World, nodeId: string): void {
 export function respecChart(world: World): void {
   const player: PlayerState = world.player;
   const points: number = player.allocated.length;
-  if (points === 0 || !pay(world, points)) return;
+  if (!pay(world, respecState(world.content, player), points)) return;
   for (const skill of chartSkills(world.content, player.allocated)) forget(world, skill);
   player.allocated = [];
   player.skillPoints += points;

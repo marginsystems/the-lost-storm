@@ -1,6 +1,7 @@
 import type { WebGLRenderer } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import type { QualityName } from '../mobile/quality.ts';
+import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { CharacterLibrary } from '../render/character-loader.ts';
 import type { Veil } from '../transition.ts';
 import { createVeil } from '../veil.ts';
@@ -25,6 +26,7 @@ export interface LobbyFlowParts {
   readonly renderer: WebGLRenderer;
   readonly content: Content;
   readonly library: CharacterLibrary;
+  readonly loader: GLTFLoader;
   readonly lobby: Lobby | null;
   readonly look: () => LobbyLook;
   readonly view: () => LobbyView;
@@ -73,10 +75,16 @@ function lendPause(screen: LobbyScreen, hud: HTMLElement, open: () => void): voi
 }
 
 export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
-  const stage: LobbyStage = createLobbyStage(parts.content, parts.library);
+  const stage: LobbyStage = createLobbyStage(parts.content, parts.library, parts.loader);
   const veil: Veil = createVeil(parts.veil);
   let active: boolean = false;
   let busy: boolean = false;
+  let warming: Promise<void> | null = null;
+  const warmStage = (): Promise<void> => {
+    stage.dress(parts.look());
+    warming ??= stage.warm(parts.renderer, parts.tier());
+    return warming;
+  };
 
   const swap = async (into: boolean, middle: () => void, colour: string | null): Promise<void> => {
     if (busy) return;
@@ -89,7 +97,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     document.body.toggleAttribute(`data-${LOBBY_FLOW.bodyMark}`, into);
     if (!into) parts.restore();
     if (into) {
-      stage.dress(parts.look());
+      await warmStage();
       screen.setBusy(false);
       screen.show(parts.view());
     }
@@ -133,8 +141,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       }, null);
     },
     warm(): Promise<void> {
-      stage.dress(parts.look());
-      return stage.warm(parts.renderer, parts.tier());
+      return warmStage();
     },
   };
 }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillTreeNodeDef, XpCurve } from './content/types.ts';
-import { applyXp, canAllocate, canRefund, refundCost, findNode, requirementsMet, adoptLearned, reachablePlaces, xpToNextLevel } from './progression.ts';
+import { applyXp, canAllocate, canRefund, refundCost, refundState, respecState, findNode, requirementsMet, adoptLearned, reachablePlaces, xpToNextLevel } from './progression.ts';
 import type { XpResult } from './progression.ts';
 
 const content: Content = loadContent();
@@ -84,6 +84,19 @@ void test('a place can be given back only while everything taken after it still 
   assert.ok(!canRefund(content, taken, 'stone_1'));
   assert.ok(!canRefund(content, taken, 'old_oak'));
   assert.equal(refundCost(content, 5, 2), 2 * (content.chart.respec.goldPerPoint + content.chart.respec.goldPerLevel * 5));
+});
+
+void test('giving a place back or starting over is ready, not allowed, or short of gold, and the price is the one refundCost names', (): void => {
+  const allocated: readonly string[] = ['stone_thunderclap', 'tempered_body', 'stone_1', 'bedrock'];
+  const one: number = refundCost(content, 5, 1);
+  const all: number = refundCost(content, 5, allocated.length);
+  assert.equal(refundState(content, { allocated, gold: one, level: 5 }, 'bedrock'), 'ready');
+  assert.equal(refundState(content, { allocated, gold: one - 1, level: 5 }, 'bedrock'), 'no_gold');
+  assert.equal(refundState(content, { allocated, gold: one, level: 5 }, 'stone_1'), 'not_allowed');
+  assert.equal(refundState(content, { allocated, gold: 0, level: 5 }, 'old_oak'), 'not_allowed');
+  assert.equal(respecState(content, { allocated, gold: all, level: 5 }), 'ready');
+  assert.equal(respecState(content, { allocated, gold: all - 1, level: 5 }), 'no_gold');
+  assert.equal(respecState(content, { allocated: [], gold: 0, level: 5 }), 'not_allowed');
 });
 
 void test('places whose way in is gone are dropped in the order they were taken, and the rest stay', (): void => {

@@ -1,6 +1,7 @@
 import type { ChartPath, SkillTreeNodeDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
-import { canRefund, refundCost } from '../../sim/progression.ts';
+import { canRefund, refundCost, refundState, respecState } from '../../sim/progression.ts';
+import type { ChartChange } from '../../sim/progression.ts';
 import { ATLAS_VIEW, atRest, stepMotion, still, toScreen } from './atlas-view.ts';
 import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-view.ts';
 import { abilityCard } from './chart-ability.ts';
@@ -205,14 +206,15 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     }
     const node: SkillTreeNodeDef = view.def;
     const status: TreeNodeStatus = statusOf(node);
-    const refundable: boolean = status.kind === 'allocated' && canRefund(content, player().allocated, node.id);
+    const refund: ChartChange = refundState(content, player(), node.id);
+    const refundable: boolean = status.kind === 'allocated' && refund !== 'not_allowed';
     const ability: AbilityCard | null = abilityCard(content, node, player().bar);
     const key: string = `${node.id}:${status.kind}:${refundable ? goldFor(1) : -1}:${player().skillPoints}:${ability?.slot ?? -1}`;
     showRoute(node.id);
     card.style.setProperty('--tint', pathTint(content, node.path));
     action.classList.toggle('shown', refundable);
     if (refundable) setText(action, `Give back · ${goldFor(1)} gold`, false);
-    action.classList.toggle('short', refundable && player().gold < goldFor(1));
+    action.classList.toggle('short', refundable && refund === 'no_gold');
     if (key === shownCard) {
       placeCard();
       return;
@@ -251,7 +253,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     event.stopPropagation();
     const view: NodeView | null = hovered ?? selected;
     if (view === null) return;
-    if (player().gold < goldFor(1)) {
+    if (refundState(content, player(), view.def.id) === 'no_gold') {
       retrigger(action, 'deny');
       return;
     }
@@ -274,7 +276,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     }
     confirmUntil = 0;
     restart.classList.remove('confirm');
-    if (player().gold < goldFor(count)) {
+    if (respecState(content, player()) === 'no_gold') {
       retrigger(restart, 'deny');
       return;
     }
