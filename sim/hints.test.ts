@@ -10,7 +10,8 @@ import type { Content, QuestDef } from './content/types.ts';
 import type { HintChange, HintInput, HintState } from './hints.ts';
 import { createHintState, HINTS, seedVeteran, stepHints } from './hints.ts';
 import { startQuests } from './world/quests.ts';
-import type { ItemInstance, World, WorldEvent } from './world/types.ts';
+import type { ItemInstance, MomentState, World, WorldEvent } from './world/types.ts';
+import { forceStrike } from './world/moments.ts';
 
 const content: Content = loadContent();
 const defs: HintsDef = loadHints(content);
@@ -199,4 +200,18 @@ void test('time spent in a conversation does not count toward a hint stepping as
   world.time += HINTS.maxShowSeconds / 2;
   assert.deepEqual(stepHints(defs, world, state, IDLE), []);
   assert.equal(state.active, 'move');
+});
+
+void test('the first time the hero stands in an awake moment a quiet line says leaving ends it, and it goes when the moment is over', (): void => {
+  const world: World = fresh();
+  const state: HintState = createHintState(defs.hints.filter((hint: HintDef): boolean => hint.id !== 'moment_edge').map((hint: HintDef): string => hint.id));
+  const moment: MomentState = must(forceStrike(world, { ...world.player.pos }, 'campfire'), 'a moment');
+  assert.notEqual(shown(stepHints(defs, world, state, IDLE)), 'moment_edge');
+  moment.phase = 'awake';
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'moment_edge');
+  moment.phase = 'fading';
+  const changes: HintChange[] = stepHints(defs, world, state, IDLE);
+  assert.ok(changes.some((change: HintChange): boolean => change.type === 'hide' && change.done));
+  moment.phase = 'awake';
+  assert.notEqual(shown(stepHints(defs, world, state, IDLE)), 'moment_edge');
 });

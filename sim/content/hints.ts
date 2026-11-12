@@ -23,7 +23,8 @@ export type HintTrigger =
   | { readonly type: 'slot_filled'; readonly slot: number }
   | { readonly type: 'gear_in_bag' }
   | { readonly type: 'low_life'; readonly fraction: number; readonly carrying: string | null }
-  | { readonly type: 'player_dead' };
+  | { readonly type: 'player_dead' }
+  | { readonly type: 'in_moment' };
 
 export type HintDone =
   | { readonly type: 'moved'; readonly distance: number }
@@ -35,7 +36,8 @@ export type HintDone =
   | { readonly type: 'equipped' }
   | { readonly type: 'allocated' }
   | { readonly type: 'life_above'; readonly fraction: number }
-  | { readonly type: 'alive' };
+  | { readonly type: 'alive' }
+  | { readonly type: 'moment_over' };
 
 export interface HintDef {
   readonly id: string;
@@ -71,7 +73,7 @@ export function hintSegments(template: string): HintSegment[] {
 
 function readTrigger(value: unknown, where: string): HintTrigger {
   const source: Fields = fields(value, where);
-  const type = choice(source, 'type', ['game_started', 'objective_person', 'objective_exit', 'waypoint_near', 'monster_near', 'item_near', 'skill_point', 'skill_learned', 'slot_filled', 'gear_in_bag', 'low_life', 'player_dead'] as const, where);
+  const type = choice(source, 'type', ['game_started', 'objective_person', 'objective_exit', 'waypoint_near', 'monster_near', 'item_near', 'skill_point', 'skill_learned', 'slot_filled', 'gear_in_bag', 'low_life', 'player_dead', 'in_moment'] as const, where);
   let trigger: HintTrigger;
   switch (type) {
     case 'game_started':
@@ -80,6 +82,7 @@ function readTrigger(value: unknown, where: string): HintTrigger {
     case 'skill_point':
     case 'gear_in_bag':
     case 'player_dead':
+    case 'in_moment':
       trigger = { type };
       break;
     case 'waypoint_near':
@@ -109,7 +112,7 @@ function readSlots(value: unknown, where: string): number[] {
 
 function readDone(value: unknown, where: string): HintDone {
   const source: Fields = fields(value, where);
-  const type = choice(source, 'type', ['moved', 'talked', 'panel', 'zone_changed', 'skills_used', 'picked_up', 'equipped', 'allocated', 'life_above', 'alive'] as const, where);
+  const type = choice(source, 'type', ['moved', 'talked', 'panel', 'zone_changed', 'skills_used', 'picked_up', 'equipped', 'allocated', 'life_above', 'alive', 'moment_over'] as const, where);
   let done: HintDone;
   switch (type) {
     case 'talked':
@@ -118,6 +121,7 @@ function readDone(value: unknown, where: string): HintDone {
     case 'equipped':
     case 'allocated':
     case 'alive':
+    case 'moment_over':
       done = { type };
       break;
     case 'moved':

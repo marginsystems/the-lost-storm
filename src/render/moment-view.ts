@@ -3,6 +3,7 @@ import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Colo
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { MomentDef, MomentEcho, MomentProp } from '../../sim/content/moment-types.ts';
 import type { Content, MonsterDef, PropDef, SurfaceDef } from '../../sim/content/types.ts';
+import { distance } from '../../sim/math.ts';
 import { wornWearables, hiddenBodyParts } from '../../sim/wear.ts';
 import type { MomentFigure, MomentState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { QualityTier } from '../mobile/quality.ts';
@@ -12,6 +13,8 @@ import { disposeObject, groundArcs, skyBolt } from './effect-shapes.ts';
 import type { GhostUniforms } from './ghost-material.ts';
 import { createGhostUniforms, makeGhost } from './ghost-material.ts';
 import { DOME_FRAGMENT, DOME_VERTEX, FLOOR_FRAGMENT, FLOOR_VERTEX } from './moment-shaders.ts';
+import type { Press } from './membrane.ts';
+import { MEMBRANE, pressAngle, pressTarget, SLACK, stepPress } from './membrane.ts';
 import { surfaceMaterial } from './surfaces.ts';
 
 export const MOMENT_VIEW = {
@@ -72,10 +75,14 @@ interface SurfaceUniforms {
   readonly uTime: IUniform<number>;
   readonly uDissolve: IUniform<number>;
   readonly uMark: IUniform<number>;
+  readonly uPress: IUniform<number>;
+  readonly uAngle: IUniform<number>;
+  readonly uPressGlow: IUniform<number>;
+  readonly uPressWidth: IUniform<number>;
 }
 
 function surfaceUniforms(tint: Color): SurfaceUniforms {
-  return { uTint: { value: tint.clone() }, uStrength: { value: 0 }, uTime: { value: 0 }, uDissolve: { value: 0 }, uMark: { value: 0 } };
+  return { uTint: { value: tint.clone() }, uStrength: { value: 0 }, uTime: { value: 0 }, uDissolve: { value: 0 }, uMark: { value: 0 }, uPress: { value: 0 }, uAngle: { value: 0 }, uPressGlow: { value: MEMBRANE.glow }, uPressWidth: { value: MEMBRANE.width } };
 }
 
 function glowMaterial(vertex: string, fragment: string, uniforms: SurfaceUniforms): ShaderMaterial {
@@ -107,6 +114,7 @@ interface MomentEntry {
   light: PointLight | null;
   shown: number;
   awake: number;
+  press: Press;
 }
 
 interface Flash {
@@ -358,7 +366,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       group.add(ground);
     }
     group.add(floor, props, dome);
-    const entry: MomentEntry = { group, dome, floor, ground, domeUniforms, floorUniforms, props, propGhost, propMaterials: [], figures: [], tint, lens, glow: new Color(moment.def.light), light: null, shown: 0, awake: 0 };
+    const entry: MomentEntry = { group, dome, floor, ground, domeUniforms, floorUniforms, props, propGhost, propMaterials: [], figures: [], tint, lens, glow: new Color(moment.def.light), light: null, shown: 0, awake: 0, press: SLACK };
     scene.add(group);
     return entry;
   };
@@ -420,6 +428,13 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     const fade: number = fadeOf(moment, world);
     entry.shown = easeToward(entry.shown, marking ? 0 : 1, MOMENT_VIEW.appearRate, dt);
     entry.awake = easeToward(entry.awake, moment.phase === 'awake' ? 1 : 0, MOMENT_VIEW.wakeRate, dt);
+    const reach: number = distance(world.player.pos, moment.pos);
+    entry.press = stepPress(entry.press, moment.phase === 'awake' && world.player.alive ? pressTarget(reach, moment.def.radius) : 0, dt);
+    const angle: number = pressAngle(world.player.pos, moment.pos);
+    for (const uniforms of [entry.domeUniforms, entry.floorUniforms]) {
+      uniforms.uPress.value = entry.press.level;
+      uniforms.uAngle.value = angle;
+    }
     const strength: number = entry.shown * (1 - fade);
     entry.domeUniforms.uStrength.value = MOMENT_VIEW.domeAlpha * strength * (1 + entry.awake * 0.5);
     entry.floorUniforms.uStrength.value = MOMENT_VIEW.floorAlpha * strength * (1 + entry.awake * 0.4);

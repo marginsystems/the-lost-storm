@@ -5,6 +5,7 @@ import type { Vec2 } from './math.ts';
 import { objectiveTarget } from './world/objective.ts';
 import { questState } from './world/conditions.ts';
 import type { ObjectiveTarget } from './world/objective.ts';
+import { insideAwakeMoment } from './world/moments.ts';
 import type { GroundItem, ItemInstance, MonsterState, World, WorldEvent } from './world/types.ts';
 
 export const HINTS = { maxShowSeconds: 14 } as const;
@@ -102,6 +103,9 @@ function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarge
     case 'low_life':
       holds = lifeFraction(world) <= trigger.fraction && carries(world, trigger.carrying);
       break;
+    case 'in_moment':
+      holds = insideAwakeMoment(world);
+      break;
   }
   return holds;
 }
@@ -144,6 +148,9 @@ function finished(done: HintDone, world: World, state: HintState, open: Readonly
       break;
     case 'alive':
       complete = player.alive;
+      break;
+    case 'moment_over':
+      complete = !insideAwakeMoment(world);
       break;
   }
   return complete;
