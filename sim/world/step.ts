@@ -11,7 +11,8 @@ import { stepVoices } from './voices.ts';
 import { stepProjectiles } from './skills.ts';
 import { stepTrade } from './trade.ts';
 import type { Command, World, WorldEvent } from './types.ts';
-import { acceptsCommand, stepVoid } from './void.ts';
+import { stepVoid } from './void.ts';
+import { acceptsCommand } from './wake.ts';
 
 export const MAX_STEP: number = 1 / 30;
 

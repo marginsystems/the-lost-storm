@@ -88,6 +88,12 @@ export function positive(source: Fields, key: string, where: string): number {
   return value;
 }
 
+export function nonNegative(source: Fields, key: string, where: string): number {
+  const value: number = numeric(source, key, where);
+  if (value < 0) throw new ContentError(`${where}.${key}`, 'expected a number of zero or more');
+  return value;
+}
+
 export function fraction(source: Fields, key: string, where: string): number {
   const value: number = numeric(source, key, where);
   if (value <= 0 || value > 1) throw new ContentError(`${where}.${key}`, 'expected a number above 0 and at most 1');

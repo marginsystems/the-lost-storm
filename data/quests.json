@@ -1,8 +1,21 @@
 [
   {
+    "id": "follow_the_light",
+    "name": "Follow the Light",
+    "requires": [],
+    "when": [{"type": "flag", "flag": "opening", "is": "read"}],
+    "objectives": [
+      {"id": "light", "type": "reach", "zone": "stillhold", "x": 13, "z": 35.5, "radius": 4, "text": "Follow the light"}
+    ]
+  },
+  {
     "id": "fallen_in",
     "name": "Fallen In",
     "requires": [],
+    "when": [
+      {"type": "flag", "flag": "opening", "is": "begun", "not": true},
+      {"type": "quest", "quest": "follow_the_light", "is": "active", "not": true}
+    ],
     "objectives": [
       {"id": "tallier", "type": "talk", "npc": "maren", "text": "Speak to the Tallier"},
       {"id": "lampwright", "type": "talk", "npc": "hale", "text": "Find the Lampwright, by the lamps"}

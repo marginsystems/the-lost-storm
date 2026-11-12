@@ -52,6 +52,7 @@ import type { GameBoard } from './lobby/game-board.ts';
 import { mountTitleLobby } from './lobby/title-lobby.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
+import type { Leaderboard } from './backend/api.ts';
 import type { Opening } from './opening/opening.ts';
 import { createOpening } from './opening/opening.ts';
 import type { Actors } from './render/actors.ts';
@@ -227,7 +228,11 @@ async function start(): Promise<void> {
 
   const save: SaveData | null = await loadingSave;
   if (lobby !== null) void lobby.feed.refresh(true);
-  const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
+  let heroName: string | null = null;
+  lobby?.feed.subscribe((board: Leaderboard | null): void => {
+    if (board?.you) heroName = board.you.name;
+  });
+  const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
   status.textContent = 'Raising the dead and the walls…';
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene)]);
   status.textContent = 'Waking the world…';
@@ -327,6 +332,7 @@ async function start(): Promise<void> {
     openSettings: (section: SettingsSection): void => pauseMenu.open(section),
     playUi,
     voice,
+    readBook: (item: ItemInstance): void => opening.readBook(item),
   });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
     heightOf: (id: number): number => actors.heightOf(id),
@@ -370,7 +376,7 @@ async function start(): Promise<void> {
   const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, openMenu: (): void => {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
-  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement) });
+  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), send, nameOf: (): string | null => heroName });
   if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene) };
 
   let playing: boolean = false;

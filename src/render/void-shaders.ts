@@ -114,6 +114,8 @@ uniform float uOpacity;
 uniform float uSeed;
 uniform float uScale;
 uniform float uDrift;
+uniform vec3 uLight;
+uniform vec3 uLightColor;
 varying vec3 vWorld;
 ${NOISE}
 ${POCKET}
@@ -129,7 +131,16 @@ void main() {
   float lit = voidFbm(at + vec2(0.35, 0.22));
   float storm = voidFbm(q * uScale * 0.38 - roll * 0.8 + uSeed * 1.7 + vec2(body * 1.6));
   float puff = smoothstep(0.3, 0.58, body);
-  float density = open * clamp(0.45 + puff * 0.55 + smoothstep(uNear.y * 0.4, uNear.y * 1.3, away) * 0.5, 0.0, 1.0);
+  vec2 toLight = uLight.xy - uHero;
+  float lightAway = max(length(toLight), 0.001);
+  vec2 lightDir = toLight / lightAway;
+  vec2 fromHero = p - uHero;
+  float along = dot(fromHero, lightDir);
+  float across = abs(dot(fromHero, vec2(-lightDir.y, lightDir.x)));
+  float lane = smoothstep(-2.0, 3.0, along) * (1.0 - smoothstep(lightAway + 4.0, lightAway + 9.0, along));
+  float width = mix(2.5, 7.0, clamp(along / lightAway, 0.0, 1.0));
+  float pull = uLight.z * lane * (1.0 - smoothstep(width, width + 3.5, across));
+  float density = open * (1.0 - pull * 0.7) * mix(1.0, 1.35, uLight.z * (1.0 - pull)) * clamp(0.45 + puff * 0.55 + smoothstep(uNear.y * 0.4, uNear.y * 1.3, away) * 0.5, 0.0, 1.0);
   float shade = clamp(0.5 + (lit - body) * 6.0, 0.0, 1.0);
   vec3 color = mix(uStorm, uMist, near * 0.8 + shade * 0.2);
   color *= 0.82 + shade * 0.28;
@@ -137,6 +148,9 @@ void main() {
   vec2 toFlash = vWorld.xz - uFlashPos;
   float glow = uFlash * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
   color = mix(color, uFlashColor, clamp(glow * (0.35 + storm * 0.9), 0.0, 1.0));
+  color = mix(color, uDeep * 0.75, uLight.z * 0.72 * (1.0 - near * 0.55) * (1.0 - pull * 0.8));
+  vec2 nearLight = vWorld.xz - uLight.xy;
+  color = mix(color, uLightColor, uLight.z * 0.85 * exp(-dot(nearLight, nearLight) / 90.0));
   gl_FragColor = vec4(color, clamp(density * uOpacity, 0.0, 1.0));
 }
 `;

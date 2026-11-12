@@ -66,7 +66,9 @@
   "props": [],
   "packs": [],
   "surge": null,
-  "exits": [],
+  "exits": [
+    {"id": "into_stillhold", "x": 8, "z": 8, "radius": 2.6, "to": "stillhold", "toExit": "fallstone", "arrival": {"x": 80, "z": 80}, "requires": [{"type": "flag", "flag": "opening", "is": "read"}], "lockedHint": "Only mist.", "hiddenWhenLocked": true}
+  ],
   "checkpoints": [],
   "waypoint": null,
   "npcs": [],
@@ -75,7 +77,26 @@
     "wake": {
       "lie": 2.2,
       "rise": 3.4
-    }
+    },
+    "heading": 1.5,
+    "wander": {"degrees": 70, "seconds": 4, "farther": 1.6},
+    "sets": {"opening": "begun"},
+    "encounters": [
+      {
+        "id": "journal",
+        "when": [{"type": "flag", "flag": "first_choice", "not": true}],
+        "after": 170,
+        "ahead": 16,
+        "find": {"type": "item", "item": "worn_journal", "sets": {"first_choice": "took_journal"}}
+      },
+      {
+        "id": "light",
+        "when": [{"type": "flag", "flag": "opening", "is": "read"}],
+        "after": 0,
+        "ahead": 20,
+        "find": {"type": "exit", "exit": "into_stillhold"}
+      }
+    ]
   },
   "hud": {
     "hide": [
@@ -85,7 +106,8 @@
       "quests",
       "minimap",
       "hints"
-    ]
+    ],
+    "until": [{"type": "flag", "flag": "opening", "is": "read"}]
   },
   "ambience": {
     "background": "#d9dcdf",

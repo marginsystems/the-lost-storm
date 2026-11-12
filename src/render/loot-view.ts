@@ -9,6 +9,8 @@ import type { GroundItem, ItemInstance, World } from '../../sim/world/types.ts';
 import type { CharacterLibrary, LoadedAttachment } from './character-loader.ts';
 import { loadKeptModel } from './character-loader.ts';
 import { disposeObject, glow } from './effect-shapes.ts';
+import type { Keepsake } from './keepsake.ts';
+import { createKeepsake } from './keepsake.ts';
 
 export const LOOT = {
   coinModel: 'models/world/coins.glb',
@@ -54,7 +56,13 @@ interface WeaponEntry {
   readonly beam: Mesh | null;
 }
 
-type LootEntry = GoldEntry | GemEntry | WeaponEntry;
+interface KeepsakeEntry {
+  readonly kind: 'keepsake';
+  readonly group: Group;
+  readonly keepsake: Keepsake;
+}
+
+type LootEntry = GoldEntry | GemEntry | WeaponEntry | KeepsakeEntry;
 
 export interface LootView {
   sync(world: World): void;
@@ -150,6 +158,11 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       group.add(stack);
       return { kind: 'gold', group };
     }
+    if (ground.find !== null) {
+      const keepsake: Keepsake = createKeepsake();
+      group.add(keepsake.group);
+      return { kind: 'keepsake', group, keepsake };
+    }
     const color: Color = new Color(rarityOf(world.content, ground.content.item).color);
     const attachment: LoadedAttachment | undefined = attachmentFor(world, ground);
     if (attachment !== undefined) {
@@ -179,6 +192,10 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       case 'weapon':
         entry.group.removeFromParent();
         break;
+      case 'keepsake':
+        entry.keepsake.dispose();
+        entry.group.removeFromParent();
+        break;
     }
   };
 
@@ -199,6 +216,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
         const landed: boolean = ground.age > LOOT.tossTime;
         switch (entry.kind) {
           case 'gold':
+          case 'keepsake':
             break;
           case 'gem':
             entry.gem.position.y = LOOT.gemHover + Math.sin(world.time * 3 + ground.id) * LOOT.gemBob;

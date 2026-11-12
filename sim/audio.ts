@@ -169,6 +169,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'respawn':
     case 'flask':
     case 'use':
+    case 'read':
       break;
   }
   return action;

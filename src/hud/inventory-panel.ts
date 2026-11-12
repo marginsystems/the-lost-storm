@@ -1,3 +1,4 @@
+import { bookOf } from '../../sim/content/story.ts';
 import type { ItemBaseDef, ItemSlot } from '../../sim/content/types.ts';
 import { ITEM_SLOTS } from '../../sim/content/types.ts';
 import { baseOf, rarityOf, slotOf } from '../../sim/items.ts';
@@ -99,6 +100,10 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
     view.cell.addEventListener('click', (event: MouseEvent): void => {
       if (view.current === null) return;
       context.tooltip.hide();
+      if (bookOf(context.api.world.content, baseOf(context.api.world.content, view.current)) !== null) {
+        context.api.readBook(view.current);
+        return;
+      }
       context.api.send(inventoryCommand(context.api.world, index, event.ctrlKey || event.metaKey ? 'ctrl' : 'click'));
     });
     view.cell.addEventListener('contextmenu', (): void => {

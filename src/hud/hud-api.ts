@@ -16,6 +16,7 @@ export interface HudApi {
   playUi(action: UiAction): void;
   itemImage(item: ItemInstance): string | null;
   readonly voice: VoicePlayer;
+  readBook(item: ItemInstance): void;
 }
 
 export interface Hud {

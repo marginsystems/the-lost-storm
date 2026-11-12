@@ -1,21 +1,8 @@
 import type { ZoneVoid } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
+import { distance } from '../math.ts';
+import { moveExit, stepEncounters } from './encounters.ts';
 import type { Command, Intent, PlayerState, WakeState, World } from './types.ts';
-
-export function beginVoid(world: World): void {
-  const rules: ZoneVoid | null = world.zone.void;
-  world.wake = rules === null || rules.wake === null ? null : { elapsed: 0, lie: rules.wake.lie, rise: rules.wake.rise };
-  if (rules !== null) world.player.queued = null;
-}
-
-export function wakeProgress(wake: WakeState): number {
-  return Math.min(1, Math.max(0, (wake.elapsed - wake.lie) / wake.rise));
-}
-
-export function acceptsCommand(world: World, command: Command): boolean {
-  if (world.wake !== null) return false;
-  return !(world.zone.kind === 'void' && command.type === 'skill');
-}
 
 function moved(point: Vec2, by: Vec2): Vec2 {
   return { x: point.x + by.x, z: point.z + by.z };
@@ -39,7 +26,24 @@ export function shiftWorld(world: World, by: Vec2): void {
     ground.pos = moved(ground.pos, by);
     ground.from = moved(ground.from, by);
   }
+  for (const state of world.encounters) if (state.pos !== null) state.pos = moved(state.pos, by);
+  for (const exit of world.zone.exits) moveExit(world, exit.id, moved(exit, by));
+  world.trail = moved(world.trail, by);
   world.shift = moved(world.shift, by);
+}
+
+function steer(world: World, rules: ZoneVoid, dt: number): number {
+  const pos: Vec2 = world.player.pos;
+  const travelled: number = distance(pos, world.trail);
+  if (travelled > 0) {
+    const blend: number = 1 - Math.exp(-rules.heading * dt);
+    const x: number = world.heading.x + ((pos.x - world.trail.x) / travelled - world.heading.x) * blend;
+    const z: number = world.heading.z + ((pos.z - world.trail.z) / travelled - world.heading.z) * blend;
+    const size: number = Math.hypot(x, z);
+    if (size > 0) world.heading = { x: x / size, z: z / size };
+  }
+  world.trail = { x: pos.x, z: pos.z };
+  return travelled;
 }
 
 export function stepVoid(world: World, dt: number): void {
@@ -50,6 +54,9 @@ export function stepVoid(world: World, dt: number): void {
   }
   const rules: ZoneVoid | null = world.zone.void;
   if (rules === null) return;
+  const zone: string = world.zone.id;
+  stepEncounters(world, rules, steer(world, rules, dt), dt);
+  if (world.zone.id !== zone) return;
   const home: Vec2 = world.zone.playerStart;
   const offX: number = world.player.pos.x - home.x;
   const offZ: number = world.player.pos.z - home.z;

@@ -172,8 +172,8 @@ void test('a spilled item lies at the hero and stays in every save until it is p
 
 void test('loot that was never part of a save is not carried by it', (): void => {
   const world: World = played();
-  world.ground.push({ id: 900, pos: { x: 0, z: 0 }, from: { x: 0, z: 0 }, content: { kind: 'item', item: made('gale_charm', 'common', 70) }, age: 0, kept: false });
-  world.ground.push({ id: 901, pos: { x: 0, z: 0 }, from: { x: 0, z: 0 }, content: { kind: 'gold', amount: 5 }, age: 0, kept: true });
+  world.ground.push({ id: 900, pos: { x: 0, z: 0 }, from: { x: 0, z: 0 }, content: { kind: 'item', item: made('gale_charm', 'common', 70) }, age: 0, kept: false, find: null });
+  world.ground.push({ id: 901, pos: { x: 0, z: 0 }, from: { x: 0, z: 0 }, content: { kind: 'gold', amount: 5 }, age: 0, kept: true, find: null });
   assert.deepEqual(toSave(world).spilled, []);
 });
 
@@ -284,7 +284,7 @@ void test('flask charges survive a save, and a version 2 save from before flasks
   const { flasks: _dropped, ...older } = toSave(played());
   const migrated: SaveData = must(readSave(content, JSON.parse(JSON.stringify({ ...older, version: 2 }))), 'version 2 save');
   assert.equal(migrated.version, SAVE_VERSION);
-  assert.equal(SAVE_VERSION, 4);
+  assert.equal(SAVE_VERSION, 5);
   assert.deepEqual(migrated.flasks, {});
   const loaded: World = createWorld(content, { seed: 2, save: migrated });
   assert.ok(loaded.player.flasks.every((flask): boolean => flask.charges === flask.def.maxCharges));
@@ -316,7 +316,7 @@ void test('a version 2 save, which has no stash, loads as the current version wi
   delete older['flasks'];
   const save: SaveData = must(readSave(content, older), 'save');
   assert.equal(save.version, SAVE_VERSION);
-  assert.equal(SAVE_VERSION, 4);
+  assert.equal(SAVE_VERSION, 5);
   assert.equal(save.stash.length, content.trade.stashSize);
   assert.ok(save.stash.every((item: ItemInstance | null): boolean => item === null));
   assert.deepEqual(save.inventory, current.inventory);
@@ -371,4 +371,25 @@ void test('saved stalls of unknown or non-vendor characters are dropped, and a s
   assert.deepEqual(Object.keys(save.vendors), [vendorId()]);
   assert.equal(save.vendors[vendorId()]?.stale, true);
   assert.deepEqual(save.vendors[vendorId()]?.buyback, []);
+});
+
+void test('story flags survive a save, and bad entries are dropped', (): void => {
+  const world: World = played();
+  world.flags['first_choice'] = 'took_journal';
+  const save: SaveData = roundTrip(world);
+  assert.equal(save.flags['first_choice'], 'took_journal');
+  const dirty: SaveData = must(readSave(content, { ...toSave(world), flags: { first_choice: 'took_journal', broken: 7 } }), 'dirty save');
+  assert.deepEqual(dirty.flags, { first_choice: 'took_journal' });
+  assert.deepEqual(createWorld(content, { seed: 3, save }).flags, save.flags);
+});
+
+void test('a save from before story flags is a returning hero: the legacy flags mark the opening skipped, and a lost zone falls back to town', (): void => {
+  const { flags: _dropped, ...older } = toSave(played());
+  const migrated: SaveData = must(readSave(content, JSON.parse(JSON.stringify({ ...older, version: 4 }))), 'version 4 save');
+  assert.equal(migrated.version, SAVE_VERSION);
+  assert.deepEqual(migrated.flags, content.world.legacyFlags);
+  const lost: SaveData = must(readSave(content, { ...older, version: 4, zone: 'nowhere' }), 'lost save');
+  assert.equal(lost.zone, content.world.town);
+  const current: SaveData = must(readSave(content, { ...older, version: SAVE_VERSION, flags: {} }), 'current save');
+  assert.deepEqual(current.flags, {});
 });

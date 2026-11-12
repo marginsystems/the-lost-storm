@@ -1,4 +1,5 @@
 import attachments from '../../data/attachments.json' with { type: 'json' };
+import books from '../../data/books.json' with { type: 'json' };
 import flasks from '../../data/flasks.json' with { type: 'json' };
 import items from '../../data/items.json' with { type: 'json' };
 import lines from '../../data/lines.json' with { type: 'json' };
@@ -28,7 +29,7 @@ import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [between, stillhold, duskway, dusksEnd, theSpill, theCoursework, theStill, drownedBastion], world, npcs, lines, quests, player, flasks, trade };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, items, skillTree, rigs, attachments, wearables, surfaces, props, zones: [between, stillhold, duskway, dusksEnd, theSpill, theCoursework, theStill, drownedBastion], world, npcs, lines, quests, player, flasks, trade, books };
 
 export function loadContent(): Content {
   const content: Content = parseContent(RAW_CONTENT);

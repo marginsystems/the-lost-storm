@@ -1,6 +1,7 @@
 body.hud-hide-life .hud-globe-group.life,
 body.hud-hide-mana .hud-globe-group.mana,
 body.hud-hide-bar .hud-bottom,
+body.hud-hide-bar .hud-flask,
 body.hud-hide-bar .tc-actions,
 body.hud-hide-bar .tc-menu-btn:not(.tc-pause),
 body.hud-hide-quests .hud-quests,
@@ -18,6 +19,7 @@ body.hud-hide-hints .objective-arrow {
 body.hud-reveal-life .hud-globe-group.life,
 body.hud-reveal-mana .hud-globe-group.mana,
 body.hud-reveal-bar .hud-bottom,
+body.hud-reveal-bar .hud-flask,
 body.hud-reveal-bar .tc-actions,
 body.hud-reveal-bar .tc-menu-btn:not(.tc-pause),
 body.hud-reveal-quests .hud-quests,
@@ -40,4 +42,17 @@ body.hud-reveal-hints .objective-arrow {
 
 body[data-zone-kind='void'] #vignette {
   background: radial-gradient(ellipse at center, rgba(40, 44, 50, 0) 40%, rgba(40, 44, 50, 0.38) 100%);
+}
+
+body[data-zone-kind='void'] #vignette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, rgba(34, 38, 46, 0) 30%, rgba(34, 38, 46, 0.66) 100%);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+body[data-zone-kind='void'][data-void-light='on'] #vignette::before {
+  opacity: 1;
 }

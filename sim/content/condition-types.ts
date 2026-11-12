@@ -19,4 +19,11 @@ export interface ObjectiveCondition {
   readonly not: boolean;
 }
 
-export type Condition = QuestCondition | ObjectiveCondition;
+export interface FlagCondition {
+  readonly type: 'flag';
+  readonly flag: string;
+  readonly is: string | null;
+  readonly not: boolean;
+}
+
+export type Condition = QuestCondition | ObjectiveCondition | FlagCondition;

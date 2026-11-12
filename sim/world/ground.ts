@@ -13,7 +13,7 @@ export function dropOnGround(world: World, from: Vec2, content: GroundItem['cont
   const reach: number = world.rng.range(GROUND.scatterMin, GROUND.scatterMax);
   const wanted: Vec2 = { x: from.x + Math.cos(angle) * reach, z: from.z + Math.sin(angle) * reach };
   const pos: Vec2 = nearestWalkable(world.grid, wanted, GROUND.snapRadius) ?? { x: from.x, z: from.z };
-  const ground: GroundItem = { id: world.nextId, pos, from: { x: from.x, z: from.z }, content, age: 0, kept: false };
+  const ground: GroundItem = { id: world.nextId, pos, from: { x: from.x, z: from.z }, content, age: 0, kept: false, find: null };
   world.nextId += 1;
   world.ground.push(ground);
   world.events.push({ type: 'drop', ground });

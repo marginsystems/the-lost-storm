@@ -1,5 +1,6 @@
 import type { Fields } from './content/read.ts';
 import { isFields } from './content/read.ts';
+import type { StoryFlags } from './content/story-types.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
@@ -7,8 +8,9 @@ import { flaskCharges } from './world/flasks.ts';
 import { decodeExplored, encodeExplored, exploredSize } from './world/exploration.ts';
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, VendorStock, World } from './world/types.ts';
 
-export const SAVE_VERSION: number = 4;
-const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, 3, SAVE_VERSION]);
+export const SAVE_VERSION: number = 5;
+const FLAGGED_VERSION: number = 5;
+const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, 3, 4, SAVE_VERSION]);
 
 export interface SaveData {
   readonly version: number;
@@ -33,6 +35,7 @@ export interface SaveData {
   readonly flasks: Readonly<Record<string, number>>;
   readonly stash: readonly (ItemInstance | null)[];
   readonly vendors: Readonly<Record<string, VendorStock>>;
+  readonly flags: StoryFlags;
 }
 
 interface Worn {
@@ -69,6 +72,7 @@ export function toSave(world: World): SaveData {
     flasks: flaskCharges(player.flasks),
     stash: [...world.stash],
     vendors: copyVendors(world.vendors),
+    flags: { ...world.flags },
   };
 }
 
@@ -218,6 +222,16 @@ function readVendors(content: Content, value: unknown): Record<string, VendorSto
   return vendors;
 }
 
+function readFlags(content: Content, value: unknown, legacy: boolean): StoryFlags {
+  const flags: Record<string, string> = legacy ? { ...content.world.legacyFlags } : {};
+  if (!isFields(value)) return flags;
+  for (const key of Object.keys(value)) {
+    const flag: unknown = value[key];
+    if (typeof flag === 'string') flags[key] = flag;
+  }
+  return flags;
+}
+
 export function readSave(content: Content, value: unknown): SaveData | null {
   if (!isFields(value) || !READABLE_VERSIONS.has(value['version'])) return null;
   const level: number | null = count(value, 'level', 1);
@@ -236,7 +250,8 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const size: number = content.player.inventorySize;
   const savedZone: unknown = value['zone'];
   const known: boolean = typeof savedZone === 'string' && content.zones.has(savedZone);
-  const zone: string = typeof savedZone === 'string' && known ? savedZone : content.world.start;
+  const legacy: boolean = typeof value['version'] !== 'number' || value['version'] < FLAGGED_VERSION;
+  const zone: string = typeof savedZone === 'string' && known ? savedZone : legacy ? content.world.town : content.world.start;
   const slots: (ItemInstance | null)[] = Array.from({ length: size }, (_: unknown, index: number): ItemInstance | null => readItem(content, inventoryList[index]));
   const worn: Worn = readEquipped(content, value['equipped'], slots);
   const spilled: unknown = value['spilled'];
@@ -266,6 +281,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     flasks: readFlasks(content, value['flasks']),
     stash: stashed.stash,
     vendors: readVendors(content, value['vendors']),
+    flags: readFlags(content, value['flags'], legacy),
   };
 }
 

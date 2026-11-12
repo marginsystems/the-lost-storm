@@ -1,5 +1,4 @@
-import type { HudPart } from '../content/story-types.ts';
-import type { ZoneHud } from '../content/types.ts';
+import type { HudPart, ZoneHud } from '../content/story-types.ts';
 import { allHold } from './conditions.ts';
 import type { World } from './types.ts';
 

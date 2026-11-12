@@ -226,6 +226,7 @@ export interface GroundItem {
   pos: Vec2;
   from: Vec2;
   readonly content: GoldDrop | ItemDrop;
+  readonly find: string | null;
   age: number;
   kept: boolean;
 }
@@ -327,7 +328,13 @@ export interface TradeCommand {
   readonly action: TradeAction;
 }
 
-export type Command = MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export interface ReadCommand {
+  readonly type: 'read';
+  readonly book: string;
+  readonly page: string;
+}
+
+export type Command = ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -401,6 +408,14 @@ export interface OpenService {
   readonly anchor: Vec2;
 }
 
+export interface EncounterState {
+  readonly id: string;
+  walked: number;
+  pos: Vec2 | null;
+  off: number;
+  groundId: number | null;
+}
+
 export interface WakeState {
   elapsed: number;
   readonly lie: number;
@@ -436,6 +451,10 @@ export interface World {
   surgeTimer: number | null;
   wake: WakeState | null;
   shift: Vec2;
+  trail: Vec2;
+  heading: Vec2;
+  encounters: EncounterState[];
+  flags: Record<string, string>;
   events: WorldEvent[];
   service: OpenService | null;
   vendors: Record<string, VendorStock>;

@@ -49,7 +49,7 @@ void test('bases respect their minimum level', (): void => {
   for (const id of low) assert.equal(must(content.itemBases.get(id), id).minLevel, 1);
   assert.ok(!low.has('squall_plate'));
   const high: Set<string> = new Set<string>(rolls(4, 6).map((item: ItemInstance): string => item.base));
-  assert.equal(high.size, content.itemBases.size);
+  assert.equal(high.size, [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.dropWeight > 0).length);
 });
 
 void test('generation is deterministic for a seed and honours forced choices', (): void => {
@@ -190,7 +190,7 @@ void test('each material has its own trade-off', (): void => {
         assert.ok(implicitOf(base, 'maxLife') > 0, `${base.id} gives life`);
         break;
       case null:
-        assert.ok(base.slot === 'weapon' || base.slot === 'charm', base.id);
+        assert.ok(base.slot === 'weapon' || base.slot === 'charm' || base.book !== null, base.id);
         break;
     }
   }

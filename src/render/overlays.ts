@@ -23,6 +23,7 @@ export const OVERLAYS = {
   labelHeight: 20,
   labelWidth: 90,
   labelShownRank: 1,
+  findLabel: 'Pick up',
   altKey: 'Alt',
   numberHeight: 0.75,
   exitLift: 2.6,
@@ -143,7 +144,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     const element: HTMLDivElement = document.createElement('div');
     element.className = 'loot-label';
     const inner: HTMLSpanElement = document.createElement('span');
-    inner.textContent = itemName(world.content, ground.content.item);
+    inner.textContent = ground.find === null ? itemName(world.content, ground.content.item) : OVERLAYS.findLabel;
     inner.style.color = rarityOf(world.content, ground.content.item).color;
     element.append(inner);
     element.addEventListener('pointerdown', (event: PointerEvent): void => {

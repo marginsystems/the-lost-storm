@@ -14,12 +14,13 @@ import { spawnPacks } from './monsters.ts';
 import { startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
 import { emptyStash } from './trade.ts';
-import { beginVoid } from './void.ts';
+import { beginVoid } from './wake.ts';
 import { placePlayer, respawnExists, startZone } from './zones.ts';
 
 export interface WorldOptions {
   readonly seed: number;
   readonly save: SaveData | null;
+  readonly opening?: boolean;
 }
 
 const PLAYER_ID: number = 1;
@@ -81,8 +82,10 @@ function giveStartingItems(world: World): void {
   world.player.stats = computeStats(world.content, world.player.level, world.player.equipped, world.player.allocated);
 }
 
-function savedZone(content: Content, save: SaveData | null): ZoneDef {
-  return (save === null ? undefined : content.zones.get(save.zone)) ?? startZone(content);
+function savedZone(content: Content, save: SaveData | null, opening: boolean): ZoneDef {
+  if (save !== null) return content.zones.get(save.zone) ?? startZone(content);
+  const first: ZoneDef | undefined = opening && content.world.opening !== null ? content.zones.get(content.world.opening) : undefined;
+  return first ?? startZone(content);
 }
 
 function restoreExplored(content: Content, save: SaveData | null): Record<string, Uint8Array> {
@@ -97,7 +100,7 @@ function restoreExplored(content: Content, save: SaveData | null): Record<string
 
 export function createWorld(content: Content, options: WorldOptions): World {
   const save: SaveData | null = options.save;
-  const zone: ZoneDef = savedZone(content, save);
+  const zone: ZoneDef = savedZone(content, save, options.opening === true);
   const respawn: RespawnPoint = save !== null && save.zone === zone.id && respawnExists(zone, save.respawn) ? save.respawn : { type: 'start' };
   const visited: string[] = save === null ? [] : save.visited.filter((id: string): boolean => content.zones.has(id));
   if (!visited.includes(zone.id)) visited.push(zone.id);
@@ -130,6 +133,10 @@ export function createWorld(content: Content, options: WorldOptions): World {
     surgeTimer: null,
     wake: null,
     shift: { x: 0, z: 0 },
+    trail: { x: 0, z: 0 },
+    heading: { x: 0, z: 1 },
+    encounters: [],
+    flags: save === null ? {} : { ...save.flags },
     events: [],
     service: null,
     vendors: save === null ? {} : copyVendors(save.vendors),

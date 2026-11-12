@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
 import { packMods } from './parse-combat.ts';
-import { byId, choice, choiceList, ContentError, each, fields, flag, numeric, positive, text, textList } from './read.ts';
+import { byId, choice, choiceList, ContentError, each, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
   AtlasDef,
@@ -22,7 +22,6 @@ import type {
   ZoneCheckpoint,
   ZoneDef,
   ZoneExit,
-  ZoneHud,
   ZoneNpc,
   ZoneOutside,
   ZonePack,
@@ -32,9 +31,11 @@ import type {
   ZoneWaypoint,
 } from './types.ts';
 import { service } from './parse-trade.ts';
-import type { ZoneVoid, ZoneWake } from './story-types.ts';
+import type { ZoneHud, ZoneVoid, ZoneWake } from './story-types.ts';
 import { HUD_PARTS } from './story-types.ts';
-import { ATLAS_FEATURE_KINDS, OBJECTIVE_STATES, QUEST_STATES, ZONE_KINDS } from './types.ts';
+import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
+import { encounter, storyFlags } from './parse-story.ts';
+import { conditions } from './parse-conditions.ts';
 
 function point(value: unknown, where: string): ZonePoint {
   const source: Fields = fields(value, where);
@@ -63,17 +64,6 @@ function surgeRules(value: unknown, where: string): SurgeRules | null {
   return { delay: numeric(source, 'delay', where), surgesPerExtraMonster: numeric(source, 'surgesPerExtraMonster', where), maxExtraMonsters: numeric(source, 'maxExtraMonsters', where) };
 }
 
-function condition(value: unknown, where: string): Condition {
-  const source: Fields = fields(value, where);
-  const type: Condition['type'] = choice(source, 'type', ['quest', 'objective'] as const, where);
-  const not: boolean = source['not'] === undefined ? false : flag(source, 'not', where);
-  if (type === 'quest') return { type, quest: text(source, 'quest', where), is: choice(source, 'is', QUEST_STATES, where), not };
-  return { type, quest: text(source, 'quest', where), objective: text(source, 'objective', where), is: choice(source, 'is', OBJECTIVE_STATES, where), not };
-}
-
-function conditions(source: Fields, key: string, where: string): Condition[] {
-  return source[key] === undefined ? [] : each(source[key], `${where}.${key}`, condition);
-}
 
 function zoneExit(value: unknown, where: string): ZoneExit {
   const source: Fields = fields(value, where);
@@ -139,7 +129,15 @@ function zoneWake(value: unknown, where: string): ZoneWake | null {
 
 function zoneVoid(value: unknown, where: string): ZoneVoid {
   const source: Fields = fields(value, where);
-  return { span: positive(source, 'span', where), wake: zoneWake(source['wake'], `${where}.wake`) };
+  const wander: Fields = fields(source['wander'], `${where}.wander`);
+  return {
+    span: positive(source, 'span', where),
+    wake: zoneWake(source['wake'], `${where}.wake`),
+    heading: positive(source, 'heading', where),
+    wander: { degrees: positive(wander, 'degrees', `${where}.wander`), seconds: positive(wander, 'seconds', `${where}.wander`), farther: positive(wander, 'farther', `${where}.wander`) },
+    sets: storyFlags(source['sets'], `${where}.sets`),
+    encounters: [...byId(each(source['encounters'] ?? [], `${where}.encounters`, encounter), `${where}.encounters`).values()],
+  };
 }
 
 function zoneHud(value: unknown, where: string): ZoneHud | null {
@@ -170,7 +168,7 @@ export function zone(value: unknown, where: string): ZoneDef {
   const surge: SurgeRules | null = surgeRules(source['surge'], `${where}.surge`);
   if (kind === 'town' && (packs.length > 0 || surge !== null)) throw new ContentError(where, 'a town is safe: it cannot have packs or surges');
   if (kind === 'void' && (packs.length > 0 || surge !== null)) throw new ContentError(where, 'a void is empty: it cannot have packs or surges');
-  if (kind === 'void' && [source['npcs'], source['checkpoints']].some((list: unknown): boolean => Array.isArray(list) && list.length > 0)) throw new ContentError(where, 'a void recentres around the hero: it cannot hold npcs or checkpoints');
+  if (kind === 'void' && [source['npcs'], source['checkpoints'], source['props']].some((list: unknown): boolean => Array.isArray(list) && list.length > 0)) throw new ContentError(where, 'a void recentres around the hero: it cannot hold npcs, checkpoints or props');
   if (kind === 'void' && source['waypoint'] !== null && source['waypoint'] !== undefined) throw new ContentError(`${where}.waypoint`, 'a void recentres around the hero: it cannot hold a waypoint');
   if ((kind === 'void') !== (source['void'] !== undefined && source['void'] !== null)) throw new ContentError(`${where}.void`, kind === 'void' ? 'a void zone needs its void rules' : 'only a void zone has void rules');
   return {
@@ -298,7 +296,7 @@ export function quest(value: unknown, where: string): QuestDef {
   const source: Fields = fields(value, where);
   const objectives: ObjectiveDef[] = [...byId(each(source['objectives'], `${where}.objectives`, objective), `${where}.objectives`).values()];
   if (objectives.length === 0) throw new ContentError(`${where}.objectives`, 'a quest needs at least one objective');
-  return { id: text(source, 'id', where), name: text(source, 'name', where), requires: textList(source, 'requires', where), objectives };
+  return { id: text(source, 'id', where), name: text(source, 'name', where), requires: textList(source, 'requires', where), when: conditions(source, 'when', where), objectives };
 }
 
 export function worldDef(value: unknown, where: string): WorldDef {
@@ -308,6 +306,8 @@ export function worldDef(value: unknown, where: string): WorldDef {
     acts: [...byId(each(source['acts'], `${where}.acts`, act), `${where}.acts`).values()],
     start: text(source, 'start', where),
     town: text(source, 'town', where),
+    opening: nullableText(source, 'opening', where),
+    legacyFlags: storyFlags(source['legacyFlags'], `${where}.legacyFlags`),
     scaling: {
       lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),
       damagePerLevel: numeric(scaling, 'damagePerLevel', `${where}.scaling`),

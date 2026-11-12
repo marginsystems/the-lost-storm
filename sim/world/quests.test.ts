@@ -26,6 +26,7 @@ const errand: QuestDef = {
   id: 'errand',
   name: 'An Errand',
   requires: [],
+  when: [],
   objectives: [
     { id: 'ask', type: 'talk', npc: 'maren', text: 'Ask' },
     { id: 'go', type: 'reach', zone: 'stillhold', x: 30, z: 20, radius: 1.5, text: 'Go' },
@@ -33,7 +34,7 @@ const errand: QuestDef = {
   ],
 };
 
-const sequel: QuestDef = { id: 'sequel', name: 'After', requires: ['errand'], objectives: [{ id: 'tell', type: 'talk', npc: 'hale', text: 'Tell' }] };
+const sequel: QuestDef = { id: 'sequel', name: 'After', requires: ['errand'], when: [], objectives: [{ id: 'tell', type: 'talk', npc: 'hale', text: 'Tell' }] };
 
 function during(objective: string): Condition[] {
   return [{ type: 'objective', quest: 'errand', objective, is: 'current', not: false }];
@@ -247,7 +248,7 @@ function hunted(): Content {
   const hunt: QuestDef = {
     id: 'errand',
     name: 'A Hunt',
-    requires: [],
+    requires: [], when: [],
     objectives: [
       { id: 'go', type: 'reach', zone: bastion.id, x: bastion.playerStart.x, z: bastion.playerStart.z, radius: 2, text: 'Go' },
       { id: 'kill', type: 'defeat', monster: 'hex_caller', text: 'Kill' },

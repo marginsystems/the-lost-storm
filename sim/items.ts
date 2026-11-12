@@ -76,7 +76,7 @@ export function itemLines(content: Content, item: ItemInstance): ItemLine[] {
 }
 
 function rollAffixes(content: Content, rng: Rng, base: ItemBaseDef, rarity: RarityDef, level: number): RolledAffix[] {
-  const pool: AffixDef[] = [...content.affixes.values()].filter((affix: AffixDef): boolean => affix.slots.includes(base.slot));
+  const pool: AffixDef[] = [...content.affixes.values()].filter((affix: AffixDef): boolean => base.slot !== null && affix.slots.includes(base.slot));
   const wanted: number = rng.int(rarity.affixMin, rarity.affixMax);
   const rolled: RolledAffix[] = [];
   const taken: Set<AffixDef['position']> = new Set<AffixDef['position']>();

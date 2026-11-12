@@ -2,7 +2,7 @@ import type { Box3, Scene } from 'three';
 import { Color } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import { hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
-import { wakeProgress } from '../../sim/world/void.ts';
+import { wakeProgress } from '../../sim/world/wake.ts';
 import type { ActorState, Equipment, MonsterState, NpcState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { ActorPose, ActorView } from './actor-view.ts';
 import { ACTOR, createActorView } from './actor-view.ts';

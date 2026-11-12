@@ -1,6 +1,6 @@
 import type { ObjectiveDef, QuestDef } from '../content/types.ts';
 import { distance } from '../math.ts';
-import { questState } from './conditions.ts';
+import { allHold, questState } from './conditions.ts';
 import { refreshNpcs } from './dialogue.ts';
 import { spawnPacks } from './monsters.ts';
 import type { MonsterState, World, WorldEvent } from './types.ts';
@@ -20,7 +20,7 @@ export function startQuests(world: World): void {
     started = false;
     for (const quest of world.content.quests.values()) {
       if (world.quests[quest.id] !== undefined) continue;
-      if (!quest.requires.every((required: string): boolean => questState(world, required) === 'done')) continue;
+      if (!quest.requires.every((required: string): boolean => questState(world, required) === 'done') || !allHold(world, quest.when)) continue;
       world.quests[quest.id] = 0;
       world.events.push({ type: 'quest_started', quest: quest.id });
       started = true;

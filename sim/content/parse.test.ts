@@ -584,7 +584,8 @@ function voidWith(change: Readonly<Record<string, unknown>>): RawContent {
 
 void test('a void recentres around the hero, so it cannot hold npcs, checkpoints or a waypoint', (): void => {
   const checkpoint = { id: 'stone', x: 80, z: 80, radius: 2 };
-  assert.throws((): unknown => parseContent(voidWith({ checkpoints: [checkpoint] })), (error: unknown): boolean => problem(error, 'cannot hold npcs or checkpoints'));
+  assert.throws((): unknown => parseContent(voidWith({ checkpoints: [checkpoint] })), (error: unknown): boolean => problem(error, 'cannot hold npcs, checkpoints or props'));
+  assert.throws((): unknown => parseContent(voidWith({ props: [{ prop: 'castle_pier', x: 80, z: 80 }] })), (error: unknown): boolean => problem(error, 'or props'));
   assert.throws((): unknown => parseContent(voidWith({ waypoint: { x: 80, z: 80 } })), (error: unknown): boolean => problem(error, 'cannot hold a waypoint'));
   assert.doesNotThrow((): unknown => parseContent(voidWith({})));
 });

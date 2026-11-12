@@ -1,0 +1,20 @@
+[
+  {
+    "id": "journal",
+    "title": "A worn journal",
+    "pages": [
+      {
+        "id": "do_not",
+        "lines": [
+          "Do not."
+        ],
+        "address": "For {name}.",
+        "unnamed": "For you.",
+        "when": [],
+        "sets": {
+          "opening": "read"
+        }
+      }
+    ]
+  }
+]

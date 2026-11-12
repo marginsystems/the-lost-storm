@@ -25,6 +25,9 @@ export function holds(world: World, condition: Condition): boolean {
     case 'objective':
       held = objectiveState(world, condition.quest, condition.objective) === condition.is;
       break;
+    case 'flag':
+      held = condition.is === null ? world.flags[condition.flag] !== undefined : world.flags[condition.flag] === condition.is;
+      break;
   }
   return held !== condition.not;
 }

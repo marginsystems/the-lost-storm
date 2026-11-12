@@ -1,4 +1,6 @@
 import { atlasProblems } from './atlas.ts';
+import { books } from './parse-story.ts';
+import { storyFlagNames, storyProblems } from './story.ts';
 import { parseFlasks } from './flasks.ts';
 import { combatProblems, markDelivery, monsterMod, monsterTraits, skillMotion } from './parse-combat.ts';
 import type { Fields } from './read.ts';
@@ -68,6 +70,7 @@ export interface RawContent {
   readonly player: unknown;
   readonly flasks: unknown;
   readonly trade: unknown;
+  readonly books: unknown;
 }
 
 function statMod(value: unknown, where: string): StatMod {
@@ -254,7 +257,8 @@ function itemBase(value: unknown, where: string): ItemBaseDef {
   return {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
-    slot: choice(source, 'slot', ITEM_SLOTS, where),
+    slot: source['slot'] === null ? null : choice(source, 'slot', ITEM_SLOTS, where),
+    book: source['book'] === undefined ? null : text(source, 'book', where),
     material: source['material'] === null || source['material'] === undefined ? null : choice(source, 'material', ARMOUR_MATERIALS, where),
     icon: text(source, 'icon', where),
     dropWeight: numeric(source, 'dropWeight', where),
@@ -488,6 +492,7 @@ export function parseContent(raw: RawContent): Content {
     player: player(raw.player, 'player'),
     flasks: parseFlasks(raw.flasks, 'flasks'),
     trade: trade(raw.trade, 'trade'),
+    books: books(raw.books, 'books'),
   };
 }
 
@@ -541,7 +546,7 @@ export function contentProblems(content: Content): string[] {
   for (const base of content.itemBases.values()) {
     if (base.visual !== null) fits(`item ${base.id}`, content.player.rig, base.visual);
     wears(`item ${base.id}`, content.player.rig, base.wear);
-    need(WORN_SLOTS.has(base.slot) === (base.material !== null), `item ${base.id} in slot ${base.slot} ${base.material === null ? 'needs a material' : 'cannot have a material'}`);
+    need((base.slot !== null && WORN_SLOTS.has(base.slot)) === (base.material !== null), `item ${base.id} in slot ${base.slot ?? 'none'} ${base.material === null ? 'needs a material' : 'cannot have a material'}`);
   }
   for (const worn of content.wearables.values()) wears(`wearable ${worn.id}`, content.player.rig, [worn.id]);
   for (const binding of content.player.skillBar) {
@@ -560,6 +565,10 @@ export function contentProblems(content: Content): string[] {
   }
   const known = (holder: string, list: readonly Condition[]): void => {
     for (const entry of list) {
+      if (entry.type === 'flag') {
+        need(storyFlagNames(content).has(entry.flag), `${holder} names flag ${entry.flag}, which nothing sets`);
+        continue;
+      }
       const questDef: QuestDef | undefined = content.quests.get(entry.quest);
       need(questDef !== undefined, `${holder} names unknown quest ${entry.quest}`);
       if (questDef !== undefined && entry.type === 'objective') need(questDef.objectives.some((candidate: ObjectiveDef): boolean => candidate.id === entry.objective), `${holder} names unknown objective ${entry.quest}.${entry.objective}`);
@@ -572,10 +581,12 @@ export function contentProblems(content: Content): string[] {
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `attachment ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }
   need(content.zones.has(content.world.start), `world starts in unknown zone ${content.world.start}`);
+  need(content.world.opening === null || content.zones.get(content.world.opening)?.kind === 'void', `world opens in ${content.world.opening ?? ''}, which is not a void zone`);
   need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
   for (const problem of combatProblems(content)) problems.push(problem);
+  for (const problem of storyProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;
     for (const floor of Object.values(zoneDef.floors)) need(content.surfaces.has(floor), `${at} floor uses unknown surface ${floor}`);
@@ -599,6 +610,7 @@ export function contentProblems(content: Content): string[] {
     if (zoneDef.kind === 'void') need(places === 0, `${at} is a void: it has no place on the world map`);
     else need(places === 1, `${at} needs one place on the world map`);
     if (zoneDef.hud !== null) known(`${at} hud`, zoneDef.hud.until);
+    for (const met of zoneDef.void?.encounters ?? []) known(`${at} encounter ${met.id}`, met.when);
     for (const placed of zoneDef.npcs) {
       need(content.npcs.has(placed.npc), `${at} places unknown npc ${placed.npc}`);
       known(`${at} npc ${placed.npc}`, placed.when);
@@ -648,7 +660,9 @@ export function contentProblems(content: Content): string[] {
       if (spoken !== undefined) need(spoken.speaker === def.id, `${at} barks line ${lineId}, which is spoken by ${spoken.speaker}`);
     }
   }
+  for (const book of content.books.values()) for (const page of book.pages) known(`book ${book.id} page ${page.id}`, page.when);
   for (const questDef of content.quests.values()) {
+    known(`quest ${questDef.id}`, questDef.when);
     for (const required of questDef.requires) need(content.quests.has(required) && required !== questDef.id, `quest ${questDef.id} requires unknown quest ${required}`);
     for (const goal of questDef.objectives) {
       const at: string = `quest ${questDef.id} objective ${goal.id}`;

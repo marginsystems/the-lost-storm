@@ -6,7 +6,8 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { stepWorld } from './step.ts';
 import type { Command, World } from './types.ts';
-import { acceptsCommand, beginVoid, shiftWorld, wakeProgress } from './void.ts';
+import { shiftWorld } from './void.ts';
+import { acceptsCommand, beginVoid, wakeProgress } from './wake.ts';
 
 const content: Content = loadContent();
 const DT: number = 1 / 60;
@@ -89,7 +90,7 @@ void test('a shift moves the hero, his path, his order and what lies on the grou
   const world: World = worldIn(content, zoneOf(content, voidZone.id).id, 5);
   world.player.intent = { type: 'move', dest: { x: 90, z: 80 } };
   world.player.path = [{ x: 85, z: 80 }];
-  world.ground = [{ id: 99, pos: { x: 82, z: 82 }, from: { x: 81, z: 81 }, content: { kind: 'gold', amount: 1 }, age: 0, kept: false }];
+  world.ground = [{ id: 99, pos: { x: 82, z: 82 }, from: { x: 81, z: 81 }, content: { kind: 'gold', amount: 1 }, age: 0, kept: false, find: null }];
   const before = { ...world.player.pos };
   shiftWorld(world, { x: -10, z: 4 });
   assert.deepEqual(world.player.pos, { x: before.x - 10, z: before.z + 4 });

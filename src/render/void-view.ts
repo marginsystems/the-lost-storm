@@ -2,9 +2,11 @@ import type { IUniform } from 'three';
 import { BufferAttribute, BufferGeometry, Color, Group, Mesh, PlaneGeometry, Points, ShaderMaterial, UniformsLib, UniformsUtils, Vector2, Vector3 } from 'three';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
-import { wakeProgress } from '../../sim/world/void.ts';
+import { wakeProgress } from '../../sim/world/wake.ts';
 import type { World } from '../../sim/world/types.ts';
 import { CAMERA } from './iso-camera.ts';
+import type { VoidLight } from './void-light.ts';
+import { createVoidLight } from './void-light.ts';
 import { GROUND_FRAGMENT, GROUND_VERTEX, MIST_FRAGMENT, MIST_VERTEX, MOTE_FRAGMENT, MOTE_VERTEX } from './void-shaders.ts';
 import type { ZoneView } from './zone-view.ts';
 
@@ -21,6 +23,7 @@ export const VOID_VIEW = {
   nearClear: 3,
   farStorm: 30,
   flashColor: 0xd8e4ff,
+  lightColor: 0xfff1d6,
   layers: [
     { height: 0.35, opacity: 0.42, scale: 0.21, drift: 0.11 },
     { height: 1.1, opacity: 0.42, scale: 0.17, drift: 0.09 },
@@ -36,6 +39,7 @@ export const VOID_VIEW = {
   stiffness: 9,
   damping: 5.2,
   dirStiffness: 20,
+  dirDamping: 9,
   springStep: 1 / 120,
   stillBelow: 0.4,
   leadShare: 0.45,
@@ -133,6 +137,8 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
   const size: IUniform<Vector3> = { value: new Vector3(VOID_VIEW.clear, VOID_VIEW.clear, VOID_VIEW.clear) };
   const feather: IUniform<number> = { value: VOID_VIEW.feather };
   const view: IUniform<Vector2> = { value: viewOffset() };
+  const light: VoidLight = createVoidLight(zone.floorHeight);
+  group.add(light.group);
 
   const groundUniforms: Uniforms = UniformsUtils.merge([UniformsLib.fog]);
   Object.assign(groundUniforms, { uColor: color(VOID_VIEW.groundColor), uShade: color(VOID_VIEW.groundShade), uFlashColor: flashColor, uShift: shift, uHero: hero, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uRipple: { value: VOID_VIEW.ripple }, uShadow: { value: VOID_VIEW.heroShadow } });
@@ -146,7 +152,7 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
   const mistGeometry: PlaneGeometry = new PlaneGeometry(VOID_VIEW.mistSize, VOID_VIEW.mistSize);
   const layers: Mesh[] = VOID_VIEW.layers.map((layer, index: number): Mesh => {
     const material: ShaderMaterial = new ShaderMaterial({
-      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uView: view, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: index * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uPocket: pocket, uDir: dir, uSize: size, uFeather: feather },
+      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uView: view, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: index * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uPocket: pocket, uDir: dir, uSize: size, uFeather: feather, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor) },
       vertexShader: MIST_VERTEX,
       fragmentShader: MIST_FRAGMENT,
       transparent: true,
@@ -219,7 +225,7 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
     const going: number = Math.min(1, speed / Math.max(world.player.stats.moveSpeed, 1e-3));
     if (instant > VOID_VIEW.stillBelow) target.set(stepX, stepZ).normalize();
     else target.copy(heading.at);
-    stepSpring(heading, target, VOID_VIEW.dirStiffness, VOID_VIEW.dirStiffness, dt);
+    stepSpring(heading, target, VOID_VIEW.dirStiffness, VOID_VIEW.dirDamping, dt);
     if (heading.at.lengthSq() > 1e-6) dir.value.copy(heading.at).normalize();
     target.set(dir.value.x * VOID_VIEW.lead * going * VOID_VIEW.leadShare, dir.value.y * VOID_VIEW.lead * going * VOID_VIEW.leadShare);
     stepSpring(centre, target, VOID_VIEW.stiffness, VOID_VIEW.damping, dt);
@@ -242,6 +248,7 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
       shift.value.set(world.shift.x, world.shift.z);
       follow(world, dt);
       stepLightning(world, dt);
+      light.update(world, now, dt);
       ground.position.set(world.player.pos.x, zone.floorHeight, world.player.pos.z);
       for (const layer of layers) layer.position.set(world.player.pos.x, layer.position.y, world.player.pos.z);
     },
@@ -253,6 +260,7 @@ export function buildVoidView(zone: ZoneDef): ZoneView {
       for (const layer of layers) if (layer.material instanceof ShaderMaterial) layer.material.dispose();
       moteGeometryBuilt.dispose();
       moteMaterial.dispose();
+      light.dispose();
     },
   };
 }

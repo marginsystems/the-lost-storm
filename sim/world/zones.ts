@@ -9,7 +9,7 @@ import { spawnPacks } from './monsters.ts';
 import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
 import type { GroundItem, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
-import { beginVoid } from './void.ts';
+import { beginVoid } from './wake.ts';
 
 export function startZone(content: Content): ZoneDef {
   const zone: ZoneDef | undefined = content.zones.get(content.world.start);

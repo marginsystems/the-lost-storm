@@ -2,7 +2,7 @@ import type { FlaskDef } from './flasks.ts';
 import type { GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, SkillLeap, StalkerBehaviour, SummonDef } from './combat-types.ts';
 import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
-import type { HudPart, ZoneVoid } from './story-types.ts';
+import type { BookDef, StoryFlags, ZoneHud, ZoneVoid } from './story-types.ts';
 
 export const STAT_IDS = [
   'maxLife',
@@ -236,7 +236,8 @@ export type ArmourMaterial = (typeof ARMOUR_MATERIALS)[number];
 export interface ItemBaseDef {
   readonly id: string;
   readonly name: string;
-  readonly slot: ItemSlot;
+  readonly slot: ItemSlot | null;
+  readonly book: string | null;
   readonly material: ArmourMaterial | null;
   readonly icon: string;
   readonly dropWeight: number;
@@ -418,12 +419,7 @@ export const ZONE_KINDS = ['town', 'wild', 'void'] as const;
 export type ZoneKind = (typeof ZONE_KINDS)[number];
 
 export { OBJECTIVE_STATES, QUEST_STATES } from './condition-types.ts';
-export type { Condition, ObjectiveCondition, ObjectiveState, QuestCondition, QuestState } from './condition-types.ts';
-
-export interface ZoneHud {
-  readonly hide: readonly HudPart[];
-  readonly until: readonly Condition[];
-}
+export type { Condition, FlagCondition, ObjectiveCondition, ObjectiveState, QuestCondition, QuestState } from './condition-types.ts';
 
 export interface ZoneExit {
   readonly id: string;
@@ -539,6 +535,7 @@ export interface QuestDef {
   readonly id: string;
   readonly name: string;
   readonly requires: readonly string[];
+  readonly when: readonly Condition[];
   readonly objectives: readonly ObjectiveDef[];
 }
 
@@ -615,6 +612,8 @@ export interface ActDef {
 export interface WorldDef {
   readonly start: string;
   readonly town: string;
+  readonly opening: string | null;
+  readonly legacyFlags: StoryFlags;
   readonly scaling: MonsterScaling;
   readonly acts: readonly ActDef[];
 }
@@ -676,6 +675,7 @@ export interface Content {
   readonly npcs: ReadonlyMap<string, NpcDef>;
   readonly lines: ReadonlyMap<string, LineDef>;
   readonly quests: ReadonlyMap<string, QuestDef>;
+  readonly books: ReadonlyMap<string, BookDef>;
   readonly player: PlayerDef;
   readonly flasks: readonly FlaskDef[];
   readonly trade: TradeDef;

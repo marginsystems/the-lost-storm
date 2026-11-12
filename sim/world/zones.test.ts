@@ -119,7 +119,7 @@ void test('a wild zone is reset when it is entered again and loot left behind is
     monster.alive = false;
     monster.life = 0;
   }
-  world.ground.push({ id: 9000, pos: { x: 28, z: 30 }, from: { x: 28, z: 30 }, content: { kind: 'gold', amount: 5 }, age: 0, kept: false });
+  world.ground.push({ id: 9000, pos: { x: 28, z: 30 }, from: { x: 28, z: 30 }, content: { kind: 'gold', amount: 5 }, age: 0, kept: false, find: null });
   const leaving: WorldEvent[] = travel(world, 'stair');
   assert.equal(world.zone.id, town.id);
   assert.equal(world.monsters.length, 0);
@@ -219,8 +219,8 @@ void test('travel is queued behind an attack in progress and ignored while dead'
 void test('items that did not fit in a loaded save follow the hero into the next zone instead of being lost', (): void => {
   const world: World = finishQuests(createWorld(shipped, { seed: 13, save: null }));
   const spare = must(world.player.equipped.weapon, 'starting weapon');
-  world.ground.push({ id: 9100, pos: { x: 22, z: 20 }, from: { x: 22, z: 20 }, content: { kind: 'item', item: spare }, age: 0, kept: true });
-  world.ground.push({ id: 9101, pos: { x: 22, z: 21 }, from: { x: 22, z: 21 }, content: { kind: 'item', item: { ...spare, uid: 777 } }, age: 0, kept: false });
+  world.ground.push({ id: 9100, pos: { x: 22, z: 20 }, from: { x: 22, z: 20 }, content: { kind: 'item', item: spare }, age: 0, kept: true, find: null });
+  world.ground.push({ id: 9101, pos: { x: 22, z: 21 }, from: { x: 22, z: 21 }, content: { kind: 'item', item: { ...spare, uid: 777 } }, age: 0, kept: false, find: null });
   travel(world, 'bastion_stair');
   assert.equal(world.zone.id, bastion.id);
   assert.equal(world.ground.length, 1);
