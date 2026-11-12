@@ -184,7 +184,17 @@
     "hall_of_time": {
       "loops": [
         { "sound": "ambience_wind_storm", "volume": 0.6 },
-        { "sound": "ambience_torch_fire", "volume": 0.25 },
+        { "sound": "ambience_wind_low", "volume": 0.35 }
+      ],
+      "stingers": [
+        { "sound": "thunder_rumble", "volume": 0.55, "minDelay": 12, "maxDelay": 30 },
+        { "sound": "thunder_distant", "volume": 0.45, "minDelay": 20, "maxDelay": 45 }
+      ]
+    },
+    "hideout": {
+      "loops": [
+        { "sound": "ambience_wind_storm", "volume": 0.5 },
+        { "sound": "ambience_torch_fire", "volume": 0.3 },
         { "sound": "ambience_wind_low", "volume": 0.35 }
       ],
       "stingers": [

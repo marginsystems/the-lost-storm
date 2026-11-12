@@ -1,10 +1,11 @@
 import hall from '../data/zones/hall_of_time.json' with { type: 'json' };
+import hideout from '../data/zones/hideout.json' with { type: 'json' };
 import world from '../data/world.json' with { type: 'json' };
 
 const FLOOR_ROWS: readonly string[] = hall.tiles.map((row: string): string => row.replace(/[^ ]/g, '.'));
 
 export const WAYSTATION = {
-  ...hall,
+  ...hideout,
   id: 'waystation',
   name: 'The Waystation',
   level: 2,
@@ -40,7 +41,7 @@ export const PAIR_WORLD = {
     atlas: {
       ...ATLAS,
       places: [{ zone: 'shallows', x: 260, y: 560 }, { zone: 'waystation', x: 520, y: 520 }, ...ATLAS.places],
-      roads: [{ from: 'shallows', to: 'waystation', via: [{ x: 390, y: 548 }] }],
+      roads: [{ from: 'shallows', to: 'waystation', via: [{ x: 390, y: 548 }] }, ...ATLAS.roads],
     },
   }],
   retired: { ...world.retired, zones: world.retired.zones.filter((zone: string): boolean => zone !== 'shallows' && zone !== 'waystation') },

@@ -18,9 +18,9 @@ const content: Content = loadContent();
 const ACT = {
   seeds: [11, 12, 13],
   minSeconds: 5,
-  maxSeconds: 90,
+  maxSeconds: 240,
   minLevel: 1,
-  maxLevel: 3,
+  maxLevel: 4,
   maxDeaths: 1,
 } as const;
 
@@ -48,9 +48,10 @@ void test('the bot walks, talks and travels between zones', (): void => {
   const bot: Bot = createBot(world);
   assert.deepEqual(botRoute(world, 'hall_of_time')?.map((exit): string => exit.id), []);
   assert.equal(botRoute(world, 'nowhere'), null);
-  assert.equal(botTravelTo(bot, 'hall_of_time'), true);
-  assert.equal(world.zone.id, 'hall_of_time');
-  assert.equal(botWalkTo(bot, 'hall_of_time', { x: 70, z: 31 }, 3), true);
+  assert.deepEqual(botRoute(world, 'hideout')?.map((exit): string => exit.id), ['east']);
+  assert.equal(botTravelTo(bot, 'hideout'), true);
+  assert.equal(world.zone.id, 'hideout');
+  assert.equal(botWalkTo(bot, 'hideout', { x: 22, z: 21 }, 3), true);
   assert.equal(botTalk(bot, 'warden_guide'), true);
   assert.equal(world.dialogue, null);
   assert.equal(botTalk(bot, 'nobody'), false);

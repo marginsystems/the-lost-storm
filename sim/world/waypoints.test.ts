@@ -17,9 +17,8 @@ const outpostZone: ZoneDef = roadZone({
   packs: [{ x: 12, z: 8, members: [{ monster: 'mended', count: 2, mods: [] }], when: [] }],
 });
 const roads: Content = roadContent(outpostZone);
-const hall: ZoneDef = zoneOf(roads, 'hall_of_time');
-const content: Content = { ...roads, zones: new Map<string, ZoneDef>([...roads.zones, [hall.id, { ...hall, moments: null }]]) };
-const town: ZoneDef = zoneOf(content, 'hall_of_time');
+const content: Content = roads;
+const town: ZoneDef = zoneOf(content, 'hideout');
 const outpost: ZoneDef = zoneOf(content, 'outpost');
 const townPoint: ZoneWaypoint = must(town.waypoint, 'town waypoint');
 const outpostPoint: ZoneWaypoint = must(outpost.waypoint, 'outpost waypoint');

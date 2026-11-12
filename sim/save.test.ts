@@ -249,16 +249,16 @@ void test('the conversations and the voices of a place already heard survive a s
 void test('quest progress and unlocked waypoints survive a save, and bad entries are cleaned', (): void => {
   const world: World = createWorld(content, { seed: 10, save: null });
   world.quests = { out_of_the_mist: 1, to_the_waystation: 0 };
-  world.waypoints = ['hall_of_time', 'outpost'];
+  world.waypoints = ['hideout', 'outpost'];
   const save: SaveData = roundTrip(world);
   assert.deepEqual(save.quests, { out_of_the_mist: 1, to_the_waystation: 0 });
-  assert.deepEqual(save.waypoints, ['hall_of_time', 'outpost']);
+  assert.deepEqual(save.waypoints, ['hideout', 'outpost']);
   const restored: World = createWorld(content, { seed: 11, save });
   assert.deepEqual(restored.quests, { out_of_the_mist: 1, to_the_waystation: 0, the_first_taker: 0 });
-  assert.deepEqual(restored.waypoints, ['hall_of_time', 'outpost']);
-  const messy: SaveData = must(readSave(content, { ...toSave(world), quests: { out_of_the_mist: 99, a_rumour: 1, also: 'no' }, waypoints: ['hall_of_time', 'atlantis', 7] }), 'save');
+  assert.deepEqual(restored.waypoints, ['hideout', 'outpost']);
+  const messy: SaveData = must(readSave(content, { ...toSave(world), quests: { out_of_the_mist: 99, a_rumour: 1, also: 'no' }, waypoints: ['hideout', 'atlantis', 7] }), 'save');
   assert.deepEqual(messy.quests, { out_of_the_mist: must(content.quests.get('out_of_the_mist'), 'quest').objectives.length });
-  assert.deepEqual(messy.waypoints, ['hall_of_time']);
+  assert.deepEqual(messy.waypoints, ['hideout']);
   assert.deepEqual(must(readSave(content, { ...toSave(world), quests: { out_of_the_mist: -1 } }), 'save').quests, {});
 });
 

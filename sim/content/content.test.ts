@@ -452,11 +452,12 @@ void test('no arrival point lies inside an exit, so walking in never sends the h
   }
 });
 
-void test('the hero walks out of the In-Between into the Hall and on to the fire without clicking an exit, and once a moment is cleared the Warden ends the slice', (): void => {
+void test('the hero walks out of the In-Between, through the Hall and on to the fire in the hideout without clicking an exit, and once a moment is cleared the Warden ends the slice', (): void => {
   const world: World = createWorld(content, { seed: 5, save: null });
   enterZone(world, zoneOf(content, 'between'), { type: 'start' });
   world.flags['opening'] = 'read';
-  const fire = must(zoneOf(content, 'hall_of_time').npcs.find((placed): boolean => placed.npc === 'warden_guide'), 'guide');
+  const fire = must(zoneOf(content, 'hideout').npcs.find((placed): boolean => placed.npc === 'warden_guide'), 'guide');
+  const onward: ZoneExit = must(zoneOf(content, 'hall_of_time').exits.find((entry: ZoneExit): boolean => entry.to === 'hideout'), 'east exit');
   const walkTo = (zoneId: string, goal: Vec2, done: () => boolean): void => {
     world.monsters = [];
     for (let step: number = 0; step < 1800 && world.zone.id === zoneId && !done(); step += 1) stepWorld(world, step % 30 === 0 ? [{ type: 'move', held: false, dest: goal }] : [], 1 / 30);
@@ -464,8 +465,10 @@ void test('the hero walks out of the In-Between into the Hall and on to the fire
   const exit: ZoneExit = must(zoneOf(content, 'between').exits.find((entry: ZoneExit): boolean => entry.id === 'into_the_hall'), 'into_the_hall');
   walkTo('between', exit, (): boolean => world.zone.id !== 'between');
   assert.equal(world.zone.id, 'hall_of_time');
-  walkTo('hall_of_time', fire, (): boolean => world.flags['camp'] === 'reached');
-  assert.equal(world.zone.id, 'hall_of_time');
+  walkTo('hall_of_time', onward, (): boolean => world.zone.id !== 'hall_of_time');
+  assert.equal(world.zone.id, 'hideout');
+  walkTo('hideout', fire, (): boolean => world.flags['camp'] === 'reached');
+  assert.equal(world.zone.id, 'hideout');
   assert.equal(world.flags['alpha_slice_complete'], undefined);
   world.quests['the_first_taker'] = must(content.quests.get('the_first_taker'), 'the_first_taker').objectives.length;
   startQuests(world);

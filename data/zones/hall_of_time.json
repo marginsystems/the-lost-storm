@@ -1,7 +1,7 @@
 {
   "id": "hall_of_time",
   "name": "The Hall of Time",
-  "kind": "town",
+  "kind": "wild",
   "level": 1,
   "cellSize": 4,
   "floorHeight": 0,
@@ -50,27 +50,6 @@
     {"prop": "castle_wall_ruin", "x": 75.5, "z": 13.0, "y": 0, "rotationDegrees": 0},
     {"prop": "castle_column", "x": 62.0, "z": 16.5, "y": 0, "rotationDegrees": 0},
     {"prop": "castle_column_broken", "x": 79.5, "z": 18.5, "y": 0, "rotationDegrees": 40},
-    {"prop": "crate", "x": 77.8, "z": 23.6, "y": 0, "rotationDegrees": 15},
-    {"prop": "crate_tall", "x": 73.2, "z": 21.4, "y": 0, "rotationDegrees": 340},
-    {"prop": "barrel", "x": 78.6, "z": 25.2, "y": 0, "rotationDegrees": 0},
-    {"prop": "basket", "x": 74.0, "z": 24.3, "y": 0, "rotationDegrees": 30},
-    {"prop": "lantern", "x": 76.9, "z": 21.2, "y": 0, "rotationDegrees": 0},
-    {"prop": "branches", "x": 68.0, "z": 33.0, "y": 0, "rotationDegrees": 20},
-    {"prop": "axe", "x": 67.4, "z": 33.6, "y": 0, "rotationDegrees": 35},
-    {"prop": "pot", "x": 71.9, "z": 32.6, "y": 0, "rotationDegrees": 0},
-    {"prop": "stump", "x": 72.8, "z": 34.2, "y": 0, "rotationDegrees": 0},
-    {"prop": "cask", "x": 61.0, "z": 29.0, "y": 0, "rotationDegrees": 80},
-    {"prop": "bucket", "x": 63.9, "z": 29.0, "y": 0, "rotationDegrees": 0},
-    {"prop": "table_long", "x": 79.4, "z": 37.6, "y": 0, "rotationDegrees": 90},
-    {"prop": "pail", "x": 75.4, "z": 38.6, "y": 0, "rotationDegrees": 0},
-    {"prop": "basket", "x": 78.6, "z": 41.2, "y": 0, "rotationDegrees": 200},
-    {"prop": "campfire", "x": 70.0, "z": 31.0, "y": 0, "rotationDegrees": 0},
-    {"prop": "brazier", "x": 63.5, "z": 22.5, "y": 0, "rotationDegrees": 0},
-    {"prop": "bench", "x": 66.0, "z": 34.5, "y": 0, "rotationDegrees": 90},
-    {"prop": "stool", "x": 73.5, "z": 35.0, "y": 0, "rotationDegrees": 0},
-    {"prop": "stall_pale", "x": 75.5, "z": 22.5, "y": 0, "rotationDegrees": 200},
-    {"prop": "stash_chest", "x": 66.5, "z": 37.5, "y": 0, "rotationDegrees": 160},
-    {"prop": "shelter", "x": 77.0, "z": 39.5, "y": 0, "rotationDegrees": 270},
     {"prop": "tree_dead_large", "x": 6.0, "z": 46.0, "y": 0, "rotationDegrees": 0},
     {"prop": "tree_dead_medium", "x": 12.0, "z": 7.5, "y": 0, "rotationDegrees": 40},
     {"prop": "dead_log", "x": 56.0, "z": 40.5, "y": 0, "rotationDegrees": 70},
@@ -145,19 +124,21 @@
     {"prop": "crag_spire", "x": 61.3, "z": -2.62, "y": -0.05, "rotationDegrees": 345},
     {"prop": "boulder_2", "x": -7.94, "z": 28.29, "y": -0.05, "rotationDegrees": 300}
   ],
-  "packs": [],
+  "packs": [
+    {"x": 30, "z": 23, "members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 2}]},
+    {"x": 46, "z": 37, "members": [{"monster": "unfinished_taker", "count": 2}, {"monster": "unfinished_thrower", "count": 1}]},
+    {"x": 52, "z": 19, "members": [{"monster": "unfinished_brute", "count": 2}, {"monster": "unfinished_thrower", "count": 1}]},
+    {"x": 50, "z": 38, "members": [{"monster": "unfinished_taker", "count": 3}]}
+  ],
   "surge": null,
   "exits": [
-    {"id": "mist", "x": 1.6, "z": 30, "radius": 2.2, "to": "between", "toExit": "into_the_hall", "arrival": {"x": 8, "z": 30}, "requires": [], "look": "mist"}
+    {"id": "mist", "x": 1.6, "z": 30, "radius": 2.2, "to": "between", "toExit": "into_the_hall", "arrival": {"x": 8, "z": 30}, "requires": [], "look": "mist"},
+    {"id": "east", "x": 78.4, "z": 30, "radius": 2.2, "to": "hideout", "toExit": "west", "arrival": {"x": 72, "z": 30}, "requires": []}
   ],
   "checkpoints": [],
-  "waypoint": {"x": 70, "z": 25.5, "radius": 1.8},
-  "npcs": [
-    {"npc": "warden_trader", "x": 75.5, "z": 26, "facingDegrees": 220},
-    {"npc": "warden_guide", "x": 64.5, "z": 32, "facingDegrees": 260},
-    {"npc": "warden_lookout", "x": 77, "z": 34, "facingDegrees": 250}
-  ],
-  "ambience": {"background": "#0a0e16", "abyss": "#05070b", "fogNear": 34, "fogFar": 110, "skyColor": "#5a6f94", "groundColor": "#283040", "skyIntensity": 4.8, "keyColor": "#b1c4e4", "keyIntensity": 3.4},
+  "waypoint": null,
+  "npcs": [],
+  "ambience": {"background": "#0a0e16", "abyss": "#05070b", "fogNear": 34, "fogFar": 110, "skyColor": "#5a6f94", "groundColor": "#344057", "skyIntensity": 6.8, "keyColor": "#b9cbe8", "keyIntensity": 4.8},
   "weather": {"lightning": {"first": 1.4, "min": 5, "max": 10}, "rain": 0.85, "wet": 0.6, "mistWall": {"from": {"x": -10, "z": -6}, "to": {"x": -10, "z": 66}, "height": 7}},
   "moments": {
     "combat": true,

@@ -338,9 +338,9 @@ void test('reaching the fire marks the camp, and the slice ends only once a mome
   const content: Content = loadContent();
   const outOfMist: QuestDef = must(content.quests.get('out_of_the_mist'), 'quest');
   const firstTaker: QuestDef = must(content.quests.get('the_first_taker'), 'quest');
-  const world: World = worldIn(content, 'hall_of_time', 9);
+  const world: World = worldIn(content, 'hideout', 9);
   world.quests = { out_of_the_mist: outOfMist.objectives.length, to_the_waystation: 0, the_first_taker: 0 };
-  world.player.pos = { x: 70, z: 31 };
+  world.player.pos = { x: 24, z: 20 };
   stepWorld(world, [], DT);
   assert.equal(questState(world, 'to_the_waystation'), 'done');
   assert.equal(world.flags['camp'], 'reached');
@@ -349,7 +349,7 @@ void test('reaching the fire marks the camp, and the slice ends only once a mome
   startQuests(world);
   assert.equal(world.flags['alpha_slice_complete'], undefined);
   assert.equal(questState(world, 'wardens_lesson'), 'active');
-  world.player.pos = { x: 66, z: 32 };
+  world.player.pos = { x: 20, z: 21 };
   converse(world, 'warden_guide');
   assert.equal(questState(world, 'wardens_lesson'), 'done');
   assert.equal(world.flags['alpha_slice_complete'], 'reached');

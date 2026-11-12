@@ -54,7 +54,7 @@ export const ARENA_CONTENT: Content = {
 };
 
 export function arena(seed: number, content: Content = ARENA_CONTENT): World {
-  const world: World = worldIn(content, content.world.start, seed);
+  const world: World = worldIn(content, content.world.town, seed);
   enterZone(world, sceneZone(SCENE_BASE, 'test_arena', { tiles: OPEN, props: [], start: ARENA_CENTRE }), { type: 'start' });
   world.monsters = [];
   return armed(world);

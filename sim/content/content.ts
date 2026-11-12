@@ -21,12 +21,13 @@ import wearables from '../../data/wearables.json' with { type: 'json' };
 import world from '../../data/world.json' with { type: 'json' };
 import between from '../../data/zones/between.json' with { type: 'json' };
 import hallOfTime from '../../data/zones/hall_of_time.json' with { type: 'json' };
+import hideout from '../../data/zones/hideout.json' with { type: 'json' };
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, surfaces, props, zones: [between, hallOfTime], world, npcs, lines, quests, player, flasks, trade, books, moments };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, surfaces, props, zones: [between, hallOfTime, hideout], world, npcs, lines, quests, player, flasks, trade, books, moments };
 
 export function loadContent(): Content {
   const content: Content = parseContent(RAW_CONTENT);

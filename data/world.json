@@ -4,7 +4,7 @@
   "legacyFlags": {
     "opening": "skipped"
   },
-  "town": "hall_of_time",
+  "town": "hideout",
   "scaling": {
     "lifePerLevel": 0.22,
     "damagePerLevel": 0.12,
@@ -27,9 +27,20 @@
             "zone": "hall_of_time",
             "x": 360,
             "y": 540
+          },
+          {
+            "zone": "hideout",
+            "x": 640,
+            "y": 500
           }
         ],
-        "roads": [],
+        "roads": [
+          {
+            "from": "hall_of_time",
+            "to": "hideout",
+            "via": []
+          }
+        ],
         "features": [
           {
             "kind": "marsh",
@@ -127,7 +138,7 @@
       "shallows",
       "waystation"
     ],
-    "to": "hall_of_time",
+    "to": "hideout",
     "flags": {
       "road": "rerouted"
     }

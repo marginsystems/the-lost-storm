@@ -29,9 +29,9 @@
           {
             "id": "rerouted",
             "type": "reach",
-            "zone": "hall_of_time",
-            "x": 70,
-            "z": 31,
+            "zone": "hideout",
+            "x": 24,
+            "z": 20,
             "radius": 8,
             "text": "Reach the fire",
             "when": [
@@ -59,9 +59,9 @@
       {
         "id": "arrive",
         "type": "reach",
-        "zone": "hall_of_time",
-        "x": 70,
-        "z": 31,
+        "zone": "hideout",
+        "x": 24,
+        "z": 20,
         "radius": 8,
         "text": "Reach the fire",
         "sets": {

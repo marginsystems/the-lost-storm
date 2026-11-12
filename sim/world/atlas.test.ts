@@ -44,7 +44,8 @@ void test('a new hero sees the town lit, open neighbours dim, barred ones locked
   assert.equal(roadState(world, mapRoad('vale', 'peak')), 'hidden');
   const shipped: World = createWorld(content, { seed: 1, save: null });
   assert.equal(placeState(shipped, 'hall_of_time'), 'here');
-  assert.deepEqual(act.atlas.roads, []);
+  assert.deepEqual(act.atlas.roads, [{ from: 'hall_of_time', to: 'hideout', via: [] }]);
+  assert.equal(placeState(shipped, 'hideout'), 'reachable');
 });
 
 void test('quests open barred roads and walking a road lights the far end', (): void => {
@@ -61,7 +62,8 @@ void test('quests open barred roads and walking a road lights the far end', (): 
 });
 
 void test('a zone is marked by its kind, and a zone with a boss pack is a boss zone', (): void => {
-  assert.equal(zoneMark(content, zoneOf(content, 'hall_of_time')), 'town');
+  assert.equal(zoneMark(content, zoneOf(content, 'hall_of_time')), 'wild');
+  assert.equal(zoneMark(content, zoneOf(content, 'hideout')), 'town');
   assert.equal(zoneMark(staged, vale), 'wild');
   const lair: ZoneDef = roadZone({ id: 'lair', packs: [{ x: 8, z: 8, members: [{ monster: 'unfinished_colossus', count: 1, mods: [] }], when: [] }] });
   const marks: string[] = [...staged.zones.values(), lair].map((zone): string => zoneMark(staged, zone));
