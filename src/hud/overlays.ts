@@ -43,6 +43,16 @@ export const OVERLAY_BODY = {
   off: 'off',
 } as const;
 
+export const OVERLAY_MOTION = {
+  token: '--spring-snappy-ms',
+  fallbackMs: 260,
+} as const;
+
+export function cssMotionMs(element: Element): number {
+  const value: number | null = durationMs(getComputedStyle(element).getPropertyValue(OVERLAY_MOTION.token));
+  return value !== null && value > 0 ? value : OVERLAY_MOTION.fallbackMs;
+}
+
 export function durationMs(text: string): number | null {
   const match: RegExpExecArray | null = /^\s*(\d*\.?\d+)\s*(ms|s)\s*$/.exec(text);
   if (match === null) return null;

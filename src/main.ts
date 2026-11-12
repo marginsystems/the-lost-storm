@@ -114,6 +114,8 @@ import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-view.ts';
 import { neighbourZones } from './render/zone-assets.ts';
 import { createBrowserTimers } from './browser-timers.ts';
+import { createOverlayManager, cssMotionMs } from './hud/overlays.ts';
+import type { OverlayManager } from './hud/overlays.ts';
 import { readServerUrl } from './backend/server-url.ts';
 import { createTitleSync, followSync } from './title-sync.ts';
 import { createStatusLine, TITLE_NOTICES } from './title-status.ts';
@@ -284,7 +286,9 @@ async function start(): Promise<void> {
     },
   };
   const glitchSettings: GlitchSettingsStore = createGlitchSettings(createBrowserStore());
+  const overlayManager: OverlayManager = createOverlayManager({ body: document.body, timers: createBrowserTimers(), motionMs: (): number => cssMotionMs(document.documentElement) });
   const pauseMenu: PauseMenu = createPauseMenu(element('hud', HTMLDivElement), {
+    overlays: overlayManager,
     settings: gameSettings,
     glitches: glitchSettings,
     audio: controls,
@@ -319,6 +323,7 @@ async function start(): Promise<void> {
     readBook: (item: ItemInstance): void => opening.readBook(item),
     touch: mobile.touch,
     qualityTier: (): string => (mobile.quality.tier.name === 'desktop' ? gameSettings.get().graphics.quality : `${gameSettings.get().graphics.quality} ${mobile.quality.tier.name}`),
+    overlays: overlayManager,
   });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
     heightOf: (id: number): number => actors.heightOf(id),
@@ -339,7 +344,7 @@ async function start(): Promise<void> {
     },
   });
   const objectiveMarker: ObjectiveMarker = createObjectiveMarker(stage.scene, camera, element('hud', HTMLDivElement));
-  const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby, { isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'ladder' });
+  const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby, { isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'ladder', overlays: overlayManager });
   const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
   const input: Input = createInput(canvas, world, camera, hud, gameSettings, {
     heightOf: (id: number): number => actors.heightOf(id),
@@ -362,7 +367,7 @@ async function start(): Promise<void> {
   const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, openMenu: (): void => {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
-  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, send, nameOf: (): string | null => heroName ?? readHeroName(createBrowserStore()), fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), refreshName: (): Promise<void> => (lobby === null ? Promise.resolve() : lobby.feed.refresh(true)) });
+  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, overlays: overlayManager, send, nameOf: (): string | null => heroName ?? readHeroName(createBrowserStore()), fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), refreshName: (): Promise<void> => (lobby === null ? Promise.resolve() : lobby.feed.refresh(true)) });
   const glitches: GlitchView = createGlitchView({
     world,
     scene: stage.scene,

@@ -5,6 +5,8 @@ import type { Lobby } from './compact.ts';
 import { createLobbyPanel } from './lobby-panel.ts';
 import type { LobbyPanel } from './lobby-panel.ts';
 import { passedNames, rankText } from './lobby-model.ts';
+import type { OverlayManager } from '../hud/overlays.ts';
+import { markOverlay } from '../hud/overlay-mark.ts';
 
 export interface GameBoard {
   setPlaying(playing: boolean): void;
@@ -15,6 +17,7 @@ export interface GameBoard {
 
 export interface GameBoardOptions {
   readonly isToggleKey: (code: string) => boolean;
+  readonly overlays: OverlayManager;
 }
 
 export const GAME_BOARD: {
@@ -78,15 +81,26 @@ export function mountGameBoard(hud: HTMLElement, lobby: Lobby, options: GameBoar
     setText(pinLevel, mine === null ? '' : String(mine.level), true);
   };
 
+  options.overlays.register('ladder', {
+    element: root,
+    show(): void {
+      root.classList.add('open');
+      markOverlay(root, true);
+      void lobby.feed.refresh(false);
+    },
+    hide(): void {
+      root.classList.remove('open');
+      markOverlay(root, false);
+    },
+  });
+
   const toggle = (): void => {
-    const open: boolean = !root.classList.contains('open');
-    root.classList.toggle('open', open);
-    if (open) void lobby.feed.refresh(false);
+    options.overlays.send({ type: 'toggle', id: 'ladder' });
   };
 
   const close = (): boolean => {
-    if (!root.classList.contains('open')) return false;
-    root.classList.remove('open');
+    if (!options.overlays.shown('ladder')) return false;
+    options.overlays.send({ type: 'close', id: 'ladder' });
     return true;
   };
 

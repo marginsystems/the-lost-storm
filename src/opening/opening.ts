@@ -18,6 +18,7 @@ import type { NameEcho } from './name-echo.ts';
 import { createNameEcho } from './name-echo.ts';
 import type { Reader } from './reader.ts';
 import { createReader } from './reader.ts';
+import type { OverlayManager } from '../hud/overlays.ts';
 
 export const OPENING = {
   wakeDistance: 46,
@@ -30,6 +31,7 @@ export interface OpeningDeps {
   readonly camera: IsoCamera;
   readonly hud: HTMLElement;
   readonly touch: boolean;
+  readonly overlays: OverlayManager;
   send(command: Command): void;
   nameOf(): string | null;
   fetchVoice(): Promise<SpokenName | null>;
@@ -63,7 +65,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   let shiftZone: string = world.zone.id;
   let eased: WakeState | null = null;
   let held: WakeState | null = null;
-  const reader: Reader = createReader(hud, deps.touch);
+  const reader: Reader = createReader(hud, deps.touch, deps.overlays);
   const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): Promise<void> => deps.refreshName() });
   let books: Set<number> = carriedBooks(world);
   let shownShore: number = 0;

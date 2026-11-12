@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { anyOverlay, chromeHidden, exitingOverlays, INITIAL_OVERLAYS, isShown, liveOverlays, stepOverlays, visibleOverlays } from './overlay-core.ts';
 import type { OverlayEvent, OverlayState, OverlayStep } from './overlay-core.ts';
-import { OVERLAY_IDS, OVERLAY_PAIRS, OVERLAY_TABLE, overlayZ, paired, QUEUED_OVERLAYS } from './overlay-table.ts';
+import { NARROW_PAIRS, OVERLAY_IDS, OVERLAY_PAIRS, OVERLAY_TABLE, overlayZ, paired, QUEUED_OVERLAYS } from './overlay-table.ts';
 import type { OverlayId } from './overlay-table.ts';
 
 const SPEC = {
   path: '../../spec/Overlays.tla',
-  reachable: 697,
+  reachable: 608,
   seeds: 200,
   length: 60,
 } as const;
@@ -24,30 +24,29 @@ function allEvents(): OverlayEvent[] {
     { type: 'close', id: 'death' },
     { type: 'open', id: 'trade' },
     { type: 'open', id: 'reader' },
-    { type: 'open', id: 'choice' },
     { type: 'escape' },
     { type: 'death' },
     { type: 'respawn' },
     { type: 'zone' },
-    ...QUEUED_OVERLAYS.map((id: 'choice' | 'endcard'): OverlayEvent => ({ type: 'arrive', id })),
+    ...QUEUED_OVERLAYS.map((id: 'endcard'): OverlayEvent => ({ type: 'arrive', id })),
     { type: 'present' },
-    { type: 'choose' },
+    { type: 'layout', narrow: true },
+    { type: 'layout', narrow: false },
   ];
 }
 
 function keyOf(state: OverlayState): string {
-  return JSON.stringify([OVERLAY_IDS.map((id: OverlayId): string => state.phase[id]), state.pending, state.waiting.toSorted()]);
+  return JSON.stringify([OVERLAY_IDS.map((id: OverlayId): string => state.phase[id]), state.pending, state.waiting.toSorted(), state.narrow]);
 }
 
 function assertInvariants(state: OverlayState, trail: string): void {
   const shown: OverlayId[] = visibleOverlays(state);
-  assert.ok(shown.length <= 1 || (shown.length === 2 && paired(shown[0] ?? 'death', shown[1] ?? 'death')), `one exclusive overlay: ${shown.join(',')} after ${trail}`);
+  assert.ok(shown.length <= 1 || (shown.length === 2 && paired(shown[0] ?? 'death', shown[1] ?? 'death', state.narrow)), `one exclusive overlay: ${shown.join(',')} after ${trail}`);
   for (const exiting of exitingOverlays(state)) {
     for (const id of OVERLAY_IDS) if (state.phase[id] === 'opening') assert.ok(paired(exiting, id), `${id} entered while ${exiting} was leaving after ${trail}`);
   }
   if (OVERLAY_IDS.some((id: OverlayId): boolean => OVERLAY_TABLE[id].layer === 'full' && state.phase[id] !== 'closed')) assert.ok(chromeHidden(state), trail);
   if (state.pending.length > 0) assert.ok(exitingOverlays(state).length > 0, `idle gap after ${trail}`);
-  assert.ok(state.phase.choice === 'closed' || state.phase.endcard === 'closed', `two queued cards after ${trail}`);
   if (isShown(state, 'death')) assert.deepEqual(liveOverlays(state), ['death'], `orphan under death after ${trail}`);
   assert.equal(anyOverlay(state), liveOverlays(state).length > 0);
 }
@@ -80,6 +79,8 @@ void test('the table and the TLA+ spec name the same overlays, layers, blockers,
   assert.deepEqual(setOf(source, 'Blockers'), OVERLAY_IDS.filter((id: OverlayId): boolean => OVERLAY_TABLE[id].blocks).toSorted());
   assert.deepEqual(setOf(source, 'Queued'), QUEUED_OVERLAYS.toSorted());
   const line: string = /^Pairs == (.*)$/m.exec(source)?.[1] ?? '';
+  const narrowLine: string = /^NarrowPairs == (.*)$/m.exec(source)?.[1] ?? '';
+  assert.deepEqual([...narrowLine.matchAll(/\{"([a-z]+)", "([a-z]+)"\}/g)].map((pair: RegExpExecArray): string => `${pair[1] ?? ''}+${pair[2] ?? ''}`), NARROW_PAIRS.map(([a, b]: readonly [OverlayId, OverlayId]): string => `${a}+${b}`));
   const pairs: string[] = [...line.matchAll(/\{"([a-z]+)", "([a-z]+)"\}/g)].map((pair: RegExpExecArray): string => `${pair[1] ?? ''}+${pair[2] ?? ''}`);
   assert.deepEqual(pairs.toSorted(), OVERLAY_PAIRS.map(([a, b]: readonly [OverlayId, OverlayId]): string => `${a}+${b}`).toSorted());
   for (const id of OVERLAY_IDS) assert.match(source, new RegExp(`o = "${id}" -> ${OVERLAY_TABLE[id].rank}\\b`), id);
@@ -92,8 +93,9 @@ void test('z order follows rank, one table for every overlay', (): void => {
 });
 
 void test('every state the core can reach keeps the spec invariants, and there are exactly as many as TLC finds', (): void => {
-  const seen: Map<string, OverlayState> = new Map<string, OverlayState>([[keyOf(INITIAL_OVERLAYS), INITIAL_OVERLAYS]]);
-  const queue: OverlayState[] = [INITIAL_OVERLAYS];
+  const narrow: OverlayState = { ...INITIAL_OVERLAYS, narrow: true };
+  const seen: Map<string, OverlayState> = new Map<string, OverlayState>([[keyOf(INITIAL_OVERLAYS), INITIAL_OVERLAYS], [keyOf(narrow), narrow]]);
+  const queue: OverlayState[] = [INITIAL_OVERLAYS, narrow];
   const events: OverlayEvent[] = allEvents();
   for (let state: OverlayState | undefined = queue.shift(); state !== undefined; state = queue.shift()) {
     assertInvariants(state, keyOf(state));
@@ -189,24 +191,14 @@ void test('Escape walks down a stack one overlay at a time', (): void => {
   assert.equal(stepOverlays(two, { type: 'escape' }).state.phase.pause, 'opening');
 });
 
-void test('a pending skill choice with a panel open waits; opening it closes the panel; Escape defers it', (): void => {
-  const bag: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'toggle', id: 'inventory' }, { type: 'arrive', id: 'choice' }]));
-  assert.ok(isShown(bag, 'inventory'));
-  assert.equal(bag.phase.choice, 'closed');
-  const choosing: OverlayState = settleAll(stepOverlays(bag, { type: 'open', id: 'choice' }).state);
-  assert.deepEqual(visibleOverlays(choosing), ['choice']);
-  const deferred: OverlayState = settleAll(stepOverlays(choosing, { type: 'escape' }).state);
-  assert.deepEqual(deferred.waiting, ['choice']);
-  assert.equal(deferred.phase.pause, 'closed');
-  const chosen: OverlayState = settleAll(apply(deferred, [{ type: 'open', id: 'choice' }, { type: 'settled', id: 'choice' }, { type: 'choose' }]));
-  assert.deepEqual(chosen.waiting, []);
-});
-
-void test('the end card waits behind the skill choice and any panel', (): void => {
-  const choosing: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'arrive', id: 'choice' }, { type: 'open', id: 'choice' }, { type: 'arrive', id: 'endcard' }]));
-  assert.equal(stepOverlays(choosing, { type: 'present' }).outcome, 'ignored');
-  const done: OverlayState = settleAll(apply(choosing, [{ type: 'choose' }]));
-  assert.equal(stepOverlays(done, { type: 'present' }).state.phase.endcard, 'opening');
+void test('the end card waits until nothing else is up', (): void => {
+  const bag: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'toggle', id: 'inventory' }, { type: 'arrive', id: 'endcard' }]));
+  assert.equal(stepOverlays(bag, { type: 'present' }).outcome, 'ignored');
+  const clear: OverlayState = settleAll(stepOverlays(bag, { type: 'toggle', id: 'inventory' }).state);
+  const shown: OverlayState = stepOverlays(clear, { type: 'present' }).state;
+  assert.equal(shown.phase.endcard, 'opening');
+  assert.deepEqual(shown.waiting, []);
+  assert.equal(stepOverlays(settleAll(shown), { type: 'toggle', id: 'map' }).outcome, 'refused');
 });
 
 void test('death closes every panel before its card enters; a zone change leaves nothing open', (): void => {
@@ -237,4 +229,14 @@ void test('death leaves only through respawn: toggle and close are ignored', ():
   assert.equal(stepOverlays(dead, { type: 'escape' }).outcome, 'ignored');
   const pending: OverlayState = stepOverlays(settleAll(stepOverlays(INITIAL_OVERLAYS, { type: 'toggle', id: 'map' }).state), { type: 'death' }).state;
   assert.deepEqual(stepOverlays(pending, { type: 'toggle', id: 'death' }).state.pending, ['death']);
+});
+
+void test('on a narrow layout the character sheet replaces the bag instead of sharing the screen, and narrowing splits a pair', (): void => {
+  const phone: OverlayState = { ...INITIAL_OVERLAYS, narrow: true };
+  const sheet: OverlayState = settleAll(stepOverlays(phone, { type: 'toggle', id: 'character' }).state);
+  const bag: OverlayState = settleAll(stepOverlays(sheet, { type: 'toggle', id: 'inventory' }).state);
+  assert.deepEqual(visibleOverlays(bag), ['inventory']);
+  const wide: OverlayState = settleAll(apply(INITIAL_OVERLAYS, [{ type: 'toggle', id: 'character' }, { type: 'toggle', id: 'inventory' }]));
+  const narrowed: OverlayState = settleAll(stepOverlays(wide, { type: 'layout', narrow: true }).state);
+  assert.deepEqual(visibleOverlays(narrowed), ['inventory']);
 });

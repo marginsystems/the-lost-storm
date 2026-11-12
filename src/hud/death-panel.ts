@@ -3,6 +3,7 @@ import type { RespawnChoice, World } from '../../sim/world/types.ts';
 import { el, label, setText } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
 import type { WorldStatus } from './status.ts';
+import { markOverlay } from './overlay-mark.ts';
 
 const DEATH_PANEL: { readonly confirmKeys: readonly string[] } = {
   confirmKeys: ['Enter', 'Space'],
@@ -39,6 +40,20 @@ export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus 
     if (visible && ready) api.send({ type: 'respawn', choice });
   };
 
+  api.overlays.register('death', {
+    element: screen,
+    show(): void {
+      visible = true;
+      screen.classList.add('visible');
+      markOverlay(screen, true);
+    },
+    hide(): void {
+      visible = false;
+      screen.classList.remove('visible');
+      markOverlay(screen, false);
+    },
+  });
+
   for (const entry of CHOICES) {
     const button: HTMLButtonElement = el('button', 'death-button', actions);
     button.type = 'button';
@@ -60,10 +75,6 @@ export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus 
     update(world: World): void {
       const fallen: boolean = !world.player.alive && world.death !== null;
       if (fallen) setText(cause, causeText(world), false);
-      if (fallen !== visible) {
-        visible = fallen;
-        screen.classList.toggle('visible', fallen);
-      }
       const open: boolean = fallen && choicesOpen(world);
       if (open !== ready) {
         ready = open;
