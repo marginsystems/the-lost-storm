@@ -9,3 +9,4 @@ public/audio/local
 .claude/launch.json
 .env.local
 .env.*.local
+simulate-out

@@ -14,7 +14,8 @@
     "test": "node tools/affected.ts --all --run",
     "test:isolated": "node --test --test-concurrency=4 'sim/**/*.test.ts' 'src/**/*.test.ts' 'test/**/*.test.ts' 'tools/**/*.test.ts'",
     "test:affected": "node tools/affected.ts --run",
-    "assets:inspect": "node tools/inspect-glb.ts"
+    "assets:inspect": "node tools/inspect-glb.ts",
+    "simulate": "node tools/simulate.ts"
   },
   "dependencies": {
     "@fontsource/alegreya-sans": "^5.3.0",
