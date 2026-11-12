@@ -231,7 +231,8 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       if (prop !== undefined && !models.has(prop.model)) wanted.add(prop.model);
     }
     await Promise.all([...wanted].map(async (model: string): Promise<void> => {
-      models.set(model, await loadModel(deps.loader, model));
+      const gltf: GLTF | null = await loadModel(deps.loader, model).catch((): null => null);
+      if (gltf !== null) models.set(model, gltf);
     }));
   };
 
@@ -327,6 +328,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
 
   const dressFigures = (entry: MomentEntry, moment: MomentState): void => {
     for (const figure of moment.figures) {
+      if (figure.turned || entry.figures.some((view: FigureView): boolean => view.echo === figure.echo)) continue;
       const echo: MomentEcho | undefined = moment.def.echoes[figure.echo];
       const view: FigureView | null = echo === undefined ? null : makeFigure(entry, figure, echo);
       if (view !== null) entry.figures.push(view);
@@ -433,8 +435,8 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
           entry = build(moment);
           entries.set(moment.id, entry);
           dressProps(entry, moment);
-          dressFigures(entry, moment);
         }
+        if (moment.phase !== 'fading' && entry.figures.length < moment.figures.length) dressFigures(entry, moment);
         stepEntry(entry, moment, world, dt);
       }
       for (const [id, entry] of entries) {
