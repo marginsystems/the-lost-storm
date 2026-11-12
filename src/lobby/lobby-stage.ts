@@ -1,6 +1,7 @@
 import type { AnimationClip, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, DodecahedronGeometry, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SpotLight, Vector2 } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SpotLight, Vector2 } from 'three';
 import type { Object3D } from 'three';
+import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
 import type { Look } from '../../sim/wear.ts';
 import { heroBase, lookOf } from '../../sim/wear.ts';
@@ -12,6 +13,9 @@ import { surfaceMaterial } from '../render/surfaces.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import { createLobbyPipeline } from './lobby-render.ts';
 import type { LobbyPipeline } from './lobby-render.ts';
+import { poseBones, settlePose, turnPose } from './lobby-pose.ts';
+import type { PosedBone, PoseTurn } from './lobby-pose.ts';
+import { placeRocks } from './lobby-scenery.ts';
 
 export const LOBBY_STAGE = {
   background: 0x05070b,
@@ -20,8 +24,8 @@ export const LOBBY_STAGE = {
   fogFar: 23,
   fov: 18,
   cameraHeight: 1.4,
-  cameraDistance: 11.7,
-  lookHeight: 0.95,
+  cameraDistance: 10.2,
+  lookHeight: 0.98,
   near: 0.1,
   far: 40,
   facing: 0.32,
@@ -52,19 +56,9 @@ export const LOBBY_STAGE = {
   rimPenumbra: 0.7,
   rimGlow: 0x3a4f80,
   groundSurface: 'black_rock',
-  groundWet: 0,
-  groundShade: 0.4,
-  groundRelief: 0.45,
-  groundRock: 'black_ledge',
-  rocks: [
-    [-3.4, -4.2, 1.3, 0.9],
-    [-5.8, -7.5, 2.2, 1.4],
-    [3.6, -5.2, 1.6, 1.1],
-    [6.4, -9, 2.6, 1.8],
-    [-1.2, -10.5, 2, 1.2],
-    [1.9, -3.1, 0.55, 0.35],
-  ],
-  rockSquash: 0.62,
+  groundWet: 0.35,
+  groundShade: 0.6,
+  groundRelief: 0.8,
   groundRadius: 14,
   groundSegments: 72,
   groundEdge: 0.06,
@@ -94,6 +88,13 @@ export const LOBBY_STAGE = {
   hazeTop: 0.6,
   hazeSize: 128,
 } as const;
+
+export const LOBBY_POSE: readonly PoseTurn[] = [
+  ['DEF-upper_arm.L', 0, 0, -12],
+  ['DEF-upper_arm.R', 0, 0, 12],
+  ['DEF-thigh.L', 0, 0, 5],
+  ['DEF-thigh.R', 0, 0, -5],
+];
 
 export const LOBBY_FRAMING = {
   wide: { across: 0.5, down: 0, zoom: 1 },
@@ -245,7 +246,7 @@ function idleClip(rig: RigInstance, equipped: Equipment): AnimationClip {
   return equipped.weapon === null ? (rig.clips.unarmed?.idle ?? rig.clips.idle) : rig.clips.idle;
 }
 
-export function createLobbyStage(content: Content, library: CharacterLibrary, random: () => number = Math.random): LobbyStage {
+export function createLobbyStage(content: Content, library: CharacterLibrary, loader: GLTFLoader, random: () => number = Math.random): LobbyStage {
   const scene: Scene = new Scene();
   scene.background = new Color(LOBBY_STAGE.background);
   scene.fog = new Fog(LOBBY_STAGE.haze, LOBBY_STAGE.fogNear, LOBBY_STAGE.fogFar);
@@ -274,15 +275,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
   scene.add(rim.target);
 
   scene.add(groundMesh(content.surfaces.get(LOBBY_STAGE.groundSurface)));
-  const rockDef: SurfaceDef | undefined = content.surfaces.get(LOBBY_STAGE.groundRock);
-  const rockMaterial: MeshBasicMaterial | ReturnType<typeof surfaceMaterial> = rockDef === undefined ? new MeshBasicMaterial({ color: LOBBY_STAGE.background }) : surfaceMaterial(rockDef, 'solid', LOBBY_STAGE.groundWet);
-  for (const [x, z, size, height] of LOBBY_STAGE.rocks) {
-    const rock: Mesh = new Mesh(new DodecahedronGeometry(size, 0), rockMaterial);
-    rock.position.set(x, height * LOBBY_STAGE.rockSquash * 0.4, z);
-    rock.scale.set(1, (height / size) * LOBBY_STAGE.rockSquash, 1);
-    rock.rotation.set(random(), random() * Math.PI, random() * 0.4);
-    scene.add(rock);
-  }
   const rain: RainLayer = rainLayer(random);
   scene.add(rain.lines);
 
@@ -301,6 +293,8 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
   const rimGlow: Color = new Color(LOBBY_STAGE.rimGlow);
   const size: Vector2 = new Vector2();
   let pipeline: LobbyPipeline | null = null;
+  let scenery: Promise<void> | null = null;
+  let posed: readonly PosedBone[] = [];
 
   const build = (): RigInstance | null => {
     if (hero !== null) return hero;
@@ -309,6 +303,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
     const made: RigInstance = instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null });
     made.root.rotation.y = LOBBY_STAGE.facing;
     castShadows(made.root);
+    posed = poseBones(made.root, LOBBY_POSE);
     made.root.add(contactShadow());
     scene.add(made.root);
     hero = made;
@@ -337,7 +332,9 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
         if (Math.abs(mist.position.x) > LOBBY_STAGE.mistWidth * 0.5) mist.position.x = -mist.position.x * 0.9;
       });
       if (hero !== null) {
+        settlePose(posed);
         hero.mixer.update(dt);
+        turnPose(posed);
         hero.stepWear(dt);
         hero.root.rotation.y = LOBBY_STAGE.facing + Math.sin(time * LOBBY_STAGE.swayRate) * LOBBY_STAGE.sway + Math.sin(time * LOBBY_STAGE.driftRate) * LOBBY_STAGE.drift;
       }
@@ -352,10 +349,12 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, ra
       pipeline ??= createLobbyPipeline(renderer, scene, camera);
       pipeline.render(tier, devicePixelRatio);
     },
-    warm(renderer: WebGLRenderer, tier: QualityName): Promise<void> {
+    async warm(renderer: WebGLRenderer, tier: QualityName): Promise<void> {
       build();
+      scenery ??= placeRocks(loader, content, scene);
+      await scenery;
       pipeline ??= createLobbyPipeline(renderer, scene, camera);
-      return pipeline.compile(tier);
+      await pipeline.compile(tier);
     },
   };
 }
