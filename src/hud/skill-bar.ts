@@ -1,6 +1,7 @@
 import type { SkillDef } from '../../sim/content/types.ts';
 import { usable } from '../../sim/world/hud.ts';
-import type { PlayerState } from '../../sim/world/types.ts';
+import type { Command, PlayerState } from '../../sim/world/types.ts';
+import { rowPress } from './row-press.ts';
 import { slotAction } from '../settings/bindings.ts';
 import type { HudContext } from './context.ts';
 import { clamp01, el, label, pulseClass, setText } from './dom.ts';
@@ -79,7 +80,11 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
     const root: HTMLDivElement = el('div', 'slot', element);
     root.addEventListener('click', (event: MouseEvent): void => {
       event.stopPropagation();
-      if (picker.slot === index) picker.close();
+      const instead: Command | null = rowPress(context.api.world);
+      if (instead !== null) {
+        picker.close();
+        context.api.send(instead);
+      } else if (picker.slot === index) picker.close();
       else picker.open(index, root);
     });
     const icon: HTMLDivElement = el('div', 'slot-icon', root);

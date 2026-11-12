@@ -190,3 +190,36 @@ void test('a held walk that began on the ground keeps walking and goes through a
   run(setup, 30, (): boolean => world.zone.id !== 'hall_of_time');
   assert.equal(world.zone.id, exit.to);
 });
+
+function talkingToGuide(): World {
+  const world: World = worldIn(content, 'hideout', 7);
+  for (const quest of content.quests.values()) if (quest.id !== 'wardens_lesson') world.quests[quest.id] = quest.objectives.length;
+  world.quests['wardens_lesson'] = 0;
+  const guide = must(world.npcs.find((npc): boolean => npc.def.id === 'warden_guide'), 'guide');
+  world.player.pos.x = guide.pos.x + 1;
+  world.player.pos.z = guide.pos.z;
+  stepWorld(world, [{ type: 'talk', npcId: guide.id }], DT);
+  for (let step: number = 0; step < 60 && world.dialogue === null; step += 1) stepWorld(world, [], DT);
+  assert.equal(world.dialogue?.talk.id, 'warden_guide_lesson');
+  return world;
+}
+
+void test('one click anywhere in the world closes the guide\'s one-line lesson and completes the objective', (): void => {
+  const world: World = talkingToGuide();
+  const setup: Rig = rig(world);
+  setup.input.holdAt(200, 300);
+  run(setup, 0.15, (): boolean => false);
+  setup.input.releaseHold();
+  run(setup, 0.1, (): boolean => false);
+  assert.equal(world.dialogue, null);
+  assert.equal(world.quests['wardens_lesson'], 1);
+});
+
+void test('one phone tap closes the guide\'s one-line lesson and completes the objective', (): void => {
+  const world: World = talkingToGuide();
+  const setup: Rig = rig(world);
+  setup.input.tap(200, 300);
+  run(setup, 0.1, (): boolean => false);
+  assert.equal(world.dialogue, null);
+  assert.equal(world.quests['wardens_lesson'], 1);
+});
