@@ -109,10 +109,10 @@ export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse, wet: number = 
   return made;
 }
 
-export function dressed(content: Content, dress: Readonly<Record<string, string>>, material: Material): Material {
+export function dressed(content: Content, dress: Readonly<Record<string, string>>, material: Material, wet: number = 0): Material {
   const surfaceId: string | undefined = dress[material.name];
   const def: SurfaceDef | undefined = surfaceId === undefined ? undefined : content.surfaces.get(surfaceId);
-  return def === undefined ? matte(material) : surfaceMaterial(def, 'solid');
+  return def === undefined ? matte(material) : surfaceMaterial(def, 'solid', wet);
 }
 
 export async function preloadSurfaces(content: Content, ids: ReadonlySet<string>): Promise<void> {

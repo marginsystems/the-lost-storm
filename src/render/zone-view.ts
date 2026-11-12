@@ -198,7 +198,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       const geometry: unknown = object.geometry;
       const material: unknown = object.material;
       if (!(material instanceof MeshStandardMaterial) || !isGeometry(geometry)) return;
-      const instanced: InstancedMesh = new InstancedMesh(geometry, withCutaway(finish(content.props.get(propId), dressed(content, dress, material))), list.length);
+      const instanced: InstancedMesh = new InstancedMesh(geometry, withCutaway(finish(content.props.get(propId), dressed(content, dress, material, zone.weather.wet))), list.length);
       list.forEach((placement: Placement, index: number): void => {
         instanced.setMatrixAt(index, new Matrix4().multiplyMatrices(placement.matrix, object.matrixWorld));
       });
@@ -223,7 +223,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
         child.castShadow = true;
         child.receiveShadow = true;
         const shared: unknown = child.material;
-        const own: MeshStandardMaterial[] = standardMaterials(shared).map((material: MeshStandardMaterial): MeshStandardMaterial => standardMaterials(dressed(content, conditional.def.surfaces, material)).map((worn: MeshStandardMaterial): MeshStandardMaterial => worn.clone())[0] ?? material.clone());
+        const own: MeshStandardMaterial[] = standardMaterials(shared).map((material: MeshStandardMaterial): MeshStandardMaterial => standardMaterials(dressed(content, conditional.def.surfaces, material, zone.weather.wet)).map((worn: MeshStandardMaterial): MeshStandardMaterial => worn.clone())[0] ?? material.clone());
         const first: MeshStandardMaterial | undefined = own[0];
         if (Array.isArray(shared)) {
           if (own.length !== shared.length) return;

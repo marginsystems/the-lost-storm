@@ -10,6 +10,7 @@ import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures
 import { fitToSkeleton, groupBodyParts, skinnedMeshes } from './wearables.ts';
 import type { GhostUniforms } from './ghost-material.ts';
 import { makeGhost } from './ghost-material.ts';
+import { addBoxUvs } from './box-uv.ts';
 
 export interface ActionClip {
   readonly clip: AnimationClip;
@@ -106,6 +107,7 @@ export function loadModel(loader: GLTFLoader, path: string): Promise<GLTF> {
 }
 
 function shrinkModel(gltf: GLTF): GLTF {
+  addBoxUvs(gltf.scene);
   shrinkModelTextures(gltf.scene, renderBudget().maxModelTextureSize);
   return gltf;
 }
