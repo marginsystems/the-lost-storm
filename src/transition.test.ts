@@ -4,18 +4,26 @@ import type { Content } from '../sim/content/types.ts';
 import { loadContent } from '../sim/content/content.ts';
 import type { Timers } from './backend/backend.ts';
 import type { TransitionReport, Veil, ZoneTransition } from './transition.ts';
-import { cleanFrameLimit, createZoneTransition, isLight, leavingColour, TRANSITION } from './transition.ts';
+import { cleanFrameLimit, createZoneTransition, isLight, TRANSITION, veilColour } from './transition.ts';
 
 const content: Content = loadContent();
 
-void test('leaving the In-Between fades through its own white, and leaving the Hall through its night', (): void => {
-  assert.equal(leavingColour(content.zones, [{ type: 'zone_changed', from: 'between', to: 'hall_of_time' }]), '#d9dcdf');
-  assert.equal(leavingColour(content.zones, [{ type: 'zone_changed', from: 'hall_of_time', to: 'between' }]), '#0a0e16');
+void test('entering the Hall from the white In-Between fades through the Hall night, never through white', (): void => {
+  assert.equal(veilColour(content.zones, [{ type: 'zone_changed', from: 'between', to: 'hall_of_time' }]), '#0a0e16');
 });
 
-void test('with no zone change, or one from an unknown zone, the fade keeps its own colour', (): void => {
-  assert.equal(leavingColour(content.zones, []), null);
-  assert.equal(leavingColour(content.zones, [{ type: 'zone_changed', from: 'nowhere', to: 'between' }]), null);
+void test('leaving a dark zone for a light one fades through the dark side', (): void => {
+  assert.equal(veilColour(content.zones, [{ type: 'zone_changed', from: 'hall_of_time', to: 'between' }]), '#0a0e16');
+});
+
+void test('between two dark zones the fade takes the colour of the zone being entered', (): void => {
+  assert.equal(veilColour(content.zones, [{ type: 'zone_changed', from: 'hideout', to: 'hall_of_time' }]), '#0a0e16');
+});
+
+void test('with no zone change, or an unknown zone on either side, the fade keeps its own dark', (): void => {
+  assert.equal(veilColour(content.zones, []), null);
+  assert.equal(veilColour(content.zones, [{ type: 'zone_changed', from: 'nowhere', to: 'between' }]), null);
+  assert.equal(veilColour(content.zones, [{ type: 'zone_changed', from: 'between', to: 'nowhere' }]), null);
 });
 
 interface FakeVeil extends Veil {
@@ -30,8 +38,8 @@ function fakeVeil(): FakeVeil {
   const lifts: (() => void)[] = [];
   return {
     log,
-    cover(colour: string | null, place: string): Promise<void> {
-      log.push(`cover ${colour ?? 'none'} ${place}`);
+    cover(colour: string | null): Promise<void> {
+      log.push(`cover ${colour ?? 'none'}`);
       return new Promise<void>((resolve: () => void): void => {
         covers.push(resolve);
       });
@@ -48,6 +56,12 @@ function fakeVeil(): FakeVeil {
     finishLift(): void {
       for (const done of lifts.splice(0)) done();
     },
+  };
+}
+
+function revealOf(run: Harness): () => void {
+  return (): void => {
+    run.veil.log.push('reveal');
   };
 }
 
@@ -121,9 +135,9 @@ void test('the new zone is built only once the veil fully covers the old one', a
   run.transition.begin((): Promise<void> => {
     built.push('built');
     return Promise.resolve();
-  }, '#0a0e16', 'The Hall of Time');
+  }, '#0a0e16', revealOf(run));
   await settle();
-  assert.deepEqual(run.veil.log, ['cover #0a0e16 The Hall of Time']);
+  assert.deepEqual(run.veil.log, ['cover #0a0e16']);
   assert.deepEqual(built, []);
   assert.equal(run.transition.blocking, true);
   assert.equal(run.transition.presenting, false);
@@ -132,9 +146,9 @@ void test('the new zone is built only once the veil fully covers the old one', a
   assert.deepEqual(built, ['built']);
 });
 
-void test('the veil lifts only after the new zone has drawn several clean frames in a row', async (): Promise<void> => {
+void test('the veil lifts, and the HUD hears of the new zone, only after the new zone has drawn several clean frames in a row', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, 'The In-Between');
+  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
   run.veil.finishCover();
   await settle();
   assert.equal(run.transition.presenting, true);
@@ -146,7 +160,7 @@ void test('the veil lifts only after the new zone has drawn several clean frames
   assert.deepEqual(run.veil.log.slice(1), []);
   cleanFrames(run, 1);
   await settle();
-  assert.deepEqual(run.veil.log.slice(1), ['lift']);
+  assert.deepEqual(run.veil.log.slice(1), ['reveal', 'lift']);
   assert.equal(run.transition.blocking, false);
   run.veil.finishLift();
   await settle();
@@ -157,14 +171,14 @@ void test('the veil lifts only after the new zone has drawn several clean frames
 
 void test('a zone that never draws clean frames still lifts the veil after the cap', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, 'The Hall of Time');
+  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
   run.veil.finishCover();
   await settle();
   run.advance(TRANSITION.cleanFrameMs * 3);
   assert.equal(run.due.length, 1);
   for (const task of run.due.splice(0)) task();
   await settle();
-  assert.deepEqual(run.veil.log.slice(1), ['lift']);
+  assert.deepEqual(run.veil.log.slice(1), ['reveal', 'lift']);
   run.veil.finishLift();
   await settle();
   assert.equal(only(run.reports).settled, false);
@@ -172,7 +186,7 @@ void test('a zone that never draws clean frames still lifts the veil after the c
 
 void test('frames while the veil comes and goes count as seen, frames behind it as hidden', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, 'The Hall of Time');
+  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
   run.advance(17);
   run.veil.finishCover();
   await settle();
@@ -189,25 +203,25 @@ void test('frames while the veil comes and goes count as seen, frames behind it 
 
 void test('a failed build lifts the veil, reports the error and leaves the transition ready again', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.reject(new Error('no models')), null, 'The Hall of Time');
+  run.transition.begin((): Promise<void> => Promise.reject(new Error('no models')), null, revealOf(run));
   run.veil.finishCover();
   await settle();
   assert.equal(run.errors.length, 1);
   assert.deepEqual(run.veil.log.slice(1), ['lift']);
   assert.equal(run.transition.blocking, false);
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, 'The In-Between');
-  assert.equal(run.veil.log.at(-1), 'cover none The In-Between');
+  run.transition.begin((): Promise<void> => Promise.resolve(), '#d9dcdf', revealOf(run));
+  assert.equal(run.veil.log.at(-1), 'cover #d9dcdf');
 });
 
 void test('a second zone change while one is under way is ignored', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, 'The Hall of Time');
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, 'The In-Between');
+  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
+  run.transition.begin((): Promise<void> => Promise.resolve(), '#d9dcdf', revealOf(run));
   await settle();
-  assert.deepEqual(run.veil.log, ['cover none The Hall of Time']);
+  assert.deepEqual(run.veil.log, ['cover none']);
 });
 
-void test('light leaving colours get dark lettering', (): void => {
+void test('light zone colours are told from dark ones by their luminance', (): void => {
   assert.equal(isLight('#d9dcdf'), true);
   assert.equal(isLight('#0a0e16'), false);
   assert.equal(isLight(null), false);

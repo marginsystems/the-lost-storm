@@ -122,7 +122,7 @@ import type { StatusLine } from './title-status.ts';
 import { changesSave } from './save-events.ts';
 import type { TransitionReport, ZoneTransition } from './transition.ts';
 import type { VoicePlayer } from './voice.ts';
-import { createZoneTransition, describeTransition, leavingColour } from './transition.ts';
+import { createZoneTransition, describeTransition, veilColour } from './transition.ts';
 import { createVeil } from './veil.ts';
 import type { FigureGauge } from './render/figure-gauge.ts';
 import { createFigureGauge } from './render/figure-gauge.ts';
@@ -395,11 +395,10 @@ async function start(): Promise<void> {
     sinceSave = 0;
   };
 
-  const present = (events: readonly WorldEvent[]): void => {
+  const presentScene = (events: readonly WorldEvent[]): void => {
     actors.handle(events, world);
     effects.handle(events, world);
     overlays.handle(events, world);
-    hud.handleEvents(events);
     glitches.handle(events);
     if (!glitches.silences(events)) for (const event of events) playCues(cuesForEvent(audioDef, world, event));
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_edited')) void refreshZone().catch((error: unknown): void => {
@@ -407,6 +406,10 @@ async function start(): Promise<void> {
       });
     hitStop = Math.max(hitStop, effects.takeHitStop());
     if (changesSave(events)) dirty = true;
+  };
+  const present = (events: readonly WorldEvent[]): void => {
+    presentScene(events);
+    hud.handleEvents(events);
   };
 
   const refreshZone = async (): Promise<void> => {
@@ -431,7 +434,7 @@ async function start(): Promise<void> {
   };
 
   const showZone = async (events: readonly WorldEvent[]): Promise<void> => {
-    present(events);
+    presentScene(events);
     effects.clear();
     particles.clear();
     markers.dispose();
@@ -456,7 +459,7 @@ async function start(): Promise<void> {
   };
 
   const transition: ZoneTransition = createZoneTransition({
-    veil: createVeil(element('fade', HTMLDivElement), element('fade-place', HTMLDivElement)),
+    veil: createVeil(element('fade', HTMLDivElement)),
     timers: createBrowserTimers(),
     now: (): number => performance.now(),
     onReport: (report: TransitionReport): void => {
@@ -498,7 +501,7 @@ async function start(): Promise<void> {
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
-      transition.begin((): Promise<void> => showZone(held), leavingColour(content.zones, held), world.zone.name);
+      transition.begin((): Promise<void> => showZone(held), veilColour(content.zones, held), (): void => hud.handleEvents(held));
     } else {
       present(events);
     }

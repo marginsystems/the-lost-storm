@@ -1,12 +1,9 @@
 export const VEIL = {
   fallbackMs: 900,
   coverClass: 'on',
-  lightClass: 'light',
-  namedClass: 'named',
 } as const;
 
 import type { Veil } from './transition.ts';
-import { isLight } from './transition.ts';
 
 function faded(element: HTMLElement): Promise<void> {
   return new Promise<void>((resolve: () => void): void => {
@@ -26,18 +23,14 @@ function faded(element: HTMLElement): Promise<void> {
   });
 }
 
-export function createVeil(element: HTMLElement, place: HTMLElement): Veil {
+export function createVeil(element: HTMLElement): Veil {
   return {
-    async cover(colour: string | null, name: string): Promise<void> {
+    async cover(colour: string | null): Promise<void> {
       element.style.background = colour ?? '';
-      element.classList.toggle(VEIL.lightClass, isLight(colour));
-      place.textContent = name;
       element.classList.add(VEIL.coverClass);
       await faded(element);
-      place.classList.add(VEIL.namedClass);
     },
     async lift(): Promise<void> {
-      place.classList.remove(VEIL.namedClass);
       element.classList.remove(VEIL.coverClass);
       await faded(element);
     },

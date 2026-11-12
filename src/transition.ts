@@ -12,7 +12,7 @@ import type { WorldEvent } from '../sim/world/types.ts';
 import type { Clock, Timers } from './backend/backend.ts';
 
 export interface Veil {
-  cover(colour: string | null, place: string): Promise<void>;
+  cover(colour: string | null): Promise<void>;
   lift(): Promise<void>;
 }
 
@@ -28,7 +28,7 @@ export interface TransitionReport {
 export interface ZoneTransition {
   readonly blocking: boolean;
   readonly presenting: boolean;
-  begin(swap: () => Promise<void>, colour: string | null, place: string): void;
+  begin(swap: () => Promise<void>, colour: string | null, reveal: () => void): void;
   frame(dtMs: number): void;
 }
 
@@ -42,10 +42,14 @@ export interface TransitionDeps {
 
 type Phase = 'idle' | 'covering' | 'building' | 'settling' | 'lifting';
 
-export function leavingColour(zones: ReadonlyMap<string, ZoneDef>, events: readonly WorldEvent[]): string | null {
+export function veilColour(zones: ReadonlyMap<string, ZoneDef>, events: readonly WorldEvent[]): string | null {
   for (const event of events) {
     if (event.type !== 'zone_changed') continue;
-    return zones.get(event.from)?.ambience.background ?? null;
+    const leaving: string | null = zones.get(event.from)?.ambience.background ?? null;
+    const entering: string | null = zones.get(event.to)?.ambience.background ?? null;
+    if (entering === null || leaving === null) return null;
+    if (isLight(entering) && !isLight(leaving)) return leaving;
+    return entering;
   }
   return null;
 }
@@ -96,13 +100,13 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
       };
     });
 
-  const run = async (swap: () => Promise<void>, colour: string | null, place: string): Promise<void> => {
+  const run = async (swap: () => Promise<void>, colour: string | null, reveal: () => void): Promise<void> => {
     worstHidden = 0;
     worstShown = 0;
     limit = cleanFrameLimit(recent);
     const started: number = now();
     phase = 'covering';
-    await veil.cover(colour, place);
+    await veil.cover(colour);
     const covered: number = now();
     phase = 'building';
     await swap();
@@ -111,6 +115,7 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
     const settled: boolean = await settle();
     const ready: number = now();
     phase = 'lifting';
+    reveal();
     await veil.lift();
     phase = 'idle';
     deps.onReport({ coverMs: covered - started, buildMs: built - covered, settleMs: ready - built, settled, worstHiddenMs: worstHidden, worstShownMs: worstShown });
@@ -123,9 +128,9 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
     get presenting(): boolean {
       return phase === 'idle' || phase === 'settling' || phase === 'lifting';
     },
-    begin(swap: () => Promise<void>, colour: string | null, place: string): void {
+    begin(swap: () => Promise<void>, colour: string | null, reveal: () => void): void {
       if (phase !== 'idle') return;
-      run(swap, colour, place).catch((error: unknown): void => {
+      run(swap, colour, reveal).catch((error: unknown): void => {
         settledNow = null;
         phase = 'idle';
         veil.lift().catch((): void => undefined);
