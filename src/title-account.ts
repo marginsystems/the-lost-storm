@@ -1,9 +1,10 @@
+import type { SignInMethod } from './backend/api.ts';
 import type { Timers } from './backend/backend.ts';
 
 export type AccountView =
   | { readonly kind: 'hidden' }
-  | { readonly kind: 'guest' }
-  | { readonly kind: 'signed-in'; readonly name: string | null };
+  | { readonly kind: 'guest'; readonly google: boolean; readonly email: boolean }
+  | { readonly kind: 'signed-in'; readonly method: SignInMethod; readonly name: string | null };
 
 export interface AccountPart {
   textContent: string | null;
@@ -18,7 +19,9 @@ export interface AccountRoot {
 export interface TitleAccountParts {
   readonly root: AccountRoot;
   readonly button: AccountPart;
+  readonly email: AccountPart;
   readonly line: AccountPart;
+  readonly method: AccountPart;
   readonly name: AccountPart;
   readonly note: AccountPart;
 }
@@ -27,11 +30,14 @@ export interface TitleAccount {
   show(view: AccountView, note: string): void;
 }
 
-export const TITLE_ACCOUNT: { readonly swapMs: number; readonly fallbackName: string } = { swapMs: 280, fallbackName: 'Signed in' };
+export const TITLE_ACCOUNT: { readonly swapMs: number; readonly fallbackName: string; readonly methods: Readonly<Record<SignInMethod, string>> } = {
+  swapMs: 280,
+  fallbackName: 'Signed in',
+  methods: { google: 'Google', email: 'Email' },
+};
 
 function sameView(left: AccountView | null, right: AccountView): boolean {
-  if (left === null || left.kind !== right.kind) return false;
-  return left.kind !== 'signed-in' || right.kind !== 'signed-in' || left.name === right.name;
+  return left !== null && JSON.stringify(left) === JSON.stringify(right);
 }
 
 export function createTitleAccount(parts: TitleAccountParts, timers: Timers): TitleAccount {
@@ -41,8 +47,10 @@ export function createTitleAccount(parts: TitleAccountParts, timers: Timers): Ti
 
   const apply = (view: AccountView, note: string): void => {
     cancelSwap = null;
-    parts.button.toggleAttribute('hidden', view.kind !== 'guest');
+    parts.button.toggleAttribute('hidden', view.kind !== 'guest' || !view.google);
+    parts.email.toggleAttribute('hidden', view.kind !== 'guest' || !view.email);
     parts.line.toggleAttribute('hidden', view.kind !== 'signed-in');
+    parts.method.textContent = view.kind === 'signed-in' ? TITLE_ACCOUNT.methods[view.method] : '';
     parts.name.textContent = view.kind === 'signed-in' ? (view.name ?? TITLE_ACCOUNT.fallbackName) : '';
     parts.note.textContent = note;
     parts.note.toggleAttribute('hidden', note === '');

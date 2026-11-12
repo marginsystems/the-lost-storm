@@ -1,22 +1,47 @@
-import type { Api, NonceResult, ProfileResult, ProvidersResult, Session, SessionResult } from './api.ts';
+import type { Api, EmailStartAnswer, EmailVerifyAnswer, NonceResult, ProfileResult, Providers, ProvidersResult, Session, SessionResult, SignInMethod } from './api.ts';
 import type { KeyValueStore } from './backend.ts';
 import { SAVE_KEY } from './local.ts';
 import { parseSyncRecord, serializeSyncRecord, SYNC_KEY } from './sync-record.ts';
 import type { SyncRecord } from './sync-record.ts';
 
+export interface GoogleOffer {
+  readonly clientId: string;
+  readonly nonce: string;
+}
+
+export interface EmailOffer {
+  readonly siteKey: string;
+}
+
 export type AccountState =
   | { readonly kind: 'hidden' }
   | { readonly kind: 'unreachable' }
-  | { readonly kind: 'guest'; readonly clientId: string; readonly nonce: string }
-  | { readonly kind: 'signed-in'; readonly name: string | null };
+  | { readonly kind: 'guest'; readonly google: GoogleOffer | null; readonly email: EmailOffer | null }
+  | { readonly kind: 'signed-in'; readonly method: SignInMethod; readonly name: string | null };
 
 export type SignInResult = { readonly kind: 'reload' } | { readonly kind: 'failed'; readonly state: AccountState };
+
+export type EmailStartResult =
+  | { readonly kind: 'sent'; readonly resendAfterMs: number }
+  | { readonly kind: 'invalid-email' }
+  | { readonly kind: 'bot-check' }
+  | { readonly kind: 'wait'; readonly afterMs: number | null }
+  | { readonly kind: 'unavailable' };
+
+export type EmailVerifyResult =
+  | SignInResult
+  | { readonly kind: 'wrong'; readonly attemptsLeft: number }
+  | { readonly kind: 'expired' }
+  | { readonly kind: 'locked' }
+  | { readonly kind: 'wait'; readonly afterMs: number | null };
 
 export type SignOutResult = 'reload' | 'unsynced';
 
 export interface AccountService {
   load(): Promise<AccountState>;
   signIn(credential: string): Promise<SignInResult>;
+  startEmail(email: string, turnstileToken: string): Promise<EmailStartResult>;
+  verifyEmail(email: string, code: string): Promise<EmailVerifyResult>;
   signOut(): Promise<SignOutResult>;
 }
 
@@ -40,6 +65,19 @@ export function recordAfterSignIn(held: SyncRecord, session: Session): SyncRecor
   return { serverUrl: held.serverUrl, accountId: session.accountId, token: session.token, revision: 0, updatedAt: null, savedAt: held.pending ? held.savedAt : null, pending: held.pending, overwriteCloud: false };
 }
 
+export function emailStartResult(answer: EmailStartAnswer): EmailStartResult {
+  if (answer.kind === 'sent') return { kind: 'sent', resendAfterMs: answer.resendAfterMs };
+  if (answer.kind === 'unreachable') return { kind: 'unavailable' };
+  if (answer.code === 'invalid_email') return { kind: 'invalid-email' };
+  if (answer.code === 'bot_check_failed') return { kind: 'bot-check' };
+  if (answer.status === 429) return { kind: 'wait', afterMs: answer.retryAfterMs };
+  return { kind: 'unavailable' };
+}
+
+function hasOffer(providers: Providers): boolean {
+  return providers.googleClientId !== null || providers.emailSiteKey !== null;
+}
+
 export function createAccountService(options: AccountOptions): AccountService {
   const { serverUrl, api, store } = options;
   const held = (): SyncRecord | null => parseSyncRecord(store.read(SYNC_KEY), serverUrl);
@@ -49,13 +87,23 @@ export function createAccountService(options: AccountOptions): AccountService {
     if (record === null) return UNREACHABLE;
     const offered: ProvidersResult = await api.providers(timeout());
     if (offered.kind !== 'ok') return UNREACHABLE;
-    if (offered.providers.googleClientId === null) return HIDDEN;
+    if (!hasOffer(offered.providers)) return HIDDEN;
     const who: ProfileResult = await api.profile(record.token, timeout());
     if (who.kind !== 'ok') return UNREACHABLE;
-    if (who.profile.kind === 'google') return { kind: 'signed-in', name: who.profile.name };
+    if (who.profile.kind !== 'guest') return { kind: 'signed-in', method: who.profile.kind, name: who.profile.name };
+    const email: EmailOffer | null = offered.providers.emailSiteKey === null ? null : { siteKey: offered.providers.emailSiteKey };
+    const clientId: string | null = offered.providers.googleClientId;
+    if (clientId === null) return { kind: 'guest', google: null, email };
     const issued: NonceResult = await api.googleNonce(record.token, timeout());
-    if (issued.kind !== 'ok') return UNREACHABLE;
-    return { kind: 'guest', clientId: offered.providers.googleClientId, nonce: issued.nonce };
+    if (issued.kind !== 'ok') return email === null ? UNREACHABLE : { kind: 'guest', google: null, email };
+    return { kind: 'guest', google: { clientId, nonce: issued.nonce }, email };
+  };
+
+  const adopt = async (asked: SyncRecord, session: Session | null): Promise<SignInResult> => {
+    const current: SyncRecord | null = held();
+    if (session !== null && current?.token === asked.token && store.write(SYNC_KEY, serializeSyncRecord(recordAfterSignIn(current, session)))) return { kind: 'reload' };
+    const state: AccountState = await load();
+    return state.kind === 'signed-in' ? { kind: 'reload' } : { kind: 'failed', state };
   };
 
   return {
@@ -64,10 +112,23 @@ export function createAccountService(options: AccountOptions): AccountService {
       const asked: SyncRecord | null = held();
       if (asked === null) return { kind: 'failed', state: UNREACHABLE };
       const result: SessionResult = await api.googleSignIn(asked.token, credential, AbortSignal.timeout(ACCOUNT_TIMING.signInMs));
-      const current: SyncRecord | null = held();
-      if (result.kind === 'ok' && current?.token === asked.token && store.write(SYNC_KEY, serializeSyncRecord(recordAfterSignIn(current, result.session)))) return { kind: 'reload' };
-      const state: AccountState = await load();
-      return state.kind === 'signed-in' ? { kind: 'reload' } : { kind: 'failed', state };
+      return adopt(asked, result.kind === 'ok' ? result.session : null);
+    },
+    async startEmail(email: string, turnstileToken: string): Promise<EmailStartResult> {
+      const asked: SyncRecord | null = held();
+      if (asked === null) return { kind: 'unavailable' };
+      return emailStartResult(await api.emailStart(asked.token, email, turnstileToken, AbortSignal.timeout(ACCOUNT_TIMING.signInMs)));
+    },
+    async verifyEmail(email: string, code: string): Promise<EmailVerifyResult> {
+      const asked: SyncRecord | null = held();
+      if (asked === null) return { kind: 'failed', state: UNREACHABLE };
+      const answer: EmailVerifyAnswer = await api.emailVerify(asked.token, email, code, AbortSignal.timeout(ACCOUNT_TIMING.signInMs));
+      if (answer.kind === 'ok') return adopt(asked, answer.session);
+      if (answer.kind === 'wrong') return { kind: 'wrong', attemptsLeft: answer.attemptsLeft };
+      if (answer.kind === 'refused' && answer.code === 'code_expired') return { kind: 'expired' };
+      if (answer.kind === 'refused' && answer.code === 'too_many_attempts') return { kind: 'locked' };
+      if (answer.kind === 'refused' && answer.status === 429) return { kind: 'wait', afterMs: answer.retryAfterMs };
+      return adopt(asked, null);
     },
     async signOut(): Promise<SignOutResult> {
       const asked: SyncRecord | null = held();

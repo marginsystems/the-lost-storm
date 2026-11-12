@@ -1,4 +1,4 @@
-import type { AccountService, AccountState, SignInResult, SignOutResult } from './backend/account.ts';
+import type { AccountService, AccountState, EmailOffer, EmailStartResult, EmailVerifyResult, SignInResult, SignOutResult } from './backend/account.ts';
 import type { Timers } from './backend/backend.ts';
 import type { AccountView, TitleAccount } from './title-account.ts';
 
@@ -7,6 +7,7 @@ export interface AccountFlowOptions {
   readonly view: TitleAccount;
   readonly timers: Timers;
   readonly showButton: (clientId: string, nonce: string, onCredential: (credential: string) => void) => Promise<boolean>;
+  readonly offerEmail: (offer: EmailOffer | null) => void;
   readonly reload: () => void;
   readonly setBusy: (busy: boolean) => void;
 }
@@ -14,6 +15,8 @@ export interface AccountFlowOptions {
 export interface AccountFlow {
   start(): Promise<void>;
   signOut(): Promise<void>;
+  sendEmailCode(email: string, turnstileToken: string): Promise<EmailStartResult>;
+  verifyEmailCode(email: string, code: string): Promise<EmailVerifyResult>;
 }
 
 export const ACCOUNT_NOTES: { readonly none: string; readonly failed: string; readonly unsynced: string } = {
@@ -24,14 +27,14 @@ export const ACCOUNT_NOTES: { readonly none: string; readonly failed: string; re
 
 export const ACCOUNT_RETRY: { readonly delaysMs: readonly number[] } = { delaysMs: [1500, 3000, 6000, 12_000, 24_000, 48_000] };
 
-function viewOf(state: AccountState): AccountView {
-  if (state.kind === 'signed-in') return { kind: 'signed-in', name: state.name };
-  if (state.kind === 'guest') return { kind: 'guest' };
+function viewOf(state: AccountState, google: boolean): AccountView {
+  if (state.kind === 'signed-in') return { kind: 'signed-in', method: state.method, name: state.name };
+  if (state.kind === 'guest') return { kind: 'guest', google, email: state.email !== null };
   return { kind: 'hidden' };
 }
 
 export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
-  const { account, view, timers, showButton, reload, setBusy } = options;
+  const { account, view, timers, showButton, offerEmail, reload, setBusy } = options;
   let current: AccountState = { kind: 'unreachable' };
   let busy: boolean = false;
   let turn: number = 0;
@@ -59,17 +62,14 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
     cancelRetry?.();
     cancelRetry = null;
     current = state;
+    let google: boolean = false;
     if (state.kind === 'guest') {
-      const rendered: boolean = await showButton(state.clientId, state.nonce, onCredential);
+      google = state.google !== null && (await showButton(state.google.clientId, state.google.nonce, onCredential));
       if (mine !== turn) return;
-      if (rendered) {
-        retries = 0;
-        view.show({ kind: 'guest' }, note);
-        return;
-      }
-      current = { kind: 'unreachable' };
+      if (!google && state.email === null) current = { kind: 'unreachable' };
     }
-    view.show(viewOf(current), note);
+    offerEmail(current.kind === 'guest' ? current.email : null);
+    view.show(viewOf(current, google), note);
     if (current.kind === 'unreachable') retryLater(note);
     else retries = 0;
   };
@@ -99,10 +99,28 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
     void exchange(credential);
   }
 
+  const verifyEmailCode = async (email: string, code: string): Promise<EmailVerifyResult> => {
+    if (busy) return { kind: 'wait', afterMs: null };
+    hold(true);
+    const result: EmailVerifyResult = await account.verifyEmail(email, code);
+    if (result.kind === 'reload') {
+      reload();
+      return result;
+    }
+    hold(false);
+    if (result.kind === 'failed') {
+      retries = 0;
+      await present(result.state, ACCOUNT_NOTES.failed);
+    }
+    return result;
+  };
+
   return {
     async start(): Promise<void> {
       await present(await account.load(), ACCOUNT_NOTES.none);
     },
+    sendEmailCode: (email: string, turnstileToken: string): Promise<EmailStartResult> => account.startEmail(email, turnstileToken),
+    verifyEmailCode,
     async signOut(): Promise<void> {
       if (busy || current.kind !== 'signed-in') return;
       hold(true);
@@ -112,7 +130,7 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
         return;
       }
       hold(false);
-      view.show(viewOf(current), ACCOUNT_NOTES.unsynced);
+      view.show(viewOf(current, false), ACCOUNT_NOTES.unsynced);
     },
   };
 }

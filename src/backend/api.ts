@@ -30,11 +30,24 @@ export type Failure =
   | { readonly kind: 'refused'; readonly status: number }
   | { readonly kind: 'retry'; readonly afterMs: number | null };
 
-export type AccountKind = 'guest' | 'google';
+export type SignInMethod = 'google' | 'email';
+export type AccountKind = 'guest' | SignInMethod;
 
 export interface Providers {
   readonly googleClientId: string | null;
+  readonly emailSiteKey: string | null;
 }
+
+export type EmailStartAnswer =
+  | { readonly kind: 'sent'; readonly resendAfterMs: number }
+  | { readonly kind: 'refused'; readonly status: number; readonly code: string; readonly retryAfterMs: number | null }
+  | { readonly kind: 'unreachable' };
+
+export type EmailVerifyAnswer =
+  | { readonly kind: 'ok'; readonly session: Session }
+  | { readonly kind: 'wrong'; readonly attemptsLeft: number }
+  | { readonly kind: 'refused'; readonly status: number; readonly code: string; readonly retryAfterMs: number | null }
+  | { readonly kind: 'unreachable' };
 
 export interface Profile {
   readonly accountId: string;
@@ -70,6 +83,8 @@ export interface Api {
   googleNonce(token: string, signal: AbortSignal): Promise<NonceResult>;
   googleSignIn(token: string, credential: string, signal: AbortSignal): Promise<SessionResult>;
   signOut(token: string, signal: AbortSignal): Promise<SignOutResult>;
+  emailStart(token: string, email: string, turnstileToken: string, signal: AbortSignal): Promise<EmailStartAnswer>;
+  emailVerify(token: string, email: string, code: string, signal: AbortSignal): Promise<EmailVerifyAnswer>;
 }
 
 interface Answer {
@@ -123,13 +138,40 @@ function nameOf(source: Fields): string | null | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
+function offered(value: unknown, key: string): string | null | undefined {
+  if (value === null || value === undefined) return null;
+  if (!isFields(value)) return undefined;
+  return textOf(value, key) ?? undefined;
+}
+
 export function readProviders(value: unknown): Providers | null {
   if (!isFields(value)) return null;
-  const google: unknown = value['google'];
-  if (google === null) return { googleClientId: null };
-  if (!isFields(google)) return null;
-  const clientId: string | null = textOf(google, 'clientId');
-  return clientId === null ? null : { googleClientId: clientId };
+  const googleClientId: string | null | undefined = offered(value['google'], 'clientId');
+  const emailSiteKey: string | null | undefined = offered(value['email'], 'turnstileSiteKey');
+  if (googleClientId === undefined || emailSiteKey === undefined || !('google' in value)) return null;
+  return { googleClientId, emailSiteKey };
+}
+
+const MS_PER_SECOND: number = 1000;
+const DEFAULT_RESEND_MS: number = 60_000;
+const MAX_RESEND_MS: number = 600_000;
+
+export function readEmailSent(value: unknown): number | null {
+  if (!isFields(value) || value['sent'] !== true) return null;
+  const seconds: unknown = value['resendAfterSeconds'];
+  if (seconds === undefined) return DEFAULT_RESEND_MS;
+  return typeof seconds === 'number' && Number.isFinite(seconds) && seconds >= 0 ? Math.min(MAX_RESEND_MS, seconds * MS_PER_SECOND) : null;
+}
+
+export function errorCodeOf(body: unknown): string {
+  const error: unknown = isFields(body) ? body['error'] : null;
+  const code: string | null = isFields(error) ? textOf(error, 'code') : null;
+  return code ?? 'unknown';
+}
+
+function attemptsLeftOf(body: unknown): number | null {
+  const left: unknown = isFields(body) ? body['attemptsLeft'] : null;
+  return typeof left === 'number' && Number.isSafeInteger(left) && left >= 0 ? left : null;
 }
 
 export function readProfile(value: unknown): Profile | null {
@@ -137,7 +179,7 @@ export function readProfile(value: unknown): Profile | null {
   const accountId: string | null = textOf(value, 'accountId');
   const kind: unknown = value['kind'];
   const name: string | null | undefined = nameOf(value);
-  if (accountId === null || name === undefined || (kind !== 'guest' && kind !== 'google')) return null;
+  if (accountId === null || name === undefined || (kind !== 'guest' && kind !== 'google' && kind !== 'email')) return null;
   return { accountId, kind, name };
 }
 
@@ -235,6 +277,22 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
     async signOut(token: string, signal: AbortSignal): Promise<SignOutResult> {
       const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/signout`, { method: 'POST', headers: headers(token), signal });
       return succeeded(answer) ? { kind: 'ok' } : failureOf(answer);
+    },
+    async emailStart(token: string, email: string, turnstileToken: string, signal: AbortSignal): Promise<EmailStartAnswer> {
+      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/auth/email/start`, { method: 'POST', headers: headers(token), body: JSON.stringify({ email, turnstileToken }), signal });
+      if (answer === null) return { kind: 'unreachable' };
+      const resendAfterMs: number | null = succeeded(answer) ? readEmailSent(answer.body) : null;
+      if (resendAfterMs !== null) return { kind: 'sent', resendAfterMs };
+      return { kind: 'refused', status: answer.status, code: errorCodeOf(answer.body), retryAfterMs: retryAfterMs(answer.retryAfter) };
+    },
+    async emailVerify(token: string, email: string, code: string, signal: AbortSignal): Promise<EmailVerifyAnswer> {
+      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/auth/email/verify`, { method: 'POST', headers: headers(token), body: JSON.stringify({ email, code }), signal });
+      if (answer === null) return { kind: 'unreachable' };
+      const session: Session | null = succeeded(answer) ? readSession(answer.body) : null;
+      if (session !== null) return { kind: 'ok', session };
+      const attemptsLeft: number | null = attemptsLeftOf(answer.body);
+      if (answer.status === 422 && errorCodeOf(answer.body) === 'wrong_code' && attemptsLeft !== null) return { kind: 'wrong', attemptsLeft };
+      return { kind: 'refused', status: answer.status, code: errorCodeOf(answer.body), retryAfterMs: retryAfterMs(answer.retryAfter) };
     },
   };
 }

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { content, createHarness, createSecondBrowser, makeSave, settle } from '../../test/backend-support.ts';
+import { BAD_TURNSTILE_TOKEN, content, createHarness, createSecondBrowser, makeSave, settle } from '../../test/backend-support.ts';
 import type { Harness, ServerAccount } from '../../test/backend-support.ts';
 import { must } from '../../test/support.ts';
 import type { SaveData } from '../../sim/save.ts';
-import { createAccountService, recordAfterSignIn } from './account.ts';
-import type { AccountService, AccountState, SignInResult } from './account.ts';
+import { createAccountService, emailStartResult, recordAfterSignIn } from './account.ts';
+import type { AccountService, AccountState, EmailVerifyResult, SignInResult } from './account.ts';
 import { createApi } from './api.ts';
 import type { Session } from './api.ts';
 import type { Backend } from './backend.ts';
@@ -43,7 +43,7 @@ function record(harness: Harness): SyncRecord {
 
 function credential(state: AccountState, subject: string, name: string = 'Ada'): string {
   assert.ok(state.kind === 'guest');
-  return `google|${subject}|${state.nonce}|${name}`;
+  return `google|${subject}|${state.google?.nonce ?? ''}|${name}`;
 }
 
 async function signInAs(service: AccountService, subject: string): Promise<SignInResult> {
@@ -56,7 +56,7 @@ function owner(harness: Harness, index: number): ServerAccount {
 
 void test('a guest on a server that offers Google gets the client id and a nonce', async (): Promise<void> => {
   const { service } = await browser();
-  assert.deepEqual(await service.load(), { kind: 'guest', clientId: CLIENT_ID, nonce: 'nonce-1' });
+  assert.deepEqual(await service.load(), { kind: 'guest', google: { clientId: CLIENT_ID, nonce: 'nonce-1' }, email: null });
 });
 
 void test('nothing is offered without a stored account, on a server without sign-in, or when the server is unreachable', async (): Promise<void> => {
@@ -90,7 +90,7 @@ void test('signing in as a guest keeps the account and the save and swaps only t
   assert.deepEqual(after, { ...before, token: 'session-2' });
   assert.equal(owner(harness, 0).google, 'ada');
   assert.notEqual(harness.store.read(SAVE_KEY), null);
-  assert.deepEqual(await service.load(), { kind: 'signed-in', name: 'Ada' });
+  assert.deepEqual(await service.load(), { kind: 'signed-in', method: 'google', name: 'Ada' });
   const reloaded: SaveData | null = await harness.open().load();
   assert.equal(reloaded?.level, 4);
   assert.equal(harness.server.accounts.length, 1);
@@ -135,7 +135,7 @@ void test('a browser that switches to an account with a cloud save loads that sa
   await settle();
   assert.equal(owner(harness, 0).save?.level, 9);
   assert.equal(owner(harness, 1).save?.level, 2);
-  assert.deepEqual(await secondService.load(), { kind: 'signed-in', name: 'Ada' });
+  assert.deepEqual(await secondService.load(), { kind: 'signed-in', method: 'google', name: 'Ada' });
 });
 
 void test('a browser that switches to an account with no cloud save uploads its own save to it', async (): Promise<void> => {
@@ -157,7 +157,7 @@ void test('a refused credential changes nothing and comes back with a fresh nonc
   const { harness, service } = await browser(makeSave(4, 10));
   const before: SyncRecord = record(harness);
   const result: SignInResult = await service.signIn('google|ada|not-the-nonce|Ada');
-  assert.deepEqual(result, { kind: 'failed', state: { kind: 'guest', clientId: CLIENT_ID, nonce: 'nonce-1' } });
+  assert.deepEqual(result, { kind: 'failed', state: { kind: 'guest', google: { clientId: CLIENT_ID, nonce: 'nonce-1' }, email: null } });
   assert.deepEqual(record(harness), before);
   assert.deepEqual(await service.signIn(credential(result.kind === 'failed' ? result.state : { kind: 'hidden' }, 'ada')), { kind: 'reload' });
 });
@@ -182,7 +182,7 @@ void test('a sign-in whose answer never arrives still signs this browser in, bec
   assert.deepEqual(await service.signIn(credential(state, 'ada')), { kind: 'reload' });
   assert.deepEqual(record(harness), before);
   assert.equal(owner(harness, 0).google, 'ada');
-  assert.deepEqual(await service.load(), { kind: 'signed-in', name: 'Ada' });
+  assert.deepEqual(await service.load(), { kind: 'signed-in', method: 'google', name: 'Ada' });
   const reloaded: SaveData | null = await harness.open().load();
   assert.equal(reloaded?.level, 4);
   assert.equal(harness.server.accounts.length, 1);
@@ -194,7 +194,7 @@ void test('a sign-in whose answer is lost while the server stays out of reach is
   harness.server.loseNextAnswer('POST', '/v1/auth/google');
   harness.server.plan(503, {}, 'GET');
   assert.deepEqual(await service.signIn(credential(state, 'ada')), { kind: 'failed', state: { kind: 'unreachable' } });
-  assert.deepEqual(await service.load(), { kind: 'signed-in', name: 'Ada' });
+  assert.deepEqual(await service.load(), { kind: 'signed-in', method: 'google', name: 'Ada' });
 });
 
 void test('a lost answer for a sign-in to another account leaves this browser a guest with a fresh nonce', async (): Promise<void> => {
@@ -208,7 +208,7 @@ void test('a lost answer for a sign-in to another account leaves this browser a 
   const result: SignInResult = await service.signIn(credential(state, 'ada'));
   assert.ok(result.kind === 'failed' && result.state.kind === 'guest');
   assert.deepEqual(await service.signIn(credential(result.state, 'ada')), { kind: 'reload' });
-  assert.deepEqual(await service.load(), { kind: 'signed-in', name: 'Ada' });
+  assert.deepEqual(await service.load(), { kind: 'signed-in', method: 'google', name: 'Ada' });
 });
 
 void test('a browser left on its guest token after a lost answer can sign out, and that token stops working', async (): Promise<void> => {
@@ -323,4 +323,111 @@ void test('progress saved while the sign-out request is in flight is kept, and t
   assert.equal(harness.server.accounts.length, 2);
   assert.equal(owner(harness, 1).save?.level, 6);
   assert.equal(owner(harness, 0).save?.level, 4);
+});
+
+const SITE_KEY: string = '0x4AAAAAAexample';
+const ADA_EMAIL: string = 'ada@example.com';
+
+async function emailBrowser(google: boolean = false, save: SaveData | null = null): Promise<Browser> {
+  const made: Browser = await browser(save);
+  made.harness.server.offerGoogle(google ? CLIENT_ID : null);
+  made.harness.server.offerEmail(SITE_KEY);
+  return made;
+}
+
+async function emailSignIn(made: Browser, email: string = ADA_EMAIL): Promise<string> {
+  assert.deepEqual(await made.service.startEmail(email, 'turnstile-ok'), { kind: 'sent', resendAfterMs: 60_000 });
+  return made.harness.server.codeFor(email);
+}
+
+void test('a server that offers email gives a guest the site key, with or without Google', async (): Promise<void> => {
+  const only: Browser = await emailBrowser();
+  assert.deepEqual(await only.service.load(), { kind: 'guest', google: null, email: { siteKey: SITE_KEY } });
+  assert.equal(only.harness.server.count('POST', '/v1/auth/google/nonce'), 0);
+  const both: Browser = await emailBrowser(true);
+  assert.deepEqual(await both.service.load(), { kind: 'guest', google: { clientId: CLIENT_ID, nonce: 'nonce-1' }, email: { siteKey: SITE_KEY } });
+});
+
+void test('a guest that cannot get a Google nonce is still offered email', async (): Promise<void> => {
+  const made: Browser = await emailBrowser(true);
+  made.harness.server.plan(503, {}, 'POST');
+  assert.deepEqual(await made.service.load(), { kind: 'guest', google: null, email: { siteKey: SITE_KEY } });
+});
+
+void test('a right email code keeps the account and the save and swaps only the token, like Google', async (): Promise<void> => {
+  const made: Browser = await emailBrowser(false, makeSave(4, 10));
+  const before: SyncRecord = record(made.harness);
+  const code: string = await emailSignIn(made);
+  const start = must(
+    made.harness.server.requests.find((request): boolean => request.path === '/v1/auth/email/start'),
+    'the start request',
+  );
+  assert.deepEqual(start.body, { email: ADA_EMAIL, turnstileToken: 'turnstile-ok' });
+  assert.equal(start.token, before.token);
+  assert.deepEqual(await made.service.verifyEmail(ADA_EMAIL, code), { kind: 'reload' });
+  const after: SyncRecord = record(made.harness);
+  assert.equal(after.accountId, before.accountId);
+  assert.notEqual(after.token, before.token);
+  assert.equal(after.revision, before.revision);
+  assert.deepEqual(await made.service.load(), { kind: 'signed-in', method: 'email', name: 'a•••@example.com' });
+});
+
+void test('an email that already has an account switches this browser to it with a clean record', async (): Promise<void> => {
+  const first: Browser = await emailBrowser();
+  await first.service.verifyEmail(ADA_EMAIL, await emailSignIn(first));
+  const harness: Harness = createSecondBrowser(first.harness);
+  await harness.open().load();
+  const service: AccountService = serviceFor(harness);
+  first.harness.clock.now += 61_000;
+  assert.deepEqual(await service.startEmail(ADA_EMAIL, 'turnstile-ok'), { kind: 'sent', resendAfterMs: 60_000 });
+  assert.deepEqual(await service.verifyEmail(ADA_EMAIL, first.harness.server.codeFor(ADA_EMAIL)), { kind: 'reload' });
+  const switched: SyncRecord = record(harness);
+  assert.equal(switched.accountId, owner(first.harness, 0).accountId);
+  assert.equal(switched.revision, 0);
+});
+
+void test('wrong, expired and spent codes come back as such and leave the guest token alone', async (): Promise<void> => {
+  const made: Browser = await emailBrowser();
+  const before: SyncRecord = record(made.harness);
+  const code: string = await emailSignIn(made);
+  const wrong: string = code === '000000' ? '000001' : '000000';
+  assert.deepEqual(await made.service.verifyEmail(ADA_EMAIL, wrong), { kind: 'wrong', attemptsLeft: 4 });
+  const lefts: readonly number[] = [3, 2, 1, 0];
+  const answers = await lefts.reduce(
+    (chain: Promise<EmailVerifyResult[]>): Promise<EmailVerifyResult[]> => chain.then(async (seen: EmailVerifyResult[]): Promise<EmailVerifyResult[]> => [...seen, await made.service.verifyEmail(ADA_EMAIL, wrong)]),
+    Promise.resolve([]),
+  );
+  assert.deepEqual(answers, lefts.map((left: number): EmailVerifyResult => ({ kind: 'wrong', attemptsLeft: left })));
+  assert.deepEqual(await made.service.verifyEmail(ADA_EMAIL, code), { kind: 'locked' });
+  made.harness.clock.now += 61_000;
+  const fresh: string = await emailSignIn(made);
+  made.harness.clock.now += 600_000;
+  assert.deepEqual(await made.service.verifyEmail(ADA_EMAIL, fresh), { kind: 'expired' });
+  assert.equal(record(made.harness).token, before.token);
+});
+
+void test('a refused send says why: a bad address, a failed bot check, too soon, or no email at all', async (): Promise<void> => {
+  const made: Browser = await emailBrowser();
+  assert.deepEqual(await made.service.startEmail('not an address', 'turnstile-ok'), { kind: 'invalid-email' });
+  assert.deepEqual(await made.service.startEmail(ADA_EMAIL, BAD_TURNSTILE_TOKEN), { kind: 'bot-check' });
+  await emailSignIn(made);
+  assert.deepEqual(await made.service.startEmail(ADA_EMAIL, 'turnstile-ok'), { kind: 'wait', afterMs: 60_000 });
+  made.harness.server.offerEmail(null);
+  assert.deepEqual(await made.service.startEmail('bran@example.com', 'turnstile-ok'), { kind: 'unavailable' });
+  made.harness.server.offerEmail(SITE_KEY);
+  made.harness.server.goDown();
+  assert.deepEqual(await made.service.startEmail('bran@example.com', 'turnstile-ok'), { kind: 'unavailable' });
+});
+
+void test('an email verify whose answer is lost still signs in when the server linked the account', async (): Promise<void> => {
+  const made: Browser = await emailBrowser();
+  const code: string = await emailSignIn(made);
+  made.harness.server.loseNextAnswer('POST', '/v1/auth/email/verify');
+  assert.deepEqual(await made.service.verifyEmail(ADA_EMAIL, code), { kind: 'reload' });
+});
+
+void test('the start answers map onto what the entry shows', (): void => {
+  assert.deepEqual(emailStartResult({ kind: 'refused', status: 503, code: 'bot_check_unavailable', retryAfterMs: null }), { kind: 'unavailable' });
+  assert.deepEqual(emailStartResult({ kind: 'refused', status: 503, code: 'email_unavailable', retryAfterMs: null }), { kind: 'unavailable' });
+  assert.deepEqual(emailStartResult({ kind: 'refused', status: 429, code: 'rate_limited', retryAfterMs: 5000 }), { kind: 'wait', afterMs: 5000 });
 });

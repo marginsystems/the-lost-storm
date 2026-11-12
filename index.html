@@ -43,9 +43,32 @@
           <button id="title-reset" type="button" class="title-quiet" hidden>Start over</button>
           <p class="title-sync" id="title-sync" aria-live="polite"></p>
           <div class="title-account" id="title-account" data-state="hidden">
-            <div class="title-google" id="title-google" hidden></div>
-            <p class="title-account-line" id="title-account-line" hidden><span id="title-account-name"></span><button id="title-signout" type="button" class="title-quiet">Sign out</button></p>
+            <div class="title-methods">
+              <div class="title-google" id="title-google" hidden></div>
+              <button id="title-email-open" type="button" class="title-email-open" aria-label="Sign in with email" hidden><span class="title-email-long">Sign in with email</span><span class="title-email-short">Email</span></button>
+            </div>
+            <form class="title-email" id="title-email" data-step="closed" novalidate>
+              <div class="title-email-row title-email-address">
+                <input id="title-email-input" type="email" name="email" autocomplete="email" inputmode="email" spellcheck="false" maxlength="254" placeholder="Email address" aria-label="Email address" />
+                <button id="title-email-send" type="submit" class="title-email-action">Send code</button>
+              </div>
+              <div class="title-email-row title-email-code" id="title-email-code" role="group" aria-label="Six-digit code from the email">
+                <span class="title-email-digits" id="title-email-digits">
+                  <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="Digit 1" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 2" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 3" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 4" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 5" />
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="Digit 6" />
+                </span>
+                <button id="title-email-resend" type="button" class="title-email-action">Resend</button>
+              </div>
+              <button id="title-email-back" type="button" class="title-email-back" aria-label="Back">&#x2190;</button>
+            </form>
+            <p class="title-account-line" id="title-account-line" hidden><span class="title-account-method" id="title-account-method"></span><span id="title-account-name"></span><button id="title-signout" type="button" class="title-quiet">Sign out</button></p>
             <p class="title-account-note" id="title-account-note" aria-live="polite" hidden></p>
+            <p class="title-email-note" id="title-email-note" aria-live="polite"></p>
+            <div class="title-turnstile" id="title-turnstile"><div id="title-turnstile-mount"></div></div>
           </div>
           <dl class="title-keys">
             <div><dt>Left mouse</dt><dd>Move, attack, pick up</dd></div>

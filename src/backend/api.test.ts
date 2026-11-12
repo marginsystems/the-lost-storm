@@ -149,12 +149,13 @@ void test('a copy is read through readSave, so the game rules repair what they r
 
 void test('the providers call needs no token and reads the Google client id or its absence', async (): Promise<void> => {
   const offered = api((): Response => reply(200, { google: { clientId: 'c.apps.googleusercontent.com' } }));
-  assert.deepEqual(await offered.client.providers(SIGNAL), { kind: 'ok', providers: { googleClientId: 'c.apps.googleusercontent.com' } });
+  assert.deepEqual(await offered.client.providers(SIGNAL), { kind: 'ok', providers: { googleClientId: 'c.apps.googleusercontent.com', emailSiteKey: null } });
   assert.equal(sent(offered.seen).url, 'http://localhost:8787/v1/auth/providers');
   assert.equal(new Headers(sent(offered.seen).init.headers).get('authorization'), null);
   const none = api((): Response => reply(200, { google: null }));
-  assert.deepEqual(await none.client.providers(SIGNAL), { kind: 'ok', providers: { googleClientId: null } });
-  for (const body of [{}, { google: {} }, { google: { clientId: 7 } }, { google: 'yes' }, 'text']) {
+  assert.deepEqual(await none.client.providers(SIGNAL), { kind: 'ok', providers: { googleClientId: null, emailSiteKey: null } });
+  assert.deepEqual(readProviders({ google: null, email: { turnstileSiteKey: '0x4AAA' } }), { googleClientId: null, emailSiteKey: '0x4AAA' });
+  for (const body of [{}, { google: {} }, { google: { clientId: 7 } }, { google: 'yes' }, 'text', { google: null, email: {} }, { google: null, email: 'yes' }]) {
     assert.deepEqual(readProviders(body), null);
   }
 });
@@ -165,11 +166,38 @@ void test('the profile call sends the token and accepts only a known kind', asyn
   assert.equal(sent(signedIn.seen).url, 'http://localhost:8787/v1/me');
   assert.equal(new Headers(sent(signedIn.seen).init.headers).get('authorization'), 'Bearer tok');
   assert.deepEqual(readProfile({ accountId: 'a', kind: 'guest' }), { accountId: 'a', kind: 'guest', name: null });
+  assert.deepEqual(readProfile({ accountId: 'a', kind: 'email', name: 'a•••@example.com' }), { accountId: 'a', kind: 'email', name: 'a•••@example.com' });
   for (const body of [{ accountId: 'a', kind: 'admin', name: null }, { kind: 'guest', name: null }, { accountId: 'a', kind: 'guest', name: 5 }, null]) {
     assert.deepEqual(readProfile(body), null);
   }
   const gone = api((): Response => reply(401, {}));
   assert.deepEqual(await gone.client.profile('tok', SIGNAL), { kind: 'unauthorized' });
+});
+
+void test('the email start call posts the address and the bot token and reads the cooldown', async (): Promise<void> => {
+  const sentCode = api((): Response => reply(200, { sent: true, expiresInSeconds: 600, resendAfterSeconds: 60 }));
+  assert.deepEqual(await sentCode.client.emailStart('tok', 'ada@example.com', 'ts', SIGNAL), { kind: 'sent', resendAfterMs: 60_000 });
+  assert.equal(sent(sentCode.seen).url, 'http://localhost:8787/v1/auth/email/start');
+  assert.equal(sent(sentCode.seen).init.method, 'POST');
+  assert.equal(new Headers(sent(sentCode.seen).init.headers).get('authorization'), 'Bearer tok');
+  assert.deepEqual(bodyOf(sent(sentCode.seen).init), { email: 'ada@example.com', turnstileToken: 'ts' });
+  const limited = api((): Response => reply(429, { error: { code: 'rate_limited', message: 'm' } }, { 'Retry-After': '30' }));
+  assert.deepEqual(await limited.client.emailStart('tok', 'a@b.co', 'ts', SIGNAL), { kind: 'refused', status: 429, code: 'rate_limited', retryAfterMs: 30_000 });
+  const odd = api((): Response => reply(200, { sent: 'yes' }));
+  assert.deepEqual(await odd.client.emailStart('tok', 'a@b.co', 'ts', SIGNAL), { kind: 'refused', status: 200, code: 'unknown', retryAfterMs: null });
+  const down = api((): Error => new TypeError('down'));
+  assert.deepEqual(await down.client.emailStart('tok', 'a@b.co', 'ts', SIGNAL), { kind: 'unreachable' });
+});
+
+void test('the email verify call reads a session, a wrong code with the tries left, or the refusal code', async (): Promise<void> => {
+  const ok = api((): Response => reply(200, { accountId: 'a', token: 's', outcome: 'linked', name: 'a•••@example.com' }));
+  assert.deepEqual(await ok.client.emailVerify('tok', 'ada@example.com', '042917', SIGNAL), { kind: 'ok', session: { accountId: 'a', token: 's', outcome: 'linked', name: 'a•••@example.com' } });
+  assert.equal(sent(ok.seen).url, 'http://localhost:8787/v1/auth/email/verify');
+  assert.deepEqual(bodyOf(sent(ok.seen).init), { email: 'ada@example.com', code: '042917' });
+  const wrong = api((): Response => reply(422, { error: { code: 'wrong_code', message: 'm' }, attemptsLeft: 3 }));
+  assert.deepEqual(await wrong.client.emailVerify('tok', 'a@b.co', '000000', SIGNAL), { kind: 'wrong', attemptsLeft: 3 });
+  const expired = api((): Response => reply(410, { error: { code: 'code_expired', message: 'm' } }));
+  assert.deepEqual(await expired.client.emailVerify('tok', 'a@b.co', '000000', SIGNAL), { kind: 'refused', status: 410, code: 'code_expired', retryAfterMs: null });
 });
 
 void test('the nonce call is a POST with the token and refuses an answer without a nonce', async (): Promise<void> => {

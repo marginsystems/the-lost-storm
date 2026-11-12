@@ -108,8 +108,18 @@ export interface ServerAccount {
   readonly sessions: string[];
   guestRetired: boolean;
   google: string | null;
+  email: string | null;
+  method: 'google' | 'email' | null;
   name: string | null;
   nonce: string | null;
+}
+
+export interface SentCode {
+  readonly accountId: string;
+  readonly email: string;
+  readonly code: string;
+  readonly expiresAt: number;
+  attempts: number;
 }
 
 interface Planned {
@@ -129,11 +139,31 @@ export interface FakeServer {
   loseNextAnswer(method: string, path: string): void;
   plant(account: ServerAccount, save: SaveData): void;
   offerGoogle(clientId: string | null): void;
+  offerEmail(siteKey: string | null): void;
+  readonly codes: SentCode[];
+  codeFor(email: string): string;
   count(method: string, path: string): number;
 }
 
+export const BAD_TURNSTILE_TOKEN: string = 'turnstile-refused';
+const EMAIL_SHAPE: RegExp = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/;
+const EMAIL_RESEND_MS: number = 60_000;
+const EMAIL_CODE_MS: number = 600_000;
+const EMAIL_ATTEMPTS: number = 5;
+
 function json(status: number, body: unknown, headers: Readonly<Record<string, string>> = {}): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...headers } });
+}
+
+function failed(status: number, code: string, extra: Readonly<Record<string, unknown>> = {}, headers: Readonly<Record<string, string>> = {}): Response {
+  return json(status, { error: { code, message: code }, ...extra }, headers);
+}
+
+function addressOf(body: unknown): string | null {
+  const raw: unknown = isFields(body) ? body['email'] : null;
+  if (typeof raw !== 'string') return null;
+  const email: string = raw.trim().toLowerCase();
+  return EMAIL_SHAPE.test(email) ? email : null;
 }
 
 export function createFakeServer(clock: FakeClock): FakeServer {
@@ -145,6 +175,9 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   let issued: number = 0;
   let down: boolean = false;
   let googleClientId: string | null = null;
+  let emailSiteKey: string | null = null;
+  const codes: SentCode[] = [];
+  const cooldowns: Map<string, number> = new Map();
   let lost: { readonly method: string; readonly path: string } | null = null;
   const signIn = (owner: ServerAccount, credential: unknown): Response => {
     const [scheme, subject, nonce, name]: readonly string[] = typeof credential === 'string' ? credential.split('|') : [];
@@ -157,8 +190,51 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     issued += 1;
     const token: string = `session-${issued}`;
     target.sessions.push(token);
-    target.name = name ?? null;
-    if (known === undefined) owner.google = subject;
+    if (known === undefined) {
+      owner.google = subject;
+      owner.method ??= 'google';
+    }
+    if (target.method === 'google') target.name = name ?? null;
+    return json(200, { accountId: target.accountId, token, outcome: known === undefined ? 'linked' : 'existing', name: target.name });
+  };
+  const startEmail = (owner: ServerAccount, body: unknown): Response => {
+    const email: string | null = addressOf(body);
+    if (email === null) return failed(400, 'invalid_email');
+    const turnstileToken: unknown = isFields(body) ? body['turnstileToken'] : null;
+    if (typeof turnstileToken !== 'string' || turnstileToken === '') return failed(400, 'bad_request');
+    if (turnstileToken === BAD_TURNSTILE_TOKEN) return failed(403, 'bot_check_failed');
+    const openAt: number = cooldowns.get(email) ?? 0;
+    if (clock.now < openAt) return failed(429, 'rate_limited', {}, { 'Retry-After': String(Math.ceil((openAt - clock.now) / 1000)) });
+    cooldowns.set(email, clock.now + EMAIL_RESEND_MS);
+    issued += 1;
+    const index: number = codes.findIndex((entry: SentCode): boolean => entry.accountId === owner.accountId && entry.email === email);
+    if (index >= 0) codes.splice(index, 1);
+    codes.push({ accountId: owner.accountId, email, code: String(100_000 + issued), expiresAt: clock.now + EMAIL_CODE_MS, attempts: 0 });
+    return json(200, { sent: true, expiresInSeconds: EMAIL_CODE_MS / 1000, resendAfterSeconds: EMAIL_RESEND_MS / 1000 });
+  };
+  const verifyEmail = (owner: ServerAccount, body: unknown): Response => {
+    const email: string | null = addressOf(body);
+    const code: unknown = isFields(body) ? body['code'] : null;
+    if (email === null) return failed(400, 'invalid_email');
+    if (typeof code !== 'string' || !/^\d{6}$/.test(code)) return failed(400, 'bad_request');
+    const index: number = codes.findIndex((entry: SentCode): boolean => entry.accountId === owner.accountId && entry.email === email);
+    const entry: SentCode | undefined = codes[index];
+    if (entry === undefined || entry.expiresAt <= clock.now) return failed(410, 'code_expired');
+    if (entry.attempts >= EMAIL_ATTEMPTS) return failed(410, 'too_many_attempts');
+    entry.attempts += 1;
+    if (entry.code !== code) return failed(422, 'wrong_code', { attemptsLeft: EMAIL_ATTEMPTS - entry.attempts });
+    codes.splice(index, 1);
+    const known: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => account.email === email);
+    if (known === undefined && owner.email !== null) return failed(409, 'already_signed_in');
+    const target: ServerAccount = known ?? owner;
+    issued += 1;
+    const token: string = `session-${issued}`;
+    target.sessions.push(token);
+    if (known === undefined) {
+      owner.email = email;
+      owner.method ??= 'email';
+      if (owner.method === 'email') owner.name = `${email.slice(0, 1)}•••${email.slice(email.indexOf('@'))}`;
+    }
     return json(200, { accountId: target.accountId, token, outcome: known === undefined ? 'linked' : 'existing', name: target.name });
   };
   const stamp = (): string => new Date(clock.now).toISOString();
@@ -175,14 +251,16 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     if (plan !== undefined) return json(plan.status, { error: { code: 'planned', message: 'planned' } }, plan.headers);
     if (method === 'POST' && path === '/v1/guest') {
       created += 1;
-      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, name: null, nonce: null };
+      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, email: null, method: null, name: null, nonce: null };
       accounts.push(account);
       return json(201, { accountId: account.accountId, token: account.token });
     }
-    if (method === 'GET' && path === '/v1/auth/providers') return json(200, { google: googleClientId === null ? null : { clientId: googleClientId } });
+    if (method === 'GET' && path === '/v1/auth/providers') {
+      return json(200, { google: googleClientId === null ? null : { clientId: googleClientId }, email: emailSiteKey === null ? null : { turnstileSiteKey: emailSiteKey } });
+    }
     const owner: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => token !== null && ((account.token === token && !account.guestRetired) || account.sessions.includes(token)));
     if (owner === undefined) return json(401, { error: { code: 'unauthorized', message: 'no' } });
-    if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.google === null ? 'guest' : 'google', name: owner.name, createdAt: stamp() });
+    if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.method ?? 'guest', name: owner.name, createdAt: stamp() });
     if (path.startsWith('/v1/auth/google') && googleClientId === null) return json(503, { error: { code: 'sign_in_unavailable', message: 'no' } });
     if (method === 'POST' && path === '/v1/auth/google/nonce') {
       issued += 1;
@@ -190,10 +268,13 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       return json(200, { nonce: owner.nonce });
     }
     if (method === 'POST' && path === '/v1/auth/google') return signIn(owner, isFields(body) ? body['credential'] : null);
+    if (path.startsWith('/v1/auth/email') && emailSiteKey === null) return failed(503, 'sign_in_unavailable');
+    if (method === 'POST' && path === '/v1/auth/email/start') return startEmail(owner, body);
+    if (method === 'POST' && path === '/v1/auth/email/verify') return verifyEmail(owner, body);
     if (method === 'POST' && path === '/v1/signout') {
       const index: number = token === null ? -1 : owner.sessions.indexOf(token);
       if (index >= 0) owner.sessions.splice(index, 1);
-      const retiresGuest: boolean = index < 0 && owner.google !== null;
+      const retiresGuest: boolean = index < 0 && owner.method !== null;
       if (retiresGuest) owner.guestRetired = true;
       return json(200, { signedOut: index >= 0 || retiresGuest });
     }
@@ -254,6 +335,15 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     },
     offerGoogle: (clientId: string | null): void => {
       googleClientId = clientId;
+    },
+    offerEmail: (siteKey: string | null): void => {
+      emailSiteKey = siteKey;
+    },
+    codes,
+    codeFor: (email: string): string => {
+      const entry: SentCode | undefined = codes.findLast((sent: SentCode): boolean => sent.email === email);
+      if (entry === undefined) throw new Error(`no code was sent to ${email}`);
+      return entry.code;
     },
     count: (method: string, path: string): number => requests.filter((request: RecordedRequest): boolean => request.method === method && request.path === path).length,
   };
