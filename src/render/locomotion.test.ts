@@ -86,11 +86,19 @@ function stateProblems(who: string, rig: RigDef, animations: readonly string[]):
   return problems;
 }
 
-void test('the hero and every monster have a clip, or a standing fallback, for everything the sim can put them through, so no body ever shows the bind pose', (): void => {
+void test('the hero, every monster and every echo that turns have a clip, or a standing fallback, for everything the sim can put them through, so no body ever shows the bind pose', (): void => {
   const problems: string[] = [];
   for (const monster of content.monsters.values()) {
     const skill = must(content.skills.get(monster.skill), monster.skill);
     problems.push(...stateProblems(monster.id, must(content.rigs.get(monster.rig), monster.rig), [skill.animation]));
+  }
+  for (const moment of content.moments.defs.values()) {
+    for (const echo of moment.echoes) {
+      if (!echo.turns || echo.look === null) continue;
+      const monster = must(content.monsters.get(echo.monster), echo.monster);
+      const skill = must(content.skills.get(monster.skill), monster.skill);
+      problems.push(...stateProblems(`${moment.id} echo of ${echo.monster}`, must(content.rigs.get(echo.look.rig), echo.look.rig), [skill.animation]));
+    }
   }
   const hero: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
   problems.push(...stateProblems('the hero', hero, Object.keys(hero.clips.actions)));

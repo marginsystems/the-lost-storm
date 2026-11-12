@@ -5,6 +5,7 @@ import type { MomentDef, MomentEcho, MomentProp } from '../../sim/content/moment
 import type { Content, MonsterDef, PropDef, SurfaceDef } from '../../sim/content/types.ts';
 import { distance } from '../../sim/math.ts';
 import { wornWearables, hiddenBodyParts } from '../../sim/wear.ts';
+import { momentFade } from '../../sim/world/moments.ts';
 import type { MomentFigure, MomentState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { QualityTier } from '../mobile/quality.ts';
 import type { CharacterLibrary, Dresser, LoadedRig, RigInstance } from './character-loader.ts';
@@ -168,10 +169,6 @@ function clipOf(rig: RigInstance, name: string): AnimationClip {
     default:
       return rig.clips.actions.get(name)?.clip ?? rig.clips.idle;
   }
-}
-
-function fadeOf(moment: MomentState, world: World): number {
-  return moment.phase === 'fading' ? Math.min(1, moment.phaseTime / world.content.moments.fade) : 0;
 }
 
 function hashOf(text: string): number {
@@ -434,7 +431,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
 
   const stepEntry = (entry: MomentEntry, moment: MomentState, world: World, dt: number): void => {
     const marking: boolean = moment.phase === 'mark';
-    const fade: number = fadeOf(moment, world);
+    const fade: number = momentFade(world, moment);
     entry.shown = easeToward(entry.shown, marking ? 0 : 1, MOMENT_VIEW.appearRate, dt);
     entry.awake = easeToward(entry.awake, moment.phase === 'awake' ? 1 : 0, MOMENT_VIEW.wakeRate, dt);
     const reach: number = distance(world.player.pos, moment.pos);

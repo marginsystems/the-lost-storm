@@ -14,7 +14,7 @@ import { hasWear, instantiateRig } from './character-loader.ts';
 import { holdEquipped } from './hero-gear.ts';
 import type { GhostUniforms } from './ghost-material.ts';
 import { createGhostUniforms } from './ghost-material.ts';
-import { momentOfEcho } from '../../sim/world/moments.ts';
+import { echoFade, momentOfEcho } from '../../sim/world/moments.ts';
 
 export const ACTORS = {
   monsterFlash: 1,
@@ -84,6 +84,12 @@ function npcPose(npc: NpcState): ActorPose {
 function dress(content: Content, rig: RigInstance, clothes: readonly string[], equipped: Equipment | null): void {
   const look: Look = lookOf(content, clothes, equipped);
   rig.setWear(look.wearables, look.hidden);
+}
+
+function fadeEcho(view: ActorView, ghost: GhostUniforms, fade: number): void {
+  ghost.dissolve.value = fade;
+  view.rig.setOpacity(ACTORS.echoOpacity * (1 - fade));
+  view.setShadowOpacity(ACTORS.echoOpacity * (1 - fade));
 }
 
 function echoLook(current: World, monster: MonsterState): EchoLook | null {
@@ -227,6 +233,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         if (entry.echo !== null) {
           entry.echo.ghost.tint.value.copy(entry.echo.from).lerp(entry.echo.to, turning);
           entry.echo.ghost.rim.value = 1 + (1 - turning) * ACTORS.turnRim;
+          const fade: number = echoFade(current, monster.id);
+          if (fade > 0) fadeEcho(entry.view, entry.echo.ghost, fade);
         }
         entry.view.setHover(monster.id === hoveredId);
         entry.view.sync(dt, poseOf(monster), { rise: entry.echo === null ? turning : 1, floor, turnRate: ACTOR.turnRate });
@@ -235,9 +243,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         const echo: LeavingEcho | undefined = leaving[index];
         if (echo === undefined) continue;
         echo.age += dt;
-        echo.ghost.dissolve.value = Math.min(1, echo.age / ACTORS.leaveTime);
-        echo.entry.view.rig.setOpacity(ACTORS.echoOpacity * (1 - echo.ghost.dissolve.value));
-        echo.entry.view.setShadowOpacity(ACTORS.echoOpacity * (1 - echo.ghost.dissolve.value));
+        fadeEcho(echo.entry.view, echo.ghost, Math.min(1, echo.age / ACTORS.leaveTime));
         if (echo.age < ACTORS.leaveTime) continue;
         echo.entry.view.dispose();
         leaving.splice(index, 1);
@@ -306,7 +312,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);
             if (entry !== undefined) {
               if (entry.echo === null) retire(entry);
-              else leaving.push({ entry, ghost: entry.echo.ghost, age: 0 });
+              else leaving.push({ entry, ghost: entry.echo.ghost, age: entry.echo.ghost.dissolve.value * ACTORS.leaveTime });
               monsters.delete(event.monsterId);
             }
             break;

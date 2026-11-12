@@ -353,6 +353,15 @@ export function momentOfEcho(world: World, monsterId: number): MomentState | nul
   return world.moments.find((moment: MomentState): boolean => moment.figures.some((figure: MomentFigure): boolean => figure.monsterId === monsterId)) ?? null;
 }
 
+export function momentFade(world: World, moment: MomentState): number {
+  return moment.phase === 'fading' ? Math.min(1, moment.phaseTime / world.content.moments.fade) : 0;
+}
+
+export function echoFade(world: World, monsterId: number): number {
+  const moment: MomentState | null = momentOfEcho(world, monsterId);
+  return moment === null ? 0 : momentFade(world, moment);
+}
+
 export function shiftMoments(world: World, by: Vec2): void {
   for (const moment of world.moments) {
     moment.pos = { x: moment.pos.x + by.x, z: moment.pos.z + by.z };

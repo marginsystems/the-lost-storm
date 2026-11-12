@@ -9,7 +9,7 @@ import { parseSaveText, toSave } from '../save.ts';
 import { cuesForEvent } from '../audio.ts';
 import { loadAudio } from '../content/audio.ts';
 import { createWorld } from './create.ts';
-import { forceStrike, insideAwakeMoment, MOMENTS, momentOfEcho, nearestFight, restEchoes, safeSpots, strikeGround } from './moments.ts';
+import { echoFade, forceStrike, insideAwakeMoment, MOMENTS, momentOfEcho, nearestFight, restEchoes, safeSpots, strikeGround } from './moments.ts';
 import { stepWorld } from './step.ts';
 import { applyHit, offenceOf } from './combat.ts';
 import { steadiness } from './poise.ts';
@@ -186,6 +186,22 @@ void test('turned echoes are hostile monsters of the echo faction; killing them 
   assert.equal(world.player.gold, gold);
   run(world, world.content.moments.fade + DT * 2);
   assert.equal(world.monsters.some((monster: MonsterState): boolean => echoes.includes(monster)), false);
+});
+
+void test('a slain echo lies still until its moment fades, then fades out with it', (): void => {
+  const world: World = fieldWorld(quietField(), momentLibrary());
+  const moment: MomentState = struck(world, RAID.id);
+  standAt(world, moment.pos);
+  run(world, DT * 2);
+  const echoes: MonsterState[] = echoesOf(world, moment);
+  slay(world, echoes);
+  const slain: MonsterState = must(echoes[0], 'slain echo');
+  assert.equal(echoFade(world, slain.id), 0);
+  run(world, DT * 3 + world.content.moments.fade / 2);
+  assert.equal(moment.phase, 'fading');
+  assert.ok(Math.abs(echoFade(world, slain.id) - 0.5) < 0.1);
+  run(world, world.content.moments.fade / 2 - DT * 3);
+  assert.ok(echoFade(world, slain.id) > 0.9);
 });
 
 void test('a moment the hero walks out of before it is cleared dissolves at once and gives nothing: no experience, no drops, no quest credit', (): void => {
