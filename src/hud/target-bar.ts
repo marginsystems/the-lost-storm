@@ -5,11 +5,11 @@ import targetCss from './target.css?inline';
 import { clamp01, el, label, setText } from './dom.ts';
 import { monsterLines, monsterSummary } from './monster-info.ts';
 import type { MonsterLine } from './monster-info.ts';
+import { NO_INFO, stepInfo } from './target-info.ts';
+import type { InfoState, InfoStep } from './target-info.ts';
 
 export const TARGET_BAR = {
   step: 0.002,
-  infoDelay: 0.35,
-  fadeOut: 0.3,
 } as const;
 
 export interface TargetBar {
@@ -51,22 +51,12 @@ export function createTargetBar(root: HTMLElement): TargetBar {
   const track: HTMLDivElement = el('div', 'target-track', element);
   const chip: HTMLDivElement = el('div', 'target-chip', track);
   const fill: HTMLDivElement = el('div', 'target-fill', track);
-  const info: HTMLDivElement = el('div', 'target-info', element);
+  const infoBox: HTMLDivElement = el('div', 'target-info', element);
   let recent: RecentHit | null = null;
   let shownId: number | null = null;
   let shownRatio: number = -1;
-  let shownInfo: string = '';
-  let dwell: number = 0;
   let visible: boolean = false;
-  let informed: boolean = false;
-  let quiet: number = TARGET_BAR.fadeOut;
-
-  const inform = (show: boolean): void => {
-    if (show === informed) return;
-    informed = show;
-    if (!show) quiet = 0;
-    info.classList.toggle('visible', show);
-  };
+  let info: InfoState = NO_INFO;
 
   return {
     hit(monsterId: number): void {
@@ -74,7 +64,6 @@ export function createTargetBar(root: HTMLElement): TargetBar {
     },
     update(dt: number, world: World, hoveredId: number | null): void {
       if (recent !== null) recent = { id: recent.id, age: recent.age + dt };
-      if (!informed) quiet += dt;
       const picked: Target | null = pickTarget(world.monsters, hoveredId, recent, TARGETING.grace);
       const target: MonsterState | null = picked !== null && picked.kind === 'monster' ? picked.monster : null;
       const show: boolean = target !== null;
@@ -82,29 +71,19 @@ export function createTargetBar(root: HTMLElement): TargetBar {
         visible = show;
         element.classList.toggle('visible', show);
       }
-      if (target === null) {
-        dwell = 0;
-        inform(false);
-        return;
-      }
+      const lines: MonsterLine[] = target === null ? [] : monsterLines(world, target);
+      const step: InfoStep = stepInfo(info, target === null ? null : { id: target.id, kind: target.def.id, key: JSON.stringify(lines), hasLines: lines.length > 0 }, dt);
+      if (step.refill) fillInfo(infoBox, lines);
+      if (step.state.informed !== info.informed) infoBox.classList.toggle('visible', step.state.informed);
+      info = step.state;
+      if (target === null) return;
       if (target.id !== shownId) {
         shownId = target.id;
         shownRatio = -1;
-        dwell = 0;
-        inform(false);
         setText(name, target.def.name, false);
         track.classList.add('snap');
       }
-      dwell += dt;
-      const lines: MonsterLine[] = monsterLines(world, target);
-      const key: string = JSON.stringify(lines);
       setText(summary, monsterSummary(lines), false);
-      const settled: boolean = informed || quiet >= TARGET_BAR.fadeOut;
-      if (key !== shownInfo && settled) {
-        shownInfo = key;
-        fillInfo(info, lines);
-      }
-      inform(dwell >= TARGET_BAR.infoDelay && lines.length > 0 && key === shownInfo);
       setText(level, `Level ${target.level}`, false);
       const ratio: number = Math.round(clamp01(target.life / target.maxLife) / TARGET_BAR.step) * TARGET_BAR.step;
       if (ratio === shownRatio) return;
