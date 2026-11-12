@@ -25,11 +25,6 @@ interface SliderView {
   readonly value: HTMLElement;
 }
 
-export interface VolumeControl {
-  readonly element: HTMLElement;
-  close(): boolean;
-}
-
 function sliderRow(parent: HTMLElement, category: AudioCategory, controls: AudioControls): SliderView {
   const row: HTMLDivElement = el('div', 'volume-row', parent);
   label('volume-label', LABELS[category], row);
@@ -49,26 +44,15 @@ function sliderRow(parent: HTMLElement, category: AudioCategory, controls: Audio
   return { category, input, fill, value };
 }
 
-export function createVolumeControl(parent: HTMLElement, controls: AudioControls, track: (element: HTMLElement) => void, onToggle: (open: boolean) => void): VolumeControl {
-  const element: HTMLDivElement = el('div', 'hud-volume-wrap', parent);
-  const button: HTMLButtonElement = el('button', 'hud-menu-btn hud-volume-btn', element);
-  button.type = 'button';
-  button.setAttribute('aria-label', 'Sound');
-  button.innerHTML = SPEAKER;
-  const panel: HTMLDivElement = el('div', 'hud-volume', element);
-  track(button);
-  track(panel);
-
-  const head: HTMLDivElement = el('div', 'volume-head', panel);
-  label('volume-title', 'Sound', head);
-  const group: HTMLDivElement = el('div', 'volume-mute-group', head);
-  label('volume-mute-label', 'Mute', group);
-  const mute: HTMLButtonElement = el('button', 'volume-mute', group);
+export function mountVolumeSliders(parent: HTMLElement, controls: AudioControls): void {
+  const head: HTMLDivElement = el('div', 'volume-head', parent);
+  label('volume-mute-label', 'Mute all sound', head);
+  const mute: HTMLButtonElement = el('button', 'set-switch', head);
   mute.type = 'button';
   mute.setAttribute('role', 'switch');
   mute.setAttribute('aria-label', 'Mute all sound');
-  el('span', 'volume-mute-knob', mute);
-  const sliders: SliderView[] = AUDIO_CATEGORIES.map((category: AudioCategory): SliderView => sliderRow(panel, category, controls));
+  el('span', 'set-switch-knob', mute);
+  const sliders: SliderView[] = AUDIO_CATEGORIES.map((category: AudioCategory): SliderView => sliderRow(parent, category, controls));
 
   const render = (settings: AudioSettings): void => {
     for (const slider of sliders) {
@@ -77,29 +61,24 @@ export function createVolumeControl(parent: HTMLElement, controls: AudioControls
       slider.fill.style.setProperty('--level', String(level));
       setText(slider.value, String(Math.round(level * VOLUME.percent)), true);
     }
-    panel.classList.toggle('muted', settings.muted);
-    button.classList.toggle('muted', settings.muted);
+    parent.classList.toggle('muted', settings.muted);
     mute.setAttribute('aria-checked', String(settings.muted));
   };
   controls.subscribe(render);
   render(controls.get());
-
-  let open: boolean = false;
-  const setOpen = (next: boolean): void => {
-    if (next === open) return;
-    open = next;
-    panel.classList.toggle('open', next);
-    button.classList.toggle('open', next);
-    onToggle(next);
-  };
-  button.addEventListener('click', (): void => setOpen(!open));
   mute.addEventListener('click', (): void => controls.setMuted(!controls.get().muted));
-  return {
-    element,
-    close(): boolean {
-      const wasOpen: boolean = open;
-      setOpen(false);
-      return wasOpen;
-    },
-  };
+}
+
+export function createVolumeButton(parent: HTMLElement, controls: AudioControls, track: (element: HTMLElement) => void, onClick: () => void): void {
+  const element: HTMLDivElement = el('div', 'hud-volume-wrap', parent);
+  const button: HTMLButtonElement = el('button', 'hud-menu-btn hud-volume-btn', element);
+  button.type = 'button';
+  button.setAttribute('aria-label', 'Sound settings');
+  button.innerHTML = SPEAKER;
+  track(button);
+  controls.subscribe((settings: AudioSettings): void => {
+    button.classList.toggle('muted', settings.muted);
+  });
+  button.classList.toggle('muted', controls.get().muted);
+  button.addEventListener('click', onClick);
 }

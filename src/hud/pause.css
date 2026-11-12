@@ -1,0 +1,379 @@
+.pause {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: rgba(3, 5, 9, 0);
+  transition: background-color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.pause.open {
+  pointer-events: auto;
+  background: rgba(3, 5, 9, 0.62);
+}
+
+.pause-card {
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(10, 13, 20, 0.94);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6);
+  width: 200px;
+  height: 168px;
+  opacity: 0;
+  transform: translateY(14px) scale(0.97);
+  transition:
+    width var(--spring-smooth-ms) var(--spring-smooth),
+    height var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.pause.open .pause-card {
+  opacity: 1;
+  transform: none;
+}
+
+.pause-card[data-view='settings'] {
+  width: 440px;
+  height: 330px;
+}
+
+.pause-view {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 14px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s var(--spring-snappy-ms);
+}
+
+.pause-view.active {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s;
+}
+
+.pause-title {
+  margin-bottom: 10px;
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ember);
+}
+
+.pause-btn {
+  display: block;
+  width: 100%;
+  height: 32px;
+  margin-top: 4px;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  border: 0;
+  border-radius: 2px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.05);
+  transition: background-color var(--spring-snappy-ms) var(--spring-snappy), transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.pause-btn:hover,
+.pause-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pause-btn:active {
+  transform: scale(0.98);
+}
+
+.set-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+}
+
+.set-tabs {
+  position: relative;
+  display: flex;
+  gap: 2px;
+}
+
+.set-tab {
+  height: 30px;
+  padding: 0 12px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-dim);
+  border: 0;
+  outline: none;
+  background: transparent;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.set-tab.active,
+.set-tab:hover,
+.set-tab:focus-visible {
+  color: var(--text);
+}
+
+.set-marker {
+  --x: 0px;
+  --w: 0px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: var(--w);
+  background: var(--ember);
+  transform: translateX(var(--x));
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    width var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.set-text-btn {
+  height: 26px;
+  padding: 0 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-dim);
+  border: 0;
+  border-radius: 2px;
+  outline: none;
+  background: transparent;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy), background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.set-text-btn:hover,
+.set-text-btn:focus-visible {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.set-body {
+  position: absolute;
+  inset: 52px 14px 14px;
+}
+
+.set-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(14px);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s var(--spring-snappy-ms);
+}
+
+.set-page[data-state='before'] {
+  transform: translateX(-14px);
+}
+
+.set-page[data-state='active'] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+}
+
+.set-name {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.set-detail {
+  margin-bottom: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.set-seg {
+  --count: 3;
+  --index: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--count), 64px);
+  height: 24px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.set-seg-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% / var(--count));
+  height: 100%;
+  border-radius: 2px;
+  background: rgba(232, 184, 102, 0.22);
+  transform: translateX(calc(var(--index) * 100%));
+  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.set-seg-btn {
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-dim);
+  border: 0;
+  outline: none;
+  background: transparent;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.set-seg-btn[aria-checked='true'],
+.set-seg-btn:hover,
+.set-seg-btn:focus-visible {
+  color: var(--text);
+}
+
+.set-switch {
+  position: relative;
+  width: 34px;
+  height: 16px;
+  padding: 0;
+  cursor: pointer;
+  border: 0;
+  border-radius: 2px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background-color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.set-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--text);
+  transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.set-switch[aria-checked='true'] {
+  background: rgba(232, 184, 102, 0.4);
+}
+
+.set-switch[aria-checked='true'] .set-switch-knob {
+  transform: translateX(18px);
+}
+
+.ctl-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.ctl-group {
+  margin: 8px 0 2px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.ctl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  border: 0;
+  border-radius: 2px;
+  outline: none;
+  background: transparent;
+  transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.ctl-row:hover,
+.ctl-row:focus-visible {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ctl-row.waiting {
+  background: rgba(232, 184, 102, 0.12);
+}
+
+.ctl-row.locked {
+  cursor: default;
+}
+
+.ctl-chip {
+  min-width: 34px;
+  padding: 2px 8px;
+  text-align: center;
+  font-size: 11px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.ctl-row.waiting .ctl-chip {
+  color: var(--ember);
+}
+
+.ctl-row.locked .ctl-chip {
+  color: var(--text-dim);
+}
+
+.ctl-note {
+  min-height: 15px;
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.ctl-note.warn {
+  color: #e0866a;
+}
+
+.ctl-foot {
+  display: flex;
+  justify-content: flex-end;
+}

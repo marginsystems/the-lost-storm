@@ -53,6 +53,7 @@ export interface ZoneView {
   readonly group: Group;
   readonly torches: readonly Vector3[];
   readonly lightsVersion: number;
+  setLightBudget(count: number): void;
   update(time: number, dt: number, world: World): void;
   dispose(): void;
 }
@@ -143,6 +144,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     group.add(light);
   }
   const ranked: Source[] = [...sources];
+  let activeLights: number = pool.length;
 
   const loaded: [string, GLTF][] = await Promise.all(
     [...placements.keys()].map(async (propId: string): Promise<[string, GLTF]> => {
@@ -220,6 +222,9 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   return {
     zone,
     group,
+    setLightBudget(count: number): void {
+      activeLights = Math.min(pool.length, Math.max(0, count));
+    },
     get torches(): readonly Vector3[] {
       return sources.flatMap((source: Source): Vector3[] => (source.conditional === null || source.conditional.on === true ? [source.point] : []));
     },
@@ -261,10 +266,11 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
         source.score = lit ? Math.hypot(source.point.x - player.x, source.point.z - player.z) - source.distance : Number.POSITIVE_INFINITY;
       }
       ranked.sort((a: Source, b: Source): number => a.score - b.score);
-      const cutoff: number = ranked[pool.length]?.score ?? Number.POSITIVE_INFINITY;
+      const cutoff: number = ranked[activeLights]?.score ?? Number.POSITIVE_INFINITY;
       pool.forEach((light: PointLight, index: number): void => {
         const source: Source | undefined = ranked[index];
-        if (source === undefined || source.score === Number.POSITIVE_INFINITY) {
+        light.visible = index < activeLights;
+        if (index >= activeLights || source === undefined || source.score === Number.POSITIVE_INFINITY) {
           light.intensity = 0;
           return;
         }
