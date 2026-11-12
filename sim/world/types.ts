@@ -5,7 +5,7 @@ import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBloc
 import type { ServiceKind } from '../content/trade-types.ts';
 import type { MomentDef } from '../content/moment-types.ts';
 import type { Vec2 } from '../math.ts';
-import type { NavGrid } from '../nav/grid.ts';
+import type { GridStamp, NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
 
 export interface RolledAffix {
@@ -430,6 +430,7 @@ export interface MomentState {
   away: number;
   entered: boolean;
   bounty: number;
+  blocks: GridStamp | null;
   outcome: MomentOutcome | null;
   readonly figures: MomentFigure[];
 }

@@ -567,6 +567,14 @@ void test('a prop may carry a tint colour, and a malformed one is rejected', ():
   assert.throws((): Content => parseContent({ ...shipped, props: [...propDefs, { ...plain, tint: 'dark' }] }), /tint/);
 });
 
+void test('a prop collider with a length but no radius is rejected, since it would block nothing', (): void => {
+  const wall = { id: 'thin_wall', model: 'models/props/rock_set_1.glb', scale: 1, blockRadius: 0, blockLength: 4, light: null, surfaces: {} };
+  assert.throws((): Content => parseContent({ ...shipped, props: [...propDefs, wall] }), /needs a radius above zero/);
+  assert.throws((): Content => parseContent({ ...shipped, props: [...propDefs, { ...wall, blockRadius: -1, blockLength: 0 }] }), /cannot be negative/);
+  const parsed: Content = parseContent({ ...shipped, props: [...propDefs, { ...wall, blockRadius: 0.3 }] });
+  assert.equal(must(parsed.props.get('thin_wall'), 'wall').blockLength, 4);
+});
+
 void test('a combo is data: its steps parse, and a combo without steps or with a wrong field is rejected', (): void => {
   const step = { animation: 'attack', windup: 0.2, recovery: 0.2, damageScale: 1.5, areaScale: 1.1, knockbackScale: 2, stagger: 0.4, shake: 0.3, hitStop: 0.05 };
   const parsed: Content = parseContent({ ...shipped, skills: [...skills, { ...extraSkill, combo: { window: 0.5, steps: [step] } }] });

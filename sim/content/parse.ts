@@ -413,11 +413,16 @@ function dressing(value: unknown, where: string): Record<string, string> {
 
 function prop(value: unknown, where: string): PropDef {
   const source: Fields = fields(value, where);
+  const blockRadius: number = numeric(source, 'blockRadius', where);
+  const blockLength: number = source['blockLength'] === undefined ? 0 : numeric(source, 'blockLength', where);
+  if (blockRadius < 0 || blockLength < 0) throw new ContentError(`${where}.blockRadius`, 'a collider cannot be negative');
+  if (blockLength > 0 && blockRadius === 0) throw new ContentError(`${where}.blockRadius`, 'a collider with a length needs a radius above zero to block anything');
   return {
     id: text(source, 'id', where),
     model: text(source, 'model', where),
     scale: numeric(source, 'scale', where),
-    blockRadius: numeric(source, 'blockRadius', where),
+    blockRadius,
+    blockLength,
     light: propLight(source['light'], `${where}.light`),
     surfaces: dressing(source['surfaces'], `${where}.surfaces`),
     tint: source['tint'] === undefined ? null : colour(source, 'tint', where),

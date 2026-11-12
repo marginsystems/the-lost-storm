@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
-import type { Content, ZoneDef } from '../content/types.ts';
+import type { Content, PropDef, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, lineOfSight, linePace, lineWalkable, moveWithCollision, nearestWalkable, paceAt, setDriftOpen } from './grid.ts';
-import type { DriftCells, NavGrid } from './grid.ts';
+import { blockerGap, buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, liftStamp, lineOfSight, linePace, lineWalkable, moveWithCollision, nearestWalkable, paceAt, propBlocker, setDriftOpen, stampBlockers } from './grid.ts';
+import type { Blocker, DriftCells, GridStamp, NavGrid } from './grid.ts';
 import { OUTPOST_ZONE, ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts';
 import { must } from '../../test/support.ts';
 import { findPath } from './path.ts';
@@ -185,3 +185,31 @@ void test('a closed drift takes its cells out of the walkable grid and puts them
   setDriftOpen(local, patch, true);
   assert.equal(isWalkable(local, 10, 8), true);
 });
+
+void test('a long prop blocks along its length as a capsule turned by its rotation, and a stamp closes and lifts its cells', (): void => {
+  const log: PropDef = { ...must(content.props.get('dead_log'), 'dead_log'), blockRadius: 0.3, blockLength: 4 };
+  const open: NavGrid = buildNavGrid(OUTPOST_ZONE, content.props, content.surfaces, content.player.radius);
+  const centre: Vec2 = must(findOpen(open), 'open floor');
+  const along: Blocker = must(propBlocker(log, centre.x, centre.z, 0), 'a blocker');
+  assert.ok(blockerGap(along, centre.x + 1.8, centre.z) < 0);
+  assert.ok(blockerGap(along, centre.x, centre.z + 1.8) > 1);
+  const turned: Blocker = must(propBlocker(log, centre.x, centre.z, 90), 'a turned blocker');
+  assert.ok(blockerGap(turned, centre.x, centre.z - 1.8) < 0);
+  assert.ok(blockerGap(turned, centre.x + 1.8, centre.z) > 1);
+  const before: Uint8Array = open.walkable.slice();
+  const stamp: GridStamp = stampBlockers(open, [along], content.player.radius);
+  assert.ok(stamp.cells.length > 0);
+  assert.equal(isWalkable(open, centre.x + 1.5, centre.z), false);
+  assert.equal(isSolid(open, centre.x + 1.5, centre.z), true);
+  liftStamp(open, stamp);
+  assert.deepEqual(open.walkable, before);
+});
+
+function findOpen(open: NavGrid): Vec2 | null {
+  for (let index: number = 0; index < open.walkable.length; index += 1) {
+    const at: Vec2 = cellCenter(open, index);
+    const clear: boolean = [-3, -2, -1, 0, 1, 2, 3].every((dx: number): boolean => [-3, 0, 3].every((dz: number): boolean => isWalkable(open, at.x + dx, at.z + dz) && isWalkable(open, at.x + dz, at.z + dx)));
+    if (clear) return at;
+  }
+  return null;
+}

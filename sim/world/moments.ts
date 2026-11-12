@@ -8,6 +8,7 @@ import { pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
 import { grantXp, killXp } from './character.ts';
 import { dropOnGround } from './ground.ts';
+import { lowerProps, raiseProps, standClear } from './moment-ground.ts';
 import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
 import type { EchoState, ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, NpcState, ProjectileState, World } from './types.ts';
@@ -56,12 +57,14 @@ function begin(world: World, def: MomentDef, pos: Vec2, combat: boolean, mark: b
     away: 0,
     entered: false,
     bounty: 0,
+    blocks: null,
     outcome: null,
     figures: figuresOf(def, pos),
   };
   world.nextId += 1;
   world.moments.push(moment);
   if (mark) world.events.push({ type: 'moment_mark', moment });
+  else raiseProps(world, moment);
   return moment;
 }
 
@@ -173,6 +176,7 @@ function turn(world: World, moment: MomentState): number[] {
     const def: MonsterDef | null = echoDef(world, entry);
     if (def === null) continue;
     const monster: MonsterState = spawnMonster(world, def, packId, figure.pos, { summonerId: null, scatter: 0, revived: false });
+    standClear(world, monster);
     monster.facing = figure.facing;
     monster.aggro = true;
     monster.foeId = world.player.id;
@@ -274,6 +278,7 @@ function stepMoment(world: World, moment: MomentState, dt: number): boolean {
       moment.timeLeft = moment.def.lifetime;
       moment.phaseTime = 0;
       moment.armed = !inside;
+      raiseProps(world, moment);
       world.events.push({ type: 'moment_strike', moment });
       return true;
     case 'dormant':
@@ -287,6 +292,7 @@ function stepMoment(world: World, moment: MomentState, dt: number): boolean {
     case 'fading':
       if (moment.timeLeft > 0) return true;
       removeEchoes(world, moment, false);
+      lowerProps(world, moment);
       world.events.push({ type: 'moment_gone', momentId: moment.id });
       return false;
   }
@@ -313,6 +319,7 @@ export function insideAwakeMoment(world: World): boolean {
 export function clearMoments(world: World): void {
   for (const moment of world.moments) {
     removeEchoes(world, moment, false);
+    lowerProps(world, moment);
     world.events.push({ type: 'moment_gone', momentId: moment.id });
   }
   world.moments = [];

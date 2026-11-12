@@ -20,10 +20,33 @@ export interface DriftCells {
   open: boolean;
 }
 
-interface Blocker {
-  readonly x: number;
-  readonly z: number;
+export interface Blocker {
+  readonly from: Vec2;
+  readonly to: Vec2;
   readonly radius: number;
+}
+
+export interface GridStamp {
+  readonly cells: Int32Array;
+  readonly walkable: Uint8Array;
+  readonly solid: Uint8Array;
+}
+
+export function propBlocker(def: PropDef, x: number, z: number, rotationDegrees: number): Blocker | null {
+  if (def.blockRadius <= 0) return null;
+  const angle: number = (rotationDegrees * Math.PI) / 180;
+  const half: number = def.blockLength / 2;
+  const ax: number = Math.cos(angle) * half;
+  const az: number = -Math.sin(angle) * half;
+  return { from: { x: x - ax, z: z - az }, to: { x: x + ax, z: z + az }, radius: def.blockRadius };
+}
+
+export function blockerGap(blocker: Blocker, x: number, z: number): number {
+  const dx: number = blocker.to.x - blocker.from.x;
+  const dz: number = blocker.to.z - blocker.from.z;
+  const span: number = dx * dx + dz * dz;
+  const t: number = span <= 0 ? 0 : Math.min(1, Math.max(0, ((x - blocker.from.x) * dx + (z - blocker.from.z) * dz) / span));
+  return Math.hypot(x - (blocker.from.x + dx * t), z - (blocker.from.z + dz * t)) - blocker.radius;
 }
 
 const NAV = {
@@ -36,10 +59,11 @@ function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[]
   const list: Blocker[] = [];
   for (const placed of zone.props) {
     if (placed.when.length > 0) continue;
-    const radius: number = props.get(placed.prop)?.blockRadius ?? 0;
-    if (radius > 0) list.push({ x: placed.x, z: placed.z, radius });
+    const def: PropDef | undefined = props.get(placed.prop);
+    const blocker: Blocker | null = def === undefined ? null : propBlocker(def, placed.x, placed.z, placed.rotationDegrees);
+    if (blocker !== null) list.push(blocker);
   }
-  if (zone.walls !== null) for (const corner of wallCorners(zone)) list.push({ x: corner.x, z: corner.z, radius: CORNER_PILLAR_RADIUS });
+  if (zone.walls !== null) for (const corner of wallCorners(zone)) list.push({ from: { x: corner.x, z: corner.z }, to: { x: corner.x, z: corner.z }, radius: CORNER_PILLAR_RADIUS });
   return list;
 }
 
@@ -72,7 +96,7 @@ function fill(zone: ZoneDef, obstacles: readonly Blocker[], columns: number, row
     for (let column: number = 0; column < columns; column += 1) {
       const x: number = (column + 0.5) * NAV.cellSize;
       const z: number = (row + 0.5) * NAV.cellSize;
-      const open: boolean = insideFloor(zone, x, z, margin) && obstacles.every((blocker: Blocker): boolean => Math.hypot(blocker.x - x, blocker.z - z) >= blocker.radius + agentRadius);
+      const open: boolean = insideFloor(zone, x, z, margin) && obstacles.every((blocker: Blocker): boolean => blockerGap(blocker, x, z) >= agentRadius);
       cells[row * columns + column] = open ? 1 : 0;
     }
   }
@@ -117,6 +141,32 @@ export function buildNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>,
   const walkable: Uint8Array = fill(zone, obstacles, columns, rows, agentRadius);
   const drifts: DriftCells[] = zone.drifts.map((drift: ZoneDrift): DriftCells => driftCells(zone, drift, walkable, columns, rows));
   return { cellSize: NAV.cellSize, columns, rows, walkable, solid, pace: paceOf(zone, surfaces, columns, rows), drifts };
+}
+
+export function stampBlockers(grid: NavGrid, stamped: readonly Blocker[], agentRadius: number): GridStamp {
+  const cells: number[] = [];
+  const inside: boolean[] = [];
+  for (let index: number = 0; index < grid.walkable.length; index += 1) {
+    const centre: Vec2 = cellCenter(grid, index);
+    const gap: number = Math.min(...stamped.map((blocker: Blocker): number => blockerGap(blocker, centre.x, centre.z)));
+    if (gap >= agentRadius) continue;
+    cells.push(index);
+    inside.push(gap < 0);
+  }
+  const indices: Int32Array = Int32Array.from(cells);
+  const stamp: GridStamp = { cells: indices, walkable: Uint8Array.from(indices, (index: number): number => grid.walkable[index] ?? 0), solid: Uint8Array.from(indices, (index: number): number => grid.solid[index] ?? 0) };
+  indices.forEach((index: number, at: number): void => {
+    grid.walkable[index] = 0;
+    if (inside[at] === true) grid.solid[index] = 1;
+  });
+  return stamp;
+}
+
+export function liftStamp(grid: NavGrid, stamp: GridStamp): void {
+  stamp.cells.forEach((index: number, at: number): void => {
+    grid.walkable[index] = stamp.walkable[at] ?? 0;
+    grid.solid[index] = stamp.solid[at] ?? 0;
+  });
 }
 
 export function paceAt(grid: NavGrid, x: number, z: number): number {

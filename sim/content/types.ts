@@ -4,6 +4,7 @@ import type { AttachmentDef, RigDef } from './rig-types.ts';
 import type { DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, StalkerBehaviour, SummonDef } from './combat-types.ts';
 import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
 import type { ServiceKind, TradeDef } from './trade-types.ts';
+import type { PropDef, SurfaceDef } from './prop-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { ZoneAmbience } from './ambience-types.ts';
 import type { BookDef, StoryFlags, ZoneVoid } from './story-types.ts';
@@ -277,39 +278,9 @@ export interface SkillTreeNodeDef {
 
 export type { ChartDef, ChartGroup, ChartPath, ChartRespec, PointGrant, SkillTarget, SkillVariant } from './chart-types.ts';
 
+export type { PropDef, PropLight, SurfaceDef } from './prop-types.ts';
+
 export type { AttachmentDef, RigActionClip, RigClips, RigDef, RigSocket, RigUnarmedClips, Triple } from './rig-types.ts';
-
-export interface PropLight {
-  readonly color: string;
-  readonly intensity: number;
-  readonly distance: number;
-  readonly height: number;
-}
-
-export interface SurfaceDef {
-  readonly id: string;
-  readonly color: string;
-  readonly normal: string | null;
-  readonly orm: string | null;
-  readonly metres: number;
-  readonly tint: string;
-  readonly roughness: number;
-  readonly metalness: number;
-  readonly normalScale: number;
-  readonly spill: number;
-  readonly pace: number;
-}
-
-export interface PropDef {
-  readonly id: string;
-  readonly model: string;
-  readonly scale: number;
-  readonly blockRadius: number;
-  readonly light: PropLight | null;
-  readonly surfaces: Readonly<Record<string, string>>;
-  readonly tint: string | null;
-  readonly service: ServiceKind | null;
-}
 
 export interface ZonePoint {
   readonly x: number;

@@ -14,13 +14,15 @@ import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
 import { shiftWorld } from './void.ts';
-import { isWalkable } from '../nav/grid.ts';
+import { buildNavGrid, isWalkable } from '../nav/grid.ts';
+import type { NavGrid } from '../nav/grid.ts';
 import { echoesOf, FIELD, fieldContent, fieldWorld, fieldZone, momentLibrary, QUIET, RAID, slay, standAt } from '../../test/moment-support.ts';
 import { must } from '../../test/support.ts';
 
 const DT: number = 1 / 30;
 const SHIPPED: MomentLibrary = loadContent().moments;
 const FAR = { x: 150, z: 150 } as const;
+const HEARTH_SIDE = { x: 3, z: 0 } as const;
 const ROAD_WALK = { speed: 4, within: 4 } as const;
 const SAFE_PROBE = { x: 40, z: 47 } as const;
 const BOUND = { knock: 60, frames: 45 } as const;
@@ -340,7 +342,8 @@ void test('a hero who walked the In-Between still sees strikes land in the Hall,
   const events: WorldEvent[] = run(world, field.interval.max + world.content.moments.telegraph + 1);
   assert.ok(events.some((event: WorldEvent): boolean => event.type === 'moment_strike'));
   assert.equal(world.strikeMisses, 0);
-  for (const moment of world.moments) assert.ok(isWalkable(world.grid, moment.pos.x, moment.pos.z));
+  const floor: NavGrid = buildNavGrid(world.zone, world.content.props, world.content.surfaces, world.content.player.radius);
+  for (const moment of world.moments) assert.ok(isWalkable(floor, moment.pos.x, moment.pos.z));
 });
 
 void test('brushing the edge of a bubble does not wake it; only stepping well inside does', (): void => {
@@ -516,7 +519,7 @@ function firstFight(seed: number): FirstFight {
   const at = { x: world.player.pos.x + 30, z: world.player.pos.z };
   const moment: MomentState = must(forceStrike(world, at, 'first_fire'), 'first fire');
   run(world, shipped.moments.telegraph + DT * 2);
-  standAt(world, { x: at.x, z: at.z - 0.5 });
+  standAt(world, { x: at.x + HEARTH_SIDE.x, z: at.z + HEARTH_SIDE.z });
   return { world, moment };
 }
 

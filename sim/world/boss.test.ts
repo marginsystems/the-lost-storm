@@ -26,7 +26,7 @@ function ofType<T extends WorldEvent['type']>(events: readonly WorldEvent[], typ
 
 function room(monster: string, when: readonly Condition[] = []): Content {
   const packs: ZonePack[] = [{ x: 28, z: 14, members: [{ monster, count: 1, mods: [] }], when }];
-  const zone: ZoneDef = { ...OUTPOST_ZONE, id: ROOM, level: 2, surge: null, packs, exits: [], waypoint: null };
+  const zone: ZoneDef = { ...OUTPOST_ZONE, id: ROOM, level: 2, surge: null, packs, exits: [], waypoint: null, moments: null };
   return { ...OUTPOST_CONTENT, zones: new Map<string, ZoneDef>([...OUTPOST_CONTENT.zones, [zone.id, zone]]) };
 }
 

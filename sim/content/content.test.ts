@@ -19,6 +19,7 @@ import type { World, WorldEvent } from '../world/types.ts';
 import { enterZone } from '../world/zones.ts';
 import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, PathObjective, QuestDef, RigDef, SkillTreeNodeDef, TalkDef, WearableDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
 import { fields, items, text } from './read.ts';
+import type { Fields } from './read.ts';
 import type { MomentDef, MomentEcho, MomentField, WeightedMoment } from './moment-types.ts';
 
 const ARRIVAL_PUSH = {
@@ -63,6 +64,40 @@ function clipNames(path: string): string[] {
   const parsed: unknown = JSON.parse(file.subarray(GLB.jsonStart, GLB.jsonStart + file.readUInt32LE(GLB.jsonLength)).toString('utf8'));
   return items(fields(parsed, path)['animations'], `${path}.animations`).map((entry: unknown): string => text(fields(entry, path), 'name', path));
 }
+
+const FOOTPRINT = { solid: 1, cover: 0.4 } as const;
+
+function footprint(path: string, scale: number): number {
+  const file: Buffer = readFileSync(path);
+  const parsed: Fields = fields(JSON.parse(file.subarray(GLB.jsonStart, GLB.jsonStart + file.readUInt32LE(GLB.jsonLength)).toString('utf8')), path);
+  const accessors: readonly unknown[] = items(parsed['accessors'], `${path}.accessors`);
+  let wide: number = 0;
+  for (const mesh of items(parsed['meshes'], `${path}.meshes`)) {
+    for (const primitive of items(fields(mesh, path)['primitives'], `${path}.primitives`)) {
+      const index: unknown = fields(fields(primitive, path)['attributes'], path)['POSITION'];
+      const accessor: Fields = fields(typeof index === 'number' ? accessors[index] : null, `${path}.POSITION`);
+      const low: readonly unknown[] = items(accessor['min'], `${path}.min`);
+      const high: readonly unknown[] = items(accessor['max'], `${path}.max`);
+      for (const axis of [0, 2]) {
+        const from: unknown = low[axis];
+        const to: unknown = high[axis];
+        if (typeof from === 'number' && typeof to === 'number') wide = Math.max(wide, (to - from) * scale);
+      }
+    }
+  }
+  return wide;
+}
+
+void test('every moment prop a metre or more across has a collider that covers it, so nobody stands on a rock pile', (): void => {
+  const used: Set<string> = new Set<string>([...content.moments.defs.values()].flatMap((def) => def.props.map((placed) => placed.prop)));
+  for (const id of used) {
+    const prop = must(content.props.get(id), id);
+    const wide: number = footprint(`public/${prop.model}`, prop.scale);
+    if (wide < FOOTPRINT.solid) continue;
+    assert.ok(prop.blockRadius > 0, `${id} is ${wide.toFixed(1)} m across but has no collider`);
+    assert.ok(prop.blockRadius * 2 + prop.blockLength >= wide * FOOTPRINT.cover, `${id} is ${wide.toFixed(1)} m across but its collider spans ${(prop.blockRadius * 2 + prop.blockLength).toFixed(1)} m`);
+  }
+});
 
 void test('every clip a rig names has its own file in the rig clip folder, and the hero dies in more than one way', (): void => {
   for (const rig of content.rigs.values()) {
