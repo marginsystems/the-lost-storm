@@ -34,6 +34,9 @@ import type { PauseMenu } from './hud/pause-menu.ts';
 import type { GraphicsPreset, SettingsSection } from './settings/settings.ts';
 import type { SettingsStore } from './settings/store.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
+import { createHintStore } from './hints-store.ts';
+import type { ObjectiveMarker } from './objective/objective-marker.ts';
+import { createObjectiveMarker } from './objective/objective-marker.ts';
 import { createBrowserStore } from './storage.ts';
 import type { Mobile, MobileBoot } from './mobile/mobile.ts';
 import { bootMobile, startMobile } from './mobile/mobile.ts';
@@ -319,6 +322,7 @@ async function start(): Promise<void> {
       hud.requestMap(true);
     },
   });
+  const objectiveMarker: ObjectiveMarker = createObjectiveMarker(stage.scene, camera, element('hud', HTMLDivElement));
   const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
   const input: Input = createInput(canvas, world, camera, hud, gameSettings, {
     heightOf: (id: number): number => actors.heightOf(id),
@@ -450,6 +454,7 @@ async function start(): Promise<void> {
       effects.setTorches(zoneView.torches);
     }
     markers.update(dt, now / 1000, world);
+    objectiveMarker.update(dt, now / 1000, world);
     stage.setFlash(weather.flash);
     hud.update(dt);
     touch.update();
@@ -505,6 +510,7 @@ async function start(): Promise<void> {
     dirty = false;
     reset.disabled = true;
     enter.disabled = true;
+    createHintStore(createBrowserStore()).clear();
     await backend.reset();
     window.location.reload();
   };
