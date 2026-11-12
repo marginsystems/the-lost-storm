@@ -1,3 +1,4 @@
+import { tagPart } from './hud-gate.ts';
 import type { ObjectiveDef, QuestDef } from '../../sim/content/types.ts';
 import { activeQuests, currentObjective } from '../../sim/world/quests.ts';
 import { nextAction, questTarget } from '../../sim/world/objective.ts';
@@ -31,6 +32,7 @@ function actionText(world: World, quest: QuestDef, objective: ObjectiveDef | nul
 
 export function createQuestTracker(root: HTMLElement): QuestTracker {
   const element: HTMLDivElement = el('div', 'hud-quests', root);
+  tagPart(element, 'quests');
   const blocks: Map<string, QuestBlock> = new Map<string, QuestBlock>();
 
   const add = (world: World, quest: QuestDef): QuestBlock => {

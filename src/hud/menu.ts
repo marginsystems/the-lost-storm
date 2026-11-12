@@ -1,3 +1,5 @@
+import type { HudPanel } from './hud-api.ts';
+import { panelPart, tagPart } from './hud-gate.ts';
 import { el, label, setText } from './dom.ts';
 
 export interface MenuButton {
@@ -6,8 +8,9 @@ export interface MenuButton {
   setKey(key: string): void;
 }
 
-export function createMenuButton(parent: HTMLElement, name: string, key: string, onClick: () => void, track: (element: HTMLElement) => void): MenuButton {
+export function createMenuButton(parent: HTMLElement, panel: HudPanel, name: string, key: string, onClick: () => void, track: (element: HTMLElement) => void): MenuButton {
   const button: HTMLButtonElement = el('button', 'hud-menu-btn', parent);
+  tagPart(button, panelPart(panel));
   button.type = 'button';
   button.title = name;
   button.setAttribute('aria-label', name);

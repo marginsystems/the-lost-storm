@@ -122,13 +122,15 @@ void test('a still stick finger joins a second finger that lands soon after as a
   assert.equal(joinsPinch(false, TOUCH.pinchJoinMs + 1), false);
 });
 
-void test('only bar slots that hold a skill get a button, and the attack always does', (): void => {
+void test('only bar slots that hold a usable skill get a button, the attack included', (): void => {
   const bar = [{ bindings: ['mouse_left'], filled: false }, { bindings: ['KeyQ'], filled: false }, { bindings: ['KeyW'], filled: true }];
-  assert.deepEqual(touchButtons(bar, 'mouse_left', []), [
-    { kind: 'attack', slot: 0 },
-    { kind: 'skill', slot: 2 },
-  ]);
-  assert.deepEqual(touchButtons(bar.slice(0, 2), 'mouse_left', []), [{ kind: 'attack', slot: 0 }]);
+  assert.deepEqual(touchButtons(bar, 'mouse_left', []), [{ kind: 'skill', slot: 2 }]);
+  assert.deepEqual(touchButtons(bar.slice(0, 2), 'mouse_left', []), []);
+  assert.deepEqual(touchButtons([{ bindings: ['mouse_left'], filled: true }], 'mouse_left', []), [{ kind: 'attack', slot: 0 }]);
+});
+
+void test('a flask the HUD does not show gets no button, and the others keep their own slot', (): void => {
+  assert.deepEqual(touchButtons([], 'mouse_left', [null, { name: 'Mana Flask' }]), [{ kind: 'flask', slot: 1, label: 'Mana Flask' }]);
 });
 
 void test('a phone-sized screen takes the phone layout even when no coarse pointer is reported', (): void => {

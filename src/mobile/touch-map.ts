@@ -113,15 +113,15 @@ export function aimedSkill(slot: number, from: Vec2, ahead: Vec2, target: Candid
   return { type: 'skill', slot, aim: { x: from.x + (ahead.x / length) * TOUCH.aimRange, z: from.z + (ahead.z / length) * TOUCH.aimRange }, targetId: null };
 }
 
-export function touchButtons(skillBar: readonly SkillBarEntry[], attackBinding: string, flasks: readonly FlaskEntry[]): TouchButton[] {
+export function touchButtons(skillBar: readonly SkillBarEntry[], attackBinding: string, flasks: readonly (FlaskEntry | null)[]): TouchButton[] {
   const buttons: TouchButton[] = [];
   skillBar.forEach((entry: SkillBarEntry, slot: number): void => {
-    if (entry.bindings.includes(attackBinding)) buttons.push({ kind: 'attack', slot });
-    else if (entry.filled) buttons.push({ kind: 'skill', slot });
+    if (!entry.filled) return;
+    buttons.push(entry.bindings.includes(attackBinding) ? { kind: 'attack', slot } : { kind: 'skill', slot });
   });
   buttons.sort((a: TouchButton, b: TouchButton): number => (a.kind === 'attack' ? 0 : 1) - (b.kind === 'attack' ? 0 : 1));
-  flasks.forEach((flask: FlaskEntry, slot: number): void => {
-    buttons.push({ kind: 'flask', slot, label: flask.name });
+  flasks.forEach((flask: FlaskEntry | null, slot: number): void => {
+    if (flask !== null) buttons.push({ kind: 'flask', slot, label: flask.name });
   });
   return buttons;
 }

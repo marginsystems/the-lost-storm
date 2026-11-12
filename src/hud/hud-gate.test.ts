@@ -3,7 +3,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { GAME_LAYERS } from '../title-screen.ts';
-import { createHudGate, HUD_GATE, hudGateCss } from './hud-gate.ts';
+import { createHudGate, HUD_GATE, hudGateCss, panelPart, shownData } from './hud-gate.ts';
+import { HUD_PARTS } from '../../sim/world/hud.ts';
 import type { HudGate, HudGateTarget } from './hud-gate.ts';
 
 interface Mount {
@@ -102,4 +103,31 @@ void test('the gate closes at once and opens with a reveal that settles', (): vo
   gate.set(true);
   assert.equal(target.dataset['hudGate'], 'closed');
   assert.equal(createHudGate(body(), false).state(), 'open');
+});
+
+void test('a HUD part or skill slot the hero has not earned is taken out of the layout, and each has its rule', (): void => {
+  const css: string = hudGateCss();
+  for (const part of HUD_PARTS) assert.ok(css.includes(`body[data-hud-show]:not([data-hud-show~='${part}']) [${HUD_GATE.partAttribute}~='${part}']`), part);
+  for (let slot: number = 0; slot < HUD_GATE.slots; slot += 1) assert.ok(css.includes(`body[data-hud-slots]:not([data-hud-slots~='${slot}']) [${HUD_GATE.slotAttribute}='${slot}']`), String(slot));
+  assert.ok(css.includes('display: none !important'));
+  assert.ok(css.includes(`animation: ${HUD_GATE.partAnimation} var(--spring-snappy-ms) var(--spring-snappy)`));
+  const fade: string = css.slice(css.indexOf(`@keyframes ${HUD_GATE.partAnimation}`));
+  assert.match(fade, /opacity: 0/);
+  assert.doesNotMatch(fade, /translate|transform|scale/);
+});
+
+void test('the gate writes the shown parts and slots to the page', (): void => {
+  const page: HudGateTarget = { dataset: {} };
+  const gate: HudGate = createHudGate(page, false);
+  gate.show({ parts: ['life', 'inventory'], slots: [0, 3] });
+  assert.equal(page.dataset['hudShow'], 'life inventory');
+  assert.equal(page.dataset['hudSlots'], '0 3');
+  gate.show({ parts: [], slots: [] });
+  assert.equal(page.dataset['hudShow'], '');
+  assert.equal(shownData({ parts: ['map'], slots: [] }).hudShow, 'map');
+});
+
+void test('each menu panel button belongs to its own HUD part', (): void => {
+  assert.equal(panelPart('tree'), 'chart');
+  assert.equal(panelPart('inventory'), 'inventory');
 });

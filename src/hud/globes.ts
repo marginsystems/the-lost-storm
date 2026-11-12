@@ -1,3 +1,4 @@
+import { tagPart } from './hud-gate.ts';
 import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { approach, clamp01, el, label, pulseClass, setText } from './dom.ts';
@@ -121,12 +122,15 @@ function updateGlobe(view: GlobeView, value: number, max: number, dt: number): v
 export function createGlobes(root: HTMLElement): Globes {
   const lifeGroup: HTMLDivElement = el('div', 'hud-globe-group life', root);
   const manaGroup: HTMLDivElement = el('div', 'hud-globe-group mana', root);
+  tagPart(lifeGroup, 'life');
   const gold: HTMLDivElement = el('div', 'hud-gold', manaGroup);
   const coin: HTMLSpanElement = el('span', 'gold-icon', gold);
   coin.innerHTML = iconSvg('coin');
   const goldText: HTMLSpanElement = el('span', 'gold-text', gold);
+  tagPart(gold, 'gold');
   const life: GlobeView = buildGlobe(lifeGroup, 'life');
   const mana: GlobeView = buildGlobe(manaGroup, 'mana');
+  tagPart(mana.globe, 'mana');
   let shownGold: number | null = null;
   const viewOf = (resource: FlaskResource): GlobeView => (resource === 'life' ? life : mana);
 

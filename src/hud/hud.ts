@@ -174,11 +174,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   });
 
   const keyOf = (action: ActionId): string => api.settings.keys().labelOf(action);
-  buttons.inventory = createMenuButton(row, 'Inventory', keyOf('inventory'), (): void => toggle('inventory'), track);
-  buttons.character = createMenuButton(row, 'Character', keyOf('character'), (): void => toggle('character'), track);
+  buttons.inventory = createMenuButton(row, 'inventory', 'Inventory', keyOf('inventory'), (): void => toggle('inventory'), track);
+  buttons.character = createMenuButton(row, 'character', 'Character', keyOf('character'), (): void => toggle('character'), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
-  buttons.tree = createMenuButton(row, 'Chart', keyOf('tree'), (): void => toggle('tree'), track);
-  buttons.map = createMenuButton(row, 'Map', keyOf('map'), (): void => toggle('map'), track);
+  buttons.tree = createMenuButton(row, 'tree', 'Chart', keyOf('tree'), (): void => toggle('tree'), track);
+  buttons.map = createMenuButton(row, 'map', 'Map', keyOf('map'), (): void => toggle('map'), track);
   createVolumeButton(row, api.audio, track, (): void => api.openSettings('sound'));
   const showKeys = (): void => {
     buttons.inventory?.setKey(keyOf('inventory'));

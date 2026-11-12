@@ -1,3 +1,4 @@
+import { tagSlot } from './hud-gate.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { slotAction } from '../settings/bindings.ts';
@@ -76,6 +77,7 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
 
   const buildSlot = (index: number): SlotView => {
     const root: HTMLDivElement = el('div', 'slot', element);
+    tagSlot(root, index);
     root.addEventListener('click', (event: MouseEvent): void => {
       event.stopPropagation();
       if (picker.slot === index) picker.close();
