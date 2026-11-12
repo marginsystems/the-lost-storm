@@ -10,6 +10,8 @@ import { drawMarks, exitAt } from './marks.ts';
 import minimapCss from './minimap.css?inline';
 import type { MapMatrix } from './projection.ts';
 import { mapMatrix, toWorld } from './projection.ts';
+import type { ElementSize } from '../render/element-size.ts';
+import { watchSize } from '../render/element-size.ts';
 
 export const MINIMAP = {
   zoomStart: 3.6,
@@ -43,6 +45,7 @@ export interface Minimap {
 interface Surface {
   readonly canvas: HTMLCanvasElement;
   readonly context: CanvasRenderingContext2D;
+  readonly size: ElementSize;
   width: number;
   height: number;
   ratio: number;
@@ -51,12 +54,12 @@ interface Surface {
 function surface(canvas: HTMLCanvasElement): Surface {
   const context: CanvasRenderingContext2D | null = canvas.getContext('2d');
   if (context === null) throw new Error('The minimap needs a 2D canvas');
-  return { canvas, context, width: 0, height: 0, ratio: 1 };
+  return { canvas, context, size: watchSize(canvas), width: 0, height: 0, ratio: 1 };
 }
 
 function fit(target: Surface): void {
-  const width: number = target.canvas.clientWidth;
-  const height: number = target.canvas.clientHeight;
+  const width: number = target.size.width;
+  const height: number = target.size.height;
   const ratio: number = Math.min(MINIMAP.maxPixelRatio, window.devicePixelRatio > 0 ? window.devicePixelRatio : 1);
   if (width === target.width && height === target.height && ratio === target.ratio) return;
   target.width = width;
@@ -181,8 +184,8 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   };
 
   const drawOverlay = (): void => {
-    const width: number = overlaySurface.canvas.clientWidth;
-    const height: number = overlaySurface.canvas.clientHeight;
+    const width: number = overlaySurface.size.width;
+    const height: number = overlaySurface.size.height;
     const extent: number = Math.max(layer.width, layer.height, 1);
     const scale: number = (Math.min(width, height) * MINIMAP.overlayExtent) / extent;
     const matrix: MapMatrix = mapMatrix({ scale, squash: SQUASH, centreX: width / 2, centreY: height / 2, focusX: world.player.pos.x, focusZ: world.player.pos.z });

@@ -1,5 +1,7 @@
 import type { PerspectiveCamera, Vector2 } from 'three';
 import { Plane, Raycaster, Vector3 } from 'three';
+import type { ElementSize } from './element-size.ts';
+import { watchSize } from './element-size.ts';
 
 export const CAMERA = {
   fov: 30,
@@ -39,6 +41,7 @@ function noise(time: number, seed: number): number {
 }
 
 export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasElement): IsoCamera {
+  const size: ElementSize = watchSize(canvas);
   const yaw: number = (CAMERA.yawDegrees * Math.PI) / 180;
   const pitch: number = (CAMERA.pitchDegrees * Math.PI) / 180;
   const offset: Vector3 = new Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
@@ -125,7 +128,7 @@ export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasEle
     },
     project(x: number, y: number, z: number, out: Vector2): boolean {
       projected.set(x, y, z).project(camera);
-      out.set((projected.x * 0.5 + 0.5) * canvas.clientWidth, (-projected.y * 0.5 + 0.5) * canvas.clientHeight);
+      out.set((projected.x * 0.5 + 0.5) * size.width, (-projected.y * 0.5 + 0.5) * size.height);
       return projected.z > -1 && projected.z < 1;
     },
   };
