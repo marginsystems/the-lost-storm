@@ -6,7 +6,7 @@ export const READER = {
   hintDelayMs: 2800,
   leaveMs: 520,
   nameSlot: '{name}',
-  hint: 'Click to close',
+  hints: { touch: 'Tap to close', pointer: 'Click or press Enter to close' },
 } as const;
 
 export interface ReaderPage {
@@ -31,7 +31,11 @@ function line(parent: HTMLElement, className: string, text: string): HTMLParagra
   return element;
 }
 
-export function createReader(root: HTMLElement): Reader {
+export function closeHint(touch: boolean): string {
+  return touch ? READER.hints.touch : READER.hints.pointer;
+}
+
+export function createReader(root: HTMLElement, touch: boolean): Reader {
   const style: HTMLStyleElement = document.createElement('style');
   style.textContent = readerCss;
   root.append(style);
@@ -60,7 +64,7 @@ export function createReader(root: HTMLElement): Reader {
         for (const text of entry.page.lines) line(sheet, 'reader-line', text);
         addresses.push(line(sheet, 'reader-address', addressLine(entry.page, entry.name)));
       }
-      const hint: HTMLParagraphElement = line(sheet, 'reader-hint', READER.hint);
+      const hint: HTMLParagraphElement = line(sheet, 'reader-hint', closeHint(touch));
       root.append(veil);
       current = veil;
       const timers: number[] = [
