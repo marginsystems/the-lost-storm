@@ -5,6 +5,7 @@ import { createRng } from '../rng.ts';
 import type { SaveData } from '../save.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
 import { addToInventory } from './character.ts';
+import { decodeExplored, exploredSize, stepExploration } from './exploration.ts';
 import { spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
@@ -78,6 +79,16 @@ function savedZone(content: Content, save: SaveData | null): ZoneDef {
   return (save === null ? undefined : content.zones.get(save.zone)) ?? startZone(content);
 }
 
+function restoreExplored(content: Content, save: SaveData | null): Record<string, Uint8Array> {
+  const explored: Record<string, Uint8Array> = {};
+  for (const [zoneId, text] of Object.entries(save?.explored ?? {})) {
+    const zone: ZoneDef | undefined = content.zones.get(zoneId);
+    const cells: Uint8Array | null = zone === undefined ? null : decodeExplored(text, exploredSize(zone));
+    if (cells !== null) explored[zoneId] = cells;
+  }
+  return explored;
+}
+
 export function createWorld(content: Content, options: WorldOptions): World {
   const save: SaveData | null = options.save;
   const zone: ZoneDef = savedZone(content, save);
@@ -100,6 +111,8 @@ export function createWorld(content: Content, options: WorldOptions): World {
     heard: save === null ? [] : [...save.heard],
     quests: save === null ? {} : { ...save.quests },
     waypoints: save === null ? [] : [...save.waypoints],
+    explored: restoreExplored(content, save),
+    exploredRevision: 0,
     projectiles: [],
     ground: [],
     nextId: PLAYER_ID + 1,
@@ -115,6 +128,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   startQuests(world);
   spawnNpcs(world);
   spawnPacks(world);
+  stepExploration(world);
   world.events = [];
   return world;
 }

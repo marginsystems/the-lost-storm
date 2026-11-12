@@ -3,6 +3,7 @@ import { isFields } from './content/read.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
+import { decodeExplored, encodeExplored, exploredSize } from './world/exploration.ts';
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, World } from './world/types.ts';
 
 export const SAVE_VERSION: number = 2;
@@ -27,6 +28,7 @@ export interface SaveData {
   readonly heard: readonly string[];
   readonly quests: Readonly<Record<string, number>>;
   readonly waypoints: readonly string[];
+  readonly explored: Readonly<Record<string, string>>;
 }
 
 interface Worn {
@@ -55,6 +57,7 @@ export function toSave(world: World): SaveData {
     heard: [...world.heard],
     quests: { ...world.quests },
     waypoints: [...world.waypoints],
+    explored: Object.fromEntries(Object.entries(world.explored).map(([zone, cells]: [string, Uint8Array]): [string, string] => [zone, encodeExplored(cells)])),
   };
 }
 
@@ -147,6 +150,16 @@ function readWaypoints(content: Content, value: unknown): string[] {
   return list.filter((id: unknown): id is string => typeof id === 'string' && (content.zones.get(id)?.waypoint ?? null) !== null);
 }
 
+function readExplored(content: Content, value: unknown): Record<string, string> {
+  const explored: Record<string, string> = {};
+  if (!isFields(value)) return explored;
+  for (const zone of content.zones.values()) {
+    const text: unknown = value[zone.id];
+    if (typeof text === 'string' && decodeExplored(text, exploredSize(zone)) !== null) explored[zone.id] = text;
+  }
+  return explored;
+}
+
 export function readSave(content: Content, value: unknown): SaveData | null {
   if (!isFields(value) || !READABLE_VERSIONS.has(value['version'])) return null;
   const level: number | null = count(value, 'level', 1);
@@ -190,6 +203,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     heard: readHeard(content, value['heard']),
     quests: readQuests(content, value['quests']),
     waypoints: readWaypoints(content, value['waypoints']),
+    explored: readExplored(content, value['explored']),
   };
 }
 

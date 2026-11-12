@@ -29,6 +29,8 @@ import { createHud } from './hud/hud.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
 import { createInput } from './input.ts';
+import type { Minimap } from './minimap/minimap.ts';
+import { createMinimap } from './minimap/minimap.ts';
 import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
 import type { CharacterLibrary } from './render/character-loader.ts';
@@ -228,6 +230,7 @@ async function start(): Promise<void> {
       hud.requestMap(true);
     },
   });
+  const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile) });
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),
     boundsOf: (id: number, out: Box3): boolean => actors.boundsOf(id, out),
@@ -337,6 +340,7 @@ async function start(): Promise<void> {
     markers.update(dt, now / 1000, world);
     stage.setFlash(weather.flash);
     hud.update(dt);
+    minimap.update(dt);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     stage.render();
 
