@@ -12,6 +12,10 @@ import type { IsoCamera } from './iso-camera.ts';
 import type { BurstOptions, ParticleSystem } from './particles.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
+function echoOwner(actorId: number): number {
+  return -actorId - 1;
+}
+
 export const EFFECTS = {
   slashTime: 0.2,
   slashHeight: 1.15,
@@ -52,6 +56,14 @@ export const EFFECTS = {
   phaseRing: 9,
   phaseShake: 0.5,
   castLift: 1.7,
+  echoRing: 1.4,
+  echoHeight: 1.1,
+  echoSpray: 18,
+  reviveRing: 1.8,
+  reviveSpray: 26,
+  shedHeight: 1.6,
+  shedLow: 0.3,
+  shedSpread: 0.35,
   castReach: 0.6,
   markRise: 0.4,
   guardSparks: 14,
@@ -275,6 +287,20 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     );
   };
 
+  const afterImage = (x: number, z: number, color: Color): void => {
+    ring(x, z, EFFECTS.echoRing, color, EFFECTS.ringTime);
+    spray(x, EFFECTS.echoHeight, z, color, EFFECTS.echoSpray, { speed: { min: 0.2, max: 1.2 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.4, max: 0.9 }, gravity: -0.6, size: { min: 0.4, max: 0.9 }, jitter: 0.5 });
+  };
+
+  const onRevive = (event: Extract<WorldEvent, { type: 'revive' }>, world: World): void => {
+    const raised: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.monsterId);
+    if (raised === undefined) return;
+    const color: Color = colorOf(raised.def.color);
+    ring(raised.pos.x, raised.pos.z, EFFECTS.reviveRing, color, EFFECTS.ringTime);
+    spray(raised.pos.x, 0.2, raised.pos.z, color, EFFECTS.reviveSpray, { speed: { min: 0.3, max: 1.5 }, lift: { min: 2, max: 6 }, life: { min: 0.5, max: 1 }, gravity: -1, size: { min: 0.25, max: 0.55 }, jitter: 0.4 });
+    flashLight(raised.pos.x, 1.6, raised.pos.z, color, 45);
+  };
+
   const levelUp = (x: number, z: number): void => {
     const pillar = pillarMesh(glow(GOLD, 1.6), 1.1, 16);
     pillar.position.x = x;
@@ -313,6 +339,12 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const color: Color = colorOf(event.skill.vfx.color);
     const delivery = event.skill.delivery;
     cancelOwned(event.actorId);
+    if (event.echo) {
+      cancelOwned(echoOwner(event.actorId));
+      afterImage(event.origin.x, event.origin.z, color);
+    } else if (event.skill.echo > 0 && event.team === 'monster') {
+      telegraph(echoOwner(event.actorId), event.origin.x, event.origin.z, event.direction, event.skill, event.skill.echo);
+    }
     switch (delivery.type) {
       case 'arc':
         slash(event.origin.x, event.origin.z, event.direction, delivery.reach, delivery.arcDegrees, color, event.team === 'monster');
@@ -397,6 +429,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       return;
     }
     cancelOwned(hazard.id);
+    if (hazard.skill.delivery.type === 'field') {
+      ring(hazard.pos.x, hazard.pos.z, hazard.radius, color, EFFECTS.ringTime);
+      return;
+    }
     shockwave(hazard.pos.x, hazard.pos.z, hazard.radius, color);
     if (event.hits > 0) camera.addTrauma(hazard.skill.shake);
   };
@@ -459,6 +495,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             cancelOwned(event.actorId);
             break;
           case 'revive':
+            onRevive(event, world);
             break;
           case 'hazard':
             onHazard(event);
@@ -584,6 +621,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       }
       for (const light of lights) light.intensity *= Math.exp(-EFFECTS.flashDecay * dt);
       hurt = Math.max(0, hurt - EFFECTS.hurtDecay * dt);
+      for (const monster of world.monsters) {
+        if (!monster.alive || monster.def.shed <= 0 || Math.random() > monster.def.shed * dt) continue;
+        spray(monster.pos.x, EFFECTS.shedHeight * Math.random() + EFFECTS.shedLow, monster.pos.z, colorOf(monster.def.color), 1, { speed: { min: 0, max: 0.4 }, lift: { min: 0.2, max: 1 }, life: { min: 0.5, max: 1.1 }, size: { min: 0.12, max: 0.3 }, gravity: -0.4, drag: 0.8, jitter: EFFECTS.shedSpread });
+      }
       emberTimer -= dt;
       if (emberTimer <= 0 && torches.length > 0) {
         emberTimer = EFFECTS.emberEvery;

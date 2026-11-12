@@ -212,6 +212,7 @@ export interface MonsterDef {
   readonly dormant: DormantDef | null;
   readonly support: string | null;
   readonly barks: readonly string[];
+  readonly shed: number;
 }
 
 export const ITEM_SLOTS = ['weapon', 'head', 'chest', 'hands', 'legs', 'feet', 'charm'] as const;

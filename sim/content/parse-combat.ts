@@ -1,5 +1,5 @@
 import type { Fields } from './read.ts';
-import { ContentError, fields, nullableText, numeric, positive, text, textList } from './read.ts';
+import { ContentError, fields, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
 import type { DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, SkillLeap, SummonDef } from './combat-types.ts';
 import type { Content, MonsterDef, SkillDef } from './types.ts';
 
@@ -91,6 +91,7 @@ export interface MonsterTraits {
   readonly dormant: DormantDef | null;
   readonly support: string | null;
   readonly barks: readonly string[];
+  readonly shed: number;
 }
 
 export function monsterTraits(source: Fields, where: string): MonsterTraits {
@@ -104,6 +105,7 @@ export function monsterTraits(source: Fields, where: string): MonsterTraits {
     dormant: optional(source['dormant'], `${where}.dormant`, dormant),
     support: nullableText(source, 'support', where),
     barks: source['barks'] === undefined ? [] : textList(source, 'barks', where),
+    shed: source['shed'] === undefined ? 0 : nonNegative(source, 'shed', where),
   };
 }
 

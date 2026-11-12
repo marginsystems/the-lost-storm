@@ -629,6 +629,7 @@
     "name": "Stormcaller Rival",
     "rig": "skeleton_hero",
     "faction": "stormcallers",
+    "shed": 14,
     "scale": 1.12,
     "radius": 0.5,
     "life": 560,

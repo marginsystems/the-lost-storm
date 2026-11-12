@@ -122,12 +122,12 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     sync(dt: number, current: World, hoveredId: number | null): void {
       const floor: number = current.zone.floorHeight;
       playerView.lie(current.wake === null ? null : wakeProgress(current.wake));
-      playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.stats.moveSpeed * paceAt(current.grid, current.player.pos.x, current.player.pos.z), rise: 1, floor, turnRate: ACTOR.turnRate });
+      playerView.sync(dt, poseOf(current.player), { moveSpeed: current.player.stats.moveSpeed * paceAt(current.grid, current.player.pos.x, current.player.pos.z), rise: 1, floor, turnRate: ACTOR.turnRate, tempo: current.player.tempo });
       for (const monster of current.monsters) {
         const entry: MonsterEntry | null = entryFor(monster);
         if (entry === null) continue;
         entry.view.setHover(monster.id === hoveredId);
-        entry.view.sync(dt, poseOf(monster), { moveSpeed: monster.def.moveSpeed * paceAt(current.grid, monster.pos.x, monster.pos.z), rise: 1 - monster.spawnTime / entry.spawnTime, floor, turnRate: ACTOR.turnRate });
+        entry.view.sync(dt, poseOf(monster), { moveSpeed: monster.def.moveSpeed * paceAt(current.grid, monster.pos.x, monster.pos.z), rise: 1 - monster.spawnTime / entry.spawnTime, floor, turnRate: ACTOR.turnRate, tempo: monster.tempo });
       }
       const sameZone: boolean = npcZone === current.zone;
       npcZone = current.zone;
@@ -139,7 +139,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         entry.shown += (1 - entry.shown) * ease;
         if (1 - entry.shown < ACTORS.npcSettledWithin) entry.shown = 1;
         entry.view.setHover(npc.id === hoveredId);
-        entry.view.sync(dt, entry.pose, { moveSpeed: 0, rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate });
+        entry.view.sync(dt, entry.pose, { moveSpeed: 0, rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate, tempo: 1 });
       }
       for (const [id, entry] of npcs) {
         if (current.npcs.some((npc: NpcState): boolean => npc.id === id)) continue;
@@ -150,7 +150,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           continue;
         }
         entry.view.setHover(false);
-        entry.view.sync(dt, entry.pose, { moveSpeed: 0, rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate });
+        entry.view.sync(dt, entry.pose, { moveSpeed: 0, rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate, tempo: 1 });
       }
     },
     handle(events: readonly WorldEvent[], current: World): void {

@@ -53,6 +53,7 @@ export interface SyncOptions {
   readonly rise: number;
   readonly floor: number;
   readonly turnRate: number;
+  readonly tempo: number;
 }
 
 export interface ActorView {
@@ -162,7 +163,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         }
         if (oneShot <= 0) {
           const run: boolean = actor.moving;
-          const speed: number = run ? clamped(options.moveSpeed / rig.def.runSpeed, ACTOR.minRunSpeed, ACTOR.maxRunSpeed) : 1;
+          const speed: number = run ? clamped(options.moveSpeed / rig.def.runSpeed, ACTOR.minRunSpeed, ACTOR.maxRunSpeed) : rig.def.idleRate;
           play(run ? rig.clips.run : rig.clips.idle, ACTOR.locomotionFade, speed, false, false);
         }
       }
@@ -174,7 +175,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       const hoverAmount: number = hover && !dead ? ACTOR.hoverGlow : 0;
       mixed.copy(hoverColor).lerp(flashColor, flash > 0 ? 1 : 0);
       rig.setFlash(mixed, Math.max(flash, hoverAmount));
-      rig.mixer.update(dt);
+      rig.mixer.update(dt * options.tempo);
     },
     startAction(animation: string, windup: number, recovery: number): boolean {
       const entry: ActionClip | undefined = rig.clips.actions.get(animation);

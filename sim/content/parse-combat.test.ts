@@ -7,7 +7,7 @@ import { combatProblems, monsterMod, monsterTraits, packMods, skillMotion } from
 import type { Content, MonsterDef, SkillDef, ZoneDef } from './types.ts';
 
 void test('a monster without combat traits is steady, unguarded and plain', (): void => {
-  assert.deepEqual(monsterTraits({ faction: 'f' }, 'm'), { poise: { knockback: 1, stagger: 1 }, guard: null, deathSkill: null, summon: null, mods: [], faction: 'f', dormant: null, support: null, barks: [] });
+  assert.deepEqual(monsterTraits({ faction: 'f' }, 'm'), { poise: { knockback: 1, stagger: 1 }, guard: null, deathSkill: null, summon: null, mods: [], faction: 'f', dormant: null, support: null, barks: [], shed: 0 });
   assert.deepEqual(skillMotion({}, 's'), { leap: null, root: 0, hold: 0, echo: 0 });
   assert.deepEqual(packMods({}, 'p'), []);
 });
@@ -18,6 +18,8 @@ void test('combat traits are read and checked', (): void => {
   assert.equal(read.guard?.breakTime, 1.4);
   assert.equal(read.summon?.monster, null);
   assert.throws(() => monsterTraits({ poise: { knockback: 2, stagger: 0 }, faction: 'f' }, 'm'), /from 0 to 1/);
+  assert.equal(monsterTraits({ faction: 'f', shed: 9 }, 'm').shed, 9);
+  assert.throws(() => monsterTraits({ faction: 'f', shed: -1 }, 'm'), /shed/);
   assert.throws(() => monsterTraits({ summon: { monster: null, count: 1.5, cooldown: 4, limit: 3 }, faction: 'f' }, 'm'), /whole numbers/);
   assert.throws(() => monsterTraits({ guard: { arcDegrees: 720, damageTaken: 0.2, breakStagger: 0.45, breakTime: 1.4 }, faction: 'f' }, 'm'), /at most 360/);
   assert.throws(() => skillMotion({ root: -1 }, 's'), /zero or more/);
