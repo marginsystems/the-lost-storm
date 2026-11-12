@@ -142,22 +142,28 @@ export function objectiveTarget(world: World): ObjectiveTarget | null {
   return null;
 }
 
-export function nextAction(target: ObjectiveTarget | null, fallback: string): string {
-  if (target === null) return fallback;
+function namedAction(target: ObjectiveTarget): string {
   let line: string;
   switch (target.kind) {
     case 'person':
       line = `Talk to ${target.name}`;
       break;
-    case 'exit':
-      line = `Leave through the marked exit to ${target.name}`;
-      break;
     case 'monster':
       line = `Defeat ${target.name}`;
       break;
     case 'spot':
-      line = target.objective.type === 'defeat' ? `Find ${target.name}` : 'Go to the marked place';
+      line = target.objective.type === 'defeat' ? `Find ${target.name}` : `Go to ${target.name}`;
+      break;
+    case 'exit':
+      line = `Go to ${target.name}`;
       break;
   }
   return line;
+}
+
+export function nextAction(target: ObjectiveTarget | null, written: string): string {
+  if (target === null) return written;
+  if (target.kind === 'exit' && target.name !== '') return namedAction(target);
+  if (written !== '') return written;
+  return target.name === '' ? '' : namedAction(target);
 }
