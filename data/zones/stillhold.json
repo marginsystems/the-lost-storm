@@ -83,6 +83,7 @@
     {"prop": "crate_tall", "x": 41.42, "z": 28.86, "y": 0, "rotationDegrees": -27},
     {"prop": "castle_column", "x": 18.0, "z": 28.0, "y": 0, "rotationDegrees": 0},
     {"prop": "castle_column", "x": 34.0, "z": 28.0, "y": 0, "rotationDegrees": 0},
+    {"prop": "stash_chest", "x": 21.4, "z": 18.6, "y": 0, "rotationDegrees": 45},
     {"prop": "post", "x": 23.2, "z": 3.6, "y": 0, "rotationDegrees": 0},
     {"prop": "post", "x": 28.8, "z": 3.6, "y": 0, "rotationDegrees": 0},
     {"prop": "post", "x": 48.4, "z": 19.2, "y": 0, "rotationDegrees": 90},
@@ -154,7 +155,8 @@
   "npcs": [
     {"npc": "maren", "x": 17.6, "z": 33, "facingDegrees": -62, "when": [{"type": "objective", "quest": "the_gate", "objective": "door", "is": "current", "not": true}]},
     {"npc": "maren", "x": 7.6, "z": 18.8, "facingDegrees": 60, "when": [{"type": "objective", "quest": "the_gate", "objective": "door", "is": "current"}]},
-    {"npc": "hale", "x": 37, "z": 13.2, "facingDegrees": 215, "when": [{"type": "objective", "quest": "the_gate", "objective": "hale_still", "is": "current", "not": true}]}
+    {"npc": "hale", "x": 37, "z": 13.2, "facingDegrees": 215, "when": [{"type": "objective", "quest": "the_gate", "objective": "hale_still", "is": "current", "not": true}]},
+    {"npc": "odric", "x": 35.4, "z": 6.6, "facingDegrees": 150}
   ],
   "ambience": {
     "background": "#07090d",

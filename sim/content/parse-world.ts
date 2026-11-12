@@ -30,6 +30,7 @@ import type {
   ZoneVoice,
   ZoneWaypoint,
 } from './types.ts';
+import { service } from './parse-trade.ts';
 import { ATLAS_FEATURE_KINDS, OBJECTIVE_STATES, QUEST_STATES, ZONE_KINDS } from './types.ts';
 
 function point(value: unknown, where: string): ZonePoint {
@@ -197,6 +198,7 @@ function npc(value: unknown, where: string): NpcDef {
     gear: textList(source, 'gear', where),
     wear: textList(source, 'wear', where),
     talks: each(source['talks'], `${where}.talks`, talk),
+    service: service(source, where),
   };
 }
 

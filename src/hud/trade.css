@@ -1,0 +1,59 @@
+.trade-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.trade-head .panel-title {
+  margin-bottom: 0;
+}
+
+.trade-naming {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.trade-role {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.trade-gold {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ember);
+}
+
+.trade-gold .gold-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.stash-grid {
+  grid-template-columns: repeat(12, 44px);
+}
+
+.cell-price {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  z-index: 1;
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ember);
+  text-shadow: var(--legible-shadow);
+  pointer-events: none;
+  transition: color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.cell-price.short {
+  color: #c4675c;
+}

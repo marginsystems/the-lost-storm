@@ -57,6 +57,9 @@ import { createTooltip } from './tooltip.ts';
 import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
 import { createTreePanel } from './tree-panel.ts';
+import tradeCss from './trade.css?inline';
+import { createTradeHud } from './trade-hud.ts';
+import type { TradeHud } from './trade-hud.ts';
 import volumeCss from './volume.css?inline';
 import { createVolumeButton } from './volume-panel.ts';
 
@@ -66,7 +69,7 @@ const PANEL_IDS: readonly HudPanel[] = ['inventory', 'character', 'tree', 'map']
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -141,6 +144,13 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   };
 
   for (const panel of PANEL_IDS) track(panels[panel].element);
+  const trade: TradeHud = createTradeHud(root, context, track, {
+    element: panels.inventory.element,
+    isOpen: (): boolean => open.inventory,
+    setOpen: (next: boolean): void => setOpen('inventory', next),
+    besideOpen: (): boolean => open.character,
+    closeBeside: (): void => setOpen('character', false),
+  });
 
   const keyOf = (action: ActionId): string => api.settings.keys().labelOf(action);
   buttons.inventory = createMenuButton(row, 'Inventory', keyOf('inventory'), (): void => toggle('inventory'), track);
@@ -187,6 +197,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       buttons.tree?.setBadge(world.player.skillPoints);
       if (open.map) map.update(dt);
       if (open.character) characterPanel.update(dt);
+      trade.update();
       if (mapWanted && onWaypoint(world)) {
         mapWanted = false;
         if (world.dialogue === null && world.player.alive) setOpen('map', true);
@@ -303,6 +314,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     },
     closePanels(): boolean {
       let anyOpen: boolean = false;
+      if (trade.close()) anyOpen = true;
       for (const panel of PANEL_IDS) {
         if (open[panel]) {
           anyOpen = true;

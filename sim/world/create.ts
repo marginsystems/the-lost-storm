@@ -2,6 +2,7 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import { emptyEquipment, generateItem, slotOf } from '../items.ts';
 import { buildNavGrid } from '../nav/grid.ts';
 import { createRng } from '../rng.ts';
+import { copyVendors } from '../save.ts';
 import type { SaveData } from '../save.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
 import { addToInventory } from './character.ts';
@@ -12,6 +13,7 @@ import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
 import { startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
+import { emptyStash } from './trade.ts';
 import { placePlayer, respawnExists, startZone } from './zones.ts';
 
 export interface WorldOptions {
@@ -126,6 +128,10 @@ export function createWorld(content: Content, options: WorldOptions): World {
     surge: save?.surge ?? 1,
     surgeTimer: null,
     events: [],
+    service: null,
+    vendors: save === null ? {} : copyVendors(save.vendors),
+    stash: save === null ? emptyStash(content) : [...save.stash],
+    tradeZone: zone.id,
   };
   placePlayer(world);
   if (save === null) giveStartingItems(world);

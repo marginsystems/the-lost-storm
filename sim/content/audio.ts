@@ -10,7 +10,7 @@ export type UiAction = (typeof UI_ACTIONS)[number];
 export const WORLD_SOUND_EVENTS = ['hero_step', 'level_up', 'surge', 'surge_cleared', 'monster_spawn', 'player_respawn', 'flask_used'] as const;
 export type WorldSoundEvent = (typeof WORLD_SOUND_EVENTS)[number];
 
-const NOTICE_KEYS: Readonly<Record<NoticeReason, true>> = { no_mana: true, on_cooldown: true, inventory_full: true, flask_empty: true, life_full: true, mana_full: true };
+const NOTICE_KEYS: Readonly<Record<NoticeReason, true>> = { no_mana: true, on_cooldown: true, inventory_full: true, flask_empty: true, life_full: true, mana_full: true, no_gold: true, stash_full: true };
 const NOTICE_REASONS: readonly string[] = Object.keys(NOTICE_KEYS);
 
 export const PLAYER_KEY: string = 'player';
