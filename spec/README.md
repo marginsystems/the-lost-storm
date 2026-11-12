@@ -19,7 +19,7 @@ Checked properties:
 
 - **Invariants:** one exclusive overlay at a time (`OneExclusive`), exits before entries (`ExitBeforeEntry`), full screens hide the HUD chrome (`FullHidesChrome`), no gap with nothing on screen (`NoIdleGap`), nothing left under death (`DeathAlone`), no play panel up or waiting while the hero is dead (`DeadHoldsNothing`), and the sim's overlay flag equals "any overlay not closed" (`FlagMatches`).
 - **Action properties:** `EscapeTopFirst` and `EscapeClosesOnlyTop`.
-- **World interrupts:** `Interrupt` is one action for every reset of the world under the player: a zone change, returning to the lobby, the wake, the end card and a dialogue starting (`WORLD_INTERRUPTS` in `src/hud/overlay-core.ts`). The end card's arrival interrupts too. After any of them no play panel is open or waiting (`NoPanelAfterInterrupt`); death closes every play panel (`NoPanelAfterDeath`), and a respawn starts with nothing open (`RespawnStartsClear`). With `CURRENT = TRUE` and `NoPanelAfterDeath`, TLC finds the playtest bug in three states: open the inventory, die, and it stays open beside the death card.
+- **World interrupts:** `Interrupt` is one action for every reset of the world under the player: a zone change, returning to the lobby, the wake, the end card and a dialogue starting (`WORLD_INTERRUPTS` in `src/hud/overlay-core.ts`). The end card's arrival interrupts too. After any of them no play panel is open or waiting (`NoPanelAfterInterrupt`); death closes every play panel (`NoPanelAfterDeath`), and a respawn starts with nothing open (`RespawnStartsClear`). `OverlaysCurrentDeath.cfg` checks `NoPanelAfterDeath` with `CURRENT = TRUE`, and TLC finds the playtest bug in three states: open the inventory, die, and it stays open beside the death card.
 - **Death:** a pending death is never dropped (`DeathNeverDropped`), and its card always enters (`DeathShows`).
 - **Liveness:** every request is eventually shown or superseded (`NothingLost`).
 
@@ -32,6 +32,7 @@ Download `tla2tools.jar` from the [TLA+ releases](https://github.com/tlaplus/tla
 ```
 spec/run-tlc.sh
 spec/run-tlc.sh OverlaysCurrent.cfg
+spec/run-tlc.sh OverlaysCurrentDeath.cfg
 ```
 
-The first command passes: it finds 608 distinct states, depth 7. The second prints the counterexample. `src/hud/overlay-core.test.ts` walks every state the TypeScript core can reach and checks that there are exactly 608. It also reads this spec's tables and fails if they differ from `overlay-table.ts`, so a change to one without the other fails `npm test`.
+The first command passes: it finds 608 distinct states, depth 7. The other two print the counterexamples. `src/hud/overlay-core.test.ts` walks every state the TypeScript core can reach and checks that there are exactly 608. It also reads this spec's tables and fails if they differ from `overlay-table.ts`, so a change to one without the other fails `npm test`.
