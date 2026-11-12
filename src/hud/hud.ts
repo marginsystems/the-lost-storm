@@ -18,6 +18,7 @@ import type { Banners } from './banners.ts';
 import type { ActionId } from '../settings/bindings.ts';
 import { flaskAction } from '../settings/bindings.ts';
 import characterCss from './character.css?inline';
+import contextCss from './context-notice.css?inline';
 import { createCharacterPanel } from './character-panel.ts';
 import type { CharacterPanel } from './character-panel.ts';
 import type { HudContext, PanelView } from './context.ts';
@@ -69,7 +70,7 @@ const PANEL_IDS: readonly HudPanel[] = ['inventory', 'character', 'tree', 'map']
 export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {

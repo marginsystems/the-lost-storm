@@ -1,0 +1,69 @@
+.ctx-notice {
+  position: absolute;
+  left: 50%;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100% - 32px);
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-edge);
+  color: var(--text);
+  font: 14px/1.3 var(--sans);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  translate: -50% -10px;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+.ctx-notice.on {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  translate: -50% 0;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy),
+    visibility 0s;
+}
+
+.ctx-text {
+  white-space: nowrap;
+}
+
+.ctx-reload {
+  max-width: 0;
+  padding: 6px 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(127, 212, 255, 0.16);
+  color: var(--text);
+  font: 600 13px/1 var(--sans);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    max-width var(--spring-smooth-ms) var(--spring-smooth),
+    padding var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.ctx-notice.failed .ctx-reload {
+  max-width: 120px;
+  padding: 6px 12px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ctx-reload:hover {
+  background: rgba(127, 212, 255, 0.26);
+}

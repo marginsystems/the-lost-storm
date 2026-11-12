@@ -4,8 +4,9 @@ import type { Input } from '../input.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import { CAMERA } from '../render/iso-camera.ts';
 import type { Stage } from '../render/stage.ts';
-import type { ContextWatch } from './page.ts';
-import { enterLandscapeFullscreen, holdPageStill, readDeviceFacts, watchContext } from './page.ts';
+import type { ContextWatch } from '../hud/context-notice.ts';
+import { watchContext } from '../hud/context-notice.ts';
+import { enterLandscapeFullscreen, holdPageStill, readDeviceFacts } from './page.ts';
 import type { DeviceFacts, Quality, QualityTier } from './quality.ts';
 import { chooseQuality, configureRenderBudget, createQuality } from './quality.ts';
 import { prefersTouch } from './touch-map.ts';
@@ -47,7 +48,7 @@ export function bootMobile(): MobileBoot {
 export function startMobile(boot: MobileBoot, setup: MobileSetup): Mobile {
   const { canvas, stage } = setup;
   boot.quality.subscribe((tier: QualityTier): void => stage.applyQuality(tier));
-  const context: ContextWatch = watchContext(canvas, setup.hudRoot, (): void => stage.resize());
+  const context: ContextWatch = watchContext(canvas, setup.hudRoot, (): boolean => stage.renderer.getContext().isContextLost(), (): void => stage.resize());
   const controls: TouchControls | null = boot.touch
     ? createTouchControls({
         canvas,

@@ -1,7 +1,6 @@
 import type { DeviceFacts } from './quality.ts';
 
 export const PAGE = {
-  reloadOfferMs: 6000,
   scrollable: '.hud-panel, .pause-card, #title',
 } as const;
 
@@ -52,42 +51,4 @@ export function enterLandscapeFullscreen(): void {
   const root: HTMLElement = document.documentElement;
   if (document.fullscreenElement !== null || typeof root.requestFullscreen !== 'function') return;
   root.requestFullscreen({ navigationUI: 'hide' }).then(lockLandscape, ignore);
-}
-
-export interface ContextWatch {
-  readonly lost: boolean;
-}
-
-export function watchContext(canvas: HTMLCanvasElement, parent: HTMLElement, onRestored: () => void): ContextWatch {
-  let lost: boolean = false;
-  let offer: number | undefined;
-  const note: HTMLDivElement = document.createElement('div');
-  note.className = 'tc-lost';
-  note.setAttribute('role', 'status');
-  const text: HTMLSpanElement = document.createElement('span');
-  text.textContent = 'Restoring graphics…';
-  const reload: HTMLButtonElement = document.createElement('button');
-  reload.type = 'button';
-  reload.textContent = 'Reload';
-  reload.addEventListener('click', (): void => window.location.reload());
-  note.append(text, reload);
-  parent.append(note);
-  canvas.addEventListener('webglcontextlost', (event: Event): void => {
-    event.preventDefault();
-    lost = true;
-    note.classList.add('on');
-    window.clearTimeout(offer);
-    offer = window.setTimeout((): void => note.classList.add('stuck'), PAGE.reloadOfferMs);
-  });
-  canvas.addEventListener('webglcontextrestored', (): void => {
-    lost = false;
-    window.clearTimeout(offer);
-    note.classList.remove('on', 'stuck');
-    onRestored();
-  });
-  return {
-    get lost(): boolean {
-      return lost;
-    },
-  };
 }

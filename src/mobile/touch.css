@@ -284,61 +284,6 @@ body.touch .tree-viewport {
   }
 }
 
-.tc-lost {
-  position: absolute;
-  left: 50%;
-  top: 40%;
-  z-index: 70;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: rgba(8, 12, 18, 0.86);
-  color: var(--text);
-  font: 15px/1.3 var(--sans);
-  opacity: 0;
-  visibility: hidden;
-  translate: -50% 8px;
-  pointer-events: auto;
-  transition:
-    opacity var(--spring-smooth-ms) var(--spring-smooth),
-    translate var(--spring-bouncy-ms) var(--spring-bouncy),
-    visibility 0s linear var(--spring-smooth-ms);
-}
-
-.tc-lost.on {
-  opacity: 1;
-  visibility: visible;
-  translate: -50% 0;
-  transition:
-    opacity var(--spring-smooth-ms) var(--spring-smooth),
-    translate var(--spring-bouncy-ms) var(--spring-bouncy),
-    visibility 0s;
-}
-
-.tc-lost button {
-  max-width: 0;
-  padding: 6px 0;
-  overflow: hidden;
-  border: 0;
-  border-radius: 6px;
-  background: rgba(127, 212, 255, 0.18);
-  color: var(--text);
-  font: 600 14px/1 var(--sans);
-  opacity: 0;
-  transition:
-    max-width var(--spring-smooth-ms) var(--spring-smooth),
-    padding var(--spring-smooth-ms) var(--spring-smooth),
-    opacity var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-.tc-lost.stuck button {
-  max-width: 120px;
-  padding: 6px 12px;
-  opacity: 1;
-}
-
 @media (max-width: 900px), (max-height: 500px) {
   body.touch .hud-panel,
   body.touch .hud-panel.left,
