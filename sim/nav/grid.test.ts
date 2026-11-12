@@ -113,14 +113,21 @@ for (const zone of content.zones.values()) {
   void test(`${zone.id}: paths around every blocking prop keep a walker's body out of its footprint`, (): void => {
     const problems: string[] = [];
     const blocking = zone.props.filter((placed) => placed.when.length === 0 && must(content.props.get(placed.prop), placed.prop).blockRadius > 0);
+    let crossings: number = 0;
     for (const placed of blocking) {
       const reach: number = must(content.props.get(placed.prop), placed.prop).blockRadius + content.player.radius + AUDIT.approach;
       for (const [dx, dz] of AUDIT.crossings) {
         const from: Vec2 = { x: placed.x - dx * reach, z: placed.z - dz * reach };
         const to: Vec2 = { x: placed.x + dx * reach, z: placed.z + dz * reach };
         if (!isWalkable(zoneGrid, from.x, from.z) || !isWalkable(zoneGrid, to.x, to.z)) continue;
+        const path: Vec2[] = findPath(zoneGrid, from, to);
+        if (path.length === 0) {
+          problems.push(`no path across ${placed.prop} at ${placed.x},${placed.z} from ${from.x.toFixed(2)},${from.z.toFixed(2)}`);
+          continue;
+        }
+        crossings += 1;
         let previous: Vec2 = from;
-        for (const point of findPath(zoneGrid, from, to)) {
+        for (const point of path) {
           const steps: number = Math.max(1, Math.ceil(Math.hypot(point.x - previous.x, point.z - previous.z) / AUDIT.sampleStep));
           for (let step: number = 0; step <= steps; step += 1) {
             const x: number = previous.x + ((point.x - previous.x) * step) / steps;
@@ -135,6 +142,7 @@ for (const zone of content.zones.values()) {
       }
     }
     assert.deepEqual(problems.slice(0, AUDIT.reported), []);
+    if (blocking.length > 0) assert.ok(crossings > 0, `${zone.id} checked no crossing`);
   });
 
   void test(`${zone.id}: every pack, exit, checkpoint, waypoint and NPC is reachable from the start`, (): void => {
