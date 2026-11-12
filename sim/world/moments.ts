@@ -16,6 +16,9 @@ export const MOMENTS = {
   startLifeMin: 0.35,
   startLifeMax: 1,
   settle: 1.2,
+  wakeDepth: 0.7,
+  presence: 1.4,
+  awayLimit: 6,
 } as const;
 
 const NO_LOOT = { goldChance: 0, goldMin: 0, goldMax: 0, itemChance: 0 } as const;
@@ -48,6 +51,7 @@ function begin(world: World, def: MomentDef, pos: Vec2, combat: boolean, mark: b
     timeLeft: mark ? library.telegraph : def.lifetime * world.rng.range(MOMENTS.startLifeMin, MOMENTS.startLifeMax),
     phaseTime: 0,
     armed: distance(world.player.pos, pos) >= def.radius,
+    away: 0,
     outcome: null,
     figures: figuresOf(def, pos),
   };
@@ -189,19 +193,25 @@ function end(world: World, moment: MomentState, outcome: MomentOutcome): void {
   world.events.push({ type: 'moment_ended', moment, outcome });
 }
 
-function stepAwake(world: World, moment: MomentState): void {
+function stepAwake(world: World, moment: MomentState, dt: number): void {
   const turned: boolean = moment.figures.some((figure: MomentFigure): boolean => figure.turned);
-  if (turned && echoMonsters(world, moment).every((monster: MonsterState): boolean => !monster.alive)) {
+  const fighting: boolean = turned && echoMonsters(world, moment).some((monster: MonsterState): boolean => monster.alive);
+  if (turned && !fighting) {
     end(world, moment, 'resolved');
     return;
   }
-  if (moment.timeLeft <= 0) end(world, moment, turned ? 'expired' : 'played');
+  const present: boolean = world.player.alive && distance(world.player.pos, moment.pos) < moment.def.radius * MOMENTS.presence;
+  moment.away = present ? 0 : moment.away + dt;
+  const held: boolean = fighting && (sureHolds(world, world.zone.moments) || moment.away < MOMENTS.awayLimit);
+  if (moment.timeLeft <= 0 && !held) end(world, moment, turned ? 'expired' : 'played');
 }
 
 function stepMoment(world: World, moment: MomentState, dt: number): boolean {
   moment.timeLeft -= dt;
   moment.phaseTime += dt;
-  const inside: boolean = world.player.alive && distance(world.player.pos, moment.pos) < moment.def.radius;
+  const reach: number = world.player.alive ? distance(world.player.pos, moment.pos) : Infinity;
+  const inside: boolean = reach < moment.def.radius;
+  const deep: boolean = reach < moment.def.radius * MOMENTS.wakeDepth;
   switch (moment.phase) {
     case 'mark':
       if (moment.timeLeft > 0) return true;
@@ -213,11 +223,11 @@ function stepMoment(world: World, moment: MomentState, dt: number): boolean {
       return true;
     case 'dormant':
       if (!inside) moment.armed = true;
-      if (inside && (moment.armed || moment.phaseTime >= MOMENTS.settle)) wake(world, moment);
+      if (deep && (moment.armed || moment.phaseTime >= MOMENTS.settle)) wake(world, moment);
       else if (moment.timeLeft <= 0) end(world, moment, 'faded');
       return true;
     case 'awake':
-      stepAwake(world, moment);
+      stepAwake(world, moment, dt);
       return true;
     case 'fading':
       if (moment.timeLeft > 0) return true;
