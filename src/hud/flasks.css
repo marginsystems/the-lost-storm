@@ -1,21 +1,30 @@
 .hud-flask {
   position: absolute;
-  bottom: 14px;
+  bottom: calc(14px * var(--hud-s, 1));
+  scale: var(--hud-s, 1);
   width: 34px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   pointer-events: none;
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    scale var(--spring-smooth-ms) var(--spring-smooth),
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    right var(--spring-smooth-ms) var(--spring-smooth),
+    bottom var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .hud-flask.life {
-  left: 154px;
+  left: calc(154px * var(--hud-s, 1));
+  transform-origin: left bottom;
 }
 
 .hud-flask.mana {
-  right: 154px;
+  right: calc(154px * var(--hud-s, 1));
+  transform-origin: right bottom;
 }
 
 .hud-flask.used {

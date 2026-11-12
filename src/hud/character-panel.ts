@@ -203,7 +203,7 @@ export function createCharacterPanel(parent: HTMLElement, context: HudContext, i
 
   const place = (): void => {
     const shifted: boolean = inventory.classList.contains('open');
-    element.style.right = `${shifted ? inventory.offsetWidth + CHARACTER.edge + CHARACTER.inventoryGap : CHARACTER.minimapClearance}px`;
+    element.style.setProperty('--beside-right', `${shifted ? inventory.offsetWidth + CHARACTER.edge + CHARACTER.inventoryGap : CHARACTER.minimapClearance}px`);
   };
 
   return {

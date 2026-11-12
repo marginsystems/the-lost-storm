@@ -38,7 +38,7 @@ function buildCell(cellParent: HTMLElement, className: string): CellView {
 }
 
 export function createInventoryPanel(parent: HTMLElement, context: HudContext): PanelView {
-  const element: HTMLDivElement = el('div', 'hud-panel right', parent);
+  const element: HTMLDivElement = el('div', 'hud-panel right inventory-panel', parent);
   element.addEventListener('contextmenu', (event: MouseEvent): void => {
     event.preventDefault();
   });

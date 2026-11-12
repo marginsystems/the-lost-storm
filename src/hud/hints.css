@@ -7,10 +7,12 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
+  flex-wrap: wrap;
+  row-gap: 3px;
   font-size: 14px;
   color: var(--text-dim);
   text-shadow: var(--legible-shadow);
-  white-space: nowrap;
+  text-align: center;
   pointer-events: none;
   opacity: 0;
   transform: translateY(10px);
