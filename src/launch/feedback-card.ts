@@ -20,7 +20,7 @@ export interface FeedbackCard {
 }
 
 const COPY: Readonly<Record<CardMode, { readonly title: string; readonly line: string; readonly done: string }>> = {
-  end: { title: 'End of the alpha', line: 'This is as far as the alpha goes for now. More is coming.', done: 'Keep playing' },
+  end: { title: 'End of the alpha', line: 'More is coming.', done: 'Keep playing' },
   ask: { title: 'Feedback', line: 'What do you think of the alpha so far?', done: 'Close' },
 };
 

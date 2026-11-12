@@ -97,7 +97,6 @@ function skillTip(skill: SkillOffence): HTMLElement {
   line(tip, 'Weapon damage', `${Math.round(skill.weaponPercent * 100)}%`);
   line(tip, 'Time per use', `${skill.cycle.toFixed(2)}s`);
   if (skill.manaCost > 0) line(tip, 'Mana cost', String(skill.manaCost));
-  label('cs-tip-note', 'Per second counts critical hits and the opening blow of a combo.', tip);
   return tip;
 }
 
