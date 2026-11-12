@@ -111,6 +111,7 @@ export function drawMarks(context: CanvasRenderingContext2D, matrix: MapMatrix, 
     diamond(context, toMap(matrix, waypoint.x, waypoint.z), MARKS.waypoint * unit, MARKS.waypointColour);
   }
   for (const ground of world.ground) {
+    if (!isExplored(world, ground.pos.x, ground.pos.z)) continue;
     const at: MapPoint = toMap(matrix, ground.pos.x, ground.pos.z);
     if (visible(at, options, unit * MARKS.loot)) dot(context, at, (ground.content.kind === 'gold' ? MARKS.gold : MARKS.loot) * unit, lootColour(world, ground));
   }
