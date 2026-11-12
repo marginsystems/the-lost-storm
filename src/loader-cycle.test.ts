@@ -34,10 +34,10 @@ void test('the mark leaves only on a cycle boundary, the first one after the loa
 });
 
 void test('the mark stops after the cycle it leaves on, so its pixels rest dark through the exit', (): void => {
-  assert.equal(loaderCycles(loaderExitAt(400)), 1);
-  assert.equal(loaderCycles(loaderExitAt(900)), 2);
+  assert.equal(loaderCycles(loaderExitAt(LOADER_CYCLE.showDelayMs + 1)), 1);
+  assert.equal(loaderCycles(loaderExitAt(LOADER_CYCLE.showDelayMs + LOADER_CYCLE.cycleMs + 1)), 2);
   assert.equal(loaderCycles(loaderExitAt(LOADER_CYCLE.showDelayMs + 3 * LOADER_CYCLE.cycleMs)), 3);
-  assert.equal(loaderCycles(loaderExitAt(100)), 0);
+  assert.equal(loaderCycles(loaderExitAt(LOADER_CYCLE.showDelayMs - 1)), 0);
 });
 
 void test('while the load runs the mark keeps cycling, never leaving', (): void => {
@@ -48,4 +48,9 @@ void test('the shared cycle stays under a second so a crossing grows by less tha
   const cycle: number = LOADER_CYCLE.cycleMs;
   assert.ok(cycle < 1000);
   for (let done: number = LOADER_CYCLE.showDelayMs; done < 4000; done += 13) assert.ok(loaderExitAt(done) - done <= LOADER_CYCLE.cycleMs);
+});
+
+void test('a quick zone build ends inside the show delay, so a repeat crossing skips the mark and lifts at once', (): void => {
+  const repeatCrossingDoneMs: number = 280;
+  assert.equal(loaderExitAt(repeatCrossingDoneMs), repeatCrossingDoneMs);
 });

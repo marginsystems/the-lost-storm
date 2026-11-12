@@ -1,6 +1,6 @@
 .loading-mark {
   --mark-cycle: 720ms;
-  --mark-show: 150ms;
+  --mark-show: 300ms;
   --mark-step: 0.05625;
   display: grid;
   grid-template-columns: repeat(5, 5px);

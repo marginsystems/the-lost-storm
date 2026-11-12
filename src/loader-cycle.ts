@@ -1,5 +1,5 @@
 export const LOADER_CYCLE = {
-  showDelayMs: 150,
+  showDelayMs: 300,
   cycleMs: 720,
 } as const;
 
