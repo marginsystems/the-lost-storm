@@ -6,7 +6,7 @@ export const READER = {
   hintDelayMs: 2800,
   leaveMs: 520,
   nameSlot: '{name}',
-  hint: 'Click to close',
+  hint: 'Click or press Enter to close',
   touchHint: 'Tap to close',
 } as const;
 
