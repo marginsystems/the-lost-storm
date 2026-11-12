@@ -104,17 +104,18 @@ void test('garbage, the wrong version and wrong shapes are rejected without thro
   assert.equal(readSave(content, { ...toSave(played()), inventory: 'bag' }), null);
 });
 
-void test('items with unknown bases, rarities or affixes are dropped or cleaned', (): void => {
+void test('items with unknown bases or rarities are dropped, and one with a line that no longer exists has its lines rolled again', (): void => {
   const base: SaveData = toSave(played());
   const ghost: ItemInstance = { uid: 8, base: 'ghost_blade', rarity: 'common', level: 1, affixes: [] };
   const odd: ItemInstance = { uid: 9, base: 'rusted_blade', rarity: 'mythic', level: 1, affixes: [] };
-  const mixed: ItemInstance = { uid: 10, base: 'rusted_blade', rarity: 'magic', level: 1, affixes: [{ affix: 'jagged', value: 2 }, { affix: 'made_up', value: 9 }] };
+  const mixed: ItemInstance = { uid: 10, base: 'rusted_blade', rarity: 'magic', level: 1, affixes: [{ affix: 'honed', value: 0.06 }, { affix: 'made_up', value: 9 }] };
+  const kept: ItemInstance = { uid: 12, base: 'rusted_blade', rarity: 'magic', level: 1, affixes: [{ affix: 'honed', value: 0.06 }] };
   const misplaced: ItemInstance = made('drowned_leathers', 'common', 11);
   const raw: unknown = JSON.parse(
     JSON.stringify({
       ...base,
       allocated: ['stone_thunderclap', 'tempered_body', 'ghost_node', 7],
-      inventory: [ghost, odd, mixed, 'junk', null],
+      inventory: [ghost, odd, mixed, 'junk', kept],
       equipped: { weapon: misplaced, chest: null, charm: null },
     }),
   );
@@ -122,13 +123,14 @@ void test('items with unknown bases, rarities or affixes are dropped or cleaned'
   assert.deepEqual(save.allocated, ['stone_thunderclap', 'tempered_body']);
   assert.equal(save.inventory[0], null);
   assert.equal(save.inventory[1], null);
-  assert.deepEqual(must(save.inventory[2], 'mixed').affixes, [{ affix: 'jagged', value: 2 }]);
+  assert.deepEqual(must(save.inventory[2], 'mixed').affixes, must(generateItem(content, createRng(10), 10, 1, 'rusted_blade', 'magic'), 'reroll').affixes);
+  assert.deepEqual(must(save.inventory[4], 'kept').affixes, kept.affixes);
   assert.equal(save.inventory[3], null);
   assert.equal(save.equipped.weapon, null);
   assert.deepEqual(save.equipped.chest, misplaced);
   assert.equal(save.inventory.length, content.player.inventorySize);
   const world: World = createWorld(content, { seed: 1, save });
-  assert.equal(world.player.inventory.filter((item: ItemInstance | null): boolean => item !== null).length, 1);
+  assert.equal(world.player.inventory.filter((item: ItemInstance | null): boolean => item !== null).length, 2);
 });
 
 void test('a level above the maximum is clamped and fractions are floored', (): void => {

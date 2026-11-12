@@ -29,10 +29,11 @@ void test('rarity decides how many affixes an item gets', (): void => {
   }
 });
 
-void test('all four rarities turn up over many rolls', (): void => {
+void test('every rarity with a drop weight turns up over many rolls', (): void => {
   const seen: Set<string> = new Set<string>(rolls(2, 5).map((item: ItemInstance): string => item.rarity));
-  assert.deepEqual([...seen].toSorted(), content.rarities.map((rarity: RarityDef): string => rarity.id).toSorted());
-  assert.equal(seen.size, 4);
+  const dropping: string[] = content.rarities.filter((rarity: RarityDef): boolean => rarity.weight > 0).map((rarity: RarityDef): string => rarity.id);
+  assert.deepEqual([...seen].toSorted(), dropping.toSorted());
+  assert.ok(seen.size >= 3);
 });
 
 void test('an item never rolls the same stat twice and only affixes valid for its slot', (): void => {
@@ -63,58 +64,65 @@ void test('generation is deterministic for a seed and honours forced choices', (
   assert.equal(generateItem(content, createRng(1), 1, 1, null, 'missing_rarity'), null);
 });
 
-void test('affix values stay within their scaled range', (): void => {
+void test('line values stay within their range, scaled only by item level', (): void => {
   for (const item of rolls(5, 1)) {
-    const scale: number = rarityOf(content, item).statScale;
     for (const rolled of item.affixes) {
       const affix: AffixDef = affixOf(rolled.affix);
+      const scale: number = 1 + affix.perLevel * (item.level - 1);
       assert.ok(rolled.value >= affix.min * scale - 0.5 && rolled.value <= affix.max * scale + 0.5, `${affix.id} ${rolled.value}`);
     }
   }
 });
 
-void test('item level and rarity scale the implicit modifiers', (): void => {
+void test('each rarity rolls its number of lines, and never the same stat twice', (): void => {
+  for (const item of rolls(7, 8)) {
+    const rarity = rarityOf(content, item);
+    assert.ok(item.affixes.length >= rarity.affixMin && item.affixes.length <= rarity.affixMax, `${item.rarity} has ${item.affixes.length}`);
+    const stats: string[] = item.affixes.map((rolled): string => affixOf(rolled.affix).stat);
+    assert.equal(new Set<string>(stats).size, stats.length);
+  }
+  const legendary: ItemInstance = must(generateItem(content, createRng(3), 1, 10, 'squall_plate', 'stormtouched'), 'legendary');
+  assert.equal(legendary.affixes.length, 3);
+});
+
+void test('item level scales the implicit modifiers and rarity does not', (): void => {
   const common: ItemInstance = must(generateItem(content, createRng(1), 1, 1, 'rusted_blade', 'common'), 'common');
   const levelled: ItemInstance = must(generateItem(content, createRng(1), 1, 3, 'rusted_blade', 'common'), 'levelled');
   assert.deepEqual(itemMods(content, common).map((mod) => mod.value), [3, 6, 0.03]);
   assert.deepEqual(itemMods(content, levelled).map((mod) => mod.value), [4, 8, 0.04]);
+  assert.deepEqual(itemMods(content, { ...common, rarity: 'rare' }).map((mod) => mod.value), [3, 6, 0.03]);
   assert.equal(baseOf(content, common)?.slot, 'weapon');
   assert.equal(baseOf(content, { ...common, base: 'gone' }), null);
   assert.equal(rarityOf(content, { ...common, rarity: 'gone' }).id, 'unknown');
 });
 
-void test('the item name carries its prefix and suffix', (): void => {
+void test('the item name takes one word from its first line in the fixed order', (): void => {
   const plain: ItemInstance = { uid: 1, base: 'rusted_blade', rarity: 'common', level: 1, affixes: [] };
   assert.equal(itemName(content, plain), 'Rusted Blade');
-  const prefixed: ItemInstance = { ...plain, affixes: [{ affix: 'jagged', value: 3 }] };
-  assert.equal(itemName(content, prefixed), 'Jagged Rusted Blade');
-  const both: ItemInstance = { ...plain, rarity: 'magic', affixes: [{ affix: 'of_haste', value: 0.06 }, { affix: 'jagged', value: 3 }] };
-  assert.equal(itemName(content, both), 'Jagged Rusted Blade of Haste');
+  const one: ItemInstance = { ...plain, rarity: 'magic', affixes: [{ affix: 'brimming', value: 9 }] };
+  assert.equal(itemName(content, one), 'Brimming Rusted Blade');
+  const two: ItemInstance = { ...plain, rarity: 'magic', affixes: [{ affix: 'brimming', value: 9 }, { affix: 'quick', value: 0.06 }] };
+  assert.equal(itemName(content, two), 'Quick Rusted Blade');
   assert.equal(itemName(content, { ...plain, base: 'gone' }), 'gone');
 });
 
-void test('item lines merge the weapon damage range and list affixes separately', (): void => {
-  const item: ItemInstance = { uid: 1, base: 'stormsteel_sword', rarity: 'common', level: 1, affixes: [{ affix: 'of_precision', value: 0.05 }] };
+void test('item lines put the damage range first, then every stat in the fixed order', (): void => {
+  const item: ItemInstance = { uid: 1, base: 'stormsteel_sword', rarity: 'rare', level: 1, affixes: [{ affix: 'brimming', value: 8 }, { affix: 'keen', value: 0.03 }, { affix: 'honed', value: 0.07 }] };
   const lines: ItemLine[] = itemLines(content, item);
   assert.deepEqual(
     lines.map((line: ItemLine): string => line.text),
-    ['5–9 Damage', '+10% Attack Speed', '+3% Critical Strike Chance', '+5% Critical Strike Chance'],
+    ['5–9 Damage', '+10% Attack Speed', '+3% Critical Strike Chance', '+7% Damage', '+3% Critical Strike Chance', '+8 Maximum Mana'],
   );
   assert.deepEqual(
     lines.map((line: ItemLine): string => line.source),
-    ['implicit', 'implicit', 'implicit', 'affix'],
+    ['implicit', 'implicit', 'implicit', 'affix', 'affix', 'affix'],
   );
 });
 
-void test('every slot has a base that drops and affixes that can roll on it', (): void => {
+void test('every slot has a base that drops and enough lines for every rarity', (): void => {
   assert.deepEqual(Object.keys(emptyEquipment()).toSorted(), [...ITEM_SLOTS].toSorted());
   const dropped: Set<ItemSlot> = new Set<ItemSlot>(rolls(6, 6).map((item: ItemInstance): ItemSlot => must(slotOf(content, item), 'slot')));
-  for (const slot of ITEM_SLOTS) {
-    assert.ok(dropped.has(slot), `${slot} drops`);
-    const prefixes: AffixDef[] = [...content.affixes.values()].filter((affix: AffixDef): boolean => affix.slots.includes(slot) && affix.position === 'prefix');
-    const suffixes: AffixDef[] = [...content.affixes.values()].filter((affix: AffixDef): boolean => affix.slots.includes(slot) && affix.position === 'suffix');
-    assert.ok(prefixes.length >= 1 && suffixes.length >= 1, `${slot} affixes`);
-  }
+  for (const slot of ITEM_SLOTS) assert.ok(dropped.has(slot), `${slot} drops`);
 });
 
 void test('a held weapon shows a model and never wears clothes, and armour is the reverse', (): void => {

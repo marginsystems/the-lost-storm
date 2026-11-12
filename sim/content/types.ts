@@ -1,3 +1,4 @@
+import type { AffixDef, ItemBaseDef, ItemScaling, RarityDef } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
 import type { AttachmentDef, RigDef } from './rig-types.ts';
 import type { DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, StalkerBehaviour, SummonDef } from './combat-types.ts';
@@ -248,55 +249,8 @@ export interface WearableDef {
   readonly hides: readonly string[];
 }
 
-export const RARITY_MARKERS = ['none', 'shaft'] as const;
-export type RarityMarker = (typeof RARITY_MARKERS)[number];
-
-export interface RarityDef {
-  readonly id: string;
-  readonly name: string;
-  readonly color: string;
-  readonly marker: RarityMarker;
-  readonly weight: number;
-  readonly affixMin: number;
-  readonly affixMax: number;
-  readonly statScale: number;
-}
-
-export const ARMOUR_MATERIALS = ['cloth', 'leather', 'mail', 'plate'] as const;
-export type ArmourMaterial = (typeof ARMOUR_MATERIALS)[number];
-
-export interface ItemBaseDef {
-  readonly id: string;
-  readonly name: string;
-  readonly slot: ItemSlot | null;
-  readonly book: string | null;
-  readonly material: ArmourMaterial | null;
-  readonly icon: string;
-  readonly dropWeight: number;
-  readonly minLevel: number;
-  readonly implicit: readonly StatMod[];
-  readonly visual: string | null;
-  readonly wear: readonly string[];
-}
-
-export const AFFIX_POSITIONS = ['prefix', 'suffix'] as const;
-export type AffixPosition = (typeof AFFIX_POSITIONS)[number];
-
-export interface AffixDef {
-  readonly id: string;
-  readonly label: string;
-  readonly position: AffixPosition;
-  readonly slots: readonly ItemSlot[];
-  readonly stat: StatId;
-  readonly op: ModOp;
-  readonly min: number;
-  readonly max: number;
-  readonly perLevel: number;
-}
-
-export interface ItemScaling {
-  readonly implicitPerLevel: number;
-}
+export { ARMOUR_MATERIALS, ITEM_STATS, RARITY_MARKERS } from './item-types.ts';
+export type { AffixDef, ArmourMaterial, ItemBaseDef, ItemScaling, ItemStat, RarityDef, RarityMarker } from './item-types.ts';
 
 export const REQUIRE_MODES = ['all', 'any'] as const;
 export type RequireMode = (typeof REQUIRE_MODES)[number];
@@ -659,9 +613,16 @@ export interface PlayerDef {
   readonly respawnInvulnerability: number;
   readonly deathPenalty: DeathPenalty;
   readonly resistance: ResistanceRules;
+  readonly caps: readonly StatCap[];
+}
+
+export interface StatCap {
+  readonly stat: StatId;
+  readonly max: number;
 }
 
 export interface ResistanceRules {
+  readonly armourCap: number;
   readonly cap: number;
   readonly floor: number;
   readonly tierPenalty: number;

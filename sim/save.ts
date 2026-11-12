@@ -3,7 +3,8 @@ import { isFields } from './content/read.ts';
 import type { StoryFlags } from './content/story-types.ts';
 import type { RetiredZones } from './content/road-types.ts';
 import type { Content, ItemSlot } from './content/types.ts';
-import { emptyEquipment, slotOf } from './items.ts';
+import { emptyEquipment, generateItem, slotOf } from './items.ts';
+import { createRng } from './rng.ts';
 import { adoptLearned, findNode, reachablePlaces } from './progression.ts';
 import type { AdoptedPlaces } from './progression.ts';
 import { readBar, readLearned } from './skill-book.ts';
@@ -119,7 +120,9 @@ function readItem(content: Content, value: unknown): ItemInstance | null {
   if (!content.itemBases.has(base) || !content.rarities.some((candidate): boolean => candidate.id === rarity)) return null;
   const list: readonly unknown[] = affixes;
   const rolled: RolledAffix[] = list.map((entry: unknown): RolledAffix | null => readAffix(content, entry)).filter((entry: RolledAffix | null): entry is RolledAffix => entry !== null);
-  return { uid, base, rarity, level, affixes: rolled };
+  if (rolled.length === list.length) return { uid, base, rarity, level, affixes: rolled };
+  const fresh: ItemInstance | null = generateItem(content, createRng(uid), uid, level, base, rarity);
+  return { uid, base, rarity, level, affixes: fresh === null ? rolled : fresh.affixes };
 }
 
 function readEquipped(content: Content, value: unknown, inventory: (ItemInstance | null)[]): Worn {

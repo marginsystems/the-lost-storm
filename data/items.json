@@ -9,8 +9,7 @@
       "color": "#c9ccd1",
       "weight": 58,
       "affixMin": 0,
-      "affixMax": 0,
-      "statScale": 1
+      "affixMax": 0
     },
     {
       "id": "magic",
@@ -18,8 +17,7 @@
       "color": "#6fa8ff",
       "weight": 29,
       "affixMin": 1,
-      "affixMax": 2,
-      "statScale": 1.1
+      "affixMax": 2
     },
     {
       "id": "rare",
@@ -28,18 +26,16 @@
       "marker": "shaft",
       "weight": 11,
       "affixMin": 3,
-      "affixMax": 4,
-      "statScale": 1.25
+      "affixMax": 4
     },
     {
       "id": "stormtouched",
       "name": "Legendary",
       "color": "#ff9a4a",
       "marker": "shaft",
-      "weight": 2,
-      "affixMin": 4,
-      "affixMax": 5,
-      "statScale": 1.5
+      "weight": 0,
+      "affixMin": 3,
+      "affixMax": 3
     }
   ],
   "bases": [
@@ -129,11 +125,6 @@
           "stat": "maxMana",
           "op": "add",
           "value": 16
-        },
-        {
-          "stat": "manaRegen",
-          "op": "add",
-          "value": 1.2
         }
       ]
     },
@@ -164,9 +155,9 @@
           "value": -0.18
         },
         {
-          "stat": "critMultiplier",
+          "stat": "damagePercent",
           "op": "add",
-          "value": 0.3
+          "value": 0.15
         }
       ]
     },
@@ -267,11 +258,6 @@
           "stat": "maxMana",
           "op": "add",
           "value": 22
-        },
-        {
-          "stat": "manaRegen",
-          "op": "add",
-          "value": 1
         }
       ]
     },
@@ -562,9 +548,9 @@
           "value": 14
         },
         {
-          "stat": "manaRegen",
+          "stat": "stormResist",
           "op": "add",
-          "value": 1
+          "value": 0.06
         }
       ]
     },
@@ -602,9 +588,50 @@
   ],
   "affixes": [
     {
-      "id": "sturdy",
-      "label": "Sturdy",
-      "position": "prefix",
+      "id": "honed",
+      "label": "Honed",
+      "slots": [
+        "weapon",
+        "hands",
+        "charm"
+      ],
+      "stat": "damagePercent",
+      "op": "add",
+      "min": 0.05,
+      "max": 0.1,
+      "perLevel": 0.03
+    },
+    {
+      "id": "quick",
+      "label": "Quick",
+      "slots": [
+        "weapon",
+        "hands",
+        "charm"
+      ],
+      "stat": "attackSpeed",
+      "op": "add",
+      "min": 0.04,
+      "max": 0.08,
+      "perLevel": 0.02
+    },
+    {
+      "id": "keen",
+      "label": "Keen",
+      "slots": [
+        "weapon",
+        "head",
+        "charm"
+      ],
+      "stat": "critChance",
+      "op": "add",
+      "min": 0.02,
+      "max": 0.04,
+      "perLevel": 0.02
+    },
+    {
+      "id": "hale",
+      "label": "Hale",
       "slots": [
         "head",
         "chest",
@@ -620,52 +647,8 @@
       "perLevel": 0.12
     },
     {
-      "id": "jagged",
-      "label": "Jagged",
-      "position": "prefix",
-      "slots": [
-        "weapon"
-      ],
-      "stat": "damageMax",
-      "op": "add",
-      "min": 2,
-      "max": 4,
-      "perLevel": 0.12
-    },
-    {
-      "id": "honed",
-      "label": "Honed",
-      "position": "prefix",
-      "slots": [
-        "weapon",
-        "charm"
-      ],
-      "stat": "damagePercent",
-      "op": "add",
-      "min": 0.06,
-      "max": 0.14,
-      "perLevel": 0.03
-    },
-    {
-      "id": "charged",
-      "label": "Charged",
-      "position": "prefix",
-      "slots": [
-        "weapon",
-        "head",
-        "chest",
-        "charm"
-      ],
-      "stat": "maxMana",
-      "op": "add",
-      "min": 6,
-      "max": 14,
-      "perLevel": 0.1
-    },
-    {
       "id": "plated",
       "label": "Plated",
-      "position": "prefix",
       "slots": [
         "head",
         "chest",
@@ -680,109 +663,66 @@
       "perLevel": 0.12
     },
     {
-      "id": "of_haste",
-      "label": "of Haste",
-      "position": "suffix",
+      "id": "grounded",
+      "label": "Grounded",
       "slots": [
-        "weapon",
+        "head",
+        "chest",
         "hands",
-        "charm"
-      ],
-      "stat": "attackSpeed",
-      "op": "add",
-      "min": 0.05,
-      "max": 0.12,
-      "perLevel": 0.02
-    },
-    {
-      "id": "of_the_squall",
-      "label": "of the Squall",
-      "position": "suffix",
-      "slots": [
         "legs",
         "feet",
         "charm"
+      ],
+      "stat": "stormResist",
+      "op": "add",
+      "min": 0.05,
+      "max": 0.1,
+      "perLevel": 0.05
+    },
+    {
+      "id": "hearthwarm",
+      "label": "Hearthwarm",
+      "slots": [
+        "head",
+        "chest",
+        "hands",
+        "legs",
+        "feet",
+        "charm"
+      ],
+      "stat": "frostResist",
+      "op": "add",
+      "min": 0.05,
+      "max": 0.1,
+      "perLevel": 0.05
+    },
+    {
+      "id": "fleet",
+      "label": "Fleet",
+      "slots": [
+        "legs",
+        "feet"
       ],
       "stat": "moveSpeed",
       "op": "percent",
-      "min": 0.04,
-      "max": 0.09,
+      "min": 0.03,
+      "max": 0.06,
       "perLevel": 0.01
     },
     {
-      "id": "of_precision",
-      "label": "of Precision",
-      "position": "suffix",
-      "slots": [
-        "weapon",
-        "hands",
-        "charm"
-      ],
-      "stat": "critChance",
-      "op": "add",
-      "min": 0.03,
-      "max": 0.07,
-      "perLevel": 0.02
-    },
-    {
-      "id": "of_mending",
-      "label": "of Mending",
-      "position": "suffix",
-      "slots": [
-        "head",
-        "chest",
-        "legs",
-        "charm"
-      ],
-      "stat": "lifeRegen",
-      "op": "add",
-      "min": 0.6,
-      "max": 1.6,
-      "perLevel": 0.08
-    },
-    {
-      "id": "of_the_font",
-      "label": "of the Font",
-      "position": "suffix",
+      "id": "brimming",
+      "label": "Brimming",
       "slots": [
         "weapon",
         "head",
         "chest",
         "charm"
       ],
-      "stat": "manaRegen",
+      "stat": "maxMana",
       "op": "add",
-      "min": 0.5,
-      "max": 1.4,
-      "perLevel": 0.08
-    },
-    {
-      "id": "of_plunder",
-      "label": "of Plunder",
-      "position": "suffix",
-      "slots": [
-        "hands",
-        "feet",
-        "charm"
-      ],
-      "stat": "goldFind",
-      "op": "add",
-      "min": 0.1,
-      "max": 0.3,
-      "perLevel": 0.02
-    },
-    {
-      "id": "of_ruin",
-      "label": "of Ruin",
-      "position": "suffix",
-      "slots": [
-        "weapon"
-      ],
-      "stat": "critMultiplier",
-      "op": "add",
-      "min": 0.15,
-      "max": 0.35,
-      "perLevel": 0.02
+      "min": 6,
+      "max": 14,
+      "perLevel": 0.1
     }
   ]
 }

@@ -32,6 +32,7 @@ export function computeStats(content: Content, level: number, equipped: Equipmen
   for (const node of allocatedNodes(content, allocated)) mods.push(...node.statMods);
   const stats: StatBlock = applyMods(content.player.baseStats, mods);
   stats.damageMax = Math.max(stats.damageMax, stats.damageMin);
+  for (const cap of content.player.caps) stats[cap.stat] = Math.min(stats[cap.stat], cap.max);
   return stats;
 }
 
@@ -144,9 +145,9 @@ export function resolveSkillBar(content: Content, bar: readonly (string | null)[
   });
 }
 
-export function armourReduction(armour: number): number {
+export function armourReduction(armour: number, cap: number): number {
   const effective: number = Math.max(0, armour);
-  return effective / (effective + ARMOUR_HALF_POINT);
+  return Math.min(cap, effective / (effective + ARMOUR_HALF_POINT));
 }
 
 export function resistanceOf(stats: StatBlock, type: ResistedType, rules: ResistanceRules, stormTier: number): number {
@@ -155,7 +156,7 @@ export function resistanceOf(stats: StatBlock, type: ResistedType, rules: Resist
 }
 
 export function damageTakenScale(stats: StatBlock, type: DamageType, rules: ResistanceRules, stormTier: number): number {
-  const armour: number = 1 - armourReduction(stats.armour);
+  const armour: number = 1 - armourReduction(stats.armour, rules.armourCap);
   switch (type) {
     case 'physical':
       return armour;

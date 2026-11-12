@@ -1,4 +1,6 @@
-import type { AffixDef, Content, ItemBaseDef, ItemSlot, RarityDef, StatMod } from './content/types.ts';
+import type { AffixDef, Content, ItemBaseDef, ItemSlot, ItemStat, RarityDef, StatId, StatMod } from './content/types.ts';
+import { ITEM_STATS } from './content/types.ts';
+import { linesFor } from './content/item-rules.ts';
 import type { Rng } from './rng.ts';
 import { pickWeighted } from './rng.ts';
 import { describeMod, roundStat } from './stat-text.ts';
@@ -9,7 +11,7 @@ export interface ItemLine {
   readonly source: 'implicit' | 'affix';
 }
 
-const FALLBACK_RARITY: RarityDef = { id: 'unknown', name: 'Unknown', color: '#9aa3ad', marker: 'none', weight: 0, affixMin: 0, affixMax: 0, statScale: 1 };
+const FALLBACK_RARITY: RarityDef = { id: 'unknown', name: 'Unknown', color: '#9aa3ad', marker: 'none', weight: 0, affixMin: 0, affixMax: 0 };
 
 export function emptyEquipment(): Equipment {
   return { weapon: null, head: null, chest: null, hands: null, legs: null, feet: null, charm: null };
@@ -30,7 +32,7 @@ export function slotOf(content: Content, item: ItemInstance): ItemSlot | null {
 function implicitMods(content: Content, item: ItemInstance): StatMod[] {
   const base: ItemBaseDef | null = baseOf(content, item);
   if (base === null) return [];
-  const factor: number = rarityOf(content, item).statScale * (1 + content.itemScaling.implicitPerLevel * (item.level - 1));
+  const factor: number = 1 + content.itemScaling.implicitPerLevel * (item.level - 1);
   return base.implicit.map((mod: StatMod): StatMod => ({ stat: mod.stat, op: mod.op, value: roundStat(mod.stat, mod.op, mod.value * factor) }));
 }
 
@@ -47,18 +49,24 @@ export function itemMods(content: Content, item: ItemInstance): StatMod[] {
   return [...implicitMods(content, item), ...affixMods(content, item)];
 }
 
+function orderOf(stat: StatId): number {
+  const index: number = ITEM_STATS.findIndex((candidate: ItemStat): boolean => candidate === stat);
+  return index === -1 ? ITEM_STATS.length : index;
+}
+
+function rolledLines(content: Content, item: ItemInstance): { readonly affix: AffixDef; readonly value: number }[] {
+  const lines: { readonly affix: AffixDef; readonly value: number }[] = [];
+  for (const rolled of item.affixes) {
+    const affix: AffixDef | undefined = content.affixes.get(rolled.affix);
+    if (affix !== undefined) lines.push({ affix, value: rolled.value });
+  }
+  return lines.toSorted((a, b): number => orderOf(a.affix.stat) - orderOf(b.affix.stat));
+}
+
 export function itemName(content: Content, item: ItemInstance): string {
   const base: string = baseOf(content, item)?.name ?? item.base;
-  const labelAt = (position: AffixDef['position']): string | null => {
-    for (const rolled of item.affixes) {
-      const affix: AffixDef | undefined = content.affixes.get(rolled.affix);
-      if (affix?.position === position) return affix.label;
-    }
-    return null;
-  };
-  const prefix: string | null = labelAt('prefix');
-  const suffix: string | null = labelAt('suffix');
-  return `${prefix === null ? '' : `${prefix} `}${base}${suffix === null ? '' : ` ${suffix}`}`;
+  const top: AffixDef | undefined = rolledLines(content, item)[0]?.affix;
+  return top === undefined ? base : `${top.label} ${base}`;
 }
 
 export function itemLines(content: Content, item: ItemInstance): ItemLine[] {
@@ -67,29 +75,25 @@ export function itemLines(content: Content, item: ItemInstance): ItemLine[] {
   const min: StatMod | undefined = implicit.find((mod: StatMod): boolean => mod.stat === 'damageMin' && mod.op === 'add');
   const max: StatMod | undefined = implicit.find((mod: StatMod): boolean => mod.stat === 'damageMax' && mod.op === 'add');
   if (min !== undefined && max !== undefined) lines.push({ text: `${min.value}–${max.value} Damage`, source: 'implicit' });
-  for (const mod of implicit) {
-    if (min !== undefined && max !== undefined && (mod === min || mod === max)) continue;
-    lines.push({ text: describeMod(mod), source: 'implicit' });
-  }
-  for (const mod of affixMods(content, item)) lines.push({ text: describeMod(mod), source: 'affix' });
+  const rest: StatMod[] = implicit.filter((mod: StatMod): boolean => !(min !== undefined && max !== undefined && (mod === min || mod === max)));
+  for (const mod of rest.toSorted((a: StatMod, b: StatMod): number => orderOf(a.stat) - orderOf(b.stat))) lines.push({ text: describeMod(mod), source: 'implicit' });
+  for (const line of rolledLines(content, item)) lines.push({ text: describeMod({ stat: line.affix.stat, op: line.affix.op, value: line.value }), source: 'affix' });
   return lines;
 }
 
 function rollAffixes(content: Content, rng: Rng, base: ItemBaseDef, rarity: RarityDef, level: number): RolledAffix[] {
-  const pool: AffixDef[] = [...content.affixes.values()].filter((affix: AffixDef): boolean => base.slot !== null && affix.slots.includes(base.slot));
+  const pool: AffixDef[] = base.slot === null ? [] : [...linesFor(content, base.slot)];
   const wanted: number = rng.int(rarity.affixMin, rarity.affixMax);
   const rolled: RolledAffix[] = [];
-  const taken: Set<AffixDef['position']> = new Set<AffixDef['position']>();
-  const usedStats: Set<string> = new Set<string>();
-  for (let attempt: number = 0; attempt < wanted * 6 && rolled.length < wanted; attempt += 1) {
-    const affix: AffixDef | undefined = pool[rng.int(0, pool.length - 1)];
+  while (rolled.length < wanted && pool.length > 0) {
+    const index: number = rng.int(0, pool.length - 1);
+    const affix: AffixDef | undefined = pool[index];
     if (affix === undefined) break;
-    const needsFreeLabel: boolean = rolled.length < 2;
-    if (usedStats.has(affix.stat) || (needsFreeLabel && taken.has(affix.position))) continue;
-    const scale: number = (1 + affix.perLevel * (level - 1)) * rarity.statScale;
+    const scale: number = 1 + affix.perLevel * (level - 1);
     rolled.push({ affix: affix.id, value: roundStat(affix.stat, affix.op, rng.range(affix.min, affix.max) * scale) });
-    taken.add(affix.position);
-    usedStats.add(affix.stat);
+    for (let at: number = pool.length - 1; at >= 0; at -= 1) {
+      if (pool[at]?.stat === affix.stat) pool.splice(at, 1);
+    }
   }
   return rolled;
 }

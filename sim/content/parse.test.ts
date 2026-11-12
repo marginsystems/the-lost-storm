@@ -644,7 +644,7 @@ void test('a skill hits for physical damage unless its data names storm or frost
 void test('a zone with no storm tier is tier 0, and the hero resists up to a cap from data', (): void => {
   const content: Content = parseContent(shipped);
   assert.ok([...content.zones.values()].every((zone): boolean => zone.stormTier === 0));
-  assert.deepEqual(content.player.resistance, { cap: 0.75, floor: -1, tierPenalty: 0.2 });
-  const broken: RawContent = { ...shipped, player: { ...player, resistance: { cap: 0.75, floor: 0.5, tierPenalty: 0.2 } } };
+  assert.deepEqual(content.player.resistance, { armourCap: 0.75, cap: 0.75, floor: -1, tierPenalty: 0.2 });
+  const broken: RawContent = { ...shipped, player: { ...player, resistance: { armourCap: 0.75, cap: 0.75, floor: 0.5, tierPenalty: 0.2 } } };
   assert.throws((): Content => parseContent(broken), (error: unknown): boolean => problem(error, 'player.resistance.floor'));
 });

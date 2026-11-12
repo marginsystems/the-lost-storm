@@ -67,7 +67,12 @@
   "respawnDelay": 1.4,
   "respawnInvulnerability": 3,
   "deathPenalty": {"minLevel": 5, "xpPercent": 0.1},
-  "resistance": {"cap": 0.75, "floor": -1, "tierPenalty": 0.2},
+  "resistance": {"armourCap": 0.75, "cap": 0.75, "floor": -1, "tierPenalty": 0.2},
+  "caps": [
+    {"stat": "attackSpeed", "max": 2},
+    {"stat": "critChance", "max": 0.5},
+    {"stat": "moveSpeed", "max": 10.64}
+  ],
   "tint": "#e8d2bd",
   "color": "#8fdcff",
   "gear": [],

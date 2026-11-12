@@ -88,15 +88,15 @@ export function nextPlace(content: Content, plan: BotPlan, allocated: readonly s
   return ranked[0]?.id ?? null;
 }
 
-function toughnessOf(stats: StatBlock): number {
-  return stats.maxLife / Math.max(0.05, 1 - armourReduction(stats.armour));
+function toughnessOf(content: Content, stats: StatBlock): number {
+  return stats.maxLife / Math.max(0.05, 1 - armourReduction(stats.armour, content.player.resistance.armourCap));
 }
 
 export function powerOf(content: Content, level: number, equipped: Equipment, allocated: readonly string[]): Power {
   const stats: StatBlock = computeStats(content, level, equipped, allocated);
   const basic: SkillDef | undefined = content.skills.get(content.player.skillBar[0]?.skill ?? '');
   const items: number = Object.values(equipped).reduce((sum: number, item: ItemInstance | null): number => sum + (item?.level ?? 0), 0);
-  return { dps: basic === undefined ? 0 : damagePerSecond(stats, basic), toughness: toughnessOf(stats), itemLevels: items };
+  return { dps: basic === undefined ? 0 : damagePerSecond(stats, basic), toughness: toughnessOf(content, stats), itemLevels: items };
 }
 
 function scoreOf(power: Power): number {

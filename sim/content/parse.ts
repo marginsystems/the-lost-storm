@@ -1,4 +1,5 @@
 import { atlasProblems } from './atlas.ts';
+import { itemProblems } from './item-rules.ts';
 import { books } from './parse-story.ts';
 import { storyFlagNames, storyProblems } from './story.ts';
 import { conditionProblems, roadProblems } from './road.ts';
@@ -36,6 +37,7 @@ import type {
   PropLight,
   RarityDef,
   ResistanceRules,
+  StatCap,
   RigActionClip,
   RigClips,
   RigDef,
@@ -53,7 +55,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { AFFIX_POSITIONS, ARMOUR_MATERIALS, DAMAGE_TYPES, ITEM_SLOTS, MOD_OPS, RARITY_MARKERS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { ARMOUR_MATERIALS, DAMAGE_TYPES, ITEM_SLOTS, ITEM_STATS, MOD_OPS, RARITY_MARKERS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -260,7 +262,6 @@ function rarity(value: unknown, where: string): RarityDef {
     weight: numeric(source, 'weight', where),
     affixMin: numeric(source, 'affixMin', where),
     affixMax: numeric(source, 'affixMax', where),
-    statScale: numeric(source, 'statScale', where),
   };
 }
 
@@ -286,9 +287,8 @@ function affix(value: unknown, where: string): AffixDef {
   return {
     id: text(source, 'id', where),
     label: text(source, 'label', where),
-    position: choice(source, 'position', AFFIX_POSITIONS, where),
     slots: choiceList(source, 'slots', ITEM_SLOTS, where),
-    stat: choice(source, 'stat', STAT_IDS, where),
+    stat: choice(source, 'stat', ITEM_STATS, where),
     op: choice(source, 'op', MOD_OPS, where),
     min: numeric(source, 'min', where),
     max: numeric(source, 'max', where),
@@ -457,7 +457,7 @@ function resistanceRules(value: unknown, where: string): ResistanceRules {
   const cap: number = fraction(source, 'cap', where);
   const floor: number = numeric(source, 'floor', where);
   if (floor > 0 || floor < -1) throw new ContentError(`${where}.floor`, 'expected a number from -1 to 0');
-  return { cap, floor, tierPenalty: fraction(source, 'tierPenalty', where) };
+  return { armourCap: fraction(source, 'armourCap', where), cap, floor, tierPenalty: fraction(source, 'tierPenalty', where) };
 }
 
 function player(value: unknown, where: string): PlayerDef {
@@ -486,6 +486,10 @@ function player(value: unknown, where: string): PlayerDef {
     respawnInvulnerability: numeric(source, 'respawnInvulnerability', where),
     deathPenalty: { minLevel: positive(penalty, 'minLevel', `${where}.deathPenalty`), xpPercent: fraction(penalty, 'xpPercent', `${where}.deathPenalty`) },
     resistance: resistanceRules(source['resistance'], `${where}.resistance`),
+    caps: each(source['caps'], `${where}.caps`, (entry: unknown, entryWhere: string): StatCap => {
+      const cap: Fields = fields(entry, entryWhere);
+      return { stat: choice(cap, 'stat', STAT_IDS, entryWhere), max: positive(cap, 'max', entryWhere) };
+    }),
   };
 }
 
@@ -580,6 +584,7 @@ export function contentProblems(content: Content): string[] {
   }
   for (const base of content.player.startingItems) need(content.itemBases.has(base), `starting item ${base} is unknown`);
   need(content.rarities.length > 0, 'items need at least one rarity');
+  problems.push(...itemProblems(content));
   problems.push(...chartProblems(content));
   const flagNames: ReadonlySet<string> = storyFlagNames(content);
   const known = (holder: string, list: readonly Condition[]): void => {

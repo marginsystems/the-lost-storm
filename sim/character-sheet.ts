@@ -128,7 +128,7 @@ export function characterSheet(content: Content, subject: SheetSubject): Charact
     xpToNext: xpToNextLevel(curve, subject.level),
     atMaxLevel: subject.level >= curve.maxLevel,
     figures: figures(total, base, treeOnly),
-    armourReduction: armourReduction(total.armour),
+    armourReduction: armourReduction(total.armour, content.player.resistance.armourCap),
     skills: subject.skills.filter((skill: SkillDef | null): skill is SkillDef => skill !== null && skill.delivery.type !== 'dash').map((skill: SkillDef): SkillOffence => skillOffence(total, skill)),
     bonuses: [...gearBonuses(content, subject.equipped), ...treeBonuses(content, subject.allocated)],
   };

@@ -138,9 +138,9 @@ void test('skills without matching modifiers are returned untouched', (): void =
 });
 
 void test('armour and damage helpers behave sensibly', (): void => {
-  assert.equal(armourReduction(0), 0);
-  assert.equal(armourReduction(100), 0.5);
-  assert.equal(armourReduction(-50), 0);
+  assert.equal(armourReduction(0, 1), 0);
+  assert.equal(armourReduction(100, 1), 0.5);
+  assert.equal(armourReduction(-50, 1), 0);
   const stats: StatBlock = content.player.baseStats;
   assert.ok(averageHit(stats) > (stats.damageMin + stats.damageMax) / 2);
   assert.ok(damagePerSecond(stats, skillOf('cleave')) > 0);
@@ -185,8 +185,14 @@ void test('a resistance is capped, lowered by each storm tier, and never falls b
 void test('armour cuts every hit, and storm and frost hits are cut again by their own resistance', (): void => {
   const rules = content.player.resistance;
   const stats: StatBlock = { ...computeStats(content, 1, bare, []), armour: 100, stormResist: 0.5, frostResist: 0 };
-  assert.equal(damageTakenScale(stats, 'physical', rules, 0), 1 - armourReduction(100));
-  assert.equal(damageTakenScale(stats, 'storm', rules, 0), (1 - armourReduction(100)) * 0.5);
-  assert.equal(damageTakenScale(stats, 'frost', rules, 0), 1 - armourReduction(100));
-  assert.ok(damageTakenScale(stats, 'frost', rules, 1) > 1 - armourReduction(100));
+  assert.equal(damageTakenScale(stats, 'physical', rules, 0), 1 - armourReduction(100, 1));
+  assert.equal(damageTakenScale(stats, 'storm', rules, 0), (1 - armourReduction(100, 1)) * 0.5);
+  assert.equal(damageTakenScale(stats, 'frost', rules, 0), 1 - armourReduction(100, 1));
+  assert.ok(damageTakenScale(stats, 'frost', rules, 1) > 1 - armourReduction(100, 1));
+});
+
+void test('attack speed, critical chance and movement speed stop at their caps from data', (): void => {
+  const stats: StatBlock = computeStats({ ...content, player: { ...content.player, baseStats: { ...content.player.baseStats, attackSpeed: 9, critChance: 0.9, moveSpeed: 99 } } }, 1, bare, []);
+  for (const cap of content.player.caps) assert.equal(stats[cap.stat], cap.max);
+  assert.equal(armourReduction(100000, content.player.resistance.armourCap), content.player.resistance.armourCap);
 });
