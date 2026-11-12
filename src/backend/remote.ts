@@ -29,6 +29,7 @@ export const TIMING: {
   readonly retryBaseMs: number;
   readonly retryMaxMs: number;
   readonly maxQuickRetries: number;
+  readonly maxEnrolRetries: number;
 } = {
   loadMs: 3000,
   resetMs: 3000,
@@ -37,6 +38,7 @@ export const TIMING: {
   retryBaseMs: 2000,
   retryMaxMs: 60_000,
   maxQuickRetries: 3,
+  maxEnrolRetries: 8,
 };
 
 function canonical(value: unknown): string {
@@ -73,6 +75,10 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   let blocked: boolean = false;
   let frozen: boolean = false;
   let epoch: number = 0;
+  let creating: Promise<SyncRecord | null> | null = null;
+  let enrolRetries: number = 0;
+  let cancelEnrol: (() => void) | null = null;
+  let unsent: SaveData | null = null;
 
   const now = (): string => new Date(clock()).toISOString();
   const setState = (next: BackendState): void => {
@@ -98,14 +104,47 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   };
   const freshSave = (): SaveData => toSave(createWorld(content, { seed: 0, save: null }));
 
-  const account = async (signal: AbortSignal): Promise<SyncRecord | null> => {
-    if (record !== null) return record;
+  const create = async (signal: AbortSignal): Promise<SyncRecord | null> => {
     const result: GuestResult = await api.createGuest(signal);
+    creating = null;
+    if (record !== null) return record;
     if (result.kind !== 'ok') return null;
     const created: SyncRecord = { serverUrl, accountId: result.account.accountId, token: result.account.token, revision: 0, updatedAt: null, savedAt: latest === null ? null : now(), pending: latest !== null, overwriteCloud: false };
     keep(created);
     return created;
   };
+
+  const account = (signal: AbortSignal): Promise<SyncRecord | null> => {
+    if (record !== null) return Promise.resolve(record);
+    creating ??= create(signal);
+    return creating;
+  };
+
+  const enrol = async (): Promise<void> => {
+    const held: SyncRecord | null = await account(timeout(TIMING.requestMs));
+    if (held === null) {
+      enrolLater();
+      return;
+    }
+    if (latest !== null) return;
+    if (unsent === null) {
+      setState('cloud');
+      return;
+    }
+    latest = unsent;
+    unsent = null;
+    keep({ ...held, pending: true, savedAt: now() });
+    schedule(0);
+  };
+
+  function enrolLater(): void {
+    if (record !== null || latest !== null || frozen || cancelEnrol !== null || enrolRetries >= TIMING.maxEnrolRetries) return;
+    enrolRetries += 1;
+    cancelEnrol = timers.after(backoffMs(enrolRetries), (): void => {
+      cancelEnrol = null;
+      if (latest === null) void enrol();
+    });
+  }
 
   const schedule = (ms: number): void => {
     if (cancelTimer !== null || pushing || latest === null || frozen || blocked) return;
@@ -237,7 +276,9 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       setState('offline');
       announceOffline();
       if (record?.pending === true && localSave !== null) latest = localSave;
+      if (record === null) unsent = localSave;
       schedule(TIMING.retryBaseMs);
+      enrolLater();
       return localSave;
     }
     const { held, cloud } = reached;
@@ -275,6 +316,9 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       if (frozen) return true;
       const written: boolean = local.save(save);
       latest = save;
+      unsent = null;
+      cancelEnrol?.();
+      cancelEnrol = null;
       blocked = false;
       if (record !== null) keep({ ...record, pending: true, savedAt: now() });
       schedule(TIMING.pushGapMs);

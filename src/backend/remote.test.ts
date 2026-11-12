@@ -6,6 +6,7 @@ import { isFields } from '../../sim/content/read.ts';
 import { must } from '../../test/support.ts';
 import type { Backend } from './backend.ts';
 import { SAVE_KEY } from './local.ts';
+import { TIMING } from './remote.ts';
 import { parseSyncRecord, SYNC_KEY } from './sync-record.ts';
 import type { SyncRecord } from './sync-record.ts';
 
@@ -467,4 +468,59 @@ void test('a push that settles after another writer replaced the record does not
   await harness.timers.advance(5000);
   assert.deepEqual(record(harness), replaced);
   assert.equal(harness.server.count('PUT', '/v1/save'), 1);
+});
+
+void test('a first visit that cannot reach the server gets its account once the server answers, without any save being made', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  harness.server.goDown();
+  const backend: Backend = harness.open();
+  assert.equal(await backend.load(), null);
+  assert.equal(harness.store.read(SYNC_KEY), null);
+  harness.server.comeUp();
+  await harness.timers.advance(must(harness.timers.nextDelay(), 'a retry of the account request'));
+  assert.equal(harness.server.accounts.length, 1);
+  assert.equal(record(harness).accountId, account(harness).accountId);
+  assert.equal(backend.state(), 'cloud');
+  assert.equal(harness.timers.pending(), 0);
+});
+
+void test('the account request is retried with a growing delay and given up after the last retry', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  harness.server.goDown();
+  await harness.open().load();
+  const delays: number[] = await retryDelays(harness, TIMING.maxEnrolRetries);
+  assert.deepEqual(delays.slice(0, 3), [2000, 4000, 8000]);
+  assert.equal(harness.timers.pending(), 0);
+  assert.equal(harness.server.accounts.length, 0);
+});
+
+void test('a save kept on this device from a visit with no account is sent once the server answers', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  harness.store.write(SAVE_KEY, JSON.stringify(makeSave(6, 0)));
+  harness.server.goDown();
+  const backend: Backend = harness.open();
+  assert.equal((await backend.load())?.level, 6);
+  harness.server.comeUp();
+  await harness.timers.advance(TIMING.retryBaseMs);
+  await harness.timers.advance(0);
+  assert.equal(harness.server.accounts.length, 1);
+  assert.equal(backend.state(), 'cloud');
+  assert.equal(account(harness).save?.level, 6);
+});
+
+void test('a save made while the account request is in flight does not create a second account', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  harness.server.goDown();
+  const backend: Backend = harness.open();
+  await backend.load();
+  harness.server.comeUp();
+  const release: () => void = harness.server.holdNext();
+  await harness.timers.advance(TIMING.retryBaseMs);
+  backend.save(makeSave(3, 0));
+  await harness.timers.advance(TIMING.pushGapMs);
+  release();
+  await settle();
+  await settle();
+  assert.equal(harness.server.accounts.length, 1);
+  assert.equal(account(harness).save?.level, 3);
 });
