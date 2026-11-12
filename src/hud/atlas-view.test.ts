@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { atRest, ATLAS_VIEW, clampView, maxScale, minScale, openView, panBy, still, stepMotion, toMap, toScreen, zoomAt } from './atlas-view.ts';
-import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-view.ts';
+import { atRest, ATLAS_VIEW, clampView, maxScale, minScale, openView, panBy, pinchTo, still, stepMotion, toMap, toScreen, zoomAt } from './atlas-view.ts';
+import type { AtlasFrame, AtlasMotion, AtlasView, Pinch, ScreenPoint } from './atlas-view.ts';
 
 const frame: AtlasFrame = { width: 800, height: 600, mapWidth: 1600, mapHeight: 1000 };
 const CLOSE: number = 1e-6;
@@ -45,4 +45,17 @@ void test('the view springs to its target and comes to rest there', (): void => 
   assert.deepEqual(motion.view, target);
   assert.ok(atRest(motion, target));
   assert.deepEqual(stepMotion(motion, target, 5).view, target);
+});
+
+void test('spreading two fingers zooms by their ratio and keeps the map under their midpoint', (): void => {
+  const view: AtlasView = openView(frame, 800, 500);
+  const from: Pinch = { a: { x: 350, y: 300 }, b: { x: 450, y: 300 } };
+  const to: Pinch = { a: { x: 330, y: 310 }, b: { x: 470, y: 310 } };
+  const held: ScreenPoint = toMap(view, frame, { x: 400, y: 300 });
+  const pinched: AtlasView = pinchTo(view, frame, from, to);
+  assert.ok(Math.abs(pinched.scale - Math.min(maxScale(frame), view.scale * 1.4)) < CLOSE);
+  const after: ScreenPoint = toScreen(pinched, frame, held);
+  assert.ok(Math.abs(after.x - 400) < CLOSE && Math.abs(after.y - 310) < CLOSE);
+  assert.equal(pinchTo(view, frame, from, { a: { x: 399, y: 300 }, b: { x: 401, y: 300 } }).scale, minScale(frame));
+  assert.equal(pinchTo(view, frame, from, { a: from.a, b: from.a }).scale, view.scale);
 });

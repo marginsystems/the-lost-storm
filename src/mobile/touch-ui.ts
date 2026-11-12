@@ -164,7 +164,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     hud.closePanels();
   });
   const syncClose = (): void => {
-    close.classList.toggle('on', hudRoot.querySelector('.hud-panel.open') !== null);
+    close.classList.toggle('on', hudRoot.querySelector('.hud-panel.open, .atlas.open') !== null);
   };
   new MutationObserver(syncClose).observe(hudRoot, { attributes: true, attributeFilter: ['class'], subtree: true });
 
