@@ -91,6 +91,8 @@ const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
   glitch_setting: false,
   move: true,
   skill: true,
+  hold: false,
+  steer: false,
   pickup: true,
   travel: true,
   talk: true,

@@ -44,6 +44,7 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   const corner: Vector2 = new Vector2();
   const held: Set<string> = new Set<string>();
   const pressed: string[] = [];
+  const lifted: string[] = [];
   let hoveredId: number | null = null;
   let pointerInside: boolean = false;
   let holdTimer: number = 0;
@@ -82,9 +83,13 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   canvas.addEventListener('pointerleave', (): void => {
     pointerInside = false;
   });
+  const lift = (binding: string): void => {
+    if (!held.delete(binding)) return;
+    lifted.push(binding);
+  };
   const release = (event: PointerEvent): void => {
-    if (event.button === 0) held.delete(INPUT.leftBinding);
-    if (event.button === 2) held.delete(INPUT.rightBinding);
+    if (event.button === 0) lift(INPUT.leftBinding);
+    if (event.button === 2) lift(INPUT.rightBinding);
   };
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
@@ -115,9 +120,10 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
   });
   window.addEventListener('keyup', (event: KeyboardEvent): void => {
     shift = event.shiftKey;
-    held.delete(event.code);
+    lift(event.code);
   });
   window.addEventListener('blur', (): void => {
+    for (const binding of held) lifted.push(binding);
     held.clear();
     shift = false;
   });
@@ -181,8 +187,8 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     return stationNear(world, ground);
   };
 
-  const ready = (skill: SkillDef | undefined): boolean => {
-    if (skill === undefined) return false;
+  const ready = (skill: SkillDef | null | undefined): boolean => {
+    if (skill === undefined || skill === null || skill.hold !== null) return false;
     const player = world.player;
     return player.action === null && player.queued === null && (player.cooldowns[skill.id] ?? 0) <= 0 && player.mana >= skill.manaCost;
   };
@@ -217,6 +223,12 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       canvas.style.cursor = target !== null ? 'crosshair' : exit !== null || person !== null || station !== null || marked ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
+      const up: Set<string> = new Set<string>(lifted.splice(0, lifted.length));
+      world.content.player.skillBar.forEach((_entry, slot: number): void => {
+        const bound: readonly string[] = settings.keys().bindingsOf(slotAction(slot));
+        if (bound.some((binding: string): boolean => fresh.has(binding))) commands.push({ type: 'hold', slot, down: true });
+        else if (bound.some((binding: string): boolean => up.has(binding)) && !bound.some((binding: string): boolean => held.has(binding))) commands.push({ type: 'hold', slot, down: false });
+      });
       holdTimer -= dt;
       const holdTick: boolean = holdTimer <= 0;
       if (holdTick) holdTimer = INPUT.holdInterval;
@@ -229,6 +241,8 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
         if (action !== null && settings.keys().bindingsOf(action).some((binding: string): boolean => fresh.has(binding))) commands.push({ type: 'flask', slot });
       });
       if (aim === null || ground === null) return commands;
+      const steering = world.player.action;
+      if (steering !== null && steering.slot !== null && steering.skill.hold !== null && settings.keys().bindingsOf(slotAction(steering.slot)).some((binding: string): boolean => held.has(binding))) commands.push({ type: 'steer', aim });
 
       const leftSlot: number = slotFor(INPUT.leftBinding);
       const leftFresh: boolean = fresh.has(INPUT.leftBinding);

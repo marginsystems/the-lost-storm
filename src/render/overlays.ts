@@ -278,6 +278,11 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             if (event.ground.content.kind === 'gold') float(`+${event.ground.content.amount} gold`, 'gold', event.ground.pos.x, 1.2, event.ground.pos.z);
             break;
           }
+          case 'field':
+          case 'chain':
+          case 'beam':
+          case 'blink':
+          case 'brand':
           case 'xp':
           case 'skill_start':
           case 'skill_impact':

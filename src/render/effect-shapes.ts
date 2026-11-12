@@ -5,6 +5,7 @@ import { SKILLS } from '../../sim/world/skills.ts';
 
 export const SHAPES = {
   sectorSegments: 28,
+  lineStep: 0.7,
   dashLane: 0.6,
   boltSegments: 9,
   boltHeight: 30,
@@ -226,6 +227,8 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
     }
     case 'nova':
     case 'mark':
+    case 'field':
+    case 'blink':
       fills.push(telegraphPart(sectorGeometry(Math.PI * 2, 0, delivery.radius), color, SHAPES.telegraphFill, 5));
       edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.radius * SHAPES.telegraphEdge, delivery.radius), color, SHAPES.telegraphLine, 6));
       break;
@@ -241,9 +244,16 @@ export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
     case 'dash':
       fills.push(telegraphPart(laneGeometry(SHAPES.dashLane, delivery.distance), color, SHAPES.telegraphFill, 5));
       break;
+    case 'beam':
+      fills.push(telegraphPart(laneGeometry(delivery.width / 2, delivery.range), color, SHAPES.telegraphFill, 5));
+      break;
+    case 'chain':
+      fills.push(telegraphPart(sectorGeometry(Math.PI * 2, 0, delivery.range), color, SHAPES.telegraphFill, 5));
+      edges.push(telegraphPart(sectorGeometry(Math.PI * 2, delivery.range * SHAPES.telegraphEdge, delivery.range), color, SHAPES.telegraphLine, 6));
+      break;
   }
   for (const part of [...fills, ...edges]) object.add(part);
-  return { object, fills, edges, lanes: delivery.type === 'projectile' || delivery.type === 'dash' };
+  return { object, fills, edges, lanes: delivery.type === 'projectile' || delivery.type === 'dash' || delivery.type === 'beam' };
 }
 
 export function pillarMesh(color: Color, radius: number, height: number): Mesh<CylinderGeometry, MeshBasicMaterial> {
@@ -334,6 +344,27 @@ export function skyBolt(color: Color): Mesh<BufferGeometry, MeshBasicMaterial> {
   const indices: number[] = [];
   ribbon(points, SHAPES.boltWidth, false, positions, indices);
   return ribbonMesh(positions, indices, glow(color, SHAPES.glowBoost * 1.6), 9);
+}
+
+export function lightningLine(from: Vector3, to: Vector3, color: Color, jitter: number, width: number): Mesh<BufferGeometry, MeshBasicMaterial> {
+  const length: number = from.distanceTo(to);
+  const steps: number = Math.max(2, Math.ceil(length / SHAPES.lineStep));
+  const points: Vector3[] = [];
+  for (let step: number = 0; step <= steps; step += 1) {
+    const t: number = step / steps;
+    const sway: number = step === 0 || step === steps ? 0 : jitter;
+    points.push(new Vector3().lerpVectors(from, to, t).add(new Vector3((Math.random() - 0.5) * sway, (Math.random() - 0.5) * sway * 0.6, (Math.random() - 0.5) * sway)));
+  }
+  const positions: number[] = [];
+  const indices: number[] = [];
+  ribbon(points, width, false, positions, indices);
+  return ribbonMesh(positions, indices, glow(color, SHAPES.glowBoost * 1.4), 9);
+}
+
+export function discMesh(color: Color, radius: number, opacity: number): Mesh<BufferGeometry, MeshBasicMaterial> {
+  const mesh: Mesh<BufferGeometry, MeshBasicMaterial> = new Mesh(sectorGeometry(Math.PI * 2, 0, radius), additive(color, opacity));
+  mesh.renderOrder = 4;
+  return mesh;
 }
 
 export function groundArcs(color: Color, radius: number): Mesh<BufferGeometry, MeshBasicMaterial> {

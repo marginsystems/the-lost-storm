@@ -9,6 +9,8 @@ import type { Telegraph } from './effect-shapes.ts';
 import type { DashTrails } from './dash-trail.ts';
 import { createDashTrails } from './dash-trail.ts';
 import type { IsoCamera } from './iso-camera.ts';
+import type { StormEffects } from './storm-effects.ts';
+import { createStormEffects } from './storm-effects.ts';
 import type { BurstOptions, ParticleSystem } from './particles.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
@@ -102,6 +104,11 @@ const FLASK_SPRAY: Partial<BurstOptions> = { speed: { min: 0.3, max: 1.4 }, lift
 const FLASK_BURST = { height: 0.5, count: 22, ring: 1.6, ringTime: 0.5 } as const;
 const SPARK: Color = new Color(0xffc070);
 const ROOT: Color = new Color(0x5d7a52);
+
+function landsAhead(skill: SkillDef): boolean {
+  const delivery = skill.delivery;
+  return skill.leap !== null || delivery.type === 'blink' || (delivery.type === 'field' && delivery.anchor === 'ground');
+}
 
 function easeOut(t: number): number {
   return 1 - (1 - t) * (1 - t) * (1 - t);
@@ -303,7 +310,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
     if (monster === undefined) return;
     const casts: boolean = event.skill.delivery.type === 'projectile' || event.skill.delivery.type === 'mark';
-    const lands: { readonly x: number; readonly z: number } = event.skill.leap === null ? monster.pos : (monster.action?.target ?? monster.pos);
+    const lands: { readonly x: number; readonly z: number } = landsAhead(event.skill) ? (monster.action?.target ?? monster.pos) : monster.pos;
     if (event.skill.delivery.type !== 'mark') telegraph(monster.id, lands.x, lands.z, event.direction, event.skill, event.windup);
     if (casts) spray(monster.pos.x + event.direction.x * 0.6, 1.7, monster.pos.z + event.direction.z * 0.6, colorOf(event.skill.vfx.color), 16, { speed: { min: 0.3, max: 1.6 }, lift: { min: 0.3, max: 2.2 }, life: { min: 0.3, max: event.windup + 0.1 }, gravity: -1, size: { min: 0.25, max: 0.55 } });
   };
@@ -328,6 +335,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         break;
       case 'dash':
         if (event.skill.vfx.style === 'roll') dashTrails.land(event.origin, event.direction, color);
+        break;
+      case 'field':
+      case 'chain':
+      case 'beam':
+      case 'blink':
         break;
     }
     if (event.team !== 'player') return;
@@ -419,6 +431,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     return view;
   };
 
+  const storm: StormEffects = createStormEffects({ add, spray, ring, shockwave, flashLight, colorOf, addObject: (object: Mesh): void => void scene.add(object), trauma: (amount: number): void => camera.addTrauma(amount) });
+
   return {
     get hurt(): number {
       return hurt;
@@ -444,6 +458,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     },
     handle(events: readonly WorldEvent[], world: World): void {
       for (const event of events) {
+        storm.handle(event);
         switch (event.type) {
           case 'skill_start':
             onSkillStart(event, world);
@@ -511,6 +526,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'monster_remove':
           case 'aggro':
           case 'drop':
+          case 'field':
+          case 'chain':
+          case 'beam':
+          case 'blink':
+          case 'brand':
           case 'xp':
           case 'surge_cleared':
           case 'notice':
@@ -554,9 +574,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       projectiles.clear();
       for (const light of lights) light.intensity = 0;
       dashTrails.clear();
+      storm.clear();
     },
     update(dt: number, world: World): void {
       dashTrails.update(dt, world);
+      storm.update(dt, world);
       for (const transient of transients) {
         transient.age += dt;
         if (transient.age < transient.duration) transient.tick(transient.age / transient.duration);
