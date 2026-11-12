@@ -360,6 +360,18 @@ function collectGold(world: World): void {
   }
 }
 
+function walkIntoExit(world: World): void {
+  const player: PlayerState = world.player;
+  for (const exit of world.zone.exits) {
+    if (distance(player.pos, exit) > exit.radius) continue;
+    if (!allHold(world, exit.requires)) continue;
+    player.intent = { type: 'idle' };
+    player.path = [];
+    travelThrough(world, exit);
+    return;
+  }
+}
+
 function isBusy(player: PlayerState): boolean {
   return player.action !== null;
 }
@@ -407,6 +419,7 @@ export function stepPlayer(world: World, dt: number): void {
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.strideTravel = PLAYER.stride * PLAYER.firstStepFraction;
   collectGold(world);
+  if (player.moving) walkIntoExit(world);
   stepCheckpoints(world);
   stepWaypoints(world);
 }

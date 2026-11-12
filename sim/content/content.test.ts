@@ -375,3 +375,27 @@ void test('no pack, and no boss while its fight is on, notices the hero at a zon
     }
   }
 });
+
+void test('no arrival point lies inside an exit, so walking in never sends the hero straight back', (): void => {
+  for (const zone of content.zones.values()) {
+    for (const exit of zone.exits) {
+      for (const other of zone.exits) {
+        assert.ok(Math.hypot(exit.arrival.x - other.x, exit.arrival.z - other.z) > other.radius, `${zone.id} ${exit.id} arrival inside ${other.id}`);
+      }
+    }
+  }
+});
+
+void test('the hero walks out of the In-Between into the Shallows, and on into the waystation, without clicking an exit', (): void => {
+  const world: World = createWorld(content, { seed: 5, save: null });
+  enterZone(world, zoneOf(content, 'between'), { type: 'start' });
+  world.flags['opening'] = 'read';
+  const walkTo = (zoneId: string, exitId: string): void => {
+    const exit: ZoneExit = must(zoneOf(content, zoneId).exits.find((entry: ZoneExit): boolean => entry.id === exitId), exitId);
+    world.monsters = [];
+    for (let step: number = 0; step < 900 && world.zone.id === zoneId; step += 1) stepWorld(world, step % 30 === 0 ? [{ type: 'move', held: false, dest: { x: exit.x, z: exit.z } }] : [], 1 / 30);
+    assert.equal(world.zone.id, exit.to);
+  };
+  walkTo('between', 'into_the_shallows');
+  walkTo('shallows', 'east');
+});

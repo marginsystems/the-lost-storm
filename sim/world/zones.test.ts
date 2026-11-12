@@ -99,15 +99,28 @@ void test('travel walks to the exit, swaps the zone and grid and places the hero
   assert.ok(world.monsters.every((monster: MonsterState): boolean => monster.alive && isWalkable(world.grid, monster.pos.x, monster.pos.z)));
 });
 
-void test('an unknown exit is ignored and walking over an exit without asking does not travel', (): void => {
+void test('an unknown exit is ignored, and walking into an open exit travels through it', (): void => {
   const world: World = createWorld(shipped, { seed: 3, save: null });
   const out: ZoneExit = must(findExit(town, 'outpost_stair'), 'town exit');
   run(world, 1, [{ type: 'travel', exit: 'no_such_exit' }]);
   assert.deepEqual(world.player.intent, { type: 'idle' });
   const events: WorldEvent[] = run(world, 6, [{ type: 'move', held: false, dest: { x: out.x, z: out.z } }]);
-  assert.ok(distance(world.player.pos, out) <= out.radius);
+  assert.equal(ofType(events, 'zone_changed').length, 1);
+  assert.equal(world.zone.id, out.to);
+  assert.equal(world.player.path.length, 0);
+});
+
+void test('standing on an exit without walking, or walking into a locked one, does not travel', (): void => {
+  const out: ZoneExit = must(findExit(town, 'outpost_stair'), 'town exit');
+  const standing: World = createWorld(shipped, { seed: 3, save: null });
+  standing.player.pos = { x: out.x, z: out.z };
+  assert.equal(ofType(run(standing, 1), 'zone_changed').length, 0);
+  const lockedTown: ZoneDef = { ...town, exits: [{ ...out, requires: [{ type: 'flag', flag: 'never_set', is: 'set', not: false }] }] };
+  const locked: World = createWorld({ ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [town.id, lockedTown]]) }, { seed: 3, save: null });
+  const events: WorldEvent[] = run(locked, 6, [{ type: 'move', held: false, dest: { x: out.x, z: out.z } }]);
+  assert.ok(distance(locked.player.pos, out) <= out.radius);
   assert.equal(ofType(events, 'zone_changed').length, 0);
-  assert.equal(world.zone.id, town.id);
+  assert.equal(locked.zone.id, town.id);
 });
 
 void test('a wild zone is reset when it is entered again and loot left behind is gone', (): void => {
