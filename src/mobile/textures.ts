@@ -1,5 +1,5 @@
 import type { Object3D } from 'three';
-import { Mesh } from 'three';
+import { Mesh, Texture } from 'three';
 import { fittedSize } from './quality.ts';
 
 type Drawable = HTMLImageElement | ImageBitmap | HTMLCanvasElement;
@@ -64,4 +64,11 @@ export function shrinkModelTextures(root: Object3D, maxSize: number): void {
       }
     }
   });
+}
+
+export function disposeMaterialTextures(material: object): void {
+  for (const key of MAP_KEYS) {
+    const value: unknown = Reflect.get(material, key);
+    if (value instanceof Texture) value.dispose();
+  }
 }

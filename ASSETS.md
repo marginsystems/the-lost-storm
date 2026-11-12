@@ -43,6 +43,12 @@ Universal Animation Library 2 ships on a rig with Unreal joint names (`pelvis`, 
 node tools/retarget-clips.ts public/models/animations/humanoid.glb <UAL2_Standard.glb> tools/combat-clips.json public/models/animations/combat.glb
 ```
 
+After either rebuild, drop the keyframes that a straight line between their neighbours already gives (within 0.0001), which more than halves both files without changing a pose:
+
+```bash
+node tools/resample-clips.ts public/models/animations/humanoid.glb public/models/animations/combat.glb
+```
+
 ## Weapons
 
 | File | Source | Author | Licence |
@@ -208,25 +214,31 @@ Rebuild with each asset's 1k glTF download (`https://api.polyhaven.com/files/<as
 
 Ground, wall, wood, metal and cloth textures from polyhaven.com, all CC0. Each is the 1k JPEG download resized with `cwebp`: colour and normal map at 1024 pixels for ground and walls and 512 for the rest, and the occlusion, roughness and metalness map at 512. `data/surfaces.json` turns them into surfaces with a tile size and a tint.
 
+The copies in `public/textures/half/` are the same textures at half the size, for the mobile quality tier. `tools/half-textures.sh` makes them with `sips` and `cwebp`:
+
+```bash
+sh tools/half-textures.sh
+```
+
 | Files | Poly Haven asset | Authors | Licence |
 |---|---|---|---|
-| `public/textures/cobble_color.webp`, `public/textures/cobble_normal.webp`, `public/textures/cobble_orm.webp` | "Cobblestone Floor 08" (`cobblestone_floor_08`) | Rob Tuytel | CC0 1.0 |
-| `public/textures/flagstone_color.webp`, `public/textures/flagstone_normal.webp`, `public/textures/flagstone_orm.webp` | "Monastery Stone Floor" (`monastery_stone_floor`) | Amal Kumar | CC0 1.0 |
-| `public/textures/ashlar_color.webp`, `public/textures/ashlar_normal.webp`, `public/textures/ashlar_orm.webp` | "Rock Tile Floor" (`rock_tile_floor`) | Charlotte Baglioni | CC0 1.0 |
-| `public/textures/mud_color.webp`, `public/textures/mud_normal.webp`, `public/textures/mud_orm.webp` | "Brown Mud 03" (`brown_mud_03`) | Rob Tuytel | CC0 1.0 |
-| `public/textures/dirt_color.webp`, `public/textures/dirt_normal.webp`, `public/textures/dirt_orm.webp` | "Brown Mud Rocks 01" (`brown_mud_rocks_01`) | Rob Tuytel | CC0 1.0 |
-| `public/textures/forest_color.webp`, `public/textures/forest_normal.webp`, `public/textures/forest_orm.webp` | "Forest Ground 04" (`forest_ground_04`) | Rob Tuytel, Rico Cilliers | CC0 1.0 |
-| `public/textures/trail_color.webp`, `public/textures/trail_normal.webp`, `public/textures/trail_orm.webp` | "Rocky Trail 02" (`rocky_trail_02`) | Amal Kumar | CC0 1.0 |
-| `public/textures/castle_wall_color.webp`, `public/textures/castle_wall_normal.webp`, `public/textures/castle_wall_orm.webp` | "Castle Wall Slates" (`castle_wall_slates`) | Rob Tuytel | CC0 1.0 |
-| `public/textures/mossy_wall_color.webp`, `public/textures/mossy_wall_normal.webp`, `public/textures/mossy_wall_orm.webp` | "Mossy Stone Wall" (`mossy_stone_wall`) | Amal Kumar | CC0 1.0 |
-| `public/textures/drystone_color.webp`, `public/textures/drystone_normal.webp`, `public/textures/drystone_orm.webp` | "Stacked Stone Wall" (`stacked_stone_wall`) | Dimitrios Savva | CC0 1.0 |
-| `public/textures/planks_color.webp`, `public/textures/planks_normal.webp`, `public/textures/planks_orm.webp` | "Old Planks 02" (`old_planks_02`) | Rob Tuytel | CC0 1.0 |
-| `public/textures/iron_color.webp`, `public/textures/iron_normal.webp`, `public/textures/iron_orm.webp` | "Rusty Metal 02" (`rusty_metal_02`) | Rob Tuytel | CC0 1.0 |
-| `public/textures/burlap_color.webp`, `public/textures/burlap_normal.webp`, `public/textures/burlap_orm.webp` | "Hessian 230" (`hessian_230`) | colormass, Rico Cilliers | CC0 1.0 |
-| `public/textures/plaster_color.webp`, `public/textures/plaster_normal.webp`, `public/textures/plaster_orm.webp` | "Worn Plaster Wall" (`worn_plaster_wall`) | Dimitrios Savva | CC0 1.0 |
-| `public/textures/slates_color.webp`, `public/textures/slates_normal.webp`, `public/textures/slates_orm.webp` | "Roof Slates 02" (`roof_slates_02`) | Rob Tuytel | CC0 1.0 |
-| `public/textures/bark_color.webp`, `public/textures/bark_normal.webp`, `public/textures/bark_orm.webp` | "Bark Brown 02" (`bark_brown_02`) | Rob Tuytel | CC0 1.0 |
-| `public/textures/leather_color.webp`, `public/textures/leather_normal.webp`, `public/textures/leather_orm.webp` | "Brown Leather" (`brown_leather`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/cobble_color.webp`, `public/textures/cobble_normal.webp`, `public/textures/cobble_orm.webp`, `public/textures/half/cobble_color.webp`, `public/textures/half/cobble_normal.webp`, `public/textures/half/cobble_orm.webp` | "Cobblestone Floor 08" (`cobblestone_floor_08`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/flagstone_color.webp`, `public/textures/flagstone_normal.webp`, `public/textures/flagstone_orm.webp`, `public/textures/half/flagstone_color.webp`, `public/textures/half/flagstone_normal.webp`, `public/textures/half/flagstone_orm.webp` | "Monastery Stone Floor" (`monastery_stone_floor`) | Amal Kumar | CC0 1.0 |
+| `public/textures/ashlar_color.webp`, `public/textures/ashlar_normal.webp`, `public/textures/ashlar_orm.webp`, `public/textures/half/ashlar_color.webp`, `public/textures/half/ashlar_normal.webp`, `public/textures/half/ashlar_orm.webp` | "Rock Tile Floor" (`rock_tile_floor`) | Charlotte Baglioni | CC0 1.0 |
+| `public/textures/mud_color.webp`, `public/textures/mud_normal.webp`, `public/textures/mud_orm.webp`, `public/textures/half/mud_color.webp`, `public/textures/half/mud_normal.webp`, `public/textures/half/mud_orm.webp` | "Brown Mud 03" (`brown_mud_03`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/dirt_color.webp`, `public/textures/dirt_normal.webp`, `public/textures/dirt_orm.webp`, `public/textures/half/dirt_color.webp`, `public/textures/half/dirt_normal.webp`, `public/textures/half/dirt_orm.webp` | "Brown Mud Rocks 01" (`brown_mud_rocks_01`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/forest_color.webp`, `public/textures/forest_normal.webp`, `public/textures/forest_orm.webp`, `public/textures/half/forest_color.webp`, `public/textures/half/forest_normal.webp`, `public/textures/half/forest_orm.webp` | "Forest Ground 04" (`forest_ground_04`) | Rob Tuytel, Rico Cilliers | CC0 1.0 |
+| `public/textures/trail_color.webp`, `public/textures/trail_normal.webp`, `public/textures/trail_orm.webp`, `public/textures/half/trail_color.webp`, `public/textures/half/trail_normal.webp`, `public/textures/half/trail_orm.webp` | "Rocky Trail 02" (`rocky_trail_02`) | Amal Kumar | CC0 1.0 |
+| `public/textures/castle_wall_color.webp`, `public/textures/castle_wall_normal.webp`, `public/textures/castle_wall_orm.webp`, `public/textures/half/castle_wall_color.webp`, `public/textures/half/castle_wall_normal.webp`, `public/textures/half/castle_wall_orm.webp` | "Castle Wall Slates" (`castle_wall_slates`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/mossy_wall_color.webp`, `public/textures/mossy_wall_normal.webp`, `public/textures/mossy_wall_orm.webp`, `public/textures/half/mossy_wall_color.webp`, `public/textures/half/mossy_wall_normal.webp`, `public/textures/half/mossy_wall_orm.webp` | "Mossy Stone Wall" (`mossy_stone_wall`) | Amal Kumar | CC0 1.0 |
+| `public/textures/drystone_color.webp`, `public/textures/drystone_normal.webp`, `public/textures/drystone_orm.webp`, `public/textures/half/drystone_color.webp`, `public/textures/half/drystone_normal.webp`, `public/textures/half/drystone_orm.webp` | "Stacked Stone Wall" (`stacked_stone_wall`) | Dimitrios Savva | CC0 1.0 |
+| `public/textures/planks_color.webp`, `public/textures/planks_normal.webp`, `public/textures/planks_orm.webp`, `public/textures/half/planks_color.webp`, `public/textures/half/planks_normal.webp`, `public/textures/half/planks_orm.webp` | "Old Planks 02" (`old_planks_02`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/iron_color.webp`, `public/textures/iron_normal.webp`, `public/textures/iron_orm.webp`, `public/textures/half/iron_color.webp`, `public/textures/half/iron_normal.webp`, `public/textures/half/iron_orm.webp` | "Rusty Metal 02" (`rusty_metal_02`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/burlap_color.webp`, `public/textures/burlap_normal.webp`, `public/textures/burlap_orm.webp`, `public/textures/half/burlap_color.webp`, `public/textures/half/burlap_normal.webp`, `public/textures/half/burlap_orm.webp` | "Hessian 230" (`hessian_230`) | colormass, Rico Cilliers | CC0 1.0 |
+| `public/textures/plaster_color.webp`, `public/textures/plaster_normal.webp`, `public/textures/plaster_orm.webp`, `public/textures/half/plaster_color.webp`, `public/textures/half/plaster_normal.webp`, `public/textures/half/plaster_orm.webp` | "Worn Plaster Wall" (`worn_plaster_wall`) | Dimitrios Savva | CC0 1.0 |
+| `public/textures/slates_color.webp`, `public/textures/slates_normal.webp`, `public/textures/slates_orm.webp`, `public/textures/half/slates_color.webp`, `public/textures/half/slates_normal.webp`, `public/textures/half/slates_orm.webp` | "Roof Slates 02" (`roof_slates_02`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/bark_color.webp`, `public/textures/bark_normal.webp`, `public/textures/bark_orm.webp`, `public/textures/half/bark_color.webp`, `public/textures/half/bark_normal.webp`, `public/textures/half/bark_orm.webp` | "Bark Brown 02" (`bark_brown_02`) | Rob Tuytel | CC0 1.0 |
+| `public/textures/leather_color.webp`, `public/textures/leather_normal.webp`, `public/textures/leather_orm.webp`, `public/textures/half/leather_color.webp`, `public/textures/half/leather_normal.webp`, `public/textures/half/leather_orm.webp` | "Brown Leather" (`brown_leather`) | Rob Tuytel | CC0 1.0 |
 
 ## Fonts
 

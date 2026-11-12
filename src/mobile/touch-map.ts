@@ -17,6 +17,7 @@ export const TOUCH = {
   fullTurn: 360,
   tapSlopPx: 12,
   tapMs: 320,
+  pinchJoinMs: 160,
 } as const;
 
 export interface StickReading {
@@ -34,15 +35,14 @@ export interface Candidate {
 export type TouchButton =
   | { readonly kind: 'attack'; readonly slot: number }
   | { readonly kind: 'skill'; readonly slot: number }
-  | { readonly kind: 'key'; readonly code: string; readonly label: string };
+  | { readonly kind: 'flask'; readonly slot: number; readonly label: string };
 
 export interface SkillBarEntry {
   readonly bindings: readonly string[];
 }
 
-export interface KeyEntry {
-  readonly code: string;
-  readonly label: string;
+export interface FlaskEntry {
+  readonly name: string;
 }
 
 export interface ArcPoint {
@@ -113,13 +113,15 @@ export function aimedSkill(slot: number, from: Vec2, ahead: Vec2, target: Candid
   return { type: 'skill', slot, aim: { x: from.x + (ahead.x / length) * TOUCH.aimRange, z: from.z + (ahead.z / length) * TOUCH.aimRange }, targetId: null };
 }
 
-export function touchButtons(skillBar: readonly SkillBarEntry[], attackBinding: string, keys: readonly KeyEntry[]): TouchButton[] {
+export function touchButtons(skillBar: readonly SkillBarEntry[], attackBinding: string, flasks: readonly FlaskEntry[]): TouchButton[] {
   const buttons: TouchButton[] = [];
   skillBar.forEach((entry: SkillBarEntry, slot: number): void => {
     buttons.push(entry.bindings.includes(attackBinding) ? { kind: 'attack', slot } : { kind: 'skill', slot });
   });
   buttons.sort((a: TouchButton, b: TouchButton): number => (a.kind === 'attack' ? 0 : 1) - (b.kind === 'attack' ? 0 : 1));
-  for (const key of keys) buttons.push({ kind: 'key', code: key.code, label: key.label });
+  flasks.forEach((flask: FlaskEntry, slot: number): void => {
+    buttons.push({ kind: 'flask', slot, label: flask.name });
+  });
   return buttons;
 }
 
@@ -139,6 +141,14 @@ export function sideForPoint(x: number, viewportWidth: number): 'move' | 'world'
   return x < viewportWidth * TOUCH.moveSideShare ? 'move' : 'world';
 }
 
+export function startsStick(x: number, viewportWidth: number, stickDown: boolean, worldFingers: number): boolean {
+  return !stickDown && worldFingers === 0 && sideForPoint(x, viewportWidth) === 'move';
+}
+
+export function joinsPinch(stickMoved: boolean, msSinceStick: number): boolean {
+  return !stickMoved && msSinceStick <= TOUCH.pinchJoinMs;
+}
+
 export function rotateHintShows(portrait: boolean, msInPortrait: number, dismissed: boolean): boolean {
   return portrait && !dismissed && msInPortrait < TOUCH.rotateHintMs;
 }
@@ -150,22 +160,4 @@ export function cooldownTurn(remaining: number, total: number): number {
 
 export function isTap(dx: number, dy: number, ms: number): boolean {
   return Math.hypot(dx, dy) <= TOUCH.tapSlopPx && ms <= TOUCH.tapMs;
-}
-
-export function keyLabel(code: string): string {
-  return code.startsWith('Digit') ? code.slice('Digit'.length) : code;
-}
-
-export function flaskKeys(content: object): KeyEntry[] {
-  const flasks: unknown = Reflect.get(content, 'flasks');
-  if (!Array.isArray(flasks)) return [];
-  const keys: KeyEntry[] = [];
-  for (const flask of flasks) {
-    if (flask === null || typeof flask !== 'object') continue;
-    const bindings: unknown = Reflect.get(flask, 'bindings');
-    if (!Array.isArray(bindings)) continue;
-    const code: unknown = bindings.find((binding: unknown): boolean => typeof binding === 'string' && !binding.startsWith('mouse_'));
-    if (typeof code === 'string') keys.push({ code, label: keyLabel(code) });
-  }
-  return keys;
 }

@@ -3,8 +3,9 @@ import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasic
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import type { AttachmentDef, Content, RigDef, RigSocket, WearableDef } from '../../sim/content/types.ts';
+import type { CharacterNeeds } from '../../sim/wear.ts';
 import { renderBudget } from '../mobile/quality.ts';
-import { shrinkModelTextures } from '../mobile/textures.ts';
+import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
 import { fitToSkeleton, groupBodyParts, skinnedMeshes } from './wearables.ts';
 
 export interface ActionClip {
@@ -39,9 +40,9 @@ export interface LoadedWearable {
 }
 
 export interface CharacterLibrary {
-  readonly rigs: ReadonlyMap<string, LoadedRig>;
+  readonly rigs: Map<string, LoadedRig>;
   readonly attachments: ReadonlyMap<string, LoadedAttachment>;
-  readonly wearables: ReadonlyMap<string, LoadedWearable>;
+  readonly wearables: Map<string, LoadedWearable>;
 }
 
 export interface RigLook {
@@ -93,7 +94,15 @@ function shrinkModel(gltf: GLTF): GLTF {
   return gltf;
 }
 
+const kept: Set<string> = new Set<string>();
+
+export function loadKeptModel(loader: GLTFLoader, path: string): Promise<GLTF> {
+  kept.add(path);
+  return loadModel(loader, path);
+}
+
 export function forgetModel(path: string): void {
+  if (kept.has(path)) return;
   const cached: Promise<GLTF> | undefined = pending.get(path);
   if (cached === undefined) return;
   pending.delete(path);
@@ -110,7 +119,11 @@ function disposeModel(gltf: GLTF): undefined {
     const geometry: unknown = object.geometry;
     if (geometry instanceof BufferGeometry) geometry.dispose();
     const materials: unknown = object.material;
-    for (const material of Array.isArray(materials) ? materials : [materials]) if (material instanceof Material) material.dispose();
+    for (const material of Array.isArray(materials) ? materials : [materials]) {
+      if (!(material instanceof Material)) continue;
+      disposeMaterialTextures(material);
+      material.dispose();
+    }
   });
   return undefined;
 }
@@ -141,8 +154,8 @@ function pickClip(def: RigDef, key: string, wanted: string, available: readonly 
 }
 
 async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
-  const main: GLTF = await loadModel(loader, def.url);
-  const extras: GLTF[] = await Promise.all(def.animationUrls.map((url: string): Promise<GLTF> => loadModel(loader, url)));
+  const main: GLTF = await loadKeptModel(loader, def.url);
+  const extras: GLTF[] = await Promise.all(def.animationUrls.map((url: string): Promise<GLTF> => loadKeptModel(loader, url)));
   const available: AnimationClip[] = [...main.animations, ...extras.flatMap((extra: GLTF): AnimationClip[] => extra.animations)];
   const clip = (key: string, wanted: string): AnimationClip => pickClip(def, key, wanted, available);
   const actions: Map<string, ActionClip> = new Map<string, ActionClip>();
@@ -171,7 +184,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
 }
 
 async function loadWearable(loader: GLTFLoader, def: WearableDef): Promise<LoadedWearable> {
-  const model: GLTF = await loadModel(loader, def.model);
+  const model: GLTF = await loadKeptModel(loader, def.model);
   const pieces: SkinnedMesh[] = skinnedMeshes(model.scene);
   if (pieces.length === 0) throw new Error(`Wearable "${def.id}" has no skinned mesh in ${def.model}`);
   return { def, pieces };
@@ -180,7 +193,7 @@ async function loadWearable(loader: GLTFLoader, def: WearableDef): Promise<Loade
 export type Dresser = (dress: Readonly<Record<string, string>>, material: Material) => Material;
 
 async function loadAttachment(loader: GLTFLoader, dresser: Dresser, def: AttachmentDef): Promise<LoadedAttachment> {
-  const model: GLTF = await loadModel(loader, def.model);
+  const model: GLTF = await loadKeptModel(loader, def.model);
   model.scene.traverse((object: Object3D): void => {
     if (!(object instanceof Mesh)) return;
     object.castShadow = true;
@@ -190,10 +203,14 @@ async function loadAttachment(loader: GLTFLoader, dresser: Dresser, def: Attachm
   return { def, template: model.scene };
 }
 
-function usedRigs(content: Content): RigDef[] {
+function usedRigs(content: Content): Set<string> {
   const ids: Set<string> = new Set<string>([content.player.rig]);
   for (const monster of content.monsters.values()) ids.add(monster.rig);
   for (const npc of content.npcs.values()) ids.add(npc.rig);
+  return ids;
+}
+
+function rigDefs(content: Content, ids: Iterable<string>): RigDef[] {
   const rigs: RigDef[] = [];
   for (const id of ids) {
     const rig: RigDef | undefined = content.rigs.get(id);
@@ -202,17 +219,43 @@ function usedRigs(content: Content): RigDef[] {
   return rigs;
 }
 
-export async function loadCharacters(loader: GLTFLoader, content: Content, dresser: Dresser): Promise<CharacterLibrary> {
+function wearableDefs(content: Content, ids: Iterable<string>): WearableDef[] {
+  const defs: WearableDef[] = [];
+  for (const id of ids) {
+    const def: WearableDef | undefined = content.wearables.get(id);
+    if (def !== undefined) defs.push(def);
+  }
+  return defs;
+}
+
+export async function loadCharacters(loader: GLTFLoader, content: Content, dresser: Dresser, needs: CharacterNeeds): Promise<CharacterLibrary> {
   const [rigs, attachments, wearables]: [LoadedRig[], LoadedAttachment[], LoadedWearable[]] = await Promise.all([
-    Promise.all(usedRigs(content).map((def: RigDef): Promise<LoadedRig> => loadRig(loader, def))),
+    Promise.all(rigDefs(content, needs.rigs).map((def: RigDef): Promise<LoadedRig> => loadRig(loader, def))),
     Promise.all([...content.attachments.values()].map((def: AttachmentDef): Promise<LoadedAttachment> => loadAttachment(loader, dresser, def))),
-    Promise.all([...content.wearables.values()].map((def: WearableDef): Promise<LoadedWearable> => loadWearable(loader, def))),
+    Promise.all(wearableDefs(content, needs.wearables).map((def: WearableDef): Promise<LoadedWearable> => loadWearable(loader, def))),
   ]);
   return {
     rigs: new Map<string, LoadedRig>(rigs.map((rig: LoadedRig): [string, LoadedRig] => [rig.def.id, rig])),
     attachments: new Map<string, LoadedAttachment>(attachments.map((held: LoadedAttachment): [string, LoadedAttachment] => [held.def.id, held])),
     wearables: new Map<string, LoadedWearable>(wearables.map((worn: LoadedWearable): [string, LoadedWearable] => [worn.def.id, worn])),
   };
+}
+
+export async function loadRemainingCharacters(loader: GLTFLoader, content: Content, library: CharacterLibrary): Promise<void> {
+  const rigIds: string[] = [...usedRigs(content)].filter((id: string): boolean => !library.rigs.has(id));
+  const wearIds: string[] = [...content.wearables.keys()].filter((id: string): boolean => !library.wearables.has(id));
+  await Promise.all([
+    ...rigDefs(content, rigIds).map(async (def: RigDef): Promise<void> => {
+      library.rigs.set(def.id, await loadRig(loader, def));
+    }),
+    ...wearableDefs(content, wearIds).map(async (def: WearableDef): Promise<void> => {
+      library.wearables.set(def.id, await loadWearable(loader, def));
+    }),
+  ]);
+}
+
+export function hasWear(library: CharacterLibrary, wearableIds: readonly string[]): boolean {
+  return wearableIds.every((id: string): boolean => library.wearables.has(id));
 }
 
 function recolourEmissiveMap(material: MeshStandardMaterial, glow: string): void {
@@ -322,7 +365,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       }
     },
     setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void {
-      const key: string = `${wearableIds.join('|')}#${hiddenParts.join('|')}`;
+      const key: string = `${wearableIds.join('|')}#${hiddenParts.join('|')}#${library.wearables.size}`;
       if (key === wornKey || anchor === undefined) return;
       wornKey = key;
       for (const piece of worn.splice(0, worn.length)) piece.removeFromParent();

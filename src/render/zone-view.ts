@@ -8,7 +8,8 @@ import type { World } from '../../sim/world/types.ts';
 import { forgetModel, loadModel } from './character-loader.ts';
 import { buildGround } from './ground.ts';
 import type { Ground } from './ground.ts';
-import { dressed, preloadSurfaces } from './surfaces.ts';
+import { dressed, preloadSurfaces, releaseSurfaces } from './surfaces.ts';
+import { zoneModels, zoneProps, zoneSurfaces } from './zone-assets.ts';
 import { renderBudget } from '../mobile/quality.ts';
 
 export const ZONE_VIEW = {
@@ -74,10 +75,6 @@ function transform(x: number, y: number, z: number, yaw: number, scale: number):
   return new Matrix4().compose(new Vector3(x, y, z), new Quaternion().setFromEuler(new Euler(0, yaw, 0)), new Vector3(scale, scale, scale));
 }
 
-function zoneProps(zone: ZoneDef): string[] {
-  return [...zone.walls.tall, zone.walls.low, zone.walls.corner, ...zone.props.map((placed): string => placed.prop)];
-}
-
 export async function preloadZones(loader: GLTFLoader, content: Content): Promise<void> {
   const models: Set<string> = new Set<string>();
   for (const zone of content.zones.values()) {
@@ -89,16 +86,8 @@ export async function preloadZones(loader: GLTFLoader, content: Content): Promis
   await Promise.allSettled([preloadSurfaces(content), ...[...models].map((model: string): Promise<GLTF> => loadModel(loader, model))]);
 }
 
-function zoneModels(content: Content, zone: ZoneDef): Set<string> {
-  const models: Set<string> = new Set<string>();
-  for (const propId of zoneProps(zone)) {
-    const def: PropDef | undefined = content.props.get(propId);
-    if (def !== undefined) models.add(def.model);
-  }
-  return models;
-}
-
-export function releaseOtherZoneModels(content: Content, kept: ZoneDef): void {
+export function releaseOtherZones(content: Content, kept: ZoneDef): void {
+  releaseSurfaces(zoneSurfaces(content, kept));
   const keep: Set<string> = zoneModels(content, kept);
   for (const zone of content.zones.values()) {
     if (zone.id === kept.id) continue;

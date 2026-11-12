@@ -1,6 +1,7 @@
 import type { Box3, Material, Scene } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
+import { zoneCharacterNeeds } from '../sim/wear.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
@@ -51,8 +52,8 @@ import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
-import type { CharacterLibrary } from './render/character-loader.ts';
-import { loadCharacters } from './render/character-loader.ts';
+import type { CharacterLibrary, Dresser } from './render/character-loader.ts';
+import { loadCharacters, loadRemainingCharacters } from './render/character-loader.ts';
 import type { Effects } from './render/effects.ts';
 import { createEffects } from './render/effects.ts';
 import type { Ward } from './render/ward.ts';
@@ -75,7 +76,7 @@ import type { ZoneMarkers } from './render/zone-markers.ts';
 import { createZoneMarkers } from './render/zone-markers.ts';
 import { dressed } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
-import { buildZoneView, preloadZones, releaseOtherZoneModels } from './render/zone-view.ts';
+import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-view.ts';
 import { createBrowserTimers } from './browser-timers.ts';
 import { createAccountFlow } from './account-flow.ts';
 import type { AccountFlow } from './account-flow.ts';
@@ -98,7 +99,13 @@ const GAME = {
   saveEvery: 2,
   soundLogLength: 300,
   millisecondsPerSecond: 1000,
+  idleWaitMs: 1500,
 } as const;
+
+function whenIdle(work: () => void): void {
+  if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(work, { timeout: GAME.idleWaitMs });
+  else window.setTimeout(work, GAME.idleWaitMs);
+}
 
 export interface DebugHandle {
   readonly world: World;
@@ -210,17 +217,17 @@ async function start(): Promise<void> {
   const stage: Stage = createStage(canvas, mobile.quality.tier);
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader();
-  const loadingCharacters: Promise<CharacterLibrary> = loadCharacters(loader, content, (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material));
+  const dresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material);
 
   const save: SaveData | null = await loadingSave;
   if (lobby !== null) void lobby.feed.refresh(true);
   const world: World = createWorld(content, { seed: Date.now() >>> 0, save });
   status.textContent = 'Raising the dead and the walls…';
-  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadingCharacters, buildZoneView(loader, content, world.zone, stage.scene)]);
+  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene)]);
   status.textContent = 'Waking the world…';
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
-  const thumbnails: ItemThumbnails = createItemThumbnails(library, shownPieces);
+  let thumbnails: ItemThumbnails = createItemThumbnails(library, shownPieces);
   let zoneView: ZoneView = firstView;
   let markers: ZoneMarkers = createZoneMarkers(stage.scene, world.zone);
   stage.setAmbience(world.zone.ambience);
@@ -390,7 +397,7 @@ async function start(): Promise<void> {
     markers.dispose();
     zoneView.dispose();
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene);
-    if (mobile.quality.tier.releaseOtherZones) releaseOtherZoneModels(content, world.zone);
+    if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
     markers = createZoneMarkers(stage.scene, world.zone);
     stage.setAmbience(world.zone.ambience);
     zoneView.setLightBudget(gameSettings.preset().lights);
@@ -493,7 +500,12 @@ async function start(): Promise<void> {
 
   camera.snap(world.player.pos.x, world.player.pos.z);
   requestAnimationFrame(frame);
-  if (mobile.quality.tier.preloadAllZones) void preloadZones(loader, content);
+  const loadTheRest = async (): Promise<void> => {
+    await loadRemainingCharacters(loader, content, library);
+    thumbnails = createItemThumbnails(library, shownPieces);
+    actors.refreshWear(world);
+    if (mobile.quality.tier.preloadAllZones) await preloadZones(loader, content);
+  };
 
   status.classList.remove('failed');
   status.classList.add('quiet');
@@ -507,6 +519,9 @@ async function start(): Promise<void> {
     });
   }
   enter.disabled = false;
+  whenIdle((): void => {
+    void loadTheRest();
+  });
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = save === null;
   enter.addEventListener('click', (): void => {

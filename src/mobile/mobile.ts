@@ -8,8 +8,7 @@ import type { ContextWatch } from './page.ts';
 import { enterLandscapeFullscreen, holdPageStill, readDeviceFacts, watchContext } from './page.ts';
 import type { DeviceFacts, Quality, QualityTier } from './quality.ts';
 import { chooseQuality, configureRenderBudget, createQuality } from './quality.ts';
-import type { KeyEntry } from './touch-map.ts';
-import { flaskKeys, prefersTouch } from './touch-map.ts';
+import { prefersTouch } from './touch-map.ts';
 import type { TouchControls } from './touch-ui.ts';
 import { createTouchControls } from './touch-ui.ts';
 
@@ -59,7 +58,6 @@ export function startMobile(boot: MobileBoot, setup: MobileSetup): Mobile {
         yaw: (CAMERA.yawDegrees * Math.PI) / 180,
         zoomStep: CAMERA.zoomStep,
         zoomBy: (wheelDelta: number): void => setup.camera.zoomBy(wheelDelta),
-        keys: (): KeyEntry[] => flaskKeys(setup.world.content),
         openMenu: (): void => setup.openMenu(),
       })
     : null;

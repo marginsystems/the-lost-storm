@@ -5,7 +5,7 @@ import { loadContent } from './content/content.ts';
 import type { Content, WearableDef } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
-import { hiddenBodyParts, wornWearables } from './wear.ts';
+import { hiddenBodyParts, wornWearables, zoneCharacterNeeds } from './wear.ts';
 import type { Equipment, ItemInstance } from './world/types.ts';
 
 const content: Content = loadContent();
@@ -68,4 +68,27 @@ void test('monsters are dressed from the same pool', (): void => {
     assert.deepEqual(worn, [...monster.wear], monster.id);
     assert.ok(worn.length > 0, monster.id);
   }
+});
+
+void test('a zone needs the hero, its people and its packs, dressed as they are, and nothing else', (): void => {
+  for (const zone of content.zones.values()) {
+    const needs = zoneCharacterNeeds(content, zone, emptyEquipment());
+    assert.ok(needs.rigs.has(content.player.rig));
+    for (const id of content.player.wear) assert.ok(needs.wearables.has(id), zone.id);
+    for (const placed of zone.npcs) {
+      const npc = must(content.npcs.get(placed.npc), placed.npc);
+      assert.ok(needs.rigs.has(npc.rig), zone.id);
+      for (const id of npc.wear) assert.ok(needs.wearables.has(id), `${zone.id} ${id}`);
+    }
+    for (const member of zone.packs.flatMap((pack) => pack.members)) assert.ok(needs.rigs.has(must(content.monsters.get(member.monster), member.monster).rig), zone.id);
+  }
+  const town = [...content.zones.values()].find((zone) => zone.packs.length === 0);
+  if (town !== undefined) assert.ok(zoneCharacterNeeds(content, town, null).wearables.size < content.wearables.size);
+});
+
+void test('the equipped pieces are needed too', (): void => {
+  const zone = must(content.zones.values().next().value, 'a zone');
+  const equipped: Equipment = { ...emptyEquipment(), chest: item('drowned_leathers') };
+  const needs = zoneCharacterNeeds(content, zone, equipped);
+  for (const id of wornWearables(content, content.player.wear, equipped)) assert.ok(needs.wearables.has(id));
 });

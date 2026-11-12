@@ -7,7 +7,7 @@ import type { AttachmentDef, Content, ItemBaseDef, RarityDef, RigDef } from '../
 import { baseOf, rarityOf } from '../../sim/items.ts';
 import type { GroundItem, ItemInstance, World } from '../../sim/world/types.ts';
 import type { CharacterLibrary, LoadedAttachment } from './character-loader.ts';
-import { loadModel } from './character-loader.ts';
+import { loadKeptModel } from './character-loader.ts';
 import { disposeObject, glow } from './effect-shapes.ts';
 
 export const LOOT = {
@@ -111,7 +111,7 @@ function lyingModel(attachment: LoadedAttachment, scale: number, floor: number):
 }
 
 export async function createLootView(loader: GLTFLoader, scene: Scene, library: CharacterLibrary): Promise<LootView> {
-  const coins: Object3D = (await loadModel(loader, LOOT.coinModel)).scene;
+  const coins: Object3D = (await loadKeptModel(loader, LOOT.coinModel)).scene;
   coins.traverse((object: Object3D): void => {
     if (object instanceof Mesh) object.castShadow = true;
   });

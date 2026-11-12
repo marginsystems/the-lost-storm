@@ -1,13 +1,13 @@
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
-import type { Command, MonsterState, World } from '../../sim/world/types.ts';
+import type { Command, FlaskState, MonsterState, World } from '../../sim/world/types.ts';
 import { el } from '../hud/dom.ts';
 import type { Hud, HudPanel } from '../hud/hud-api.ts';
 import { iconSvg } from '../hud/icons.ts';
 import type { Input } from '../input.ts';
 import { INPUT } from '../input.ts';
-import type { Candidate, KeyEntry, StickReading, TouchButton } from './touch-map.ts';
-import { aimedSkill, arcPoint, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap, pinchWheelDelta, readStick, rotateHintShows, sideForPoint, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import type { Candidate, FlaskEntry, StickReading, TouchButton } from './touch-map.ts';
+import { aimedSkill, arcPoint, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, pinchWheelDelta, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 import touchCss from './touch.css?inline';
 
 export interface TouchSetup {
@@ -19,7 +19,6 @@ export interface TouchSetup {
   readonly yaw: number;
   readonly zoomStep: number;
   zoomBy(wheelDelta: number): void;
-  keys(): readonly KeyEntry[];
   openMenu(): void;
 }
 
@@ -53,11 +52,7 @@ const ROTATE_HTML: string = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x
 const MENU_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg>';
 const CLOSE_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 
-const signature = (buttons: readonly TouchButton[]): string => buttons.map((button: TouchButton): string => (button.kind === 'key' ? button.code : `${button.kind}${button.slot}`)).join('|');
-
-function keyEvent(type: 'keydown' | 'keyup', code: string): void {
-  window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
-}
+const signature = (buttons: readonly TouchButton[]): string => buttons.map((button: TouchButton): string => `${button.kind}${button.slot}`).join('|');
 
 export function createTouchControls(setup: TouchSetup): TouchControls {
   const style: HTMLStyleElement = document.createElement('style');
@@ -133,7 +128,6 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   let moving: boolean = false;
   let stopPending: boolean = false;
   let pinch: number | null = null;
-  let keysDown: Set<string> = new Set<string>();
 
   const buildButtons = (specs: readonly TouchButton[]): void => {
     actions.replaceChildren();
@@ -151,8 +145,8 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       }
       const ringEl: HTMLElement = el('i', 'tc-cd', root);
       const icon: HTMLElement = el('span', 'tc-icon', root);
-      if (spec.kind === 'key') {
-        icon.textContent = spec.label;
+      if (spec.kind === 'flask') {
+        icon.textContent = String(spec.slot + 1);
         root.setAttribute('aria-label', spec.label);
       } else {
         const skill: SkillDef | undefined = world.player.skills[spec.slot];
@@ -164,7 +158,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   };
 
   const refreshButtons = (): void => {
-    const specs: TouchButton[] = touchButtons(world.content.player.skillBar, INPUT.leftBinding, setup.keys());
+    const specs: TouchButton[] = touchButtons(world.content.player.skillBar, INPUT.leftBinding, world.player.flasks.map((flask: FlaskState): FlaskEntry => flask.def));
     const next: string = signature(specs);
     if (next === shownSignature) return;
     shownSignature = next;
@@ -203,10 +197,6 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       case 'button': {
         const view: ButtonView | undefined = views[track.index];
         view?.root.classList.remove('down');
-        if (view?.spec.kind === 'key' && keysDown.has(view.spec.code)) {
-          keysDown.delete(view.spec.code);
-          keyEvent('keyup', view.spec.code);
-        }
         return;
       }
     }
@@ -221,20 +211,21 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       view.root.classList.add('down');
       tracks.set(event.pointerId, { kind: 'button', index });
       fresh.add(index);
-      if (view.spec.kind === 'key' && !keysDown.has(view.spec.code)) {
-        keysDown.add(view.spec.code);
-        keyEvent('keydown', view.spec.code);
-      }
       return;
     }
     const now: number = performance.now();
-    if (stickTrack() === null && sideForPoint(event.clientX, window.innerWidth) === 'move') {
+    if (startsStick(event.clientX, window.innerWidth, stickTrack() !== null, worldTracks().length)) {
       tracks.set(event.pointerId, { kind: 'stick', ox: event.clientX, oy: event.clientY, at: now, moved: false, reading: { x: 0, y: 0, magnitude: 0 } });
       stick.classList.add('on');
       const rect: DOMRect = layer.getBoundingClientRect();
       stick.style.transform = `translate(${(event.clientX - rect.left).toFixed(1)}px,${(event.clientY - rect.top).toFixed(1)}px)`;
       knob.style.transform = '';
       return;
+    }
+    for (const [id, track] of tracks) {
+      if (track.kind !== 'stick' || !joinsPinch(track.moved, now - track.at)) continue;
+      tracks.set(id, { kind: 'world', ox: track.ox, oy: track.oy, at: track.at, x: track.ox, y: track.oy });
+      restStick();
     }
     tracks.set(event.pointerId, { kind: 'world', ox: event.clientX, oy: event.clientY, at: now, x: event.clientX, y: event.clientY });
     const fingers = worldTracks();
@@ -270,8 +261,6 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   layer.addEventListener('contextmenu', (event: MouseEvent): void => event.preventDefault());
 
   const reset = (): void => {
-    for (const code of keysDown) keyEvent('keyup', code);
-    keysDown = new Set<string>();
     for (const view of views) view.root.classList.remove('down');
     tracks.clear();
     fresh.clear();
@@ -330,7 +319,8 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
             if (isFresh || (isHeld && tick && ready)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)));
             return;
           }
-          case 'key':
+          case 'flask':
+            if (isFresh) commands.push({ type: 'flask', slot: view.spec.slot });
             return;
         }
       });
@@ -340,7 +330,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       refreshButtons();
       const player = world.player;
       for (const view of views) {
-        if (view.spec.kind === 'key') continue;
+        if (view.spec.kind === 'flask') continue;
         const skill: SkillDef | undefined = player.skills[view.spec.slot];
         if (skill === undefined) continue;
         const turn: number = cooldownTurn(player.cooldowns[skill.id] ?? 0, skill.cooldown);

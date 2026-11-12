@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { DeviceFacts, QualityTier } from './quality.ts';
-import { chooseQuality, configureRenderBudget, createQuality, DEVICE_LIMITS, fittedSize, pixelRatioFor, QUALITY_TIERS, renderBudget } from './quality.ts';
+import { chooseQuality, configureRenderBudget, createQuality, DEVICE_LIMITS, fittedSize, pixelRatioFor, QUALITY_TIERS, renderBudget, texturePath } from './quality.ts';
 
 const DESKTOP: DeviceFacts = { search: '', coarsePointer: false, deviceMemory: 16, cores: 10 };
 
@@ -58,4 +58,11 @@ void test('a quality change reaches subscribers once and the render budget follo
   configureRenderBudget(QUALITY_TIERS.mobile);
   assert.equal(renderBudget().name, 'mobile');
   configureRenderBudget(QUALITY_TIERS.desktop);
+});
+
+void test('the half texture path swaps the folder only when asked and only for surface textures', (): void => {
+  assert.equal(texturePath('textures/cobble_color.webp', true), 'textures/half/cobble_color.webp');
+  assert.equal(texturePath('textures/cobble_color.webp', false), 'textures/cobble_color.webp');
+  assert.equal(texturePath('textures/half/cobble_color.webp', true), 'textures/half/cobble_color.webp');
+  assert.equal(texturePath('models/x.glb', true), 'models/x.glb');
 });

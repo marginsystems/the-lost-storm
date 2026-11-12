@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Candidate } from './touch-map.ts';
-import { aimedSkill, arcPoint, autoAimTarget, clampKnob, cooldownTurn, flaskKeys, isTap, pinchWheelDelta, prefersTouch, readStick, rotateHintShows, sideForPoint, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import { aimedSkill, arcPoint, autoAimTarget, clampKnob, cooldownTurn, isTap, joinsPinch, pinchWheelDelta, prefersTouch, readStick, rotateHintShows, sideForPoint, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 
 const YAW: number = Math.PI / 4;
 const near = (actual: number, expected: number): void => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
@@ -66,13 +66,13 @@ void test('an aimed skill targets the enemy, or swings ahead at full range when 
   assert.deepEqual(aimedSkill(2, { x: 1, z: 1 }, { x: 2, z: 0 }, null), { type: 'skill', slot: 2, aim: { x: 1 + TOUCH.aimRange, z: 1 }, targetId: null });
 });
 
-void test('buttons put the left click skill first as the attack, then every other slot, then keys', (): void => {
-  const buttons = touchButtons([{ bindings: ['KeyQ'] }, { bindings: ['mouse_left'] }, { bindings: ['KeyW', 'mouse_right'] }], 'mouse_left', [{ code: 'Digit1', label: '1' }]);
+void test('buttons put the left click skill first as the attack, then every other slot, then the flasks', (): void => {
+  const buttons = touchButtons([{ bindings: ['KeyQ'] }, { bindings: ['mouse_left'] }, { bindings: ['KeyW', 'mouse_right'] }], 'mouse_left', [{ name: 'Life Flask' }]);
   assert.deepEqual(buttons, [
     { kind: 'attack', slot: 1 },
     { kind: 'skill', slot: 0 },
     { kind: 'skill', slot: 2 },
-    { kind: 'key', code: 'Digit1', label: '1' },
+    { kind: 'flask', slot: 0, label: 'Life Flask' },
   ]);
 });
 
@@ -117,10 +117,15 @@ void test('the cooldown sweep is a full turn when ready and grows as the cooldow
   assert.equal(cooldownTurn(1, 0), TOUCH.fullTurn);
 });
 
-void test('flask keys come from content that has flasks and are empty otherwise', (): void => {
-  assert.deepEqual(flaskKeys({}), []);
-  assert.deepEqual(flaskKeys({ flasks: [{ bindings: ['Digit1'] }, { bindings: ['mouse_left', 'Digit2'] }, { nope: true }] }), [
-    { code: 'Digit1', label: '1' },
-    { code: 'Digit2', label: '2' },
-  ]);
+void test('the stick starts on the move side only when no other finger is on the world', (): void => {
+  assert.equal(startsStick(10, 800, false, 0), true);
+  assert.equal(startsStick(10, 800, true, 0), false);
+  assert.equal(startsStick(10, 800, false, 1), false);
+  assert.equal(startsStick(700, 800, false, 0), false);
+});
+
+void test('a still stick finger joins a second finger that lands soon after as a pinch', (): void => {
+  assert.equal(joinsPinch(false, TOUCH.pinchJoinMs - 1), true);
+  assert.equal(joinsPinch(true, 10), false);
+  assert.equal(joinsPinch(false, TOUCH.pinchJoinMs + 1), false);
 });

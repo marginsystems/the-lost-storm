@@ -91,7 +91,7 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 | `public/models/` | GLB models. Every file is listed in [ASSETS.md](ASSETS.md) |
 | `public/textures/` | Colour, normal and roughness maps for the surfaces in `data/surfaces.json`. Every file is listed in [ASSETS.md](ASSETS.md) |
 | `blender/` | Blender scripts that build models: weapons, clothing and armour converted from outfit packs to the shared rig, the walls, lamps, furniture and houses of the world (`build_environment.py`), and props converted from Poly Haven scans (`import_polyhaven.py`) |
-| `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file, `retarget-clips.ts` moves clips from a rig with other joint names onto the shared rig (`combat-clips.json` lists which), `pack-gltf.ts` packs a `.gltf` with its buffers and textures into one `.glb` |
+| `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file, `retarget-clips.ts` moves clips from a rig with other joint names onto the shared rig (`combat-clips.json` lists which), `pack-gltf.ts` packs a `.gltf` with its buffers and textures into one `.glb`, `resample-clips.ts` drops redundant keyframes from the shared clip files, `half-textures.sh` writes the half-size surface textures the mobile tier loads |
 | `test/rules.test.ts` | Repository rules: no comments, no type escape hatches, `sim/` stays free of rendering code, every model is credited |
 
 The renderer reads the world and the events `stepWorld` returns, and sends commands back. It never changes world state.

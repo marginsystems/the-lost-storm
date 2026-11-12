@@ -1,7 +1,7 @@
 import type { Material, Texture } from 'three';
 import { Color, MeshStandardMaterial, NoColorSpace, RepeatWrapping, SRGBColorSpace, TextureLoader, Vector2 } from 'three';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
-import { renderBudget } from '../mobile/quality.ts';
+import { renderBudget, texturePath } from '../mobile/quality.ts';
 import { shrinkTexture } from '../mobile/textures.ts';
 import { assetUrl } from './character-loader.ts';
 
@@ -30,17 +30,27 @@ interface Loading {
 
 const loader: TextureLoader = new TextureLoader();
 const textures: Map<string, Loading> = new Map<string, Loading>();
-const materials: Map<string, MeshStandardMaterial> = new Map<string, MeshStandardMaterial>();
+interface Made {
+  readonly surface: string;
+  readonly material: MeshStandardMaterial;
+  readonly textures: readonly string[];
+}
+
+const materials: Map<string, Made> = new Map<string, Made>();
+
+function textureKey(path: string, metres: number): string {
+  return `${path}@${metres}`;
+}
 
 function loadTexture(path: string, metres: number, colour: boolean): Texture {
-  const key: string = `${path}@${metres}`;
+  const key: string = textureKey(path, metres);
   const cached: Loading | undefined = textures.get(key);
   if (cached !== undefined) return cached.texture;
   const started: Texture[] = [];
   const done: Promise<void> = new Promise<void>((resolve: () => void): void => {
     started.push(
       loader.load(
-        assetUrl(path),
+        assetUrl(texturePath(path, renderBudget().halfTextures)),
         (loaded: Texture): void => {
           shrinkTexture(loaded, renderBudget().maxTextureSize);
           resolve();
@@ -63,8 +73,8 @@ function loadTexture(path: string, metres: number, colour: boolean): Texture {
 
 export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse): MeshStandardMaterial {
   const key: string = `${def.id}:${use}`;
-  const cached: MeshStandardMaterial | undefined = materials.get(key);
-  if (cached !== undefined) return cached;
+  const cached: Made | undefined = materials.get(key);
+  if (cached !== undefined) return cached.material;
   const orm: Texture | null = def.orm === null ? null : loadTexture(def.orm, def.metres, false);
   const metal: boolean = def.metalness >= SURFACES.metalFrom;
   const made: MeshStandardMaterial = new MeshStandardMaterial({
@@ -87,7 +97,8 @@ export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse): MeshStandardM
     made.polygonOffsetFactor = SURFACES.overlayOffset;
     made.polygonOffsetUnits = SURFACES.overlayOffset;
   }
-  materials.set(key, made);
+  const used: string[] = [def.color, def.normal, def.orm].filter((path: string | null): path is string => path !== null).map((path: string): string => textureKey(path, def.metres));
+  materials.set(key, { surface: def.id, material: made, textures: used });
   return made;
 }
 
@@ -100,4 +111,18 @@ export function dressed(content: Content, dress: Readonly<Record<string, string>
 export async function preloadSurfaces(content: Content): Promise<void> {
   for (const def of content.surfaces.values()) surfaceMaterial(def, 'solid');
   await Promise.all([...textures.values()].map((loading: Loading): Promise<void> => loading.done));
+}
+
+export function releaseSurfaces(keep: ReadonlySet<string>): void {
+  for (const [key, made] of materials) {
+    if (keep.has(made.surface)) continue;
+    made.material.dispose();
+    materials.delete(key);
+  }
+  const used: Set<string> = new Set<string>([...materials.values()].flatMap((made: Made): readonly string[] => made.textures));
+  for (const [key, loading] of textures) {
+    if (used.has(key)) continue;
+    loading.texture.dispose();
+    textures.delete(key);
+  }
 }

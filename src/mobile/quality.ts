@@ -16,6 +16,7 @@ export interface QualityTier {
   readonly maxTextureSize: number;
   readonly maxModelTextureSize: number;
   readonly preloadAllZones: boolean;
+  readonly halfTextures: boolean;
   readonly releaseOtherZones: boolean;
 }
 
@@ -36,6 +37,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     maxTextureSize: 4096,
     maxModelTextureSize: 4096,
     preloadAllZones: true,
+    halfTextures: false,
     releaseOtherZones: false,
   },
   mobile: {
@@ -54,6 +56,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     maxTextureSize: 512,
     maxModelTextureSize: 256,
     preloadAllZones: false,
+    halfTextures: true,
     releaseOtherZones: true,
   },
 };
@@ -122,6 +125,16 @@ export function createQuality(initial: QualityName): Quality {
 }
 
 let current: QualityTier = QUALITY_TIERS.desktop;
+
+export const HALF_TEXTURES = {
+  root: 'textures/',
+  folder: 'textures/half/',
+} as const;
+
+export function texturePath(path: string, half: boolean): string {
+  if (!half || !path.startsWith(HALF_TEXTURES.root) || path.startsWith(HALF_TEXTURES.folder)) return path;
+  return `${HALF_TEXTURES.folder}${path.slice(HALF_TEXTURES.root.length)}`;
+}
 
 export function renderBudget(): QualityTier {
   return current;

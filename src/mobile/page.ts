@@ -2,6 +2,7 @@ import type { DeviceFacts } from './quality.ts';
 
 export const PAGE = {
   reloadOfferMs: 6000,
+  scrollable: '.hud-panel, .pause-card',
 } as const;
 
 export function readDeviceFacts(): DeviceFacts {
@@ -40,7 +41,7 @@ export function holdPageStill(): void {
     'touchmove',
     (event: TouchEvent): void => {
       const target: EventTarget | null = event.target;
-      if (target instanceof Element && target.closest('.hud-panel') !== null) return;
+      if (target instanceof Element && target.closest(PAGE.scrollable) !== null) return;
       event.preventDefault();
     },
     { passive: false },

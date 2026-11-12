@@ -7,7 +7,8 @@ body.touch {
   -webkit-tap-highlight-color: transparent;
 }
 
-body.touch .hud-panel {
+body.touch .hud-panel,
+body.touch .pause-card {
   touch-action: pan-y;
   overscroll-behavior: contain;
 }
@@ -92,7 +93,7 @@ body.touch .tree-viewport {
 }
 
 .tc-btn.skill,
-.tc-btn.key {
+.tc-btn.flask {
   width: 48px;
   height: 48px;
   right: calc(8px + var(--tc-x, 0px));
@@ -397,4 +398,23 @@ body.touch .hud-quests {
   top: calc((154px + env(safe-area-inset-top, 0px)) / 0.72);
   right: calc((10px + env(safe-area-inset-right, 0px)) / 0.72);
   width: 200px;
+}
+
+body.touch .hud-flask {
+  zoom: 0.6;
+  top: calc((10px + env(safe-area-inset-top, 0px)) / 0.6);
+  bottom: auto;
+}
+
+body.touch .hud-flask.life {
+  left: calc((132px + env(safe-area-inset-left, 0px)) / 0.6);
+}
+
+body.touch .hud-flask.mana {
+  left: calc((158px + env(safe-area-inset-left, 0px)) / 0.6);
+  right: auto;
+}
+
+body.touch .flask-key {
+  display: none;
 }
