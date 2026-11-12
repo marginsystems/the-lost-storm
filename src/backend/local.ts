@@ -7,6 +7,7 @@ import { epochOf } from './epoch.ts';
 import type { Epochs } from './epoch.ts';
 
 export const SAVE_KEY: string = 'the-lost-storm.save.v1';
+export const UNREADABLE_KEY: string = 'the-lost-storm.save.v1.unreadable';
 
 export function localSaveText(save: SaveData, epoch: number): string {
   return JSON.stringify({ ...save, epoch });
@@ -31,11 +32,31 @@ export function readLocalSave(content: Content, text: string | null): LocalCopy 
   return epoch === null || save === null ? null : { save, epoch };
 }
 
+export function unreadable(content: Content, text: string | null): boolean {
+  if (text === null) return false;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return true;
+  }
+  return readSave(content, parsed) === null;
+}
+
+function keepUnreadable(content: Content, store: KeyValueStore, text: string | null): void {
+  if (text === null || store.read(UNREADABLE_KEY) !== null || !unreadable(content, text)) return;
+  store.write(UNREADABLE_KEY, text);
+}
+
 export function createLocalBackend(content: Content, store: KeyValueStore, epochs: Epochs): Backend {
   return {
     load: (): Promise<SaveData | null> => {
-      const stored: LocalCopy | null = readLocalSave(content, store.read(SAVE_KEY));
-      if (stored === null) return Promise.resolve(null);
+      const text: string | null = store.read(SAVE_KEY);
+      const stored: LocalCopy | null = readLocalSave(content, text);
+      if (stored === null) {
+        keepUnreadable(content, store, text);
+        return Promise.resolve(null);
+      }
       if (stored.epoch >= epochs.current()) return Promise.resolve(stored.save);
       epochs.drop();
       store.remove(SAVE_KEY);

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { content, createMemoryStore, makeSave, preEpochLocal, storedLocal } from '../../test/backend-support.ts';
 import { createEpochs, SAVE_EPOCH } from './epoch.ts';
-import { createLocalBackend, readLocalSave, SAVE_KEY } from './local.ts';
+import { createLocalBackend, readLocalSave, SAVE_KEY, UNREADABLE_KEY } from './local.ts';
 
 void test('a save written by the local backend is the one it loads, under the same key as before, stamped with the epoch', async (): Promise<void> => {
   const store = createMemoryStore();
@@ -78,4 +78,32 @@ void test('loading says a fresh start only when it dropped a save from an older 
   const dropped = createLocalBackend(content, old, createEpochs(SAVE_EPOCH));
   assert.equal(await dropped.load(), null);
   assert.equal(dropped.freshStart(), true);
+});
+
+async function keptAfterLoad(text: string, writeAfter: boolean): Promise<string | null> {
+  const store = createMemoryStore();
+  store.write(SAVE_KEY, text);
+  const backend = createLocalBackend(content, store, createEpochs(SAVE_EPOCH));
+  await backend.load();
+  if (writeAfter) backend.save(makeSave(1, 0));
+  return store.read(UNREADABLE_KEY);
+}
+
+void test('a stored save this build cannot read is kept under its own key before the game writes a new one over it', async (): Promise<void> => {
+  const newer: string = storedLocal(makeSave(9, 500)).replace(/"version":\d+/, '"version":99');
+  assert.deepEqual(await Promise.all([keptAfterLoad(newer, true), keptAfterLoad('garbage', true)]), [newer, 'garbage']);
+});
+
+void test('a readable save, or one from an older epoch that is dropped on purpose, is never kept', async (): Promise<void> => {
+  const texts: readonly string[] = [storedLocal(makeSave(3, 0)), preEpochLocal(makeSave(9, 500)), storedLocal(makeSave(9, 500), SAVE_EPOCH - 1)];
+  assert.deepEqual(await Promise.all(texts.map((text: string): Promise<string | null> => keptAfterLoad(text, false))), [null, null, null]);
+});
+
+void test('the first unreadable save kept is not replaced by a later one', async (): Promise<void> => {
+  const store = createMemoryStore();
+  store.write(SAVE_KEY, 'first');
+  await createLocalBackend(content, store, createEpochs(SAVE_EPOCH)).load();
+  store.write(SAVE_KEY, 'second');
+  await createLocalBackend(content, store, createEpochs(SAVE_EPOCH)).load();
+  assert.equal(store.read(UNREADABLE_KEY), 'first');
 });
