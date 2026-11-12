@@ -79,15 +79,22 @@
       <p class="dated">The Lost Storm, as served at theloststorm.com. Last updated 12 November 2026.</p>
 
       <h2>In short</h2>
-      <p>The game keeps your progress so you can come back to it. It has no ads, no third-party analytics and no trackers, and nothing about you is sold or shared for marketing. It counts a few anonymous milestones, described below, and keeps the feedback you choose to send.</p>
+      <p>The game keeps your progress so you can come back to it. It has no ads, no analytics service and no trackers, and nothing about you is sold or shared for marketing. A few services handle data for the parts of the game that need them: Cloudflare delivers the site and runs the bot check for email sign-in, Google handles Google sign-in, Resend delivers sign-in codes by email, and ElevenLabs makes the voice that speaks your character's name. Each is described below. The game also counts a few anonymous milestones and keeps the feedback you choose to send.</p>
 
       <h2>If you just play</h2>
       <p>Your progress is saved in your browser's local storage. The first time the game reaches the server it also creates a guest account so the save can be kept there. For a guest account the server stores:</p>
       <ul>
         <li>a random account id and the time it was created;</li>
         <li>a one-way hash of the guest token. The token itself stays in your browser's local storage;</li>
-        <li>your save: your hero, items and progress, with a revision number and the time it was last written.</li>
+        <li>your save: your hero, items, progress and story choices, with a revision number and the time it was last written.</li>
       </ul>
+
+      <h2>Your character and the ladder</h2>
+      <p>Your character gets a generated two-word name until you pick one. The ladder and the lobby are public: anyone who opens the site can see each character's name, level and furthest zone, whether it played in the last five minutes, and recent level-ups (name, level and how many minutes ago). The ladder never shows an account id, an email address or a Google name.</p>
+      <p>When you pick up the journal in the In-Between, your account is counted once toward the number of players who did. Only that number is shown, never who.</p>
+
+      <h2>The voice that speaks your name</h2>
+      <p>At the start of the game a voice may say your character's name. To make it, the server sends the character name, and nothing else about you, to ElevenLabs, which turns it into audio. The audio is kept on the server under a file name made from a hash of the name, so the same name is not sent again.</p>
 
       <h2>If you sign in with Google</h2>
       <p>Signing in is optional. It attaches your Google account to your save so that you can load it in another browser. The server then also stores:</p>
@@ -99,39 +106,50 @@
       <p>The sign-in token Google sends also contains your email address. The server checks the token and does not store the email address, your profile picture or anything else from your Google account. The game asks Google for nothing beyond that basic sign-in.</p>
       <p>When sign-in is offered, the page loads Google's sign-in script from accounts.google.com, and Google handles the sign-in window under its own privacy policy.</p>
 
+      <h2>If you sign in with email</h2>
+      <p>Email sign-in is optional and has no password. You type your address and the server emails you a six-digit code.</p>
+      <ul>
+        <li>Before a code is sent, the page runs Cloudflare Turnstile, a bot check. It loads from challenges.cloudflare.com, and Cloudflare sees your IP address and browser details. The server sends Cloudflare the check's result and your IP address to confirm it.</li>
+        <li>The code is sent through Resend, an email delivery service. Resend receives your email address and the code.</li>
+        <li>The server stores a one-way hash of your address as your sign-in identity, and a masked form such as a•••@example.com to show who is signed in. It never stores the full address.</li>
+        <li>The code is stored only as a salted hash, lasts 10 minutes and works once. To limit how many codes one address gets, the server keeps a hash of the address with a count for up to 24 hours.</li>
+        <li>The server's logs record your account id and the part of your address after the @, never the full address or the code.</li>
+      </ul>
+
       <h2>Feedback you send</h2>
-<p>The game asks what you think at the end of the alpha, and Feedback in the pause menu and on the title screen asks any time. Sending it is optional. The server stores:</p>
-<ul>
-<li>your rating, thumbs up or thumbs down, and the line of text you typed, if any (at most 600 characters);</li>
-<li>where you were: the zone, your hero's level, the minutes you have played in this browser, whether you play on a desktop or a phone, and which version of the game you were running;</li>
-<li>the time it arrived;</li>
-<li>your account id, so the note can be read beside your character's name on the ladder. If you have no account yet, nothing ties it to you.</li>
-</ul>
-<p>Your IP address and email address are not stored with it. If the server cannot be reached, the note waits in your browser's local storage and is sent later.</p>
+      <p>The game asks what you think at the end of the alpha, and Feedback in the pause menu and on the title screen asks any time. Sending it is optional. The server stores:</p>
+      <ul>
+        <li>your rating, thumbs up or thumbs down, and the line of text you typed, if any (at most 600 characters);</li>
+        <li>where you were: the zone, your hero's level, the minutes you have played in this browser, whether you play on a desktop or a phone, and which version of the game you were running;</li>
+        <li>the time it arrived;</li>
+        <li>your account id, so the note can be read beside your character's name on the ladder. If you have no account yet, nothing ties it to you.</li>
+      </ul>
+      <p>Your IP address and email address are not stored with it. If the server cannot be reached, the note waits in your browser's local storage and is sent later.</p>
 
-<h2>Anonymous counts</h2>
-<p>To see how far players get, the game sends each of these milestones at most once per browser: opened the game, pressed Enter, picked up the journal, reached the Shallows, reached the waystation, sent feedback, and died for the first time. Each one adds one to a counter for that day, kept separately for desktops and phones. Nothing else is sent or stored with it: no account, no IP address, no time beyond the day, no identifier of your browser. Your browser remembers in its local storage which milestones it has already sent.</p>
-<p>Feedback and counts are sent only to the game's own server. Their lines in the server's request log leave out the IP address and the account.</p>
+      <h2>Anonymous counts</h2>
+      <p>To see how far players get, the game sends each of these milestones at most once per browser: opened the game, pressed Enter, picked up the journal, reached the Shallows, reached the waystation, sent feedback, and died for the first time. Each one adds one to a counter for that day, kept separately for desktops and phones. Nothing else is sent or stored with it: no account, no IP address, no time beyond the day, no identifier of your browser. Your browser remembers in its local storage which milestones it has already sent.</p>
+      <p>Feedback and counts are sent only to the game's own server. Their lines in the server's request log leave out the IP address and the account.</p>
 
-<h2>IP addresses</h2>
+      <h2>IP addresses</h2>
       <p>The server uses your IP address to limit how fast one address can send requests, and writes it to its request logs, which are used only to run and protect the service. It is not stored with your account or your save. The site is delivered through Cloudflare, which processes requests, including IP addresses, to deliver and protect it.</p>
 
       <h2>Cookies</h2>
-      <p>The game sets no cookies. It uses your browser's local storage for your save, your token, the minutes you have played, the milestones already counted and any feedback still waiting to be sent. Google may set its own cookies when you use its sign-in.</p>
+      <p>The game sets no cookies. It uses your browser's local storage for your save, your token, the minutes you have played, the milestones already counted and any feedback still waiting to be sent. Google may set its own cookies when you use its sign-in, and Cloudflare may when it runs the bot check.</p>
 
       <h2>Removing your data</h2>
       <ul>
-        <li>"Start over" on the title screen clears your progress.</li>
+        <li>"Start over" on the title screen clears your progress, here and in the cloud copy.</li>
         <li>"Sign out" ends your session on the server and returns this browser to a new guest account.</li>
         <li>Clearing this site's data in your browser removes everything kept on your device.</li>
-        <li>To have an account and its save deleted from the server, ask through the <a href="https://github.com/marginsystems/the-lost-storm/issues">project's issue tracker</a>. Do not post personal details there; you will be told how to identify the account privately.</li>
+        <li>To have your account deleted from the server, email <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a> with your character name, and the address you signed in with if you used email. The operator deletes it by hand: the account, its sign-in identities and sessions, its save, its character and ladder entries, and the feedback tied to it. You get a reply when it is done.</li>
       </ul>
+      <p>The alpha may reset every player's progress. A reset deletes every save and every character on the ladder, and keeps accounts and sign-ins.</p>
 
       <h2>Open source</h2>
       <p>The game client is open source under the MIT licence, so you can read exactly what it stores and sends: <a href="https://github.com/marginsystems/the-lost-storm">github.com/marginsystems/the-lost-storm</a>.</p>
 
       <h2>Changes and contact</h2>
-      <p>If this page changes, the date at the top changes with it. Questions go to the <a href="https://github.com/marginsystems/the-lost-storm/issues">issue tracker</a>.</p>
+      <p>If this page changes, the date at the top changes with it. Questions about your data go to <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a>; other questions can go to the <a href="https://github.com/marginsystems/the-lost-storm/issues">issue tracker</a>, without personal details.</p>
 
       <p class="foot"><a href="/">The Lost Storm</a> · <a href="/play/">Play</a> · <a href="/terms.html">Terms</a></p>
     </main>
