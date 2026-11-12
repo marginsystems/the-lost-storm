@@ -4,8 +4,8 @@ import type { ObjectiveTarget } from '../../sim/world/objective.ts';
 import { objectiveTarget } from '../../sim/world/objective.ts';
 import type { World } from '../../sim/world/types.ts';
 import { el } from '../hud/dom.ts';
-import type { GroundGlow } from '../render/ground-glow.ts';
-import { createGroundGlow } from '../render/ground-glow.ts';
+import type { LightPool } from '../render/light-pool.ts';
+import { createLightPool } from '../render/light-pool.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import { arrowToward } from './arrow-geometry.ts';
 import type { ArrowPlacement, Point, Rect } from './arrow-geometry.ts';
@@ -15,7 +15,7 @@ import { createGlide, glideToward } from '../render/label-glide.ts';
 
 export const OBJECTIVE = {
   color: 0xe8b866,
-  glowStrength: 0.16,
+  glowStrength: 0.12,
   pulseSpeed: 2.4,
   pulseDepth: 0.25,
   lift: 0.09,
@@ -48,10 +48,10 @@ function sameSpot(a: ObjectiveTarget | null, b: ObjectiveTarget | null): boolean
 export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTMLElement): ObjectiveMarker {
   const style: HTMLStyleElement = el('style', '', hud);
   style.textContent = css;
-  const glow: GroundGlow = createGroundGlow(new Color(OBJECTIVE.color));
-  glow.mesh.renderOrder = 5;
-  glow.mesh.visible = false;
-  scene.add(glow.mesh);
+  const glow: LightPool = createLightPool(new Color(OBJECTIVE.color), false);
+  for (const part of glow.group.children) part.renderOrder = 5;
+  glow.group.visible = false;
+  scene.add(glow.group);
   const arrow: HTMLDivElement = el('div', 'objective-arrow', hud);
   el('div', 'objective-arrow-head', arrow);
   const screen: Vector2 = new Vector2();
@@ -70,7 +70,7 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
       const goal: number = target === null ? 0 : 1;
       level += (goal - level) * (1 - Math.exp(-OBJECTIVE.ease * dt));
       if (target !== null) glow.place(target.pos.x, world.zone.floorHeight + OBJECTIVE.lift, target.pos.z, target.radius);
-      glow.mesh.visible = level > 0.01;
+      glow.group.visible = level > 0.01;
       glow.set(level * OBJECTIVE.glowStrength * (1 + Math.sin(time * OBJECTIVE.pulseSpeed) * OBJECTIVE.pulseDepth), time);
       let placement: ArrowPlacement | null = null;
       sinceRead += dt;
