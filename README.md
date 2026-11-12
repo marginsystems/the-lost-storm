@@ -73,7 +73,7 @@ CI runs typecheck, lint and the affected tests on every pull request, and the wh
 npm run check
 ```
 
-It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with type information, rules in `.oxlintrc.json`) and `npm test` (Node's test runner, every file in one process; about ten seconds). `npm run test:affected` runs only the tests a branch can affect, and `npm run test:isolated` runs the whole suite with one process per file. `npm run build` makes the production bundle in `dist/`.
+It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with type information, rules in `.oxlintrc.json`) and `npm test` (Node's test runner, the whole suite split over a few processes; a few seconds). `npm run test:affected` runs only the tests a branch can affect, and `npm run test:isolated` runs the whole suite with one process per file. `npm run build` makes the production bundle in `dist/`.
 
 ## Layout
 

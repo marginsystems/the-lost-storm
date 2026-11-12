@@ -34,7 +34,7 @@ npm run lint
 npm run test:affected
 ```
 
-`npm run test:affected` runs only the tests your branch can affect (its diff against `origin/main` plus uncommitted and untracked files), all in one process, in a second or two. Run it through the machine's test lane. `npm test` is the whole suite in one process (about ten seconds) and `npm run test:isolated` is the whole suite with one process per file, which is what the merge queue and `main` run.
+`npm run test:affected` runs only the tests your branch can affect (its diff against `origin/main` plus uncommitted and untracked files), split over up to four processes, in a few seconds. Run it through the machine's test lane. `npm test` is the whole suite, split over up to four processes that each run their files together (a few seconds); the merge queue runs it. `npm run test:isolated` is the whole suite with one process per file; every push to `main` runs it.
 
 ## Logic and rendering are separate layers
 
@@ -67,7 +67,7 @@ Name a test file exactly after the file it tests, in the same directory: `foo.ts
 
 `tools/affected.ts` picks the tests from the real import graph and the rules in `tools/affected-rules.json`. A changed file runs its own test and every test that imports it, directly or through other files. `data/**` also runs the content cross-check, `src/hud/**` every HUD test, `src/backend/**` every backend test. Docs, Markdown and `public/**` run only `test/rules.test.ts`, which runs on every change. Configuration, the lockfile, shared test support, the tool itself and any path no rule names run everything. A test that reads files from disk instead of importing them must be named in a rule; `tools/affected.test.ts` fails until it is. Tests never start a server, a browser or another process, and never wait on real time: use the fake clock and timers in `test/`.
 
-CI (`.github/workflows/ci.yml`) runs typecheck and lint on every push, the affected tests on a pull request, and the whole isolated suite once a pull request enters the merge queue (`mq-live`) and on every push to `main`. `CI result` is the one check that sums them up.
+CI (`.github/workflows/ci.yml`) runs typecheck and lint on every push, the affected tests on a pull request, `npm test` once a pull request enters the merge queue (`mq-live`), and `npm run test:isolated` on every push to `main`. `CI result` is the one check that sums them up.
 
 ## Tuning values
 
