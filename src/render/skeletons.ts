@@ -9,3 +9,18 @@ export function disposeSkeletons(root: Object3D): number {
   for (const skeleton of skeletons) skeleton.dispose();
   return skeletons.size;
 }
+
+const boundTemplates: WeakSet<Object3D> = new WeakSet<Object3D>();
+
+export function boundSkins(template: Object3D): number {
+  if (boundTemplates.has(template)) return 0;
+  boundTemplates.add(template);
+  template.updateMatrixWorld(true);
+  let bounded: number = 0;
+  template.traverse((object: Object3D): void => {
+    if (!(object instanceof SkinnedMesh)) return;
+    object.computeBoundingSphere();
+    bounded += 1;
+  });
+  return bounded;
+}

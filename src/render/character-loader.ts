@@ -2,7 +2,7 @@ import type { AnimationClip, IUniform, Object3D } from 'three';
 import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import { disposeSkeletons } from './skeletons.ts';
+import { boundSkins, disposeSkeletons } from './skeletons.ts';
 import type { AttachmentDef, Content, RigActionClip, RigDef, RigGait, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
@@ -432,6 +432,7 @@ function findNode(model: Object3D, name: string): Object3D | undefined {
 
 export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: RigLook): RigInstance {
   const def: RigDef = rig.def;
+  boundSkins(rig.template);
   const model: Object3D = cloneSkinned(rig.template);
   model.scale.setScalar(def.scale);
   model.rotation.y = def.yawOffsetDegrees * DEGREES;
@@ -495,6 +496,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       mesh.quaternion.copy(skinAnchor.quaternion);
       mesh.scale.copy(skinAnchor.scale);
       mesh.bind(skinAnchor.skeleton, skinAnchor.bindMatrix);
+      mesh.boundingSphere = skinAnchor.boundingSphere.clone();
       (skinAnchor.parent ?? model).add(mesh);
       piece.meshes.push(mesh);
       piece.materials.push(...cloned);
