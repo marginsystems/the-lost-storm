@@ -8,6 +8,7 @@ import { createBossBar } from './boss-bar.ts';
 import type { BossBar } from './boss-bar.ts';
 import bossCss from './boss.css?inline';
 import type { Banners } from './banners.ts';
+import type { ActionId } from '../settings/bindings.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { createDialogueBox } from './dialogue-box.ts';
 import dialogueCss from './dialogue.css?inline';
@@ -37,8 +38,7 @@ import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
 import { createTreePanel } from './tree-panel.ts';
 import volumeCss from './volume.css?inline';
-import { createVolumeControl } from './volume-panel.ts';
-import type { VolumeControl } from './volume-panel.ts';
+import { createVolumeButton } from './volume-panel.ts';
 
 const PANEL_IDS: readonly HudPanel[] = ['inventory', 'tree', 'map'];
 
@@ -110,11 +110,21 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
 
   for (const panel of PANEL_IDS) track(panels[panel].element);
 
-  buttons.inventory = createMenuButton(row, 'Inventory', 'I', (): void => toggle('inventory'), track);
+  const keyOf = (action: ActionId): string => api.settings.keys().labelOf(action);
+  buttons.inventory = createMenuButton(row, 'Inventory', keyOf('inventory'), (): void => toggle('inventory'), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
-  buttons.tree = createMenuButton(row, 'Skills', 'T', (): void => toggle('tree'), track);
-  buttons.map = createMenuButton(row, 'Map', 'M', (): void => toggle('map'), track);
-  const volume: VolumeControl = createVolumeControl(row, api.audio, track, (opened: boolean): void => api.playUi(opened ? 'panel_open' : 'panel_close'));
+  buttons.tree = createMenuButton(row, 'Skills', keyOf('tree'), (): void => toggle('tree'), track);
+  buttons.map = createMenuButton(row, 'Map', keyOf('map'), (): void => toggle('map'), track);
+  createVolumeButton(row, api.audio, track, (): void => api.openSettings('sound'));
+  const showKeys = (): void => {
+    buttons.inventory?.setKey(keyOf('inventory'));
+    buttons.tree?.setKey(keyOf('tree'));
+    buttons.map?.setKey(keyOf('map'));
+    skillBar.refreshKeys();
+    fps.setVisible(api.settings.get().graphics.showFps);
+  };
+  api.settings.subscribe(showKeys);
+  fps.setVisible(api.settings.get().graphics.showFps);
   root.addEventListener('click', (event: MouseEvent): void => {
     const target: EventTarget | null = event.target;
     if (!(target instanceof Element)) return;
@@ -183,7 +193,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             banners.show(api.world.content.quests.get(event.quest)?.name ?? '', 'Quest complete', 'quest');
             break;
           case 'waypoint_unlocked':
-            banners.show('Waypoint', 'Open the map with M to travel between waypoints', 'checkpoint');
+            banners.show('Waypoint', `Open the map with ${keyOf('map')} to travel between waypoints`, 'checkpoint');
             break;
           case 'exit_locked':
             notices.say(event.hint);
@@ -234,7 +244,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       mapWanted = wanted;
     },
     closePanels(): boolean {
-      let anyOpen: boolean = volume.close();
+      let anyOpen: boolean = false;
       for (const panel of PANEL_IDS) {
         if (open[panel]) {
           anyOpen = true;

@@ -29,6 +29,12 @@ import { createHud } from './hud/hud.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
 import { createInput } from './input.ts';
+import { createPauseMenu } from './hud/pause-menu.ts';
+import type { PauseMenu } from './hud/pause-menu.ts';
+import type { GraphicsPreset, SettingsSection } from './settings/settings.ts';
+import type { SettingsStore } from './settings/store.ts';
+import { createSettingsStore as createGameSettings } from './settings/store.ts';
+import { createBrowserStore } from './storage.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Actors } from './render/actors.ts';
@@ -217,7 +223,36 @@ async function start(): Promise<void> {
       audio.stopVoice();
     },
   };
-  const hud: Hud = createHud(element('hud', HTMLDivElement), { world, send, itemImage, audio: controls, playUi, voice });
+  const gameSettings: SettingsStore = createGameSettings(
+    createBrowserStore(),
+    content.player.skillBar.map((entry, slot: number) => ({ name: slot === 0 ? 'Move / attack' : (content.skills.get(entry.skill)?.name ?? entry.skill), bindings: entry.bindings })),
+  );
+  const pauseMenu: PauseMenu = createPauseMenu(element('hud', HTMLDivElement), {
+    settings: gameSettings,
+    audio: controls,
+    onOpen: (): void => playUi('panel_open'),
+    onClose: (): void => playUi('panel_close'),
+    onTitle: (): void => {
+      persist();
+      backend.flush();
+      playing = false;
+      audio.stopAmbience();
+      enter.textContent = 'Continue';
+      reset.hidden = false;
+      title.classList.remove('gone');
+    },
+  });
+
+  const hud: Hud = createHud(element('hud', HTMLDivElement), {
+    world,
+    send,
+    itemImage,
+    audio: controls,
+    settings: gameSettings,
+    openSettings: (section: SettingsSection): void => pauseMenu.open(section),
+    playUi,
+    voice,
+  });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
     heightOf: (id: number): number => actors.heightOf(id),
     onPickup: (groundId: number): void => send({ type: 'pickup', groundId }),
@@ -230,14 +265,25 @@ async function start(): Promise<void> {
       hud.requestMap(true);
     },
   });
-  const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile) });
-  const input: Input = createInput(canvas, world, camera, hud, {
+  const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
+  const input: Input = createInput(canvas, world, camera, hud, gameSettings, {
     heightOf: (id: number): number => actors.heightOf(id),
     boundsOf: (id: number, out: Box3): boolean => actors.boundsOf(id, out),
     labelHover: (): number | null => overlays.labelHover(),
     clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile),
     aimExit: (exit: string | null): void => overlays.aimExit(exit),
+    pause: (): void => {
+      if (playing && !transition.blocking) pauseMenu.open(null);
+    },
   });
+  const applyGraphics = (): void => {
+    const preset: GraphicsPreset = gameSettings.preset();
+    stage.applyGraphics(preset);
+    particles.setDensity(preset.effectsDensity);
+    zoneView.setLightBudget(preset.lights);
+  };
+  gameSettings.subscribe(applyGraphics);
+  applyGraphics();
   if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send };
 
   let playing: boolean = false;
@@ -274,6 +320,7 @@ async function start(): Promise<void> {
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene);
     markers = createZoneMarkers(stage.scene, world.zone);
     stage.setAmbience(world.zone.ambience);
+    zoneView.setLightBudget(gameSettings.preset().lights);
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
     startZoneAmbience();
@@ -299,9 +346,15 @@ async function start(): Promise<void> {
     const dt: number = Math.min(GAME.maxFrame, Math.max(0, (now - last) / 1000));
     last = now;
     let events: WorldEvent[] = [];
-    const live: boolean = playing && !transition.blocking;
+    const paused: boolean = pauseMenu.isOpen;
+    const simVisualDt: number = paused ? 0 : dt;
+    const active: boolean = playing && !transition.blocking;
+    const live: boolean = active && !paused;
+    if (active) {
+      const collected: Command[] = input.collect(dt);
+      if (live) queue.push(...collected);
+    }
     if (live) {
-      queue.push(...input.collect(dt));
       hitStop = Math.max(0, hitStop - dt);
       if (hitStop <= 0) {
         let remaining: number = dt;
@@ -325,13 +378,13 @@ async function start(): Promise<void> {
       actors.sync(simDt, world, input.hoveredId);
       loot.sync(world);
       camera.update(dt, world.player.pos.x, world.player.pos.z);
-      effects.update(dt, world);
+      effects.update(simVisualDt, world);
       stage.follow(world.player.pos.x, world.player.pos.z);
       overlays.update(dt, world, input.hoveredId);
     }
     audio.update(dt);
-    particles.update(dt);
-    weather.update(dt);
+    particles.update(simVisualDt);
+    weather.update(simVisualDt);
     zoneView.update(now / 1000, dt, world);
     if (zoneView.lightsVersion !== torchVersion) {
       torchVersion = zoneView.lightsVersion;

@@ -12,7 +12,6 @@ import type { MapMatrix } from './projection.ts';
 import { mapMatrix, toWorld } from './projection.ts';
 
 export const MINIMAP = {
-  toggleKey: 'Tab',
   zoomStart: 3.6,
   zoomMin: 1.6,
   zoomMax: 9,
@@ -33,6 +32,7 @@ export interface MinimapHooks {
   readonly world: World;
   send(command: Command): void;
   clickMarker(x: number, z: number, hostile: boolean): void;
+  isToggleKey(code: string): boolean;
 }
 
 export interface Minimap {
@@ -99,7 +99,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   };
 
   window.addEventListener('keydown', (event: KeyboardEvent): void => {
-    if (event.code !== MINIMAP.toggleKey) return;
+    if (!hooks.isToggleKey(event.code)) return;
     event.preventDefault();
     if (event.repeat) return;
     setMode(mode === 'corner' ? 'overlay' : 'corner');

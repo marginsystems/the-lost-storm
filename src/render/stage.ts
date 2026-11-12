@@ -1,5 +1,6 @@
 import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight, PCFSoftShadowMap, PerspectiveCamera, PointLight, Scene, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three';
 import type { ZoneAmbience } from '../../sim/content/types.ts';
+import type { GraphicsPreset } from '../settings/settings.ts';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -34,6 +35,7 @@ export interface Stage {
   setAmbience(ambience: ZoneAmbience): void;
   follow(x: number, z: number): void;
   setFlash(amount: number): void;
+  applyGraphics(preset: GraphicsPreset): void;
   resize(): void;
   render(): void;
 }
@@ -54,6 +56,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   const fog: Fog = new Fog(background, 1, 2);
   scene.background = shownBackground;
   scene.fog = fog;
+  let pixelRatioCap: number = STAGE.maxPixelRatio;
   let skyIntensity: number = 0;
   let keyIntensity: number = 0;
 
@@ -91,7 +94,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     const width: number = canvas.clientWidth;
     const height: number = canvas.clientHeight;
     if (width === 0 || height === 0) return;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, STAGE.maxPixelRatio));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioCap));
     renderer.setSize(width, height, false);
     composer.setPixelRatio(renderer.getPixelRatio());
     composer.setSize(width, height);
@@ -131,6 +134,17 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       sky.intensity = skyIntensity + STAGE.flashSky * amount;
       storm.intensity = keyIntensity + STAGE.flashStorm * amount;
       shownBackground.copy(background).lerp(flashBackground, amount);
+    },
+    applyGraphics(preset: GraphicsPreset): void {
+      pixelRatioCap = preset.pixelRatioCap;
+      bloom.enabled = preset.bloom;
+      storm.castShadow = preset.shadows;
+      if (storm.shadow.mapSize.x !== preset.shadowSize) {
+        storm.shadow.map?.dispose();
+        storm.shadow.map = null;
+        storm.shadow.mapSize.set(preset.shadowSize, preset.shadowSize);
+      }
+      resize();
     },
     resize,
     render(): void {

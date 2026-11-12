@@ -31,7 +31,7 @@ Open http://localhost:5193.
 | Left mouse on the minimap | Walk there; on an exit, travel through it. Hold to keep going |
 | Mouse wheel over the minimap | Minimap zoom |
 | Mouse wheel | Zoom |
-| Escape | Close panels, leave a conversation |
+| Escape | Close panels, leave a conversation; with nothing to close, open the pause menu (Resume, Settings, Return to title). Settings has Graphics (quality preset, FPS), Sound and Controls, where every key above can be rebound |
 
 Progress saves to `localStorage` on its own, including the zone you are in and where you last arrived or touched a checkpoint; dying returns you there. "Start over" on the title screen clears it.
 
