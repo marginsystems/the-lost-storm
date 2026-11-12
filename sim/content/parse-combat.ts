@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
 import { ContentError, fields, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, SkillLeap, SummonDef } from './combat-types.ts';
+import type { DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, SkillLeap, SummonDef } from './combat-types.ts';
 import type { Content, MonsterDef, SkillDef } from './types.ts';
 
 const STEADY: MonsterPoise = { knockback: 1, stagger: 1 };
@@ -31,13 +31,31 @@ function leap(source: Fields, where: string): SkillLeap {
   return { distance: positive(source, 'distance', where), stopShort: zeroOrMore(source, 'stopShort', where), airTime: positive(source, 'airTime', where) };
 }
 
+export function reviveDelivery(source: Fields, where: string): ReviveDelivery {
+  const count: number = positive(source, 'count', where);
+  if (!Number.isInteger(count)) throw new ContentError(`${where}.count`, 'expected a whole number');
+  const lifeShare: number = share(source, 'lifeShare', where);
+  if (lifeShare === 0) throw new ContentError(`${where}.lifeShare`, 'a raised body needs some life');
+  return { type: 'revive', range: positive(source, 'range', where), count, lifeShare };
+}
+
+export function fieldDelivery(source: Fields, where: string): FieldDelivery {
+  return { type: 'field', range: zeroOrMore(source, 'range', where), radius: positive(source, 'radius', where), duration: positive(source, 'duration', where), slow: share(source, 'slow', where) };
+}
+
 export interface SkillMotion {
   readonly leap: SkillLeap | null;
   readonly root: number;
+  readonly hold: number;
+  readonly echo: number;
 }
 
 export function skillMotion(source: Fields, where: string): SkillMotion {
-  return { leap: optional(source['leap'], `${where}.leap`, leap), root: zeroOrMore(source, 'root', where) };
+  return { leap: optional(source['leap'], `${where}.leap`, leap), root: zeroOrMore(source, 'root', where), hold: zeroOrMore(source, 'hold', where), echo: zeroOrMore(source, 'echo', where) };
+}
+
+function dormant(source: Fields, where: string): DormantDef {
+  return { noiseRadius: positive(source, 'noiseRadius', where) };
 }
 
 function poise(source: Fields, where: string): MonsterPoise {
@@ -69,6 +87,10 @@ export interface MonsterTraits {
   readonly deathSkill: string | null;
   readonly summon: SummonDef | null;
   readonly mods: readonly string[];
+  readonly faction: string;
+  readonly dormant: DormantDef | null;
+  readonly support: string | null;
+  readonly barks: readonly string[];
 }
 
 export function monsterTraits(source: Fields, where: string): MonsterTraits {
@@ -78,6 +100,10 @@ export function monsterTraits(source: Fields, where: string): MonsterTraits {
     deathSkill: nullableText(source, 'deathSkill', where),
     summon: optional(source['summon'], `${where}.summon`, summon),
     mods: [],
+    faction: text(source, 'faction', where),
+    dormant: optional(source['dormant'], `${where}.dormant`, dormant),
+    support: nullableText(source, 'support', where),
+    barks: source['barks'] === undefined ? [] : textList(source, 'barks', where),
   };
 }
 
@@ -125,7 +151,14 @@ export function combatProblems(content: Content): string[] {
     need(def.boss === null || def.guard === null, `boss ${def.id} cannot have a guard; bosses are never staggered`);
     blasts(content, `monster ${def.id}`, def.deathSkill, need);
     summons(content, `monster ${def.id}`, def.summon, need);
+    if (def.support !== null) {
+      const helper: SkillDef | undefined = content.skills.get(def.support);
+      need(helper !== undefined, `monster ${def.id} supports with unknown skill ${def.support}`);
+      if (helper !== undefined) need(helper.delivery.type === 'revive', `monster ${def.id} supports with skill ${def.support}, which raises nobody`);
+    }
+    need(def.dormant === null || def.boss === null, `boss ${def.id} cannot be dormant`);
     const used: SkillDef | undefined = content.skills.get(def.skill);
+    if (used !== undefined) need(used.delivery.type !== 'revive', `monster ${def.id} attacks with ${def.skill}, which only raises the fallen`);
     if (def.behaviour.type === 'stalker' && used !== undefined) need(used.engageRange > def.behaviour.orbitRange, `monster ${def.id} circles at ${def.behaviour.orbitRange}, outside the reach of its skill ${def.skill}`);
   }
   for (const mod of content.monsterMods.values()) {
@@ -148,6 +181,7 @@ export function combatProblems(content: Content): string[] {
   for (const used of content.skills.values()) {
     if (used.leap !== null) need(used.delivery.type === 'arc' || used.delivery.type === 'nova', `skill ${used.id} leaps, so it must land with an arc or a nova`);
     if (used.leap !== null) need(used.leap.airTime <= used.windup, `skill ${used.id} is in the air longer than its windup`);
+    if (used.echo > 0) need(used.delivery.type !== 'dash' && used.delivery.type !== 'revive', `skill ${used.id} echoes, but a ${used.delivery.type} cannot be replayed`);
   }
   return problems;
 }

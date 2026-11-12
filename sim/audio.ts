@@ -132,6 +132,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'exit_locked':
     case 'boss_phase':
     case 'bark':
+    case 'revive':
     case 'flasks_refilled':
       break;
   }

@@ -1,0 +1,165 @@
+[
+  {
+    "id": "unfinished",
+    "name": "The Unfinished",
+    "description": "Minds the storm put together wrong: strong bodies with no memories, or someone else's. They raid to take other people's pasts.",
+    "palette": {
+      "tints": [
+        "#f2e4d6",
+        "#e6d8c8"
+      ],
+      "glow": "#d08a5a"
+    },
+    "wearables": [
+      "salvaged_mail",
+      "patched_tunic",
+      "stolen_jerkin",
+      "odd_breeches",
+      "faded_trousers",
+      "cast_off_boots",
+      "torn_hood",
+      "mismatched_gloves"
+    ],
+    "weapons": [
+      "raider_maul",
+      "raider_cleaver",
+      "scrap_board",
+      "scrap_javelin"
+    ],
+    "regards": {
+      "player": "hostile",
+      "wardens": "hostile",
+      "menders": "wary",
+      "timekeepers": "wary",
+      "stormcallers": "wary"
+    }
+  },
+  {
+    "id": "still",
+    "name": "The Still",
+    "description": "People who stopped moving and were half taken by the mist. They stand where they stopped.",
+    "palette": {
+      "tints": [
+        "#c4c8ca",
+        "#b2b6b8"
+      ],
+      "glow": "#c8d4dc"
+    },
+    "wearables": [
+      "still_shroud",
+      "still_tunic",
+      "still_trousers",
+      "still_hood"
+    ],
+    "weapons": [],
+    "regards": {
+      "player": "hostile"
+    }
+  },
+  {
+    "id": "menders",
+    "name": "The Menders",
+    "description": "They stitch dead moments back together. The people they mend repeat the same hour.",
+    "palette": {
+      "tints": [
+        "#fff4e6",
+        "#d8ccc0"
+      ],
+      "glow": "#d9cfb0"
+    },
+    "wearables": [
+      "mender_coat",
+      "mender_trousers",
+      "mender_gloves",
+      "mender_hood",
+      "stitched_tunic",
+      "stitched_trousers"
+    ],
+    "weapons": [
+      "mender_knife",
+      "mended_cleaver"
+    ],
+    "regards": {
+      "player": "hostile",
+      "wardens": "hostile",
+      "unfinished": "wary"
+    }
+  },
+  {
+    "id": "timekeepers",
+    "name": "The Timekeepers",
+    "description": "An old order that keeps moments in their proper sequence. Their clocks disagree.",
+    "palette": {
+      "tints": [
+        "#fff4e6"
+      ],
+      "glow": "#d8b46a"
+    },
+    "wearables": [
+      "keeper_robe",
+      "keeper_hood",
+      "keeper_gloves"
+    ],
+    "weapons": [
+      "keeper_rod",
+      "keeper_blade"
+    ],
+    "regards": {
+      "player": "hostile",
+      "unfinished": "wary",
+      "menders": "wary"
+    }
+  },
+  {
+    "id": "wardens",
+    "name": "The Wardens",
+    "description": "They walk the roads between safe places and keep them safe.",
+    "palette": {
+      "tints": [
+        "#f2e2d0"
+      ],
+      "glow": "#f0c070"
+    },
+    "wearables": [
+      "warden_jerkin",
+      "warden_breeches",
+      "warden_boots",
+      "warden_hood",
+      "warden_gloves"
+    ],
+    "weapons": [
+      "warden_staff",
+      "warden_lantern"
+    ],
+    "regards": {
+      "player": "friendly",
+      "unfinished": "hostile",
+      "menders": "hostile"
+    }
+  },
+  {
+    "id": "stormcallers",
+    "name": "The Stormcallers",
+    "description": "People who draw on the storm itself, and are coming apart at the edges for it.",
+    "palette": {
+      "tints": [
+        "#f4eedd"
+      ],
+      "glow": "#8fdcff"
+    },
+    "wearables": [
+      "dirty_shirt",
+      "dirty_trousers",
+      "leather_boots"
+    ],
+    "weapons": [
+      "sword_1h"
+    ],
+    "regards": {
+      "player": "hostile",
+      "unfinished": "wary",
+      "menders": "wary",
+      "timekeepers": "wary"
+    }
+  }
+]

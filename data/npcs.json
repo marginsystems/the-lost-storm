@@ -372,5 +372,95 @@
       }
     ],
     "service": "vendor"
+  },
+  {
+    "id": "warden_guide",
+    "name": "Warden Guide",
+    "title": "Warden",
+    "faction": "wardens",
+    "rig": "warden",
+    "scale": 1.0,
+    "tint": "#f2e2d0",
+    "color": "#f0c070",
+    "gear": [
+      "warden_staff",
+      "warden_lantern"
+    ],
+    "wear": [
+      "warden_jerkin",
+      "warden_breeches",
+      "warden_boots",
+      "warden_hood"
+    ],
+    "talks": [
+      {
+        "id": "warden_guide_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "warden_guide_road"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "warden_trader",
+    "name": "Warden Trader",
+    "title": "Warden",
+    "faction": "wardens",
+    "rig": "warden",
+    "scale": 1.0,
+    "tint": "#f2e2d0",
+    "color": "#f0c070",
+    "gear": [
+      "warden_lantern"
+    ],
+    "wear": [
+      "warden_jerkin",
+      "warden_breeches",
+      "warden_boots",
+      "warden_gloves"
+    ],
+    "talks": [
+      {
+        "id": "warden_trader_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "warden_trader_goods"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "warden_lookout",
+    "name": "Warden Lookout",
+    "title": "Warden",
+    "faction": "wardens",
+    "rig": "warden",
+    "scale": 1.0,
+    "tint": "#f2e2d0",
+    "color": "#f0c070",
+    "gear": [
+      "warden_staff",
+      "warden_lantern"
+    ],
+    "wear": [
+      "warden_jerkin",
+      "warden_breeches",
+      "warden_boots",
+      "warden_hood",
+      "warden_gloves"
+    ],
+    "talks": [
+      {
+        "id": "warden_lookout_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "warden_lookout_ahead"
+        ]
+      }
+    ]
   }
 ]

@@ -62,10 +62,10 @@
     {"prop": "crate", "x": 12.4, "z": 12.2, "y": 0, "rotationDegrees": 10}
   ],
   "packs": [
-    {"x": 32, "z": 20, "members": [{"monster": "bearer", "count": 2}, {"monster": "chanter", "count": 2}]},
-    {"x": 53.5, "z": 26.5, "members": [{"monster": "misbuilt", "count": 2}, {"monster": "gnawer", "count": 3}, {"monster": "hodman", "count": 1}]},
-    {"x": 21, "z": 33, "members": [{"monster": "misbuilt", "count": 2}, {"monster": "hodman", "count": 1}, {"monster": "bearer", "count": 1, "mods": ["hulking"]}]},
-    {"x": 18, "z": 6, "members": [{"monster": "mason", "count": 1}], "when": [{"type": "objective", "quest": "east_lamp", "objective": "mason", "is": "current"}]}
+    {"x": 32, "z": 20, "members": [{"monster": "unfinished_brute", "count": 2}, {"monster": "unfinished_thrower", "count": 2}]},
+    {"x": 53.5, "z": 26.5, "members": [{"monster": "unfinished_brute", "count": 2}, {"monster": "unfinished_taker", "count": 3}, {"monster": "unfinished_thrower", "count": 1}]},
+    {"x": 21, "z": 33, "members": [{"monster": "unfinished_borrower", "count": 1}, {"monster": "unfinished_brute", "count": 1, "mods": ["hulking"]}, {"monster": "unfinished_thrower", "count": 2}]},
+    {"x": 18, "z": 6, "members": [{"monster": "unfinished_colossus", "count": 1}], "when": [{"type": "objective", "quest": "east_lamp", "objective": "mason", "is": "current"}]}
   ],
   "surge": null,
   "exits": [

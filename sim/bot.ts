@@ -8,7 +8,8 @@ import { currentObjective } from './world/quests.ts';
 import { SKILLS } from './world/skills.ts';
 import { choicesOpen } from './world/death.ts';
 import { stepWorld } from './world/step.ts';
-import type { Command, HazardState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
+import { playerMayStrike } from './world/factions.ts';
+import type { Command, EchoState, HazardState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
 
 export const BOT = {
   step: 1 / 30,
@@ -71,7 +72,7 @@ function free(world: World): boolean {
 }
 
 function threats(world: World): MonsterState[] {
-  return world.monsters.filter((monster: MonsterState): boolean => monster.alive && (monster.aggro || distance(monster.pos, world.player.pos) <= BOT.threat));
+  return world.monsters.filter((monster: MonsterState): boolean => playerMayStrike(world, monster) && (monster.aggro ? monster.foeId === null || monster.foeId === world.player.id || distance(monster.pos, world.player.pos) <= BOT.threat : monster.def.dormant === null && distance(monster.pos, world.player.pos) <= BOT.threat));
 }
 
 function nearest(world: World, monsters: readonly MonsterState[]): MonsterState | null {
@@ -101,50 +102,51 @@ function attack(world: World, target: MonsterState, crowd: readonly MonsterState
   return { type: 'skill', slot: 0, aim: target.pos, targetId: target.id };
 }
 
-function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reaction: number): boolean {
-  const action = monster.action;
-  if (!monster.alive || action === null || action.phase !== 'windup' || action.windup - action.timeLeft < reaction) return false;
+function struck(world: World, skill: SkillDef, origin: ReadonlyVec2, direction: ReadonlyVec2, target: ReadonlyVec2 | null, pos: ReadonlyVec2): boolean {
   const reach: number = world.player.radius + BOT.dodgeMargin;
-  const origin: ReadonlyVec2 = action.skill.leap === null ? monster.pos : (action.target ?? monster.pos);
   const offset: Vec2 = { x: pos.x - origin.x, z: pos.z - origin.z };
   const gap: number = Math.hypot(offset.x, offset.z);
-  const delivery = action.skill.delivery;
-  let inside: boolean;
+  const delivery = skill.delivery;
   switch (delivery.type) {
     case 'nova':
-      inside = gap <= delivery.radius + reach;
-      break;
+      return gap <= delivery.radius + reach;
     case 'arc': {
       const spread: number = Math.cos(Math.min(Math.PI, (delivery.arcDegrees / 2) * DEGREES_TO_RADIANS + BOT.dodgeMargin / Math.max(1, gap)));
-      inside = gap <= delivery.reach + reach && (gap <= reach || dot(normalize(offset, action.direction), action.direction) >= spread);
-      break;
+      return gap <= delivery.reach + reach && (gap <= reach || dot(normalize(offset, direction), direction) >= spread);
     }
-    case 'mark': {
-      const mark: ReadonlyVec2 = action.target ?? monster.pos;
-      inside = Math.hypot(pos.x - mark.x, pos.z - mark.z) <= delivery.radius + reach;
-      break;
+    case 'mark':
+    case 'field': {
+      const mark: ReadonlyVec2 = target ?? origin;
+      return Math.hypot(pos.x - mark.x, pos.z - mark.z) <= delivery.radius + reach;
     }
     case 'projectile': {
       const count: number = Math.max(1, Math.round(delivery.count));
-      inside = false;
       for (let index: number = 0; index < count; index += 1) {
-        const lane: Vec2 = rotate(action.direction, count === 1 ? 0 : (index - (count - 1) / 2) * delivery.spreadDegrees * DEGREES_TO_RADIANS);
+        const lane: Vec2 = rotate(direction, count === 1 ? 0 : (index - (count - 1) / 2) * delivery.spreadDegrees * DEGREES_TO_RADIANS);
         const along: number = dot(offset, lane);
         const across: number = Math.abs(offset.x * lane.z - offset.z * lane.x);
-        if (along >= 0 && along <= delivery.range + SKILLS.projectileOrigin + delivery.radius + reach && across <= delivery.radius + reach) inside = true;
+        if (along >= 0 && along <= delivery.range + SKILLS.projectileOrigin + delivery.radius + reach && across <= delivery.radius + reach) return true;
       }
-      break;
+      return false;
     }
     case 'dash':
-      inside = false;
-      break;
+    case 'revive':
+      return false;
   }
-  return inside;
+  return false;
+}
+
+function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reaction: number): boolean {
+  const action = monster.action;
+  if (!monster.alive || action === null || action.phase !== 'windup' || action.windup - action.timeLeft < reaction) return false;
+  const origin: ReadonlyVec2 = action.skill.leap === null ? monster.pos : (action.target ?? monster.pos);
+  return struck(world, action.skill, origin, action.direction, action.target, pos);
 }
 
 export function botInDanger(world: World, pos: ReadonlyVec2, reaction: number = 0): boolean {
   const reach: number = world.player.radius + BOT.dodgeMargin;
   if (world.hazards.some((hazard: HazardState): boolean => hazard.team === 'monster' && Math.hypot(pos.x - hazard.pos.x, pos.z - hazard.pos.z) <= hazard.radius + reach)) return true;
+  if (world.echoes.some((echo: EchoState): boolean => echo.team === 'monster' && struck(world, echo.skill, echo.origin, echo.direction, echo.target, pos))) return true;
   return world.monsters.some((monster: MonsterState): boolean => threatened(world, monster, pos, reaction));
 }
 

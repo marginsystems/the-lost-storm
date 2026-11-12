@@ -113,7 +113,7 @@ void test('the hero cannot be targeted during the invulnerable start of the roll
   let elapsed: number = MOTION_DT;
   while (elapsed + MOTION_DT < dash.invulnerable) {
     assert.ok(isInvulnerable(world.player));
-    assert.deepEqual(targetsOf(world, 'monster'), []);
+    assert.deepEqual(targetsOf(world, { sourceId: 0, faction: 'unfinished' }), []);
     stepWorld(world, [], MOTION_DT);
     elapsed += MOTION_DT;
   }
@@ -122,7 +122,7 @@ void test('the hero cannot be targeted during the invulnerable start of the roll
     elapsed += MOTION_DT;
   }
   assert.equal(isInvulnerable(world.player), false);
-  assert.deepEqual(targetsOf(world, 'monster'), [world.player]);
+  assert.deepEqual(targetsOf(world, { sourceId: 0, faction: 'unfinished' }), [world.player]);
 });
 
 void test('a second roll waits for the cooldown', (): void => {
@@ -170,7 +170,7 @@ void test('a roll cuts the recovery of an attack but waits out its wind-up', ():
 
 void test('a roll passes through a monster standing in its way', (): void => {
   const world: World = scene('through', { tiles: OPEN, props: [], start: { x: 10, z: 14 } });
-  const monster: MonsterState = spawnAt(world, 'bone_thrall', { x: 12.5, z: 14 });
+  const monster: MonsterState = spawnAt(world, 'mended', { x: 12.5, z: 14 });
   const from: Vec2 = { ...world.player.pos };
   const stood: Vec2 = { ...monster.pos };
   stepWorld(world, [rollToward({ x: 20, z: 14 })], MOTION_DT);
@@ -194,7 +194,7 @@ void test('with the cursor on the hero, the roll follows the path the hero is wa
 
 void test('a monster whose skill is a dash rolls with the same code', (): void => {
   const world: World = scene('monster', { tiles: OPEN, props: [], start: { x: 6, z: 14 } });
-  const monster: MonsterState = spawnAt(world, 'bone_thrall', { x: 10, z: 14 });
+  const monster: MonsterState = spawnAt(world, 'mended', { x: 10, z: 14 });
   world.monsters = [{ ...monster, def: { ...monster.def, skill: roll.id }, aggro: true }];
   const roller: MonsterState = must(world.monsters[0], 'roller');
   let from: Vec2 | null = null;

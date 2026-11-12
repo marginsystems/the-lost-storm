@@ -1,5 +1,6 @@
 import type { FlaskDef } from './flasks.ts';
-import type { GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, SkillLeap, StalkerBehaviour, SummonDef } from './combat-types.ts';
+import type { AttachmentDef, RigDef } from './rig-types.ts';
+import type { DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, SkillLeap, StalkerBehaviour, SummonDef } from './combat-types.ts';
 import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { BookDef, StoryFlags, ZoneHud, ZoneVoid } from './story-types.ts';
@@ -72,7 +73,7 @@ export interface DashDelivery {
   readonly invulnerable: number;
 }
 
-export type Delivery = ArcDelivery | NovaDelivery | ProjectileDelivery | DashDelivery | MarkDelivery;
+export type Delivery = ArcDelivery | NovaDelivery | ProjectileDelivery | DashDelivery | MarkDelivery | ReviveDelivery | FieldDelivery;
 
 export interface SkillDamage {
   readonly weaponPercent: number;
@@ -124,6 +125,8 @@ export interface SkillDef {
   readonly combo: SkillCombo | null;
   readonly leap: SkillLeap | null;
   readonly root: number;
+  readonly hold: number;
+  readonly echo: number;
 }
 
 export interface ChaserBehaviour {
@@ -205,6 +208,10 @@ export interface MonsterDef {
   readonly deathSkill: string | null;
   readonly summon: SummonDef | null;
   readonly mods: readonly string[];
+  readonly faction: string;
+  readonly dormant: DormantDef | null;
+  readonly support: string | null;
+  readonly barks: readonly string[];
 }
 
 export const ITEM_SLOTS = ['weapon', 'head', 'chest', 'hands', 'legs', 'feet', 'charm'] as const;
@@ -287,50 +294,7 @@ export interface SkillTreeNodeDef {
   readonly skillMods: readonly SkillMod[];
 }
 
-export interface RigActionClip {
-  readonly clip: string;
-  readonly impactFraction: number;
-}
-
-export interface RigClips {
-  readonly idle: string;
-  readonly run: string;
-  readonly hit: readonly string[];
-  readonly death: readonly string[];
-  readonly rise: string | null;
-  readonly actions: Readonly<Record<string, RigActionClip>>;
-}
-
-export type Triple = readonly [number, number, number];
-
-export interface RigSocket {
-  readonly bone: string;
-  readonly position: Triple;
-  readonly rotationDegrees: Triple;
-  readonly scale: number;
-}
-
-export interface AttachmentDef {
-  readonly id: string;
-  readonly model: string;
-  readonly socket: string;
-  readonly surfaces: Readonly<Record<string, string>>;
-}
-
-export interface RigDef {
-  readonly id: string;
-  readonly url: string;
-  readonly clipFolder: string;
-  readonly scale: number;
-  readonly yawOffsetDegrees: number;
-  readonly height: number;
-  readonly rootMotionBone: string | null;
-  readonly runSpeed: number;
-  readonly clips: RigClips;
-  readonly sockets: Readonly<Record<string, RigSocket>>;
-  readonly hiddenNodes: readonly string[];
-  readonly bodyParts: Readonly<Record<string, readonly string[]>>;
-}
+export type { AttachmentDef, RigActionClip, RigClips, RigDef, RigSocket, Triple } from './rig-types.ts';
 
 export interface PropLight {
   readonly color: string;
@@ -397,6 +361,7 @@ export interface ZonePack {
   readonly z: number;
   readonly members: readonly PackMember[];
   readonly when: readonly Condition[];
+  readonly row?: ZonePoint;
 }
 
 export interface SurgeRules {
@@ -563,6 +528,7 @@ export interface NpcDef {
   readonly wear: readonly string[];
   readonly talks: readonly TalkDef[];
   readonly service: ServiceKind | null;
+  readonly faction: string | null;
 }
 
 export interface MonsterScaling {
@@ -674,6 +640,7 @@ export interface Content {
   readonly skills: ReadonlyMap<string, SkillDef>;
   readonly monsters: ReadonlyMap<string, MonsterDef>;
   readonly monsterMods: ReadonlyMap<string, MonsterModDef>;
+  readonly factions: ReadonlyMap<string, FactionDef>;
   readonly rarities: readonly RarityDef[];
   readonly itemBases: ReadonlyMap<string, ItemBaseDef>;
   readonly affixes: ReadonlyMap<string, AffixDef>;

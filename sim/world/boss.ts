@@ -57,9 +57,14 @@ function bossOf(world: World, monsterId: number): MonsterState | null {
 }
 
 function onAggro(world: World, monsterId: number): void {
-  const monster: MonsterState | null = bossOf(world, monsterId);
-  const boss: BossDef | null = monster?.def.boss ?? null;
-  if (monster !== null && boss !== null) bark(world, boss.barks.aggro);
+  const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === monsterId);
+  if (monster === undefined) return;
+  if (monster.def.boss !== null) {
+    bark(world, monster.def.boss.barks.aggro);
+    return;
+  }
+  const said: string | undefined = monster.def.barks[world.rng.int(0, monster.def.barks.length - 1)];
+  if (monster.def.barks.length > 0 && said !== undefined) bark(world, [said]);
 }
 
 function onHurt(world: World, monsterId: number): void {

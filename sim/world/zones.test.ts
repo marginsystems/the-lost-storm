@@ -164,7 +164,7 @@ void test('monster level is the zone level, raised by the surge only in a surge 
   const deep: ZoneDef = { ...bastion, id: 'deep', level: 4, surge: null };
   const content: Content = { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [deep.id, deep]]) };
   const world: World = worldIn(content, deep.id, 7);
-  const thrall: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.id === 'bone_thrall'), 'thrall');
+  const thrall: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.id === 'mended'), 'thrall');
   assert.equal(thrall.level, 4);
   assert.equal(thrall.maxLife, Math.round(thrall.def.life * (1 + content.world.scaling.lifePerLevel * 3)));
   assert.ok(Math.abs(thrall.damageMin - thrall.def.damageMin * (1 + content.world.scaling.damagePerLevel * 3)) < 1e-9);

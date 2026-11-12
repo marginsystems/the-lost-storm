@@ -227,7 +227,7 @@ void test('a move just outside the dead zone still walks there', (): void => {
 
 void test('a skill command with a target walks into range, hits, knocks back and emits damage', (): void => {
   const world: World = fresh();
-  const thrall: MonsterState = must(monstersOf(world, 'bone_thrall')[0], 'thrall');
+  const thrall: MonsterState = must(monstersOf(world, 'mended')[0], 'thrall');
   isolate(world, thrall);
   put(thrall, { x: 28, z: 25.5 });
   const events: WorldEvent[] = [];
@@ -256,7 +256,7 @@ void test('a skill command with a target walks into range, hits, knocks back and
 
 void test('Thunderclap costs mana, hits every monster around, then goes on cooldown', (): void => {
   const world: World = fresh();
-  const thralls: MonsterState[] = monstersOf(world, 'bone_thrall').slice(0, 4);
+  const thralls: MonsterState[] = monstersOf(world, 'mended').slice(0, 4);
   isolate(world, ...thralls);
   thralls.forEach((thrall: MonsterState, index: number): void => put(thrall, around(START, 2.8, index, 4)));
   const manaBefore: number = world.player.mana;
@@ -273,7 +273,7 @@ void test('Thunderclap costs mana, hits every monster around, then goes on coold
 
 void test('Thunderclap again straight away is refused as on cooldown, and without mana as no_mana', (): void => {
   const world: World = fresh();
-  isolate(world, must(monstersOf(world, 'bone_thrall')[0], 'thrall'));
+  isolate(world, must(monstersOf(world, 'mended')[0], 'thrall'));
   const cast: Command = { type: 'skill', slot: 1, aim: { x: START.x, z: START.z - 1 }, targetId: null };
   advance(world, 0.1, [cast]);
   const events: WorldEvent[] = advance(world, 1, [cast]);
@@ -281,7 +281,7 @@ void test('Thunderclap again straight away is refused as on cooldown, and withou
   assert.equal(ofType(events, 'skill_start').length, 0);
 
   const dry: World = fresh();
-  isolate(dry, must(monstersOf(dry, 'bone_thrall')[0], 'thrall'));
+  isolate(dry, must(monstersOf(dry, 'mended')[0], 'thrall'));
   dry.player.mana = 0;
   dry.player.stats.manaRegen = 0;
   const refused: WorldEvent[] = advance(dry, 0.2, [cast]);
@@ -291,7 +291,7 @@ void test('Thunderclap again straight away is refused as on cooldown, and withou
 
 void test('Storm Bolt spawns a projectile that travels, hits a monster in its path and ends', (): void => {
   const world: World = fresh();
-  const thrall: MonsterState = must(monstersOf(world, 'bone_thrall')[0], 'thrall');
+  const thrall: MonsterState = must(monstersOf(world, 'mended')[0], 'thrall');
   isolate(world, thrall);
   put(thrall, { x: 28, z: 30 });
   thrall.life = 500;
@@ -321,7 +321,7 @@ void test('Storm Bolt spawns a projectile that travels, hits a monster in its pa
 
 void test('a Storm Bolt with nothing in its way flies its full range and ends without a hit', (): void => {
   const world: World = fresh();
-  const thrall: MonsterState = must(monstersOf(world, 'bone_thrall')[0], 'thrall');
+  const thrall: MonsterState = must(monstersOf(world, 'mended')[0], 'thrall');
   isolate(world, thrall);
   put(thrall, { x: 50, z: 6 });
   const events: WorldEvent[] = advance(world, 1.5, [{ type: 'skill', slot: 2, aim: { x: 9, z: START.z }, targetId: null }]);
@@ -334,7 +334,7 @@ void test('a Storm Bolt with nothing in its way flies its full range and ends wi
 
 void test('Forked Bolt fires three projectiles', (): void => {
   const world: World = fresh();
-  isolate(world, must(monstersOf(world, 'bone_thrall')[0], 'thrall'));
+  isolate(world, must(monstersOf(world, 'mended')[0], 'thrall'));
   world.player.skillPoints = 2;
   advance(world, 0.1, [{ type: 'allocate', node: 'stormcallers_focus' }]);
   advance(world, 0.1, [{ type: 'allocate', node: 'forked_bolt' }]);
@@ -345,7 +345,7 @@ void test('Forked Bolt fires three projectiles', (): void => {
 
 void test('monsters aggro when the player comes close, and the whole pack wakes together', (): void => {
   const world: World = fresh();
-  const pack: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.packId === must(monstersOf(world, 'bone_thrall')[0], 'thrall').packId);
+  const pack: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.packId === must(monstersOf(world, 'mended')[0], 'thrall').packId);
   assert.ok(pack.length >= 4);
   isolate(world, ...pack);
   pack.forEach((monster: MonsterState, index: number): void => put(monster, around({ x: 28, z: 24 }, 1.5, index, pack.length)));
@@ -360,7 +360,7 @@ void test('monsters aggro when the player comes close, and the whole pack wakes 
 
 void test('a chaser closes in and damages the player', (): void => {
   const world: World = fresh();
-  const thrall: MonsterState = must(monstersOf(world, 'bone_thrall')[0], 'thrall');
+  const thrall: MonsterState = must(monstersOf(world, 'mended')[0], 'thrall');
   isolate(world, thrall);
   put(thrall, { x: 28, z: 28 });
   const events: WorldEvent[] = advance(world, 3);
@@ -368,14 +368,14 @@ void test('a chaser closes in and damages the player', (): void => {
   assert.ok(hits.length >= 1);
   const hit = must(hits[0], 'hit');
   assert.equal(hit.sourceId, thrall.id);
-  assert.equal(hit.skill.id, 'thrall_claw');
+  assert.equal(hit.skill.id, 'mended_rhythm');
   assert.ok(hit.amount >= 4 && hit.amount <= 7);
   assert.ok(Math.hypot(thrall.pos.x - world.player.pos.x, thrall.pos.z - world.player.pos.z) < 2.5);
 });
 
 void test('a ranged monster fires a projectile from a distance', (): void => {
   const world: World = fresh();
-  const caller: MonsterState = must(monstersOf(world, 'hex_caller')[0], 'caller');
+  const caller: MonsterState = must(monstersOf(world, 'mender')[0], 'caller');
   isolate(world, caller);
   put(caller, { x: 28, z: 28 });
   let spawnGap: number = 0;
@@ -390,15 +390,15 @@ void test('a ranged monster fires a projectile from a distance', (): void => {
   const bolt = must(spawned[0], 'bolt').projectile;
   assert.equal(bolt.ownerId, caller.id);
   assert.equal(bolt.team, 'monster');
-  assert.equal(bolt.skill.id, 'hex_bolt');
+  assert.equal(bolt.skill.id, 'mender_needle');
   assert.ok(spawnGap > 4, `gap ${spawnGap}`);
-  assert.ok(ofType(events, 'damage').some((hit): boolean => hit.targetTeam === 'player' && hit.skill.id === 'hex_bolt'));
+  assert.ok(ofType(events, 'damage').some((hit): boolean => hit.targetTeam === 'player' && hit.skill.id === 'mender_needle'));
 });
 
 void test('killing monsters emits death, grants xp, levels up and a skill point can be spent', (): void => {
   const world: World = fresh();
-  const thralls: MonsterState[] = monstersOf(world, 'bone_thrall').slice(0, 6);
-  isolate(world, ...thralls, must(monstersOf(world, 'hex_caller')[0], 'caller'));
+  const thralls: MonsterState[] = monstersOf(world, 'mended').slice(0, 6);
+  isolate(world, ...thralls, must(monstersOf(world, 'mender')[0], 'caller'));
   thralls.forEach((thrall: MonsterState, index: number): void => {
     put(thrall, around(START, 2.6, index, thralls.length));
     thrall.life = 1;
@@ -429,8 +429,8 @@ void test('killing monsters emits death, grants xp, levels up and a skill point 
 
 void test('dead monsters stay as corpses for a while and are then removed', (): void => {
   const world: World = fresh();
-  const thrall: MonsterState = must(monstersOf(world, 'bone_thrall')[0], 'thrall');
-  const caller: MonsterState = must(monstersOf(world, 'hex_caller')[0], 'caller');
+  const thrall: MonsterState = must(monstersOf(world, 'mended')[0], 'thrall');
+  const caller: MonsterState = must(monstersOf(world, 'mender')[0], 'caller');
   isolate(world, thrall, caller);
   put(caller, { x: 50, z: 6 });
   put(thrall, { x: 28, z: 35 });
@@ -500,7 +500,7 @@ void test('a full inventory refuses an unequip with a notice', (): void => {
 
 void test('commands are ignored while the player is dead', (): void => {
   const world: World = fresh();
-  isolate(world, must(monstersOf(world, 'bone_thrall')[0], 'thrall'));
+  isolate(world, must(monstersOf(world, 'mended')[0], 'thrall'));
   world.player.alive = false;
   const events: WorldEvent[] = advance(world, 0.3, [{ type: 'move', held: false, dest: { x: 28, z: 20 } }]);
   assert.deepEqual(world.player.pos, START);
@@ -509,7 +509,7 @@ void test('commands are ignored while the player is dead', (): void => {
 
 void test('clearing every monster fires surge_cleared and then a stronger surge spawns', (): void => {
   const world: World = fresh(5);
-  const firstLife: number = must(monstersOf(world, 'bone_thrall')[0], 'thrall').maxLife;
+  const firstLife: number = must(monstersOf(world, 'mended')[0], 'thrall').maxLife;
   const initial: number = world.monsters.length;
   const cleared: WorldEvent[] = annihilate(world);
   const all: WorldEvent[] = [...cleared, ...advance(world, 7)];
@@ -521,7 +521,7 @@ void test('clearing every monster fires surge_cleared and then a stronger surge 
   assert.equal(world.surge, 2);
   assert.equal(world.monsters.length, initial);
   assert.ok(world.monsters.every((monster: MonsterState): boolean => monster.alive && monster.level === 2));
-  const secondLife: number = must(monstersOf(world, 'bone_thrall')[0], 'thrall').maxLife;
+  const secondLife: number = must(monstersOf(world, 'mended')[0], 'thrall').maxLife;
   assert.ok(secondLife > firstLife);
   assert.equal(secondLife, Math.round(firstLife * (1 + content.world.scaling.lifePerLevel)));
   assert.equal(ofType(all, 'monster_spawn').length, initial);

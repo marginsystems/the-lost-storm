@@ -156,7 +156,9 @@
     {"npc": "maren", "x": 17.6, "z": 33, "facingDegrees": -62, "when": [{"type": "objective", "quest": "the_gate", "objective": "door", "is": "current", "not": true}]},
     {"npc": "maren", "x": 7.6, "z": 18.8, "facingDegrees": 60, "when": [{"type": "objective", "quest": "the_gate", "objective": "door", "is": "current"}]},
     {"npc": "hale", "x": 37, "z": 13.2, "facingDegrees": 215, "when": [{"type": "objective", "quest": "the_gate", "objective": "hale_still", "is": "current", "not": true}]},
-    {"npc": "odric", "x": 35.4, "z": 6.6, "facingDegrees": 150}
+    {"npc": "odric", "x": 35.4, "z": 6.6, "facingDegrees": 150},
+    {"npc": "warden_guide", "x": 13, "z": 29, "facingDegrees": 150, "when": []},
+    {"npc": "warden_trader", "x": 31, "z": 29.5, "facingDegrees": 200, "when": []}
   ],
   "ambience": {
     "background": "#07090d",

@@ -14,9 +14,9 @@ export const ARENA_CENTRE: Vec2 = { x: 14, z: 14 };
 const OPEN: readonly string[] = ['.......', '.......', '.......', '.......', '.......', '.......', '.......'];
 
 const shipped: Content = loadContent();
-const claw: SkillDef = must(shipped.skills.get('thrall_claw'), 'thrall_claw');
-const bolt: SkillDef = must(shipped.skills.get('hex_bolt'), 'hex_bolt');
-const thrall: MonsterDef = must(shipped.monsters.get('bone_thrall'), 'bone_thrall');
+const claw: SkillDef = must(shipped.skills.get('mended_rhythm'), 'mended_rhythm');
+const bolt: SkillDef = must(shipped.skills.get('mender_needle'), 'mender_needle');
+const thrall: MonsterDef = must(shipped.monsters.get('mended'), 'mended');
 
 const SKILLS: readonly SkillDef[] = [
   { ...claw, id: 'test_grab', windup: 0.6, root: 1.2, knockback: 0 },

@@ -367,7 +367,7 @@ export function stepPlayer(world: World, dt: number): void {
   player.mana = Math.min(player.stats.maxMana, player.mana + player.stats.manaRegen * dt);
   stepTimers(player, dt);
   stepKnock(world.grid, player, dt);
-  stepAction(world, player, dt);
+  stepAction(world, player, dt * player.tempo);
   player.moving = false;
   const startX: number = player.pos.x;
   const startZ: number = player.pos.z;
@@ -379,8 +379,8 @@ export function stepPlayer(world: World, dt: number): void {
   }
   if (player.action === null) {
     stepIntent(world, dt);
-    if (!isBusy(player) && player.root <= 0 && player.path.length > 0) {
-      const moved: number = followPath(world.grid, player, player.path, player.stats.moveSpeed * dt, PLAYER.turnRate * dt);
+    if (!isBusy(player) && player.root <= 0 && player.tempo > 0 && player.path.length > 0) {
+      const moved: number = followPath(world.grid, player, player.path, player.stats.moveSpeed * player.tempo * dt, PLAYER.turnRate * dt);
       player.moving = moved > PLAYER.stuckStep;
       if (!player.moving) {
         player.path = [];

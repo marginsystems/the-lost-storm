@@ -224,16 +224,18 @@ void test('an unknown zone or respawn id in a save falls back to the start', ():
 });
 
 void test('the conversations and the voices of a place already heard survive a save, and unknown ones are dropped', (): void => {
-  const voice: string = must([...content.zones.values()].flatMap((zone: ZoneDef): readonly ZoneVoice[] => zone.voices)[0], 'a zone voice').id;
-  const world: World = createWorld(content, { seed: 8, save: null });
+  const voice: string = 'test_whisper';
+  const whisper: ZoneVoice = { id: voice, x: 0, z: 0, radius: 1, lines: [], when: [] };
+  const voiced: Content = { ...content, zones: new Map<string, ZoneDef>([...content.zones].map(([id, zone]: [string, ZoneDef]): [string, ZoneDef] => [id, { ...zone, voices: [...zone.voices, whisper] }])) };
+  const world: World = createWorld(voiced, { seed: 8, save: null });
   world.heard = ['maren_wake', 'hale_first', voice];
-  const save: SaveData = roundTrip(world);
+  const save: SaveData = must(parseSaveText(voiced, JSON.stringify(toSave(world))), 'save');
   assert.deepEqual(save.heard, ['maren_wake', 'hale_first', voice]);
-  assert.deepEqual(createWorld(content, { seed: 9, save }).heard, ['maren_wake', 'hale_first', voice]);
+  assert.deepEqual(createWorld(voiced, { seed: 9, save }).heard, ['maren_wake', 'hale_first', voice]);
   const { heard: _heard, ...older } = toSave(world);
-  assert.deepEqual(must(readSave(content, older), 'save').heard, []);
-  assert.deepEqual(must(readSave(content, { ...toSave(world), heard: ['maren_wake', 'a_rumour', 4] }), 'save').heard, ['maren_wake']);
-  assert.deepEqual(must(readSave(content, { ...toSave(world), heard: 'everything' }), 'save').heard, []);
+  assert.deepEqual(must(readSave(voiced, older), 'save').heard, []);
+  assert.deepEqual(must(readSave(voiced, { ...toSave(world), heard: ['maren_wake', 'a_rumour', 4] }), 'save').heard, ['maren_wake']);
+  assert.deepEqual(must(readSave(voiced, { ...toSave(world), heard: 'everything' }), 'save').heard, []);
 });
 
 void test('quest progress and unlocked waypoints survive a save, and bad entries are cleaned', (): void => {

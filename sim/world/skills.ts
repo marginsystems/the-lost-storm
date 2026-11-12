@@ -8,7 +8,8 @@ import { applyHit, offenceOf, targetsOf, teamOf } from './combat.ts';
 import { stepDash } from './dash.ts';
 import { effectiveAttackSpeed } from '../stats.ts';
 import { placeHazard } from './hazards.ts';
-import type { ActionState, Actor, NoticeReason, ProjectileState, World } from './types.ts';
+import { raiseFallen } from './revive.ts';
+import type { ActionState, Actor, EchoState, NoticeReason, ProjectileState, Team, World } from './types.ts';
 
 export const SKILLS = {
   projectileOrigin: 0.9,
@@ -24,7 +25,7 @@ export function blockedReason(actor: Actor, skill: SkillDef): NoticeReason | nul
 
 function widened(delivery: Delivery, scale: number): Delivery {
   if (delivery.type === 'arc') return { ...delivery, reach: delivery.reach * scale };
-  if (delivery.type === 'nova' || delivery.type === 'mark') return { ...delivery, radius: delivery.radius * scale };
+  if (delivery.type === 'nova' || delivery.type === 'mark' || delivery.type === 'field') return { ...delivery, radius: delivery.radius * scale };
   return delivery;
 }
 
@@ -53,7 +54,7 @@ export function chainedSkill(actor: Actor, skill: SkillDef): SkillDef {
 
 function reachOf(skill: SkillDef, leap: SkillLeap | null, wanted: number): number {
   if (leap !== null) return Math.min(leap.distance, Math.max(0, wanted - leap.stopShort));
-  return skill.delivery.type === 'mark' ? Math.min(skill.delivery.range, wanted) : 0;
+  return skill.delivery.type === 'mark' || skill.delivery.type === 'field' ? Math.min(skill.delivery.range, wanted) : 0;
 }
 
 function clearReach(world: World, actor: Actor, aim: ReadonlyVec2, wanted: number): number {
@@ -79,7 +80,7 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   actor.moving = false;
   const planned: number = reachOf(skill, skill.leap, Math.hypot(direction.x, direction.z));
   const reach: number = skill.leap === null ? planned : clearReach(world, actor, aim, planned);
-  const aimsAhead: boolean = skill.leap !== null || skill.delivery.type === 'mark';
+  const aimsAhead: boolean = skill.leap !== null || skill.delivery.type === 'mark' || skill.delivery.type === 'field';
   const target: Vec2 | null = aimsAhead ? { x: actor.pos.x + aim.x * reach, z: actor.pos.z + aim.z * reach } : null;
   const travelSpeed: number = skill.leap === null ? 0 : reach / Math.min(windup, skill.leap.airTime);
   actor.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach };
@@ -87,22 +88,23 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   world.events.push({ type: 'skill_start', actorId: actor.id, skill, direction: aim, windup, recovery });
 }
 
-function spawnProjectiles(world: World, actor: Actor, skill: SkillDef, delivery: ProjectileDelivery, direction: ReadonlyVec2, offence: Offence): void {
+function spawnProjectiles(world: World, origin: ReadonlyVec2, skill: SkillDef, delivery: ProjectileDelivery, direction: ReadonlyVec2, offence: Offence): void {
   const count: number = Math.max(1, Math.round(delivery.count));
   for (let index: number = 0; index < count; index += 1) {
     const offset: number = count === 1 ? 0 : (index - (count - 1) / 2) * delivery.spreadDegrees * DEGREES_TO_RADIANS;
     const aim: Vec2 = rotate(direction, offset);
     const projectile: ProjectileState = {
       id: world.nextId,
-      ownerId: actor.id,
+      ownerId: offence.sourceId,
       team: offence.team,
+      faction: offence.faction,
       skill,
       damageMin: offence.damageMin,
       damageMax: offence.damageMax,
       damagePercent: offence.damagePercent,
       critChance: offence.critChance,
       critMultiplier: offence.critMultiplier,
-      pos: { x: actor.pos.x + aim.x * SKILLS.projectileOrigin, z: actor.pos.z + aim.z * SKILLS.projectileOrigin },
+      pos: { x: origin.x + aim.x * SKILLS.projectileOrigin, z: origin.z + aim.z * SKILLS.projectileOrigin },
       direction: aim,
       distanceLeft: delivery.range,
       pierceLeft: delivery.pierce,
@@ -114,43 +116,79 @@ function spawnProjectiles(world: World, actor: Actor, skill: SkillDef, delivery:
   }
 }
 
-function resolveImpact(world: World, actor: Actor, action: ActionState): void {
-  const skill: SkillDef = action.skill;
-  const direction: ReadonlyVec2 = action.direction;
-  const offence: Offence = offenceOf(actor);
+interface Impact {
+  readonly offence: Offence;
+  readonly skill: SkillDef;
+  readonly origin: ReadonlyVec2;
+  readonly direction: ReadonlyVec2;
+  readonly target: ReadonlyVec2 | null;
+  readonly echo: boolean;
+}
+
+function strike(world: World, impact: Impact): number {
+  const { offence, skill, origin, direction } = impact;
   let hits: number = 0;
   const delivery = skill.delivery;
   switch (delivery.type) {
     case 'arc': {
       const minDot: number = Math.cos((delivery.arcDegrees / 2) * DEGREES_TO_RADIANS);
-      for (const target of targetsOf(world, offence.team)) {
-        const offset: Vec2 = { x: target.pos.x - actor.pos.x, z: target.pos.z - actor.pos.z };
+      for (const target of targetsOf(world, offence)) {
+        const offset: Vec2 = { x: target.pos.x - origin.x, z: target.pos.z - origin.z };
         const gap: number = Math.hypot(offset.x, offset.z);
         if (gap > delivery.reach + target.radius) continue;
         const toward: Vec2 = normalize(offset, direction);
         if (gap > target.radius && dot(toward, direction) < minDot) continue;
         if (applyHit(world, offence, target, skill, toward)) hits += 1;
       }
-      break;
+      return hits;
     }
     case 'nova': {
-      for (const target of targetsOf(world, offence.team)) {
-        const offset: Vec2 = { x: target.pos.x - actor.pos.x, z: target.pos.z - actor.pos.z };
+      for (const target of targetsOf(world, offence)) {
+        const offset: Vec2 = { x: target.pos.x - origin.x, z: target.pos.z - origin.z };
         if (Math.hypot(offset.x, offset.z) > delivery.radius + target.radius) continue;
         if (applyHit(world, offence, target, skill, normalize(offset, direction))) hits += 1;
       }
-      break;
+      return hits;
     }
     case 'projectile':
-      spawnProjectiles(world, actor, skill, delivery, direction, offence);
-      break;
+      spawnProjectiles(world, origin, skill, delivery, direction, offence);
+      return 0;
     case 'dash':
-      break;
+      return 0;
     case 'mark':
-      placeHazard(world, offence, skill, action.target ?? actor.pos);
-      break;
+    case 'field':
+      placeHazard(world, offence, skill, impact.target ?? origin);
+      return 0;
+    case 'revive':
+      return offence.faction === null ? 0 : raiseFallen(world, offence.sourceId, offence.faction, delivery, origin);
   }
-  world.events.push({ type: 'skill_impact', actorId: actor.id, team: teamOf(actor), skill, origin: { x: actor.pos.x, z: actor.pos.z }, direction: { x: direction.x, z: direction.z }, hits });
+  return hits;
+}
+
+function resolve(world: World, impact: Impact, team: Team): void {
+  const hits: number = strike(world, impact);
+  const { offence, skill, origin, direction, target } = impact;
+  world.events.push({ type: 'skill_impact', actorId: offence.sourceId, team, skill, origin: { x: origin.x, z: origin.z }, direction: { x: direction.x, z: direction.z }, hits, echo: impact.echo });
+  if (impact.echo || skill.echo <= 0) return;
+  world.echoes.push({ ownerId: offence.sourceId, ...offence, skill, origin: { x: origin.x, z: origin.z }, direction: { x: direction.x, z: direction.z }, target: target === null ? null : { x: target.x, z: target.z }, timeLeft: skill.echo });
+}
+
+function resolveImpact(world: World, actor: Actor, action: ActionState): void {
+  resolve(world, { offence: offenceOf(actor), skill: action.skill, origin: actor.pos, direction: action.direction, target: action.target, echo: false }, teamOf(actor));
+}
+
+export function stepEchoes(world: World, dt: number): void {
+  const due: EchoState[] = [];
+  world.echoes = world.echoes.filter((echo: EchoState): boolean => {
+    echo.timeLeft -= dt;
+    if (echo.timeLeft > 0) return true;
+    due.push(echo);
+    return false;
+  });
+  for (const echo of due) {
+    const offence: Offence = { sourceId: echo.ownerId, team: echo.team, faction: echo.faction, damageMin: echo.damageMin, damageMax: echo.damageMax, damagePercent: echo.damagePercent, critChance: echo.critChance, critMultiplier: echo.critMultiplier };
+    resolve(world, { offence, skill: echo.skill, origin: echo.origin, direction: echo.direction, target: echo.target, echo: true }, echo.team);
+  }
 }
 
 function land(world: World, actor: Actor, action: ActionState): void {
@@ -194,7 +232,7 @@ function stepProjectile(world: World, projectile: ProjectileState, dt: number): 
       world.events.push({ type: 'projectile_end', id: projectile.id, pos: { ...projectile.pos }, hit: true, skill: projectile.skill });
       return false;
     }
-    for (const target of targetsOf(world, projectile.team)) {
+    for (const target of targetsOf(world, { sourceId: projectile.ownerId, faction: projectile.faction })) {
       if (projectile.hitIds.includes(target.id)) continue;
       if (Math.hypot(target.pos.x - projectile.pos.x, target.pos.z - projectile.pos.z) > delivery.radius + target.radius) continue;
       projectile.hitIds.push(target.id);
