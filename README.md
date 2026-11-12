@@ -75,6 +75,8 @@ npm run check
 
 It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with type information, rules in `.oxlintrc.json`) and `npm test` (Node's test runner, the whole suite split over a few processes; a few seconds). `npm run test:affected` runs only the tests a branch can affect, and `npm run test:isolated` runs the whole suite with one process per file. `npm run build` makes the production bundle in `dist/`.
 
+The overlay state machine (which panel, screen or card may be up, in what order, and what Escape closes) is specified in TLA+ in `spec/Overlays.tla`. Check it with `spec/run-tlc.sh`; [spec/README.md](spec/README.md) says how to get TLC.
+
 ## Layout
 
 | Path | What it holds |
@@ -85,6 +87,7 @@ It runs `npm run typecheck` (strict TypeScript), `npm run lint` (oxlint with typ
 | `sim/world/` | World state, the commands the player can send and the events each step returns (`types.ts`), and `stepWorld` (`step.ts`) |
 | `src/render/` | Three.js: stage and lighting, the isometric camera, character loading, the zone view and its exit and checkpoint markers, the ground (`ground.ts`) and the shared surface materials (`surfaces.ts`), effects, weather, world-anchored overlays |
 | `src/hud/` | DOM HUD: globes, skill bar, inventory, skill tree, volume panel, tooltips, the dialogue box, the quest tracker, the world map, the boss bar and the subtitle strip for lines spoken in a fight |
+| `src/hud/overlay-core.ts` | The overlay state machine: one request in, the phase of every panel, screen and card out. `overlay-table.ts` holds the layers, the declared pairs and the z order. It mirrors `spec/Overlays.tla` |
 | `src/minimap/` | The minimap and the Tab overlay map: the zone's explored layout from the nav grid, turned to the camera, with markers for the hero, monsters, people, exits, the waypoint, loot and the current quest. Exploration itself is world state in `sim/world/exploration.ts` |
 | `sim/bot.ts` | A scripted player for tests: walks, travels between zones, talks, fights and steps out of telegraphed attacks. `sim/bot.test.ts` uses it to play the whole act from a fresh save and checks how long it takes |
 | `src/audio/` | Web Audio: loads sounds from the asset server, plays them with variation, distance and panning, keeps volumes, plays one voice line at a time |
