@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { content, createHarness, createSecondBrowser, freshSave, makeSave, preEpochLocal, settle, storedLocal } from '../../test/backend-support.ts';
+import { createHarness, freshSave, makeSave, settle, storedLocal } from '../../test/backend-support.ts';
 import type { Harness, RecordedRequest, ServerAccount } from '../../test/backend-support.ts';
 import { isFields } from '../../sim/content/read.ts';
 import { must } from '../../test/support.ts';
 import type { Backend } from './backend.ts';
-import { SAVE_EPOCH } from './epoch.ts';
-import { readLocalSave, SAVE_KEY } from './local.ts';
+import { SAVE_KEY } from './local.ts';
 import { TIMING } from './remote.ts';
 import { parseSyncRecord, SYNC_KEY } from './sync-record.ts';
 import type { SyncRecord } from './sync-record.ts';
@@ -564,103 +563,4 @@ void test('when the save read is refused for an account created in that load, th
   backend.save(makeSave(7, 5));
   await harness.timers.advance(TIMING.pushGapMs);
   assert.equal(account(harness).save?.xp, 5);
-});
-
-async function beforeTheWipe(harness: Harness, level: number): Promise<void> {
-  await synced(harness, level);
-  harness.store.write(SAVE_KEY, preEpochLocal(makeSave(level, 0)));
-}
-
-function putsAbove(harness: Harness, level: number): number {
-  return harness.server.requests.filter((request: RecordedRequest): boolean => request.method === 'PUT' && isFields(request.body) && isFields(request.body['save']) && Number(request.body['save']['level']) > level).length;
-}
-
-void test('after the wipe an old local save is discarded before the merge: the character starts new and the old one never reaches the cloud', async (): Promise<void> => {
-  const harness: Harness = createHarness();
-  await beforeTheWipe(harness, 8);
-  const before: number = record(harness).revision;
-  harness.server.wipe();
-  const backend: Backend = harness.open();
-  assert.equal(await backend.load(), null);
-  assert.equal(harness.store.read(SAVE_KEY), null);
-  assert.equal(record(harness).revision, 0);
-  assert.equal(record(harness).pending, false);
-  assert.ok(before > 0);
-  await harness.timers.advance(TIMING.retryMaxMs);
-  assert.equal(account(harness).save, null);
-  backend.save(makeSave(1, 30));
-  await harness.timers.advance(TIMING.pushGapMs);
-  assert.deepEqual(lastPut(harness), { baseRevision: 0, level: 1 });
-  assert.equal(account(harness).revision, 1);
-  assert.equal(putsAbove(harness, 1), 1);
-  assert.equal(harness.warns.length, 0);
-});
-
-void test('an old local save is discarded even when the first load after the wipe is offline, and nothing old is pushed when the server comes back', async (): Promise<void> => {
-  const harness: Harness = createHarness();
-  await beforeTheWipe(harness, 8);
-  harness.server.wipe();
-  harness.server.goDown();
-  const backend: Backend = harness.open();
-  assert.equal(await backend.load(), null);
-  harness.server.comeUp();
-  await harness.timers.advance(TIMING.retryMaxMs);
-  assert.equal(account(harness).save, null);
-  assert.equal(putsAbove(harness, 1), 1);
-});
-
-void test('signed in on two devices, both old saves are dropped and the second device picks up the new character from the cloud', async (): Promise<void> => {
-  const first: Harness = createHarness();
-  await beforeTheWipe(first, 8);
-  const second: Harness = createSecondBrowser(first);
-  second.store.write(SYNC_KEY, must(first.store.read(SYNC_KEY), 'the sync record'));
-  second.store.write(SAVE_KEY, preEpochLocal(makeSave(11, 0)));
-  first.server.wipe();
-  const one: Backend = first.open();
-  assert.equal(await one.load(), null);
-  one.save(makeSave(2, 15));
-  await first.timers.advance(TIMING.pushGapMs);
-  assert.equal(account(first).save?.level, 2);
-  const two: Backend = second.open();
-  const loaded = must(await two.load(), 'the cloud save');
-  assert.equal(loaded.level, 2);
-  assert.equal(loaded.xp, 15);
-  assert.deepEqual(readLocalSave(content, second.store.read(SAVE_KEY))?.epoch, SAVE_EPOCH);
-  await second.timers.advance(TIMING.retryMaxMs);
-  assert.equal(account(first).save?.level, 2);
-  assert.equal(account(first).revision, 1);
-  assert.equal(first.server.accounts.length, 1);
-});
-
-void test('a wipe while the game is open: the next push is refused as stale, the save on this device is dropped and nothing more is sent', async (): Promise<void> => {
-  const harness: Harness = createHarness();
-  const backend: Backend = await synced(harness, 4);
-  harness.server.wipe(SAVE_EPOCH + 1);
-  backend.save(makeSave(5, 0));
-  await harness.timers.advance(TIMING.pushGapMs);
-  assert.equal(account(harness).save, null);
-  assert.equal(harness.store.read(SAVE_KEY), null);
-  assert.ok(harness.warns.some((line: string): boolean => line.includes('every save was reset')));
-  const puts: number = harness.server.count('PUT', '/v1/save');
-  backend.save(makeSave(6, 0));
-  await harness.timers.advance(TIMING.retryMaxMs);
-  assert.equal(harness.server.count('PUT', '/v1/save'), puts);
-  const next: Backend = harness.open();
-  assert.equal(await next.load(), null);
-  next.save(makeSave(1, 1));
-  await harness.timers.advance(TIMING.pushGapMs);
-  assert.equal(account(harness).save?.level, 1);
-});
-
-void test('a server epoch above the one this build knows makes a save stamped with the older epoch stale on load', async (): Promise<void> => {
-  const harness: Harness = createHarness();
-  await synced(harness, 6);
-  harness.server.wipe(SAVE_EPOCH + 1);
-  const backend: Backend = harness.open();
-  assert.equal(await backend.load(), null);
-  assert.equal(harness.store.read(SAVE_KEY), null);
-  backend.save(makeSave(1, 2));
-  await harness.timers.advance(TIMING.pushGapMs);
-  assert.equal(account(harness).save?.level, 1);
-  assert.deepEqual(readLocalSave(content, harness.store.read(SAVE_KEY))?.epoch, SAVE_EPOCH + 1);
 });

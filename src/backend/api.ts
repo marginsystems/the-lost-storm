@@ -3,7 +3,7 @@ import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
 import type { SaveData } from '../../sim/save.ts';
 import { readSave } from '../../sim/save.ts';
-import { epochOf } from './epoch.ts';
+import { epochOf, isEpoch } from './epoch.ts';
 
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
 
@@ -278,8 +278,8 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
       const body: string = JSON.stringify({ save, baseRevision, epoch });
       const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/save`, { method: 'PUT', headers: headers(token), body, signal, keepalive: body.length < KEEPALIVE_LIMIT_CHARS });
       if (answer !== null && answer.status === 409 && errorCodeOf(answer.body) === 'stale_epoch') {
-        const current: number | null = isFields(answer.body) && answer.body['epoch'] !== undefined ? epochOf(answer.body, 'epoch') : null;
-        return current === null ? { kind: 'refused', status: 409 } : { kind: 'stale', epoch: current };
+        const current: unknown = isFields(answer.body) ? answer.body['epoch'] : null;
+        return isEpoch(current) && current > epoch ? { kind: 'stale', epoch: current } : { kind: 'refused', status: 409 };
       }
       if (answer !== null && answer.status === 409) {
         const current: CloudState | null = isFields(answer.body) ? readCloudState(content, answer.body['current']) : null;
