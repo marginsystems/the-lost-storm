@@ -6,6 +6,8 @@ import { clamp01, el, label, pulseClass, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
 import type { SkillPicker } from './skill-picker.ts';
 import { createSkillPicker, skillDetails } from './skill-picker.ts';
+import { createSkillOffer } from './skill-offer.ts';
+import type { SkillOfferView } from './skill-offer.ts';
 import { promptText, use } from './prompts.ts';
 import { attachTooltip } from './tooltip.ts';
 
@@ -58,6 +60,7 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
   const element: HTMLDivElement = el('div', 'hud-skillbar', parent);
   track(element);
   const picker: SkillPicker = createSkillPicker(element, context, track);
+  const offer: SkillOfferView = createSkillOffer(element, context, track);
   document.addEventListener('pointerdown', (event: PointerEvent): void => {
     if (!(event.target instanceof Node) || !element.contains(event.target)) picker.close();
   });
@@ -125,6 +128,7 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
         });
       }
       picker.refresh(player);
+      offer.update();
       element.classList.toggle('spare', player.learned.some((skill: string): boolean => !player.bar.includes(skill)));
       slots.forEach((view: SlotView, index: number): void => {
         const skill: SkillDef | null = player.skills[index] ?? null;

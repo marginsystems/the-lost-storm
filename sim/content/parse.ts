@@ -7,7 +7,7 @@ import { combatProblems, fieldDelivery, markDelivery, monsterMod, monsterTraits,
 import { faction, factionProblems } from './parse-factions.ts';
 import { momentLibrary } from './parse-moments.ts';
 import { momentProblems } from './moments.ts';
-import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
+import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillOffer, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
@@ -475,6 +475,7 @@ function player(value: unknown, where: string): PlayerDef {
     perLevel: each(source['perLevel'], `${where}.perLevel`, statMod),
     skillBar: each(source['skillBar'], `${where}.skillBar`, skillBinding),
     skillBook: each(source['skillBook'], `${where}.skillBook`, skillUnlock),
+    skillOffers: each(source['skillOffers'], `${where}.skillOffers`, skillOffer),
     xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`) },
     startingItems: textList(source, 'startingItems', where),
     unarmedVisual: nullableText(source, 'unarmedVisual', where),
@@ -595,6 +596,7 @@ export function contentProblems(content: Content): string[] {
   };
   problems.push(...roadProblems(content, flagNames));
   for (const entry of content.player.skillBook) known(`skill book ${entry.skill}`, entry.when);
+  for (const offer of content.player.skillOffers) known(`skill offer ${offer.id}`, offer.when);
   for (const def of content.props.values()) {
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `prop ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }

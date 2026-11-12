@@ -20,6 +20,7 @@ export type HintTrigger =
   | { readonly type: 'item_near'; readonly range: number }
   | { readonly type: 'skill_point' }
   | { readonly type: 'skill_learned'; readonly skill: string }
+  | { readonly type: 'slot_filled'; readonly slot: number }
   | { readonly type: 'gear_in_bag' }
   | { readonly type: 'low_life'; readonly fraction: number; readonly carrying: string | null }
   | { readonly type: 'player_dead' };
@@ -70,7 +71,7 @@ export function hintSegments(template: string): HintSegment[] {
 
 function readTrigger(value: unknown, where: string): HintTrigger {
   const source: Fields = fields(value, where);
-  const type = choice(source, 'type', ['game_started', 'objective_person', 'objective_exit', 'waypoint_near', 'monster_near', 'item_near', 'skill_point', 'skill_learned', 'gear_in_bag', 'low_life', 'player_dead'] as const, where);
+  const type = choice(source, 'type', ['game_started', 'objective_person', 'objective_exit', 'waypoint_near', 'monster_near', 'item_near', 'skill_point', 'skill_learned', 'slot_filled', 'gear_in_bag', 'low_life', 'player_dead'] as const, where);
   let trigger: HintTrigger;
   switch (type) {
     case 'game_started':
@@ -88,6 +89,9 @@ function readTrigger(value: unknown, where: string): HintTrigger {
       break;
     case 'skill_learned':
       trigger = { type, skill: text(source, 'skill', where) };
+      break;
+    case 'slot_filled':
+      trigger = { type, slot: numeric(source, 'slot', where) };
       break;
     case 'low_life':
       trigger = { type, fraction: numeric(source, 'fraction', where), carrying: nullableText(source, 'carrying', where) };
@@ -169,6 +173,7 @@ export function hintProblems(defs: HintsDef, content: Content): string[] {
   for (const hint of defs.hints) {
     const trigger: HintTrigger = hint.trigger;
     if (trigger.type === 'skill_learned' && !content.player.skillBook.some((entry: SkillUnlock): boolean => entry.skill === trigger.skill)) problems.push(`${hint.id}: skill ${trigger.skill} is not in the skill book`);
+    if (trigger.type === 'slot_filled' && !(Number.isInteger(trigger.slot) && trigger.slot >= 0 && trigger.slot < slots)) problems.push(`${hint.id}: skill slot ${trigger.slot} does not exist`);
     if (hint.done.type === 'skills_used') {
       for (const slot of hint.done.slots) {
         if (slot >= slots) problems.push(`${hint.id}: skill slot ${slot} does not exist`);

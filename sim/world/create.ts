@@ -69,6 +69,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     skillPoints: save?.skillPoints ?? 0,
     allocated,
     learned: save === null ? startingSkills(content) : [...save.learned],
+    offersTaken: save === null ? [] : [...save.offers],
     inventory,
     equipped,
     intent: { type: 'idle' },

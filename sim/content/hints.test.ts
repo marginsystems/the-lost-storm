@@ -27,6 +27,15 @@ void test('an unknown key or slot is a problem', (): void => {
   assert.equal(hintProblems(defs, loadContent()).length, 3);
 });
 
+function filled(slot: number): HintsDef {
+  return parseHints({ hints: [{ id: 'a', trigger: { type: 'slot_filled', slot }, text: 'Cast it', touch: 'Tap it', done: { type: 'skills_used', slots: [0] }, after: [], forNewPlayers: true }] });
+}
+
+void test('a filled-slot hint must name a slot on the bar', (): void => {
+  assert.deepEqual(hintProblems(filled(1), loadContent()), []);
+  for (const slot of [-1, 1.5, 6]) assert.deepEqual(hintProblems(filled(slot), loadContent()), [`a: skill slot ${slot} does not exist`]);
+});
+
 void test('a hint may only come after an earlier one', (): void => {
   assert.throws(
     (): HintsDef => parseHints({ hints: [{ id: 'a', trigger: { type: 'game_started' }, text: 'x', touch: 'x', done: { type: 'alive' }, after: ['b'], forNewPlayers: true }] }),

@@ -67,3 +67,11 @@ export interface SkillUnlock {
   readonly level: number;
   readonly when: readonly Condition[];
 }
+
+export interface SkillOffer {
+  readonly id: string;
+  readonly level: number;
+  readonly when: readonly Condition[];
+  readonly choices: readonly string[];
+  readonly count: number;
+}

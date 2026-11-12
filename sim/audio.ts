@@ -181,6 +181,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'equip':
     case 'unequip':
     case 'slot':
+    case 'choose':
       action = 'equip';
       break;
     case 'trade':

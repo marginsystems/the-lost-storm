@@ -1,7 +1,7 @@
 import { conditions } from './parse-conditions.ts';
 import type { Fields } from './read.ts';
-import { choice, ContentError, fields, fraction, nonNegative, positive, text } from './read.ts';
-import type { BeamDelivery, BlinkDelivery, BrandDef, ChainDelivery, AreaDelivery, PressDef, SkillUnlock } from './shape-types.ts';
+import { choice, ContentError, fields, fraction, nonNegative, positive, text, textList } from './read.ts';
+import type { BeamDelivery, BlinkDelivery, BrandDef, ChainDelivery, AreaDelivery, PressDef, SkillOffer, SkillUnlock } from './shape-types.ts';
 import { AREA_ANCHORS } from './shape-types.ts';
 import type { Content, SkillBinding, SkillDef } from './types.ts';
 
@@ -101,6 +101,20 @@ export function skillUnlock(value: unknown, where: string): SkillUnlock {
   return { skill: text(source, 'skill', where), level, when: conditions(source, 'when', where) };
 }
 
+export const OFFER_LIMITS = {
+  fewest: 2,
+  most: 3,
+} as const;
+
+export function skillOffer(value: unknown, where: string): SkillOffer {
+  const source: Fields = fields(value, where);
+  const level: number = positive(source, 'level', where);
+  if (!Number.isInteger(level)) throw new ContentError(`${where}.level`, 'expected a whole level');
+  const count: number = positive(source, 'count', where);
+  if (!Number.isInteger(count) || count < OFFER_LIMITS.fewest || count > OFFER_LIMITS.most) throw new ContentError(`${where}.count`, `expected ${OFFER_LIMITS.fewest} to ${OFFER_LIMITS.most}`);
+  return { id: text(source, 'id', where), level, when: conditions(source, 'when', where), choices: textList(source, 'choices', where), count };
+}
+
 export function bookProblems(content: Content): string[] {
   const problems: string[] = [];
   const need = (ok: boolean, problem: string): void => {
@@ -112,5 +126,16 @@ export function bookProblems(content: Content): string[] {
   need(new Set<string>(slotted).size === slotted.length, 'skill bar starts with a skill in two slots');
   for (const skill of slotted) need(book.has(skill), `skill bar keeps a home slot for ${skill}, which is not in the skill book`);
   need(content.player.skillBook.some((entry: SkillUnlock): boolean => entry.level === 1 && entry.when.length === 0), 'skill book teaches nothing at the start');
+  const offerIds: Set<string> = new Set<string>();
+  for (const offer of content.player.skillOffers) {
+    need(!offerIds.has(offer.id), `skill offer ${offer.id} is listed twice`);
+    offerIds.add(offer.id);
+    need(offer.choices.length >= offer.count, `skill offer ${offer.id} offers fewer skills than it shows`);
+    need(new Set<string>(offer.choices).size === offer.choices.length, `skill offer ${offer.id} lists a skill twice`);
+    for (const skill of offer.choices) {
+      need(content.skills.has(skill), `skill offer ${offer.id} offers unknown skill ${skill}`);
+      need(!book.has(skill), `skill offer ${offer.id} offers ${skill}, which the skill book already grants`);
+    }
+  }
   return problems;
 }

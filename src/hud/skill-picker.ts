@@ -1,6 +1,7 @@
 import type { SkillUnlock } from '../../sim/content/shape-types.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
+import { everySkill } from '../../sim/skill-book.ts';
 import type { HudContext } from './context.ts';
 import { el, label } from './dom.ts';
 import { iconSvg } from './icons.ts';
@@ -44,7 +45,7 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
   const choices: Choice[] = [];
   let slot: number | null = null;
   const content = context.api.world.content;
-  for (const entry of content.player.skillBook) {
+  for (const entry of everySkill(content)) {
     const skill: SkillDef | undefined = content.skills.get(entry.skill);
     if (skill === undefined) continue;
     const root: HTMLButtonElement = el('button', 'skill-choice', grid);
@@ -86,7 +87,7 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
       if (slot === null) return;
       const current: string | null = player.bar[slot] ?? null;
       for (const choice of choices) {
-        const state: string = choice.entry.level > player.level ? 'locked' : choice.entry.skill === current ? 'current' : player.bar.includes(choice.entry.skill) ? 'elsewhere' : 'free';
+        const state: string = choice.entry.level > player.level || !player.learned.includes(choice.entry.skill) ? 'locked' : choice.entry.skill === current ? 'current' : player.bar.includes(choice.entry.skill) ? 'elsewhere' : 'free';
         if (state === choice.state) continue;
         if (choice.state !== '') choice.root.classList.remove(choice.state);
         choice.root.classList.add(state);

@@ -166,3 +166,163 @@
 .tip-line.locked {
   color: var(--ember);
 }
+
+.skill-offer {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 24px));
+  padding: 12px 12px 10px;
+  border-radius: 8px;
+  background: linear-gradient(var(--panel-bg), var(--panel-bg)), var(--panel-bg);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--panel-edge);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, 14px) scale(0.94);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+.skill-offer.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    visibility 0s;
+}
+
+.skill-offer-title {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(214, 236, 255, 0.92);
+}
+
+.skill-offer-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: rgba(214, 226, 240, 0.55);
+}
+
+.skill-offer-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.skill-offer-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 160px;
+  padding: 10px 8px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(16, 22, 34, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(169, 226, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth) var(--offer-delay, 0ms),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy) var(--offer-delay, 0ms),
+    background var(--spring-smooth-ms) var(--spring-smooth),
+    box-shadow var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.skill-offer.open .skill-offer-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.skill-offer-card:hover,
+.skill-offer-card:focus-visible {
+  outline: none;
+  background: rgba(26, 38, 58, 0.86);
+  box-shadow: inset 0 0 0 1px rgba(169, 226, 255, 0.18), 0 0 18px rgba(120, 190, 255, 0.14);
+}
+
+.skill-offer.open .skill-offer-card:hover {
+  transform: translateY(-3px) scale(1.02);
+}
+
+.skill-offer.choosing .skill-offer-card {
+  opacity: 0;
+  transform: translateY(6px) scale(0.94);
+}
+
+.skill-offer.choosing .skill-offer-card.chosen {
+  opacity: 1;
+  transform: translateY(-6px) scale(1.06);
+  box-shadow: inset 0 0 14px 2px rgba(169, 226, 255, 0.28), 0 0 22px rgba(120, 190, 255, 0.3);
+}
+
+.skill-offer-art {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, rgba(120, 190, 255, 0.22), rgba(10, 16, 26, 0) 70%);
+  animation: offer-breathe var(--drift-ms) var(--drift-ease) infinite;
+}
+
+.skill-offer-art svg {
+  width: 30px;
+  height: 30px;
+}
+
+@keyframes offer-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(150, 210, 255, 0.25));
+  }
+  50% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 7px rgba(150, 210, 255, 0.5));
+  }
+}
+
+.skill-offer-name {
+  font-size: 13px;
+  color: rgba(236, 244, 255, 0.95);
+}
+
+.skill-offer-line {
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(214, 226, 240, 0.66);
+}
+
+.skill-offer-key {
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: rgba(214, 236, 255, 0.8);
+  background: rgba(169, 226, 255, 0.08);
+}
+
+@media (max-width: 560px) {
+  .skill-offer-card {
+    width: calc(50vw - 30px);
+  }
+}

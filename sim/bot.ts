@@ -1,3 +1,5 @@
+import type { OpenOffer } from './skill-book.ts';
+import { pendingOffer } from './world/learning.ts';
 import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, ZoneDef, ZoneExit } from './content/types.ts';
 import type { ReadonlyVec2, Vec2 } from './math.ts';
 import { DEGREES_TO_RADIANS, distance, dot, normalize, rotate } from './math.ts';
@@ -59,7 +61,9 @@ export function createBot(world: World, habits: BotHabits = CAREFUL, watch: BotW
 }
 
 function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
-  const events: WorldEvent[] = stepWorld(bot.world, choicesOpen(bot.world) ? [...commands, { type: 'respawn', choice: 'checkpoint' }] : commands, BOT.step);
+  const offer: OpenOffer | null = pendingOffer(bot.world);
+  const chosen: readonly Command[] = offer === null ? commands : [...commands, { type: 'choose', offer: offer.offer.id, skill: offer.choices[0] ?? '' }];
+  const events: WorldEvent[] = stepWorld(bot.world, choicesOpen(bot.world) ? [...chosen, { type: 'respawn', choice: 'checkpoint' }] : chosen, BOT.step);
   for (const event of events) {
     if (event.type === 'death' && event.team === 'player') bot.deaths += 1;
   }

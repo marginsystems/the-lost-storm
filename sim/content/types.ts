@@ -1,7 +1,7 @@
 import type { FlaskDef } from './flasks.ts';
 import type { AttachmentDef, RigDef } from './rig-types.ts';
 import type { DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, StalkerBehaviour, SummonDef } from './combat-types.ts';
-import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
+import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillOffer, SkillShape, SkillUnlock } from './shape-types.ts';
 import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { ZoneAmbience } from './ambience-types.ts';
@@ -613,6 +613,7 @@ export interface PlayerDef {
   readonly perLevel: readonly StatMod[];
   readonly skillBar: readonly SkillBinding[];
   readonly skillBook: readonly SkillUnlock[];
+  readonly skillOffers: readonly SkillOffer[];
   readonly xp: XpCurve;
   readonly startingItems: readonly string[];
   readonly unarmedVisual: string | null;

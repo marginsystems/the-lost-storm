@@ -145,6 +145,7 @@ export interface PlayerState extends ActorState {
   skillPoints: number;
   allocated: string[];
   learned: string[];
+  offersTaken: string[];
   inventory: (ItemInstance | null)[];
   equipped: Equipment;
   intent: Intent;
@@ -333,6 +334,12 @@ export interface SlotCommand {
   readonly skill: string | null;
 }
 
+export interface ChooseCommand {
+  readonly type: 'choose';
+  readonly offer: string;
+  readonly skill: string;
+}
+
 export interface AllocateCommand {
   readonly type: 'allocate';
   readonly node: string;
@@ -452,7 +459,7 @@ export interface GlitchSettingCommand {
   readonly enabled: boolean;
 }
 
-export type Command = StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export type Command = StrikeCommand | SlotCommand | ChooseCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';

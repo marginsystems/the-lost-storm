@@ -91,6 +91,9 @@ function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarge
     case 'skill_learned':
       holds = player.learned.includes(trigger.skill);
       break;
+    case 'slot_filled':
+      holds = (player.bar[trigger.slot] ?? null) !== null;
+      break;
     case 'gear_in_bag':
       holds = gearInBag(world);
       break;

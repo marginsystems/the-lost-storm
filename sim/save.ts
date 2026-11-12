@@ -5,7 +5,7 @@ import type { RetiredZones } from './content/road-types.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
-import { readBar, readLearned } from './skill-book.ts';
+import { readBar, readLearned, readTaken } from './skill-book.ts';
 import { flaskCharges } from './world/flasks.ts';
 import { glitchToSave } from './world/glitch.ts';
 import type { GlitchSave, PathLogSave } from './world/glitch-types.ts';
@@ -27,6 +27,7 @@ export interface SaveData {
   readonly skillPoints: number;
   readonly allocated: readonly string[];
   readonly learned: readonly string[];
+  readonly offers: readonly string[];
   readonly bar: readonly (string | null)[];
   readonly inventory: readonly (ItemInstance | null)[];
   readonly equipped: Equipment;
@@ -68,6 +69,7 @@ export function toSave(world: World): SaveData {
     skillPoints: player.skillPoints,
     allocated: [...player.allocated],
     learned: [...player.learned],
+    offers: [...player.offersTaken],
     bar: [...player.bar],
     inventory: [...player.inventory],
     equipped: { ...player.equipped },
@@ -286,6 +288,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     skillPoints: Math.floor(skillPoints),
     allocated: allocatedList.filter((node: unknown): node is string => typeof node === 'string' && findNode(content, node) !== null),
     learned,
+    offers: readTaken(content, value['offers'], learned),
     bar: readBar(content, savedBar, learned),
     inventory: slots,
     equipped: worn.equipped,

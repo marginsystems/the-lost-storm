@@ -40,22 +40,22 @@
   ],
   "skillBook": [
     {"skill": "cleave", "level": 1},
-    {"skill": "dodge_roll", "level": 1, "when": [{"type": "flag", "flag": "roll_taught", "is": "yes"}]},
-    {"skill": "thunderclap", "level": 1, "when": [{"type": "flag", "flag": "first_moment", "is": "cleared"}]},
-    {"skill": "storm_bolt", "level": 1, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
-    {"skill": "forkline", "level": 2, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
-    {"skill": "mist_step", "level": 2, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
-    {"skill": "downdraught", "level": 3, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
-    {"skill": "thunderhead", "level": 3, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
-    {"skill": "static_brand", "level": 4, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
-    {"skill": "squall", "level": 5, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
-    {"skill": "living_wire", "level": 6, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]},
-    {"skill": "held_breath", "level": 7, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}]}
+    {"skill": "dodge_roll", "level": 1, "when": [{"type": "flag", "flag": "roll_taught", "is": "yes"}]}
+  ],
+  "skillOffers": [
+    {"id": "first_moment", "level": 1, "when": [{"type": "flag", "flag": "first_moment", "is": "cleared"}], "choices": ["thunderclap", "storm_bolt", "forkline"], "count": 3},
+    {"id": "fire_lesson", "level": 1, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}], "choices": ["storm_bolt", "thunderclap", "mist_step", "forkline"], "count": 3},
+    {"id": "second_wind", "level": 2, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}], "choices": ["mist_step", "forkline", "downdraught", "thunderhead"], "count": 3},
+    {"id": "third_wind", "level": 3, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}], "choices": ["downdraught", "thunderhead", "static_brand", "mist_step"], "count": 3},
+    {"id": "fourth_wind", "level": 4, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}], "choices": ["static_brand", "squall", "thunderhead", "downdraught"], "count": 3},
+    {"id": "fifth_wind", "level": 5, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}], "choices": ["squall", "living_wire", "static_brand"], "count": 3},
+    {"id": "sixth_wind", "level": 6, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}], "choices": ["living_wire", "held_breath", "squall"], "count": 3},
+    {"id": "seventh_wind", "level": 7, "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}], "choices": ["held_breath", "living_wire"], "count": 2}
   ],
   "skillBar": [
     { "skill": "cleave", "bindings": ["mouse_left"], "label": "LMB" },
-    { "skill": "thunderclap", "bindings": ["KeyQ"], "label": "Q" },
-    { "skill": "storm_bolt", "bindings": ["KeyW", "mouse_right"], "label": "W" },
+    { "skill": null, "bindings": ["KeyQ"], "label": "Q" },
+    { "skill": null, "bindings": ["KeyW", "mouse_right"], "label": "W" },
     { "skill": null, "bindings": ["KeyE"], "label": "E" },
     { "skill": null, "bindings": ["KeyR"], "label": "R" },
     { "skill": "dodge_roll", "bindings": ["Space"], "label": "Space" }
