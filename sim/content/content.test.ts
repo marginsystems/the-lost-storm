@@ -99,6 +99,18 @@ void test('every moment prop a metre or more across has a collider that covers i
   }
 });
 
+void test('every zone prop a metre or more across blocks over its ground outline unless the data says it can be walked over', (): void => {
+  for (const zone of content.zones.values()) {
+    for (const placed of zone.props) {
+      if (placed.when.length > 0) continue;
+      const prop = must(content.props.get(placed.prop), placed.prop);
+      const wide: number = footprint(`public/${prop.model}`, prop.scale);
+      if (wide < FOOTPRINT.solid || prop.solid === false) continue;
+      assert.ok(prop.footprint.length >= 3, `${zone.id} places ${placed.prop}, ${wide.toFixed(1)} m across, with no ground outline`);
+    }
+  }
+});
+
 void test('every clip a rig names has its own file in the rig clip folder, and the hero dies in more than one way', (): void => {
   for (const rig of content.rigs.values()) {
     for (const clip of rigClipNames(rig)) {

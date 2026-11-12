@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
 import type { Content, PropDef, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { blockerGap, buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, liftStamp, lineOfSight, linePace, lineWalkable, moveWithCollision, nearestWalkable, paceAt, propBlocker, setDriftOpen, stampBlockers } from './grid.ts';
+import { blockerGap, buildNavGrid, cellCenter, cellIndex, isSolid, isWalkable, liftStamp, lineOfSight, linePace, lineWalkable, moveWithCollision, nearestWalkable, paceAt, propBlocker, propBlockers, propOutline, setDriftOpen, stampBlockers } from './grid.ts';
 import type { Blocker, DriftCells, GridStamp, NavGrid } from './grid.ts';
 import { OUTPOST_ZONE, ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts';
 import { must } from '../../test/support.ts';
@@ -213,3 +213,33 @@ function findOpen(open: NavGrid): Vec2 | null {
   }
   return null;
 }
+
+void test('no point inside a placed prop\'s ground outline can be walked on, in any zone', (): void => {
+  for (const zone of content.zones.values()) {
+    const zoneGrid: NavGrid = buildNavGrid(zone, content.props, content.surfaces, content.player.radius);
+    for (const placed of zone.props) {
+      const def: PropDef | undefined = content.props.get(placed.prop);
+      const outline: Blocker | null = placed.when.length > 0 || def === undefined ? null : propOutline(def, placed.x, placed.z, placed.rotationDegrees);
+      if (outline === null || outline.kind !== 'outline') continue;
+      const centre: Vec2 = { x: outline.outline.reduce((sum: number, point): number => sum + point.x, 0) / outline.outline.length, z: outline.outline.reduce((sum: number, point): number => sum + point.z, 0) / outline.outline.length };
+      for (const corner of [centre, ...outline.outline]) {
+        for (const share of [0, 0.5, 0.9]) {
+          const x: number = centre.x + (corner.x - centre.x) * share;
+          const z: number = centre.z + (corner.z - centre.z) * share;
+          assert.equal(isWalkable(zoneGrid, x, z), false, `${zone.id}: ${placed.prop} at (${placed.x}, ${placed.z}) lets the hero stand at (${x.toFixed(2)}, ${z.toFixed(2)})`);
+        }
+      }
+    }
+  }
+});
+
+void test('a rotated outline turns with its placement, and a point outside it keeps its distance', (): void => {
+  const slab: PropDef = { ...must(content.props.get('dead_log'), 'dead_log'), blockRadius: 0, blockLength: 0, footprint: [{ x: -2, z: -0.5 }, { x: 2, z: -0.5 }, { x: 2, z: 0.5 }, { x: -2, z: 0.5 }] };
+  const along: Blocker = must(propOutline(slab, 10, 10, 0), 'outline');
+  assert.ok(blockerGap(along, 11.8, 10) < 0);
+  assert.ok(Math.abs(blockerGap(along, 10, 11.5) - 1) < 1e-9);
+  const turned: Blocker = must(propOutline(slab, 10, 10, 90), 'turned outline');
+  assert.ok(blockerGap(turned, 10, 8.2) < 0);
+  assert.ok(blockerGap(turned, 11.8, 10) > 1);
+  assert.equal(propBlockers(slab, 10, 10, 0).length, 1);
+});

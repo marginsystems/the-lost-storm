@@ -1,9 +1,9 @@
 import type { CorpseGoneEdit, GlitchEdit, MonsterDeadEdit, PropPair, PropShiftEdit, PropSwapEdit } from '../content/glitches.ts';
-import type { ZoneDef, ZoneProp } from '../content/types.ts';
+import type { PropDef, ZoneDef, ZoneProp } from '../content/types.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { distance, normalize, sub } from '../math.ts';
-import type { NavGrid } from '../nav/grid.ts';
-import { buildNavGrid, cellIndex, nearestWalkable } from '../nav/grid.ts';
+import type { Blocker, NavGrid } from '../nav/grid.ts';
+import { blockerGap, buildNavGrid, cellIndex, nearestWalkable, propBlockers } from '../nav/grid.ts';
 import { isFloorCell } from '../nav/layout.ts';
 import type { Rng } from '../rng.ts';
 import { kill } from './combat.ts';
@@ -82,12 +82,14 @@ function withProp(zone: ZoneDef, index: number, placed: ZoneProp): ZoneDef {
 }
 
 function blocking(world: World, propId: string): boolean {
-  return (world.content.props.get(propId)?.blockRadius ?? 0) > 0;
+  const def: PropDef | undefined = world.content.props.get(propId);
+  return def !== undefined && (def.blockRadius > 0 || def.footprint.length > 0);
 }
 
 function clearsHero(world: World, placed: ZoneProp): boolean {
-  const block: number = world.content.props.get(placed.prop)?.blockRadius ?? 0;
-  return block <= 0 || distance(placed, world.player.pos) > block + world.content.player.radius;
+  const def: PropDef | undefined = world.content.props.get(placed.prop);
+  if (def === undefined) return true;
+  return propBlockers(def, placed.x, placed.z, placed.rotationDegrees).every((blocker: Blocker): boolean => blockerGap(blocker, world.player.pos.x, world.player.pos.z) > world.content.player.radius);
 }
 
 function commit(world: World, edited: ZoneDef, mustCheck: boolean): boolean {

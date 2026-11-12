@@ -11,6 +11,7 @@ import npcs from '../../data/npcs.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
 import quests from '../../data/quests.json' with { type: 'json' };
 import props from '../../data/props.json' with { type: 'json' };
+import footprints from '../../data/footprints.json' with { type: 'json' };
 import rigs from '../../data/rigs.json' with { type: 'json' };
 import skillTree from '../../data/skill-tree.json' with { type: 'json' };
 import chart from '../../data/chart.json' with { type: 'json' };
@@ -26,11 +27,13 @@ import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
+import { modelFootprints, withFootprints } from './footprints.ts';
 
 export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, surfaces, props, zones: [between, hallOfTime, hideout], world, npcs, lines, quests, player, flasks, trade, books, moments };
 
 export function loadContent(): Content {
-  const content: Content = parseContent(RAW_CONTENT);
+  const parsed: Content = parseContent(RAW_CONTENT);
+  const content: Content = { ...parsed, props: withFootprints(parsed.props, modelFootprints(footprints, 'footprints')) };
   const problems: string[] = contentProblems(content);
   if (problems.length > 0) throw new ContentError('content', problems.join('; '));
   return content;

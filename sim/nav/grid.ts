@@ -1,6 +1,7 @@
 import type { ZoneDef, PropDef, SurfaceDef } from '../content/types.ts';
 import type { ZoneDrift } from '../content/road-types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
+import { outlineGap } from './outline.ts';
 import { CORNER_PILLAR_RADIUS, isFloorCell, tileAtCell, wallCorners } from './layout.ts';
 
 export interface NavGrid {
@@ -20,11 +21,7 @@ export interface DriftCells {
   open: boolean;
 }
 
-export interface Blocker {
-  readonly from: Vec2;
-  readonly to: Vec2;
-  readonly radius: number;
-}
+export type Blocker = { readonly kind: 'capsule'; readonly from: Vec2; readonly to: Vec2; readonly radius: number } | { readonly kind: 'outline'; readonly outline: readonly ReadonlyVec2[] };
 
 export interface GridStamp {
   readonly cells: Int32Array;
@@ -38,10 +35,23 @@ export function propBlocker(def: PropDef, x: number, z: number, rotationDegrees:
   const half: number = def.blockLength / 2;
   const ax: number = Math.cos(angle) * half;
   const az: number = -Math.sin(angle) * half;
-  return { from: { x: x - ax, z: z - az }, to: { x: x + ax, z: z + az }, radius: def.blockRadius };
+  return { kind: 'capsule', from: { x: x - ax, z: z - az }, to: { x: x + ax, z: z + az }, radius: def.blockRadius };
+}
+
+export function propOutline(def: PropDef, x: number, z: number, rotationDegrees: number): Blocker | null {
+  if (def.footprint.length < 3) return null;
+  const angle: number = (rotationDegrees * Math.PI) / 180;
+  const cos: number = Math.cos(angle);
+  const sin: number = Math.sin(angle);
+  return { kind: 'outline', outline: def.footprint.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: x + point.x * cos + point.z * sin, z: z - point.x * sin + point.z * cos })) };
+}
+
+export function propBlockers(def: PropDef, x: number, z: number, rotationDegrees: number): Blocker[] {
+  return [propBlocker(def, x, z, rotationDegrees), propOutline(def, x, z, rotationDegrees)].filter((blocker: Blocker | null): blocker is Blocker => blocker !== null);
 }
 
 export function blockerGap(blocker: Blocker, x: number, z: number): number {
+  if (blocker.kind === 'outline') return outlineGap(blocker.outline, x, z);
   const dx: number = blocker.to.x - blocker.from.x;
   const dz: number = blocker.to.z - blocker.from.z;
   const span: number = dx * dx + dz * dz;
@@ -60,10 +70,9 @@ function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[]
   for (const placed of zone.props) {
     if (placed.when.length > 0) continue;
     const def: PropDef | undefined = props.get(placed.prop);
-    const blocker: Blocker | null = def === undefined ? null : propBlocker(def, placed.x, placed.z, placed.rotationDegrees);
-    if (blocker !== null) list.push(blocker);
+    if (def !== undefined) list.push(...propBlockers(def, placed.x, placed.z, placed.rotationDegrees));
   }
-  if (zone.walls !== null) for (const corner of wallCorners(zone)) list.push({ from: { x: corner.x, z: corner.z }, to: { x: corner.x, z: corner.z }, radius: CORNER_PILLAR_RADIUS });
+  if (zone.walls !== null) for (const corner of wallCorners(zone)) list.push({ kind: 'capsule', from: { x: corner.x, z: corner.z }, to: { x: corner.x, z: corner.z }, radius: CORNER_PILLAR_RADIUS });
   return list;
 }
 
@@ -89,15 +98,35 @@ function insideFloor(zone: ZoneDef, x: number, z: number, margin: number): boole
   return true;
 }
 
+interface Bounds {
+  readonly fromColumn: number;
+  readonly toColumn: number;
+  readonly fromRow: number;
+  readonly toRow: number;
+}
+
+function blockerBounds(blocker: Blocker, pad: number, columns: number, rows: number): Bounds {
+  const points: readonly ReadonlyVec2[] = blocker.kind === 'outline' ? blocker.outline : [blocker.from, blocker.to];
+  const reach: number = pad + (blocker.kind === 'outline' ? 0 : blocker.radius);
+  const xs: number[] = points.map((point: ReadonlyVec2): number => point.x);
+  const zs: number[] = points.map((point: ReadonlyVec2): number => point.z);
+  const clampColumn = (value: number): number => Math.min(columns - 1, Math.max(0, Math.floor(value / NAV.cellSize)));
+  const clampRow = (value: number): number => Math.min(rows - 1, Math.max(0, Math.floor(value / NAV.cellSize)));
+  return { fromColumn: clampColumn(Math.min(...xs) - reach), toColumn: clampColumn(Math.max(...xs) + reach), fromRow: clampRow(Math.min(...zs) - reach), toRow: clampRow(Math.max(...zs) + reach) };
+}
+
 function fill(zone: ZoneDef, obstacles: readonly Blocker[], columns: number, rows: number, agentRadius: number): Uint8Array {
   const cells: Uint8Array = new Uint8Array(columns * rows);
   const margin: number = (zone.walls?.halfThickness ?? 0) + agentRadius;
   for (let row: number = 0; row < rows; row += 1) {
-    for (let column: number = 0; column < columns; column += 1) {
-      const x: number = (column + 0.5) * NAV.cellSize;
-      const z: number = (row + 0.5) * NAV.cellSize;
-      const open: boolean = insideFloor(zone, x, z, margin) && obstacles.every((blocker: Blocker): boolean => blockerGap(blocker, x, z) >= agentRadius);
-      cells[row * columns + column] = open ? 1 : 0;
+    for (let column: number = 0; column < columns; column += 1) cells[row * columns + column] = insideFloor(zone, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize, margin) ? 1 : 0;
+  }
+  for (const blocker of obstacles) {
+    const bounds: Bounds = blockerBounds(blocker, agentRadius, columns, rows);
+    for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
+      for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
+        if (cells[row * columns + column] === 1 && blockerGap(blocker, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize) < agentRadius) cells[row * columns + column] = 0;
+      }
     }
   }
   return cells;
@@ -144,20 +173,23 @@ export function buildNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>,
 }
 
 export function stampBlockers(grid: NavGrid, stamped: readonly Blocker[], agentRadius: number): GridStamp {
-  const cells: number[] = [];
-  const inside: boolean[] = [];
-  for (let index: number = 0; index < grid.walkable.length; index += 1) {
-    const centre: Vec2 = cellCenter(grid, index);
-    const gap: number = Math.min(...stamped.map((blocker: Blocker): number => blockerGap(blocker, centre.x, centre.z)));
-    if (gap >= agentRadius) continue;
-    cells.push(index);
-    inside.push(gap < 0);
+  const gaps: Map<number, number> = new Map<number, number>();
+  for (const blocker of stamped) {
+    const bounds: Bounds = blockerBounds(blocker, agentRadius, grid.columns, grid.rows);
+    for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
+      for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
+        const index: number = row * grid.columns + column;
+        const centre: Vec2 = cellCenter(grid, index);
+        gaps.set(index, Math.min(gaps.get(index) ?? Infinity, blockerGap(blocker, centre.x, centre.z)));
+      }
+    }
   }
-  const indices: Int32Array = Int32Array.from(cells);
+  const touched: [number, number][] = [...gaps].filter(([, gap]: [number, number]): boolean => gap < agentRadius).toSorted((a: [number, number], b: [number, number]): number => a[0] - b[0]);
+  const indices: Int32Array = Int32Array.from(touched, ([index]: [number, number]): number => index);
   const stamp: GridStamp = { cells: indices, walkable: Uint8Array.from(indices, (index: number): number => grid.walkable[index] ?? 0), solid: Uint8Array.from(indices, (index: number): number => grid.solid[index] ?? 0) };
-  indices.forEach((index: number, at: number): void => {
+  touched.forEach(([index, gap]: [number, number]): void => {
     grid.walkable[index] = 0;
-    if (inside[at] === true) grid.solid[index] = 1;
+    if (gap < 0) grid.solid[index] = 1;
   });
   return stamp;
 }
