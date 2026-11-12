@@ -73,6 +73,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   let cancelTimer: (() => void) | null = null;
   let failures: number = 0;
   let announced: boolean = false;
+  let behindAnnounced: boolean = false;
   let quickRetries: number = 0;
   let blocked: boolean = false;
   let frozen: boolean = false;
@@ -171,10 +172,18 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     schedule(afterMs ?? backoffMs(failures));
   };
 
+  const waitForServer = (): void => {
+    if (!behindAnnounced) log.warn('the cloud save runs an older game than this one; the game keeps saving on this device and sends it again later');
+    behindAnnounced = true;
+    failures += 1;
+    schedule(backoffMs(failures));
+  };
+
   const succeed = (sending: SaveData, copy: CloudState): void => {
     failures = 0;
     quickRetries = 0;
     announced = false;
+    behindAnnounced = false;
     setState('cloud');
     if (record !== null) keep({ ...record, revision: copy.revision, updatedAt: copy.updatedAt, pending: latest !== sending, overwriteCloud: false });
     if (latest === sending) latest = null;
@@ -239,6 +248,9 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
         log.info('the save epoch moved on since Start over; this new character is kept and sent again under the new epoch.');
         schedule(0);
         return;
+      case 'behind':
+        waitForServer();
+        return;
       case 'refused':
         blocked = true;
         log.warn(`the cloud save refused this save (status ${result.status}); it will try again after the next save`);
@@ -283,6 +295,10 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       restamp(localSave, result.epoch);
       keep({ ...held, revision: 0, updatedAt: null, overwriteCloud: false });
       schedule(0);
+      return;
+    }
+    if (result.kind === 'behind') {
+      waitForServer();
       return;
     }
     if (result.kind === 'refused') {

@@ -2,7 +2,7 @@ import { loadContent } from '../sim/content/content.ts';
 import type { Content } from '../sim/content/types.ts';
 import { isFields } from '../sim/content/read.ts';
 import type { SaveData } from '../sim/save.ts';
-import { readSave, toSave } from '../sim/save.ts';
+import { readSave, SAVE_VERSION, toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import type { FetchFn } from '../src/backend/api.ts';
 import type { Backend, KeyValueStore, Logger, Timers } from '../src/backend/backend.ts';
@@ -147,6 +147,8 @@ export interface FakeServer {
   readonly accounts: ServerAccount[];
   goDown(): void;
   comeUp(): void;
+  fallBehind(): void;
+  catchUp(): void;
   plan(status: number, headers?: Readonly<Record<string, string>>, method?: string): void;
   holdNext(): () => void;
   loseNextAnswer(method: string, path: string): void;
@@ -220,6 +222,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   let created: number = 0;
   let issued: number = 0;
   let down: boolean = false;
+  let behind: boolean = false;
   let googleClientId: string | null = null;
   let emailSiteKey: string | null = null;
   const codes: SentCode[] = [];
@@ -358,6 +361,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       const written: number | null = epochOf(body, 'epoch');
       if (written === null) return failed(400, 'bad_request');
       if (written < epoch) return failed(409, 'stale_epoch', { epoch });
+      if (behind) return failed(409, 'server_behind', { saveVersion: SAVE_VERSION - 1, sent: SAVE_VERSION });
       const save: SaveData | null = readSave(content, body['save']);
       if (save === null) return json(422, { error: { code: 'invalid_save', message: 'no' } });
       if (body['baseRevision'] !== owner.revision) return json(409, { error: { code: 'revision_conflict', message: 'no' }, current: view() });
@@ -401,6 +405,12 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     },
     comeUp: (): void => {
       down = false;
+    },
+    fallBehind: (): void => {
+      behind = true;
+    },
+    catchUp: (): void => {
+      behind = false;
     },
     plan: (status: number, headers: Readonly<Record<string, string>> = {}, method?: string): void => {
       planned.push({ method: method ?? null, status, headers });

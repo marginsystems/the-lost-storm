@@ -579,3 +579,23 @@ void test('a cloud save this build cannot read is never written over: this devic
   assert.deepEqual(account(harness).save, newer);
   assert.equal(storedLevel(harness), 3);
 });
+
+void test('a cloud save on an older game keeps this device saving locally, says so once, backs off, and sends the save once it has caught up', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = harness.open();
+  await backend.load();
+  harness.server.fallBehind();
+  backend.save(makeSave(3, 4));
+  await harness.timers.advance(1000);
+  assert.equal(storedLevel(harness), 3);
+  assert.equal(account(harness).save, null);
+  assert.equal(harness.timers.nextDelay(), 2000);
+  await harness.timers.advance(2000);
+  assert.equal(harness.timers.nextDelay(), 4000);
+  assert.equal(harness.warns.filter((line: string): boolean => line.includes('older game')).length, 1);
+  assert.equal(backend.state(), 'cloud');
+  harness.server.catchUp();
+  await harness.timers.advance(4000);
+  assert.equal(account(harness).save?.level, 3);
+  assert.equal(account(harness).save?.xp, 4);
+});

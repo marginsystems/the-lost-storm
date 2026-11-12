@@ -92,6 +92,11 @@ void test('a 409 stale_epoch names the epoch now in force, and one without a rea
   assert.deepEqual(results, answers.map((): unknown => ({ kind: 'refused', status: 409 })));
 });
 
+void test('a 409 server_behind is its own answer, whatever else it carries', async (): Promise<void> => {
+  const { client } = api((): Response => reply(409, { error: { code: 'server_behind', message: 'x' }, saveVersion: 6, sent: 7 }));
+  assert.deepEqual(await client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'behind' });
+});
+
 void test('a cloud answer without an epoch is from before epochs and counts as epoch 1; a bad epoch is unreadable', async (): Promise<void> => {
   const legacy = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null }));
   assert.deepEqual(await legacy.client.readSave('tok', SIGNAL), { kind: 'ok', state: { save: null, revision: 0, updatedAt: null, epoch: 1 } });

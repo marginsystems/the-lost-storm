@@ -75,7 +75,7 @@ export type SignOutResult = { readonly kind: 'ok' } | Failure;
 
 export type GuestResult = { readonly kind: 'ok'; readonly account: GuestAccount } | Failure;
 export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | { readonly kind: 'unreadable' } | Failure;
-export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stale'; readonly epoch: number } | Failure;
+export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stale'; readonly epoch: number } | { readonly kind: 'behind' } | Failure;
 
 export interface BoardRow {
   readonly rank: number;
@@ -286,6 +286,7 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
         const current: unknown = isFields(answer.body) ? answer.body['epoch'] : null;
         return isEpoch(current) && current > epoch ? { kind: 'stale', epoch: current } : { kind: 'refused', status: 409 };
       }
+      if (answer !== null && answer.status === 409 && errorCodeOf(answer.body) === 'server_behind') return { kind: 'behind' };
       if (answer !== null && answer.status === 409) {
         const current: CloudState | null = isFields(answer.body) ? readCloudState(content, answer.body['current']) : null;
         return current === null ? { kind: 'refused', status: 409 } : { kind: 'conflict', current };
