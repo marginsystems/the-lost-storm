@@ -24,7 +24,7 @@ function ofType<T extends WorldEvent['type']>(events: readonly WorldEvent[], typ
 
 function room(monster: string, when: readonly Condition[] = []): Content {
   const bastion: ZoneDef = zoneOf(shipped, 'drowned_bastion');
-  const packs: ZonePack[] = [{ x: 28, z: 14, members: [{ monster, count: 1 }], when }];
+  const packs: ZonePack[] = [{ x: 28, z: 14, members: [{ monster, count: 1, mods: [] }], when }];
   const zone: ZoneDef = { ...bastion, id: ROOM, level: 2, surge: null, packs, exits: [], waypoint: null };
   return { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [zone.id, zone]]) };
 }
@@ -253,7 +253,7 @@ void test('the lane a bolt is read by reaches as far as the bolt does', (): void
   assert.ok(range > 0);
   boss.spawnTime = 0;
   boss.pos = { x: 28, z: 6 };
-  boss.action = { skill: stone, phase: 'windup', timeLeft: 0.5, windup: stone.windup, recovery: stone.recovery, direction: { x: 0, z: 1 } };
+  boss.action = { skill: stone, phase: 'windup', timeLeft: 0.5, windup: stone.windup, recovery: stone.recovery, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0 };
   assert.equal(botInDanger(world, { x: 28, z: 6 + range - 1 }), true);
   assert.equal(botInDanger(world, { x: 28, z: 6 + range + SKILLS.projectileOrigin }), true);
   assert.equal(botInDanger(world, { x: 28, z: 6 + range + SKILLS.projectileOrigin + 4 }), false);

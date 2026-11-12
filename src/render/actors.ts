@@ -14,6 +14,7 @@ export const ACTORS = {
   defaultHeight: 2.2,
   npcAppearRate: 3.4,
   npcSettledWithin: 0.01,
+  blockTime: 0.35,
 } as const;
 
 interface MonsterEntry {
@@ -146,6 +147,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       }
     },
     handle(events: readonly WorldEvent[], current: World): void {
+      const guarded: Set<number> = new Set<number>();
       for (const event of events) {
         switch (event.type) {
           case 'skill_start':
@@ -157,7 +159,13 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'damage': {
             const isPlayer: boolean = event.targetTeam === 'player';
             const stagger: boolean = isPlayer ? current.player.action === null && !current.player.moving : event.skill.stagger > 0;
-            viewOf(event.targetId)?.hit(isPlayer ? HIT_RED : HIT_WHITE, isPlayer ? ACTORS.playerFlash : ACTORS.monsterFlash, stagger && !event.killed);
+            viewOf(event.targetId)?.hit(isPlayer ? HIT_RED : HIT_WHITE, isPlayer ? ACTORS.playerFlash : ACTORS.monsterFlash, stagger && !event.killed && !guarded.has(event.targetId));
+            break;
+          }
+          case 'guarded': {
+            guarded.add(event.monsterId);
+            const monster: MonsterState | undefined = current.monsters.find((candidate: MonsterState): boolean => candidate.id === event.monsterId);
+            viewOf(event.monsterId)?.startAction(event.broken ? 'guard_break' : 'block', 0, event.broken ? (monster?.stagger ?? ACTORS.blockTime) : ACTORS.blockTime);
             break;
           }
           case 'death':
@@ -183,6 +191,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             monsters.clear();
             break;
           case 'skill_impact':
+          case 'hazard':
           case 'checkpoint':
           case 'dialogue_line':
           case 'dialogue_closed':

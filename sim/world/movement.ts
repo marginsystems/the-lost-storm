@@ -30,6 +30,7 @@ export function stepTimers(actor: ActorState, dt: number): void {
     actor.cooldowns[key] = Math.max(0, left);
   }
   actor.stagger = Math.max(0, actor.stagger - dt);
+  actor.root = Math.max(0, actor.root - dt);
   if (actor.combo === null) return;
   actor.combo.timeLeft -= dt;
   if (actor.combo.timeLeft <= 0) actor.combo = null;

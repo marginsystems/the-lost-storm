@@ -8,6 +8,7 @@ import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, openDialogue } from 
 import { removeGround } from './ground.ts';
 import { followPath, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
+import { clearHazards } from './hazards.ts';
 import { blockedReason, clearProjectiles, startSkill, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { stepWaypoints, teleport } from './waypoints.ts';
@@ -289,8 +290,10 @@ function respawn(world: World): void {
   player.mana = player.stats.maxMana;
   player.cooldowns = {};
   player.combo = null;
+  player.root = 0;
   placePlayer(world);
   clearProjectiles(world);
+  clearHazards(world);
   for (const monster of world.monsters) {
     if (!monster.alive) continue;
     monster.aggro = false;
@@ -348,7 +351,7 @@ export function stepPlayer(world: World, dt: number): void {
   }
   if (player.action === null) {
     stepIntent(world, dt);
-    if (!isBusy(player) && player.path.length > 0) {
+    if (!isBusy(player) && player.root <= 0 && player.path.length > 0) {
       const moved: number = followPath(world.grid, player, player.path, player.stats.moveSpeed * dt, PLAYER.turnRate * dt);
       player.moving = moved > PLAYER.stuckStep;
       if (!player.moving) {

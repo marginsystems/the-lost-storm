@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { MotionSample, TestScene } from '../../test/motion-support.ts';
 import { MOTION_DT, motionProblems, placedProp, sampleOf, sceneZone } from '../../test/motion-support.ts';
+import { ARENA_CENTRE, arena, place } from '../../test/arena-support.ts';
 import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
@@ -24,6 +25,7 @@ const LIMITS = {
   paceEvery: 1.5,
   blockedSeconds: 3,
   pinnedRunTime: 0.15,
+  flickerGap: 0.3,
 } as const;
 
 interface Scene extends TestScene {
@@ -73,7 +75,7 @@ const SCENES: readonly Scene[] = [
 const KINDS: readonly string[] = ['bone_thrall', 'hex_caller', 'one_before', 'mason', 'hodman'];
 
 function spawn(world: World, kind: string, at: Vec2): MonsterState {
-  world.zone = { ...world.zone, packs: [{ x: at.x, z: at.z, members: [{ monster: kind, count: 1 }], when: [] }] };
+  world.zone = { ...world.zone, packs: [{ x: at.x, z: at.z, members: [{ monster: kind, count: 1, mods: [] }], when: [] }] };
   spawnPacks(world);
   const monster: MonsterState = must(world.monsters.at(-1), `${kind} spawned`);
   monster.pos = must(nearestWalkable(world.grid, at, 6), 'walkable spawn');
@@ -176,4 +178,79 @@ void test('a monster pinned against a prop stops its run within a tenth of a sec
   }
   assert.ok(blockedSteps > 0);
   assert.ok(runningWhileBlocked * MOTION_DT <= LIMITS.pinnedRunTime, `ran for ${(runningWhileBlocked * MOTION_DT).toFixed(2)} s while pinned`);
+});
+
+void test('a stalker circles the hero at its orbit range while its leap recovers, smoothly, then leaps in', (): void => {
+  const world: World = arena(8);
+  const ghoul: MonsterState = place(world, 'test_ghoul', { x: ARENA_CENTRE.x + 10, z: ARENA_CENTRE.z });
+  const orbit: number = ghoul.def.behaviour.type === 'stalker' ? ghoul.def.behaviour.orbitRange : 0;
+  const samples: MotionSample[] = [];
+  const gaps: number[] = [];
+  let swept: number = 0;
+  let last: number = Math.atan2(ghoul.pos.x - ARENA_CENTRE.x, ghoul.pos.z - ARENA_CENTRE.z);
+  for (let step: number = 0; step < Math.round(4 / MOTION_DT); step += 1) {
+    world.player.pos = { ...ARENA_CENTRE };
+    world.player.life = world.player.maxLife;
+    ghoul.cooldowns = { test_pounce: 1 };
+    const acting: boolean = ghoul.action !== null;
+    stepWorld(world, [], MOTION_DT);
+    samples.push(sampleOf(ghoul, acting));
+    const angle: number = Math.atan2(ghoul.pos.x - ARENA_CENTRE.x, ghoul.pos.z - ARENA_CENTRE.z);
+    swept += Math.abs(Math.atan2(Math.sin(angle - last), Math.cos(angle - last)));
+    last = angle;
+    if (step * MOTION_DT > 2) gaps.push(distance(ghoul.pos, ARENA_CENTRE));
+  }
+  assert.deepEqual(motionProblems('ghoul', samples, LIMITS.turnRate), []);
+  assert.ok(swept > 1, `it went round the hero (${swept.toFixed(2)} rad)`);
+  assert.ok(Math.min(...gaps) > orbit - 2 && Math.max(...gaps) < orbit + 2.5, `it kept to its ring (${Math.min(...gaps).toFixed(1)} to ${Math.max(...gaps).toFixed(1)})`);
+  ghoul.cooldowns = {};
+  let leapt: boolean = false;
+  for (let step: number = 0; step < Math.round(1 / MOTION_DT) && !leapt; step += 1) {
+    world.player.pos = { ...ARENA_CENTRE };
+    leapt = stepWorld(world, [], MOTION_DT).some((event): boolean => event.type === 'skill_start' && event.actorId === ghoul.id);
+  }
+  assert.ok(leapt, 'it leaps once the leap is ready');
+});
+
+void test('a ranged monster backs off from a hero who closes in and holds once clear, without flickering between the two', (): void => {
+  const world: World = arena(9);
+  const caller: MonsterState = place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z });
+  const retreat: number = caller.def.behaviour.type === 'ranged' ? caller.def.behaviour.retreatRange : 0;
+  const switches: number[] = [];
+  let stance = caller.stance;
+  let retreated: boolean = false;
+  for (let step: number = 0; step < Math.round(6 / MOTION_DT); step += 1) {
+    caller.cooldowns = { test_mark: 1 };
+    world.player.life = world.player.maxLife;
+    const wobble: number = Math.sin(step * MOTION_DT * 9) * 0.6;
+    const toward: Vec2 = { x: caller.pos.x - ARENA_CENTRE.x, z: caller.pos.z - ARENA_CENTRE.z };
+    const gap: number = Math.hypot(toward.x, toward.z);
+    const wanted: number = step * MOTION_DT < 3 ? retreat - 0.5 + wobble : retreat + 2 + wobble;
+    world.player.pos = { x: caller.pos.x - (toward.x / gap) * wanted, z: caller.pos.z - (toward.z / gap) * wanted };
+    stepWorld(world, [], MOTION_DT);
+    if (caller.stance === 'retreat') retreated = true;
+    if (caller.stance !== stance) switches.push(step * MOTION_DT);
+    stance = caller.stance;
+  }
+  assert.ok(retreated, 'it backed off');
+  const flickers: number[] = switches.filter((at: number, index: number): boolean => at > LIMITS.settleTime / 4 && index > 0 && at - (switches[index - 1] ?? 0) < LIMITS.flickerGap);
+  assert.deepEqual(flickers, [], `stance changed at ${switches.map((at: number): string => at.toFixed(2)).join(', ')}`);
+});
+
+void test('a summoner calls its own kind to its side, aggroed, and never more than its limit', (): void => {
+  const world: World = arena(10);
+  const mother: MonsterState = place(world, 'bone_thrall', { x: ARENA_CENTRE.x + 6, z: ARENA_CENTRE.z }, ['test_brood']);
+  const summon = must(mother.def.summon, 'summon');
+  for (let step: number = 0; step < Math.round((summon.cooldown * 3 + 1) / MOTION_DT); step += 1) {
+    world.player.life = world.player.maxLife;
+    mother.life = mother.maxLife;
+    stepWorld(world, [], MOTION_DT);
+  }
+  const called: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.summonerId === mother.id);
+  assert.equal(called.length, summon.limit);
+  for (const minion of called) {
+    assert.equal(minion.def.id, mother.def.id);
+    assert.deepEqual(minion.def.mods, []);
+    assert.equal(minion.aggro, true);
+  }
 });

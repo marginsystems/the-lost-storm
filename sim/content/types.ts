@@ -1,3 +1,5 @@
+import type { GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, SkillLeap, StalkerBehaviour, SummonDef } from './combat-types.ts';
+
 export const STAT_IDS = [
   'maxLife',
   'maxMana',
@@ -58,7 +60,7 @@ export interface ProjectileDelivery {
   readonly spreadDegrees: number;
 }
 
-export type Delivery = ArcDelivery | NovaDelivery | ProjectileDelivery;
+export type Delivery = ArcDelivery | NovaDelivery | ProjectileDelivery | MarkDelivery;
 
 export interface SkillDamage {
   readonly weaponPercent: number;
@@ -108,6 +110,8 @@ export interface SkillDef {
   readonly hitStop: number;
   readonly vfx: SkillVfx;
   readonly combo: SkillCombo | null;
+  readonly leap: SkillLeap | null;
+  readonly root: number;
 }
 
 export interface ChaserBehaviour {
@@ -120,7 +124,7 @@ export interface RangedBehaviour {
   readonly retreatRange: number;
 }
 
-export type MonsterBehaviour = ChaserBehaviour | RangedBehaviour;
+export type MonsterBehaviour = ChaserBehaviour | RangedBehaviour | StalkerBehaviour;
 
 export interface MonsterLoot {
   readonly goldChance: number;
@@ -184,6 +188,11 @@ export interface MonsterDef {
   readonly gear: readonly string[];
   readonly wear: readonly string[];
   readonly boss: BossDef | null;
+  readonly poise: MonsterPoise;
+  readonly guard: GuardDef | null;
+  readonly deathSkill: string | null;
+  readonly summon: SummonDef | null;
+  readonly mods: readonly string[];
 }
 
 export const ITEM_SLOTS = ['weapon', 'head', 'chest', 'hands', 'legs', 'feet', 'charm'] as const;
@@ -364,6 +373,7 @@ export interface ZoneVoice {
 export interface PackMember {
   readonly monster: string;
   readonly count: number;
+  readonly mods: readonly string[];
 }
 
 export interface ZonePack {
@@ -641,6 +651,7 @@ export interface PlayerDef {
 export interface Content {
   readonly skills: ReadonlyMap<string, SkillDef>;
   readonly monsters: ReadonlyMap<string, MonsterDef>;
+  readonly monsterMods: ReadonlyMap<string, MonsterModDef>;
   readonly rarities: readonly RarityDef[];
   readonly itemBases: ReadonlyMap<string, ItemBaseDef>;
   readonly affixes: ReadonlyMap<string, AffixDef>;

@@ -6,7 +6,7 @@ import { allHold, questState } from './world/conditions.ts';
 import { currentObjective } from './world/quests.ts';
 import { SKILLS } from './world/skills.ts';
 import { stepWorld } from './world/step.ts';
-import type { Command, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
+import type { Command, HazardState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
 
 export const BOT = {
   step: 1 / 30,
@@ -103,7 +103,8 @@ function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reac
   const action = monster.action;
   if (!monster.alive || action === null || action.phase !== 'windup' || action.windup - action.timeLeft < reaction) return false;
   const reach: number = world.player.radius + BOT.dodgeMargin;
-  const offset: Vec2 = { x: pos.x - monster.pos.x, z: pos.z - monster.pos.z };
+  const origin: ReadonlyVec2 = action.skill.leap === null ? monster.pos : (action.target ?? monster.pos);
+  const offset: Vec2 = { x: pos.x - origin.x, z: pos.z - origin.z };
   const gap: number = Math.hypot(offset.x, offset.z);
   const delivery = action.skill.delivery;
   let inside: boolean;
@@ -114,6 +115,11 @@ function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reac
     case 'arc': {
       const spread: number = Math.cos(Math.min(Math.PI, (delivery.arcDegrees / 2) * DEGREES_TO_RADIANS + BOT.dodgeMargin / Math.max(1, gap)));
       inside = gap <= delivery.reach + reach && (gap <= reach || dot(normalize(offset, action.direction), action.direction) >= spread);
+      break;
+    }
+    case 'mark': {
+      const mark: ReadonlyVec2 = action.target ?? monster.pos;
+      inside = Math.hypot(pos.x - mark.x, pos.z - mark.z) <= delivery.radius + reach;
       break;
     }
     case 'projectile': {
@@ -132,6 +138,8 @@ function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reac
 }
 
 export function botInDanger(world: World, pos: ReadonlyVec2, reaction: number = 0): boolean {
+  const reach: number = world.player.radius + BOT.dodgeMargin;
+  if (world.hazards.some((hazard: HazardState): boolean => hazard.team === 'monster' && Math.hypot(pos.x - hazard.pos.x, pos.z - hazard.pos.z) <= hazard.radius + reach)) return true;
   return world.monsters.some((monster: MonsterState): boolean => threatened(world, monster, pos, reaction));
 }
 

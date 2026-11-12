@@ -216,6 +216,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             refreshOpen('inventory');
             break;
           case 'skill_impact':
+          case 'hazard':
+          case 'guarded':
           case 'skill_interrupt':
           case 'projectile_spawn':
           case 'projectile_end':

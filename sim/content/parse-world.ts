@@ -1,4 +1,5 @@
 import type { Fields } from './read.ts';
+import { packMods } from './parse-combat.ts';
 import { byId, choice, ContentError, each, fields, flag, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
@@ -43,7 +44,7 @@ function zoneProp(value: unknown, where: string): ZoneProp {
 
 function packMember(value: unknown, where: string): PackMember {
   const source: Fields = fields(value, where);
-  return { monster: text(source, 'monster', where), count: numeric(source, 'count', where) };
+  return { monster: text(source, 'monster', where), count: numeric(source, 'count', where), mods: packMods(source, where) };
 }
 
 function pack(value: unknown, where: string): ZonePack {
