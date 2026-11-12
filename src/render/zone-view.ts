@@ -1,4 +1,5 @@
 import type { FigureSize } from './figure-gauge.ts';
+import { withCutaway } from './prop-cutaway.ts';
 import type { Material, Object3D, Scene } from 'three';
 import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -197,7 +198,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       const geometry: unknown = object.geometry;
       const material: unknown = object.material;
       if (!(material instanceof MeshStandardMaterial) || !isGeometry(geometry)) return;
-      const instanced: InstancedMesh = new InstancedMesh(geometry, finish(content.props.get(propId), dressed(content, dress, material)), list.length);
+      const instanced: InstancedMesh = new InstancedMesh(geometry, withCutaway(finish(content.props.get(propId), dressed(content, dress, material))), list.length);
       list.forEach((placement: Placement, index: number): void => {
         instanced.setMatrixAt(index, new Matrix4().multiplyMatrices(placement.matrix, object.matrixWorld));
       });
@@ -232,6 +233,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
         } else {
           return;
         }
+        for (const material of own) withCutaway(material);
         conditional.materials.push(...own);
       });
       object.visible = false;
@@ -294,11 +296,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
         const target: number = wanted ? 1 : 0;
         conditional.shown += (target - conditional.shown) * (1 - Math.exp(-ZONE_VIEW.appearRate * dt));
         if (Math.abs(target - conditional.shown) < ZONE_VIEW.settledWithin) conditional.shown = target;
-        const solid: boolean = conditional.shown === 1;
-        for (const material of conditional.materials) {
-          material.transparent = !solid;
-          material.opacity = conditional.shown;
-        }
+        for (const material of conditional.materials) material.opacity = conditional.shown;
         if (conditional.object !== null) conditional.object.visible = conditional.shown > 0;
       }
       const player = world.player.pos;

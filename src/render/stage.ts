@@ -12,6 +12,7 @@ import type { QualityTier } from '../mobile/quality.ts';
 import { pixelRatioFor } from '../mobile/quality.ts';
 import { frameGuardPass } from './frame-guard.ts';
 import { RIM_LIGHT } from './character-loader.ts';
+import { aimCutaway } from './prop-cutaway.ts';
 
 export const STAGE = {
   exposure: 1.22,
@@ -147,6 +148,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   const rimBase: Color = new Color(0x000000);
 
   const camera: PerspectiveCamera = new PerspectiveCamera(30, 1, 1, 220);
+  const heroAt: Vector2 = new Vector2();
+  const drawing: Vector2 = new Vector2();
 
   const sky: HemisphereLight = new HemisphereLight(0xffffff, 0x000000, 0);
   scene.add(sky);
@@ -255,6 +258,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       storm.target.position.set(snappedX, 0, snappedZ);
       placeStorm();
       hero.position.set(x + STAGE.heroToward * Math.SQRT1_2, STAGE.heroHeight, z + STAGE.heroToward * Math.SQRT1_2);
+      heroAt.set(x, z);
     },
     setFlash(light: SkyFlash): void {
       const amount: number = light.amount;
@@ -289,6 +293,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       apply();
     },
     render(): void {
+      renderer.getDrawingBufferSize(drawing);
+      aimCutaway(camera, heroAt.x, heroAt.y, drawing.x, drawing.y);
       if (composer === null) renderer.render(scene, camera);
       else composer.render();
     },
