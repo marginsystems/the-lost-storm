@@ -53,6 +53,7 @@ export function withCutaway(material: Material): Material {
   };
   material.customProgramCacheKey = (): string => `${key}|cutaway`;
   material.transparent = true;
+  material.forceSinglePass = true;
   return material;
 }
 

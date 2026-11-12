@@ -8,6 +8,7 @@ void test('a prop material is set up for the cutaway once, before it is ever dra
   const key: string = material.customProgramCacheKey();
   assert.equal(withCutaway(material), material);
   assert.equal(material.transparent, true);
+  assert.equal(material.forceSinglePass, true);
   const once: string = material.customProgramCacheKey();
   assert.notEqual(once, key);
   withCutaway(material);

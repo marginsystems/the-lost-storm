@@ -33,6 +33,7 @@ export const GHOST_SHADE: string = [
 
 export function makeGhost(material: MeshStandardMaterial, flash: IUniform<Color>, ghost: GhostUniforms): void {
   material.transparent = true;
+  material.forceSinglePass = true;
   material.depthWrite = true;
   material.onBeforeCompile = (shader): void => {
     shader.uniforms['uFlash'] = flash;
