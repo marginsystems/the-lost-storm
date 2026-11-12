@@ -34,6 +34,9 @@
         window.addEventListener('unhandledrejection', fail);
       })();
     </script>
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/cinzel/files/cinzel-latin-500-normal.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/cinzel/files/cinzel-latin-700-normal.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/alegreya-sans/files/alegreya-sans-latin-400-normal.woff2" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/src/app.css" />
@@ -43,6 +46,38 @@
     <link rel="stylesheet" href="/src/title-motion.css" />
     <link rel="stylesheet" href="/src/title-enter.css" />
     <link rel="stylesheet" href="/src/launch/title-launch.css" />
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var fonts = document.fonts;
+        if (!fonts || !fonts.load || !fonts.forEach) return;
+        root.classList.add('fonts-wait');
+        var release = function () {
+          root.classList.remove('fonts-wait');
+        };
+        var cap = setTimeout(release, 2500);
+        var settle = function () {
+          clearTimeout(cap);
+          release();
+        };
+        var declared = function () {
+          var found = false;
+          fonts.forEach(function (face) {
+            if (face.family.replace(/"/g, '') === 'Cinzel') found = true;
+          });
+          return found;
+        };
+        var wait = function () {
+          if (!root.classList.contains('fonts-wait')) return;
+          if (!declared()) {
+            setTimeout(wait, 20);
+            return;
+          }
+          Promise.all([fonts.load('500 1em Cinzel'), fonts.load('700 1em Cinzel'), fonts.load('400 1em "Alegreya Sans"')]).then(settle, settle);
+        };
+        wait();
+      })();
+    </script>
   </head>
   <body>
     <div id="app">
@@ -56,7 +91,7 @@
           <h1>The Lost Storm</h1>
           <p class="title-sub" id="title-place"></p>
           <div class="title-loader" id="title-loader" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <p class="title-status" id="title-status">Gathering the storm…</p>
+          <p class="title-status" id="title-status">Loading…</p>
           <button id="title-enter" type="button" disabled>Enter</button>
           <button id="title-reset" type="button" class="title-quiet" hidden>Start over</button>
           <p class="title-sync" id="title-sync" aria-live="polite"></p>
