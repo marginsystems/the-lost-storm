@@ -62,6 +62,10 @@ uniform vec4 uShore;
 uniform vec3 uShoreLook;
 uniform vec3 uRock;
 uniform vec3 uRockShade;
+uniform vec3 uLight;
+uniform vec3 uLightColor;
+uniform vec4 uLift;
+uniform vec3 uLiftColor;
 varying vec3 vWorld;
 ${NOISE}
 void main() {
@@ -83,6 +87,10 @@ void main() {
   float rock = uShoreLook.y * smoothstep(-2.0, 5.0, ashore);
   vec3 stone = mix(uRockShade, uRock, 0.55 + mottle * 0.45) * (0.82 + fine * 0.18 + ripple * 0.08);
   color = mix(color, stone, rock);
+  vec2 toPool = vWorld.xz - uHero;
+  color += uLiftColor * rock * uLift.y * exp(-dot(toPool, toPool) / (uLift.x * uLift.x));
+  vec2 toFire = vWorld.xz - uLight.xy;
+  color += uLightColor * uLight.z * uLift.z * exp(-dot(toFire, toFire) / (uLift.w * uLift.w));
   vec2 toFlash = vWorld.xz - uFlashPos;
   color += uFlashColor * uFlash * 0.18 * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
   gl_FragColor = vec4(color, 1.0);

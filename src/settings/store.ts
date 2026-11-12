@@ -10,6 +10,7 @@ export interface SettingsStore {
   preset(): GraphicsPreset;
   setQuality(quality: Quality): void;
   setShowFps(show: boolean): void;
+  setLensWater(on: boolean): void;
   rebind(action: ActionId, code: string): RebindResult;
   resetControls(): void;
   saved(): boolean;
@@ -32,7 +33,7 @@ export function createSettingsStore(storage: KeyValueStore, slots: readonly Slot
     commit(mergeSettings(settings, { controls }));
   };
   const setGraphics = (graphics: GraphicsSettings): void => {
-    if (graphics.quality === settings.graphics.quality && graphics.showFps === settings.graphics.showFps) return;
+    if (graphics.quality === settings.graphics.quality && graphics.showFps === settings.graphics.showFps && graphics.lensWater === settings.graphics.lensWater) return;
     commit(mergeSettings(settings, { graphics }));
   };
   return {
@@ -50,6 +51,9 @@ export function createSettingsStore(storage: KeyValueStore, slots: readonly Slot
     },
     setShowFps(showFps: boolean): void {
       setGraphics({ ...settings.graphics, showFps });
+    },
+    setLensWater(lensWater: boolean): void {
+      setGraphics({ ...settings.graphics, lensWater });
     },
     rebind(action: ActionId, code: string): RebindResult {
       const result: RebindResult = rebind(table, settings.controls, action, code);

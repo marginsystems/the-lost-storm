@@ -27,6 +27,7 @@ export interface ZoneEncounter {
   readonly when: readonly Condition[];
   readonly after: number;
   readonly ahead: number;
+  readonly latest: number | null;
   readonly find: EncounterFind;
 }
 
@@ -40,6 +41,7 @@ export interface VoidShore {
   readonly when: readonly Condition[];
   readonly ahead: number;
   readonly thin: number;
+  readonly surface: string | null;
   readonly ambience: ZoneAmbience;
 }
 

@@ -58,7 +58,7 @@ export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Eq
       if (monster !== undefined) add(monster.rig, monster.wear, monster.gear);
     }
   }
-  for (const entry of zone.moments?.table ?? []) {
+  for (const entry of [...(zone.moments?.table ?? []), ...(zone.moments?.first ?? [])]) {
     for (const echo of content.moments.defs.get(entry.moment)?.echoes ?? []) {
       const monster: MonsterDef | undefined = content.monsters.get(echo.monster);
       if (monster === undefined) continue;

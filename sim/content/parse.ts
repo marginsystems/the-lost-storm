@@ -581,6 +581,8 @@ export function contentProblems(content: Content): string[] {
     const at: string = `zone ${zoneDef.id}`;
     for (const floor of Object.values(zoneDef.floors)) need(content.surfaces.has(floor), `${at} floor uses unknown surface ${floor}`);
     if (zoneDef.outside !== null) need(content.surfaces.has(zoneDef.outside.surface), `${at} outside uses unknown surface ${zoneDef.outside.surface}`);
+    const shoreSurface: string | null = zoneDef.void?.shore?.surface ?? null;
+    if (shoreSurface !== null) need(content.surfaces.has(shoreSurface), `${at} shore uses unknown surface ${shoreSurface}`);
     for (const model of zoneDef.walls === null ? [] : [...zoneDef.walls.tall, zoneDef.walls.low, zoneDef.walls.corner]) need(content.props.has(model), `${at} wall uses unknown prop ${model}`);
     for (const placed of zoneDef.props) {
       const def: PropDef | undefined = content.props.get(placed.prop);

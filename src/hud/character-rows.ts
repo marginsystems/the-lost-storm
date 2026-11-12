@@ -60,5 +60,5 @@ export const OFFENCE_ROWS: readonly SheetRow[] = [
 export const SOURCES: readonly { readonly source: Source; readonly title: string }[] = [
   { source: 'base', title: 'Base' },
   { source: 'gear', title: 'Gear' },
-  { source: 'tree', title: 'Skill tree' },
+  { source: 'tree', title: 'Storm Chart' },
 ];

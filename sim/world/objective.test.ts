@@ -49,3 +49,15 @@ void test('with no active quest there is no target and the fallback text stays',
   assert.equal(objectiveTarget(world), null);
   assert.equal(nextAction(null, 'keep'), 'keep');
 });
+
+void test('a target in this zone shows the objective as written, and one past an exit names where to go', (): void => {
+  const world: World = fresh(content.world.start);
+  const person: ObjectiveTarget | null = objectiveTarget(world);
+  assert.ok(person !== null);
+  assert.equal(nextAction(person, 'Ask about the storm'), 'Ask about the storm');
+  world.quests['errand'] = 1;
+  const exit: ObjectiveTarget | null = objectiveTarget(world);
+  assert.ok(exit !== null && exit.kind === 'exit');
+  assert.equal(nextAction(exit, 'Reach the fire'), `Go to ${exit.name}`);
+  assert.doesNotMatch(nextAction(exit, ''), /marked/);
+});

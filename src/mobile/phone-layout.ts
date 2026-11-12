@@ -38,6 +38,9 @@ export const PHONE = {
   dialogueMaxHeight: 220,
   cardWidth: 320,
   cardInset: 16,
+  bannerHeight: 24,
+  bannerMaxWidth: 360,
+  bannerMinWidth: 140,
 } as const;
 
 export interface Rect {
@@ -85,6 +88,7 @@ export interface PhoneLayout {
   readonly toast: Rect;
   readonly dialogue: Rect;
   readonly card: Rect;
+  readonly banner: Rect;
   readonly xp: Rect;
   readonly stick: Rect;
   readonly attack: Rect;
@@ -137,6 +141,28 @@ function questsRect(column: Rect, top: number, limit: number, height: number): R
   const room: number = Math.min(height * PHONE.questHeightShare, limit - PHONE.gap - top);
   if (room < PHONE.questMinHeight) return null;
   return { x: column.x, y: top, w: column.w, h: Math.floor(room) };
+}
+
+interface Span {
+  readonly from: number;
+  readonly to: number;
+}
+
+interface BannerRow {
+  readonly y: number;
+  readonly span: Span;
+}
+
+function widestFree(from: number, to: number, blockers: readonly Rect[]): Span {
+  const taken: Span[] = blockers.map((rect: Rect): Span => ({ from: rect.x - PHONE.gap, to: right(rect) + PHONE.gap })).toSorted((a: Span, b: Span): number => a.from - b.from);
+  let best: Span = { from, to: from };
+  let cursor: number = from;
+  for (const block of [...taken, { from: to, to }]) {
+    const end: number = Math.min(block.from, to);
+    if (end - cursor > best.to - best.from) best = { from: cursor, to: end };
+    cursor = Math.max(cursor, block.to);
+  }
+  return best;
 }
 
 export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayout {
@@ -209,7 +235,17 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const questTop: number = Math.max(bottom(minimap), sharesColumn ? bottom(menu.rect) : 0) + PHONE.gap;
   const quests: Rect | null = questsRect(column, questTop, below, height);
 
-  return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, toast, dialogue, card, xp, stick, attack, skills, flasks };
+  const taken: readonly Rect[] = [life, mana, lifeFlask, manaFlask, menu.rect, zone, minimap, hint, toast, dialogue, ...controls, ...(quests === null ? [] : [quests])];
+  const rows: readonly BannerRow[] = [Math.ceil(Math.max(clusterBottom, bottom(menu.rect)) + PHONE.gap), top].map((y: number): BannerRow => {
+    const row: Rect = { x: left, y, w: rightEdge - left, h: PHONE.bannerHeight };
+    return { y, span: widestFree(left, rightEdge, taken.filter((rect: Rect): boolean => overlaps(rect, row))) };
+  });
+  const roomOf = (row: BannerRow): number => row.span.to - row.span.from;
+  const chosen: BannerRow = rows.find((row: BannerRow): boolean => roomOf(row) >= PHONE.bannerMinWidth) ?? rows.reduce((a: BannerRow, b: BannerRow): BannerRow => (roomOf(b) > roomOf(a) ? b : a));
+  const bannerWidth: number = Math.min(PHONE.bannerMaxWidth, roomOf(chosen));
+  const banner: Rect = { x: Math.round(chosen.span.from + (roomOf(chosen) - bannerWidth) / 2), y: chosen.y, w: bannerWidth, h: PHONE.bannerHeight };
+
+  return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, toast, dialogue, card, banner, xp, stick, attack, skills, flasks };
 }
 
 export function layoutRects(layout: PhoneLayout): NamedRect[] {
@@ -223,6 +259,7 @@ export function layoutRects(layout: PhoneLayout): NamedRect[] {
     { name: 'minimap', rect: layout.minimap },
     { name: 'hint', rect: layout.hint },
     { name: 'toast', rect: layout.toast },
+    { name: 'banner', rect: layout.banner },
     { name: 'xp', rect: layout.xp },
     { name: 'stick', rect: layout.stick },
     { name: 'attack', rect: layout.attack },

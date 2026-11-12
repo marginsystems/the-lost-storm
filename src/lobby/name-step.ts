@@ -6,13 +6,16 @@ import type { KeyValueStore } from '../backend/backend.ts';
 import { keepHeroName, pendingRename, readHeroName, stepWanted } from './hero-name.ts';
 import { chooseName, NAME_MESSAGES, NAME_RULES, nameProblem, tidyName } from './lobby-model.ts';
 import type { NameProblem } from './lobby-model.ts';
+import { pressAction } from './name-press.ts';
+import type { PressAction, StepState } from './name-press.ts';
 import stepCss from './name-step.css?inline';
 
 export const NAME_STEP = {
   ask: 'What is your name?',
   placeholder: 'Your name',
   choose: 'Choose for me',
-  chooseTries: 4,
+  suggested: 'Enter to keep it, or type your own.',
+  nudgeClass: 'nudge',
 } as const;
 
 export interface NameStep {
@@ -28,8 +31,6 @@ export interface NameStepParts {
   readonly random: () => number;
   readonly begin: () => void;
 }
-
-type StepState = 'closed' | 'open' | 'busy' | 'done';
 
 async function sendKept(lobby: Lobby, kept: string): Promise<boolean> {
   const outcome: RenameOutcome = await lobby.service.rename(kept);
@@ -71,7 +72,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
     step.dataset['state'] = next;
     step.toggleAttribute('aria-busy', next === 'busy');
     enter.disabled = next === 'busy';
-    choose.disabled = next === 'busy';
+    choose.disabled = next === 'busy' || limited;
     const reachable: number = next === 'open' || next === 'busy' ? 0 : -1;
     field.tabIndex = reachable;
     choose.tabIndex = reachable;
@@ -84,9 +85,31 @@ export function createNameStep(parts: NameStepParts): NameStep {
 
   const needed = (): boolean => stepWanted(parts.fresh, lobby === null ? null : lobby.feed.current(), lobby !== null && lobby.service.hasAccount());
 
+  const nudge = (): void => {
+    field.classList.remove(NAME_STEP.nudgeClass);
+    void field.offsetWidth;
+    field.classList.add(NAME_STEP.nudgeClass);
+  };
+
+  const hold = (): void => {
+    field.focus({ preventScroll: true });
+    field.select();
+    nudge();
+  };
+
   const refuse = (problem: NameProblem): boolean => {
     setState('open');
     tell(NAME_MESSAGES[problem], true);
+    hold();
+    return false;
+  };
+
+  const suggest = (): boolean => {
+    const picked: string | null = chooseName(parts.random, refused);
+    if (picked === null) return refuse('name_taken');
+    field.value = picked;
+    tell(NAME_STEP.suggested, false);
+    hold();
     return false;
   };
 
@@ -115,19 +138,6 @@ export function createNameStep(parts: NameStepParts): NameStep {
     return finish();
   };
 
-  const chooseForMe = async (tries: number): Promise<boolean> => {
-    if (tries >= NAME_STEP.chooseTries) return false;
-    const picked: string | null = chooseName(parts.random, refused);
-    if (picked === null) return refuse('name_taken');
-    field.value = picked;
-    if (await name(picked)) return true;
-    return limited ? false : chooseForMe(tries + 1);
-  };
-
-  const pick = async (): Promise<void> => {
-    if (await chooseForMe(0)) parts.begin();
-  };
-
   let sentKept: boolean = false;
   lobby?.feed.subscribe((board: Leaderboard | null): void => {
     const kept: string | null = pendingRename(readHeroName(parts.store), board, lobby.service.hasAccount());
@@ -145,29 +155,31 @@ export function createNameStep(parts: NameStepParts): NameStep {
   });
   choose.addEventListener('click', (): void => {
     if (state !== 'open') return;
-    void pick();
+    suggest();
   });
   for (const kind of ['keydown', 'keyup'] as const) {
     field.addEventListener(kind, (event: KeyboardEvent): void => {
       event.stopPropagation();
     });
   }
+  field.addEventListener('animationend', (): void => {
+    field.classList.remove(NAME_STEP.nudgeClass);
+  });
   field.addEventListener('input', (): void => {
-    if (note.classList.contains('problem')) tell(NAME_STEP.ask, false);
+    if (note.textContent !== NAME_STEP.ask) tell(NAME_STEP.ask, false);
   });
 
   return {
     async enter(): Promise<boolean> {
-      if (state === 'busy') return false;
-      if (state === 'done') return true;
-      if (state === 'closed') {
-        if (!needed()) return true;
-        setState('open');
-        field.value = readHeroName(parts.store) ?? '';
-        field.focus({ preventScroll: true });
-        return false;
-      }
-      return limited || name(field.value);
+      const action: PressAction = pressAction({ state, value: field.value, needed: state === 'closed' && needed(), limited });
+      if (action === 'wait') return false;
+      if (action === 'begin') return true;
+      if (action === 'suggest') return suggest();
+      if (action === 'submit') return name(field.value);
+      setState('open');
+      field.value = readHeroName(parts.store) ?? '';
+      field.focus({ preventScroll: true });
+      return false;
     },
   };
 }

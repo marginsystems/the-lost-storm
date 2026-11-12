@@ -29,6 +29,7 @@
     { "kind": "importers", "paths": ["src/**/*.css"], "alsoRun": ["src/title-screen.test.ts", "src/landing/leave.test.ts", "src/hud/panel-cover.test.ts"] },
     { "kind": "importers", "paths": ["src/input.ts"], "alsoRun": ["src/input.test.ts"] },
     { "kind": "only", "paths": ["index.html", "play/**"], "run": ["src/launch/data.test.ts"] },
-    { "kind": "only", "paths": ["**/*.md", "docs/**", "public/**", "licenses/**", "blender/**", "LICENSE", ".gitignore", ".claude/**"], "run": [] }
+    { "kind": "only", "paths": ["public/**"], "run": ["sim/content/content.test.ts"] },
+    { "kind": "only", "paths": ["**/*.md", "docs/**", "licenses/**", "blender/**", "LICENSE", ".gitignore", ".claude/**"], "run": [] }
   ]
 }

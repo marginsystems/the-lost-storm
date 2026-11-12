@@ -42,6 +42,8 @@ export interface MomentDef {
   readonly id: string;
   readonly name: string;
   readonly tint: string;
+  readonly ground: string;
+  readonly light: string;
   readonly bright: boolean;
   readonly radius: number;
   readonly lifetime: number;
@@ -93,4 +95,7 @@ export interface MomentField {
   readonly max: number;
   readonly table: readonly WeightedMoment[];
   readonly sure: readonly Condition[];
+  readonly first: readonly WeightedMoment[];
+  readonly grace: number;
+  readonly avoid: readonly StrikeArea[];
 }

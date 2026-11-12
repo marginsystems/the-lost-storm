@@ -40,7 +40,7 @@ function shiftEdit(): PropShiftEdit {
 const GATE: PropSwapEdit = { id: 'gate', type: 'prop_swap', weight: 1, reach: 40, twoWay: true, pairs: [{ from: 'gate_lantern', to: 'dry_plinth' }] };
 
 function exitAt(x: number, z: number): ZoneExit {
-  return { id: 'far', x, z, radius: 1, to: 'hall_of_time', toExit: 'west_gate', arrival: { x, z }, requires: [], lockedHint: '', hiddenWhenLocked: false };
+  return { id: 'far', x, z, radius: 1, to: 'hall_of_time', toExit: 'west_gate', arrival: { x, z }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' };
 }
 
 void test('a monster that was alive is now dead, and the hero still gets its experience and its kill', (): void => {

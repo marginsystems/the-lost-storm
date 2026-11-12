@@ -4,11 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   push:
-    branches: [main]
+    branches: [main, "mq-batch-**"]
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.sha }}${{ github.event.action == 'labeled' && github.event.label.name != 'mq-live' && format('-label-{0}', github.run_id) || '' }}
+  group: ci-${{ github.event.pull_request.number || github.sha }}${{ ((github.event.action == 'labeled' && (github.event.label.name != 'mq-live' || vars.CI_GATE != 'on')) || (vars.CI_GATE != 'on' && ((github.event.action == 'synchronize' && github.triggering_actor == 'mergestorm-surge[bot]') || startsWith(github.ref, 'refs/heads/mq-batch-')))) && format('-skip-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 permissions:
@@ -16,8 +16,8 @@ permissions:
 
 jobs:
   scope:
-    name: CI scope
-    if: github.event.action != 'labeled' || github.event.label.name == 'mq-live'
+    name: ${{ ((github.event.action == 'labeled' && (github.event.label.name != 'mq-live' || vars.CI_GATE != 'on')) || (vars.CI_GATE != 'on' && ((github.event.action == 'synchronize' && github.triggering_actor == 'mergestorm-surge[bot]') || startsWith(github.ref, 'refs/heads/mq-batch-')))) && 'CI scope (not run)' || 'CI scope' }}
+    if: ${{ !((github.event.action == 'labeled' && (github.event.label.name != 'mq-live' || vars.CI_GATE != 'on')) || (vars.CI_GATE != 'on' && ((github.event.action == 'synchronize' && github.triggering_actor == 'mergestorm-surge[bot]') || startsWith(github.ref, 'refs/heads/mq-batch-')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -26,20 +26,20 @@ jobs:
       - id: scope
         env:
           EVENT: ${{ github.event_name }}
-          QUEUED: ${{ contains(github.event.pull_request.labels.*.name, 'mq-live') }}
+          QUEUED: ${{ contains(github.event.pull_request.labels.*.name, 'mq-live') || startsWith(github.ref, 'refs/heads/mq-batch-') }}
         run: |
-          if [ "$EVENT" != "pull_request" ]; then
-            echo "tests=isolated" >> "$GITHUB_OUTPUT"
-          elif [ "$QUEUED" = "true" ]; then
+          if [ "$QUEUED" = "true" ]; then
             echo "tests=full" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" != "pull_request" ]; then
+            echo "tests=isolated" >> "$GITHUB_OUTPUT"
           else
             echo "tests=affected" >> "$GITHUB_OUTPUT"
           fi
           echo "event=$EVENT queued=$QUEUED"
 
   static:
-    name: Typecheck and lint
-    if: github.event.action != 'labeled' || github.event.label.name == 'mq-live'
+    name: ${{ ((github.event.action == 'labeled' && (github.event.label.name != 'mq-live' || vars.CI_GATE != 'on')) || (vars.CI_GATE != 'on' && ((github.event.action == 'synchronize' && github.triggering_actor == 'mergestorm-surge[bot]') || startsWith(github.ref, 'refs/heads/mq-batch-')))) && 'Typecheck and lint (not run)' || 'Typecheck and lint' }}
+    if: ${{ !((github.event.action == 'labeled' && (github.event.label.name != 'mq-live' || vars.CI_GATE != 'on')) || (vars.CI_GATE != 'on' && ((github.event.action == 'synchronize' && github.triggering_actor == 'mergestorm-surge[bot]') || startsWith(github.ref, 'refs/heads/mq-batch-')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -52,14 +52,19 @@ jobs:
         with:
           node-version: "22"
       - id: modules
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: node_modules
-          key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+          key: modules-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - id: install
         if: steps.modules.outputs.cache-hit != 'true'
         continue-on-error: ${{ vars.CI_GATE != 'on' }}
         run: npm ci --no-audit --no-fund
+      - if: steps.install.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: node_modules
+          key: ${{ steps.modules.outputs.cache-primary-key }}
       - id: typecheck
         continue-on-error: ${{ vars.CI_GATE != 'on' }}
         run: npm run typecheck
@@ -68,9 +73,9 @@ jobs:
         run: npm run lint
 
   tests:
-    name: Tests
+    name: ${{ ((github.event.action == 'labeled' && (github.event.label.name != 'mq-live' || vars.CI_GATE != 'on')) || (vars.CI_GATE != 'on' && ((github.event.action == 'synchronize' && github.triggering_actor == 'mergestorm-surge[bot]') || startsWith(github.ref, 'refs/heads/mq-batch-')))) && 'Tests (not run)' || 'Tests' }}
     needs: scope
-    if: github.event.action != 'labeled' || github.event.label.name == 'mq-live'
+    if: ${{ !((github.event.action == 'labeled' && (github.event.label.name != 'mq-live' || vars.CI_GATE != 'on')) || (vars.CI_GATE != 'on' && ((github.event.action == 'synchronize' && github.triggering_actor == 'mergestorm-surge[bot]') || startsWith(github.ref, 'refs/heads/mq-batch-')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -86,14 +91,19 @@ jobs:
         with:
           node-version: "22"
       - id: modules
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: node_modules
-          key: modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+          key: modules-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - id: install
         if: steps.modules.outputs.cache-hit != 'true'
         continue-on-error: ${{ vars.CI_GATE != 'on' }}
         run: npm ci --no-audit --no-fund
+      - if: steps.install.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: node_modules
+          key: ${{ steps.modules.outputs.cache-primary-key }}
       - name: Affected tests
         id: affected
         continue-on-error: ${{ vars.CI_GATE != 'on' }}
@@ -114,9 +124,9 @@ jobs:
         run: npm run test:isolated
 
   result:
-    name: CI result
+    name: ${{ ((github.event.action == 'labeled' && (github.event.label.name != 'mq-live' || vars.CI_GATE != 'on')) || (vars.CI_GATE != 'on' && ((github.event.action == 'synchronize' && github.triggering_actor == 'mergestorm-surge[bot]') || startsWith(github.ref, 'refs/heads/mq-batch-')))) && 'CI result (not run)' || 'CI result' }}
     needs: [scope, static, tests]
-    if: always() && (github.event.action != 'labeled' || github.event.label.name == 'mq-live')
+    if: ${{ always() && !((github.event.action == 'labeled' && (github.event.label.name != 'mq-live' || vars.CI_GATE != 'on')) || (vars.CI_GATE != 'on' && ((github.event.action == 'synchronize' && github.triggering_actor == 'mergestorm-surge[bot]') || startsWith(github.ref, 'refs/heads/mq-batch-')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -157,3 +167,11 @@ jobs:
             exit 1
           fi
           echo "::warning::Failed (informational, CI_GATE is off):$failed"
+
+  queue:
+    name: CI result
+    if: ${{ vars.CI_GATE != 'on' && startsWith(github.ref, 'refs/heads/mq-batch-') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: echo "CI_GATE is off, so the merge queue's batch is not tested; the pull requests were." >> "$GITHUB_STEP_SUMMARY"

@@ -20,8 +20,12 @@ body:not(.playing) .tc-rotate {
 
 body:not(.playing) #hud *,
 body:not(.playing) .tc * {
-  visibility: hidden !important;
   pointer-events: none !important;
+}
+
+body.hud-away:not(.playing) #hud *,
+body.hud-away:not(.playing) .tc * {
+  visibility: hidden !important;
 }
 
 .title-fold {

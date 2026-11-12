@@ -274,13 +274,13 @@ void test('a zone parses with its kind, level, exits, checkpoints, surge rules a
   assert.equal(arena.level, 1);
   assert.deepEqual(arena.surge, { delay: 5, surgesPerExtraMonster: 2, maxExtraMonsters: 3 });
   assert.deepEqual(arena.checkpoints, [{ id: 'grate', x: 28, z: 22, radius: 2 }]);
-  assert.deepEqual(arena.exits[0], { id: 'east', x: 78.4, z: 30, radius: 1.6, to: 'waystation', toExit: 'west_gate', arrival: { x: 73, z: 30 }, requires: [], lockedHint: '', hiddenWhenLocked: false });
+  assert.deepEqual(arena.exits[0], { id: 'east', x: 78.4, z: 30, radius: 1.6, to: 'waystation', toExit: 'west_gate', arrival: { x: 73, z: 30 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' });
   assert.deepEqual(arena.waypoint, null);
   assert.deepEqual(town.waypoint, waystation.waypoint);
-  const mist = must(must(content.zones.get('hall_of_time'), 'hall').exits.find((exit): boolean => exit.id === 'mist'), 'hidden exit');
-  assert.deepEqual(mist.requires, [{ type: 'quest', quest: 'out_of_the_mist', is: 'locked', not: false }]);
-  assert.equal(mist.lockedHint, 'Only mist.');
-  assert.equal(mist.hiddenWhenLocked, true);
+  const mist = must(must(content.zones.get('hall_of_time'), 'hall').exits.find((exit): boolean => exit.id === 'mist'), 'mist exit');
+  assert.deepEqual(mist.requires, []);
+  assert.equal(mist.look, 'mist');
+  assert.equal(mist.hiddenWhenLocked, false);
   assert.equal(must(town.props.find((placed): boolean => placed.when.length > 0), 'conditional prop').when.length, 1);
   assert.equal(arena.ambience.background, shallows.ambience.background);
   assert.equal(arena.floors['.'], 'silt');

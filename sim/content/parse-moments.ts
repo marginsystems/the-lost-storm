@@ -1,7 +1,7 @@
 import { conditions } from './parse-conditions.ts';
 import { storyFlags } from './parse-story.ts';
 import type { Fields } from './read.ts';
-import { byId, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
+import { byId, colour, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
 import type { EchoLook, EchoPose, MomentDef, MomentEcho, MomentField, MomentLibrary, MomentProp, MomentReward, StrikeArea, StrikeClearance, StrikeInterval, WeightedMoment } from './moment-types.ts';
 
 function chance(source: Fields, key: string, where: string): number {
@@ -66,6 +66,8 @@ function moment(value: unknown, where: string): MomentDef {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
     tint: text(source, 'tint', where),
+    ground: text(source, 'ground', where),
+    light: colour(source, 'light', where),
     bright: flag(source, 'bright', where),
     radius,
     lifetime: positive(source, 'lifetime', where),
@@ -123,5 +125,5 @@ export function momentField(value: unknown, where: string): MomentField | null {
   if (areas.length === 0) throw new ContentError(`${where}.areas`, 'a field needs at least one area');
   const table: WeightedMoment[] = each(source['table'], `${where}.table`, weighted);
   if (table.length === 0) throw new ContentError(`${where}.table`, 'a field needs at least one moment');
-  return { combat: flag(source, 'combat', where), areas, clearance: clearance(source['clearance'], `${where}.clearance`), interval: interval(source['interval'], `${where}.interval`), start, max, table, sure: conditions(source, 'sure', where) };
+  return { combat: flag(source, 'combat', where), areas, clearance: clearance(source['clearance'], `${where}.clearance`), interval: interval(source['interval'], `${where}.interval`), start, max, table, sure: conditions(source, 'sure', where), first: source['first'] === undefined ? [] : each(source['first'], `${where}.first`, weighted), grace: source['grace'] === undefined ? 0 : nonNegative(source, 'grace', where), avoid: source['avoid'] === undefined ? [] : each(source['avoid'], `${where}.avoid`, area) };
 }

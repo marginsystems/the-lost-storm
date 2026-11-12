@@ -13,7 +13,7 @@ const content: Content = loadContent();
 const act: ActDef = must(actOf(content, 'hall_of_time'), 'act');
 
 function exitTo(to: string, requires: ZoneExit['requires'], hidden: boolean): ZoneExit {
-  return { id: `to_${to}`, x: 4, z: 4, radius: 1.6, to, toExit: 'back', arrival: { x: 8, z: 8 }, requires, lockedHint: 'Barred.', hiddenWhenLocked: hidden };
+  return { id: `to_${to}`, x: 4, z: 4, radius: 1.6, to, toExit: 'back', arrival: { x: 8, z: 8 }, requires, lockedHint: 'Barred.', hiddenWhenLocked: hidden, look: 'ring' };
 }
 
 const errand: QuestDef = { id: 'errand', name: 'An Errand', requires: [], when: [], objectives: [{ id: 'go', type: 'reach', zone: 'hub', x: 8, z: 8, radius: 2, text: 'Go', when: [], sets: {} }] };

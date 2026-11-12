@@ -74,6 +74,21 @@ export function zoomAt(view: AtlasView, frame: AtlasFrame, cursor: ScreenPoint, 
   return clampView({ scale, x: held.x - (cursor.x - frame.width / 2) / scale, y: held.y - (cursor.y - frame.height / 2) / scale }, frame);
 }
 
+export interface Pinch {
+  readonly a: ScreenPoint;
+  readonly b: ScreenPoint;
+}
+
+export function pinchTo(view: AtlasView, frame: AtlasFrame, from: Pinch, to: Pinch): AtlasView {
+  const before: number = Math.hypot(from.a.x - from.b.x, from.a.y - from.b.y);
+  const after: number = Math.hypot(to.a.x - to.b.x, to.a.y - to.b.y);
+  const ratio: number = before > 0 && after > 0 ? after / before : 1;
+  const scale: number = between(view.scale * ratio, minScale(frame), maxScale(frame));
+  const held: ScreenPoint = toMap(view, frame, { x: (from.a.x + from.b.x) / 2, y: (from.a.y + from.b.y) / 2 });
+  const centre: ScreenPoint = { x: (to.a.x + to.b.x) / 2, y: (to.a.y + to.b.y) / 2 };
+  return clampView({ scale, x: held.x - (centre.x - frame.width / 2) / scale, y: held.y - (centre.y - frame.height / 2) / scale }, frame);
+}
+
 export function panBy(view: AtlasView, frame: AtlasFrame, dx: number, dy: number): AtlasView {
   return clampView({ scale: view.scale, x: view.x - dx / view.scale, y: view.y - dy / view.scale }, frame);
 }

@@ -1,16 +1,20 @@
-.hud-panel.tree-panel,
-.tree-tip {
-  --socket: 34px;
-  --keystone: 42px;
+.hud-panel.tree-panel {
+  --socket: 30px;
+  --notable: 38px;
+  --keystone: 46px;
   --tree-lit: #8fd8ff;
   --tree-well: #090c12;
 }
 
 .hud-panel.tree-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(940px, calc(100vw - 32px));
+  height: calc(100% - 58px - var(--hud-cluster-h, 168px));
   padding: 0;
   overflow: hidden;
   border: 0;
-  border-radius: 2px;
+  border-radius: 4px;
   background:
     radial-gradient(ellipse at 50% 40%, rgba(46, 70, 96, 0.22), rgba(8, 10, 15, 0) 70%),
     rgba(8, 10, 15, 0.9);
@@ -19,10 +23,10 @@
 
 .tree-head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 6px 10px 5px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 7px 10px 6px;
   background: rgba(0, 0, 0, 0.32);
 }
 
@@ -56,11 +60,10 @@
 
 .tree-viewport {
   position: relative;
+  flex: 1 1 auto;
+  min-height: 160px;
   overflow: hidden;
   touch-action: none;
-}
-
-.tree-viewport.pannable {
   cursor: grab;
 }
 
@@ -72,6 +75,7 @@
   position: absolute;
   left: 0;
   top: 0;
+  transform-origin: 0 0;
 }
 
 .tree-links {
@@ -85,7 +89,7 @@
 }
 
 .tree-track {
-  stroke: rgba(150, 170, 195, 0.13);
+  stroke: color-mix(in srgb, var(--tint) 22%, transparent);
   stroke-width: 3;
 }
 
@@ -102,12 +106,13 @@
 }
 
 .tree-flow.open {
-  stroke: var(--ember);
+  stroke: var(--tint);
   stroke-dashoffset: 0.45;
   opacity: 0.5;
 }
 
 .tree-flow.lit {
+  stroke: color-mix(in srgb, var(--tint) 60%, #ffffff);
   stroke-dashoffset: 0;
   opacity: 0.95;
 }
@@ -123,10 +128,17 @@
   background: none;
   outline: none;
   cursor: default;
-  color: rgba(239, 230, 214, 0.2);
+  color: color-mix(in srgb, var(--tint) 34%, transparent);
   transition:
     transform var(--spring-bouncy-ms) var(--spring-bouncy),
-    color var(--spring-smooth-ms) var(--spring-smooth);
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-socket.notable {
+  width: var(--notable);
+  height: var(--notable);
+  margin: calc(var(--notable) / -2) 0 0 calc(var(--notable) / -2);
 }
 
 .tree-socket.keystone {
@@ -172,7 +184,7 @@
   inset: 2px;
   opacity: 0;
   transform: scale(0.4);
-  background: radial-gradient(circle at 50% 32%, rgba(170, 228, 255, 0.62), rgba(52, 112, 158, 0.55) 55%, rgba(14, 30, 46, 0.9));
+  background: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--tint) 70%, #ffffff), color-mix(in srgb, var(--tint) 55%, #0e1e2e) 55%, rgba(14, 30, 46, 0.9));
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-bouncy-ms) var(--spring-bouncy);
@@ -211,6 +223,7 @@
 }
 
 .tree-socket.available .tree-socket-well {
+  animation: chart-breathe var(--drift-ms) var(--drift-ease) infinite;
   box-shadow:
     inset 0 0 0 1px rgba(232, 184, 102, 0.5),
     inset 0 3px 6px rgba(0, 0, 0, 0.85),
@@ -227,9 +240,203 @@
 
 .tree-socket.allocated .tree-socket-well {
   box-shadow:
-    inset 0 0 0 1px rgba(143, 216, 255, 0.55),
+    inset 0 0 0 1px color-mix(in srgb, var(--tint) 55%, transparent),
     inset 0 3px 6px rgba(0, 0, 0, 0.85),
-    0 0 11px 0 rgba(143, 216, 255, 0.3);
+    0 0 11px 0 color-mix(in srgb, var(--tint) 30%, transparent);
+}
+
+.tree-socket.notable .tree-glyph {
+  width: 20px;
+  height: 20px;
+}
+
+.tree-socket.variant .tree-socket-rim {
+  display: block;
+  inset: -4px;
+  border-radius: 50%;
+  background: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 28%, transparent);
+  transform: none;
+}
+
+.tree-socket.selected {
+  transform: scale(1.12);
+}
+
+.tree-viewport.searching .tree-socket:not(.match) {
+  opacity: 0.22;
+}
+
+.tree-viewport.searching .tree-socket.match {
+  transform: scale(1.18);
+}
+
+@keyframes chart-breathe {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.35);
+  }
+}
+
+.chart-path-name {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tint);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.chart-search {
+  flex: 1 1 140px;
+  min-width: 110px;
+  max-width: 240px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 3px;
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  transition: background var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.chart-search:focus {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chart-zoom,
+.chart-restart,
+.chart-action {
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition:
+    background var(--spring-smooth-ms) var(--spring-smooth),
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.chart-zoom:hover,
+.chart-restart:hover,
+.chart-action:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.chart-zoom:active,
+.chart-restart:active,
+.chart-action:active {
+  transform: scale(0.94);
+}
+
+.chart-restart {
+  margin-left: auto;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chart-restart.shown {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.chart-restart.confirm {
+  color: var(--ember);
+  background: rgba(232, 184, 102, 0.14);
+}
+
+.chart-restart.deny,
+.chart-action.deny {
+  animation: tree-deny var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chart-card {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  width: min(260px, calc(100% - 20px));
+  padding: 8px 10px 9px;
+  border-radius: 4px;
+  background: rgba(7, 9, 14, 0.94);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 3px 0 0 color-mix(in srgb, var(--tint, #8fd8ff) 45%, transparent);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    box-shadow var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.chart-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.chart-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11.5px;
+  line-height: 1.32;
+  animation: hud-tick var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chart-card-path {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tint, var(--text-dim));
+}
+
+.chart-action {
+  display: block;
+  max-height: 0;
+  margin-top: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chart-action.shown {
+  max-height: 30px;
+  margin-top: 7px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  opacity: 1;
+  pointer-events: auto;
+  transition:
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
+    margin-top var(--spring-smooth-ms) var(--spring-smooth),
+    padding var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    background var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.chart-action.short {
+  color: #d98572;
+}
+
+.chart-card.deny .tree-tip-status {
+  animation: tree-deny var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .tree-socket.allocated .tree-socket-fill {
@@ -267,44 +474,6 @@
   100% {
     transform: translateX(0);
   }
-}
-
-.tree-tip {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 50;
-  width: max-content;
-  max-width: 208px;
-  padding: 6px 9px 7px;
-  border-radius: 2px;
-  pointer-events: none;
-  background: rgba(7, 9, 14, 0.97);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  opacity: 0;
-  transform: translateX(-6px);
-  transition:
-    opacity var(--spring-snappy-ms) var(--spring-snappy),
-    transform var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-.tree-tip.visible {
-  opacity: 1;
-  transform: translateX(0);
-  transition:
-    opacity var(--spring-snappy-ms) var(--spring-snappy),
-    transform var(--spring-smooth-ms) var(--spring-smooth),
-    left var(--spring-snappy-ms) var(--spring-snappy),
-    top var(--spring-snappy-ms) var(--spring-snappy);
-}
-
-.tree-tip-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 11.5px;
-  line-height: 1.32;
-  animation: hud-tick var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .tree-tip-name {
@@ -352,6 +521,4 @@
   color: #d98572;
 }
 
-.tree-tip.deny .tree-tip-status {
-  animation: tree-deny var(--spring-snappy-ms) var(--spring-snappy);
-}
+

@@ -11,6 +11,7 @@ const STASH = {
 
 export function createStashPanel(parent: HTMLElement, context: HudContext): PanelView {
   const element: HTMLDivElement = el('div', 'hud-panel right beside trade-panel', parent);
+  element.dataset['tab'] = 'Stash';
   element.addEventListener('contextmenu', (event: MouseEvent): void => {
     event.preventDefault();
   });

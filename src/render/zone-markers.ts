@@ -1,7 +1,7 @@
 import type { Scene } from 'three';
 import { Color, Group, Mesh, PointLight, RingGeometry } from 'three';
 import type { MeshBasicMaterial } from 'three';
-import type { ZoneCheckpoint, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
+import type { ExitLook, ZoneCheckpoint, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { World } from '../../sim/world/types.ts';
 import { additive, glow } from './effect-shapes.ts';
@@ -27,7 +27,13 @@ export const MARKERS = {
   idle: 0.3,
   ease: 5,
   segments: 48,
+  mistLight: 4,
 } as const;
+
+interface MarkerShape {
+  readonly flats: boolean;
+  readonly light: number;
+}
 
 interface Marker {
   readonly ring: MeshBasicMaterial;
@@ -44,12 +50,22 @@ export interface ZoneMarkers {
   dispose(): void;
 }
 
+const EXIT_SHAPES: Readonly<Record<ExitLook, MarkerShape>> = {
+  ring: { flats: true, light: MARKERS.exitLight },
+  mist: { flats: false, light: MARKERS.mistLight },
+};
+
+export function exitShape(look: ExitLook): MarkerShape {
+  return EXIT_SHAPES[look];
+}
+
 export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
   const group: Group = new Group();
   const markers: Marker[] = [];
   const meshes: Mesh[] = [];
 
-  const build = (x: number, z: number, radius: number, hex: number, lightPower: number, lit: (world: World) => number): void => {
+  const build = (x: number, z: number, radius: number, hex: number, shape: MarkerShape, lit: (world: World) => number): void => {
+    const lightPower: number = shape.light;
     const color: Color = new Color(hex);
     const ring: Mesh<RingGeometry, MeshBasicMaterial> = new Mesh(new RingGeometry(radius * MARKERS.ringInner, radius, MARKERS.segments), additive(glow(color, 1.6), MARKERS.ringOpacity));
     const core: Mesh<RingGeometry, MeshBasicMaterial> = new Mesh(new RingGeometry(0, radius * MARKERS.coreOuter, MARKERS.segments), additive(color, MARKERS.coreOpacity));
@@ -57,6 +73,7 @@ export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
       flat.rotation.x = -Math.PI / 2;
       flat.position.set(x, zone.floorHeight + MARKERS.lift, z);
       flat.renderOrder = 4;
+      flat.visible = shape.flats;
       group.add(flat);
       meshes.push(flat);
     }
@@ -68,9 +85,9 @@ export function createZoneMarkers(scene: Scene, zone: ZoneDef): ZoneMarkers {
 
   const exitLit = (exit: ZoneExit): ((world: World) => number) => (world: World): number => (allHold(world, exit.requires) ? 1 : exit.hiddenWhenLocked ? 0 : MARKERS.locked);
   const checkpointLit = (checkpoint: ZoneCheckpoint): ((world: World) => number) => (world: World): number => (world.respawn.type === 'checkpoint' && world.respawn.checkpoint === checkpoint.id ? 1 : MARKERS.idle);
-  for (const exit of zone.kind === 'void' ? [] : zone.exits) build(exit.x, exit.z, exit.radius, MARKERS.exitColor, MARKERS.exitLight, exitLit(exit));
-  for (const checkpoint of zone.checkpoints) build(checkpoint.x, checkpoint.z, checkpoint.radius, MARKERS.checkpointColor, MARKERS.checkpointLight, checkpointLit(checkpoint));
-  if (zone.waypoint !== null) build(zone.waypoint.x, zone.waypoint.z, zone.waypoint.radius, MARKERS.waypointColor, MARKERS.waypointLight, (world: World): number => (world.waypoints.includes(zone.id) ? 1 : MARKERS.idle));
+  for (const exit of zone.kind === 'void' ? [] : zone.exits) build(exit.x, exit.z, exit.radius, MARKERS.exitColor, exitShape(exit.look), exitLit(exit));
+  for (const checkpoint of zone.checkpoints) build(checkpoint.x, checkpoint.z, checkpoint.radius, MARKERS.checkpointColor, { flats: true, light: MARKERS.checkpointLight }, checkpointLit(checkpoint));
+  if (zone.waypoint !== null) build(zone.waypoint.x, zone.waypoint.z, zone.waypoint.radius, MARKERS.waypointColor, { flats: true, light: MARKERS.waypointLight }, (world: World): number => (world.waypoints.includes(zone.id) ? 1 : MARKERS.idle));
   scene.add(group);
 
   return {

@@ -34,6 +34,9 @@ export interface InputHooks {
 export interface Input {
   collect(dt: number): Command[];
   tap(clientX: number, clientY: number): void;
+  holdAt(clientX: number, clientY: number): void;
+  moveHold(clientX: number, clientY: number): void;
+  releaseHold(): void;
   readonly hoveredId: number | null;
   readonly look: Vec2 | null;
 }
@@ -211,6 +214,19 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
       shift = false;
       pressed.push(INPUT.leftBinding);
       lifted.push(INPUT.leftBinding);
+    },
+    holdAt(clientX: number, clientY: number): void {
+      trackPoint(clientX, clientY);
+      pointerInside = true;
+      shift = false;
+      press(INPUT.leftBinding);
+    },
+    moveHold(clientX: number, clientY: number): void {
+      trackPoint(clientX, clientY);
+    },
+    releaseHold(): void {
+      lift(INPUT.leftBinding);
+      pointerInside = false;
     },
     collect(dt: number): Command[] {
       const commands: Command[] = extra.splice(0, extra.length);

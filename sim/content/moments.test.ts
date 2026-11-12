@@ -11,6 +11,8 @@ const MOMENT: MomentDef = {
   id: 'test_fire',
   name: 'A campfire',
   tint: '#ff9a3c',
+  ground: 'dirt',
+  light: '#ffb070',
   bright: false,
   radius: 6,
   lifetime: 40,
@@ -45,6 +47,10 @@ void test('a moment naming an unknown prop, monster, clip or rarity is reported'
   assert.equal(momentProblems(withMoment(broken)).length, 4);
 });
 
+void test('a moment standing on an unknown surface is reported', (): void => {
+  assert.deepEqual(momentProblems(withMoment({ ...MOMENT, ground: 'lava' })), ['moment test_fire stands on unknown surface lava']);
+});
+
 void test('an echo look must fit its rig, and an echo that may turn needs its fighting clip on that rig', (): void => {
   const dressed: MomentDef = { ...MOMENT, echoes: [{ monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0.5 }, turns: true, look: { rig: 'human_man', scale: 1, gear: ['raider_maul'], wear: ['linen_shirt', 'wool_trousers'] } }] };
   assert.deepEqual(momentProblems(withMoment(dressed)), []);
@@ -55,6 +61,6 @@ void test('an echo look must fit its rig, and an echo that may turn needs its fi
 void test('a zone field naming an unknown moment or an area outside the zone is reported', (): void => {
   const base: ZoneDef | undefined = shipped.zones.get(shipped.world.start);
   assert.ok(base !== undefined);
-  const zone: ZoneDef = { ...base, id: 'test_field', moments: { combat: true, areas: [{ x: -50, z: 4, radius: 4 }], clearance: { hero: 1, exits: 1, between: 1 }, interval: { min: 1, max: 2 }, start: 0, max: 1, table: [{ moment: 'ghost', weight: 1 }], sure: [] } };
+  const zone: ZoneDef = { ...base, id: 'test_field', moments: { combat: true, areas: [{ x: -50, z: 4, radius: 4 }], clearance: { hero: 1, exits: 1, between: 1 }, interval: { min: 1, max: 2 }, start: 0, max: 1, table: [{ moment: 'ghost', weight: 1 }], sure: [], first: [], grace: 0, avoid: [] } };
   assert.equal(momentProblems(withMoment(MOMENT, zone)).length, 2);
 });

@@ -22,6 +22,7 @@ import type {
   ZoneAmbience,
   ZoneCheckpoint,
   ZoneDef,
+  ExitLook,
   ZoneExit,
   ZoneNpc,
   ZoneOutside,
@@ -71,6 +72,18 @@ function surgeRules(value: unknown, where: string): SurgeRules | null {
 }
 
 
+function exitLook(value: unknown, where: string): ExitLook {
+  switch (value) {
+    case undefined:
+    case 'ring':
+      return 'ring';
+    case 'mist':
+      return 'mist';
+    default:
+      throw new ContentError(where, 'expected "ring" or "mist"');
+  }
+}
+
 function zoneExit(value: unknown, where: string): ZoneExit {
   const source: Fields = fields(value, where);
   const requires: Condition[] = conditions(source, 'requires', where);
@@ -85,6 +98,7 @@ function zoneExit(value: unknown, where: string): ZoneExit {
     to: text(source, 'to', where),
     toExit: text(source, 'toExit', where),
     arrival: point(source['arrival'], `${where}.arrival`),
+    look: exitLook(source['look'], `${where}.look`),
   };
 }
 
@@ -136,7 +150,7 @@ function zoneWake(value: unknown, where: string): ZoneWake | null {
 function voidShore(value: unknown, where: string): VoidShore | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
-  return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where), ambience: zoneAmbience(source['ambience'], `${where}.ambience`) };
+  return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where), surface: source['surface'] === undefined ? null : text(source, 'surface', where), ambience: zoneAmbience(source['ambience'], `${where}.ambience`) };
 }
 
 function voidFinds(value: unknown, where: string): VoidFinds {

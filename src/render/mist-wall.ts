@@ -13,13 +13,18 @@ export const MIST_WALL = {
   topErode: 0.55,
   flashGain: 0.8,
   renderOrder: 2,
+  cameraNear: 8,
+  cameraClear: 22,
 } as const;
 
 const VERTEX: string = `
 varying vec2 vUv;
+varying float vEye;
 void main() {
   vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  vec4 view = modelViewMatrix * vec4(position, 1.0);
+  vEye = -view.z;
+  gl_Position = projectionMatrix * view;
 }
 `;
 
@@ -34,6 +39,9 @@ uniform float uFeather;
 uniform float uErode;
 uniform float uGain;
 uniform float uAspect;
+uniform float uNear;
+uniform float uClear;
+varying float vEye;
 varying vec2 vUv;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
@@ -64,7 +72,8 @@ void main() {
   float ground = smoothstep(0.0, uFeather, vUv.y);
   float top = 1.0 - smoothstep(0.35, 1.0, vUv.y);
   float ends = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.88, vUv.x);
-  float alpha = uOpacity * body * ground * top * ends;
+  float near = smoothstep(uNear, uClear, vEye);
+  float alpha = uOpacity * body * ground * top * ends * near;
   vec3 colour = mix(uColor, uLit, clamp(uFlash * uGain + billow * 0.15, 0.0, 1.0));
   gl_FragColor = vec4(colour, alpha * (1.0 + uFlash * 0.6));
 }
@@ -102,6 +111,8 @@ export function buildMistWall(wall: ZoneMistWall): MistWallView {
         uErode: { value: MIST_WALL.topErode },
         uGain: { value: MIST_WALL.flashGain },
         uAspect: { value: wall.height === 0 ? 1 : frame.length / wall.height },
+        uNear: { value: MIST_WALL.cameraNear },
+        uClear: { value: MIST_WALL.cameraClear },
       },
       vertexShader: VERTEX,
       fragmentShader: FRAGMENT,

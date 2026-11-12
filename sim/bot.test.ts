@@ -8,7 +8,6 @@ import type { Bot, BotReport } from './bot.ts';
 import { loadContent } from './content/content.ts';
 import type { Condition, Content, QuestDef, SkillDef } from './content/types.ts';
 import { offenceOf } from './world/combat.ts';
-import { questState } from './world/conditions.ts';
 import { createWorld } from './world/create.ts';
 import { placeHazard } from './world/hazards.ts';
 import { startSkill } from './world/skills.ts';
@@ -71,10 +70,11 @@ void test('the bot routes through a chain of exits and back', (): void => {
 
 void test('the bot will not route through an exit that is still locked', (): void => {
   const world: World = createWorld(content, { seed: 13, save: null });
-  assert.notEqual(questState(world, 'out_of_the_mist'), 'locked');
-  assert.equal(botRoute(world, 'between'), null);
-  assert.equal(botTravelTo(createBot(world), 'between'), false);
-  assert.equal(world.zone.id, 'hall_of_time');
+  assert.equal(botTravelTo(createBot(world), 'between'), true);
+  assert.equal(world.zone.id, 'between');
+  assert.equal(botRoute(world, 'hall_of_time'), null);
+  assert.equal(botTravelTo(createBot(world), 'hall_of_time'), false);
+  assert.equal(world.zone.id, 'between');
 });
 
 void test('the bot reads a live mark on the ground and the landing spot of a leap as danger', (): void => {

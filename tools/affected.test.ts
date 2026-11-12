@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { AFFECTED, buildImportGraph, countOf, defaultJobs, dependents, filesToRun, globToRegExp, matchesAny, parseArgs, readRepository, resolveSpecifier, selectTests, shard, specifiersOf, testCommand } from './affected.ts';
+import { AFFECTED, buildImportGraph, targetsOf, countOf, defaultJobs, dependents, filesToRun, globToRegExp, matchesAny, parseArgs, readRepository, resolveSpecifier, selectTests, shard, specifiersOf, testCommand } from './affected.ts';
 import type { AffectedConfig, AffectedRule, ImportGraph, Selection, SourceText } from './affected.ts';
 import { readConfig, readRule } from './affected.ts';
 
@@ -84,6 +84,12 @@ void test('a specifier resolves to the file it names, with or without its extens
   assert.equal(resolveSpecifier('src/hud/bar.ts', './bar.css?inline', files), 'src/hud/bar.css');
   assert.equal(resolveSpecifier('sim/world/step.ts', '../nav', files), 'sim/nav/index.ts');
   assert.equal(resolveSpecifier('src/gone.test.ts', './gone.ts', files), 'src/gone.ts');
+});
+
+void test('a test reaches the file it is named after and any repository file it names by path', (): void => {
+  const files: ReadonlySet<string> = new Set<string>(['src/input.ts', 'src/input.test.ts', 'data/zones/shallows.json', '.github/workflows/ci.yml']);
+  const reader: SourceText = { path: 'src/input.test.ts', text: "readFileSync('src/input.ts');\nreadFileSync('data/zones/shallows.json');\nreadFileSync('.github/workflows/ci.yml');\nconst other = 'src/missing.ts';\n" };
+  assert.deepEqual(targetsOf(reader, files).toSorted(), ['.github/workflows/ci.yml', 'data/zones/shallows.json', 'src/input.ts', 'src/input.ts']);
 });
 
 void test('dependents follow imports transitively and stop on cycles', (): void => {
@@ -175,6 +181,11 @@ void test('the rules file reads into typed rules and refuses an unknown kind', (
 });
 
 const REPO = readRepository('.', AFFECTED);
+
+void test('a changed model or clip under public runs the content check that reads it', (): void => {
+  const tests: readonly string[] = testsOf(selectTests(['public/models/characters/hero.glb'], REPO.graph, REPO.testFiles, AFFECTED), 'public model');
+  assert.deepEqual(tests, ['sim/content/content.test.ts', 'test/rules.test.ts']);
+});
 
 void test('every test that reads files from disk is named by a rule, so a change to what it reads runs it', (): void => {
   const named: readonly string[] = [...AFFECTED.alwaysRun, ...AFFECTED.rules.flatMap((rule: AffectedRule): readonly string[] => (rule.kind === 'importers' ? rule.alsoRun : rule.kind === 'only' ? rule.run : []))];

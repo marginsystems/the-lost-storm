@@ -61,6 +61,7 @@ import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
 import pickerCss from './skill-picker.css?inline';
 import { createTreePanel } from './tree-panel.ts';
+import type { ChartPanel } from './tree-panel.ts';
 import { applyCover, closedBy, coverOf, HUD_PANELS, sheetOverflow } from './panel-cover.ts';
 import { openWith, promptText, use } from './prompts.ts';
 import tradeCss from './trade.css?inline';
@@ -116,10 +117,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.insertBefore(map.element, bottom);
   const inventoryPanel: PanelView = createInventoryPanel(root, context);
   const characterPanel: CharacterPanel = createCharacterPanel(root, context, inventoryPanel.element);
+  const chartPanel: ChartPanel = createTreePanel(root, context);
   const panels: Record<HudPanel, PanelView> = {
     inventory: inventoryPanel,
     character: characterPanel,
-    tree: createTreePanel(root, context),
+    tree: chartPanel,
     map,
   };
   let mapWanted: boolean = false;
@@ -171,7 +173,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   buttons.inventory = createMenuButton(row, 'Inventory', keyOf('inventory'), (): void => toggle('inventory'), track);
   buttons.character = createMenuButton(row, 'Character', keyOf('character'), (): void => toggle('character'), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
-  buttons.tree = createMenuButton(row, 'Skills', keyOf('tree'), (): void => toggle('tree'), track);
+  buttons.tree = createMenuButton(row, 'Chart', keyOf('tree'), (): void => toggle('tree'), track);
   buttons.map = createMenuButton(row, 'Map', keyOf('map'), (): void => toggle('map'), track);
   createVolumeButton(row, api.audio, track, (): void => api.openSettings('sound'));
   const showKeys = (): void => {
@@ -215,6 +217,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       bossBar.update(world);
       buttons.tree?.setBadge(world.player.skillPoints);
       if (open.map) map.update(dt);
+      if (open.tree) chartPanel.update(dt);
       if (open.character) characterPanel.update(dt);
       trade.update();
       if (mapWanted && onWaypoint(world)) {

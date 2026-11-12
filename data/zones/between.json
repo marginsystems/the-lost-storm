@@ -67,7 +67,7 @@
   "packs": [],
   "surge": null,
   "exits": [
-    {"id": "into_the_hall", "x": 8, "z": 8, "radius": 2.6, "to": "hall_of_time", "toExit": "mist", "arrival": {"x": 8, "z": 30}, "requires": [{"type": "flag", "flag": "opening", "is": "read"}], "lockedHint": "Only mist.", "hiddenWhenLocked": true}
+    {"id": "into_the_hall", "x": 8, "z": 8, "radius": 6, "to": "hall_of_time", "toExit": "mist", "arrival": {"x": 8, "z": 30}, "requires": [{"type": "flag", "flag": "opening", "is": "read"}, {"type": "flag", "flag": "first_blade", "is": "found"}], "lockedHint": "Only mist.", "hiddenWhenLocked": true}
   ],
   "checkpoints": [],
   "waypoint": null,
@@ -83,27 +83,30 @@
     "sets": {"opening": "begun"},
     "finds": {"reach": 1.4, "aim": 2.8},
     "emptyHanded": true,
-    "shore": {"when": [{"type": "flag", "flag": "opening", "is": "read"}], "ahead": 22, "thin": 14, "ambience": {"background": "#06080d", "abyss": "#040508", "fogNear": 20, "fogFar": 70, "skyColor": "#4a5c7c", "groundColor": "#100d0b", "skyIntensity": 1.1, "keyColor": "#9fb3d6", "keyIntensity": 0.7}},
+    "shore": {"when": [{"type": "flag", "flag": "opening", "is": "read"}], "ahead": 22, "thin": 14, "surface": "black_rock", "ambience": {"background": "#06080d", "abyss": "#040508", "fogNear": 20, "fogFar": 70, "skyColor": "#6a7e9e", "groundColor": "#2a2420", "skyIntensity": 1.7, "keyColor": "#b4c6e4", "keyIntensity": 1.9}},
     "encounters": [
       {
         "id": "journal",
         "when": [{"type": "flag", "flag": "first_choice", "not": true}],
         "after": 170,
         "ahead": 16,
+        "latest": 50,
         "find": {"type": "item", "item": "worn_journal", "sets": {"first_choice": "took_journal"}}
       },
       {
         "id": "blade",
-        "when": [{"type": "flag", "flag": "first_blade", "not": true}, {"type": "shore", "depth": 0.3}],
-        "after": 0,
+        "when": [{"type": "flag", "flag": "first_blade", "not": true}, {"type": "flag", "flag": "opening", "is": "read"}],
+        "after": 34,
         "ahead": 9,
+        "latest": 30,
         "find": {"type": "item", "item": "rusted_blade", "sets": {"first_blade": "found"}, "equip": true}
       },
       {
         "id": "light",
-        "when": [{"type": "flag", "flag": "opening", "is": "read"}],
+        "when": [{"type": "flag", "flag": "opening", "is": "read"}, {"type": "flag", "flag": "first_blade", "is": "found"}],
         "after": 0,
-        "ahead": 60,
+        "ahead": 40,
+        "latest": 60,
         "find": {"type": "exit", "exit": "into_the_hall"}
       }
     ]

@@ -42,6 +42,7 @@ function echoProblems(content: Content, at: string, entry: MomentEcho): string[]
 function defProblems(content: Content, def: MomentDef): string[] {
   const at: string = `moment ${def.id}`;
   const problems: string[] = [];
+  if (!content.surfaces.has(def.ground)) problems.push(`${at} stands on unknown surface ${def.ground}`);
   for (const placed of def.props) if (!content.props.has(placed.prop)) problems.push(`${at} places unknown prop ${placed.prop}`);
   def.echoes.forEach((entry: MomentEcho, index: number): void => {
     problems.push(...echoProblems(content, `${at} echo ${index}`, entry));
@@ -54,7 +55,7 @@ function defProblems(content: Content, def: MomentDef): string[] {
 function fieldProblems(content: Content, zone: ZoneDef, field: MomentField): string[] {
   const at: string = `zone ${zone.id} moments`;
   const problems: string[] = [];
-  for (const entry of field.table) {
+  for (const entry of [...field.table, ...field.first]) {
     const def: MomentDef | undefined = content.moments.defs.get(entry.moment);
     if (def === undefined) problems.push(`${at} names unknown moment ${entry.moment}`);
   }

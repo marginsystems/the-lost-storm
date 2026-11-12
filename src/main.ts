@@ -6,7 +6,8 @@ import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { warnInConsole } from './backend/console-log.ts';
 import { element } from './dom-element.ts';
 import { startTitleAccount } from './title-signin.ts';
-import { markInput, markPlaying, wireFold, wireTitleKeys } from './title-screen.ts';
+import { fadePageOut } from './landing/leave.ts';
+import { markInput, markPlaying, wireFold, wireHudAway, wireTitleKeys } from './title-screen.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
@@ -100,8 +101,8 @@ import { createStage } from './render/stage.ts';
 import { WARM_UP, warmUp, warmUpWithin } from './render/warm-up.ts';
 import type { Weather } from './render/weather.ts';
 import { createWeather } from './render/weather.ts';
-import type { Rain } from './render/rain.ts';
-import { createRain } from './render/rain.ts';
+import type { Rainfall } from './render/rainfall.ts';
+import { createRainfall } from './render/rainfall.ts';
 import type { ZoneMarkers } from './render/zone-markers.ts';
 import { createZoneMarkers } from './render/zone-markers.ts';
 import { dressed } from './render/surfaces.ts';
@@ -251,15 +252,15 @@ async function start(): Promise<void> {
   };
   const particles: ParticleSystem = createParticles(stage.scene);
   const weather: Weather = createWeather();
-  const rain: Rain = createRain(stage.scene, mobile.quality.tier.rainDrops);
+  const rain: Rainfall = createRainfall(stage, mobile.quality, gameSettings);
   const applyWeather = (zone: World['zone']): void => {
     weather.setLightning(zone.weather.lightning);
-    rain.setDensity(zone.weather.rain);
+    rain.setWeather(zone.weather);
   };
   applyWeather(world.zone);
   const effects: Effects = await momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.strike(power)), { scene: stage.scene, loader, content, library, dresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
-  const ward: Ward = createWard(stage.scene);
+  const ward: Ward = createWard(stage.scene, mobile.quality.tier.name === 'mobile');
   const actors: Actors = createActors(stage.scene, library, world);
   const figureGauge: FigureGauge = createFigureGauge();
   const itemImage = (item: ItemInstance): string | null => {
@@ -510,7 +511,7 @@ async function start(): Promise<void> {
     audio.update(dt);
     particles.update(simVisualDt);
     weather.update(simVisualDt);
-    rain.update(simVisualDt, world.player.pos.x, world.player.pos.z, weather.flash);
+    rain.update(simVisualDt, world.player.pos.x, world.player.pos.z, weather.flash, zoneView);
     zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.measure(actors.hero(), now / 1000), flash: weather.flash });
     if (zoneView.lightsVersion !== torchVersion) {
       torchVersion = zoneView.lightsVersion;
@@ -586,13 +587,14 @@ async function start(): Promise<void> {
     preloadNearZones();
   };
   wireTitleKeys(title, enter);
+  wireHudAway(document.body, element('hud', HTMLDivElement));
   wireEnter({ enter, begin, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), random: Math.random, begin }) });
   const startOver = async (): Promise<void> => {
     dirty = false;
     reset.disabled = true;
     enter.disabled = true;
     createHintStore(createBrowserStore()).clear();
-    await backend.reset();
+    await Promise.all([backend.reset(), fadePageOut()]);
     window.location.reload();
   };
   reset.addEventListener('click', (): void => {

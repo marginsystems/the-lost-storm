@@ -32,10 +32,18 @@ export function createDialogueBox(root: HTMLElement, context: HudContext): Dialo
   const hint: HTMLDivElement = el('div', 'dialogue-hint', foot);
   let open: boolean = false;
 
+  let touched: boolean = false;
   element.addEventListener('pointerdown', (event: PointerEvent): void => {
-    event.preventDefault();
     event.stopPropagation();
+    touched = event.pointerType === 'touch';
+    if (touched) return;
+    event.preventDefault();
     if (event.button === 0 && open) context.api.send({ type: 'advance' });
+  });
+  element.addEventListener('click', (): void => {
+    if (!touched) return;
+    touched = false;
+    if (open) context.api.send({ type: 'advance' });
   });
 
   return {

@@ -11,9 +11,12 @@ import type { TargetBar } from '../hud/target-bar.ts';
 import { createHealthBars } from './health-bars.ts';
 import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
+import { createLootTip } from './loot-tip.ts';
+import type { LootTip, TipCheck } from './loot-tip.ts';
 import { anchorInView } from './label-edge.ts';
 import type { ViewSize } from './label-edge.ts';
-import { clearOfHud, stackLabels } from './label-stack.ts';
+import { clearOfRects, stackLabels } from './label-stack.ts';
+import type { ScreenRect } from './label-stack.ts';
 import type { LabelBox } from './label-stack.ts';
 
 export const OVERLAYS = {
@@ -33,7 +36,8 @@ export const OVERLAYS = {
   npcLift: 0.5,
   npcLeave: 0.52,
   npcHudGap: 8,
-  hudSelector: '.hud-bottom',
+  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.hud-flask', '.hud-xp', '.tc-btn', '.tc-stick'],
+  hudReadSeconds: 0.25,
   waypointId: 'waypoint',
   waypointName: 'Waypoint',
 } as const;
@@ -50,7 +54,6 @@ interface LootLabel {
   readonly element: HTMLDivElement;
   readonly ground: GroundItem;
   leaving: number;
-  hovered: boolean;
   rank: number;
   width: number;
   height: number;
@@ -98,11 +101,25 @@ export interface Overlays {
   labelHover(): number | null;
 }
 
+function blockersIn(root: HTMLElement): ScreenRect[] {
+  const origin: DOMRect = root.getBoundingClientRect();
+  const rects: ScreenRect[] = [];
+  for (const selector of OVERLAYS.hudBlockers) {
+    for (const element of document.querySelectorAll(selector)) {
+      const box: DOMRect = element.getBoundingClientRect();
+      if (box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== 'hidden') rects.push({ left: box.left - origin.left, top: box.top - origin.top, right: box.right - origin.left, bottom: box.bottom - origin.top });
+    }
+  }
+  return rects;
+}
+
 function place(element: HTMLElement, point: Vector2): void {
   element.style.transform = `translate3d(${point.x.toFixed(1)}px, ${point.y.toFixed(1)}px, 0)`;
 }
 
 export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: OverlayHooks): Overlays {
+  let hudRects: ScreenRect[] = [];
+  let sinceHudRead: number = Infinity;
   const numbers: FloatingNumber[] = [];
   const labels: Map<number, LootLabel> = new Map<number, LootLabel>();
   let exits: ExitLabel[] = [];
@@ -117,8 +134,19 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   let people: NpcLabel[] = [];
   let peopleOf: readonly NpcState[] | null = null;
   let peopleZone: ZoneDef | null = null;
+  let seenZone: ZoneDef | null = null;
+  let tipZone: ZoneDef | null = null;
+  const pointer: Vector2 = new Vector2(-1, -1);
+  window.addEventListener('pointermove', (event: PointerEvent): void => {
+    pointer.set(event.clientX, event.clientY);
+  });
+  const tip: LootTip = createLootTip((): void => hooks.onLootLeave());
   let leaving: LeavingLabel[] = [];
   const point: Vector2 = new Vector2();
+  const keepClear = (element: HTMLElement): void => {
+    const tag: Element | null = element.firstElementChild;
+    if (tag instanceof HTMLElement) point.y = clearOfRects({ id: 0, x: point.x, y: point.y, width: tag.offsetWidth, height: tag.offsetHeight }, hudRects, OVERLAYS.npcHudGap);
+  };
   const labelLayer: HTMLDivElement = document.createElement('div');
   const numberLayer: HTMLDivElement = document.createElement('div');
   for (const layer of [labelLayer, numberLayer]) {
@@ -164,18 +192,19 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     const item: ItemInstance = ground.content.item;
     element.addEventListener('pointerenter', (event: PointerEvent): void => {
       const label: LootLabel | undefined = labels.get(ground.id);
-      if (label !== undefined) label.hovered = true;
-      hooks.onLootEnter(item, event.clientX, event.clientY);
+      pointer.set(event.clientX, event.clientY);
+      tipZone = seenZone;
+      tip.enter(ground.id, label === undefined || label.leaving >= 0, (): void => hooks.onLootEnter(item, event.clientX, event.clientY));
     });
-    element.addEventListener('pointermove', (event: PointerEvent): void => hooks.onLootMove(event.clientX, event.clientY));
+    element.addEventListener('pointermove', (event: PointerEvent): void => {
+      if (tip.owner() === ground.id) hooks.onLootMove(event.clientX, event.clientY);
+    });
     element.addEventListener('pointerleave', (): void => {
-      const label: LootLabel | undefined = labels.get(ground.id);
-      if (label !== undefined) label.hovered = false;
-      hooks.onLootLeave();
+      tip.leave(ground.id);
     });
     labelLayer.append(element);
     const rank: number = world.content.rarities.findIndex((rarity): boolean => rarity.id === item.rarity);
-    labels.set(ground.id, { element, ground, leaving: -1, hovered: false, rank, width: OVERLAYS.labelWidth, height: OVERLAYS.labelHeight, shown: true });
+    labels.set(ground.id, { element, ground, leaving: -1, rank, width: OVERLAYS.labelWidth, height: OVERLAYS.labelHeight, shown: true });
   };
 
   const showExits = (world: World): void => {
@@ -184,7 +213,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     aimed = null;
     exits = world.zone.exits.map((exit): ExitLabel => {
       const element: HTMLDivElement = document.createElement('div');
-      element.className = 'exit-label';
+      element.className = world.zone.kind === 'void' ? 'exit-label distant' : 'exit-label';
       const inner: HTMLSpanElement = document.createElement('span');
       inner.textContent = world.content.zones.get(exit.to)?.name ?? exit.to;
       element.append(inner);
@@ -348,8 +377,11 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       return labelHoverId;
     },
     update(dt: number, world: World, hoveredId: number | null): void {
-      const bar: Element | null = document.querySelector(OVERLAYS.hudSelector);
-      const hudTop: number | null = bar === null ? null : bar.getBoundingClientRect().top - root.getBoundingClientRect().top;
+      sinceHudRead += dt;
+      if (sinceHudRead >= OVERLAYS.hudReadSeconds) {
+        hudRects = blockersIn(root);
+        sinceHudRead = 0;
+      }
       if (exitsOf !== world.zone) showExits(world);
       for (const label of exits) {
         const open: boolean = label.open(world);
@@ -357,6 +389,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         label.element.classList.toggle('secret', !open && label.secret);
         camera.project(label.x, OVERLAYS.exitLift, label.z, point);
         label.element.classList.toggle('edge', !anchorInView(point.x, point.y, view));
+        keepClear(label.element);
         place(label.element, point);
       }
       if (peopleOf !== world.npcs) showPeople(world);
@@ -368,7 +401,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         }
         label.element.classList.toggle('aimed', label.npc.id === hoveredId);
         camera.project(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z, point);
-        point.y = clearOfHud(point.y, hudTop, OVERLAYS.npcHudGap);
+        keepClear(label.element);
         place(label.element, point);
       }
       for (const label of leaving) {
@@ -398,6 +431,17 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       healthBars.update(dt, world, (actorId: number): number => hooks.heightOf(actorId));
       targetBar.update(dt, world.monsters, hoveredId);
 
+      seenZone = world.zone;
+      tip.check((id: number): TipCheck => {
+        const label: LootLabel | undefined = labels.get(id);
+        const under: Element | null = document.elementFromPoint(pointer.x, pointer.y);
+        return {
+          present: label !== undefined && world.ground.includes(label.ground),
+          leaving: label === undefined || label.leaving >= 0,
+          sameZone: tipZone === world.zone,
+          underPointer: label !== undefined && under !== null && label.element.contains(under),
+        };
+      });
       for (const ground of world.ground) labelFor(world, ground);
       const boxes: LabelBox[] = [];
       for (const [id, label] of labels) {
@@ -411,7 +455,6 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         } else if (!world.ground.includes(label.ground)) {
           label.leaving = OVERLAYS.labelExit;
           label.element.classList.add('taken');
-          if (label.hovered) hooks.onLootLeave();
         }
         const near: boolean = Math.hypot(label.ground.pos.x - world.player.pos.x, label.ground.pos.z - world.player.pos.z) <= OVERLAYS.labelNear;
         const shown: boolean = showAll || near || label.rank >= OVERLAYS.labelShownRank;

@@ -17,6 +17,8 @@ export function zoneModels(content: Content, zone: ZoneDef): Set<string> {
 export function zoneSurfaces(content: Content, zone: ZoneDef): Set<string> {
   const ids: Set<string> = new Set<string>(Object.values(zone.floors));
   if (zone.outside !== null) ids.add(zone.outside.surface);
+  const shoreSurface: string | null = zone.void?.shore?.surface ?? null;
+  if (shoreSurface !== null) ids.add(shoreSurface);
   for (const propId of zoneProps(zone)) {
     const def: PropDef | undefined = content.props.get(propId);
     if (def !== undefined) for (const id of Object.values(def.surfaces)) ids.add(id);

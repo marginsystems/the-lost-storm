@@ -154,7 +154,8 @@ body.touch .tree-viewport {
   pointer-events: auto;
   transition:
     left var(--spring-smooth-ms) var(--spring-smooth),
-    top var(--spring-smooth-ms) var(--spring-smooth);
+    top var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .tc-menu-btn,
@@ -311,6 +312,20 @@ body.touch .tc-close svg {
   body.touch .hud-panel.open {
     transform: none;
   }
+
+  body.touch .hud-panel.tree-panel {
+    height: auto;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  body.touch .chart-card {
+    width: min(210px, calc(100% - 20px));
+  }
+
+  body.touch .chart-card-inner {
+    font-size: 10.5px;
+  }
 }
 
 body.touch .hud-row,
@@ -417,6 +432,7 @@ body.touch .flask-key {
 }
 
 body.touch .hud-dialogue {
+  touch-action: pan-y;
   left: var(--ph-dialogue-x);
   bottom: var(--ph-dialogue-bottom);
   width: var(--ph-dialogue-w);
@@ -464,4 +480,164 @@ body.touch:has(.fb.open) .hud-hint,
 body.touch:has(.fb.open) .tc-rotate {
   opacity: 0;
   pointer-events: none;
+}
+
+body.touch .hud > .hud-banners {
+  left: var(--ph-banner-x);
+  right: auto;
+  top: var(--ph-banner-y);
+  width: var(--ph-banner-w);
+}
+
+body.touch .hud .banner {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+body.touch .hud .banner .banner-title {
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-indent: 0;
+}
+
+body.touch .hud .banner .banner-sub {
+  margin-top: 0;
+  overflow: hidden;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+}
+
+.tc-stick.intro {
+  opacity: 0.9;
+}
+
+body[data-hud-gate='closed'] .tc-stick.intro {
+  opacity: 0.9;
+}
+
+.tc-stick-hint {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  width: max-content;
+  max-width: 200px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(10, 14, 20, 0.62);
+  color: var(--text);
+  font: 14px/1.3 var(--sans);
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.tc-stick.intro .tc-stick-hint {
+  opacity: 1;
+  transform: none;
+}
+
+.tc-stick.on .tc-stick-hint {
+  opacity: 0;
+}
+
+.tc-tabs {
+  position: absolute;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: calc(12px + env(safe-area-inset-left, 0px));
+  z-index: 40;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: auto;
+  transform: translateY(-8px);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    visibility 0s linear var(--spring-snappy-ms);
+}
+
+.tc-tabs.on {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    visibility 0s;
+}
+
+.tc-tab {
+  min-width: 72px;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dim);
+  font: 600 13px/36px var(--serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.tc-tab.active {
+  background: rgba(127, 212, 255, 0.12);
+  color: var(--text);
+}
+
+.tc-tab:active {
+  transform: scale(0.95);
+}
+
+body.touch .hud.tc-trade .hud-panel.open,
+body.touch .hud.tc-bag .hud-panel.open {
+  padding-top: calc(56px + env(safe-area-inset-top, 0px));
+}
+
+body.touch .hud.tc-trade .hud-panel.inventory-panel.open,
+body.touch .hud.tc-bag .hud-panel.trade-panel.open {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(16px);
+}
+
+body.touch .atlas {
+  z-index: 30;
+}
+
+body.touch:has(.atlas.open) .tc-stick,
+body.touch:has(.atlas.open) .tc-btn,
+body.touch:has(.atlas.open) .tc-menu,
+body.touch:has(.atlas.open) .hud-hint,
+body.touch:has(.atlas.open) .tc-rotate {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.touch .atlas-head {
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  left: calc(18px + env(safe-area-inset-left, 0px));
+}
+
+@media (max-width: 600px) {
+  body.touch .atlas-legend {
+    opacity: 0;
+  }
+
+  body.touch .atlas-head {
+    max-width: calc(100% - 72px);
+  }
 }

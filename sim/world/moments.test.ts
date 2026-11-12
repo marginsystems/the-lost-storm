@@ -6,7 +6,7 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { parseSaveText, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
-import { forceStrike, momentOfEcho, strikeGround } from './moments.ts';
+import { forceStrike, MOMENTS, momentOfEcho, strikeGround } from './moments.ts';
 import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -63,7 +63,7 @@ void test('a strike marks the ground before it lands, then leaves a dormant bubb
 
 void test('strikes keep their distance from the hero, the exits and each other', (): void => {
   const field: MomentField = { ...FIELD, max: 6, interval: { min: 0.5, max: 0.5 } };
-  const zone = { ...fieldZone(field), exits: [{ id: 'east', x: 100, z: 80, radius: 2, to: 'moment_field', toExit: 'east', arrival: { x: 100, z: 80 }, requires: [], lockedHint: '', hiddenWhenLocked: false }] };
+  const zone = { ...fieldZone(field), exits: [{ id: 'east', x: 100, z: 80, radius: 2, to: 'moment_field', toExit: 'east', arrival: { x: 100, z: 80 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' as const }] };
   const world: World = createWorld(withZone(fieldContent(field), zone), { seed: 3, save: null });
   enterZone(world, zone, { type: 'start' });
   for (let index: number = 0; index < 600; index += 1) {
@@ -75,6 +75,17 @@ void test('strikes keep their distance from the hero, the exits and each other',
     }
     for (const a of world.moments) for (const b of world.moments) if (a !== b) assert.ok(distance(a.pos, b.pos) >= a.def.radius + b.def.radius + field.clearance.between - 1e-9);
   }
+});
+
+void test('a bubble that forms around the hero wakes after a short beat without him stepping out', (): void => {
+  const world: World = fieldWorld(quietField());
+  const at = { x: 40, z: 40 };
+  standAt(world, at);
+  const moment: MomentState = must(forceStrike(world, at, QUIET.id), 'forced strike');
+  run(world, world.content.moments.telegraph + DT * 2);
+  assert.equal(moment.phase, 'dormant');
+  run(world, MOMENTS.settle);
+  assert.equal(moment.phase, 'awake');
 });
 
 void test('an untouched bubble fades after its lifetime and is then gone', (): void => {
@@ -305,9 +316,61 @@ void test('a hero who walked the In-Between still sees strikes land in the Hall,
   const field: MomentField = must(hall.moments, 'hall field');
   enterZone(world, hall, { type: 'start' });
   assert.deepEqual(world.shift, { x: 0, z: 0 });
-  assert.ok(world.moments.length > 0);
+  assert.equal(world.moments.length, field.start);
   const events: WorldEvent[] = run(world, field.interval.max + world.content.moments.telegraph + 1);
   assert.ok(events.some((event: WorldEvent): boolean => event.type === 'moment_strike'));
   assert.equal(world.strikeMisses, 0);
   for (const moment of world.moments) assert.ok(isWalkable(world.grid, moment.pos.x, moment.pos.z));
+});
+
+void test('brushing the edge of a bubble does not wake it; only stepping well inside does', (): void => {
+  const world: World = fieldWorld(quietField());
+  const moment: MomentState = struck(world, QUIET.id);
+  standAt(world, { x: moment.pos.x + QUIET.radius * 0.9, z: moment.pos.z });
+  run(world, 3);
+  assert.equal(moment.phase, 'dormant');
+  standAt(world, { x: moment.pos.x + QUIET.radius * MOMENTS.wakeDepth * 0.8, z: moment.pos.z });
+  run(world, DT * 2);
+  assert.equal(moment.phase, 'awake');
+});
+
+void test('a fight does not run out while the hero stays with it, and runs out once he has been away long enough', (): void => {
+  const world: World = fieldWorld(quietField());
+  world.player.invulnerable = 1e9;
+  const moment: MomentState = struck(world, RAID.id);
+  standAt(world, moment.pos);
+  run(world, RAID.awake + 3);
+  assert.equal(moment.phase, 'awake');
+  standAt(world, FAR);
+  run(world, MOMENTS.awayLimit - 1);
+  assert.equal(moment.phase, 'awake');
+  run(world, 2);
+  assert.equal(moment.outcome, 'expired');
+});
+
+void test('while the field is sure, a woken fight never runs out even with the hero away', (): void => {
+  const world: World = fieldWorld(quietField({ sure: [{ type: 'flag', flag: 'first_moment', is: 'cleared', not: true }] }));
+  world.player.invulnerable = 1e9;
+  const moment: MomentState = struck(world, RAID.id);
+  standAt(world, moment.pos);
+  run(world, DT * 2);
+  standAt(world, FAR);
+  run(world, RAID.awake + MOMENTS.awayLimit * 2);
+  assert.equal(moment.phase, 'awake');
+});
+
+void test('a new hero in the Hall gets a grace period, and the first moment is a fixed fight away from the arrival and the road to the fire', (): void => {
+  const shipped: Content = loadContent();
+  const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');
+  const field: MomentField = must(hall.moments, 'hall field');
+  for (let seed: number = 1; seed <= 8; seed += 1) {
+    const world: World = createWorld(shipped, { seed, save: null });
+    enterZone(world, hall, { type: 'start' });
+    const early: WorldEvent[] = run(world, field.grace - 0.5);
+    assert.equal(early.some((event: WorldEvent): boolean => event.type === 'moment_mark'), false, `seed ${seed}`);
+    run(world, field.interval.max - field.grace + 1);
+    const first: MomentState = must(world.moments[0], `seed ${seed} first moment`);
+    assert.equal(first.def.id, must(field.first[0], 'first entry').moment);
+    for (const keep of field.avoid) assert.ok(distance(first.pos, keep) >= first.def.radius + keep.radius, `seed ${seed}`);
+  }
 });

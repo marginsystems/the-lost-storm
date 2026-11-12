@@ -396,6 +396,8 @@ export type ZoneKind = (typeof ZONE_KINDS)[number];
 export { OBJECTIVE_STATES, QUEST_STATES } from './condition-types.ts';
 export type { Condition, FlagCondition, ObjectiveCondition, ObjectiveState, QuestCondition, QuestState } from './condition-types.ts';
 
+export type ExitLook = 'ring' | 'mist';
+
 export interface ZoneExit {
   readonly id: string;
   readonly x: number;
@@ -407,6 +409,7 @@ export interface ZoneExit {
   readonly requires: readonly Condition[];
   readonly lockedHint: string;
   readonly hiddenWhenLocked: boolean;
+  readonly look: ExitLook;
 }
 
 export interface ZoneWaypoint {

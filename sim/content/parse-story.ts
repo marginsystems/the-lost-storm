@@ -25,6 +25,7 @@ export function encounter(value: unknown, where: string): ZoneEncounter {
     when: conditions(source, 'when', where),
     after: nonNegative(source, 'after', where),
     ahead: positive(source, 'ahead', where),
+    latest: source['latest'] === undefined ? null : positive(source, 'latest', where),
     find: find(source['find'], `${where}.find`),
   };
 }

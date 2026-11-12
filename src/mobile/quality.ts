@@ -1,5 +1,15 @@
 export type QualityName = 'desktop' | 'mobile';
 
+export interface RainBudget {
+  readonly near: number;
+  readonly mid: number;
+  readonly far: number;
+  readonly splashes: number;
+  readonly sprays: number;
+  readonly mist: number;
+  readonly lens: boolean;
+}
+
 export interface QualityTier {
   readonly name: QualityName;
   readonly maxPixelRatio: number;
@@ -19,7 +29,7 @@ export interface QualityTier {
   readonly preloadNearZones: boolean;
   readonly halfTextures: boolean;
   readonly releaseOtherZones: boolean;
-  readonly rainDrops: number;
+  readonly rain: RainBudget;
 }
 
 export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
@@ -40,7 +50,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     maxTextureSize: 4096,
     maxModelTextureSize: 4096,
     preloadNearZones: true,
-    rainDrops: 1600,
+    rain: { near: 140, mid: 9000, far: 7000, splashes: 2600, sprays: 3, mist: 14, lens: true },
     halfTextures: false,
     releaseOtherZones: false,
   },
@@ -61,7 +71,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     maxTextureSize: 512,
     maxModelTextureSize: 256,
     preloadNearZones: false,
-    rainDrops: 500,
+    rain: { near: 24, mid: 2600, far: 1400, splashes: 700, sprays: 1, mist: 6, lens: false },
     halfTextures: true,
     releaseOtherZones: true,
   },

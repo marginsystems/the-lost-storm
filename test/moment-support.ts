@@ -13,6 +13,8 @@ export const QUIET: MomentDef = {
   id: 'test_quiet',
   name: 'A quiet moment',
   tint: '#ffb060',
+  ground: 'dirt',
+  light: '#ffd0a0',
   bright: false,
   radius: 5,
   lifetime: 30,
@@ -49,6 +51,9 @@ export const FIELD: MomentField = {
     { moment: 'test_raid', weight: 2 },
   ],
   sure: [],
+  first: [],
+  grace: 0,
+  avoid: [],
 };
 
 export function momentLibrary(defs: readonly MomentDef[] = [QUIET, RAID]): MomentLibrary {

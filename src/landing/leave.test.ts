@@ -24,6 +24,12 @@ void test('the fade lasts as long as the spring token says, with a fallback for 
   assert.equal(leaveMs(''), LEAVE.fallbackMs);
 });
 
+void test('a token the minifier rewrote in seconds still reads as milliseconds', (): void => {
+  assert.equal(leaveMs('.26s'), 260);
+  assert.equal(leaveMs(' 0.52s'), 520);
+  assert.equal(leaveMs('260'), 260);
+});
+
 void test('both pages opt in to cross-document view transitions and share the leaving fade', (): void => {
   const shared: string = readFileSync(new URL('../page-transition.css', import.meta.url), 'utf8');
   assert.match(shared, /@view-transition\s*\{\s*navigation:\s*auto;/);

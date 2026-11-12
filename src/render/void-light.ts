@@ -1,21 +1,29 @@
 import type { BufferGeometry, IUniform } from 'three';
-import { AdditiveBlending, CircleGeometry, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3 } from 'three';
+import { AdditiveBlending, Color, DoubleSide, Group, Mesh, PlaneGeometry, PointLight, ShaderMaterial, Vector3 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ZoneExit } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { EncounterState, World } from '../../sim/world/types.ts';
 
 export const VOID_LIGHT = {
-  color: 0xffd99a,
-  pillarWidth: 1.6,
-  pillarHeight: 34,
-  pillarOpacity: 0.9,
-  haloRadius: 5,
-  haloOpacity: 0.6,
+  color: 0xffc27a,
+  pillarWidth: 7,
+  pillarHeight: 30,
+  pillarOpacity: 0.34,
+  pillarFalloff: 2.2,
+  glowRadius: 11,
+  glowOpacity: 0.42,
+  glowFalloff: 2.6,
   rise: 0.9,
   breathe: 0.12,
   breatheRate: 0.9,
+  flicker: 0.1,
+  flickerRates: [5.3, 8.9],
   renderOrder: 20,
+  fireIntensity: 40,
+  fireDistance: 36,
+  fireDecay: 1.2,
+  fireHeight: 3,
 } as const;
 
 export interface VoidLight {
@@ -25,7 +33,53 @@ export interface VoidLight {
   dispose(): void;
 }
 
-function pillarGeometry(): BufferGeometry {
+const GLOW_VERTEX: string = `
+varying vec2 vUv;
+varying float vFacing;
+void main() {
+  vUv = uv;
+  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+  vFacing = abs(dot(normalize(normalMatrix * normal), normalize(-mvPosition.xyz)));
+  gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
+const POOL_FRAGMENT: string = `
+uniform vec3 uColor;
+uniform float uOpacity;
+uniform float uFalloff;
+varying vec2 vUv;
+void main() {
+  float r = clamp(length(vUv - 0.5) * 2.0, 0.0, 1.0);
+  float glow = pow(1.0 - r, uFalloff);
+  gl_FragColor = vec4(uColor * glow * uOpacity, 1.0);
+}
+`;
+
+const COLUMN_FRAGMENT: string = `
+uniform vec3 uColor;
+uniform float uOpacity;
+uniform float uFalloff;
+varying vec2 vUv;
+varying float vFacing;
+void main() {
+  float across = pow(1.0 - clamp(abs(vUv.x - 0.5) * 2.0, 0.0, 1.0), uFalloff);
+  float up = smoothstep(0.0, 0.12, vUv.y) * pow(1.0 - vUv.y, 1.6);
+  gl_FragColor = vec4(uColor * across * up * smoothstep(0.15, 0.6, vFacing) * uOpacity, 1.0);
+}
+`;
+
+interface GlowUniforms {
+  readonly uColor: IUniform<Color>;
+  readonly uOpacity: IUniform<number>;
+  readonly uFalloff: IUniform<number>;
+}
+
+function glowMaterial(fragmentShader: string, uniforms: GlowUniforms): ShaderMaterial {
+  return new ShaderMaterial({ vertexShader: GLOW_VERTEX, fragmentShader, uniforms: { ...uniforms }, transparent: true, depthWrite: false, side: DoubleSide, blending: AdditiveBlending });
+}
+
+function columnGeometry(): BufferGeometry {
   const planes: BufferGeometry[] = [0, Math.PI / 3, (Math.PI * 2) / 3].map((yaw: number): BufferGeometry => {
     const plane: PlaneGeometry = new PlaneGeometry(VOID_LIGHT.pillarWidth, VOID_LIGHT.pillarHeight, 1, 8);
     plane.rotateY(yaw);
@@ -46,21 +100,33 @@ function placedLight(world: World): ZoneExit | null {
   return null;
 }
 
+export function firelight(now: number): number {
+  const [slow, fast] = VOID_LIGHT.flickerRates;
+  const breathing: number = 1 - VOID_LIGHT.breathe + VOID_LIGHT.breathe * Math.sin(now * VOID_LIGHT.breatheRate);
+  const flicker: number = 1 - VOID_LIGHT.flicker * (0.5 + 0.25 * Math.sin(now * slow) + 0.25 * Math.sin(now * fast + 1.3));
+  return breathing * flicker;
+}
+
 export function createVoidLight(floor: number): VoidLight {
   const group: Group = new Group();
   const tint: Color = new Color(VOID_LIGHT.color);
-  const geometry: BufferGeometry = pillarGeometry();
-  const pillarMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: tint, transparent: true, opacity: 0, depthWrite: false, side: DoubleSide, blending: AdditiveBlending });
-  const pillar: Mesh = new Mesh(geometry, pillarMaterial);
-  pillar.renderOrder = VOID_LIGHT.renderOrder;
-  const haloGeometry: CircleGeometry = new CircleGeometry(VOID_LIGHT.haloRadius, 40);
-  haloGeometry.rotateX(-Math.PI / 2);
-  const haloMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: tint, transparent: true, opacity: 0, depthWrite: false, blending: AdditiveBlending });
-  const halo: Mesh = new Mesh(haloGeometry, haloMaterial);
-  halo.position.y = floor + 0.02;
-  halo.renderOrder = VOID_LIGHT.renderOrder;
-  group.add(pillar, halo);
-  group.visible = false;
+  const columnUniforms: GlowUniforms = { uColor: { value: tint }, uOpacity: { value: 0 }, uFalloff: { value: VOID_LIGHT.pillarFalloff } };
+  const poolUniforms: GlowUniforms = { uColor: { value: tint }, uOpacity: { value: 0 }, uFalloff: { value: VOID_LIGHT.glowFalloff } };
+  const geometry: BufferGeometry = columnGeometry();
+  const columnMaterial: ShaderMaterial = glowMaterial(COLUMN_FRAGMENT, columnUniforms);
+  const column: Mesh = new Mesh(geometry, columnMaterial);
+  column.renderOrder = VOID_LIGHT.renderOrder;
+  const poolGeometry: PlaneGeometry = new PlaneGeometry(VOID_LIGHT.glowRadius * 2, VOID_LIGHT.glowRadius * 2);
+  poolGeometry.rotateX(-Math.PI / 2);
+  const poolMaterial: ShaderMaterial = glowMaterial(POOL_FRAGMENT, poolUniforms);
+  const pool: Mesh = new Mesh(poolGeometry, poolMaterial);
+  pool.position.y = floor + 0.02;
+  pool.renderOrder = VOID_LIGHT.renderOrder;
+  const fire: PointLight = new PointLight(tint, 0, VOID_LIGHT.fireDistance, VOID_LIGHT.fireDecay);
+  fire.position.y = floor + VOID_LIGHT.fireHeight;
+  group.add(column, pool, fire);
+  column.visible = false;
+  pool.visible = false;
   const uniform: IUniform<Vector3> = { value: new Vector3() };
   let strength: number = 0;
 
@@ -77,17 +143,19 @@ export function createVoidLight(floor: number): VoidLight {
       } else {
         uniform.value.z = strength;
       }
-      const breathing: number = 1 - VOID_LIGHT.breathe + VOID_LIGHT.breathe * Math.sin(now * VOID_LIGHT.breatheRate);
-      pillarMaterial.opacity = VOID_LIGHT.pillarOpacity * strength * breathing;
-      haloMaterial.opacity = VOID_LIGHT.haloOpacity * strength * breathing;
-      group.visible = strength > 1e-3;
+      const lit: number = strength * firelight(now);
+      columnUniforms.uOpacity.value = VOID_LIGHT.pillarOpacity * lit;
+      poolUniforms.uOpacity.value = VOID_LIGHT.glowOpacity * lit;
+      column.visible = strength > 1e-3;
+      pool.visible = column.visible;
+      fire.intensity = VOID_LIGHT.fireIntensity * lit;
     },
     dispose(): void {
       group.removeFromParent();
       geometry.dispose();
-      haloGeometry.dispose();
-      pillarMaterial.dispose();
-      haloMaterial.dispose();
+      poolGeometry.dispose();
+      columnMaterial.dispose();
+      poolMaterial.dispose();
     },
   };
 }

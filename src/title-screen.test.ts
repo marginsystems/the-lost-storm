@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { ClassTarget } from './title-screen.ts';
-import { GAME_LAYERS, markInput, markPlaying, pressesEnter, TITLE_SCREEN } from './title-screen.ts';
+import { GAME_LAYERS, markInput, markPlaying, pressesEnter, settlesAway, TITLE_SCREEN } from './title-screen.ts';
 
 function fakeBody(): ClassTarget & { readonly tokens: Set<string> } {
   const tokens: Set<string> = new Set<string>();
@@ -64,4 +64,26 @@ void test('Enter and Space on the title press Enter, but not while a control has
   assert.equal(pressesEnter('Enter', 'control', true), false);
   assert.equal(pressesEnter(' ', 'page', false), false);
   assert.equal(pressesEnter('Escape', 'page', true), false);
+});
+
+void test('entering clears the settled-away mark so the game layers can show again', (): void => {
+  const body = fakeBody();
+  body.classList.toggle(TITLE_SCREEN.awayClass, true);
+  markPlaying(body, true);
+  assert.equal(body.tokens.has(TITLE_SCREEN.awayClass), false);
+});
+
+void test('the game layers settle away only when their own fade ends on the title', (): void => {
+  assert.equal(settlesAway(TITLE_SCREEN.awayProperty, true, false), true);
+  assert.equal(settlesAway(TITLE_SCREEN.awayProperty, true, true), false);
+  assert.equal(settlesAway(TITLE_SCREEN.awayProperty, false, false), false);
+  assert.equal(settlesAway('transform', true, false), false);
+});
+
+void test('the hard hide of every layer child waits for the settled-away mark', (): void => {
+  const css: string = readFileSync(new URL('./title-screen.css', import.meta.url), 'utf8');
+  const rule: string | null = ruleFor(css, `body.${TITLE_SCREEN.awayClass}:not(.${TITLE_SCREEN.playingClass}) #hud *`);
+  assert.ok(rule !== null);
+  assert.match(rule, /visibility:\s*hidden\s*!important;/);
+  assert.match(readFileSync(new URL('../play/index.html', import.meta.url), 'utf8'), new RegExp(`<body class="${TITLE_SCREEN.awayClass}">`));
 });

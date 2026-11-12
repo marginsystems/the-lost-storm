@@ -6,8 +6,10 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import type { Pass } from 'three/addons/postprocessing/Pass.js';
 import type { QualityTier } from '../mobile/quality.ts';
 import { pixelRatioFor } from '../mobile/quality.ts';
+import { frameGuardPass } from './frame-guard.ts';
 
 export const STAGE = {
   exposure: 1.22,
@@ -45,6 +47,7 @@ export interface Stage {
   render(): void;
   applyQuality(tier: QualityTier): void;
   compileAsync(target: Object3D, viewer: Camera): Promise<Object3D>;
+  setFinish(pass: Pass | null): void;
 }
 
 export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): Stage {
@@ -93,12 +96,19 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   scene.add(hero);
 
   let composer: EffectComposer | null = null;
+  let finish: Pass | null = null;
+  let builtBloom: boolean = false;
+  let builtFinish: Pass | null = null;
 
   const buildComposer = (): EffectComposer => {
     const target: WebGLRenderTarget = new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: Math.min(STAGE.samples, tier.msaaSamples) });
     const made: EffectComposer = new EffectComposer(renderer, target);
     made.addPass(new RenderPass(scene, camera));
-    made.addPass(new UnrealBloomPass(new Vector2(1, 1), STAGE.bloomStrength, STAGE.bloomRadius, STAGE.bloomThreshold));
+    if (builtBloom) {
+      made.addPass(frameGuardPass());
+      made.addPass(new UnrealBloomPass(new Vector2(1, 1), STAGE.bloomStrength, STAGE.bloomRadius, STAGE.bloomThreshold));
+    }
+    if (builtFinish !== null) made.addPass(builtFinish);
     made.addPass(new OutputPass());
     return made;
   };
@@ -130,12 +140,14 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       storm.shadow.mapSize.set(shadowSize, shadowSize);
     }
     texel = (STAGE.shadowExtent * 2) / shadowSize;
-    if (bloom && composer === null) composer = buildComposer();
-    if (!bloom && composer !== null) {
-      for (const pass of composer.passes) pass.dispose();
+    if (composer !== null && (bloom !== builtBloom || finish !== builtFinish)) {
+      for (const pass of composer.passes) if (pass !== builtFinish) pass.dispose();
       composer.dispose();
       composer = null;
     }
+    builtBloom = bloom;
+    builtFinish = finish;
+    if (composer === null && (bloom || finish !== null)) composer = buildComposer();
     resize();
   };
   apply();
@@ -182,6 +194,11 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
     resize,
     applyQuality(next: QualityTier): void {
       tier = next;
+      apply();
+    },
+    setFinish(pass: Pass | null): void {
+      if (pass === finish) return;
+      finish = pass;
       apply();
     },
     render(): void {

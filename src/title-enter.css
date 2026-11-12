@@ -33,14 +33,7 @@
     color var(--spring-smooth-ms) var(--spring-smooth),
     text-shadow var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-snappy-ms) var(--spring-snappy),
-    opacity var(--spring-smooth-ms) var(--spring-smooth),
-    height var(--spring-smooth-ms) var(--spring-smooth),
-    margin-top var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-.title-card #title-reset[hidden] {
-  height: 0;
-  margin-top: 0;
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 #title-enter::before,
@@ -143,7 +136,14 @@
     text-shadow var(--spring-smooth-ms) var(--spring-smooth),
     background-color var(--spring-snappy-ms) var(--spring-snappy),
     transform var(--spring-snappy-ms) var(--spring-snappy),
-    opacity var(--spring-smooth-ms) var(--spring-smooth);
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    height var(--spring-smooth-ms) var(--spring-smooth),
+    margin-top var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.title-card #title-reset[hidden] {
+  height: 0;
+  margin-top: 0;
 }
 
 .title-card #title-reset:not(:disabled):hover,

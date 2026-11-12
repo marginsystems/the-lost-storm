@@ -25,6 +25,7 @@ export const PRESETS: Readonly<Record<Quality, GraphicsPreset>> = {
 export interface GraphicsSettings {
   readonly quality: Quality;
   readonly showFps: boolean;
+  readonly lensWater: boolean;
 }
 
 export interface Settings {
@@ -34,7 +35,7 @@ export interface Settings {
 
 export const SETTINGS_KEY: string = 'the-lost-storm.settings.v1';
 
-export const DEFAULT_GRAPHICS: GraphicsSettings = { quality: 'high', showFps: false };
+export const DEFAULT_GRAPHICS: GraphicsSettings = { quality: 'high', showFps: false, lensWater: true };
 export const DEFAULT_SETTINGS: Settings = { graphics: DEFAULT_GRAPHICS, controls: {} };
 
 function fieldOf(source: unknown, key: string): unknown {
@@ -67,10 +68,12 @@ export function readSettings(text: string | null, table: readonly ActionDef[]): 
   }
   const graphics: unknown = fieldOf(parsed, 'graphics');
   const showFps: unknown = fieldOf(graphics, 'showFps');
+  const lensWater: unknown = fieldOf(graphics, 'lensWater');
   return {
     graphics: {
       quality: qualityOf(fieldOf(graphics, 'quality')),
       showFps: typeof showFps === 'boolean' ? showFps : DEFAULT_GRAPHICS.showFps,
+      lensWater: typeof lensWater === 'boolean' ? lensWater : DEFAULT_GRAPHICS.lensWater,
     },
     controls: sanitizeOverrides(table, overridesOf(fieldOf(parsed, 'controls'))),
   };

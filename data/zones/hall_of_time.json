@@ -23,7 +23,7 @@
     "                    "
   ],
   "floors": {"s": "black_ledge", "r": "black_rock", "p": "ruined_road"},
-  "outside": {"surface": "crag_ground", "reach": 3},
+  "outside": {"surface": "crag_ground", "reach": 6},
   "walls": null,
   "playerStart": {"x": 8, "z": 30},
   "props": [
@@ -148,7 +148,7 @@
   "packs": [],
   "surge": null,
   "exits": [
-    {"id": "mist", "x": 1.6, "z": 30, "radius": 2.2, "to": "between", "toExit": "into_the_hall", "arrival": {"x": 8, "z": 30}, "requires": [{"type": "quest", "quest": "out_of_the_mist", "is": "locked"}], "lockedHint": "Only mist.", "hiddenWhenLocked": true}
+    {"id": "mist", "x": 1.6, "z": 30, "radius": 2.2, "to": "between", "toExit": "into_the_hall", "arrival": {"x": 8, "z": 30}, "requires": [], "look": "mist"}
   ],
   "checkpoints": [],
   "waypoint": {"x": 70, "z": 25.5, "radius": 1.8},
@@ -157,16 +157,19 @@
     {"npc": "warden_guide", "x": 64.5, "z": 32, "facingDegrees": 260},
     {"npc": "warden_lookout", "x": 77, "z": 34, "facingDegrees": 250}
   ],
-  "ambience": {"background": "#06080d", "abyss": "#040508", "fogNear": 20, "fogFar": 70, "skyColor": "#4a5c7c", "groundColor": "#100d0b", "skyIntensity": 2.0, "keyColor": "#9fb3d6", "keyIntensity": 1.4},
+  "ambience": {"background": "#0a0e16", "abyss": "#05070b", "fogNear": 34, "fogFar": 110, "skyColor": "#5a6f94", "groundColor": "#283040", "skyIntensity": 4.8, "keyColor": "#b1c4e4", "keyIntensity": 3.4},
   "weather": {"lightning": {"first": 1.4, "min": 5, "max": 10}, "rain": 0.85, "wet": 0.6, "mistWall": {"from": {"x": -10, "z": -6}, "to": {"x": -10, "z": 66}, "height": 7}},
   "moments": {
     "combat": true,
-    "areas": [{"x": 38, "z": 30, "radius": 14}, {"x": 24, "z": 46, "radius": 7}, {"x": 24, "z": 14, "radius": 7}],
+    "areas": [{"x": 40, "z": 47, "radius": 9}, {"x": 40, "z": 13, "radius": 9}, {"x": 24, "z": 47, "radius": 7}, {"x": 24, "z": 13, "radius": 7}],
+    "avoid": [{"x": 8, "z": 30, "radius": 16}, {"x": 26, "z": 30, "radius": 7}, {"x": 42, "z": 30, "radius": 7}, {"x": 58, "z": 30, "radius": 7}, {"x": 70, "z": 31, "radius": 10}],
     "clearance": {"hero": 8, "exits": 12, "between": 6},
     "interval": {"min": 12, "max": 24},
-    "start": 1,
+    "grace": 20,
+    "start": 0,
     "max": 2,
     "table": [{"moment": "campfire", "weight": 3}, {"moment": "charge", "weight": 3}, {"moment": "market_street", "weight": 3}, {"moment": "children_at_play", "weight": 1}, {"moment": "funeral", "weight": 1}],
+    "first": [{"moment": "first_fire", "weight": 1}],
     "sure": [{"type": "flag", "flag": "first_moment", "is": "cleared", "not": true}]
   }
 }

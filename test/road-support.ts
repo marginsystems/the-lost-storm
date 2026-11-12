@@ -69,7 +69,7 @@ export const HUB_ZONE: ZoneDef = roadZone({
   kind: 'town',
   tiles: ['wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww'],
   playerStart: { x: 8, z: 12 },
-  exits: [{ id: 'outpost_stair', x: 26, z: 12, radius: 1.6, to: 'outpost', toExit: 'stair', arrival: { x: 22, z: 12 }, requires: [], lockedHint: '', hiddenWhenLocked: false }],
+  exits: [{ id: 'outpost_stair', x: 26, z: 12, radius: 1.6, to: 'outpost', toExit: 'stair', arrival: { x: 22, z: 12 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' }],
 });
 export const OUTPOST_ZONE: ZoneDef = roadZone({
   id: 'outpost',
@@ -83,7 +83,7 @@ export const OUTPOST_ZONE: ZoneDef = roadZone({
     { x: 28, z: 15, members: [{ monster: 'mended', count: 2, mods: [] }, { monster: 'unfinished_brute', count: 3, mods: [] }], when: [] },
   ],
   surge: { delay: 5, surgesPerExtraMonster: 2, maxExtraMonsters: 3 },
-  exits: [{ id: 'stair', x: 28, z: 41.6, radius: 1.5, to: 'hub', toExit: 'outpost_stair', arrival: { x: 28, z: 37 }, requires: [], lockedHint: '', hiddenWhenLocked: false }],
+  exits: [{ id: 'stair', x: 28, z: 41.6, radius: 1.5, to: 'hub', toExit: 'outpost_stair', arrival: { x: 28, z: 37 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' }],
   waypoint: { x: 21, z: 37.5, radius: 1.8 },
 });
 export const OUTPOST_CONTENT: Content = roadAct([HUB_ZONE, OUTPOST_ZONE], 'hub');
