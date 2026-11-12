@@ -4,10 +4,13 @@ import { slotAction } from '../settings/bindings.ts';
 import type { HudContext } from './context.ts';
 import { clamp01, el, label, pulseClass, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
+import type { SkillPicker } from './skill-picker.ts';
+import { createSkillPicker, skillDetails } from './skill-picker.ts';
 import { attachTooltip } from './tooltip.ts';
 
 const SKILL_BAR = {
   pressMs: 110,
+  swapMs: 320,
   fullTurn: 360,
   coolingEpsilon: 0.001,
 } as const;
@@ -25,6 +28,7 @@ interface SlotView {
   readonly keyNode: HTMLElement;
   key: string | null;
   skill: SkillDef | null;
+  empty: boolean | null;
   iconId: string;
   angle: number;
   cooling: boolean | null;
@@ -36,22 +40,24 @@ export interface SkillBar {
   update(player: PlayerState): void;
   refreshKeys(): void;
   press(skillId: string): void;
+  closePicker(): boolean;
 }
 
-function skillTooltip(skill: SkillDef, key: string): HTMLElement {
+function emptyTooltip(key: string): HTMLElement {
   const root: HTMLDivElement = el('div', 'tip', null);
-  label('tip-title', skill.name, root);
+  label('tip-title', 'Empty slot', root);
   label('tip-sub', key === '' ? 'Skill' : `Skill · ${key}`, root);
-  label('tip-line', skill.description, root);
-  el('div', 'tip-sep', root);
-  if (skill.manaCost > 0) label('tip-line cost', `Mana cost: ${skill.manaCost}`, root);
-  if (skill.cooldown > 0) label('tip-line', `Cooldown: ${skill.cooldown.toFixed(1)}s`, root);
+  label('tip-line', 'Click to choose a skill for this slot.', root);
   return root;
 }
 
 export function createSkillBar(parent: HTMLElement, context: HudContext, track: (element: HTMLElement) => void): SkillBar {
   const element: HTMLDivElement = el('div', 'hud-skillbar', parent);
   track(element);
+  const picker: SkillPicker = createSkillPicker(element, context, track);
+  document.addEventListener('pointerdown', (event: PointerEvent): void => {
+    if (!(event.target instanceof Node) || !element.contains(event.target)) picker.close();
+  });
   const slots: SlotView[] = [];
 
   const keyOf = (index: number): string => context.api.settings.keys().labelOf(slotAction(index));
@@ -67,23 +73,35 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
 
   const buildSlot = (index: number): SlotView => {
     const root: HTMLDivElement = el('div', 'slot', element);
+    root.addEventListener('click', (event: MouseEvent): void => {
+      event.stopPropagation();
+      if (picker.slot === index) picker.close();
+      else picker.open(index, root);
+    });
     const icon: HTMLDivElement = el('div', 'slot-icon', root);
     const cooldown: HTMLDivElement = el('div', 'slot-cd', root);
     const keyNode: HTMLDivElement = el('div', 'slot-key', root);
     const cost: HTMLDivElement = el('div', 'slot-cost', root);
-    const view: SlotView = { root, icon, cost, cooldown, keyNode, key: null, skill: null, iconId: '', angle: -1, cooling: null, dim: null };
+    const view: SlotView = { root, icon, cost, cooldown, keyNode, key: null, skill: null, empty: null, iconId: '', angle: -1, cooling: null, dim: null };
     paintKey(view, keyOf(index));
-    attachTooltip(context.tooltip, root, (): HTMLElement | null => (view.skill === null ? null : skillTooltip(view.skill, keyOf(index))));
+    attachTooltip(context.tooltip, root, (): HTMLElement | null => (picker.slot !== null ? null : view.skill === null ? emptyTooltip(keyOf(index)) : skillDetails(view.skill, `Skill · ${keyOf(index)} · click to change`, null)));
     return view;
   };
 
-  const applySkill = (view: SlotView, skill: SkillDef): void => {
+  const applySkill = (view: SlotView, skill: SkillDef | null): void => {
     view.skill = skill;
-    if (view.iconId !== skill.icon) {
-      view.iconId = skill.icon;
-      view.icon.innerHTML = iconSvg(skill.icon);
+    const iconId: string = skill?.icon ?? '';
+    if (view.iconId !== iconId) {
+      view.iconId = iconId;
+      view.icon.innerHTML = skill === null ? '' : iconSvg(iconId);
+      if (skill !== null) pulseClass(view.root, 'swap', SKILL_BAR.swapMs);
     }
-    setText(view.cost, skill.manaCost > 0 ? String(skill.manaCost) : '', true);
+    const empty: boolean = skill === null;
+    if (empty !== view.empty) {
+      view.empty = empty;
+      view.root.classList.toggle('empty', empty);
+    }
+    setText(view.cost, skill !== null && skill.manaCost > 0 ? String(skill.manaCost) : '', true);
   };
 
   return {
@@ -93,16 +111,17 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
     },
     update(player: PlayerState): void {
       if (slots.length !== player.skills.length) {
-        element.replaceChildren();
+        for (const view of slots) view.root.remove();
         slots.length = 0;
-        player.skills.forEach((_skill: SkillDef, index: number): void => {
+        player.skills.forEach((_skill: SkillDef | null, index: number): void => {
           slots.push(buildSlot(index));
         });
       }
+      picker.refresh(player);
       slots.forEach((view: SlotView, index: number): void => {
-        const skill: SkillDef | undefined = player.skills[index];
-        if (skill === undefined) return;
-        if (view.skill !== skill) applySkill(view, skill);
+        const skill: SkillDef | null = player.skills[index] ?? null;
+        if (view.skill !== skill || view.empty === null) applySkill(view, skill);
+        if (skill === null) return;
         const remaining: number = player.cooldowns[skill.id] ?? 0;
         const cooling: boolean = remaining > SKILL_BAR.coolingEpsilon;
         const fraction: number = skill.cooldown > 0 ? clamp01(remaining / skill.cooldown) : 0;
@@ -121,6 +140,9 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
           view.root.classList.toggle('dim', dim);
         }
       });
+    },
+    closePicker(): boolean {
+      return picker.close();
     },
     press(skillId: string): void {
       for (const view of slots) {

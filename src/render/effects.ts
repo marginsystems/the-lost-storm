@@ -536,6 +536,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'beam':
           case 'blink':
           case 'brand':
+          case 'skill_unlocked':
           case 'xp':
           case 'surge_cleared':
           case 'notice':

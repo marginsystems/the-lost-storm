@@ -7,6 +7,7 @@ import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import { applyMods, armourReduction, averageHit, computeStats, damagePerSecond, resolveSkill, resolveSkillBar } from './stats.ts';
+import { defaultBar } from './skill-book.ts';
 import type { Equipment, ItemInstance } from './world/types.ts';
 
 const content: Content = loadContent();
@@ -86,10 +87,10 @@ void test('Rolling Thunder widens Thunderclap and shortens its cooldown', (): vo
 void test('skills without matching modifiers are returned untouched', (): void => {
   const cleave: SkillDef = skillOf('cleave');
   assert.equal(resolveSkill(content, cleave, ['rolling_thunder', 'forked_bolt']), cleave);
-  const bar: SkillDef[] = resolveSkillBar(content, []);
+  const bar: (SkillDef | null)[] = resolveSkillBar(content, defaultBar(content), []);
   assert.deepEqual(
-    bar.map((skill: SkillDef): string => skill.id),
-    content.player.skillBar.map((binding): string => binding.skill),
+    bar.map((skill: SkillDef | null): string | null => skill?.id ?? null),
+    content.player.skillBar.map((binding): string | null => binding.skill),
   );
 });
 

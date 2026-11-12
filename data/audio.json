@@ -24,7 +24,15 @@
     "keeper_bind": [{ "sound": "bolt_zap", "volume": 0.9, "maxVoices": 2 }],
     "mender_stitch": [{ "sound": "hex_charge", "volume": 0.9, "maxVoices": 1 }],
     "keeper_replay": [{ "sound": "sword_swing_light", "volume": 0.7, "maxVoices": 2 }],
-    "gate_replay": [{ "sound": "hex_charge", "volume": 0.9, "maxVoices": 1 }]
+    "gate_replay": [{ "sound": "hex_charge", "volume": 0.9, "maxVoices": 1 }],
+    "forkline": [{ "sound": "bolt_zap", "volume": 0.8, "maxVoices": 3 }],
+    "mist_step": [{ "sound": "hex_charge", "volume": 0.45, "maxVoices": 2 }],
+    "downdraught": [{ "sound": "hex_charge", "volume": 0.7, "maxVoices": 2 }],
+    "squall": [{ "sound": "electric_crackle", "volume": 0.8, "maxVoices": 2 }],
+    "thunderhead": [{ "sound": "sword_swing_heavy", "volume": 0.9, "maxVoices": 2 }],
+    "static_brand": [{ "sound": "bolt_zap", "volume": 0.6, "maxVoices": 3 }],
+    "living_wire": [{ "sound": "electric_crackle", "volume": 0.7, "maxVoices": 2 }],
+    "held_breath": [{ "sound": "hex_charge", "volume": 0.9, "maxVoices": 1 }]
   },
   "skillImpact": {
     "keeper_field": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 2 }],
@@ -33,7 +41,11 @@
     "thunderclap": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 2 }, { "sound": "thunder_crack", "volume": 0.75, "maxVoices": 2 }],
     "rival_clap": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 1 }, { "sound": "thunder_crack", "volume": 0.6, "maxVoices": 1 }],
     "colossus_slam": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 1 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
-    "gate_ring": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 1 }]
+    "gate_ring": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 1 }],
+    "thunderhead": [
+      { "sound": "ground_boom", "volume": 1, "maxVoices": 2 },
+      { "sound": "thunder_crack", "volume": 0.7, "maxVoices": 2 }
+    ]
   },
   "projectileSpawn": {
     "storm_bolt": [{ "sound": "bolt_whoosh", "volume": 0.6, "maxVoices": 3 }],

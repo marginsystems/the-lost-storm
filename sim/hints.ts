@@ -97,7 +97,8 @@ function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarge
 
 function usedSlot(world: World, state: HintState, slot: number): boolean {
   const entry = world.content.player.skillBar[slot];
-  return entry !== undefined && state.skillsUsed.has(entry.skill);
+  const skill: string | null = world.player.bar[slot] ?? entry?.skill ?? null;
+  return skill !== null && state.skillsUsed.has(skill);
 }
 
 function finished(done: HintDone, world: World, state: HintState, open: ReadonlySet<HintPanel>): boolean {

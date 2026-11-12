@@ -4,6 +4,7 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import { emptyEquipment, generateItem, slotOf } from '../items.ts';
 import { buildNavGrid } from '../nav/grid.ts';
 import { createRng } from '../rng.ts';
+import { defaultBar } from '../skill-book.ts';
 import { copyVendors } from '../save.ts';
 import type { SaveData } from '../save.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
@@ -34,6 +35,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
   const equipped: Equipment = save === null ? emptyEquipment() : { ...save.equipped };
   const allocated: string[] = save === null ? [] : [...save.allocated];
   const level: number = save?.level ?? 1;
+  const bar: (string | null)[] = save === null ? defaultBar(content) : [...save.bar];
   const stats = computeStats(content, level, equipped, allocated);
   const inventory: (ItemInstance | null)[] = Array.from({ length: content.player.inventorySize }, (_: unknown, index: number): ItemInstance | null => save?.inventory[index] ?? null);
   return {
@@ -58,7 +60,8 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     moving: false,
     mana: stats.maxMana,
     stats,
-    skills: resolveSkillBar(content, allocated),
+    bar,
+    skills: resolveSkillBar(content, bar, allocated),
     level,
     xp: save?.xp ?? 0,
     gold: save?.gold ?? 0,

@@ -228,6 +228,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'beam':
           case 'blink':
           case 'brand':
+          case 'skill_unlocked':
           case 'xp':
           case 'level_up':
           case 'surge':

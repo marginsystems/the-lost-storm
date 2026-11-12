@@ -10,7 +10,7 @@ import { cellIndex } from '../nav/grid.ts';
 import { chainedSkill, chargedSkill, comboHits, startSkill } from './skills.ts';
 import { damageTo, dummy, offset, run, shapeArena, shapeSkill } from '../../test/shape-support.ts';
 import { stepWorld } from './step.ts';
-import type { Command, MonsterState, World, WorldEvent } from './types.ts';
+import type { AreaState, Command, MonsterState, World, WorldEvent } from './types.ts';
 
 const content: Content = loadContent();
 const DT: number = 1 / 60;
@@ -211,6 +211,14 @@ void test('a channelled skill keeps striking while held, pays each tick, and sto
   assert.equal(world.player.action, null);
 });
 
+void test('a channel tapped and let go before its windup ends strikes once and recovers', (): void => {
+  const world: World = shapeArena(['test_wire']);
+  const struck: MonsterState = dummy(world, offset(0, 5));
+  const events: WorldEvent[] = [...stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 5), targetId: null }, { type: 'hold', slot: 0, down: false }], DT), ...run(world, 1)];
+  assert.equal(damageTo(events, struck.id).length, 1);
+  assert.equal(world.player.action, null);
+});
+
 void test('a channel can be steered while held', (): void => {
   const world: World = shapeArena(['test_wire']);
   const ahead: MonsterState = dummy(world, offset(0, 5));
@@ -220,6 +228,18 @@ void test('a channel can be steered while held', (): void => {
   const steered: WorldEvent[] = run(world, 0.6, [{ type: 'steer', aim: offset(5, 0) }]);
   assert.ok(damageTo(steered, beside.id).length >= 2);
   assert.ok(damageTo(steered, ahead.id).length <= 1);
+});
+
+void test('steering a channel that lands at its aim moves where the next pulse lands', (): void => {
+  const world: World = shapeArena(['test_squall']);
+  const squall: SkillDef = shapeSkill('test_squall');
+  world.player.skills = [{ ...squall, id: 'test_rain', cooldown: 0, press: { type: 'channel', interval: 0.2, max: 2 } }];
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 6), targetId: null }], DT);
+  run(world, 0.3);
+  const steered: WorldEvent[] = run(world, 0.5, [{ type: 'steer', aim: offset(6, 0) }]);
+  const placed: AreaState[] = steered.flatMap((event: WorldEvent): AreaState[] => (event.type === 'area' && event.stage === 'start' ? [event.area] : []));
+  assert.ok(placed.length >= 1);
+  for (const area of placed) assert.ok(distance(area.pos, offset(6, 0)) < 0.5);
 });
 
 void test('a channel ends when mana runs out', (): void => {

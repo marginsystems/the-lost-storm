@@ -40,6 +40,7 @@ import type { PauseMenu } from './hud/pause-menu.ts';
 import type { GraphicsPreset, SettingsSection } from './settings/settings.ts';
 import type { SettingsStore } from './settings/store.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
+import { slotName } from './settings/bindings.ts';
 import { createHintStore } from './hints-store.ts';
 import type { ObjectiveMarker } from './objective/objective-marker.ts';
 import { createObjectiveMarker } from './objective/objective-marker.ts';
@@ -322,7 +323,7 @@ async function start(): Promise<void> {
   };
   const gameSettings: SettingsStore = createGameSettings(
     createBrowserStore(),
-    content.player.skillBar.map((entry, slot: number) => ({ name: slot === 0 ? 'Move / attack' : (content.skills.get(entry.skill)?.name ?? entry.skill), bindings: entry.bindings })),
+    content.player.skillBar.map((entry, slot: number) => ({ name: slotName(slot), bindings: entry.bindings })),
     { flasks: content.flasks.length, ladder: lobby !== null },
   );
   const glitchSettings: GlitchSettingsStore = createGlitchSettings(createBrowserStore());

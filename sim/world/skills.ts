@@ -331,12 +331,17 @@ export function stepAction(world: World, actor: Actor, dt: number): void {
   if (actor.action === action && action.phase === 'recovery' && action.timeLeft <= 0) actor.action = null;
 }
 
-export function steerAction(actor: Actor, aim: ReadonlyVec2): void {
+export function steerAction(world: World, actor: Actor, aim: ReadonlyVec2): void {
   const action: ActionState | null = actor.action;
   if (action === null || action.skill.press === null || action.phase === 'recovery') return;
-  const toward: Vec2 = normalize({ x: aim.x - actor.pos.x, z: aim.z - actor.pos.z }, action.direction);
+  const offset: Vec2 = { x: aim.x - actor.pos.x, z: aim.z - actor.pos.z };
+  const toward: Vec2 = normalize(offset, action.direction);
   action.direction = toward;
   actor.facing = facingOf(toward);
+  if (action.target === null || action.skill.leap !== null) return;
+  const planned: number = reachOf(action.skill, null, Math.hypot(offset.x, offset.z));
+  const reach: number = walksTo(action.skill) ? clearReach(world, actor, toward, planned) : planned;
+  action.target = { x: actor.pos.x + toward.x * reach, z: actor.pos.z + toward.z * reach };
 }
 
 function stepProjectile(world: World, projectile: ProjectileState, dt: number): boolean {

@@ -160,8 +160,9 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
         icon.textContent = String(spec.slot + 1);
         root.setAttribute('aria-label', spec.label);
       } else {
-        const skill: SkillDef | undefined = world.player.skills[spec.slot];
-        icon.innerHTML = iconSvg(skill?.icon ?? '');
+        const skill: SkillDef | undefined = world.player.skills[spec.slot] ?? undefined;
+        icon.innerHTML = skill === undefined ? '' : iconSvg(skill.icon);
+        root.classList.toggle('empty', skill === undefined);
         root.setAttribute('aria-label', skill?.name ?? 'Skill');
       }
       return { spec, root, ring: ringEl, turn: -1, dim: null };
@@ -170,7 +171,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
 
   const refreshButtons = (): void => {
     const specs: TouchButton[] = touchButtons(world.content.player.skillBar, INPUT.leftBinding, world.player.flasks.map((flask: FlaskState): FlaskEntry => flask.def));
-    const next: string = signature(specs);
+    const next: string = `${signature(specs)}#${world.player.bar.join(',')}`;
     if (next === shownSignature) return;
     shownSignature = next;
     buildButtons(specs);
@@ -331,7 +332,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
             if (isFresh || (isHeld && tick && player.skills[view.spec.slot]?.press === null)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)));
             return;
           case 'skill': {
-            const skill: SkillDef | undefined = player.skills[view.spec.slot];
+            const skill: SkillDef | undefined = player.skills[view.spec.slot] ?? undefined;
             if (isFresh) commands.push({ type: 'hold', slot: view.spec.slot, down: true });
             const ready: boolean = skill !== undefined && skill.press === null && player.action === null && player.queued === null && (player.cooldowns[skill.id] ?? 0) <= 0 && player.mana >= skill.manaCost;
             if (isFresh || (isHeld && tick && ready)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)));
@@ -355,7 +356,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       const player = world.player;
       for (const view of views) {
         if (view.spec.kind === 'flask') continue;
-        const skill: SkillDef | undefined = player.skills[view.spec.slot];
+        const skill: SkillDef | undefined = player.skills[view.spec.slot] ?? undefined;
         if (skill === undefined) continue;
         const turn: number = cooldownTurn(player.cooldowns[skill.id] ?? 0, skill.cooldown);
         if (turn !== view.turn) {

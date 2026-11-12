@@ -60,3 +60,8 @@ export interface SkillShape {
   readonly press: PressDef | null;
   readonly brand: BrandDef | null;
 }
+
+export interface SkillUnlock {
+  readonly skill: string;
+  readonly level: number;
+}

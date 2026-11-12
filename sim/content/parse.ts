@@ -5,7 +5,7 @@ import { conditionProblems, roadProblems } from './road.ts';
 import { parseFlasks } from './flasks.ts';
 import { combatProblems, fieldDelivery, markDelivery, monsterMod, monsterTraits, reviveDelivery, skillMotion } from './parse-combat.ts';
 import { faction, factionProblems } from './parse-factions.ts';
-import { shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress } from './parse-shapes.ts';
+import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
@@ -446,7 +446,7 @@ function statBlock(value: unknown, where: string): StatBlock {
 
 function skillBinding(value: unknown, where: string): SkillBinding {
   const source: Fields = fields(value, where);
-  return { skill: text(source, 'skill', where), bindings: textList(source, 'bindings', where), label: text(source, 'label', where) };
+  return { skill: nullableText(source, 'skill', where), bindings: textList(source, 'bindings', where), label: text(source, 'label', where) };
 }
 
 function player(value: unknown, where: string): PlayerDef {
@@ -459,6 +459,7 @@ function player(value: unknown, where: string): PlayerDef {
     baseStats: statBlock(source['baseStats'], `${where}.baseStats`),
     perLevel: each(source['perLevel'], `${where}.perLevel`, statMod),
     skillBar: each(source['skillBar'], `${where}.skillBar`, skillBinding),
+    skillBook: each(source['skillBook'], `${where}.skillBook`, skillUnlock),
     xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`) },
     startingItems: textList(source, 'startingItems', where),
     unarmedVisual: nullableText(source, 'unarmedVisual', where),
@@ -558,9 +559,9 @@ export function contentProblems(content: Content): string[] {
     need((base.slot !== null && WORN_SLOTS.has(base.slot)) === (base.material !== null), `item ${base.id} in slot ${base.slot ?? 'none'} ${base.material === null ? 'needs a material' : 'cannot have a material'}`);
   }
   for (const worn of content.wearables.values()) wears(`wearable ${worn.id}`, content.player.rig, [worn.id]);
-  for (const binding of content.player.skillBar) {
-    need(content.skills.has(binding.skill), `skill bar uses unknown skill ${binding.skill}`);
-    animates('skill bar', content.player.rig, binding.skill);
+  for (const entry of content.player.skillBook) {
+    need(content.skills.has(entry.skill), `skill book uses unknown skill ${entry.skill}`);
+    animates('skill book', content.player.rig, entry.skill);
   }
   for (const base of content.player.startingItems) need(content.itemBases.has(base), `starting item ${base} is unknown`);
   need(content.rarities.length > 0, 'items need at least one rarity');
@@ -588,7 +589,7 @@ export function contentProblems(content: Content): string[] {
   need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
-  for (const problem of [...combatProblems(content), ...factionProblems(content), ...shapeProblems(content)]) problems.push(problem);
+  for (const problem of [...combatProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
   for (const problem of storyProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;

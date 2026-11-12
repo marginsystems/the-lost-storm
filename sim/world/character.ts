@@ -2,6 +2,7 @@ import type { ItemSlot } from '../content/types.ts';
 import { slotOf } from '../items.ts';
 import { applyXp, canAllocate } from '../progression.ts';
 import type { XpResult } from '../progression.ts';
+import { assignSlot, isUnlocked, newlyUnlocked, withUnlocks } from '../skill-book.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
 import { dropOnGround } from './ground.ts';
 import type { ItemInstance, PlayerState, World } from './types.ts';
@@ -9,7 +10,7 @@ import type { ItemInstance, PlayerState, World } from './types.ts';
 export function refreshPlayer(world: World): void {
   const player: PlayerState = world.player;
   player.stats = computeStats(world.content, player.level, player.equipped, player.allocated);
-  player.skills = resolveSkillBar(world.content, player.allocated);
+  player.skills = resolveSkillBar(world.content, player.bar, player.allocated);
   player.maxLife = player.stats.maxLife;
   player.life = Math.min(player.life, player.maxLife);
   player.mana = Math.min(player.mana, player.stats.maxMana);
@@ -22,8 +23,14 @@ export function grantXp(world: World, amount: number): void {
   player.xp = result.xp;
   world.events.push({ type: 'xp', amount });
   if (result.levelsGained === 0) return;
+  const before: number = player.level;
   player.level = result.level;
   player.skillPoints += result.levelsGained;
+  player.bar = withUnlocks(world.content, player.bar, before, player.level);
+  for (const skill of newlyUnlocked(world.content, before, player.level)) {
+    const slot: number = player.bar.indexOf(skill);
+    world.events.push({ type: 'skill_unlocked', skill, slot: slot < 0 ? null : slot });
+  }
   refreshPlayer(world);
   player.life = player.maxLife;
   player.mana = player.stats.maxMana;
@@ -67,6 +74,14 @@ export function dropFromInventory(world: World, inventoryIndex: number): void {
   player.inventory[inventoryIndex] = null;
   dropOnGround(world, player.pos, { kind: 'item', item });
   world.events.push({ type: 'character_changed' });
+}
+
+export function slotSkill(world: World, slot: number, skill: string | null): void {
+  const player: PlayerState = world.player;
+  if (skill !== null && !isUnlocked(world.content, skill, player.level)) return;
+  if (player.action !== null && player.action.slot !== null) return;
+  player.bar = assignSlot(player.bar, slot, skill);
+  refreshPlayer(world);
 }
 
 export function allocateNode(world: World, nodeId: string): void {

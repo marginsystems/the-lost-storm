@@ -58,6 +58,7 @@ import type { Notices, WorldStatus, XpBar } from './status.ts';
 import { createTooltip } from './tooltip.ts';
 import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
+import pickerCss from './skill-picker.css?inline';
 import { createTreePanel } from './tree-panel.ts';
 import { applyCover, closedBy, coverOf, HUD_PANELS } from './panel-cover.ts';
 import tradeCss from './trade.css?inline';
@@ -79,7 +80,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}`;
+  style.textContent = `${hudCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${contextCss}\n${pickerCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -274,6 +275,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'bark':
             barks.say(event.speaker, event.line);
             break;
+          case 'skill_unlocked':
+            banners.show(api.world.content.skills.get(event.skill)?.name ?? event.skill, event.slot === null ? 'New skill learned' : 'New skill learned and placed on your bar', 'quest');
+            break;
           case 'level_up':
             banners.show(`LEVEL ${event.level}`, 'Skill point gained', 'level');
             refreshOpen('tree');
@@ -348,7 +352,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       mapWanted = wanted;
     },
     closePanels(): boolean {
-      let anyOpen: boolean = false;
+      let anyOpen: boolean = skillBar.closePicker();
       if (trade.close()) anyOpen = true;
       for (const panel of HUD_PANELS) {
         if (open[panel]) {

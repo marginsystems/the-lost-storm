@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
 import type { KeyValueStore } from '../backend/backend.ts';
 import type { SlotDefault } from './bindings.ts';
+import { slotName } from './bindings.ts';
 import { SETTINGS_KEY } from './settings.ts';
 import type { SettingsStore } from './store.ts';
 import { createSettingsStore } from './store.ts';
@@ -75,7 +76,7 @@ void test('the preset follows the quality', (): void => {
 
 void test('the shipped skill bar and every panel, flask and ladder action share one table that persists', (): void => {
   const content = loadContent();
-  const slots: readonly SlotDefault[] = content.player.skillBar.map((entry, slot: number): SlotDefault => ({ name: slot === 0 ? 'Move / attack' : (content.skills.get(entry.skill)?.name ?? entry.skill), bindings: entry.bindings }));
+  const slots: readonly SlotDefault[] = content.player.skillBar.map((entry, slot: number): SlotDefault => ({ name: slotName(slot), bindings: entry.bindings }));
   const build = { flasks: content.flasks.length, ladder: true };
   const storage = memory(null);
   const store: SettingsStore = createSettingsStore(storage, slots, build);

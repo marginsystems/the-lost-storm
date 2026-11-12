@@ -89,7 +89,7 @@ function nearest(world: World, monsters: readonly MonsterState[]): MonsterState 
 }
 
 function ready(world: World, slot: number): SkillDef | null {
-  const skill: SkillDef | undefined = world.player.skills[slot];
+  const skill: SkillDef | undefined = world.player.skills[slot] ?? undefined;
   if (skill === undefined) return null;
   return (world.player.cooldowns[skill.id] ?? 0) <= 0 && world.player.mana >= skill.manaCost ? skill : null;
 }

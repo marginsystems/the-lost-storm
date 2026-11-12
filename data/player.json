@@ -38,36 +38,27 @@
       "value": 1
     }
   ],
+  "skillBook": [
+    { "skill": "cleave", "level": 1 },
+    { "skill": "dodge_roll", "level": 1 },
+    { "skill": "thunderclap", "level": 1 },
+    { "skill": "storm_bolt", "level": 1 },
+    { "skill": "forkline", "level": 2 },
+    { "skill": "mist_step", "level": 2 },
+    { "skill": "downdraught", "level": 3 },
+    { "skill": "thunderhead", "level": 3 },
+    { "skill": "squall", "level": 5 },
+    { "skill": "static_brand", "level": 4 },
+    { "skill": "living_wire", "level": 6 },
+    { "skill": "held_breath", "level": 7 }
+  ],
   "skillBar": [
-    {
-      "skill": "cleave",
-      "bindings": [
-        "mouse_left"
-      ],
-      "label": "LMB"
-    },
-    {
-      "skill": "thunderclap",
-      "bindings": [
-        "KeyQ"
-      ],
-      "label": "Q"
-    },
-    {
-      "skill": "storm_bolt",
-      "bindings": [
-        "KeyW",
-        "mouse_right"
-      ],
-      "label": "W"
-    },
-    {
-      "skill": "dodge_roll",
-      "bindings": [
-        "Space"
-      ],
-      "label": "Space"
-    }
+    { "skill": "cleave", "bindings": ["mouse_left"], "label": "LMB" },
+    { "skill": "thunderclap", "bindings": ["KeyQ"], "label": "Q" },
+    { "skill": "storm_bolt", "bindings": ["KeyW", "mouse_right"], "label": "W" },
+    { "skill": null, "bindings": ["KeyE"], "label": "E" },
+    { "skill": null, "bindings": ["KeyR"], "label": "R" },
+    { "skill": "dodge_roll", "bindings": ["Space"], "label": "Space" }
   ],
   "xp": {
     "base": 60,

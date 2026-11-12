@@ -29,8 +29,8 @@ export type TouchLabel = { readonly kind: 'icon'; readonly icon: string; readonl
 export function touchLabel(world: World, name: string): TouchLabel {
   const slot: RegExpMatchArray | null = name.match(/^slot_(\d+)$/);
   if (slot !== null) {
-    const skill: SkillDef | undefined = world.player.skills[Number(slot[1]) - 1];
-    return skill === undefined ? { kind: 'words', text: '' } : { kind: 'icon', icon: skill.icon, name: skill.name };
+    const skill: SkillDef | null = world.player.skills[Number(slot[1]) - 1] ?? null;
+    return skill === null ? { kind: 'words', text: '' } : { kind: 'icon', icon: skill.icon, name: skill.name };
   }
   switch (name) {
     case 'inventory':

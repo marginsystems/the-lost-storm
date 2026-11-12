@@ -31,7 +31,7 @@ export interface ActionState {
   readonly windup: number;
   readonly recovery: number;
   direction: Vec2;
-  readonly target: Vec2 | null;
+  target: Vec2 | null;
   readonly travelSpeed: number;
   travelLeft: number;
   readonly slot: number | null;
@@ -136,7 +136,8 @@ export interface PlayerState extends ActorState {
   readonly kind: 'player';
   mana: number;
   stats: StatBlock;
-  skills: SkillDef[];
+  bar: (string | null)[];
+  skills: (SkillDef | null)[];
   level: number;
   xp: number;
   gold: number;
@@ -324,6 +325,12 @@ export interface DropCommand {
   readonly inventoryIndex: number;
 }
 
+export interface SlotCommand {
+  readonly type: 'slot';
+  readonly slot: number;
+  readonly skill: string | null;
+}
+
 export interface AllocateCommand {
   readonly type: 'allocate';
   readonly node: string;
@@ -411,7 +418,7 @@ export interface GlitchSettingCommand {
   readonly enabled: boolean;
 }
 
-export type Command = HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export type Command = SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -460,6 +467,7 @@ export type WorldEvent =
   | { readonly type: 'pickup'; readonly ground: GroundItem }
   | { readonly type: 'xp'; readonly amount: number }
   | { readonly type: 'level_up'; readonly level: number }
+  | { readonly type: 'skill_unlocked'; readonly skill: string; readonly slot: number | null }
   | { readonly type: 'surge'; readonly surge: number }
   | { readonly type: 'surge_cleared'; readonly surge: number; readonly delay: number }
   | { readonly type: 'player_respawn' }

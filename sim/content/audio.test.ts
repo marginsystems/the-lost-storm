@@ -37,7 +37,7 @@ void test('the shipped audio data loads against the shipped content', (): void =
 void test('every skill the player or a monster uses has a start sound', (): void => {
   const audio: AudioDef = loadAudio(content);
   const bossSkills: string[] = [...content.monsters.values()].flatMap((monster): string[] => (monster.boss === null ? [] : monster.boss.phases.flatMap((phase): string[] => phase.skills.map((entry): string => entry.skill))));
-  const used: string[] = [...content.player.skillBar.map((binding): string => binding.skill), ...[...content.monsters.values()].map((monster): string => monster.skill), ...bossSkills];
+  const used: string[] = [...content.player.skillBook.map((entry): string => entry.skill), ...[...content.monsters.values()].map((monster): string => monster.skill), ...bossSkills];
   for (const skill of used) assert.ok((audio.skillStart.get(skill)?.length ?? 0) > 0, `${skill} has no start sound`);
 });
 

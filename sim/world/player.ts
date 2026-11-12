@@ -2,7 +2,7 @@ import type { SkillDef, ZoneExit } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { findPath } from '../nav/path.ts';
-import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, unequip } from './character.ts';
+import { addToInventory, allocateNode, dropFromInventory, equipFromInventory, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
 import { respawnPlayer } from './death.ts';
@@ -75,7 +75,7 @@ function inEngageRange(player: PlayerState, target: Actor, skill: SkillDef): boo
 
 function useSkill(world: World, command: SkillCommand): void {
   const player: PlayerState = world.player;
-  const skill: SkillDef | undefined = player.skills[command.slot];
+  const skill: SkillDef | undefined = player.skills[command.slot] ?? undefined;
   if (skill === undefined) return;
   if (skill.delivery.type === 'dash') {
     if (canDash(player)) fire(world, skill, dashAim(player, command.aim, player.path), command.slot);
@@ -149,6 +149,7 @@ function act(world: World, command: Command): void {
       return;
     }
     case 'flask':
+    case 'slot':
     case 'hold':
     case 'steer':
     case 'trade':
@@ -167,7 +168,7 @@ function act(world: World, command: Command): void {
 
 function cutsRecovery(player: PlayerState, command: Command | null): boolean {
   if (command?.type !== 'skill' || player.action?.phase !== 'recovery') return false;
-  const skill: SkillDef | undefined = player.skills[command.slot];
+  const skill: SkillDef | undefined = player.skills[command.slot] ?? undefined;
   return skill !== undefined && skill.delivery.type === 'dash' && canDash(player) && blockedReason(player, skill) === null;
 }
 
@@ -207,11 +208,14 @@ export function handleCommand(world: World, command: Command): void {
     case 'glitch_setting':
       setGlitchesEnabled(world, command.enabled);
       return;
+    case 'slot':
+      slotSkill(world, command.slot, command.skill);
+      return;
     case 'hold':
       player.held = command.down ? [...player.held.filter((slot: number): boolean => slot !== command.slot), command.slot] : player.held.filter((slot: number): boolean => slot !== command.slot);
       return;
     case 'steer':
-      if (player.alive) steerAction(player, command.aim);
+      if (player.alive) steerAction(world, player, command.aim);
       return;
     case 'use':
     case 'move':
@@ -263,7 +267,7 @@ function stepIntent(world: World, dt: number): void {
       return;
     case 'attack': {
       const target: Actor | null = findActor(world, intent.targetId);
-      const skill: SkillDef | undefined = player.skills[intent.slot];
+      const skill: SkillDef | undefined = player.skills[intent.slot] ?? undefined;
       if (target === null || !target.alive || skill === undefined) {
         player.intent = { type: 'idle' };
         player.path = [];

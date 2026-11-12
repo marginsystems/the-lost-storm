@@ -563,7 +563,7 @@ function botCommand(world: World): Command | null {
   }
   if (nearest === null) return null;
   const ready = (slot: number): boolean => {
-    const skill = player.skills[slot];
+    const skill = player.skills[slot] ?? undefined;
     return skill !== undefined && (player.cooldowns[skill.id] ?? 0) <= 0 && player.mana >= skill.manaCost;
   };
   const target: number = nearest.id;

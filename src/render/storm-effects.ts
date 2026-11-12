@@ -161,7 +161,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
     if (delivery.pull > 0) {
       kit.shockwave(area.pos.x, area.pos.z, delivery.radius * 0.55, color);
       kit.spray(area.pos.x, 0.3, area.pos.z, color, 30, { speed: { min: 3, max: 9 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.3, max: 0.7 }, size: { min: 0.8, max: 1.8 }, drag: 3 });
-      kit.trauma(area.skill.shake);
+      if (hits > 0) kit.trauma(area.skill.shake);
       return;
     }
     const angle: number = Math.random() * Math.PI * 2;

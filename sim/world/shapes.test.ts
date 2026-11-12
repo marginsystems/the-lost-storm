@@ -60,7 +60,7 @@ void test('a blink moves the caster to the aimed spot, capped at its range, and 
 
 void test('an echoing chain strikes again from where it was cast, and an echoing blink strikes at its arrival without moving anyone', (): void => {
   const world: World = shapeArena(['test_fork', 'test_step']);
-  world.player.skills = world.player.skills.map((skill: SkillDef): SkillDef => ({ ...skill, echo: 0.3 }));
+  world.player.skills = world.player.skills.map((skill: SkillDef | null): SkillDef | null => (skill === null ? null : { ...skill, echo: 0.3 }));
   const struck: MonsterState = dummy(world, offset(4, 0));
   const chained: WorldEvent[] = [...cast(world, 0, offset(4, 0)), ...run(world, 0.6)];
   assert.equal(damageTo(chained, struck.id).length, 2);

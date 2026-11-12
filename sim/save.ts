@@ -5,6 +5,7 @@ import type { RetiredZones } from './content/road-types.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, slotOf } from './items.ts';
 import { findNode } from './progression.ts';
+import { readBar } from './skill-book.ts';
 import { flaskCharges } from './world/flasks.ts';
 import { glitchToSave } from './world/glitch.ts';
 import type { GlitchSave, PathLogSave } from './world/glitch-types.ts';
@@ -25,6 +26,7 @@ export interface SaveData {
   readonly kills: number;
   readonly skillPoints: number;
   readonly allocated: readonly string[];
+  readonly bar: readonly (string | null)[];
   readonly inventory: readonly (ItemInstance | null)[];
   readonly equipped: Equipment;
   readonly spilled: readonly ItemInstance[];
@@ -64,6 +66,7 @@ export function toSave(world: World): SaveData {
     kills: player.kills,
     skillPoints: player.skillPoints,
     allocated: [...player.allocated],
+    bar: [...player.bar],
     inventory: [...player.inventory],
     equipped: { ...player.equipped },
     spilled: world.ground.flatMap((ground: GroundItem): ItemInstance[] => (ground.kept && ground.content.kind === 'item' ? [ground.content.item] : [])),
@@ -276,6 +279,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     kills,
     skillPoints: Math.floor(skillPoints),
     allocated: allocatedList.filter((node: unknown): node is string => typeof node === 'string' && findNode(content, node) !== null),
+    bar: readBar(content, value['bar'], Math.min(Math.floor(level), content.player.xp.maxLevel)),
     inventory: slots,
     equipped: worn.equipped,
     spilled: [...kept, ...worn.spilled, ...stashed.overflow],

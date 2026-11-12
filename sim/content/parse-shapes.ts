@@ -1,8 +1,8 @@
 import type { Fields } from './read.ts';
 import { choice, ContentError, fields, fraction, nonNegative, positive, text } from './read.ts';
-import type { BeamDelivery, BlinkDelivery, BrandDef, ChainDelivery, AreaDelivery, PressDef } from './shape-types.ts';
+import type { BeamDelivery, BlinkDelivery, BrandDef, ChainDelivery, AreaDelivery, PressDef, SkillUnlock } from './shape-types.ts';
 import { AREA_ANCHORS } from './shape-types.ts';
-import type { Content, SkillDef } from './types.ts';
+import type { Content, SkillBinding, SkillDef } from './types.ts';
 
 export const SHAPE_LIMITS = {
   shortestPulse: 0.1,
@@ -90,5 +90,25 @@ export function shapeProblems(content: Content): string[] {
     need(burst !== undefined, `skill ${used.id} brands with unknown burst skill ${used.brand.burst}`);
     if (burst !== undefined) need(burst.delivery.type === 'nova' && burst.brand === null, `skill ${used.id} brands with ${burst.id}, which must be a nova that brands nothing itself`);
   }
+  return problems;
+}
+
+export function skillUnlock(value: unknown, where: string): SkillUnlock {
+  const source: Fields = fields(value, where);
+  const level: number = positive(source, 'level', where);
+  if (!Number.isInteger(level)) throw new ContentError(`${where}.level`, 'expected a whole level');
+  return { skill: text(source, 'skill', where), level };
+}
+
+export function bookProblems(content: Content): string[] {
+  const problems: string[] = [];
+  const need = (ok: boolean, problem: string): void => {
+    if (!ok) problems.push(problem);
+  };
+  const book: ReadonlyMap<string, number> = new Map<string, number>(content.player.skillBook.map((entry: SkillUnlock): [string, number] => [entry.skill, entry.level]));
+  need(book.size === content.player.skillBook.length, 'skill book lists a skill twice');
+  const slotted: string[] = content.player.skillBar.flatMap((binding: SkillBinding): string[] => (binding.skill === null ? [] : [binding.skill]));
+  need(new Set<string>(slotted).size === slotted.length, 'skill bar starts with a skill in two slots');
+  for (const skill of slotted) need(book.get(skill) === 1, `skill bar starts with ${skill}, which is not in the skill book at level 1`);
   return problems;
 }

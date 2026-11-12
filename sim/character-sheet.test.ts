@@ -8,6 +8,7 @@ import type { Content } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import { computeStats, resolveSkillBar, skillCycle } from './stats.ts';
+import { defaultBar } from './skill-book.ts';
 import type { World } from './world/types.ts';
 
 const content: Content = loadContent();
@@ -15,7 +16,7 @@ const content: Content = loadContent();
 function subject(level: number, allocated: readonly string[], weapon: boolean): SheetSubject {
   const equipped = emptyEquipment();
   if (weapon) equipped.weapon = must(generateItem(content, createRng(1), 1, 1, 'rusted_blade', 'common'), 'blade');
-  return { level, xp: 0, equipped, allocated: [...allocated], skills: resolveSkillBar(content, allocated) };
+  return { level, xp: 0, equipped, allocated: [...allocated], skills: resolveSkillBar(content, defaultBar(content), allocated) };
 }
 
 function near(actual: number, expected: number): void {
@@ -88,7 +89,7 @@ void test('the sheet agrees with the stats the world fights with', (): void => {
     { life: sheet.figures.maxLife.total, mana: sheet.figures.maxMana.total, armour: sheet.figures.armour.total, crit: sheet.figures.critChance.total },
     { life: world.player.stats.maxLife, mana: world.player.stats.maxMana, armour: world.player.stats.armour, crit: world.player.stats.critChance },
   );
-  assert.equal(sheet.skills.length, world.player.skills.filter((owned): boolean => owned.delivery.type !== 'dash').length);
+  assert.equal(sheet.skills.length, world.player.skills.filter((owned): boolean => owned !== null && owned.delivery.type !== 'dash').length);
   assert.ok(sheet.skills.every((entry: SkillOffence): boolean => entry.id !== 'dodge_roll'));
 });
 

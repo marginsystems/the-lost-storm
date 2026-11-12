@@ -197,3 +197,7 @@ export function rebind(table: readonly ActionDef[], overrides: Overrides, action
   if (owner !== undefined) return { kind: 'conflict', with: owner };
   return { kind: 'ok', overrides: { ...overrides, [action]: [code] } };
 }
+
+export function slotName(slot: number): string {
+  return slot === 0 ? 'Move / attack' : `Skill slot ${slot}`;
+}

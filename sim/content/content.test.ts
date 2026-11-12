@@ -64,8 +64,8 @@ void test('every clip a rig names has its own file in the rig clip folder, and t
 
 void test('every skill on the bar and every monster skill has an action clip on the rig that uses it', (): void => {
   const hero = must(content.rigs.get(content.player.rig), 'hero rig');
-  for (const binding of content.player.skillBar) {
-    const skill = must(content.skills.get(binding.skill), binding.skill);
+  for (const entry of content.player.skillBook) {
+    const skill = must(content.skills.get(entry.skill), entry.skill);
     for (const animation of [skill.animation, ...(skill.combo?.steps ?? []).map((step: { readonly animation: string }): string => step.animation)]) assert.ok(hero.clips.actions[animation] !== undefined, `${skill.id} ${animation}`);
   }
   for (const monster of content.monsters.values()) {

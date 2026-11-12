@@ -64,13 +64,11 @@ export function resolveSkill(content: Content, skill: SkillDef, allocated: reado
   };
 }
 
-export function resolveSkillBar(content: Content, allocated: readonly string[]): SkillDef[] {
-  const skills: SkillDef[] = [];
-  for (const binding of content.player.skillBar) {
-    const skill: SkillDef | undefined = content.skills.get(binding.skill);
-    if (skill !== undefined) skills.push(resolveSkill(content, skill, allocated));
-  }
-  return skills;
+export function resolveSkillBar(content: Content, bar: readonly (string | null)[], allocated: readonly string[]): (SkillDef | null)[] {
+  return bar.map((id: string | null): SkillDef | null => {
+    const skill: SkillDef | undefined = id === null ? undefined : content.skills.get(id);
+    return skill === undefined ? null : resolveSkill(content, skill, allocated);
+  });
 }
 
 export function armourReduction(armour: number): number {
