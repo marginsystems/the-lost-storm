@@ -11,6 +11,7 @@ import { hasWear, instantiateRig, loadModel } from './character-loader.ts';
 import { disposeObject, groundArcs, skyBolt } from './effect-shapes.ts';
 import type { GhostUniforms } from './ghost-material.ts';
 import { createGhostUniforms, makeGhost } from './ghost-material.ts';
+import { DOME_FRAGMENT, DOME_VERTEX, FLOOR_FRAGMENT, FLOOR_VERTEX } from './moment-shaders.ts';
 
 export const MOMENT_VIEW = {
   domeSegments: 40,
@@ -50,63 +51,6 @@ const WARM: Color = new Color(0xffe2b8);
 const STRIKE_WHITE: Color = new Color(0xe8f2ff);
 const MARK: Color = new Color(0xb8d2ff);
 
-const DOME_VERTEX: string = [
-  'varying vec3 vNormalView;',
-  'varying vec3 vViewDir;',
-  'varying float vHeight;',
-  'varying float vAround;',
-  'void main() {',
-  '  vec4 view = modelViewMatrix * vec4(position, 1.0);',
-  '  vNormalView = normalize(normalMatrix * normal);',
-  '  vViewDir = normalize(-view.xyz);',
-  '  vHeight = position.y;',
-  '  vAround = atan(position.z, position.x);',
-  '  gl_Position = projectionMatrix * view;',
-  '}',
-].join('\n');
-
-const DOME_FRAGMENT: string = [
-  'uniform vec3 uTint;',
-  'uniform float uStrength;',
-  'uniform float uTime;',
-  'uniform float uDissolve;',
-  'varying vec3 vNormalView;',
-  'varying vec3 vViewDir;',
-  'varying float vHeight;',
-  'varying float vAround;',
-  'void main() {',
-  '  float facing = 1.0 - abs(dot(normalize(vNormalView), normalize(vViewDir)));',
-  '  float rim = pow(facing, 3.4);',
-  '  float shimmer = 0.5 + 0.5 * sin(uTime * 2.1 + vAround * 5.0 + vHeight * 7.0);',
-  '  float foot = smoothstep(0.0, 0.18, vHeight);',
-  '  float speck = fract(sin(dot(floor(gl_FragCoord.xy / 2.0), vec2(12.9898, 78.233))) * 43758.5453);',
-  '  if (speck < uDissolve) discard;',
-  '  float alpha = (rim * (0.75 + 0.25 * shimmer) + 0.05) * foot * uStrength;',
-  '  gl_FragColor = vec4(uTint * alpha, alpha);',
-  '}',
-].join('\n');
-
-const FLOOR_VERTEX: string = ['varying vec2 vPlane;', 'void main() {', '  vPlane = position.xy;', '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);', '}'].join('\n');
-
-const FLOOR_FRAGMENT: string = [
-  'uniform vec3 uTint;',
-  'uniform float uStrength;',
-  'uniform float uTime;',
-  'uniform float uDissolve;',
-  'uniform float uMark;',
-  'varying vec2 vPlane;',
-  'void main() {',
-  '  float d = length(vPlane);',
-  '  float pool = smoothstep(1.0, 0.55, d);',
-  '  float edge = smoothstep(0.82, 0.96, d) * smoothstep(1.0, 0.96, d);',
-  '  float ripple = 0.5 + 0.5 * sin(d * 18.0 - uTime * 2.6);',
-  '  float speck = fract(sin(dot(floor(gl_FragCoord.xy / 2.0), vec2(39.3468, 11.135))) * 43758.5453);',
-  '  if (speck < uDissolve) discard;',
-  '  float rings = uMark * smoothstep(0.08, 0.0, abs(fract(d * 3.0 - uTime * 1.5) - 0.5)) * smoothstep(1.0, 0.85, d);',
-  '  float alpha = ((pool * (0.55 + 0.15 * ripple) + edge * 0.9) * uStrength + rings) ;',
-  '  gl_FragColor = vec4(uTint * alpha, alpha);',
-  '}',
-].join('\n');
 
 interface SurfaceUniforms {
   readonly [name: string]: IUniform<Color | number>;

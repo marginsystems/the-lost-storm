@@ -21,11 +21,11 @@ export function createGhostUniforms(tint: Color, mix: number): GhostUniforms {
 
 const DECLARE: string = ['uniform vec3 uFlash;', 'uniform vec3 uGhostTint;', 'uniform float uGhostMix;', 'uniform float uGhostRim;', 'uniform float uGhostDissolve;', 'void main() {'].join('\n');
 
-const SHADE: string = [
+export const GHOST_SHADE: string = [
   '#include <emissivemap_fragment>',
   'float ghostLuma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));',
   `diffuseColor.rgb = mix(diffuseColor.rgb, uGhostTint * (${GHOST.shadeFloor.toFixed(2)} + ghostLuma), uGhostMix);`,
-  'float ghostFacing = 1.0 - abs(dot(normalize(normal), normalize(vViewPosition)));',
+  'float ghostFacing = clamp(1.0 - abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0);',
   `totalEmissiveRadiance += uFlash + uGhostTint * pow(ghostFacing, ${GHOST.rimPower.toFixed(2)}) * ${GHOST.rimBoost.toFixed(2)} * uGhostRim;`,
   `float ghostSpeck = fract(sin(dot(floor(gl_FragCoord.xy / ${GHOST.speckle.toFixed(1)}), vec2(12.9898, 78.233))) * 43758.5453);`,
   'if (ghostSpeck < uGhostDissolve) discard;',
@@ -40,7 +40,7 @@ export function makeGhost(material: MeshStandardMaterial, flash: IUniform<Color>
     shader.uniforms['uGhostMix'] = ghost.mix;
     shader.uniforms['uGhostRim'] = ghost.rim;
     shader.uniforms['uGhostDissolve'] = ghost.dissolve;
-    shader.fragmentShader = shader.fragmentShader.replace('void main() {', DECLARE).replace('#include <emissivemap_fragment>', SHADE);
+    shader.fragmentShader = shader.fragmentShader.replace('void main() {', DECLARE).replace('#include <emissivemap_fragment>', GHOST_SHADE);
   };
   material.customProgramCacheKey = (): string => GHOST.programKey;
 }

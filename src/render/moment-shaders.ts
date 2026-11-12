@@ -1,0 +1,57 @@
+export const DOME_VERTEX: string = [
+  'varying vec3 vNormalView;',
+  'varying vec3 vViewDir;',
+  'varying float vHeight;',
+  'varying float vAround;',
+  'void main() {',
+  '  vec4 view = modelViewMatrix * vec4(position, 1.0);',
+  '  vNormalView = normalize(normalMatrix * normal);',
+  '  vViewDir = normalize(-view.xyz);',
+  '  vHeight = position.y;',
+  '  vAround = atan(position.z, position.x);',
+  '  gl_Position = projectionMatrix * view;',
+  '}',
+].join('\n');
+
+export const DOME_FRAGMENT: string = [
+  'uniform vec3 uTint;',
+  'uniform float uStrength;',
+  'uniform float uTime;',
+  'uniform float uDissolve;',
+  'varying vec3 vNormalView;',
+  'varying vec3 vViewDir;',
+  'varying float vHeight;',
+  'varying float vAround;',
+  'void main() {',
+  '  float facing = clamp(1.0 - abs(dot(normalize(vNormalView), normalize(vViewDir))), 0.0, 1.0);',
+  '  float rim = pow(facing, 3.4);',
+  '  float shimmer = 0.5 + 0.5 * sin(uTime * 2.1 + vAround * 5.0 + vHeight * 7.0);',
+  '  float foot = smoothstep(0.0, 0.18, vHeight);',
+  '  float speck = fract(sin(dot(floor(gl_FragCoord.xy / 2.0), vec2(12.9898, 78.233))) * 43758.5453);',
+  '  if (speck < uDissolve) discard;',
+  '  float alpha = max((rim * (0.75 + 0.25 * shimmer) + 0.05) * foot * uStrength, 0.0);',
+  '  gl_FragColor = vec4(uTint * alpha, alpha);',
+  '}',
+].join('\n');
+
+export const FLOOR_VERTEX: string = ['varying vec2 vPlane;', 'void main() {', '  vPlane = position.xy;', '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);', '}'].join('\n');
+
+export const FLOOR_FRAGMENT: string = [
+  'uniform vec3 uTint;',
+  'uniform float uStrength;',
+  'uniform float uTime;',
+  'uniform float uDissolve;',
+  'uniform float uMark;',
+  'varying vec2 vPlane;',
+  'void main() {',
+  '  float d = length(vPlane);',
+  '  float pool = (1.0 - smoothstep(0.55, 1.0, d));',
+  '  float edge = smoothstep(0.82, 0.96, d) * (1.0 - smoothstep(0.96, 1.0, d));',
+  '  float ripple = 0.5 + 0.5 * sin(d * 18.0 - uTime * 2.6);',
+  '  float speck = fract(sin(dot(floor(gl_FragCoord.xy / 2.0), vec2(39.3468, 11.135))) * 43758.5453);',
+  '  if (speck < uDissolve) discard;',
+  '  float rings = uMark * (1.0 - smoothstep(0.0, 0.08, abs(fract(d * 3.0 - uTime * 1.5) - 0.5))) * (1.0 - smoothstep(0.85, 1.0, d));',
+  '  float alpha = max((pool * (0.55 + 0.15 * ripple) + edge * 0.9) * uStrength + rings, 0.0);',
+  '  gl_FragColor = vec4(uTint * alpha, alpha);',
+  '}',
+].join('\n');
