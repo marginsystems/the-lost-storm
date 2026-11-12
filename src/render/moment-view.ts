@@ -12,6 +12,7 @@ import { hasWear, instantiateRig, loadKeptModel } from './character-loader.ts';
 import { disposeObject, groundArcs, skyBolt } from './effect-shapes.ts';
 import type { GhostUniforms } from './ghost-material.ts';
 import { createGhostUniforms, makeGhost } from './ghost-material.ts';
+import type { RigGlow } from './ghost-material.ts';
 import { DOME_FRAGMENT, DOME_VERTEX, FLOOR_FRAGMENT, FLOOR_VERTEX } from './moment-shaders.ts';
 import type { Press } from './membrane.ts';
 import { MEMBRANE, pressAngle, pressTarget, SLACK, stepPress } from './membrane.ts';
@@ -260,7 +261,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
   const flashes: Flash[] = [];
   const models: Map<string, GLTF> = new Map<string, GLTF>();
   const lights: PointLight[] = [];
-  const zeroFlash: IUniform<Color> = { value: new Color(0, 0, 0) };
+  const zeroFlash: RigGlow = { flash: { value: new Color(0, 0, 0) }, hover: { value: new Color(0, 0, 0) } };
   const grounds: Map<string, BufferGeometry> = new Map<string, BufferGeometry>();
   const groundOf = (def: MomentDef): BufferGeometry => {
     const known: BufferGeometry | undefined = grounds.get(def.id);

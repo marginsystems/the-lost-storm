@@ -9,6 +9,8 @@ import type { ActionClip, GaitClip, RigInstance, UnarmedClipSet } from './charac
 import type { BodyState, ClipKind, GaitChoice, KnockPose } from './locomotion.ts';
 import { chooseGait, clipKindOf, clipsFor, knockPose } from './locomotion.ts';
 import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
+import type { Spring } from '../hud/character-spring.ts';
+import { springTo, stepSpring } from '../hud/character-spring.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -22,7 +24,7 @@ export const ACTOR = {
   flashDecay: 9,
   punchDecay: 11,
   punchSquash: 0.14,
-  hoverGlow: 0.16,
+  hoverGlow: 1,
   hostileHover: 0xff5a3c,
   friendlyHover: 0xffd9a0,
   npcTurnRate: 6,
@@ -159,6 +161,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let flash: number = 0;
   let punch: number = 0;
   let hover: boolean = false;
+  const hoverLevel: Spring = { value: 0, velocity: 0, target: 0 };
   let yaw: number = facing;
   let gaitIndex: number = -1;
   let lastKind: ClipKind = 'idle';
@@ -166,7 +169,6 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let knockLeft: number = 0;
   const flashColor: Color = new Color(0xffffff);
   const hoverColor: Color = new Color(hoverTint);
-  const mixed: Color = new Color();
   rig.root.scale.setScalar(scale);
   rig.root.rotation.order = 'YXZ';
   rig.root.rotation.y = yaw;
@@ -270,9 +272,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       shadow.position.set(rig.root.position.x, rig.root.position.y + CONTACT_SHADOW.lift, rig.root.position.z);
       shadow.scale.setScalar(scale * grow);
       shadow.visible = rig.root.visible && (ownShadow === null || ownShadow.opacity > 0);
-      const hoverAmount: number = hover && !dead ? ACTOR.hoverGlow : 0;
-      mixed.copy(hoverColor).lerp(flashColor, flash > 0 ? 1 : 0);
-      rig.setFlash(mixed, Math.max(flash, hoverAmount));
+      springTo(hoverLevel, hover && !dead ? ACTOR.hoverGlow : 0);
+      stepSpring(hoverLevel, dt);
+      rig.setFlash(flashColor, flash);
+      rig.setHover(hoverColor, Math.max(0, hoverLevel.value));
       rig.mixer.update(dt);
       rig.stepWear(dt);
       if (lying && woke !== null) layerWake(woke);

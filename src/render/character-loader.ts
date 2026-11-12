@@ -8,7 +8,7 @@ import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
 import { fitToSkeleton, groupBodyParts, skinnedMeshes } from './wearables.ts';
-import type { GhostUniforms } from './ghost-material.ts';
+import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { makeGhost } from './ghost-material.ts';
 import { addBoxUvs } from './box-uv.ts';
 
@@ -78,17 +78,26 @@ export interface RigInstance {
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   stepWear(dt: number): void;
   setFlash(color: Color, amount: number): void;
+  setHover(color: Color, amount: number): void;
   setOpacity(opacity: number): void;
   dispose(): void;
 }
 
 export const CHARACTER = {
   flashBoost: 1.9,
+  hoverBoost: 0.5,
+  hoverPower: 3,
   glowBoost: 2.4,
   metalFrom: 0.5,
   matteRoughness: 0.86,
   rimPower: 6,
 } as const;
+
+export const CHARACTER_SHADE: string = [
+  '#include <emissivemap_fragment>',
+  'float edgeFacing = clamp( 1.0 - dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );',
+  `totalEmissiveRadiance += uFlash + uRim * pow( edgeFacing, ${CHARACTER.rimPower.toFixed(2)} ) + uHover * pow( edgeFacing, ${CHARACTER.hoverPower.toFixed(2)} );`,
+].join('\n');
 
 export const WEAR_FADE = {
   stiffness: 240,
@@ -352,7 +361,7 @@ function recolourEmissiveMap(material: MeshStandardMaterial, glow: string): void
   material.emissiveIntensity = CHARACTER.glowBoost;
 }
 
-function flashing(source: unknown, look: RigLook, flash: IUniform<Color>): MeshStandardMaterial[] {
+function flashing(source: unknown, look: RigLook, glow: RigGlow): MeshStandardMaterial[] {
   const list: readonly unknown[] = Array.isArray(source) ? source : [source];
   const cloned: MeshStandardMaterial[] = [];
   for (const entry of list) {
@@ -368,27 +377,28 @@ function flashing(source: unknown, look: RigLook, flash: IUniform<Color>): MeshS
     recolourEmissiveMap(material, look.glow);
     if (look.ghost === null) {
       material.onBeforeCompile = (shader): void => {
-        shader.uniforms['uFlash'] = flash;
+        shader.uniforms['uFlash'] = glow.flash;
+        shader.uniforms['uHover'] = glow.hover;
         shader.uniforms['uRim'] = RIM_LIGHT;
         shader.fragmentShader = shader.fragmentShader
-          .replace('void main() {', 'uniform vec3 uFlash;\nuniform vec3 uRim;\nvoid main() {')
-          .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\ntotalEmissiveRadiance += uFlash + uRim * pow( 1.0 - clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 ), ${CHARACTER.rimPower.toFixed(2)} );`);
+          .replace('void main() {', 'uniform vec3 uFlash;\nuniform vec3 uHover;\nuniform vec3 uRim;\nvoid main() {')
+          .replace('#include <emissivemap_fragment>', CHARACTER_SHADE);
       };
       material.customProgramCacheKey = (): string => FLASH_KEY;
     } else {
-      makeGhost(material, flash, look.ghost);
+      makeGhost(material, glow, look.ghost);
     }
     cloned.push(material);
   }
   return cloned;
 }
 
-function dress(object: Object3D, look: RigLook, flash: IUniform<Color>, sink: MeshStandardMaterial[]): void {
+function dress(object: Object3D, look: RigLook, glow: RigGlow, sink: MeshStandardMaterial[]): void {
   if (!(object instanceof Mesh)) return;
   object.castShadow = true;
   object.receiveShadow = false;
   object.frustumCulled = false;
-  const cloned: MeshStandardMaterial[] = flashing(object.material, look, flash);
+  const cloned: MeshStandardMaterial[] = flashing(object.material, look, glow);
   sink.push(...cloned);
   const first: MeshStandardMaterial | undefined = cloned[0];
   if (first !== undefined) object.material = cloned.length === 1 ? first : cloned;
@@ -418,9 +428,9 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   model.rotation.y = def.yawOffsetDegrees * DEGREES;
   const root: Group = new Group();
   root.add(model);
-  const flash: IUniform<Color> = { value: new Color(0, 0, 0) };
+  const glow: RigGlow = { flash: { value: new Color(0, 0, 0) }, hover: { value: new Color(0, 0, 0) } };
   const materials: MeshStandardMaterial[] = [];
-  model.traverse((object: Object3D): void => dress(object, look, flash, materials));
+  model.traverse((object: Object3D): void => dress(object, look, glow, materials));
   for (const name of def.hiddenNodes) {
     const node: Object3D | undefined = findNode(model, name);
     if (node !== undefined) node.visible = false;
@@ -466,7 +476,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     const geometries: readonly BufferGeometry[] = fittedPieces(rig, wearable, skinAnchor);
     wearable.pieces.forEach((source: SkinnedMesh, index: number): void => {
       const geometry: BufferGeometry | undefined = geometries[index];
-      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost }, flash);
+      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost }, glow);
       const first: MeshStandardMaterial | undefined = cloned[0];
       if (geometry === undefined || first === undefined) return;
       const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
@@ -521,7 +531,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const piece: HeldPiece = { holder, size: socket.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
         holder.scale.setScalar(socket.scale * piece.value);
         const copy: Object3D = attachment.template.clone(true);
-        if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, flash, piece.materials));
+        if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, glow, piece.materials));
         holder.add(copy);
         bone.add(holder);
         held.set(id, piece);
@@ -579,7 +589,10 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       if (!moving && shownParts.join('|') !== finalParts.join('|')) hide(finalParts);
     },
     setFlash(color: Color, amount: number): void {
-      flash.value.copy(color).multiplyScalar(amount * CHARACTER.flashBoost);
+      glow.flash.value.copy(color).multiplyScalar(amount * CHARACTER.flashBoost);
+    },
+    setHover(color: Color, amount: number): void {
+      glow.hover.value.copy(color).multiplyScalar(amount * CHARACTER.hoverBoost);
     },
     setOpacity(opacity: number): void {
       if (look.ghost === null) return;

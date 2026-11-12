@@ -15,7 +15,11 @@ void test('a ghost fades out by its alpha, with no screen-space noise pattern', 
 
 void test('a double-sided ghost draws in one pass, so three never marks it for a program rebuild mid-frame', (): void => {
   const material: MeshStandardMaterial = new MeshStandardMaterial({ side: DoubleSide });
-  makeGhost(material, { value: new Color() }, createGhostUniforms(new Color(), 0.5));
+  makeGhost(material, { flash: { value: new Color() }, hover: { value: new Color() } }, createGhostUniforms(new Color(), 0.5));
   assert.equal(material.transparent, true);
   assert.equal(material.forceSinglePass, true);
+});
+
+void test('a hovered ghost glows at its edge, never as a flat fill', (): void => {
+  assert.match(GHOST_SHADE, /uHover \* pow\(ghostFacing,/);
 });
