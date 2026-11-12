@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Content } from '../sim/content/types.ts';
+import { Color, Fog, Scene } from 'three';
+import type { Content, ZoneAmbience } from '../sim/content/types.ts';
 import { loadContent } from '../sim/content/content.ts';
 import type { Timers } from './backend/backend.ts';
 import type { TransitionReport, Veil, ZoneTransition } from './transition.ts';
@@ -146,6 +147,58 @@ void test('the new zone is built only once the veil fully covers the old one', a
   assert.deepEqual(built, ['built']);
 });
 
+function ambienceOf(id: string): ZoneAmbience {
+  const ambience: ZoneAmbience | undefined = content.zones.get(id)?.ambience;
+  if (ambience === undefined) throw new Error(`no zone ${id}`);
+  return ambience;
+}
+
+function dress(scene: Scene, ambience: ZoneAmbience): void {
+  scene.background = new Color(ambience.background);
+  scene.fog = new Fog(ambience.background, ambience.fogNear, ambience.fogFar);
+}
+
+function looks(scene: Scene): string {
+  const background: string = scene.background instanceof Color ? scene.background.getHexString() : 'none';
+  const fog: string = scene.fog instanceof Fog ? `${scene.fog.color.getHexString()} ${scene.fog.near} ${scene.fog.far}` : 'none';
+  return `${background} | ${fog}`;
+}
+
+void test('while the veil is still coming down the scene keeps the old zone background and fog, whatever the world already says', async (): Promise<void> => {
+  const run: Harness = harness();
+  const scene: Scene = new Scene();
+  dress(scene, ambienceOf('between'));
+  const before: string = looks(scene);
+  const world: { zone: string } = { zone: 'between' };
+  const frame = (ms: number): void => {
+    run.advance(ms);
+    if (run.transition.presenting) dress(scene, ambienceOf(world.zone));
+  };
+  world.zone = 'hall_of_time';
+  run.transition.begin((): Promise<void> => {
+    dress(scene, ambienceOf('hall_of_time'));
+    return Promise.resolve();
+  }, veilColour(content.zones, [{ type: 'zone_changed', from: 'between', to: 'hall_of_time' }]), revealOf(run));
+  const seen: string[] = [];
+  for (let index: number = 0; index < 20; index += 1) {
+    frame(16);
+    seen.push(looks(scene));
+  }
+  await settle();
+  for (let index: number = 0; index < 20; index += 1) {
+    frame(16);
+    seen.push(looks(scene));
+  }
+  await settle();
+  frame(16);
+  seen.push(looks(scene));
+  assert.deepEqual(new Set(seen), new Set([before]));
+  run.veil.finishCover();
+  await settle();
+  frame(16);
+  assert.notEqual(looks(scene), before);
+});
+
 void test('the veil lifts, and the HUD hears of the new zone, only after the new zone has drawn several clean frames in a row', async (): Promise<void> => {
   const run: Harness = harness();
   run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
@@ -158,6 +211,15 @@ void test('the veil lifts, and the HUD hears of the new zone, only after the new
   cleanFrames(run, TRANSITION.cleanFrames - 1);
   await settle();
   assert.deepEqual(run.veil.log.slice(1), []);
+  cleanFrames(run, 1);
+  await settle();
+  assert.deepEqual(run.veil.log.slice(1), ['reveal']);
+  assert.equal(run.transition.blocking, true);
+  cleanFrames(run, TRANSITION.revealFrames - 1);
+  run.advance(TRANSITION.cleanFrameMs * 4);
+  cleanFrames(run, TRANSITION.revealFrames - 1);
+  await settle();
+  assert.deepEqual(run.veil.log.slice(1), ['reveal']);
   cleanFrames(run, 1);
   await settle();
   assert.deepEqual(run.veil.log.slice(1), ['reveal', 'lift']);
@@ -178,6 +240,11 @@ void test('a zone that never draws clean frames still lifts the veil after the c
   assert.equal(run.due.length, 1);
   for (const task of run.due.splice(0)) task();
   await settle();
+  assert.deepEqual(run.veil.log.slice(1), ['reveal']);
+  run.advance(TRANSITION.cleanFrameMs * 3);
+  assert.equal(run.due.length, 1);
+  for (const task of run.due.splice(0)) task();
+  await settle();
   assert.deepEqual(run.veil.log.slice(1), ['reveal', 'lift']);
   run.veil.finishLift();
   await settle();
@@ -192,6 +259,8 @@ void test('frames while the veil comes and goes count as seen, frames behind it 
   await settle();
   run.advance(300);
   cleanFrames(run, TRANSITION.cleanFrames);
+  await settle();
+  cleanFrames(run, TRANSITION.revealFrames);
   await settle();
   run.advance(19);
   run.veil.finishLift();

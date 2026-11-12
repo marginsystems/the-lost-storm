@@ -5,6 +5,8 @@ export const TRANSITION = {
   typicalWindow: 30,
   settleMaxMs: 3000,
   lightFrom: 0.5,
+  revealFrames: 2,
+  revealMaxMs: 400,
 } as const;
 
 import type { ZoneDef } from '../sim/content/types.ts';
@@ -21,6 +23,7 @@ export interface TransitionReport {
   readonly buildMs: number;
   readonly settleMs: number;
   readonly settled: boolean;
+  readonly revealMs: number;
   readonly worstHiddenMs: number;
   readonly worstShownMs: number;
 }
@@ -40,7 +43,7 @@ export interface TransitionDeps {
   readonly onReport: (report: TransitionReport) => void;
 }
 
-type Phase = 'idle' | 'covering' | 'building' | 'settling' | 'lifting';
+type Phase = 'idle' | 'covering' | 'building' | 'settling' | 'revealing' | 'lifting';
 
 export function veilColour(zones: ReadonlyMap<string, ZoneDef>, events: readonly WorldEvent[]): string | null {
   for (const event of events) {
@@ -73,7 +76,7 @@ export function cleanFrameLimit(recent: readonly number[]): number {
 
 export function describeTransition(report: TransitionReport): string {
   const settle: string = report.settled ? 'settled' : 'gave up settling';
-  return `Zone change: covered in ${report.coverMs.toFixed(0)} ms, built in ${report.buildMs.toFixed(0)} ms, ${settle} in ${report.settleMs.toFixed(0)} ms; worst frame ${report.worstShownMs.toFixed(1)} ms in view, ${report.worstHiddenMs.toFixed(1)} ms behind the veil`;
+  return `Zone change: covered in ${report.coverMs.toFixed(0)} ms, built in ${report.buildMs.toFixed(0)} ms, ${settle} in ${report.settleMs.toFixed(0)} ms, revealed in ${report.revealMs.toFixed(0)} ms; worst frame ${report.worstShownMs.toFixed(1)} ms in view, ${report.worstHiddenMs.toFixed(1)} ms behind the veil`;
 }
 
 export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
@@ -82,14 +85,16 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
   const recent: number[] = [];
   let limit: number = TRANSITION.cleanFrameMs;
   let clean: number = 0;
+  let needed: number = TRANSITION.cleanFrames;
   let worstHidden: number = 0;
   let worstShown: number = 0;
   let settledNow: (() => void) | null = null;
 
-  const settle = (): Promise<boolean> =>
+  const settle = (frames: number, maxMs: number): Promise<boolean> =>
     new Promise<boolean>((resolve: (settled: boolean) => void): void => {
       clean = 0;
-      const cancel: () => void = timers.after(TRANSITION.settleMaxMs, (): void => {
+      needed = frames;
+      const cancel: () => void = timers.after(maxMs, (): void => {
         settledNow = null;
         resolve(false);
       });
@@ -112,13 +117,16 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
     await swap();
     const built: number = now();
     phase = 'settling';
-    const settled: boolean = await settle();
+    const settled: boolean = await settle(TRANSITION.cleanFrames, TRANSITION.settleMaxMs);
     const ready: number = now();
-    phase = 'lifting';
+    phase = 'revealing';
     reveal();
+    await settle(TRANSITION.revealFrames, TRANSITION.revealMaxMs);
+    const revealed: number = now();
+    phase = 'lifting';
     await veil.lift();
     phase = 'idle';
-    deps.onReport({ coverMs: covered - started, buildMs: built - covered, settleMs: ready - built, settled, worstHiddenMs: worstHidden, worstShownMs: worstShown });
+    deps.onReport({ coverMs: covered - started, buildMs: built - covered, settleMs: ready - built, settled, revealMs: revealed - ready, worstHiddenMs: worstHidden, worstShownMs: worstShown });
   };
 
   return {
@@ -126,7 +134,7 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
       return phase !== 'idle' && phase !== 'lifting';
     },
     get presenting(): boolean {
-      return phase === 'idle' || phase === 'settling' || phase === 'lifting';
+      return phase === 'idle' || phase === 'settling' || phase === 'revealing' || phase === 'lifting';
     },
     begin(swap: () => Promise<void>, colour: string | null, reveal: () => void): void {
       if (phase !== 'idle') return;
@@ -151,9 +159,10 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
           worstHidden = Math.max(worstHidden, dtMs);
           return;
         case 'settling':
+        case 'revealing':
           worstHidden = Math.max(worstHidden, dtMs);
           clean = dtMs <= limit ? clean + 1 : 0;
-          if (clean >= TRANSITION.cleanFrames) settledNow?.();
+          if (clean >= needed) settledNow?.();
           return;
       }
     },

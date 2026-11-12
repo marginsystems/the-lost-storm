@@ -539,27 +539,27 @@ async function start(): Promise<void> {
       ward.update(dt, world);
       stage.follow(world.player.pos.x, world.player.pos.z);
       overlays.update(dt, world, input.hoveredId);
+      weather.update(dt, world.player.pos.x, world.player.pos.z, glitchSettings.get().reduceFlashes);
+      rain.update(dt, world.player.pos.x, world.player.pos.z, weather.flash, zoneView);
+      zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.measure(actors.hero(), now / 1000), flash: weather.flash });
+      if (zoneView.lightsVersion !== torchVersion) {
+        torchVersion = zoneView.lightsVersion;
+        effects.setTorches(zoneView.torches);
+      }
+      markers.update(dt, now / 1000, world);
+      objectiveMarker.update(dt, now / 1000, world);
+      stage.setFlash(weather.light);
+      minimap.update(dt);
     }
     audio.setMuffled(insideAwakeMoment(world));
     audio.update(dt);
     particles.update(dt);
-    weather.update(dt, world.player.pos.x, world.player.pos.z, glitchSettings.get().reduceFlashes);
-    rain.update(dt, world.player.pos.x, world.player.pos.z, weather.flash, zoneView);
-    zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.measure(actors.hero(), now / 1000), flash: weather.flash });
-    if (zoneView.lightsVersion !== torchVersion) {
-      torchVersion = zoneView.lightsVersion;
-      effects.setTorches(zoneView.torches);
-    }
-    markers.update(dt, now / 1000, world);
-    objectiveMarker.update(dt, now / 1000, world);
-    stage.setFlash(weather.light);
     hud.update(dt);
     touch.update();
-    minimap.update(dt);
     ladder?.noteLevel(world.player.level);
     launch.update(world, dt, gate.queue);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
-    glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
+    if (transition.presenting) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
     stage.render();
 
     sinceSave += dt;
