@@ -67,3 +67,13 @@ void test('the half texture path swaps the folder only when asked and only for s
   assert.equal(texturePath('textures/half/cobble_color.webp', true), 'textures/half/cobble_color.webp');
   assert.equal(texturePath('models/x.glb', true), 'models/x.glb');
 });
+
+void test('the phone gets a lighter rain with no lens water', (): void => {
+  const desktop = QUALITY_TIERS.desktop.rain;
+  const phone = QUALITY_TIERS.mobile.rain;
+  assert.ok(phone.mid < desktop.mid && phone.far < desktop.far && phone.near < desktop.near);
+  assert.ok(phone.splashes < desktop.splashes && phone.mist < desktop.mist);
+  assert.equal(phone.lens, false);
+  assert.equal(desktop.lens, true);
+  assert.ok(desktop.splashes <= desktop.mid && phone.splashes <= phone.mid);
+});
