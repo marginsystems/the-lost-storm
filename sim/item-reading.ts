@@ -2,11 +2,12 @@ import type { Content, DamageType, ItemSlot, ModOp, SkillDef, StatBlock, StatId,
 import { DAMAGE_TYPES, ITEM_STATS } from './content/types.ts';
 import { baseOf, itemMods, slotOf } from './items.ts';
 import { describeMod, isRatio, roundStat, statLabel } from './stat-text.ts';
-import { computeStats, damagePerSecond, damageTakenScale } from './stats.ts';
+import { computeStats, damagePerSecond, damageTakenScale, effectiveAttackSpeed } from './stats.ts';
 import type { Equipment, ItemInstance, PlayerState } from './world/types.ts';
 
 export const READING = {
   even: 0.005,
+  sharpSpeed: 0.1,
 } as const;
 
 export interface ReadingRow {
@@ -28,6 +29,7 @@ export interface Verdict {
   readonly kind: VerdictKind;
   readonly damage: number;
   readonly toughness: number;
+  readonly speed: number;
 }
 
 export interface ReadingLine {
@@ -141,6 +143,7 @@ export function verdictParts(verdict: Verdict): readonly string[] {
   };
   say(verdict.damage, 'damage');
   say(verdict.toughness, 'toughness');
+  if (Math.abs(verdict.speed) >= READING.sharpSpeed) say(verdict.speed, 'attack speed');
   return parts;
 }
 
@@ -180,8 +183,9 @@ export function itemVerdict(content: Content, subject: ReadingSubject, zone: Zon
   const after: StatBlock = computeStats(content, subject.level, swapped, subject.allocated);
   const damage: number = change(bestDamage(after, subject.skills), bestDamage(before, subject.skills));
   const tough: number = change(toughness(content, after, zone), toughness(content, before, zone));
-  const up: boolean = damage > READING.even || tough > READING.even;
-  const down: boolean = damage < -READING.even || tough < -READING.even;
+  const speed: number = change(effectiveAttackSpeed(after), effectiveAttackSpeed(before));
+  const up: boolean = damage > READING.even || tough > READING.even || speed >= READING.sharpSpeed;
+  const down: boolean = damage < -READING.even || tough < -READING.even || speed <= -READING.sharpSpeed;
   const kind: VerdictKind = up && down ? 'trade' : up ? 'better' : down ? 'worse' : 'same';
-  return { kind, damage, toughness: tough };
+  return { kind, damage, toughness: tough, speed };
 }

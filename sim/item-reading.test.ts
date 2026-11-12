@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
 import type { Content, ZoneDef } from './content/types.ts';
-import { readItem, itemVerdict, readingLines, toughness, verdictParts, zoneDamageMix } from './item-reading.ts';
+import { READING, readItem, itemVerdict, readingLines, toughness, verdictParts, zoneDamageMix } from './item-reading.ts';
 import type { ItemReading, ReadingLine, ReadingRow, ReadingSubject } from './item-reading.ts';
 import { emptyEquipment } from './items.ts';
 import { computeStats } from './stats.ts';
@@ -52,10 +52,14 @@ void test('a zone with storm monsters weighs storm resistance into toughness', (
   assert.ok(toughness(content, { ...stats, frostResist: 0.5 }, frost) > toughness(content, stats, frost) * 1.9);
 });
 
-void test('the verdict is better, worse, a trade or the same from damage per second and toughness', (): void => {
+void test('the verdict is better, worse, a trade or the same from damage per second, toughness and a sharp change in attack speed', (): void => {
   const skills = [must(content.skills.get('cleave'), 'cleave')];
   const subject: ReadingSubject = { level: 5, equipped: { ...emptyEquipment(), weapon: item('stormsteel_sword', 'common', []) }, allocated: [], skills };
-  assert.equal(itemVerdict(content, subject, zone, item('tempest_greatsword', 'common', []))?.kind, 'better');
+  const greatsword = must(itemVerdict(content, subject, zone, item('tempest_greatsword', 'common', [])), 'greatsword');
+  assert.equal(greatsword.kind, 'trade');
+  assert.ok(greatsword.damage > 0);
+  assert.ok(greatsword.speed <= -READING.sharpSpeed);
+  assert.equal(itemVerdict(content, { ...subject, equipped: { ...subject.equipped, weapon: item('tempest_greatsword', 'common', []) } }, zone, item('stormsteel_sword', 'common', []))?.kind, 'trade');
   assert.equal(itemVerdict(content, subject, zone, item('rusted_blade', 'common', []))?.kind, 'worse');
   assert.equal(itemVerdict(content, subject, zone, item('stormsteel_sword', 'common', []))?.kind, 'same');
   const heavy: ReadingSubject = { ...subject, equipped: { ...subject.equipped, chest: item('squall_plate', 'common', []) } };
@@ -83,7 +87,8 @@ void test('a lost line sits in its own place in the fixed order, not at the end'
 });
 
 void test('the verdict names only the sides that change, with a true minus', (): void => {
-  assert.deepEqual(verdictParts({ kind: 'better', damage: 1.22, toughness: 0.001 }), ['+122% damage']);
-  assert.deepEqual(verdictParts({ kind: 'trade', damage: -0.35, toughness: 0.4 }), ['−35% damage', '+40% toughness']);
-  assert.deepEqual(verdictParts({ kind: 'same', damage: 0, toughness: 0 }), []);
+  assert.deepEqual(verdictParts({ kind: 'better', damage: 1.22, toughness: 0.001, speed: 0.04 }), ['+122% damage']);
+  assert.deepEqual(verdictParts({ kind: 'trade', damage: -0.35, toughness: 0.4, speed: 0 }), ['−35% damage', '+40% toughness']);
+  assert.deepEqual(verdictParts({ kind: 'trade', damage: 3.19, toughness: 0, speed: -0.3 }), ['+319% damage', '−30% attack speed']);
+  assert.deepEqual(verdictParts({ kind: 'same', damage: 0, toughness: 0, speed: 0 }), []);
 });
