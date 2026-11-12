@@ -287,6 +287,11 @@ export function stepMoments(world: World, dt: number): void {
   if (missed) world.strikeTimer = Math.min(world.strikeTimer, MOMENTS.retry);
 }
 
+export function insideAwakeMoment(world: World): boolean {
+  if (!world.player.alive) return false;
+  return world.moments.some((moment: MomentState): boolean => moment.phase === 'awake' && distance(world.player.pos, moment.pos) < moment.def.radius);
+}
+
 export function clearMoments(world: World): void {
   for (const moment of world.moments) {
     removeEchoes(world, moment, false);

@@ -18,6 +18,7 @@ import type { Vec2 } from '../sim/math.ts';
 import type { SaveData } from '../sim/save.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
+import { insideAwakeMoment } from '../sim/world/moments.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../sim/world/types.ts';
 import type { Listener } from './audio/listener.ts';
@@ -519,6 +520,7 @@ async function start(): Promise<void> {
       stage.follow(world.player.pos.x, world.player.pos.z);
       overlays.update(dt, world, input.hoveredId);
     }
+    audio.setMuffled(insideAwakeMoment(world));
     audio.update(dt);
     particles.update(dt);
     weather.update(dt, world.player.pos.x, world.player.pos.z, glitchSettings.get().reduceFlashes);

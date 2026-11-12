@@ -6,8 +6,10 @@ import type { Content, ZoneDef, ZoneNpc } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { parseSaveText, toSave } from '../save.ts';
+import { cuesForEvent } from '../audio.ts';
+import { loadAudio } from '../content/audio.ts';
 import { createWorld } from './create.ts';
-import { forceStrike, MOMENTS, momentOfEcho, nearestFight, safeSpots, strikeGround } from './moments.ts';
+import { forceStrike, insideAwakeMoment, MOMENTS, momentOfEcho, nearestFight, safeSpots, strikeGround } from './moments.ts';
 import { stepWorld } from './step.ts';
 import type { MomentState, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -543,4 +545,30 @@ void test('safe ground is every NPC, the waypoint and every service prop such as
   const services = hideout.props.filter((placed): boolean => (shipped.props.get(placed.prop)?.service ?? null) !== null);
   assert.ok(services.length > 0);
   for (const placed of services) assert.ok(has(placed.x, placed.z), placed.prop);
+});
+
+void test('the bubble sound and the muffled bed follow the hero into a woken bubble', (): void => {
+  const world: World = fieldWorld(quietField());
+  const moment: MomentState = struck(world, QUIET.id);
+  assert.equal(insideAwakeMoment(world), false);
+  standAt(world, moment.pos);
+  const events: WorldEvent[] = run(world, DT * 2);
+  assert.equal(insideAwakeMoment(world), true);
+  const woke: WorldEvent | undefined = events.find((event: WorldEvent): boolean => event.type === 'moment_woke');
+  assert.ok(woke !== undefined);
+  const audio = loadAudio(world.content);
+  assert.deepEqual(cuesForEvent(audio, world, woke).map((cue): string => cue.sound), ['bubble_calm']);
+  world.player.pos = { x: moment.pos.x + moment.def.radius + 5, z: moment.pos.z };
+  assert.equal(insideAwakeMoment(world), false);
+});
+
+void test('a bubble that turns its echoes opens with the hostile sound', (): void => {
+  const world: World = fieldWorld(quietField({ table: [{ moment: RAID.id, weight: 1 }] }), momentLibrary([RAID]));
+  const moment: MomentState = must(forceStrike(world, { x: 40, z: 40 }, RAID.id), 'strike');
+  run(world, world.content.moments.telegraph + DT * 2);
+  standAt(world, moment.pos);
+  const events: WorldEvent[] = run(world, DT * 2);
+  const woke: WorldEvent | undefined = events.find((event: WorldEvent): boolean => event.type === 'moment_woke' && event.turned.length > 0);
+  assert.ok(woke !== undefined);
+  assert.deepEqual(cuesForEvent(loadAudio(world.content), world, woke).map((cue): string => cue.sound), ['bubble_hostile']);
 });
