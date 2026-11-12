@@ -21,7 +21,7 @@ interface Mount {
 
 const FAINT_LIMIT: number = 0.5;
 
-const ALLOWED_IN_A_HIDDEN_HUD: readonly string[] = ['ctx-notice', 'fb', 'glitch-white', 'hud-fps', 'name-echo', 'pause', 'reader-veil', 'tc-stick'];
+const ALLOWED_IN_A_HIDDEN_HUD: readonly string[] = ['ctx-notice', 'fb', 'glitch-white', 'hud-bottom', 'hud-fps', 'hud-hint', 'name-echo', 'pause', 'reader-veil', 'tc-stick'];
 
 const MOUNT_SITES: Readonly<Record<string, string>> = {
   'src/mobile/touch-ui.ts:canvas.after(layer)': '.tc',
@@ -189,4 +189,11 @@ void test('a note read as the HUD first arrives holds the frame back until it cl
   gate.settle();
   followWorld(gate, world, true);
   assert.equal(gate.state(), 'open');
+});
+
+void test('a closed gate hides every piece of the bottom row except the hint, so a first hint can show in the mist', (): void => {
+  const css: string = hudGateCss();
+  const keep: string = HUD_GATE.keep.map((name: string): string => `.${name}`).join(', ');
+  assert.ok(css.includes(`body[data-hud-gate='closed'] #hud > .hud-bottom > :not(${keep})`));
+  assert.ok(HUD_GATE.keep.includes('hud-hint'));
 });

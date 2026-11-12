@@ -4,10 +4,10 @@ import type { World } from '../../sim/world/types.ts';
 import type { HudPanel } from './hud-api.ts';
 
 export const HUD_GATE = {
-  roots: ['#hud', '.tc'],
+  roots: ['#hud', '#hud > .hud-bottom', '.tc'],
   loose: ['.tc-rotate'],
   open: ['#overlays'],
-  keep: ['pause', 'hud-fps', 'ctx-notice', 'name-echo', 'reader-veil', 'tc-stick', 'glitch-white', 'fb'],
+  keep: ['pause', 'hud-fps', 'ctx-notice', 'name-echo', 'reader-veil', 'tc-stick', 'glitch-white', 'fb', 'hud-bottom', 'hud-hint'],
   faint: 'tc-stick',
   faintIdle: 0.12,
   faintHeld: 0.3,

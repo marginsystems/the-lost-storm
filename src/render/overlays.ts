@@ -217,12 +217,12 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const labelFor = (world: World, ground: GroundItem): void => {
     if (ground.content.kind !== 'item' || labels.has(ground.id)) return;
     const element: HTMLDivElement = document.createElement('div');
-    element.className = 'loot-label';
+    element.className = ground.find === null ? 'loot-label' : 'loot-label find';
     const inner: HTMLSpanElement = document.createElement('span');
     const arrow: HTMLElement = document.createElement('i');
     arrow.className = 'loot-arrow';
     inner.textContent = ground.find === null ? itemName(world.content, ground.content.item) : hooks.findLabel;
-    inner.style.color = rarityOf(world.content, ground.content.item).color;
+    if (ground.find === null) inner.style.color = rarityOf(world.content, ground.content.item).color;
     element.append(inner, arrow);
     element.addEventListener('pointerdown', (event: PointerEvent): void => {
       event.preventDefault();

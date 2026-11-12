@@ -2,13 +2,14 @@
   position: absolute;
   left: 0;
   top: 0;
-  pointer-events: auto;
-  cursor: pointer;
+  pointer-events: none;
   will-change: transform;
 }
 
 .loot-label span {
   display: block;
+  pointer-events: auto;
+  cursor: pointer;
   transform: translate(-50%, -100%);
   padding: 1px 8px 2px;
   border-radius: 3px;
@@ -30,6 +31,9 @@
 
 .loot-label.dim {
   opacity: 0;
+}
+
+.loot-label.dim span {
   pointer-events: none;
 }
 
@@ -37,6 +41,20 @@
 .loot-label.aimed span {
   background: rgba(16, 20, 28, 0.78);
   scale: 1.06;
+}
+
+.loot-label.find span {
+  padding: 3px 11px 4px;
+  border-radius: 4px;
+  background: rgba(8, 10, 14, 0.84);
+  color: #efe6d6;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.loot-label.find:hover span,
+.loot-label.find.aimed span {
+  background: rgba(22, 30, 42, 0.92);
 }
 
 .loot-arrow {

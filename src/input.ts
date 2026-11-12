@@ -240,7 +240,8 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
     },
     releaseHold(): void {
       lift(INPUT.leftBinding);
-      pointerInside = false;
+      if (pressed.includes(INPUT.leftBinding)) tapping = true;
+      else pointerInside = false;
     },
     collect(dt: number): Command[] {
       const commands: Command[] = extra.splice(0, extra.length);
