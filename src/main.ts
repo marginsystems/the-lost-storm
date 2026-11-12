@@ -100,8 +100,8 @@ import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
 import type { Weather } from './render/weather.ts';
 import { createWeather } from './render/weather.ts';
-import type { Rain } from './render/rain.ts';
-import { createRain } from './render/rain.ts';
+import type { Rainfall } from './render/rainfall.ts';
+import { createRainfall } from './render/rainfall.ts';
 import type { ZoneMarkers } from './render/zone-markers.ts';
 import { createZoneMarkers } from './render/zone-markers.ts';
 import { dressed } from './render/surfaces.ts';
@@ -251,10 +251,10 @@ async function start(): Promise<void> {
   };
   const particles: ParticleSystem = createParticles(stage.scene);
   const weather: Weather = createWeather();
-  const rain: Rain = createRain(stage.scene, mobile.quality.tier.rainDrops);
+  const rain: Rainfall = createRainfall(stage, mobile.quality, gameSettings);
   const applyWeather = (zone: World['zone']): void => {
     weather.setLightning(zone.weather.lightning);
-    rain.setDensity(zone.weather.rain);
+    rain.setWeather(zone.weather);
   };
   applyWeather(world.zone);
   const effects: Effects = await momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.strike(power)), { scene: stage.scene, loader, content, library, dresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
@@ -509,7 +509,7 @@ async function start(): Promise<void> {
     audio.update(dt);
     particles.update(simVisualDt);
     weather.update(simVisualDt);
-    rain.update(simVisualDt, world.player.pos.x, world.player.pos.z, weather.flash);
+    rain.update(simVisualDt, world.player.pos.x, world.player.pos.z, weather.flash, zoneView);
     zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.measure(actors.hero(), now / 1000), flash: weather.flash });
     if (zoneView.lightsVersion !== torchVersion) {
       torchVersion = zoneView.lightsVersion;

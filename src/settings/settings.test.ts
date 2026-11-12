@@ -17,22 +17,24 @@ void test('missing or broken text reads as the defaults', (): void => {
 });
 
 void test('a good record reads back', (): void => {
-  const text: string = JSON.stringify({ graphics: { quality: 'low', showFps: true }, controls: { inventory: ['KeyB'] } });
+  const text: string = JSON.stringify({ graphics: { quality: 'low', showFps: true, lensWater: false }, controls: { inventory: ['KeyB'] } });
   const read = readSettings(text, TABLE);
   assert.equal(read.graphics.quality, 'low');
   assert.equal(read.graphics.showFps, true);
+  assert.equal(read.graphics.lensWater, false);
   assert.deepEqual(read.controls, { inventory: ['KeyB'] });
 });
 
 void test('each bad field falls back on its own', (): void => {
-  const read = readSettings(JSON.stringify({ graphics: { quality: 'ultra', showFps: 'yes' }, controls: { inventory: 'KeyB', tree: [1] } }), TABLE);
+  const read = readSettings(JSON.stringify({ graphics: { quality: 'ultra', showFps: 'yes', lensWater: 0 }, controls: { inventory: 'KeyB', tree: [1] } }), TABLE);
   assert.equal(read.graphics.quality, 'high');
   assert.equal(read.graphics.showFps, false);
+  assert.equal(read.graphics.lensWater, true);
   assert.deepEqual(read.controls, {});
 });
 
 void test('merging replaces only what changed', (): void => {
-  const next = mergeSettings(DEFAULT_SETTINGS, { graphics: { quality: 'medium', showFps: false } });
+  const next = mergeSettings(DEFAULT_SETTINGS, { graphics: { quality: 'medium', showFps: false, lensWater: true } });
   assert.equal(next.graphics.quality, 'medium');
   assert.equal(next.controls, DEFAULT_SETTINGS.controls);
 });

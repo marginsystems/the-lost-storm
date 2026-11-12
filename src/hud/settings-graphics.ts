@@ -48,6 +48,7 @@ export function mountGraphics(page: HTMLElement, settings: SettingsStore, glitch
   const detail: HTMLDivElement = label('set-detail', '', page);
 
   const toggle: HTMLButtonElement = switchRow(page, 'Show FPS', (): void => settings.setShowFps(!settings.get().graphics.showFps));
+  const lens: HTMLButtonElement = switchRow(page, 'Lens water', (): void => settings.setLensWater(!settings.get().graphics.lensWater));
   mountGlitchSwitches(page, glitches);
 
   const render = (): void => {
@@ -57,6 +58,7 @@ export function mountGraphics(page: HTMLElement, settings: SettingsStore, glitch
     const preset: GraphicsPreset = settings.preset();
     setText(detail, describePreset(preset), true);
     toggle.setAttribute('aria-checked', String(settings.get().graphics.showFps));
+    lens.setAttribute('aria-checked', String(settings.get().graphics.lensWater));
   };
   settings.subscribe(render);
   render();
