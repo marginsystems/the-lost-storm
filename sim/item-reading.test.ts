@@ -3,8 +3,8 @@ import { test } from 'node:test';
 import { must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
 import type { Content, ZoneDef } from './content/types.ts';
-import { readItem, itemVerdict, toughness, zoneDamageMix } from './item-reading.ts';
-import type { ItemReading, ReadingRow, ReadingSubject } from './item-reading.ts';
+import { readItem, itemVerdict, readingLines, toughness, verdictParts, zoneDamageMix } from './item-reading.ts';
+import type { ItemReading, ReadingLine, ReadingRow, ReadingSubject } from './item-reading.ts';
 import { emptyEquipment } from './items.ts';
 import { computeStats } from './stats.ts';
 import type { ItemInstance } from './world/types.ts';
@@ -62,4 +62,28 @@ void test('the verdict is better, worse, a trade or the same from damage per sec
   const verdict = itemVerdict(content, heavy, zone, item('saltworn_shirt', 'magic', [{ affix: 'hale', value: 1 }]));
   assert.equal(verdict?.kind, 'worse');
   assert.equal(itemVerdict(content, subject, zone, item('ghost', 'common', [])), null);
+});
+
+void test('a line that cancels the base out to nothing is left off instead of reading as +0%', (): void => {
+  const slow: number = must(must(content.itemBases.get('ringmail_hauberk'), 'hauberk').implicit.find((mod) => mod.stat === 'moveSpeed'), 'mail slow').value;
+  const hauberk: ItemInstance = item('ringmail_hauberk', 'rare', [{ affix: 'fleet', value: -slow }, { affix: 'hale', value: 20 }]);
+  const reading: ItemReading = readItem(content, hauberk, null);
+  assert.ok(!reading.rows.some((entry: ReadingRow): boolean => entry.stat === 'moveSpeed'));
+  assert.ok(reading.rows.some((entry: ReadingRow): boolean => entry.stat === 'maxLife'));
+});
+
+void test('a lost line sits in its own place in the fixed order, not at the end', (): void => {
+  const sword: ItemInstance = item('stormsteel_sword', 'rare', [{ affix: 'brimming', value: 8 }, { affix: 'quick', value: 0.1 }]);
+  const blade: ItemInstance = item('rusted_blade', 'magic', []);
+  const lines: readonly ReadingLine[] = readingLines(readItem(content, sword, blade));
+  assert.deepEqual(
+    lines.map((line: ReadingLine): string => `${line.lost ? 'lost ' : ''}${line.row.stat}`),
+    ['attackSpeed', 'critChance', 'lost moveSpeed', 'maxMana'],
+  );
+});
+
+void test('the verdict names only the sides that change, with a true minus', (): void => {
+  assert.deepEqual(verdictParts({ kind: 'better', damage: 1.22, toughness: 0.001 }), ['+122% damage']);
+  assert.deepEqual(verdictParts({ kind: 'trade', damage: -0.35, toughness: 0.4 }), ['−35% damage', '+40% toughness']);
+  assert.deepEqual(verdictParts({ kind: 'same', damage: 0, toughness: 0 }), []);
 });

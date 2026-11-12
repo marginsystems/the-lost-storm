@@ -36,7 +36,7 @@ export function roundStat(stat: StatId, op: ModOp, value: number): number {
 }
 
 export function describeMod(mod: StatMod): string {
-  const sign: string = mod.value < 0 ? '-' : '+';
+  const sign: string = mod.value < 0 ? '−' : '+';
   const size: number = Math.abs(mod.value);
   if (isRatio(mod.stat, mod.op)) return `${sign}${Math.round(size * 100)}% ${statLabel(mod.stat)}`;
   return `${sign}${size} ${statLabel(mod.stat)}`;

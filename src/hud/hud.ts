@@ -416,7 +416,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     showGroundItem(item: ItemInstance, x: number, y: number): void {
       const slot: ItemSlot | null = slotOf(api.world.content, item);
       const equipped: ItemInstance | null = slot === null ? null : api.world.player.equipped[slot];
-      tooltip.show(itemTooltip(api, item, equipped, promptText(api.touch, use(GROUND_HINT))), x, y);
+      tooltip.show(itemTooltip(api, item, equipped, promptText(api.touch, use(GROUND_HINT))), x, y, null);
     },
     moveGroundItem(x: number, y: number): void {
       tooltip.move(x, y);

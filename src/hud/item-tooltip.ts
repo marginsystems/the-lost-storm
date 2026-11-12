@@ -1,5 +1,5 @@
 import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, RarityDef } from '../../sim/content/types.ts';
-import { itemVerdict, readItem } from '../../sim/item-reading.ts';
+import { itemVerdict, readItem, readingLines, verdictParts } from '../../sim/item-reading.ts';
 import type { Headline, ItemReading, ReadingRow, Verdict, VerdictKind } from '../../sim/item-reading.ts';
 import { baseOf, itemName, rarityOf, slotOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
@@ -31,11 +31,6 @@ const VERDICT_WORDS: Readonly<Record<VerdictKind, string>> = {
   same: 'Same',
 };
 
-function percentChange(value: number): string {
-  const rounded: number = Math.round(value * 100);
-  return `${rounded < 0 ? '−' : '+'}${Math.abs(rounded)}%`;
-}
-
 function deltaClass(delta: number | null): string {
   if (delta === null || delta === 0) return '';
   return delta > 0 ? ' better' : ' worse';
@@ -63,15 +58,15 @@ function appendHeadline(parent: HTMLElement, headline: Headline): void {
 function appendVerdict(parent: HTMLElement, verdict: Verdict): void {
   const line: HTMLDivElement = el('div', `tip-verdict ${verdict.kind}`, parent);
   label('tip-verdict-word', VERDICT_WORDS[verdict.kind], line);
-  label('tip-verdict-detail', `${percentChange(verdict.damage)} damage · ${percentChange(verdict.toughness)} toughness`, line);
+  const parts: readonly string[] = verdictParts(verdict);
+  if (parts.length > 0) label('tip-verdict-detail', parts.join(' · '), line);
 }
 
 function appendReading(parent: HTMLElement, reading: ItemReading): void {
   appendHeadline(parent, reading.headline);
   if (reading.rows.length + reading.lost.length === 0) return;
   el('div', 'tip-sep', parent);
-  for (const row of reading.rows) appendRow(parent, row, 'own');
-  for (const row of reading.lost) appendRow(parent, row, 'lost');
+  for (const line of readingLines(reading)) appendRow(parent, line.row, line.lost ? 'lost' : 'own');
 }
 
 function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null, compare: boolean, hint: string | null, className: string): HTMLElement {

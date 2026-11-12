@@ -5,8 +5,32 @@ const TOOLTIP = {
   margin: 8,
 } as const;
 
+export interface Box {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+export interface Spot {
+  readonly left: number;
+  readonly top: number;
+}
+
+export function tooltipSpot(x: number, y: number, width: number, height: number, view: Box, beside: Box | null): Spot {
+  const below: number = y + TOOLTIP.offset + height > view.bottom - TOOLTIP.margin ? y - TOOLTIP.offset - height : y + TOOLTIP.offset;
+  const top: number = Math.max(view.top + TOOLTIP.margin, below);
+  if (beside !== null) {
+    const towardLeft: boolean = beside.left + beside.right > view.left + view.right;
+    const left: number = towardLeft ? beside.left - TOOLTIP.offset - width : beside.right + TOOLTIP.offset;
+    if (left >= view.left + TOOLTIP.margin && left + width <= view.right - TOOLTIP.margin) return { left, top };
+  }
+  const right: number = x + TOOLTIP.offset + width > view.right - TOOLTIP.margin ? x - TOOLTIP.offset - width : x + TOOLTIP.offset;
+  return { left: Math.max(view.left + TOOLTIP.margin, right), top };
+}
+
 export interface Tooltip {
-  show(content: HTMLElement, x: number, y: number): void;
+  show(content: HTMLElement, x: number, y: number, beside: Box | null): void;
   move(x: number, y: number): void;
   hide(): void;
 }
@@ -17,15 +41,13 @@ export function createTooltip(root: HTMLElement): Tooltip {
   let shifted: boolean = false;
   let lastX: number = 0;
   let lastY: number = 0;
+  let lastBeside: Box | null = null;
   const place = (x: number, y: number): void => {
     lastX = x;
     lastY = y;
-    const width: number = node.offsetWidth;
-    const height: number = node.offsetHeight;
-    const left: number = x + TOOLTIP.offset + width > window.innerWidth - TOOLTIP.margin ? x - TOOLTIP.offset - width : x + TOOLTIP.offset;
-    const top: number = y + TOOLTIP.offset + height > window.innerHeight - TOOLTIP.margin ? y - TOOLTIP.offset - height : y + TOOLTIP.offset;
-    node.style.left = `${Math.max(TOOLTIP.margin, left)}px`;
-    node.style.top = `${Math.max(TOOLTIP.margin, top)}px`;
+    const spot: Spot = tooltipSpot(x, y, node.offsetWidth, node.offsetHeight, { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }, lastBeside);
+    node.style.left = `${spot.left}px`;
+    node.style.top = `${spot.top}px`;
   };
 
   const compare = (event: KeyboardEvent): void => {
@@ -42,7 +64,8 @@ export function createTooltip(root: HTMLElement): Tooltip {
   });
 
   return {
-    show(content: HTMLElement, x: number, y: number): void {
+    show(content: HTMLElement, x: number, y: number, beside: Box | null): void {
+      lastBeside = beside;
       node.replaceChildren(content);
       node.classList.toggle('compare', shifted);
       place(x, y);
@@ -61,7 +84,7 @@ export function attachTooltip(tooltip: Tooltip, target: HTMLElement, build: () =
   target.addEventListener('pointerenter', (event: PointerEvent): void => {
     const content: HTMLElement | null = build();
     if (content === null) tooltip.hide();
-    else tooltip.show(content, event.clientX, event.clientY);
+    else tooltip.show(content, event.clientX, event.clientY, target.closest('.hud-panel')?.getBoundingClientRect() ?? null);
   });
   target.addEventListener('pointermove', (event: PointerEvent): void => {
     tooltip.move(event.clientX, event.clientY);

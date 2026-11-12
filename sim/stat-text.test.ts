@@ -10,7 +10,7 @@ void test('flat mods read as signed numbers with the stat label', (): void => {
 void test('ratio stats and percent mods read as percentages', (): void => {
   assert.equal(describeMod({ stat: 'moveSpeed', op: 'percent', value: 0.1 }), '+10% Movement Speed');
   assert.equal(describeMod({ stat: 'critChance', op: 'add', value: 0.04 }), '+4% Critical Strike Chance');
-  assert.equal(describeMod({ stat: 'attackSpeed', op: 'add', value: -0.15 }), '-15% Attack Speed');
+  assert.equal(describeMod({ stat: 'attackSpeed', op: 'add', value: -0.15 }), '−15% Attack Speed');
 });
 
 void test('rounding follows the stat kind', (): void => {

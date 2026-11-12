@@ -30,6 +30,11 @@ export interface Verdict {
   readonly toughness: number;
 }
 
+export interface ReadingLine {
+  readonly row: ReadingRow;
+  readonly lost: boolean;
+}
+
 export interface ItemReading {
   readonly headline: Headline;
   readonly rows: readonly ReadingRow[];
@@ -97,6 +102,7 @@ export function readItem(content: Content, item: ItemInstance, equipped: ItemIns
   const rows: ReadingRow[] = [...mine.values()]
     .filter((total: Total): boolean => total.stat !== 'damageMin' && total.stat !== 'damageMax')
     .map((total: Total): ReadingRow => row(total.stat, total.op, total.value, other(total.stat, total.op), false))
+    .filter((candidate: ReadingRow): boolean => roundStat(candidate.stat, candidate.op, mine.get(keyOf(candidate.stat, candidate.op))?.value ?? 0) !== 0 || candidate.deltaText !== null)
     .toSorted(byOrder);
   const lost: ReadingRow[] =
     theirs === null
@@ -119,6 +125,23 @@ export function readItem(content: Content, item: ItemInstance, equipped: ItemIns
   const first: ReadingRow | undefined = rows[0];
   if (first === undefined) return { headline: { kind: 'none' }, rows, lost };
   return { headline: { kind: 'stat', row: first }, rows: rows.slice(1), lost };
+}
+
+export function readingLines(reading: ItemReading): readonly ReadingLine[] {
+  const own: ReadingLine[] = reading.rows.map((entry: ReadingRow): ReadingLine => ({ row: entry, lost: false }));
+  const lost: ReadingLine[] = reading.lost.map((entry: ReadingRow): ReadingLine => ({ row: entry, lost: true }));
+  return [...own, ...lost].toSorted((a: ReadingLine, b: ReadingLine): number => byOrder(a.row, b.row));
+}
+
+export function verdictParts(verdict: Verdict): readonly string[] {
+  const parts: string[] = [];
+  const say = (value: number, name: string): void => {
+    const rounded: number = Math.round(value * 100);
+    if (rounded !== 0) parts.push(`${rounded < 0 ? '−' : '+'}${Math.abs(rounded)}% ${name}`);
+  };
+  say(verdict.damage, 'damage');
+  say(verdict.toughness, 'toughness');
+  return parts;
 }
 
 export function zoneDamageMix(content: Content, zone: ZoneDef): DamageMix {
