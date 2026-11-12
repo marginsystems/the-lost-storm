@@ -196,6 +196,9 @@ export function createInput(canvas: HTMLCanvasElement, world: World, camera: Iso
         if (fresh.has(INPUT.leftBinding) || INPUT.advanceKeys.some((key: string): boolean => fresh.has(key))) commands.push({ type: 'advance' });
         return commands;
       }
+      world.content.flasks.forEach((flask, slot: number): void => {
+        if (flask.bindings.some((binding: string): boolean => fresh.has(binding))) commands.push({ type: 'flask', slot });
+      });
       if (aim === null || ground === null) return commands;
 
       const leftSlot: number = slotFor(INPUT.leftBinding);
