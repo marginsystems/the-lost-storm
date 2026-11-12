@@ -63,6 +63,11 @@ import { createGlitchView } from './glitch/glitch-view.ts';
 import { createGlitchSettings } from './glitch/glitch-settings.ts';
 import type { GlitchSettingsStore } from './glitch/glitch-settings.ts';
 import type { GlitchKind } from '../sim/content/glitches.ts';
+import type { TracesClient } from './backend/traces-api.ts';
+import { createBrowserTracesClient } from './traces/browser-traces.ts';
+import type { Traces } from './traces/traces.ts';
+import { createTraces } from './traces/traces.ts';
+import { loadMarkVocabulary } from './traces/words.ts';
 import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
 import type { CharacterLibrary, Dresser } from './render/character-loader.ts';
@@ -412,6 +417,8 @@ async function start(): Promise<void> {
     },
     resume: (): void => startZoneAmbience(),
   });
+  const tracesClient: TracesClient | null = createBrowserTracesClient(import.meta.env.VITE_SERVER_URL);
+  const traces: Traces | null = tracesClient === null ? null : createTraces({ world, scene: stage.scene, library, camera, hud: element('hud', HTMLDivElement), client: tracesClient, vocabulary: loadMarkVocabulary(), store: createBrowserStore(), chance: Math.random });
   if (import.meta.env.DEV) window.storm = { world, scene: stage.scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(stage.renderer, stage.scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }) };
 
   let playing: boolean = false;
@@ -528,6 +535,7 @@ async function start(): Promise<void> {
       actors.sync(simDt, world, input.hoveredId);
       loot.sync(world);
       opening.update();
+      traces?.update(simVisualDt);
       camera.update(dt, world.player.pos.x, world.player.pos.z);
       effects.update(simVisualDt, world);
       ward.update(simVisualDt, world);

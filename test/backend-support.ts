@@ -9,6 +9,9 @@ import type { Backend, KeyValueStore, Logger, Timers } from '../src/backend/back
 import { createBackend } from '../src/backend/create.ts';
 import { epochOf, SAVE_EPOCH } from '../src/backend/epoch.ts';
 import { localSaveText } from '../src/backend/local.ts';
+import type { ZoneDef } from '../sim/content/types.ts';
+import { isFloorCell } from '../sim/nav/layout.ts';
+import { loadMarkVocabulary } from '../src/traces/words.ts';
 
 export const content: Content = loadContent();
 
@@ -166,6 +169,55 @@ const EMAIL_ATTEMPTS: number = 5;
 
 const FAKE_NAME: RegExp = /^[A-Za-z0-9 ]+$/;
 
+export const FAKE_TRACES = {
+  echoesServed: 5,
+  marksServed: 6,
+  runsServed: 6,
+  minPoints: 4,
+  maxPoints: 40,
+  stepReach: 3.25,
+  maxWords: 3,
+  markHours: 168,
+  pathKept: 48,
+} as const;
+
+interface FakeEcho {
+  readonly accountId: string;
+  readonly zone: string;
+  readonly points: readonly (readonly number[])[];
+}
+
+interface FakeMark {
+  readonly accountId: string;
+  readonly zone: string;
+  readonly x: number;
+  readonly z: number;
+  readonly words: readonly string[];
+}
+
+const MARK_WORDS: ReadonlySet<string> = new Set(loadMarkVocabulary().lists.flatMap((list) => list.words.map((word) => word.id)));
+
+function onFloor(zone: ZoneDef, x: number, z: number): boolean {
+  return x >= 0 && z >= 0 && isFloorCell(zone, Math.floor(x / zone.cellSize), Math.floor(z / zone.cellSize));
+}
+
+function fakePoints(value: unknown, zone: ZoneDef): readonly (readonly number[])[] | null {
+  if (!Array.isArray(value) || value.length < FAKE_TRACES.minPoints || value.length > FAKE_TRACES.maxPoints) return null;
+  const list: readonly unknown[] = value;
+  const points: (readonly number[])[] = [];
+  for (const entry of list) {
+    if (!Array.isArray(entry) || entry.length !== 3) return null;
+    const parts: readonly unknown[] = entry;
+    const [x, z, facing] = parts;
+    if (typeof x !== 'number' || typeof z !== 'number' || typeof facing !== 'number' || Math.abs(facing) > Math.PI + 0.01) return null;
+    if (!onFloor(zone, x, z)) return null;
+    const last: readonly number[] | undefined = points.at(-1);
+    if (last !== undefined && Math.hypot(x - (last[0] ?? 0), z - (last[1] ?? 0)) > FAKE_TRACES.stepReach) return null;
+    points.push([Math.round(x * 10) / 10, Math.round(z * 10) / 10, Math.round(facing * 100) / 100]);
+  }
+  return points;
+}
+
 function characterKey(name: string): string {
   return name.toLowerCase().replaceAll(' ', '');
 }
@@ -281,6 +333,83 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     return json(200, { accountId: target.accountId, token, outcome: known === undefined ? 'linked' : 'existing', name: target.name });
   };
   const stamp = (): string => new Date(clock.now).toISOString();
+  const echoes: FakeEcho[] = [];
+  const marks: FakeMark[] = [];
+  const tallied: Set<string> = new Set<string>();
+  const paths: Map<string, (readonly [string, number, number])[]> = new Map();
+  const others = (owner: ServerAccount | undefined) => (entry: { readonly accountId: string }): boolean => owner === undefined || entry.accountId !== owner.accountId;
+  const characterOf = (accountId: string): string | null => accounts.find((account: ServerAccount): boolean => account.accountId === accountId)?.character ?? null;
+  const tally = (owner: ServerAccount | undefined): Response => json(200, { count: tallied.size, others: tallied.size - (owner !== undefined && tallied.has(owner.accountId) ? 1 : 0) });
+  const traceRead = (method: string, path: string, owner: ServerAccount | undefined): Response | null => {
+    if (method !== 'GET') return null;
+    const [, , kind, rawZone] = path.split('/');
+    if (kind === 'echoes' || kind === 'marks') {
+      const zone: string = decodeURIComponent(rawZone ?? '');
+      if (!content.zones.has(zone)) return failed(404, 'no_such_zone');
+      if (kind === 'echoes') {
+        const seen = echoes.filter((echo: FakeEcho): boolean => echo.zone === zone).filter(others(owner)).slice(0, FAKE_TRACES.echoesServed);
+        return json(200, { echoes: seen.map((echo: FakeEcho) => ({ name: characterOf(echo.accountId), points: echo.points })) });
+      }
+      const place = (mark: FakeMark): Readonly<Record<string, unknown>> => ({ x: mark.x, z: mark.z, words: mark.words });
+      const mine: FakeMark | undefined = owner === undefined ? undefined : marks.find((mark: FakeMark): boolean => mark.accountId === owner.accountId && mark.zone === zone);
+      const seen = marks.filter((mark: FakeMark): boolean => mark.zone === zone).filter(others(owner)).slice(0, FAKE_TRACES.marksServed);
+      return json(200, { marks: seen.map(place), yours: mine === undefined ? null : place(mine) });
+    }
+    if (path === '/v1/tallies/journal') return tally(owner);
+    if (path.startsWith('/v1/tallies/')) return failed(404, 'no_such_tally');
+    if (path === '/v1/timelines') {
+      const runs = accounts
+        .filter((account: ServerAccount): boolean => account.save !== null && (owner === undefined || account !== owner))
+        .slice(0, FAKE_TRACES.runsServed)
+        .map((account: ServerAccount) => ({
+          name: account.character ?? `Guest ${account.accountId.replace('account-', '')}`,
+          level: account.save?.level ?? 1,
+          furthest: content.zones.get(account.save?.zone ?? '')?.name ?? 'Stillhold',
+          furthestZone: account.save?.zone ?? 'stillhold',
+          playedMinutes: 0,
+          choices: account.save?.flags ?? {},
+          path: paths.get(account.accountId) ?? [],
+        }));
+      return json(200, { runs });
+    }
+    return null;
+  };
+  const traceWrite = (method: string, path: string, owner: ServerAccount, body: unknown): Response | null => {
+    if (method === 'POST' && path === '/v1/echoes') {
+      const zone: ZoneDef | undefined = isFields(body) && typeof body['zone'] === 'string' ? content.zones.get(body['zone']) : undefined;
+      const points = zone === undefined || !isFields(body) ? null : fakePoints(body['points'], zone);
+      if (zone === undefined || points === null) return failed(400, 'bad_echo');
+      const index: number = echoes.findIndex((echo: FakeEcho): boolean => echo.accountId === owner.accountId && echo.zone === zone.id);
+      if (index >= 0) echoes.splice(index, 1);
+      echoes.push({ accountId: owner.accountId, zone: zone.id, points });
+      const first: readonly number[] | undefined = points[0];
+      const steps = paths.get(owner.accountId) ?? [];
+      if (first !== undefined) steps.push([zone.id, first[0] ?? 0, first[1] ?? 0]);
+      paths.set(owner.accountId, steps.length > FAKE_TRACES.pathKept ? steps.filter((_step, at: number): boolean => at % 2 === 0) : steps);
+      return json(201, { kept: true });
+    }
+    if (method === 'PUT' && path === '/v1/mark') {
+      const zone: ZoneDef | undefined = isFields(body) && typeof body['zone'] === 'string' ? content.zones.get(body['zone']) : undefined;
+      const x: unknown = isFields(body) ? body['x'] : null;
+      const z: unknown = isFields(body) ? body['z'] : null;
+      const words: unknown = isFields(body) ? body['words'] : null;
+      const placed: boolean = zone !== undefined && typeof x === 'number' && typeof z === 'number' && onFloor(zone, Math.round(x * 10) / 10, Math.round(z * 10) / 10);
+      const list: readonly unknown[] = Array.isArray(words) ? words : [];
+      const worded: boolean = list.length > 0 && list.length <= FAKE_TRACES.maxWords && list.every((word: unknown): boolean => typeof word === 'string' && MARK_WORDS.has(word));
+      if (zone === undefined || !placed || !worded || typeof x !== 'number' || typeof z !== 'number') return failed(400, 'bad_mark');
+      const index: number = marks.findIndex((mark: FakeMark): boolean => mark.accountId === owner.accountId);
+      if (index >= 0) marks.splice(index, 1);
+      const mark: FakeMark = { accountId: owner.accountId, zone: zone.id, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10, words: list.filter((word: unknown): word is string => typeof word === 'string') };
+      marks.push(mark);
+      return json(200, { mark: { x: mark.x, z: mark.z, words: mark.words }, lastsHours: FAKE_TRACES.markHours });
+    }
+    if (method === 'POST' && path === '/v1/tallies/journal') {
+      tallied.add(owner.accountId);
+      return tally(owner);
+    }
+    if (method === 'POST' && path.startsWith('/v1/tallies/')) return failed(404, 'no_such_tally');
+    return null;
+  };
   const handle = (url: string, init: RequestInit): Response => {
     const method: string = init.method ?? 'GET';
     const path: string = new URL(url).pathname;
@@ -303,6 +432,8 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     }
     const owner: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => token !== null && ((account.token === token && !account.guestRetired) || account.sessions.includes(token)));
     if (method === 'GET' && path === '/v1/leaderboard') return json(200, ladder(accounts, owner));
+    const traced: Response | null = traceRead(method, path, owner);
+    if (traced !== null) return traced;
     if (owner === undefined) return json(401, { error: { code: 'unauthorized', message: 'no' } });
     if (method === 'PUT' && path === '/v1/character/name') {
       const raw: unknown = isFields(body) ? body['name'] : null;
@@ -311,6 +442,8 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       owner.character = typeof raw === 'string' ? raw.trim() : null;
       return json(200, { name: owner.character, chosen: true });
     }
+    const left: Response | null = traceWrite(method, path, owner, body);
+    if (left !== null) return left;
     if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.method ?? 'guest', name: owner.name, createdAt: stamp(), saveEpoch: epoch });
     if (path.startsWith('/v1/auth/google') && googleClientId === null) return json(503, { error: { code: 'sign_in_unavailable', message: 'no' } });
     if (method === 'POST' && path === '/v1/auth/google/nonce') {

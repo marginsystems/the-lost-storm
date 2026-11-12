@@ -1,0 +1,158 @@
+.traces-world,
+.traces-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  pointer-events: none;
+}
+
+.trace-name,
+.trace-mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -50% -100%;
+  white-space: nowrap;
+  font-family: var(--serif);
+  color: rgba(44, 50, 58, 0.55);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.trace-name {
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.trace-name[data-near='on'] {
+  opacity: 0.85;
+}
+
+.trace-mark {
+  font-size: 15px;
+  letter-spacing: 0.32em;
+  opacity: var(--seen, 0);
+  filter: blur(0.4px);
+}
+
+.trace-count {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 22%;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  color: rgba(44, 50, 58, 0.62);
+  opacity: 0;
+  translate: 0 6px;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.trace-count[data-shown='on'] {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.trace-leave {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  translate: -50% 0;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.trace-leave[data-shown='on'] {
+  opacity: 1;
+}
+
+.trace-leave[data-shown='off'] {
+  pointer-events: none;
+}
+
+.trace-leave button {
+  font: inherit;
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: rgba(36, 42, 50, 0.7);
+  background: rgba(20, 24, 30, 0.06);
+  border: 0;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition:
+    background var(--spring-snappy-ms) var(--spring-snappy),
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.trace-leave button:hover,
+.trace-leave button[aria-pressed='true'] {
+  background: rgba(20, 24, 30, 0.14);
+  color: rgba(20, 24, 30, 0.92);
+}
+
+.trace-leave button:focus-visible {
+  outline: none;
+  background: rgba(20, 24, 30, 0.16);
+}
+
+.trace-leave button[data-swap='out'] {
+  opacity: 0;
+}
+
+.trace-leave button:disabled {
+  cursor: default;
+}
+
+.trace-leave button:disabled:not([data-swap='out']) {
+  opacity: 0.55;
+}
+
+.trace-panel {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(236, 239, 242, 0.72);
+  backdrop-filter: blur(6px);
+  max-width: min(92vw, 520px);
+  opacity: 0;
+  translate: 0 6px;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    translate var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.trace-panel[data-open='on'] {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.trace-panel[data-open='off'] {
+  pointer-events: none;
+}
+
+.trace-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.trace-actions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}

@@ -1,0 +1,43 @@
+{
+  "lists": [
+    {
+      "id": "say",
+      "words": [
+        {"id": "do_not", "text": "do not"},
+        {"id": "keep_walking", "text": "keep walking"},
+        {"id": "i_remember", "text": "I remember"},
+        {"id": "who_called", "text": "who called"},
+        {"id": "not_alone", "text": "not alone"},
+        {"id": "it_was_me", "text": "it was me"},
+        {"id": "turn_back", "text": "turn back"},
+        {"id": "still_here", "text": "still here"},
+        {"id": "wake_up", "text": "wake up"},
+        {"id": "forgive", "text": "forgive"}
+      ]
+    },
+    {
+      "id": "of",
+      "words": [
+        {"id": "the_light", "text": "the light"},
+        {"id": "the_journal", "text": "the journal"},
+        {"id": "the_storm", "text": "the storm"},
+        {"id": "the_white", "text": "the white"},
+        {"id": "your_name", "text": "your name"},
+        {"id": "the_others", "text": "the others"},
+        {"id": "this_moment", "text": "this moment"},
+        {"id": "the_gap", "text": "the gap"}
+      ]
+    }
+  ],
+  "copy": {
+    "open": "leave a mark",
+    "leave": "leave it",
+    "close": "not now",
+    "left": "your mark stays a while",
+    "count": {
+      "none": "No one else has carried it.",
+      "one": "One other has carried it.",
+      "many": "{count} others have carried it."
+    }
+  }
+}
