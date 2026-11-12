@@ -26,4 +26,10 @@ export interface FlagCondition {
   readonly not: boolean;
 }
 
-export type Condition = QuestCondition | ObjectiveCondition | FlagCondition;
+export interface ShoreCondition {
+  readonly type: 'shore';
+  readonly depth: number;
+  readonly not: boolean;
+}
+
+export type Condition = QuestCondition | ObjectiveCondition | FlagCondition | ShoreCondition;

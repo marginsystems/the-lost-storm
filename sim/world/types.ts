@@ -562,6 +562,11 @@ export interface WakeState {
   readonly rise: number;
 }
 
+export interface ShoreState {
+  readonly at: Vec2;
+  readonly facing: Vec2;
+}
+
 export interface World {
   readonly content: Content;
   zone: ZoneDef;
@@ -596,6 +601,7 @@ export interface World {
   trail: Vec2;
   heading: Vec2;
   encounters: EncounterState[];
+  shore: ShoreState | null;
   flags: Record<string, string>;
   events: WorldEvent[];
   service: OpenService | null;

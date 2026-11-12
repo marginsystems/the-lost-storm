@@ -33,7 +33,7 @@ import type {
   ZoneWaypoint,
 } from './types.ts';
 import { service } from './parse-trade.ts';
-import type { ZoneHud, ZoneVoid, ZoneWake } from './story-types.ts';
+import type { VoidShore, ZoneHud, ZoneVoid, ZoneWake } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
@@ -133,6 +133,12 @@ function zoneWake(value: unknown, where: string): ZoneWake | null {
   return { lie: positive(source, 'lie', where), rise: positive(source, 'rise', where) };
 }
 
+function voidShore(value: unknown, where: string): VoidShore | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where) };
+}
+
 function zoneVoid(value: unknown, where: string): ZoneVoid {
   const source: Fields = fields(value, where);
   const wander: Fields = fields(source['wander'], `${where}.wander`);
@@ -143,6 +149,7 @@ function zoneVoid(value: unknown, where: string): ZoneVoid {
     wander: { degrees: positive(wander, 'degrees', `${where}.wander`), seconds: positive(wander, 'seconds', `${where}.wander`), farther: positive(wander, 'farther', `${where}.wander`) },
     sets: storyFlags(source['sets'], `${where}.sets`),
     encounters: [...byId(each(source['encounters'] ?? [], `${where}.encounters`, encounter), `${where}.encounters`).values()],
+    shore: voidShore(source['shore'], `${where}.shore`),
   };
 }
 

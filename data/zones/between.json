@@ -81,6 +81,7 @@
     "heading": 1.5,
     "wander": {"degrees": 70, "seconds": 4, "farther": 1.6},
     "sets": {"opening": "begun"},
+    "shore": {"when": [{"type": "flag", "flag": "opening", "is": "read"}], "ahead": 22, "thin": 14},
     "encounters": [
       {
         "id": "journal",
@@ -93,13 +94,13 @@
         "id": "light",
         "when": [{"type": "flag", "flag": "opening", "is": "read"}],
         "after": 0,
-        "ahead": 20,
+        "ahead": 60,
         "find": {"type": "exit", "exit": "into_the_hall"}
       }
     ]
   },
   "hud": {
-    "until": [{"type": "flag", "flag": "opening", "is": "read"}]
+    "until": [{"type": "shore", "depth": 0.6}]
   },
   "ambience": {
     "background": "#d9dcdf",

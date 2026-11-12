@@ -34,6 +34,12 @@ export interface VoidWander {
   readonly farther: number;
 }
 
+export interface VoidShore {
+  readonly when: readonly Condition[];
+  readonly ahead: number;
+  readonly thin: number;
+}
+
 export interface ZoneVoid {
   readonly span: number;
   readonly wake: ZoneWake | null;
@@ -41,6 +47,7 @@ export interface ZoneVoid {
   readonly wander: VoidWander;
   readonly sets: StoryFlags;
   readonly encounters: readonly ZoneEncounter[];
+  readonly shore: VoidShore | null;
 }
 
 export interface ZoneHud {

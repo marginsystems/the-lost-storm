@@ -152,6 +152,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     trail: { x: 0, z: 0 },
     heading: { x: 0, z: 1 },
     encounters: [],
+    shore: null,
     flags: save === null ? {} : { ...save.flags },
     events: [],
     service: null,
