@@ -1,0 +1,54 @@
+import { hintSegments } from '../../sim/content/hints.ts';
+import type { HintDef, HintPanel, HintsDef, HintSegment } from '../../sim/content/hints.ts';
+import { createHintState, seedVeteran, stepHints } from '../../sim/hints.ts';
+import type { HintChange, HintState } from '../../sim/hints.ts';
+import type { World, WorldEvent } from '../../sim/world/types.ts';
+import type { HintStore } from '../hints-store.ts';
+import { el } from './dom.ts';
+import { keyLabel } from './key-labels.ts';
+
+export interface Hints {
+  update(world: World, events: readonly WorldEvent[]): void;
+}
+
+export function createHints(parent: HTMLElement, defs: HintsDef, store: HintStore, openPanels: () => ReadonlySet<HintPanel>): Hints {
+  const element: HTMLDivElement = el('div', 'hud-hint', null);
+  parent.insertBefore(element, parent.firstChild);
+  let state: HintState | null = null;
+  let showing: boolean = false;
+
+  const fill = (world: World, hint: HintDef): void => {
+    element.replaceChildren();
+    hintSegments(hint.text).forEach((segment: HintSegment): void => {
+      if (segment.type === 'words') element.append(document.createTextNode(segment.text));
+      else el('kbd', 'hint-key', element).textContent = keyLabel(world.content, segment.name);
+    });
+  };
+
+  const setShown = (next: boolean): void => {
+    if (next === showing) return;
+    showing = next;
+    element.classList.toggle('visible', next);
+  };
+
+  return {
+    update(world: World, events: readonly WorldEvent[]): void {
+      if (state === null) {
+        const record = store.read();
+        state = createHintState(record?.seen ?? []);
+        if (record === null) seedVeteran(defs, state, world);
+      }
+      const changes: HintChange[] = stepHints(defs, world, state, { events, open: openPanels(), enabled: store.isEnabled() });
+      for (const change of changes) {
+        if (change.type === 'show') {
+          fill(world, change.hint);
+          setShown(true);
+        } else {
+          if (change.done) store.remember(change.hint.id);
+          setShown(false);
+        }
+      }
+      if (state.active !== null) setShown(world.dialogue === null);
+    },
+  };
+}

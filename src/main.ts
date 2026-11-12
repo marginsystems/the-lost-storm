@@ -29,6 +29,10 @@ import { createHud } from './hud/hud.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { Input } from './input.ts';
 import { createInput } from './input.ts';
+import { createHintStore } from './hints-store.ts';
+import type { ObjectiveMarker } from './objective/objective-marker.ts';
+import { createObjectiveMarker } from './objective/objective-marker.ts';
+import { createBrowserStore } from './storage.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Actors } from './render/actors.ts';
@@ -230,6 +234,7 @@ async function start(): Promise<void> {
       hud.requestMap(true);
     },
   });
+  const objectiveMarker: ObjectiveMarker = createObjectiveMarker(stage.scene, camera, element('hud', HTMLDivElement));
   const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile) });
   const input: Input = createInput(canvas, world, camera, hud, {
     heightOf: (id: number): number => actors.heightOf(id),
@@ -338,6 +343,7 @@ async function start(): Promise<void> {
       effects.setTorches(zoneView.torches);
     }
     markers.update(dt, now / 1000, world);
+    objectiveMarker.update(dt, now / 1000, world);
     stage.setFlash(weather.flash);
     hud.update(dt);
     minimap.update(dt);
@@ -392,6 +398,7 @@ async function start(): Promise<void> {
     dirty = false;
     reset.disabled = true;
     enter.disabled = true;
+    createHintStore(createBrowserStore()).clear();
     await backend.reset();
     window.location.reload();
   };
