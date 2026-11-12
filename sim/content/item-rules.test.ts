@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content.ts';
-import { basesWithoutLook, itemProblems, linesFor } from './item-rules.ts';
+import { basesWithoutLook, groundGenerics, itemProblems, linesFor } from './item-rules.ts';
 import type { AffixDef, Content, ItemBaseDef } from './types.ts';
 import { ITEM_STATS } from './types.ts';
 
@@ -29,6 +29,18 @@ void test('a base with a stat outside the nine, a line that rolls backwards or a
   assert.ok(problems.some((problem: string): boolean => problem.includes('rusted_blade has goldFind')));
   assert.ok(problems.some((problem: string): boolean => problem.includes('line backwards')));
   assert.ok(problems.some((problem: string): boolean => problem.includes('rarity huge wants 9 lines but a weapon')));
+});
+
+void test('every wearable base lies on the ground as a real model except the ones listed here, which still use a generic bundle or pouch', (): void => {
+  assert.deepEqual(groundGenerics(content), ['gale_charm', 'ember_charm']);
+  const blade: ItemBaseDef | undefined = content.itemBases.get('rusted_blade');
+  assert.ok(blade !== undefined);
+  const unheld: ItemBaseDef = { ...blade, visual: null };
+  const unworn: ItemBaseDef = { ...blade, id: 'bare', wear: [], ground: { ...blade.ground, model: 'worn' } };
+  const broken: Content = { ...content, itemBases: new Map<string, ItemBaseDef>([...content.itemBases, [unheld.id, unheld], [unworn.id, unworn]]) };
+  const problems: string[] = itemProblems(broken);
+  assert.ok(problems.some((problem: string): boolean => problem.includes('rusted_blade lies on the ground as its held model')));
+  assert.ok(problems.some((problem: string): boolean => problem.includes('bare lies on the ground as its worn model')));
 });
 
 void test('every base that can be worn or held has a look, so the hero wears exactly what is equipped', (): void => {

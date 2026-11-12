@@ -1,10 +1,13 @@
 import type { Object3D, Scene } from 'three';
-import { Box3, Color, Group, Mesh, MeshStandardMaterial, OctahedronGeometry, Vector3 } from 'three';
+import { Group, Mesh } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { AttachmentDef, Content, ItemBaseDef, RigDef } from '../../sim/content/types.ts';
-import { baseOf, rarityOf } from '../../sim/items.ts';
+import type { ItemBaseDef } from '../../sim/content/types.ts';
+import { baseOf } from '../../sim/items.ts';
 import type { GroundItem, World } from '../../sim/world/types.ts';
-import type { CharacterLibrary, LoadedAttachment } from './character-loader.ts';
+import type { CharacterLibrary } from './character-loader.ts';
+import { CONTACT_SHADOW, contactShadow } from './contact-shadow.ts';
+import type { GroundTemplate } from './ground-models.ts';
+import { groundTemplate } from './ground-models.ts';
 import { loadKeptModel } from './character-loader.ts';
 import type { Keepsake } from './keepsake.ts';
 import { createKeepsake } from './keepsake.ts';
@@ -20,36 +23,29 @@ export const LOOT = {
   tossHeight: 2.6,
   bounceTime: 0.3,
   bounceHeight: 0.35,
-  gemSize: 0.3,
-  gemHover: 0.75,
-  gemBob: 0.12,
-  gemSpin: 2.4,
   lightSeedStep: 0.137,
   longestFrame: 0.1,
-  weaponTumbleTurns: 2,
-  floorClearance: 0.02,
+  tumbleTurns: 2,
+  yawSeedStep: 0.618034,
+  shadowFallScale: 0.5,
 } as const;
 
-const HALF_TURN: number = Math.PI / 2;
 const FULL_TURN: number = Math.PI * 2;
+const DEGREES: number = Math.PI / 180;
 
 interface GoldEntry {
   readonly kind: 'gold';
   readonly group: Group;
 }
 
-interface GemEntry {
-  readonly kind: 'gem';
-  readonly group: Group;
-  readonly gem: Mesh;
-  readonly light: LootLight | null;
-}
-
-interface WeaponEntry {
-  readonly kind: 'weapon';
+interface ModelEntry {
+  readonly kind: 'model';
   readonly group: Group;
   readonly pivot: Group;
+  readonly shadow: Mesh;
+  readonly footprint: number;
   readonly yaw: number;
+  readonly waiting: boolean;
   readonly light: LootLight | null;
 }
 
@@ -60,7 +56,7 @@ interface KeepsakeEntry {
   readonly light: LootLight | null;
 }
 
-type LootEntry = GoldEntry | GemEntry | WeaponEntry | KeepsakeEntry;
+type LootEntry = GoldEntry | ModelEntry | KeepsakeEntry;
 
 export interface LootView {
   sync(world: World): void;
@@ -77,27 +73,13 @@ function tossOffset(age: number): number {
   return 4 * LOOT.bounceHeight * bounce * (1 - bounce);
 }
 
-function heldScale(content: Content, attachment: AttachmentDef): number {
-  const rig: RigDef | undefined = content.rigs.get(content.player.rig);
-  if (rig === undefined) return 1;
-  return rig.scale * (rig.sockets[attachment.socket]?.scale ?? 1);
+function baseFor(world: World, ground: GroundItem): ItemBaseDef | null {
+  return ground.content.kind === 'item' ? baseOf(world.content, ground.content.item) : null;
 }
 
-function lyingModel(attachment: LoadedAttachment, scale: number, floor: number): Group {
-  const model: Object3D = attachment.template.clone(true);
-  const flat: Group = new Group();
-  flat.add(model);
-  const size: Vector3 = new Box3().setFromObject(model).getSize(new Vector3());
-  model.rotation.y = size.x < size.z ? HALF_TURN : 0;
-  flat.rotation.x = HALF_TURN;
-  const lifted: Group = new Group();
-  lifted.add(flat);
-  lifted.scale.setScalar(scale);
-  lifted.updateMatrixWorld(true);
-  const bounds: Box3 = new Box3().setFromObject(lifted);
-  const centre: Vector3 = bounds.getCenter(new Vector3());
-  lifted.position.set(-centre.x, floor + LOOT.floorClearance - bounds.min.y, -centre.z);
-  return lifted;
+function seededYaw(id: number, jitterDegrees: number): number {
+  const unit: number = (id * LOOT.yawSeedStep) % 1;
+  return (unit * 2 - 1) * jitterDegrees * DEGREES;
 }
 
 export async function createLootView(loader: GLTFLoader, scene: Scene, library: CharacterLibrary): Promise<LootView> {
@@ -111,16 +93,14 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   scene.add(...lights.meshes);
   let lastTime: number | null = null;
   let lastZone: string | null = null;
-  const gemGeometry: OctahedronGeometry = new OctahedronGeometry(LOOT.gemSize, 0);
-  const gemMaterials: Map<number, MeshStandardMaterial> = new Map<number, MeshStandardMaterial>();
+  const templates: Map<string, GroundTemplate> = new Map<string, GroundTemplate>();
 
-  const gemMaterial = (color: Color): MeshStandardMaterial => {
-    const key: number = color.getHex();
-    const cached: MeshStandardMaterial | undefined = gemMaterials.get(key);
-    if (cached !== undefined) return cached;
-    const made: MeshStandardMaterial = new MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.25, metalness: 0.3 });
-    gemMaterials.set(key, made);
-    return made;
+  const templateFor = (world: World, base: ItemBaseDef): GroundTemplate => {
+    const cached: GroundTemplate | undefined = templates.get(base.id);
+    if (cached !== undefined && !cached.waiting) return cached;
+    const made: GroundTemplate = groundTemplate(world.content, library, base);
+    if (cached === undefined || !made.waiting) templates.set(base.id, made);
+    return cached !== undefined && made.waiting ? cached : made;
   };
 
   const lightFor = (world: World, ground: GroundItem): LootLight | null => {
@@ -128,12 +108,6 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
     const seed: number = (ground.id * LOOT.lightSeedStep) % 1;
     if (marker.kind === 'none') return null;
     return marker.kind === 'shaft' ? lights.add('shaft', marker.color, marker.step, seed) : lights.add('bolt', '', 0, seed);
-  };
-
-  const attachmentFor = (world: World, ground: GroundItem): LoadedAttachment | undefined => {
-    if (ground.content.kind !== 'item') return undefined;
-    const base: ItemBaseDef | null = baseOf(world.content, ground.content.item);
-    return base === null || base.visual === null ? undefined : library.attachments.get(base.visual);
   };
 
   const build = (world: World, ground: GroundItem): LootEntry => {
@@ -145,24 +119,23 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       group.add(stack);
       return { kind: 'gold', group };
     }
-    const attachment: LoadedAttachment | undefined = attachmentFor(world, ground);
-    if (ground.find !== null && attachment === undefined) {
+    const base: ItemBaseDef | null = baseFor(world, ground);
+    if (ground.find !== null && (base === null || base.ground.model === 'bundle' || base.ground.model === 'pouch')) {
       const keepsake: Keepsake = createKeepsake();
       group.add(keepsake.group);
       return { kind: 'keepsake', group, keepsake, light: lightFor(world, ground) };
     }
-    const color: Color = new Color(rarityOf(world.content, ground.content.item).color);
-    if (attachment !== undefined) {
-      const pivot: Group = new Group();
-      pivot.rotation.order = 'YXZ';
-      pivot.add(lyingModel(attachment, heldScale(world.content, attachment.def), world.zone.floorHeight));
-      group.add(pivot);
-      return { kind: 'weapon', group, pivot, yaw: Math.random() * FULL_TURN, light: lightFor(world, ground) };
-    }
-    const gem: Mesh = new Mesh(gemGeometry, gemMaterial(color));
-    gem.castShadow = true;
-    group.add(gem);
-    return { kind: 'gem', group, gem, light: lightFor(world, ground) };
+    const shadow: Mesh = contactShadow();
+    shadow.position.y += world.zone.floorHeight;
+    group.add(shadow);
+    const pivot: Group = new Group();
+    pivot.rotation.order = 'YXZ';
+    pivot.position.y = world.zone.floorHeight;
+    group.add(pivot);
+    if (base === null) return { kind: 'model', group, pivot, shadow, footprint: 1, yaw: 0, waiting: false, light: lightFor(world, ground) };
+    const template: GroundTemplate = templateFor(world, base);
+    pivot.add(template.model.clone(true));
+    return { kind: 'model', group, pivot, shadow, footprint: template.footprint, yaw: seededYaw(ground.id, base.ground.yawJitter), waiting: template.waiting, light: lightFor(world, ground) };
   };
 
   const release = (entry: LootEntry): void => {
@@ -170,8 +143,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       case 'gold':
         entry.group.removeFromParent();
         break;
-      case 'gem':
-      case 'weapon':
+      case 'model':
         entry.light?.release();
         entry.group.removeFromParent();
         break;
@@ -198,9 +170,12 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       for (const ground of world.ground) {
         seen.add(ground.id);
         let entry: LootEntry | undefined = entries.get(ground.id);
-        if (entry?.kind === 'gem' && attachmentFor(world, ground) !== undefined) {
-          release(entry);
-          entry = undefined;
+        if (entry?.kind === 'model' && entry.waiting) {
+          const base: ItemBaseDef | null = baseFor(world, ground);
+          if (base !== null && !templateFor(world, base).waiting) {
+            release(entry);
+            entry = undefined;
+          }
         }
         if (entry === undefined) {
           entry = build(world, ground);
@@ -219,14 +194,13 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
           case 'gold':
           case 'keepsake':
             break;
-          case 'gem':
-            entry.gem.position.y = LOOT.gemHover + Math.sin(world.time * 3 + ground.id) * LOOT.gemBob;
-            entry.gem.rotation.y = world.time * LOOT.gemSpin + ground.id;
-            break;
-          case 'weapon': {
+          case 'model': {
             const remaining: number = (1 - t) * (1 - t);
+            const height: number = entry.group.position.y;
             entry.pivot.rotation.y = entry.yaw;
-            entry.pivot.rotation.x = remaining * LOOT.weaponTumbleTurns * FULL_TURN;
+            entry.pivot.rotation.x = remaining * LOOT.tumbleTurns * FULL_TURN;
+            entry.shadow.position.y = world.zone.floorHeight - height + CONTACT_SHADOW.lift;
+            entry.shadow.scale.setScalar(entry.footprint / (1 + height * LOOT.shadowFallScale));
             break;
           }
         }

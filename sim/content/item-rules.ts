@@ -42,6 +42,10 @@ export function itemProblems(content: Content): string[] {
   for (const affix of content.affixes.values()) {
     if (affix.min > affix.max) problems.push(`line ${affix.id} rolls from ${affix.min} down to ${affix.max}`);
   }
+  for (const base of content.itemBases.values()) {
+    if (base.ground.model === 'held' && (base.visual === null || !content.attachments.has(base.visual))) problems.push(`item ${base.id} lies on the ground as its held model but has no attachment`);
+    if (base.ground.model === 'worn' && !base.wear.some((id: string): boolean => content.wearables.has(id))) problems.push(`item ${base.id} lies on the ground as its worn model but has no wearable`);
+  }
   const dropped: readonly ItemBaseDef[] = [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.dropWeight > 0 && base.slot !== null);
   for (const slot of ITEM_SLOTS) {
     if (!dropped.some((base: ItemBaseDef): boolean => base.slot === slot)) continue;
@@ -52,4 +56,8 @@ export function itemProblems(content: Content): string[] {
     }
   }
   return problems;
+}
+
+export function groundGenerics(content: Content): readonly string[] {
+  return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot !== null && (base.ground.model === 'bundle' || base.ground.model === 'pouch')).map((base: ItemBaseDef): string => base.id);
 }
