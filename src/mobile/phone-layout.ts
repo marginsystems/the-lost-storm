@@ -35,6 +35,9 @@ export const PHONE = {
   hintHeight: 48,
   toastMaxWidth: 340,
   toastHeight: 64,
+  dialogueMaxHeight: 220,
+  cardWidth: 320,
+  cardInset: 16,
 } as const;
 
 export interface Rect {
@@ -80,6 +83,8 @@ export interface PhoneLayout {
   readonly quests: Rect | null;
   readonly hint: Rect;
   readonly toast: Rect;
+  readonly dialogue: Rect;
+  readonly card: Rect;
   readonly xp: Rect;
   readonly stick: Rect;
   readonly attack: Rect;
@@ -192,11 +197,19 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
 
   const column: Rect = { x: rightEdge - PHONE.questWidth, y: 0, w: PHONE.questWidth, h: height };
   const below: number = Math.min(height, ...[toast, hint, ...controls].filter((rect: Rect): boolean => rect.x < right(column) && column.x < right(rect)).map((rect: Rect): number => rect.y));
+  const dialogueRight: number = attack.x - PHONE.gap;
+  const dialogueTop: number = Math.max(baseline - PHONE.dialogueMaxHeight, Math.ceil(Math.max(clusterBottom, bottom(menu.rect), bottom(minimap)) + PHONE.gap));
+  const dialogue: Rect = { x: left, y: dialogueTop, w: dialogueRight - left, h: baseline - dialogueTop };
+
+  const cardWidth: number = Math.min(PHONE.cardWidth, width - safe.left - safe.right - PHONE.cardInset * 2);
+  const cardHeight: number = height - safe.top - safe.bottom - PHONE.cardInset * 2;
+  const card: Rect = { x: safe.left + (width - safe.left - safe.right - cardWidth) / 2, y: safe.top + PHONE.cardInset, w: cardWidth, h: cardHeight };
+
   const sharesColumn: boolean = menu.rect.x < right(column) && column.x < right(menu.rect);
   const questTop: number = Math.max(bottom(minimap), sharesColumn ? bottom(menu.rect) : 0) + PHONE.gap;
   const quests: Rect | null = questsRect(column, questTop, below, height);
 
-  return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, toast, xp, stick, attack, skills, flasks };
+  return { life, mana, lifeFlask, manaFlask, menu, zone, minimap, quests, hint, toast, dialogue, card, xp, stick, attack, skills, flasks };
 }
 
 export function layoutRects(layout: PhoneLayout): NamedRect[] {

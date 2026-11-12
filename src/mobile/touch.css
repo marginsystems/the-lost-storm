@@ -415,3 +415,53 @@ body.touch .hud-flask.mana {
 body.touch .flask-key {
   display: none;
 }
+
+body.touch .hud-dialogue {
+  left: var(--ph-dialogue-x);
+  bottom: var(--ph-dialogue-bottom);
+  width: var(--ph-dialogue-w);
+  max-height: var(--ph-dialogue-h);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateY(16px) scale(0.98);
+}
+
+body.touch .hud-dialogue.open {
+  transform: none;
+}
+
+body.touch.ph-talking .tc-stick,
+body.touch.ph-talking .tc-btn.skill,
+body.touch.ph-talking .tc-btn.flask,
+body.touch.ph-talking .hud-hint,
+body.touch.ph-talking .tc-rotate,
+body.touch.ph-talking .hud > .hud-quests {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.touch .fb {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  margin: 0;
+  border-radius: 3px;
+  width: min(320px, calc(100% - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-height: calc(100% - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translate(-50%, calc(-50% + 12px)) scale(0.98);
+}
+
+body.touch .fb.open {
+  transform: translate(-50%, -50%);
+}
+
+body.touch:has(.fb.open) .tc-stick,
+body.touch:has(.fb.open) .tc-btn,
+body.touch:has(.fb.open) .hud-hint,
+body.touch:has(.fb.open) .tc-rotate {
+  opacity: 0;
+  pointer-events: none;
+}

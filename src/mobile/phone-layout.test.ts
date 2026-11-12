@@ -106,8 +106,29 @@ void test('the rotate toast and both globes stay whole and clear of every other 
 void test('the zone name gets its own width above the minimap, clear of the menu', (): void => {
   for (const screen of SCREENS) {
     const layout = phoneLayout(screen, { skills: 1, flasks: 2, menu: 5 });
-    assert.ok(layout.zone.w >= (screen.width >= PHONE.zoneRoomyWidth ? PHONE.zoneWidth : layout.minimap.w), label(screen, 1, 2));
+    if (screen.width >= PHONE.zoneRoomyWidth) assert.ok(layout.zone.w >= PHONE.zoneWidth, label(screen, 1, 2));
+    assert.ok(layout.zone.x >= layout.manaFlask.x + layout.manaFlask.w + PHONE.gap, label(screen, 1, 2));
     assert.equal(layout.zone.x + layout.zone.w, layout.minimap.x + layout.minimap.w);
     assert.equal(overlaps(layout.zone, layout.menu.rect), false, label(screen, 1, 2));
+  }
+});
+
+void test('while someone speaks the dialogue box owns the space above the xp bar, clear of every piece that stays', (): void => {
+  for (const screen of SCREENS) {
+    const layout = phoneLayout(screen, { skills: 5, flasks: 2, menu: 5 });
+    assert.ok(inside(layout.dialogue, screen), label(screen, 5, 2));
+    assert.ok(layout.dialogue.h >= PHONE.toastHeight, label(screen, 5, 2));
+    const staying: Rect[] = [layout.life, layout.mana, layout.lifeFlask, layout.manaFlask, layout.menu.rect, layout.zone, layout.minimap, layout.xp, layout.attack];
+    for (const rect of staying) assert.equal(overlaps(layout.dialogue, rect), false, label(screen, 5, 2));
+  }
+});
+
+void test('the end card is a centred sheet that fits inside the safe area with a margin', (): void => {
+  for (const screen of SCREENS) {
+    const { card } = phoneLayout(screen, { skills: 5, flasks: 2, menu: 5 });
+    assert.ok(inside(card, screen), label(screen, 5, 2));
+    assert.ok(card.x - screen.safe.left >= PHONE.cardInset && screen.width - screen.safe.right - card.x - card.w >= PHONE.cardInset, label(screen, 5, 2));
+    assert.equal(Math.round(card.x - screen.safe.left), Math.round(screen.width - screen.safe.right - card.x - card.w));
+    assert.ok(card.w >= PHONE.hintMinWidth && card.h >= PHONE.dialogueMaxHeight, label(screen, 5, 2));
   }
 });

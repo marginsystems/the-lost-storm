@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { DeviceFacts, QualityTier } from './quality.ts';
 import { chooseQuality, configureRenderBudget, createQuality, DEVICE_LIMITS, fittedSize, pixelRatioFor, QUALITY_TIERS, renderBudget, texturePath } from './quality.ts';
 
-const DESKTOP: DeviceFacts = { search: '', coarsePointer: false, shortSide: 900, deviceMemory: 16, cores: 10 };
+const DESKTOP: DeviceFacts = { search: '', coarsePointer: false, shortSide: 900, longSide: 1440, deviceMemory: 16, cores: 10 };
 
 void test('a touch device or a small low memory machine gets the mobile tier', (): void => {
   assert.equal(chooseQuality(DESKTOP), 'desktop');

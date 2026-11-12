@@ -113,6 +113,10 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   set('--ph-toast-y', layout.toast.y);
   set('--ph-toast-w', layout.toast.w);
   set('--ph-zone-w', layout.zone.w);
+  set('--ph-dialogue-x', layout.dialogue.x);
+  set('--ph-dialogue-bottom', height - layout.dialogue.y - layout.dialogue.h);
+  set('--ph-dialogue-w', layout.dialogue.w);
+  set('--ph-dialogue-h', layout.dialogue.h);
   set('--ph-hint-left', layout.hint.x - layout.xp.x);
   set('--ph-hint-right', layout.xp.x + layout.xp.w - layout.hint.x - layout.hint.w);
   set('--ph-hint-bottom', xpBottom - layout.hint.y - layout.hint.h);
@@ -434,6 +438,8 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     },
     update(): void {
       refreshButtons();
+      const talking: boolean = world.dialogue !== null;
+      if (talking !== document.body.classList.contains(TOUCH.talkingClass)) document.body.classList.toggle(TOUCH.talkingClass, talking);
       const player = world.player;
       for (const view of views) {
         if (view.spec.kind === 'flask') continue;

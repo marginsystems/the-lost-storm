@@ -7,10 +7,10 @@ const YAW: number = Math.PI / 4;
 const near = (actual: number, expected: number): void => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
 
 void test('a query string forces touch on or off, otherwise a coarse pointer decides', (): void => {
-  assert.equal(prefersTouch('?touch=1', false, 900), true);
-  assert.equal(prefersTouch('?touch=0', true, 390), false);
-  assert.equal(prefersTouch('', true, 900), true);
-  assert.equal(prefersTouch('', false, 900), false);
+  assert.equal(prefersTouch('?touch=1', false, 900, 1440), true);
+  assert.equal(prefersTouch('?touch=0', true, 390, 844), false);
+  assert.equal(prefersTouch('', true, 900, 1440), true);
+  assert.equal(prefersTouch('', false, 900, 1440), false);
 });
 
 void test('the stick reads a direction and a magnitude capped at its radius', (): void => {
@@ -132,6 +132,11 @@ void test('only bar slots that hold a skill get a button, and the attack always 
 });
 
 void test('a phone-sized screen takes the phone layout even when no coarse pointer is reported', (): void => {
-  for (const side of [340, 375, 390, TOUCH.phoneShortSide]) assert.equal(prefersTouch('', false, side), true);
-  assert.equal(prefersTouch('', false, TOUCH.phoneShortSide + 1), false);
+  for (const [short, long] of [[320, 568], [375, 667], [390, 844], [430, TOUCH.phoneLongSide], [TOUCH.phoneShortSide, 800]]) assert.equal(prefersTouch('', false, short ?? 0, long ?? 0), true);
+  assert.equal(prefersTouch('', false, TOUCH.phoneShortSide + 1, 800), false);
+});
+
+void test('a short but wide desktop window keeps the desktop HUD', (): void => {
+  assert.equal(prefersTouch('', false, 480, 1440), false);
+  assert.equal(prefersTouch('', false, 390, TOUCH.phoneLongSide + 1), false);
 });

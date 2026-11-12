@@ -40,7 +40,7 @@ export function bootMobile(): MobileBoot {
   const quality: Quality = createQuality(chooseQuality(facts));
   configureRenderBudget(quality.tier);
   quality.subscribe(configureRenderBudget);
-  const touch: boolean = prefersTouch(facts.search, facts.coarsePointer, facts.shortSide);
+  const touch: boolean = prefersTouch(facts.search, facts.coarsePointer, facts.shortSide, facts.longSide);
   if (touch) holdPageStill();
   return { quality, touch };
 }
