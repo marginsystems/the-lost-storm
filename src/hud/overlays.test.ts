@@ -19,13 +19,15 @@ interface Rig {
   readonly body: OverlayBody;
   readonly fake: FakeTimers;
   readonly probe: Probe;
+  readonly play: { live: boolean };
 }
 
 function rig(ids: readonly OverlayId[]): Rig {
   const clock: FakeClock = createFakeClock();
   const fake: FakeTimers = createFakeTimers(clock);
   const body: OverlayBody = { dataset: {} };
-  const manager: OverlayManager = createOverlayManager({ body, timers: fake.timers, motionMs: (): number => MOTION_MS });
+  const play: { live: boolean } = { live: true };
+  const manager: OverlayManager = createOverlayManager({ body, timers: fake.timers, motionMs: (): number => MOTION_MS, inPlay: (): boolean => play.live });
   const probe: Probe = { log: [], surfaces: new Map<OverlayId, OverlaySurface>() };
   for (const id of ids) {
     const surface: OverlaySurface = { style: { zIndex: '' } };
@@ -40,7 +42,7 @@ function rig(ids: readonly OverlayId[]): Rig {
       },
     });
   }
-  return { manager, body, fake, probe };
+  return { manager, body, fake, probe, play };
 }
 
 void test('T then I: the chart is hidden first and the inventory shows only after its exit', async (): Promise<void> => {
@@ -165,4 +167,39 @@ void test('motion tokens read in milliseconds whether the build writes ms or sec
   assert.equal(durationMs('0.52s'), 520);
   assert.equal(durationMs(''), null);
   assert.equal(durationMs('fast'), null);
+});
+
+void test('out of play, on the title, in the lobby or after an error, a key or button cannot open a side or full panel', async (): Promise<void> => {
+  const { manager, body, fake, play } = rig(['inventory', 'character', 'trade', 'chart', 'map', 'ladder', 'pause']);
+  play.live = false;
+  for (const id of ['inventory', 'character', 'trade', 'chart', 'map', 'ladder'] as const) {
+    assert.equal(manager.send({ type: 'toggle', id }), 'ignored', id);
+    assert.equal(manager.send({ type: 'open', id }), 'ignored', id);
+  }
+  await fake.advance(MOTION_MS);
+  assert.equal(body.dataset[OVERLAY_BODY.any], OVERLAY_BODY.off);
+  manager.send({ type: 'open', id: 'pause' });
+  await fake.advance(MOTION_MS);
+  assert.equal(manager.shown('pause'), true);
+});
+
+void test('once play is live the same key opens the panel', async (): Promise<void> => {
+  const { manager, fake, play } = rig(['inventory']);
+  play.live = false;
+  manager.send({ type: 'toggle', id: 'inventory' });
+  play.live = true;
+  manager.send({ type: 'toggle', id: 'inventory' });
+  await fake.advance(MOTION_MS);
+  assert.equal(manager.shown('inventory'), true);
+});
+
+void test('a panel left open when play stops still closes on its own key', async (): Promise<void> => {
+  const { manager, fake, play } = rig(['inventory']);
+  manager.send({ type: 'toggle', id: 'inventory' });
+  await fake.advance(MOTION_MS);
+  play.live = false;
+  assert.notEqual(manager.send({ type: 'toggle', id: 'inventory' }), 'ignored');
+  await fake.advance(MOTION_MS);
+  assert.equal(manager.shown('inventory'), false);
+  assert.equal(manager.send({ type: 'toggle', id: 'inventory' }), 'ignored');
 });

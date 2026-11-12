@@ -1,8 +1,8 @@
 import type { Timers } from '../backend/backend.ts';
 import { anyOverlay, chromeHidden, dropped, INITIAL_OVERLAYS, isShown, stepOverlays, topOverlay } from './overlay-core.ts';
 import type { OverlayEvent, OverlayOutcome, OverlayPhase, OverlayState, OverlayStep } from './overlay-core.ts';
-import { OVERLAY_IDS, overlayZ } from './overlay-table.ts';
-import type { OverlayId } from './overlay-table.ts';
+import { OVERLAY_IDS, OVERLAY_TABLE, overlayZ } from './overlay-table.ts';
+import type { OverlayId, OverlayLayer } from './overlay-table.ts';
 
 export interface OverlaySurface {
   readonly style: { zIndex: string };
@@ -22,6 +22,7 @@ export interface OverlayDriverOptions {
   readonly body: OverlayBody;
   readonly timers: Timers;
   readonly motionMs: () => number;
+  readonly inPlay: () => boolean;
 }
 
 export type OverlayListener = (state: OverlayState, previous: OverlayState) => void;
@@ -64,6 +65,17 @@ export function durationMs(text: string): number | null {
   if (match === null) return null;
   const value: number = Number.parseFloat(match[1] ?? '');
   return match[2] === 's' ? value * 1000 : value;
+}
+
+export function playPanel(id: OverlayId): boolean {
+  const layer: OverlayLayer = OVERLAY_TABLE[id].layer;
+  return layer === 'side' || layer === 'full';
+}
+
+export function heldOutOfPlay(event: OverlayEvent, state: OverlayState, inPlay: () => boolean): boolean {
+  if (event.type !== 'open' && event.type !== 'toggle') return false;
+  if (!playPanel(event.id) || inPlay()) return false;
+  return event.type === 'open' || (!isShown(state, event.id) && !state.pending.includes(event.id));
 }
 
 export function createOverlayManager(options: OverlayDriverOptions): OverlayManager {
@@ -111,6 +123,7 @@ export function createOverlayManager(options: OverlayDriverOptions): OverlayMana
   };
 
   const dispatch = (event: OverlayEvent): OverlayOutcome => {
+    if (heldOutOfPlay(event, state, options.inPlay)) return 'ignored';
     if (running) {
       queue.push(event);
       return 'waiting';
