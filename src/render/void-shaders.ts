@@ -147,6 +147,7 @@ uniform vec3 uLight;
 uniform vec3 uLightColor;
 uniform vec4 uShore;
 uniform vec3 uShoreLook;
+uniform vec2 uPoolClear;
 varying vec3 vWorld;
 ${NOISE}
 float figureDistance(vec2 p, vec2 feet, vec2 head) {
@@ -207,6 +208,7 @@ void main() {
   float density = (1.0 - open) * (1.0 - pull * 0.7) * mix(1.0, 1.35, uLight.z * (1.0 - pull)) * clamp(0.45 + puff * 0.55 + smoothstep(uNear.y * 0.4, uNear.y * 1.3, away) * 0.5, 0.0, 1.0);
   float ashore = dot(q - uShore.xy, uShore.zw) + (voidFbm(q * 0.09 + 3.0) - 0.5) * uShoreLook.z + (body - 0.5) * 4.0;
   density *= 1.0 - uShoreLook.y * smoothstep(0.0, uShoreLook.x * 0.6, ashore);
+  density *= 1.0 - uShoreLook.y * smoothstep(-1.0, 3.0, ashore) * (1.0 - smoothstep(uPoolClear.x, uPoolClear.y, away));
   float shade = clamp(0.5 + (lit - body) * 6.0, 0.0, 1.0);
   vec3 color = mix(uStorm, uMist, near * 0.8 + shade * 0.2);
   color *= 0.82 + shade * 0.28;

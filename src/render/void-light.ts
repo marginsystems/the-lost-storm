@@ -20,7 +20,7 @@ export const VOID_LIGHT = {
   flicker: 0.1,
   flickerRates: [5.3, 8.9],
   renderOrder: 20,
-  fireIntensity: 40,
+  fireIntensity: 14,
   fireDistance: 36,
   fireDecay: 1.2,
   fireHeight: 3,

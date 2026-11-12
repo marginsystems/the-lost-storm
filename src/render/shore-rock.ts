@@ -1,8 +1,9 @@
-import { BufferAttribute, Mesh, PlaneGeometry } from 'three';
+import { BufferAttribute, CustomBlending, MaxEquation, Mesh, PlaneGeometry } from 'three';
 import type { MeshStandardMaterial } from 'three';
 import type { SurfaceDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { surfaceMaterial } from './surfaces.ts';
+import { wetGround } from './wet-ground.ts';
 
 export const SHORE_ROCK = {
   size: 30,
@@ -47,6 +48,15 @@ export function snapped(value: number, tile: number): number {
   return Math.round(value / tile) * tile;
 }
 
+export function brighterOnly(source: MeshStandardMaterial, wet: number): MeshStandardMaterial {
+  const material: MeshStandardMaterial = source.clone();
+  wetGround(material, wet);
+  material.premultipliedAlpha = true;
+  material.blending = CustomBlending;
+  material.blendEquation = MaxEquation;
+  return material;
+}
+
 export function createShoreRock(def: SurfaceDef): ShoreRock {
   const geometry: PlaneGeometry = new PlaneGeometry(SHORE_ROCK.size, SHORE_ROCK.size, SHORE_ROCK.cells, SHORE_ROCK.cells);
   geometry.rotateX(-Math.PI / 2);
@@ -66,7 +76,7 @@ export function createShoreRock(def: SurfaceDef): ShoreRock {
   geometry.setAttribute('uv', new BufferAttribute(uv, 2));
   const colours: BufferAttribute = new BufferAttribute(new Float32Array(count * 4).fill(1), 4);
   geometry.setAttribute('color', colours);
-  const material: MeshStandardMaterial = surfaceMaterial(def, 'overlay', SHORE_ROCK.wet);
+  const material: MeshStandardMaterial = brighterOnly(surfaceMaterial(def, 'overlay', SHORE_ROCK.wet), SHORE_ROCK.wet);
   const mesh: Mesh = new Mesh(geometry, material);
   mesh.renderOrder = SHORE_ROCK.renderOrder;
   mesh.receiveShadow = true;
@@ -88,6 +98,7 @@ export function createShoreRock(def: SurfaceDef): ShoreRock {
     dispose(): void {
       mesh.removeFromParent();
       geometry.dispose();
+      material.dispose();
     },
   };
 }
