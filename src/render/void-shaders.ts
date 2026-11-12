@@ -58,6 +58,10 @@ uniform float uFieldReach;
 uniform float uOpen;
 uniform vec2 uGroundClear;
 uniform vec2 uPocketShade;
+uniform vec4 uShore;
+uniform vec3 uShoreLook;
+uniform vec3 uRock;
+uniform vec3 uRockShade;
 varying vec3 vWorld;
 ${NOISE}
 void main() {
@@ -75,6 +79,10 @@ void main() {
   color *= 1.0 - uShadow * exp(-dot(toHero, toHero) / 0.9);
   color *= 1.0 - uPocketShade.x * clamp(pocket * (1.0 - pocket) * 4.0, 0.0, 1.0);
   color *= mix(1.0 - uPocketShade.y, 1.0, smoothstep(0.15, 1.0, pocket));
+  float ashore = dot(q - uShore.xy, uShore.zw) + (voidFbm(q * 0.09 + 3.0) - 0.5) * uShoreLook.z;
+  float rock = uShoreLook.y * smoothstep(-2.0, 5.0, ashore);
+  vec3 stone = mix(uRockShade, uRock, 0.55 + mottle * 0.45) * (0.82 + fine * 0.18 + ripple * 0.08);
+  color = mix(color, stone, rock);
   vec2 toFlash = vWorld.xz - uFlashPos;
   color += uFlashColor * uFlash * 0.18 * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
   gl_FragColor = vec4(color, 1.0);
@@ -129,6 +137,8 @@ uniform sampler2D uField;
 uniform float uOpen;
 uniform vec3 uLight;
 uniform vec3 uLightColor;
+uniform vec4 uShore;
+uniform vec3 uShoreLook;
 varying vec3 vWorld;
 ${NOISE}
 float figureDistance(vec2 p, vec2 feet, vec2 head) {
@@ -187,6 +197,8 @@ void main() {
   float width = mix(2.5, 7.0, clamp(along / lightAway, 0.0, 1.0));
   float pull = uLight.z * lane * (1.0 - smoothstep(width, width + 3.5, across));
   float density = (1.0 - open) * (1.0 - pull * 0.7) * mix(1.0, 1.35, uLight.z * (1.0 - pull)) * clamp(0.45 + puff * 0.55 + smoothstep(uNear.y * 0.4, uNear.y * 1.3, away) * 0.5, 0.0, 1.0);
+  float ashore = dot(q - uShore.xy, uShore.zw) + (voidFbm(q * 0.09 + 3.0) - 0.5) * uShoreLook.z + (body - 0.5) * 4.0;
+  density *= 1.0 - uShoreLook.y * smoothstep(0.0, uShoreLook.x * 0.6, ashore);
   float shade = clamp(0.5 + (lit - body) * 6.0, 0.0, 1.0);
   vec3 color = mix(uStorm, uMist, near * 0.8 + shade * 0.2);
   color *= 0.82 + shade * 0.28;

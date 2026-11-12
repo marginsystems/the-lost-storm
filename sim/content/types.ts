@@ -4,7 +4,9 @@ import type { DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, Mon
 import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
 import type { ServiceKind, TradeDef } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
+import type { ZoneAmbience } from './ambience-types.ts';
 import type { BookDef, StoryFlags, ZoneHud, ZoneVoid } from './story-types.ts';
+export type { ZoneAmbience } from './ambience-types.ts';
 import type { ActEnd, RetiredZones, ZoneDrift, ZoneTrigger, ZoneWeather } from './road-types.ts';
 import type { MomentField, MomentLibrary } from './moment-types.ts';
 
@@ -420,18 +422,6 @@ export interface ZoneNpc {
   readonly z: number;
   readonly facingDegrees: number;
   readonly when: readonly Condition[];
-}
-
-export interface ZoneAmbience {
-  readonly background: string;
-  readonly abyss: string;
-  readonly fogNear: number;
-  readonly fogFar: number;
-  readonly skyColor: string;
-  readonly groundColor: string;
-  readonly skyIntensity: number;
-  readonly keyColor: string;
-  readonly keyIntensity: number;
 }
 
 export interface ZoneDef {

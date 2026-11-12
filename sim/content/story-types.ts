@@ -1,3 +1,4 @@
+import type { ZoneAmbience } from './ambience-types.ts';
 import type { Condition } from './condition-types.ts';
 
 export type StoryFlags = Readonly<Record<string, string>>;
@@ -38,6 +39,7 @@ export interface VoidShore {
   readonly when: readonly Condition[];
   readonly ahead: number;
   readonly thin: number;
+  readonly ambience: ZoneAmbience;
 }
 
 export interface ZoneVoid {

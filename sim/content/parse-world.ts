@@ -136,7 +136,7 @@ function zoneWake(value: unknown, where: string): ZoneWake | null {
 function voidShore(value: unknown, where: string): VoidShore | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
-  return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where) };
+  return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where), ambience: zoneAmbience(source['ambience'], `${where}.ambience`) };
 }
 
 function zoneVoid(value: unknown, where: string): ZoneVoid {

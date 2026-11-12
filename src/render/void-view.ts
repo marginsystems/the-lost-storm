@@ -4,7 +4,8 @@ import type { ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { wakeProgress } from '../../sim/world/wake.ts';
-import type { GroundItem, World } from '../../sim/world/types.ts';
+import type { GroundItem, ShoreState, World } from '../../sim/world/types.ts';
+import type { VoidShore } from '../../sim/content/story-types.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Eddy, MistDrive, MistField } from './mist-field.ts';
 import { createMistDrive, createMistField, MIST, stepDrive, stepField } from './mist-field.ts';
@@ -48,6 +49,10 @@ export const VOID_VIEW = {
   motionRate: 2.2,
   groundClear: { inner: 1.4, outer: 2.6 },
   pocketShade: { edge: 0.06, inner: 0.05 },
+  rockColor: 0x2a2e35,
+  rockShade: 0x0d0f12,
+  shoreFray: 9,
+  shoreRate: 0.8,
   wallLight: 0.55,
   glimpseColor: 0x6d747d,
   glimpseOpacity: 0.75,
@@ -179,6 +184,8 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
   fieldTexture.needsUpdate = true;
   const fieldUniform: IUniform<DataTexture> = { value: fieldTexture };
   const openScale: IUniform<number> = { value: VOID_VIEW.sleepingClear };
+  const shoreLine: IUniform<Vector4> = { value: new Vector4(0, 0, 1, 0) };
+  const shoreLook: IUniform<Vector3> = { value: new Vector3(1, 0, VOID_VIEW.shoreFray) };
   const figure: IUniform<Vector3> = { value: new Vector3(FIGURE_GAUGE.fallback, VOID_VIEW.figureClear.inner, VOID_VIEW.figureClear.outer) };
   const motion: IUniform<number> = { value: 0 };
   const light: VoidLight = createVoidLight(zone.floorHeight);
@@ -187,7 +194,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
   group.add(glimpse.group);
 
   const groundUniforms: Uniforms = UniformsUtils.merge([UniformsLib.fog]);
-  Object.assign(groundUniforms, { uColor: color(VOID_VIEW.groundColor), uShade: color(VOID_VIEW.groundShade), uFlashColor: flashColor, uShift: shift, uHero: hero, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uRipple: { value: VOID_VIEW.ripple }, uShadow: { value: VOID_VIEW.heroShadow }, uField: fieldUniform, uSpan: { value: MIST.span }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uOpen: openScale, uGroundClear: { value: new Vector2(VOID_VIEW.groundClear.inner, VOID_VIEW.groundClear.outer) }, uPocketShade: { value: new Vector2(VOID_VIEW.pocketShade.edge, VOID_VIEW.pocketShade.inner) } });
+  Object.assign(groundUniforms, { uColor: color(VOID_VIEW.groundColor), uShade: color(VOID_VIEW.groundShade), uFlashColor: flashColor, uShift: shift, uHero: hero, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uRipple: { value: VOID_VIEW.ripple }, uShadow: { value: VOID_VIEW.heroShadow }, uField: fieldUniform, uSpan: { value: MIST.span }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uOpen: openScale, uGroundClear: { value: new Vector2(VOID_VIEW.groundClear.inner, VOID_VIEW.groundClear.outer) }, uPocketShade: { value: new Vector2(VOID_VIEW.pocketShade.edge, VOID_VIEW.pocketShade.inner) }, uShore: shoreLine, uShoreLook: shoreLook, uRock: color(VOID_VIEW.rockColor), uRockShade: color(VOID_VIEW.rockShade) });
   const groundMaterial: ShaderMaterial = new ShaderMaterial({ uniforms: groundUniforms, defines, vertexShader: GROUND_VERTEX, fragmentShader: GROUND_FRAGMENT, fog: true });
   const groundGeometry: PlaneGeometry = new PlaneGeometry(VOID_VIEW.groundSize, VOID_VIEW.groundSize);
   const ground: Mesh = new Mesh(groundGeometry, groundMaterial);
@@ -199,7 +206,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
   const layers: Mesh[] = tier.layers.map((which: number, index: number): Mesh => {
     const layer = VOID_VIEW.layers[which] ?? VOID_VIEW.layers[0];
     const material: ShaderMaterial = new ShaderMaterial({
-      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uView: view, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: which * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uDir: dir, uSpan: { value: MIST.span }, uNeed: { value: layer.need }, uTear: { value: layer.tear }, uWarp: { value: layer.warp }, uFeather: { value: VOID_VIEW.edgeFeather }, uFray: { value: VOID_VIEW.fray }, uFigure: figure, uRest: { value: new Vector4(VOID_VIEW.rest.tear, VOID_VIEW.rest.feather, VOID_VIEW.rest.breathe, VOID_VIEW.rest.curl) }, uMotion: motion, uRestWall: { value: VOID_VIEW.restWall }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uStreak: { value: layer.streak }, uWall: { value: VOID_VIEW.wallLight }, uEddyRadius: { value: MIST.eddyRadius }, uEddies: eddies, uField: fieldUniform, uOpen: openScale, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor) },
+      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uView: view, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: which * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uDir: dir, uSpan: { value: MIST.span }, uNeed: { value: layer.need }, uTear: { value: layer.tear }, uWarp: { value: layer.warp }, uFeather: { value: VOID_VIEW.edgeFeather }, uFray: { value: VOID_VIEW.fray }, uFigure: figure, uRest: { value: new Vector4(VOID_VIEW.rest.tear, VOID_VIEW.rest.feather, VOID_VIEW.rest.breathe, VOID_VIEW.rest.curl) }, uMotion: motion, uRestWall: { value: VOID_VIEW.restWall }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uStreak: { value: layer.streak }, uWall: { value: VOID_VIEW.wallLight }, uEddyRadius: { value: MIST.eddyRadius }, uEddies: eddies, uField: fieldUniform, uOpen: openScale, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor), uShore: shoreLine, uShoreLook: shoreLook },
       defines,
       vertexShader: MIST_VERTEX,
       fragmentShader: MIST_FRAGMENT,
@@ -298,6 +305,14 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName): ZoneView {
     shiftedEddies(drive.eddies, eddies.value);
     const wanted: number = world.wake === null ? 1 : VOID_VIEW.sleepingClear + (1 - VOID_VIEW.sleepingClear) * wakeProgress(world.wake);
     openScale.value += (wanted - openScale.value) * Math.min(1, dt * VOID_VIEW.openRate);
+    const shore: ShoreState | null = world.shore;
+    const rules: VoidShore | null = world.zone.void?.shore ?? null;
+    if (shore !== null && rules !== null) {
+      shoreLine.value.set(shore.at.x - world.shift.x, shore.at.z - world.shift.z, shore.facing.x, shore.facing.z);
+      shoreLook.value.x = rules.thin;
+    }
+    const shoreOn: number = shore !== null && rules !== null ? 1 : 0;
+    shoreLook.value.y += (shoreOn - shoreLook.value.y) * Math.min(1, dt * VOID_VIEW.shoreRate);
     hero.value.set(pos.x, pos.z);
   };
 

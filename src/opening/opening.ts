@@ -1,4 +1,7 @@
-import type { BookDef, PageDef } from '../../sim/content/story-types.ts';
+import type { BookDef, PageDef, VoidShore } from '../../sim/content/story-types.ts';
+import type { ZoneAmbience } from '../../sim/content/types.ts';
+import { shoreDepth } from '../../sim/world/shore.ts';
+import { blendAmbience, shoreEase } from '../render/shore-look.ts';
 import { bookOf } from '../../sim/content/story.ts';
 import { baseOf } from '../../sim/items.ts';
 import type { Vec2 } from '../../sim/math.ts';
@@ -19,6 +22,7 @@ import { createReader } from './reader.ts';
 export const OPENING = {
   wakeDistance: 46,
   wakeRate: 0.45,
+  ambienceStep: 0.004,
 } as const;
 
 export interface OpeningDeps {
@@ -31,11 +35,13 @@ export interface OpeningDeps {
   fetchVoice(): Promise<SpokenName | null>;
   refreshName(): void;
   playVoice(audio: ArrayBuffer): Promise<void>;
+  setAmbience(ambience: ZoneAmbience): void;
 }
 
 export interface Opening {
   update(): void;
   readBook(item: ItemInstance): void;
+  relight(): void;
 }
 
 function bookIn(world: World, item: ItemInstance): BookDef | null {
@@ -59,6 +65,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   const reader: Reader = createReader(hud, deps.touch);
   const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): void => deps.refreshName() });
   let books: Set<number> = carriedBooks(world);
+  let shownShore: number = 0;
   const gateStyle: HTMLStyleElement = document.createElement('style');
   gateStyle.textContent = hudGateCss();
   hud.append(gateStyle);
@@ -89,6 +96,9 @@ export function createOpening(deps: OpeningDeps): Opening {
 
   return {
     readBook,
+    relight(): void {
+      shownShore = -1;
+    },
     update(): void {
       document.body.dataset['zoneKind'] = world.zone.kind;
       document.body.dataset['voidLight'] = world.zone.void !== null && world.zone.exits.some((exit): boolean => exit.hiddenWhenLocked && allHold(world, exit.requires)) ? 'on' : 'off';
@@ -104,6 +114,12 @@ export function createOpening(deps: OpeningDeps): Opening {
       if (wake !== null && wake !== eased && wake.elapsed > 0) {
         eased = wake;
         camera.ease(OPENING.wakeRate);
+      }
+      const shore: VoidShore | null = world.zone.void?.shore ?? null;
+      const depth: number = shore === null ? 0 : shoreEase(shoreDepth(world));
+      if (shore !== null && (Math.abs(depth - shownShore) >= OPENING.ambienceStep || (depth !== shownShore && (depth === 0 || depth === 1)))) {
+        shownShore = depth;
+        deps.setAmbience(blendAmbience(world.zone.ambience, shore.ambience, depth));
       }
       gate.set(hudHidden(world));
       noticeBooks();

@@ -7,6 +7,7 @@ import { warnInConsole } from './backend/console-log.ts';
 import { markInput, markPlaying, wireFold } from './title-screen.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
+import type { ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
 import { loadAudio } from '../sim/content/audio.ts';
 import { loadContent } from '../sim/content/content.ts';
 import type { Content, ItemBaseDef } from '../sim/content/types.ts';
@@ -434,7 +435,7 @@ async function start(): Promise<void> {
   const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, openMenu: (): void => {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
-  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, send, nameOf: (): string | null => heroName, fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), refreshName: (): void => {
+  const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, send, nameOf: (): string | null => heroName, fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), refreshName: (): void => {
       if (lobby !== null) void lobby.feed.refresh(true);
     } });
   const glitches: GlitchView = createGlitchView({
@@ -446,7 +447,7 @@ async function start(): Promise<void> {
     settings: glitchSettings,
     hero: () => actors.hero(),
     send,
-    setAmbience: (ambience): void => stage.setAmbience(ambience),
+    setAmbience: (ambience): void => { stage.setAmbience(ambience); opening.relight(); },
     silence: (): void => {
       audio.stopAmbience();
       voice.stop();
