@@ -1,5 +1,6 @@
 import type { ObjectiveDef, QuestDef } from '../../sim/content/types.ts';
 import { activeQuests, currentObjective } from '../../sim/world/quests.ts';
+import { nextAction, questTarget } from '../../sim/world/objective.ts';
 import type { World, WorldEvent } from '../../sim/world/types.ts';
 import { el, label, retrigger } from './dom.ts';
 
@@ -12,6 +13,7 @@ interface QuestBlock {
   readonly element: HTMLDivElement;
   readonly goal: HTMLDivElement;
   shown: string;
+  text: string;
   swapping: boolean;
   leaving: boolean;
 }
@@ -20,6 +22,10 @@ export interface QuestTracker {
   readonly element: HTMLElement;
   update(world: World): void;
   handle(event: WorldEvent, world: World): void;
+}
+
+function actionText(world: World, quest: QuestDef, objective: ObjectiveDef | null): string {
+  return objective === null ? '' : nextAction(questTarget(world, quest), objective.text);
 }
 
 export function createQuestTracker(root: HTMLElement): QuestTracker {
@@ -31,10 +37,11 @@ export function createQuestTracker(root: HTMLElement): QuestTracker {
     label('quest-name', quest.name, block);
     const goal: HTMLDivElement = el('div', 'quest-goal', block);
     const objective: ObjectiveDef | null = currentObjective(world, quest);
-    goal.textContent = objective?.text ?? '';
+    const text: string = actionText(world, quest, objective);
+    goal.textContent = text;
     block.getBoundingClientRect();
     block.classList.add('in');
-    const entry: QuestBlock = { element: block, goal, shown: objective?.id ?? '', swapping: false, leaving: false };
+    const entry: QuestBlock = { element: block, goal, shown: objective?.id ?? '', text, swapping: false, leaving: false };
     blocks.set(quest.id, entry);
     return entry;
   };
@@ -59,7 +66,8 @@ export function createQuestTracker(root: HTMLElement): QuestTracker {
       const objective: ObjectiveDef | null = currentObjective(world, quest);
       if (objective === null || block.leaving) return;
       block.shown = objective.id;
-      block.goal.textContent = objective.text;
+      block.text = actionText(world, quest, objective);
+      block.goal.textContent = block.text;
       block.goal.classList.remove('done');
       retrigger(block.goal, 'next');
     }, TRACKER.swapMs);
@@ -72,7 +80,7 @@ export function createQuestTracker(root: HTMLElement): QuestTracker {
       for (const quest of active) {
         const block: QuestBlock = blocks.get(quest.id) ?? add(world, quest);
         const objective: ObjectiveDef | null = currentObjective(world, quest);
-        if (objective !== null && objective.id !== block.shown) swap(world, quest, block);
+        if (objective !== null && (objective.id !== block.shown || actionText(world, quest, objective) !== block.text)) swap(world, quest, block);
       }
       for (const [questId, block] of blocks) {
         if (!active.some((quest: QuestDef): boolean => quest.id === questId)) leave(questId, block);
