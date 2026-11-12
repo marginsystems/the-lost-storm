@@ -1,7 +1,7 @@
 import type { Box3, Object3D, Scene } from 'three';
 import { paceAt } from '../../sim/nav/grid.ts';
 import { Color } from 'three';
-import type { Content } from '../../sim/content/types.ts';
+import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import { heldGear, hiddenBodyParts, wornWearables } from '../../sim/wear.ts';
 import { wakeProgress } from '../../sim/world/wake.ts';
 import type { ActorState, Equipment, MomentState, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
@@ -24,6 +24,7 @@ export const ACTORS = {
   echoOpacity: 0.78,
   turnRim: 4,
   leaveTime: 1.2,
+  pooledPerKind: 8,
 } as const;
 
 interface EchoLook {
@@ -33,6 +34,7 @@ interface EchoLook {
 }
 
 interface MonsterEntry {
+  readonly def: MonsterDef;
   readonly view: ActorView;
   readonly spawnTime: number;
   readonly echo: EchoLook | null;
@@ -57,6 +59,7 @@ export interface Actors {
   heightOf(actorId: number): number;
   boundsOf(actorId: number, out: Box3): boolean;
   hero(): Object3D;
+  standIns(zone: ZoneDef): Object3D[];
 }
 
 const HIT_WHITE: Color = new Color(0xffffff);
@@ -64,6 +67,10 @@ const HIT_RED: Color = new Color(0xff2a1a);
 
 function poseOf(actor: ActorState): ActorPose {
   return { pos: actor.pos, facing: actor.facing, moving: actor.moving, busy: actor.action !== null, deadTime: actor.deadTime };
+}
+
+function lookOf(def: MonsterDef): string {
+  return `${def.id}|${def.rig}|${def.tint}|${def.color}|${def.scale}`;
 }
 
 function npcPose(npc: NpcState): ActorPose {
@@ -111,18 +118,55 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
 
   const leaving: LeavingEcho[] = [];
 
+  const pool: Map<string, ActorView[]> = new Map<string, ActorView[]>();
+
+  const makeMonsterView = (def: MonsterDef, facing: number, echo: EchoLook | null): ActorView | null => {
+    const rig: LoadedRig | undefined = library.rigs.get(def.rig);
+    if (rig === undefined || !hasWear(library, wornWearables(content, def.wear, null), def.gear)) return null;
+    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: echo === null ? def.tint : '#ffffff', glow: echo === null ? def.color : '#ffffff', ghost: echo?.ghost ?? null }), def.scale, facing);
+    view.rig.setGear(def.gear);
+    dress(content, view.rig, def.wear, null);
+    view.rig.setOpacity(ACTORS.echoOpacity);
+    return view;
+  };
+
+  const monsterView = (def: MonsterDef, facing: number, echo: EchoLook | null): ActorView | null => {
+    const pooled: ActorView | undefined = echo === null ? pool.get(lookOf(def))?.pop() : undefined;
+    if (pooled === undefined) return makeMonsterView(def, facing, echo);
+    pooled.face(facing);
+    pooled.revive();
+    return pooled;
+  };
+
+  const keep = (def: MonsterDef, view: ActorView): void => {
+    view.rig.root.removeFromParent();
+    const kept: ActorView[] = pool.get(lookOf(def)) ?? [];
+    if (kept.length >= ACTORS.pooledPerKind) {
+      view.dispose();
+      return;
+    }
+    kept.push(view);
+    pool.set(lookOf(def), kept);
+  };
+
+  const retire = (entry: MonsterEntry): void => {
+    if (entry.echo === null) keep(entry.def, entry.view);
+    else entry.view.dispose();
+  };
+
+  const emptyPool = (): void => {
+    for (const views of pool.values()) for (const view of views) view.dispose();
+    pool.clear();
+  };
+
   const entryFor = (current: World, monster: MonsterState): MonsterEntry | null => {
     const existing: MonsterEntry | undefined = monsters.get(monster.id);
     if (existing !== undefined) return existing;
-    const rig: LoadedRig | undefined = library.rigs.get(monster.def.rig);
-    if (rig === undefined || !hasWear(library, wornWearables(content, monster.def.wear, null), monster.def.gear)) return null;
     const echo: EchoLook | null = echoLook(current, monster);
-    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: echo === null ? monster.def.tint : '#ffffff', glow: echo === null ? monster.def.color : '#ffffff', ghost: echo?.ghost ?? null }), monster.def.scale, monster.facing);
-    view.rig.setGear(monster.def.gear);
-    dress(content, view.rig, monster.def.wear, null);
-    view.rig.setOpacity(ACTORS.echoOpacity);
+    const view: ActorView | null = monsterView(monster.def, monster.facing, echo);
+    if (view === null) return null;
     scene.add(view.rig.root);
-    const entry: MonsterEntry = { view, spawnTime: Math.max(monster.spawnTime, 1e-3), echo };
+    const entry: MonsterEntry = { def: monster.def, view, spawnTime: Math.max(monster.spawnTime, 1e-3), echo };
     monsters.set(monster.id, entry);
     if (!monster.alive) view.die();
     return entry;
@@ -136,6 +180,19 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   return {
     hero(): Object3D {
       return playerView.rig.root;
+    },
+    standIns(zone: ZoneDef): Object3D[] {
+      emptyPool();
+      const ids: Set<string> = new Set<string>(zone.packs.flatMap((pack): string[] => pack.members.map((member): string => member.monster)));
+      const made: ActorView[] = [];
+      for (const id of ids) {
+        const def: MonsterDef | undefined = content.monsters.get(id);
+        const view: ActorView | null = def === undefined ? null : makeMonsterView(def, 0, null);
+        if (def === undefined || view === null) continue;
+        keep(def, view);
+        made.push(view);
+      }
+      return made.map((view: ActorView): Object3D => view.rig.root);
     },
     refreshWear(current: World): void {
       playerView.rig.setGear(heldGear(content, current.player.equipped));
@@ -238,14 +295,14 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'monster_remove': {
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);
             if (entry !== undefined) {
-              if (entry.echo === null) entry.view.dispose();
+              if (entry.echo === null) retire(entry);
               else leaving.push({ entry, ghost: entry.echo.ghost, age: 0 });
               monsters.delete(event.monsterId);
             }
             break;
           }
           case 'zone_changed':
-            for (const entry of monsters.values()) entry.view.dispose();
+            for (const entry of monsters.values()) retire(entry);
             monsters.clear();
             for (const echo of leaving.splice(0, leaving.length)) echo.entry.view.dispose();
             break;

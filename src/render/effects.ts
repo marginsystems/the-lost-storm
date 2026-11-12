@@ -1,10 +1,10 @@
 import type { Group, Object3D, Scene, Vector3 } from 'three';
-import { Color, Mesh, MeshBasicMaterial, PointLight, SphereGeometry } from 'three';
+import { BufferGeometry, Color, Float32BufferAttribute, Mesh, MeshBasicMaterial, PointLight, SphereGeometry } from 'three';
 import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { Delivery, SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
-import { disposeObject, glow, groundArcs, markerMesh, pillarMesh, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
+import { additive, disposeObject, flat, glow, groundArcs, markerMesh, pillarMesh, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
 import type { Telegraph } from './effect-shapes.ts';
 import type { DashTrails } from './dash-trail.ts';
 import { createDashTrails } from './dash-trail.ts';
@@ -133,10 +133,12 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   }
   const flameMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: glow(EMBER, 3.4) });
   const flameGeometry: SphereGeometry = new SphereGeometry(EFFECTS.flameSize, 10, 8);
+  const bareGeometry: BufferGeometry = new BufferGeometry();
+  bareGeometry.setAttribute('position', new Float32BufferAttribute(new Float32Array(9), 3));
   let torches: readonly Vector3[] = [];
   let flames: Mesh[] = [];
 
-  const keepers: Mesh[] = [shockwaveMesh(WHITE, EFFECTS.waveTrail, 1).mesh, scorchMesh(WHITE).mesh, markerMesh(WHITE).mesh, slashMesh(1, 1, WHITE).mesh];
+  const keepers: Mesh[] = [shockwaveMesh(WHITE, EFFECTS.waveTrail, 1).mesh, scorchMesh(WHITE).mesh, markerMesh(WHITE).mesh, slashMesh(1, 1, WHITE).mesh, new Mesh(bareGeometry, additive(WHITE, 0)), new Mesh(bareGeometry, flat(WHITE, 0))];
   let warmFrames: number = EFFECTS.warmFrames;
   for (const keeper of keepers) {
     keeper.position.set(0, EFFECTS.warmDepth, 0);
