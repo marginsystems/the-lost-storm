@@ -119,9 +119,19 @@ void test('level ups, surges, notices and footsteps have sounds, and bookkeeping
   const thrall: MonsterState = monster(world, 'bone_thrall');
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'aggro', monsterId: thrall.id })), ['bones_rattle']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'monster_spawn', monsterId: thrall.id })), ['monsters_rising']);
-  for (const event of [{ type: 'xp', amount: 4 }, { type: 'character_changed' }, { type: 'skill_interrupt', actorId: 1 }, { type: 'monster_remove', monsterId: 1 }, { type: 'surge_cleared', surge: 1, delay: 3 }, { type: 'player_respawn' }] as const) {
+  for (const event of [{ type: 'xp', amount: 4 }, { type: 'character_changed' }, { type: 'skill_interrupt', actorId: 1 }, { type: 'monster_remove', monsterId: 1 }] as const) {
     assert.deepEqual(cuesForEvent(audio, world, event), [], event.type);
   }
+});
+
+void test('quests, waypoints, flasks, respawns and cleared surges have sounds', (): void => {
+  const world: World = fresh();
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'quest_started', quest: 'q' })), ['page_turn']);
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'quest_advanced', quest: 'q', objective: 'o' })), ['quest_update']);
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'quest_completed', quest: 'q' })), ['quest_update']);
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'waypoint_unlocked', zone: 'z' })), ['shimmer_faint']);
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'player_respawn' })), ['swell_slow']);
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'surge_cleared', surge: 1, delay: 3 })), ['shimmer_faint']);
 });
 
 void test('cues carry the tuning of their data entry', (): void => {
@@ -138,14 +148,14 @@ void test('walking through a real world step produces footstep cues', (): void =
   const cues: SoundCue[] = [];
   for (let step: number = 0; step < 90; step += 1) {
     const events: readonly WorldEvent[] = stepWorld(world, step === 0 ? [{ type: 'move', held: false, dest: { x: 28, z: 25 } }] : [], 1 / 60);
-    for (const event of events) cues.push(...cuesForEvent(audio, world, event));
+    for (const event of events) if (event.type === 'hero_step') cues.push(...cuesForEvent(audio, world, event));
   }
   assert.ok(cues.length >= 2);
   assert.ok(cues.every((cue: SoundCue): boolean => cue.sound === 'footstep_stone' && cue.position !== null));
 });
 
 void test('interface actions have sounds and commands map to the right action', (): void => {
-  assert.deepEqual(sounds(cuesForUi(audio, 'click')), ['ui_click']);
+  assert.deepEqual(sounds(cuesForUi(audio, 'click')), ['ui_tap']);
   assert.equal(cuesForUi(audio, 'click')[0]?.position, null);
   assert.deepEqual(sounds(cuesForUi(audio, 'skill_point')), ['ui_skill_point']);
   assert.equal(uiActionForCommand({ type: 'allocate', node: 'x' }), 'skill_point');
@@ -159,7 +169,7 @@ void test('the warm list names every one-shot sound once, footsteps first and no
   const ids: readonly string[] = warmSoundIds(audio);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(ids[0], 'footstep_stone');
-  for (const id of ['sword_swing_light', 'bone_hit', 'crit_hit', 'ground_boom', 'coin_pickup', 'ui_click', 'wave_arrival']) assert.ok(ids.includes(id), id);
+  for (const id of ['sword_swing_light', 'bone_hit', 'crit_hit', 'ground_boom', 'coin_pickup', 'ui_tap', 'wave_arrival']) assert.ok(ids.includes(id), id);
   for (const zone of audio.ambience.values()) {
     for (const loop of zone.loops) assert.equal(ids.includes(loop.sound), false, loop.sound);
     for (const stinger of zone.stingers) assert.equal(ids.includes(stinger.sound), false, stinger.sound);
