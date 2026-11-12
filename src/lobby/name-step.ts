@@ -6,7 +6,7 @@ import type { Lobby } from './compact.ts';
 import type { KeyValueStore } from '../backend/backend.ts';
 import { keepHeroName, pendingRename, readHeroName, stepWanted } from './hero-name.ts';
 import { chooseName, NAME_MESSAGES, NAME_RULES, nameProblem, tidyName } from './lobby-model.ts';
-import type { NameProblem } from './lobby-model.ts';
+import type { NameBody, NameProblem } from './lobby-model.ts';
 import { pressAction } from './name-press.ts';
 import type { PressAction, StepState } from './name-press.ts';
 import stepCss from './name-step.css?inline';
@@ -29,6 +29,7 @@ export interface NameStepParts {
   readonly lobby: Lobby | null;
   readonly fresh: boolean;
   readonly store: KeyValueStore;
+  readonly body: NameBody;
   readonly random: () => number;
   readonly begin: () => void;
 }
@@ -108,7 +109,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
   };
 
   const suggest = (): boolean => {
-    const picked: string | null = chooseName(parts.random, refused);
+    const picked: string | null = chooseName(parts.body, parts.random, refused);
     if (picked === null) return refuse('name_taken');
     field.value = picked;
     tell(NAME_STEP.suggested, false);
