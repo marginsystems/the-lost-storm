@@ -53,7 +53,8 @@
     "id": "to_the_waystation",
     "name": "Find shelter",
     "requires": [
-      "out_of_the_mist"
+      "out_of_the_mist",
+      "the_first_taker"
     ],
     "objectives": [
       {

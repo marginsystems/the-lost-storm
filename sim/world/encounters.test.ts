@@ -110,7 +110,7 @@ void test('turning away from the journal brings it back in front of the hero', (
   assert.equal(world.ground.filter((ground: GroundItem): boolean => ground.find !== null).length, 1);
 });
 
-void test('taking the journal is the first choice and brings the HUD; reading it shows the light and starts the quest, the blade is taken with a click, and the light leads on', (): void => {
+void test('taking the journal is the first choice and brings the HUD; reading it shows the light and starts the quest, the blade is taken with a click, and the light leads on to the first moment', (): void => {
   const world: World = fresh(4);
   walkUntil(world, { x: 0, z: 1 }, (): boolean => found(world) !== null);
   const journal: GroundItem = must(found(world), 'journal');
@@ -140,7 +140,8 @@ void test('taking the journal is the first choice and brings the HUD; reading it
   assert.equal(world.zone.id, content.world.start);
   stepWorld(world, [], DT);
   assert.equal(questState(world, 'out_of_the_mist'), 'done');
-  assert.equal(questState(world, 'to_the_waystation'), 'active');
+  assert.equal(questState(world, 'the_first_taker'), 'active');
+  assert.equal(questState(world, 'to_the_waystation'), 'locked');
 });
 
 void test('reading needs the book in the pack, and an unknown page does nothing', (): void => {
