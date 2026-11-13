@@ -14,14 +14,17 @@ export const LOBBY_LIFE = {
   glancePitchPeak: 1.5,
   phaseSpreadSeconds: 17,
   weightIn: { freq: 1.1, damping: 0.8 },
-  spines: ['DEF-spine.001', 'DEF-spine.002', 'DEF-spine.003'],
-  head: 'DEF-head',
 } as const;
 
 export interface LifeOffsets {
   readonly lean: number;
   readonly headYaw: number;
   readonly headPitch: number;
+}
+
+export interface BodyRoles {
+  readonly head: string | null;
+  readonly torso: readonly string[];
 }
 
 export interface LobbyLife {
@@ -51,13 +54,25 @@ export function lifeOffsets(t: number, weight: number): LifeOffsets {
   };
 }
 
-function boneNamed(root: Object3D, name: string): Object3D | null {
+export function bodyRoles(parts: Readonly<Record<string, readonly string[]>>): BodyRoles {
+  return { head: parts['head']?.[0] ?? null, torso: parts['torso'] ?? [] };
+}
+
+export function boneNamed(root: Object3D, name: string | null): Object3D | null {
+  if (name === null) return null;
   return root.getObjectByName(PropertyBinding.sanitizeNodeName(name)) ?? root.getObjectByName(name) ?? null;
 }
 
-export function createLobbyLife(root: Object3D, seed: number): LobbyLife {
-  const spines: Object3D[] = LOBBY_LIFE.spines.map((name: string): Object3D | null => boneNamed(root, name)).filter((bone: Object3D | null): bone is Object3D => bone !== null);
-  const head: Object3D | null = boneNamed(root, LOBBY_LIFE.head);
+export function spineBelow(head: Object3D | null, torso: readonly string[]): Object3D[] {
+  const names: Set<string> = new Set(torso.flatMap((name: string): string[] => [name, PropertyBinding.sanitizeNodeName(name)]));
+  const chain: Object3D[] = [];
+  for (let bone: Object3D | null = head?.parent ?? null; bone !== null; bone = bone.parent) if (names.has(bone.name)) chain.push(bone);
+  return chain.toReversed();
+}
+
+export function createLobbyLife(root: Object3D, seed: number, roles: BodyRoles): LobbyLife {
+  const head: Object3D | null = boneNamed(root, roles.head);
+  const spines: Object3D[] = spineBelow(head, roles.torso);
   const living: Object3D[] = head === null ? spines : [...spines, head];
   const applied: Map<Object3D, Applied> = new Map(living.map((bone: Object3D): [Object3D, Applied] => [bone, { result: new Quaternion(), offset: new Quaternion(), set: false }]));
   const undo: Quaternion = new Quaternion();

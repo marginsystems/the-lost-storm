@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Bone, PropertyBinding } from 'three';
-import { createLobbyLife, LOBBY_LIFE, lifeOffsets } from './lobby-life.ts';
+import { bodyRoles, createLobbyLife, LOBBY_LIFE, lifeOffsets, spineBelow } from './lobby-life.ts';
 
 const FRAME: number = 1 / 60;
 
@@ -30,9 +30,9 @@ void test('the head glances slowly around and never jumps between frames', (): v
 void test('the life layer never piles up on a bone the idle clip leaves alone', (): void => {
   const root: Bone = new Bone();
   const head: Bone = new Bone();
-  head.name = PropertyBinding.sanitizeNodeName(LOBBY_LIFE.head);
+  head.name = PropertyBinding.sanitizeNodeName('DEF-head');
   root.add(head);
-  const life = createLobbyLife(root, 0.3);
+  const life = createLobbyLife(root, 0.3, { head: 'DEF-head', torso: [] });
   const angles: number[] = [];
   for (let frame: number = 0; frame < 60 * 30; frame += 1) {
     life.step(FRAME);
@@ -40,4 +40,27 @@ void test('the life layer never piles up on a bone the idle clip leaves alone', 
   }
   const widest: number = Math.max(...angles);
   assert.ok(widest <= Math.hypot(LOBBY_LIFE.glanceYawRadians, LOBBY_LIFE.glancePitchRadians) * 1.05, `the head turned ${widest.toFixed(3)} rad`);
+});
+
+void test('the breathing spine is found from the rig\'s own head and torso roles, whatever the bones are called', (): void => {
+  const hips: Bone = new Bone();
+  const spine: Bone = new Bone();
+  const chest: Bone = new Bone();
+  const neck: Bone = new Bone();
+  const head: Bone = new Bone();
+  const shoulder: Bone = new Bone();
+  hips.name = 'Hips';
+  spine.name = 'Spine';
+  chest.name = 'Chest';
+  neck.name = 'Neck';
+  head.name = 'Head';
+  shoulder.name = 'Shoulder.L';
+  hips.add(spine);
+  spine.add(chest);
+  chest.add(neck, shoulder);
+  neck.add(head);
+  const roles = bodyRoles({ head: ['Head'], torso: ['Spine', 'Chest', 'Shoulder.L'] });
+  assert.deepEqual(roles, { head: 'Head', torso: ['Spine', 'Chest', 'Shoulder.L'] });
+  assert.deepEqual(spineBelow(head, roles.torso), [spine, chest]);
+  assert.deepEqual(bodyRoles({}), { head: null, torso: [] });
 });
