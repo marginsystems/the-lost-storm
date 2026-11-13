@@ -21,6 +21,8 @@ import { cardSpot, nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
 import type { CardSpot, NodeSpot } from './tree-nodes.ts';
 import { lockedLine, pointsPrompt, statusLine, takenLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
+import { cardNode, CLOSED_CARD, stepCard } from './tree-card.ts';
+import type { CardEvent, CardState, CardStep } from './tree-card.ts';
 
 const CHART = {
   unit: TREE_NODES.unit,
@@ -195,12 +197,15 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   const statusOf = (node: SkillTreeNodeDef): TreeNodeStatus => treeNodeStatus(content, player().allocated, player().skillPoints, node);
   const goldFor = (count: number): number => refundCost(content, player().level, count);
 
-  let hovered: NodeView | null = null;
-  let selected: NodeView | null = null;
+  let cardState: CardState = CLOSED_CARD;
   let shownCard: string = '';
   let unhover: number | undefined;
-  let pending: NodeView | null = null;
   let dwell: number | undefined;
+  let pinnedButton: HTMLButtonElement | null = null;
+  const cardView = (): NodeView | null => {
+    const id: string | null = cardNode(cardState);
+    return id === null ? null : (viewOf.get(id) ?? null);
+  };
 
   const costLine = (node: SkillTreeNodeDef, status: TreeNodeStatus): string => {
     if (status.kind === 'allocated') return takenLine(refundBlock(content, player().allocated, node.id));
@@ -222,7 +227,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   };
 
   const fillCard = (): void => {
-    const view: NodeView | null = hovered ?? selected;
+    const view: NodeView | null = cardView();
     card.classList.toggle('visible', view !== null);
     if (view === null) {
       shownCard = '';
@@ -262,21 +267,41 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     return context.api.touch ? ` · slot ${slot + 1}` : ` · on ${context.api.settings.keys().labelOf(slotAction(slot))}`;
   };
 
-  const leaveHover = (): void => {
-    window.clearTimeout(unhover);
-    unhover = window.setTimeout((): void => {
-      hovered = null;
-      fillCard();
-    }, CHART.hoverGraceMs);
+  const sendCard = (event: CardEvent): void => {
+    const step: CardStep = stepCard(cardState, event);
+    cardState = step.state;
+    switch (step.timer) {
+      case 'none':
+        break;
+      case 'stop':
+        window.clearTimeout(dwell);
+        window.clearTimeout(unhover);
+        break;
+      case 'dwell':
+        window.clearTimeout(dwell);
+        window.clearTimeout(unhover);
+        dwell = window.setTimeout((): void => sendCard({ type: 'dwell' }), CHART.hoverDwellMs);
+        break;
+      case 'grace':
+        window.clearTimeout(dwell);
+        window.clearTimeout(unhover);
+        unhover = window.setTimeout((): void => sendCard({ type: 'grace' }), CHART.hoverGraceMs);
+        break;
+    }
+    const pinned: HTMLButtonElement | null = cardState.pinned === null ? null : (viewOf.get(cardState.pinned)?.button ?? null);
+    if (pinned !== pinnedButton) {
+      pinnedButton?.classList.remove('selected');
+      pinned?.classList.add('selected');
+      pinnedButton = pinned;
+    }
+    fillCard();
   };
-  card.addEventListener('pointerenter', (): void => window.clearTimeout(unhover));
-  card.addEventListener('pointerleave', (): void => {
-    if (hovered !== null) leaveHover();
-  });
+  card.addEventListener('pointerenter', (): void => sendCard({ type: 'enter_card' }));
+  card.addEventListener('pointerleave', (): void => sendCard({ type: 'leave_card' }));
 
   action.addEventListener('click', (event: MouseEvent): void => {
     event.stopPropagation();
-    const view: NodeView | null = hovered ?? selected;
+    const view: NodeView | null = cardView();
     if (view === null) return;
     if (refundState(content, player(), view.def.id) === 'no_gold') {
       retrigger(action, 'deny');
@@ -328,7 +353,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     return { id: spot.id, x: at.x, y: at.y, radius: spot.radius * motion.view.scale };
   };
   const placeCard = (): void => {
-    const view: NodeView | null = hovered ?? selected;
+    const view: NodeView | null = cardView();
     if (view === null) return;
     const own: NodeSpot | undefined = spots.find((spot: NodeSpot): boolean => spot.id === view.def.id);
     if (own === undefined) return;
@@ -405,9 +430,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (!viewport.classList.contains('dragging')) {
       viewport.classList.add('dragging');
       viewport.setPointerCapture(event.pointerId);
-      hovered = null;
-      pending = null;
-      fillCard();
+      sendCard({ type: 'clear' });
     }
     moved = true;
     target = panChart(target, frame, dx, dy);
@@ -476,9 +499,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     glyph.innerHTML = placeGlyph(content, node);
     const view: NodeView = { def: node, button };
     button.addEventListener('click', (): void => {
-      selected?.button.classList.remove('selected');
-      selected = view;
-      button.classList.add('selected');
+      sendCard({ type: 'pin', node: node.id });
       const status: TreeNodeStatus = statusOf(node);
       switch (status.kind) {
         case 'available':
@@ -498,33 +519,15 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   }
   const spots: readonly NodeSpot[] = views.map((view: NodeView): NodeSpot => ({ id: view.def.id, ...centreOf(view.def), radius: nodeDiameter(view.def) / 2 }));
   const viewOf: ReadonlyMap<string, NodeView> = new Map<string, NodeView>(views.map((view: NodeView): [string, NodeView] => [view.def.id, view]));
-  const pointAt = (view: NodeView | null): void => {
-    if (view === pending) return;
-    pending = view;
-    window.clearTimeout(dwell);
-    if (view === null) {
-      if (hovered !== null) leaveHover();
-      return;
-    }
-    window.clearTimeout(unhover);
-    if (view === hovered) return;
-    dwell = window.setTimeout((): void => {
-      hovered = view;
-      fillCard();
-    }, CHART.hoverDwellMs);
-  };
   viewport.addEventListener('pointermove', (event: PointerEvent): void => {
     if (event.pointerType === 'touch' || viewport.classList.contains('dragging')) return;
-    if (card.contains(event.target instanceof Node ? event.target : null)) {
-      pending = null;
-      window.clearTimeout(dwell);
-      return;
-    }
+    if (card.contains(event.target instanceof Node ? event.target : null)) return;
     const at: ScreenPoint = toMap(motion.view, frame, local(event));
-    const id: string | null = nodeAt(spots, at.x, at.y);
-    pointAt(id === null ? null : (viewOf.get(id) ?? null));
+    sendCard({ type: 'point', node: nodeAt(spots, at.x, at.y) });
   });
-  viewport.addEventListener('pointerleave', (): void => pointAt(null));
+  viewport.addEventListener('pointerleave', (event: PointerEvent): void => {
+    if (event.pointerType !== 'touch') sendCard({ type: 'point', node: null });
+  });
 
   const showMatches = (): void => {
     const found: ReadonlySet<string> | null = chartMatches(content, search.value);
@@ -547,10 +550,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const at: ChartPoint = centreOf(next.def);
     moved = true;
     target = clampChart({ x: at.x, y: at.y, scale: Math.max(target.scale, CHART.findZoom) }, frame);
-    selected?.button.classList.remove('selected');
-    selected = next;
-    next.button.classList.add('selected');
-    fillCard();
+    sendCard({ type: 'pin', node: next.def.id });
   });
   search.addEventListener('keyup', (event: KeyboardEvent): void => event.stopPropagation());
 
@@ -558,11 +558,13 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   new MutationObserver((): void => {
     const open: boolean = element.classList.contains('open');
     parent.classList.toggle('chart-open', open);
-    if (open) return;
+    if (open) {
+      if (!cardState.open) sendCard({ type: 'open' });
+      return;
+    }
     if (wasOpen) lastView = target;
     wasOpen = false;
-    hovered = null;
-    fillCard();
+    sendCard({ type: 'close' });
   }).observe(element, { attributes: true, attributeFilter: ['class'] });
   const openingView = (): ChartPoint[] => {
     const at: string | null = chartHere(content, player().allocated);
@@ -610,6 +612,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     refresh(): void {
       const open: boolean = element.classList.contains('open');
       if (open && !wasOpen) {
+        if (!cardState.open) sendCard({ type: 'open' });
         moved = false;
         frame = measured();
         target = reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
