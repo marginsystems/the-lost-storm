@@ -11,7 +11,7 @@ export const SHORE_ROCK = {
   lineFrom: -1,
   lineTo: 3,
   lift: 0.015,
-  wet: 0.6,
+  wet: 0.2,
   opacity: 1,
   renderOrder: 2,
 } as const;

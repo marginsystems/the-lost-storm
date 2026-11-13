@@ -110,7 +110,7 @@ export const VOID_VIEW = {
   haze: { near: 7, far: 20 },
   land: { from: -1, to: 3, bank: 10 },
   bankSolid: 0.95,
-  landFlash: { intensity: 7, height: 30, lean: 0.5 },
+  landFlash: { intensity: 18, height: 14, lean: 1 },
   bank: { length: 220, height: 10, back: 2.5, color: 0xeef0f2, lit: 0xffffff, opacity: 0.8 },
   thinMist: 0.6,
 } as const;
