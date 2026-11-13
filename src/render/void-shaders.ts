@@ -69,6 +69,8 @@ uniform vec4 uLift;
 uniform vec3 uLiftColor;
 uniform vec4 uBody;
 uniform vec4 uBed;
+uniform vec3 uPale;
+uniform vec4 uClear;
 varying vec3 vWorld;
 ${NOISE}
 float bodyDistance(vec2 p) {
@@ -84,12 +86,18 @@ void main() {
   float mottle = voidFbm(q * 0.035 + 7.0);
   vec3 color = mix(uShade, uColor, 0.82 + mottle * 0.18);
   color *= 1.0 - uRipple * (ripple * 0.7 + fine * 0.3);
-  vec2 toHero = vWorld.xz - uHero - vec2(-0.25, 0.1);
-  color *= 1.0 - uShadow * exp(-dot(toHero, toHero) / 0.9);
+  float clearAway = distance(vWorld.xz, uHero) + (warp - 0.5) * uClear.x * 0.3 + (mottle - 0.5) * uClear.x * 0.2;
+  float clearing = uClear.y * (1.0 - smoothstep(uClear.x * 0.3, uClear.x, clearAway));
+  float seam = smoothstep(0.62, 0.86, voidNoise(q * 0.8 + warp * 2.5));
+  float glint = smoothstep(0.7, 1.0, fine) * ripple;
+  vec3 pale = uPale * (1.0 + (fine - 0.5) * uClear.z + (mottle - 0.5) * uClear.z - seam * uClear.z) + glint * uClear.w;
+  color = mix(color, pale, clearing);
   float bedAway = distance(vWorld.xz, uHero) + (mottle - 0.5) * uBed.y * 0.5 + (warp - 0.5) * 0.8;
   float bed = uBed.x * (1.0 - smoothstep(uBed.y * 0.3, uBed.y, bedAway));
-  vec3 bedStone = mix(uRockShade, uShade, 0.22 + mottle * 0.4) * (0.75 + fine * 0.35 + ripple * 0.15);
-  color = mix(color, bedStone, bed * 0.75);
+  vec3 bedStone = uPale * (0.95 + (fine - 0.5) * uClear.z * 1.5 - seam * uClear.z * 1.5) + glint * uClear.w * 2.0;
+  color = mix(color, bedStone, bed * 0.6);
+  vec2 toHero = vWorld.xz - uHero - vec2(-0.25, 0.1);
+  color *= 1.0 - uShadow * exp(-dot(toHero, toHero) / 0.9);
   float touch = bodyDistance(vWorld.xz);
   color *= 1.0 - uBed.x * uBed.z * (1.0 - smoothstep(0.05, uBed.w, touch)) * (0.75 + fine * 0.25);
   float ashore = dot(q - uShore.xy, uShore.zw) + (voidFbm(q * 0.09 + 3.0) - 0.5) * uShoreLook.z;
@@ -166,6 +174,7 @@ uniform vec3 uLightColor;
 uniform vec4 uShore;
 uniform vec3 uShoreLook;
 uniform vec2 uPoolClear;
+uniform float uThinMist;
 varying vec3 vWorld;
 ${NOISE}
 float figureDistance(vec2 p, vec2 feet, vec2 head) {
@@ -223,7 +232,7 @@ void main() {
   float figure = 1.0 - smoothstep(uFigure.y * reachOut, uFigure.z * reachOut, figureDistance(p, uHero, head));
   vec2 fromCentre = abs(p - uHero);
   float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
-  float aroundBody = 1.0 - smoothstep(uBodyClear.x * reachOut, uBodyClear.y * reachOut, figureDistance(vWorld.xz, uBody.zw, uBody.xy));
+  float aroundBody = 1.0 - smoothstep(uBodyClear.x * reachOut, uBodyClear.y * reachOut, figureDistance(p, uBody.zw, uBody.xy));
   float cleared = max(max(fieldAt((swirled + warp * uWarp) / uSpan) * inside, figure), aroundBody);
   float fray = voidFbm(swirled * uFray + roll * 2.2 + uSeed * 3.1);
   float still = 1.0 - uMotion;
@@ -257,6 +266,7 @@ void main() {
   vec3 color = mix(uStorm, uMist, near * 0.8 + shade * 0.2);
   color *= 0.82 + shade * 0.28;
   color = mix(color, uDeep, smoothstep(0.36, 0.58, storm) * (1.0 - near * 0.8) * (1.0 - open));
+  color = mix(color, uMist, (1.0 - smoothstep(0.0, uThinMist, density)) * (1.0 - near));
   color = mix(color, uMist * 1.06, wall * uWall);
   color = mix(color, uMist * 1.08, rim * 0.6);
   color = mix(color, uMist, uShoreLook.y * (1.0 - smoothstep(-8.0, 2.0, ashore)) * 0.8);
@@ -303,5 +313,73 @@ void main() {
   vec2 c = gl_PointCoord - 0.5;
   float soft = 1.0 - smoothstep(0.0, 0.5, length(c));
   gl_FragColor = vec4(uColor, soft * vFade * uOpacity);
+}
+`;
+
+export const WISP_VERTEX: string = `
+attribute vec3 aCentre;
+attribute vec4 aLook;
+uniform float uFlatten;
+uniform vec4 uEye;
+varying vec2 vUv;
+varying vec3 vWorld;
+varying float vAlpha;
+varying float vSeed;
+varying float vGlow;
+void main() {
+  vec3 right = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
+  vec3 up = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+  vec3 world = aCentre + (right * position.x + up * position.y * uFlatten) * aLook.x;
+  vUv = position.xy * 2.0;
+  vWorld = world;
+  vAlpha = aLook.y * smoothstep(uEye.x, uEye.y, distance(aCentre, cameraPosition));
+  vSeed = aLook.z;
+  vGlow = aLook.w;
+  gl_Position = projectionMatrix * viewMatrix * vec4(world, 1.0);
+}
+`;
+
+export const WISP_FRAGMENT: string = `
+uniform float uTime;
+uniform vec4 uBody;
+uniform float uDither;
+uniform vec3 uMist;
+uniform vec3 uShade;
+uniform vec4 uBodyClear;
+uniform vec2 uKeySide;
+uniform vec3 uReach;
+uniform float uGround;
+uniform float uFloorFade;
+varying vec2 vUv;
+varying vec3 vWorld;
+varying float vAlpha;
+varying float vSeed;
+varying float vGlow;
+${NOISE}
+float bodyAt(float height) {
+  float level = uGround + height;
+  if (vWorld.y <= level || cameraPosition.y <= vWorld.y) return 1000.0;
+  vec2 behind = vWorld.xz + (vWorld.xz - cameraPosition.xz) * (vWorld.y - level) / (cameraPosition.y - vWorld.y);
+  vec2 span = uBody.xy - uBody.zw;
+  float t = clamp(dot(behind - uBody.zw, span) / max(dot(span, span), 0.0001), 0.0, 1.0);
+  return distance(behind, uBody.zw + span * t);
+}
+void main() {
+  vec2 drift = vec2(uTime * 0.05, -uTime * 0.03);
+  float broad = voidFbm(vUv * 1.6 + vSeed * 31.0 + drift);
+  float fine = voidFbm(vUv * 4.2 - vSeed * 17.0 + drift * 2.3);
+  float reach = length(vUv) + (broad - 0.5) * 0.9;
+  float mass = broad * 0.65 + fine * 0.35 + (1.0 - length(vUv)) * 0.3;
+  vec2 edge = abs(vUv);
+  float window = (1.0 - smoothstep(0.62, 0.98, max(edge.x, edge.y))) * smoothstep(0.0, uFloorFade, vWorld.y - uGround);
+  float shape = (1.0 - smoothstep(0.25, 1.0, reach)) * smoothstep(0.3, 0.58, mass) * window;
+  float lee = voidFbm(vUv * 1.6 + vSeed * 31.0 + drift - uKeySide * 0.35);
+  float lit = clamp(0.5 + (broad - lee) * 5.0 + vUv.y * 0.25, 0.0, 1.0);
+  float touch = min(min(bodyAt(uReach.x), bodyAt(uReach.y)), bodyAt(uReach.z)) + (fine - 0.5) * uBodyClear.w;
+  float keep = mix(uBodyClear.z, 1.0, smoothstep(uBodyClear.x, uBodyClear.y, touch));
+  vec3 color = mix(uShade, uMist * 1.04, lit * 0.75 + smoothstep(0.3, 0.7, mass) * 0.25);
+  color = mix(color, uMist * 1.07, vGlow * smoothstep(0.35, 0.75, fine));
+  float grain = voidDither(gl_FragCoord.xy + vSeed * 97.0) * uDither;
+  gl_FragColor = vec4(color + grain, clamp(shape * vAlpha * keep + grain, 0.0, 1.0));
 }
 `;

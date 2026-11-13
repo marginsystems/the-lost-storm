@@ -18,7 +18,7 @@ import { createGlitchState, storyProgress } from './glitch.ts';
 import { spawnPacks } from './monsters.ts';
 import { startMoments } from './moments.ts';
 import { emptyPathLog, markStart, readPathLog } from './path-log.ts';
-import { startQuests } from './quests.ts';
+import { settleQuests, startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
 import { emptyStash } from './trade.ts';
 import { beginVoid } from './wake.ts';
@@ -181,6 +181,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   beginVoid(world, 'first');
   if (save === null) giveStartingItems(world, world.zone.void?.emptyHanded === true);
   for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
+  settleQuests(world);
   startQuests(world);
   spawnNpcs(world);
   spawnPacks(world);

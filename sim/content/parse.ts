@@ -311,6 +311,7 @@ function prop(value: unknown, where: string): PropDef {
     blockLength,
     solid: source['solid'] === undefined ? null : flag(source, 'solid', where),
     footprints: [],
+    height: 0,
     light: propLight(source['light'], `${where}.light`),
     surfaces: dressing(source['surfaces'], `${where}.surfaces`),
     tint: source['tint'] === undefined ? null : colour(source, 'tint', where),

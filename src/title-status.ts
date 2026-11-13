@@ -11,6 +11,7 @@ export const STATUS_LINE = {
 
 export const TITLE_NOTICES = {
   freshStart: 'A new storm has begun.',
+  setAside: 'Your earlier save could not be read and was set aside. A new journey starts here.',
 } as const;
 
 export interface LineEnd {

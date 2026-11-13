@@ -1,10 +1,14 @@
-export type ContextPhase = 'live' | 'lost' | 'restoring' | 'failed';
+export type ContextPhase = 'live' | 'lost' | 'restoring' | 'failed' | 'faulted';
 
-export type ContextSignal = { readonly type: 'lost' } | { readonly type: 'restored' } | { readonly type: 'timeout' } | { readonly type: 'frame'; readonly contextLost: boolean };
+export type ContextSignal = { readonly type: 'lost' } | { readonly type: 'restored' } | { readonly type: 'timeout' } | { readonly type: 'frame'; readonly contextLost: boolean } | { readonly type: 'fault' };
 
 export function nextContextPhase(phase: ContextPhase, signal: ContextSignal): ContextPhase {
+  if (phase === 'faulted') return phase;
   let next: ContextPhase;
   switch (signal.type) {
+    case 'fault':
+      next = 'faulted';
+      break;
     case 'lost':
       next = 'lost';
       break;
@@ -26,7 +30,11 @@ export function contextNoticeShown(phase: ContextPhase): boolean {
 }
 
 export function contextReloadOffered(phase: ContextPhase): boolean {
-  return phase === 'failed';
+  return phase === 'failed' || phase === 'faulted';
+}
+
+export function contextPolls(phase: ContextPhase): boolean {
+  return phase !== 'live' && phase !== 'faulted';
 }
 
 export function contextWaits(phase: ContextPhase): boolean {

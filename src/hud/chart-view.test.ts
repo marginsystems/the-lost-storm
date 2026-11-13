@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { toMap, toScreen } from './atlas-view.ts';
 import type { AtlasFrame, AtlasView, ScreenPoint } from './atlas-view.ts';
-import { CHART_VIEW, clampChart, fitScale, frameChart, openChart, panChart, pinLabel, reopenChart, sameFrame, spreadLabels, wholeChart, zoomChart } from './chart-view.ts';
+import { captionFoot, CHART_VIEW, clampChart, easeFoot, fitScale, frameChart, openChart, panChart, pinLabel, reopenChart, sameFrame, spreadLabels, wholeChart, zoomChart } from './chart-view.ts';
 import type { LabelBox, PinnedLabel } from './chart-view.ts';
 
 const FRAME: AtlasFrame = { width: 1400, height: 700, mapWidth: 1500, mapHeight: 1400 };
@@ -32,13 +32,31 @@ void test('a pan on a chart smaller than the frame keeps it centred', (): void =
 });
 
 void test('a path name off the screen is pinned whole to the nearest edge, and one on screen stays where it is', (): void => {
-  const inside: PinnedLabel = pinLabel({ x: 600, y: 300 }, 80, 10, FRAME);
+  const inside: PinnedLabel = pinLabel({ x: 600, y: 300 }, 80, 10, FRAME, CHART_VIEW.labelFoot);
   assert.deepEqual(inside, { x: 600, y: 300, pinned: false });
-  const left: PinnedLabel = pinLabel({ x: -400, y: 300 }, 80, 10, FRAME);
+  const left: PinnedLabel = pinLabel({ x: -400, y: 300 }, 80, 10, FRAME, CHART_VIEW.labelFoot);
   assert.deepEqual(left, { x: 80 + CHART_VIEW.labelEdge, y: 300, pinned: true });
-  const corner: PinnedLabel = pinLabel({ x: 2000, y: 900 }, 80, 10, FRAME);
+  const corner: PinnedLabel = pinLabel({ x: 2000, y: 900 }, 80, 10, FRAME, CHART_VIEW.labelFoot);
   assert.equal(corner.x + 80, FRAME.width - CHART_VIEW.labelEdge);
   assert.equal(corner.y + 10, FRAME.height - CHART_VIEW.labelFoot);
+});
+
+void test('a name pinned to the bottom stays above the caption band, however tall the caption wraps', (): void => {
+  const twoLines: number = captionFoot(FRAME.height - 18 - 56, 56, FRAME.height);
+  assert.equal(twoLines, 18 + 56 + CHART_VIEW.labelGap);
+  const low: PinnedLabel = pinLabel({ x: 300, y: 900 }, 80, 10, FRAME, twoLines);
+  assert.ok(low.y + 10 + CHART_VIEW.labelGap <= FRAME.height - 18 - 56);
+  assert.equal(captionFoot(FRAME.height - 18 - 20, 20, FRAME.height), CHART_VIEW.labelFoot);
+  assert.equal(captionFoot(0, 0, FRAME.height), CHART_VIEW.labelFoot);
+});
+
+void test('the caption band eases toward its new height over several frames and then settles exactly', (): void => {
+  const step: number = 1 / 60;
+  const first: number = easeFoot(52, 86, step);
+  assert.ok(first > 52 && first < 86);
+  let foot: number = first;
+  for (let frame: number = 0; frame < 120; frame += 1) foot = easeFoot(foot, 86, step);
+  assert.equal(foot, 86);
 });
 
 void test('two names pinned onto the same spot are spread apart toward the middle, and apart names stay put', (): void => {

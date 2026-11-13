@@ -2,7 +2,7 @@ import type { AnimationClip, IUniform, Object3D } from 'three';
 import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import { disposeSkeletons } from './skeletons.ts';
+import { boundSkins, disposeSkeletons } from './skeletons.ts';
 import type { AttachmentDef, Content, RigActionClip, RigDef, RigGait, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
@@ -11,7 +11,11 @@ import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures
 import { fitToSkeleton, groupBodyParts, maskHidden, partMasks, skinnedMeshes } from './wearables.ts';
 import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { makeGhost } from './ghost-material.ts';
+import { createBrowserTimers } from '../browser-timers.ts';
+import { STALL, withStallLimit } from './stall-limit.ts';
 import { addBoxUvs } from './box-uv.ts';
+import { idleWeight, relaxHands, restHands } from './rest-hands.ts';
+import type { RestHand } from './rest-hands.ts';
 
 export interface ActionClip {
   readonly clip: AnimationClip;
@@ -67,6 +71,7 @@ export interface RigLook {
   readonly tint: string;
   readonly glow: string;
   readonly ghost: GhostUniforms | null;
+  readonly feather: boolean;
 }
 
 export interface RigInstance {
@@ -78,6 +83,7 @@ export interface RigInstance {
   armed(): boolean;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   stepWear(dt: number): void;
+  relaxHands(): void;
   setFlash(color: Color, amount: number): void;
   setHover(color: Color, amount: number): void;
   setOpacity(opacity: number): void;
@@ -85,20 +91,27 @@ export interface RigInstance {
 }
 
 export const CHARACTER = {
-  flashBoost: 1.9,
+  flashBoost: 1.3,
+  flashCore: 0.3,
+  flashPower: 1.5,
+  flashPeak: 1.2,
   hoverBoost: 0.5,
   hoverPower: 3,
   glowBoost: 2.4,
   metalFrom: 0.5,
   matteRoughness: 0.86,
   rimPower: 6,
+  featherFrom: 0.2,
+  featherTo: 0.8,
 } as const;
 
 export const CHARACTER_SHADE: string = [
   '#include <emissivemap_fragment>',
   'float edgeFacing = clamp( 1.0 - dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );',
-  `totalEmissiveRadiance += uFlash + uRim * pow( edgeFacing, ${CHARACTER.rimPower.toFixed(2)} ) + uHover * pow( edgeFacing, ${CHARACTER.hoverPower.toFixed(2)} );`,
+  `totalEmissiveRadiance += uFlash * ( ${CHARACTER.flashCore.toFixed(2)} + ${(1 - CHARACTER.flashCore).toFixed(2)} * pow( edgeFacing, ${CHARACTER.flashPower.toFixed(2)} ) ) + uRim * pow( edgeFacing, ${CHARACTER.rimPower.toFixed(2)} ) + uHover * pow( edgeFacing, ${CHARACTER.hoverPower.toFixed(2)} );`,
 ].join('\n');
+
+export const CHARACTER_FEATHER: string = `diffuseColor.a = smoothstep( ${CHARACTER.featherFrom.toFixed(2)}, ${CHARACTER.featherTo.toFixed(2)}, diffuseColor.a );\nif ( diffuseColor.a <= 0.0 ) discard;`;
 
 export const WEAR_FADE = {
   stiffness: 240,
@@ -144,6 +157,10 @@ interface WornPiece {
 export const RIM_LIGHT: IUniform<Color> = { value: new Color(0x000000) };
 
 const DEGREES: number = Math.PI / 180;
+export function flashLevel(amount: number): number {
+  return amount * CHARACTER.flashBoost + amount * amount * amount * CHARACTER.flashPeak;
+}
+
 const FLASH_KEY: string = 'storm-flash-rim';
 const WHITE: string = '#ffffff';
 const UNSEEN: Material = new MeshBasicMaterial({ visible: false });
@@ -156,7 +173,7 @@ export function assetUrl(path: string): string {
 export function loadModel(loader: GLTFLoader, path: string): Promise<GLTF> {
   const cached: Promise<GLTF> | undefined = pending.get(path);
   if (cached !== undefined) return cached;
-  const started: Promise<GLTF> = loader.loadAsync(assetUrl(path)).then(shrinkModel);
+  const started: Promise<GLTF> = withStallLimit((progress: () => void): Promise<GLTF> => loader.loadAsync(assetUrl(path), progress), createBrowserTimers(), STALL.limitMs, path).then(shrinkModel);
   pending.set(path, started);
   started.catch((): void => {
     pending.delete(path);
@@ -369,6 +386,7 @@ function flashing(source: unknown, look: RigLook, glow: RigGlow): MeshStandardMa
     if (!(entry instanceof MeshStandardMaterial)) continue;
     const material: MeshStandardMaterial = entry.clone();
     material.color.multiply(new Color(look.tint));
+    material.alphaToCoverage = look.feather && material.alphaTest > 0;
     if (material.metalness < CHARACTER.metalFrom) {
       material.roughness = Math.max(material.roughness, CHARACTER.matteRoughness);
       material.roughnessMap = null;
@@ -383,9 +401,11 @@ function flashing(source: unknown, look: RigLook, glow: RigGlow): MeshStandardMa
         shader.uniforms['uRim'] = RIM_LIGHT;
         shader.fragmentShader = shader.fragmentShader
           .replace('void main() {', 'uniform vec3 uFlash;\nuniform vec3 uHover;\nuniform vec3 uRim;\nvoid main() {')
-          .replace('#include <emissivemap_fragment>', CHARACTER_SHADE);
+          .replace('#include <emissivemap_fragment>', CHARACTER_SHADE)
+          .replace('#include <alphatest_fragment>', material.alphaToCoverage ? CHARACTER_FEATHER : '#include <alphatest_fragment>');
       };
-      material.customProgramCacheKey = (): string => FLASH_KEY;
+      const programKey: string = material.alphaToCoverage ? `${FLASH_KEY}-feather` : FLASH_KEY;
+      material.customProgramCacheKey = (): string => programKey;
     } else {
       makeGhost(material, glow, look.ghost);
     }
@@ -418,12 +438,13 @@ function fittedPieces(rig: LoadedRig, worn: LoadedWearable, anchor: SkinnedMesh)
   return made;
 }
 
-function findNode(model: Object3D, name: string): Object3D | undefined {
+export function findNode(model: Object3D, name: string): Object3D | undefined {
   return model.getObjectByName(PropertyBinding.sanitizeNodeName(name)) ?? model.getObjectByName(name);
 }
 
 export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: RigLook): RigInstance {
   const def: RigDef = rig.def;
+  boundSkins(rig.template);
   const model: Object3D = cloneSkinned(rig.template);
   model.scale.setScalar(def.scale);
   model.rotation.y = def.yawOffsetDegrees * DEGREES;
@@ -437,6 +458,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     if (node !== undefined) node.visible = false;
   }
 
+  const hands: readonly RestHand[] = restHands(model, def);
+  const idles: readonly AnimationClip[] = rig.clips.unarmed === null ? [rig.clips.idle] : [rig.clips.idle, rig.clips.unarmed.idle];
   const mixer: AnimationMixer = new AnimationMixer(model);
   const held: Map<string, HeldPiece> = new Map<string, HeldPiece>();
   const lettingGo: HeldPiece[] = [];
@@ -477,7 +500,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     const geometries: readonly BufferGeometry[] = fittedPieces(rig, wearable, skinAnchor);
     wearable.pieces.forEach((source: SkinnedMesh, index: number): void => {
       const geometry: BufferGeometry | undefined = geometries[index];
-      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost }, glow);
+      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow);
       const first: MeshStandardMaterial | undefined = cloned[0];
       if (geometry === undefined || first === undefined) return;
       const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
@@ -487,6 +510,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       mesh.quaternion.copy(skinAnchor.quaternion);
       mesh.scale.copy(skinAnchor.scale);
       mesh.bind(skinAnchor.skeleton, skinAnchor.bindMatrix);
+      mesh.boundingSphere = skinAnchor.boundingSphere.clone();
       (skinAnchor.parent ?? model).add(mesh);
       piece.meshes.push(mesh);
       piece.materials.push(...cloned);
@@ -589,8 +613,16 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       }
       if (!moving && shownParts.join('|') !== finalParts.join('|')) hide(finalParts);
     },
+    relaxHands(): void {
+      const holding: Set<string> = new Set<string>();
+      for (const id of held.keys()) {
+        const socket: string | undefined = library.attachments.get(id)?.def.socket;
+        if (socket !== undefined) holding.add(socket);
+      }
+      relaxHands(hands, idleWeight(mixer, idles), holding);
+    },
     setFlash(color: Color, amount: number): void {
-      glow.flash.value.copy(color).multiplyScalar(amount * CHARACTER.flashBoost);
+      glow.flash.value.copy(color).multiplyScalar(flashLevel(amount));
     },
     setHover(color: Color, amount: number): void {
       glow.hover.value.copy(color).multiplyScalar(amount * CHARACTER.hoverBoost);

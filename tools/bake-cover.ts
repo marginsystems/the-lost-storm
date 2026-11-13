@@ -1,0 +1,72 @@
+import type { Accessor, Primitive } from '@gltf-transform/core';
+import { NodeIO } from '@gltf-transform/core';
+import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { MeshoptDecoder } from 'meshoptimizer';
+import { writeFileSync } from 'node:fs';
+import { COVER_REACH, coveredTriangles, coveredVertices, triangleRanges } from './cover-bake.ts';
+import type { BodyMesh, TriangleMesh, TriangleRange } from './cover-bake.ts';
+
+interface BakedCover {
+  readonly body: string;
+  readonly mesh: string;
+  readonly wearable: string;
+  readonly triangles: number;
+  readonly hidden: readonly TriangleRange[];
+}
+
+function floats(accessor: Accessor | null, what: string): Float32Array {
+  if (accessor === null) throw new Error(`${what} is missing`);
+  const values: Float32Array = new Float32Array(accessor.getCount() * 3);
+  const element: number[] = [];
+  for (let index: number = 0; index < accessor.getCount(); index += 1) {
+    accessor.getElement(index, element);
+    values.set([element[0] ?? 0, element[1] ?? 0, element[2] ?? 0], index * 3);
+  }
+  return values;
+}
+
+function indices(primitive: Primitive, what: string): Uint32Array {
+  const accessor: Accessor | null = primitive.getIndices();
+  if (accessor === null) throw new Error(`${what} has no indices`);
+  return Uint32Array.from({ length: accessor.getCount() }, (_: unknown, index: number): number => accessor.getScalar(index));
+}
+
+interface NamedPrimitive {
+  readonly mesh: string;
+  readonly primitive: Primitive;
+}
+
+async function primitives(io: NodeIO, path: string): Promise<NamedPrimitive[]> {
+  const document = await io.read(path);
+  return document.getRoot().listMeshes().flatMap((mesh) => mesh.listPrimitives().map((primitive: Primitive): NamedPrimitive => ({ mesh: mesh.getName(), primitive })));
+}
+
+function merged(parts: readonly TriangleMesh[]): TriangleMesh {
+  let offset: number = 0;
+  const positions: number[] = [];
+  const corners: number[] = [];
+  for (const part of parts) {
+    positions.push(...part.positions);
+    corners.push(...Array.from(part.indices, (corner: number): number => corner + offset));
+    offset += part.positions.length / 3;
+  }
+  return { positions: new Float32Array(positions), indices: new Uint32Array(corners) };
+}
+
+async function main(): Promise<void> {
+  const [bodyPath, wearablePath, outPath] = process.argv.slice(2);
+  if (bodyPath === undefined || wearablePath === undefined || outPath === undefined) throw new Error('usage: bake-cover <body.glb> <wearable.glb> <out.json>');
+  await MeshoptDecoder.ready;
+  const io: NodeIO = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
+  const [first] = await primitives(io, bodyPath);
+  if (first === undefined) throw new Error(`${bodyPath} has no mesh`);
+  const skin: Primitive = first.primitive;
+  const body: BodyMesh = { positions: floats(skin.getAttribute('POSITION'), 'body POSITION'), normals: floats(skin.getAttribute('NORMAL'), 'body NORMAL'), indices: indices(skin, bodyPath) };
+  const cover: TriangleMesh = merged((await primitives(io, wearablePath)).map(({ primitive }: NamedPrimitive): TriangleMesh => ({ positions: floats(primitive.getAttribute('POSITION'), 'wearable POSITION'), indices: indices(primitive, wearablePath) })));
+  const hidden: boolean[] = coveredTriangles(body, coveredVertices(body, cover, COVER_REACH), COVER_REACH);
+  const baked: BakedCover = { body: bodyPath.replace(/^.*public\//, ''), mesh: first.mesh, wearable: wearablePath.replace(/^.*public\//, ''), triangles: hidden.length, hidden: triangleRanges(hidden) };
+  writeFileSync(outPath, `${JSON.stringify(baked)}\n`);
+  process.stdout.write(`${outPath}: ${hidden.filter(Boolean).length} of ${hidden.length} triangles hidden in ${baked.hidden.length} ranges\n`);
+}
+
+await main();

@@ -1,7 +1,8 @@
 import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { ActDef, ItemSlot } from '../../sim/content/types.ts';
 import { slotOf } from '../../sim/items.ts';
-import type { ItemInstance, WorldEvent } from '../../sim/world/types.ts';
+import type { Command, ItemInstance, WorldEvent } from '../../sim/world/types.ts';
+import { rowPress } from './row-press.ts';
 import { HINT_PANELS, loadHints } from '../../sim/content/hints.ts';
 import { createBrowserStore } from '../storage.ts';
 import { createHintStore } from '../hints-store.ts';
@@ -171,8 +172,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const hints: Hints = createHints(bottom, loadHints(api.world.content), createHintStore(createBrowserStore()), (): ResolvedKeys => api.settings.keys(), (): ReadonlySet<HintPanel> => new Set<HintPanel>(HINT_PANELS.filter((id: HintPanel): boolean => isOpen(id))), api.touch);
   const pending: WorldEvent[] = [];
 
-  const grid: HTMLDivElement = el('div', 'hud-grid', null);
-  root.insertBefore(grid, root.firstChild);
+  const backdrop: HTMLDivElement = el('div', 'panel-backdrop', null);
+  root.insertBefore(backdrop, root.firstChild);
 
   for (const panel of HUD_PANELS) {
     const view: PanelView = panels[panel];
@@ -206,13 +207,18 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
 
   overlays.subscribe((): void => {
     const live: Record<HudPanel, boolean> = { inventory: isLive('inventory'), character: isLive('character'), tree: isLive('tree'), map: isLive('map') };
-    grid.classList.toggle('visible', HUD_PANELS.some((panel: HudPanel): boolean => live[panel]));
+    backdrop.classList.toggle('visible', HUD_PANELS.some((panel: HudPanel): boolean => live[panel]));
     const cover: CoverState = coverOf(live);
     applyCover(root, { side: cover.side, full: cover.full || chromeHidden(overlays.state()) });
   });
 
   const toggle = (panel: HudPanel): void => {
     overlays.send({ type: 'toggle', id: PANEL_OVERLAY[panel] });
+  };
+  const fromRow = (open: () => void): void => {
+    const instead: Command | null = rowPress(api.world);
+    if (instead === null) open();
+    else api.send(instead);
   };
 
   for (const panel of HUD_PANELS) track(panels[panel].element);
@@ -224,12 +230,12 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   }
 
   const keyOf = (action: ActionId): string => api.settings.keys().labelOf(action);
-  buttons.inventory = createMenuButton(row, 'inventory', 'Inventory', keyOf('inventory'), (): void => toggle('inventory'), track);
-  buttons.character = createMenuButton(row, 'character', 'Character', keyOf('character'), (): void => toggle('character'), track);
+  buttons.inventory = createMenuButton(row, 'inventory', 'Inventory', keyOf('inventory'), (): void => fromRow((): void => toggle('inventory')), track);
+  buttons.character = createMenuButton(row, 'character', 'Character', keyOf('character'), (): void => fromRow((): void => toggle('character')), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
-  buttons.tree = createMenuButton(row, 'tree', 'Chart', keyOf('tree'), (): void => toggle('tree'), track);
-  buttons.map = createMenuButton(row, 'map', 'Map', keyOf('map'), (): void => toggle('map'), track);
-  createVolumeButton(row, api.audio, track, (): void => api.openSettings('sound'));
+  buttons.tree = createMenuButton(row, 'tree', 'Chart', keyOf('tree'), (): void => fromRow((): void => toggle('tree')), track);
+  buttons.map = createMenuButton(row, 'map', 'Map', keyOf('map'), (): void => fromRow((): void => toggle('map')), track);
+  createVolumeButton(row, api.audio, track, (): void => fromRow((): void => api.openSettings('sound')));
   const showKeys = (): void => {
     buttons.inventory?.setKey(keyOf('inventory'));
     buttons.character?.setKey(keyOf('character'));
@@ -430,7 +436,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       return hovered.size > 0;
     },
     togglePanel(panel: HudPanel): void {
-      toggle(panel);
+      fromRow((): void => toggle(panel));
     },
     requestMap(wanted: boolean): void {
       mapWanted = wanted;

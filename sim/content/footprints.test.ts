@@ -26,6 +26,7 @@ void test('a prop is solid when it stands above the knee over enough ground, and
   const footprints: ReadonlyMap<string, ModelFootprint> = new Map<string, ModelFootprint>([[base.model, square]]);
   const scaled: PropDef = must(withFootprints(new Map<string, PropDef>([['log', { ...base, scale: 2, solid: null }]]), footprints).get('log'), 'log');
   assert.deepEqual(scaled.footprints[0]?.[2], { x: 2, z: 2 });
+  assert.equal(scaled.height, square.height * 2);
   const walkable: PropDef = must(withFootprints(new Map<string, PropDef>([['log', { ...base, solid: false }]]), footprints).get('log'), 'log');
   assert.equal(walkable.footprints.length, 0);
 });
@@ -34,4 +35,6 @@ void test('every prop model the zones place has a measured footprint, and the bi
   for (const zone of content.zones.values()) for (const placed of zone.props) assert.ok(content.props.has(placed.prop));
   assert.ok(must(content.props.get('castle_rubble_large'), 'rubble').footprints.length >= 1);
   assert.ok(must(content.props.get('crag_b'), 'crag').footprints.length >= 1);
+  assert.ok(Math.abs(must(content.props.get('crag_b'), 'crag').height - 3.44) < 0.05);
+  assert.ok(must(content.props.get('fire_pit'), 'fire').height < 1);
 });

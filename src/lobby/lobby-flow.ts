@@ -32,6 +32,7 @@ export interface LobbyFlowParts {
   readonly view: () => LobbyView;
   readonly begin: () => void;
   readonly ready: () => Promise<void>;
+  readonly enterColour: () => string | null;
   readonly startOver: () => void;
   readonly openSettings: () => void;
   readonly tier: () => QualityName;
@@ -86,12 +87,12 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     return warming;
   };
 
-  const swap = async (into: boolean, middle: () => void, hold: () => Promise<void> = (): Promise<void> => Promise.resolve()): Promise<void> => {
+  const swap = async (into: boolean, middle: () => void, colour: string | null, hold: () => Promise<void> = (): Promise<void> => Promise.resolve()): Promise<void> => {
     if (busy) return;
     busy = true;
     screen.setBusy(true);
     if (!into) screen.hide();
-    await veil.cover(null);
+    await veil.cover(colour);
     await hold();
     middle();
     active = into;
@@ -110,7 +111,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
 
   const screen: LobbyScreen = createLobbyScreen(parts.root, parts.lobby, {
     primary: (): void => {
-      void swap(false, parts.begin, parts.ready);
+      void swap(false, parts.begin, parts.enterColour(), parts.ready);
     },
     startOver: (): void => {
       screen.setBusy(true);
@@ -122,7 +123,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     back: (): void => {
       void swap(false, (): void => {
         parts.title.classList.remove('gone');
-      });
+      }, null);
     },
   });
 
@@ -139,7 +140,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       if (active) return Promise.resolve();
       return swap(true, (): void => {
         parts.title.classList.add('gone');
-      });
+      }, null);
     },
     warm(): Promise<void> {
       return warmStage();

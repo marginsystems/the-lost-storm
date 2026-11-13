@@ -2,10 +2,12 @@ import type { AnimationAction, AnimationClip } from 'three';
 import type { Box3, Mesh, Object3D } from 'three';
 import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial, Quaternion, Vector3 } from 'three';
 import type { WakePose } from './wake-pose.ts';
-import { WAKE_POSE } from './wake-pose.ts';
+import { restOffset, restWeight, WAKE_POSE } from './wake-pose.ts';
+import type { Contact } from './wake-pose.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { Motion } from '../../sim/world/types.ts';
 import type { ActionClip, GaitClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
+import { findNode } from './character-loader.ts';
 import type { BodyState, ClipKind, GaitChoice, KnockPose } from './locomotion.ts';
 import { chooseGait, clipKindOf, clipsFor, knockPose } from './locomotion.ts';
 import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
@@ -138,17 +140,35 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let risen: boolean = false;
   const spare = { q: new Quaternion(), turn: new Quaternion(), v: new Vector3() };
   const side: Vector3 = new Vector3();
-  const head: Object3D | undefined = rig.root.getObjectByName(ACTOR.head);
-  const neck: Object3D | undefined = rig.root.getObjectByName(ACTOR.neck);
+  const head: Object3D | undefined = findNode(rig.root, ACTOR.head);
+  const neck: Object3D | undefined = findNode(rig.root, ACTOR.neck);
   const chest: Object3D[] = ACTOR.chest.flatMap((name: string): Object3D[] => {
-    const bone: Object3D | undefined = rig.root.getObjectByName(name);
+    const bone: Object3D | undefined = findNode(rig.root, name);
     return bone === undefined ? [] : [bone];
   });
+  const contacts: { readonly bone: Object3D; readonly radius: number }[] = WAKE_POSE.contacts.flatMap((contact): { readonly bone: Object3D; readonly radius: number }[] => {
+    const bone: Object3D | undefined = findNode(rig.root, contact.bone);
+    return bone === undefined ? [] : [{ bone, radius: contact.radius }];
+  });
+  const touching: Vector3 = new Vector3();
+  const rest = (pose: WakePose, floor: number): void => {
+    rig.root.updateMatrixWorld(true);
+    const reached: Contact[] = contacts.map(({ bone, radius }): Contact => ({ y: bone.getWorldPosition(touching).y, radius }));
+    rig.root.position.y += restOffset(reached, floor) * restWeight(pose.share);
+  };
   const fingers: Object3D[] = ACTOR.fingers.flatMap((name: string): Object3D[] => {
-    const bone: Object3D | undefined = rig.root.getObjectByName(name);
+    const bone: Object3D | undefined = findNode(rig.root, name);
     return bone === undefined ? [] : [bone];
   });
 
+  const layered: Object3D[] = [...new Set([...(head === undefined ? [] : [head]), ...(neck === undefined ? [] : [neck]), ...chest, ...fingers])];
+  const rests: Quaternion[] = layered.map((bone: Object3D): Quaternion => bone.quaternion.clone());
+  const unlayer = (): void => {
+    layered.forEach((bone: Object3D, index: number): void => {
+      const resting: Quaternion | undefined = rests[index];
+      if (resting !== undefined) bone.quaternion.copy(resting);
+    });
+  };
   const layerWake = (pose: WakePose): void => {
     const turn: number = (pose.turn * WAKE_POSE.turnDegrees * Math.PI) / 180;
     if (neck !== undefined) turnInWorld(neck, UP, turn * WAKE_POSE.neckShare, spare);
@@ -191,7 +211,8 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     next.clampWhenFinished = once;
     next.timeScale = speed;
     next.setEffectiveWeight(1);
-    if (previous !== next) next.crossFadeFrom(previous, fade, false);
+    if (previous !== next && fade > 0) next.crossFadeFrom(previous, fade, false);
+    else if (previous !== next) previous.stop();
     next.play();
     current = next;
   };
@@ -276,9 +297,14 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       stepSpring(hoverLevel, dt);
       rig.setFlash(flashColor, flash);
       rig.setHover(hoverColor, Math.max(0, hoverLevel.value));
+      unlayer();
       rig.mixer.update(dt);
+      rig.relaxHands();
       rig.stepWear(dt);
-      if (lying && woke !== null) layerWake(woke);
+      if (lying && woke !== null) {
+        layerWake(woke);
+        if (!risen) rest(woke, options.floor);
+      }
     },
     startAction(animation: string, windup: number, recovery: number): boolean {
       const entry: ActionClip | undefined = actionClip(rig, animation);
@@ -319,7 +345,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         return;
       }
       if (!lying) {
-        play(clip, ACTOR.locomotionFade, 0, true, true);
+        play(clip, 0, 0, true, true);
         lying = true;
         risen = false;
       }

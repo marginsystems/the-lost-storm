@@ -79,6 +79,7 @@ const NAV = {
   backOut: 1e-6,
   slideLeast: 0.2,
   slideShares: [1, 0.5],
+  groundRings: 4,
 } as const;
 
 function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[] {
@@ -292,9 +293,28 @@ export function routedGrid(grid: NavGrid): NavGrid {
   return routed;
 }
 
+export function groundReach(grid: NavGrid, x: number, z: number): number {
+  if (onGround(grid, x, z)) return 0;
+  const column: number = Math.floor(x / grid.cellSize);
+  const row: number = Math.floor(z / grid.cellSize);
+  let best: number = Infinity;
+  for (let dr: number = -NAV.groundRings; dr <= NAV.groundRings; dr += 1) {
+    for (let dc: number = -NAV.groundRings; dc <= NAV.groundRings; dc += 1) {
+      const c: number = column + dc;
+      const r: number = row + dr;
+      if (c < 0 || r < 0 || c >= grid.columns || r >= grid.rows || grid.ground[r * grid.columns + c] !== 1) continue;
+      const nx: number = Math.min(Math.max(x, c * grid.cellSize), (c + 1) * grid.cellSize);
+      const nz: number = Math.min(Math.max(z, r * grid.cellSize), (r + 1) * grid.cellSize);
+      best = Math.min(best, Math.hypot(x - nx, z - nz));
+    }
+  }
+  return best;
+}
+
 function canStep(grid: NavGrid, pos: Vec2, x: number, z: number): boolean {
   if (isWalkable(grid, x, z)) return true;
   if (grid.routed && isWalkable(grid, pos.x, pos.z)) return false;
+  if (!onGround(grid, pos.x, pos.z)) return groundReach(grid, x, z) < groundReach(grid, pos.x, pos.z) && bodyGap(grid, x, z) >= Math.min(grid.radius - NAV.touch, bodyGap(grid, pos.x, pos.z));
   return onGround(grid, x, z) && bodyGap(grid, x, z) > bodyGap(grid, pos.x, pos.z);
 }
 

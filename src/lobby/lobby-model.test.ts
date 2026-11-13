@@ -60,11 +60,22 @@ void test('times and counts read as short words', (): void => {
 });
 
 void test('choose for me picks a name the rules accept and never one already refused', (): void => {
-  for (const name of CHOSEN_NAMES) assert.equal(nameProblem(name), null);
-  assert.equal(chooseName((): number => 0, new Set<string>()), CHOSEN_NAMES[0]);
-  assert.equal(chooseName((): number => 0.9999, new Set<string>()), CHOSEN_NAMES.at(-1));
-  assert.equal(chooseName((): number => 0, new Set<string>([CHOSEN_NAMES[0] ?? ''])), CHOSEN_NAMES[1]);
-  assert.equal(chooseName((): number => 0.5, new Set<string>(CHOSEN_NAMES)), null);
+  const man: readonly string[] = CHOSEN_NAMES.man;
+  for (const name of [...man, ...CHOSEN_NAMES.woman]) assert.equal(nameProblem(name), null);
+  assert.equal(chooseName('man', (): number => 0, new Set<string>()), man[0]);
+  assert.equal(chooseName('man', (): number => 0.9999, new Set<string>()), man.at(-1));
+  assert.equal(chooseName('man', (): number => 0, new Set<string>([man[0] ?? ''])), man[1]);
+  assert.equal(chooseName('man', (): number => 0.5, new Set<string>(man)), null);
+});
+
+void test('a man is never offered a woman\'s name, and the other way round', (): void => {
+  const either: ReadonlySet<string> = new Set<string>(CHOSEN_NAMES.man.filter((name: string): boolean => CHOSEN_NAMES.woman.includes(name)));
+  for (const name of ['Liesl', 'Anwen', 'Edda']) assert.ok(!CHOSEN_NAMES.man.includes(name));
+  for (const name of ['Tavin', 'Joren', 'Teodor']) assert.ok(!CHOSEN_NAMES.woman.includes(name));
+  for (let draw: number = 0; draw < 40; draw += 1) {
+    const picked: string | null = chooseName('man', (): number => draw / 40, new Set<string>());
+    assert.ok(picked !== null && (either.has(picked) || !CHOSEN_NAMES.woman.includes(picked)));
+  }
 });
 
 void test('only a name the player chose is ever spoken', (): void => {

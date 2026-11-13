@@ -1,5 +1,5 @@
 import type { FigureSize } from './figure-gauge.ts';
-import { withCutaway } from './prop-cutaway.ts';
+import { isTall, resetCutaway, setOccluders, withCutaway } from './prop-cutaway.ts';
 import type { Material, Object3D, Scene } from 'three';
 import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -12,7 +12,7 @@ import { buildGround } from './ground.ts';
 import type { MistWallView } from './mist-wall.ts';
 import { buildMistWall } from './mist-wall.ts';
 import { buildVoidView } from './void-view.ts';
-import type { Vec2 } from '../../sim/math.ts';
+import type { ReadonlyVec2, Vec2 } from '../../sim/math.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Ground } from './ground.ts';
 import type { PropDressing } from './surfaces.ts';
@@ -127,6 +127,14 @@ function carryLook(from: MeshStandardMaterial, to: MeshStandardMaterial): MeshSt
   return look === undefined ? to : withPropLook(to, look);
 }
 
+function propWidth(def: PropDef): number {
+  const points: readonly ReadonlyVec2[] = def.footprints.flat();
+  if (points.length === 0) return Infinity;
+  const xs: number[] = points.map((point: ReadonlyVec2): number => point.x);
+  const zs: number[] = points.map((point: ReadonlyVec2): number => point.z);
+  return Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs));
+}
+
 export async function buildZoneView(loader: GLTFLoader, content: Content, zone: ZoneDef, scene: Scene, quality: QualityName): Promise<ZoneView> {
   if (zone.kind === 'void') {
     const rockId: string | null = zone.void?.shore?.surface ?? null;
@@ -140,6 +148,13 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const instances: InstancedMesh[] = [];
   const conditionals: Conditional[] = [];
   const tintedMaterials: MeshStandardMaterial[] = [];
+  const occluders: Object3D[] = [];
+  const cutFor = (def: PropDef | undefined, material: Material): Material => {
+    if (def === undefined || !isTall(def.height) || !(material instanceof MeshStandardMaterial)) return material;
+    const own: MeshStandardMaterial = carryLook(material, material.clone());
+    tintedMaterials.push(own);
+    return withCutaway(own, propWidth(def));
+  };
   let lightsVersion: number = 0;
 
   const dressing: PropDressing = propDressing(zone);
@@ -212,7 +227,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       const geometry: unknown = object.geometry;
       const material: unknown = object.material;
       if (!(material instanceof MeshStandardMaterial) || !isGeometry(geometry)) return;
-      const instanced: InstancedMesh = new InstancedMesh(geometry, withCutaway(finish(content.props.get(propId), dressedProp(content, dress, material, scattered.has(propId) ? loose : dressing))), list.length);
+      const instanced: InstancedMesh = new InstancedMesh(geometry, cutFor(content.props.get(propId), finish(content.props.get(propId), dressedProp(content, dress, material, scattered.has(propId) ? loose : dressing))), list.length);
       list.forEach((placement: Placement, index: number): void => {
         instanced.setMatrixAt(index, new Matrix4().multiplyMatrices(placement.matrix, object.matrixWorld));
       });
@@ -220,6 +235,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       instanced.castShadow = list[0]?.castShadow ?? false;
       instanced.receiveShadow = true;
       instanced.computeBoundingSphere();
+      if (isTall(content.props.get(propId)?.height ?? 0)) occluders.push(instanced);
       instances.push(instanced);
       group.add(instanced);
     });
@@ -247,7 +263,11 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
         } else {
           return;
         }
-        for (const material of own) withCutaway(material);
+        for (const material of own) material.transparent = true;
+        if (isTall(conditional.def.height)) {
+          for (const material of own) withCutaway(material, propWidth(conditional.def));
+          occluders.push(child);
+        }
         conditional.materials.push(...own);
       });
       object.visible = false;
@@ -272,6 +292,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   if (mistWall !== null) group.add(mistWall.group);
   scene.add(group);
 
+  setOccluders(occluders);
   return {
     zone,
     group,
@@ -285,6 +306,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       return lightsVersion;
     },
     dispose(): void {
+      resetCutaway();
       group.removeFromParent();
       ground.dispose();
       for (const instanced of instances) instanced.dispose();

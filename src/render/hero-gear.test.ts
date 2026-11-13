@@ -57,7 +57,7 @@ function library(withBlade: boolean): CharacterLibrary {
 }
 
 function hero(held: CharacterLibrary): RigInstance {
-  return instantiateRig(must(held.rigs.get(rigDef.id), 'loaded rig'), held, { tint: '#ffffff', glow: '#ffffff', ghost: null });
+  return instantiateRig(must(held.rigs.get(rigDef.id), 'loaded rig'), held, { tint: '#ffffff', glow: '#ffffff', ghost: null, feather: false });
 }
 
 function armedWorld(): World {

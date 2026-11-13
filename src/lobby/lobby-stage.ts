@@ -97,7 +97,7 @@ export const LOBBY_STAGE = {
 
 export const LOBBY_POSE: readonly PoseTurn[] = [
   ['DEF-upper_arm.L', 0, 0, -12],
-  ['DEF-upper_arm.R', 0, 0, 12],
+  ['DEF-upper_arm.R', 0, 0, 4],
   ['DEF-thigh.L', 0, 0, 5],
   ['DEF-thigh.R', 0, 0, -5],
 ];
@@ -311,7 +311,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     if (hero !== null) return hero;
     const loaded: LoadedRig | undefined = library.rigs.get(content.player.rig);
     if (loaded === undefined) return null;
-    const made: RigInstance = instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null });
+    const made: RigInstance = instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather: true });
     made.root.rotation.y = LOBBY_STAGE.facing;
     castShadows(made.root);
     posed = poseBones(made.root, LOBBY_POSE);
@@ -345,6 +345,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       if (hero !== null) {
         settlePose(posed);
         hero.mixer.update(dt);
+        hero.relaxHands();
         turnPose(posed);
         hero.stepWear(dt);
         hero.root.rotation.y = LOBBY_STAGE.facing + Math.sin(time * LOBBY_STAGE.swayRate) * LOBBY_STAGE.sway + Math.sin(time * LOBBY_STAGE.driftRate) * LOBBY_STAGE.drift;

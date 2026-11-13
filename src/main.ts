@@ -4,6 +4,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { noteInConsole, warnInConsole } from './backend/console-log.ts';
+import { runFrames } from './frame-loop.ts';
 import { element } from './dom-element.ts';
 import { startTitleAccount } from './title-signin.ts';
 import { fadePageOut } from './landing/leave.ts';
@@ -125,6 +126,7 @@ import type { OverlayManager } from './hud/overlays.ts';
 import { readServerUrl } from './backend/server-url.ts';
 import { createTitleSync, followSync } from './title-sync.ts';
 import { createStatusLine, TITLE_NOTICES } from './title-status.ts';
+import { BROWSER_NOTICES, createdOrUnsupported, failureText, probeBrowser, reloadHelps, UnsupportedBrowser, unsupportedReason } from './browser-support.ts';
 import { defaultBar } from '../sim/skill-book.ts';
 import type { Bar } from '../sim/skill-book.ts';
 import { shippedKeys, showTitleKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleNames } from './title-keys.ts';
@@ -175,6 +177,8 @@ async function start(): Promise<void> {
     overlayManager.send({ type: 'interrupt', cause: 'endcard' });
   } });
   statusLine.show('Loading…');
+  const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
+  if (unsupported !== null) throw new UnsupportedBrowser(unsupported);
   const content: Content = loadContent();
   const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
   const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
@@ -189,7 +193,7 @@ async function start(): Promise<void> {
   };
   drawTitleKeys();
   gameSettings.subscribe(drawTitleKeys);
-  const stage: Stage = createStage(canvas, mobile.quality.tier);
+  const stage: Stage = createdOrUnsupported((): Stage => createStage(canvas, mobile.quality.tier));
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const dresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material);
@@ -262,7 +266,7 @@ async function start(): Promise<void> {
   const effects: MomentEffects = momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.pulse(power)), { scene: stage.scene, loader, content, library, dresser: propDresser, tier: mobile.quality.tier, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene, mobile.quality.tier.name === 'mobile');
-  const actors: Actors = createActors(stage.scene, library, world);
+  const actors: Actors = createActors(stage.scene, library, world, mobile.quality.tier.msaaSamples > 0);
   const figureGauge: FigureGauge = createFigureGauge();
   const itemImage = (item: ItemInstance): string | null => {
     const base: ItemBaseDef | null = baseOf(content, item);
@@ -555,7 +559,6 @@ async function start(): Promise<void> {
 
     sinceSave += dt;
     if (sinceSave > GAME.saveEvery) persist();
-    requestAnimationFrame(frame);
   };
 
   window.addEventListener('resize', (): void => stage.resize());
@@ -570,7 +573,14 @@ async function start(): Promise<void> {
   });
 
   camera.snap(world.player.pos.x, world.player.pos.z);
-  requestAnimationFrame(frame);
+  runFrames(
+    frame,
+    (error: unknown): void => {
+      warnInConsole(`A frame failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
+      touch.fault();
+    },
+    { request: (callback: (now: number) => void): void => void requestAnimationFrame(callback) },
+  );
   void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns()]);
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library);
@@ -581,6 +591,7 @@ async function start(): Promise<void> {
 
   status.classList.remove('failed');
   if (backend.freshStart()) statusLine.show(TITLE_NOTICES.freshStart);
+  else if (backend.setAside()) statusLine.show(TITLE_NOTICES.setAside);
   else status.classList.add('quiet');
   const titleLoader: HTMLDivElement = element('title-loader', HTMLDivElement);
   await untilCycleEnds(titleLoader);
@@ -630,23 +641,30 @@ async function start(): Promise<void> {
     void startOver();
   });
   let entered: boolean = save !== null;
-  const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped }), view: (): LobbyView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered }), begin: (): void => {
+  const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped }), view: (): LobbyView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
     entered = true;
     begin();
   }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), openSettings: (): void => pauseMenu.open('graphics') });
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();
-  wireEnter({ enter, begin: openLobby, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), random: Math.random, begin: openLobby }) });
+  wireEnter({ enter, begin: openLobby, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), body: 'man', random: Math.random, begin: openLobby }) });
 }
 
 start().catch((error: unknown): void => {
   titleLines.current?.freeze();
   const status: HTMLElement | null = document.getElementById('title-status');
   if (status !== null) {
-    status.textContent = error instanceof Error ? `The storm failed to gather: ${error.message}` : 'The storm failed to gather.';
+    status.textContent = failureText(error);
     status.classList.add('failed');
   }
   document.getElementById('title-loader')?.classList.add('done');
+  const enter: HTMLElement | null = document.getElementById('title-enter');
+  if (reloadHelps(error) && enter instanceof HTMLButtonElement) {
+    enter.textContent = BROWSER_NOTICES.reload;
+    enter.disabled = false;
+    enter.addEventListener('click', (): void => window.location.reload());
+    document.getElementById('title')?.classList.add('stuck');
+  }
   throw error;
 });

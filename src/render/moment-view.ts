@@ -1,5 +1,5 @@
 import type { AnimationAction, AnimationClip, Camera, IUniform, Material, MeshBasicMaterial, Object3D, Scene, Texture, WebGLRenderer } from 'three';
-import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, Group, LoopRepeat, Mesh, MeshStandardMaterial, PointLight, ShaderMaterial, SphereGeometry } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, Group, LoopRepeat, Mesh, MeshStandardMaterial, PointLight, ShaderMaterial, SphereGeometry, Vector2 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { MomentDef, MomentEcho, MomentProp } from '../../sim/content/moment-types.ts';
 import type { Content, MonsterDef, PropDef, SurfaceDef } from '../../sim/content/types.ts';
@@ -42,6 +42,12 @@ export const MOMENT_VIEW = {
   lensWhite: 0.75,
   domeAlpha: 0.07,
   floorAlpha: 0.22,
+  shell: 0.3,
+  phoneShell: 0.16,
+  phoneEdge: 0.7,
+  clearFrom: 0.5,
+  clearTo: 2.2,
+  insideRate: 6,
   shimmerSpeed: 1.3,
   appearRate: 5.5,
   wakeRate: 3,
@@ -75,7 +81,7 @@ const MARK: Color = new Color(0xb8d2ff);
 
 
 interface SurfaceUniforms {
-  readonly [name: string]: IUniform<Color | number>;
+  readonly [name: string]: IUniform<Color | Vector2 | number>;
   readonly uTint: IUniform<Color>;
   readonly uStrength: IUniform<number>;
   readonly uTime: IUniform<number>;
@@ -84,10 +90,16 @@ interface SurfaceUniforms {
   readonly uAngle: IUniform<number>;
   readonly uPressGlow: IUniform<number>;
   readonly uPressWidth: IUniform<number>;
+  readonly uRadius: IUniform<number>;
+  readonly uShell: IUniform<number>;
+  readonly uHero: IUniform<Vector2>;
+  readonly uInside: IUniform<number>;
+  readonly uClearFrom: IUniform<number>;
+  readonly uClearTo: IUniform<number>;
 }
 
 function surfaceUniforms(tint: Color): SurfaceUniforms {
-  return { uTint: { value: tint.clone() }, uStrength: { value: 0 }, uTime: { value: 0 }, uMark: { value: 0 }, uPress: { value: 0 }, uAngle: { value: 0 }, uPressGlow: { value: MEMBRANE.glow }, uPressWidth: { value: MEMBRANE.width } };
+  return { uTint: { value: tint.clone() }, uStrength: { value: 0 }, uTime: { value: 0 }, uMark: { value: 0 }, uPress: { value: 0 }, uAngle: { value: 0 }, uPressGlow: { value: MEMBRANE.glow }, uPressWidth: { value: MEMBRANE.width }, uRadius: { value: 1 }, uShell: { value: MOMENT_VIEW.shell }, uHero: { value: new Vector2() }, uInside: { value: 0 }, uClearFrom: { value: MOMENT_VIEW.clearFrom }, uClearTo: { value: MOMENT_VIEW.clearTo } };
 }
 
 function glowMaterial(vertex: string, fragment: string, uniforms: SurfaceUniforms): ShaderMaterial {
@@ -323,7 +335,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     const loaded: LoadedRig | undefined = library.rigs.get(rigId);
     if (loaded === undefined || !hasWear(library, wornWearables(content, wear, null), gear)) return null;
     const ghost: GhostUniforms = createGhostUniforms(STILL, MOMENT_VIEW.echoMix);
-    const rig: RigInstance = instantiateRig(loaded, library, { tint: '#ffffff', glow: '#ffffff', ghost });
+    const rig: RigInstance = instantiateRig(loaded, library, { tint: '#ffffff', glow: '#ffffff', ghost, feather: deps.tier.msaaSamples > 0 });
     rig.setGear(gear);
     const worn: string[] = wornWearables(content, wear, null);
     rig.setWear(worn, hiddenBodyParts(content, worn));
@@ -444,7 +456,11 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     }
     const strength: number = entry.shown * (1 - fade);
     entry.domeUniforms.uStrength.value = MOMENT_VIEW.domeAlpha * strength * (1 + entry.awake * 0.5);
-    entry.floorUniforms.uStrength.value = MOMENT_VIEW.floorAlpha * strength * (1 + entry.awake * 0.4);
+    entry.floorUniforms.uStrength.value = MOMENT_VIEW.floorAlpha * strength * (1 + entry.awake * 0.4) * (phone ? MOMENT_VIEW.phoneEdge : 1);
+    entry.floorUniforms.uRadius.value = moment.def.radius;
+    entry.floorUniforms.uShell.value = phone ? MOMENT_VIEW.phoneShell : MOMENT_VIEW.shell;
+    entry.floorUniforms.uHero.value.set((world.player.pos.x - moment.pos.x) / moment.def.radius, -(world.player.pos.z - moment.pos.z) / moment.def.radius);
+    entry.floorUniforms.uInside.value = easeToward(entry.floorUniforms.uInside.value, reach < moment.def.radius ? 1 : 0, MOMENT_VIEW.insideRate, dt);
     entry.floorUniforms.uMark.value = marking ? MOMENT_VIEW.markAlpha * (0.6 + 0.4 * Math.sin(clock * MOMENT_VIEW.markPulse)) : 0;
     entry.floorUniforms.uTint.value.copy(marking ? MARK : entry.lens);
     entry.domeUniforms.uTime.value = clock * MOMENT_VIEW.shimmerSpeed;

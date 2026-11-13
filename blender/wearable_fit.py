@@ -5,6 +5,7 @@ import bpy
 import numpy as np
 from bpy.types import Object
 from mathutils import Matrix, Vector
+from mathutils.bvhtree import BVHTree
 
 SIDES: tuple[tuple[str, str], ...] = (("L", "l"), ("R", "r"))
 FINGERS: tuple[str, ...] = ("index", "middle", "ring", "pinky")
@@ -175,6 +176,58 @@ def refit(obj: Object, skeleton: SourceSkeleton, source: dict[str, Vector], targ
         for vertex in used:
             group.add([int(vertex)], float(limited[vertex, index]), "REPLACE")
     mesh.update()
+
+
+def keep_below(obj: Object, label: str, top: float | None) -> None:
+    if top is None:
+        return
+    mesh = bmesh.new()
+    mesh.from_mesh(obj.data)
+    bmesh.ops.bisect_plane(mesh, geom=[*mesh.verts, *mesh.edges, *mesh.faces], plane_co=(0.0, 0.0, top), plane_no=(0.0, 0.0, 1.0), dist=1e-6)
+    above = [face for face in mesh.faces if face.calc_center_median().z > top]
+    bmesh.ops.delete(mesh, geom=above, context="FACES")
+    loose = [vert for vert in mesh.verts if not vert.link_faces]
+    bmesh.ops.delete(mesh, geom=loose, context="VERTS")
+    mesh.to_mesh(obj.data)
+    mesh.free()
+    if len(obj.data.polygons) == 0:
+        raise RuntimeError(f"{label}: nothing left below {top}")
+
+
+SHADE: str = "shade"
+
+
+@dataclass(frozen=True)
+class Shade:
+    depth: float
+    reach: float
+    soft: float
+
+
+def shade_under(obj: Object, cover: Object, shade: Shade) -> None:
+    tree: BVHTree = BVHTree.FromObject(cover, bpy.context.evaluated_depsgraph_get())
+    values = obj.data.attributes.new(SHADE, "FLOAT", "POINT")
+    for vertex in obj.data.vertices:
+        normal: Vector = vertex.normal
+        lift: float = shade.soft * 0.1
+        hit, _, _, along = tree.ray_cast(vertex.co - normal * lift, normal, shade.reach + shade.soft + lift)
+        near, _, _, apart = tree.find_nearest(vertex.co, shade.reach + shade.soft)
+        gaps: list[float] = [max(0.0, gap) for found, gap in ((hit, None if along is None else along - lift), (near, apart)) if found is not None and gap is not None]
+        fade: float = 1.0 if not gaps else min(1.0, max(0.0, (min(gaps) - shade.reach) / shade.soft))
+        weight: float = 1.0 - fade * fade * (3.0 - 2.0 * fade)
+        values.data[vertex.index].value = 1.0 - (1.0 - shade.depth) * weight
+
+
+def paint_shade(obj: Object) -> None:
+    values = obj.data.attributes.get(SHADE)
+    if values is None:
+        return
+    shades: list[float] = [entry.value for entry in values.data]
+    obj.data.attributes.remove(values)
+    colors = obj.data.color_attributes.new("Col", "FLOAT_COLOR", "POINT")
+    obj.data.color_attributes.active_color = colors
+    for index, value in enumerate(shades):
+        colors.data[index].color = (value, value, value, 1.0)
 
 
 def inflate(obj: Object, distance: float) -> None:

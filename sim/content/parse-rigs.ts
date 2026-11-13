@@ -46,6 +46,20 @@ function rigSocket(value: unknown, where: string): RigSocket {
   return { bone: text(source, 'bone', where), position: triple(source, 'position', where), rotationDegrees: triple(source, 'rotationDegrees', where), scale: numeric(source, 'scale', where) };
 }
 
+function restHands(value: unknown, sockets: Readonly<Record<string, RigSocket>>, where: string): Record<string, Record<string, Triple>> {
+  if (value === undefined) return {};
+  const handFields: Fields = fields(value, where);
+  const hands: Record<string, Record<string, Triple>> = {};
+  for (const socket of Object.keys(handFields)) {
+    if (sockets[socket] === undefined) throw new ContentError(`${where}.${socket}`, 'a resting hand must name one of the rig\'s sockets');
+    const boneFields: Fields = fields(handFields[socket], `${where}.${socket}`);
+    const bones: Record<string, Triple> = {};
+    for (const bone of Object.keys(boneFields)) bones[bone] = triple(boneFields, bone, `${where}.${socket}`);
+    hands[socket] = bones;
+  }
+  return hands;
+}
+
 export function rig(value: unknown, where: string): RigDef {
   const source: Fields = fields(value, where);
   const socketFields: Fields = fields(source['sockets'], `${where}.sockets`);
@@ -69,5 +83,6 @@ export function rig(value: unknown, where: string): RigDef {
     hiddenNodes: textList(source, 'hiddenNodes', where),
     bodyParts,
     base: source['base'] === undefined ? [] : textList(source, 'base', where),
+    restHands: restHands(source['restHands'], sockets, `${where}.restHands`),
   };
 }

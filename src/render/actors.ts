@@ -99,11 +99,11 @@ function echoLook(current: World, monster: MonsterState): EchoLook | null {
   return { ghost: createGhostUniforms(from, ACTORS.echoMix), from, to: new Color(current.content.moments.hostileTint) };
 }
 
-export function createActors(scene: Scene, library: CharacterLibrary, world: World): Actors {
+export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean): Actors {
   const content: Content = world.content;
   const playerRig: LoadedRig | undefined = library.rigs.get(content.player.rig);
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
-  const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color, ghost: null }), 1, world.player.facing);
+  const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather }), 1, world.player.facing);
   holdEquipped(content, playerView.rig, world.player.equipped);
   dress(content, playerView.rig, heroBase(content), world.player.equipped);
   scene.add(playerView.rig.root);
@@ -116,7 +116,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     if (existing !== undefined) return existing;
     const rig: LoadedRig | undefined = library.rigs.get(npc.def.rig);
     if (rig === undefined || !hasWear(library, wornWearables(content, npc.def.wear, null), npc.def.gear)) return null;
-    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: npc.def.tint, glow: npc.def.color, ghost: null }), npc.def.scale, npc.facing, ACTOR.friendlyHover);
+    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: npc.def.tint, glow: npc.def.color, ghost: null, feather }), npc.def.scale, npc.facing, ACTOR.friendlyHover);
     view.rig.setGear(npc.def.gear);
     dress(content, view.rig, npc.def.wear, null);
     scene.add(view.rig.root);
@@ -132,7 +132,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   const makeMonsterView = (def: MonsterDef, facing: number, echo: EchoLook | null): ActorView | null => {
     const rig: LoadedRig | undefined = library.rigs.get(def.rig);
     if (rig === undefined || !hasWear(library, wornWearables(content, def.wear, null), def.gear)) return null;
-    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: echo === null ? def.tint : '#ffffff', glow: echo === null ? def.color : '#ffffff', ghost: echo?.ghost ?? null }), def.scale, facing);
+    const view: ActorView = createActorView(instantiateRig(rig, library, { tint: echo === null ? def.tint : '#ffffff', glow: echo === null ? def.color : '#ffffff', ghost: echo?.ghost ?? null, feather }), def.scale, facing);
     view.rig.setGear(def.gear);
     dress(content, view.rig, def.wear, null);
     view.rig.setOpacity(ACTORS.echoOpacity);

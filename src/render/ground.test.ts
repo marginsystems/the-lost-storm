@@ -3,9 +3,9 @@ import { test } from 'node:test';
 import type { ZoneDrift } from '../../sim/content/road-types.ts';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { OUTPOST_ZONE, SCENE_BASE } from '../../test/road-support.ts';
-import type { FloorGrid } from './ground.ts';
-import { coverLines, floorGrid, GROUND, growAt, occlusionAt } from './ground.ts';
-import { isFloorCell, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
+import type { FloorGrid, GroundBatches, SpillGrid } from './ground.ts';
+import { coverLines, floorGrid, GROUND, groundBatches, growAt, occlusionAt, spillGrid } from './ground.ts';
+import { isFloorCell, tileAtCell, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
 import { loadContent } from '../../sim/content/content.ts';
 
 const DRIFT: ZoneDrift = { id: 'drift', column: 1, row: 1, columns: 1, rows: 1, period: 10, open: 0.5, offset: 0, fade: 1 };
@@ -53,4 +53,33 @@ void test('a cell is cut into evenly spaced lines shared by neighbouring pieces,
   assert.equal(lines[0], 6 - 0.1);
   assert.equal(lines[GROUND.divisions], 6 + 2 + 0.2);
   for (let index: number = 1; index < GROUND.divisions; index += 1) assert.equal(lines[index], 6 + (index * 2) / GROUND.divisions);
+});
+
+void test('a spill grid names the same surface as the tile map, inside the zone and past its edges', (): void => {
+  const content = loadContent();
+  for (const zone of content.zones.values()) {
+    const spills: SpillGrid = spillGrid(content, zone);
+    for (let row: number = -4; row < zoneRows(zone) + 4; row += 1) {
+      for (let column: number = -4; column < zoneColumns(zone) + 4; column += 1) {
+        const surfaceId: string | undefined = zone.floors[tileAtCell(zone, column, row)];
+        const expected: string | null = surfaceId === undefined ? null : (content.surfaces.get(surfaceId)?.id ?? null);
+        assert.equal(spills.at(column, row)?.id ?? null, expected, `${zone.id} ${column},${row}`);
+      }
+    }
+  }
+});
+
+void test('a zone ground is shaped once and reused when the zone is entered again', (): void => {
+  const content = loadContent();
+  for (const zone of content.zones.values()) {
+    const first: GroundBatches = groundBatches(content, zone);
+    assert.equal(groundBatches(content, zone), first);
+    assert.ok(first.solid.size + first.overlay.size > 0, zone.id);
+  }
+  const other = loadContent();
+  for (const zone of content.zones.values()) {
+    const fresh: ZoneDef | undefined = other.zones.get(zone.id);
+    if (fresh === undefined) throw new Error(`missing ${zone.id}`);
+    assert.notEqual(groundBatches(other, fresh), groundBatches(content, zone));
+  }
 });

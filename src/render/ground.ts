@@ -30,6 +30,8 @@ export const GROUND = {
   propReach: 1.6,
 } as const;
 
+const GROUND_GRID = { spillMargin: 2 } as const;
+
 export interface Occluder {
   readonly x: number;
   readonly z: number;
@@ -50,7 +52,7 @@ export function occlusionAt(occluders: readonly Occluder[], x: number, z: number
   return shade;
 }
 
-interface Batch {
+export interface Batch {
   readonly positions: number[];
   readonly uvs: number[];
   readonly colors: number[];
@@ -240,11 +242,33 @@ function spillOf(content: Content, zone: ZoneDef, column: number, row: number): 
   return surfaceId === undefined ? null : (content.surfaces.get(surfaceId) ?? null);
 }
 
-function fringes(content: Content, zone: ZoneDef, cell: FloorCell, own: SurfaceDef): SurfaceDef[] {
+export interface SpillGrid {
+  at(column: number, row: number): SurfaceDef | null;
+}
+
+export function spillGrid(content: Content, zone: ZoneDef): SpillGrid {
+  const margin: number = GROUND_GRID.spillMargin;
+  const columns: number = Math.max(zoneColumns(zone), ...zone.tiles.map((line: string): number => line.length)) + 2 * margin;
+  const rows: number = zoneRows(zone) + 2 * margin;
+  const cells: (SurfaceDef | null)[] = [];
+  for (let row: number = 0; row < rows; row += 1) {
+    for (let column: number = 0; column < columns; column += 1) cells.push(spillOf(content, zone, column - margin, row - margin));
+  }
+  return {
+    at(column: number, row: number): SurfaceDef | null {
+      const c: number = column + margin;
+      const r: number = row + margin;
+      if (c < 0 || r < 0 || c >= columns || r >= rows) return spillOf(content, zone, column, row);
+      return cells[r * columns + c] ?? null;
+    },
+  };
+}
+
+function fringes(spills: SpillGrid, cell: FloorCell, own: SurfaceDef): SurfaceDef[] {
   const found: Map<string, SurfaceDef> = new Map<string, SurfaceDef>();
   for (let dr: number = -1; dr <= 1; dr += 1) {
     for (let dc: number = -1; dc <= 1; dc += 1) {
-      const other: SurfaceDef | null = spillOf(content, zone, cell.column + dc, cell.row + dr);
+      const other: SurfaceDef | null = spills.at(cell.column + dc, cell.row + dr);
       if (other !== null && other.id !== own.id && other.spill > own.spill) found.set(other.id, other);
     }
   }
@@ -266,21 +290,39 @@ function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: Bat
   return mesh;
 }
 
-export function buildGround(content: Content, zone: ZoneDef): Ground {
+export interface GroundBatches {
+  readonly solid: ReadonlyMap<string, Batch>;
+  readonly overlay: ReadonlyMap<string, Batch>;
+  readonly drifting: ReadonlyMap<ZoneDrift, ReadonlyMap<string, Batch>>;
+}
+
+const builtBatches: WeakMap<Content, WeakMap<ZoneDef, GroundBatches>> = new WeakMap<Content, WeakMap<ZoneDef, GroundBatches>>();
+
+export function groundBatches(content: Content, zone: ZoneDef): GroundBatches {
+  const forContent: WeakMap<ZoneDef, GroundBatches> = builtBatches.get(content) ?? new WeakMap<ZoneDef, GroundBatches>();
+  builtBatches.set(content, forContent);
+  const found: GroundBatches | undefined = forContent.get(zone);
+  if (found !== undefined) return found;
+  const made: GroundBatches = shapeGround(content, zone);
+  forContent.set(zone, made);
+  return made;
+}
+
+function shapeGround(content: Content, zone: ZoneDef): GroundBatches {
   const solid: Map<string, Batch> = new Map<string, Batch>();
   const overlay: Map<string, Batch> = new Map<string, Batch>();
   const floorY: number = zone.floorHeight;
-  const zoneWet: number = zone.weather.wet;
   const occluders: Occluder[] = zone.props.flatMap((placed: ZoneProp): Occluder[] => {
     const radius: number = content.props.get(placed.prop)?.blockRadius ?? 0;
     return radius > 0 && placed.when.length === 0 ? [{ x: placed.x, z: placed.z, radius }] : [];
   });
   const grid: FloorGrid = floorGrid(zone);
+  const spills: SpillGrid = spillGrid(content, zone);
   const shading: Shading = { zone, occluders, grid };
 
   const drifting: Map<ZoneDrift, Map<string, Batch>> = new Map<ZoneDrift, Map<string, Batch>>();
   for (const cell of floorCells(zone)) {
-    const own: SurfaceDef | null = spillOf(content, zone, cell.column, cell.row);
+    const own: SurfaceDef | null = spills.at(cell.column, cell.row);
     if (own === null) continue;
     const drift: ZoneDrift | null = driftAt(zone, cell.column, cell.row);
     if (drift !== null) {
@@ -293,9 +335,9 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
       continue;
     }
     cover(shading, batchFor(solid, own.id), cell.column, cell.row, floorY, 1, null, growAt(zone, cell.column, cell.row));
-    for (const other of fringes(content, zone, cell, own)) {
+    for (const other of fringes(spills, cell, own)) {
       const alphaAt = (x: number, z: number): number => {
-        const distance: number = nearest(zone, x, z, 1, (column: number, row: number): boolean => spillOf(content, zone, column, row)?.id === other.id);
+        const distance: number = nearest(zone, x, z, 1, (column: number, row: number): boolean => spills.at(column, row)?.id === other.id);
         const ragged: number = (noise(x * GROUND.fringeNoiseScale + 7.3, z * GROUND.fringeNoiseScale + 3.1) - 0.5) * GROUND.fringeNoise;
         return smooth(1 - distance / GROUND.fringeReach + ragged);
       };
@@ -314,6 +356,12 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
     const cells: OutsideCell[] = outsideCells(zone, outside.reach);
     for (const cell of cells) cover(shading, batchFor(overlay, outside.surface), cell.column, cell.row, floorY + GROUND.outsideLift, GROUND.outsideShade, alphaAt);
   }
+  return { solid, overlay, drifting };
+}
+
+export function buildGround(content: Content, zone: ZoneDef): Ground {
+  const { solid, overlay, drifting } = groundBatches(content, zone);
+  const zoneWet: number = zone.weather.wet;
 
   const meshes: Mesh[] = [];
   for (const [surfaceId, batch] of solid) {
@@ -324,7 +372,7 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
     const mesh: Mesh | null = toMesh(content, surfaceId, 'overlay', batch, zoneWet);
     if (mesh !== null) meshes.push(mesh);
   }
-  const drifts: DriftGround[] = [...drifting].map(([drift, batches]: [ZoneDrift, Map<string, Batch>]): DriftGround => driftGround(content, drift, batches, zoneWet));
+  const drifts: DriftGround[] = [...drifting].map(([drift, batches]: [ZoneDrift, ReadonlyMap<string, Batch>]): DriftGround => driftGround(content, drift, batches, zoneWet));
   return {
     meshes: [...meshes, ...drifts.flatMap((entry: DriftGround): readonly Mesh[] => entry.meshes)],
     drifts,

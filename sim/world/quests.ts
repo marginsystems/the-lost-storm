@@ -16,13 +16,22 @@ export function activeQuests(world: World): QuestDef[] {
   return [...world.content.quests.values()].filter((quest: QuestDef): boolean => questState(world, quest.id) === 'active');
 }
 
+function ready(world: World, quest: QuestDef): boolean {
+  return quest.requires.every((required: string): boolean => questState(world, required) === 'done');
+}
+
+export function settleQuests(world: World): void {
+  const unready: Set<string> = new Set<string>([...world.content.quests.values()].filter((quest: QuestDef): boolean => world.quests[quest.id] === 0 && !ready(world, quest)).map((quest: QuestDef): string => quest.id));
+  world.quests = Object.fromEntries(Object.entries(world.quests).filter(([id]: [string, number]): boolean => !unready.has(id)));
+}
+
 export function startQuests(world: World): void {
   let started: boolean = true;
   while (started) {
     started = false;
     for (const quest of world.content.quests.values()) {
       if (world.quests[quest.id] !== undefined) continue;
-      if (!quest.requires.every((required: string): boolean => questState(world, required) === 'done') || !allHold(world, quest.when)) continue;
+      if (!ready(world, quest) || !allHold(world, quest.when)) continue;
       world.quests[quest.id] = 0;
       world.events.push({ type: 'quest_started', quest: quest.id });
       started = true;

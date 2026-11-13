@@ -43,18 +43,19 @@ export function unreadable(content: Content, text: string | null): boolean {
   return readSave(content, parsed) === null;
 }
 
-function keepUnreadable(content: Content, store: KeyValueStore, text: string | null): void {
-  if (text === null || store.read(UNREADABLE_KEY) !== null || !unreadable(content, text)) return;
-  store.write(UNREADABLE_KEY, text);
+function keepUnreadable(content: Content, store: KeyValueStore, text: string | null): boolean {
+  if (text === null || store.read(UNREADABLE_KEY) !== null || !unreadable(content, text)) return false;
+  return store.write(UNREADABLE_KEY, text);
 }
 
 export function createLocalBackend(content: Content, store: KeyValueStore, epochs: Epochs): Backend {
+  let setAside: boolean = false;
   return {
     load: (): Promise<SaveData | null> => {
       const text: string | null = store.read(SAVE_KEY);
       const stored: LocalCopy | null = readLocalSave(content, text);
       if (stored === null) {
-        keepUnreadable(content, store, text);
+        setAside = keepUnreadable(content, store, text) || setAside;
         return Promise.resolve(null);
       }
       if (stored.epoch >= epochs.current()) return Promise.resolve(stored.save);
@@ -71,5 +72,6 @@ export function createLocalBackend(content: Content, store: KeyValueStore, epoch
     state: (): BackendState => 'offline',
     subscribe: (): void => undefined,
     freshStart: (): boolean => epochs.dropped(),
+    setAside: (): boolean => setAside,
   };
 }

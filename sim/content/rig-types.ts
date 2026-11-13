@@ -54,4 +54,5 @@ export interface RigDef {
   readonly idleRate: number;
   readonly bodyParts: Readonly<Record<string, readonly string[]>>;
   readonly base: readonly string[];
+  readonly restHands: Readonly<Record<string, Readonly<Record<string, Triple>>>>;
 }

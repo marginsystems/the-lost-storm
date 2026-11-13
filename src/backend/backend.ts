@@ -10,6 +10,7 @@ export interface Backend {
   state(): BackendState;
   subscribe(listener: (state: BackendState) => void): void;
   freshStart(): boolean;
+  setAside(): boolean;
 }
 
 export interface KeyValueStore {
