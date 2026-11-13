@@ -171,8 +171,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const hints: Hints = createHints(bottom, loadHints(api.world.content), createHintStore(createBrowserStore()), (): ResolvedKeys => api.settings.keys(), (): ReadonlySet<HintPanel> => new Set<HintPanel>(HINT_PANELS.filter((id: HintPanel): boolean => isOpen(id))), api.touch);
   const pending: WorldEvent[] = [];
 
-  const grid: HTMLDivElement = el('div', 'hud-grid', null);
-  root.insertBefore(grid, root.firstChild);
+  const backdrop: HTMLDivElement = el('div', 'panel-backdrop', null);
+  root.insertBefore(backdrop, root.firstChild);
 
   for (const panel of HUD_PANELS) {
     const view: PanelView = panels[panel];
@@ -206,7 +206,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
 
   overlays.subscribe((): void => {
     const live: Record<HudPanel, boolean> = { inventory: isLive('inventory'), character: isLive('character'), tree: isLive('tree'), map: isLive('map') };
-    grid.classList.toggle('visible', HUD_PANELS.some((panel: HudPanel): boolean => live[panel]));
+    backdrop.classList.toggle('visible', HUD_PANELS.some((panel: HudPanel): boolean => live[panel]));
     const cover: CoverState = coverOf(live);
     applyCover(root, { side: cover.side, full: cover.full || chromeHidden(overlays.state()) });
   });
