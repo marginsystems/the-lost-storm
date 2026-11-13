@@ -6,8 +6,9 @@ import { exitUnder } from '../sim/world/exits.ts';
 import { aimedItem } from '../sim/world/finds.ts';
 import { readyToRepeat } from '../sim/world/skills.ts';
 import { stationNear } from '../sim/world/trade.ts';
+import { chestNear, chestSpot } from '../sim/world/moment-chest.ts';
 import type { Station } from '../sim/world/trade.ts';
-import type { Command, GroundItem, MonsterState, NpcState, World } from '../sim/world/types.ts';
+import type { Command, GroundItem, MomentState, MonsterState, NpcState, World } from '../sim/world/types.ts';
 import { waypointAt } from '../sim/world/waypoints.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { PickCandidate, ScreenRect } from './pick.ts';
@@ -231,6 +232,11 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     return waypointAt(world, ground);
   };
 
+  const chestAt = (ground: Vec2 | null): MomentState | null => {
+    if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
+    return chestNear(world, ground);
+  };
+
   const stationAt = (ground: Vec2 | null): Station | null => {
     if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
     return stationNear(world, ground);
@@ -278,13 +284,14 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       hooks.aimItem(item?.id ?? null);
       const exit: ZoneExit | null = target === null && person === null && item === null ? exitAt(ground) : null;
       hooks.aimExit(exit?.id ?? null);
-      const station: Station | null = target === null && person === null && item === null && exit === null ? stationAt(ground) : null;
-      const marked: boolean = target === null && person === null && item === null && exit === null && station === null && onWaypointMark(ground);
+      const chest: MomentState | null = target === null && person === null && item === null && exit === null ? chestAt(ground) : null;
+      const station: Station | null = target === null && person === null && item === null && exit === null && chest === null ? stationAt(ground) : null;
+      const marked: boolean = target === null && person === null && item === null && exit === null && chest === null && station === null && onWaypointMark(ground);
       if (tapping) {
         tapping = false;
         pointerInside = false;
       }
-      canvas.style.cursor = target !== null ? 'crosshair' : item !== null || exit !== null || person !== null || station !== null || marked ? 'pointer' : 'default';
+      canvas.style.cursor = target !== null ? 'crosshair' : item !== null || exit !== null || person !== null || chest !== null || station !== null || marked ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       const up: Set<string> = new Set<string>(lifted.splice(0, lifted.length));
@@ -330,6 +337,12 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
           if (itemHit.pickup !== null && item !== null) {
             commands.push({ type: 'pickup', groundId: itemHit.pickup });
             hooks.clickMarker(item.pos.x, item.pos.z, false);
+          }
+        } else if (chest !== null) {
+          const spot: Vec2 | null = chestSpot(chest);
+          if (leftFresh && spot !== null) {
+            commands.push({ type: 'open', momentId: chest.id });
+            hooks.clickMarker(spot.x, spot.z, false);
           }
         } else if (station !== null) {
           if (leftFresh) {

@@ -8,6 +8,7 @@ import { pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
 import { grantXp, killXp } from './character.ts';
 import { dropOnGround } from './ground.ts';
+import { goldScale } from './moment-chest.ts';
 import { clearOfTallProps, inSight, lowerProps, raiseProps, standClear } from './moment-ground.ts';
 import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
@@ -60,6 +61,7 @@ function begin(world: World, def: MomentDef, pos: Vec2, combat: boolean, mark: b
     bounty: 0,
     blocks: null,
     outcome: null,
+    chest: 'none',
     figures: figuresOf(def, pos),
   };
   world.nextId += 1;
@@ -204,7 +206,14 @@ function wake(world: World, moment: MomentState): void {
   moment.entered = true;
   moment.timeLeft = moment.def.awake;
   moment.phaseTime = 0;
-  world.events.push({ type: 'moment_woke', moment, turned: turn(world, moment) });
+  const turned: number[] = turn(world, moment);
+  world.events.push({ type: 'moment_woke', moment, turned });
+  if (turned.length > 0 || !moment.combat || moment.def.chest === null) return;
+  moment.chest = 'closed';
+  moment.timeLeft = world.content.moments.chest.linger;
+  lowerProps(world, moment);
+  raiseProps(world, moment);
+  world.events.push({ type: 'moment_chest', moment });
 }
 
 export function echoMonsters(world: World, moment: MomentState): MonsterState[] {
@@ -224,8 +233,7 @@ function removeEchoes(world: World, moment: MomentState, onlyLiving: boolean): v
 
 function reward(world: World, moment: MomentState, share: number, items: boolean): void {
   const table = moment.def.reward;
-  const scale: number = (1 + world.content.world.scaling.xpPerLevel * (moment.level - 1)) * (1 + world.player.stats.goldFind);
-  const gold: number = Math.round(world.rng.int(table.goldMin, table.goldMax) * scale * share);
+  const gold: number = Math.round(world.rng.int(table.goldMin, table.goldMax) * goldScale(world, moment) * share);
   if (gold > 0) dropOnGround(world, moment.pos, { kind: 'gold', amount: gold });
   if (!items) return;
   for (let index: number = 0; index < table.items; index += 1) {
@@ -237,7 +245,7 @@ function reward(world: World, moment: MomentState, share: number, items: boolean
 }
 
 function end(world: World, moment: MomentState, outcome: MomentOutcome): void {
-  if (outcome === 'played' && moment.combat) reward(world, moment, world.content.moments.playedShare, false);
+  if (outcome === 'played' && moment.combat && moment.chest === 'none') reward(world, moment, world.content.moments.playedShare, false);
   if (outcome === 'resolved') {
     reward(world, moment, 1, true);
     if (moment.bounty > 0) grantXp(world, moment.bounty);
@@ -252,7 +260,21 @@ function end(world: World, moment: MomentState, outcome: MomentOutcome): void {
   world.events.push({ type: 'moment_ended', moment, outcome });
 }
 
+function stepChest(world: World, moment: MomentState): void {
+  if (moment.timeLeft > 0) return;
+  if (moment.chest === 'opening') {
+    moment.chest = 'opened';
+    end(world, moment, 'opened');
+    return;
+  }
+  end(world, moment, 'played');
+}
+
 function stepAwake(world: World, moment: MomentState, dt: number): void {
+  if (moment.chest === 'closed' || moment.chest === 'opening') {
+    stepChest(world, moment);
+    return;
+  }
   const turned: boolean = moment.figures.some((figure: MomentFigure): boolean => figure.turned);
   const fighting: boolean = turned && echoMonsters(world, moment).some((monster: MonsterState): boolean => monster.alive);
   if (turned && !fighting) {
@@ -319,9 +341,17 @@ export function stepMoments(world: World, dt: number): void {
   if (missed) world.strikeTimer = Math.min(world.strikeTimer, MOMENTS.retry);
 }
 
+function awakeAround(world: World): MomentState[] {
+  if (!world.player.alive) return [];
+  return world.moments.filter((moment: MomentState): boolean => moment.phase === 'awake' && distance(world.player.pos, moment.pos) < moment.def.radius);
+}
+
 export function insideAwakeMoment(world: World): boolean {
-  if (!world.player.alive) return false;
-  return world.moments.some((moment: MomentState): boolean => moment.phase === 'awake' && distance(world.player.pos, moment.pos) < moment.def.radius);
+  return awakeAround(world).length > 0;
+}
+
+export function insideChestMoment(world: World): boolean {
+  return awakeAround(world).some((moment: MomentState): boolean => moment.chest === 'closed');
 }
 
 export function clearMoments(world: World): void {

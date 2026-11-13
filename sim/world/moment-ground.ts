@@ -1,4 +1,4 @@
-import type { MomentDef } from '../content/moment-types.ts';
+import type { MomentChest, MomentDef } from '../content/moment-types.ts';
 import type { PropDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { Blocker, NavGrid } from '../nav/grid.ts';
@@ -64,6 +64,9 @@ export function momentBlockers(world: World, moment: MomentState): Blocker[] {
     const blocker: Blocker | null = def === undefined ? null : propBlocker(def, moment.pos.x + placed.x, moment.pos.z + placed.z, placed.rotationDegrees);
     if (blocker !== null) list.push(blocker);
   }
+  const chest: MomentChest | null = moment.def.chest;
+  const box: PropDef | undefined = world.content.props.get(world.content.moments.chest.prop);
+  if (moment.chest !== 'none' && chest !== null && box !== undefined) list.push(...propBlockers(box, moment.pos.x + chest.x, moment.pos.z + chest.z, chest.rotationDegrees));
   return list;
 }
 

@@ -23,6 +23,14 @@ export const QUIET: MomentDef = {
   props: [],
   echoes: [{ monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 90, pose: { clip: 'idle', at: 0.3 }, turns: false, look: null }],
   reward: { goldMin: 10, goldMax: 10, items: 1, itemChance: 1, rarity: null },
+  chest: null,
+};
+
+export const CHESTED: MomentDef = {
+  ...QUIET,
+  id: 'test_chested',
+  name: 'A quiet moment with a chest',
+  chest: { x: 2, z: -2, rotationDegrees: 30, goldMin: 12, goldMax: 12 },
 };
 
 export const RAID: MomentDef = {
@@ -37,6 +45,7 @@ export const RAID: MomentDef = {
     { monster: 'unfinished_thrower', x: 0, z: 2, facingDegrees: 180, pose: { clip: 'idle', at: 0 }, turns: false, look: null },
   ],
   reward: { goldMin: 20, goldMax: 40, items: 2, itemChance: 0.5, rarity: null },
+  chest: { x: -2, z: 2, rotationDegrees: 0, goldMin: 15, goldMax: 15 },
 };
 
 export const FIELD: MomentField = {
@@ -57,7 +66,7 @@ export const FIELD: MomentField = {
   near: null,
 };
 
-export function momentLibrary(defs: readonly MomentDef[] = [QUIET, RAID]): MomentLibrary {
+export function momentLibrary(defs: readonly MomentDef[] = [QUIET, CHESTED, RAID]): MomentLibrary {
   return { ...ROAD_CONTENT.moments, defs: new Map<string, MomentDef>(defs.map((def: MomentDef): [string, MomentDef] => [def.id, def])) };
 }
 

@@ -39,6 +39,28 @@ export interface MomentReward {
   readonly rarity: string | null;
 }
 
+export interface MomentChest {
+  readonly x: number;
+  readonly z: number;
+  readonly rotationDegrees: number;
+  readonly goldMin: number;
+  readonly goldMax: number;
+}
+
+export interface ChestLid {
+  readonly seam: number;
+  readonly hinge: number;
+  readonly degrees: number;
+}
+
+export interface ChestRules {
+  readonly prop: string;
+  readonly reach: number;
+  readonly open: number;
+  readonly linger: number;
+  readonly lid: ChestLid;
+}
+
 export interface MomentDef {
   readonly id: string;
   readonly name: string;
@@ -53,6 +75,7 @@ export interface MomentDef {
   readonly props: readonly MomentProp[];
   readonly echoes: readonly MomentEcho[];
   readonly reward: MomentReward;
+  readonly chest: MomentChest | null;
 }
 
 export interface MomentLibrary {
@@ -66,6 +89,7 @@ export interface MomentLibrary {
   readonly comeback: number;
   readonly echoKnockback: number;
   readonly stagger: number;
+  readonly chest: ChestRules;
   readonly defs: ReadonlyMap<string, MomentDef>;
 }
 

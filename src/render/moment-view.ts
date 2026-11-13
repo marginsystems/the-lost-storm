@@ -1,7 +1,7 @@
 import type { AnimationAction, AnimationClip, Camera, IUniform, Material, MeshBasicMaterial, Object3D, Scene, Texture, WebGLRenderer } from 'three';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, Group, LoopRepeat, Mesh, MeshStandardMaterial, PointLight, ShaderMaterial, SphereGeometry, Vector2 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { MomentDef, MomentEcho, MomentProp } from '../../sim/content/moment-types.ts';
+import type { ChestRules, MomentChest, MomentDef, MomentEcho, MomentProp } from '../../sim/content/moment-types.ts';
 import type { Content, MonsterDef, PropDef, SurfaceDef } from '../../sim/content/types.ts';
 import { distance } from '../../sim/math.ts';
 import { wornWearables, hiddenBodyParts } from '../../sim/wear.ts';
@@ -11,6 +11,8 @@ import type { QualityTier } from '../mobile/quality.ts';
 import type { CharacterLibrary, Dresser, LoadedRig, RigInstance } from './character-loader.ts';
 import { hasWear, instantiateRig, loadKeptModel } from './character-loader.ts';
 import { disposeObject, groundArcs, skyBolt } from './effect-shapes.ts';
+import type { ChestView } from './moment-chest.ts';
+import { buildChest, disposeChest, stepChest } from './moment-chest.ts';
 import type { GhostUniforms } from './ghost-material.ts';
 import { createGhostUniforms, createRigGlow, makeGhost } from './ghost-material.ts';
 import type { RigGlow } from './ghost-material.ts';
@@ -129,6 +131,7 @@ interface MomentEntry {
   readonly lens: Color;
   readonly glow: Color;
   light: PointLight | null;
+  chest: ChestView | null;
   shown: number;
   awake: number;
   press: Press;
@@ -295,6 +298,8 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       const prop: PropDef | undefined = content.props.get(placed.prop);
       if (prop !== undefined && !models.has(prop.model)) wanted.add(prop.model);
     }
+    const box: PropDef | undefined = content.props.get(content.moments.chest.prop);
+    if (box !== undefined && !models.has(box.model)) wanted.add(box.model);
     await Promise.all([...wanted].map(async (model: string): Promise<void> => {
       const gltf: GLTF | null = await loadKeptModel(deps.loader, model).catch((): null => null);
       if (gltf !== null) models.set(model, gltf);
@@ -324,6 +329,20 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       child.receiveShadow = true;
     });
     entry.props.add(object);
+  };
+
+  const chestOf = (entry: MomentEntry, chest: MomentChest): ChestView | null => {
+    const rules: ChestRules = content.moments.chest;
+    const prop: PropDef | undefined = content.props.get(rules.prop);
+    const model: GLTF | undefined = prop === undefined ? undefined : models.get(prop.model);
+    if (prop === undefined || model === undefined) return null;
+    return buildChest({ rules, prop, model, dresser: deps.dresser, flash: zeroFlash }, entry.group, chest);
+  };
+
+  const dressChest = (entry: MomentEntry, moment: MomentState, fade: number, dt: number): void => {
+    const chest: MomentChest | null = moment.def.chest;
+    if (entry.chest === null && moment.chest !== 'none' && chest !== null) entry.chest = chestOf(entry, chest);
+    if (entry.chest !== null) stepChest(entry.chest, content.moments.chest, { state: moment.chest, fade, clock }, dt);
   };
 
   const makeFigure = (entry: MomentEntry, figure: MomentFigure, echo: MomentEcho): FigureView | null => {
@@ -385,7 +404,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       group.add(ground);
     }
     group.add(floor, props, dome);
-    const entry: MomentEntry = { group, dome, floor, ground, domeUniforms, floorUniforms, props, propGhost, propMaterials: [], figures: [], tint, lens, glow: new Color(moment.def.light), light: null, shown: 0, awake: 0, press: SLACK };
+    const entry: MomentEntry = { group, dome, floor, ground, domeUniforms, floorUniforms, props, propGhost, propMaterials: [], figures: [], tint, lens, glow: new Color(moment.def.light), light: null, chest: null, shown: 0, awake: 0, press: SLACK };
     scene.add(group);
     return entry;
   };
@@ -418,6 +437,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
   const dispose = (entry: MomentEntry): void => {
     for (const figure of entry.figures) figure.rig.dispose();
     for (const material of entry.propMaterials) material.dispose();
+    if (entry.chest !== null) disposeChest(entry.chest);
     entry.dome.material.dispose();
     entry.floor.material.dispose();
     entry.ground?.material.dispose();
@@ -469,6 +489,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     entry.propGhost.dissolve.value = marking ? 1 : Math.max(1 - entry.shown, fade);
     entry.propGhost.mix.value = MOMENT_VIEW.stillMix * (1 - entry.awake);
     entry.group.position.set(moment.pos.x, 0, moment.pos.z);
+    dressChest(entry, moment, fade, dt);
     if (entry.light === null && !marking) entry.light = freeLights.pop() ?? null;
     if (entry.light !== null) {
       entry.light.color.copy(entry.glow);
@@ -546,9 +567,10 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       await loadProps(content.moments.defs.values());
       const warm: MomentEntry[] = [];
       for (const def of content.moments.defs.values()) {
-        const moment: MomentState = { id: -1, def, combat: false, level: 1, pos: { x: 0, z: 0 }, phase: 'dormant', timeLeft: 1, phaseTime: 0, armed: false, away: 0, entered: false, bounty: 0, blocks: null, outcome: null, figures: def.echoes.map((echo: MomentEcho, index: number): MomentFigure => ({ echo: index, pos: { x: echo.x, z: echo.z }, facing: 0, turned: false, monsterId: null })) };
+        const moment: MomentState = { id: -1, def, combat: false, level: 1, pos: { x: 0, z: 0 }, phase: 'dormant', timeLeft: 1, phaseTime: 0, armed: false, away: 0, entered: false, bounty: 0, blocks: null, outcome: null, chest: 'none', figures: def.echoes.map((echo: MomentEcho, index: number): MomentFigure => ({ echo: index, pos: { x: echo.x, z: echo.z }, facing: 0, turned: false, monsterId: null })) };
         const entry: MomentEntry = build(moment);
         for (const placed of def.props) placeProp(entry, placed);
+        if (def.chest !== null) entry.chest = chestOf(entry, def.chest);
         dressFigures(entry, moment);
         for (const figure of entry.figures) figure.rig.setOpacity(1);
         warm.push(entry);

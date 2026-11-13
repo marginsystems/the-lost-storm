@@ -25,6 +25,7 @@ import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
 export const OVERLAYS = {
   numberLife: 1,
   numberDrift: 26,
+  chestHeight: 1.6,
   labelLift: 1.35,
   findLift: 3.15,
   labelExit: 0.52,
@@ -419,6 +420,9 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'drop':
             labelFor(world, event.ground);
             break;
+          case 'chest_opened':
+            if (event.gold > 0) float(`+${event.gold} gold`, 'gold', event.pos.x, OVERLAYS.chestHeight, event.pos.z);
+            break;
           case 'pickup': {
             const label: LootLabel | undefined = labels.get(event.ground.id);
             if (label !== undefined) {
@@ -462,6 +466,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'moment_woke':
           case 'moment_ended':
           case 'moment_gone':
+          case 'moment_chest':
           case 'path_marked':
           case 'character_changed':
           case 'zone_changed':

@@ -24,7 +24,8 @@ export type HintTrigger =
   | { readonly type: 'gear_in_bag' }
   | { readonly type: 'low_life'; readonly fraction: number; readonly carrying: string | null }
   | { readonly type: 'player_dead' }
-  | { readonly type: 'in_moment' };
+  | { readonly type: 'in_moment' }
+  | { readonly type: 'chest_moment' };
 
 export type HintDone =
   | { readonly type: 'moved'; readonly distance: number }
@@ -74,7 +75,7 @@ export function hintSegments(template: string): HintSegment[] {
 
 function readTrigger(value: unknown, where: string): HintTrigger {
   const source: Fields = fields(value, where);
-  const type = choice(source, 'type', ['game_started', 'objective_person', 'objective_exit', 'waypoint_near', 'monster_near', 'item_near', 'skill_point', 'skill_learned', 'slot_filled', 'gear_in_bag', 'low_life', 'player_dead', 'in_moment'] as const, where);
+  const type = choice(source, 'type', ['game_started', 'objective_person', 'objective_exit', 'waypoint_near', 'monster_near', 'item_near', 'skill_point', 'skill_learned', 'slot_filled', 'gear_in_bag', 'low_life', 'player_dead', 'in_moment', 'chest_moment'] as const, where);
   let trigger: HintTrigger;
   switch (type) {
     case 'game_started':
@@ -84,6 +85,7 @@ function readTrigger(value: unknown, where: string): HintTrigger {
     case 'gear_in_bag':
     case 'player_dead':
     case 'in_moment':
+    case 'chest_moment':
       trigger = { type };
       break;
     case 'waypoint_near':

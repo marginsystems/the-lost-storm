@@ -21,6 +21,7 @@ const MOMENT: MomentDef = {
   props: [{ prop: 'fire_pit', x: 0, z: 0, rotationDegrees: 0, blocks: true }],
   echoes: [{ monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0.5 }, turns: true, look: null }],
   reward: { goldMin: 5, goldMax: 9, items: 1, itemChance: 0.4, rarity: null },
+  chest: null,
 };
 
 function withMoment(def: MomentDef, zone: ZoneDef | null = null): Content {
@@ -72,4 +73,12 @@ void test('a moment may block with one prop at its centre, and a second blocker 
   assert.deepEqual(momentProblems(withMoment(aside)), ['moment test_fire blocks with fire_pit off its centre']);
   const loose: MomentDef = { ...MOMENT, props: [{ prop: 'stool', x: 3, z: 0, rotationDegrees: 0, blocks: false }] };
   assert.deepEqual(momentProblems(withMoment(loose)), []);
+});
+
+void test('a moment chest must name a known prop and stand clear of the bubble edge, its props and its echoes', (): void => {
+  assert.deepEqual(momentProblems(withMoment({ ...MOMENT, chest: { x: -2.5, z: 2.5, rotationDegrees: 0, goldMin: 4, goldMax: 8 } })), []);
+  assert.deepEqual(momentProblems(withMoment({ ...MOMENT, chest: { x: 5.6, z: 0, rotationDegrees: 0, goldMin: 4, goldMax: 8 } })), ['moment test_fire chest reaches past its bubble']);
+  assert.deepEqual(momentProblems(withMoment({ ...MOMENT, chest: { x: 0.3, z: 0, rotationDegrees: 0, goldMin: 4, goldMax: 8 } })), ['moment test_fire chest stands inside fire_pit', 'moment test_fire chest stands on echo 0']);
+  const unknown: Content = { ...shipped, moments: { ...shipped.moments, chest: { ...shipped.moments.chest, prop: 'coffer' } } };
+  assert.deepEqual(momentProblems(unknown), ['moments keep their gold in unknown prop coffer']);
 });

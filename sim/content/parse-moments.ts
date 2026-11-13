@@ -2,7 +2,7 @@ import { conditions } from './parse-conditions.ts';
 import { storyFlags } from './parse-story.ts';
 import type { Fields } from './read.ts';
 import { byId, colour, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { EchoLook, EchoPose, MomentDef, MomentEcho, MomentField, MomentLibrary, MomentProp, MomentReward, StrikeArea, StrikeClearance, StrikeBearing, StrikeInterval, StrikeNear, WeightedMoment } from './moment-types.ts';
+import type { ChestLid, ChestRules, EchoLook, EchoPose, MomentChest, MomentDef, MomentEcho, MomentField, MomentLibrary, MomentProp, MomentReward, StrikeArea, StrikeClearance, StrikeBearing, StrikeInterval, StrikeNear, WeightedMoment } from './moment-types.ts';
 
 function chance(source: Fields, key: string, where: string): number {
   const value: number = numeric(source, key, where);
@@ -53,6 +53,28 @@ function reward(value: unknown, where: string): MomentReward {
   return { goldMin, goldMax, items: whole(source, 'items', 0, where), itemChance: chance(source, 'itemChance', where), rarity: nullableText(source, 'rarity', where) };
 }
 
+function chest(value: unknown, radius: number, where: string): MomentChest | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  const x: number = numeric(source, 'x', where);
+  const z: number = numeric(source, 'z', where);
+  if (Math.hypot(x, z) >= radius) throw new ContentError(where, 'a chest stands inside its bubble');
+  const goldMin: number = nonNegative(source, 'goldMin', where);
+  const goldMax: number = nonNegative(source, 'goldMax', where);
+  if (goldMax < goldMin) throw new ContentError(`${where}.goldMax`, 'goldMax is below goldMin');
+  return { x, z, rotationDegrees: numeric(source, 'rotationDegrees', where), goldMin, goldMax };
+}
+
+function lid(value: unknown, where: string): ChestLid {
+  const source: Fields = fields(value, where);
+  return { seam: positive(source, 'seam', where), hinge: numeric(source, 'hinge', where), degrees: positive(source, 'degrees', where) };
+}
+
+function chestRules(value: unknown, where: string): ChestRules {
+  const source: Fields = fields(value, where);
+  return { prop: text(source, 'prop', where), reach: positive(source, 'reach', where), open: positive(source, 'open', where), linger: positive(source, 'linger', where), lid: lid(source['lid'], `${where}.lid`) };
+}
+
 function moment(value: unknown, where: string): MomentDef {
   const source: Fields = fields(value, where);
   const radius: number = positive(source, 'radius', where);
@@ -76,6 +98,7 @@ function moment(value: unknown, where: string): MomentDef {
     props: each(source['props'], `${where}.props`, momentProp),
     echoes,
     reward: reward(source['reward'], `${where}.reward`),
+    chest: chest(source['chest'], radius, `${where}.chest`),
   };
 }
 
@@ -92,6 +115,7 @@ export function momentLibrary(value: unknown, where: string): MomentLibrary {
     comeback: source['comeback'] === undefined ? 0 : nonNegative(source, 'comeback', where),
     echoKnockback: source['echoKnockback'] === undefined ? 1 : chance(source, 'echoKnockback', where),
     stagger: source['stagger'] === undefined ? 0 : nonNegative(source, 'stagger', where),
+    chest: chestRules(source['chest'], `${where}.chest`),
     defs: byId(each(source['moments'], `${where}.moments`, moment), `${where}.moments`),
   };
 }

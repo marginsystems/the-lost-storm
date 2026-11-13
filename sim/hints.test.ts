@@ -216,6 +216,20 @@ void test('the first time the hero stands in an awake moment a quiet line says l
   assert.notEqual(shown(stepHints(defs, world, state, IDLE)), 'moment_edge');
 });
 
+void test('a peaceful moment holding a chest says to click the chest instead of saying leaving ends it', (): void => {
+  const world: World = fresh();
+  const state: HintState = createHintState(defs.hints.filter((hint: HintDef): boolean => hint.id !== 'moment_edge' && hint.id !== 'moment_chest').map((hint: HintDef): string => hint.id));
+  const moment: MomentState = must(forceStrike(world, { ...world.player.pos }, 'children_at_play'), 'a moment');
+  moment.phase = 'awake';
+  moment.chest = 'closed';
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'moment_chest');
+  moment.chest = 'opening';
+  moment.phase = 'fading';
+  const changes: HintChange[] = stepHints(defs, world, state, IDLE);
+  assert.ok(changes.some((change: HintChange): boolean => change.type === 'hide' && change.done));
+  assert.equal(state.active, null);
+});
+
 void test('learning the roll shows its hint, and the first roll puts it away for good', (): void => {
   const world: World = fresh();
   const state: HintState = createHintState(earlyIds().filter((id: string): boolean => id !== 'roll'));

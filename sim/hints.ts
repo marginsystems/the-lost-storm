@@ -5,7 +5,7 @@ import type { Vec2 } from './math.ts';
 import { objectiveTarget } from './world/objective.ts';
 import { questState } from './world/conditions.ts';
 import type { ObjectiveTarget } from './world/objective.ts';
-import { insideAwakeMoment } from './world/moments.ts';
+import { insideAwakeMoment, insideChestMoment } from './world/moments.ts';
 import type { GroundItem, ItemInstance, MonsterState, World, WorldEvent } from './world/types.ts';
 
 export const HINTS = { maxShowSeconds: 14 } as const;
@@ -104,7 +104,10 @@ function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarge
       holds = lifeFraction(world) <= trigger.fraction && carries(world, trigger.carrying);
       break;
     case 'in_moment':
-      holds = insideAwakeMoment(world);
+      holds = insideAwakeMoment(world) && !insideChestMoment(world);
+      break;
+    case 'chest_moment':
+      holds = insideChestMoment(world);
       break;
   }
   return holds;

@@ -134,6 +134,7 @@ export function setGlitchesEnabled(world: World, enabled: boolean): void {
 const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
   read: true,
   hero: false,
+  open: true,
   glitch: false,
   glitch_setting: false,
   overlay: false,

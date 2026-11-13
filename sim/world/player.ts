@@ -1,5 +1,6 @@
 import type { SkillDef, ZoneExit } from '../content/types.ts';
 import { forceStrike } from './moments.ts';
+import { chestOf, chestReach, chestSpot, openChest } from './moment-chest.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { isWalkable, lineWalkable } from '../nav/grid.ts';
@@ -17,7 +18,7 @@ import type { Steering, SteerStep } from './movement.ts';
 import { beingKnocked, faceToward, steerAlong, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
 import { blockedReason, startSkill, steerAction, stepAction } from './skills.ts';
-import type { Actor, Command, GroundItem, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
+import type { Actor, Command, GroundItem, MomentState, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './trade.ts';
 import type { Station } from './trade.ts';
 import { requestGlitch, setGlitchesEnabled, setOverlay } from './glitch.ts';
@@ -226,6 +227,14 @@ function act(world: World, command: Command): void {
       setDestination(world, station.placed);
       return;
     }
+    case 'open': {
+      const moment: MomentState | null = chestOf(world, command.momentId);
+      const spot: Vec2 | null = moment === null ? null : chestSpot(moment);
+      if (moment === null || spot === null) return;
+      player.intent = { type: 'open', momentId: moment.id };
+      setDestination(world, spot);
+      return;
+    }
     case 'flask':
     case 'slot':
     case 'hold':
@@ -316,6 +325,7 @@ export function handleCommand(world: World, command: Command): void {
       if (player.alive) steerAction(world, player, command.aim);
       return;
     case 'use':
+    case 'open':
     case 'move':
     case 'walk':
     case 'stop':
@@ -441,6 +451,23 @@ function stepIntent(world: World, dt: number): void {
         return;
       }
       pursue(world, station.placed, dt);
+      return;
+    }
+    case 'open': {
+      const moment: MomentState | null = chestOf(world, intent.momentId);
+      const spot: Vec2 | null = moment === null ? null : chestSpot(moment);
+      if (moment === null || spot === null) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        return;
+      }
+      if (distance(player.pos, spot) <= chestReach(world)) {
+        player.intent = { type: 'idle' };
+        player.path = [];
+        openChest(world, moment);
+        return;
+      }
+      pursue(world, spot, dt);
       return;
     }
   }

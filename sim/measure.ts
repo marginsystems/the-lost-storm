@@ -223,6 +223,7 @@ function outcome(fields: Fields): MomentOutcome {
     case 'resolved':
     case 'expired':
     case 'left':
+    case 'opened':
       return value;
     default:
       throw new Error(`measurement.outcome ${value} is not a moment outcome`);

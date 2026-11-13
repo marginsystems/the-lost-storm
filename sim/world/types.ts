@@ -139,7 +139,7 @@ export interface UseIntent {
   readonly prop: number;
 }
 
-export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent | TravelIntent | TalkIntent | UseIntent;
+export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent | TravelIntent | TalkIntent | UseIntent | OpenChest;
 
 export interface PlayerState extends ActorState {
   readonly kind: 'player';
@@ -450,7 +450,9 @@ export interface StrikeCommand {
 
 export type MomentPhase = 'mark' | 'dormant' | 'awake' | 'fading';
 
-export type MomentOutcome = 'faded' | 'played' | 'resolved' | 'expired' | 'left';
+export type MomentOutcome = 'faded' | 'played' | 'resolved' | 'expired' | 'left' | 'opened';
+
+export type ChestState = 'none' | 'closed' | 'opening' | 'opened';
 
 export interface MomentFigure {
   readonly echo: number;
@@ -475,12 +477,18 @@ export interface MomentState {
   bounty: number;
   blocks: GridStamp | null;
   outcome: MomentOutcome | null;
+  chest: ChestState;
   readonly figures: MomentFigure[];
 }
 
 export interface UseCommand {
   readonly type: 'use';
   readonly prop: number;
+}
+
+export interface OpenChest {
+  readonly type: 'open';
+  readonly momentId: number;
 }
 
 export type TradeAction =
@@ -517,7 +525,7 @@ export interface OverlayCommand {
   readonly open: boolean;
 }
 
-export type Command = HeroCommand | StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export type Command = HeroCommand | StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -601,7 +609,9 @@ export type WorldEvent =
   | { readonly type: 'moment_strike'; readonly moment: MomentState }
   | { readonly type: 'moment_woke'; readonly moment: MomentState; readonly turned: readonly number[] }
   | { readonly type: 'moment_ended'; readonly moment: MomentState; readonly outcome: MomentOutcome }
-  | { readonly type: 'moment_gone'; readonly momentId: number };
+  | { readonly type: 'moment_gone'; readonly momentId: number }
+  | { readonly type: 'moment_chest'; readonly moment: MomentState }
+  | { readonly type: 'chest_opened'; readonly moment: MomentState; readonly pos: Vec2; readonly gold: number };
 
 export interface VendorStock {
   stock: (ItemInstance | null)[];

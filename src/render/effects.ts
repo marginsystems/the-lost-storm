@@ -130,6 +130,8 @@ const WHITE: Color = new Color(0xffffff);
 const FLASK_GLOW: Readonly<Record<FlaskResource, Color>> = { life: new Color(0xd8402e), mana: new Color(0x4f9be0) };
 const FLASK_SPRAY: Partial<BurstOptions> = { speed: { min: 0.3, max: 1.4 }, lift: { min: 1.5, max: 4 }, life: { min: 0.5, max: 1 }, size: { min: 0.15, max: 0.35 }, gravity: 1, drag: 1.4, jitter: 0.6 };
 const FLASK_BURST = { height: 0.5, count: 22, ring: 1.6, ringTime: 0.5 } as const;
+const CHEST_SPRAY: Partial<BurstOptions> = { speed: { min: 0.4, max: 2.2 }, lift: { min: 3, max: 7 }, life: { min: 0.6, max: 1.2 }, size: { min: 0.15, max: 0.4 }, gravity: 5, drag: 0.8, jitter: 0.3 };
+const CHEST_BURST = { height: 0.8, count: 34, ring: 2.2, ringTime: 0.9, shake: 0.12 } as const;
 const SPARK: Color = new Color(0xffc070);
 const ROOT: Color = new Color(0x5d7a52);
 
@@ -563,6 +565,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             camera.addTrauma(EFFECTS.phaseShake);
             break;
           }
+          case 'chest_opened':
+            spray(event.pos.x, CHEST_BURST.height, event.pos.z, GOLD, CHEST_BURST.count, CHEST_SPRAY);
+            ring(event.pos.x, event.pos.z, CHEST_BURST.ring, GOLD, CHEST_BURST.ringTime);
+            camera.addTrauma(CHEST_BURST.shake);
+            break;
           case 'flask_used':
             spray(event.pos.x, FLASK_BURST.height, event.pos.z, FLASK_GLOW[event.resource], FLASK_BURST.count, FLASK_SPRAY);
             ring(event.pos.x, event.pos.z, FLASK_BURST.ring, FLASK_GLOW[event.resource], FLASK_BURST.ringTime);
@@ -592,6 +599,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'moment_woke':
           case 'moment_ended':
           case 'moment_gone':
+          case 'moment_chest':
           case 'path_marked':
           case 'character_changed':
           case 'zone_changed':

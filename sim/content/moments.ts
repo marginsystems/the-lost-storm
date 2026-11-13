@@ -1,6 +1,6 @@
 import type { RigClips, RigDef } from './rig-types.ts';
-import type { EchoLook, MomentDef, MomentEcho, MomentField, MomentProp } from './moment-types.ts';
-import type { Content, MonsterDef, RarityDef, SkillDef, WearableDef, WearRegion, ZoneDef } from './types.ts';
+import type { EchoLook, MomentChest, MomentDef, MomentEcho, MomentField, MomentProp } from './moment-types.ts';
+import type { Content, MonsterDef, PropDef, RarityDef, SkillDef, WearableDef, WearRegion, ZoneDef } from './types.ts';
 
 function poseClips(clips: RigClips): ReadonlySet<string> {
   return new Set<string>(['idle', 'run', 'hit', 'death', ...Object.keys(clips.actions)]);
@@ -39,12 +39,27 @@ function echoProblems(content: Content, at: string, entry: MomentEcho): string[]
   return problems;
 }
 
-export const MOMENT_PROPS = { blockingMost: 1, centreReach: 1, lowHeight: 0.62 } as const;
+export const MOMENT_PROPS = { blockingMost: 1, centreReach: 1, lowHeight: 0.62, echoRoom: 0.5 } as const;
 
 function centreProblems(at: string, def: MomentDef): string[] {
   const blocking: MomentProp[] = def.props.filter((placed: MomentProp): boolean => placed.blocks);
   const problems: string[] = blocking.length > MOMENT_PROPS.blockingMost ? [`${at} blocks with ${blocking.length} props, more than ${MOMENT_PROPS.blockingMost}`] : [];
   for (const placed of blocking) if (Math.hypot(placed.x, placed.z) > MOMENT_PROPS.centreReach) problems.push(`${at} blocks with ${placed.prop} off its centre`);
+  return problems;
+}
+
+function chestProblems(content: Content, at: string, def: MomentDef, chest: MomentChest): string[] {
+  const box: PropDef | undefined = content.props.get(content.moments.chest.prop);
+  if (box === undefined) return [];
+  const problems: string[] = [];
+  if (Math.hypot(chest.x, chest.z) + box.blockRadius > def.radius) problems.push(`${at} chest reaches past its bubble`);
+  for (const placed of def.props) {
+    const prop: PropDef | undefined = content.props.get(placed.prop);
+    if (prop !== undefined && Math.hypot(placed.x - chest.x, placed.z - chest.z) < prop.blockRadius + box.blockRadius) problems.push(`${at} chest stands inside ${placed.prop}`);
+  }
+  def.echoes.forEach((entry: MomentEcho, index: number): void => {
+    if (Math.hypot(entry.x - chest.x, entry.z - chest.z) < box.blockRadius + MOMENT_PROPS.echoRoom) problems.push(`${at} chest stands on echo ${index}`);
+  });
   return problems;
 }
 
@@ -62,6 +77,7 @@ function defProblems(content: Content, def: MomentDef): string[] {
   def.echoes.forEach((entry: MomentEcho, index: number): void => {
     problems.push(...echoProblems(content, `${at} echo ${index}`, entry));
   });
+  if (def.chest !== null) problems.push(...chestProblems(content, at, def, def.chest));
   const rarity: string | null = def.reward.rarity;
   if (rarity !== null && !content.rarities.some((entry: RarityDef): boolean => entry.id === rarity)) problems.push(`${at} rewards unknown rarity ${rarity}`);
   return problems;
@@ -86,6 +102,7 @@ function fieldProblems(content: Content, zone: ZoneDef, field: MomentField): str
 export function momentProblems(content: Content): string[] {
   const problems: string[] = [];
   if (!content.factions.has(content.moments.faction)) problems.push(`moments use unknown faction ${content.moments.faction}`);
+  if (!content.props.has(content.moments.chest.prop)) problems.push(`moments keep their gold in unknown prop ${content.moments.chest.prop}`);
   for (const def of content.moments.defs.values()) problems.push(...defProblems(content, def));
   for (const zone of content.zones.values()) if (zone.moments !== null) problems.push(...fieldProblems(content, zone, zone.moments));
   return problems;

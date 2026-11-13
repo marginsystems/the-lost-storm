@@ -390,6 +390,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'moment_woke':
           case 'moment_ended':
           case 'moment_gone':
+          case 'moment_chest':
+          case 'chest_opened':
           case 'path_marked':
             break;
         }

@@ -8,6 +8,17 @@
   "comeback": 4,
   "echoKnockback": 0,
   "stagger": 0.9,
+  "chest": {
+    "prop": "chest",
+    "reach": 1.3,
+    "open": 1.6,
+    "linger": 45,
+    "lid": {
+      "seam": 0.4,
+      "hinge": -0.22,
+      "degrees": 100
+    }
+  },
   "moments": [
     {
       "id": "campfire",
@@ -119,6 +130,13 @@
         "items": 1,
         "itemChance": 0.5,
         "rarity": null
+      },
+      "chest": {
+        "x": -2.0,
+        "z": 2.4,
+        "rotationDegrees": 15,
+        "goldMin": 6,
+        "goldMax": 12
       }
     },
     {
@@ -252,7 +270,8 @@
         "items": 1,
         "itemChance": 0.5,
         "rarity": null
-      }
+      },
+      "chest": null
     },
     {
       "id": "market_street",
@@ -397,6 +416,13 @@
         "items": 2,
         "itemChance": 0.45,
         "rarity": null
+      },
+      "chest": {
+        "x": 2.2,
+        "z": -4.2,
+        "rotationDegrees": -15,
+        "goldMin": 9,
+        "goldMax": 18
       }
     },
     {
@@ -495,6 +521,13 @@
         "items": 2,
         "itemChance": 0.55,
         "rarity": null
+      },
+      "chest": {
+        "x": 1.8,
+        "z": -2.8,
+        "rotationDegrees": -20,
+        "goldMin": 10,
+        "goldMax": 20
       }
     },
     {
@@ -612,6 +645,13 @@
         "items": 1,
         "itemChance": 0.5,
         "rarity": null
+      },
+      "chest": {
+        "x": -2.2,
+        "z": -2.0,
+        "rotationDegrees": 20,
+        "goldMin": 6,
+        "goldMax": 14
       }
     },
     {
@@ -707,6 +747,13 @@
         "items": 1,
         "itemChance": 0.7,
         "rarity": null
+      },
+      "chest": {
+        "x": -2.4,
+        "z": 2.4,
+        "rotationDegrees": 15,
+        "goldMin": 12,
+        "goldMax": 22
       }
     },
     {
@@ -782,6 +829,13 @@
         "items": 0,
         "itemChance": 0,
         "rarity": null
+      },
+      "chest": {
+        "x": 0.8,
+        "z": 3.0,
+        "rotationDegrees": -10,
+        "goldMin": 8,
+        "goldMax": 14
       }
     },
     {
@@ -910,6 +964,13 @@
         "items": 2,
         "itemChance": 0.5,
         "rarity": null
+      },
+      "chest": {
+        "x": 3.0,
+        "z": -3.0,
+        "rotationDegrees": -25,
+        "goldMin": 10,
+        "goldMax": 21
       }
     },
     {
@@ -1005,6 +1066,13 @@
         "items": 3,
         "itemChance": 0.75,
         "rarity": "rare"
+      },
+      "chest": {
+        "x": -1.6,
+        "z": 2.8,
+        "rotationDegrees": 10,
+        "goldMin": 30,
+        "goldMax": 52
       }
     }
   ]

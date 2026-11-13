@@ -149,6 +149,8 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'moment_mark':
     case 'moment_ended':
     case 'moment_gone':
+    case 'moment_chest':
+    case 'chest_opened':
     case 'path_marked':
     case 'character_changed':
     case 'explored':
@@ -212,6 +214,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'respawn':
     case 'flask':
     case 'use':
+    case 'open':
     case 'read':
     case 'glitch':
     case 'glitch_setting':
