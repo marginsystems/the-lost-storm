@@ -200,8 +200,9 @@
     "hideout": {
       "loops": [
         { "sound": "ambience_hideout_fire", "volume": 0.6 },
-        { "sound": "ambience_hall_storm", "volume": 0.25 },
-        { "sound": "ambience_wind_low", "volume": 0.2 }
+        { "sound": "ambience_wind_storm", "volume": 0.22 },
+        { "sound": "ambience_wind_low", "volume": 0.3 },
+        { "sound": "ambience_mist_air", "volume": 0.15 }
       ],
       "stingers": [
         { "sound": "thunder_far", "volume": 0.45, "minDelay": 20, "maxDelay": 45 },

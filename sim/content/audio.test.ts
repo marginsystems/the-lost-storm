@@ -196,3 +196,14 @@ void test('every sound id in data/audio.json is in the committed list of sound i
   assert.ok(used.size > 0);
   assert.deepEqual([...used].filter((id: string): boolean => !listed.has(id)), []);
 });
+
+void test('the hideout is sheltered: no rain falls there, while the storm still flashes overhead and its wind is heard', (): void => {
+  const hideout = must(content.zones.get('hideout'), 'the hideout');
+  assert.equal(hideout.weather.rain, 0);
+  assert.notEqual(hideout.weather.lightning, null);
+  const heard = must(loadAudio(content).ambience.get('hideout'), 'the hideout ambience');
+  const loops: string[] = heard.loops.map((loop): string => loop.sound);
+  assert.ok(loops.some((sound: string): boolean => sound.includes('wind')), 'no wind is heard in the hideout');
+  assert.ok(!loops.includes('ambience_hall_storm'), 'the Hall\'s rain is heard in the hideout');
+  assert.ok(heard.stingers.some((stinger): boolean => stinger.sound.startsWith('thunder')), 'no thunder is heard in the hideout');
+});

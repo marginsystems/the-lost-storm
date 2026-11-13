@@ -72,6 +72,6 @@
     {"npc": "warden_lookout", "x": 31, "z": 23, "facingDegrees": 250},
     {"npc": "warden_auctioneer", "x": 19.5, "z": 14.5, "facingDegrees": 120}
   ],
-  "ambience": {"background": "#0a0e16", "abyss": "#05070b", "fogNear": 34, "fogFar": 110, "skyColor": "#5a6f94", "groundColor": "#344057", "skyIntensity": 6.8, "keyColor": "#b9cbe8", "keyIntensity": 4.8},
-  "weather": {"lightning": {"first": 3, "min": 7, "max": 14}, "rain": 0.85, "wet": 0.6, "mistWall": null}
+  "ambience": {"background": "#0a0e16", "abyss": "#05070b", "fogNear": 26, "fogFar": 92, "skyColor": "#5a6f94", "groundColor": "#344057", "skyIntensity": 6.8, "keyColor": "#b9cbe8", "keyIntensity": 4.8},
+  "weather": {"lightning": {"first": 3, "min": 7, "max": 14}, "rain": 0, "wet": 0.35, "mistWall": null}
 }
