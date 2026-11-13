@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { floorLift, LOBBY_FRAMING, lobbyFraming } from './lobby-stage.ts';
-import type { Framing } from './lobby-stage.ts';
+import { AnimationClip } from 'three';
+import type { RigClipSet, StanceClipSet } from '../render/character-loader.ts';
+import { floorLift, LOBBY_FRAMING, lobbyFraming, lobbyIdle } from './lobby-stage.ts';
+import type { Framing, IdleSource } from './lobby-stage.ts';
 
 void test('a wide screen stands the hero larger and right of centre, clear of the dock under the middle', (): void => {
   assert.deepEqual(lobbyFraming(1440, 900), LOBBY_FRAMING.wide);
@@ -18,4 +20,16 @@ void test('the deepest sole over the idle is lifted to just above the floor, and
   assert.equal(floorLift([-0.01, -0.03, -0.02], 0.002), 0.032);
   assert.equal(floorLift([0.05, 0.08], 0), -0.05);
   assert.equal(floorLift([], 0.002), 0);
+});
+
+void test('the lobby hero plays the bare idle with no weapon, the stance idle of a held weapon, and his own armed idle while an equipped weapon is not in his hand yet', (): void => {
+  const aim: StanceClipSet = { idle: new AnimationClip('aim_idle', 1, []), actions: new Map() };
+  const bare: StanceClipSet = { idle: new AnimationClip('bare_idle', 1, []), actions: new Map() };
+  const clips: RigClipSet = { idle: new AnimationClip('armed_idle', 1, []), run: new AnimationClip('run', 1, []), gaits: [], hit: [], death: [], rise: null, actions: new Map(), unarmed: bare, stances: new Map([['crossbow', aim]]) };
+  const holding = (held: boolean, stance: StanceClipSet | null): IdleSource => ({ clips, armed: (): boolean => held, stance: (): StanceClipSet | null => (held ? stance : bare) });
+  assert.equal(lobbyIdle(holding(false, null), false), bare.idle);
+  assert.equal(lobbyIdle(holding(true, aim), true), aim.idle);
+  assert.equal(lobbyIdle(holding(true, null), true), clips.idle);
+  assert.equal(lobbyIdle(holding(false, null), true), clips.idle);
+  assert.equal(lobbyIdle({ ...holding(false, null), clips: { ...clips, unarmed: null } }, false), clips.idle);
 });

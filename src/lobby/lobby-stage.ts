@@ -210,8 +210,11 @@ function lowestPoint(root: Object3D): number {
   return lowest;
 }
 
-function idleClip(rig: RigInstance, equipped: Equipment): AnimationClip {
-  return equipped.weapon === null ? (rig.clips.unarmed?.idle ?? rig.clips.idle) : (rig.stance()?.idle ?? rig.clips.idle);
+export type IdleSource = Pick<RigInstance, 'clips' | 'armed' | 'stance'>;
+
+export function lobbyIdle(rig: IdleSource, weaponEquipped: boolean): AnimationClip {
+  if (!weaponEquipped) return rig.clips.unarmed?.idle ?? rig.clips.idle;
+  return rig.armed() ? (rig.stance()?.idle ?? rig.clips.idle) : rig.clips.idle;
 }
 
 function fromStage(event: Event): boolean {
@@ -337,7 +340,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       rig.setGear(worn.held);
       castShadows(rig.root);
       rig.mixer.stopAllAction();
-      const clip: AnimationClip = idleClip(rig, look.equipped);
+      const clip: AnimationClip = lobbyIdle(rig, look.equipped.weapon !== null);
       rig.mixer.clipAction(clip).play();
       plantFeet(rig, clip);
     },
