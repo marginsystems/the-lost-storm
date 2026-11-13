@@ -2,6 +2,7 @@ import type { Material, Matrix4, Object3D, WebGLRenderTarget } from 'three';
 import { ACESFilmicToneMapping, Box3, BufferAttribute, BufferGeometry, Color, InterleavedBufferAttribute, DirectionalLight, Group, Mesh, MeshStandardMaterial, OrthographicCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { Timers } from '../backend/backend.ts';
+import { wearKey } from '../../sim/wear.ts';
 import type { CharacterLibrary, LoadedWearable } from './character-loader.ts';
 
 export const THUMBNAIL = {
@@ -125,7 +126,7 @@ function oneSleeve(posed: Group): Box3 {
   return new Box3().setFromPoints(points.map((point: Vector3): Vector3 => point.applyMatrix4(turn)));
 }
 
-export async function createItemThumbnails(library: CharacterLibrary, wearableIds: readonly string[], timers: Timers): Promise<ItemThumbnails> {
+export async function createItemThumbnails(library: CharacterLibrary, frame: string, wearableIds: readonly string[], timers: Timers): Promise<ItemThumbnails> {
   const renderer: WebGLRenderer = new WebGLRenderer({ alpha: true, antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(THUMBNAIL.size, THUMBNAIL.size, false);
@@ -152,7 +153,7 @@ export async function createItemThumbnails(library: CharacterLibrary, wearableId
   const made: Material[] = [];
   const shots: Shot[] = [...library.attachments.values()].map((attachment): Shot => ({ name: attachment.def.id, posed: pose(attachment.template), frame: boundsOf }));
   for (const id of wearableIds) {
-    const wearable: LoadedWearable | undefined = library.wearables.get(id);
+    const wearable: LoadedWearable | undefined = library.wearables.get(wearKey(frame, id));
     if (wearable !== undefined) shots.push({ name: wornImageKey(id), posed: dressed(wearable, made), frame: oneSleeve });
   }
 

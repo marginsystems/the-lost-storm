@@ -1,0 +1,252 @@
+[
+  {
+    "out": "public/models/characters/man.glb",
+    "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Male_Ranger.gltf",
+    "keep": [],
+    "textureSize": 1024,
+    "parts": [
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+        "meshes": [
+          "SuperHero_Male"
+        ],
+        "held": [
+          "Head",
+          "neck_01"
+        ],
+        "share": 0.5,
+        "material": "MI_Regular_Male"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+        "meshes": [
+          "Eyes",
+          "Eyebrows"
+        ]
+      }
+    ],
+    "names": {
+      "SuperHero_Male": "Head"
+    },
+    "materials": [
+      {
+        "material": "MI_Regular_Male",
+        "name": "skin"
+      },
+      {
+        "material": "MI_Hair_1",
+        "name": "brows",
+        "tint": "#4b3d33"
+      },
+      {
+        "material": "MI_Hair_2",
+        "name": "brows",
+        "tint": "#4b3d33"
+      }
+    ]
+  },
+  {
+    "out": "public/models/wear/man/ranger.glb",
+    "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Male_Ranger.gltf",
+    "keep": [
+      "Male_Ranger_Acc_Pauldron",
+      "Male_Ranger_Arms",
+      "Male_Ranger_Arms_Bracer",
+      "Male_Ranger_Body",
+      "Male_Ranger_Body_Belt_1",
+      "Male_Ranger_Body_Belt_2",
+      "Male_Ranger_Feet_Boots",
+      "Male_Ranger_Head_Hood",
+      "Male_Ranger_Legs"
+    ],
+    "textureSize": 1024,
+    "names": {
+      "Male_Ranger_Acc_Pauldron": "Ranger_Pauldron",
+      "Male_Ranger_Arms": "Ranger_Arms",
+      "Male_Ranger_Arms_Bracer": "Ranger_Bracers",
+      "Male_Ranger_Body": "Ranger_Body",
+      "Male_Ranger_Body_Belt_1": "Ranger_Belt_1",
+      "Male_Ranger_Body_Belt_2": "Ranger_Belt_2",
+      "Male_Ranger_Feet_Boots": "Ranger_Feet",
+      "Male_Ranger_Head_Hood": "Ranger_Hood",
+      "Male_Ranger_Legs": "Ranger_Legs"
+    },
+    "materials": [
+      {
+        "material": "MI_Regular_Male",
+        "name": "skin"
+      }
+    ]
+  },
+  {
+    "out": "public/models/wear/man/peasant.glb",
+    "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Male_Peasant.gltf",
+    "keep": [
+      "Male_Peasant_Arms",
+      "Male_Peasant_Body",
+      "Male_Peasant_Feet",
+      "Male_Peasant_Legs"
+    ],
+    "textureSize": 1024,
+    "names": {
+      "Male_Peasant_Arms": "Peasant_Arms",
+      "Male_Peasant_Body": "Peasant_Body",
+      "Male_Peasant_Feet": "Peasant_Feet",
+      "Male_Peasant_Legs": "Peasant_Legs"
+    },
+    "materials": [
+      {
+        "material": "MI_Regular_Male",
+        "name": "skin"
+      }
+    ]
+  },
+  {
+    "out": "public/models/wear/man/hair.glb",
+    "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Male_Ranger.gltf",
+    "keep": [],
+    "textureSize": 1024,
+    "parts": [
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_SimpleParted.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Buzzed.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_BuzzedFemale.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Long.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Buns.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Beard.gltf"
+      }
+    ]
+  },
+  {
+    "out": "public/models/characters/woman.glb",
+    "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Female_Ranger.gltf",
+    "keep": [],
+    "textureSize": 1024,
+    "parts": [
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Base Characters/Godot - UE/Superhero_Female_FullBody.gltf",
+        "meshes": [
+          "Superhero_Female"
+        ],
+        "held": [
+          "Head",
+          "neck_01"
+        ],
+        "share": 0.5,
+        "material": "MI_Regular_Female"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Base Characters/Godot - UE/Superhero_Female_FullBody.gltf",
+        "meshes": [
+          "Eyes",
+          "Eyebrows"
+        ]
+      }
+    ],
+    "names": {
+      "Superhero_Female": "Head"
+    },
+    "materials": [
+      {
+        "material": "MI_Regular_Female",
+        "name": "skin"
+      },
+      {
+        "material": "MI_Hair_1",
+        "name": "brows",
+        "tint": "#4b3d33"
+      },
+      {
+        "material": "MI_Hair_2",
+        "name": "brows",
+        "tint": "#4b3d33"
+      }
+    ]
+  },
+  {
+    "out": "public/models/wear/woman/ranger.glb",
+    "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Female_Ranger.gltf",
+    "keep": [
+      "Female_Ranger_Acc_Pauldrons",
+      "Female_Ranger_Arms",
+      "Female_Ranger_Arms_Bracer",
+      "Female_Ranger_Body",
+      "Female_Ranger_Body_Belt_1",
+      "Female_Ranger_Body_Belt_2",
+      "Female_Ranger_Feet",
+      "Female_Ranger_Head_Hood",
+      "Female_Ranger_Legs"
+    ],
+    "textureSize": 1024,
+    "names": {
+      "Female_Ranger_Acc_Pauldrons": "Ranger_Pauldron",
+      "Female_Ranger_Arms": "Ranger_Arms",
+      "Female_Ranger_Arms_Bracer": "Ranger_Bracers",
+      "Female_Ranger_Body": "Ranger_Body",
+      "Female_Ranger_Body_Belt_1": "Ranger_Belt_1",
+      "Female_Ranger_Body_Belt_2": "Ranger_Belt_2",
+      "Female_Ranger_Feet": "Ranger_Feet",
+      "Female_Ranger_Head_Hood": "Ranger_Hood",
+      "Female_Ranger_Legs": "Ranger_Legs"
+    },
+    "materials": [
+      {
+        "material": "MI_Regular_Female",
+        "name": "skin"
+      }
+    ]
+  },
+  {
+    "out": "public/models/wear/woman/peasant.glb",
+    "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Female_Peasant.gltf",
+    "keep": [
+      "Female_Peasant_Arms",
+      "Female_Peasant_Body",
+      "Female_Peasant_Feet",
+      "Female_Peasant_Legs"
+    ],
+    "textureSize": 1024,
+    "names": {
+      "Female_Peasant_Arms": "Peasant_Arms",
+      "Female_Peasant_Body": "Peasant_Body",
+      "Female_Peasant_Feet": "Peasant_Feet",
+      "Female_Peasant_Legs": "Peasant_Legs"
+    }
+  },
+  {
+    "out": "public/models/wear/woman/hair.glb",
+    "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Female_Ranger.gltf",
+    "keep": [],
+    "textureSize": 1024,
+    "parts": [
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_SimpleParted.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Buzzed.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_BuzzedFemale.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Long.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Buns.gltf"
+      },
+      {
+        "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Beard.gltf"
+      }
+    ]
+  }
+]

@@ -22,14 +22,14 @@
       ]
     },
     { "kind": "importers", "paths": ["sim/**", "test/**/*.test.ts", "tools/**"], "alsoRun": [] },
-    { "kind": "importers", "paths": ["data/**"], "alsoRun": ["sim/content/content.test.ts", "src/launch/data.test.ts", "sim/content/audio.test.ts", "tools/clip-pose.test.ts"] },
+    { "kind": "importers", "paths": ["data/**"], "alsoRun": ["sim/content/content.test.ts", "src/launch/data.test.ts", "sim/content/audio.test.ts"] },
     { "kind": "importers", "paths": ["src/**"], "alsoRun": ["src/hud/hud.test.ts", "src/hud/hud-gate.test.ts"] },
     { "kind": "importers", "paths": ["src/hud/**"], "alsoRun": ["src/hud/**/*.test.ts"] },
     { "kind": "importers", "paths": ["src/backend/**"], "alsoRun": ["src/backend/**/*.test.ts"] },
     { "kind": "importers", "paths": ["src/**/*.css"], "alsoRun": ["src/title-screen.test.ts", "src/landing/leave.test.ts", "src/hud/panel-cover.test.ts"] },
     { "kind": "importers", "paths": ["src/input.ts"], "alsoRun": ["src/input.test.ts"] },
     { "kind": "only", "paths": ["index.html", "play/**"], "run": ["src/launch/data.test.ts"] },
-    { "kind": "only", "paths": ["public/**"], "run": ["sim/content/content.test.ts", "tools/clip-pose.test.ts"] },
+    { "kind": "only", "paths": ["public/**"], "run": ["sim/content/content.test.ts"] },
     { "kind": "only", "paths": ["spec/**"], "run": ["src/hud/overlay-core.test.ts"] },
     { "kind": "only", "paths": ["**/*.md", "docs/**", "licenses/**", "blender/**", "LICENSE", ".gitignore", ".claude/**"], "run": [] }
   ]

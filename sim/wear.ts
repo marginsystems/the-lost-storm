@@ -8,6 +8,24 @@ export interface Look {
   readonly held: readonly string[];
 }
 
+export const WEAR_FRAME: string = '{frame}';
+
+export function frameOf(content: Content, rig: string): string {
+  return content.rigs.get(rig)?.frame ?? '';
+}
+
+export function wearKey(frame: string, id: string): string {
+  return `${frame}/${id}`;
+}
+
+export function wearModel(def: WearableDef, frame: string): string {
+  return def.model.replaceAll(WEAR_FRAME, frame);
+}
+
+export function wearFrames(content: Content): string[] {
+  return [...new Set<string>([...content.rigs.values()].map((rig): string => rig.frame))].filter((frame: string): boolean => frame !== '');
+}
+
 export function baseLayerOf(content: Content, rig: string): readonly string[] {
   const body: string | undefined = content.rigs.get(rig)?.url;
   return body === undefined ? [] : (content.baseLayers.get(body) ?? []);
@@ -63,11 +81,12 @@ export function heldGear(content: Content, equipped: Equipment | null): string[]
 export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Equipment | null): CharacterNeeds {
   const rigs: Set<string> = new Set<string>([content.player.rig]);
   const look: Look = lookOf(content, content.player.rig, heroBase(content), equipped);
-  const wearables: Set<string> = new Set<string>(look.wearables);
+  const heroFrame: string = frameOf(content, content.player.rig);
+  const wearables: Set<string> = new Set<string>(look.wearables.map((id: string): string => wearKey(heroFrame, id)));
   const attachments: Set<string> = new Set<string>(look.held);
   const add = (rig: string, wear: readonly string[], gear: readonly string[]): void => {
     rigs.add(rig);
-    for (const id of wornWearables(content, rig, wear, null)) wearables.add(id);
+    for (const id of wornWearables(content, rig, wear, null)) wearables.add(wearKey(frameOf(content, rig), id));
     for (const id of gear) attachments.add(id);
   };
   for (const placed of zone.npcs) {

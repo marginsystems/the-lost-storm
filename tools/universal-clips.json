@@ -1,0 +1,280 @@
+{
+  "hips": "pelvis",
+  "joints": {
+    "pelvis": "pelvis",
+    "spine_01": "spine_01",
+    "spine_02": "spine_02",
+    "spine_03": "spine_03",
+    "neck_01": "neck_01",
+    "Head": "Head",
+    "clavicle_l": "clavicle_l",
+    "upperarm_l": "upperarm_l",
+    "lowerarm_l": "lowerarm_l",
+    "hand_l": "hand_l",
+    "thigh_l": "thigh_l",
+    "calf_l": "calf_l",
+    "foot_l": "foot_l",
+    "ball_l": "ball_l",
+    "index_01_l": "index_01_l",
+    "index_02_l": "index_02_l",
+    "index_03_l": "index_03_l",
+    "middle_01_l": "middle_01_l",
+    "middle_02_l": "middle_02_l",
+    "middle_03_l": "middle_03_l",
+    "ring_01_l": "ring_01_l",
+    "ring_02_l": "ring_02_l",
+    "ring_03_l": "ring_03_l",
+    "pinky_01_l": "pinky_01_l",
+    "pinky_02_l": "pinky_02_l",
+    "pinky_03_l": "pinky_03_l",
+    "thumb_01_l": "thumb_01_l",
+    "thumb_02_l": "thumb_02_l",
+    "thumb_03_l": "thumb_03_l",
+    "clavicle_r": "clavicle_r",
+    "upperarm_r": "upperarm_r",
+    "lowerarm_r": "lowerarm_r",
+    "hand_r": "hand_r",
+    "thigh_r": "thigh_r",
+    "calf_r": "calf_r",
+    "foot_r": "foot_r",
+    "ball_r": "ball_r",
+    "index_01_r": "index_01_r",
+    "index_02_r": "index_02_r",
+    "index_03_r": "index_03_r",
+    "middle_01_r": "middle_01_r",
+    "middle_02_r": "middle_02_r",
+    "middle_03_r": "middle_03_r",
+    "ring_01_r": "ring_01_r",
+    "ring_02_r": "ring_02_r",
+    "ring_03_r": "ring_03_r",
+    "pinky_01_r": "pinky_01_r",
+    "pinky_02_r": "pinky_02_r",
+    "pinky_03_r": "pinky_03_r",
+    "thumb_01_r": "thumb_01_r",
+    "thumb_02_r": "thumb_02_r",
+    "thumb_03_r": "thumb_03_r"
+  },
+  "clips": [
+    {
+      "name": "Sword_Combo_A",
+      "parts": [
+        {
+          "clip": "Sword_Regular_A"
+        },
+        {
+          "clip": "Sword_Regular_A_Rec"
+        }
+      ]
+    },
+    {
+      "name": "Sword_Combo_B",
+      "parts": [
+        {
+          "clip": "Sword_Regular_B"
+        },
+        {
+          "clip": "Sword_Regular_B_Rec"
+        }
+      ]
+    },
+    {
+      "name": "Sword_Combo_C",
+      "parts": [
+        {
+          "clip": "Sword_Regular_C"
+        }
+      ]
+    },
+    {
+      "name": "Sword_Slam",
+      "parts": [
+        {
+          "clip": "Sword_Heavy_Combo",
+          "start": 2.0
+        }
+      ]
+    },
+    {
+      "name": "Sword_Slam_Charged",
+      "parts": [
+        {
+          "clip": "Sword_Heavy_Combo",
+          "start": 2.0,
+          "end": 2.43
+        },
+        {
+          "clip": "Sword_Heavy_Combo",
+          "start": 2.43,
+          "end": 2.43,
+          "hold": 0.5
+        },
+        {
+          "clip": "Sword_Heavy_Combo",
+          "start": 2.43
+        }
+      ]
+    },
+    {
+      "name": "Sword_Lunge",
+      "parts": [
+        {
+          "clip": "Sword_Heavy_Combo",
+          "start": 0,
+          "end": 0.8
+        }
+      ]
+    },
+    {
+      "name": "Sword_Sweep",
+      "parts": [
+        {
+          "clip": "Sword_Heavy_Combo",
+          "start": 1.35,
+          "end": 2.1
+        }
+      ]
+    },
+    {
+      "name": "Sword_Dash",
+      "parts": [
+        {
+          "clip": "Sword_Dash"
+        }
+      ]
+    },
+    {
+      "name": "Sword_Block",
+      "parts": [
+        {
+          "clip": "Sword_Block"
+        }
+      ]
+    },
+    {
+      "name": "Shield_Idle_Loop",
+      "parts": [
+        {
+          "clip": "Idle_Shield_Loop"
+        }
+      ]
+    },
+    {
+      "name": "Shield_Bash",
+      "parts": [
+        {
+          "clip": "Shield_Dash",
+          "start": 0,
+          "end": 0,
+          "hold": 0.3
+        },
+        {
+          "clip": "Shield_Dash"
+        }
+      ]
+    },
+    {
+      "name": "Shield_Block",
+      "parts": [
+        {
+          "clip": "Shield_OneShot"
+        }
+      ]
+    },
+    {
+      "name": "Shield_Break",
+      "parts": [
+        {
+          "clip": "Idle_Shield_Break"
+        }
+      ]
+    },
+    {
+      "name": "Claw_Lunge",
+      "parts": [
+        {
+          "clip": "Melee_Hook"
+        },
+        {
+          "clip": "Melee_Hook_Rec"
+        }
+      ]
+    },
+    {
+      "name": "Throw",
+      "parts": [
+        {
+          "clip": "OverhandThrow"
+        }
+      ]
+    },
+    {
+      "name": "Chop",
+      "parts": [
+        {
+          "clip": "TreeChopping_Loop",
+          "start": 0.3
+        },
+        {
+          "clip": "TreeChopping_Loop",
+          "start": 0,
+          "end": 0.35
+        }
+      ]
+    },
+    {
+      "name": "Leap",
+      "parts": [
+        {
+          "clip": "NinjaJump_Start",
+          "start": 0,
+          "end": 0.5
+        },
+        {
+          "clip": "NinjaJump_Land"
+        }
+      ]
+    },
+    {
+      "name": "Zombie_Idle_Loop",
+      "parts": [
+        {
+          "clip": "Zombie_Idle_Loop"
+        }
+      ]
+    },
+    {
+      "name": "Zombie_Walk_Loop",
+      "parts": [
+        {
+          "clip": "Zombie_Walk_Fwd_Loop"
+        }
+      ]
+    },
+    {
+      "name": "Zombie_Scratch",
+      "parts": [
+        {
+          "clip": "Zombie_Scratch"
+        }
+      ]
+    },
+    {
+      "name": "Death_Knockback",
+      "parts": [
+        {
+          "clip": "Hit_Knockback"
+        }
+      ]
+    },
+    {
+      "name": "Death_Collapse",
+      "parts": [
+        {
+          "clip": "LayToIdle",
+          "reverse": true,
+          "rate": 1.5
+        }
+      ]
+    }
+  ]
+}

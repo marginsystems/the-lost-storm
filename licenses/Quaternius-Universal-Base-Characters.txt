@@ -1,0 +1,11 @@
+Universal Base Characters (Standard) by Quaternius
+https://quaternius.com/packs/universalbasecharacters.html
+
+License: Creative Commons Zero (CC0 1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Free to use in personal, educational and commercial projects. Credit is not required; we credit Quaternius anyway.
+
+Files in this repository: public/models/characters/man.glb and public/models/characters/woman.glb (the head,
+eyes, brows and light skin texture of the Superhero full-body characters), and public/models/wear/man/hair.glb
+and public/models/wear/woman/hair.glb (the head-bone hairstyles), assembled by tools/assemble-body.ts.

@@ -1,4 +1,4 @@
-import type { Quad, RigActionClip, RigClips, RigDef, RigHold, RigHoldSeat, RigSocket, RigUnarmedClips, Triple } from './types.ts';
+import type { RigActionClip, RigClips, RigDef, RigSocket, RigUnarmedClips, Triple } from './types.ts';
 import type { Fields } from './read.ts';
 import { ContentError, each, fields, nullableText, numeric, text, textList } from './read.ts';
 import { rigGaits } from './parse-gaits.ts';
@@ -46,54 +46,6 @@ function rigSocket(value: unknown, where: string): RigSocket {
   return { bone: text(source, 'bone', where), position: triple(source, 'position', where), rotationDegrees: triple(source, 'rotationDegrees', where), scale: numeric(source, 'scale', where) };
 }
 
-function restHands(value: unknown, sockets: Readonly<Record<string, RigSocket>>, where: string): Record<string, Record<string, Triple>> {
-  if (value === undefined) return {};
-  const handFields: Fields = fields(value, where);
-  const hands: Record<string, Record<string, Triple>> = {};
-  for (const socket of Object.keys(handFields)) {
-    if (sockets[socket] === undefined) throw new ContentError(`${where}.${socket}`, 'a resting hand must name one of the rig\'s sockets');
-    const boneFields: Fields = fields(handFields[socket], `${where}.${socket}`);
-    const bones: Record<string, Triple> = {};
-    for (const bone of Object.keys(boneFields)) bones[bone] = triple(boneFields, bone, `${where}.${socket}`);
-    hands[socket] = bones;
-  }
-  return hands;
-}
-
-const UNIT_TOLERANCE: number = 1e-3;
-
-function quad(source: Fields, key: string, where: string): Quad {
-  const values: number[] = each(source[key], `${where}.${key}`, (entry: unknown, entryWhere: string): number => {
-    if (typeof entry !== 'number' || !Number.isFinite(entry)) throw new ContentError(entryWhere, 'expected a number');
-    return entry;
-  });
-  const [x, y, z, w] = values;
-  if (values.length !== 4 || x === undefined || y === undefined || z === undefined || w === undefined) throw new ContentError(`${where}.${key}`, 'expected four numbers, a quaternion x, y, z, w');
-  if (Math.abs(Math.hypot(x, y, z, w) - 1) > UNIT_TOLERANCE) throw new ContentError(`${where}.${key}`, 'expected a unit quaternion');
-  return [x, y, z, w];
-}
-
-function holdSeat(value: unknown, where: string): RigHoldSeat | null {
-  if (value === undefined || value === null) return null;
-  const source: Fields = fields(value, where);
-  return { position: triple(source, 'position', where), rotationDegrees: triple(source, 'rotationDegrees', where), scale: numeric(source, 'scale', where) };
-}
-
-function holds(value: unknown, where: string): Record<string, RigHold> {
-  if (value === undefined) return {};
-  const holdFields: Fields = fields(value, where);
-  const held: Record<string, RigHold> = {};
-  for (const attachment of Object.keys(holdFields)) {
-    const holdWhere: string = `${where}.${attachment}`;
-    const hold: Fields = fields(holdFields[attachment], holdWhere);
-    const boneFields: Fields = fields(hold['bones'], `${holdWhere}.bones`);
-    const bones: Record<string, Quad> = {};
-    for (const bone of Object.keys(boneFields)) bones[bone] = quad(boneFields, bone, `${holdWhere}.bones`);
-    held[attachment] = { seat: holdSeat(hold['seat'], `${holdWhere}.seat`), bones };
-  }
-  return held;
-}
-
 export function rig(value: unknown, where: string): RigDef {
   const source: Fields = fields(value, where);
   const socketFields: Fields = fields(source['sockets'], `${where}.sockets`);
@@ -106,6 +58,7 @@ export function rig(value: unknown, where: string): RigDef {
     id: text(source, 'id', where),
     url: text(source, 'url', where),
     clipFolder: text(source, 'clipFolder', where),
+    frame: source['frame'] === undefined ? '' : text(source, 'frame', where),
     scale: numeric(source, 'scale', where),
     yawOffsetDegrees: numeric(source, 'yawOffsetDegrees', where),
     height: numeric(source, 'height', where),
@@ -117,7 +70,5 @@ export function rig(value: unknown, where: string): RigDef {
     hiddenNodes: textList(source, 'hiddenNodes', where),
     bodyParts,
     base: source['base'] === undefined ? [] : textList(source, 'base', where),
-    restHands: restHands(source['restHands'], sockets, `${where}.restHands`),
-    holds: holds(source['holds'], `${where}.holds`),
   };
 }

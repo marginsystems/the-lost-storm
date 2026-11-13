@@ -1,6 +1,7 @@
 import type { BufferGeometry, Object3D } from 'three';
 import { Box3, BufferAttribute, Color, CylinderGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry, Vector3 } from 'three';
 import type { Content, GroundKeep, GroundLook, ItemBaseDef, RigDef } from '../../sim/content/types.ts';
+import { frameOf, wearKey } from '../../sim/wear.ts';
 import type { CharacterLibrary, LoadedAttachment, LoadedWearable } from './character-loader.ts';
 
 export const GROUND_MODEL = {
@@ -148,7 +149,7 @@ export function groundTemplate(content: Content, library: CharacterLibrary, base
       break;
     }
     case 'worn': {
-      const worn: LoadedWearable | undefined = base.wear.map((id: string): LoadedWearable | undefined => library.wearables.get(id)).find((entry: LoadedWearable | undefined): boolean => entry !== undefined);
+      const worn: LoadedWearable | undefined = base.wear.map((id: string): LoadedWearable | undefined => library.wearables.get(wearKey(frameOf(content, content.player.rig), id))).find((entry: LoadedWearable | undefined): boolean => entry !== undefined);
       if (worn !== undefined) return settled(wornModel(worn, look.keep), look, rigScale(content), false);
       break;
     }

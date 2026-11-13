@@ -11,8 +11,10 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 | Free Pack - Human Skeleton | PolyOne Studio | https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
 | Universal Animation Library (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library.txt](licenses/Quaternius-Universal-Animation-Library.txt) |
 | Universal Animation Library 2 (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary2.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library-2.txt](licenses/Quaternius-Universal-Animation-Library-2.txt) |
-| MakeHuman community garments (suits02, gloves01, shirts01, pants01, shoes01) | Donitz, Rehman Polanski, MRT, culturalibre (makehumancommunity.org) | http://www.makehumancommunity.org/clothes.html | CC0 1.0 | [licenses/MakeHuman-community-assets.txt](licenses/MakeHuman-community-assets.txt) |
-| MakeHuman base mesh, shape targets, skins and eyes | The MakeHuman project: Data Collection AB, Joel Palmius, Jonas Hauquier (makehumancommunity.org) | https://github.com/makehumancommunity/makehuman | CC0 1.0 | [licenses/MakeHuman-community-assets.txt](licenses/MakeHuman-community-assets.txt) |
+| Universal Base Characters (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalbasecharacters.html | CC0 1.0 | [licenses/Quaternius-Universal-Base-Characters.txt](licenses/Quaternius-Universal-Base-Characters.txt) |
+| Modular Character Outfits - Fantasy (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/modularcharacteroutfitsfantasy.html | CC0 1.0 | [licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt](licenses/Quaternius-Modular-Character-Outfits-Fantasy.txt) |
+| MakeHuman community garments (suits02) | Donitz (makehumancommunity.org) | http://www.makehumancommunity.org/clothes.html | CC0 1.0 | [licenses/MakeHuman-community-assets.txt](licenses/MakeHuman-community-assets.txt) |
+| MakeHuman base mesh | The MakeHuman project: Data Collection AB, Joel Palmius, Jonas Hauquier (makehumancommunity.org) | https://github.com/makehumancommunity/makehuman | CC0 1.0 | [licenses/MakeHuman-community-assets.txt](licenses/MakeHuman-community-assets.txt) |
 | Poly Haven models and textures | The authors named in the tables below (polyhaven.com) | https://polyhaven.com | CC0 1.0 | [licenses/Poly-Haven-CC0.txt](licenses/Poly-Haven-CC0.txt) |
 
 ## Landing page images
@@ -29,13 +31,40 @@ The Discord, GitHub and X marks in the footers of the title screen (`play/index.
 
 ## Characters and animations
 
-Every humanoid uses one rig, the Universal Animation Library rig (53 `DEF-*` joints), so bodies, clips and held gear are interchangeable.
+Humans (the hero, the townsfolk and the unfinished) stand on the Quaternius universal skeleton (65 joints: `pelvis`, `spine_01`, `hand_r`, `index_01_r` and so on). A body is a head with eyes and brows; everything below it is a modular clothing part. Any body with the same joint names plays the same clips, because `src/render/clip-fit.ts` fits each clip to the body's rest pose when it loads. The skeleton monsters keep the older Universal Animation Library rig (53 `DEF-*` joints) and its clip folder.
 
 | File | What it is | Source | Licence |
 |---|---|---|---|
-| `public/models/characters/skeleton.glb` | The skeleton body used by the hero, the townsfolk and every monster | "Free Pack - Human Skeleton" by PolyOne Studio, fitted to the rig, decimated and repainted for Movement Lab (`blender/variant_skeleton.py` in that repository); lower-detail copies stripped here by `tools/build-characters.ts` | CC BY 4.0 |
-| `public/models/characters/human_man.glb`, `public/models/characters/human_woman.glb`, `public/models/characters/human_elder.glb` | The townsfolk: a broad middle-aged man, a middle-aged woman and a gaunt old man, each a skinned body with eyes on the shared rig | MakeHuman base mesh (`base.obj`, the `body` group) shaped with the MakeHuman `caucasian-*` and `universal-*` macro targets, with the MakeHuman skins `middleage_caucasian_male`, `middleage_caucasian_female` and `old_caucasian_male` and the low-poly eyes with the brown iris, from `makehuman_system_assets_cc0.zip`; skinned through the MakeHuman default rig, refitted to this rig and decimated to 50% by `blender/build_wearables.py` (parts with `"body": true` in `blender/wearables.json`) | CC0 1.0 |
-| `public/models/characters/human_man.glb`, `public/models/characters/human_woman.glb`, `public/models/characters/human_elder.glb` hands (`human_man_hands`, `human_woman_hands`, `human_elder_hands`) | Each townsperson's two hands, with five shaped fingers each | The `M_Char_Glove` hands of the Movement Lab wanderer (`assets/character.glb` at commit 18bf38c7 of Movement Lab, by the same author), cut there from the realistic male body of Blender Studio's "Human Base Meshes" bundle v1.4.1 and weighted to the same rig; grafted by `blender/wearable_hands.py` (the `hands` field in `blender/wearables.json`): welded, subdivided once, each finger turned onto its bone chain, the finger weights smoothed so the knuckles keep their form in a fist, the wrist welded to each body's arm with blended weights and normals, and the skin baked from that body's skin | CC0 1.0 |
+| `public/models/characters/skeleton.glb` | The skeleton body of the skeleton monsters | "Free Pack - Human Skeleton" by PolyOne Studio, fitted to the rig, decimated and repainted for Movement Lab (`blender/variant_skeleton.py` in that repository); lower-detail copies stripped here by `tools/build-characters.ts` | CC BY 4.0 |
+| `public/models/characters/man.glb`, `public/models/characters/woman.glb` | The man's and the woman's bodies: head, eyes and brows on the universal skeleton | Head, eyes and brows of `Superhero_Male_FullBody.gltf` and `Superhero_Female_FullBody.gltf` with the light skin texture, from Universal Base Characters [Standard] by Quaternius; joint proportions from the Ranger outfits of Modular Character Outfits - Fantasy [Standard] by Quaternius; assembled by `tools/assemble-body.ts` from `tools/universal-bodies.json` | CC0 1.0 |
+| `public/models/wear/man/hair.glb`, `public/models/wear/woman/hair.glb` | The hairstyles and the beard, one mesh per style | The head-bone hairstyles of Universal Base Characters [Standard] by Quaternius, assembled by `tools/assemble-body.ts` | CC0 1.0 |
+| `public/models/wear/man/peasant.glb`, `public/models/wear/woman/peasant.glb` | The Peasant outfit, one mesh per part | Male and Female Peasant parts of Modular Character Outfits - Fantasy [Standard] by Quaternius, assembled by `tools/assemble-body.ts` | CC0 1.0 |
+| `public/models/wear/man/ranger.glb`, `public/models/wear/woman/ranger.glb` | The Ranger outfit, one mesh per part | Male and Female Ranger parts of Modular Character Outfits - Fantasy [Standard] by Quaternius, assembled by `tools/assemble-body.ts` | CC0 1.0 |
+| `public/models/animations/universal/Chop.glb`, `public/models/animations/universal/Claw_Lunge.glb`, `public/models/animations/universal/Death01.glb`, `public/models/animations/universal/Death_Collapse.glb`, `public/models/animations/universal/Death_Knockback.glb`, `public/models/animations/universal/Hit_Chest.glb`, `public/models/animations/universal/Hit_Head.glb`, `public/models/animations/universal/Idle_Loop.glb`, `public/models/animations/universal/Idle_Torch_Loop.glb`, `public/models/animations/universal/Jog_Fwd_Loop.glb`, `public/models/animations/universal/Jump_Land.glb`, `public/models/animations/universal/Leap.glb`, `public/models/animations/universal/Punch_Cross.glb`, `public/models/animations/universal/Punch_Jab.glb`, `public/models/animations/universal/Roll.glb`, `public/models/animations/universal/Shield_Bash.glb`, `public/models/animations/universal/Shield_Block.glb`, `public/models/animations/universal/Shield_Break.glb`, `public/models/animations/universal/Shield_Idle_Loop.glb`, `public/models/animations/universal/Spell_Simple_Shoot.glb`, `public/models/animations/universal/Sprint_Loop.glb`, `public/models/animations/universal/Sword_Attack.glb`, `public/models/animations/universal/Sword_Block.glb`, `public/models/animations/universal/Sword_Combo_A.glb`, `public/models/animations/universal/Sword_Combo_B.glb`, `public/models/animations/universal/Sword_Combo_C.glb`, `public/models/animations/universal/Sword_Dash.glb`, `public/models/animations/universal/Sword_Idle.glb`, `public/models/animations/universal/Sword_Lunge.glb`, `public/models/animations/universal/Sword_Slam.glb`, `public/models/animations/universal/Sword_Slam_Charged.glb`, `public/models/animations/universal/Sword_Sweep.glb`, `public/models/animations/universal/Throw.glb`, `public/models/animations/universal/Walk_Loop.glb`, `public/models/animations/universal/Zombie_Idle_Loop.glb`, `public/models/animations/universal/Zombie_Scratch.glb`, `public/models/animations/universal/Zombie_Walk_Loop.glb` | The humans' clips, one clip per file | Universal Animation Library [Standard] and Universal Animation Library 2 [Standard] (Unreal-Godot glb) by Quaternius, built by the commands below | CC0 1.0 |
+
+Build the human clips with the packs and a scratch folder outside this repository:
+
+```bash
+node tools/build-characters.ts <UAL1_Standard.glb> <UAL1_Standard.glb> <scratch/body.glb> <scratch/humanoid.glb>
+node tools/retarget-clips.ts <scratch/humanoid.glb> <UAL2_Standard.glb> tools/universal-clips.json <scratch/combat.glb>
+node tools/resample-clips.ts <scratch/humanoid.glb> <scratch/combat.glb>
+node tools/split-clips.ts <scratch/humanoid.glb> <scratch/combat.glb> public/models/animations/universal
+node tools/compress-models.ts public/models/animations/universal/*.glb
+```
+
+Build the bodies and the clothes with both Quaternius packs unpacked in one sources folder:
+
+```bash
+node tools/assemble-body.ts tools/universal-bodies.json <sources-folder>
+node tools/compress-models.ts public/models/characters/man.glb public/models/characters/woman.glb public/models/wear/man/*.glb public/models/wear/woman/*.glb
+```
+
+Three texture references in the pack's Superhero glTF files point at `*_png.png` names that the pack does not ship. Put a copy of `T_Hair_1_Normal.png`, `T_Hair_2_Normal.png` and `T_Eye_Normal.png` under those names beside them before assembling.
+
+The skeleton monsters' rig and clips:
+
+| File | What it is | Source | Licence |
+|---|---|---|---|
 | `public/models/animations/humanoid.glb` | The rig and 15 clips (idle, walk, jog, sprint, sword attack, punches, spell, hits, death, roll, landing) | Universal Animation Library (Standard) by Quaternius, Godot Asset Store build; the clips are picked out by `tools/build-characters.ts` | CC0 1.0 |
 | `public/models/animations/combat.glb` | 22 combat clips on the same rig: a three-swing sword chain, heavy slams, a sweep, a lunge, a dash, blocks, a shield bash, a claw lunge, a throw, a chop, a leap, a zombie idle, walk and scratch, and two more deaths | Universal Animation Library 2 (Standard) by Quaternius, `Unreal-Godot/UAL2_Standard.glb`, moved onto this rig by `tools/retarget-clips.ts` | CC0 1.0 |
 
@@ -98,51 +127,7 @@ Rebuild with:
 
 ## Clothing and armour
 
-Skinned pieces made once and worn by every character on the shared rig. `data/wearables.json` turns each file into one or more wearables with a tint and the body parts it hides.
-
-MakeHuman community garments come as a mesh fitted to the MakeHuman base body, with no skin of their own. `blender/wearable_makehuman.py` places each vertex from the garment's bindings to that body, takes its skin weights from the MakeHuman default rig through the same bindings, and maps MakeHuman's 163 bones onto our 53 `DEF-*` joints. `blender/build_wearables.py` then moves each vertex from MakeHuman's rest pose to ours joint by joint and repacks the UV islands the part uses into its own 256 to 1024 pixel WebP textures; a part can ask for its colour map to be desaturated and brought to a set brightness, so one garment takes several tints. `blender/wearables.json` lists the parts; the refit is in `blender/wearable_fit.py` and the texture repack in `blender/wearable_textures.py`. Only garments whose own `.mhclo` header says CC0 are used; the header lines are quoted in the licence text.
-
-| File | What it is | Original | Licence |
-|---|---|---|---|
-| `public/models/wear/monk_robe.glb` | Hooded robe with rope belt | "Monks Robe" by Donitz, `suits02_cc0.zip`, decimated to 50% | CC0 1.0 |
-| `public/models/wear/monk_hood.glb` | Hood for the robe | "Monks Hood" by Donitz, `suits02_cc0.zip`, decimated to 50%, widened to fit the skull | CC0 1.0 |
-| `public/models/wear/mail_tunic.glb` | Ring mail over a padded tunic | "TunicViking" by Rehman Polanski, `suits02_cc0.zip`, decimated to 60% | CC0 1.0 |
-| `public/models/wear/leather_jerkin.glb` | Studded jerkin over a padded tunic | "TunicViking" by Rehman Polanski, `suits02_cc0.zip`, decimated to 60%, colour desaturated for leather tints | CC0 1.0 |
-| `public/models/wear/viking_breeches.glb` | Breeches | "PantsViking" by Rehman Polanski, `suits02_cc0.zip` | CC0 1.0 |
-| `public/models/wear/hide_boots.glb` | Hide boots tied with cord | "BootsViking" by Rehman Polanski, `suits02_cc0.zip` | CC0 1.0 |
-| `public/models/wear/leather_gloves.glb` | Gloves fitted to the man's five-finger hands | Shell of the man's grafted hands (`human_man_hands` in `public/models/characters/human_man.glb`) with a cuff of his forearm skin within 35 mm of the wrist rim, lifted 2.5 mm along the normals, decimated to 25% and given a plain brown leather material, by `blender/glove_shell.py`. Built only for the man's hands; the mender's elder hands keep `long_gloves_makehuman.glb` | CC0 1.0 |
-| `public/models/wear/hair_short.glb` | Short practical hair, the default man | MakeHuman hair `short02` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
-| `public/models/wear/hair_cropped.glb` | Close-cropped hair | MakeHuman hair `short01` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
-| `public/models/wear/hair_swept.glb` | Short swept hair | MakeHuman hair `short04` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
-| `public/models/wear/hair_ponytail.glb` | Long hair tied in a ponytail | MakeHuman hair `ponytail01` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
-| `public/models/wear/hair_braid.glb` | A long braid | MakeHuman hair `braid01` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
-| `public/models/wear/hair_bob.glb` | A short bob | MakeHuman hair `bob02` from `makehuman_system_assets_cc0.zip`, fitted to the shared rig with the alpha-cut cards kept by `blender/build_wearables.py` (`"cutout": true`) | CC0 1.0 |
-| `public/models/wear/long_gloves.glb` | Long gloves worn as bracers, fitted to the man's five-finger hands | Shell of the man's grafted hands (`human_man_hands` in `public/models/characters/human_man.glb`) with a cuff of his forearm skin within 140 mm of the wrist rim, lifted 2.5 mm along the normals, decimated to 25% and given a plain grey leather material, by `blender/glove_shell.py`. Built only for the man's hands; the mender's elder hands keep `long_gloves_makehuman.glb` | CC0 1.0 |
-| `public/models/wear/long_gloves_makehuman.glb` | Long gloves worn as bracers, on the MakeHuman hands of the woman and the elder | "Gloves_Long" by MRT, `gloves01_cc0.zip`, decimated to 50%, colour desaturated | CC0 1.0 |
-| `public/models/wear/wool_tunic.glb` | Knitted wool tunic | "Sweater_Fisherman" by MRT, `shirts01_cc0.zip`, colour desaturated | CC0 1.0 |
-| `public/models/wear/wool_trousers.glb` | Wool trousers | "Pants_Wool" by MRT, `pants01_cc0.zip`, colour partly desaturated | CC0 1.0 |
-| `public/models/wear/undertunic.glb` | Plain short-sleeved undertunic, the base layer of the man and the elder | "T-shirt_basic_tucked" by MRT, `shirts01_cc0.zip`, colour desaturated | CC0 1.0 |
-| `public/models/wear/undertunic_woman.glb` | Plain short-sleeved undertunic, the base layer of the woman | "CrudeFemaleTshirt" by Joel Palmius, `shirts01_cc0.zip`, colour desaturated | CC0 1.0 |
-| `public/models/wear/braies.glb` | Knee-length linen braies, the base layer of every body | "Pants_Wool" by MRT, `pants01_cc0.zip`, cut above the knee (`keepAbove`), colour desaturated | CC0 1.0 |
-| `public/models/wear/tall_boots.glb` | Tall leather boots with folded cuffs | "male_boots" by culturalibre after Roachburn, `shoes01_cc0.zip`, decimated to 20% | CC0 1.0 |
-
-Rebuild with the packs unpacked somewhere outside this repository:
-
-```bash
-/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_wearables.py -- blender/wearables.json public/models/characters/skeleton.glb public/models/wear <scratch-dir> makehuman_suits02=<path to suits02_cc0> makehuman_gloves01=<path to gloves01_cc0> makehuman_shirts01=<path to shirts01_cc0> makehuman_pants01=<path to pants01_cc0> makehuman_shoes01=<path to shoes01_cc0> makehuman_rig=<folder with base.obj, default.mhskel, default_weights.mhw and targets/>
-```
-
-That command builds the garments. The three townsfolk bodies are parts of the `makehuman_system` pack and are written to a different folder, so they have their own command:
-
-```bash
-/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_wearables.py -- blender/wearables.json public/models/characters/skeleton.glb public/models/characters <scratch-dir> makehuman_system=<path to makehuman_system_assets_cc0> makehuman_rig=<folder with base.obj, default.mhskel, default_weights.mhw and targets/> movement_lab_hands=<folder with the Movement Lab character.glb from commit 18bf38c7> only=human_man,human_woman,human_elder
-```
-
-Blender cannot read the meshopt-compressed `skeleton.glb`: give it a copy with the compression removed. Then run `node tools/compress-models.ts` on each body and re-bake its covers with `node tools/bake-cover.ts`, since a body with new hands has a different triangle count.
-
-The garments are fitted to the unshaped MakeHuman base body and the townsfolk bodies carry shape targets, so a body does not match its clothes exactly. The pieces that cover the torso, arms, legs, hands and feet name those body parts in `hides`, so the body under them is not drawn and cannot poke through. The hoods hide nothing: they are widened to clear the head (`girth` in `blender/wearables.json`).
-
-The arguments are the manifest, the body whose rig the parts are fitted to, the output folder, a scratch folder for the repacked PNG textures, and one `<pack>=<folder>` per source pack. Parts of a pack with no folder are left as they are. Add `only=<id>,<id>` to rebuild some parts. The build stops with an error when it would build nothing.
+Clothes are the modular parts in `public/models/wear/<frame>/` listed in the table above. A file holds every part of an outfit; an entry in `data/wearables.json` names its model and the parts it shows in `pieces`, so one file gives several wearables. A part is bound to the wearer's skeleton by joint name when it is put on.
 
 ## World
 
@@ -195,7 +180,7 @@ The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and sta
 | `public/models/world/standing_clock.glb` | Standing case clock | Built by `blender/build_road.py` | MIT |
 | `public/models/world/standing_clock_tilted.glb` | Leaning standing clock with a cracked face | Built by `blender/build_road.py` | MIT |
 | `public/models/world/statue_base.glb` | Statue base | Built by `blender/build_environment.py` | MIT |
-| `public/models/world/still_figure.glb` | Still figure standing, in a hooded robe | Built by `blender/build_road.py` from the MakeHuman body in `human_man.glb` and the "Monks Robe" and "Monks Hood" wearables (Donitz, `suits02_cc0.zip`), posed on the shared rig, joined and decimated to about 1400 triangles with the textures dropped | CC0 1.0 |
+| `public/models/world/still_figure.glb` | Still figure standing, in a hooded robe | Built from the MakeHuman base body and the "Monks Robe" and "Monks Hood" garments (Donitz, `suits02_cc0.zip`), posed, joined and decimated to about 1400 triangles with the textures dropped. The builder read the MakeHuman-era townsfolk body and wearables, which are no longer in this repository, so the two figures are kept as built and cannot be rebuilt from here | CC0 1.0 |
 | `public/models/world/still_figure_bowed.glb` | Still figure with bowed head, in a hooded robe | Built like `still_figure.glb` with the neck, head and spine turned forward | CC0 1.0 |
 | `public/models/world/sunken_cart.glb` | Cart sunk to its axle | Built by `blender/build_road.py` | MIT |
 | `public/models/world/table_broken.glb` | Broken trestle table | Built by `blender/build_environment.py` | MIT |

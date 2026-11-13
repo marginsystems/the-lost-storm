@@ -99,8 +99,8 @@ The overlay state machine (which panel, screen or card may be up, in what order,
 | `src/main.ts` | Loads everything and runs the frame loop |
 | `public/models/` | GLB models. Every file is listed in [ASSETS.md](ASSETS.md) |
 | `public/textures/` | Colour, normal and roughness maps for the surfaces in `data/surfaces.json`. Every file is listed in [ASSETS.md](ASSETS.md) |
-| `blender/` | Blender scripts that build models: weapons, clothing and armour converted from outfit packs to the shared rig, the walls, lamps, furniture and houses of the world (`build_environment.py`), and props converted from Poly Haven scans (`import_polyhaven.py`) |
-| `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file, `retarget-clips.ts` moves clips from a rig with other joint names onto the shared rig (`combat-clips.json` lists which), `pack-gltf.ts` packs a `.gltf` with its buffers and textures into one `.glb`, `resample-clips.ts` drops redundant keyframes from the shared clip files, `split-clips.ts` writes one file per clip from the shared clip files, `compress-models.ts` compresses a model with meshopt and WebP, `half-textures.sh` writes the half-size surface textures the mobile tier loads |
+| `blender/` | Blender scripts that build models: weapons, the walls, lamps, furniture and houses of the world (`build_environment.py`), and props converted from Poly Haven scans (`import_polyhaven.py`) |
+| `tools/` | Node tools: `inspect-glb.ts` prints a GLB's meshes and clips, `build-characters.ts` trims a body and extracts the shared animation file, `assemble-body.ts` builds the human bodies and their clothes from the Quaternius packs (`universal-bodies.json`), `retarget-clips.ts` moves clips from a rig with other joint names onto the shared rig (`combat-clips.json` lists which), `pack-gltf.ts` packs a `.gltf` with its buffers and textures into one `.glb`, `resample-clips.ts` drops redundant keyframes from the shared clip files, `split-clips.ts` writes one file per clip from the shared clip files, `compress-models.ts` compresses a model with meshopt and WebP, `half-textures.sh` writes the half-size surface textures the mobile tier loads |
 | `test/rules.test.ts` | Repository rules: no comments, no type escape hatches, `sim/` stays free of rendering code, every model is credited |
 
 The renderer reads the world and the events `stepWorld` returns, and sends commands back. It never changes world state.
@@ -137,7 +137,7 @@ If something cannot be expressed in the data, extend the schema in `sim/content/
 
 ## Characters and gear
 
-Every humanoid shares one rig (the Quaternius Universal Animation Library rig), so a body, a clip and a piece of held gear each exist once and work on every character.
+Humans stand on the Quaternius universal skeleton (`pelvis`, `spine_01`, `hand_r`, `index_01_r` and so on). A body is `public/models/characters/<frame>.glb`, a head with eyes and brows, and the rig names that frame in `frame`. Any body with the same joint names plays the clips in `public/models/animations/universal/`, because `src/render/clip-fit.ts` fits each clip to the body's rest pose when it loads. The skeleton monsters keep the older Universal Animation Library rig (`DEF-*` joints) and the clips in `public/models/animations/clips/`.
 
 A character is a rig entry in `data/rigs.json`. The loader (`src/render/character-loader.ts`) needs nothing else.
 
@@ -183,23 +183,25 @@ A character is a rig entry in `data/rigs.json`. The loader (`src/render/characte
 - `rootMotionBone` pins that bone's horizontal movement so a clip with root motion plays in place.
 - `sockets` are named mounting points: a bone plus an offset, rotation and scale.
 - `hiddenNodes` are nodes in the body file that are never shown.
-- `bodyParts` names groups of joints. The body's triangles skinned mostly to a group can be left undrawn while a wearable covers them.
+- `bodyParts` names groups of joints. The body's triangles skinned mostly to a group are left undrawn while a wearable that `hides` that part is worn.
+- `frame` names the body's frame (`man` or `woman`), which picks the clothes made for it.
 
 Held gear is an entry in `data/attachments.json`: an id, a model file, the socket it mounts on, and `surfaces`, which dresses each of the model's named materials (`steel`, `leather`, `wood`) in a surface from `data/surfaces.json` the way a prop is dressed. An item base's `visual`, the player's `gear` and a monster's `gear` name attachment ids, so a new weapon model is one GLB and one line of data. Weapon models are authored with the grip at the origin and the blade along +Y. `tint` on the player and on each monster recolours the body, so one body file makes several characters. `color` tints that character's effects and its body's emissive map (glowing eyes, runes) when the body has one; a body without an emissive map does not glow.
 
-Clothing and armour are wearables: skinned meshes in `public/models/wear/` that are bound to the wearer's own skeleton by joint name, so each piece is made once, fits every character on the rig and bends with every clip. An entry in `data/wearables.json` has:
+Clothing and armour are wearables: modular skinned parts in `public/models/wear/<frame>/`, bound to the wearer's own skeleton by joint name, so a part fits every body of its frame and bends with every clip. An entry in `data/wearables.json` has:
 
 ```json
-{ "id": "leather_boots", "model": "models/wear/tall_boots.glb", "region": "feet", "tint": "#ffffff", "hides": ["feet"] }
+{ "id": "dirty_shirt", "model": "models/wear/{frame}/peasant.glb", "pieces": ["Peasant_Body", "Peasant_Arms"], "region": "chest", "tint": "#9c927c", "hides": [] }
 ```
 
+- `model` is the outfit file, with `{frame}` replaced by the wearer's frame, and `pieces` names the parts of it this wearable shows.
 - `region` is the part of the body it covers: `head`, `shoulders`, `chest`, `arms`, `hands`, `legs` or `feet`. A character shows one piece per region. Its own clothes (`wear` on the player or a monster) come first, and each equipped item's pieces replace whatever covers the same region (`sim/wear.ts`).
 - `tint` multiplies the piece's colour, so one model gives a clean shirt, a dirty one and a monster's rags.
-- `hides` lists the wearer's `bodyParts` that are not drawn under it, so bone does not poke through a boot.
+- `hides` lists the wearer's `bodyParts` that are not drawn under it, so a body does not poke through a piece that hugs it.
 
-New pieces come from outfit packs through `blender/build_wearables.py`, which refits a part to our rig and writes one GLB per part. It reads rigged glTF parts and MakeHuman garments, and builds the human bodies of the townsfolk from the MakeHuman base mesh the same way. [ASSETS.md](ASSETS.md) has the command.
+New bodies and outfits are assembled from the Quaternius packs by `tools/assemble-body.ts` from `tools/universal-bodies.json`. [ASSETS.md](ASSETS.md) has the commands.
 
-A held weapon has a hand pose. A rig's `holds` maps an attachment id to joint rotations for the arm, wrist and fingers (`bones`) and an optional `seat` (position, rotation and scale in the hand bone, used over the socket's), set by hand in Blender; the hand turns toward the pose while that attachment is held and the idle plays. An attachment with a `grip` (radius and half length in metres) closes each finger on it at run time until it stops 2 mm from the grip, within the joint limits in `src/render/grip-closure.ts`. To set a hold, pose the rig named `Rig` with the weapon as an object named `Weapon` parented to the hand, run `blender/save_hold_pose.py` from Blender's Text Editor, and write the saved pose into the data with `node tools/export-hold.ts <saved-pose.json> <rig id> <attachment id> --seat` (`--seat` also writes where the weapon sits).
+A held weapon sits in its socket, and the fingers close on it only through the authored clips.
 
 An armour base also names its `material`: `cloth`, `leather`, `mail` or `plate`. Within a slot a heavier material gives more armour, turns up later and less often, and mail and plate slow the wearer; `sim/items.test.ts` holds the data to that.
 

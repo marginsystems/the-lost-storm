@@ -3,25 +3,21 @@ import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasic
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { boundSkins, disposeSkeletons } from './skeletons.ts';
-import type { AttachmentDef, AttachmentGrip, Content, RigActionClip, RigDef, RigGait, RigHoldSeat, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
+import type { AttachmentDef, Content, RigActionClip, RigDef, RigGait, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
+import { wearFrames, wearKey, wearModel } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
 import { CHARACTER_INSIDE } from './character-inside.ts';
-import { fitToSkeleton, groupBodies, groupByCovers, maskHidden, skinnedMeshes } from './wearables.ts';
+import { fitToSkeleton, groupBodies, maskHidden, skinnedMeshes } from './wearables.ts';
 import type { BodyGroupings } from './wearables.ts';
-import { BODY_COVERS, coverKey, coveringKeys, coversOf, groupHidden, hiddenWithCovers } from './body-covers.ts';
-import type { BodyCover, BodyGroup, CoverableWearable } from './body-covers.ts';
 import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { createRigGlow, FLASH, flashEdge, flashLift, makeGhost } from './ghost-material.ts';
 import { createBrowserTimers } from '../browser-timers.ts';
 import { STALL, withStallLimit } from './stall-limit.ts';
 import { addBoxUvs } from './box-uv.ts';
-import { heldPoses, holdPoses, idleWeight, relaxHands, restHands } from './rest-hands.ts';
-import type { GripHand } from './grip-closure.ts';
-import { clampHand, closeOnGrip, gripHand } from './grip-closure.ts';
-import type { HeldPose, RestHand } from './rest-hands.ts';
+import { fitClip } from './clip-fit.ts';
 
 export interface ActionClip {
   readonly clip: AnimationClip;
@@ -54,14 +50,8 @@ export interface LoadedRig {
   readonly template: Object3D;
   readonly clips: RigClipSet;
   readonly bodyParts: readonly string[];
-  readonly bodyGroups: ReadonlyMap<string, readonly BodyGroup[]>;
-  readonly coveredModels: ReadonlySet<string>;
-  readonly fitted: Map<string, readonly FittedPiece[]>;
-}
-
-export interface FittedPiece {
-  readonly geometry: BufferGeometry;
-  readonly covers: readonly (readonly string[])[];
+  readonly bodyMasks: ReadonlyMap<string, readonly number[]>;
+  readonly fitted: Map<string, readonly BufferGeometry[]>;
 }
 
 export interface LoadedAttachment {
@@ -71,6 +61,8 @@ export interface LoadedAttachment {
 
 export interface LoadedWearable {
   readonly def: WearableDef;
+  readonly frame: string;
+  readonly model: string;
   readonly pieces: readonly SkinnedMesh[];
 }
 
@@ -96,7 +88,6 @@ export interface RigInstance {
   armed(): boolean;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   stepWear(dt: number): void;
-  relaxHands(): void;
   setFlash(color: Color, amount: number): void;
   setHover(color: Color, amount: number): void;
   setOpacity(opacity: number): void;
@@ -110,6 +101,7 @@ export const CHARACTER = {
   metalFrom: 0.5,
   matteRoughness: 0.86,
   rimPower: 6,
+  skinMaterial: 'skin',
   featherFrom: 0.2,
   featherTo: 0.8,
 } as const;
@@ -155,16 +147,9 @@ function springTo(piece: Springy, step: number, ceiling: number): boolean {
   return !settled;
 }
 
-interface CoveredMesh {
-  readonly mesh: SkinnedMesh;
-  readonly material: MeshStandardMaterial;
-  readonly covers: readonly (readonly string[])[];
-}
-
 interface WornPiece {
   readonly meshes: SkinnedMesh[];
   readonly materials: MeshStandardMaterial[];
-  readonly covered: CoveredMesh[];
   value: number;
   velocity: number;
   target: number;
@@ -263,7 +248,7 @@ function pickClip(def: RigDef, key: string, wanted: string, available: readonly 
 async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   const main: GLTF = await loadKeptModel(loader, def.url);
   const extras: GLTF[] = await Promise.all(rigClipNames(def).map((clip: string): Promise<GLTF> => loadKeptModel(loader, clipUrl(def, clip))));
-  const available: AnimationClip[] = [...main.animations, ...extras.flatMap((extra: GLTF): AnimationClip[] => extra.animations)];
+  const available: AnimationClip[] = [...main.animations, ...extras.flatMap((extra: GLTF): AnimationClip[] => extra.animations.map((found: AnimationClip): AnimationClip => fitClip(found, extra.scene, main.scene)))];
   const clip = (key: string, wanted: string): AnimationClip => pickClip(def, key, wanted, available);
   const actionSet = (entries: Readonly<Record<string, RigActionClip>>): Map<string, ActionClip> => {
     const actions: Map<string, ActionClip> = new Map<string, ActionClip>();
@@ -276,13 +261,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   const actions: Map<string, ActionClip> = actionSet(def.clips.actions);
   const bare: RigUnarmedClips | null = def.clips.unarmed;
   const template: Object3D = cloneSkinned(main.scene);
-  const coveredModels: Set<string> = new Set<string>();
-  const grouping: BodyGroupings = groupBodies(skinnedMeshes(template), def.bodyParts, (mesh: SkinnedMesh): readonly (readonly string[])[] => {
-    const triangles: number = (mesh.geometry.getIndex()?.count ?? 0) / 3;
-    const covers: readonly BodyCover[] = coversOf(BODY_COVERS, def.url, mesh.name, triangles);
-    for (const cover of covers) coveredModels.add(cover.wearable);
-    return coveringKeys(covers, triangles);
-  });
+  const grouping: BodyGroupings = groupBodies(skinnedMeshes(template), def.bodyParts);
   return {
     def,
     template,
@@ -297,17 +276,27 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
       unarmed: bare === null ? null : { idle: clip('unarmed.idle', bare.idle), actions: actionSet(bare.actions) },
     },
     bodyParts: grouping.names,
-    bodyGroups: grouping.groups,
-    coveredModels,
-    fitted: new Map<string, readonly FittedPiece[]>(),
+    bodyMasks: grouping.masks,
+    fitted: new Map<string, readonly BufferGeometry[]>(),
   };
 }
 
-async function loadWearable(loader: GLTFLoader, def: WearableDef): Promise<LoadedWearable> {
-  const model: GLTF = await loadKeptModel(loader, def.model);
-  const pieces: SkinnedMesh[] = skinnedMeshes(model.scene);
-  if (pieces.length === 0) throw new Error(`Wearable "${def.id}" has no skinned mesh in ${def.model}`);
-  return { def, pieces };
+function isPiece(mesh: SkinnedMesh, names: ReadonlySet<string>): boolean {
+  return names.size === 0 || names.has(mesh.name) || names.has(mesh.parent?.name ?? '');
+}
+
+async function loadWearable(loader: GLTFLoader, def: WearableDef, frame: string): Promise<LoadedWearable> {
+  const path: string = wearModel(def, frame);
+  const model: GLTF = await loadKeptModel(loader, path);
+  const names: Set<string> = new Set<string>(def.pieces.map((name: string): string => PropertyBinding.sanitizeNodeName(name)));
+  const pieces: SkinnedMesh[] = skinnedMeshes(model.scene).filter((mesh: SkinnedMesh): boolean => isPiece(mesh, names));
+  if (pieces.length === 0) throw new Error(`Wearable "${def.id}" has no skinned mesh in ${path}`);
+  return { def, frame, model: path, pieces };
+}
+
+interface FramedWearable {
+  readonly def: WearableDef;
+  readonly frame: string;
 }
 
 export type Dresser = (dress: Readonly<Record<string, string>>, material: Material) => Material;
@@ -349,38 +338,42 @@ function attachmentDefs(content: Content, ids: Iterable<string>): AttachmentDef[
   return defs;
 }
 
-function wearableDefs(content: Content, ids: Iterable<string>): WearableDef[] {
-  const defs: WearableDef[] = [];
-  for (const id of ids) {
-    const def: WearableDef | undefined = content.wearables.get(id);
-    if (def !== undefined) defs.push(def);
+function framedWearables(content: Content, keys: Iterable<string>): FramedWearable[] {
+  const wanted: Set<string> = new Set<string>(keys);
+  const found: FramedWearable[] = [];
+  for (const frame of wearFrames(content)) {
+    for (const def of content.wearables.values()) if (wanted.has(wearKey(frame, def.id))) found.push({ def, frame });
   }
-  return defs;
+  return found;
+}
+
+function everyWearable(content: Content): FramedWearable[] {
+  return wearFrames(content).flatMap((frame: string): FramedWearable[] => [...content.wearables.values()].map((def: WearableDef): FramedWearable => ({ def, frame })));
 }
 
 export async function loadCharacters(loader: GLTFLoader, content: Content, dresser: Dresser, needs: CharacterNeeds): Promise<CharacterLibrary> {
   const [rigs, attachments, wearables]: [LoadedRig[], LoadedAttachment[], LoadedWearable[]] = await Promise.all([
     Promise.all(rigDefs(content, needs.rigs).map((def: RigDef): Promise<LoadedRig> => loadRig(loader, def))),
     Promise.all(attachmentDefs(content, needs.attachments).map((def: AttachmentDef): Promise<LoadedAttachment> => loadAttachment(loader, dresser, def))),
-    Promise.all(wearableDefs(content, needs.wearables).map((def: WearableDef): Promise<LoadedWearable> => loadWearable(loader, def))),
+    Promise.all(framedWearables(content, needs.wearables).map((worn: FramedWearable): Promise<LoadedWearable> => loadWearable(loader, worn.def, worn.frame))),
   ]);
   return {
     rigs: new Map<string, LoadedRig>(rigs.map((rig: LoadedRig): [string, LoadedRig] => [rig.def.id, rig])),
     attachments: new Map<string, LoadedAttachment>(attachments.map((held: LoadedAttachment): [string, LoadedAttachment] => [held.def.id, held])),
-    wearables: new Map<string, LoadedWearable>(wearables.map((worn: LoadedWearable): [string, LoadedWearable] => [worn.def.id, worn])),
+    wearables: new Map<string, LoadedWearable>(wearables.map((worn: LoadedWearable): [string, LoadedWearable] => [wearKey(worn.frame, worn.def.id), worn])),
   };
 }
 
 export async function loadRemainingCharacters(loader: GLTFLoader, content: Content, dresser: Dresser, library: CharacterLibrary): Promise<void> {
   const heldIds: string[] = [...content.attachments.keys()].filter((id: string): boolean => !library.attachments.has(id));
   const rigIds: string[] = [...usedRigs(content)].filter((id: string): boolean => !library.rigs.has(id));
-  const wearIds: string[] = [...content.wearables.keys()].filter((id: string): boolean => !library.wearables.has(id));
+  const unworn: FramedWearable[] = everyWearable(content).filter((worn: FramedWearable): boolean => !library.wearables.has(wearKey(worn.frame, worn.def.id)));
   await Promise.all([
     ...rigDefs(content, rigIds).map(async (def: RigDef): Promise<void> => {
       library.rigs.set(def.id, await loadRig(loader, def));
     }),
-    ...wearableDefs(content, wearIds).map(async (def: WearableDef): Promise<void> => {
-      library.wearables.set(def.id, await loadWearable(loader, def));
+    ...unworn.map(async (worn: FramedWearable): Promise<void> => {
+      library.wearables.set(wearKey(worn.frame, worn.def.id), await loadWearable(loader, worn.def, worn.frame));
     }),
     ...attachmentDefs(content, heldIds).map(async (def: AttachmentDef): Promise<void> => {
       library.attachments.set(def.id, await loadAttachment(loader, dresser, def));
@@ -388,8 +381,8 @@ export async function loadRemainingCharacters(loader: GLTFLoader, content: Conte
   ]);
 }
 
-export function hasWear(library: CharacterLibrary, wearableIds: readonly string[], gear: readonly string[]): boolean {
-  return wearableIds.every((id: string): boolean => library.wearables.has(id)) && gear.every((id: string): boolean => library.attachments.has(id));
+export function hasWear(library: CharacterLibrary, frame: string, wearableIds: readonly string[], gear: readonly string[]): boolean {
+  return wearableIds.every((id: string): boolean => library.wearables.has(wearKey(frame, id))) && gear.every((id: string): boolean => library.attachments.has(id));
 }
 
 function recolourEmissiveMap(material: MeshStandardMaterial, glow: string): void {
@@ -398,13 +391,13 @@ function recolourEmissiveMap(material: MeshStandardMaterial, glow: string): void
   material.emissiveIntensity = CHARACTER.glowBoost;
 }
 
-function flashing(source: unknown, look: RigLook, glow: RigGlow, wakeLamps: number): MeshStandardMaterial[] {
+function flashing(source: unknown, look: RigLook, glow: RigGlow, wakeLamps: number, skinTint: string): MeshStandardMaterial[] {
   const list: readonly unknown[] = Array.isArray(source) ? source : [source];
   const cloned: MeshStandardMaterial[] = [];
   for (const entry of list) {
     if (!(entry instanceof MeshStandardMaterial)) continue;
     const material: MeshStandardMaterial = entry.clone();
-    material.color.multiply(new Color(look.tint));
+    material.color.multiply(new Color(entry.name === CHARACTER.skinMaterial ? skinTint : look.tint));
     material.alphaToCoverage = look.feather && material.alphaTest > 0;
     if (material.metalness < CHARACTER.metalFrom) {
       material.roughness = Math.max(material.roughness, CHARACTER.matteRoughness);
@@ -443,7 +436,7 @@ function dress(object: Object3D, look: RigLook, glow: RigGlow, sink: MeshStandar
   object.castShadow = true;
   object.receiveShadow = false;
   object.frustumCulled = false;
-  const cloned: MeshStandardMaterial[] = flashing(object.material, look, glow, 1);
+  const cloned: MeshStandardMaterial[] = flashing(object.material, look, glow, 1, look.tint);
   sink.push(...cloned);
   const first: MeshStandardMaterial | undefined = cloned[0];
   if (first !== undefined) object.material = cloned.length === 1 ? first : cloned;
@@ -454,16 +447,11 @@ interface BodyMesh {
   readonly skin: Material;
 }
 
-function fittedPieces(rig: LoadedRig, worn: LoadedWearable, anchor: SkinnedMesh): readonly FittedPiece[] {
-  const cached: readonly FittedPiece[] | undefined = rig.fitted.get(worn.def.model);
+function fittedPieces(rig: LoadedRig, worn: LoadedWearable, anchor: SkinnedMesh): readonly BufferGeometry[] {
+  const cached: readonly BufferGeometry[] | undefined = rig.fitted.get(worn.def.id);
   if (cached !== undefined) return cached;
-  const made: FittedPiece[] = worn.pieces.map((piece: SkinnedMesh): FittedPiece => {
-    const geometry: BufferGeometry = fitToSkeleton(piece, anchor.skeleton, `Wearable "${worn.def.id}" on rig "${rig.def.id}"`);
-    const triangles: number = (geometry.getIndex()?.count ?? 0) / 3;
-    const covers: readonly (readonly string[])[] = Array.isArray(piece.material) ? [] : groupByCovers(geometry, coveringKeys(coversOf(BODY_COVERS, worn.def.model, piece.name, triangles), triangles));
-    return { geometry, covers };
-  });
-  rig.fitted.set(worn.def.model, made);
+  const made: BufferGeometry[] = worn.pieces.map((piece: SkinnedMesh): BufferGeometry => fitToSkeleton(piece, anchor.skeleton, `Wearable "${worn.def.id}" on rig "${rig.def.id}"`));
+  rig.fitted.set(worn.def.id, made);
   return made;
 }
 
@@ -487,10 +475,6 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     if (node !== undefined) node.visible = false;
   }
 
-  const hands: readonly RestHand[] = restHands(model, def);
-  const holds: readonly HeldPose[] = heldPoses(model, def);
-  const gripHands: readonly GripHand[] = [gripHand(model, 'R'), gripHand(model, 'L')].filter((found: GripHand | null): found is GripHand => found !== null);
-  const idles: readonly AnimationClip[] = rig.clips.unarmed === null ? [rig.clips.idle] : [rig.clips.idle, rig.clips.unarmed.idle];
   const mixer: AnimationMixer = new AnimationMixer(model);
   const held: Map<string, HeldPiece> = new Map<string, HeldPiece>();
   const lettingGo: HeldPiece[] = [];
@@ -506,8 +490,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const hide = (parts: readonly string[]): void => {
     shownParts = parts;
     for (const body of bodies) {
-      const groups: readonly BodyGroup[] | undefined = rig.bodyGroups.get(body.mesh.name);
-      body.mesh.material = parts.length === 0 || groups === undefined ? body.skin : groups.map((group: BodyGroup): Material => (groupHidden(group, parts, (mask: number): boolean => maskHidden(mask, rig.bodyParts, parts)) ? UNSEEN : body.skin));
+      const masks: readonly number[] | undefined = rig.bodyMasks.get(body.mesh.name);
+      body.mesh.material = parts.length === 0 || masks === undefined ? body.skin : masks.map((mask: number): Material => (maskHidden(mask, rig.bodyParts, parts) ? UNSEEN : body.skin));
     }
   };
   const fade = (piece: WornPiece, value: number): void => {
@@ -526,18 +510,16 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     for (const material of piece.materials) material.dispose();
   };
   const build = (id: string, skinAnchor: SkinnedMesh): WornPiece | null => {
-    const wearable: LoadedWearable | undefined = library.wearables.get(id);
+    const wearable: LoadedWearable | undefined = library.wearables.get(wearKey(def.frame, id));
     if (wearable === undefined) return null;
-    const piece: WornPiece = { meshes: [], materials: [], covered: [], value: 1, velocity: 0, target: 1 };
-    const fitted: readonly FittedPiece[] = fittedPieces(rig, wearable, skinAnchor);
+    const piece: WornPiece = { meshes: [], materials: [], value: 1, velocity: 0, target: 1 };
+    const fitted: readonly BufferGeometry[] = fittedPieces(rig, wearable, skinAnchor);
     wearable.pieces.forEach((source: SkinnedMesh, index: number): void => {
-      const geometry: BufferGeometry | undefined = fitted[index]?.geometry;
-      const covers: readonly (readonly string[])[] = fitted[index]?.covers ?? [];
-      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow, wearable.def.wakeLamps);
+      const geometry: BufferGeometry | undefined = fitted[index];
+      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow, wearable.def.wakeLamps, look.tint);
       const first: MeshStandardMaterial | undefined = cloned[0];
       if (geometry === undefined || first === undefined) return;
       const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
-      if (covers.length > 0 && cloned.length === 1) piece.covered.push({ mesh, material: first, covers });
       mesh.castShadow = true;
       mesh.frustumCulled = false;
       mesh.position.copy(skinAnchor.position);
@@ -584,12 +566,11 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const socket: RigSocket | undefined = attachment === undefined ? undefined : def.sockets[attachment.def.socket];
         const bone: Object3D | undefined = socket === undefined ? undefined : findNode(model, socket.bone);
         if (attachment === undefined || socket === undefined || bone === undefined) continue;
-        const seat: RigHoldSeat | RigSocket = def.holds[id]?.seat ?? socket;
         const holder: Group = new Group();
-        holder.position.set(seat.position[0], seat.position[1], seat.position[2]);
-        holder.rotation.set(seat.rotationDegrees[0] * DEGREES, seat.rotationDegrees[1] * DEGREES, seat.rotationDegrees[2] * DEGREES);
-        const piece: HeldPiece = { holder, size: seat.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
-        holder.scale.setScalar(seat.scale * piece.value);
+        holder.position.set(socket.position[0], socket.position[1], socket.position[2]);
+        holder.rotation.set(socket.rotationDegrees[0] * DEGREES, socket.rotationDegrees[1] * DEGREES, socket.rotationDegrees[2] * DEGREES);
+        const piece: HeldPiece = { holder, size: socket.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
+        holder.scale.setScalar(socket.scale * piece.value);
         const copy: Object3D = attachment.template.clone(true);
         if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, glow, piece.materials));
         holder.add(copy);
@@ -622,17 +603,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         if (!instant) fade(piece, 0);
         else fade(piece, 1);
       }
-      const wornPieces: CoverableWearable[] = wearableIds.flatMap((id: string): CoverableWearable[] => {
-        const wearable: LoadedWearable | undefined = library.wearables.get(id);
-        return wearable === undefined ? [] : [{ model: wearable.def.model, hides: wearable.def.hides }];
-      });
-      const over: ReadonlySet<string> = new Set<string>(wornPieces.map((piece: CoverableWearable): string => coverKey(piece.model)));
-      for (const piece of worn.values()) {
-        for (const entry of piece.covered) entry.mesh.material = entry.covers.map((keys: readonly string[]): Material => (keys.some((cover: string): boolean => over.has(cover)) ? UNSEEN : entry.material));
-      }
-      const hiddenNow: readonly string[] = hiddenWithCovers(wornPieces, hiddenParts, rig.coveredModels);
-      finalParts = [...hiddenNow];
-      hide(instant ? finalParts : shownParts.filter((part: string): boolean => hiddenNow.includes(part)));
+      finalParts = [...hiddenParts];
+      hide(instant ? finalParts : shownParts.filter((part: string): boolean => hiddenParts.includes(part)));
     },
     stepWear(dt: number): void {
       const step: number = Math.min(dt, WEAR_FADE.longestStep);
@@ -656,27 +628,6 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         leaving.splice(leaving.indexOf(piece), 1);
       }
       if (!moving && shownParts.join('|') !== finalParts.join('|')) hide(finalParts);
-    },
-    relaxHands(): void {
-      const holding: Set<string> = new Set<string>();
-      for (const id of held.keys()) {
-        const socket: string | undefined = library.attachments.get(id)?.def.socket;
-        if (socket !== undefined) holding.add(socket);
-      }
-      const idle: number = idleWeight(mixer, idles);
-      relaxHands(hands, idle, holding);
-      const holdWeights: Map<string, number> = new Map<string, number>();
-      for (const [id, piece] of held) holdWeights.set(id, idle * Math.min(1, Math.max(0, piece.value)));
-      holdPoses(holds, holdWeights);
-      for (const hand of gripHands) clampHand(hand);
-      for (const [id, piece] of held) {
-        const attachment: LoadedAttachment | undefined = library.attachments.get(id);
-        const bone: string | undefined = attachment === undefined ? undefined : def.sockets[attachment.def.socket]?.bone;
-        const hand: GripHand | undefined = gripHands.find((candidate: GripHand): boolean => candidate.hand.name === bone || candidate.hand.name === (bone === undefined ? undefined : PropertyBinding.sanitizeNodeName(bone)));
-        const grip: AttachmentGrip | null = attachment?.def.grip ?? null;
-        if (grip === null || hand === undefined) continue;
-        closeOnGrip(hand, piece.holder, grip, piece.value);
-      }
     },
     setFlash(color: Color, amount: number): void {
       glow.flash.value.copy(color).multiplyScalar(amount * FLASH.boost);

@@ -117,7 +117,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     const existing: NpcEntry | undefined = npcs.get(npc.id);
     if (existing !== undefined) return existing;
     const rig: LoadedRig | undefined = library.rigs.get(npc.def.rig);
-    if (rig === undefined || !hasWear(library, wornWearables(content, npc.def.rig, npc.def.wear, null), npc.def.gear)) return null;
+    if (rig === undefined || !hasWear(library, rig.def.frame, wornWearables(content, npc.def.rig, npc.def.wear, null), npc.def.gear)) return null;
     const view: ActorView = createActorView(instantiateRig(rig, library, { tint: npc.def.tint, glow: npc.def.color, ghost: null, feather }), npc.def.scale, npc.facing, ACTOR.friendlyHover);
     view.rig.setGear(npc.def.gear);
     dress(content, npc.def.rig, view.rig, npc.def.wear, null);
@@ -133,7 +133,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
 
   const makeMonsterView = (def: MonsterDef, facing: number, echo: EchoLook | null): ActorView | null => {
     const rig: LoadedRig | undefined = library.rigs.get(def.rig);
-    if (rig === undefined || !hasWear(library, wornWearables(content, def.rig, def.wear, null), def.gear)) return null;
+    if (rig === undefined || !hasWear(library, rig.def.frame, wornWearables(content, def.rig, def.wear, null), def.gear)) return null;
     const view: ActorView = createActorView(instantiateRig(rig, library, { tint: echo === null ? def.tint : '#ffffff', glow: echo === null ? def.color : '#ffffff', ghost: echo?.ghost ?? null, feather }), def.scale, facing);
     view.rig.setGear(def.gear);
     dress(content, def.rig, view.rig, def.wear, null);

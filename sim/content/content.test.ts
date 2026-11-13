@@ -39,7 +39,8 @@ void test('the shipped data loads and has no dangling references', (): void => {
 
 void test('the hero is a dressed human: a human body, and starting clothes that are items for the chest, legs and feet, and a bare head', (): void => {
   const rig: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
-  assert.match(rig.url, /^models\/characters\/human_/);
+  assert.notEqual(rig.frame, '');
+  assert.equal(rig.url, `models/characters/${rig.frame}.glb`);
   const worn: WearableDef[] = content.player.startingItems.flatMap((id: string): readonly string[] => must(content.itemBases.get(id), id).wear).map((id: string): WearableDef => must(content.wearables.get(id), id));
   assert.deepEqual(worn.map((piece: WearableDef): string => piece.region).toSorted(), ['chest', 'feet', 'legs']);
   assert.ok(!content.player.startingItems.some((id: string): boolean => content.itemBases.get(id)?.slot === 'head'));
@@ -173,15 +174,6 @@ void test('every skill on the bar and every monster skill has an action clip on 
     const rig = must(content.rigs.get(monster.rig), monster.rig);
     const used: string[] = [monster.skill, ...(monster.boss?.phases ?? []).flatMap((phase: { readonly skills: readonly { readonly skill: string }[] }): string[] => phase.skills.map((entry: { readonly skill: string }): string => entry.skill))];
     for (const id of used) assert.ok(rig.clips.actions[must(content.skills.get(id), id).animation] !== undefined, `${monster.id} ${id}`);
-  }
-});
-
-void test('every hold a rig sets names an attachment that sits in one of that rig\'s sockets', (): void => {
-  for (const rig of content.rigs.values()) {
-    for (const id of Object.keys(rig.holds)) {
-      const attachment = must(content.attachments.get(id), `${rig.id} holds ${id}, which is not an attachment`);
-      assert.ok(rig.sockets[attachment.socket] !== undefined, `${rig.id} holds ${id}, but has no ${attachment.socket} socket`);
-    }
   }
 });
 

@@ -2,7 +2,7 @@ import type { Box3, Material } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
-import { zoneCharacterNeeds } from '../sim/wear.ts';
+import { frameOf, zoneCharacterNeeds } from '../sim/wear.ts';
 import { noteInConsole, warnInConsole } from './backend/console-log.ts';
 import { runFrames } from './frame-loop.ts';
 import { element } from './dom-element.ts';
@@ -591,7 +591,7 @@ async function start(): Promise<void> {
     await loadRemainingCharacters(loader, content, dresser, library);
     actors.refreshWear(world);
     await warmUp(stage, stage.scene, stage.camera, loot.standIns(world));
-    thumbnails = await createItemThumbnails(library, shownPieces, createBrowserTimers());
+    thumbnails = await createItemThumbnails(library, frameOf(content, content.player.rig), shownPieces, createBrowserTimers());
     hud.refreshItems();
   };
 

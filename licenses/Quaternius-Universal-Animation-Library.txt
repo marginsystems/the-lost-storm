@@ -6,4 +6,5 @@ https://creativecommons.org/publicdomain/zero/1.0/
 
 Free to use in personal, educational and commercial projects. Credit is not required; we credit Quaternius anyway.
 
-File in this repository: public/models/animations/humanoid.glb (the rig and 15 of the library's clips).
+Files in this repository: public/models/animations/humanoid.glb (the rig and 15 of the library's clips), and the
+same clips on the universal skeleton in public/models/animations/universal/.

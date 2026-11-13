@@ -48,7 +48,7 @@ function bladeAttachment(): LoadedAttachment {
 }
 
 function library(withBlade: boolean): CharacterLibrary {
-  const rig: LoadedRig = { def: rigDef, template: rigTemplate(), clips, bodyParts: [], bodyGroups: new Map(), coveredModels: new Set<string>(), fitted: new Map() };
+  const rig: LoadedRig = { def: rigDef, template: rigTemplate(), clips, bodyParts: [], bodyMasks: new Map(), fitted: new Map() };
   return {
     rigs: new Map([[rigDef.id, rig]]),
     attachments: new Map(withBlade ? [[visual, bladeAttachment()]] : []),

@@ -313,10 +313,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       unlayer();
       const posing: boolean = lying || woke !== null;
       const step: number | null = settled && !posing ? null : bank.take(dt, posing || options.seen);
-      if (step !== null) {
-        rig.mixer.update(step);
-        rig.relaxHands();
-      }
+      if (step !== null) rig.mixer.update(step);
       rig.stepWear(dt);
       if (lying && woke !== null) {
         layerWake(woke);

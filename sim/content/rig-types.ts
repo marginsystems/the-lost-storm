@@ -24,18 +24,6 @@ export interface RigGait {
 }
 
 export type Triple = readonly [number, number, number];
-export type Quad = readonly [number, number, number, number];
-
-export interface RigHoldSeat {
-  readonly position: Triple;
-  readonly rotationDegrees: Triple;
-  readonly scale: number;
-}
-
-export interface RigHold {
-  readonly seat: RigHoldSeat | null;
-  readonly bones: Readonly<Record<string, Quad>>;
-}
 
 export interface RigSocket {
   readonly bone: string;
@@ -44,23 +32,18 @@ export interface RigSocket {
   readonly scale: number;
 }
 
-export interface AttachmentGrip {
-  readonly radius: number;
-  readonly halfLength: number;
-}
-
 export interface AttachmentDef {
   readonly id: string;
   readonly model: string;
   readonly socket: string;
   readonly surfaces: Readonly<Record<string, string>>;
-  readonly grip: AttachmentGrip | null;
 }
 
 export interface RigDef {
   readonly id: string;
   readonly url: string;
   readonly clipFolder: string;
+  readonly frame: string;
   readonly scale: number;
   readonly yawOffsetDegrees: number;
   readonly height: number;
@@ -72,6 +55,4 @@ export interface RigDef {
   readonly idleRate: number;
   readonly bodyParts: Readonly<Record<string, readonly string[]>>;
   readonly base: readonly string[];
-  readonly restHands: Readonly<Record<string, Readonly<Record<string, Triple>>>>;
-  readonly holds: Readonly<Record<string, RigHold>>;
 }

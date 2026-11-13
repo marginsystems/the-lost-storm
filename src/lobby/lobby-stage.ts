@@ -13,8 +13,6 @@ import { surfaceMaterial } from '../render/surfaces.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import { createLobbyPipeline } from './lobby-render.ts';
 import type { LobbyPipeline } from './lobby-render.ts';
-import { poseBones, settlePose, turnPose } from './lobby-pose.ts';
-import type { PosedBone, PoseTurn } from './lobby-pose.ts';
 import { placeRocks } from './lobby-scenery.ts';
 import { createLobbyLights } from './lobby-lights.ts';
 import type { LobbyLights } from './lobby-lights.ts';
@@ -68,13 +66,6 @@ export const LOBBY_STAGE = {
   footSamples: 16,
   soleClearance: 0.002,
 } as const;
-
-export const LOBBY_POSE: readonly PoseTurn[] = [
-  ['DEF-upper_arm.L', 0, 0, -12],
-  ['DEF-upper_arm.R', 0, 0, 4],
-  ['DEF-thigh.L', 0, 0, 5],
-  ['DEF-thigh.R', 0, 0, -5],
-];
 
 export const LOBBY_ORBIT_UI: string = '.lobby-sheet, .lobby-ladder, .lobby-dock, #title, button, a, input, select, textarea, [role="dialog"]:not(#lobby)';
 
@@ -261,7 +252,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   const size: Vector2 = new Vector2();
   let pipeline: LobbyPipeline | null = null;
   let scenery: Promise<void> | null = null;
-  let posed: readonly PosedBone[] = [];
   let life: LobbyLife | null = null;
   let head: Object3D | null = null;
   const orbit: LobbyOrbit = createLobbyOrbit();
@@ -310,11 +300,8 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     rig.root.position.y = 0;
     const lows: number[] = [];
     for (let sample: number = 0; sample < LOBBY_STAGE.footSamples; sample += 1) {
-      settlePose(posed);
       action.time = (clip.duration * sample) / LOBBY_STAGE.footSamples;
       rig.mixer.update(0);
-      rig.relaxHands();
-      turnPose(posed);
       const low: number = lowestPoint(rig.root);
       if (Number.isFinite(low)) lows.push(low);
     }
@@ -329,7 +316,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     const made: RigInstance = instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather: true });
     made.root.rotation.y = LOBBY_STAGE.facing;
     castShadows(made.root);
-    posed = poseBones(made.root, LOBBY_POSE);
     const roles: BodyRoles = bodyRoles(loaded.def.bodyParts);
     life = createLobbyLife(made.root, random(), roles);
     head = boneNamed(made.root, roles.head);
@@ -363,10 +349,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
         if (Math.abs(mist.position.x) > LOBBY_STAGE.mistWidth * 0.5) mist.position.x = -mist.position.x * 0.9;
       });
       if (hero !== null) {
-        settlePose(posed);
         hero.mixer.update(dt);
-        hero.relaxHands();
-        turnPose(posed);
         life?.step(dt);
         hero.stepWear(dt);
         hero.root.rotation.y = LOBBY_STAGE.facing;

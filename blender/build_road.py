@@ -9,9 +9,7 @@ from bmesh.types import BMVert
 from mathutils import Matrix, Vector
 
 from environment_kit import PALETTE, Kit, export
-from road_figures import figure, fitted, standing_scale
 
-PALETTE["skin"] = ((0.55, 0.42, 0.34), 0.0, 0.8, False)
 PALETTE["reed"] = ((0.38, 0.34, 0.2), 0.0, 0.9, False)
 
 FACE: float = 2.05
@@ -295,22 +293,6 @@ def hut_patched(kit: Kit) -> None:
     kit.sheet("cloth", (-1.95, 0.0, 2.92), (3.9, 0.0, 0.0), (0.0, 1.8, -0.95), 10, 7, 0.1, ragged=0.1)
 
 
-def still_figure(kit: Kit) -> None:
-    scale: float = standing_scale()
-    cloth, skin = figure(False)
-    fitted(cloth, skin, scale)
-    kit.parts["cloth"] = cloth
-    kit.parts["skin"] = skin
-
-
-def still_figure_bowed(kit: Kit) -> None:
-    scale: float = standing_scale()
-    cloth, skin = figure(True)
-    fitted(cloth, skin, scale)
-    kit.parts["cloth"] = cloth
-    kit.parts["skin"] = skin
-
-
 MODELS: dict[str, Callable[[Kit], None]] = {
     "standing_clock": standing_clock,
     "standing_clock_tilted": standing_clock_tilted,
@@ -322,8 +304,6 @@ MODELS: dict[str, Callable[[Kit], None]] = {
     "warden_stone": warden_stone,
     "shelter": shelter,
     "hut_patched": hut_patched,
-    "still_figure": still_figure,
-    "still_figure_bowed": still_figure_bowed,
 }
 
 

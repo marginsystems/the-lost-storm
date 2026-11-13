@@ -1,0 +1,12 @@
+Modular Character Outfits - Fantasy (Standard) by Quaternius
+https://quaternius.com/packs/modularcharacteroutfitsfantasy.html
+
+License: Creative Commons Zero (CC0 1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Free to use in personal, educational and commercial projects. Credit is not required; we credit Quaternius anyway.
+
+Files in this repository: public/models/wear/man/peasant.glb, public/models/wear/man/ranger.glb,
+public/models/wear/woman/peasant.glb and public/models/wear/woman/ranger.glb (the Peasant and Ranger parts),
+assembled by tools/assemble-body.ts; the skeleton proportions of public/models/characters/man.glb and
+public/models/characters/woman.glb come from the Ranger outfits.

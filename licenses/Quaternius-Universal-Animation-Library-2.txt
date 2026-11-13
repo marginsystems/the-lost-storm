@@ -16,4 +16,5 @@ The License.txt inside the downloaded archive (UAL2_Standard.zip) reads:
 
     Models by @Quaternius
 
-File in this repository: public/models/animations/combat.glb (22 clips cut from 21 of the library's clips and moved onto the Universal Animation Library 1 rig by tools/retarget-clips.ts).
+File in this repository: public/models/animations/combat.glb (22 clips cut from 21 of the library's clips and moved onto the Universal Animation Library 1 rig by tools/retarget-clips.ts), and the
+same clips on the universal skeleton in public/models/animations/universal/.

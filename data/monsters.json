@@ -652,11 +652,7 @@
     "gear": [
       "sword_1h"
     ],
-    "wear": [
-      "dirty_shirt",
-      "dirty_trousers",
-      "leather_boots"
-    ],
+    "wear": [],
     "boss": {
       "title": "Coming Apart",
       "phases": [

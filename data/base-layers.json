@@ -1,5 +1,4 @@
 [
-  { "body": "models/characters/human_man.glb", "wear": ["undertunic", "braies"] },
-  { "body": "models/characters/human_woman.glb", "wear": ["undertunic_woman", "braies"] },
-  { "body": "models/characters/human_elder.glb", "wear": ["undertunic", "braies"] }
+  {"body": "models/characters/man.glb", "wear": ["hair_cropped", "undertunic", "braies", "plain_shoes"]},
+  {"body": "models/characters/woman.glb", "wear": ["hair_ponytail", "undertunic_woman", "braies", "plain_shoes"]}
 ]

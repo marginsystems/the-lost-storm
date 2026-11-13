@@ -1,7 +1,6 @@
 MakeHuman community garments and MakeHuman system assets
 http://www.makehumancommunity.org/clothes.html
-Asset packs: http://files2.makehumancommunity.org/asset_packs/ (suits02_cc0.zip, gloves01_cc0.zip,
-shirts01_cc0.zip, pants01_cc0.zip, shoes01_cc0.zip, makehuman_system_assets_cc0.zip)
+Asset packs: http://files2.makehumancommunity.org/asset_packs/ (suits02_cc0.zip, makehuman_system_assets_cc0.zip)
 
 License: Creative Commons Zero (CC0 1.0)
 https://creativecommons.org/publicdomain/zero/1.0/
@@ -10,83 +9,22 @@ MakeHuman assets have no pack-wide licence file. Each garment states its own lic
 its .mhclo file, and only garments whose header says CC0 are used here. The header lines are quoted
 below as they appear in the files.
 
-public/models/wear/monk_robe.glb
+Files in this repository: public/models/world/still_figure.glb and public/models/world/still_figure_bowed.glb,
+each a MakeHuman body in a robe and hood, joined, decimated and with the textures dropped.
+
+The robe and hood
   suits02_cc0.zip, clothes/donitz_monk_robe/donitz_monk_robe.mhclo ("Monks Robe")
     # author: Donitz
     # license: CC0
-
-public/models/wear/monk_hood.glb
   suits02_cc0.zip, clothes/donitz_monk_robe_hood/donitz_monk_robe_hood.mhclo ("Monks Hood")
     # author: Donitz
     # license: CC0
 
-public/models/wear/mail_tunic.glb
-  suits02_cc0.zip, clothes/rehmanpolanski_viking_tunic/rehmanpolanski_viking_tunic.mhclo ("TunicViking")
-    # author Rehman Polanski
-    # license CC0
-
-public/models/wear/viking_breeches.glb
-  suits02_cc0.zip, clothes/rehmanpolanski_viking_pants/rehmanpolanski_viking_pants.mhclo ("PantsViking")
-    # author Rehman Polanski
-    # license CC0
-
-public/models/wear/leather_gloves.glb
-  gloves01_cc0.zip, clothes/toigo_gloves_medium/toigo_gloves_medium.mhclo ("Gloves_Medium")
-    # author MRT
-    # license CC0
-
-public/models/wear/leather_jerkin.glb
-  suits02_cc0.zip, clothes/rehmanpolanski_viking_tunic/rehmanpolanski_viking_tunic.mhclo ("TunicViking")
-    # author Rehman Polanski
-    # license CC0
-
-public/models/wear/hide_boots.glb
-  suits02_cc0.zip, clothes/rehmanpolanski_viking_boots/rehmanpolanski_viking_boots.mhclo
-    # author Rehman Polanski
-    # license CC0
-
-public/models/wear/long_gloves.glb
-  gloves01_cc0.zip, clothes/toigo_gloves_long/toigo_gloves_long.mhclo
-    # author MRT
-    # license CC0
-
-public/models/wear/wool_tunic.glb
-  shirts01_cc0.zip, clothes/toigo_fisherman_sweater/toigo_fisherman_sweater.mhclo
-    # author MRT
-    # license CC0
-
-public/models/wear/wool_trousers.glb
-  pants01_cc0.zip, clothes/toigo_wool_pants/toigo_wool_pants.mhclo
-    # author MRT
-    # license CC0
-
-public/models/wear/undertunic.glb
-  shirts01_cc0.zip, clothes/toigo_basic_tucked_t-shirt/toigo_basic_tucked_t-shirt.mhclo
-    # author MRT
-    # license CC0
-
-public/models/wear/undertunic_woman.glb
-  shirts01_cc0.zip, clothes/joepal_crude_t-shirt_female/joepal_crude_t-shirt_female.mhclo
-    # author Joel Palmius
-    # license CC0
-
-public/models/wear/braies.glb
-  pants01_cc0.zip, clothes/toigo_wool_pants/toigo_wool_pants.mhclo
-    # author MRT
-    # license CC0
-
-public/models/wear/tall_boots.glb
-  shoes01_cc0.zip, clothes/culturalibre_male_boots/culturalibre_male_boots.mhclo
-    # author culturalibre
-    # Original by Roachburn
-    # license CC-0
-
-public/models/characters/human_man.glb, human_woman.glb, human_elder.glb
-  The MakeHuman base mesh (makehuman/data/3dobjs/base.obj), the macro shape targets
-  (makehuman/data/targets/macrodetails/caucasian-*.target and universal-*.target), and from
-  makehuman_system_assets_cc0.zip the skins middleage_caucasian_male, middleage_caucasian_female and
-  old_caucasian_male, the low-poly eyes (eyes/low-poly/low-poly.mhclo) and the brown iris
-  (eyes/materials/brown.mhmat). The header of each of those files reads:
+The body
+  The MakeHuman base mesh (makehuman/data/3dobjs/base.obj) shaped with the macro shape targets
+  (makehuman/data/targets/macrodetails/caucasian-*.target and universal-*.target), skinned through the
+  default rig (makehuman/data/rigs/default.mhskel, default_weights.mhw). The header of each of those
+  files reads:
     # This asset was explicitly released as CC0 in september 2020. The license
     # text for CC0 can be found in the root of this repository.
     # Copyright (C) 2020 Data Collection AB, https://www.datacollection.se
@@ -95,15 +33,4 @@ public/models/characters/human_man.glb, human_woman.glb, human_elder.glb
   and LICENSE.md in https://github.com/makehumancommunity/makehuman, section C, says of the bundled
   assets: "These assets have been released under CC0 1.0 Universal."
 
-Left out of the same packs because their headers do not say CC0: culturalibre_hero-heroine_gloves_1
-(AGPL3).
-
-Build inputs that are read but not shipped, all released as CC0 by the MakeHuman project
-(Data Collection AB, Joel Palmius, Jonas Hauquier):
-  base.obj                the MakeHuman base mesh, makehuman/data/3dobjs/base.obj
-  default.mhskel          "license": "CC0", makehuman/data/rigs/default.mhskel
-  default_weights.mhw     "license": "CC0", makehuman/data/rigs/default_weights.mhw
-from https://github.com/makehumancommunity/makehuman
-
-Credit is not required; we credit the authors anyway. The garments were refitted to this game's rig,
-decimated, and had their textures repacked and resized by blender/build_wearables.py.
+Credit is not required; we credit the authors anyway.

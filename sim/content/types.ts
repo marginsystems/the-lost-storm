@@ -246,6 +246,7 @@ export type WearRegion = (typeof WEAR_REGIONS)[number];
 export interface WearableDef {
   readonly id: string;
   readonly model: string;
+  readonly pieces: readonly string[];
   readonly region: WearRegion;
   readonly tint: string;
   readonly hides: readonly string[];
@@ -282,7 +283,7 @@ export type { ChartDef, ChartGroup, ChartPath, ChartRespec, PointGrant, SkillTar
 
 export type { PropDef, PropLight, SurfaceDef } from './prop-types.ts';
 
-export type { AttachmentDef, AttachmentGrip, Quad, RigActionClip, RigClips, RigDef, RigGait, RigHold, RigHoldSeat, RigSocket, RigUnarmedClips, Triple } from './rig-types.ts';
+export type { AttachmentDef, RigActionClip, RigClips, RigDef, RigGait, RigSocket, RigUnarmedClips, Triple } from './rig-types.ts';
 
 export interface ZonePoint {
   readonly x: number;
