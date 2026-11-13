@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { createFakeClock, createFakeTimers } from '../test/backend-support.ts';
 import type { FakeTimers } from '../test/backend-support.ts';
@@ -164,4 +165,29 @@ void test('a signed-in player sees which method was used beside the name', (): v
   const google: Screen = screen();
   google.view.show({ kind: 'signed-in', method: 'google', name: 'Ada' }, '');
   assert.equal(google.method.textContent, 'Google');
+});
+
+function rulesFor(css: string, selector: string): string[] {
+  const bodies: string[] = [];
+  for (const block of css.split('}')) {
+    const [head, body] = block.split('{');
+    if (head === undefined || body === undefined) continue;
+    if (head.split(",").some((piece: string): boolean => piece.trim().split(/\s+/).at(-1)?.split(':')[0] === selector)) bodies.push(body);
+  }
+  return bodies;
+}
+
+void test('Google\'s own button is drawn fully visible, because it ignores a click while it is transparent, hidden or filtered', (): void => {
+  const css: string = readFileSync(new URL('./title-account.css', import.meta.url), 'utf8');
+  const official: string[] = rulesFor(css, '.title-google-official');
+  assert.ok(official.length > 0);
+  for (const body of official) {
+    assert.ok(!/\bopacity\s*:/.test(body), body);
+    assert.ok(!/\bvisibility\s*:\s*hidden/.test(body), body);
+    assert.ok(!/\b(filter|clip-path|mask)\s*:/.test(body), body);
+    assert.ok(!/\bdisplay\s*:\s*none/.test(body), body);
+  }
+  for (const holder of ['.title-google', '.title-methods', '.title-account']) {
+    for (const body of rulesFor(css, holder)) assert.ok(!/\b(filter|clip-path|mask)\s*:/.test(body), `${holder} ${body}`);
+  }
 });
