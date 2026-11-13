@@ -16,6 +16,20 @@
   background: rgba(3, 5, 9, 0.28);
 }
 
+.pause::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--panel-vignette);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.pause.open::before {
+  opacity: 1;
+}
+
 .pause-hurt {
   height: 18px;
   margin-top: 12px;

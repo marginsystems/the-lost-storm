@@ -3,7 +3,7 @@
   inset: 0;
   pointer-events: none;
   opacity: 0;
-  background: radial-gradient(ellipse at center, rgba(4, 8, 14, 0) 34%, rgba(4, 8, 14, 0.5) 100%);
+  background: var(--panel-vignette);
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 
