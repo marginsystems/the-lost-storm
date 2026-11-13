@@ -10,7 +10,7 @@ import type { MomentState, MonsterState, World } from '../../sim/world/types.ts'
 import { echoesOf, FIELD, fieldWorld, momentLibrary, QUIET, RAID, standAt } from '../../test/moment-support.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { CATEGORY_NAMES } from './chart-ability.ts';
-import { monsterLines, monsterSummary } from './monster-info.ts';
+import { monsterLines, monsterSummary, monsterSummaryParts, reusedPhrases } from './monster-info.ts';
 import type { MonsterLine } from './monster-info.ts';
 
 const content: Content = loadContent();
@@ -98,4 +98,11 @@ void test('the phone summary keeps one short word per line and drops repeats', (
     { kind: 'resist', text: 'Resists knockback' },
   ];
   assert.equal(monsterSummary(lines), 'Elite · Melee · Calls for help · Resists knockback');
+  assert.deepEqual(monsterSummaryParts(lines), ['Elite', 'Melee', 'Calls for help', 'Resists knockback']);
+});
+
+void test('a new summary keeps every phrase still shown in order and makes only the new ones', (): void => {
+  assert.deepEqual(reusedPhrases(['Hostile echo', 'Melee'], ['Hostile echo', 'Bound to a moment', 'Melee']), [0, null, 1]);
+  assert.deepEqual(reusedPhrases(['Asleep until it hears you', 'Melee'], ['Melee']), [1]);
+  assert.deepEqual(reusedPhrases(['Melee', 'Area'], ['Area', 'Melee']), [1, null]);
 });

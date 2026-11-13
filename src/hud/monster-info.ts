@@ -78,6 +78,10 @@ export function monsterLines(world: World, monster: MonsterState): MonsterLine[]
 }
 
 export function monsterSummary(lines: readonly MonsterLine[]): string {
+  return monsterSummaryParts(lines).join(' · ');
+}
+
+export function monsterSummaryParts(lines: readonly MonsterLine[]): string[] {
   return lines
     .map((line: MonsterLine): string => {
       switch (line.kind) {
@@ -90,6 +94,15 @@ export function monsterSummary(lines: readonly MonsterLine[]): string {
       }
       return '';
     })
-    .filter((text: string, index: number, all: readonly string[]): boolean => text.length > 0 && all.indexOf(text) === index)
-    .join(' · ');
+    .filter((text: string, index: number, all: readonly string[]): boolean => text.length > 0 && all.indexOf(text) === index);
+}
+
+export function reusedPhrases(shown: readonly string[], wanted: readonly string[]): (number | null)[] {
+  let from: number = 0;
+  return wanted.map((phrase: string): number | null => {
+    const at: number = shown.indexOf(phrase, from);
+    if (at < 0) return null;
+    from = at + 1;
+    return at;
+  });
 }

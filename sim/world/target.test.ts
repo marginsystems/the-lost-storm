@@ -25,9 +25,14 @@ void test('hover beats a recent hit on another monster', (): void => {
   assert.equal(pickTarget([monster(1), monster(2)], 2, { id: 1, age: 0.1 }, GRACE)?.monster.id, 2);
 });
 
-void test('a recent hit stays the target within the grace time, dead or alive', (): void => {
+void test('a recent hit stays the target within the grace time while it lives', (): void => {
   assert.equal(pickTarget([monster(1)], null, { id: 1, age: GRACE - 0.1 }, GRACE)?.monster.id, 1);
-  assert.equal(pickTarget([monster(1, { alive: false })], null, { id: 1, age: 0.5 }, GRACE)?.monster.id, 1);
+});
+
+void test('a struck monster that dies stays only long enough to show its bar empty', (): void => {
+  assert.equal(pickTarget([monster(1, { alive: false })], null, { id: 1, age: TARGETING.fallen - 0.1 }, GRACE)?.monster.id, 1);
+  assert.equal(pickTarget([monster(1, { alive: false })], null, { id: 1, age: TARGETING.fallen + 0.1 }, GRACE), null);
+  assert.ok(TARGETING.fallen < GRACE);
 });
 
 void test('a recent hit is dropped after the grace time or when the monster is gone', (): void => {

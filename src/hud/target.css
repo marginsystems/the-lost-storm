@@ -145,14 +145,45 @@ body.touch .target-info {
   display: none;
 }
 
+[data-ph-target='tall'] body.touch .target-head {
+  flex-wrap: wrap;
+  row-gap: 1px;
+}
+
+[data-ph-target='tall'] body.touch .target-summary {
+  order: 1;
+  flex: 1 0 100%;
+}
+
 body.touch .target-summary {
-  display: block;
+  display: flex;
   flex: 1;
+  flex-wrap: wrap;
   min-width: 0;
+  height: 13px;
   overflow: hidden;
   font-family: var(--sans);
   font-size: 10px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 13px;
   color: rgba(239, 230, 214, 0.62);
+}
+
+.target-summary-part {
+  white-space: nowrap;
+  animation: target-summary-in var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.target-summary-part.too-wide {
+  display: none;
+}
+
+.target-summary-part:not(.too-wide) ~ .target-summary-part:not(.too-wide)::before {
+  content: '·';
+  margin: 0 4px;
+}
+
+@keyframes target-summary-in {
+  from {
+    opacity: 0;
+  }
 }

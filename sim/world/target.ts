@@ -2,6 +2,7 @@ import type { MonsterState } from './types.ts';
 
 export const TARGETING = {
   grace: 1.6,
+  fallen: 0.4,
 } as const;
 
 export type TargetKind = 'boss' | 'monster';
@@ -30,5 +31,7 @@ export function pickTarget<T extends Candidate>(monsters: readonly T[], hoveredI
   if (hovered !== undefined) return { monster: hovered, kind: 'monster' };
   if (recent === null || recent.age > grace) return null;
   const struck: T | undefined = monsters.find((monster: T): boolean => monster.id === recent.id);
-  return struck === undefined ? null : { monster: struck, kind: 'monster' };
+  if (struck === undefined) return null;
+  if (!struck.alive && recent.age > Math.min(grace, TARGETING.fallen)) return null;
+  return { monster: struck, kind: 'monster' };
 }

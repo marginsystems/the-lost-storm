@@ -90,6 +90,7 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   const set = (name: string, value: number): void => vars.setProperty(name, `${value.toFixed(1)}px`);
   vars.setProperty('--ph-globe-zoom', String(PHONE.globeZoom));
   vars.setProperty('--ph-quests-zoom', String(PHONE.questZoom));
+  target.dataset['phTarget'] = layout.target.h > PHONE.targetHeight ? 'tall' : 'short';
   set('--ph-life-x', layout.life.x / PHONE.globeZoom);
   set('--ph-life-y', layout.life.y / PHONE.globeZoom);
   set('--ph-mana-x', layout.mana.x / PHONE.globeZoom);

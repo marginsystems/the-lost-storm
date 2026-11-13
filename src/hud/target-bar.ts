@@ -3,7 +3,7 @@ import { pickTarget, TARGETING } from '../../sim/world/target.ts';
 import type { RecentHit, Target } from '../../sim/world/target.ts';
 import targetCss from './target.css?inline';
 import { clamp01, el, label, setText } from './dom.ts';
-import { monsterLines, monsterSummary } from './monster-info.ts';
+import { monsterLines, monsterSummaryParts, reusedPhrases } from './monster-info.ts';
 import type { MonsterLine } from './monster-info.ts';
 import { NO_INFO, stepInfo } from './target-info.ts';
 import type { InfoState, InfoStep } from './target-info.ts';
@@ -40,6 +40,32 @@ function fillInfo(info: HTMLDivElement, lines: readonly MonsterLine[]): void {
   info.replaceChildren(body);
 }
 
+function showPhrases(summary: HTMLElement, parts: readonly string[]): void {
+  const shown: Element[] = [...summary.children];
+  const reuse: (number | null)[] = reusedPhrases(shown.map((node: Element): string => node.textContent), parts);
+  const kept: Set<number> = new Set<number>(reuse.flatMap((at: number | null): number[] => (at === null ? [] : [at])));
+  shown.forEach((node: Element, index: number): void => {
+    if (!kept.has(index)) node.remove();
+  });
+  let before: Element | null = summary.firstElementChild;
+  parts.forEach((part: string, index: number): void => {
+    const at: number | null = reuse[index] ?? null;
+    const node: Element | undefined = at === null ? undefined : shown[at];
+    if (node !== undefined) {
+      before = node.nextElementSibling;
+      return;
+    }
+    summary.insertBefore(label('target-summary-part', part, null), before);
+  });
+  const room: number = summary.clientWidth;
+  if (room === 0) return;
+  for (const node of summary.children) {
+    if (!(node instanceof HTMLElement)) continue;
+    node.classList.remove('too-wide');
+    node.classList.toggle('too-wide', node.scrollWidth > room);
+  }
+}
+
 export function createTargetBar(root: HTMLElement): TargetBar {
   const style: HTMLStyleElement = el('style', '', document.head);
   style.textContent = targetCss;
@@ -55,6 +81,7 @@ export function createTargetBar(root: HTMLElement): TargetBar {
   let recent: RecentHit | null = null;
   let shownId: number | null = null;
   let shownRatio: number = -1;
+  let shownSummary: string = '';
   let visible: boolean = false;
   let info: InfoState = NO_INFO;
 
@@ -83,7 +110,12 @@ export function createTargetBar(root: HTMLElement): TargetBar {
         setText(name, target.def.name, false);
         track.classList.add('snap');
       }
-      setText(summary, monsterSummary(lines), false);
+      const parts: string[] = monsterSummaryParts(lines);
+      const said: string = parts.join(' · ');
+      if (said !== shownSummary) {
+        shownSummary = said;
+        showPhrases(summary, parts);
+      }
       setText(level, `Level ${target.level}`, false);
       const ratio: number = Math.round(clamp01(target.life / target.maxLife) / TARGET_BAR.step) * TARGET_BAR.step;
       if (ratio === shownRatio) return;

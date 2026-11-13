@@ -157,3 +157,12 @@ void test('the frame meter gets its own line at every phone size, wide enough fo
     for (const { name, rect } of layoutRects(layout)) if (name !== 'meter') assert.equal(overlaps(layout.meter, rect), false, `${name} at ${label(screen, 5, 2)}`);
   }
 });
+
+void test('the target gets a second line for its summary on a common phone, and keeps one line where the meter would lose its place', (): void => {
+  assert.equal(phoneLayout({ width: 390, height: 844, safe: NOTCH_PORTRAIT }, { skills: 5, flasks: 2, menu: 6 }).target.h, PHONE.targetTallHeight);
+  for (const screen of SCREENS) {
+    const layout: PhoneLayout = phoneLayout(screen, { skills: 5, flasks: 2, menu: 6 });
+    assert.ok(layout.target.h === PHONE.targetHeight || layout.target.h === PHONE.targetTallHeight, label(screen, 5, 2));
+    assert.equal(overlaps(layout.target, layout.meter), false, label(screen, 5, 2));
+  }
+});

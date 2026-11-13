@@ -38,6 +38,7 @@ export const PHONE = {
   bannerMaxWidth: 360,
   bannerMinWidth: 140,
   targetHeight: 28,
+  targetTallHeight: 42,
   targetMaxWidth: 320,
   targetMinWidth: 140,
   meterHeight: 28,
@@ -248,9 +249,14 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const taken: readonly Rect[] = [life, mana, menu.rect, zone, minimap, hint, toast, dialogue, ...controls, ...(quests === null ? [] : [quests])];
   const underCluster: number = Math.ceil(Math.max(clusterBottom, bottom(menu.rect)) + PHONE.gap);
   const banner: Rect = freeRow([underCluster, top], PHONE.bannerHeight, PHONE.bannerMinWidth, PHONE.bannerMaxWidth, left, rightEdge, taken);
-  const target: Rect = freeRow([top, underCluster, bottom(banner) + PHONE.gap], PHONE.targetHeight, PHONE.targetMinWidth, PHONE.targetMaxWidth, left, rightEdge, [...taken.filter((rect: Rect): boolean => rect !== dialogue), banner]);
-
-  const meter: Rect = freeRow([top, underCluster, bottom(banner) + PHONE.gap, bottom(target) + PHONE.gap], PHONE.meterHeight, PHONE.meterMinWidth, PHONE.meterMaxWidth, left, rightEdge, [...taken.filter((rect: Rect): boolean => rect !== dialogue), banner, target]);
+  const open: readonly Rect[] = [...taken.filter((rect: Rect): boolean => rect !== dialogue), banner];
+  const targetOf = (rowHeight: number): Rect => freeRow([top, underCluster, bottom(banner) + PHONE.gap], rowHeight, PHONE.targetMinWidth, PHONE.targetMaxWidth, left, rightEdge, open);
+  const meterBeside = (beside: Rect): Rect => freeRow([top, underCluster, bottom(banner) + PHONE.gap, bottom(beside) + PHONE.gap], PHONE.meterHeight, PHONE.meterMinWidth, PHONE.meterMaxWidth, left, rightEdge, [...open, beside]);
+  const tall: Rect = targetOf(PHONE.targetTallHeight);
+  const tallMeter: Rect = meterBeside(tall);
+  const roomy: boolean = tall.w >= PHONE.targetMinWidth && tallMeter.w >= PHONE.meterMinWidth && !open.some((rect: Rect): boolean => overlaps(rect, tall) || overlaps(rect, tallMeter)) && !overlaps(tall, tallMeter);
+  const target: Rect = roomy ? tall : targetOf(PHONE.targetHeight);
+  const meter: Rect = roomy ? tallMeter : meterBeside(target);
 
   return { life, mana, menu, zone, minimap, quests, hint, toast, dialogue, card, banner, target, meter, xp, stick, attack, skills, flasks };
 }
