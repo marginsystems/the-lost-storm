@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content.ts';
 import type { MomentDef } from './moment-types.ts';
-import { momentProblems } from './moments.ts';
+import { MOMENT_PROPS, momentProblems } from './moments.ts';
 import type { Content, ZoneDef } from './types.ts';
 
 const shipped: Content = loadContent();
@@ -18,7 +18,7 @@ const MOMENT: MomentDef = {
   lifetime: 40,
   awake: 15,
   turnChance: 0.5,
-  props: [{ prop: 'fire_pit', x: 0, z: 0, rotationDegrees: 0 }],
+  props: [{ prop: 'fire_pit', x: 0, z: 0, rotationDegrees: 0, blocks: true }],
   echoes: [{ monster: 'unfinished_brute', x: 1, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0.5 }, turns: true, look: null }],
   reward: { goldMin: 5, goldMax: 9, items: 1, itemChance: 0.4, rarity: null },
 };
@@ -37,7 +37,7 @@ void test('a moment naming an unknown prop, monster, clip or rarity is reported'
   assert.deepEqual(momentProblems(withMoment(MOMENT)), []);
   const broken: MomentDef = {
     ...MOMENT,
-    props: [{ prop: 'nowhere', x: 0, z: 0, rotationDegrees: 0 }],
+    props: [{ prop: 'nowhere', x: 0, z: 0, rotationDegrees: 0, blocks: false }],
     echoes: [
       { monster: 'nobody', x: 0, z: 0, facingDegrees: 0, pose: { clip: 'idle', at: 0 }, turns: false, look: null },
       { monster: 'unfinished_brute', x: 0, z: 0, facingDegrees: 0, pose: { clip: 'juggle', at: 0 }, turns: false, look: null },
@@ -63,4 +63,13 @@ void test('a zone field naming an unknown moment or an area outside the zone is 
   assert.ok(base !== undefined);
   const zone: ZoneDef = { ...base, id: 'test_field', moments: { combat: true, areas: [{ x: -50, z: 4, radius: 4 }], clearance: { hero: 1, exits: 1, between: 1, safe: 0, packs: 0 }, interval: { min: 1, max: 2 }, start: 0, max: 1, table: [{ moment: 'ghost', weight: 1 }], sure: [], first: [], grace: 0, avoid: [], near: null } };
   assert.equal(momentProblems(withMoment(MOMENT, zone)).length, 2);
+});
+
+void test('a moment may block with one prop at its centre, and a second blocker or one off the centre is reported', (): void => {
+  const twice: MomentDef = { ...MOMENT, props: [...MOMENT.props, { prop: 'stool', x: 0.5, z: 0, rotationDegrees: 0, blocks: true }] };
+  assert.deepEqual(momentProblems(withMoment(twice)), [`moment test_fire blocks with 2 props, more than ${MOMENT_PROPS.blockingMost}`]);
+  const aside: MomentDef = { ...MOMENT, props: [{ prop: 'fire_pit', x: MOMENT_PROPS.centreReach + 1, z: 0, rotationDegrees: 0, blocks: true }] };
+  assert.deepEqual(momentProblems(withMoment(aside)), ['moment test_fire blocks with fire_pit off its centre']);
+  const loose: MomentDef = { ...MOMENT, props: [{ prop: 'stool', x: 3, z: 0, rotationDegrees: 0, blocks: false }] };
+  assert.deepEqual(momentProblems(withMoment(loose)), []);
 });

@@ -25,7 +25,8 @@
           "prop": "fire_pit",
           "x": 0,
           "z": 0,
-          "rotationDegrees": 0
+          "rotationDegrees": 0,
+          "blocks": true
         },
         {
           "prop": "dead_log",
@@ -136,7 +137,8 @@
           "prop": "fire_pit",
           "x": 0,
           "z": 0,
-          "rotationDegrees": 0
+          "rotationDegrees": 0,
+          "blocks": true
         },
         {
           "prop": "dead_log",
@@ -547,7 +549,8 @@
           "prop": "grave_slab",
           "x": 0,
           "z": 0,
-          "rotationDegrees": 0
+          "rotationDegrees": 0,
+          "blocks": true
         },
         {
           "prop": "gravestone",
@@ -869,7 +872,8 @@
           "prop": "bridge_broken",
           "x": 0,
           "z": 0,
-          "rotationDegrees": 15
+          "rotationDegrees": 15,
+          "blocks": true
         },
         {
           "prop": "crate_tall",

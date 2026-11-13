@@ -1,5 +1,5 @@
 import type { RigClips, RigDef } from './rig-types.ts';
-import type { EchoLook, MomentDef, MomentEcho, MomentField } from './moment-types.ts';
+import type { EchoLook, MomentDef, MomentEcho, MomentField, MomentProp } from './moment-types.ts';
 import type { Content, MonsterDef, RarityDef, SkillDef, WearableDef, WearRegion, ZoneDef } from './types.ts';
 
 function poseClips(clips: RigClips): ReadonlySet<string> {
@@ -39,11 +39,21 @@ function echoProblems(content: Content, at: string, entry: MomentEcho): string[]
   return problems;
 }
 
+export const MOMENT_PROPS = { blockingMost: 1, centreReach: 1 } as const;
+
+function centreProblems(at: string, def: MomentDef): string[] {
+  const blocking: MomentProp[] = def.props.filter((placed: MomentProp): boolean => placed.blocks);
+  const problems: string[] = blocking.length > MOMENT_PROPS.blockingMost ? [`${at} blocks with ${blocking.length} props, more than ${MOMENT_PROPS.blockingMost}`] : [];
+  for (const placed of blocking) if (Math.hypot(placed.x, placed.z) > MOMENT_PROPS.centreReach) problems.push(`${at} blocks with ${placed.prop} off its centre`);
+  return problems;
+}
+
 function defProblems(content: Content, def: MomentDef): string[] {
   const at: string = `moment ${def.id}`;
   const problems: string[] = [];
   if (!content.surfaces.has(def.ground)) problems.push(`${at} stands on unknown surface ${def.ground}`);
   for (const placed of def.props) if (!content.props.has(placed.prop)) problems.push(`${at} places unknown prop ${placed.prop}`);
+  problems.push(...centreProblems(at, def));
   def.echoes.forEach((entry: MomentEcho, index: number): void => {
     problems.push(...echoProblems(content, `${at} echo ${index}`, entry));
   });

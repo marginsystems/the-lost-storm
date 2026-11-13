@@ -59,6 +59,7 @@ export function inSight(world: World, from: Vec2, to: Vec2): boolean {
 export function momentBlockers(world: World, moment: MomentState): Blocker[] {
   const list: Blocker[] = [];
   for (const placed of moment.def.props) {
+    if (!placed.blocks) continue;
     const def: PropDef | undefined = world.content.props.get(placed.prop);
     const blocker: Blocker | null = def === undefined ? null : propBlocker(def, moment.pos.x + placed.x, moment.pos.z + placed.z, placed.rotationDegrees);
     if (blocker !== null) list.push(blocker);

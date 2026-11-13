@@ -18,7 +18,7 @@ function whole(source: Fields, key: string, min: number, where: string): number 
 
 function momentProp(value: unknown, where: string): MomentProp {
   const source: Fields = fields(value, where);
-  return { prop: text(source, 'prop', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), rotationDegrees: numeric(source, 'rotationDegrees', where) };
+  return { prop: text(source, 'prop', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), rotationDegrees: numeric(source, 'rotationDegrees', where), blocks: source['blocks'] === undefined ? false : flag(source, 'blocks', where) };
 }
 
 function pose(value: unknown, where: string): EchoPose {

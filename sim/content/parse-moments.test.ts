@@ -74,3 +74,12 @@ void test('a field that starts above its max, has no area or no table is refused
     momentField({ ...FIELD, interval: { min: 9, max: 3 } }, 'zone.moments');
   }, ContentError);
 });
+
+void test('a moment prop blocks only when it says so, and a blocks that is not true or false is refused', (): void => {
+  assert.equal(momentLibrary(LIBRARY, 'moments').defs.get('fire')?.props[0]?.blocks, false);
+  const raised = momentLibrary({ ...LIBRARY, moments: [{ ...MOMENT, props: [{ prop: 'fire_pit', x: 0, z: 0, rotationDegrees: 0, blocks: true }] }] }, 'moments');
+  assert.equal(raised.defs.get('fire')?.props[0]?.blocks, true);
+  assert.throws((): void => {
+    momentLibrary({ ...LIBRARY, moments: [{ ...MOMENT, props: [{ prop: 'fire_pit', x: 0, z: 0, rotationDegrees: 0, blocks: 'yes' }] }] }, 'moments');
+  }, ContentError);
+});

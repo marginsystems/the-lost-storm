@@ -113,8 +113,8 @@ void test('every prop placed in a zone or a moment dresses each untextured mater
   }
 });
 
-void test('every moment prop a metre or more across has a collider that covers it, so nobody stands on a rock pile', (): void => {
-  const used: Set<string> = new Set<string>([...content.moments.defs.values()].flatMap((def) => def.props.map((placed) => placed.prop)));
+void test('every moment centrepiece a metre or more across has a collider that covers it, so nobody stands on a rock pile', (): void => {
+  const used: Set<string> = new Set<string>([...content.moments.defs.values()].flatMap((def) => def.props.filter((placed) => placed.blocks).map((placed) => placed.prop)));
   for (const id of used) {
     const prop = must(content.props.get(id), id);
     const wide: number = footprint(`public/${prop.model}`, prop.scale);

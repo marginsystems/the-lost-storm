@@ -6,6 +6,7 @@ export interface MomentProp {
   readonly x: number;
   readonly z: number;
   readonly rotationDegrees: number;
+  readonly blocks: boolean;
 }
 
 export interface EchoPose {

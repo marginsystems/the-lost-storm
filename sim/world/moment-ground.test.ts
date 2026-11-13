@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
-import type { Content } from '../content/types.ts';
+import type { MomentDef } from '../content/moment-types.ts';
+import type { Content, PropDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import type { Vec2 } from '../math.ts';
-import { blockerGap, isWalkable } from '../nav/grid.ts';
-import type { Blocker } from '../nav/grid.ts';
+import { blockerGap, isWalkable, propBlocker, routedGrid } from '../nav/grid.ts';
+import { findPath } from '../nav/path.ts';
+import type { Blocker, NavGrid } from '../nav/grid.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { createWorld } from './create.ts';
 import { inSight, MOMENT_GROUND, momentBlockers, momentFootprint, tallBlockers } from './moment-ground.ts';
@@ -141,4 +143,73 @@ void test('the sight line to a strike is blocked by a tall prop that stands acro
     const centre: Vec2 = { x: points.reduce((sum: number, point: Vec2): number => sum + point.x, 0) / points.length, z: points.reduce((sum: number, point: Vec2): number => sum + point.z, 0) / points.length };
     assert.equal(inSight(world, { x: centre.x - SIGHT.side, z: centre.z }, { x: centre.x + SIGHT.side, z: centre.z }), false, `(${centre.x.toFixed(1)}, ${centre.z.toFixed(1)})`);
   }
+});
+
+const REACH = { zone: 'hall_of_time', at: { x: 40, z: 47 }, lattice: 1, arrive: 0.35, clickSeconds: 4, step: 1 / 30, hubShare: 0.5, outside: 3 } as const;
+
+function centreClear(world: World, def: MomentDef, cell: Vec2): boolean {
+  const radius: number = world.content.player.radius;
+  return def.props.every((placed): boolean => {
+    const prop: PropDef | undefined = world.content.props.get(placed.prop);
+    const blocker: Blocker | null = !placed.blocks || prop === undefined ? null : propBlocker(prop, REACH.at.x + placed.x, REACH.at.z + placed.z, placed.rotationDegrees);
+    return blocker === null || blockerGap(blocker, cell.x, cell.z) >= radius;
+  });
+}
+
+function bubbleCells(world: World, def: MomentDef): Vec2[] {
+  const cells: Vec2[] = [];
+  const inner: number = def.radius - world.content.player.radius;
+  for (let x: number = -def.radius; x <= def.radius; x += REACH.lattice) {
+    for (let z: number = -def.radius; z <= def.radius; z += REACH.lattice) {
+      const cell: Vec2 = { x: REACH.at.x + x, z: REACH.at.z + z };
+      if (Math.hypot(x, z) <= inner && isWalkable(world.grid, cell.x, cell.z) && centreClear(world, def, cell)) cells.push(cell);
+    }
+  }
+  return cells;
+}
+
+function ends(path: readonly Vec2[], cell: Vec2): boolean {
+  const last: Vec2 | undefined = path.at(-1);
+  return last !== undefined && distance(last, cell) <= REACH.arrive;
+}
+
+function clickReaches(world: World, from: Vec2, cell: Vec2): boolean {
+  world.player.pos = { ...from };
+  world.player.path = [];
+  world.player.intent = { type: 'idle' };
+  world.player.action = null;
+  stepWorld(world, [{ type: 'move', held: false, dest: cell }], REACH.step);
+  for (let elapsed: number = 0; elapsed < REACH.clickSeconds && distance(world.player.pos, cell) > REACH.arrive; elapsed += REACH.step) stepWorld(world, [], REACH.step);
+  return distance(world.player.pos, cell) <= REACH.arrive;
+}
+
+void test('inside every raised moment, each walkable spot off its centrepiece is reached by the hero path, the echo path and a click', (): void => {
+  const content: Content = loadContent();
+  const shut: string[] = [];
+  for (const def of content.moments.defs.values()) {
+    const world: World = worldIn(content, REACH.zone, 1);
+    setFlags(world, content.moments.cleared);
+    clearMoments(world);
+    world.monsters = [];
+    world.strikeTimer = 1e9;
+    world.player.invulnerable = 1e9;
+    const cells: Vec2[] = bubbleCells(world, def);
+    const echoGround: NavGrid = routedGrid(world.grid);
+    const echoCells: Set<Vec2> = new Set<Vec2>(cells.filter((cell: Vec2): boolean => isWalkable(echoGround, cell.x, cell.z)));
+    world.player.pos = { x: REACH.at.x + def.radius + REACH.outside, z: REACH.at.z };
+    const moment: MomentState = must(forceStrike(world, REACH.at, def.id), def.id);
+    for (let elapsed: number = 0; elapsed < content.moments.telegraph + GROUND.settle; elapsed += REACH.step) stepWorld(world, [], REACH.step);
+    assert.equal(moment.blocks === null, momentBlockers(world, moment).length === 0, def.id);
+    world.moments = [];
+    const hubAt: Vec2 = { x: REACH.at.x + def.radius * REACH.hubShare, z: REACH.at.z };
+    const hub: Vec2 = [...echoCells].reduce((best: Vec2, cell: Vec2): Vec2 => (distance(cell, hubAt) < distance(best, hubAt) ? cell : best), must(cells[0], def.id));
+    const echoGrid: NavGrid = routedGrid(world.grid);
+    for (const cell of cells) {
+      const spot: string = `${def.id} (${(cell.x - REACH.at.x).toFixed(0)}, ${(cell.z - REACH.at.z).toFixed(0)})`;
+      if (!ends(findPath(world.grid, hub, cell), cell)) shut.push(`${spot}: no hero path`);
+      if (echoCells.has(cell) && !ends(findPath(echoGrid, hub, cell), cell)) shut.push(`${spot}: no echo path`);
+      if (!clickReaches(world, hub, cell)) shut.push(`${spot}: a click stops at (${(world.player.pos.x - REACH.at.x).toFixed(1)}, ${(world.player.pos.z - REACH.at.z).toFixed(1)})`);
+    }
+  }
+  assert.deepEqual(shut, []);
 });
