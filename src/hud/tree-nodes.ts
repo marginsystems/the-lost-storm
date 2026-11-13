@@ -12,6 +12,13 @@ export const TREE_NODES = {
   gap: 6,
 } as const;
 
+export interface NodeSpot {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+}
+
 export function nodeFace(node: SkillTreeNodeDef): number {
   if (node.unlock !== null) return TREE_NODES.ability;
   if (node.kind === 'keystone') return TREE_NODES.keystone;
@@ -24,4 +31,16 @@ export function nodeDiameter(node: SkillTreeNodeDef): number {
   const diamond: number = node.kind === 'keystone' ? (face - TREE_NODES.keystoneInset * 2) * Math.SQRT2 : 0;
   const ring: number = node.variant === null ? 0 : face + TREE_NODES.variantRim * 2;
   return Math.max(face, diamond, ring);
+}
+
+export function nodeAt(spots: readonly NodeSpot[], x: number, y: number): string | null {
+  let best: NodeSpot | null = null;
+  let bestDistance: number = Number.POSITIVE_INFINITY;
+  for (const spot of spots) {
+    const distance: number = Math.hypot(spot.x - x, spot.y - y);
+    if (distance > spot.radius || distance > bestDistance) continue;
+    best = spot;
+    bestDistance = distance;
+  }
+  return best === null ? null : best.id;
 }

@@ -2,7 +2,7 @@ import type { ChartPath, SkillTreeNodeDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { canRefund, refundCost, refundState, respecState } from '../../sim/progression.ts';
 import type { ChartChange } from '../../sim/progression.ts';
-import { ATLAS_VIEW, atRest, stepMotion, still, toScreen } from './atlas-view.ts';
+import { ATLAS_VIEW, atRest, stepMotion, still, toMap, toScreen } from './atlas-view.ts';
 import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-view.ts';
 import { abilityCard } from './chart-ability.ts';
 import type { AbilityCard } from './chart-ability.ts';
@@ -14,7 +14,8 @@ import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
 import { slotAction } from '../settings/bindings.ts';
 import { placeGlyph } from './tree-glyphs.ts';
-import { TREE_NODES } from './tree-nodes.ts';
+import { nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
+import type { NodeSpot } from './tree-nodes.ts';
 import { statusLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
 
@@ -452,15 +453,6 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const glyph: HTMLSpanElement = el('span', 'tree-socket-glyph', button);
     glyph.innerHTML = placeGlyph(content, node);
     const view: NodeView = { def: node, button };
-    button.addEventListener('pointerenter', (event: PointerEvent): void => {
-      if (event.pointerType === 'touch' || viewport.classList.contains('dragging')) return;
-      window.clearTimeout(unhover);
-      hovered = view;
-      fillCard();
-    });
-    button.addEventListener('pointerleave', (): void => {
-      if (hovered === view) leaveHover();
-    });
     button.addEventListener('click', (): void => {
       selected?.button.classList.remove('selected');
       selected = view;
@@ -482,6 +474,26 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     });
     views.push(view);
   }
+  const spots: readonly NodeSpot[] = views.map((view: NodeView): NodeSpot => ({ id: view.def.id, ...centreOf(view.def), radius: nodeDiameter(view.def) / 2 }));
+  const viewOf: ReadonlyMap<string, NodeView> = new Map<string, NodeView>(views.map((view: NodeView): [string, NodeView] => [view.def.id, view]));
+  const pointAt = (view: NodeView | null): void => {
+    if (view === null) {
+      if (hovered !== null) leaveHover();
+      return;
+    }
+    window.clearTimeout(unhover);
+    if (view === hovered) return;
+    hovered = view;
+    fillCard();
+  };
+  viewport.addEventListener('pointermove', (event: PointerEvent): void => {
+    if (event.pointerType === 'touch' || viewport.classList.contains('dragging')) return;
+    if (card.contains(event.target instanceof Node ? event.target : null)) return;
+    const at: ScreenPoint = toMap(motion.view, frame, local(event));
+    const id: string | null = nodeAt(spots, at.x, at.y);
+    pointAt(id === null ? null : (viewOf.get(id) ?? null));
+  });
+  viewport.addEventListener('pointerleave', (): void => pointAt(null));
 
   const showMatches = (): void => {
     const found: ReadonlySet<string> | null = chartMatches(content, search.value);

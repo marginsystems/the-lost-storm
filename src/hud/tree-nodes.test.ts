@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content, SkillTreeNodeDef } from '../../sim/content/types.ts';
-import { nodeDiameter, nodeFace, TREE_NODES } from './tree-nodes.ts';
+import { nodeAt, nodeDiameter, nodeFace, TREE_NODES } from './tree-nodes.ts';
+import type { NodeSpot } from './tree-nodes.ts';
 
 const content: Content = loadContent();
 
@@ -23,4 +24,15 @@ void test('no two places on the tree touch: every pair sits further apart than t
 void test('a taken place, a named place and an ability are no more than slightly larger than a plain place', (): void => {
   for (const node of content.skillTree) assert.ok(nodeDiameter(node) <= TREE_NODES.minor * 1.35, `${node.id} is ${nodeDiameter(node)} across`);
   assert.ok(content.skillTree.every((node: SkillTreeNodeDef): boolean => nodeFace(node) <= nodeDiameter(node)));
+});
+
+void test('the pointer on one of two neighbouring places names that place, never the other', (): void => {
+  const a: NodeSpot = { id: 'a', x: 100, y: 100, radius: 16 };
+  const b: NodeSpot = { id: 'b', x: 100, y: 140, radius: 16 };
+  for (let y: number = 84; y <= 116; y += 2) assert.equal(nodeAt([a, b], 100, y), 'a', `at y ${y}`);
+  for (let y: number = 124; y <= 156; y += 2) assert.equal(nodeAt([a, b], 100, y), 'b', `at y ${y}`);
+  assert.equal(nodeAt([b, a], 100, 110), 'a');
+  assert.equal(nodeAt([a, b], 100, 120), null);
+  assert.equal(nodeAt([a, b], 130, 120), null);
+  assert.equal(nodeAt([{ ...a, id: 'under' }, a], 100, 100), 'a');
 });
