@@ -19,7 +19,7 @@ export function keyLabel(keys: ResolvedKeys, name: string): string {
 
 export const PANEL_ICONS = {
   inventory: 'armour',
-  character: 'helm',
+  character: 'bust',
   tree: 'fork',
   map: 'eye',
 } as const;
