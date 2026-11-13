@@ -1,9 +1,9 @@
 import { el, setText } from './dom.ts';
-import type { FrameMeter, FrameReading } from './frame-meter.ts';
+import type { FrameMeter, FrameReading, FrameView } from './frame-meter.ts';
 import { createFrameMeter, describeFrames, FRAME_METER } from './frame-meter.ts';
 
 export interface FpsReadout {
-  frame(now: number): void;
+  frame(now: number, view: FrameView): void;
   setVisible(visible: boolean): void;
 }
 
@@ -19,8 +19,8 @@ export function createFpsReadout(parent: HTMLElement, tier: () => string): FpsRe
       visible = next;
       element.classList.toggle('shown', next);
     },
-    frame(now: number): void {
-      meter.frame(now);
+    frame(now: number, view: FrameView): void {
+      meter.frame(now, view);
       if (!visible || now - shownAt < FRAME_METER.updateMs) return;
       const reading: FrameReading | null = meter.reading(now);
       if (reading === null) return;

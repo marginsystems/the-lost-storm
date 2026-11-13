@@ -15,8 +15,10 @@ export interface FrameReading {
   readonly budgetMs: number;
 }
 
+export type FrameView = 'shown' | 'veiled';
+
 export interface FrameMeter {
-  frame(now: number): void;
+  frame(now: number, view: FrameView): void;
   reading(now: number): FrameReading | null;
 }
 
@@ -39,7 +41,12 @@ export function createFrameMeter(): FrameMeter {
   const samples: Sample[] = [];
   let last: number | null = null;
   return {
-    frame(now: number): void {
+    frame(now: number, view: FrameView): void {
+      if (view === 'veiled') {
+        samples.length = 0;
+        last = null;
+        return;
+      }
       const previous: number | null = last;
       last = now;
       while (samples.length > 0 && (samples[0]?.at ?? now) <= now - FRAME_METER.longWindowMs) samples.shift();

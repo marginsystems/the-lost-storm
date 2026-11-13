@@ -550,7 +550,7 @@ async function start(): Promise<void> {
     audio.setMuffled(insideAwakeMoment(world));
     audio.update(dt);
     particles.update(dt);
-    hud.update(dt);
+    hud.update(dt, transition.blocking ? 'veiled' : 'shown');
     touch.update();
     ladder?.noteLevel(world.player.level);
     launch.update(world, dt, gate.queue);

@@ -34,6 +34,7 @@ import type { DialogueBox } from './dialogue-box.ts';
 import { el } from './dom.ts';
 import type { FpsReadout } from './fps.ts';
 import { createFpsReadout } from './fps.ts';
+import type { FrameView } from './frame-meter.ts';
 import { createFlaskBelt } from './flask-belt.ts';
 import type { FlaskBelt } from './flask-belt.ts';
 import flasksCss from './flasks.css?inline';
@@ -265,9 +266,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       refreshOpen('inventory');
       refreshOpen('character');
     },
-    update(dt: number): void {
+    update(dt: number, view: FrameView): void {
       const world = api.world;
-      fps.frame(performance.now());
+      fps.frame(performance.now(), view);
       globes.update(world.player, dt);
       flasks.update(world.player);
       skillBar.update(world.player);

@@ -1,26 +1,26 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { FrameMeter, FrameReading } from './frame-meter.ts';
+import type { FrameMeter, FrameReading, FrameView } from './frame-meter.ts';
 import { createFrameMeter, describeFrames, displayBudget, FRAME_METER } from './frame-meter.ts';
 
 interface FakeClock {
   readonly meter: FrameMeter;
   now: number;
-  run(ms: number, count: number): void;
+  run(ms: number, count: number, view?: FrameView): void;
 }
 
 function clock(): FakeClock {
   const fake: FakeClock = {
     meter: createFrameMeter(),
     now: 1000,
-    run(ms: number, count: number): void {
+    run(ms: number, count: number, view: FrameView = 'shown'): void {
       for (let index: number = 0; index < count; index += 1) {
         fake.now += ms;
-        fake.meter.frame(fake.now);
+        fake.meter.frame(fake.now, view);
       }
     },
   };
-  fake.meter.frame(fake.now);
+  fake.meter.frame(fake.now, 'shown');
   return fake;
 }
 
@@ -76,6 +76,29 @@ void test('a paused tab leaves no gap in the numbers, and no frames read as noth
   fake.run(1000 / 60, 60);
   fake.run(FRAME_METER.maxGapMs + 500, 1);
   fake.run(1000 / 60, 60);
+  assert.equal(Math.round(read(fake).worstMs), 17);
+  assert.equal(read(fake).longFrames, 0);
+});
+
+void test('frames behind the veil never reach the readout, and the count starts fresh when the veil lifts', (): void => {
+  const fake: FakeClock = clock();
+  fake.run(1000 / 60, 60);
+  fake.run(120, 1);
+  fake.run(1000 / 60, 30);
+  fake.run(300, 6, 'veiled');
+  fake.run(1000 / 60, 20, 'veiled');
+  fake.run(1000 / 60, 60);
+  const reading: FrameReading = read(fake);
+  assert.equal(Math.round(reading.worstMs), 17);
+  assert.equal(reading.longFrames, 0);
+  assert.equal(Math.round(reading.fps), 60);
+});
+
+void test('the first frame after the veil lifts is not measured against the last veiled one', (): void => {
+  const fake: FakeClock = clock();
+  fake.run(1000 / 60, 10, 'veiled');
+  fake.run(400, 1);
+  fake.run(1000 / 60, 30);
   assert.equal(Math.round(read(fake).worstMs), 17);
   assert.equal(read(fake).longFrames, 0);
 });
