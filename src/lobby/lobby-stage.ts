@@ -1,5 +1,5 @@
 import type { AnimationClip, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SpotLight, Vector2 } from 'three';
+import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, SpotLight, Vector2 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
@@ -93,6 +93,8 @@ export const LOBBY_STAGE = {
   backdropFloor: -2,
   hazeTop: 0.6,
   hazeSize: 128,
+  footSamples: 16,
+  soleClearance: 0.002,
 } as const;
 
 export const LOBBY_POSE: readonly PoseTurn[] = [
@@ -248,6 +250,24 @@ function stepRain(layer: RainLayer, dt: number): void {
   attribute.needsUpdate = true;
 }
 
+export function floorLift(lows: readonly number[], clearance: number): number {
+  if (lows.length === 0) return 0;
+  return clearance - Math.min(...lows);
+}
+
+function lowestPoint(root: Object3D): number {
+  root.updateMatrixWorld(true);
+  const box: Box3 = new Box3();
+  let lowest: number = Number.POSITIVE_INFINITY;
+  root.traverseVisible((node: Object3D): void => {
+    if (!(node instanceof SkinnedMesh)) return;
+    node.computeBoundingBox();
+    box.copy(node.boundingBox).applyMatrix4(node.matrixWorld);
+    lowest = Math.min(lowest, box.min.y);
+  });
+  return lowest;
+}
+
 function idleClip(rig: RigInstance, equipped: Equipment): AnimationClip {
   return equipped.weapon === null ? (rig.clips.unarmed?.idle ?? rig.clips.idle) : rig.clips.idle;
 }
@@ -307,6 +327,23 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   let scenery: Promise<void> | null = null;
   let posed: readonly PosedBone[] = [];
 
+  const plantFeet = (rig: RigInstance, clip: AnimationClip): void => {
+    const action = rig.mixer.clipAction(clip);
+    rig.root.position.y = 0;
+    const lows: number[] = [];
+    for (let sample: number = 0; sample < LOBBY_STAGE.footSamples; sample += 1) {
+      settlePose(posed);
+      action.time = (clip.duration * sample) / LOBBY_STAGE.footSamples;
+      rig.mixer.update(0);
+      rig.relaxHands();
+      turnPose(posed);
+      const low: number = lowestPoint(rig.root);
+      if (Number.isFinite(low)) lows.push(low);
+    }
+    action.time = 0;
+    rig.root.position.y = floorLift(lows, LOBBY_STAGE.soleClearance);
+  };
+
   const build = (): RigInstance | null => {
     if (hero !== null) return hero;
     const loaded: LoadedRig | undefined = library.rigs.get(content.player.rig);
@@ -315,7 +352,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     made.root.rotation.y = LOBBY_STAGE.facing;
     castShadows(made.root);
     posed = poseBones(made.root, LOBBY_POSE);
-    made.root.add(contactShadow());
+    scene.add(contactShadow());
     scene.add(made.root);
     hero = made;
     return made;
@@ -333,7 +370,9 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       rig.setGear(worn.held);
       castShadows(rig.root);
       rig.mixer.stopAllAction();
-      rig.mixer.clipAction(idleClip(rig, look.equipped)).play();
+      const clip: AnimationClip = idleClip(rig, look.equipped);
+      rig.mixer.clipAction(clip).play();
+      plantFeet(rig, clip);
     },
     render(renderer: WebGLRenderer, dt: number, tier: QualityName, devicePixelRatio: number): void {
       time += dt;
