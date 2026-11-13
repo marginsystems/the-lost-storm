@@ -476,6 +476,15 @@ body {
   opacity: 0;
 }
 
+body:has(.banner.zone) .exit-label {
+  pointer-events: none;
+}
+
+body:has(.banner.zone) .exit-label span {
+  opacity: 0;
+  animation: none;
+}
+
 .npc-label {
   position: absolute;
   left: 0;
