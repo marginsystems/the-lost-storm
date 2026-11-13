@@ -41,6 +41,6 @@ body:not([data-zone-kind='void']) .vignette-wake {
   pointer-events: none;
 }
 
-body[data-wake-blur='on'] #scene {
+body[data-wake-blur='on']:not([data-lobby]) #scene {
   filter: blur(var(--wake-blur, 0px));
 }
