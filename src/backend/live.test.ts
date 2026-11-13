@@ -277,3 +277,11 @@ void test('a line is said only once the player is present, and chat refusals rea
   h.live.update(ROAD);
   assert.equal(h.live.say('gone'), false);
 });
+
+void test('a friends nudge is passed on and keeps the socket open', (): void => {
+  const h: Harness = harness();
+  const socket: FakeSocket = welcomed(h);
+  say(socket, { type: 'friends' });
+  assert.equal(h.events[h.events.length - 1]?.type, 'friends');
+  assert.equal(socket.closed, false);
+});

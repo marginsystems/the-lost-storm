@@ -30,6 +30,7 @@ export interface ChatViewOptions {
 }
 
 export interface ChatView {
+  readonly friendsSlot: HTMLElement;
   show(open: boolean): void;
   render(state: ChatState): void;
   hideReport(): void;
@@ -54,6 +55,7 @@ interface Row {
 
 export function createChatView(options: ChatViewOptions): ChatView {
   const panel: HTMLDivElement = make('div', 'hideout-chat', options.root);
+  const friendsSlot: HTMLDivElement = make('div', 'chat-slot', panel);
   const list: HTMLOListElement = make('ol', 'chat-lines', panel);
   const field: HTMLInputElement = make('input', 'chat-field', panel);
   field.type = 'text';
@@ -210,6 +212,7 @@ export function createChatView(options: ChatViewOptions): ChatView {
   );
 
   return {
+    friendsSlot,
     show(next: boolean): void {
       if (next === open) return;
       open = next;

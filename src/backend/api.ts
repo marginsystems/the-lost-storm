@@ -111,9 +111,22 @@ export type ReportResult = 'reported' | 'gone' | 'own' | 'slow' | 'unsupported' 
 
 export type FriendState = 'requested' | 'friends' | 'none';
 
-export type FriendRefusal = 'name_needed' | 'own_name' | 'no_such_character' | 'friend_limit';
+export type FriendRefusal = 'name_needed' | 'own_name' | 'no_such_character' | 'friend_limit' | 'no_such_request';
 
 export type FriendResult = { readonly kind: 'ok'; readonly state: FriendState } | { readonly kind: 'refused'; readonly reason: FriendRefusal } | { readonly kind: 'unsupported' } | { readonly kind: 'failed' };
+
+export interface FriendEntry {
+  readonly name: string;
+  readonly here: boolean;
+}
+
+export interface FriendsList {
+  readonly friends: readonly FriendEntry[];
+  readonly incoming: readonly string[];
+  readonly outgoing: readonly string[];
+}
+
+export type FriendsResult = { readonly kind: 'ok'; readonly list: FriendsList } | { readonly kind: 'unsupported' } | { readonly kind: 'failed' };
 
 export type LeaderboardResult = { readonly kind: 'ok'; readonly board: Leaderboard } | Failure;
 export type NameResult = { readonly kind: 'ok'; readonly name: string } | { readonly kind: 'invalid'; readonly reason: NameRefusal } | { readonly kind: 'limited' } | Failure;

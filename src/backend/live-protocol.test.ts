@@ -27,6 +27,7 @@ void test('every server message the protocol names is read', (): void => {
   assert.deepEqual(read({ type: 'welcome' }), { type: 'welcome' });
   assert.deepEqual(read({ type: 'full' }), { type: 'full' });
   assert.deepEqual(read({ type: 'replaced' }), { type: 'replaced' });
+  assert.deepEqual(read({ type: 'friends' }), { type: 'friends' });
   assert.deepEqual(read({ type: 'present', zone: 'hideout', you: 'me', players: [WREN] }), { type: 'present', zone: 'hideout', you: 'me', players: [WREN], chat: null });
   assert.deepEqual(read({ type: 'present', zone: 'hideout', you: 'me', players: [], chat: [LINE, { id: 'x' }] }), { type: 'present', zone: 'hideout', you: 'me', players: [], chat: [LINE] });
   assert.deepEqual(read({ type: 'said', line: LINE }), { type: 'said', line: LINE });

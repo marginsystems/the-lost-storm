@@ -61,6 +61,8 @@ export function friendText(result: FriendResult, name: string): string {
           return `No one is called ${name}.`;
         case 'friend_limit':
           return 'Your friends list is full.';
+        case 'no_such_request':
+          return `${name} has no request waiting.`;
       }
   }
   return 'The request could not be sent.';
@@ -113,6 +115,7 @@ export function receive(state: ChatState, event: LiveEvent): ChatState {
     case 'left':
     case 'look':
     case 'moves':
+    case 'friends':
     case 'gone':
       return state;
   }

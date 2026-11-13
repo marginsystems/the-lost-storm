@@ -67,6 +67,7 @@ export type ServerFrame =
   | { readonly type: 'moves'; readonly moves: readonly LiveMove[] }
   | { readonly type: 'full' }
   | { readonly type: 'replaced' }
+  | { readonly type: 'friends' }
   | { readonly type: 'refused'; readonly reason: Refusal };
 
 export interface Place {
@@ -152,6 +153,8 @@ function readFields(source: Fields): ServerFrame | null {
       return { type: 'full' };
     case 'replaced':
       return { type: 'replaced' };
+    case 'friends':
+      return { type: 'friends' };
     case 'present': {
       const zone: string | null = shortText(source['zone'], LIVE_LIMITS.idChars);
       const you: string | null = shortText(source['you'], LIVE_LIMITS.idChars);

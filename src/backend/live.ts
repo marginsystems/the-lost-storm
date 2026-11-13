@@ -32,6 +32,7 @@ export type LiveEvent =
   | { readonly type: 'left'; readonly id: string }
   | { readonly type: 'look'; readonly id: string; readonly hero: string | null; readonly worn: Worn }
   | { readonly type: 'moves'; readonly moves: readonly LiveMove[]; readonly at: number }
+  | { readonly type: 'friends' }
   | { readonly type: 'gone' };
 
 export type LiveListener = (event: LiveEvent) => void;
@@ -147,6 +148,9 @@ export function createLive(options: LiveOptions): Live {
         return;
       case 'said':
         emit({ type: 'said', line: frame.line });
+        return;
+      case 'friends':
+        emit({ type: 'friends' });
         return;
       case 'joined':
         emit({ type: 'joined', player: frame.player });

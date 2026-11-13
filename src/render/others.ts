@@ -226,6 +226,7 @@ export function createOthers(options: OthersOptions): Others {
           return;
         case 'said':
         case 'refused':
+        case 'friends':
           return;
       }
     },
