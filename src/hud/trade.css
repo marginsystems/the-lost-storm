@@ -6,6 +6,10 @@
   margin-bottom: 8px;
 }
 
+body:not(.touch) .trade-head {
+  padding-right: 34px;
+}
+
 .trade-head .panel-title {
   margin-bottom: 0;
 }
