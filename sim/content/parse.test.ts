@@ -664,3 +664,11 @@ void test('a zone with no storm tier is tier 0, and the hero resists up to a cap
   const broken: RawContent = { ...shipped, player: { ...player, resistance: { armourCap: 0.75, cap: 0.75, floor: 0.5, tierPenalty: 0.2 } } };
   assert.throws((): Content => parseContent(broken), (error: unknown): boolean => problem(error, 'player.resistance.floor'));
 });
+
+void test('a wearable keeps all the wake light unless its data gives it a share, and the share is checked', (): void => {
+  const plain: Content = parseContent({ ...shipped, wearables: [...wearables, extraWearable] });
+  assert.equal(must(plain.wearables.get('ash_shroud'), 'ash_shroud').wakeLamps, 1);
+  const shy: Content = parseContent({ ...shipped, wearables: [...wearables, { ...extraWearable, wakeLamps: 0.45 }] });
+  assert.equal(must(shy.wearables.get('ash_shroud'), 'ash_shroud').wakeLamps, 0.45);
+  assert.throws((): Content => parseContent({ ...shipped, wearables: [...wearables, { ...extraWearable, wakeLamps: 1.5 }] }), (error: unknown): boolean => problem(error, 'wakeLamps'));
+});

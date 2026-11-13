@@ -151,6 +151,8 @@ interface WornPiece {
 }
 
 export const RIM_LIGHT: IUniform<Color> = { value: new Color(0x000000) };
+export const WAKE_LAMPS: IUniform<number> = { value: 0 };
+const LAMP_HOLD: string = '#include <opaque_fragment>';
 
 const DEGREES: number = Math.PI / 180;
 const FLASH_KEY: string = 'storm-flash-rim';
@@ -371,7 +373,7 @@ function recolourEmissiveMap(material: MeshStandardMaterial, glow: string): void
   material.emissiveIntensity = CHARACTER.glowBoost;
 }
 
-function flashing(source: unknown, look: RigLook, glow: RigGlow): MeshStandardMaterial[] {
+function flashing(source: unknown, look: RigLook, glow: RigGlow, wakeLamps: number): MeshStandardMaterial[] {
   const list: readonly unknown[] = Array.isArray(source) ? source : [source];
   const cloned: MeshStandardMaterial[] = [];
   for (const entry of list) {
@@ -392,8 +394,11 @@ function flashing(source: unknown, look: RigLook, glow: RigGlow): MeshStandardMa
         shader.uniforms['uFlashLift'] = glow.lift;
         shader.uniforms['uHover'] = glow.hover;
         shader.uniforms['uRim'] = RIM_LIGHT;
+        shader.uniforms['uWakeLamps'] = WAKE_LAMPS;
+        shader.uniforms['uLampShare'] = { value: wakeLamps };
         shader.fragmentShader = shader.fragmentShader
-          .replace('void main() {', 'uniform vec3 uFlash;\nuniform float uFlashLift;\nuniform vec3 uHover;\nuniform vec3 uRim;\nvoid main() {')
+          .replace('void main() {', 'uniform vec3 uFlash;\nuniform float uFlashLift;\nuniform vec3 uHover;\nuniform vec3 uRim;\nuniform float uWakeLamps;\nuniform float uLampShare;\nvoid main() {')
+          .replace(LAMP_HOLD, `outgoingLight *= mix( 1.0, uLampShare, uWakeLamps );\n${LAMP_HOLD}`)
           .replace('#include <emissivemap_fragment>', CHARACTER_SHADE)
           .replace('#include <alphatest_fragment>', material.alphaToCoverage ? CHARACTER_FEATHER : '#include <alphatest_fragment>');
       };
@@ -412,7 +417,7 @@ function dress(object: Object3D, look: RigLook, glow: RigGlow, sink: MeshStandar
   object.castShadow = true;
   object.receiveShadow = false;
   object.frustumCulled = false;
-  const cloned: MeshStandardMaterial[] = flashing(object.material, look, glow);
+  const cloned: MeshStandardMaterial[] = flashing(object.material, look, glow, 1);
   sink.push(...cloned);
   const first: MeshStandardMaterial | undefined = cloned[0];
   if (first !== undefined) object.material = cloned.length === 1 ? first : cloned;
@@ -493,7 +498,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     const geometries: readonly BufferGeometry[] = fittedPieces(rig, wearable, skinAnchor);
     wearable.pieces.forEach((source: SkinnedMesh, index: number): void => {
       const geometry: BufferGeometry | undefined = geometries[index];
-      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow);
+      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow, wearable.def.wakeLamps);
       const first: MeshStandardMaterial | undefined = cloned[0];
       if (geometry === undefined || first === undefined) return;
       const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);

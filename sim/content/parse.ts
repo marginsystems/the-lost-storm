@@ -16,7 +16,7 @@ import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, sk
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
-import { byId, choice, colour, ContentError, each, fields, flag, fraction, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
+import { byId, choice, colour, ContentError, each, fields, flag, fraction, nonNegative, nullableText, numeric, positive, share, text, textList } from './read.ts';
 import type {
   ActDef,
   AttachmentDef,
@@ -263,6 +263,7 @@ function wearable(value: unknown, where: string): WearableDef {
     region: choice(source, 'region', WEAR_REGIONS, where),
     tint: text(source, 'tint', where),
     hides: textList(source, 'hides', where),
+    wakeLamps: source['wakeLamps'] === undefined ? 1 : share(source, 'wakeLamps', where),
   };
 }
 

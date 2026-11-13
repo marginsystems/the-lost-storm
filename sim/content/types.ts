@@ -248,6 +248,7 @@ export interface WearableDef {
   readonly region: WearRegion;
   readonly tint: string;
   readonly hides: readonly string[];
+  readonly wakeLamps: number;
 }
 
 export { ARMOUR_MATERIALS, CAST_ORIGINS, GROUND_KEEPS, GROUND_MODELS, ITEM_STATS, POWER_TARGETS, POWER_TRIGGERS, RARITY_MARKERS } from './item-types.ts';

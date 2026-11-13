@@ -21,6 +21,7 @@ import { FIGURE_GAUGE } from './figure-gauge.ts';
 import type { BodySpan } from './figure-gauge.ts';
 import type { WakeLights } from './wake-light.ts';
 import { createWakeLights, wakeCameraYaw, wakeLit } from './wake-light.ts';
+import { WAKE_LAMPS } from './character-loader.ts';
 import { CAMERA } from './iso-camera.ts';
 import type { WakeWisps } from './wake-wisps.ts';
 import { createWakeWisps } from './wake-wisps.ts';
@@ -375,6 +376,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
       body.value.set(span === null ? pos.x : span.head.x, span === null ? pos.z : span.head.z, span === null ? pos.x : span.feet.x, span === null ? pos.z : span.feet.z);
       const lit: number = wakeLit(stage);
       bed.value.x = lit;
+      WAKE_LAMPS.value = lit;
       wakeLights.update(pos, zone.floorHeight, lit, world.wake === null ? CAMERA.yawDegrees : wakeCameraYaw(world.wake.plan, world.wake.elapsed));
       wakeWisps.update(pos, zone.floorHeight, stage, world.wake === null ? 0 : world.wake.elapsed);
       stepLightning(world, dt);
@@ -396,6 +398,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
       for (const geometry of glimpse.geometries) geometry.dispose();
       light.dispose();
       wakeLights.dispose();
+      WAKE_LAMPS.value = 0;
       wakeWisps.dispose();
       rock?.dispose();
     },

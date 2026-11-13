@@ -440,41 +440,47 @@
     "model": "models/wear/hair_short.glb",
     "region": "head",
     "tint": "#ffffff",
-    "hides": []
+    "hides": [],
+    "wakeLamps": 0.45
   },
   {
     "id": "hair_cropped",
     "model": "models/wear/hair_cropped.glb",
     "region": "head",
     "tint": "#9a8070",
-    "hides": []
+    "hides": [],
+    "wakeLamps": 0.45
   },
   {
     "id": "hair_swept",
     "model": "models/wear/hair_swept.glb",
     "region": "head",
     "tint": "#ffffff",
-    "hides": []
+    "hides": [],
+    "wakeLamps": 0.45
   },
   {
     "id": "hair_ponytail",
     "model": "models/wear/hair_ponytail.glb",
     "region": "head",
     "tint": "#c8a684",
-    "hides": []
+    "hides": [],
+    "wakeLamps": 0.45
   },
   {
     "id": "hair_braid",
     "model": "models/wear/hair_braid.glb",
     "region": "head",
     "tint": "#d2aa80",
-    "hides": []
+    "hides": [],
+    "wakeLamps": 0.45
   },
   {
     "id": "hair_bob",
     "model": "models/wear/hair_bob.glb",
     "region": "head",
     "tint": "#9c7c66",
-    "hides": []
+    "hides": [],
+    "wakeLamps": 0.45
   }
 ]
