@@ -20,7 +20,7 @@ import { echoFade, momentOfEcho } from '../../sim/world/moments.ts';
 
 export const ACTORS = {
   monsterFlash: 1,
-  playerFlash: 0.85,
+  playerFlash: 0.4,
   defaultHeight: 2.2,
   npcAppearRate: 3.4,
   npcSettledWithin: 0.01,
@@ -68,7 +68,7 @@ export interface Actors {
 }
 
 const HIT_WHITE: Color = new Color(0xffffff);
-const HIT_RED: Color = new Color(0xff2a1a);
+const HIT_RED: Color = new Color(0xff6040);
 
 function poseOf(actor: ActorState): ActorPose {
   return { pos: actor.pos, facing: actor.facing, motion: actor.motion, gait: actor.gait, knockTime: knockTime(actor), busy: actor.action !== null, deadTime: actor.deadTime };
