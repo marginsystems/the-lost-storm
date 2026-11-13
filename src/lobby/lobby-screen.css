@@ -352,3 +352,12 @@ body[data-lobby] #vignette {
     padding-bottom: 0;
   }
 }
+
+.lobby-screen {
+  --lobby-zoom-fade: 0.82;
+}
+
+.lobby-screen .lobby-primary,
+.lobby-screen .lobby-quiet {
+  filter: opacity(calc(1 - var(--lobby-zoom, 0) * var(--lobby-zoom-fade)));
+}

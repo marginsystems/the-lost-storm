@@ -85,6 +85,8 @@ export const LOBBY_STAGE = {
   mistFirstDepth: -1.6,
   mistDepthStep: -1.4,
   mistTextureSize: 64,
+  rootId: 'lobby',
+  zoomProperty: '--lobby-zoom',
   domeRadius: 30,
   domeWidthSegments: 48,
   domeHeightSegments: 32,
@@ -440,6 +442,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       const view: OrbitView = stepOrbit(orbit, dt);
       camera.position.set(view.x, view.y, view.z);
       dome.position.copy(camera.position);
+      document.getElementById(LOBBY_STAGE.rootId)?.style.setProperty(LOBBY_STAGE.zoomProperty, view.zoom.toFixed(3));
       camera.lookAt(0, view.lookHeight, 0);
       renderer.getSize(size);
       if (size.x <= 0 || size.y <= 0) return;

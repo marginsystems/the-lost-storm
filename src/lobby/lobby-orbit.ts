@@ -36,6 +36,7 @@ export interface OrbitView {
   readonly y: number;
   readonly z: number;
   readonly lookHeight: number;
+  readonly zoom: number;
 }
 
 export function createLobbyOrbit(): LobbyOrbit {
@@ -113,5 +114,6 @@ export function stepOrbit(orbit: LobbyOrbit, dt: number): OrbitView {
     y: lookHeight + Math.sin(rise) * distance,
     z: Math.cos(yaw) * Math.cos(rise) * distance,
     lookHeight,
+    zoom,
   };
 }
