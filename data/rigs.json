@@ -373,7 +373,8 @@
         "bone": "hand_r",
         "radius": 0.03
       }
-    ]
+    ],
+    "carry": 0.3
   },
   {
     "id": "human_man",

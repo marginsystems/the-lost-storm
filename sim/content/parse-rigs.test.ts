@@ -44,3 +44,9 @@ void test('a rig lists the joints that rest on the ground when it lies down, eac
   assert.deepEqual(rig({ ...source(), contacts }, 'rig').contacts, contacts);
   assert.throws((): unknown => rig({ ...source(), contacts: [{ bone: 'pelvis', radius: 0 }] }, 'rig'), ContentError);
 });
+
+void test('a rig says how much of a gait\'s swing an arm keeps while it holds something: all of it unless told, never more than all', (): void => {
+  assert.equal(rig(source(), 'rig').carry, 1);
+  assert.equal(rig({ ...source(), carry: 0.3 }, 'rig').carry, 0.3);
+  assert.throws((): unknown => rig({ ...source(), carry: 1.4 }, 'rig'), ContentError);
+});

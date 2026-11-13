@@ -248,7 +248,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       return;
     }
     gaitIndex = choice.index;
-    play(gait.clip, ACTOR.locomotionFade, choice.rate, false, false);
+    play(rig.carried(gait.clip), ACTOR.locomotionFade, choice.rate, false, false);
   };
 
   return {

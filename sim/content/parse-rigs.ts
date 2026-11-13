@@ -1,6 +1,6 @@
 import type { RigActionClip, RigClips, RigContact, RigDef, RigSocket, RigUnarmedClips, Triple } from './types.ts';
 import type { Fields } from './read.ts';
-import { ContentError, each, fields, nullableText, numeric, positive, text, textList } from './read.ts';
+import { ContentError, each, fields, nullableText, numeric, positive, share, text, textList } from './read.ts';
 import { rigGaits } from './parse-gaits.ts';
 
 function actionClips(value: unknown, where: string): Record<string, RigActionClip> {
@@ -75,6 +75,7 @@ export function rig(value: unknown, where: string): RigDef {
     hiddenNodes: textList(source, 'hiddenNodes', where),
     bodyParts,
     base: source['base'] === undefined ? [] : textList(source, 'base', where),
+    carry: source['carry'] === undefined ? 1 : share(source, 'carry', where),
     contacts: source['contacts'] === undefined ? [] : each(source['contacts'], `${where}.contacts`, rigContact),
   };
 }

@@ -18,6 +18,7 @@ import { createBrowserTimers } from '../browser-timers.ts';
 import { STALL, withStallLimit } from './stall-limit.ts';
 import { addBoxUvs } from './box-uv.ts';
 import { fitClip } from './clip-fit.ts';
+import { carriedClip, carryJoints } from './carry-arm.ts';
 
 export interface ActionClip {
   readonly clip: AnimationClip;
@@ -51,6 +52,7 @@ export interface LoadedRig {
   readonly clips: RigClipSet;
   readonly bodyParts: readonly string[];
   readonly bodyMasks: ReadonlyMap<string, readonly number[]>;
+  readonly carried: Map<string, AnimationClip>;
   readonly fitted: Map<string, readonly BufferGeometry[]>;
 }
 
@@ -86,6 +88,7 @@ export interface RigInstance {
   readonly clips: RigClipSet;
   setGear(attachmentIds: readonly string[]): void;
   armed(): boolean;
+  carried(gait: AnimationClip): AnimationClip;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   stepWear(dt: number): void;
   setFlash(color: Color, amount: number): void;
@@ -277,6 +280,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
     },
     bodyParts: grouping.names,
     bodyMasks: grouping.masks,
+    carried: new Map<string, AnimationClip>(),
     fitted: new Map<string, readonly BufferGeometry[]>(),
   };
 }
@@ -580,6 +584,21 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     },
     armed(): boolean {
       return held.size > 0;
+    },
+    carried(gait: AnimationClip): AnimationClip {
+      if (def.carry >= 1 || held.size === 0) return gait;
+      const holding: string[] = [...held.keys()].flatMap((id: string): string[] => {
+        const socket: string | undefined = library.attachments.get(id)?.def.socket;
+        const bone: string | undefined = socket === undefined ? undefined : def.sockets[socket]?.bone;
+        return bone === undefined ? [] : [bone];
+      });
+      const bones: string[] = [...new Set<string>(holding)].toSorted();
+      const key: string = `${gait.uuid}|${bones.join(',')}`;
+      const known: AnimationClip | undefined = rig.carried.get(key);
+      if (known !== undefined) return known;
+      const made: AnimationClip = carriedClip(gait, rig.clips.idle, carryJoints(rig.template, bones, def.bodyParts['arms'] ?? []), def.carry);
+      rig.carried.set(key, made);
+      return made;
     },
     setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void {
       const key: string = `${wearableIds.join('|')}#${hiddenParts.join('|')}#${library.wearables.size}`;

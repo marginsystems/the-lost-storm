@@ -61,4 +61,5 @@ export interface RigDef {
   readonly bodyParts: Readonly<Record<string, readonly string[]>>;
   readonly base: readonly string[];
   readonly contacts: readonly RigContact[];
+  readonly carry: number;
 }
