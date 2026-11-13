@@ -3,6 +3,7 @@ import type { Hud } from '../hud/hud-api.ts';
 import type { Input } from '../input.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import { CAMERA } from '../render/iso-camera.ts';
+import { restoreSurfaceTextures } from '../render/surfaces.ts';
 import type { Stage } from '../render/stage.ts';
 import type { ContextWatch } from '../hud/context-notice.ts';
 import { watchContext } from '../hud/context-notice.ts';
@@ -49,7 +50,10 @@ export function bootMobile(): MobileBoot {
 export function startMobile(boot: MobileBoot, setup: MobileSetup): Mobile {
   const { canvas, stage } = setup;
   boot.quality.subscribe((tier: QualityTier): void => stage.applyQuality(tier));
-  const context: ContextWatch = watchContext(canvas, canvas.parentElement ?? setup.hudRoot, (): boolean => stage.renderer.getContext().isContextLost(), (): void => stage.resize());
+  const context: ContextWatch = watchContext(canvas, canvas.parentElement ?? setup.hudRoot, (): boolean => stage.renderer.getContext().isContextLost(), (): void => {
+    stage.resize();
+    restoreSurfaceTextures();
+  });
   const controls: TouchControls | null = boot.touch
     ? createTouchControls({
         canvas,

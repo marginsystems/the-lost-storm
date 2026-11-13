@@ -1,8 +1,10 @@
 import type { Material, Texture } from 'three';
-import { Color, MeshStandardMaterial, NoColorSpace, RepeatWrapping, SRGBColorSpace, TextureLoader, Vector2 } from 'three';
+import { Color, MeshStandardMaterial, NoColorSpace, RepeatWrapping, SRGBColorSpace, Vector2 } from 'three';
 import type { Content, SurfaceDef, ZoneDef } from '../../sim/content/types.ts';
 import { renderBudget, texturePath } from '../mobile/quality.ts';
 import { shrinkTexture } from '../mobile/textures.ts';
+import type { BitmapTextures } from './bitmap-texture.ts';
+import { browserBitmaps, browserImageLoad, createBitmapTextures } from './bitmap-texture.ts';
 import { assetUrl } from './character-loader.ts';
 import { PROP_SURFACE, withPropLook } from './prop-surface.ts';
 import { wetGround } from './wet-ground.ts';
@@ -35,8 +37,12 @@ interface Loading {
   readonly done: Promise<void>;
 }
 
-const loader: TextureLoader = new TextureLoader();
 const textures: Map<string, Loading> = new Map<string, Loading>();
+const bitmaps: BitmapTextures = createBitmapTextures(browserBitmaps(), browserImageLoad);
+
+export function restoreSurfaceTextures(): number {
+  return bitmaps.restore();
+}
 interface Made {
   readonly surface: string;
   readonly material: MeshStandardMaterial;
@@ -56,13 +62,12 @@ function loadTexture(path: string, metres: number, colour: boolean): Texture {
   const started: Texture[] = [];
   const done: Promise<void> = new Promise<void>((resolve: () => void): void => {
     started.push(
-      loader.load(
+      bitmaps.load(
         assetUrl(texturePath(path, renderBudget().halfTextures)),
         (loaded: Texture): void => {
           shrinkTexture(loaded, renderBudget().maxTextureSize);
           resolve();
         },
-        undefined,
         resolve,
       ),
     );
