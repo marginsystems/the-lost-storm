@@ -187,6 +187,7 @@ void test('Google\'s own button is drawn fully visible, because it ignores a cli
     assert.ok(!/\b(filter|clip-path|mask)\s*:/.test(body), body);
     assert.ok(!/\bdisplay\s*:\s*none/.test(body), body);
   }
+  assert.ok(css.replaceAll(/\s+/g, ' ').includes('.title-google .title-signin-face { display: none; }'), 'the page draws no face of its own for Google, so the control never changes look after it loads');
   for (const holder of ['.title-google', '.title-methods', '.title-account']) {
     for (const body of rulesFor(css, holder)) assert.ok(!/\b(filter|clip-path|mask)\s*:/.test(body), `${holder} ${body}`);
   }
