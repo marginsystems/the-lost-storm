@@ -5,7 +5,7 @@ import type { Content, PropDef, ZoneDef, ZoneExit } from '../content/types.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { must } from '../../test/support.ts';
 import type { BarrierPiece } from './barrier.ts';
-import { barrierPieces, barrierRuns, floorDepth, sizedProp } from './barrier.ts';
+import { BARRIER_WORK, barrierPieces, barrierRuns, floorDepth, sizedProp } from './barrier.ts';
 import type { Blocker, NavGrid } from './grid.ts';
 import { blockerGap, buildNavGrid, cellCenter, isWalkable, propBlockers } from './grid.ts';
 import { findPath } from './path.ts';
@@ -55,7 +55,7 @@ void test('the Hall and the Hideout are fenced by a barrier', (): void => {
 });
 
 for (const zone of fenced) {
-  const pieces: BarrierPiece[] = barrierPieces(zone, content.props);
+  const pieces: readonly BarrierPiece[] = barrierPieces(zone, content.props);
   const bare: NavGrid = buildNavGrid({ ...zone, props: [] }, content.props, content.surfaces, content.player.radius);
   const open: NavGrid = buildNavGrid({ ...zone, props: [], outside: null }, content.props, content.surfaces, content.player.radius);
   const full: NavGrid = buildNavGrid(zone, content.props, content.surfaces, content.player.radius);
@@ -110,5 +110,26 @@ for (const zone of fenced) {
       const def: PropDef = must(content.props.get(piece.prop), piece.prop);
       assert.ok(def.height * piece.size <= EDGE.waist, `${piece.prop} is ${(def.height * piece.size).toFixed(2)} m tall on the ${piece.side} edge`);
     }
+  });
+}
+
+const WORK = {
+  gapsPerPiece: 400,
+} as const;
+
+for (const zone of fenced) {
+  void test(`${zone.id}: placing the barrier measures each piece a bounded number of times, and only once per zone`, (): void => {
+    const fresh: ZoneDef = { ...zone };
+    const placements: number = BARRIER_WORK.placements;
+    const gaps: number = BARRIER_WORK.gaps;
+    const pieces: readonly BarrierPiece[] = barrierPieces(fresh, content.props);
+    const spent: number = BARRIER_WORK.gaps - gaps;
+    assert.ok(pieces.length > 0);
+    assert.ok(spent / pieces.length < WORK.gapsPerPiece, `${String(spent)} outline gaps for ${String(pieces.length)} pieces`);
+    assert.equal(BARRIER_WORK.placements, placements + 1);
+    assert.equal(barrierPieces(fresh, content.props), pieces);
+    buildNavGrid(fresh, content.props, content.surfaces, content.player.radius);
+    assert.equal(BARRIER_WORK.placements, placements + 1);
+    assert.equal(BARRIER_WORK.gaps - gaps, spent);
   });
 }
