@@ -32,6 +32,11 @@ export interface RigSocket {
   readonly scale: number;
 }
 
+export interface RigContact {
+  readonly bone: string;
+  readonly radius: number;
+}
+
 export interface AttachmentDef {
   readonly id: string;
   readonly model: string;
@@ -55,4 +60,5 @@ export interface RigDef {
   readonly idleRate: number;
   readonly bodyParts: Readonly<Record<string, readonly string[]>>;
   readonly base: readonly string[];
+  readonly contacts: readonly RigContact[];
 }

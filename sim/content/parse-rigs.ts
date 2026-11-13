@@ -1,6 +1,6 @@
-import type { RigActionClip, RigClips, RigDef, RigSocket, RigUnarmedClips, Triple } from './types.ts';
+import type { RigActionClip, RigClips, RigContact, RigDef, RigSocket, RigUnarmedClips, Triple } from './types.ts';
 import type { Fields } from './read.ts';
-import { ContentError, each, fields, nullableText, numeric, text, textList } from './read.ts';
+import { ContentError, each, fields, nullableText, numeric, positive, text, textList } from './read.ts';
 import { rigGaits } from './parse-gaits.ts';
 
 function actionClips(value: unknown, where: string): Record<string, RigActionClip> {
@@ -46,6 +46,11 @@ function rigSocket(value: unknown, where: string): RigSocket {
   return { bone: text(source, 'bone', where), position: triple(source, 'position', where), rotationDegrees: triple(source, 'rotationDegrees', where), scale: numeric(source, 'scale', where) };
 }
 
+function rigContact(value: unknown, where: string): RigContact {
+  const source: Fields = fields(value, where);
+  return { bone: text(source, 'bone', where), radius: positive(source, 'radius', where) };
+}
+
 export function rig(value: unknown, where: string): RigDef {
   const source: Fields = fields(value, where);
   const socketFields: Fields = fields(source['sockets'], `${where}.sockets`);
@@ -70,5 +75,6 @@ export function rig(value: unknown, where: string): RigDef {
     hiddenNodes: textList(source, 'hiddenNodes', where),
     bodyParts,
     base: source['base'] === undefined ? [] : textList(source, 'base', where),
+    contacts: source['contacts'] === undefined ? [] : each(source['contacts'], `${where}.contacts`, rigContact),
   };
 }

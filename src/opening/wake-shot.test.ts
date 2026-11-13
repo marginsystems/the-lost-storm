@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { ZoneWake } from '../../sim/content/story-types.ts';
 import { wakeLength } from '../../sim/world/wake.ts';
 import type { WakeFrame } from './wake-shot.ts';
-import { pullStart, smootherstep, WAKE_SHOT, wakeFrame } from './wake-shot.ts';
+import { lidsClosed, pullStart, smootherstep, WAKE_SHOT, wakeBlur, wakeFrame } from './wake-shot.ts';
 
 const PLAN: ZoneWake = { still: 2, stir: 1.2, rise: 3.8, front: 0.18, settle: 3, hurry: 1.2 };
 const STEP: number = 1 / 60;
@@ -56,4 +56,41 @@ void test('smootherstep is flat at both ends', (): void => {
   assert.equal(smootherstep(1), 1);
   assert.ok(smootherstep(0.01) < 1e-4);
   assert.ok(1 - smootherstep(0.99) < 1e-4);
+});
+
+void test('his eyes open on the world: shut at first, a first look, a blink, then fully open before he stirs much', (): void => {
+  assert.equal(lidsClosed(PLAN, 0), 1);
+  const firstLook: number = lidsClosed(PLAN, PLAN.still * 0.42);
+  const blink: number = lidsClosed(PLAN, PLAN.still * 0.6);
+  assert.ok(firstLook < 0.7, 'the first look opens the lids');
+  assert.ok(blink > firstLook + 0.2, 'the blink closes them again');
+  assert.equal(lidsClosed(PLAN, PLAN.still * 1.1), 0);
+  assert.equal(lidsClosed(PLAN, wakeLength(PLAN)), 0);
+  assert.equal(wakeFrame(PLAN, 0).lids, 1);
+});
+
+void test('the lids and the focus never jump between two frames', (): void => {
+  let lids: number = lidsClosed(PLAN, 0);
+  let blur: number = wakeBlur(PLAN, 0);
+  for (let elapsed: number = STEP; elapsed <= PLAN.still * 2; elapsed += STEP) {
+    const nextLids: number = lidsClosed(PLAN, elapsed);
+    const nextBlur: number = wakeBlur(PLAN, elapsed);
+    assert.ok(Math.abs(nextLids - lids) < 0.06, `lids jump at ${elapsed}`);
+    assert.ok(Math.abs(nextBlur - blur) < 0.03, `focus jumps at ${elapsed}`);
+    lids = nextLids;
+    blur = nextBlur;
+  }
+});
+
+void test('the world starts out of focus and is sharp soon after his eyes are open', (): void => {
+  assert.equal(wakeFrame(PLAN, 0).blur, WAKE_SHOT.blurPixels);
+  assert.ok(wakeBlur(PLAN, PLAN.still) > 0);
+  assert.equal(wakeBlur(PLAN, PLAN.still * 1.6), 0);
+  assert.equal(wakeFrame(PLAN, wakeLength(PLAN)).blur, 0);
+});
+
+void test('a wake with no still time has no blink and no blur', (): void => {
+  const hurried: ZoneWake = { ...PLAN, still: 0 };
+  assert.equal(lidsClosed(hurried, 0), 0);
+  assert.equal(wakeBlur(hurried, 0), 0);
 });

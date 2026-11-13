@@ -22,6 +22,17 @@ import type { Reader } from './reader.ts';
 import { createReader } from './reader.ts';
 import type { OverlayManager } from '../hud/overlays.ts';
 
+const LIDS = { className: 'wake-lids', hostId: 'vignette' } as const;
+
+function mountLids(): HTMLElement | null {
+  const host: HTMLElement | null = document.getElementById(LIDS.hostId);
+  if (host === null) return null;
+  const made: HTMLElement = document.createElement('div');
+  made.className = LIDS.className;
+  host.append(made);
+  return made;
+}
+
 export const OPENING = {
   ambienceStep: 0.004,
 } as const;
@@ -65,6 +76,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   let shift: Vec2 = { x: world.shift.x, z: world.shift.z };
   let shiftZone: string = world.zone.id;
   let framed: boolean = false;
+  let lids: HTMLElement | null = null;
   let held: WakeState | null = null;
   const reader: Reader = createReader(hud, deps.touch, deps.overlays);
   const echo: NameEcho = createNameEcho({ root: hud, fetchVoice: (): Promise<SpokenName | null> => deps.fetchVoice(), play: (audio: ArrayBuffer): Promise<void> => deps.playVoice(audio), nameOf: (): string | null => deps.nameOf(), refreshName: (): Promise<void> => deps.refreshName() });
@@ -123,10 +135,16 @@ export function createOpening(deps: OpeningDeps): Opening {
         const frame: WakeFrame = wakeFrame(wake.plan, wake.elapsed);
         camera.frame(frame.shot);
         document.body.style.setProperty('--wake-soft', frame.soft.toFixed(3));
+        lids ??= mountLids();
+        document.body.style.setProperty('--wake-lids', frame.lids.toFixed(3));
+        document.body.style.setProperty('--wake-blur', `${frame.blur.toFixed(2)}px`);
+        document.body.dataset['wakeBlur'] = frame.blur > 0 ? 'on' : 'off';
         framed = true;
       } else if (framed) {
         camera.frame(null);
         document.body.style.setProperty('--wake-soft', '0');
+        document.body.style.setProperty('--wake-lids', '0');
+        document.body.dataset['wakeBlur'] = 'off';
         framed = false;
       }
       document.body.dataset['waking'] = wake === null ? 'off' : 'on';

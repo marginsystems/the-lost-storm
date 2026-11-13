@@ -32,3 +32,15 @@ body:not([data-zone-kind='void']) .vignette-wake {
 .vignette-void-edge {
   opacity: calc(var(--void-edge) * (1 - var(--wake-soft, 0)));
 }
+
+.wake-lids {
+  position: absolute;
+  inset: 0;
+  opacity: min(1, calc(var(--wake-lids, 0) * 4));
+  background: radial-gradient(ellipse 130% calc((1 - var(--wake-lids, 0)) * 78%) at 50% 50%, rgba(4, 6, 9, 0) 0%, rgba(4, 6, 9, 0) 46%, rgba(4, 6, 9, 0.92) 78%, rgb(4, 6, 9) 100%), rgba(4, 6, 9, calc(var(--wake-lids, 0) * var(--wake-lids, 0) * var(--wake-lids, 0)));
+  pointer-events: none;
+}
+
+body[data-wake-blur='on'] #scene {
+  filter: blur(var(--wake-blur, 0px));
+}

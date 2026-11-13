@@ -6,11 +6,16 @@ import { restOffset, restWeight, WAKE_POSE } from './wake-pose.ts';
 import type { Contact } from './wake-pose.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { Motion } from '../../sim/world/types.ts';
+import type { RigContact } from '../../sim/content/types.ts';
+import type { BodyRoles } from '../lobby/lobby-life.ts';
+import { bodyRoles, boneNamed, spineBelow } from '../lobby/lobby-life.ts';
 import type { ActionClip, GaitClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
 import { findNode } from './character-loader.ts';
 import type { BodyState, ClipKind, GaitChoice, KnockPose } from './locomotion.ts';
 import { chooseGait, clipKindOf, clipsFor, knockPose } from './locomotion.ts';
 import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
+import type { RestShadows } from './rest-shadows.ts';
+import { createRestShadows } from './rest-shadows.ts';
 import type { Spring } from '../hud/character-spring.ts';
 import { springTo, stepSpring } from '../hud/character-spring.ts';
 import type { AnimationBank } from './animation-bank.ts';
@@ -41,10 +46,7 @@ export const ACTOR = {
   sinkLimit: 0.35,
   riseDepth: 2.4,
   standFade: 0.45,
-  head: 'DEF-head',
-  neck: 'DEF-neck',
-  chest: ['DEF-spine.002', 'DEF-spine.003'],
-  fingers: ['DEF-f_index.01.R', 'DEF-f_index.02.R', 'DEF-thumb.01.R', 'DEF-f_index.01.L', 'DEF-f_index.02.L'],
+  chestJoints: 2,
 } as const;
 
 const UP: Vector3 = new Vector3(0, 1, 0);
@@ -145,28 +147,24 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let risen: boolean = false;
   const spare = { q: new Quaternion(), turn: new Quaternion(), v: new Vector3() };
   const side: Vector3 = new Vector3();
-  const head: Object3D | undefined = findNode(rig.root, ACTOR.head);
-  const neck: Object3D | undefined = findNode(rig.root, ACTOR.neck);
-  const chest: Object3D[] = ACTOR.chest.flatMap((name: string): Object3D[] => {
-    const bone: Object3D | undefined = findNode(rig.root, name);
-    return bone === undefined ? [] : [bone];
-  });
-  const contacts: { readonly bone: Object3D; readonly radius: number }[] = WAKE_POSE.contacts.flatMap((contact): { readonly bone: Object3D; readonly radius: number }[] => {
+  const roles: BodyRoles = bodyRoles(rig.def.bodyParts);
+  const head: Object3D | undefined = boneNamed(rig.root, roles.head) ?? undefined;
+  const spine: Object3D[] = spineBelow(head ?? null, roles.torso);
+  const above: Object3D | null = head?.parent ?? null;
+  const neck: Object3D | undefined = above === null || spine.includes(above) ? undefined : above;
+  const chest: Object3D[] = spine.slice(-ACTOR.chestJoints);
+  const contacts: { readonly bone: Object3D; readonly radius: number }[] = rig.def.contacts.flatMap((contact: RigContact): { readonly bone: Object3D; readonly radius: number }[] => {
     const bone: Object3D | undefined = findNode(rig.root, contact.bone);
     return bone === undefined ? [] : [{ bone, radius: contact.radius }];
   });
+  const grounded: RestShadows = createRestShadows(contacts);
   const touching: Vector3 = new Vector3();
   const rest = (pose: WakePose, floor: number): void => {
     rig.root.updateMatrixWorld(true);
     const reached: Contact[] = contacts.map(({ bone, radius }): Contact => ({ y: bone.getWorldPosition(touching).y, radius }));
     rig.root.position.y += restOffset(reached, floor) * restWeight(pose.share);
   };
-  const fingers: Object3D[] = ACTOR.fingers.flatMap((name: string): Object3D[] => {
-    const bone: Object3D | undefined = findNode(rig.root, name);
-    return bone === undefined ? [] : [bone];
-  });
-
-  const layered: Object3D[] = [...new Set([...(head === undefined ? [] : [head]), ...(neck === undefined ? [] : [neck]), ...chest, ...fingers])];
+  const layered: Object3D[] = [...new Set([...(head === undefined ? [] : [head]), ...(neck === undefined ? [] : [neck]), ...chest])];
   const rests: Quaternion[] = layered.map((bone: Object3D): Quaternion => bone.quaternion.clone());
   const unlayer = (): void => {
     layered.forEach((bone: Object3D, index: number): void => {
@@ -181,7 +179,6 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     side.copy(SIDE).applyAxisAngle(UP, rig.root.rotation.y);
     if (head !== undefined && pose.dip > 0) turnInWorld(head, side, pose.dip, spare);
     if (pose.breath !== 0) for (const bone of chest) turnInWorld(bone, side, pose.breath / chest.length, spare);
-    if (pose.curl > 0) for (const finger of fingers) finger.rotateX(pose.curl / fingers.length);
   };
   let flash: number = 0;
   let punch: number = 0;
@@ -318,6 +315,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       if (lying && woke !== null) {
         layerWake(woke);
         if (!risen) rest(woke, options.floor);
+        rig.root.updateMatrixWorld(true);
+        grounded.place(rig.root.visible ? parent : null, options.floor, scale * grow, risen ? 1 : woke.share);
+      } else {
+        grounded.hide();
       }
     },
     startAction(animation: string, windup: number, recovery: number): boolean {
@@ -388,10 +389,12 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     },
     detach(): void {
       shadow.removeFromParent();
+      grounded.hide();
       rig.root.removeFromParent();
     },
     dispose(): void {
       ownShadow?.dispose();
+      grounded.detach();
       shadow.removeFromParent();
       rig.root.removeFromParent();
       rig.dispose();

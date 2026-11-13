@@ -34,3 +34,13 @@ void test('a socket offset that is not three numbers is refused', (): void => {
     rig({ ...source(), sockets: { hand_r: { bone: 'hand_r', position: [0, 0], rotationDegrees: [0, 0, 0], scale: 1 } } }, 'rig');
   }, ContentError);
 });
+
+void test('a rig lists the joints that rest on the ground when it lies down, each with a positive radius, and has none unless told', (): void => {
+  assert.deepEqual(rig(source(), 'rig').contacts, []);
+  const contacts = [
+    { bone: 'pelvis', radius: 0.12 },
+    { bone: 'hand_l', radius: 0.03 },
+  ];
+  assert.deepEqual(rig({ ...source(), contacts }, 'rig').contacts, contacts);
+  assert.throws((): unknown => rig({ ...source(), contacts: [{ bone: 'pelvis', radius: 0 }] }, 'rig'), ContentError);
+});

@@ -17,7 +17,7 @@ function at(elapsed: number): WakePose {
 }
 
 void test('he lies flat and still until the stir, and is fully up with his head forward when control comes', (): void => {
-  assert.deepEqual(at(0), { share: 0, standing: false, turn: 0, curl: 0, dip: 0, breath: 0 });
+  assert.deepEqual(at(0), { share: 0, standing: false, turn: 0, dip: 0, breath: 0 });
   assert.equal(at(PLAN.still - STEP).share, 0);
   const end: WakePose = at(wakeLength(PLAN));
   assert.equal(end.share, 1);
@@ -33,12 +33,12 @@ void test('the stir settles where the rise begins, so the push-up starts without
   assert.ok(Math.abs(at(riseAt - STEP).share - at(riseAt + STEP).share) < 0.01);
 });
 
-void test('the rise pauses at the knee: the clip barely moves through the middle of the rise', (): void => {
+void test('the rise pauses while he sits propped on one hand: the clip barely moves through that part of the rise', (): void => {
   const riseAt: number = PLAN.still + PLAN.stir;
-  const knee = WAKE_POSE.rise[1];
-  const stand = WAKE_POSE.rise[2];
-  const pause: number = at(riseAt + PLAN.rise * stand.at).share - at(riseAt + PLAN.rise * knee.at).share;
-  const push: number = at(riseAt + PLAN.rise * knee.at).share - at(riseAt).share;
+  const propped = WAKE_POSE.rise[1];
+  const pushing = WAKE_POSE.rise[2];
+  const pause: number = at(riseAt + PLAN.rise * pushing.at).share - at(riseAt + PLAN.rise * propped.at).share;
+  const push: number = at(riseAt + PLAN.rise * propped.at).share - at(riseAt).share;
   assert.ok(pause < push / 4);
 });
 
@@ -49,7 +49,6 @@ void test('every frame of the wake moves the body, the head and the hands only a
     assert.ok(now.share >= before.share - 0.004, `share falls at ${elapsed}`);
     assert.ok(Math.abs(now.share - before.share) < 0.02, `share jumps at ${elapsed}`);
     assert.ok(Math.abs(now.turn - before.turn) < 0.06, `turn jumps at ${elapsed}`);
-    assert.ok(Math.abs(now.curl - before.curl) < 0.05, `curl jumps at ${elapsed}`);
     assert.ok(Math.abs(now.dip - before.dip) < 0.02, `dip jumps at ${elapsed}`);
     before = now;
   }
