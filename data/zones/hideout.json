@@ -20,7 +20,7 @@
   "floors": {"s": "black_ledge", "r": "black_rock", "p": "ruined_road"},
   "outside": {"surface": "crag_ground", "reach": 6, "edge": {"props": ["boulder_2", "rock_4", "crag_low", "boulder_2", "rock_5"], "gap": 0.3, "exitClear": 4}},
   "walls": null,
-  "playerStart": {"x": 8, "z": 20},
+  "playerStart": {"x": 11, "z": 20},
   "props": [
     {"prop": "crag_a", "x": -2, "z": 6, "y": -0.05, "rotationDegrees": 30},
     {"prop": "crag_b", "x": -3, "z": 34, "y": -0.05, "rotationDegrees": 200},
@@ -51,6 +51,8 @@
     {"prop": "basket", "x": 32.6, "z": 30.2, "y": 0, "rotationDegrees": 200},
     {"prop": "campfire", "x": 24.0, "z": 20.0, "y": 0, "rotationDegrees": 0},
     {"prop": "brazier", "x": 17.5, "z": 11.5, "y": 0, "rotationDegrees": 0},
+    {"prop": "post_lantern_lit", "x": 13.0, "z": 18.3, "y": 0, "rotationDegrees": 0},
+    {"prop": "post_lantern_lit", "x": 16.0, "z": 22.2, "y": 0, "rotationDegrees": 180},
     {"prop": "bench", "x": 20.0, "z": 23.5, "y": 0, "rotationDegrees": 90},
     {"prop": "stool", "x": 27.5, "z": 24.0, "y": 0, "rotationDegrees": 0},
     {"prop": "stall_camp", "x": 29.5, "z": 11.5, "y": 0, "rotationDegrees": 200},
@@ -60,7 +62,7 @@
   "packs": [],
   "surge": null,
   "exits": [
-    {"id": "west", "x": 1.6, "z": 20, "radius": 2.2, "to": "hall_of_time", "toExit": "east", "arrival": {"x": 8, "z": 20}, "requires": []}
+    {"id": "west", "x": 1.6, "z": 20, "radius": 2.2, "to": "hall_of_time", "toExit": "east", "arrival": {"x": 11, "z": 20}, "requires": []}
   ],
   "checkpoints": [],
   "waypoint": {"x": 24, "z": 14.5, "radius": 1.8},
