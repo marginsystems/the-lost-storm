@@ -47,6 +47,7 @@ export interface ItemBaseDef {
   readonly implicit: readonly StatMod[];
   readonly visual: string | null;
   readonly wear: readonly string[];
+  readonly wornModel: boolean;
   readonly ground: GroundLook;
   readonly power: PowerDef | null;
 }

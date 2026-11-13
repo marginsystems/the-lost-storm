@@ -90,6 +90,7 @@ export function itemBase(value: unknown, where: string): ItemBaseDef {
     implicit: each(source['implicit'], `${where}.implicit`, statMod),
     visual: nullableText(source, 'visual', where),
     wear: textList(source, 'wear', where),
+    wornModel: source['wornModel'] === undefined ? true : flag(source, 'wornModel', where),
     ground: source['ground'] === undefined ? genericLook(slot) : groundLook(source['ground'], `${where}.ground`),
     power: power(source['power'], `${where}.power`),
   };

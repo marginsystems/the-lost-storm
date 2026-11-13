@@ -615,7 +615,7 @@ async function start(): Promise<void> {
   reset.hidden = true;
   title.classList.add('ready');
   const begin = (): void => {
-    dirty = dirty || save === null;
+    dirty = true;
     title.classList.add('gone');
     launch.note('pressed_enter');
     playing = true;

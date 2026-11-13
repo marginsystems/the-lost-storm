@@ -374,6 +374,7 @@ function player(value: unknown, where: string): PlayerDef {
     startingItems: textList(source, 'startingItems', where),
     dressedFlag: text(source, 'dressedFlag', where),
     firstDrop: firstDrop(source['firstDrop'], `${where}.firstDrop`),
+    neverWears: textList(source, 'neverWears', where),
     unarmedVisual: nullableText(source, 'unarmedVisual', where),
     manaShows: choice(source, 'manaShows', MANA_SHOWS, where),
     tint: text(source, 'tint', where),

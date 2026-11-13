@@ -21,9 +21,13 @@ export function basesWithoutLook(content: Content): string[] {
     .filter((base: ItemBaseDef): boolean => {
       if (base.slot === null) return false;
       if (base.slot === 'weapon') return base.visual === null;
-      return WORN_LOOK_SLOTS.has(base.slot) && base.wear.length === 0;
+      return WORN_LOOK_SLOTS.has(base.slot) && base.wear.length === 0 && base.wornModel;
     })
     .map((base: ItemBaseDef): string => base.id);
+}
+
+export function heroWears(content: Content, base: ItemBaseDef): boolean {
+  return !base.wear.some((id: string): boolean => content.player.neverWears.includes(id));
 }
 
 export function handedBases(content: Content): ReadonlySet<string> {
@@ -39,6 +43,10 @@ function handedProblems(content: Content): string[] {
   for (const id of handedBases(content)) {
     if ((content.itemBases.get(id)?.dropWeight ?? 0) > 0) problems.push(`item ${id} is handed to the player, so it cannot also drop at random`);
   }
+  for (const id of content.player.neverWears) if (!content.wearables.has(id)) problems.push(`the hero never wears ${id}, which is not a wearable`);
+  for (const base of content.itemBases.values()) {
+    if ((base.dropWeight > 0 || handedBases(content).has(base.id)) && !heroWears(content, base)) problems.push(`item ${base.id} reaches the hero but wears something he never wears`);
+  }
   const rarity: RarityDef | undefined = content.rarities.find((candidate: RarityDef): boolean => candidate.id === content.player.firstDrop.rarity);
   if (rarity === undefined) problems.push(`the first drop names unknown rarity ${content.player.firstDrop.rarity}`);
   else if (rarity.powers) problems.push(`the first drop names ${rarity.id}, which only powered bases carry`);
@@ -48,6 +56,7 @@ function handedProblems(content: Content): string[] {
 export function itemProblems(content: Content): string[] {
   const problems: string[] = basesWithoutLook(content).map((id: string): string => `item ${id} has no look: give it a wear or a visual`);
   problems.push(...handedProblems(content));
+  for (const base of content.itemBases.values()) if (!base.wornModel && base.wear.length > 0) problems.push(`item ${base.id} has no worn model but wears ${base.wear.join(', ')}`);
   for (const base of content.itemBases.values()) {
     for (const id of base.wear) {
       const region: string | undefined = content.wearables.get(id)?.region;
