@@ -17,11 +17,13 @@ FIT_FROM: float = 0.3
 FIT_SPAN: float = 0.6
 SIDE_REACH: float = 0.2
 SEAM_BLEND: float = 0.03
-SEAM_LIFT: float = 0.0006
 ARM_UNDER: float = 0.004
+SEAM_LIFT: float = 0.0005
+LIFT_RAMP: float = 0.0005
+SEAM_GROUP: str = "seam"
 CUT_REACH: float = 0.3
 SMOOTH_SHARE: float = 0.5
-SMOOTH_PASSES: int = 3
+SMOOTH_PASSES: int = 30
 MAX_INFLUENCES: int = 4
 WEIGHT_FLOOR: float = 0.001
 BAKE_CAGE: float = 0.02
@@ -41,7 +43,8 @@ class HandSource:
 class Cut:
     head: np.ndarray
     axis: np.ndarray
-    depth: float
+    reach: float
+    rim: np.ndarray
 
 
 def chain(digit: str, side: str) -> list[str]:
@@ -209,11 +212,12 @@ def seam_cuts(points: np.ndarray, hands: Object, rig: Object) -> list[Cut]:
         near: list[int] = [index for index in rim if np.linalg.norm(points[index] - head) < SIDE_REACH]
         if not near:
             raise RuntimeError(f"hand graft: no wrist rim on side {side}")
-        cuts.append(Cut(head, axis, float(min((points[index] - head) @ axis for index in near))))
+        alongs: list[float] = [float((points[index] - head) @ axis) for index in near]
+        cuts.append(Cut(head, axis, max(alongs), points[near]))
     return cuts
 
 
-def blend_seam(points: np.ndarray, weights: dict[str, np.ndarray], body: Object, cuts: list[Cut]) -> np.ndarray:
+def blend_seam(points: np.ndarray, weights: dict[str, np.ndarray], body: Object, cuts: list[Cut]) -> tuple[np.ndarray, np.ndarray]:
     count: int = len(points)
     surface = bmesh.new()
     surface.from_mesh(body.data)
@@ -223,25 +227,28 @@ def blend_seam(points: np.ndarray, weights: dict[str, np.ndarray], body: Object,
     body_points: np.ndarray = points_of(body) @ np.array(body.matrix_world)[:3, :3].T + np.array(body.matrix_world)[:3, 3]
     body_weights: dict[str, np.ndarray] = read_weights(body)
     placed: np.ndarray = points.copy()
+    blended: np.ndarray = np.zeros(count)
     for cut in cuts:
         near_side: np.ndarray = np.linalg.norm(points - cut.head, axis=1) < SIDE_REACH
-        along: np.ndarray = (points - cut.head) @ cut.axis
-        share: np.ndarray = smoothstep(1.0 - (along - cut.depth) / SEAM_BLEND) * near_side
+        from_rim: np.ndarray = np.array([np.min(np.linalg.norm(cut.rim - point, axis=1)) for point in points])
+        share: np.ndarray = smoothstep(1.0 - from_rim / SEAM_BLEND) * near_side
+        blended = np.maximum(blended, share)
         for index in np.nonzero(share > 0)[0]:
             hit, normal, _, _ = tree.find_nearest(Vector(points[index]))
             if hit is None or normal is None:
                 continue
-            placed[index] = points[index] + share[index] * (np.array(hit) + np.array(normal) * SEAM_LIFT - points[index])
+            lift: float = SEAM_LIFT * float(smoothstep(np.array([from_rim[index] / LIFT_RAMP]))[0])
+            placed[index] = points[index] + share[index] * (np.array(hit) + np.array(normal) * lift - points[index])
             nearest: int = int(np.argmin(np.linalg.norm(body_points - placed[index], axis=1)))
             names: set[str] = {name for name, values in weights.items() if values[index] > 0} | {name for name, values in body_weights.items() if values[nearest] > 0}
             mixed: dict[str, float] = {name: (1 - share[index]) * weight_of(weights, name, count)[index] + share[index] * weight_of(body_weights, name, len(body_points))[nearest] for name in names}
             total: float = sum(mixed.values())
             for name, value in mixed.items():
                 weights.setdefault(name, np.zeros(count))[index] = value / total if total > 0 else 0.0
-    return placed
+    return placed, blended
 
 
-def smooth_weights(obj: Object, weights: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+def smooth_weights(obj: Object, weights: dict[str, np.ndarray], pinned: np.ndarray) -> dict[str, np.ndarray]:
     count: int = len(obj.data.vertices)
     edges = np.array([tuple(edge.vertices) for edge in obj.data.edges], dtype=np.int64)
     degree: np.ndarray = np.bincount(edges.ravel(), minlength=count).astype(np.float64)
@@ -255,12 +262,29 @@ def smooth_weights(obj: Object, weights: dict[str, np.ndarray]) -> dict[str, np.
             np.add.at(total, edges[:, 1], values[edges[:, 0]])
             mean: np.ndarray = np.where(degree > 0, total / np.maximum(degree, 1.0), values)
             smoothed[name] = values + SMOOTH_SHARE * (mean - values)
+    for name in hand_groups:
+        smoothed[name] = pinned * weights[name] + (1.0 - pinned) * smoothed[name]
     names: list[str] = list(smoothed)
     table: np.ndarray = np.stack([smoothed[name] for name in names], axis=1)
     weakest = np.argsort(-table, axis=1)[:, MAX_INFLUENCES:]
     np.put_along_axis(table, weakest, 0.0, axis=1)
     table = table / np.maximum(table.sum(axis=1, keepdims=True), 1e-9)
     return {name: table[:, index] for index, name in enumerate(names)}
+
+
+def take_normals(hands: Object, body: Object, share: np.ndarray) -> None:
+    group = hands.vertex_groups.new(name=SEAM_GROUP)
+    for index in np.nonzero(share > 0)[0]:
+        group.add([int(index)], float(share[index]), "REPLACE")
+    modifier = hands.modifiers.new("seam_normals", "DATA_TRANSFER")
+    modifier.object = body
+    modifier.use_loop_data = True
+    modifier.data_types_loops = {"CUSTOM_NORMAL"}
+    modifier.loop_mapping = "POLYINTERP_NEAREST"
+    modifier.vertex_group = SEAM_GROUP
+    with bpy.context.temp_override(object=hands, active_object=hands, selected_objects=[hands], selected_editable_objects=[hands]):
+        bpy.ops.object.modifier_apply(modifier=modifier.name)
+    hands.vertex_groups.remove(hands.vertex_groups[SEAM_GROUP])
 
 
 def cut_body(body: Object, cuts: list[Cut]) -> None:
@@ -270,7 +294,7 @@ def cut_body(body: Object, cuts: list[Cut]) -> None:
     to_local: Matrix = world.inverted()
     normal_to_local = world.to_3x3().transposed()
     for cut in cuts:
-        point = Vector(cut.head + cut.axis * (cut.depth + ARM_UNDER))
+        point = Vector(cut.head + cut.axis * (cut.reach + ARM_UNDER))
         near = [vert for vert in mesh.verts if (world @ vert.co - Vector(cut.head)).length < CUT_REACH]
         geom = near + list({edge for vert in near for edge in vert.link_edges}) + list({face for vert in near for face in vert.link_faces})
         bmesh.ops.bisect_plane(mesh, geom=geom, plane_co=to_local @ point, plane_no=(normal_to_local @ Vector(cut.axis)).normalized(), clear_outer=True, dist=1e-6)
@@ -333,11 +357,12 @@ def graft_hands(body: Object, rig_path: Path, source: HandSource, name: str, siz
     armature = rig.data
     bpy.data.objects.remove(rig)
     bpy.data.armatures.remove(armature)
-    points = blend_seam(points, weights, body, cuts)
+    points, seam = blend_seam(points, weights, body, cuts)
     hands.data.vertices.foreach_set("co", points.reshape(-1))
     hands.data.update()
-    write_weights(hands, smooth_weights(hands, weights))
+    write_weights(hands, smooth_weights(hands, weights, seam))
     bake_skin(hands, body, name, size, scratch)
+    take_normals(hands, body, seam)
     cut_body(body, cuts)
     hands.name = name
     hands.data.name = name
