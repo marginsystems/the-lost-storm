@@ -89,10 +89,6 @@ function bound(world: World, goal: Vec2): number {
   return (pathLength(world.player.pos, findPath(world.grid, world.player.pos, goal)) / pace(world)) * ARROW_WALK.slack + ARROW_WALK.grace;
 }
 
-function left(zoneId: string): (world: World) => boolean {
-  return (world: World): boolean => world.zone.id !== zoneId;
-}
-
 function standAt(world: World, at: Vec2): void {
   world.player.pos = { x: at.x, z: at.z };
   world.player.path = [];
@@ -170,14 +166,24 @@ function armedOnShore(seed: number): World {
   return world;
 }
 
-void test('on the shore, a stick held along the arrow walks out of the In-Between into the Hall, on seeds 1 to 8', (): void => {
+function inLight(world: World): boolean {
+  const target: ObjectiveTarget | null = objectiveTarget(world);
+  return target !== null && target.kind === 'exit' && distance(world.player.pos, target.pos) <= target.radius;
+}
+
+void test('on the shore, a stick held along the arrow walks into the light without crossing, and a click on it takes him into the Hall, on seeds 1 to 8', (): void => {
   for (let seed: number = 1; seed <= ARROW_WALK.seeds; seed += 1) {
     const world: World = armedOnShore(seed);
     const exit: ObjectiveTarget = must(objectiveTarget(world), `seed ${seed}: the way out`);
     assert.equal(exit.kind, 'exit');
-    const run: ArrowRun = holdAlongArrow(world, left('between'), bound(world, exit.pos));
-    assert.ok(run.arrived, `seed ${seed}: still on the shore`);
-    assert.equal(world.zone.id, 'hall_of_time');
+    const run: ArrowRun = holdAlongArrow(world, inLight, bound(world, exit.pos));
+    assert.ok(run.arrived, `seed ${seed}: never reached the light`);
+    assert.equal(world.zone.id, 'between');
     assert.ok(run.stall <= ARROW_WALK.stall, `seed ${seed}: stood still ${run.stall.toFixed(2)} s`);
+    const light = must(world.zone.exits.toSorted((a, b): number => distance(a, world.player.pos) - distance(b, world.player.pos))[0], 'light exit');
+    stepWorld(world, [{ type: 'travel', exit: light.id }], ARROW_WALK.dt);
+    const zoneNow = (): string => world.zone.id;
+    for (let seconds: number = 0; zoneNow() === 'between' && seconds < ARROW_WALK.armLimit; seconds += ARROW_WALK.dt) stepWorld(world, [], ARROW_WALK.dt);
+    assert.equal(zoneNow(), 'hall_of_time', `seed ${seed}: the click left him on the shore`);
   }
 });

@@ -65,6 +65,11 @@ function walkTo(world: World, target: () => Vec2, done: () => boolean): void {
   }
 }
 
+function clickLight(world: World): void {
+  stepWorld(world, [{ type: 'travel', exit: lightExit(world).id }], DT);
+  for (let seconds: number = 0; world.zone.id === opening.id && seconds < WALK.limit; seconds += DT) stepWorld(world, [], DT);
+}
+
 function carriesJournal(world: World): boolean {
   return world.player.inventory.some((item: ItemInstance | null): boolean => item !== null && (content.itemBases.get(item.base)?.book ?? null) !== null);
 }
@@ -136,7 +141,7 @@ void test('taking the journal is the first choice and brings the HUD; reading it
   takeBlade(world);
   assert.equal(world.player.equipped.weapon?.base, 'rusted_blade');
   assert.equal(world.zone.id, opening.id);
-  walkTo(world, (): Vec2 => (world.zone.id === opening.id ? lightExit(world) : world.player.pos), (): boolean => world.zone.id !== opening.id);
+  clickLight(world);
   assert.equal(world.zone.id, content.world.start);
   stepWorld(world, [], DT);
   assert.equal(questState(world, 'out_of_the_mist'), 'done');
@@ -234,7 +239,7 @@ void test('holding a point right beside the hero still lays the journal in view,
   assert.equal(tookJournal(world), false);
 });
 
-void test('a hero who never walks onto the light is brought to it after its latest time of movement', (): void => {
+void test('a hero who never walks onto the light is brought to it after its latest time of movement, and still crosses only when he clicks it', (): void => {
   const world: World = fresh(34);
   world.flags['opening'] = 'read';
   world.flags['first_choice'] = 'took_journal';
@@ -247,6 +252,9 @@ void test('a hero who never walks onto the light is brought to it after its late
     if (commands.length > 0) next = clock + HELD.tick;
     stepWorld(world, commands, DT);
   }
+  assert.equal(world.zone.id, opening.id);
+  assert.ok(distance(lightExit(world), world.player.pos) <= lightExit(world).radius + HELD.circle.radius);
+  clickLight(world);
   assert.notEqual(world.zone.id, opening.id);
   assert.deepEqual(world.shift, { x: 0, z: 0 });
 });
@@ -294,11 +302,12 @@ void test('the light waits for the blade, so nobody reaches the Hall unarmed', (
   for (let step: number = 0; step < 60 / DT; step += 1) stepWorld(world, [], DT);
   assert.equal(world.encounters.some((state): boolean => state.id === lightFind.id && state.pos !== null), false);
   takeBlade(world);
-  walkTo(world, (): Vec2 => lightExit(world), (): boolean => world.zone.id !== opening.id);
+  clickLight(world);
+  assert.notEqual(world.zone.id, opening.id);
   assert.equal(world.player.equipped.weapon?.base, 'rusted_blade');
 });
 
-void test('stopping at the visible edge of the light carries the hero through', (): void => {
+void test('walking into the light and stopping in it never carries the hero through; only a click on it does', (): void => {
   const world: World = readOnTheShore(38);
   takeBlade(world);
   stepWorld(world, [], DT);
@@ -308,6 +317,9 @@ void test('stopping at the visible edge of the light carries the hero through', 
   const edge: number = exit.radius - PATTERN.edgeInside;
   const stop: Vec2 = { x: exit.x + (toward.x / away) * edge, z: exit.z + (toward.z / away) * edge };
   walkTo(world, (): Vec2 => stop, (): boolean => world.zone.id !== opening.id || distance(world.player.pos, stop) < 0.2);
+  walkTo(world, (): Vec2 => exit, (): boolean => world.zone.id !== opening.id || distance(world.player.pos, exit) < 0.2);
   for (let step: number = 0; step < 10 && world.zone.id === opening.id; step += 1) stepWorld(world, [], DT);
+  assert.equal(world.zone.id, opening.id);
+  clickLight(world);
   assert.notEqual(world.zone.id, opening.id);
 });

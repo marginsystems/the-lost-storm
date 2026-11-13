@@ -111,7 +111,7 @@ export function playOpening(bot: Bot, policy: SkillPolicy): boolean {
       botStep(bot, []);
     } else {
       sinceOrder = 0;
-      botStep(bot, [find !== undefined ? { type: 'pickup', groundId: find.id } : { type: 'move', held: true, dest: exit === null ? ahead(world) : { x: exit.x, z: exit.z } }]);
+      botStep(bot, [find !== undefined ? { type: 'pickup', groundId: find.id } : exit === null ? { type: 'move', held: true, dest: ahead(world) } : { type: 'travel', exit: exit.id }]);
     }
   }
   return world.zone.id !== start;

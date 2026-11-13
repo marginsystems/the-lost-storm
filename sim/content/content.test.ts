@@ -538,7 +538,7 @@ void test('no arrival point lies inside an exit, so walking in never sends the h
   }
 });
 
-void test('the hero walks out of the In-Between, has the first moment marked cleared in the Hall (the real fight is covered in sim/world/quests.test.ts), walks on to the fire in the hideout without clicking an exit, and the Warden ends the slice', (): void => {
+void test('the hero walks out of the In-Between, has the first moment marked cleared in the Hall (the real fight is covered in sim/world/quests.test.ts), clicks each exit on the way to the fire in the hideout, and the Warden ends the slice', (): void => {
   const world: World = createWorld(content, { seed: 5, save: null });
   enterZone(world, zoneOf(content, 'between'), { type: 'start' });
   world.flags['opening'] = 'read';
@@ -548,17 +548,21 @@ void test('the hero walks out of the In-Between, has the first moment marked cle
     world.monsters = [];
     for (let step: number = 0; step < 1800 && world.zone.id === zoneId && !done(); step += 1) stepWorld(world, step % 30 === 0 ? [{ type: 'move', held: false, dest: goal }] : [], 1 / 30);
   };
+  const clickExit = (zoneId: string, exitId: string): void => {
+    world.monsters = [];
+    for (let step: number = 0; step < 1800 && world.zone.id === zoneId; step += 1) stepWorld(world, step % 30 === 0 ? [{ type: 'travel', exit: exitId }] : [], 1 / 30);
+  };
   const exit: ZoneExit = must(zoneOf(content, 'between').exits.find((entry: ZoneExit): boolean => entry.id === 'into_the_hall'), 'into_the_hall');
   for (let step: number = 0; step < 1800 && world.flags['first_blade'] === undefined; step += 1) {
     const blade: GroundItem | undefined = world.ground.find((ground: GroundItem): boolean => ground.find === 'blade');
     const click: Command = blade === undefined ? { type: 'move', held: false, dest: { x: world.player.pos.x + world.heading.x * 30, z: world.player.pos.z + world.heading.z * 30 } } : { type: 'pickup', groundId: blade.id };
     stepWorld(world, step % 30 === 0 ? [click] : [], 1 / 30);
   }
-  walkTo('between', exit, (): boolean => world.zone.id !== 'between');
+  clickExit('between', exit.id);
   assert.equal(world.zone.id, 'hall_of_time');
   world.quests['the_first_taker'] = must(content.quests.get('the_first_taker'), 'the_first_taker').objectives.length;
   startQuests(world);
-  walkTo('hall_of_time', onward, (): boolean => world.zone.id !== 'hall_of_time');
+  clickExit('hall_of_time', onward.id);
   assert.equal(world.zone.id, 'hideout');
   walkTo('hideout', fire, (): boolean => world.flags['camp'] === 'reached');
   assert.equal(world.zone.id, 'hideout');

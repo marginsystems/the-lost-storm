@@ -81,6 +81,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   let shift: boolean = false;
   let tapping: boolean = false;
   let pressedItem: boolean = false;
+  let pressedExit: string | null = null;
   const extra: Command[] = [];
   const canvasRect: SurfaceRect = surfaceRect(canvas);
 
@@ -315,6 +316,8 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       const itemHit: ItemPress = itemPress(pressedItem, { fresh: leftFresh, held: leftHeld, free: target === null && person === null && !shift, item: item?.id ?? null });
       pressedItem = itemHit.onItem;
       const leftTick: boolean = leftFresh || (leftHeld && holdTick);
+      if (leftFresh) pressedExit = exit?.id ?? null;
+      else if (!leftHeld) pressedExit = null;
       if (leftFresh || leftHeld) {
         if (target !== null) {
           if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim, targetId: target.id });
@@ -333,6 +336,8 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
             commands.push({ type: 'use', prop: station.index });
             hooks.clickMarker(station.placed.x, station.placed.z, false);
           }
+        } else if (!leftFresh && pressedExit !== null) {
+          hooks.aimExit(pressedExit);
         } else if (exit !== null) {
           const through: Command | null = exitPress(exit.id, { fresh: leftFresh, travelling: world.player.intent.type === 'travel', ground });
           if (through !== null) commands.push(through);

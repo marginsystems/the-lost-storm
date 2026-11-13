@@ -70,7 +70,7 @@ void test('coming back from the Hall he stands on the black shore with his blade
   assert.ok((exit.x - world.player.pos.x) * facing.x + (exit.z - world.player.pos.z) * facing.z < 0);
 });
 
-void test('back on the shore he can stand still without being pulled into the Hall, and the light behind him leads back in', (): void => {
+void test('back on the shore he can stand still or walk into the light without being pulled into the Hall, and a click on the light leads back in', (): void => {
   const world: World = backFromTheHall();
   for (let step: number = 0; step < Math.round(RETURN.idle / DT); step += 1) stepWorld(world, [], DT);
   assert.equal(world.zone.id, 'between');
@@ -81,6 +81,9 @@ void test('back on the shore he can stand still without being pulled into the Ha
     stepWorld(world, [toward()], DT);
     seconds += DT;
   }
+  assert.equal(zoneId(world), 'between');
+  stepWorld(world, [{ type: 'travel', exit: exit.id }], DT);
+  for (let waited: number = 0; zoneId(world) === 'between' && waited < RETURN.walkLimit; waited += DT) stepWorld(world, [], DT);
   assert.equal(zoneId(world), 'hall_of_time');
 });
 

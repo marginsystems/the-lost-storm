@@ -99,12 +99,14 @@ void test('travel walks to the exit, swaps the zone and grid and places the hero
   assert.ok(world.monsters.every((monster: MonsterState): boolean => monster.alive && isWalkable(world.grid, monster.pos.x, monster.pos.z)));
 });
 
-void test('an unknown exit is ignored, and walking into an open exit travels through it', (): void => {
+void test('an unknown exit is ignored, walking into an open exit never travels, and a click on it does', (): void => {
   const world: World = createWorld(shipped, { seed: 3, save: null });
   const out: ZoneExit = must(findExit(town, 'outpost_stair'), 'town exit');
   run(world, 1, [{ type: 'travel', exit: 'no_such_exit' }]);
   assert.deepEqual(world.player.intent, { type: 'idle' });
-  const events: WorldEvent[] = run(world, 6, [{ type: 'move', held: false, dest: { x: out.x, z: out.z } }]);
+  assert.equal(ofType(run(world, 6, [{ type: 'move', held: false, dest: { x: out.x, z: out.z } }]), 'zone_changed').length, 0);
+  assert.equal(world.zone.id, town.id);
+  const events: WorldEvent[] = run(world, 6, [{ type: 'travel', exit: out.id }]);
   assert.equal(ofType(events, 'zone_changed').length, 1);
   assert.equal(world.zone.id, out.to);
   assert.equal(world.player.path.length, 0);

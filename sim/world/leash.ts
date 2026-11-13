@@ -6,7 +6,7 @@ export const LEASH = {
   wait: 3,
   shellGap: 0.4,
   homeReach: 0.6,
-  crowdReach: 3,
+  crowdReach: 5,
   rest: 1e-6,
 } as const;
 
@@ -61,5 +61,5 @@ export function homeReached(world: World, monster: MonsterState): boolean {
   const gap: number = distance(monster.pos, monster.home);
   if (gap <= LEASH.homeReach) return true;
   if (gap > LEASH.crowdReach) return false;
-  return [world.player, ...world.monsters].some((body: Actor): boolean => body !== monster && settledBody(body) && distance(body.pos, monster.home) < gap && distance(body.pos, monster.pos) <= body.radius + monster.radius + LEASH.homeReach);
+  return [world.player, ...world.monsters].some((body: Actor): boolean => body !== monster && settledBody(body) && distance(body.pos, monster.home) <= body.radius + monster.radius + LEASH.homeReach);
 }

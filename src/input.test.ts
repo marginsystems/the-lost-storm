@@ -94,17 +94,17 @@ function toward(from: Vec2, to: Vec2, metres: number): Vec2 {
   return { x: from.x + ((to.x - from.x) / gap) * metres, z: from.z + ((to.z - from.z) / gap) * metres };
 }
 
-void test('holding the pointer still, far ahead toward the light, walks the hero into it and through, though the ground under the pointer comes to rest on the light', (): void => {
+void test('holding the pointer still, far ahead toward the light, walks the hero into it but never through', (): void => {
   const world: World = voidWithLight(11);
   const setup: Rig = rig(world);
   const from: string = world.zone.id;
   const point: Vec2 = screenOf(world, toward(world.player.pos, lightOf(world), VIEW.span * 0.7));
   setup.input.holdAt(point.x, point.z);
-  run(setup, 60, (): boolean => world.zone.id !== from);
-  assert.notEqual(world.zone.id, from);
+  run(setup, 20, (): boolean => world.zone.id !== from);
+  assert.equal(world.zone.id, from);
 });
 
-void test('a held pointer dragged across the light and resting on it carries the hero through', (): void => {
+void test('a held pointer dragged across the light and resting on it never carries the hero through', (): void => {
   const world: World = voidWithLight(12);
   const setup: Rig = rig(world);
   const from: string = world.zone.id;
@@ -113,8 +113,8 @@ void test('a held pointer dragged across the light and resting on it carries the
   run(setup, 0.3, (): boolean => false);
   const onLight: Vec2 = screenOf(world, lightOf(world));
   setup.input.moveHold(onLight.x, onLight.z);
-  run(setup, 60, (): boolean => world.zone.id !== from);
-  assert.notEqual(world.zone.id, from);
+  run(setup, 20, (): boolean => world.zone.id !== from);
+  assert.equal(world.zone.id, from);
 });
 
 void test('a tap on the ground inside the light travels', (): void => {
@@ -127,22 +127,22 @@ void test('a tap on the ground inside the light travels', (): void => {
   assert.notEqual(world.zone.id, from);
 });
 
-void test('the stick held toward the light walks the hero through it', (): void => {
+void test('the stick held toward the light never walks the hero through it', (): void => {
   const world: World = voidWithLight(14);
   const setup: Rig = rig(world);
   const from: string = world.zone.id;
   let moving: boolean = false;
-  run(setup, 60, (): boolean => world.zone.id !== from, (): readonly Command[] => {
+  run(setup, 20, (): boolean => world.zone.id !== from, (): readonly Command[] => {
     const light: ZoneExit = lightOf(world);
     const gap: number = Math.hypot(light.x - world.player.pos.x, light.z - world.player.pos.z);
     const command = stickMove(world.player.pos, { x: (light.x - world.player.pos.x) / gap, z: (light.z - world.player.pos.z) / gap }, moving);
     moving = true;
     return command === null ? [] : [command];
   });
-  assert.notEqual(world.zone.id, from);
+  assert.equal(world.zone.id, from);
 });
 
-void test('every zone exit travels by a held pointer resting on it and by a click on it', (): void => {
+void test('every zone exit travels by a press that starts on it, held or tapped', (): void => {
   const exits: readonly { readonly zone: string; readonly exit: string }[] = [
     { zone: 'hall_of_time', exit: 'mist' },
     { zone: 'hall_of_time', exit: 'east' },
@@ -157,7 +157,7 @@ void test('every zone exit travels by a held pointer resting on it and by a clic
       if (press === 'held') setup.input.holdAt(point.x, point.z);
       else setup.input.tap(point.x, point.z);
       run(setup, 30, (): boolean => world.zone.id !== zone);
-      assert.equal(world.zone.id, target.to, `${press} on ${zone}.${exit}`);
+      assert.equal(world.zone.id, target.to, `${press} on ${zone}.${exit}: ${JSON.stringify(world.player.intent)} at ${world.player.pos.x.toFixed(1)},${world.player.pos.z.toFixed(1)} exit ${target.x},${target.z} r ${target.radius}`);
     }
   }
 });
@@ -176,7 +176,7 @@ void test('a held walk across the waypoint keeps walking past it', (): void => {
   assert.ok(along() > gap + 2, `stopped ${(gap - along()).toFixed(2)} m short of the waypoint`);
 });
 
-void test('a held walk that began on the ground keeps walking and goes through an open exit while the pointer drifts over the HUD', (): void => {
+void test('a held walk that began on the ground keeps walking into an open exit while the pointer drifts over the HUD, and never travels', (): void => {
   const world: World = arrivedBy('hall_of_time', 'east');
   let overHud: boolean = false;
   const setup: Rig = rig(world, (): boolean => overHud);
@@ -187,8 +187,9 @@ void test('a held walk that began on the ground keeps walking and goes through a
   overHud = true;
   const beyond: Vec2 = screenOf(world, { x: exit.x + 2, z: exit.z });
   setup.input.moveHold(beyond.x, beyond.z);
-  run(setup, 30, (): boolean => world.zone.id !== 'hall_of_time');
-  assert.equal(world.zone.id, exit.to);
+  run(setup, 10, (): boolean => world.zone.id !== 'hall_of_time');
+  assert.equal(world.zone.id, 'hall_of_time');
+  assert.ok(Math.hypot(exit.x - world.player.pos.x, exit.z - world.player.pos.z) <= exit.radius + 1, 'he stopped short of the exit');
 });
 
 function talkingToGuide(): World {

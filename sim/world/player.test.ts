@@ -66,6 +66,7 @@ const EXIT_WALK = {
   seconds: 8,
   aside: 0.9,
   sides: [-1, 0, 1],
+  reached: 1.5,
 } as const;
 
 for (const side of [{ name: 'south', x: 0, z: 1 }, { name: 'north', x: 0, z: -1 }, { name: 'east', x: 1, z: 0 }, { name: 'west', x: -1, z: 0 }] as const) {
@@ -86,7 +87,7 @@ for (const side of [{ name: 'south', x: 0, z: 1 }, { name: 'north', x: 0, z: -1 
 for (const zone of content.zones.values()) {
   for (const exit of zone.exits) {
     for (const side of zone.kind === 'void' ? [0] : EXIT_WALK.sides) {
-      void test(`holding the button beyond ${zone.id}'s ${exit.id} exit, ${side === 0 ? 'through its middle' : 'past the edge of its trigger'}${side < 0 ? ' on the left' : side > 0 ? ' on the right' : ''}, walks into it and travels`, (): void => {
+      void test(`holding the button beyond ${zone.id}'s ${exit.id} exit, ${side === 0 ? 'through its middle' : 'past the edge of its trigger'}${side < 0 ? ' on the left' : side > 0 ? ' on the right' : ''}, walks up to it without stopping short and never travels`, (): void => {
         const world: World = worldIn(content, zone.id, 5);
         world.zone = { ...world.zone, exits: world.zone.exits.map((each: ZoneExit): ZoneExit => ({ ...each, requires: [] })) };
         world.monsters = [];
@@ -107,7 +108,9 @@ for (const zone of content.zones.values()) {
           const held: Vec2 = { x: dest.x + world.shift.x - shifted.x, z: dest.z + world.shift.z - shifted.z };
           stepWorld(world, [{ type: 'move', dest: held, held: true }], MOTION_DT);
         }
-        assert.equal(world.zone.id, exit.to, `the hero stopped at (${world.player.pos.x.toFixed(1)}, ${world.player.pos.z.toFixed(1)})`);
+        assert.equal(world.zone.id, zone.id);
+        const reach: number = zone.kind === 'void' ? 0 : distance(world.player.pos, live) - live.radius - Math.abs(aside);
+        assert.ok(reach <= EXIT_WALK.reached, `the hero stopped ${reach.toFixed(1)} m short, at (${world.player.pos.x.toFixed(1)}, ${world.player.pos.z.toFixed(1)})`);
       });
     }
   }
@@ -115,7 +118,7 @@ for (const zone of content.zones.values()) {
 
 for (const zone of content.zones.values()) {
   for (const exit of zone.exits) {
-    void test(`holding the button on the glow just outside ${zone.id}'s ${exit.id} trigger walks into it and travels`, (): void => {
+    void test(`holding the button on the glow just outside ${zone.id}'s ${exit.id} trigger walks to it without travelling, and a click on the exit then travels`, (): void => {
       const world: World = worldIn(content, zone.id, 5);
       world.zone = { ...world.zone, exits: world.zone.exits.map((each: ZoneExit): ZoneExit => ({ ...each, requires: [] })) };
       world.monsters = [];
@@ -134,7 +137,10 @@ for (const zone of content.zones.values()) {
         const held: Vec2 = { x: glow.x + world.shift.x - shifted.x, z: glow.z + world.shift.z - shifted.z };
         stepWorld(world, [{ type: 'move', dest: held, held: true }], MOTION_DT);
       }
-      assert.equal(world.zone.id, exit.to, `the hero stopped at (${world.player.pos.x.toFixed(1)}, ${world.player.pos.z.toFixed(1)})`);
+      assert.equal(world.zone.id, zone.id);
+      stepWorld(world, [{ type: 'travel', exit: exit.id }], MOTION_DT);
+      for (let step: number = 0; step < Math.round(EXIT_WALK.seconds / MOTION_DT) && world.zone.id === zone.id; step += 1) stepWorld(world, [], MOTION_DT);
+      assert.equal(world.zone.id, exit.to, `the click left the hero at (${world.player.pos.x.toFixed(1)}, ${world.player.pos.z.toFixed(1)})`);
     });
   }
 }
