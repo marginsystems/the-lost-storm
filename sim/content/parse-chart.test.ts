@@ -31,7 +31,7 @@ void test('unknown paths, groups and variant skills are problems', (): void => {
 });
 
 void test('the chart needs whole points per level and a plain colour for each path', (): void => {
-  const base = { title: 'The Skill Tree', pointsPerLevel: 2, respec: { goldPerPoint: 1, goldPerLevel: 1 }, grants: [], paths: [{ id: 'a', name: 'A', tint: '#aabbcc', description: '' }], groups: [] };
+  const base = { title: 'The Skill Tree', pointsPerLevel: 2, respec: { goldPerPoint: 1, goldPerLevel: 1 }, grants: [], twist: 0.08, paths: [{ id: 'a', name: 'A', tint: '#aabbcc', description: '' }], groups: [] };
   assert.equal(chartDef(base, 'chart').pointsPerLevel, 2);
   assert.throws((): unknown => chartDef({ ...base, pointsPerLevel: 1.5 }, 'chart'), /whole number/);
   assert.throws((): unknown => chartDef({ ...base, paths: [{ id: 'a', name: 'A', tint: 'blue', description: '' }] }, 'chart'), /colour/);

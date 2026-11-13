@@ -5,6 +5,9 @@ import type { ChartChange } from '../../sim/progression.ts';
 import { ATLAS_VIEW, atRest, stepMotion, still, toMap, toScreen } from './atlas-view.ts';
 import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-view.ts';
 import { abilityCard } from './chart-ability.ts';
+import { createChartSky } from './chart-sky.ts';
+import type { ChartSky, SkyArm } from './chart-sky.ts';
+import { armShape, boltPoints, hexColour, polyline } from './chart-storm.ts';
 import type { AbilityCard } from './chart-ability.ts';
 import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
 import { captionFoot, CHART_VIEW, clampChart, easeFoot, frameChart, panChart, pinLabel, reopenChart, sameFrame, spreadLabels, zoomChart } from './chart-view.ts';
@@ -48,8 +51,8 @@ interface NodeView {
 }
 
 interface LinkView {
-  readonly path: SVGLineElement;
-  readonly track: SVGLineElement;
+  readonly path: SVGPolylineElement;
+  readonly track: SVGPolylineElement;
   readonly from: string;
   readonly to: string;
 }
@@ -80,13 +83,10 @@ function kindWord(node: SkillTreeNodeDef): string {
   return node.kind === 'notable' ? 'named place' : 'place';
 }
 
-function line(svg: SVGSVGElement, from: ChartPoint, to: ChartPoint, className: string, tint: string): SVGLineElement {
-  const shape: SVGLineElement = document.createElementNS(CHART.svgNamespace, 'line');
+function line(svg: SVGElement, points: readonly ChartPoint[], className: string, tint: string): SVGPolylineElement {
+  const shape: SVGPolylineElement = document.createElementNS(CHART.svgNamespace, 'polyline');
   shape.setAttribute('class', className);
-  shape.setAttribute('x1', String(from.x));
-  shape.setAttribute('y1', String(from.y));
-  shape.setAttribute('x2', String(to.x));
-  shape.setAttribute('y2', String(to.y));
+  shape.setAttribute('points', polyline(points));
   shape.setAttribute('pathLength', '1');
   shape.style.setProperty('--tint', tint);
   svg.appendChild(shape);
@@ -151,6 +151,17 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   svg.setAttribute('viewBox', `0 0 ${mapWidth} ${mapHeight}`);
   board.appendChild(svg);
 
+  const sky: ChartSky | null = createChartSky(viewport, {
+    eyeX: eye.x,
+    eyeY: eye.y,
+    unit: CHART.unit,
+    twist: content.chart.twist,
+    arms: content.chart.paths.map((arm: ChartPath): SkyArm => ({ shape: armShape(content, arm.id), tint: hexColour(arm.tint) })),
+  });
+
+  const shades: SVGGElement = document.createElementNS(CHART.svgNamespace, 'g');
+  shades.setAttribute('class', 'tree-shades');
+  svg.appendChild(shades);
   const byId: ReadonlyMap<string, SkillTreeNodeDef> = new Map<string, SkillTreeNodeDef>(nodes.map((node: SkillTreeNodeDef): [string, SkillTreeNodeDef] => [node.id, node]));
   const links: LinkView[] = [];
   for (const node of nodes) {
@@ -158,8 +169,11 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       const from: SkillTreeNodeDef | undefined = byId.get(requiredId);
       if (from === undefined) continue;
       const tint: string = pathTint(content, node.path === from.path ? node.path : from.path);
-      const track: SVGLineElement = line(svg, centreOf(from), centreOf(node), 'tree-track', tint);
-      links.push({ track, path: line(svg, centreOf(from), centreOf(node), 'tree-flow', tint), from: requiredId, to: node.id });
+      const bolt: ChartPoint[] = boltPoints(centreOf(from), centreOf(node), eye, `${requiredId}>${node.id}`, CHART.unit);
+      const ring: string = from.path === node.path ? '' : ' ring';
+      line(shades, bolt, `tree-shade${ring}`, tint);
+      const track: SVGPolylineElement = line(svg, bolt, `tree-track${ring}`, tint);
+      links.push({ track, path: line(svg, bolt, `tree-flow${ring}`, tint), from: requiredId, to: node.id });
     }
   }
 
@@ -328,6 +342,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     placeCard();
     const corner: ScreenPoint = toScreen(motion.view, frame, { x: 0, y: 0 });
     board.style.transform = `translate(${corner.x}px, ${corner.y}px) scale(${motion.view.scale})`;
+    sky?.draw({ cornerX: corner.x, cornerY: corner.y, scale: motion.view.scale }, performance.now() / 1000);
     viewport.style.setProperty('--zoom', String(motion.view.scale));
     const pins: readonly PinnedLabel[] = names.map((name: NameView): PinnedLabel => pinLabel(toScreen(motion.view, frame, name.at), name.element.offsetWidth / 2, name.element.offsetHeight / 2, frame, foot));
     const boxes: readonly LabelBox[] = spreadLabels(
@@ -618,6 +633,10 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       if (shifting) foot = easeFoot(foot, wanted, dt);
       if (atRest(motion, target)) {
         if (shifting) apply();
+        else {
+          const corner: ChartPoint = toScreen(motion.view, frame, { x: 0, y: 0 });
+          sky?.draw({ cornerX: corner.x, cornerY: corner.y, scale: motion.view.scale }, performance.now() / 1000);
+        }
         return;
       }
       motion = stepMotion(motion, target, dt);
