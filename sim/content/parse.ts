@@ -34,7 +34,7 @@ import type {
   MonsterDef,
   NpcDef,
   FirstDropDef,
-  PlayerDef,
+  HeroDef, PlayerDef,
   PropDef,
   PropLight,
   RarityDef,
@@ -378,8 +378,15 @@ function player(value: unknown, where: string): PlayerDef {
   const source: Fields = fields(value, where);
   const xp: Fields = fields(source['xp'], `${where}.xp`);
   const penalty: Fields = fields(source['deathPenalty'], `${where}.deathPenalty`);
+  const heroes: HeroDef[] = each(source['heroes'], `${where}.heroes`, (entry: unknown, entryWhere: string): HeroDef => {
+    const hero: Fields = fields(entry, entryWhere);
+    return { id: text(hero, 'id', entryWhere), name: text(hero, 'name', entryWhere), rig: text(hero, 'rig', entryWhere) };
+  });
+  const [first] = heroes;
+  if (first === undefined) throw new ContentError(`${where}.heroes`, 'the player needs at least one hero');
   return {
-    rig: text(source, 'rig', where),
+    hero: first,
+    heroes,
     radius: numeric(source, 'radius', where),
     baseStats: statBlock(source['baseStats'], `${where}.baseStats`),
     perLevel: each(source['perLevel'], `${where}.perLevel`, statMod),
@@ -489,15 +496,21 @@ export function contentProblems(content: Content): string[] {
     for (const held of def.gear) fits(`monster ${def.id}`, def.rig, held);
     wears(`monster ${def.id}`, def.rig, def.wear);
   }
-  need(content.rigs.has(content.player.rig), `player uses unknown rig ${content.player.rig}`);
-  for (const held of content.player.gear) fits('player', content.player.rig, held);
-  if (content.player.unarmedVisual !== null) fits('player', content.player.rig, content.player.unarmedVisual);
+  need(new Set<string>(content.player.heroes.map((hero: HeroDef): string => hero.id)).size === content.player.heroes.length, 'the player lists a hero twice');
+  for (const hero of content.player.heroes) {
+    need(content.rigs.has(hero.rig), `hero ${hero.id} uses unknown rig ${hero.rig}`);
+    for (const held of content.player.gear) fits(`hero ${hero.id}`, hero.rig, held);
+    if (content.player.unarmedVisual !== null) fits(`hero ${hero.id}`, hero.rig, content.player.unarmedVisual);
+    for (const base of content.itemBases.values()) {
+      if (base.visual !== null) fits(`item ${base.id}`, hero.rig, base.visual);
+      wears(`item ${base.id}`, hero.rig, base.wear);
+    }
+    for (const worn of content.wearables.values()) wears(`wearable ${worn.id}`, hero.rig, [worn.id]);
+    for (const entry of content.player.skillBook) animates('skill book', hero.rig, entry.skill);
+  }
   for (const base of content.itemBases.values()) {
-    if (base.visual !== null) fits(`item ${base.id}`, content.player.rig, base.visual);
-    wears(`item ${base.id}`, content.player.rig, base.wear);
     need((base.slot !== null && WORN_SLOTS.has(base.slot)) === (base.material !== null), `item ${base.id} in slot ${base.slot ?? 'none'} ${base.material === null ? 'needs a material' : 'cannot have a material'}`);
   }
-  for (const worn of content.wearables.values()) wears(`wearable ${worn.id}`, content.player.rig, [worn.id]);
   for (const [body, layer] of content.baseLayers) {
     const rigDef: RigDef | undefined = [...content.rigs.values()].find((candidate: RigDef): boolean => candidate.url === body);
     need(rigDef !== undefined, `base layer names body ${body}, which no rig uses`);
@@ -505,7 +518,6 @@ export function contentProblems(content: Content): string[] {
   }
   for (const entry of content.player.skillBook) {
     need(content.skills.has(entry.skill), `skill book uses unknown skill ${entry.skill}`);
-    animates('skill book', content.player.rig, entry.skill);
   }
   for (const base of content.player.startingItems) need(content.itemBases.has(base), `starting item ${base} is unknown`);
   need(content.rarities.length > 0, 'items need at least one rarity');

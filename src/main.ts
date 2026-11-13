@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
 import { frameOf, zoneCharacterNeeds } from '../sim/wear.ts';
+import { heroOpen, heroRig } from '../sim/hero.ts';
 import { noteInConsole, warnInConsole } from './backend/console-log.ts';
 import { runFrames } from './frame-loop.ts';
 import { element } from './dom-element.ts';
@@ -73,6 +74,7 @@ import { PLAYED_KEY, readPlayed } from './launch/played.ts';
 import { spokenName } from './lobby/lobby-model.ts';
 import { createNameStep, wireEnter } from './lobby/name-step.ts';
 import { readHeroName } from './lobby/hero-name.ts';
+import { heroChoice, keepHero, readHero } from './lobby/hero-choice.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
 import type { Leaderboard } from './backend/api.ts';
@@ -92,7 +94,7 @@ import type { GlitchSettingsStore } from './glitch/glitch-settings.ts';
 import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
 import type { CharacterLibrary, Dresser } from './render/character-loader.ts';
-import { loadCharacters, loadRemainingCharacters } from './render/character-loader.ts';
+import { loadCharacters, loadNeeds, loadRemainingCharacters } from './render/character-loader.ts';
 import { createEffects } from './render/effects.ts';
 import type { MomentEffects } from './render/moment-effects.ts';
 import { momentEffects } from './render/moment-effects.ts';
@@ -212,9 +214,11 @@ async function start(): Promise<void> {
   lobby?.feed.subscribe((board: Leaderboard | null): void => {
     if (board !== null) heroName = spokenName(board);
   });
-  const world: World = createWorld(content, { seed: Date.now() >>> 0, save, opening: true });
+  const keptHero: string | null = save === null ? readHero(createBrowserStore(), content) : null;
+  const world: World = createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero });
+  let chosenHero: string = world.player.hero;
   const propDresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressedProp(content, dress, material, propDressing(world.zone));
-  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
+  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
   const loot: LootView = await createLootView(loader, stage.scene, library);
   const shownPieces: string[] = [...content.itemBases.values()].flatMap((base: ItemBaseDef): string[] => base.wear.slice(0, 1));
   let thumbnails: ItemThumbnails = new Map<string, string>();
@@ -270,7 +274,7 @@ async function start(): Promise<void> {
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene);
   const actors: Actors = createActors(stage.scene, library, world, mobile.quality.tier.msaaSamples > 0, cameraSight(stage.camera));
-  const figureGauge: FigureGauge = createFigureGauge(figureJoints(content.rigs.get(content.player.rig)?.bodyParts ?? {}));
+  const figureGauge: FigureGauge = createFigureGauge(figureJoints(content.rigs.get(heroRig(content, world.player.hero))?.bodyParts ?? {}));
   const itemImage = (item: ItemInstance): string | null => {
     const base: ItemBaseDef | null = baseOf(content, item);
     if (base === null) return null;
@@ -591,7 +595,15 @@ async function start(): Promise<void> {
     await loadRemainingCharacters(loader, content, dresser, library);
     actors.refreshWear(world);
     await warmUp(stage, stage.scene, stage.camera, loot.standIns(world));
-    thumbnails = await createItemThumbnails(library, frameOf(content, content.player.rig), shownPieces, createBrowserTimers());
+    restLoaded = true;
+    await paintThumbnails();
+  };
+  let restLoaded: boolean = false;
+  const paintThumbnails = async (): Promise<void> => {
+    const hero: string = chosenHero;
+    const painted: ItemThumbnails = await createItemThumbnails(library, frameOf(content, heroRig(content, hero)), shownPieces, createBrowserTimers());
+    if (hero !== chosenHero) return;
+    thumbnails = painted;
     hud.refreshItems();
   };
 
@@ -647,10 +659,21 @@ async function start(): Promise<void> {
     void startOver();
   });
   let entered: boolean = save !== null;
-  const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped }), view: (): LobbyView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
+  const chooseHero = async (id: string): Promise<void> => {
+    if (entered || id === chosenHero || !heroOpen(world.player)) return;
+    chosenHero = id;
+    keepHero(createBrowserStore(), id);
+    send({ type: 'hero', hero: id });
+    flow.restage();
+    await loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, id));
+    if (chosenHero !== id) return;
+    flow.restage();
+    if (restLoaded) await paintThumbnails();
+  };
+  const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped, rig: heroRig(content, chosenHero) }), view: (): LobbyView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: entered ? null : heroChoice(content, world.player, chosenHero) }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
     entered = true;
     begin();
-  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), openSettings: (): void => pauseMenu.open('graphics') });
+  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), chooseHero: (id: string): void => void chooseHero(id), openSettings: (): void => pauseMenu.open('graphics') });
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();

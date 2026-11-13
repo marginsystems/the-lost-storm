@@ -1,6 +1,7 @@
 import type { GlitchDef } from '../content/glitches.ts';
 import { loadGlitches } from '../content/glitches.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
+import { heroOf } from '../hero.ts';
 import { emptyEquipment, slotOf } from '../items.ts';
 import { emptyLedger, makeItem } from './ledger.ts';
 import { buildNavGrid } from '../nav/grid.ts';
@@ -29,12 +30,13 @@ export interface WorldOptions {
   readonly seed: number;
   readonly save: SaveData | null;
   readonly opening?: boolean;
+  readonly hero?: string;
   readonly glitches?: GlitchDef;
 }
 
 const PLAYER_ID: number = 1;
 
-function freshPlayer(content: Content, save: SaveData | null): PlayerState {
+function freshPlayer(content: Content, save: SaveData | null, chosen: string | null): PlayerState {
   const equipped: Equipment = save === null ? emptyEquipment() : { ...save.equipped };
   const allocated: string[] = save === null ? [] : [...save.allocated];
   const level: number = save?.level ?? 1;
@@ -43,6 +45,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
   const inventory: (ItemInstance | null)[] = Array.from({ length: content.player.inventorySize }, (_: unknown, index: number): ItemInstance | null => save?.inventory[index] ?? null);
   return {
     kind: 'player',
+    hero: heroOf(content, save === null ? chosen : save.hero).id,
     id: PLAYER_ID,
     pos: { x: 0, z: 0 },
     facing: Math.PI,
@@ -140,7 +143,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     visited,
     rng: createRng(options.seed),
     time: 0,
-    player: freshPlayer(content, save),
+    player: freshPlayer(content, save, options.hero ?? null),
     monsters: [],
     spawnedPacks: [],
     npcs: [],

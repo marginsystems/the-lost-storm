@@ -3,6 +3,7 @@ import { isFields } from './content/read.ts';
 import type { StoryFlags } from './content/story-types.ts';
 import type { RetiredZones } from './content/road-types.ts';
 import type { Content, ItemSlot } from './content/types.ts';
+import { heroOf } from './hero.ts';
 import { emptyEquipment, generateItem, slotOf } from './items.ts';
 import { createRng } from './rng.ts';
 import { retireUnworn } from './save-retire.ts';
@@ -25,6 +26,7 @@ const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, 3, 4, 5,
 
 export interface SaveData {
   readonly version: number;
+  readonly hero: string;
   readonly level: number;
   readonly xp: number;
   readonly gold: number;
@@ -67,6 +69,7 @@ export function toSave(world: World): SaveData {
   const player = world.player;
   return {
     version: SAVE_VERSION,
+    hero: player.hero,
     level: player.level,
     xp: player.xp,
     gold: player.gold,
@@ -312,8 +315,10 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const taken: string[] = [...adopted.allocated];
   const learned: string[] = readLearned(content, value['learned'], taken);
   const dressed: Dressed = dressOnce(content, worn.equipped, { ...readFlags(content, value['flags'], legacy), ...retired?.flags }, Math.floor(nextItemUid));
+  const savedHero: unknown = value['hero'];
   return retireUnworn(content, {
     version: SAVE_VERSION,
+    hero: heroOf(content, typeof savedHero === 'string' ? savedHero : null).id,
     level: reached,
     xp,
     gold,

@@ -594,7 +594,7 @@ void test('a rig may name unarmed clips for when it holds nothing, and they are 
   const [first] = rigs;
   const rig = must(first, 'first rig');
   const parsed: Content = parseContent(shipped);
-  const hero = must(parsed.rigs.get(parsed.player.rig), 'hero rig');
+  const hero = must(parsed.rigs.get(parsed.player.hero.rig), 'hero rig');
   const bare = must(hero.clips.unarmed, 'hero unarmed clips');
   assert.ok(must(bare.actions['attack'], 'unarmed attack').impactFraction > 0);
   const plain: Content = parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, unarmed: null } }] });
@@ -605,7 +605,7 @@ void test('a rig may name unarmed clips for when it holds nothing, and they are 
 
 void test('a rig may name stances for what it holds, and an attachment names the stance it is held in', (): void => {
   const parsed: Content = parseContent(shipped);
-  const hero = must(parsed.rigs.get(parsed.player.rig), 'hero rig');
+  const hero = must(parsed.rigs.get(parsed.player.hero.rig), 'hero rig');
   const held = must(parsed.attachments.get('hand_crossbow'), 'crossbow attachment');
   assert.ok(must(hero.clips.stances[must(held.stance, 'stance')], 'hero stance').actions['shoot'] !== undefined);
   assert.equal(must(parsed.attachments.get('rusted_blade'), 'blade').stance, null);
@@ -621,7 +621,7 @@ void test('a rig lists its hit and death clips and names its action clips, and a
   const [first] = rigs;
   const rig = must(first, 'first rig');
   const parsed: Content = parseContent(shipped);
-  const hero = must(parsed.rigs.get(parsed.player.rig), 'hero rig');
+  const hero = must(parsed.rigs.get(parsed.player.hero.rig), 'hero rig');
   assert.ok(hero.clips.death.length >= 2);
   assert.ok(hero.gaits.length >= 2 && hero.gaits.every((gait): boolean => gait.groundSpeed > 0));
   assert.ok(must(hero.clips.actions['attack'], 'attack clip').impactFraction > 0);

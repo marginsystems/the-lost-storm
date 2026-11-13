@@ -607,8 +607,15 @@ export interface FirstDropDef {
   readonly rarity: string;
 }
 
-export interface PlayerDef {
+export interface HeroDef {
+  readonly id: string;
+  readonly name: string;
   readonly rig: string;
+}
+
+export interface PlayerDef {
+  readonly hero: HeroDef;
+  readonly heroes: readonly HeroDef[];
   readonly radius: number;
   readonly baseStats: StatBlock;
   readonly perLevel: readonly StatMod[];

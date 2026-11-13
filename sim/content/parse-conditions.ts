@@ -5,9 +5,10 @@ import { OBJECTIVE_STATES, QUEST_STATES } from './types.ts';
 
 export function condition(value: unknown, where: string): Condition {
   const source: Fields = fields(value, where);
-  const type: Condition['type'] = choice(source, 'type', ['quest', 'objective', 'flag', 'shore'] as const, where);
+  const type: Condition['type'] = choice(source, 'type', ['quest', 'objective', 'flag', 'shore', 'hero'] as const, where);
   const not: boolean = source['not'] === undefined ? false : flag(source, 'not', where);
   if (type === 'flag') return { type, flag: text(source, 'flag', where), is: source['is'] === undefined ? null : text(source, 'is', where), not };
+  if (type === 'hero') return { type, is: text(source, 'is', where), not };
   if (type === 'shore') return { type, depth: fraction(source, 'depth', where), not };
   if (type === 'quest') return { type, quest: text(source, 'quest', where), is: choice(source, 'is', QUEST_STATES, where), not };
   return { type, quest: text(source, 'quest', where), objective: text(source, 'objective', where), is: choice(source, 'is', OBJECTIVE_STATES, where), not };

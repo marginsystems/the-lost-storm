@@ -16,6 +16,7 @@ import type { ZoneView } from '../render/zone-view.ts';
 import type { Ghost } from './ghost.ts';
 import { createGhost } from './ghost.ts';
 import type { GlitchSettings, GlitchSettingsStore, SettingRequest, SettingStep } from './glitch-settings.ts';
+import { heroRig } from '../../sim/hero.ts';
 import { settingStep } from './glitch-settings.ts';
 import { SHADOW_OWNERS } from '../render/contact-shadow.ts';
 import glitchCss from './glitch.css?inline';
@@ -74,7 +75,7 @@ interface Stutter {
 
 export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   const { world, scene, app, settings } = deps;
-  const figureGauge: FigureGauge = createFigureGauge(figureJoints(world.content.rigs.get(world.content.player.rig)?.bodyParts ?? {}));
+  const figureGauge: FigureGauge = createFigureGauge(figureJoints(world.content.rigs.get(heroRig(world.content, world.player.hero))?.bodyParts ?? {}));
   const overlayWatch: OverlayWatch = createOverlayWatch(document, (command: Command): void => deps.send(command));
   const style: HTMLStyleElement = document.createElement('style');
   style.textContent = glitchCss;

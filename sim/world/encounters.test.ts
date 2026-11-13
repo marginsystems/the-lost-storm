@@ -307,6 +307,24 @@ void test('the light waits for the blade, so nobody reaches the Hall unarmed', (
   assert.equal(world.player.equipped.weapon?.base, 'rusted_blade');
 });
 
+void test('the woman is laid a hand crossbow where the man is laid the blade, and it opens the same way on', (): void => {
+  const world: World = createWorld(content, { seed: 41, save: null, opening: true, hero: 'woman' });
+  const waking: number = Math.ceil(wakeLength(must(world.wake, 'wake').plan) / DT) + 1;
+  for (let step: number = 0; step < waking; step += 1) stepWorld(world, [], DT);
+  world.flags['first_choice'] = 'took_journal';
+  world.flags['opening'] = 'read';
+  for (let seconds: number = 0; world.player.equipped.weapon === null && seconds < WALK.limit; seconds += DT) {
+    const laid: GroundItem | undefined = world.ground.find((ground: GroundItem): boolean => ground.find !== null && ground.find !== journalFind.id);
+    stepWorld(world, [laid === undefined ? walk(world, world.heading) : { type: 'pickup', groundId: laid.id }], DT);
+  }
+  assert.equal(world.player.equipped.weapon?.base, 'worn_crossbow');
+  assert.equal(world.ground.some((ground: GroundItem): boolean => ground.find === 'blade'), false);
+  assert.equal(world.flags['first_blade'], 'found');
+  assert.equal(must(world.player.skills[0], 'first skill').delivery.type, 'projectile');
+  clickLight(world);
+  assert.notEqual(world.zone.id, opening.id);
+});
+
 void test('walking into the light and stopping in it never carries the hero through; only a click on it does', (): void => {
   const world: World = readOnTheShore(38);
   takeBlade(world);

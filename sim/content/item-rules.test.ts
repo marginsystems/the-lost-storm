@@ -90,7 +90,7 @@ void test('a weapon may turn one skill into another the hero can play in the sta
   const crossbow: ItemBaseDef = must(content.itemBases.get('hand_crossbow'), 'hand_crossbow');
   assert.deepEqual(crossbow.variants, [{ skill: 'cleave', becomes: 'quarrel' }]);
   assert.deepEqual(must(content.itemBases.get('rusted_blade'), 'rusted_blade').variants, []);
-  const hero: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
+  const hero: RigDef = must(content.rigs.get(content.player.hero.rig), 'hero rig');
   assert.equal(hero.clips.actions[must(content.skills.get('quarrel'), 'quarrel').animation], undefined);
   const turned = (variants: ItemBaseDef['variants']): string[] => itemProblems({ ...content, itemBases: new Map<string, ItemBaseDef>([...content.itemBases, [crossbow.id, { ...crossbow, variants }]]) });
   assert.ok(turned([{ skill: 'cleave', becomes: 'no_such_skill' }]).some((problem: string): boolean => problem.includes('turns cleave into unknown skill no_such_skill')));
@@ -98,5 +98,5 @@ void test('a weapon may turn one skill into another the hero can play in the sta
   assert.ok(turned([{ skill: 'cleave', becomes: 'cleave' }]).some((problem: string): boolean => problem.includes('turns cleave into itself')));
   const stanceless: RigDef = { ...hero, clips: { ...hero.clips, stances: {} } };
   const unplayed: string[] = itemProblems({ ...content, rigs: new Map<string, RigDef>([...content.rigs, [hero.id, stanceless]]) });
-  assert.ok(unplayed.some((problem: string): boolean => problem.includes('item hand_crossbow turns cleave into quarrel, but the hero\'s rig has no action clip shoot')));
+  assert.ok(unplayed.some((problem: string): boolean => problem.includes(`item hand_crossbow turns cleave into quarrel, but rig ${hero.id} has no action clip shoot`)));
 });

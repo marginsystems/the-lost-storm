@@ -12,6 +12,7 @@ import { loadKeptModel } from './character-loader.ts';
 import type { Keepsake } from './keepsake.ts';
 import { createKeepsake } from './keepsake.ts';
 import type { LootLight, LootLights } from './loot-lights.ts';
+import { heroRig } from '../../sim/hero.ts';
 import { createLootLights } from './loot-lights.ts';
 import type { MarkerChoice } from './loot-marker.ts';
 import { markerFor } from './loot-marker.ts';
@@ -109,10 +110,12 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   const keepsakeStandIn: Keepsake = createKeepsake();
 
   const templateFor = (world: World, base: ItemBaseDef): GroundTemplate => {
-    const cached: GroundTemplate | undefined = templates.get(base.id);
+    const hero: string = heroRig(world.content, world.player.hero);
+    const key: string = `${hero}|${base.id}`;
+    const cached: GroundTemplate | undefined = templates.get(key);
     if (cached !== undefined && !cached.waiting) return cached;
-    const made: GroundTemplate = groundTemplate(world.content, library, base);
-    if (cached === undefined || !made.waiting) templates.set(base.id, made);
+    const made: GroundTemplate = groundTemplate(world.content, library, base, hero);
+    if (cached === undefined || !made.waiting) templates.set(key, made);
     return cached !== undefined && made.waiting ? cached : made;
   };
 

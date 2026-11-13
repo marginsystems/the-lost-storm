@@ -1,6 +1,6 @@
 import { isFloorCell } from '../nav/layout.ts';
 import type { RetiredZones, ZoneDrift } from './road-types.ts';
-import type { Condition, Content, ObjectiveDef, PathObjective, QuestDef, ZoneCheckpoint, ZoneDef, ZoneExit } from './types.ts';
+import type { Condition, Content, HeroDef, ObjectiveDef, PathObjective, QuestDef, ZoneCheckpoint, ZoneDef, ZoneExit } from './types.ts';
 
 export function objectivePaths(objective: ObjectiveDef): readonly PathObjective[] {
   return objective.type === 'either' ? objective.paths : [objective];
@@ -28,6 +28,10 @@ export function conditionProblems(content: Content, flags: ReadonlySet<string>, 
       continue;
     }
     if (entry.type === 'shore') continue;
+    if (entry.type === 'hero') {
+      if (!content.player.heroes.some((hero: HeroDef): boolean => hero.id === entry.is)) problems.push(`${holder} names unknown hero ${entry.is}`);
+      continue;
+    }
     const questDef: QuestDef | undefined = content.quests.get(entry.quest);
     if (questDef === undefined) problems.push(`${holder} names unknown quest ${entry.quest}`);
     else if (entry.type === 'objective' && !questDef.objectives.some((candidate: ObjectiveDef): boolean => candidate.id === entry.objective)) problems.push(`${holder} names unknown objective ${entry.quest}.${entry.objective}`);

@@ -387,6 +387,231 @@
     ]
   },
   {
+    "id": "hero_woman",
+    "base": [
+      "hair_ponytail"
+    ],
+    "url": "models/characters/woman.glb",
+    "clipFolder": "models/animations/universal",
+    "frame": "woman",
+    "scale": 1.2,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
+    "clips": {
+      "idle": "Idle_Loop",
+      "run": "Jog_Fwd_Loop",
+      "hit": [
+        "Hit_Chest",
+        "Hit_Head"
+      ],
+      "death": [
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "rise": "Death_Collapse",
+      "actions": {
+        "attack": {
+          "clip": "Sword_Combo_A",
+          "impactFraction": 0.18
+        },
+        "attack_b": {
+          "clip": "Sword_Combo_B",
+          "impactFraction": 0.17
+        },
+        "attack_c": {
+          "clip": "Sword_Combo_C",
+          "impactFraction": 0.325
+        },
+        "slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245
+        },
+        "slam_charged": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38
+        },
+        "sweep": {
+          "clip": "Sword_Sweep",
+          "impactFraction": 0.64
+        },
+        "cast": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
+        },
+        "roll": {
+          "clip": "Roll",
+          "impactFraction": 0.6
+        }
+      },
+      "unarmed": {
+        "idle": "Idle_Loop",
+        "actions": {
+          "attack": {
+            "clip": "Punch_Jab",
+            "impactFraction": 0.3
+          },
+          "attack_b": {
+            "clip": "Punch_Cross",
+            "impactFraction": 0.35
+          },
+          "attack_c": {
+            "clip": "Punch_Jab",
+            "impactFraction": 0.3
+          }
+        }
+      },
+      "stances": {
+        "crossbow": {
+          "idle": "Pistol_Idle_Loop",
+          "actions": {
+            "shoot": {
+              "clip": "Pistol_Shoot",
+              "impactFraction": 0.1
+            }
+          }
+        }
+      }
+    },
+    "sockets": {
+      "hand_r": {
+        "bone": "hand_r",
+        "position": [
+          -0.025,
+          0.077,
+          0.0005
+        ],
+        "rotationDegrees": [
+          80.5,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "hand_l",
+        "position": [
+          0.025,
+          0.077,
+          0.0005
+        ],
+        "rotationDegrees": [
+          80.5,
+          -90,
+          0
+        ],
+        "scale": 1
+      }
+    },
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "Head",
+        "neck_01"
+      ],
+      "torso": [
+        "spine_01",
+        "spine_02",
+        "spine_03",
+        "clavicle_l",
+        "clavicle_r"
+      ],
+      "arms": [
+        "upperarm_l",
+        "lowerarm_l",
+        "upperarm_r",
+        "lowerarm_r"
+      ],
+      "hands": [
+        "hand_l",
+        "index_01_l",
+        "index_02_l",
+        "index_03_l",
+        "middle_01_l",
+        "middle_02_l",
+        "middle_03_l",
+        "ring_01_l",
+        "ring_02_l",
+        "ring_03_l",
+        "pinky_01_l",
+        "pinky_02_l",
+        "pinky_03_l",
+        "thumb_01_l",
+        "thumb_02_l",
+        "thumb_03_l",
+        "hand_r",
+        "index_01_r",
+        "index_02_r",
+        "index_03_r",
+        "middle_01_r",
+        "middle_02_r",
+        "middle_03_r",
+        "ring_01_r",
+        "ring_02_r",
+        "ring_03_r",
+        "pinky_01_r",
+        "pinky_02_r",
+        "pinky_03_r",
+        "thumb_01_r",
+        "thumb_02_r",
+        "thumb_03_r"
+      ],
+      "legs": [
+        "pelvis",
+        "thigh_l",
+        "calf_l",
+        "thigh_r",
+        "calf_r"
+      ],
+      "feet": [
+        "foot_l",
+        "ball_l",
+        "foot_r",
+        "ball_r"
+      ]
+    },
+    "contacts": [
+      {
+        "bone": "pelvis",
+        "radius": 0.12
+      },
+      {
+        "bone": "spine_03",
+        "radius": 0.12
+      },
+      {
+        "bone": "Head",
+        "radius": 0.11
+      },
+      {
+        "bone": "foot_l",
+        "radius": 0.07
+      },
+      {
+        "bone": "foot_r",
+        "radius": 0.07
+      },
+      {
+        "bone": "hand_l",
+        "radius": 0.03
+      },
+      {
+        "bone": "hand_r",
+        "radius": 0.03
+      }
+    ]
+  },
+  {
     "id": "human_man",
     "url": "models/characters/man.glb",
     "clipFolder": "models/animations/universal",

@@ -87,6 +87,47 @@
       }
     },
     {
+      "id": "worn_crossbow",
+      "name": "Worn Crossbow",
+      "slot": "weapon",
+      "material": null,
+      "icon": "crossbow",
+      "dropWeight": 0,
+      "minLevel": 1,
+      "visual": "worn_crossbow",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 2
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 6
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.05
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "variants": [
+        {
+          "skill": "cleave",
+          "becomes": "quarrel"
+        }
+      ]
+    },
+    {
       "id": "stormsteel_sword",
       "name": "Stormsteel Sword",
       "slot": "weapon",

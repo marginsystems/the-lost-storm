@@ -53,8 +53,8 @@ function handedProblems(content: Content): string[] {
   return problems;
 }
 
-function unplayed(content: Content, skillId: string, stance: string | null): string[] {
-  const clips: RigClips | undefined = content.rigs.get(content.player.rig)?.clips;
+function unplayed(content: Content, rig: string, skillId: string, stance: string | null): string[] {
+  const clips: RigClips | undefined = content.rigs.get(rig)?.clips;
   const skill: SkillDef | undefined = content.skills.get(skillId);
   if (clips === undefined || skill === undefined) return [];
   const held: RigClips['actions'] = stance === null ? {} : (clips.stances[stance]?.actions ?? {});
@@ -69,7 +69,7 @@ function variantProblems(content: Content): string[] {
       if (!content.skills.has(variant.skill)) problems.push(`item ${base.id} varies unknown skill ${variant.skill}`);
       if (!content.skills.has(variant.becomes)) problems.push(`item ${base.id} turns ${variant.skill} into unknown skill ${variant.becomes}`);
       if (variant.skill === variant.becomes) problems.push(`item ${base.id} turns ${variant.skill} into itself`);
-      for (const animation of unplayed(content, variant.becomes, stance)) problems.push(`item ${base.id} turns ${variant.skill} into ${variant.becomes}, but the hero's rig has no action clip ${animation} for it`);
+      for (const hero of content.player.heroes) for (const animation of unplayed(content, hero.rig, variant.becomes, stance)) problems.push(`item ${base.id} turns ${variant.skill} into ${variant.becomes}, but rig ${hero.rig} has no action clip ${animation} for it`);
     }
   }
   return problems;

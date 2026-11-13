@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { AnimationClip } from 'three';
 import type { RigClipSet, StanceClipSet } from '../render/character-loader.ts';
-import { floorLift, LOBBY_FRAMING, lobbyFraming, lobbyIdle } from './lobby-stage.ts';
+import { coverShare, floorLift, LOBBY_FRAMING, LOBBY_STAGE, lobbyFraming, lobbyIdle } from './lobby-stage.ts';
 import type { Framing, IdleSource } from './lobby-stage.ts';
 
 void test('a wide screen stands the hero larger and right of centre, clear of the dock under the middle', (): void => {
@@ -32,4 +32,15 @@ void test('the lobby hero plays the bare idle with no weapon, the stance idle of
   assert.equal(lobbyIdle(holding(true, null), true), clips.idle);
   assert.equal(lobbyIdle(holding(false, null), true), clips.idle);
   assert.equal(lobbyIdle({ ...holding(false, null), clips: { ...clips, unarmed: null } }, false), clips.idle);
+});
+
+void test('the veil that hides a change of hero is solid over the whole figure and feathers to nothing at its edge', (): void => {
+  const plateau: number = LOBBY_STAGE.coverPlateau;
+  assert.equal(coverShare(0, plateau), 1);
+  assert.equal(coverShare(plateau, plateau), 1);
+  assert.equal(coverShare(1, plateau), 0);
+  assert.equal(coverShare(1.4, plateau), 0);
+  const mid: number = coverShare((1 + plateau) / 2, plateau);
+  assert.ok(mid > 0.4 && mid < 0.6);
+  assert.ok(LOBBY_STAGE.coverWide * plateau > 1.6 && LOBBY_STAGE.coverTall * plateau > 2.4);
 });

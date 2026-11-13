@@ -32,6 +32,9 @@ export function holds(world: World, condition: Condition): boolean {
     case 'shore':
       held = shoreDepth(world) >= condition.depth;
       break;
+    case 'hero':
+      held = world.player.hero === condition.is;
+      break;
   }
   return held !== condition.not;
 }

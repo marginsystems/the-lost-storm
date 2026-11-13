@@ -32,4 +32,10 @@ export interface ShoreCondition {
   readonly not: boolean;
 }
 
-export type Condition = QuestCondition | ObjectiveCondition | FlagCondition | ShoreCondition;
+export interface HeroCondition {
+  readonly type: 'hero';
+  readonly is: string;
+  readonly not: boolean;
+}
+
+export type Condition = QuestCondition | ObjectiveCondition | FlagCondition | ShoreCondition | HeroCondition;

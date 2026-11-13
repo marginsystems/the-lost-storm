@@ -1,5 +1,5 @@
 import type { AnimationClip, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2 } from 'three';
+import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2, Vector3 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
@@ -20,8 +20,8 @@ import { createLobbyMist } from './lobby-mist.ts';
 import { bodyRoles, boneNamed, createLobbyLife } from './lobby-life.ts';
 import type { BodyRoles, LobbyLife } from './lobby-life.ts';
 import type { LobbyMist } from './lobby-mist.ts';
-import { createLobbyOrbit, grab, LOBBY_ORBIT, orbitBy, release, stepOrbit, zoomBy } from './lobby-orbit.ts';
-import type { LobbyOrbit, OrbitView } from './lobby-orbit.ts';
+import { createLobbyOrbit, grab, LOBBY_ORBIT, orbitBy, release, stepOrbit, stepSpring, zoomBy } from './lobby-orbit.ts';
+import type { LobbyOrbit, OrbitView, Spring } from './lobby-orbit.ts';
 
 export const LOBBY_STAGE = {
   background: 0x05070b,
@@ -65,6 +65,17 @@ export const LOBBY_STAGE = {
   zoomProperty: '--lobby-zoom',
   footSamples: 16,
   soleClearance: 0.002,
+  swapSpring: { freq: 1.8, damping: 1 },
+  swapAt: 0.985,
+  swapClear: 0.004,
+  coverColor: 0x070a10,
+  coverWide: 2.8,
+  coverTall: 4.1,
+  coverAhead: 1.2,
+  coverHeight: 1.05,
+  coverPlateau: 0.6,
+  coverTextureSize: 64,
+  coverOrder: 20,
 } as const;
 
 export const LOBBY_ORBIT_UI: string = '.lobby-sheet, .lobby-ladder, .lobby-dock, #title, button, a, input, select, textarea, [role="dialog"]:not(#lobby)';
@@ -88,6 +99,12 @@ export function lobbyFraming(width: number, height: number): Framing {
 
 export interface LobbyLook {
   readonly equipped: Equipment;
+  readonly rig: string;
+}
+
+export function coverShare(radius: number, plateau: number): number {
+  const fall: number = Math.min(1, Math.max(0, (1 - radius) / (1 - plateau)));
+  return fall * fall * (3 - 2 * fall);
 }
 
 export interface LobbyStage {
@@ -99,6 +116,31 @@ export interface LobbyStage {
 interface RainLayer {
   readonly lines: LineSegments;
   readonly heights: Float32Array;
+}
+
+function coverTexture(): DataTexture {
+  const size: number = LOBBY_STAGE.coverTextureSize;
+  const data: Uint8Array = new Uint8Array(size * size * 4);
+  for (let y: number = 0; y < size; y += 1) {
+    for (let x: number = 0; x < size; x += 1) {
+      const value: number = Math.round(coverShare(Math.hypot(((x + 0.5) / size) * 2 - 1, ((y + 0.5) / size) * 2 - 1), LOBBY_STAGE.coverPlateau) * 255);
+      data.fill(value, (y * size + x) * 4, (y * size + x) * 4 + 3);
+      data[(y * size + x) * 4 + 3] = 255;
+    }
+  }
+  const texture: DataTexture = new DataTexture(data, size, size, RGBAFormat);
+  texture.magFilter = LinearFilter;
+  texture.minFilter = LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function coverMesh(): Mesh<PlaneGeometry, MeshBasicMaterial> {
+  const material: MeshBasicMaterial = new MeshBasicMaterial({ color: LOBBY_STAGE.coverColor, alphaMap: coverTexture(), transparent: true, opacity: 0, depthWrite: false, depthTest: false, fog: false });
+  const mesh: Mesh<PlaneGeometry, MeshBasicMaterial> = new Mesh(new PlaneGeometry(LOBBY_STAGE.coverWide, LOBBY_STAGE.coverTall), material);
+  mesh.renderOrder = LOBBY_STAGE.coverOrder;
+  mesh.visible = false;
+  return mesh;
 }
 
 function mistTexture(): DataTexture {
@@ -253,6 +295,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   let heroKey: string = '';
   const rimGlow: Color = new Color(LOBBY_STAGE.rimGlow);
   const size: Vector2 = new Vector2();
+  const toCamera: Vector3 = new Vector3();
   let pipeline: LobbyPipeline | null = null;
   let scenery: Promise<void> | null = null;
   let life: LobbyLife | null = null;
@@ -312,38 +355,78 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     rig.root.position.y = floorLift(lows, LOBBY_STAGE.soleClearance);
   };
 
-  const build = (): RigInstance | null => {
-    if (hero !== null) return hero;
-    const loaded: LoadedRig | undefined = library.rigs.get(content.player.rig);
+  const cover: Mesh<PlaneGeometry, MeshBasicMaterial> = coverMesh();
+  scene.add(cover);
+  const veil: Spring = { x: 0, v: 0 };
+  let veiling: boolean = false;
+  let wanted: LobbyLook | null = null;
+  let shadowLaid: boolean = false;
+
+  const stand = (rigId: string): RigInstance | null => {
+    const loaded: LoadedRig | undefined = library.rigs.get(rigId);
     if (loaded === undefined) return null;
+    if (hero !== null) {
+      hero.root.removeFromParent();
+      hero.dispose();
+    }
     const made: RigInstance = instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather: true });
     made.root.rotation.y = LOBBY_STAGE.facing;
     castShadows(made.root);
     const roles: BodyRoles = bodyRoles(loaded.def.bodyParts);
     life = createLobbyLife(made.root, random(), roles);
     head = boneNamed(made.root, roles.head);
-    scene.add(contactShadow());
+    if (!shadowLaid) scene.add(contactShadow());
+    shadowLaid = true;
     scene.add(made.root);
     hero = made;
+    heroKey = '';
     return made;
   };
 
+  const wear = (rig: RigInstance, look: LobbyLook): void => {
+    const worn: Look = lookOf(content, look.rig, heroBase(content, look.rig), look.equipped);
+    const lookKey: string = `${look.rig}#${worn.wearables.join('|')}#${worn.held.join('|')}#${library.wearables.size}`;
+    if (lookKey === heroKey) return;
+    heroKey = lookKey;
+    rig.setWear(worn.wearables, worn.hidden);
+    rig.setGear(worn.held);
+    castShadows(rig.root);
+    rig.mixer.stopAllAction();
+    const clip: AnimationClip = lobbyIdle(rig, look.equipped.weapon !== null);
+    rig.mixer.clipAction(clip).play();
+    plantFeet(rig, clip);
+  };
+
+  const dress = (look: LobbyLook): void => {
+    wanted = look;
+    if (hero === null) {
+      const made: RigInstance | null = stand(look.rig);
+      if (made !== null) wear(made, look);
+      return;
+    }
+    if (hero.def.id !== look.rig) {
+      veiling = library.rigs.has(look.rig);
+      return;
+    }
+    veiling = false;
+    wear(hero, look);
+  };
+
+  const stepVeil = (dt: number): void => {
+    const covered: number = Math.min(1, Math.max(0, stepSpring(veil, veiling ? 1 : 0, LOBBY_STAGE.swapSpring.freq, LOBBY_STAGE.swapSpring.damping, dt)));
+    if (veiling && covered >= LOBBY_STAGE.swapAt && wanted !== null) {
+      const made: RigInstance | null = stand(wanted.rig);
+      if (made !== null) wear(made, wanted);
+      veiling = false;
+    }
+    cover.visible = covered > LOBBY_STAGE.swapClear;
+    cover.material.opacity = covered;
+    cover.quaternion.copy(camera.quaternion);
+    cover.position.set(0, LOBBY_STAGE.coverHeight, 0).addScaledVector(toCamera.copy(camera.position).setY(LOBBY_STAGE.coverHeight).normalize(), LOBBY_STAGE.coverAhead);
+  };
+
   return {
-    dress(look: LobbyLook): void {
-      const rig: RigInstance | null = build();
-      if (rig === null) return;
-      const worn: Look = lookOf(content, content.player.rig, heroBase(content), look.equipped);
-      const lookKey: string = `${worn.wearables.join('|')}#${worn.held.join('|')}#${library.wearables.size}`;
-      if (lookKey === heroKey) return;
-      heroKey = lookKey;
-      rig.setWear(worn.wearables, worn.hidden);
-      rig.setGear(worn.held);
-      castShadows(rig.root);
-      rig.mixer.stopAllAction();
-      const clip: AnimationClip = lobbyIdle(rig, look.equipped.weapon !== null);
-      rig.mixer.clipAction(clip).play();
-      plantFeet(rig, clip);
-    },
+    dress,
     render(renderer: WebGLRenderer, dt: number, tier: QualityName, devicePixelRatio: number): void {
       lights.step(dt);
       stepRain(rain, dt);
@@ -361,6 +444,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       drawnAt = performance.now();
       const view: OrbitView = stepOrbit(orbit, dt);
       camera.position.set(view.x, view.y, view.z);
+      stepVeil(dt);
       document.getElementById(LOBBY_STAGE.rootId)?.style.setProperty(LOBBY_STAGE.zoomProperty, view.zoom.toFixed(3));
       camera.lookAt(0, view.lookHeight, 0);
       renderer.getSize(size);
@@ -376,7 +460,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       pipeline.render(tier, devicePixelRatio);
     },
     async warm(renderer: WebGLRenderer, tier: QualityName): Promise<void> {
-      build();
+      if (hero === null && wanted !== null) dress(wanted);
       scenery ??= placeRocks(loader, content, scene);
       await scenery;
       pipeline ??= createLobbyPipeline(renderer, scene, camera);

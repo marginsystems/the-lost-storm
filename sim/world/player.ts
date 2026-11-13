@@ -22,6 +22,7 @@ import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './tr
 import type { Station } from './trade.ts';
 import { requestGlitch, setGlitchesEnabled, setOverlay } from './glitch.ts';
 import { readPage } from './story.ts';
+import { chooseHero } from '../hero.ts';
 import { stepWaypoints, teleport } from './waypoints.ts';
 import { findExit, stepCheckpoints, travelThrough } from './zones.ts';
 
@@ -237,6 +238,7 @@ function act(world: World, command: Command): void {
     case 'strike':
     case 'advance':
     case 'equip':
+    case 'hero':
     case 'unequip':
     case 'drop':
     case 'allocate':
@@ -258,6 +260,9 @@ export function handleCommand(world: World, command: Command): void {
   switch (command.type) {
     case 'equip':
       equipFromInventory(world, command.inventoryIndex);
+      return;
+    case 'hero':
+      chooseHero(world, command.hero);
       return;
     case 'unequip':
       unequip(world, command.slot);

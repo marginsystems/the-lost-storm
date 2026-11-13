@@ -122,7 +122,7 @@ void test('monsters on a body with a frame are dressed from the same pool, and o
 void test('a zone needs the hero, its people and its packs, dressed as they are, and nothing else', (): void => {
   for (const zone of content.zones.values()) {
     const needs = zoneCharacterNeeds(content, zone, emptyEquipment());
-    assert.ok(needs.rigs.has(content.player.rig));
+    assert.ok(needs.rigs.has(content.player.hero.rig));
     for (const placed of zone.npcs) {
       const npc = must(content.npcs.get(placed.npc), placed.npc);
       assert.ok(needs.rigs.has(npc.rig), zone.id);
@@ -144,8 +144,8 @@ void test('the equipped pieces are needed too', (): void => {
   const zone = must(content.zones.values().next().value, 'a zone');
   const equipped: Equipment = { ...emptyEquipment(), chest: item('drowned_leathers') };
   const needs = zoneCharacterNeeds(content, zone, equipped);
-  const hero: string = content.player.rig;
-  for (const id of lookOf(content, hero, heroBase(content), equipped).wearables) assert.ok(needs.wearables.has(wearKey(frameOf(content, hero), id)), id);
+  const hero: string = content.player.hero.rig;
+  for (const id of lookOf(content, hero, heroBase(content, content.player.hero.rig), equipped).wearables) assert.ok(needs.wearables.has(wearKey(frameOf(content, hero), id)), id);
 });
 
 void test('the hero holds his weapon, or his bare-handed gear without one', (): void => {
@@ -170,23 +170,23 @@ void test('a zone with a moment field needs the bodies, clothes and gear of its 
 });
 
 void test('the hero body brings its own hair, and a hood worn on the head takes its place', (): void => {
-  const base: readonly string[] = heroBase(content);
+  const base: readonly string[] = heroBase(content, content.player.hero.rig);
   assert.deepEqual(regions(base), ['head']);
-  assert.ok(lookOf(content, content.player.rig, base, emptyEquipment()).wearables.includes('hair_short'));
-  const hooded: readonly string[] = lookOf(content, content.player.rig, base, { ...emptyEquipment(), head: item('wayfarer_hood') }).wearables;
+  assert.ok(lookOf(content, content.player.hero.rig, base, emptyEquipment()).wearables.includes('hair_short'));
+  const hooded: readonly string[] = lookOf(content, content.player.hero.rig, base, { ...emptyEquipment(), head: item('wayfarer_hood') }).wearables;
   assert.ok(hooded.includes('leather_hood') && !hooded.includes('hair_short'));
 });
 
 void test('with nothing equipped the hero wears his undertunic and braies, and each garment takes the place of the layer on its region', (): void => {
-  const hero: string = content.player.rig;
+  const hero: string = content.player.hero.rig;
   assert.deepEqual([...baseLayerOf(content, hero)], ['hair_cropped', 'undertunic', 'braies', 'plain_shoes']);
-  const bare: Look = lookOf(content, hero, heroBase(content), emptyEquipment());
+  const bare: Look = lookOf(content, hero, heroBase(content, content.player.hero.rig), emptyEquipment());
   assert.deepEqual([...bare.wearables].toSorted(), ['braies', 'hair_short', 'plain_shoes', 'undertunic']);
-  const dressed: Look = lookOf(content, hero, heroBase(content), starter());
+  const dressed: Look = lookOf(content, hero, heroBase(content, content.player.hero.rig), starter());
   assert.ok(!dressed.wearables.includes('undertunic') && !dressed.wearables.includes('braies'));
-  const coatOnly: Look = lookOf(content, hero, heroBase(content), { ...starter(), legs: null });
+  const coatOnly: Look = lookOf(content, hero, heroBase(content, content.player.hero.rig), { ...starter(), legs: null });
   assert.ok(coatOnly.wearables.includes('braies') && !coatOnly.wearables.includes('undertunic'));
-  const trousersOnly: Look = lookOf(content, hero, heroBase(content), { ...starter(), chest: null });
+  const trousersOnly: Look = lookOf(content, hero, heroBase(content, content.player.hero.rig), { ...starter(), chest: null });
   assert.ok(trousersOnly.wearables.includes('undertunic') && !trousersOnly.wearables.includes('braies'));
 });
 

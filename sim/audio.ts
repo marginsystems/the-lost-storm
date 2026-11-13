@@ -191,6 +191,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
       action = 'skill_point';
       break;
     case 'equip':
+    case 'hero':
     case 'unequip':
     case 'slot':
       action = 'equip';

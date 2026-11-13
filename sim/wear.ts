@@ -1,5 +1,6 @@
 import type { Content, ItemBaseDef, MonsterDef, NpcDef, WearableDef, WearRegion, ZoneDef } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
+import { heroRig } from './hero.ts';
 import type { Equipment } from './world/types.ts';
 
 export interface Look {
@@ -57,8 +58,8 @@ export function hiddenBodyParts(content: Content, wearableIds: readonly string[]
   return [...hidden];
 }
 
-export function heroBase(content: Content): readonly string[] {
-  return content.rigs.get(content.player.rig)?.base ?? [];
+export function heroBase(content: Content, rig: string): readonly string[] {
+  return content.rigs.get(rig)?.base ?? [];
 }
 
 export function lookOf(content: Content, rig: string, base: readonly string[], equipped: Equipment | null): Look {
@@ -78,15 +79,16 @@ export function heldGear(content: Content, equipped: Equipment | null): string[]
   return held === null ? [...content.player.gear] : [...content.player.gear, held];
 }
 
-export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Equipment | null): CharacterNeeds {
-  const rigs: Set<string> = new Set<string>([content.player.rig]);
-  const look: Look = lookOf(content, content.player.rig, heroBase(content), equipped);
-  const heroFrame: string = frameOf(content, content.player.rig);
+export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Equipment | null, hero: string | null = null): CharacterNeeds {
+  const rig: string = heroRig(content, hero);
+  const rigs: Set<string> = new Set<string>([rig]);
+  const look: Look = lookOf(content, rig, heroBase(content, rig), equipped);
+  const heroFrame: string = frameOf(content, rig);
   const wearables: Set<string> = new Set<string>(look.wearables.map((id: string): string => wearKey(heroFrame, id)));
   const attachments: Set<string> = new Set<string>(look.held);
-  const add = (rig: string, wear: readonly string[], gear: readonly string[]): void => {
-    rigs.add(rig);
-    for (const id of wornWearables(content, rig, wear, null)) wearables.add(wearKey(frameOf(content, rig), id));
+  const add = (other: string, wear: readonly string[], gear: readonly string[]): void => {
+    rigs.add(other);
+    for (const id of wornWearables(content, other, wear, null)) wearables.add(wearKey(frameOf(content, other), id));
     for (const id of gear) attachments.add(id);
   };
   for (const placed of zone.npcs) {

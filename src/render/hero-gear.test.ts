@@ -18,7 +18,7 @@ import { instantiateRig } from './character-loader.ts';
 import { holdEquipped } from './hero-gear.ts';
 
 const content: Content = loadContent();
-const rigDef: RigDef = must(content.rigs.get(content.player.rig), 'player rig');
+const rigDef: RigDef = must(content.rigs.get(content.player.hero.rig), 'player rig');
 const visual: string = must(must(content.itemBases.get('rusted_blade'), 'rusted_blade').visual, 'blade visual');
 const attachmentDef: AttachmentDef = must(content.attachments.get(visual), 'blade attachment');
 

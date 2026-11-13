@@ -34,6 +34,7 @@ export interface LobbyFlowParts {
   readonly ready: () => Promise<void>;
   readonly enterColour: () => string | null;
   readonly startOver: () => void;
+  readonly chooseHero: (id: string) => void;
   readonly openSettings: () => void;
   readonly tier: () => QualityName;
   readonly restore: () => void;
@@ -44,6 +45,7 @@ export interface LobbyFlow {
   render(dt: number): boolean;
   open(): Promise<void>;
   warm(): Promise<void>;
+  restage(): void;
 }
 
 function frames(count: number): Promise<void> {
@@ -125,6 +127,9 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
         parts.title.classList.remove('gone');
       }, null);
     },
+    chooseHero: (id: string): void => {
+      if (!busy) parts.chooseHero(id);
+    },
   });
 
   return {
@@ -144,6 +149,10 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     },
     warm(): Promise<void> {
       return warmStage();
+    },
+    restage(): void {
+      stage.dress(parts.look());
+      screen.setHeroes(parts.view().heroes);
     },
   };
 }

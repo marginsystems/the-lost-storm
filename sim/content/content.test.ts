@@ -39,7 +39,7 @@ void test('the shipped data loads and has no dangling references', (): void => {
 });
 
 void test('the hero is a dressed human: a human body, and starting clothes that are items for the chest, legs and feet, and a bare head', (): void => {
-  const rig: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
+  const rig: RigDef = must(content.rigs.get(content.player.hero.rig), 'hero rig');
   assert.notEqual(rig.frame, '');
   assert.equal(rig.url, `models/characters/${rig.frame}.glb`);
   const worn: WearableDef[] = content.player.startingItems.flatMap((id: string): readonly string[] => must(content.itemBases.get(id), id).wear).map((id: string): WearableDef => must(content.wearables.get(id), id));
@@ -52,7 +52,7 @@ void test('every monster has its skill and rig, and every rig has every animatio
     assert.ok(content.skills.has(monster.skill), `${monster.id} skill`);
     assert.ok(content.rigs.has(monster.rig), `${monster.id} rig`);
   }
-  assert.ok(content.rigs.has(content.player.rig));
+  assert.ok(content.rigs.has(content.player.hero.rig));
   for (const rig of content.rigs.values()) {
     assert.ok(rig.clips.hit.length > 0 && rig.clips.death.length > 0, `${rig.id} hit and death`);
     assert.ok(Object.keys(rig.clips.actions).length > 0, `${rig.id} actions`);
@@ -206,13 +206,13 @@ void test('every clip a rig names has its own file in the rig clip folder, and t
       assert.deepEqual(clipNames(path), [clip], path);
     }
   }
-  const hero = must(content.rigs.get(content.player.rig), 'hero rig');
+  const hero = must(content.rigs.get(content.player.hero.rig), 'hero rig');
   assert.ok(new Set<string>(hero.clips.death).size >= 2);
   assert.ok(new Set<string>(hero.clips.hit).size >= 2);
 });
 
 void test('every skill on the bar and every monster skill has an action clip on the rig that uses it', (): void => {
-  const hero = must(content.rigs.get(content.player.rig), 'hero rig');
+  const hero = must(content.rigs.get(content.player.hero.rig), 'hero rig');
   for (const entry of content.player.skillBook) {
     const skill = must(content.skills.get(entry.skill), entry.skill);
     for (const animation of [skill.animation, ...(skill.combo?.steps ?? []).map((step: { readonly animation: string }): string => step.animation)]) assert.ok(hero.clips.actions[animation] !== undefined, `${skill.id} ${animation}`);

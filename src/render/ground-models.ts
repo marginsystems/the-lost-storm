@@ -30,13 +30,13 @@ export interface GroundTemplate {
   readonly waiting: boolean;
 }
 
-function rigScale(content: Content): number {
-  const rig: RigDef | undefined = content.rigs.get(content.player.rig);
+function rigScale(content: Content, hero: string): number {
+  const rig: RigDef | undefined = content.rigs.get(hero);
   return rig === undefined ? 1 : rig.scale;
 }
 
-function heldScale(content: Content, attachment: LoadedAttachment): number {
-  const rig: RigDef | undefined = content.rigs.get(content.player.rig);
+function heldScale(content: Content, hero: string, attachment: LoadedAttachment): number {
+  const rig: RigDef | undefined = content.rigs.get(hero);
   if (rig === undefined) return 1;
   return rig.scale * (rig.sockets[attachment.def.socket]?.scale ?? 1);
 }
@@ -140,17 +140,17 @@ function settled(inner: Object3D, look: GroundLook, scale: number, waiting: bool
   return { model, footprint: Math.max(GROUND_MODEL.shadowMin, Math.max(size.x, size.z) * GROUND_MODEL.shadowPerMetre * 0.5), waiting };
 }
 
-export function groundTemplate(content: Content, library: CharacterLibrary, base: ItemBaseDef): GroundTemplate {
+export function groundTemplate(content: Content, library: CharacterLibrary, base: ItemBaseDef, hero: string): GroundTemplate {
   const look: GroundLook = base.ground;
   switch (look.model) {
     case 'held': {
       const attachment: LoadedAttachment | undefined = base.visual === null ? undefined : library.attachments.get(base.visual);
-      if (attachment !== undefined) return settled(heldModel(attachment), look, heldScale(content, attachment), false);
+      if (attachment !== undefined) return settled(heldModel(attachment), look, heldScale(content, hero, attachment), false);
       break;
     }
     case 'worn': {
-      const worn: LoadedWearable | undefined = base.wear.map((id: string): LoadedWearable | undefined => library.wearables.get(wearKey(frameOf(content, content.player.rig), id))).find((entry: LoadedWearable | undefined): boolean => entry !== undefined);
-      if (worn !== undefined) return settled(wornModel(worn, look.keep), look, rigScale(content), false);
+      const worn: LoadedWearable | undefined = base.wear.map((id: string): LoadedWearable | undefined => library.wearables.get(wearKey(frameOf(content, hero), id))).find((entry: LoadedWearable | undefined): boolean => entry !== undefined);
+      if (worn !== undefined) return settled(wornModel(worn, look.keep), look, rigScale(content, hero), false);
       break;
     }
     case 'pouch':

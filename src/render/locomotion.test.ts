@@ -67,7 +67,7 @@ void test('every monster walks, strafes, backs off and circles at speeds its rig
       if (choice.rate < BAND.slowest || choice.rate > BAND.fastest) problems.push(`${def.id} at ${speed.toFixed(2)} m/s plays ${must(rig.gaits[choice.index], 'gait').clip} at ${choice.rate.toFixed(2)}x`);
     }
   }
-  const hero: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
+  const hero: RigDef = must(content.rigs.get(content.player.hero.rig), 'hero rig');
   const run: GaitChoice = must(chooseGait(hero.gaits, 1, content.player.baseStats.moveSpeed, -1), 'hero run');
   if (run.rate < BAND.slowest || run.rate > BAND.fastest) problems.push(`the hero runs his gait at ${run.rate.toFixed(2)}x`);
   assert.deepEqual(problems, []);
@@ -100,7 +100,7 @@ void test('the hero, every monster and every echo that turns have a clip, or a s
       problems.push(...stateProblems(`${moment.id} echo of ${echo.monster}`, must(content.rigs.get(echo.look.rig), echo.look.rig), [skill.animation]));
     }
   }
-  const hero: RigDef = must(content.rigs.get(content.player.rig), 'hero rig');
+  const hero: RigDef = must(content.rigs.get(content.player.hero.rig), 'hero rig');
   problems.push(...stateProblems('the hero', hero, Object.keys(hero.clips.actions)));
   assert.deepEqual(problems, []);
   const bare = { idle: 'Idle', gaits: [], hit: [], death: [], rise: null, action: null };

@@ -1,6 +1,7 @@
 import { mountThresholdBloom } from '../dither/mount.ts';
 import { el, label, setText } from '../hud/dom.ts';
 import type { Lobby } from './compact.ts';
+import type { HeroChoice, HeroOption } from './hero-choice.ts';
 import type { LobbyHero, LobbyStat } from './lobby-sheet.ts';
 import screenCss from './lobby-screen.css?inline';
 import { mountTitleLobby } from './title-lobby.ts';
@@ -23,12 +24,17 @@ export const LOBBY_SCREEN = {
   playedLabel: 'Played',
   seenLabel: 'Last seen',
   levelLabel: 'Level',
+  heroesLabel: 'Who wakes',
+  findsLabel: 'Finds the',
+  chosenProperty: '--chosen',
+  countProperty: '--heroes',
 } as const;
 
 export interface LobbyView {
   readonly name: string | null;
   readonly hero: LobbyHero;
   readonly known: boolean;
+  readonly heroes: HeroChoice | null;
 }
 
 export interface LobbyActions {
@@ -36,6 +42,7 @@ export interface LobbyActions {
   startOver(): void;
   settings(): void;
   back(): void;
+  chooseHero(id: string): void;
 }
 
 export interface LobbyScreen {
@@ -44,6 +51,7 @@ export interface LobbyScreen {
   show(view: LobbyView): void;
   hide(): void;
   setBusy(busy: boolean): void;
+  setHeroes(choice: HeroChoice | null): void;
 }
 
 function button(parent: HTMLElement, className: string, text: string, onClick: () => void): HTMLButtonElement {
@@ -90,6 +98,32 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
   const bar: HTMLDivElement = el('div', 'lobby-xp', level);
   const fill: HTMLDivElement = el('div', 'lobby-xp-fill', bar);
   const empty: HTMLDivElement = label('lobby-fresh', LOBBY_SCREEN.fresh, sheet);
+  const heroes: HTMLDivElement = el('div', 'lobby-heroes', sheet);
+  heroes.setAttribute('role', 'radiogroup');
+  heroes.setAttribute('aria-label', LOBBY_SCREEN.heroesLabel);
+  heroes.hidden = true;
+  const heroMark: HTMLSpanElement = el('span', 'lobby-hero-mark', heroes);
+  const heroButtons: Map<string, HTMLButtonElement> = new Map<string, HTMLButtonElement>();
+  const heroButton = (option: HeroOption): HTMLButtonElement => {
+    const made: HTMLButtonElement = button(heroes, 'lobby-hero', '', (): void => actions.chooseHero(option.id));
+    made.setAttribute('role', 'radio');
+    label('lobby-hero-name', option.name, made);
+    if (option.finds !== null) label('lobby-hero-finds', `${LOBBY_SCREEN.findsLabel} ${option.finds}`, made);
+    return made;
+  };
+  const setHeroes = (choice: HeroChoice | null): void => {
+    heroes.hidden = choice === null;
+    if (choice === null) return;
+    if (choice.options.map((option: HeroOption): string => option.id).join('|') !== [...heroButtons.keys()].join('|')) {
+      for (const stale of heroButtons.values()) stale.remove();
+      heroButtons.clear();
+      for (const option of choice.options) heroButtons.set(option.id, heroButton(option));
+    }
+    heroes.style.setProperty(LOBBY_SCREEN.countProperty, String(choice.options.length));
+    heroes.style.setProperty(LOBBY_SCREEN.chosenProperty, String(Math.max(0, choice.options.findIndex((option: HeroOption): boolean => option.id === choice.chosen))));
+    heroMark.hidden = !choice.options.some((option: HeroOption): boolean => option.id === choice.chosen);
+    for (const [id, made] of heroButtons) made.setAttribute('aria-checked', String(id === choice.chosen));
+  };
   const stats: HTMLDivElement = el('div', 'lobby-stats', sheet);
   const facts: HTMLDivElement = el('div', 'lobby-facts', sheet);
   const played: HTMLDivElement = label('lobby-fact', '', facts);
@@ -169,6 +203,7 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
           break;
       }
       empty.hidden = hero.kind !== 'fresh';
+      setHeroes(view.heroes);
       dock.classList.remove(LOBBY_SCREEN.confirmClass);
       confirm.inert = true;
       shown = true;
@@ -182,7 +217,8 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
       root.classList.remove(LOBBY_SCREEN.shownClass);
     },
     setBusy(busy: boolean): void {
-      for (const control of [primary, reset, settings, back, yes, no]) control.disabled = busy;
+      for (const control of [primary, reset, settings, back, yes, no, ...heroButtons.values()]) control.disabled = busy;
     },
+    setHeroes,
   };
 }

@@ -3,7 +3,7 @@ import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasic
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { boundSkins, disposeSkeletons } from './skeletons.ts';
-import type { AttachmentDef, Content, RigActionClip, RigDef, RigGait, RigSocket, RigStanceClips, WearableDef } from '../../sim/content/types.ts';
+import type { AttachmentDef, Content, HeroDef, RigActionClip, RigDef, RigGait, RigSocket, RigStanceClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
 import { wearFrames, wearKey, wearModel } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
@@ -316,7 +316,7 @@ async function loadAttachment(loader: GLTFLoader, dresser: Dresser, def: Attachm
 }
 
 function usedRigs(content: Content): Set<string> {
-  const ids: Set<string> = new Set<string>([content.player.rig]);
+  const ids: Set<string> = new Set<string>(content.player.heroes.map((hero: HeroDef): string => hero.rig));
   for (const monster of content.monsters.values()) ids.add(monster.rig);
   for (const npc of content.npcs.values()) ids.add(npc.rig);
   for (const moment of content.moments.defs.values()) for (const echo of moment.echoes) if (echo.look !== null) ids.add(echo.look.rig);
@@ -365,6 +365,23 @@ export async function loadCharacters(loader: GLTFLoader, content: Content, dress
     attachments: new Map<string, LoadedAttachment>(attachments.map((held: LoadedAttachment): [string, LoadedAttachment] => [held.def.id, held])),
     wearables: new Map<string, LoadedWearable>(wearables.map((worn: LoadedWearable): [string, LoadedWearable] => [wearKey(worn.frame, worn.def.id), worn])),
   };
+}
+
+export async function loadNeeds(loader: GLTFLoader, content: Content, dresser: Dresser, library: CharacterLibrary, needs: CharacterNeeds): Promise<void> {
+  const rigIds: string[] = [...needs.rigs].filter((id: string): boolean => !library.rigs.has(id));
+  const heldIds: string[] = [...needs.attachments].filter((id: string): boolean => !library.attachments.has(id));
+  const unworn: FramedWearable[] = framedWearables(content, needs.wearables).filter((worn: FramedWearable): boolean => !library.wearables.has(wearKey(worn.frame, worn.def.id)));
+  await Promise.all([
+    ...rigDefs(content, rigIds).map(async (def: RigDef): Promise<void> => {
+      library.rigs.set(def.id, await loadRig(loader, def));
+    }),
+    ...unworn.map(async (worn: FramedWearable): Promise<void> => {
+      library.wearables.set(wearKey(worn.frame, worn.def.id), await loadWearable(loader, worn.def, worn.frame));
+    }),
+    ...attachmentDefs(content, heldIds).map(async (def: AttachmentDef): Promise<void> => {
+      library.attachments.set(def.id, await loadAttachment(loader, dresser, def));
+    }),
+  ]);
 }
 
 export async function loadRemainingCharacters(loader: GLTFLoader, content: Content, dresser: Dresser, library: CharacterLibrary): Promise<void> {

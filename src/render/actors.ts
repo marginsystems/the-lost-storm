@@ -5,6 +5,7 @@ import { knockTime } from '../../sim/world/movement.ts';
 import { Color } from 'three';
 import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import type { Look } from '../../sim/wear.ts';
+import { heroRig } from '../../sim/hero.ts';
 import { heroBase, lookOf, wornWearables } from '../../sim/wear.ts';
 import { wakeStage } from '../../sim/world/wake.ts';
 import { wakePose } from './wake-pose.ts';
@@ -103,12 +104,29 @@ function echoLook(current: World, monster: MonsterState): EchoLook | null {
 
 export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean, sight: Sight = SEES_ALL): Actors {
   const content: Content = world.content;
-  const playerRig: LoadedRig | undefined = library.rigs.get(content.player.rig);
-  if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
-  const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather }), 1, world.player.facing);
-  holdEquipped(content, playerView.rig, world.player.equipped);
-  dress(content, content.player.rig, playerView.rig, heroBase(content), world.player.equipped);
-  scene.add(playerView.rig.root);
+  const heroView = (loaded: LoadedRig, current: World): ActorView => {
+    const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather }), 1, current.player.facing);
+    holdEquipped(content, view.rig, current.player.equipped);
+    dress(content, loaded.def.id, view.rig, heroBase(content, loaded.def.id), current.player.equipped);
+    scene.add(view.rig.root);
+    return view;
+  };
+  const playerRig: LoadedRig | undefined = library.rigs.get(heroRig(content, world.player.hero));
+  if (playerRig === undefined) throw new Error(`Player rig "${heroRig(content, world.player.hero)}" was not loaded`);
+  let playerView: ActorView = heroView(playerRig, world);
+  const standChosen = (current: World): void => {
+    const wanted: string = heroRig(content, current.player.hero);
+    if (playerView.rig.def.id === wanted) return;
+    const loaded: LoadedRig | undefined = library.rigs.get(wanted);
+    if (loaded === undefined) return;
+    playerView.dispose();
+    playerView = heroView(loaded, current);
+  };
+  const dressHero = (current: World): void => {
+    standChosen(current);
+    holdEquipped(content, playerView.rig, current.player.equipped);
+    dress(content, playerView.rig.def.id, playerView.rig, heroBase(content, playerView.rig.def.id), current.player.equipped);
+  };
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
   const npcs: Map<number, NpcEntry> = new Map<number, NpcEntry>();
   let npcZone: World['zone'] | null = null;
@@ -211,8 +229,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       return made.map((view: ActorView): Object3D => view.rig.root);
     },
     refreshWear(current: World): void {
-      holdEquipped(content, playerView.rig, current.player.equipped);
-      dress(content, content.player.rig, playerView.rig, heroBase(content), current.player.equipped);
+      dressHero(current);
     },
     boundsOf(actorId: number, out: Box3): boolean {
       const view: ActorView | null = viewOf(actorId);
@@ -227,6 +244,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       const floor: number = current.zone.floorHeight;
       sight.refresh();
       const seen = (view: ActorView, x: number, z: number): boolean => sight.sees(x, floor + view.height / 2, z, view.height);
+      standChosen(current);
       holdEquipped(content, playerView.rig, current.player.equipped);
       playerView.wake(current.wake === null ? null : wakePose(wakeStage(current.wake.plan, current.wake.elapsed), current.wake.elapsed));
       playerView.sync(dt, poseOf(current.player), { rise: 1, floor, turnRate: ACTOR.turnRate, seen: true });
@@ -309,8 +327,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             playerView.face(current.player.facing);
             break;
           case 'character_changed':
-            holdEquipped(content, playerView.rig, current.player.equipped);
-            dress(content, content.player.rig, playerView.rig, heroBase(content), current.player.equipped);
+            dressHero(current);
             break;
           case 'monster_remove': {
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);

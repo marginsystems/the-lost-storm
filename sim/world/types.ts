@@ -143,6 +143,7 @@ export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent | Tra
 
 export interface PlayerState extends ActorState {
   readonly kind: 'player';
+  hero: string;
   mana: number;
   stats: StatBlock;
   bar: (string | null)[];
@@ -352,6 +353,11 @@ export interface StopCommand {
   readonly type: 'stop';
 }
 
+export interface HeroCommand {
+  readonly type: 'hero';
+  readonly hero: string;
+}
+
 export interface EquipCommand {
   readonly type: 'equip';
   readonly inventoryIndex: number;
@@ -510,7 +516,7 @@ export interface OverlayCommand {
   readonly open: boolean;
 }
 
-export type Command = StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export type Command = HeroCommand | StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';

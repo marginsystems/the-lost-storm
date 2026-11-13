@@ -1,5 +1,8 @@
 {
-  "rig": "hero_man",
+  "heroes": [
+    {"id": "man", "name": "Man", "rig": "hero_man"},
+    {"id": "woman", "name": "Woman", "rig": "hero_woman"}
+  ],
   "radius": 0.5,
   "baseStats": {
     "maxLife": 100,
