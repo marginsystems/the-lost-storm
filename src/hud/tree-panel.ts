@@ -14,8 +14,8 @@ import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
 import { slotAction } from '../settings/bindings.ts';
 import { placeGlyph } from './tree-glyphs.ts';
-import { nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
-import type { NodeSpot } from './tree-nodes.ts';
+import { cardSpot, nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
+import type { CardSpot, NodeSpot } from './tree-nodes.ts';
 import { statusLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
 
@@ -28,8 +28,9 @@ const CHART = {
   zoomStep: 360,
   findZoom: 1.2,
   confirmMs: 3200,
-  hoverGraceMs: 700,
-  cardGap: 26,
+  hoverGraceMs: 320,
+  hoverDwellMs: 120,
+  cardGap: 12,
   cardEdge: 10,
   svgNamespace: 'http://www.w3.org/2000/svg',
   emptyLine: 'No points yet. Moments in the storm and each new level bring them.',
@@ -184,6 +185,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   let selected: NodeView | null = null;
   let shownCard: string = '';
   let unhover: number | undefined;
+  let pending: NodeView | null = null;
+  let dwell: number | undefined;
 
   const costLine = (node: SkillTreeNodeDef, status: TreeNodeStatus): string => {
     if (status.kind === 'allocated') return canRefund(content, player().allocated, node.id) ? 'Taken' : 'Taken · places after it hold on to it';
@@ -306,17 +309,20 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const box: DOMRect = viewport.getBoundingClientRect();
     return { width: Math.max(1, box.width), height: Math.max(1, box.height), mapWidth, mapHeight };
   };
+  const onScreen = (spot: NodeSpot): NodeSpot => {
+    const at: ScreenPoint = toScreen(motion.view, frame, spot);
+    return { id: spot.id, x: at.x, y: at.y, radius: spot.radius * motion.view.scale };
+  };
   const placeCard = (): void => {
     const view: NodeView | null = hovered ?? selected;
     if (view === null) return;
-    const at: ScreenPoint = toScreen(motion.view, frame, centreOf(view.def));
-    const width: number = card.offsetWidth;
-    const height: number = card.offsetHeight;
-    const right: boolean = at.x + CHART.cardGap + width + CHART.cardEdge <= frame.width;
-    const x: number = right ? at.x + CHART.cardGap : Math.max(CHART.cardEdge, at.x - CHART.cardGap - width);
-    const y: number = Math.max(CHART.cardEdge, Math.min(at.y - height / 2, frame.height - height - CHART.cardEdge));
-    card.style.left = `${Math.round(x)}px`;
-    card.style.top = `${Math.round(y)}px`;
+    const own: NodeSpot | undefined = spots.find((spot: NodeSpot): boolean => spot.id === view.def.id);
+    if (own === undefined) return;
+    const reach: number = TREE_NODES.neighbourReach * CHART.unit;
+    const near: readonly NodeSpot[] = spots.filter((spot: NodeSpot): boolean => spot !== own && Math.hypot(spot.x - own.x, spot.y - own.y) <= reach).map(onScreen);
+    const at: CardSpot = cardSpot(onScreen(own), { width: card.offsetWidth, height: card.offsetHeight }, near, { width: frame.width, height: frame.height, edge: CHART.cardEdge, gap: CHART.cardGap });
+    card.style.left = `${Math.round(at.x)}px`;
+    card.style.top = `${Math.round(at.y)}px`;
   };
   const apply = (): void => {
     placeCard();
@@ -385,6 +391,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       viewport.classList.add('dragging');
       viewport.setPointerCapture(event.pointerId);
       hovered = null;
+      pending = null;
       fillCard();
     }
     moved = true;
@@ -477,18 +484,27 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   const spots: readonly NodeSpot[] = views.map((view: NodeView): NodeSpot => ({ id: view.def.id, ...centreOf(view.def), radius: nodeDiameter(view.def) / 2 }));
   const viewOf: ReadonlyMap<string, NodeView> = new Map<string, NodeView>(views.map((view: NodeView): [string, NodeView] => [view.def.id, view]));
   const pointAt = (view: NodeView | null): void => {
+    if (view === pending) return;
+    pending = view;
+    window.clearTimeout(dwell);
     if (view === null) {
       if (hovered !== null) leaveHover();
       return;
     }
     window.clearTimeout(unhover);
     if (view === hovered) return;
-    hovered = view;
-    fillCard();
+    dwell = window.setTimeout((): void => {
+      hovered = view;
+      fillCard();
+    }, CHART.hoverDwellMs);
   };
   viewport.addEventListener('pointermove', (event: PointerEvent): void => {
     if (event.pointerType === 'touch' || viewport.classList.contains('dragging')) return;
-    if (card.contains(event.target instanceof Node ? event.target : null)) return;
+    if (card.contains(event.target instanceof Node ? event.target : null)) {
+      pending = null;
+      window.clearTimeout(dwell);
+      return;
+    }
     const at: ScreenPoint = toMap(motion.view, frame, local(event));
     const id: string | null = nodeAt(spots, at.x, at.y);
     pointAt(id === null ? null : (viewOf.get(id) ?? null));

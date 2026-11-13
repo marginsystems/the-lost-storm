@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content, SkillTreeNodeDef } from '../../sim/content/types.ts';
-import { nodeAt, nodeDiameter, nodeFace, TREE_NODES } from './tree-nodes.ts';
-import type { NodeSpot } from './tree-nodes.ts';
+import { cardSpot, nodeAt, nodeDiameter, nodeFace, TREE_NODES } from './tree-nodes.ts';
+import type { CardRoom, CardSize, CardSpot, NodeSpot } from './tree-nodes.ts';
 
 const content: Content = loadContent();
 
@@ -35,4 +35,24 @@ void test('the pointer on one of two neighbouring places names that place, never
   assert.equal(nodeAt([a, b], 100, 120), null);
   assert.equal(nodeAt([a, b], 130, 120), null);
   assert.equal(nodeAt([{ ...a, id: 'under' }, a], 100, 100), 'a');
+});
+
+void test('the card keeps clear of its place and the places beside it, and stays on screen', (): void => {
+  const room: CardRoom = { width: 800, height: 600, edge: 10, gap: 8 };
+  const size: CardSize = { width: 220, height: 120 };
+  const node: NodeSpot = { id: 'n', x: 400, y: 300, radius: 15 };
+  const right: NodeSpot = { id: 'r', x: 446, y: 300, radius: 15 };
+  const clear = (spot: CardSpot, circle: NodeSpot): boolean => {
+    const nearX: number = Math.max(spot.x, Math.min(circle.x, spot.x + size.width));
+    const nearY: number = Math.max(spot.y, Math.min(circle.y, spot.y + size.height));
+    return Math.hypot(circle.x - nearX, circle.y - nearY) >= circle.radius + room.gap;
+  };
+  const alone: CardSpot = cardSpot(node, size, [], room);
+  assert.ok(clear(alone, node));
+  assert.ok(alone.x > node.x);
+  const crowded: CardSpot = cardSpot(node, size, [right], room);
+  assert.ok(clear(crowded, node) && clear(crowded, right));
+  const edge: CardSpot = cardSpot({ ...node, x: 780 }, size, [], room);
+  assert.ok(edge.x >= room.edge && edge.x + size.width <= room.width - room.edge);
+  assert.ok(clear(edge, { ...node, x: 780 }));
 });

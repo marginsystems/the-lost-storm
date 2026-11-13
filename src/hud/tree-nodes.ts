@@ -10,6 +10,7 @@ export const TREE_NODES = {
   variantRim: 2,
   keystoneInset: 3,
   gap: 6,
+  neighbourReach: 2.2,
 } as const;
 
 export interface NodeSpot {
@@ -17,6 +18,23 @@ export interface NodeSpot {
   readonly x: number;
   readonly y: number;
   readonly radius: number;
+}
+
+export interface CardSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface CardRoom {
+  readonly width: number;
+  readonly height: number;
+  readonly edge: number;
+  readonly gap: number;
+}
+
+export interface CardSpot {
+  readonly x: number;
+  readonly y: number;
 }
 
 export function nodeFace(node: SkillTreeNodeDef): number {
@@ -43,4 +61,36 @@ export function nodeAt(spots: readonly NodeSpot[], x: number, y: number): string
     bestDistance = distance;
   }
   return best === null ? null : best.id;
+}
+
+function covers(spot: CardSpot, size: CardSize, circle: NodeSpot, gap: number): boolean {
+  const nearX: number = Math.max(spot.x, Math.min(circle.x, spot.x + size.width));
+  const nearY: number = Math.max(spot.y, Math.min(circle.y, spot.y + size.height));
+  return Math.hypot(circle.x - nearX, circle.y - nearY) < circle.radius + gap;
+}
+
+function inside(value: number, size: number, room: number, edge: number): number {
+  return Math.max(edge, Math.min(value, room - size - edge));
+}
+
+export function cardSpot(node: NodeSpot, size: CardSize, keep: readonly NodeSpot[], room: CardRoom): CardSpot {
+  const reach: number = node.radius + room.gap;
+  const wanted: readonly CardSpot[] = [
+    { x: node.x + reach, y: node.y - size.height / 2 },
+    { x: node.x - reach - size.width, y: node.y - size.height / 2 },
+    { x: node.x - size.width / 2, y: node.y + reach },
+    { x: node.x - size.width / 2, y: node.y - reach - size.height },
+  ];
+  const placed: CardSpot[] = wanted.map((spot: CardSpot): CardSpot => ({ x: inside(spot.x, size.width, room.width, room.edge), y: inside(spot.y, size.height, room.height, room.edge) }));
+  const hits = (spot: CardSpot): number => [node, ...keep].filter((circle: NodeSpot): boolean => covers(spot, size, circle, room.gap)).length;
+  let best: CardSpot = placed[0] ?? { x: room.edge, y: room.edge };
+  let fewest: number = hits(best);
+  for (const spot of placed) {
+    const count: number = hits(spot);
+    if (count < fewest) {
+      best = spot;
+      fewest = count;
+    }
+  }
+  return best;
 }
