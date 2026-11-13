@@ -1,5 +1,5 @@
 import type { AnimationClip, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, BackSide, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, SphereGeometry, SpotLight, Vector2 } from 'three';
+import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, SpotLight, Vector2 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
@@ -16,12 +16,13 @@ import type { LobbyPipeline } from './lobby-render.ts';
 import { poseBones, settlePose, turnPose } from './lobby-pose.ts';
 import type { PosedBone, PoseTurn } from './lobby-pose.ts';
 import { placeRocks } from './lobby-scenery.ts';
+import { createLobbyMist } from './lobby-mist.ts';
+import type { LobbyMist } from './lobby-mist.ts';
 import { createLobbyOrbit, grab, LOBBY_ORBIT, orbitBy, release, stepOrbit, zoomBy } from './lobby-orbit.ts';
 import type { LobbyOrbit, OrbitView } from './lobby-orbit.ts';
 
 export const LOBBY_STAGE = {
   background: 0x05070b,
-  haze: 0x343c49,
   fogNear: 10,
   fogFar: 23,
   fov: 18,
@@ -88,13 +89,6 @@ export const LOBBY_STAGE = {
   mistTextureSize: 64,
   rootId: 'lobby',
   zoomProperty: '--lobby-zoom',
-  domeRadius: 30,
-  domeWidthSegments: 48,
-  domeHeightSegments: 32,
-  hazeFloor: -0.02,
-  hazePeak: 0.03,
-  hazeTop: 0.32,
-  hazeStrength: 0.85,
   footSamples: 16,
   soleClearance: 0.002,
 } as const;
@@ -161,27 +155,6 @@ function mistTexture(): DataTexture {
   texture.minFilter = LinearFilter;
   texture.needsUpdate = true;
   return texture;
-}
-
-function backdrop(): Mesh {
-  const geometry: SphereGeometry = new SphereGeometry(LOBBY_STAGE.domeRadius, LOBBY_STAGE.domeWidthSegments, LOBBY_STAGE.domeHeightSegments);
-  const positions: BufferAttribute | ReturnType<BufferGeometry['getAttribute']> = geometry.getAttribute('position');
-  const colours: Float32Array = new Float32Array(positions.count * 3);
-  const dark: Color = new Color(LOBBY_STAGE.background);
-  const haze: Color = new Color(LOBBY_STAGE.haze);
-  const shade: Color = new Color();
-  for (let index: number = 0; index < positions.count; index += 1) {
-    const rise: number = positions.getY(index) / LOBBY_STAGE.domeRadius;
-    const below: number = Math.min(1, Math.max(0, (rise - LOBBY_STAGE.hazeFloor) / (LOBBY_STAGE.hazePeak - LOBBY_STAGE.hazeFloor)));
-    const above: number = Math.min(1, Math.max(0, (LOBBY_STAGE.hazeTop - rise) / (LOBBY_STAGE.hazeTop - LOBBY_STAGE.hazePeak)));
-    const glow: number = rise < LOBBY_STAGE.hazePeak ? below * below * (3 - 2 * below) : above * above * (3 - 2 * above);
-    shade.copy(dark).lerp(haze, glow * LOBBY_STAGE.hazeStrength);
-    colours.set([shade.r, shade.g, shade.b], index * 3);
-  }
-  geometry.setAttribute('color', new BufferAttribute(colours, 3));
-  const mesh: Mesh = new Mesh(geometry, new MeshBasicMaterial({ vertexColors: true, side: BackSide, depthWrite: false, fog: false }));
-  mesh.renderOrder = -1;
-  return mesh;
 }
 
 function castShadows(root: Object3D): void {
@@ -294,10 +267,9 @@ function castShadow(light: SpotLight, normalBias: number): void {
 
 export function createLobbyStage(content: Content, library: CharacterLibrary, loader: GLTFLoader, random: () => number = Math.random): LobbyStage {
   const scene: Scene = new Scene();
-  scene.background = new Color(LOBBY_STAGE.background);
   scene.fog = new Fog(LOBBY_STAGE.background, LOBBY_STAGE.fogNear, LOBBY_STAGE.fogFar);
-  const dome: Mesh = backdrop();
-  scene.add(dome);
+  const sky: LobbyMist = createLobbyMist();
+  scene.background = sky.texture;
   const camera: PerspectiveCamera = new PerspectiveCamera(LOBBY_STAGE.fov, 1, LOBBY_STAGE.near, LOBBY_STAGE.far);
   camera.position.set(0, LOBBY_STAGE.cameraHeight, LOBBY_STAGE.cameraDistance);
   camera.lookAt(0, LOBBY_STAGE.lookHeight, 0);
@@ -447,7 +419,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       drawnAt = performance.now();
       const view: OrbitView = stepOrbit(orbit, dt);
       camera.position.set(view.x, view.y, view.z);
-      dome.position.copy(camera.position);
       document.getElementById(LOBBY_STAGE.rootId)?.style.setProperty(LOBBY_STAGE.zoomProperty, view.zoom.toFixed(3));
       camera.lookAt(0, view.lookHeight, 0);
       renderer.getSize(size);
@@ -457,6 +428,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       camera.zoom = framing.zoom;
       camera.setViewOffset(size.x, size.y, (0.5 - framing.across) * size.x, framing.down * size.y, size.x, size.y);
       camera.updateProjectionMatrix();
+      sky.draw(renderer, dt, size.x, size.y, devicePixelRatio, camera);
       RIM_LIGHT.value.copy(rimGlow);
       pipeline ??= createLobbyPipeline(renderer, scene, camera);
       pipeline.render(tier, devicePixelRatio);
