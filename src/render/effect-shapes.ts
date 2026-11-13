@@ -12,19 +12,26 @@ export const SHAPES = {
   boltJitter: 1.5,
   boltWidth: 0.16,
   glowBoost: 3.2,
+  orbBoost: 1.5,
+  orbCore: 0.22,
+  orbHalo: 2.6,
+  orbHaloBoost: 1.6,
+  orbHaloStrength: 0.9,
   arcCount: 6,
   arcSegments: 6,
   arcJitter: 0.9,
   arcWidth: 0.09,
   telegraphInner: 0.35,
   telegraphFill: 0.07,
-  telegraphLine: 0.5,
-  telegraphCore: 0,
+  telegraphLine: 0.3,
+  telegraphCore: 0.45,
+  telegraphMid: 0.75,
   telegraphBody: 0.82,
-  telegraphFeather: 0.12,
+  telegraphEdge: 0.6,
+  telegraphFeather: 0.36,
   telegraphSide: 0.12,
-  rimIn: 0.8,
-  rimOut: 1.06,
+  rimIn: 0.72,
+  rimOut: 1.16,
   laneShoulder: 0.45,
   laneStart: 0.7,
 } as const;
@@ -209,6 +216,7 @@ export interface Telegraph {
 
 function telegraphPart(geometry: BufferGeometry, color: Color, opacity: number, order: number): TelegraphPart {
   const mesh: TelegraphPart = new Mesh(geometry, flat(color, opacity));
+  mesh.material.blending = AdditiveBlending;
   mesh.renderOrder = order;
   return mesh;
 }
@@ -295,7 +303,9 @@ function softPart(geometry: BufferGeometry, color: Color, opacity: number, order
 function bodyRings(inner: number, outer: number): readonly Ring[] {
   return [
     { at: inner, alpha: SHAPES.telegraphCore },
+    { at: inner + (outer - inner) * 0.5, alpha: SHAPES.telegraphMid },
     { at: inner + (outer - inner) * SHAPES.telegraphBody, alpha: 1 },
+    { at: outer, alpha: SHAPES.telegraphEdge },
     { at: outer * (1 + SHAPES.telegraphFeather / 2), alpha: 0 },
   ];
 }
@@ -360,10 +370,26 @@ export function pillarMesh(color: Color, radius: number, height: number): Mesh<C
   return mesh;
 }
 
+export const ORB_HALO_VERTEX: string = ['varying float vFacing;', 'void main() {', '  vec4 seen = modelViewMatrix * vec4(position, 1.0);', '  vFacing = abs(dot(normalize(normalMatrix * normal), normalize(-seen.xyz)));', '  gl_Position = projectionMatrix * seen;', '}'].join('\n');
+
+export const ORB_HALO_FRAGMENT: string = ['uniform vec3 uColor;', 'uniform float uStrength;', 'varying float vFacing;', 'void main() {', '  float soft = vFacing * vFacing * vFacing;', '  gl_FragColor = vec4(uColor * soft * uStrength, 1.0);', '}'].join('\n');
+
+function orbHalo(color: Color): Mesh<IcosahedronGeometry, ShaderMaterial> {
+  const halo: Mesh<IcosahedronGeometry, ShaderMaterial> = new Mesh(
+    new IcosahedronGeometry(1, 2),
+    new ShaderMaterial({ vertexShader: ORB_HALO_VERTEX, fragmentShader: ORB_HALO_FRAGMENT, uniforms: { uColor: { value: glow(color, SHAPES.orbHaloBoost) }, uStrength: { value: SHAPES.orbHaloStrength } }, transparent: true, depthWrite: false, blending: AdditiveBlending }),
+  );
+  halo.scale.setScalar(SHAPES.orbHalo);
+  return halo;
+}
+
 export function projectileMesh(style: 'bolt' | 'orb', color: Color): Mesh<IcosahedronGeometry, MeshBasicMaterial> {
-  const mesh: Mesh<IcosahedronGeometry, MeshBasicMaterial> = new Mesh(new IcosahedronGeometry(1, 1), new MeshBasicMaterial({ color: glow(color, SHAPES.glowBoost) }));
+  const mesh: Mesh<IcosahedronGeometry, MeshBasicMaterial> = new Mesh(new IcosahedronGeometry(1, 1), new MeshBasicMaterial({ color: glow(color, style === 'orb' ? SHAPES.orbBoost : SHAPES.glowBoost) }));
   if (style === 'bolt') mesh.scale.set(0.2, 0.2, 1.05);
-  else mesh.scale.setScalar(0.34);
+  else {
+    mesh.scale.setScalar(SHAPES.orbCore);
+    mesh.add(orbHalo(color));
+  }
   return mesh;
 }
 
