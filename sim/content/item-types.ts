@@ -50,6 +50,7 @@ export interface ItemBaseDef {
   readonly wornModel: boolean;
   readonly ground: GroundLook;
   readonly power: PowerDef | null;
+  readonly variants: readonly SkillVariant[];
 }
 
 export const POWER_TRIGGERS = ['hit', 'kill', 'pulse'] as const;

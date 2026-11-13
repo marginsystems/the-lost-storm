@@ -25,6 +25,8 @@ const GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
   ['bust', '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/>'],
   ['gloves', '<path d="M7 20v-5l-2-5 1.6-.8L8.5 12V5.2a1.2 1.2 0 0 1 2.4 0V10M10.9 10V4.2a1.2 1.2 0 0 1 2.4 0V10M13.3 10V5.2a1.2 1.2 0 0 1 2.4 0V11M15.7 11V7.4a1.2 1.2 0 0 1 2.3 0V15l-1 5z"/><path d="M7 17h10" opacity="0.6"/>'],
   ['legs', '<path d="M6.5 3h11l1 18h-5L12 9l-1.5 12h-5z"/><path d="M6.5 6.5h11" opacity="0.6"/>'],
+  ['crossbow', '<path d="M4 20 16.5 7.5"/><path d="M9.2 5.2c4.6-.6 9 3.8 9.6 9.6" stroke-width="2"/><path d="M9.2 5.2 6.5 17.5M18.8 14.8 6.5 17.5" opacity="0.6"/><path d="M16.5 7.5 20 4" stroke-width="2"/>'],
+  ['quarrel', '<path d="M3.5 20.5 17 7"/><path d="M21 3l-1.2 6.2-5-5z" fill="currentColor" stroke="none"/><path d="M3.5 16.5v4h4M6.5 13.5v4h4" opacity="0.6"/>'],
   ['staff', '<path d="M6 21 16.5 6.5"/><circle cx="17.6" cy="5" r="2.6" fill="currentColor"/><path d="M13.4 8.4l3.2 2.2" opacity="0.6"/>'],
   ['boots', '<path d="M8 3h6v10l5 3.2V20H8z"/><path d="M8 17h11" opacity="0.6"/><path d="M8 7h6" opacity="0.6"/>'],
   ['book', '<path d="M5 4.5h9.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h9.5"/><path d="M9 8h5"/>'],

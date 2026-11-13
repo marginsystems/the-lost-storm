@@ -44,3 +44,13 @@ void test('a rig lists the joints that rest on the ground when it lies down, eac
   assert.deepEqual(rig({ ...source(), contacts }, 'rig').contacts, contacts);
   assert.throws((): unknown => rig({ ...source(), contacts: [{ bone: 'pelvis', radius: 0 }] }, 'rig'), ContentError);
 });
+
+void test('a rig has no stances unless told, and each stance reads an idle and its own action clips', (): void => {
+  const base: Record<string, unknown> = source();
+  assert.deepEqual(rig(base, 'rig').clips.stances, {});
+  const aim = { idle: 'Aim', actions: { shoot: { clip: 'Shoot', impactFraction: 0.1 } } };
+  const stanced: Record<string, unknown> = { ...base, clips: { idle: 'Idle', run: 'Run', hit: ['Hit'], death: ['Death'], actions: {}, stances: { crossbow: aim } } };
+  assert.deepEqual(rig(stanced, 'rig').clips.stances, { crossbow: aim });
+  const idleless: Record<string, unknown> = { ...base, clips: { idle: 'Idle', run: 'Run', hit: ['Hit'], death: ['Death'], actions: {}, stances: { crossbow: { actions: {} } } } };
+  assert.throws((): unknown => rig(idleless, 'rig'), ContentError);
+});

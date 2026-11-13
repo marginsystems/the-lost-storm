@@ -101,10 +101,10 @@ export function modTargets(content: Content, mod: SkillMod, skill: string): bool
   return target.type === 'skill' ? target.skill === skill : inGroup(content, target.group, skill);
 }
 
-export function chosenVariant(content: Content, skill: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = []): SkillDef {
+export function chosenVariant(content: Content, skill: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = []): SkillDef {
   const fromTree: SkillVariant[] = allocatedNodes(content, allocated).flatMap((node: SkillTreeNodeDef): SkillVariant[] => (node.variant === null ? [] : [node.variant]));
   const fromPowers: SkillVariant[] = powers.flatMap((power: PowerDef): readonly SkillVariant[] => power.variants);
-  for (const chosen of [...fromPowers, ...fromTree]) {
+  for (const chosen of [...worn, ...fromPowers, ...fromTree]) {
     if (chosen.skill !== skill.id) continue;
     const variant: SkillDef | undefined = content.skills.get(chosen.becomes);
     if (variant !== undefined) return { ...variant, id: skill.id };
@@ -116,8 +116,8 @@ function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
   return Math.max(0, 1 + sumSkillMod(mods, field));
 }
 
-export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = []): SkillDef {
-  const skill: SkillDef = chosenVariant(content, base, allocated, powers);
+export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = []): SkillDef {
+  const skill: SkillDef = chosenVariant(content, base, allocated, powers, worn);
   const mods: SkillMod[] = [...allocatedNodes(content, allocated).flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, skill.id));
   if (mods.length === 0) return skill;
   const delivery: Delivery = scaledDelivery(skill.delivery, {
@@ -141,10 +141,10 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
   };
 }
 
-export function resolveSkillBar(content: Content, bar: readonly (string | null)[], allocated: readonly string[], powers: readonly PowerDef[] = []): (SkillDef | null)[] {
+export function resolveSkillBar(content: Content, bar: readonly (string | null)[], allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = []): (SkillDef | null)[] {
   return bar.map((id: string | null): SkillDef | null => {
     const skill: SkillDef | undefined = id === null ? undefined : content.skills.get(id);
-    return skill === undefined ? null : resolveSkill(content, skill, allocated, powers);
+    return skill === undefined ? null : resolveSkill(content, skill, allocated, powers, worn);
   });
 }
 

@@ -211,7 +211,7 @@ function lowestPoint(root: Object3D): number {
 }
 
 function idleClip(rig: RigInstance, equipped: Equipment): AnimationClip {
-  return equipped.weapon === null ? (rig.clips.unarmed?.idle ?? rig.clips.idle) : rig.clips.idle;
+  return equipped.weapon === null ? (rig.clips.unarmed?.idle ?? rig.clips.idle) : (rig.stance()?.idle ?? rig.clips.idle);
 }
 
 function fromStage(event: Event): boolean {

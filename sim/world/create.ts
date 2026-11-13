@@ -9,7 +9,7 @@ import { defaultBar, startingSkills } from '../skill-book.ts';
 import { copyVendors } from '../save.ts';
 import type { SaveData } from '../save.ts';
 import { computeStats, resolveSkillBar } from '../stats.ts';
-import { emptyPowerState, wornPowers } from '../powers.ts';
+import { emptyPowerState, wornPowers, wornVariants } from '../powers.ts';
 import { addToInventory } from './character.ts';
 import { createFlasks } from './flasks.ts';
 import { decodeExplored, exploredSize, stepExploration } from './exploration.ts';
@@ -67,7 +67,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     mana: stats.maxMana,
     stats,
     bar,
-    skills: resolveSkillBar(content, bar, allocated, wornPowers(content, equipped)),
+    skills: resolveSkillBar(content, bar, allocated, wornPowers(content, equipped), wornVariants(content, equipped)),
     level,
     xp: save?.xp ?? 0,
     gold: save?.gold ?? 0,

@@ -603,6 +603,20 @@ void test('a rig may name unarmed clips for when it holds nothing, and they are 
   assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, unarmed: late } }] }), /unarmed\.actions\.attack\.impactFraction/);
 });
 
+void test('a rig may name stances for what it holds, and an attachment names the stance it is held in', (): void => {
+  const parsed: Content = parseContent(shipped);
+  const hero = must(parsed.rigs.get(parsed.player.rig), 'hero rig');
+  const held = must(parsed.attachments.get('hand_crossbow'), 'crossbow attachment');
+  assert.ok(must(hero.clips.stances[must(held.stance, 'stance')], 'hero stance').actions['shoot'] !== undefined);
+  assert.equal(must(parsed.attachments.get('rusted_blade'), 'blade').stance, null);
+  const bare: unknown[] = [];
+  for (const stanced of rigs) bare.push({ ...stanced, clips: { ...stanced.clips, stances: {} } });
+  assert.ok(contentProblems(parseContent({ ...shipped, rigs: bare })).some((found: string): boolean => /attachment hand_crossbow is held in stance crossbow, which no rig has/.test(found)));
+  const late = { crossbow: { idle: 'Pistol_Idle_Loop', actions: { shoot: { clip: 'Pistol_Shoot', impactFraction: 1 } } } };
+  const rig = must(rigs[0], 'first rig');
+  assert.throws((): Content => parseContent({ ...shipped, rigs: [{ ...rig, clips: { ...rig.clips, stances: late } }] }), /stances\.crossbow\.actions\.shoot\.impactFraction/);
+});
+
 void test('a rig lists its hit and death clips and names its action clips, and a skill whose clip the rig lacks is reported', (): void => {
   const [first] = rigs;
   const rig = must(first, 'first rig');

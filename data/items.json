@@ -162,6 +162,47 @@
       }
     },
     {
+      "id": "hand_crossbow",
+      "name": "Hand Crossbow",
+      "slot": "weapon",
+      "material": null,
+      "icon": "crossbow",
+      "dropWeight": 6,
+      "minLevel": 2,
+      "visual": "hand_crossbow",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 4
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 7
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.04
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "variants": [
+        {
+          "skill": "cleave",
+          "becomes": "quarrel"
+        }
+      ]
+    },
+    {
       "id": "tempest_greatsword",
       "name": "Tempest Greatsword",
       "slot": "weapon",

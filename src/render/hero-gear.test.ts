@@ -22,6 +22,11 @@ const rigDef: RigDef = must(content.rigs.get(content.player.rig), 'player rig');
 const visual: string = must(must(content.itemBases.get('rusted_blade'), 'rusted_blade').visual, 'blade visual');
 const attachmentDef: AttachmentDef = must(content.attachments.get(visual), 'blade attachment');
 
+const crossbowVisual: string = must(must(content.itemBases.get('hand_crossbow'), 'hand_crossbow').visual, 'crossbow visual');
+const crossbowDef: AttachmentDef = must(content.attachments.get(crossbowVisual), 'crossbow attachment');
+const AIM_STANCE: string = must(crossbowDef.stance, 'crossbow stance');
+const SWING: string = 'attack';
+
 const clips: RigClipSet = {
   idle: new AnimationClip('armed_idle', 1, []),
   run: new AnimationClip('run', 1, []),
@@ -29,8 +34,9 @@ const clips: RigClipSet = {
   hit: [],
   death: [],
   rise: null,
-  actions: new Map(),
+  actions: new Map([[SWING, { clip: new AnimationClip('swing', 1, []), impactTime: 0.2 }]]),
   unarmed: { idle: new AnimationClip('bare_idle', 1, []), actions: new Map() },
+  stances: new Map([[AIM_STANCE, { idle: new AnimationClip('aim_idle', 1, []), actions: new Map([['shoot', { clip: new AnimationClip('aim_shoot', 1, []), impactTime: 0.1 }]]) }]]),
 };
 
 function rigTemplate(): Group {
@@ -51,7 +57,7 @@ function library(withBlade: boolean): CharacterLibrary {
   const rig: LoadedRig = { def: rigDef, template: rigTemplate(), clips, bodyParts: [], bodyMasks: new Map(), fitted: new Map() };
   return {
     rigs: new Map([[rigDef.id, rig]]),
-    attachments: new Map(withBlade ? [[visual, bladeAttachment()]] : []),
+    attachments: new Map(withBlade ? [[visual, bladeAttachment()], [crossbowVisual, { def: crossbowDef, template: new Group() }]] : []),
     wearables: new Map(),
   };
 }
@@ -105,4 +111,23 @@ void test('a blade whose model loads late is picked up on the next frame', (): v
   held.attachments.set(visual, bladeAttachment());
   holdEquipped(content, rig, world.player.equipped);
   assert.equal(rig.armed(), true);
+});
+
+void test('a weapon held in its own stance plays that stance\'s idle and shot, and falls back to the rig\'s own clips for the rest', (): void => {
+  const world: World = armedWorld();
+  const rig: RigInstance = hero(library(true));
+  const view: ActorView = createActorView(rig, 1, 0);
+  holdEquipped(content, rig, world.player.equipped);
+  assert.equal(rig.stance(), null);
+  addToInventory(world.player, must(generateItem(content, createRng(2), 901, 2, 'hand_crossbow', 'common'), 'crossbow'));
+  equipFromInventory(world, world.player.inventory.findIndex((item): boolean => item?.base === 'hand_crossbow'));
+  holdEquipped(content, rig, world.player.equipped);
+  const aim = must(clips.stances.get(AIM_STANCE), 'aim stance');
+  assert.equal(rig.stance(), aim);
+  assert.equal(idlePlaying(view, aim.idle), true);
+  assert.equal(view.startAction('shoot', 0.1, 0.3), true);
+  assert.equal(view.rig.mixer.existingAction(must(aim.actions.get('shoot'), 'shot').clip)?.isRunning(), true);
+  assert.equal(view.startAction(SWING, 0.1, 0.3), true);
+  assert.equal(view.rig.mixer.existingAction(must(clips.actions.get(SWING), 'swing').clip)?.isRunning(), true);
+  assert.equal(view.startAction('no_such_action', 0.1, 0.3), false);
 });

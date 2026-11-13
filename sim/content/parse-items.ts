@@ -93,6 +93,7 @@ export function itemBase(value: unknown, where: string): ItemBaseDef {
     wornModel: source['wornModel'] === undefined ? true : flag(source, 'wornModel', where),
     ground: source['ground'] === undefined ? genericLook(slot) : groundLook(source['ground'], `${where}.ground`),
     power: power(source['power'], `${where}.power`),
+    variants: source['variants'] === undefined ? [] : each(source['variants'], `${where}.variants`, skillVariant),
   };
 }
 

@@ -253,7 +253,7 @@ function monster(value: unknown, where: string): MonsterDef {
 
 function attachment(value: unknown, where: string): AttachmentDef {
   const source: Fields = fields(value, where);
-  return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where), surfaces: dressing(source['surfaces'], `${where}.surfaces`) };
+  return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where), stance: source['stance'] === undefined ? null : nullableText(source, 'stance', where), surfaces: dressing(source['surfaces'], `${where}.surfaces`) };
 }
 
 function wearable(value: unknown, where: string): WearableDef {
@@ -523,6 +523,7 @@ export function contentProblems(content: Content): string[] {
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `prop ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }
   for (const def of content.attachments.values()) {
+    need(def.stance === null || [...content.rigs.values()].some((rigDef: RigDef): boolean => rigDef.clips.stances[def.stance ?? ''] !== undefined), `attachment ${def.id} is held in stance ${def.stance ?? ''}, which no rig has`);
     for (const [material, surfaceId] of Object.entries(def.surfaces)) need(content.surfaces.has(surfaceId), `attachment ${def.id} dresses ${material} in unknown surface ${surfaceId}`);
   }
   need(content.zones.has(content.world.start), `world starts in unknown zone ${content.world.start}`);

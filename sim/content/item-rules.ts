@@ -1,6 +1,6 @@
 import type { AffixDef, ItemBaseDef, RarityDef } from './item-types.ts';
 import { ITEM_STATS } from './item-types.ts';
-import type { Content, ItemSlot, StatId } from './types.ts';
+import type { ComboStep, Content, ItemSlot, RigClips, SkillDef, StatId } from './types.ts';
 import { ITEM_SLOTS } from './types.ts';
 
 const BASE_DAMAGE: ReadonlySet<StatId> = new Set<StatId>(['damageMin', 'damageMax']);
@@ -53,9 +53,32 @@ function handedProblems(content: Content): string[] {
   return problems;
 }
 
+function unplayed(content: Content, skillId: string, stance: string | null): string[] {
+  const clips: RigClips | undefined = content.rigs.get(content.player.rig)?.clips;
+  const skill: SkillDef | undefined = content.skills.get(skillId);
+  if (clips === undefined || skill === undefined) return [];
+  const held: RigClips['actions'] = stance === null ? {} : (clips.stances[stance]?.actions ?? {});
+  return [skill.animation, ...(skill.combo?.steps ?? []).map((step: ComboStep): string => step.animation)].filter((animation: string): boolean => held[animation] === undefined && clips.actions[animation] === undefined);
+}
+
+function variantProblems(content: Content): string[] {
+  const problems: string[] = [];
+  for (const base of content.itemBases.values()) {
+    const stance: string | null = base.visual === null ? null : (content.attachments.get(base.visual)?.stance ?? null);
+    for (const variant of base.variants) {
+      if (!content.skills.has(variant.skill)) problems.push(`item ${base.id} varies unknown skill ${variant.skill}`);
+      if (!content.skills.has(variant.becomes)) problems.push(`item ${base.id} turns ${variant.skill} into unknown skill ${variant.becomes}`);
+      if (variant.skill === variant.becomes) problems.push(`item ${base.id} turns ${variant.skill} into itself`);
+      for (const animation of unplayed(content, variant.becomes, stance)) problems.push(`item ${base.id} turns ${variant.skill} into ${variant.becomes}, but the hero's rig has no action clip ${animation} for it`);
+    }
+  }
+  return problems;
+}
+
 export function itemProblems(content: Content): string[] {
   const problems: string[] = basesWithoutLook(content).map((id: string): string => `item ${id} has no look: give it a wear or a visual`);
   problems.push(...handedProblems(content));
+  problems.push(...variantProblems(content));
   for (const base of content.itemBases.values()) if (!base.wornModel && base.wear.length > 0) problems.push(`item ${base.id} has no worn model but wears ${base.wear.join(', ')}`);
   for (const base of content.itemBases.values()) {
     for (const id of base.wear) {

@@ -1,4 +1,4 @@
-import type { BuffEffect, CastEffect, Content, FamilyDef, ItemBaseDef, ItemSlot, PowerDef, PowerTrigger, PowerTriggerDef, RarityDef, SkillDef, SkillTarget, StatMod } from './content/types.ts';
+import type { BuffEffect, CastEffect, Content, FamilyDef, ItemBaseDef, ItemSlot, PowerDef, PowerTrigger, PowerTriggerDef, RarityDef, SkillDef, SkillTarget, SkillVariant, StatMod } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { familyPieces } from './content/power-rules.ts';
 import { baseOf, rarityOf } from './items.ts';
@@ -37,6 +37,13 @@ export function wornPowers(content: Content, equipped: Equipment): PowerDef[] {
   return wornPowerList(content, equipped).map((worn: WornPower): PowerDef => worn.power);
 }
 
+export function wornVariants(content: Content, equipped: Equipment): SkillVariant[] {
+  return ITEM_SLOTS.flatMap((slot: ItemSlot): readonly SkillVariant[] => {
+    const item: ItemInstance | null = equipped[slot];
+    return item === null ? [] : (baseOf(content, item)?.variants ?? []);
+  });
+}
+
 export function buffMods(state: PowerState): StatMod[] {
   return state.buffs.map((held: BuffState): StatMod => ({ stat: held.mod.stat, op: held.mod.op, value: held.mod.value * held.stacks }));
 }
@@ -72,7 +79,7 @@ function cast(world: World, effect: CastEffect, at: ReadonlyVec2): void {
   const player: PlayerState = world.player;
   const def: SkillDef | undefined = world.content.skills.get(effect.skill);
   if (def === undefined) return;
-  const skill: SkillDef = resolveSkill(world.content, def, player.allocated, wornPowers(world.content, player.equipped));
+  const skill: SkillDef = resolveSkill(world.content, def, player.allocated, wornPowers(world.content, player.equipped), wornVariants(world.content, player.equipped));
   const origin: ReadonlyVec2 = effect.at === 'caster' ? player.pos : at;
   const facing: ReadonlyVec2 = directionOf(player.facing);
   world.echoes.push({

@@ -5,8 +5,11 @@ from typing import Sequence
 import bmesh
 import bpy
 from bpy.types import Material, Object
+from mathutils import Vector
 
 Color = tuple[float, float, float]
+Point = tuple[float, float, float]
+Ring = tuple[Point, Point, Point, Point]
 
 STEEL: Color = (0.62, 0.65, 0.7)
 EDGE: Color = (0.86, 0.88, 0.9)
@@ -18,6 +21,17 @@ WOOD: Color = (0.17, 0.11, 0.07)
 BONE: Color = (0.62, 0.58, 0.47)
 HEX: Color = (0.62, 0.3, 1.0)
 SHIELD_OFFSET: float = 0.07
+CROSSBOW: dict[str, float] = {
+    "side": -0.003,
+    "deck": 0.074,
+    "rail": 0.1,
+    "prod_x": 0.33,
+    "prod_z": 0.078,
+    "span": 0.25,
+    "sweep": 0.085,
+    "nut_x": 0.06,
+    "bolt_tip": 0.4,
+}
 
 
 def material(name: str, color: Color, metallic: float, roughness: float, emission: float = 0.0) -> Material:
@@ -85,6 +99,61 @@ def prong(name: str, angle: float, z: float, made: Material) -> Object:
     obj.rotation_euler = (0.42, 0.0, angle)
     obj.location = (-0.055 * math.sin(angle), -0.055 * math.cos(angle), z)
     return finish(obj, made)
+
+
+def beam(name: str, start: Point, end: Point, width: float, thickness: float, made: Material) -> Object:
+    along: Vector = Vector(end) - Vector(start)
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(Vector(start) + Vector(end)) / 2)
+    obj: Object = bpy.context.active_object
+    obj.name = name
+    obj.scale = (along.length, width, thickness)
+    obj.rotation_euler = along.to_track_quat("X", "Z").to_euler()
+    return finish(obj, made)
+
+
+def spike(name: str, base: Point, length: float, radius: float, made: Material) -> Object:
+    bpy.ops.mesh.primitive_cone_add(vertices=6, radius1=radius, radius2=0.001, depth=length, location=(base[0] + length / 2, base[1], base[2]))
+    obj: Object = bpy.context.active_object
+    obj.name = name
+    obj.rotation_euler = (0.0, math.pi / 2, 0.0)
+    return finish(obj, made)
+
+
+def across(x: float, z: float, width: float, height: float) -> Ring:
+    y: float = CROSSBOW["side"]
+    return ((x, y - width / 2, z - height / 2), (x, y + width / 2, z - height / 2), (x, y + width / 2, z + height / 2), (x, y - width / 2, z + height / 2))
+
+
+def level(x: float, z: float, length: float, width: float) -> Ring:
+    y: float = CROSSBOW["side"]
+    return ((x - length / 2, y - width / 2, z), (x + length / 2, y - width / 2, z), (x + length / 2, y + width / 2, z), (x - length / 2, y + width / 2, z))
+
+
+def loft(name: str, rings: Sequence[Ring], made: Material) -> Object:
+    mesh = bpy.data.meshes.new(name)
+    verts: list[Point] = [corner for ring in rings for corner in ring]
+    faces: list[Sequence[int]] = [(0, 1, 2, 3), tuple(len(verts) - 4 + corner for corner in (3, 2, 1, 0))]
+    for index in range(len(rings) - 1):
+        low: int = index * 4
+        for side in range(4):
+            after: int = (side + 1) % 4
+            faces.append((low + side, low + after, low + after + 4, low + side + 4))
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj: Object = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    return finish(obj, made)
+
+
+def limb(name: str, side: float, made: Material) -> list[Object]:
+    y: float = CROSSBOW["side"]
+    root: Point = (CROSSBOW["prod_x"], y, CROSSBOW["prod_z"])
+    elbow: Point = (CROSSBOW["prod_x"] - 0.012, y + side * CROSSBOW["span"] * 0.5, CROSSBOW["prod_z"])
+    tip: Point = (CROSSBOW["prod_x"] - CROSSBOW["sweep"], y + side * CROSSBOW["span"], CROSSBOW["prod_z"])
+    return [
+        beam(f"{name}_inner", root, elbow, 0.03, 0.016, made),
+        beam(f"{name}_outer", elbow, tip, 0.022, 0.012, made),
+    ]
 
 
 def unwrap(mesh: bmesh.types.BMesh) -> None:
@@ -224,6 +293,34 @@ def build(directory: str) -> None:
             rod("shaft", 0.014, 0.012, 1.5, 0.35, wood, 6),
             rod("point", 0.03, 0.002, 0.3, 1.25, bone, 6),
             box("binding", (0.04, 0.04, 0.06), 1.09, leather),
+        ],
+        directory,
+    )
+    side: float = CROSSBOW["side"]
+    string_x: float = CROSSBOW["prod_x"] - CROSSBOW["sweep"]
+    nut: Point = (CROSSBOW["nut_x"], side, CROSSBOW["rail"])
+    shaft_z: float = CROSSBOW["rail"] + 0.004
+    export(
+        "hand_crossbow",
+        [
+            loft("grip", [level(-0.0288, -0.058, 0.017, 0.016), level(-0.009, 0.011, 0.022, 0.018), level(0.0022, 0.054, 0.023, 0.018)], leather),
+            loft("butt_cap", [level(-0.031, -0.066, 0.021, 0.02), level(-0.0288, -0.058, 0.021, 0.02)], dark),
+            loft(
+                "tiller",
+                [across(-0.11, 0.07, 0.03, 0.036), across(-0.06, 0.074, 0.038, 0.044), across(0.05, 0.074, 0.036, 0.04), across(0.3, 0.076, 0.03, 0.034), across(0.37, 0.078, 0.026, 0.028)],
+                wood,
+            ),
+            beam("tickler", (0.031, side, 0.054), (0.037, side, 0.031), 0.006, 0.005, dark),
+            box("lock", (0.036, 0.04, 0.012), CROSSBOW["rail"] - 0.006, bronze, CROSSBOW["nut_x"], side),
+            box("binding", (0.03, 0.046, 0.05), CROSSBOW["prod_z"], bronze, CROSSBOW["prod_x"], side),
+            *limb("limb_left", 1.0, dark),
+            *limb("limb_right", -1.0, dark),
+            beam("string_left", (string_x, side + CROSSBOW["span"], CROSSBOW["prod_z"] + 0.008), nut, 0.005, 0.005, bone),
+            beam("string_right", (string_x, side - CROSSBOW["span"], CROSSBOW["prod_z"] + 0.008), nut, 0.005, 0.005, bone),
+            beam("bolt_shaft", (CROSSBOW["nut_x"], side, shaft_z), (CROSSBOW["bolt_tip"], side, shaft_z), 0.009, 0.009, wood),
+            spike("bolt_head", (CROSSBOW["bolt_tip"], side, shaft_z), 0.06, 0.014, steel),
+            beam("fletch_flat", (CROSSBOW["nut_x"] + 0.004, side, shaft_z), (CROSSBOW["nut_x"] + 0.07, side, shaft_z), 0.03, 0.002, bone),
+            beam("fletch_up", (CROSSBOW["nut_x"] + 0.004, side, shaft_z + 0.008), (CROSSBOW["nut_x"] + 0.07, side, shaft_z + 0.008), 0.002, 0.018, bone),
         ],
         directory,
     )

@@ -3,7 +3,7 @@ import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasic
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { boundSkins, disposeSkeletons } from './skeletons.ts';
-import type { AttachmentDef, Content, RigActionClip, RigDef, RigGait, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
+import type { AttachmentDef, Content, RigActionClip, RigDef, RigGait, RigSocket, RigStanceClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
 import { wearFrames, wearKey, wearModel } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
@@ -29,7 +29,7 @@ export interface GaitClip {
   readonly groundSpeed: number;
 }
 
-export interface UnarmedClipSet {
+export interface StanceClipSet {
   readonly idle: AnimationClip;
   readonly actions: ReadonlyMap<string, ActionClip>;
 }
@@ -42,7 +42,8 @@ export interface RigClipSet {
   readonly death: readonly AnimationClip[];
   readonly rise: AnimationClip | null;
   readonly actions: ReadonlyMap<string, ActionClip>;
-  readonly unarmed: UnarmedClipSet | null;
+  readonly unarmed: StanceClipSet | null;
+  readonly stances: ReadonlyMap<string, StanceClipSet>;
 }
 
 export interface LoadedRig {
@@ -86,6 +87,7 @@ export interface RigInstance {
   readonly clips: RigClipSet;
   setGear(attachmentIds: readonly string[]): void;
   armed(): boolean;
+  stance(): StanceClipSet | null;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   stepWear(dt: number): void;
   setFlash(color: Color, amount: number): void;
@@ -259,7 +261,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
     return actions;
   };
   const actions: Map<string, ActionClip> = actionSet(def.clips.actions);
-  const bare: RigUnarmedClips | null = def.clips.unarmed;
+  const bare: RigStanceClips | null = def.clips.unarmed;
   const template: Object3D = cloneSkinned(main.scene);
   const grouping: BodyGroupings = groupBodies(skinnedMeshes(template), def.bodyParts);
   return {
@@ -274,6 +276,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
       rise: def.clips.rise === null ? null : clip('rise', def.clips.rise),
       actions,
       unarmed: bare === null ? null : { idle: clip('unarmed.idle', bare.idle), actions: actionSet(bare.actions) },
+      stances: new Map<string, StanceClipSet>(Object.entries(def.clips.stances).map(([name, stance]: [string, RigStanceClips]): [string, StanceClipSet] => [name, { idle: clip(`stances.${name}.idle`, stance.idle), actions: actionSet(stance.actions) }])),
     },
     bodyParts: grouping.names,
     bodyMasks: grouping.masks,
@@ -580,6 +583,15 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     },
     armed(): boolean {
       return held.size > 0;
+    },
+    stance(): StanceClipSet | null {
+      if (held.size === 0) return rig.clips.unarmed;
+      for (const id of held.keys()) {
+        const named: string | null = library.attachments.get(id)?.def.stance ?? null;
+        const found: StanceClipSet | undefined = named === null ? undefined : rig.clips.stances.get(named);
+        if (found !== undefined) return found;
+      }
+      return null;
     },
     setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void {
       const key: string = `${wearableIds.join('|')}#${hiddenParts.join('|')}#${library.wearables.size}`;

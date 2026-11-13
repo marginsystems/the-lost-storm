@@ -3,7 +3,7 @@ export interface RigActionClip {
   readonly impactFraction: number;
 }
 
-export interface RigUnarmedClips {
+export interface RigStanceClips {
   readonly idle: string;
   readonly actions: Readonly<Record<string, RigActionClip>>;
 }
@@ -15,7 +15,8 @@ export interface RigClips {
   readonly death: readonly string[];
   readonly rise: string | null;
   readonly actions: Readonly<Record<string, RigActionClip>>;
-  readonly unarmed: RigUnarmedClips | null;
+  readonly unarmed: RigStanceClips | null;
+  readonly stances: Readonly<Record<string, RigStanceClips>>;
 }
 
 export interface RigGait {
@@ -41,6 +42,7 @@ export interface AttachmentDef {
   readonly id: string;
   readonly model: string;
   readonly socket: string;
+  readonly stance: string | null;
   readonly surfaces: Readonly<Record<string, string>>;
 }
 

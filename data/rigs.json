@@ -245,6 +245,17 @@
             "impactFraction": 0.3
           }
         }
+      },
+      "stances": {
+        "crossbow": {
+          "idle": "Pistol_Idle_Loop",
+          "actions": {
+            "shoot": {
+              "clip": "Pistol_Shoot",
+              "impactFraction": 0.1
+            }
+          }
+        }
       }
     },
     "sockets": {
@@ -430,6 +441,17 @@
           "clip": "Throw",
           "impactFraction": 0.28
         }
+      },
+      "stances": {
+        "crossbow": {
+          "idle": "Pistol_Idle_Loop",
+          "actions": {
+            "shoot": {
+              "clip": "Pistol_Shoot",
+              "impactFraction": 0.1
+            }
+          }
+        }
       }
     },
     "sockets": {
@@ -585,15 +607,26 @@
           "clip": "Throw",
           "impactFraction": 0.28
         }
+      },
+      "stances": {
+        "crossbow": {
+          "idle": "Pistol_Idle_Loop",
+          "actions": {
+            "shoot": {
+              "clip": "Pistol_Shoot",
+              "impactFraction": 0.1
+            }
+          }
+        }
       }
     },
     "sockets": {
       "hand_r": {
         "bone": "hand_r",
         "position": [
-          -0.031,
-          0.104,
-          -0.004
+          -0.025,
+          0.077,
+          0.0005
         ],
         "rotationDegrees": [
           80.5,
@@ -605,9 +638,9 @@
       "hand_l": {
         "bone": "hand_l",
         "position": [
-          0.031,
-          0.104,
-          -0.004
+          0.025,
+          0.077,
+          0.0005
         ],
         "rotationDegrees": [
           80.5,
@@ -1173,9 +1206,9 @@
       "hand_r": {
         "bone": "hand_r",
         "position": [
-          -0.031,
-          0.104,
-          -0.004
+          -0.025,
+          0.077,
+          0.0005
         ],
         "rotationDegrees": [
           80.5,
@@ -1187,9 +1220,9 @@
       "hand_l": {
         "bone": "hand_l",
         "position": [
-          0.031,
-          0.104,
-          -0.004
+          0.025,
+          0.077,
+          0.0005
         ],
         "rotationDegrees": [
           80.5,

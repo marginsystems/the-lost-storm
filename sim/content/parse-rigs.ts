@@ -1,4 +1,4 @@
-import type { RigActionClip, RigClips, RigContact, RigDef, RigSocket, RigUnarmedClips, Triple } from './types.ts';
+import type { RigActionClip, RigClips, RigContact, RigDef, RigSocket, RigStanceClips, Triple } from './types.ts';
 import type { Fields } from './read.ts';
 import { ContentError, each, fields, nullableText, numeric, positive, text, textList } from './read.ts';
 import { rigGaits } from './parse-gaits.ts';
@@ -15,10 +15,21 @@ function actionClips(value: unknown, where: string): Record<string, RigActionCli
   return actions;
 }
 
-function unarmedClips(value: unknown, where: string): RigUnarmedClips | null {
-  if (value === undefined || value === null) return null;
+function stanceClips(value: unknown, where: string): RigStanceClips {
   const source: Fields = fields(value, where);
   return { idle: text(source, 'idle', where), actions: actionClips(source['actions'], `${where}.actions`) };
+}
+
+function unarmedClips(value: unknown, where: string): RigStanceClips | null {
+  return value === undefined || value === null ? null : stanceClips(value, where);
+}
+
+function stanceSets(value: unknown, where: string): Record<string, RigStanceClips> {
+  const stances: Record<string, RigStanceClips> = {};
+  if (value === undefined) return stances;
+  const source: Fields = fields(value, where);
+  for (const key of Object.keys(source)) stances[key] = stanceClips(source[key], `${where}.${key}`);
+  return stances;
 }
 
 function rigClips(value: unknown, where: string): RigClips {
@@ -28,7 +39,7 @@ function rigClips(value: unknown, where: string): RigClips {
   const death: string[] = textList(source, 'death', where);
   if (hit.length === 0) throw new ContentError(`${where}.hit`, 'a rig needs at least one hit clip');
   if (death.length === 0) throw new ContentError(`${where}.death`, 'a rig needs at least one death clip');
-  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, death, rise: source['rise'] === undefined ? null : nullableText(source, 'rise', where), actions, unarmed: unarmedClips(source['unarmed'], `${where}.unarmed`) };
+  return { idle: text(source, 'idle', where), run: text(source, 'run', where), hit, death, rise: source['rise'] === undefined ? null : nullableText(source, 'rise', where), actions, unarmed: unarmedClips(source['unarmed'], `${where}.unarmed`), stances: stanceSets(source['stances'], `${where}.stances`) };
 }
 
 function triple(source: Fields, key: string, where: string): Triple {

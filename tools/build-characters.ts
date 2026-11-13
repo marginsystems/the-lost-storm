@@ -15,6 +15,8 @@ const KEPT_CLIPS: ReadonlySet<string> = new Set<string>([
   'Punch_Cross',
   'Punch_Jab',
   'Spell_Simple_Shoot',
+  'Pistol_Idle_Loop',
+  'Pistol_Shoot',
   'Hit_Chest',
   'Hit_Head',
   'Death01',

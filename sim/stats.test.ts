@@ -5,9 +5,12 @@ import { loadContent } from './content/content.ts';
 import type { Content, PowerDef, SkillDef, SkillMod, StatBlock } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
+import { wornVariants } from './powers.ts';
 import { createRng } from './rng.ts';
 import { applyMods, armourReduction, averageHit, computeStats, damagePerSecond, damageTakenScale, resistanceOf, resolveSkill, resolveSkillBar } from './stats.ts';
-import type { Equipment, ItemInstance } from './world/types.ts';
+import { addToInventory, equipFromInventory } from './world/character.ts';
+import { createWorld } from './world/create.ts';
+import type { Equipment, ItemInstance, World } from './world/types.ts';
 
 const content: Content = loadContent();
 const bare: Equipment = emptyEquipment();
@@ -231,6 +234,22 @@ void test('the Millwheel turns Cleave into its held form, which keeps the Cleave
   assert.equal(spun.press?.type, 'channel');
   assert.ok(spun.manaCost > 0);
   assert.equal(must(resolveSkillBar(content, ['cleave'], [])[0], 'plain').press, null);
+});
+
+void test('a worn weapon that turns Cleave into a shot does so only while it is worn, and the shot keeps the Cleave id', (): void => {
+  const world: World = createWorld(content, { seed: 4, save: null });
+  world.player.inventory.fill(null);
+  assert.equal(must(world.player.skills[0], 'bare cleave').delivery.type, 'arc');
+  addToInventory(world.player, must(generateItem(content, createRng(4), 901, 2, 'hand_crossbow', 'common'), 'crossbow'));
+  equipFromInventory(world, world.player.inventory.findIndex((held: ItemInstance | null): boolean => held?.base === 'hand_crossbow'));
+  const shot: SkillDef = must(world.player.skills[0], 'shot');
+  assert.equal(shot.id, 'cleave');
+  assert.equal(shot.delivery.type, 'projectile');
+  assert.equal(shot.animation, must(content.skills.get('quarrel'), 'quarrel').animation);
+  assert.deepEqual(wornVariants(content, world.player.equipped), must(content.itemBases.get('hand_crossbow'), 'base').variants);
+  assert.equal(resolveSkill(content, skillOf('cleave'), [], [], []).delivery.type, 'arc');
+  const whirl: readonly string[] = ['heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave'];
+  assert.equal(resolveSkill(content, skillOf('cleave'), whirl, [], wornVariants(content, world.player.equipped)).delivery.type, 'projectile');
 });
 
 void test('buff mods add on top of everything else', (): void => {

@@ -9,7 +9,7 @@ import type { Motion } from '../../sim/world/types.ts';
 import type { RigContact } from '../../sim/content/types.ts';
 import type { BodyRoles } from '../lobby/lobby-life.ts';
 import { bodyRoles, boneNamed, spineBelow } from '../lobby/lobby-life.ts';
-import type { ActionClip, GaitClip, RigInstance, UnarmedClipSet } from './character-loader.ts';
+import type { ActionClip, GaitClip, RigInstance } from './character-loader.ts';
 import { findNode } from './character-loader.ts';
 import type { BodyState, ClipKind, GaitChoice, KnockPose } from './locomotion.ts';
 import { chooseGait, clipKindOf, clipsFor, knockPose } from './locomotion.ts';
@@ -121,8 +121,7 @@ function oneOf(clips: readonly AnimationClip[], chance: Chance): AnimationClip |
 }
 
 function idleClip(rig: RigInstance): AnimationClip {
-  const bare: UnarmedClipSet | null = rig.armed() ? null : rig.clips.unarmed;
-  return bare === null ? rig.clips.idle : bare.idle;
+  return rig.stance()?.idle ?? rig.clips.idle;
 }
 
 function bodyClip(rig: RigInstance, state: BodyState, chance: Chance): AnimationClip {
@@ -131,8 +130,7 @@ function bodyClip(rig: RigInstance, state: BodyState, chance: Chance): Animation
 }
 
 function actionClip(rig: RigInstance, animation: string): ActionClip | undefined {
-  const bare: UnarmedClipSet | null = rig.armed() ? null : rig.clips.unarmed;
-  return bare?.actions.get(animation) ?? rig.clips.actions.get(animation);
+  return rig.stance()?.actions.get(animation) ?? rig.clips.actions.get(animation);
 }
 
 export function createActorView(rig: RigInstance, scale: number, facing: number, hoverTint: number = ACTOR.hostileHover, chance: Chance = Math.random): ActorView {
