@@ -350,6 +350,8 @@ export interface ZonePack {
   readonly row?: ZonePoint;
 }
 
+export interface PackReturn { readonly after: number; readonly away: number }
+
 export interface SurgeRules {
   readonly delay: number;
   readonly surgesPerExtraMonster: number;
@@ -424,6 +426,7 @@ export interface ZoneDef {
   readonly name: string;
   readonly kind: ZoneKind;
   readonly level: number;
+  readonly levelUpTo: number;
   readonly stormTier: number;
   readonly cellSize: number;
   readonly floorHeight: number;
@@ -435,6 +438,7 @@ export interface ZoneDef {
   readonly scatter: readonly ZoneScatter[];
   readonly playerStart: ZonePoint;
   readonly packs: readonly ZonePack[];
+  readonly packReturn: PackReturn | null;
   readonly surge: SurgeRules | null;
   readonly exits: readonly ZoneExit[];
   readonly checkpoints: readonly ZoneCheckpoint[];

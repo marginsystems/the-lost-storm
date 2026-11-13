@@ -3,6 +3,7 @@
   "name": "The Hall of Time",
   "kind": "wild",
   "level": 1,
+  "levelUpTo": 20,
   "cellSize": 4,
   "floorHeight": 0,
   "tiles": [
@@ -134,6 +135,7 @@
     {"x": 60, "z": 10, "members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 2}, {"monster": "unfinished_thrower", "count": 1}]},
     {"x": 70, "z": 50, "members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 1}, {"monster": "unfinished_thrower", "count": 1}]}
   ],
+  "packReturn": {"after": 45, "away": 18},
   "surge": null,
   "exits": [
     {"id": "mist", "x": 1.6, "z": 30, "radius": 2.2, "to": "between", "toExit": "into_the_hall", "arrival": {"x": 8, "z": 30}, "requires": [], "look": "mist"},
@@ -149,7 +151,7 @@
     "areas": [{"x": 40, "z": 47, "radius": 9}, {"x": 40, "z": 13, "radius": 9}, {"x": 24, "z": 47, "radius": 7}, {"x": 24, "z": 13, "radius": 7}],
     "avoid": [{"x": 8, "z": 30, "radius": 16}, {"x": 26, "z": 30, "radius": 7}, {"x": 42, "z": 30, "radius": 7}, {"x": 58, "z": 30, "radius": 7}, {"x": 70, "z": 31, "radius": 10}],
     "clearance": {"hero": 8, "exits": 6, "between": 6, "safe": 18, "packs": 4},
-    "interval": {"min": 12, "max": 24},
+    "interval": {"min": 9, "max": 18},
     "grace": 3,
     "near": {"min": 7, "max": 9, "bearing": {"x": -0.26, "z": -0.97, "spreadDegrees": 60}},
     "start": 0,

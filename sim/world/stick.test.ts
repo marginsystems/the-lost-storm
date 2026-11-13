@@ -46,6 +46,7 @@ function quietWorld(zoneId: string): World {
   setFlags(world, content.moments.cleared);
   clearMoments(world);
   world.monsters = [];
+  world.packReturns = [];
   world.strikeTimer = HELD.quiet;
   world.player.invulnerable = HELD.quiet;
   return world;

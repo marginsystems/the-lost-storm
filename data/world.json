@@ -6,8 +6,8 @@
   },
   "town": "hideout",
   "scaling": {
-    "lifePerLevel": 0.22,
-    "damagePerLevel": 0.12,
+    "lifePerLevel": 0.3,
+    "damagePerLevel": 0.28,
     "xpPerLevel": 0.15
   },
   "acts": [

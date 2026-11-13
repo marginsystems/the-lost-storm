@@ -8,6 +8,7 @@ import { createRng } from './rng.ts';
 import { parseSaveText, readSave, SAVE_VERSION, toSave } from './save.ts';
 import type { SaveData } from './save.ts';
 import { createWorld } from './world/create.ts';
+import { areaLevel } from './world/spawn.ts';
 import type { ItemInstance, World } from './world/types.ts';
 
 const OUTPOST: ZoneDef = roadZone({
@@ -64,7 +65,7 @@ void test('a save survives JSON and rebuilds the same character', (): void => {
   assert.equal(player.inventory.length, content.player.inventorySize);
   assert.equal(player.life, player.maxLife);
   assert.ok(player.stats.maxLife >= 100 + 12 * 3 + 30);
-  assert.ok(restored.monsters.every((monster): boolean => monster.level === restored.zone.level));
+  assert.ok(restored.monsters.every((monster): boolean => monster.level === areaLevel(restored)));
 });
 
 void test('a save from before the ability places gives back the points of places it can no longer reach', (): void => {

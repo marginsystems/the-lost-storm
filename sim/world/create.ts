@@ -146,6 +146,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     player: freshPlayer(content, save, options.hero ?? null),
     monsters: [],
     spawnedPacks: [],
+    packReturns: [],
     npcs: [],
     dialogue: null,
     heard: save === null ? [] : [...save.heard],

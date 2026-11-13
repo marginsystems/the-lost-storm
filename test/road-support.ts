@@ -30,6 +30,8 @@ export function roadZone(patch: Partial<ZoneDef>): ZoneDef {
     waypoint: null,
     voices: [],
     surge: null,
+    levelUpTo: base.level,
+    packReturn: null,
     drifts: [],
     triggers: [],
     playerStart: { x: 2, z: 2 },

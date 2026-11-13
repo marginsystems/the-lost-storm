@@ -17,8 +17,12 @@ export interface SpawnOrigin {
   readonly revived: boolean;
 }
 
+export function areaLevel(world: World): number {
+  return Math.max(world.zone.level, Math.min(world.zone.levelUpTo, world.player.level));
+}
+
 export function monsterLevel(world: World): number {
-  return world.zone.level + (world.zone.surge === null ? 0 : world.surge - 1);
+  return areaLevel(world) + (world.zone.surge === null ? 0 : world.surge - 1);
 }
 
 export function spawnMonster(world: World, def: MonsterDef, packId: number, center: Vec2, origin: SpawnOrigin): MonsterState {

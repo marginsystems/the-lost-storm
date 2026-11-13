@@ -647,6 +647,12 @@ export interface ShoreState {
   readonly facing: Vec2;
 }
 
+export interface PackTimer {
+  readonly pack: ZonePack;
+  readonly packId: number;
+  left: number | null;
+}
+
 export interface World {
   readonly content: Content;
   zone: ZoneDef;
@@ -659,6 +665,7 @@ export interface World {
   readonly player: PlayerState;
   monsters: MonsterState[];
   spawnedPacks: ZonePack[];
+  packReturns: PackTimer[];
   npcs: NpcState[];
   dialogue: DialogueState | null;
   heard: string[];

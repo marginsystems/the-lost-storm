@@ -390,6 +390,7 @@ export function spawnPacks(world: World): void {
     world.spawnedPacks.push(pack);
     const packId: number = world.nextPackId;
     world.nextPackId += 1;
+    if (world.zone.packReturn !== null) world.packReturns.push({ pack, packId, left: null });
     let place: number = 0;
     pack.members.forEach((member, index: number): void => {
       const base: MonsterDef | undefined = world.content.monsters.get(member.monster);
@@ -419,6 +420,7 @@ export function stepSurge(world: World, dt: number): void {
   world.surgeTimer = null;
   world.surge += 1;
   world.spawnedPacks = [];
+  world.packReturns = [];
   spawnPacks(world);
   world.events.push({ type: 'surge', surge: world.surge });
 }

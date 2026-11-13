@@ -16,6 +16,7 @@ import type {
   PathObjective,
   PackMember,
   QuestDef,
+  PackReturn,
   SurgeRules,
   TalkDef,
   WorldDef,
@@ -65,6 +66,12 @@ function pack(value: unknown, where: string): ZonePack {
   const row: Fields | null = source['row'] === undefined || source['row'] === null ? null : fields(source['row'], `${where}.row`);
   const read: ZonePack = { x: numeric(source, 'x', where), z: numeric(source, 'z', where), members: each(source['members'], `${where}.members`, packMember), when: conditions(source, 'when', where) };
   return row === null ? read : { ...read, row: { x: numeric(row, 'x', `${where}.row`), z: numeric(row, 'z', `${where}.row`) } };
+}
+
+function packReturn(value: unknown, where: string): PackReturn | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { after: positive(source, 'after', where), away: positive(source, 'away', where) };
 }
 
 function surgeRules(value: unknown, where: string): SurgeRules | null {
@@ -224,11 +231,15 @@ export function zone(value: unknown, where: string): ZoneDef {
   if (kind === 'void' && [source['npcs'], source['checkpoints'], source['props'], source['scatter']].some((list: unknown): boolean => Array.isArray(list) && list.length > 0)) throw new ContentError(where, 'a void recentres around the hero: it cannot hold npcs, checkpoints or props');
   if (kind === 'void' && source['waypoint'] !== null && source['waypoint'] !== undefined) throw new ContentError(`${where}.waypoint`, 'a void recentres around the hero: it cannot hold a waypoint');
   if ((kind === 'void') !== (source['void'] !== undefined && source['void'] !== null)) throw new ContentError(`${where}.void`, kind === 'void' ? 'a void zone needs its void rules' : 'only a void zone has void rules');
+  const level: number = positive(source, 'level', where);
+  const levelUpTo: number = source['levelUpTo'] === undefined ? level : positive(source, 'levelUpTo', where);
+  if (levelUpTo < level) throw new ContentError(`${where}.levelUpTo`, 'a zone cannot follow the hero below its own level');
   return {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
     kind,
-    level: positive(source, 'level', where),
+    level,
+    levelUpTo,
     stormTier: source['stormTier'] === undefined ? 0 : nonNegative(source, 'stormTier', where),
     cellSize: positive(source, 'cellSize', where),
     floorHeight: numeric(source, 'floorHeight', where),
@@ -240,6 +251,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     scatter: source['scatter'] === undefined ? [] : each(source['scatter'], `${where}.scatter`, zoneScatter),
     playerStart: point(source['playerStart'], `${where}.playerStart`),
     packs,
+    packReturn: packReturn(source['packReturn'], `${where}.packReturn`),
     surge,
     exits: [...byId(each(source['exits'], `${where}.exits`, zoneExit), `${where}.exits`).values()],
     checkpoints: [...byId(each(source['checkpoints'], `${where}.checkpoints`, zoneCheckpoint), `${where}.checkpoints`).values()],

@@ -33,7 +33,7 @@
       "name": "Legendary",
       "color": "#ff9a4a",
       "marker": "shaft",
-      "weight": 0,
+      "weight": 1,
       "affixMin": 3,
       "affixMax": 3,
       "powers": true,

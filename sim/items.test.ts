@@ -46,11 +46,15 @@ void test('an item never rolls the same stat twice and only affixes valid for it
   }
 });
 
+function withoutPowers(items: readonly ItemInstance[]): ItemInstance[] {
+  return items.filter((item: ItemInstance): boolean => must(content.itemBases.get(item.base), item.base).power === null);
+}
+
 void test('bases respect their minimum level', (): void => {
   const low: Set<string> = new Set<string>(rolls(4, 1).map((item: ItemInstance): string => item.base));
   for (const id of low) assert.equal(must(content.itemBases.get(id), id).minLevel, 1);
   assert.ok(!low.has('squall_plate'));
-  const high: Set<string> = new Set<string>(rolls(4, 6).map((item: ItemInstance): string => item.base));
+  const high: Set<string> = new Set<string>(withoutPowers(rolls(4, 6)).map((item: ItemInstance): string => item.base));
   assert.equal(high.size, [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.dropWeight > 0 && base.power === null).length);
 });
 
@@ -124,9 +128,9 @@ function heroCanFill(slot: ItemSlot): boolean {
   return [...content.itemBases.values()].some((base: ItemBaseDef): boolean => base.slot === slot && base.power === null && heroWears(content, base));
 }
 
-void test('every slot the hero can wear something in drops, and the head drops nothing while its only models are hoods', (): void => {
+void test('every slot the hero can wear something in drops, and the head drops nothing plain while its only models are hoods', (): void => {
   assert.deepEqual(Object.keys(emptyEquipment()).toSorted(), [...ITEM_SLOTS].toSorted());
-  const dropped: Set<ItemSlot> = new Set<ItemSlot>(rolls(6, 6).map((item: ItemInstance): ItemSlot => must(slotOf(content, item), 'slot')));
+  const dropped: Set<ItemSlot> = new Set<ItemSlot>(withoutPowers(rolls(6, 6)).map((item: ItemInstance): ItemSlot => must(slotOf(content, item), 'slot')));
   for (const slot of ITEM_SLOTS) assert.equal(dropped.has(slot), heroCanFill(slot), `${slot} drops`);
   assert.ok(!dropped.has('head'));
 });
@@ -241,6 +245,12 @@ void test('the Legendary rarity rolls only bases with a power, and no other rari
     if (base.power !== null) powered += 1;
   }
   assert.ok(powered > 40);
+});
+
+void test('a Legendary turns up at random, but rarely', (): void => {
+  const found: number = rolls(12, 6).filter((item: ItemInstance): boolean => rarityOf(content, item).powers).length;
+  assert.ok(found > 0);
+  assert.ok(found / ROLLS < 0.03, `${found} Legendaries in ${ROLLS}`);
 });
 
 void test('a Legendary roll with no powered base in reach comes out as the top plain rarity', (): void => {
