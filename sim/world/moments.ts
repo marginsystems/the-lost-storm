@@ -1,4 +1,4 @@
-import type { MomentDef, MomentEcho, MomentField, MomentLibrary, StrikeArea, StrikeInterval, WeightedMoment } from '../content/moment-types.ts';
+import type { MomentDef, MomentEcho, MomentField, MomentLibrary, StrikeArea, StrikeNear, WeightedMoment } from '../content/moment-types.ts';
 import type { Content, MonsterDef, PropDef, ZoneDef } from '../content/types.ts';
 import { rollDrop } from './loot.ts';
 import type { Vec2 } from '../math.ts';
@@ -14,7 +14,8 @@ import { monsterLevel, spawnMonster } from './spawn.ts';
 import type { EchoState, ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, NpcState, ProjectileState, World } from './types.ts';
 
 export const MOMENTS = {
-  placementTries: 40,
+  placementTries: 100,
+  aimedTries: 60,
   retry: 2,
   startLifeMin: 0.35,
   startLifeMax: 1,
@@ -91,8 +92,14 @@ export function safeSpots(world: World): Vec2[] {
   return spots.map((spot: Vec2): Vec2 => ({ x: spot.x + world.shift.x, z: spot.z + world.shift.z }));
 }
 
-function pointNear(world: World, near: StrikeInterval): Vec2 {
-  const angle: number = world.rng.range(0, Math.PI * 2);
+function nearAngle(world: World, near: StrikeNear, aimed: boolean): number {
+  if (near.bearing === null || !aimed) return world.rng.range(0, Math.PI * 2);
+  const spread: number = (near.bearing.spreadDegrees * Math.PI) / 180;
+  return Math.atan2(near.bearing.z, near.bearing.x) + world.rng.range(-spread, spread);
+}
+
+function pointNear(world: World, near: StrikeNear, aimed: boolean): Vec2 {
+  const angle: number = nearAngle(world, near, aimed);
   const reach: number = world.rng.range(near.min, near.max);
   return { x: world.player.pos.x + Math.cos(angle) * reach, z: world.player.pos.z + Math.sin(angle) * reach };
 }
@@ -138,10 +145,10 @@ function pickDef(world: World, field: MomentField): MomentDef | null {
 function place(world: World, field: MomentField, mark: boolean): MomentState | null {
   const def: MomentDef | null = pickDef(world, field);
   if (def === null) return null;
-  const near: StrikeInterval | null = sureHolds(world, field) && world.player.alive ? field.near : null;
+  const near: StrikeNear | null = sureHolds(world, field) && world.player.alive ? field.near : null;
   for (let attempt: number = 0; attempt < MOMENTS.placementTries; attempt += 1) {
     if (near !== null) {
-      const pos: Vec2 = pointNear(world, near);
+      const pos: Vec2 = pointNear(world, near, attempt < MOMENTS.aimedTries);
       if (clearNear(world, field, def, pos)) return begin(world, def, pos, field.combat, mark);
       continue;
     }

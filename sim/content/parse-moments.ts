@@ -2,7 +2,7 @@ import { conditions } from './parse-conditions.ts';
 import { storyFlags } from './parse-story.ts';
 import type { Fields } from './read.ts';
 import { byId, colour, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { EchoLook, EchoPose, MomentDef, MomentEcho, MomentField, MomentLibrary, MomentProp, MomentReward, StrikeArea, StrikeClearance, StrikeInterval, WeightedMoment } from './moment-types.ts';
+import type { EchoLook, EchoPose, MomentDef, MomentEcho, MomentField, MomentLibrary, MomentProp, MomentReward, StrikeArea, StrikeClearance, StrikeBearing, StrikeInterval, StrikeNear, WeightedMoment } from './moment-types.ts';
 
 function chance(source: Fields, key: string, where: string): number {
   const value: number = numeric(source, key, where);
@@ -114,6 +114,19 @@ function interval(value: unknown, where: string): StrikeInterval {
   return { min, max };
 }
 
+function bearing(value: unknown, where: string): StrikeBearing {
+  const source: Fields = fields(value, where);
+  const x: number = numeric(source, 'x', where);
+  const z: number = numeric(source, 'z', where);
+  if (Math.hypot(x, z) === 0) throw new ContentError(where, 'bearing has no direction');
+  return { x, z, spreadDegrees: nonNegative(source, 'spreadDegrees', where) };
+}
+
+function near(value: unknown, where: string): StrikeNear {
+  const source: Fields = fields(value, where);
+  return { ...interval(value, where), bearing: source['bearing'] === undefined ? null : bearing(source['bearing'], `${where}.bearing`) };
+}
+
 function weighted(value: unknown, where: string): WeightedMoment {
   const source: Fields = fields(value, where);
   return { moment: text(source, 'moment', where), weight: positive(source, 'weight', where) };
@@ -129,5 +142,5 @@ export function momentField(value: unknown, where: string): MomentField | null {
   if (areas.length === 0) throw new ContentError(`${where}.areas`, 'a field needs at least one area');
   const table: WeightedMoment[] = each(source['table'], `${where}.table`, weighted);
   if (table.length === 0) throw new ContentError(`${where}.table`, 'a field needs at least one moment');
-  return { combat: flag(source, 'combat', where), areas, clearance: clearance(source['clearance'], `${where}.clearance`), interval: interval(source['interval'], `${where}.interval`), start, max, table, sure: conditions(source, 'sure', where), first: source['first'] === undefined ? [] : each(source['first'], `${where}.first`, weighted), grace: source['grace'] === undefined ? 0 : nonNegative(source, 'grace', where), avoid: source['avoid'] === undefined ? [] : each(source['avoid'], `${where}.avoid`, area), near: source['near'] === undefined ? null : interval(source['near'], `${where}.near`) };
+  return { combat: flag(source, 'combat', where), areas, clearance: clearance(source['clearance'], `${where}.clearance`), interval: interval(source['interval'], `${where}.interval`), start, max, table, sure: conditions(source, 'sure', where), first: source['first'] === undefined ? [] : each(source['first'], `${where}.first`, weighted), grace: source['grace'] === undefined ? 0 : nonNegative(source, 'grace', where), avoid: source['avoid'] === undefined ? [] : each(source['avoid'], `${where}.avoid`, area), near: source['near'] === undefined ? null : near(source['near'], `${where}.near`) };
 }

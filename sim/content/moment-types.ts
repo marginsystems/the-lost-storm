@@ -88,6 +88,16 @@ export interface StrikeInterval {
   readonly max: number;
 }
 
+export interface StrikeBearing {
+  readonly x: number;
+  readonly z: number;
+  readonly spreadDegrees: number;
+}
+
+export interface StrikeNear extends StrikeInterval {
+  readonly bearing: StrikeBearing | null;
+}
+
 export interface WeightedMoment {
   readonly moment: string;
   readonly weight: number;
@@ -105,5 +115,5 @@ export interface MomentField {
   readonly first: readonly WeightedMoment[];
   readonly grace: number;
   readonly avoid: readonly StrikeArea[];
-  readonly near: StrikeInterval | null;
+  readonly near: StrikeNear | null;
 }

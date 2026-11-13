@@ -151,7 +151,7 @@
     "clearance": {"hero": 8, "exits": 6, "between": 6, "safe": 18, "packs": 4},
     "interval": {"min": 12, "max": 24},
     "grace": 3,
-    "near": {"min": 7, "max": 9},
+    "near": {"min": 7, "max": 9, "bearing": {"x": -0.26, "z": -0.97, "spreadDegrees": 60}},
     "start": 0,
     "max": 2,
     "table": [{"moment": "campfire", "weight": 3}, {"moment": "charge", "weight": 3}, {"moment": "market_street", "weight": 3}, {"moment": "children_at_play", "weight": 1}, {"moment": "funeral", "weight": 1}],

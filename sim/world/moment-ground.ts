@@ -12,7 +12,7 @@ export const MOMENT_GROUND = {
   tallProp: 1.5,
   sightMargin: 1,
   sightFrom: 1,
-  sightStep: 0.25,
+  sightStep: 0.1,
 } as const;
 
 function propExtent(def: PropDef): number {

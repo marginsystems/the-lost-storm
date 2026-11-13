@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
-import type { MomentDef, MomentField, MomentLibrary, StrikeInterval } from '../content/moment-types.ts';
+import type { MomentDef, MomentField, MomentLibrary, StrikeBearing, StrikeNear } from '../content/moment-types.ts';
 import type { Content, SkillDef, ZoneDef, ZoneNpc } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
@@ -402,7 +402,7 @@ void test('a fight whose hero rose elsewhere and never walks back in runs out af
 });
 
 void test('a first fight the hero walks out of ends, and a new one strikes beside him after a short wait', (): void => {
-  const near = { min: 8, max: 11 } as const;
+  const near = { min: 8, max: 11, bearing: null } as const;
   const world: World = fieldWorld(quietField({ sure: [{ type: 'flag', flag: 'first_moment', is: 'cleared', not: true }], near }));
   world.player.invulnerable = 1e9;
   const moment: MomentState = struck(world, RAID.id);
@@ -474,32 +474,41 @@ void test('a knock on the hero near the edge cannot throw him out of the bubble;
   assert.ok(distance(world.player.pos, moment.pos) <= RAID.radius);
 });
 
-void test('a new hero in the Hall gets a grace period, then the first moment strikes on screen beside him as he walks the road and cuts down whatever wakes', (): void => {
+void test('a new hero in the Hall gets a grace period, then the first moment strikes on screen beside him, along its bearing, whether he walks the road or stands at the arrival, and cuts down whatever wakes', (): void => {
   const shipped: Content = loadContent();
   const hall: ZoneDef = must(shipped.zones.get('hall_of_time'), 'hall');
   const field: MomentField = must(hall.moments, 'hall field');
-  const near: StrikeInterval = must(field.near, 'hall near');
+  const near: StrikeNear = must(field.near, 'hall near');
+  const bearing: StrikeBearing = must(near.bearing, 'hall bearing');
   const east: Vec2 = must(hall.exits.find((exit): boolean => exit.id === 'east'), 'east exit');
-  for (let seed: number = 1; seed <= 12; seed += 1) {
+  for (let trial: number = 0; trial < 24; trial += 1) {
+    const seed: number = (trial % 12) + 1;
+    const walks: number = trial < 12 ? ROAD_WALK.speed : 0;
     const world: World = createWorld(shipped, { seed, save: null });
     enterZone(world, hall, { type: 'start' });
     world.player.invulnerable = 1e9;
     const from: Vec2 = { ...world.player.pos };
-    let landed: { readonly at: number; readonly gap: number; readonly id: string } | null = null;
+    let landed: { readonly at: number; readonly gap: number; readonly turn: number; readonly id: string } | null = null;
     for (let elapsed: number = 0; elapsed < field.grace + ROAD_WALK.within && landed === null; elapsed += DT) {
-      const along: number = Math.min(1, (elapsed * ROAD_WALK.speed) / distance(from, east));
+      const along: number = Math.min(1, (elapsed * walks) / distance(from, east));
       standAt(world, { x: from.x + (east.x - from.x) * along, z: from.z + (east.z - from.z) * along });
       slay(world, world.monsters.filter((monster: MonsterState): boolean => monster.aggro && monster.def.faction !== world.content.moments.faction));
       for (const event of stepWorld(world, [], DT)) {
         if (event.type === 'moment_mark' && elapsed < field.grace - DT) assert.fail(`seed ${seed}: struck at ${elapsed.toFixed(1)} s, inside the grace`);
-        if (event.type === 'moment_mark') landed = { at: elapsed, gap: distance(event.moment.pos, world.player.pos), id: event.moment.def.id };
+        if (event.type === 'moment_mark') landed = { at: elapsed, gap: distance(event.moment.pos, world.player.pos), turn: turnFrom(bearing, event.moment.pos, world.player.pos), id: event.moment.def.id };
       }
     }
     const strike = must(landed, `seed ${seed}: no first moment within ${field.grace + ROAD_WALK.within} s`);
     assert.equal(strike.id, must(field.first[0], 'first entry').moment, `seed ${seed}`);
     assert.ok(strike.gap >= near.min - 1e-6 && strike.gap <= near.max + 1e-6, `seed ${seed}: ${strike.gap.toFixed(1)} m from the hero`);
+    assert.ok(strike.turn <= bearing.spreadDegrees + 1e-6, `seed ${seed} at ${walks} m/s: ${strike.turn.toFixed(0)} degrees off the bearing`);
   }
 });
+
+function turnFrom(bearing: StrikeBearing, at: Vec2, from: Vec2): number {
+  const off: number = Math.atan2(at.z - from.z, at.x - from.x) - Math.atan2(bearing.z, bearing.x);
+  return (Math.abs(Math.atan2(Math.sin(off), Math.cos(off))) * 180) / Math.PI;
+}
 
 void test('no strike ever lands near the safe ground or close enough to a living pack for it to join the fight', (): void => {
   const shipped: Content = loadContent();
