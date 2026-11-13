@@ -22,6 +22,7 @@ export interface RigClips {
 export interface RigGait {
   readonly clip: string;
   readonly groundSpeed: number;
+  readonly stride: number | null;
 }
 
 export type Triple = readonly [number, number, number];
