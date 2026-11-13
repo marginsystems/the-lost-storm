@@ -1,13 +1,11 @@
 import type { BufferGeometry, IUniform, Scene } from 'three';
-import { AdditiveBlending, CircleGeometry, Color, Mesh, ShaderMaterial } from 'three';
+import { AdditiveBlending, Color, Mesh, PlaneGeometry, ShaderMaterial } from 'three';
 import type { World } from '../../sim/world/types.ts';
 
 export const WARD = {
   color: 0xf4efe2,
   reach: 1.7,
   spread: 0.55,
-  segments: 48,
-  phoneSegments: 24,
   alpha: 0.42,
   lift: 0.04,
   breakupScale: 1.6,
@@ -61,9 +59,9 @@ export interface Ward {
   update(dt: number, world: World): void;
 }
 
-export function createWard(scene: Scene, phone: boolean): Ward {
+export function createWard(scene: Scene): Ward {
   const uniforms: WardUniforms = { uColor: { value: new Color(WARD.color) }, uStrength: { value: 0 }, uTime: { value: 0 }, uReach: { value: WARD.reach }, uSpread: { value: WARD.spread }, uBreakupScale: { value: WARD.breakupScale }, uBreakupDepth: { value: WARD.breakupDepth } };
-  const geometry: BufferGeometry = new CircleGeometry(WARD.reach, phone ? WARD.phoneSegments : WARD.segments);
+  const geometry: BufferGeometry = new PlaneGeometry(WARD.reach * 2, WARD.reach * 2);
   const glow: Mesh<BufferGeometry, ShaderMaterial> = new Mesh(geometry, new ShaderMaterial({ vertexShader: WARD_GLOW_VERTEX, fragmentShader: WARD_GLOW_FRAGMENT, uniforms, transparent: true, depthWrite: false, blending: AdditiveBlending }));
   glow.rotation.x = -Math.PI / 2;
   glow.position.y = WARD.lift;

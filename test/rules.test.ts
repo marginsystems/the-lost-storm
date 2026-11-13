@@ -72,6 +72,24 @@ void test('no source file grows past the size limit', (): void => {
   for (const { path, lines } of sources) assert.ok(lines.length <= MAX_LINES, `${path} has ${lines.length} lines`);
 });
 
+const FLAT_SHAPE: RegExp = new RegExp(joined('new (Ring|Circle|Torus)Geo', 'metry\\b|new LineLo', 'op\\b|sectorGeometry\\(Math\\.PI \\* 2'));
+const FLAT_SHAPE_ALLOWED: Readonly<Record<string, string>> = {
+  'src/render/contact-shadow.ts': 'the soft shadow under an actor, a texture that fades to nothing before the disc ends',
+  'src/lobby/lobby-stage.ts': 'the lobby floor the character stands on, not an effect',
+  'src/render/moment-view.ts': 'the floor of a moment bubble, dressed in a surface, not an effect',
+};
+
+void test('ground effects are light from the ground-light shader, never flat rings, discs or outlines', (): void => {
+  const found: string[] = [];
+  for (const source of typescript) {
+    if (!source.path.startsWith('src') || source.path.endsWith('.test.ts') || FLAT_SHAPE_ALLOWED[source.path] !== undefined) continue;
+    source.lines.forEach((line: string, index: number): void => {
+      if (FLAT_SHAPE.test(line)) found.push(`${source.path}:${index + 1}`);
+    });
+  }
+  assert.deepEqual(found, [], 'draw ground effects with createGroundLight in src/render/ground-light.ts');
+});
+
 void test('every test file sits beside the file it tests', (): void => {
   for (const { path } of typescript.filter((source: SourceFile): boolean => source.path.endsWith('.test.ts') && !source.path.startsWith('test'))) {
     assert.ok(statSync(path.replace('.test.ts', '.ts')).isFile(), `${path} has no source file`);

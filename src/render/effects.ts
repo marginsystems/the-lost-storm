@@ -4,7 +4,7 @@ import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { Delivery, SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
-import { disposeObject, glow, groundArcs, markerMesh, programKeepers, projectileMesh, scorchMesh, shockwaveMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
+import { disposeObject, glow, groundArcs, programKeepers, projectileMesh, scorchMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
 import type { Telegraph } from './effect-shapes.ts';
 import type { DashTrails } from './dash-trail.ts';
 import { createDashTrails } from './dash-trail.ts';
@@ -18,6 +18,8 @@ import { createAbilityCues, novaLook } from './ability-cues.ts';
 import type { HurtWash } from './hurt-wash.ts';
 import { CALM_WASH, stepWash, washHit } from './hurt-wash.ts';
 import type { NovaLook } from './ability-cues.ts';
+import type { GroundLight } from './ground-light.ts';
+import { createGroundLight, flare, GROUND_LIGHT, held, spread } from './ground-light.ts';
 
 export const EFFECTS = {
   levelLight: 45,
@@ -29,10 +31,23 @@ export const EFFECTS = {
   slashGlow: 0.8,
   ringTime: 0.42,
   waveTime: 0.42,
-  waveSize: 1.2,
-  waveTrail: 0.36,
-  ringTrail: 0.5,
-  markerSize: 0.95,
+  ringGlow: 0.9,
+  ringFill: 0.18,
+  ringWidth: 0.16,
+  ringMinWidth: 0.25,
+  ringWobble: 0.08,
+  waveStrength: 1.1,
+  waveFill: 0.3,
+  waveWidth: 0.2,
+  waveWobble: 0.1,
+  markGlow: 0.55,
+  markFill: 0.6,
+  markWidth: 0.35,
+  markerSize: 0.75,
+  markerFill: 0.3,
+  markerWidth: 0.22,
+  markerClose: 0.55,
+  markerGlow: 0.8,
   scorchTime: 0.9,
   waveGlow: 0.95,
   waveLight: 46,
@@ -58,9 +73,9 @@ export const EFFECTS = {
   flameSize: 0.17,
   telegraphHeight: 0.09,
   telegraphStart: 0.45,
-  telegraphFaint: 0.07,
-  telegraphStrong: 0.14,
-  telegraphEdge: 0.3,
+  telegraphFaint: 0.45,
+  telegraphStrong: 0.55,
+  telegraphEdge: 0.5,
   telegraphEdgeIn: 6,
   telegraphBreathe: 0.2,
   telegraphBreatheRate: 6,
@@ -206,14 +221,27 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   };
 
   const ring = (x: number, z: number, radius: number, color: Color, duration: number): void => {
-    const wave = shockwaveMesh(glow(color, 0.9), EFFECTS.ringTrail, 0);
-    wave.mesh.position.set(x, 0.12, z);
-    wave.mesh.scale.setScalar(radius * EFFECTS.waveSize);
+    const wave: GroundLight = createGroundLight(color, { kind: 'round', radius, inner: 0, arc: Math.PI * 2 }, { fill: EFFECTS.ringFill, band: 1, width: Math.max(EFFECTS.ringMinWidth, radius * EFFECTS.ringWidth), wobble: radius * EFFECTS.ringWobble });
+    wave.mesh.position.set(x, GROUND_LIGHT.height + 0.04, z);
     add(
       wave.mesh,
       duration,
       (t: number): void => {
-        wave.material.uniforms['uProgress'] = { value: t };
+        wave.front(spread(t));
+        wave.pose(EFFECTS.ringGlow * flare(t), t * duration);
+      },
+      null,
+    );
+  };
+
+  const mark = (x: number, z: number, radius: number, color: Color, duration: number): void => {
+    const spot: GroundLight = createGroundLight(color, { kind: 'round', radius, inner: 0, arc: Math.PI * 2 }, { fill: EFFECTS.markFill, band: 1, width: radius * EFFECTS.markWidth, wobble: radius * EFFECTS.ringWobble });
+    spot.mesh.position.set(x, GROUND_LIGHT.height + 0.03, z);
+    add(
+      spot.mesh,
+      duration,
+      (t: number): void => {
+        spot.pose(EFFECTS.markGlow * held(t), t * duration);
       },
       null,
     );
@@ -221,14 +249,14 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
 
   const shockwave = (x: number, z: number, radius: number, color: Color, light: number): void => {
     cues.shade(x, z, radius * 1.1);
-    const wave = shockwaveMesh(glow(color, EFFECTS.waveGlow), EFFECTS.waveTrail, 1);
-    wave.mesh.position.set(x, 0.13, z);
-    wave.mesh.scale.setScalar(radius * EFFECTS.waveSize);
+    const wave: GroundLight = createGroundLight(glow(color, EFFECTS.waveGlow), { kind: 'round', radius, inner: 0, arc: Math.PI * 2 }, { fill: EFFECTS.waveFill, band: 1, width: radius * EFFECTS.waveWidth, wobble: radius * EFFECTS.waveWobble });
+    wave.mesh.position.set(x, GROUND_LIGHT.height + 0.05, z);
     add(
       wave.mesh,
       EFFECTS.waveTime,
       (t: number): void => {
-        wave.material.uniforms['uProgress'] = { value: t };
+        wave.front(spread(t));
+        wave.pose(EFFECTS.waveStrength * flare(t), t * EFFECTS.waveTime);
       },
       null,
     );
@@ -296,12 +324,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       (t: number): void => {
         const grown: number = EFFECTS.telegraphStart + (1 - EFFECTS.telegraphStart) * easeOut(t);
         const breath: number = 1 - EFFECTS.telegraphBreathe * (0.5 + 0.5 * Math.cos(t * duration * EFFECTS.telegraphBreatheRate));
-        for (const fill of shape.fills) {
-          fill.material.opacity = (EFFECTS.telegraphFaint + EFFECTS.telegraphStrong * t * t) * breath;
-          if (shape.lanes) fill.scale.set(1, 1, grown);
-          else fill.scale.setScalar(grown);
+        for (const light of shape.lights) {
+          light.front(grown);
+          light.pose(EFFECTS.telegraphEdge * (EFFECTS.telegraphFaint + EFFECTS.telegraphStrong * t * t) * Math.min(1, t * EFFECTS.telegraphEdgeIn) * breath, t * duration);
         }
-        for (const edge of shape.edges) edge.material.opacity = EFFECTS.telegraphEdge * Math.min(1, t * EFFECTS.telegraphEdgeIn) * breath;
       },
       owner,
     );
@@ -372,7 +398,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       camera.addTrauma(Math.max(EFFECTS.hurtShake, event.skill.shake));
       hitStop = Math.min(EFFECTS.maxStop, Math.max(hitStop, event.skill.hitStop));
       if (event.skill.root > 0 && !event.killed) {
-        ring(event.pos.x, event.pos.z, EFFECTS.rootRing, ROOT, event.skill.root);
+        mark(event.pos.x, event.pos.z, EFFECTS.rootRing, ROOT, event.skill.root);
         spray(event.pos.x, 0.3, event.pos.z, ROOT, EFFECTS.rootSpray, { speed: { min: 0.3, max: 1.4 }, lift: { min: 0.2, max: 1.6 }, life: { min: 0.4, max: event.skill.root }, gravity: 1, size: { min: 0.3, max: 0.7 } });
       }
       spray(event.pos.x, 1.3, event.pos.z, BLOOD, 14, { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.4, speed: { min: 2, max: 7 } });
@@ -461,14 +487,14 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       return pending;
     },
     clickMarker(x: number, z: number, hostile: boolean): void {
-      const marker = markerMesh(hostile ? ATTACK_MARK : MOVE_MARK);
-      marker.mesh.position.set(x, 0.11, z);
-      marker.mesh.scale.setScalar(EFFECTS.markerSize);
+      const marker: GroundLight = createGroundLight(hostile ? ATTACK_MARK : MOVE_MARK, { kind: 'round', radius: EFFECTS.markerSize, inner: 0, arc: Math.PI * 2 }, { fill: EFFECTS.markerFill, band: 1, width: EFFECTS.markerSize * EFFECTS.markerWidth, wobble: EFFECTS.markerSize * EFFECTS.ringWobble });
+      marker.mesh.position.set(x, GROUND_LIGHT.height + 0.05, z);
       add(
         marker.mesh,
         EFFECTS.markerTime,
         (t: number): void => {
-          marker.material.uniforms['uProgress'] = { value: t };
+          marker.front(1 - EFFECTS.markerClose * spread(t));
+          marker.pose(EFFECTS.markerGlow * flare(t), t * EFFECTS.markerTime);
         },
         null,
       );

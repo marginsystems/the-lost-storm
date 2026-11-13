@@ -1,8 +1,9 @@
-import type { BufferGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
-import { Color, Mesh as ThreeMesh } from 'three';
+import type { Group, Mesh } from 'three';
+import { Color } from 'three';
 import type { SkillDef, VfxCue, VfxStyle } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
-import { additive, flat, sectorGeometry } from './effect-shapes.ts';
+import type { GroundLight, GroundLightForm } from './ground-light.ts';
+import { createGroundLight } from './ground-light.ts';
 import type { BurstOptions } from './particles.ts';
 
 export const CUES = {
@@ -13,7 +14,6 @@ export const CUES = {
   handLight: 14,
   groundFrom: 1.9,
   groundTo: 0.55,
-  groundWidth: 0.16,
   groundGlow: 0.85,
   groundMotes: 16,
   bladeSparks: 12,
@@ -25,12 +25,22 @@ export const CUES = {
   whirlTime: 0.22,
   whirlSparks: 36,
   whirlHeight: 1.05,
-  whirlBand: 0.14,
   whirlFrom: 0.35,
   whirlGlow: 0.9,
   gustMotes: 26,
   releaseLight: 26,
+  shadeSoft: 0.35,
+  shadeWobble: 0.1,
+  groundBand: 0.3,
+  groundUnder: 1.1,
+  whirlWidth: 0.12,
+  whirlWobble: 0.08,
+  whirlFill: 0.15,
 } as const;
+
+function round(radius: number): GroundLightForm {
+  return { kind: 'round', radius, inner: 0, arc: Math.PI * 2 };
+}
 
 export type NovaLook = 'shockwave' | 'whirl' | 'gust' | 'ring';
 
@@ -84,15 +94,14 @@ const MIST: Color = new Color(0xdfe8f0);
 
 export function createAbilityCues(kit: CueKit): AbilityCues {
   const shade = (x: number, z: number, radius: number): void => {
-    const disc: Mesh<BufferGeometry, MeshBasicMaterial> = new ThreeMesh(sectorGeometry(Math.PI * 2, 0, radius), flat(SHADE, 0));
-    disc.position.set(x, CUES.shadeHeight, z);
-    disc.renderOrder = 3;
+    const pool: GroundLight = createGroundLight(SHADE, round(radius), { fill: 1, band: 0, width: radius * CUES.shadeSoft, wobble: radius * CUES.shadeWobble }, 'shade');
+    pool.mesh.position.set(x, CUES.shadeHeight, z);
     kit.add(
-      disc,
+      pool.mesh,
       CUES.shadeTime,
       (t: number): void => {
-        disc.material.opacity = shadeOpacity(t);
-        disc.scale.setScalar(1 + (CUES.shadeGrow - 1) * t);
+        pool.front(1 + (CUES.shadeGrow - 1) * t);
+        pool.pose(shadeOpacity(t), t * CUES.shadeTime);
       },
       null,
     );
@@ -112,27 +121,25 @@ export function createAbilityCues(kit: CueKit): AbilityCues {
   };
 
   const ground = (owner: number, pos: Vec2, duration: number, color: Color): void => {
-    const band: Mesh<BufferGeometry, MeshBasicMaterial> = new ThreeMesh(sectorGeometry(Math.PI * 2, 1 - CUES.groundWidth, 1), additive(color, 0));
-    band.position.set(pos.x, CUES.shadeHeight + 0.02, pos.z);
-    band.renderOrder = 5;
-    const under: Mesh<BufferGeometry, MeshBasicMaterial> = new ThreeMesh(sectorGeometry(Math.PI * 2, 0, 1), flat(SHADE, 0));
-    under.position.set(pos.x, CUES.shadeHeight, pos.z);
-    under.renderOrder = 3;
+    const band: GroundLight = createGroundLight(color, round(CUES.groundFrom), { fill: 0, band: 1, width: CUES.groundBand, wobble: CUES.groundBand * 0.5 });
+    band.mesh.position.set(pos.x, CUES.shadeHeight + 0.02, pos.z);
+    const under: GroundLight = createGroundLight(SHADE, round(CUES.groundFrom * CUES.groundUnder), { fill: 1, band: 0, width: CUES.groundFrom * CUES.shadeSoft, wobble: CUES.groundBand }, 'shade');
+    under.mesh.position.set(pos.x, CUES.shadeHeight, pos.z);
     kit.add(
-      band,
+      band.mesh,
       duration,
       (t: number): void => {
-        band.scale.setScalar(gatherScale(t));
-        band.material.opacity = CUES.groundGlow * Math.min(1, t * 4);
+        band.front(gatherScale(t) / CUES.groundFrom);
+        band.pose(CUES.groundGlow * Math.min(1, t * 4), t * duration);
       },
       owner,
     );
     kit.add(
-      under,
+      under.mesh,
       duration,
       (t: number): void => {
-        under.scale.setScalar(gatherScale(t) * 1.1);
-        under.material.opacity = CUES.shadeDepth * 0.6 * t;
+        under.front(gatherScale(t) / CUES.groundFrom);
+        under.pose(CUES.shadeDepth * 0.6 * t, t * duration);
       },
       owner,
     );
@@ -161,16 +168,15 @@ export function createAbilityCues(kit: CueKit): AbilityCues {
     shade,
     whirl(x: number, z: number, radius: number, color: Color): void {
       shade(x, z, radius * 1.05);
-      const band: Mesh<BufferGeometry, MeshBasicMaterial> = new ThreeMesh(sectorGeometry(Math.PI * 2, 1 - CUES.whirlBand, 1), additive(color, 0));
-      band.position.set(x, CUES.shadeHeight + 0.03, z);
-      band.renderOrder = 5;
+      const band: GroundLight = createGroundLight(color, round(radius), { fill: CUES.whirlFill, band: 1, width: radius * CUES.whirlWidth, wobble: radius * CUES.whirlWobble });
+      band.mesh.position.set(x, CUES.shadeHeight + 0.03, z);
       kit.add(
-        band,
+        band.mesh,
         CUES.whirlTime,
         (t: number): void => {
           const opened: number = 1 - (1 - t) * (1 - t);
-          band.scale.setScalar(radius * (CUES.whirlFrom + (1 - CUES.whirlFrom) * opened));
-          band.material.opacity = CUES.whirlGlow * (1 - t * t);
+          band.front(CUES.whirlFrom + (1 - CUES.whirlFrom) * opened);
+          band.pose(CUES.whirlGlow * (1 - t * t) * Math.min(1, t * 8), t * CUES.whirlTime);
         },
         null,
       );

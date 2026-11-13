@@ -91,6 +91,10 @@ This repository is meant to become public, so every file in it must be redistrib
 
 Input must answer on the same frame. A hit that lands shows it: flash, knockback, a damage number, particles, and for heavy hits a short hit-stop and screen shake. When you add an attack, a skill or a monster, give it all of these through the skill's data (`knockback`, `stagger`, `shake`, `hitStop`, `vfx`).
 
+## Effects on the ground
+
+Ground effects are drawn as light through the shared ground-light shader (`createGroundLight` in `src/render/ground-light.ts`): area markers, reach indicators, novas, telegraphs, roots, wards, click markers. Its fill, band, wave, sector and lane forms are parameters of that one shader. Never draw a ground effect as a flat ring, disc or hard-edged shape, or with a perfect outline: no `RingGeometry`, `CircleGeometry`, `TorusGeometry`, `LineLoop` or full-circle sector mesh. Every edge is feathered, the outline is broken by noise, and strength eases in and out. Radius and timing come from the sim. `test/rules.test.ts` fails on a flat shape outside its short allowlist of non-effect uses.
+
 ## HUD motion and style
 
 Every user-visible change in the HUD animates with spring motion: panels opening, text that changes, bars, buttons. Nothing may jump from one frame to the next. Use the `--spring-*` easings and durations in `src/hud/hud.css`; do not write ad-hoc timings or cubic-bezier curves. The one exception is a continuous ambient loop that is not a state change, such as the liquid drifting in the globes: it uses the `--drift-ease` and `--drift-ms` tokens defined beside the springs, never a bare timing.

@@ -7,7 +7,7 @@ import type { Vec2 } from '../../sim/math.ts';
 import { areaOf } from '../../sim/world/areas.ts';
 import { chargeOf } from '../../sim/world/skills.ts';
 import type { AreaState, MonsterState, World, WorldEvent } from '../../sim/world/types.ts';
-import { disposeObject, discMesh, glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
+import { glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
 import type { GroundLight } from './ground-light.ts';
 import { createGroundLight, GROUND_LIGHT } from './ground-light.ts';
 import type { BurstOptions } from './particles.ts';
@@ -35,7 +35,11 @@ export const STORM_EFFECTS = {
   gapMotes: 2,
   brandSize: 0.55,
   brandHeight: 0.08,
-  brandSpin: 3.2,
+  brandGlow: 0.5,
+  brandFill: 0.5,
+  brandWidth: 0.25,
+  brandPulse: 0.3,
+  brandRate: 9,
   chargeMotes: 4,
   chargeReach: 1.6,
   chargeLight: 50,
@@ -72,7 +76,7 @@ interface AreaView {
 }
 
 interface BrandView {
-  readonly mark: Mesh<BufferGeometry, MeshBasicMaterial>;
+  readonly mark: GroundLight;
 }
 
 const MIST: Color = new Color(0xc9d6e2);
@@ -265,24 +269,25 @@ export function createStormEffects(kit: StormKit): StormEffects {
       const view: BrandView | undefined = brands.get(monster.id);
       if (brand === null) {
         if (view !== undefined) {
-          disposeObject(view.mark);
+          view.mark.dispose();
           brands.delete(monster.id);
         }
         continue;
       }
-      const shown: BrandView = view ?? { mark: discMesh(kit.colorOf(brand.burst.vfx.color), monster.radius + STORM_EFFECTS.brandSize, 0.35) };
+      const reach: number = monster.radius + STORM_EFFECTS.brandSize;
+      const shown: BrandView = view ?? { mark: createGroundLight(kit.colorOf(brand.burst.vfx.color), { kind: 'round', radius: reach, inner: 0, arc: Math.PI * 2 }, { fill: STORM_EFFECTS.brandFill, band: 1, width: reach * STORM_EFFECTS.brandWidth, wobble: reach * STORM_EFFECTS.areaWobble }) };
       if (view === undefined) {
-        kit.addObject(shown.mark);
+        kit.addObject(shown.mark.mesh);
         brands.set(monster.id, shown);
       }
-      shown.mark.position.set(monster.pos.x, STORM_EFFECTS.brandHeight, monster.pos.z);
-      shown.mark.rotation.y += dt * STORM_EFFECTS.brandSpin;
-      shown.mark.material.opacity = 0.2 + 0.15 * Math.sin(world.time * 9) + (brand.timeLeft < 1 ? -0.15 * (1 - brand.timeLeft) : 0);
+      shown.mark.mesh.position.set(monster.pos.x, STORM_EFFECTS.brandHeight, monster.pos.z);
+      shown.mark.show(brand.timeLeft < 1 ? STORM_EFFECTS.brandGlow * brand.timeLeft : STORM_EFFECTS.brandGlow * (1 + STORM_EFFECTS.brandPulse * Math.sin(world.time * STORM_EFFECTS.brandRate)));
+      shown.mark.step(dt, world.time);
     }
     for (const id of brands.keys()) {
       if (world.monsters.some((monster: MonsterState): boolean => monster.id === id)) continue;
       const view: BrandView | undefined = brands.get(id);
-      if (view !== undefined) disposeObject(view.mark);
+      if (view !== undefined) view.mark.dispose();
       brands.delete(id);
     }
   };
@@ -325,7 +330,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
       for (const view of areas.values()) view.light.dispose();
       areas.clear();
       for (const light of fading.splice(0, fading.length)) light.dispose();
-      for (const view of brands.values()) disposeObject(view.mark);
+      for (const view of brands.values()) view.mark.dispose();
       brands.clear();
       chargeGlow.intensity = 0;
     },

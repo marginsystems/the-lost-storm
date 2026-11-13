@@ -1,8 +1,9 @@
 import type { Color, IUniform, Material } from 'three';
-import { createGroundLight } from './ground-light.ts';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CylinderGeometry, DoubleSide, Group, IcosahedronGeometry, Mesh, MeshBasicMaterial, NormalBlending, PlaneGeometry, ShaderMaterial, Vector3 } from 'three';
 import type { Delivery } from '../../sim/content/types.ts';
 import { SKILLS } from '../../sim/world/skills.ts';
+import type { GroundLight, GroundLightLook } from './ground-light.ts';
+import { createGroundLight } from './ground-light.ts';
 
 export const SHAPES = {
   sectorSegments: 28,
@@ -23,17 +24,10 @@ export const SHAPES = {
   arcJitter: 0.9,
   arcWidth: 0.09,
   telegraphInner: 0.35,
-  telegraphFill: 0.07,
-  telegraphLine: 0.3,
-  telegraphCore: 0.45,
-  telegraphMid: 0.75,
-  telegraphBody: 0.82,
-  telegraphEdge: 0.6,
-  telegraphFeather: 0.36,
-  telegraphSide: 0.12,
-  rimIn: 0.72,
-  rimOut: 1.16,
-  laneShoulder: 0.45,
+  telegraphFill: 0.4,
+  telegraphWidth: 0.09,
+  telegraphWidthMin: 0.22,
+  telegraphWobble: 0.05,
   laneStart: 0.7,
 } as const;
 
@@ -102,53 +96,6 @@ float noise(vec2 p) {
 }
 float fbm(vec2 p) {
   return noise(p) * 0.55 + noise(p * 2.1) * 0.3 + noise(p * 4.3) * 0.15;
-}
-`;
-
-const SHOCKWAVE_FRAGMENT: string = `
-uniform vec3 uColor;
-uniform float uProgress;
-uniform float uSeed;
-uniform float uTrail;
-uniform float uDetail;
-void main() {
-  vec2 p = vUv * 2.0 - 1.0;
-  float r = length(p);
-  vec2 dir = p / max(r, 0.0001);
-  float eased = 1.0 - pow(max(1.0 - uProgress, 0.0), 3.0);
-  float wobble = (fbm(dir * 2.3 + uSeed) - 0.5) * 0.18;
-  float front = eased * 0.84 + wobble * uProgress;
-  float lead = 1.0 - smoothstep(front, front + 0.04, r);
-  float width = uTrail * smoothstep(0.0, 0.45, uProgress) + 0.03;
-  float trail = smoothstep(front - width, front, r);
-  float band = lead * trail * trail;
-  float streak = 0.4 + 0.6 * fbm(dir * 7.0 + vec2(r * 5.0 - uProgress * 3.0, uSeed));
-  float veins = pow(max(fbm(dir * 12.0 + vec2(uSeed * 3.1, r * 2.0)), 0.0), 6.0) * 14.0;
-  float inside = lead * smoothstep(0.06, 0.3, r);
-  float core = (1.0 - smoothstep(0.0, 0.3, r)) * (1.0 - uProgress) * 0.28;
-  float fade = (1.0 - uProgress) * (1.0 - uProgress);
-  float alpha = (band * streak * 1.25 + (veins * inside * 0.16 + core) * uDetail) * fade;
-  alpha *= 1.0 - smoothstep(0.9, 1.0, r);
-  gl_FragColor = vec4(uColor * (0.7 + band * 0.9), clamp(alpha, 0.0, 1.0));
-}
-`;
-
-const MARKER_FRAGMENT: string = `
-uniform vec3 uColor;
-uniform float uProgress;
-uniform float uSeed;
-void main() {
-  vec2 p = vUv * 2.0 - 1.0;
-  float r = length(p);
-  vec2 dir = p / max(r, 0.0001);
-  float eased = 1.0 - pow(max(1.0 - uProgress, 0.0), 2.0);
-  float radius = mix(0.78, 0.3, eased);
-  float ring = smoothstep(radius - 0.2, radius, r) * (1.0 - smoothstep(radius, radius + 0.12, r));
-  float broken = 0.25 + 0.75 * smoothstep(0.38, 0.62, fbm(dir * 2.6 + vec2(uSeed, uProgress * 1.5)));
-  float haze = (1.0 - smoothstep(0.0, 0.55, r)) * 0.22;
-  float fade = 1.0 - uProgress;
-  float alpha = (ring * broken * 0.7 + haze) * fade;
-  gl_FragColor = vec4(uColor, clamp(alpha, 0.0, 1.0));
 }
 `;
 
@@ -227,162 +174,65 @@ export function flat(color: Color, opacity: number): MeshBasicMaterial {
   return new MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: DoubleSide });
 }
 
-export type TelegraphPart = Mesh<BufferGeometry, MeshBasicMaterial>;
-
 export interface Telegraph {
   readonly object: Group;
-  readonly fills: readonly TelegraphPart[];
-  readonly edges: readonly TelegraphPart[];
-  readonly lanes: boolean;
+  readonly lights: readonly GroundLight[];
 }
 
-function telegraphPart(geometry: BufferGeometry, color: Color, opacity: number, order: number): TelegraphPart {
-  const mesh: TelegraphPart = new Mesh(geometry, flat(color, opacity));
-  mesh.material.blending = AdditiveBlending;
-  mesh.renderOrder = order;
-  return mesh;
+function telegraphLook(reach: number): GroundLightLook {
+  return { fill: SHAPES.telegraphFill, band: 1, width: Math.max(SHAPES.telegraphWidthMin, reach * SHAPES.telegraphWidth), wobble: reach * SHAPES.telegraphWobble };
 }
 
-interface Ring {
-  readonly at: number;
-  readonly alpha: number;
+function ahead(light: GroundLight): GroundLight {
+  light.mesh.rotation.z = Math.PI;
+  return light;
 }
 
-function sideFade(t: number, open: boolean): number {
-  if (!open) return 1;
-  const side: number = Math.max(0, Math.min(1, Math.min(t, 1 - t) / SHAPES.telegraphSide));
-  return side * side * (3 - 2 * side);
+function roundTelegraph(arc: number, inner: number, radius: number, color: Color): GroundLight {
+  return ahead(createGroundLight(color, { kind: 'round', radius, inner, arc }, telegraphLook(radius)));
 }
 
-function featheredSector(arc: number, rings: readonly Ring[]): BufferGeometry {
-  const segments: number = SHAPES.sectorSegments;
-  const open: boolean = arc < Math.PI * 2 - 1e-3;
-  const positions: number[] = [];
-  const colours: number[] = [];
-  const indices: number[] = [];
-  const width: number = rings.length;
-  for (let step: number = 0; step <= segments; step += 1) {
-    const t: number = step / segments;
-    const angle: number = (t - 0.5) * arc;
-    const sin: number = Math.sin(angle);
-    const cos: number = Math.cos(angle);
-    const side: number = sideFade(t, open);
-    for (const ring of rings) {
-      positions.push(sin * ring.at, 0, cos * ring.at);
-      colours.push(1, 1, 1, ring.alpha * side);
-    }
-    if (step < segments) {
-      const base: number = step * width;
-      for (let index: number = 0; index < width - 1; index += 1) indices.push(base + index, base + index + 1, base + width + index, base + index + 1, base + width + index + 1, base + width + index);
-    }
-  }
-  return gridGeometry(positions, colours, indices);
-}
-
-function featheredLane(halfWidth: number, length: number): BufferGeometry {
-  const near: number = SHAPES.laneStart;
-  const rows: readonly Ring[] = [
-    { at: near, alpha: SHAPES.telegraphCore },
-    { at: near + (length - near) * SHAPES.telegraphBody, alpha: 1 },
-    { at: length * (1 + SHAPES.telegraphFeather / 2), alpha: 0 },
-  ];
-  const columns: readonly Ring[] = [
-    { at: -halfWidth, alpha: 0 },
-    { at: -halfWidth * SHAPES.laneShoulder, alpha: 1 },
-    { at: halfWidth * SHAPES.laneShoulder, alpha: 1 },
-    { at: halfWidth, alpha: 0 },
-  ];
-  const positions: number[] = [];
-  const colours: number[] = [];
-  const indices: number[] = [];
-  rows.forEach((row: Ring, rowIndex: number): void => {
-    for (const column of columns) {
-      positions.push(column.at, 0, row.at);
-      colours.push(1, 1, 1, row.alpha * column.alpha);
-    }
-    if (rowIndex < rows.length - 1) {
-      const base: number = rowIndex * columns.length;
-      for (let index: number = 0; index < columns.length - 1; index += 1) indices.push(base + index, base + index + 1, base + columns.length + index, base + index + 1, base + columns.length + index + 1, base + columns.length + index);
-    }
-  });
-  return gridGeometry(positions, colours, indices);
-}
-
-function gridGeometry(positions: readonly number[], colours: readonly number[], indices: readonly number[]): BufferGeometry {
-  const geometry: BufferGeometry = new BufferGeometry();
-  geometry.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
-  geometry.setAttribute('color', new BufferAttribute(new Float32Array(colours), 4));
-  geometry.setIndex([...indices]);
-  return geometry;
-}
-
-function softPart(geometry: BufferGeometry, color: Color, opacity: number, order: number): TelegraphPart {
-  const part: TelegraphPart = telegraphPart(geometry, color, opacity, order);
-  part.material.vertexColors = true;
-  return part;
-}
-
-function bodyRings(inner: number, outer: number): readonly Ring[] {
-  return [
-    { at: inner, alpha: SHAPES.telegraphCore },
-    { at: inner + (outer - inner) * 0.5, alpha: SHAPES.telegraphMid },
-    { at: inner + (outer - inner) * SHAPES.telegraphBody, alpha: 1 },
-    { at: outer, alpha: SHAPES.telegraphEdge },
-    { at: outer * (1 + SHAPES.telegraphFeather / 2), alpha: 0 },
-  ];
-}
-
-function rimRings(outer: number): readonly Ring[] {
-  return [
-    { at: outer * SHAPES.rimIn, alpha: 0 },
-    { at: outer, alpha: 1 },
-    { at: outer * SHAPES.rimOut, alpha: 0 },
-  ];
-}
-
-function softArea(arc: number, inner: number, outer: number, color: Color, fills: TelegraphPart[], edges: TelegraphPart[]): void {
-  fills.push(softPart(featheredSector(arc, bodyRings(inner, outer)), color, SHAPES.telegraphFill, 5));
-  edges.push(softPart(featheredSector(arc, rimRings(outer)), color, SHAPES.telegraphLine, 6));
+function laneTelegraph(halfWidth: number, length: number, color: Color): GroundLight {
+  return ahead(createGroundLight(color, { kind: 'lane', halfWidth, start: SHAPES.laneStart, length: length - SHAPES.laneStart }, telegraphLook(halfWidth * 2)));
 }
 
 export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
   const object: Group = new Group();
-  const fills: TelegraphPart[] = [];
-  const edges: TelegraphPart[] = [];
+  const lights: GroundLight[] = [];
   switch (delivery.type) {
     case 'arc':
-      softArea((delivery.arcDegrees * Math.PI) / 180, SHAPES.telegraphInner, delivery.reach, color, fills, edges);
+      lights.push(roundTelegraph((delivery.arcDegrees * Math.PI) / 180, SHAPES.telegraphInner, delivery.reach, color));
       break;
     case 'nova':
     case 'mark':
     case 'field':
     case 'area':
     case 'blink':
-      softArea(Math.PI * 2, 0, delivery.radius, color, fills, edges);
+      lights.push(roundTelegraph(Math.PI * 2, 0, delivery.radius, color));
       break;
     case 'projectile': {
       const count: number = Math.max(1, Math.round(delivery.count));
       for (let index: number = 0; index < count; index += 1) {
-        const lane: TelegraphPart = softPart(featheredLane(delivery.radius, delivery.range + SKILLS.projectileOrigin + delivery.radius), color, SHAPES.telegraphFill, 5);
-        lane.rotation.y = count === 1 ? 0 : ((index - (count - 1) / 2) * delivery.spreadDegrees * Math.PI) / 180;
-        fills.push(lane);
+        const lane: GroundLight = laneTelegraph(delivery.radius, delivery.range + SKILLS.projectileOrigin + delivery.radius, color);
+        lane.mesh.rotation.z = Math.PI + (count === 1 ? 0 : ((index - (count - 1) / 2) * delivery.spreadDegrees * Math.PI) / 180);
+        lights.push(lane);
       }
       break;
     }
     case 'dash':
-      fills.push(softPart(featheredLane(SHAPES.dashLane, delivery.distance), color, SHAPES.telegraphFill, 5));
+      lights.push(laneTelegraph(SHAPES.dashLane, delivery.distance, color));
       break;
     case 'beam':
-      fills.push(softPart(featheredLane(delivery.width / 2, delivery.range), color, SHAPES.telegraphFill, 5));
+      lights.push(laneTelegraph(delivery.width / 2, delivery.range, color));
       break;
     case 'chain':
-      softArea(Math.PI * 2, 0, delivery.range, color, fills, edges);
+      lights.push(roundTelegraph(Math.PI * 2, 0, delivery.range, color));
       break;
     case 'revive':
       break;
   }
-  for (const part of [...fills, ...edges]) object.add(part);
-  return { object, fills, edges, lanes: delivery.type === 'projectile' || delivery.type === 'dash' || delivery.type === 'beam' };
+  for (const light of lights) object.add(light.mesh);
+  return { object, lights };
 }
 
 export function pillarMesh(color: Color, radius: number, height: number): Mesh<CylinderGeometry, MeshBasicMaterial> {
@@ -434,14 +284,6 @@ function groundPlane(fragmentShader: string, uniforms: Record<string, IUniform>,
   mesh.rotation.x = -Math.PI / 2;
   mesh.renderOrder = order;
   return { mesh, material };
-}
-
-export function shockwaveMesh(color: Color, trail: number, detail: number): ShaderPlane {
-  return groundPlane(SHOCKWAVE_FRAGMENT, { uColor: { value: color.clone() }, uProgress: { value: 0 }, uSeed: { value: Math.random() * 40 }, uTrail: { value: trail }, uDetail: { value: detail } }, true, 7);
-}
-
-export function markerMesh(color: Color): ShaderPlane {
-  return groundPlane(MARKER_FRAGMENT, { uColor: { value: color.clone() }, uProgress: { value: 0 }, uSeed: { value: Math.random() * 40 } }, true, 6);
 }
 
 export function scorchMesh(color: Color): ShaderPlane {
@@ -506,18 +348,6 @@ export function lightningLine(from: Vector3, to: Vector3, color: Color, jitter: 
   return ribbonMesh(positions, indices, glow(color, SHAPES.glowBoost * 1.4), 9);
 }
 
-export function discMesh(color: Color, radius: number, opacity: number): Mesh<BufferGeometry, MeshBasicMaterial> {
-  const mesh: Mesh<BufferGeometry, MeshBasicMaterial> = new Mesh(sectorGeometry(Math.PI * 2, 0, radius), additive(color, opacity));
-  mesh.renderOrder = 4;
-  return mesh;
-}
-
-export function bandMesh(color: Color, inner: number, outer: number, opacity: number): Mesh<BufferGeometry, MeshBasicMaterial> {
-  const mesh: Mesh<BufferGeometry, MeshBasicMaterial> = new Mesh(sectorGeometry(Math.PI * 2, inner, outer), additive(color, opacity));
-  mesh.renderOrder = 4;
-  return mesh;
-}
-
 export function groundArcs(color: Color, radius: number): Mesh<BufferGeometry, MeshBasicMaterial> {
   const positions: number[] = [];
   const indices: number[] = [];
@@ -539,8 +369,7 @@ export function groundArcs(color: Color, radius: number): Mesh<BufferGeometry, M
 export function programKeepers(color: Color): Mesh[] {
   const bare: BufferGeometry = new BufferGeometry();
   bare.setAttribute('position', new BufferAttribute(new Float32Array(9), 3));
-  const telegraph: TelegraphPart = softPart(featheredSector(Math.PI * 2, bodyRings(0, 1)), color, 0, 5);
-  return [createGroundLight(color, { kind: 'round', radius: 1, inner: 0, arc: Math.PI * 2 }, { fill: 1, band: 1, width: 0.2, wobble: 0.1 }).mesh, shockwaveMesh(color, 1, 1).mesh, scorchMesh(color).mesh, markerMesh(color).mesh, slashMesh(1, 1, color).mesh, new Mesh(bare, additive(color, 0)), new Mesh(bare, flat(color, 0)), projectileMesh('orb', color), pillarMesh(color, 1, 1), telegraph];
+  return [createGroundLight(color, { kind: 'round', radius: 1, inner: 0, arc: Math.PI * 2 }, { fill: 1, band: 1, width: 0.2, wobble: 0.1 }).mesh, scorchMesh(color).mesh, slashMesh(1, 1, color).mesh, new Mesh(bare, additive(color, 0)), new Mesh(bare, flat(color, 0)), projectileMesh('orb', color), pillarMesh(color, 1, 1)];
 }
 
 export function disposeObject(object: Mesh | Group): void {
