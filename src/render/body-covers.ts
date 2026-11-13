@@ -5,6 +5,10 @@ import undertunicOnWoman from '../../data/covers/human_woman/undertunic_woman.js
 import braiesOnWoman from '../../data/covers/human_woman/braies.json' with { type: 'json' };
 import undertunicOnElder from '../../data/covers/human_elder/undertunic.json' with { type: 'json' };
 import braiesOnElder from '../../data/covers/human_elder/braies.json' with { type: 'json' };
+import braiesUnderTunic from '../../data/covers/wear/braies/wool_tunic.json' with { type: 'json' };
+import braiesUnderJerkin from '../../data/covers/wear/braies/leather_jerkin.json' with { type: 'json' };
+import braiesUnderRobe from '../../data/covers/wear/braies/monk_robe.json' with { type: 'json' };
+import braiesUnderMail from '../../data/covers/wear/braies/mail_tunic.json' with { type: 'json' };
 
 export interface BodyCover {
   readonly body: string;
@@ -58,6 +62,10 @@ export const BODY_COVERS: readonly BodyCover[] = [
   readCover(braiesOnWoman, 'data/covers/human_woman/braies.json'),
   readCover(undertunicOnElder, 'data/covers/human_elder/undertunic.json'),
   readCover(braiesOnElder, 'data/covers/human_elder/braies.json'),
+  readCover(braiesUnderTunic, 'data/covers/wear/braies/wool_tunic.json'),
+  readCover(braiesUnderJerkin, 'data/covers/wear/braies/leather_jerkin.json'),
+  readCover(braiesUnderRobe, 'data/covers/wear/braies/monk_robe.json'),
+  readCover(braiesUnderMail, 'data/covers/wear/braies/mail_tunic.json'),
 ];
 
 export function coverKey(wearableModel: string): string {

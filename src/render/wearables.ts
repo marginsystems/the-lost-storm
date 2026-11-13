@@ -25,6 +25,30 @@ function component(attribute: Attribute, vertex: number, slot: number): number {
   return attribute.getComponent(vertex, slot);
 }
 
+export function groupByCovers(geometry: BufferGeometry, triangleCovers: readonly (readonly string[])[]): readonly (readonly string[])[] {
+  const index: BufferAttribute | null = geometry.getIndex();
+  if (index === null || triangleCovers.every((covers: readonly string[]): boolean => covers.length === 0)) return [];
+  const buckets: Map<string, { readonly covers: readonly string[]; readonly corners: number[] }> = new Map<string, { readonly covers: readonly string[]; readonly corners: number[] }>([['', { covers: [], corners: [] }]]);
+  for (let corner: number = 0; corner + 2 < index.count; corner += 3) {
+    const covers: readonly string[] = triangleCovers[corner / 3] ?? [];
+    const key: string = covers.join(',');
+    const bucket: { readonly covers: readonly string[]; readonly corners: number[] } = buckets.get(key) ?? { covers: [...covers], corners: [] };
+    bucket.corners.push(index.getX(corner), index.getX(corner + 1), index.getX(corner + 2));
+    buckets.set(key, bucket);
+  }
+  const ordered: readonly { readonly covers: readonly string[]; readonly corners: number[] }[] = [...buckets.values()];
+  const flat: number[] = ordered.flatMap((bucket: { readonly covers: readonly string[]; readonly corners: number[] }): number[] => bucket.corners);
+  const vertices: number = geometry.getAttribute('position').count;
+  geometry.setIndex(new BufferAttribute(vertices >= WEARABLES.wideIndexFrom ? new Uint32Array(flat) : new Uint16Array(flat), 1));
+  geometry.clearGroups();
+  let start: number = 0;
+  ordered.forEach((bucket: { readonly covers: readonly string[]; readonly corners: number[] }, materialIndex: number): void => {
+    geometry.addGroup(start, bucket.corners.length, materialIndex);
+    start += bucket.corners.length;
+  });
+  return ordered.map((bucket: { readonly covers: readonly string[]; readonly corners: number[] }): readonly string[] => bucket.covers);
+}
+
 function sharing(source: BufferGeometry): BufferGeometry {
   const copy: BufferGeometry = new BufferGeometry();
   for (const name of Object.keys(source.attributes)) copy.setAttribute(name, source.getAttribute(name));

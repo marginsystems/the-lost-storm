@@ -8,9 +8,9 @@ import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
-import { fitToSkeleton, groupBodies, maskHidden, skinnedMeshes } from './wearables.ts';
+import { fitToSkeleton, groupBodies, groupByCovers, maskHidden, skinnedMeshes } from './wearables.ts';
 import type { BodyGroupings } from './wearables.ts';
-import { BODY_COVERS, coveringKeys, coversOf, groupHidden, hiddenWithCovers } from './body-covers.ts';
+import { BODY_COVERS, coverKey, coveringKeys, coversOf, groupHidden, hiddenWithCovers } from './body-covers.ts';
 import type { BodyCover, BodyGroup, CoverableWearable } from './body-covers.ts';
 import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { createRigGlow, FLASH, flashEdge, flashLift, makeGhost } from './ghost-material.ts';
@@ -53,7 +53,12 @@ export interface LoadedRig {
   readonly bodyParts: readonly string[];
   readonly bodyGroups: ReadonlyMap<string, readonly BodyGroup[]>;
   readonly coveredModels: ReadonlySet<string>;
-  readonly fitted: Map<string, readonly BufferGeometry[]>;
+  readonly fitted: Map<string, readonly FittedPiece[]>;
+}
+
+export interface FittedPiece {
+  readonly geometry: BufferGeometry;
+  readonly covers: readonly (readonly string[])[];
 }
 
 export interface LoadedAttachment {
@@ -147,9 +152,16 @@ function springTo(piece: Springy, step: number, ceiling: number): boolean {
   return !settled;
 }
 
+interface CoveredMesh {
+  readonly mesh: SkinnedMesh;
+  readonly material: MeshStandardMaterial;
+  readonly covers: readonly (readonly string[])[];
+}
+
 interface WornPiece {
   readonly meshes: SkinnedMesh[];
   readonly materials: MeshStandardMaterial[];
+  readonly covered: CoveredMesh[];
   value: number;
   velocity: number;
   target: number;
@@ -284,7 +296,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
     bodyParts: grouping.names,
     bodyGroups: grouping.groups,
     coveredModels,
-    fitted: new Map<string, readonly BufferGeometry[]>(),
+    fitted: new Map<string, readonly FittedPiece[]>(),
   };
 }
 
@@ -438,10 +450,15 @@ interface BodyMesh {
   readonly skin: Material;
 }
 
-function fittedPieces(rig: LoadedRig, worn: LoadedWearable, anchor: SkinnedMesh): readonly BufferGeometry[] {
-  const cached: readonly BufferGeometry[] | undefined = rig.fitted.get(worn.def.model);
+function fittedPieces(rig: LoadedRig, worn: LoadedWearable, anchor: SkinnedMesh): readonly FittedPiece[] {
+  const cached: readonly FittedPiece[] | undefined = rig.fitted.get(worn.def.model);
   if (cached !== undefined) return cached;
-  const made: BufferGeometry[] = worn.pieces.map((piece: SkinnedMesh): BufferGeometry => fitToSkeleton(piece, anchor.skeleton, `Wearable "${worn.def.id}" on rig "${rig.def.id}"`));
+  const made: FittedPiece[] = worn.pieces.map((piece: SkinnedMesh): FittedPiece => {
+    const geometry: BufferGeometry = fitToSkeleton(piece, anchor.skeleton, `Wearable "${worn.def.id}" on rig "${rig.def.id}"`);
+    const triangles: number = (geometry.getIndex()?.count ?? 0) / 3;
+    const covers: readonly (readonly string[])[] = Array.isArray(piece.material) ? [] : groupByCovers(geometry, coveringKeys(coversOf(BODY_COVERS, worn.def.model, piece.name, triangles), triangles));
+    return { geometry, covers };
+  });
   rig.fitted.set(worn.def.model, made);
   return made;
 }
@@ -505,14 +522,16 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const build = (id: string, skinAnchor: SkinnedMesh): WornPiece | null => {
     const wearable: LoadedWearable | undefined = library.wearables.get(id);
     if (wearable === undefined) return null;
-    const piece: WornPiece = { meshes: [], materials: [], value: 1, velocity: 0, target: 1 };
-    const geometries: readonly BufferGeometry[] = fittedPieces(rig, wearable, skinAnchor);
+    const piece: WornPiece = { meshes: [], materials: [], covered: [], value: 1, velocity: 0, target: 1 };
+    const fitted: readonly FittedPiece[] = fittedPieces(rig, wearable, skinAnchor);
     wearable.pieces.forEach((source: SkinnedMesh, index: number): void => {
-      const geometry: BufferGeometry | undefined = geometries[index];
+      const geometry: BufferGeometry | undefined = fitted[index]?.geometry;
+      const covers: readonly (readonly string[])[] = fitted[index]?.covers ?? [];
       const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow, wearable.def.wakeLamps);
       const first: MeshStandardMaterial | undefined = cloned[0];
       if (geometry === undefined || first === undefined) return;
       const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
+      if (covers.length > 0 && cloned.length === 1) piece.covered.push({ mesh, material: first, covers });
       mesh.castShadow = true;
       mesh.frustumCulled = false;
       mesh.position.copy(skinAnchor.position);
@@ -600,6 +619,10 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const wearable: LoadedWearable | undefined = library.wearables.get(id);
         return wearable === undefined ? [] : [{ model: wearable.def.model, hides: wearable.def.hides }];
       });
+      const over: ReadonlySet<string> = new Set<string>(wornPieces.map((piece: CoverableWearable): string => coverKey(piece.model)));
+      for (const piece of worn.values()) {
+        for (const entry of piece.covered) entry.mesh.material = entry.covers.map((keys: readonly string[]): Material => (keys.some((cover: string): boolean => over.has(cover)) ? UNSEEN : entry.material));
+      }
       const hiddenNow: readonly string[] = hiddenWithCovers(wornPieces, hiddenParts, rig.coveredModels);
       finalParts = [...hiddenNow];
       hide(instant ? finalParts : shownParts.filter((part: string): boolean => hiddenNow.includes(part)));
