@@ -14,11 +14,12 @@ import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
 import { slotAction } from '../settings/bindings.ts';
 import { placeGlyph } from './tree-glyphs.ts';
+import { TREE_NODES } from './tree-nodes.ts';
 import { statusLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
 
 const CHART = {
-  unit: 46,
+  unit: TREE_NODES.unit,
   margin: 4,
   dragThreshold: 5,
   velocityBlend: 0.35,
@@ -93,6 +94,12 @@ function line(svg: SVGSVGElement, from: ChartPoint, to: ChartPoint, className: s
 export function createTreePanel(parent: HTMLElement, context: HudContext, close: () => void): ChartPanel {
   const content = context.api.world.content;
   const element: HTMLDivElement = el('div', 'hud-panel left tree-panel', parent);
+  element.style.setProperty('--socket', `${TREE_NODES.minor}px`);
+  element.style.setProperty('--notable', `${TREE_NODES.notable}px`);
+  element.style.setProperty('--keystone', `${TREE_NODES.keystone}px`);
+  element.style.setProperty('--ability', `${TREE_NODES.ability}px`);
+  element.style.setProperty('--ability-rim', `${TREE_NODES.abilityRim}px`);
+  element.style.setProperty('--variant-rim', `${TREE_NODES.variantRim}px`);
   const head: HTMLDivElement = el('div', 'tree-head', element);
   label('tree-title', content.chart.title, head);
   const points: HTMLDivElement = el('div', 'tree-points', head);

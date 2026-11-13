@@ -1,18 +1,18 @@
 .tree-socket.ability {
-  width: calc(var(--notable) + 6px);
-  height: calc(var(--notable) + 6px);
-  margin: calc((var(--notable) + 6px) / -2) 0 0 calc((var(--notable) + 6px) / -2);
+  width: var(--ability);
+  height: var(--ability);
+  margin: calc(var(--ability) / -2) 0 0 calc(var(--ability) / -2);
 }
 
 .tree-socket.ability .tree-socket-well,
 .tree-socket.ability .tree-socket-fill {
-  border-radius: 9px;
+  border-radius: 6px;
 }
 
 .tree-socket.ability .tree-socket-rim {
   display: block;
-  inset: -5px;
-  border-radius: 12px;
+  inset: calc(var(--ability-rim) * -1);
+  border-radius: 8px;
   background: none;
   transform: none;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 22%, transparent);
@@ -20,8 +20,8 @@
 }
 
 .tree-socket.ability .tree-glyph {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
 }
 
 .tree-socket.ability.allocated .tree-socket-rim {
@@ -31,7 +31,7 @@
 .tree-socket.available::after {
   content: '';
   position: absolute;
-  inset: -7px;
+  inset: -3px;
   border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(circle, rgba(232, 184, 102, 0.22), rgba(232, 184, 102, 0) 70%);
@@ -39,7 +39,7 @@
 }
 
 .tree-socket.ability.available::after {
-  border-radius: 14px;
+  border-radius: 9px;
 }
 
 .tree-viewport.choosing .tree-flow:not(.lit):not(.open) {

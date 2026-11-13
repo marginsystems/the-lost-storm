@@ -1,7 +1,4 @@
 .hud-panel.tree-panel {
-  --socket: 28px;
-  --notable: 42px;
-  --keystone: 56px;
   --tree-lit: #8fd8ff;
   --tree-well: #090c12;
 }
@@ -173,6 +170,7 @@
   color: color-mix(in srgb, var(--tint) 60%, #9aa4b2);
   transition:
     transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    filter var(--spring-smooth-ms) var(--spring-smooth),
     color var(--spring-smooth-ms) var(--spring-smooth),
     opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
@@ -239,13 +237,13 @@
 }
 
 .tree-glyph {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .tree-socket.keystone .tree-glyph {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
 }
 
 .tree-socket.locked {
@@ -297,13 +295,13 @@
 }
 
 .tree-socket.notable .tree-glyph {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .tree-socket.variant .tree-socket-rim {
   display: block;
-  inset: -4px;
+  inset: calc(var(--variant-rim) * -1);
   border-radius: 50%;
   background: none;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 28%, transparent);
@@ -311,7 +309,7 @@
 }
 
 .tree-socket.selected {
-  transform: scale(1.12);
+  filter: brightness(1.3);
 }
 
 .tree-viewport.searching .tree-socket:not(.match) {
@@ -319,7 +317,7 @@
 }
 
 .tree-viewport.searching .tree-socket.match {
-  transform: scale(1.18);
+  filter: brightness(1.3);
 }
 
 @keyframes chart-breathe {
@@ -599,7 +597,7 @@ body:has(.hud.chart-open) #overlays {
 
 .tree-socket:hover,
 .tree-socket:focus-visible {
-  transform: scale(1.1);
+  filter: brightness(1.25);
 }
 
 .tree-socket.available:active {
