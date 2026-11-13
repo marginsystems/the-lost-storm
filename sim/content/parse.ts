@@ -20,6 +20,7 @@ import { byId, choice, colour, ContentError, each, fields, flag, fraction, nonNe
 import type {
   ActDef,
   AttachmentDef,
+  AttachmentGrip,
   BossDef,
   BossPhase,
   BossSkill,
@@ -253,7 +254,13 @@ function monster(value: unknown, where: string): MonsterDef {
 
 function attachment(value: unknown, where: string): AttachmentDef {
   const source: Fields = fields(value, where);
-  return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where), surfaces: dressing(source['surfaces'], `${where}.surfaces`) };
+  return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where), surfaces: dressing(source['surfaces'], `${where}.surfaces`), grip: attachmentGrip(source['grip'], `${where}.grip`) };
+}
+
+function attachmentGrip(value: unknown, where: string): AttachmentGrip | null {
+  if (value === undefined) return null;
+  const source: Fields = fields(value, where);
+  return { radius: positive(source, 'radius', where), halfLength: positive(source, 'halfLength', where) };
 }
 
 function wearable(value: unknown, where: string): WearableDef {

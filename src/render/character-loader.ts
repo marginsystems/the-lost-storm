@@ -3,7 +3,7 @@ import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasic
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { boundSkins, disposeSkeletons } from './skeletons.ts';
-import type { AttachmentDef, Content, RigActionClip, RigDef, RigGait, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
+import type { AttachmentDef, AttachmentGrip, Content, RigActionClip, RigDef, RigGait, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
@@ -18,6 +18,8 @@ import { createBrowserTimers } from '../browser-timers.ts';
 import { STALL, withStallLimit } from './stall-limit.ts';
 import { addBoxUvs } from './box-uv.ts';
 import { idleWeight, relaxHands, restHands } from './rest-hands.ts';
+import type { GripHand } from './grip-closure.ts';
+import { clampHand, closeOnGrip, gripHand } from './grip-closure.ts';
 import type { RestHand } from './rest-hands.ts';
 
 export interface ActionClip {
@@ -484,6 +486,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   }
 
   const hands: readonly RestHand[] = restHands(model, def);
+  const gripHands: readonly GripHand[] = [gripHand(model, 'R'), gripHand(model, 'L')].filter((found: GripHand | null): found is GripHand => found !== null);
   const idles: readonly AnimationClip[] = rig.clips.unarmed === null ? [rig.clips.idle] : [rig.clips.idle, rig.clips.unarmed.idle];
   const mixer: AnimationMixer = new AnimationMixer(model);
   const held: Map<string, HeldPiece> = new Map<string, HeldPiece>();
@@ -657,6 +660,15 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         if (socket !== undefined) holding.add(socket);
       }
       relaxHands(hands, idleWeight(mixer, idles), holding);
+      for (const hand of gripHands) clampHand(hand);
+      for (const [id, piece] of held) {
+        const attachment: LoadedAttachment | undefined = library.attachments.get(id);
+        const bone: string | undefined = attachment === undefined ? undefined : def.sockets[attachment.def.socket]?.bone;
+        const hand: GripHand | undefined = gripHands.find((candidate: GripHand): boolean => candidate.hand.name === bone || candidate.hand.name === (bone === undefined ? undefined : PropertyBinding.sanitizeNodeName(bone)));
+        const grip: AttachmentGrip | null = attachment?.def.grip ?? null;
+        if (grip === null || hand === undefined) continue;
+        closeOnGrip(hand, piece.holder, grip, piece.value);
+      }
     },
     setFlash(color: Color, amount: number): void {
       glow.flash.value.copy(color).multiplyScalar(amount * FLASH.boost);

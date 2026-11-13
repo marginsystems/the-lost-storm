@@ -349,6 +349,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     action.time = echo.pose.at * clip.duration;
     action.timeScale = 0;
     rig.mixer.update(0);
+    rig.relaxHands();
     rig.setOpacity(0);
     entry.group.add(rig.root);
     return { rig, action, echo: figure.echo, ghost, shown: 0 };
@@ -481,7 +482,10 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       const gone: boolean = figure?.turned === true;
       view.shown = gone ? Math.max(0, view.shown - dt / MOMENT_VIEW.turnFade) : easeToward(view.shown, marking ? 0 : 1, MOMENT_VIEW.appearRate, dt);
       view.action.timeScale = moment.phase === 'awake' ? 1 : 0;
-      if (view.action.timeScale !== 0) view.rig.mixer.update(dt);
+      if (view.action.timeScale !== 0) {
+        view.rig.mixer.update(dt);
+        view.rig.relaxHands();
+      }
       view.rig.setOpacity((MOMENT_VIEW.echoOpacity + (MOMENT_VIEW.awakeOpacity - MOMENT_VIEW.echoOpacity) * entry.awake) * view.shown * (1 - fade * 0.5));
       view.ghost.dissolve.value = Math.max(fade, 1 - view.shown);
       view.ghost.mix.value = MOMENT_VIEW.echoMix + MOMENT_VIEW.stillMix * (1 - entry.awake);

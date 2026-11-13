@@ -32,11 +32,17 @@ export interface RigSocket {
   readonly scale: number;
 }
 
+export interface AttachmentGrip {
+  readonly radius: number;
+  readonly halfLength: number;
+}
+
 export interface AttachmentDef {
   readonly id: string;
   readonly model: string;
   readonly socket: string;
   readonly surfaces: Readonly<Record<string, string>>;
+  readonly grip: AttachmentGrip | null;
 }
 
 export interface RigDef {

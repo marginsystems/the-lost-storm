@@ -282,7 +282,7 @@ export type { ChartDef, ChartGroup, ChartPath, ChartRespec, PointGrant, SkillTar
 
 export type { PropDef, PropLight, SurfaceDef } from './prop-types.ts';
 
-export type { AttachmentDef, RigActionClip, RigClips, RigDef, RigGait, RigSocket, RigUnarmedClips, Triple } from './rig-types.ts';
+export type { AttachmentDef, AttachmentGrip, RigActionClip, RigClips, RigDef, RigGait, RigSocket, RigUnarmedClips, Triple } from './rig-types.ts';
 
 export interface ZonePoint {
   readonly x: number;
