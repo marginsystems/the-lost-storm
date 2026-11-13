@@ -7,7 +7,7 @@ import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-vi
 import { abilityCard } from './chart-ability.ts';
 import type { AbilityCard } from './chart-ability.ts';
 import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
-import { clampChart, frameChart, panChart, pinLabel, reopenChart, sameFrame, spreadLabels, zoomChart } from './chart-view.ts';
+import { captionFoot, CHART_VIEW, clampChart, easeFoot, frameChart, panChart, pinLabel, reopenChart, sameFrame, spreadLabels, zoomChart } from './chart-view.ts';
 import type { LabelBox, PinnedLabel } from './chart-view.ts';
 import type { ChartBounds, ChartPoint, PathLabel } from './chart-model.ts';
 import type { HudContext, PanelView } from './context.ts';
@@ -285,6 +285,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
 
   let frame: AtlasFrame = { width: 1, height: 1, mapWidth, mapHeight };
   let target: AtlasView = { x: mapWidth / 2, y: mapHeight / 2, scale: 1 };
+  let foot: number = CHART_VIEW.labelFoot;
   let motion: AtlasMotion = still(target);
   const pointers: Map<number, ScreenPoint> = new Map<number, ScreenPoint>();
   let drag: Drag | null = null;
@@ -314,7 +315,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const corner: ScreenPoint = toScreen(motion.view, frame, { x: 0, y: 0 });
     board.style.transform = `translate(${corner.x}px, ${corner.y}px) scale(${motion.view.scale})`;
     viewport.style.setProperty('--zoom', String(motion.view.scale));
-    const pins: readonly PinnedLabel[] = names.map((name: NameView): PinnedLabel => pinLabel(toScreen(motion.view, frame, name.at), name.element.offsetWidth / 2, name.element.offsetHeight / 2, frame));
+    const pins: readonly PinnedLabel[] = names.map((name: NameView): PinnedLabel => pinLabel(toScreen(motion.view, frame, name.at), name.element.offsetWidth / 2, name.element.offsetHeight / 2, frame, foot));
     const boxes: readonly LabelBox[] = spreadLabels(
       pins.map((pin: PinnedLabel, index: number): LabelBox => ({ x: pin.x, y: pin.y, halfWidth: (names[index]?.element.offsetWidth ?? 0) / 2, halfHeight: (names[index]?.element.offsetHeight ?? 0) / 2 })),
       frame,
@@ -577,7 +578,13 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
         motion = still(moved ? clampChart(motion.view, frame) : target);
         apply();
       }
-      if (atRest(motion, target)) return;
+      const wanted: number = captionFoot(prompt.offsetTop, prompt.offsetHeight, frame.height);
+      const shifting: boolean = foot !== wanted;
+      if (shifting) foot = easeFoot(foot, wanted, dt);
+      if (atRest(motion, target)) {
+        if (shifting) apply();
+        return;
+      }
       motion = stepMotion(motion, target, dt);
       apply();
     },

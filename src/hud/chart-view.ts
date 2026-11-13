@@ -8,6 +8,8 @@ export const CHART_VIEW = {
   labelEdge: 12,
   labelFoot: 52,
   labelGap: 6,
+  footEase: 14,
+  footSettle: 0.5,
   framePad: 120,
 } as const;
 
@@ -85,11 +87,21 @@ export function panChart(view: AtlasView, frame: AtlasFrame, dx: number, dy: num
   return clampChart({ scale: view.scale, x: view.x - dx / view.scale, y: view.y - dy / view.scale }, frame);
 }
 
-export function pinLabel(at: ScreenPoint, halfWidth: number, halfHeight: number, frame: AtlasFrame): PinnedLabel {
+export function captionFoot(captionTop: number, captionHeight: number, frameHeight: number): number {
+  if (captionHeight <= 0) return CHART_VIEW.labelFoot;
+  return Math.max(CHART_VIEW.labelFoot, frameHeight - captionTop + CHART_VIEW.labelGap);
+}
+
+export function easeFoot(foot: number, wanted: number, dt: number): number {
+  if (Math.abs(wanted - foot) < CHART_VIEW.footSettle) return wanted;
+  return foot + (wanted - foot) * (1 - Math.exp(-dt * CHART_VIEW.footEase));
+}
+
+export function pinLabel(at: ScreenPoint, halfWidth: number, halfHeight: number, frame: AtlasFrame, foot: number): PinnedLabel {
   const left: number = halfWidth + CHART_VIEW.labelEdge;
   const top: number = halfHeight + CHART_VIEW.labelEdge;
   const x: number = between(at.x, left, frame.width - left);
-  const y: number = between(at.y, top, frame.height - halfHeight - CHART_VIEW.labelFoot);
+  const y: number = between(at.y, top, frame.height - halfHeight - foot);
   return { x, y, pinned: x !== at.x || y !== at.y };
 }
 
