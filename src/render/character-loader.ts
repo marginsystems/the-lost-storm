@@ -8,6 +8,7 @@ import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
+import { CHARACTER_INSIDE } from './character-inside.ts';
 import { fitToSkeleton, groupBodies, groupByCovers, maskHidden, skinnedMeshes } from './wearables.ts';
 import type { BodyGroupings } from './wearables.ts';
 import { BODY_COVERS, coverKey, coveringKeys, coversOf, groupHidden, hiddenWithCovers } from './body-covers.ts';
@@ -423,6 +424,7 @@ function flashing(source: unknown, look: RigLook, glow: RigGlow, wakeLamps: numb
         shader.fragmentShader = shader.fragmentShader
           .replace('void main() {', 'uniform vec3 uFlash;\nuniform float uFlashLift;\nuniform vec3 uHover;\nuniform vec3 uRim;\nuniform float uWakeLamps;\nuniform float uLampShare;\nvoid main() {')
           .replace(LAMP_HOLD, `outgoingLight *= mix( 1.0, uLampShare, uWakeLamps );\n${LAMP_HOLD}`)
+          .replace('#include <lights_fragment_end>', CHARACTER_INSIDE)
           .replace('#include <emissivemap_fragment>', CHARACTER_SHADE)
           .replace('#include <alphatest_fragment>', material.alphaToCoverage ? CHARACTER_FEATHER : '#include <alphatest_fragment>');
       };
