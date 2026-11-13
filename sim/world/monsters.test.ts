@@ -36,6 +36,8 @@ const LIMITS = {
   flickerGap: 0.3,
   pressedStep: 0.01,
   callerClear: 3,
+  stuckStand: 20,
+  hiccupStride: 21,
 } as const;
 
 interface Scene extends TestScene {
@@ -95,11 +97,12 @@ function spawn(world: World, kind: string, at: Vec2): MonsterState {
   return monster;
 }
 
-function build(scene: Scene, kind: string): World {
-  const world: World = worldIn(content, content.world.start, 7);
-  enterZone(world, sceneZone(base, `test_${scene.name}`, scene), { type: 'start' });
+function build(scene: Scene, kind: string, seed: number = 7): World {
+  const world: World = worldIn(content, content.world.start, seed);
+  enterZone(world, { ...sceneZone(base, `test_${scene.name}`, scene), moments: null }, { type: 'start' });
   world.events = [];
   world.monsters = [];
+  world.moments = [];
   for (const at of scene.monsters) spawn(world, kind, at);
   return world;
 }
@@ -161,6 +164,36 @@ for (const scene of SCENES) {
     });
   }
 }
+
+function strideHiccups(scene: Scene, kind: string, seed: number): number {
+  const world: World = build(scene, kind, seed);
+  const shown: string[] = world.monsters.map((): string => '');
+  for (let step: number = 0; step < Math.round(LIMITS.seconds / MOTION_DT); step += 1) {
+    world.player.life = world.player.maxLife;
+    for (const monster of world.monsters) monster.life = monster.maxLife;
+    stepWorld(world, [], MOTION_DT);
+    world.monsters.forEach((monster: MonsterState, index: number): void => {
+      shown[index] = `${shown[index] ?? ''}${monster.action !== null ? 'x' : monster.motion === 'stride' ? 's' : '.'}`;
+    });
+  }
+  let count: number = 0;
+  for (const line of shown) {
+    const runs: string[] = line.match(/s+|\.+|x+/g) ?? [];
+    runs.forEach((stretch: string, index: number): void => {
+      const before: string = runs[index - 1] ?? '';
+      const after: string = runs[index + 1] ?? '';
+      if (stretch.startsWith('s') && stretch.length < LIMITS.hiccupStride && before.startsWith('.') && before.length >= LIMITS.stuckStand && after !== '' && !after.startsWith('s')) count += 1;
+    });
+  }
+  return count;
+}
+
+void test('a ranged monster blocked in a crowd stands until its next cast instead of a short run between rests', (): void => {
+  const crowd: Scene = must(SCENES.find((scene: Scene): boolean => scene.name === 'crowd converging'), 'crowd scene');
+  for (const kind of ['mender', 'unfinished_thrower']) {
+    for (const seed of [1, 2, 3, 4, 5, 6]) assert.equal(strideHiccups(crowd, kind, seed), 0, `${kind} seed ${String(seed)}`);
+  }
+});
 
 void test('a caster backed against a wall stops instead of running in place', (): void => {
   const world: World = worldIn(content, content.world.start, 2);

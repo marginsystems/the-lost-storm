@@ -27,6 +27,7 @@ function resetMonster(monster: MonsterState): void {
   monster.blindTime = 0;
   monster.stuckTime = 0;
   monster.restTime = 0;
+  monster.stalledFor = null;
   monster.leashTime = 0;
   monster.returning = false;
   monster.lastPos = { x: monster.pos.x, z: monster.pos.z };

@@ -17,6 +17,7 @@ import { SPAWN, spawnMonster } from './spawn.ts';
 import { mayStrike } from './factions.ts';
 import { LEASH, shellPoint, shutOut } from './leash.ts';
 import { revivable } from './revive.ts';
+import { roomAhead } from './queue.ts';
 import type { Actor, MomentState, MonsterStance, MonsterState, World, WorldEvent } from './types.ts';
 
 const MONSTERS = {
@@ -36,6 +37,8 @@ const MONSTERS = {
   stuckFraction: 0.3,
   stuckLimit: 0.3,
   restTime: 0.6,
+  queueRoom: 1,
+  queuePatience: 2,
   stillStep: 1e-4,
   blockedGrace: 0.1,
   orbitBand: 1.5,
@@ -119,10 +122,11 @@ function chase(world: World, monster: MonsterState, skill: SkillDef, foe: Actor,
   approach(world, monster, foe.pos, dt);
 }
 
-function rangeStance(monster: MonsterState, behaviour: RangedBehaviour, gap: number, sight: boolean, roomBehind: boolean): MonsterStance {
+function rangeStance(monster: MonsterState, behaviour: RangedBehaviour, gap: number, sight: boolean, roomBehind: boolean, reach: number): MonsterStance {
   const blind: boolean = monster.blindTime > MONSTERS.blindGrace;
-  const away: boolean = blind || gap > behaviour.preferredRange + MONSTERS.holdBand;
-  if (monster.stance === 'approach' || monster.stance === 'engage') return sight && gap <= behaviour.preferredRange ? 'hold' : 'approach';
+  const away: boolean = blind || gap > Math.max(behaviour.preferredRange + MONSTERS.holdBand, reach);
+  const blockedInReach: boolean = monster.stuckTime > 0 && gap <= reach;
+  if (monster.stance === 'approach' || monster.stance === 'engage') return sight && (gap <= behaviour.preferredRange || blockedInReach) ? 'hold' : 'approach';
   if (away) return 'approach';
   if (monster.stance === 'hold') return gap < behaviour.retreatRange && roomBehind ? 'retreat' : 'hold';
   return gap > behaviour.retreatRange + MONSTERS.retreatBand || !roomBehind ? 'hold' : 'retreat';
@@ -134,10 +138,11 @@ function keepRange(world: World, monster: MonsterState, behaviour: RangedBehavio
   const sight: boolean = lineOfSight(world.grid, monster.pos, foe.pos);
   const lostSight: boolean = !sight && monster.blindTime === 0;
   monster.blindTime = sight ? 0 : monster.blindTime + dt;
-  if (sight && gap <= skill.engageRange + foe.radius && attack(world, monster, skill, foe)) return;
+  const reach: number = skill.engageRange + foe.radius;
+  if (sight && gap <= reach && attack(world, monster, skill, foe)) return;
   const probe: number = MONSTERS.retreatProbe + (monster.stance === 'retreat' ? 0 : MONSTERS.roomBand);
   const behind: Vec2 = { x: monster.pos.x - toward.x * probe, z: monster.pos.z - toward.z * probe };
-  monster.stance = rangeStance(monster, behaviour, gap, sight, lineWalkable(routedGrid(world.grid), monster.pos, behind));
+  monster.stance = rangeStance(monster, behaviour, gap, sight, lineWalkable(routedGrid(world.grid), monster.pos, behind), reach);
   switch (monster.stance) {
     case 'approach':
     case 'engage':
@@ -185,6 +190,13 @@ function summonOf(world: World, monster: MonsterState, summon: SummonDef, dt: nu
   }
 }
 
+function stillBlocked(world: World, monster: MonsterState, foe: Actor): boolean {
+  if (monster.stalledFor === null || monster.stalledFor >= MONSTERS.queuePatience) return false;
+  const skill: SkillDef | null = monster.nextSkill ?? world.content.skills.get(monster.def.skill) ?? null;
+  if (monster.stance === 'hold') return skill !== null && blockedReason(monster, skill) !== null;
+  return roomAhead(world, monster, facingOf({ x: foe.pos.x - monster.pos.x, z: foe.pos.z - monster.pos.z })) < MONSTERS.queueRoom;
+}
+
 function trackProgress(monster: MonsterState, dt: number): void {
   const progress: number = distance(monster.lastPos, monster.pos);
   const blocked: boolean = monster.lastTravel > 0 && progress < monster.lastTravel * MONSTERS.stuckFraction;
@@ -194,6 +206,7 @@ function trackProgress(monster: MonsterState, dt: number): void {
   if (monster.stuckTime < MONSTERS.stuckLimit) return;
   monster.stuckTime = 0;
   monster.restTime = MONSTERS.restTime;
+  monster.stalledFor = 0;
   monster.path = [];
   monster.repathTimer = 0;
   monster.strafeSign = -monster.strafeSign;
@@ -341,8 +354,11 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   if (monster.restTime > 0) {
     monster.restTime = Math.max(0, monster.restTime - local);
     face(monster, foe.pos, local);
+    if (monster.stalledFor !== null) monster.stalledFor += local;
+    if (monster.restTime === 0 && stillBlocked(world, monster, foe)) monster.restTime = local;
     return;
   }
+  monster.stalledFor = null;
   const skill: SkillDef | null = chosenSkill(world, monster);
   if (skill === null) return;
   const behaviour = monster.def.behaviour;

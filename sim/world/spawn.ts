@@ -68,6 +68,7 @@ export function spawnMonster(world: World, def: MonsterDef, packId: number, cent
     blindTime: 0,
     stuckTime: 0,
     restTime: 0,
+    stalledFor: null,
     lastPos: { x: pos.x, z: pos.z },
     lastTravel: 0,
     spawnTime: SPAWN.spawnTime,

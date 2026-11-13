@@ -211,15 +211,15 @@ export function steerAlong(grid: NavGrid, actor: ActorState, path: Vec2[], trave
     if (passed === undefined || after === undefined || distance(actor.pos, passed) > steering.passRadius || !lineWalkable(grid, actor.pos, after)) break;
     path.shift();
   }
-  const next: Vec2 | undefined = path[0];
+  let next: Vec2 | undefined = path[0];
+  while (next !== undefined && distance(actor.pos, next) <= MOVEMENT.arrive) {
+    path.shift();
+    next = path[0];
+  }
   if (next === undefined) return NO_STEP;
   const dx: number = next.x - actor.pos.x;
   const dz: number = next.z - actor.pos.z;
   const gap: number = Math.hypot(dx, dz);
-  if (gap <= MOVEMENT.arrive) {
-    path.shift();
-    return NO_STEP;
-  }
   const settling: boolean = path.length === 1 && gap <= steering.settleRadius;
   const pace: number = travel * paceAt(grid, actor.pos.x, actor.pos.z);
   const wanted: number = settling ? facingOf({ x: dx, z: dz }) : aroundWall(grid, actor.pos, facingOf({ x: dx, z: dz }), Math.min(pace, gap), isWalkable(grid, next.x, next.z));
@@ -235,13 +235,12 @@ export function steerAlong(grid: NavGrid, actor: ActorState, path: Vec2[], trave
   if (settling) {
     const share: number = Math.min(1, reach / gap);
     moveWithCollision(grid, actor.pos, dx * share, dz * share);
-    if (distance(actor.pos, next) <= MOVEMENT.arrive) path.shift();
   } else if (gap <= reach && facingNext) {
     strideWithCollision(grid, actor.pos, dx, dz);
-    if (distance(actor.pos, next) <= MOVEMENT.arrive) path.shift();
   } else {
     strideWithCollision(grid, actor.pos, Math.sin(actor.facing) * reach, Math.cos(actor.facing) * reach);
   }
+  if (distance(actor.pos, next) <= MOVEMENT.arrive) path.shift();
   const moved: number = Math.hypot(actor.pos.x - fromX, actor.pos.z - fromZ);
   if (moved > MOVEMENT.arrive) actor.motion = 'stride';
   return { moved, tried: Math.min(gap, reach) };

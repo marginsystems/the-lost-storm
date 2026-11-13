@@ -5,7 +5,10 @@ import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
 import { findPath } from '../nav/path.ts';
 import type { Vec2 } from '../math.ts';
-import { isWalkable, nearestWalkable } from '../nav/grid.ts';
+import { isWalkable, lineWalkable, nearestWalkable, routedGrid } from '../nav/grid.ts';
+import type { NavGrid } from '../nav/grid.ts';
+import { placedProp, sceneZone } from '../../test/motion-support.ts';
+import { enterZone } from './zones.ts';
 import type { Steering, SteerStep } from './movement.ts';
 import { alignedSpeed, separateActors, steerAlong, steerHeading, turnToward } from './movement.ts';
 import type { Bot } from '../bot.ts';
@@ -13,7 +16,7 @@ import { botFight, CAREFUL, createBot } from '../bot.ts';
 import { arena, ARENA_CENTRE, place } from '../../test/arena-support.ts';
 import type { ActorState, MonsterState, World } from './types.ts';
 import { spawnPacks } from './monsters.ts';
-import { roadWorld, roadZone } from '../../test/road-support.ts';
+import { roadWorld, roadZone, SCENE_BASE } from '../../test/road-support.ts';
 
 const STEER: Steering = { maxTurnRate: 16, minTurnRate: 2, turnGain: 24, fullSpeedAngle: 0.35, sharpAngle: 0.9, sharpSpeed: 0, passRadius: 0.45, settleRadius: 0.3 };
 
@@ -34,6 +37,22 @@ void test('steerAlong reports no progress and slides nowhere when pressed head-o
   assert.equal(step.moved, 0);
   assert.equal(player.motion, 'still');
   assert.deepEqual(player.pos, { x: 20.5, z: 14 });
+});
+
+void test('steerAlong drops a waypoint it already stands on and strides on toward the next in the same frame', (): void => {
+  const content: Content = loadContent();
+  const world: World = worldIn(content, content.world.start, 5);
+  enterZone(world, sceneZone(SCENE_BASE, 'test_door', { tiles: ['.......', '.......', '.......', '   .   ', '.......', '.......', '.......'], props: [placedProp('mossy_column', 13.2, 14)], start: { x: 14, z: 4 } }), { type: 'start' });
+  const grid: NavGrid = routedGrid(world.grid);
+  const player = world.player;
+  player.pos = { x: 14.25 - 5e-5, z: 14.75 };
+  player.facing = Math.PI;
+  const path: Vec2[] = [{ x: 14.25, z: 14.75 }, { x: 14.25, z: 4.25 }];
+  assert.equal(lineWalkable(grid, player.pos, { x: 14.25, z: 4.25 }), false);
+  const step: SteerStep = steerAlong(grid, player, path, 0.2, 1 / 60, STEER);
+  assert.deepEqual(path, [{ x: 14.25, z: 4.25 }]);
+  assert.ok(step.moved > 0, `moved ${String(step.moved)}`);
+  assert.equal(player.motion, 'stride');
 });
 
 void test('a step longer than the gap to a flat wall closes straight in to the wall instead of stopping short or sliding', (): void => {
