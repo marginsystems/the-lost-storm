@@ -93,7 +93,7 @@ function holdToward(world: World, direction: Vec2, passed: (world: World) => boo
 
 void test('past a blocked point lies the first walkable ground further along the same line, and a wall with nothing behind it has none', (): void => {
   const world: World = quietWorld('hall_of_time');
-  const from: Vec2 = { x: 30, z: 5 };
+  const from: Vec2 = { x: 30, z: 6.5 };
   assert.ok(isWalkable(world.grid, from.x, from.z));
   assert.deepEqual(pastBlocks(world.grid, from, { x: 30, z: 1 }), []);
   const open: Vec2 = { x: 30, z: 8 };
@@ -109,7 +109,7 @@ void test('a detour is followed only while it still ends where the line comes ou
 
 void test('a stick held into the outer wall of the Hall stops him at the wall: no slide, no detour', (): void => {
   const world: World = quietWorld('hall_of_time');
-  standAt(world, { x: 30, z: 5 }, Math.PI);
+  standAt(world, { x: 30, z: 6.5 }, Math.PI);
   const run: HeldRun = holdToward(world, { x: 0, z: -1 }, (): boolean => false, HELD.wallSeconds);
   assert.equal(run.passed, false);
   assert.ok(Math.abs(world.player.pos.x - 30) < HELD.past, `he slid to x ${world.player.pos.x.toFixed(2)}`);

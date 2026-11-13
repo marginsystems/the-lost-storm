@@ -5,6 +5,7 @@ import { blockerGap, propBlockers, propOutlines } from '../../sim/nav/grid.ts';
 import { convexHull } from '../../sim/nav/outline.ts';
 import { isFloorCell, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
 import { edgeNoise, edgeRocks, propReach } from './zone-edge.ts';
+import { barrierPieces, sizedProp } from '../../sim/nav/barrier.ts';
 
 export const ZONE_SCATTER = {
   tries: 6,
@@ -46,6 +47,10 @@ function zoneBlockers(content: Content, zone: ZoneDef): Blocker[] {
   for (const rock of edgeRocks(content, zone)) {
     const def: PropDef | undefined = content.props.get(rock.prop);
     if (def !== undefined) blockers.push(...propBlockers(def, rock.x, rock.z, rock.yaw * DEGREES_PER_RADIAN));
+  }
+  for (const piece of barrierPieces(zone, content.props)) {
+    const def: PropDef | undefined = content.props.get(piece.prop);
+    if (def !== undefined) blockers.push(...propBlockers(sizedProp(def, piece.size), piece.x, piece.z, piece.rotationDegrees));
   }
   return blockers;
 }

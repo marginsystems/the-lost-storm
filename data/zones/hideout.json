@@ -18,7 +18,7 @@
     "            "
   ],
   "floors": {"s": "black_ledge", "r": "black_rock", "p": "ruined_road"},
-  "outside": {"surface": "crag_ground", "reach": 6, "edge": {"props": ["boulder_2", "rock_4", "crag_low", "boulder_2", "rock_5"], "gap": 0.3, "exitClear": 4}},
+  "outside": {"surface": "crag_ground", "reach": 6, "barrier": {"nearSides": ["south", "east"], "exitClear": 3, "rows": [{"far": {"props": ["crag_a", "crag_b", "crag_spire"], "out": -0.9, "step": 2.6, "turn": 70}, "near": {"props": ["edge_low_a", "edge_low_b"], "out": -0.6, "step": 1.1, "turn": 90}, "collide": true, "shadow": true}, {"far": {"props": ["ridge_a", "ridge_b"], "out": 4, "step": 5, "turn": 120}, "near": {"props": ["crag_low"], "out": 2.2, "step": 2.6, "turn": 90}, "collide": false, "shadow": false}, {"far": {"props": ["ridge_far"], "out": 10, "step": 9, "turn": 180}, "near": {"props": ["crag_a", "crag_b"], "out": 3.6, "step": 4, "turn": 120}, "collide": false, "shadow": false}]}},
   "walls": null,
   "playerStart": {"x": 11, "z": 20},
   "props": [

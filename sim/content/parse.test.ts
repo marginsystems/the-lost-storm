@@ -289,7 +289,7 @@ void test('a zone parses with its kind, level, exits, checkpoints, surge rules a
   assert.equal(must(town.props.find((placed): boolean => placed.when.length > 0), 'conditional prop').when.length, 1);
   assert.equal(arena.ambience.background, shallows.ambience.background);
   assert.equal(arena.floors['.'], 'silt');
-  assert.deepEqual(arena.outside, shallows.outside);
+  assert.deepEqual(arena.outside, { ...shallows.outside, edge: null });
   assert.deepEqual(town.outside, waystation.outside);
   assert.equal(arena.walls, null);
   assert.equal(content.world.start, 'shallows');

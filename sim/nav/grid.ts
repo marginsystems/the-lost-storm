@@ -2,6 +2,7 @@ import type { ZoneDef, PropDef, SurfaceDef } from '../content/types.ts';
 import type { ZoneDrift } from '../content/road-types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { outlineGap } from './outline.ts';
+import { barrierPieces, sizedProp } from './barrier.ts';
 import { CORNER_PILLAR_RADIUS, isFloorCell, tileAtCell, wallCorners } from './layout.ts';
 
 export interface NavGrid {
@@ -88,6 +89,11 @@ function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[]
     if (placed.when.length > 0) continue;
     const def: PropDef | undefined = props.get(placed.prop);
     if (def !== undefined) list.push(...propBlockers(def, placed.x, placed.z, placed.rotationDegrees));
+  }
+  for (const piece of barrierPieces(zone, props)) {
+    if (!piece.collide) continue;
+    const def: PropDef | undefined = props.get(piece.prop);
+    if (def !== undefined) list.push(...propBlockers(sizedProp(def, piece.size), piece.x, piece.z, piece.rotationDegrees));
   }
   if (zone.walls !== null) for (const corner of wallCorners(zone)) list.push({ kind: 'capsule', from: { x: corner.x, z: corner.z }, to: { x: corner.x, z: corner.z }, radius: CORNER_PILLAR_RADIUS });
   return list;

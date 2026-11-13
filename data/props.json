@@ -130,5 +130,10 @@
   {"id": "crag_b", "model": "models/props/rock_set_2.glb", "scale": 2.8, "blockRadius": 3.0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
   {"id": "crag_spire", "model": "models/props/rock_set_4.glb", "scale": 3.0, "blockRadius": 2.4, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
   {"id": "crag_low", "model": "models/props/rock_set_5.glb", "scale": 2.0, "blockRadius": 1.5, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
+  {"id": "edge_low_a", "model": "models/props/rock_set_5.glb", "scale": 0.7, "blockRadius": 0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
+  {"id": "edge_low_b", "model": "models/props/rock_set_2.glb", "scale": 0.72, "blockRadius": 0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
+  {"id": "ridge_a", "model": "models/props/rock_set_4.glb", "scale": 4.0, "blockRadius": 0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#9aa2ae"},
+  {"id": "ridge_b", "model": "models/props/rock_set_1.glb", "scale": 4.4, "blockRadius": 0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#9aa2ae"},
+  {"id": "ridge_far", "model": "models/props/rock_set_2.glb", "scale": 6.0, "blockRadius": 0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#5e6570"},
   {"id": "campfire", "model": "models/props/fire_pit.glb", "scale": 1.6, "blockRadius": 1.2, "light": {"color": "#ff8a3a", "intensity": 60, "distance": 26, "height": 2}, "surfaces": {}, "tint": "#6e5d52"}
 ]

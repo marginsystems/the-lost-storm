@@ -22,6 +22,7 @@ import { dressedProp, looseDressing, preloadSurfaces, propDressing, releaseSurfa
 import type { PropLook } from './prop-surface.ts';
 import { lookOf, withPropLook } from './prop-surface.ts';
 import { edgeRocks } from './zone-edge.ts';
+import { barrierPieces } from '../../sim/nav/barrier.ts';
 import { scatterStones } from './zone-scatter.ts';
 import { momentSurfaces, zoneModels, zoneSurfaces } from './zone-assets.ts';
 import { renderBudget } from '../mobile/quality.ts';
@@ -41,7 +42,12 @@ export const ZONE_VIEW = {
 
 interface Placement {
   readonly matrix: Matrix4;
+}
+
+interface Batch {
+  readonly prop: string;
   readonly castShadow: boolean;
+  readonly list: Placement[];
 }
 
 interface Conditional {
@@ -162,7 +168,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       },
     };
   }
-  const placements: Map<string, Placement[]> = new Map<string, Placement[]>();
+  const placements: Map<string, Batch> = new Map<string, Batch>();
   const group: Group = new Group();
   const sources: Source[] = [];
   const instances: InstancedMesh[] = [];
@@ -191,9 +197,10 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const place = (propId: string, x: number, y: number, z: number, yaw: number, castShadow: boolean, size: number = 1): void => {
     const def: PropDef | undefined = content.props.get(propId);
     if (def === undefined) return;
-    const list: Placement[] = placements.get(propId) ?? [];
-    list.push({ matrix: transform(x, y, z, yaw, def.scale * size), castShadow });
-    placements.set(propId, list);
+    const key: string = `${propId}:${String(castShadow)}`;
+    const batch: Batch = placements.get(key) ?? { prop: propId, castShadow, list: [] };
+    batch.list.push({ matrix: transform(x, y, z, yaw, def.scale * size) });
+    placements.set(key, batch);
     if (def.light === null) return;
     sources.push({ point: lightPoint(def.light, x, y, z, yaw), color: new Color(def.light.color), intensity: def.light.intensity, distance: def.light.distance, phase: hash(x, z, 1) * 40, conditional: null, score: 0 });
   };
@@ -208,6 +215,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   }
   if (walls !== null) for (const corner of wallCorners(zone)) place(walls.corner, corner.x, 0, corner.z, 0, true);
   for (const rock of edgeRocks(content, zone)) place(rock.prop, rock.x, 0, rock.z, rock.yaw, true);
+  for (const piece of barrierPieces(zone, content.props)) if (piece.collide || piece.row < renderBudget().barrierRows) place(piece.prop, piece.x, 0, piece.z, piece.rotationDegrees * DEGREES, piece.shadow, piece.size);
   for (const stone of scatterStones(content, zone)) place(stone.prop, stone.x, 0, stone.z, stone.yaw, false, stone.size);
   for (const prop of zone.props) {
     if (prop.when.length === 0) {
@@ -231,15 +239,16 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const ranked: Source[] = [...sources];
   let activeLights: number = pool.length;
 
-  const loaded: [string, GLTF][] = await Promise.all(
-    [...placements.keys()].map(async (propId: string): Promise<[string, GLTF]> => {
-      const def: PropDef | undefined = content.props.get(propId);
-      return [propId, await loadModel(loader, def?.model ?? '')];
+  const loaded: [Batch, GLTF][] = await Promise.all(
+    [...placements.values()].map(async (batch: Batch): Promise<[Batch, GLTF]> => {
+      const def: PropDef | undefined = content.props.get(batch.prop);
+      return [batch, await loadModel(loader, def?.model ?? '')];
     }),
   );
 
-  for (const [propId, gltf] of loaded) {
-    const list: Placement[] = placements.get(propId) ?? [];
+  for (const [batch, gltf] of loaded) {
+    const propId: string = batch.prop;
+    const list: Placement[] = batch.list;
     const dress: Readonly<Record<string, string>> = content.props.get(propId)?.surfaces ?? {};
     gltf.scene.updateMatrixWorld(true);
     gltf.scene.traverse((object: Object3D): void => {
@@ -252,7 +261,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
         instanced.setMatrixAt(index, new Matrix4().multiplyMatrices(placement.matrix, object.matrixWorld));
       });
       instanced.instanceMatrix.needsUpdate = true;
-      instanced.castShadow = list[0]?.castShadow ?? false;
+      instanced.castShadow = batch.castShadow;
       instanced.receiveShadow = true;
       instanced.computeBoundingSphere();
       if (isTall(content.props.get(propId)?.height ?? 0)) occluders.push(instanced);

@@ -20,6 +20,7 @@ export interface QualityTier {
   readonly msaaSamples: number;
   readonly antialias: boolean;
   readonly zoneLights: number;
+  readonly barrierRows: number;
   readonly flashLights: number;
   readonly markerLights: boolean;
   readonly particleCapacity: number;
@@ -43,6 +44,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     msaaSamples: 4,
     antialias: true,
     zoneLights: 6,
+    barrierRows: 3,
     flashLights: 3,
     markerLights: true,
     particleCapacity: 2400,
@@ -64,6 +66,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     msaaSamples: 0,
     antialias: false,
     zoneLights: 3,
+    barrierRows: 2,
     flashLights: 1,
     markerLights: false,
     particleCapacity: 700,

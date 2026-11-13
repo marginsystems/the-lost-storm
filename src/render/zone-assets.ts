@@ -2,7 +2,7 @@ import type { Content, PropDef, ZoneDef, ZoneExit } from '../../sim/content/type
 
 export function zoneProps(zone: ZoneDef): string[] {
   const walls: string[] = zone.walls === null ? [] : [...zone.walls.tall, zone.walls.low, zone.walls.corner];
-  return [...walls, ...zone.props.map((placed): string => placed.prop), ...(zone.outside?.edge?.props ?? []), ...zone.scatter.flatMap((rule): readonly string[] => rule.props), ...(zone.void?.shore?.props ?? []).map((placed): string => placed.prop)];
+  return [...walls, ...zone.props.map((placed): string => placed.prop), ...(zone.outside?.edge?.props ?? []), ...(zone.outside?.barrier?.rows.flatMap((row): readonly string[] => [...row.far.props, ...row.near.props]) ?? []), ...zone.scatter.flatMap((rule): readonly string[] => rule.props), ...(zone.void?.shore?.props ?? []).map((placed): string => placed.prop)];
 }
 
 export function zoneModels(content: Content, zone: ZoneDef): Set<string> {

@@ -5,7 +5,7 @@ import { distanceToCell, isFloorCell, outsideCells } from './layout.ts';
 import type { OutsideCell } from './layout.ts';
 import { roadZone } from '../../test/road-support.ts';
 
-const road: ZoneDef = roadZone({ tiles: ['   w   ', '   w   ', '  www  ', ' wwwww ', '  www  ', '   w   '], outside: { surface: 'silt', reach: 3, edge: null } });
+const road: ZoneDef = roadZone({ tiles: ['   w   ', '   w   ', '  www  ', ' wwwww ', '  www  ', '   w   '], outside: { surface: 'silt', reach: 3, edge: null, barrier: null } });
 
 void test('outside cells ring the floor within the reach and never overlap it', (): void => {
   const ring: OutsideCell[] = outsideCells(road, 1);

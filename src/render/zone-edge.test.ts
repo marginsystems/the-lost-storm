@@ -15,7 +15,8 @@ function floorAt(zone: ZoneDef, x: number, z: number): boolean {
 }
 
 void test('rocks line the edge of a zone that asks for them, off the floor, clear of exits, the same every visit', (): void => {
-  const hall: ZoneDef = must(content.zones.get('hall_of_time'), 'hall');
+  const stored: ZoneDef = must(content.zones.get('hall_of_time'), 'hall');
+  const hall: ZoneDef = { ...stored, outside: { surface: 'crag_ground', reach: 6, edge: { props: ['boulder_2', 'rock_4', 'crag_low', 'rock_5'], gap: 0.3, exitClear: 4 }, barrier: null } };
   const rocks: EdgeRock[] = edgeRocks(content, hall);
   assert.ok(rocks.length > 20);
   assert.deepEqual(edgeRocks(content, hall), rocks);

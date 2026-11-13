@@ -38,6 +38,7 @@ import { service } from './parse-trade.ts';
 import type { ShorePath, ShoreProp, ShoreRoom, VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { zoneScatter } from './parse-scatter.ts';
+import { zoneBarrier } from './parse-barrier.ts';
 import { encounter, storyFlags } from './parse-story.ts';
 import { conditions } from './parse-conditions.ts';
 import { actEnd, drifts, retiredZones, triggers } from './parse-road.ts';
@@ -192,7 +193,7 @@ function zoneVoid(value: unknown, where: string): ZoneVoid {
 function zoneOutside(value: unknown, where: string): ZoneOutside | null {
   if (value === null || value === undefined) return null;
   const source: Fields = fields(value, where);
-  return { surface: text(source, 'surface', where), reach: positive(source, 'reach', where), edge: zoneEdge(source['edge'], `${where}.edge`) };
+  return { surface: text(source, 'surface', where), reach: positive(source, 'reach', where), edge: zoneEdge(source['edge'], `${where}.edge`), barrier: zoneBarrier(source['barrier'], `${where}.barrier`) };
 }
 
 function zoneEdge(value: unknown, where: string): ZoneEdge | null {
