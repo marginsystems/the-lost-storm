@@ -11,7 +11,10 @@ export const VOID_LIGHT = {
   pillarHeight: 30,
   pillarOpacity: 0.34,
   pillarFalloff: 2.2,
-  glowRadius: 11,
+  coreColor: 0xfff4e2,
+  poolCore: 6,
+  pillarCore: 3,
+  glowRadius: 7.5,
   glowOpacity: 0.42,
   glowFalloff: 2.6,
   rise: 0.9,
@@ -21,7 +24,7 @@ export const VOID_LIGHT = {
   flickerRates: [5.3, 8.9],
   renderOrder: 20,
   fireIntensity: 14,
-  fireDistance: 36,
+  fireDistance: 16,
   fireDecay: 1.2,
   fireHeight: 3,
 } as const;
@@ -46,31 +49,40 @@ void main() {
 
 const POOL_FRAGMENT: string = `
 uniform vec3 uColor;
+uniform vec3 uCoreColor;
 uniform float uOpacity;
 uniform float uFalloff;
+uniform float uCore;
 varying vec2 vUv;
 void main() {
   float r = clamp(length(vUv - 0.5) * 2.0, 0.0, 1.0);
   float glow = pow(1.0 - r, uFalloff);
-  gl_FragColor = vec4(uColor * glow * uOpacity, 1.0);
+  vec3 tone = mix(uColor, uCoreColor, pow(1.0 - r, uCore));
+  gl_FragColor = vec4(tone * glow * uOpacity, 1.0);
 }
 `;
 
 const COLUMN_FRAGMENT: string = `
 uniform vec3 uColor;
+uniform vec3 uCoreColor;
 uniform float uOpacity;
 uniform float uFalloff;
+uniform float uCore;
 varying vec2 vUv;
 varying float vFacing;
 void main() {
-  float across = pow(1.0 - clamp(abs(vUv.x - 0.5) * 2.0, 0.0, 1.0), uFalloff);
+  float centre = 1.0 - clamp(abs(vUv.x - 0.5) * 2.0, 0.0, 1.0);
+  float across = pow(centre, uFalloff);
   float up = smoothstep(0.0, 0.12, vUv.y) * pow(1.0 - vUv.y, 1.6);
-  gl_FragColor = vec4(uColor * across * up * smoothstep(0.15, 0.6, vFacing) * uOpacity, 1.0);
+  vec3 tone = mix(uColor, uCoreColor, pow(centre, uCore));
+  gl_FragColor = vec4(tone * across * up * smoothstep(0.15, 0.6, vFacing) * uOpacity, 1.0);
 }
 `;
 
 interface GlowUniforms {
   readonly uColor: IUniform<Color>;
+  readonly uCoreColor: IUniform<Color>;
+  readonly uCore: IUniform<number>;
   readonly uOpacity: IUniform<number>;
   readonly uFalloff: IUniform<number>;
 }
@@ -110,8 +122,9 @@ export function firelight(now: number): number {
 export function createVoidLight(floor: number): VoidLight {
   const group: Group = new Group();
   const tint: Color = new Color(VOID_LIGHT.color);
-  const columnUniforms: GlowUniforms = { uColor: { value: tint }, uOpacity: { value: 0 }, uFalloff: { value: VOID_LIGHT.pillarFalloff } };
-  const poolUniforms: GlowUniforms = { uColor: { value: tint }, uOpacity: { value: 0 }, uFalloff: { value: VOID_LIGHT.glowFalloff } };
+  const core: Color = new Color(VOID_LIGHT.coreColor);
+  const columnUniforms: GlowUniforms = { uColor: { value: tint }, uCoreColor: { value: core }, uCore: { value: VOID_LIGHT.pillarCore }, uOpacity: { value: 0 }, uFalloff: { value: VOID_LIGHT.pillarFalloff } };
+  const poolUniforms: GlowUniforms = { uColor: { value: tint }, uCoreColor: { value: core }, uCore: { value: VOID_LIGHT.poolCore }, uOpacity: { value: 0 }, uFalloff: { value: VOID_LIGHT.glowFalloff } };
   const geometry: BufferGeometry = columnGeometry();
   const columnMaterial: ShaderMaterial = glowMaterial(COLUMN_FRAGMENT, columnUniforms);
   const column: Mesh = new Mesh(geometry, columnMaterial);

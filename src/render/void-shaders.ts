@@ -65,6 +65,8 @@ uniform vec3 uRock;
 uniform vec3 uRockShade;
 uniform vec3 uLight;
 uniform vec3 uLightColor;
+uniform vec3 uWarmCore;
+uniform vec3 uWarmGround;
 uniform vec4 uLift;
 uniform vec3 uLiftColor;
 uniform vec4 uBody;
@@ -107,7 +109,9 @@ void main() {
   vec2 toPool = vWorld.xz - uHero;
   color += uLiftColor * rock * uLift.y * exp(-dot(toPool, toPool) / (uLift.x * uLift.x));
   vec2 toFire = vWorld.xz - uLight.xy;
-  color += uLightColor * uLight.z * uLift.z * exp(-dot(toFire, toFire) / (uLift.w * uLift.w));
+  float warm = uLight.z * exp(-dot(toFire, toFire) / (uLift.w * uLift.w));
+  vec3 warmLit = mix(uLightColor, uWarmCore, sqrt(warm)) * (uWarmGround.x + glint * uWarmGround.y + ripple * uWarmGround.z);
+  color = mix(color, warmLit, pow(warm, uLift.z) * uWarmGround.x);
   vec2 toFlash = vWorld.xz - uFlashPos;
   color += uFlashColor * uFlash * 0.18 * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
   color = mix(color, uMist, smoothstep(uHaze.x, uHaze.y, distance(vWorld.xz, uHero)));
@@ -175,6 +179,7 @@ uniform vec4 uShore;
 uniform vec3 uShoreLook;
 uniform vec2 uPoolClear;
 uniform float uThinMist;
+uniform vec3 uHalo;
 varying vec3 vWorld;
 ${NOISE}
 float figureDistance(vec2 p, vec2 feet, vec2 head) {
@@ -273,9 +278,10 @@ void main() {
   vec2 toFlash = vWorld.xz - uFlashPos;
   float glow = uFlash * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
   color = mix(color, uFlashColor, clamp(glow * (0.35 + storm * 0.9) + uFlash * wall * 0.6, 0.0, 1.0));
-  color = mix(color, uDeep * 0.75, uLight.z * 0.72 * (1.0 - near * 0.55) * (1.0 - pull * 0.8));
   vec2 nearLight = vWorld.xz - uLight.xy;
-  color = mix(color, uLightColor, uLight.z * 0.85 * exp(-dot(nearLight, nearLight) / 90.0));
+  float spared = exp(-dot(nearLight, nearLight) / (uHalo.x * uHalo.x));
+  color = mix(color, uDeep * 0.75, uLight.z * 0.72 * (1.0 - near * 0.55) * (1.0 - pull * 0.8) * (1.0 - spared));
+  color = mix(color, uLightColor, uLight.z * uHalo.z * exp(-dot(nearLight, nearLight) / (uHalo.y * uHalo.y)));
   float eye = smoothstep(uEyeFade.x, uEyeFade.y, distance(vWorld, cameraPosition)) * smoothstep(0.0, uEyeFade.z, cameraPosition.y - vWorld.y) * smoothstep(uGraze.x, uGraze.y, abs(normalize(vWorld - cameraPosition).y));
   float grain = voidDither(gl_FragCoord.xy + uSeed * 7.0) * uDither;
   gl_FragColor = vec4(color + grain, clamp(density * uOpacity * (1.0 + veil * uThickness.y) * eye + grain, 0.0, 1.0));
