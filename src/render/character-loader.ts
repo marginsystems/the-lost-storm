@@ -10,7 +10,7 @@ import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
 import { fitToSkeleton, groupBodyParts, maskHidden, partMasks, skinnedMeshes } from './wearables.ts';
 import type { GhostUniforms, RigGlow } from './ghost-material.ts';
-import { makeGhost } from './ghost-material.ts';
+import { createRigGlow, FLASH, flashEdge, flashLift, makeGhost } from './ghost-material.ts';
 import { createBrowserTimers } from '../browser-timers.ts';
 import { STALL, withStallLimit } from './stall-limit.ts';
 import { addBoxUvs } from './box-uv.ts';
@@ -91,10 +91,6 @@ export interface RigInstance {
 }
 
 export const CHARACTER = {
-  flashBoost: 1.3,
-  flashCore: 0.3,
-  flashPower: 1.5,
-  flashPeak: 1.2,
   hoverBoost: 0.5,
   hoverPower: 3,
   glowBoost: 2.4,
@@ -108,7 +104,7 @@ export const CHARACTER = {
 export const CHARACTER_SHADE: string = [
   '#include <emissivemap_fragment>',
   'float edgeFacing = clamp( 1.0 - dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );',
-  `totalEmissiveRadiance += uFlash * ( ${CHARACTER.flashCore.toFixed(2)} + ${(1 - CHARACTER.flashCore).toFixed(2)} * pow( edgeFacing, ${CHARACTER.flashPower.toFixed(2)} ) ) + uRim * pow( edgeFacing, ${CHARACTER.rimPower.toFixed(2)} ) + uHover * pow( edgeFacing, ${CHARACTER.hoverPower.toFixed(2)} );`,
+  `totalEmissiveRadiance += ${flashEdge('edgeFacing', 'diffuseColor.rgb')} + uRim * pow( edgeFacing, ${CHARACTER.rimPower.toFixed(2)} ) + uHover * pow( edgeFacing, ${CHARACTER.hoverPower.toFixed(2)} );`,
 ].join('\n');
 
 export const CHARACTER_FEATHER: string = `diffuseColor.a = smoothstep( ${CHARACTER.featherFrom.toFixed(2)}, ${CHARACTER.featherTo.toFixed(2)}, diffuseColor.a );\nif ( diffuseColor.a <= 0.0 ) discard;`;
@@ -157,10 +153,6 @@ interface WornPiece {
 export const RIM_LIGHT: IUniform<Color> = { value: new Color(0x000000) };
 
 const DEGREES: number = Math.PI / 180;
-export function flashLevel(amount: number): number {
-  return amount * CHARACTER.flashBoost + amount * amount * amount * CHARACTER.flashPeak;
-}
-
 const FLASH_KEY: string = 'storm-flash-rim';
 const WHITE: string = '#ffffff';
 const UNSEEN: Material = new MeshBasicMaterial({ visible: false });
@@ -397,10 +389,11 @@ function flashing(source: unknown, look: RigLook, glow: RigGlow): MeshStandardMa
     if (look.ghost === null) {
       material.onBeforeCompile = (shader): void => {
         shader.uniforms['uFlash'] = glow.flash;
+        shader.uniforms['uFlashLift'] = glow.lift;
         shader.uniforms['uHover'] = glow.hover;
         shader.uniforms['uRim'] = RIM_LIGHT;
         shader.fragmentShader = shader.fragmentShader
-          .replace('void main() {', 'uniform vec3 uFlash;\nuniform vec3 uHover;\nuniform vec3 uRim;\nvoid main() {')
+          .replace('void main() {', 'uniform vec3 uFlash;\nuniform float uFlashLift;\nuniform vec3 uHover;\nuniform vec3 uRim;\nvoid main() {')
           .replace('#include <emissivemap_fragment>', CHARACTER_SHADE)
           .replace('#include <alphatest_fragment>', material.alphaToCoverage ? CHARACTER_FEATHER : '#include <alphatest_fragment>');
       };
@@ -450,7 +443,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   model.rotation.y = def.yawOffsetDegrees * DEGREES;
   const root: Group = new Group();
   root.add(model);
-  const glow: RigGlow = { flash: { value: new Color(0, 0, 0) }, hover: { value: new Color(0, 0, 0) } };
+  const glow: RigGlow = createRigGlow();
   const materials: MeshStandardMaterial[] = [];
   model.traverse((object: Object3D): void => dress(object, look, glow, materials));
   for (const name of def.hiddenNodes) {
@@ -622,7 +615,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       relaxHands(hands, idleWeight(mixer, idles), holding);
     },
     setFlash(color: Color, amount: number): void {
-      glow.flash.value.copy(color).multiplyScalar(flashLevel(amount));
+      glow.flash.value.copy(color).multiplyScalar(amount * FLASH.boost);
+      glow.lift.value = flashLift(amount);
     },
     setHover(color: Color, amount: number): void {
       glow.hover.value.copy(color).multiplyScalar(amount * CHARACTER.hoverBoost);
