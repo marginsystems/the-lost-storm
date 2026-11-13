@@ -7,7 +7,7 @@ import { heroOpen, heroRig } from '../sim/hero.ts';
 import { noteInConsole, warnInConsole } from './backend/console-log.ts';
 import { runFrames } from './frame-loop.ts';
 import { element } from './dom-element.ts';
-import { startTitleAccount } from './title-signin.ts';
+import { startKeepPrompt } from './keep/keep-start.ts';
 import { fadePageOut } from './landing/leave.ts';
 import { markInput, markPlaying, wireFolds, wireHudAway, wireTitleKeys } from './title-screen.ts';
 import type { SoundCue } from '../sim/audio.ts';
@@ -301,19 +301,7 @@ async function start(): Promise<void> {
     onOpen: (): void => playUi('panel_open'),
     onClose: (): void => playUi('panel_close'),
     life: (): number => world.player.life,
-    onTitle: (): void => {
-      overlayManager.send({ type: 'interrupt', cause: 'lobby' });
-      ladder?.setPlaying(false);
-      persist();
-      backend.flush();
-      playing = false;
-      markPlaying(document.body, false);
-      audio.stopAmbience();
-      enter.textContent = 'Continue';
-      titleBar.current = world.player.bar;
-      drawTitleKeys();
-      void lobbyFlow?.open();
-    },
+    onTitle: (): void => void leavePlay()?.open(),
   });
 
   const hud: Hud = createHud(element('hud', HTMLDivElement), {
@@ -414,7 +402,23 @@ async function start(): Promise<void> {
     dirty = !backend.save(toSave(world));
     sinceSave = 0;
   };
+  const saveNow = (): void => {
+    persist();
+    backend.flush();
+  };
 
+  const leavePlay = (): LobbyFlow | null => {
+    overlayManager.send({ type: 'interrupt', cause: 'lobby' });
+    ladder?.setPlaying(false);
+    saveNow();
+    playing = false;
+    markPlaying(document.body, false);
+    audio.stopAmbience();
+    enter.textContent = 'Continue';
+    titleBar.current = world.player.bar;
+    drawTitleKeys();
+    return lobbyFlow;
+  };
   const presentScene = (events: readonly WorldEvent[]): void => {
     actors.handle(events, world);
     effects.handle(events, world);
@@ -571,14 +575,9 @@ async function start(): Promise<void> {
   };
 
   window.addEventListener('resize', (): void => stage.resize());
-  window.addEventListener('beforeunload', (): void => {
-    persist();
-    backend.flush();
-  });
+  window.addEventListener('beforeunload', saveNow);
   document.addEventListener('visibilitychange', (): void => {
-    if (!document.hidden) return;
-    persist();
-    backend.flush();
+    if (document.hidden) saveNow();
   });
 
   camera.snap(world.player.pos.x, world.player.pos.z);
@@ -615,12 +614,11 @@ async function start(): Promise<void> {
   await untilCycleEnds(titleLoader);
   titleLoader.classList.add('done');
   followSync(backend, showSync, readServerUrl(import.meta.env.VITE_SERVER_URL).kind === 'ok');
-  if (account !== null) {
-    startTitleAccount(account, (busy: boolean): void => {
-      enter.disabled = busy;
-      reset.disabled = busy;
-    });
-  }
+  const setBusy = (busy: boolean): void => {
+    enter.disabled = busy;
+    reset.disabled = busy;
+  };
+  if (account !== null) startKeepPrompt({ account, world, hud: element('hud', HTMLDivElement), lobby: element('lobby', HTMLDivElement), store: createBrowserStore(), setBusy, save: saveNow, cloud: (): boolean => backend.state() === 'cloud', inPlay: (): boolean => playing && !pauseMenu.isOpen && !transition.blocking, toTitle: (): void => void (playing ? leavePlay() : lobbyFlow)?.toTitle() });
   enter.disabled = false;
   window.setTimeout((): void => {
     whenIdle((): void => {

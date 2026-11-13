@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { createFakeClock, createFakeTimers } from '../test/backend-support.ts';
 import type { FakeTimers } from '../test/backend-support.ts';
-import { createTitleAccount, TITLE_ACCOUNT } from './title-account.ts';
+import { createTitleAccount, offersSignIn, TITLE_ACCOUNT } from './title-account.ts';
 import type { AccountPart, TitleAccount, TitleAccountParts } from './title-account.ts';
 
 interface Part extends AccountPart {
@@ -145,6 +145,14 @@ void test('going from visible to hidden fades out and stays out', async (): Prom
   await ui.timers.advance(TITLE_ACCOUNT.swapMs);
   assert.ok(!ui.classes.has('shown'));
   assert.equal(visible(ui.button), false);
+});
+
+void test('a sign-in is on offer only to a guest with at least one method', (): void => {
+  assert.equal(offersSignIn({ kind: 'guest', google: true, email: false }), true);
+  assert.equal(offersSignIn({ kind: 'guest', google: false, email: true }), true);
+  assert.equal(offersSignIn({ kind: 'guest', google: false, email: false }), false);
+  assert.equal(offersSignIn({ kind: 'hidden' }), false);
+  assert.equal(offersSignIn({ kind: 'signed-in', method: 'google', name: 'Ada' }), false);
 });
 
 void test('a guest sees only the sign-in methods the server offers', (): void => {

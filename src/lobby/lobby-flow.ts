@@ -44,6 +44,7 @@ export interface LobbyFlow {
   readonly active: boolean;
   render(dt: number): boolean;
   open(): Promise<void>;
+  toTitle(): Promise<void>;
   warm(): Promise<void>;
   restage(): void;
 }
@@ -111,6 +112,11 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     await veil.lift();
   };
 
+  const toTitle = (): Promise<void> =>
+    swap(false, (): void => {
+      parts.title.classList.remove('gone');
+    }, null);
+
   const screen: LobbyScreen = createLobbyScreen(parts.root, parts.lobby, {
     primary: (): void => {
       void swap(false, parts.begin, parts.enterColour(), parts.ready);
@@ -123,9 +129,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       lendPause(screen, parts.hud, parts.openSettings);
     },
     back: (): void => {
-      void swap(false, (): void => {
-        parts.title.classList.remove('gone');
-      }, null);
+      void toTitle();
     },
     chooseHero: (id: string): void => {
       if (!busy) parts.chooseHero(id);
@@ -147,6 +151,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
         parts.title.classList.add('gone');
       }, null);
     },
+    toTitle,
     warm(): Promise<void> {
       return warmStage();
     },

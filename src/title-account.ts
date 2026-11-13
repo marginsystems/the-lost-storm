@@ -36,6 +36,10 @@ export const TITLE_ACCOUNT: { readonly swapMs: number; readonly fallbackName: st
   methods: { google: 'Google', email: 'Email' },
 };
 
+export function offersSignIn(view: AccountView): boolean {
+  return view.kind === 'guest' && (view.google || view.email);
+}
+
 function sameView(left: AccountView | null, right: AccountView): boolean {
   return left !== null && JSON.stringify(left) === JSON.stringify(right);
 }

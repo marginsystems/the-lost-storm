@@ -1,0 +1,119 @@
+.keep {
+  --keep-soft: rgba(239, 230, 214, 0.78);
+  --keep-dim: rgba(239, 230, 214, 0.5);
+  --keep-warm: rgba(232, 184, 102, 0.92);
+  font-family: var(--sans);
+  color: var(--keep-soft);
+}
+
+.keep-line {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.keep-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 6px;
+}
+
+.keep-go,
+.keep-later {
+  min-height: 30px;
+  margin: 0;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  outline: none;
+  font-family: var(--sans);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.keep-go {
+  color: var(--keep-warm);
+}
+
+.keep-later {
+  color: var(--keep-dim);
+}
+
+.keep-go:hover,
+.keep-go:focus-visible {
+  color: #f7d79a;
+}
+
+.keep-later:hover,
+.keep-later:focus-visible {
+  color: var(--keep-soft);
+}
+
+.keep-note {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.keep-note[data-shown='on'] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.keep-note .keep-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.keep-note .keep-line {
+  margin-top: 14px;
+  padding-top: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.keep-card {
+  position: absolute;
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  top: 38%;
+  z-index: 40;
+  box-sizing: border-box;
+  width: min(248px, calc(100% - 32px));
+  padding: 12px 14px 8px;
+  border-radius: 4px;
+  background: rgba(8, 11, 17, 0.72);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  translate: -12px 0;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+.keep-card[data-shown='on'] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  translate: 0 0;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy),
+    visibility 0s linear 0s;
+}
+
+.keep-title {
+  margin-bottom: 4px;
+  font-family: var(--serif);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}

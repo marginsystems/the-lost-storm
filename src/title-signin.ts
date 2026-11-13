@@ -8,8 +8,8 @@ import type { TitleEmail } from './title-email.ts';
 import { createTurnstileGate, loadTurnstile } from './turnstile.ts';
 import type { TurnstileApi, TurnstileGate } from './turnstile.ts';
 import type { GoogleIdentity } from './google-identity.ts';
-import { createTitleAccount } from './title-account.ts';
-import type { TitleAccount } from './title-account.ts';
+import { createTitleAccount, offersSignIn } from './title-account.ts';
+import type { AccountView, TitleAccount } from './title-account.ts';
 import { element } from './dom-element.ts';
 
 function startTitleEmail(flow: AccountFlow): TitleEmail {
@@ -39,9 +39,20 @@ function startTitleEmail(flow: AccountFlow): TitleEmail {
   });
 }
 
-export function startTitleAccount(account: AccountService, setBusy: (busy: boolean) => void): void {
+export interface TitleSignIn {
+  offered(): boolean;
+  ask(note: string): void;
+}
+
+export interface TitleSignInOptions {
+  readonly setBusy: (busy: boolean) => void;
+  readonly beforeSignIn: () => void;
+}
+
+export function startTitleAccount(account: AccountService, options: TitleSignInOptions): TitleSignIn {
   const mount: HTMLDivElement = element('title-google', HTMLDivElement);
-  const view: TitleAccount = createTitleAccount(
+  const seen: { current: AccountView } = { current: { kind: 'hidden' } };
+  const control: TitleAccount = createTitleAccount(
     {
       root: element('title-account', HTMLDivElement),
       button: mount,
@@ -53,6 +64,12 @@ export function startTitleAccount(account: AccountService, setBusy: (busy: boole
     },
     createBrowserTimers(),
   );
+  const view: TitleAccount = {
+    show(next: AccountView, note: string): void {
+      seen.current = next;
+      control.show(next, note);
+    },
+  };
   const email: { current: TitleEmail | null } = { current: null };
   const flow: AccountFlow = createAccountFlow({
     account,
@@ -61,7 +78,8 @@ export function startTitleAccount(account: AccountService, setBusy: (busy: boole
     offerEmail: (offer: EmailOffer | null): void => {
       email.current?.offer(offer);
     },
-    setBusy,
+    setBusy: options.setBusy,
+    beforeSignIn: options.beforeSignIn,
     reload: (): void => {
       window.location.reload();
     },
@@ -78,4 +96,10 @@ export function startTitleAccount(account: AccountService, setBusy: (busy: boole
     void flow.signOut();
   });
   void flow.start();
+  return {
+    offered: (): boolean => offersSignIn(seen.current),
+    ask(note: string): void {
+      void flow.refresh(note);
+    },
+  };
 }

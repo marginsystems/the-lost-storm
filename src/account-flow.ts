@@ -10,10 +10,12 @@ export interface AccountFlowOptions {
   readonly offerEmail: (offer: EmailOffer | null) => void;
   readonly reload: () => void;
   readonly setBusy: (busy: boolean) => void;
+  readonly beforeSignIn: () => void;
 }
 
 export interface AccountFlow {
   start(): Promise<void>;
+  refresh(note: string): Promise<void>;
   signOut(): Promise<void>;
   sendEmailCode(email: string, turnstileToken: string): Promise<EmailStartResult>;
   verifyEmailCode(email: string, code: string): Promise<EmailVerifyResult>;
@@ -34,7 +36,7 @@ function viewOf(state: AccountState, google: boolean): AccountView {
 }
 
 export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
-  const { account, view, timers, showButton, offerEmail, reload, setBusy } = options;
+  const { account, view, timers, showButton, offerEmail, reload, setBusy, beforeSignIn } = options;
   let current: AccountState = { kind: 'unreachable' };
   let busy: boolean = false;
   let turn: number = 0;
@@ -85,6 +87,7 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
   const exchange = async (credential: string): Promise<void> => {
     if (busy) return;
     hold(true);
+    beforeSignIn();
     const result: SignInResult = await account.signIn(credential);
     if (result.kind === 'reload') {
       reload();
@@ -102,6 +105,7 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
   const verifyEmailCode = async (email: string, code: string): Promise<EmailVerifyResult> => {
     if (busy) return { kind: 'wait', afterMs: null };
     hold(true);
+    beforeSignIn();
     const result: EmailVerifyResult = await account.verifyEmail(email, code);
     if (result.kind === 'reload') {
       reload();
@@ -119,6 +123,7 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
     async start(): Promise<void> {
       await present(await account.load(), ACCOUNT_NOTES.none);
     },
+    refresh,
     sendEmailCode: (email: string, turnstileToken: string): Promise<EmailStartResult> => account.startEmail(email, turnstileToken),
     verifyEmailCode,
     async signOut(): Promise<void> {
