@@ -63,3 +63,7 @@ export function hudBegun(world: World): boolean {
 export function hudHidden(world: World): boolean {
   return inMist(world) || !hudBegun(world);
 }
+
+export function partShown(world: World, part: HudPart): boolean {
+  return !hudHidden(world) && hudView(world).parts.includes(part);
+}

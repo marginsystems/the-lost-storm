@@ -9,6 +9,7 @@ import type { MapLayer } from './layer.ts';
 import { createMapLayer } from './layer.ts';
 import { drawMarks } from './marks.ts';
 import { exitUnder } from '../../sim/world/exits.ts';
+import { partShown } from '../../sim/world/hud.ts';
 import minimapCss from './minimap.css?inline';
 import type { MapMatrix } from './projection.ts';
 import { mapMatrix, toWorld } from './projection.ts';
@@ -201,6 +202,10 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
       return mode;
     },
     update(dt: number): void {
+      if (!partShown(world, 'minimap')) {
+        dragging = null;
+        return;
+      }
       layer.refresh(world);
       setText(zoneName, world.zone.name, true);
       zoom += (wantedZoom - zoom) * (1 - Math.exp(-MINIMAP.zoomRate * dt));

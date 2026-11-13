@@ -10,7 +10,7 @@ import type { SkillDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import { createWorld } from './create.ts';
 import type { HudPart } from './hud.ts';
-import { HUD_FRAME, hudBegun, hudHidden, hudView } from './hud.ts';
+import { HUD_FRAME, hudBegun, hudHidden, hudView, partShown } from './hud.ts';
 import { stepWorld } from './step.ts';
 import type { ItemInstance, World } from './types.ts';
 
@@ -158,4 +158,12 @@ void test('taking the traveller clothes off into the bag does not count as findi
   world.player.equipped.chest = null;
   world.player.inventory[0] = coat;
   assert.equal(hudHidden(world), true);
+});
+
+void test('the minimap is not shown in the opening mist, and is once a second place is visited', () => {
+  const world: World = createWorld(loadContent(), { seed: 3, save: null, opening: true });
+  assert.equal(partShown(world, 'minimap'), false);
+  world.visited.push('hall_of_time');
+  world.player.xp = 1;
+  assert.equal(partShown(world, 'minimap'), true);
 });
