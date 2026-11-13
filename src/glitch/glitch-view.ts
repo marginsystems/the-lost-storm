@@ -11,7 +11,7 @@ import { createOverlayWatch } from '../hud/overlay-mark.ts';
 import type { OverlayWatch } from '../hud/overlay-mark.ts';
 import { buildVoidView } from '../render/void-view.ts';
 import type { FigureGauge } from '../render/figure-gauge.ts';
-import { createFigureGauge } from '../render/figure-gauge.ts';
+import { createFigureGauge, figureJoints } from '../render/figure-gauge.ts';
 import type { ZoneView } from '../render/zone-view.ts';
 import type { Ghost } from './ghost.ts';
 import { createGhost } from './ghost.ts';
@@ -73,8 +73,8 @@ interface Stutter {
 }
 
 export function createGlitchView(deps: GlitchViewDeps): GlitchView {
-  const figureGauge: FigureGauge = createFigureGauge();
   const { world, scene, app, settings } = deps;
+  const figureGauge: FigureGauge = createFigureGauge(figureJoints(world.content.rigs.get(world.content.player.rig)?.bodyParts ?? {}));
   const overlayWatch: OverlayWatch = createOverlayWatch(document, (command: Command): void => deps.send(command));
   const style: HTMLStyleElement = document.createElement('style');
   style.textContent = glitchCss;

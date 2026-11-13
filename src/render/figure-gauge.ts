@@ -8,9 +8,7 @@ export const FIGURE_GAUGE = {
   max: 3.2,
   maxReach: 3,
   everySeconds: 0.5,
-  head: 'DEF-head',
   crown: 0.25,
-  feet: ['DEF-foot.L', 'DEF-foot.R'],
 } as const;
 
 export interface BodySpan {
@@ -22,6 +20,15 @@ export interface FigureSize {
   readonly height: number;
   readonly reach: number;
   readonly span: BodySpan | null;
+}
+
+export interface FigureJoints {
+  readonly head: string | null;
+  readonly feet: readonly string[];
+}
+
+export function figureJoints(bodyParts: Readonly<Record<string, readonly string[]>>): FigureJoints {
+  return { head: bodyParts['head']?.[0] ?? null, feet: bodyParts['feet'] ?? [] };
 }
 
 export interface FigureGauge {
@@ -55,9 +62,9 @@ interface SpanBones {
   readonly feet: readonly Object3D[];
 }
 
-function spanBones(figure: Object3D): SpanBones | null {
-  const head: Object3D | undefined = boneNamed(figure, FIGURE_GAUGE.head);
-  const feet: Object3D[] = FIGURE_GAUGE.feet.flatMap((name: string): Object3D[] => {
+function spanBones(figure: Object3D, joints: FigureJoints): SpanBones | null {
+  const head: Object3D | undefined = joints.head === null ? undefined : boneNamed(figure, joints.head);
+  const feet: Object3D[] = joints.feet.flatMap((name: string): Object3D[] => {
     const bone: Object3D | undefined = boneNamed(figure, name);
     return bone === undefined ? [] : [bone];
   });
@@ -88,7 +95,7 @@ function spanOf(bones: SpanBones, at: Vector3): BodySpan {
   return { head, feet: { x: x / bones.feet.length, z: z / bones.feet.length } };
 }
 
-export function createFigureGauge(): FigureGauge {
+export function createFigureGauge(joints: FigureJoints): FigureGauge {
   const box: Box3 = new Box3();
   const root: Vector3 = new Vector3();
   const at: Vector3 = new Vector3();
@@ -98,7 +105,7 @@ export function createFigureGauge(): FigureGauge {
   let bones: SpanBones | null = null;
   return {
     measure(figure: Object3D, now: number): FigureSize {
-      if (figure !== measuredFigure) bones = spanBones(figure);
+      if (figure !== measuredFigure) bones = spanBones(figure, joints);
       if (figure === measuredFigure && now - measuredAt < FIGURE_GAUGE.everySeconds) return withBones(measured, bones, figure, at, root);
       measuredFigure = figure;
       measuredAt = now;

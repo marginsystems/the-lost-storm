@@ -139,7 +139,7 @@ import type { VoicePlayer } from './voice.ts';
 import { createZoneTransition, describeTransition, veilColour } from './transition.ts';
 import { createVeil } from './veil.ts';
 import type { FigureGauge } from './render/figure-gauge.ts';
-import { createFigureGauge } from './render/figure-gauge.ts';
+import { createFigureGauge, figureJoints } from './render/figure-gauge.ts';
 import { untilCycleEnds } from './loading-mark.ts';
 
 const GAME = {
@@ -270,7 +270,7 @@ async function start(): Promise<void> {
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene);
   const actors: Actors = createActors(stage.scene, library, world, mobile.quality.tier.msaaSamples > 0, cameraSight(stage.camera));
-  const figureGauge: FigureGauge = createFigureGauge();
+  const figureGauge: FigureGauge = createFigureGauge(figureJoints(content.rigs.get(content.player.rig)?.bodyParts ?? {}));
   const itemImage = (item: ItemInstance): string | null => {
     const base: ItemBaseDef | null = baseOf(content, item);
     if (base === null) return null;
