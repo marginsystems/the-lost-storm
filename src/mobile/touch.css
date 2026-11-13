@@ -420,6 +420,15 @@ body.touch .hud-hint {
     bottom var(--spring-smooth-ms) var(--spring-smooth);
 }
 
+body.touch .hud-notice {
+  position: absolute;
+  left: var(--ph-notice-left);
+  right: var(--ph-notice-right);
+  bottom: var(--ph-notice-bottom);
+  height: auto;
+  text-wrap: balance;
+}
+
 body.touch .minimap {
   --minimap-size: var(--ph-map-size);
   --minimap-top: var(--ph-map-top);

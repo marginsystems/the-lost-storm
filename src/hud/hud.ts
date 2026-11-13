@@ -356,7 +356,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             refreshOpen('character');
             break;
           case 'chart_point':
-            if (event.source !== 'level') notices.say(`${openWith(api.touch, 'chart', keyOf('tree'))} to choose a place`);
+            if (event.source !== 'level' && !hints.teaches('skill_point')) notices.say(`${openWith(api.touch, 'chart', keyOf('tree'))} to choose a place`);
             refreshOpen('tree');
             break;
           case 'notice':

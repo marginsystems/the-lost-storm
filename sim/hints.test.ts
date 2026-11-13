@@ -8,7 +8,7 @@ import type { HintDef, HintsDef } from './content/hints.ts';
 import { loadHints } from './content/hints.ts';
 import type { Content, QuestDef } from './content/types.ts';
 import type { HintChange, HintInput, HintState } from './hints.ts';
-import { createHintState, HINTS, seedVeteran, stepHints } from './hints.ts';
+import { createHintState, HINTS, seedVeteran, stepHints, stillTeaches } from './hints.ts';
 import { startQuests } from './world/quests.ts';
 import type { ItemInstance, MomentState, MonsterState, World, WorldEvent } from './world/types.ts';
 import { forceStrike } from './world/moments.ts';
@@ -247,4 +247,11 @@ void test('the attack hint leaves when no monster is near and comes back with on
   assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
   monster.pos = { x: world.player.pos.x + 2, z: world.player.pos.z };
   assert.equal(shown(stepHints(defs, world, state, IDLE)), 'attack');
+});
+
+void test('a hint still teaches its trigger until it has been seen, and never while hints are off', (): void => {
+  const taught: HintDef = must(defs.hints.find((hint: HintDef): boolean => hint.trigger.type === 'skill_point'), 'skill point hint');
+  assert.equal(stillTeaches(defs, createHintState([]), 'skill_point', true), true);
+  assert.equal(stillTeaches(defs, createHintState([taught.id]), 'skill_point', true), false);
+  assert.equal(stillTeaches(defs, createHintState([]), 'skill_point', false), false);
 });

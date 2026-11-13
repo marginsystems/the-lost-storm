@@ -1,6 +1,6 @@
 import { hintSegments, hintWording } from '../../sim/content/hints.ts';
-import type { HintDef, HintPanel, HintsDef, HintSegment } from '../../sim/content/hints.ts';
-import { createHintState, seedVeteran, stepHints } from '../../sim/hints.ts';
+import type { HintDef, HintPanel, HintsDef, HintSegment, HintTrigger } from '../../sim/content/hints.ts';
+import { createHintState, seedVeteran, stepHints, stillTeaches } from '../../sim/hints.ts';
 import type { HintChange, HintState } from '../../sim/hints.ts';
 import type { World, WorldEvent } from '../../sim/world/types.ts';
 import type { HintStore } from '../hints-store.ts';
@@ -16,6 +16,7 @@ import { keyLabel, touchLabel } from './key-labels.ts';
 
 export interface Hints {
   update(world: World, events: readonly WorldEvent[]): void;
+  teaches(trigger: HintTrigger['type']): boolean;
 }
 
 function showTouch(parent: HTMLElement, label: TouchLabel): void {
@@ -68,6 +69,9 @@ export function createHints(parent: HTMLElement, defs: HintsDef, store: HintStor
   );
 
   return {
+    teaches(trigger: HintTrigger['type']): boolean {
+      return state !== null && stillTeaches(defs, state, trigger, store.isEnabled());
+    },
     update(world: World, events: readonly WorldEvent[]): void {
       latest = world;
       if (state === null) {

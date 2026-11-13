@@ -178,6 +178,10 @@ function begin(state: HintState, world: World, hint: HintDef): void {
   state.lastTime = world.time;
 }
 
+export function stillTeaches(defs: HintsDef, state: HintState, trigger: HintTrigger['type'], enabled: boolean): boolean {
+  return enabled && defs.hints.some((hint: HintDef): boolean => hint.trigger.type === trigger && !state.seen.has(hint.id));
+}
+
 export function stepHints(defs: HintsDef, world: World, state: HintState, input: HintInput): HintChange[] {
   const changes: HintChange[] = [];
   observe(state, world, input.events);

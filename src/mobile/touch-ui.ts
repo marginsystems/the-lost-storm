@@ -133,6 +133,9 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   set('--ph-hint-left', layout.hint.x - layout.xp.x);
   set('--ph-hint-right', layout.xp.x + layout.xp.w - layout.hint.x - layout.hint.w);
   set('--ph-hint-bottom', xpBottom - layout.hint.y - layout.hint.h);
+  set('--ph-notice-left', layout.toast.x - layout.xp.x);
+  set('--ph-notice-right', layout.xp.x + layout.xp.w - layout.toast.x - layout.toast.w);
+  set('--ph-notice-bottom', xpBottom - layout.toast.y - layout.toast.h);
   set('--ph-stick-x', layout.stick.x + layout.stick.w / 2);
   set('--ph-stick-y', layout.stick.y + layout.stick.h / 2);
 }
