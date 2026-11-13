@@ -99,7 +99,7 @@ export interface FamilyDef {
   readonly name: string;
 }
 
-export const ITEM_STATS = ['damagePercent', 'attackSpeed', 'critChance', 'maxLife', 'armour', 'stormResist', 'frostResist', 'moveSpeed', 'maxMana'] as const;
+export const ITEM_STATS = ['damagePercent', 'damageMax', 'attackSpeed', 'critChance', 'critMultiplier', 'maxLife', 'lifeRegen', 'armour', 'stormResist', 'frostResist', 'moveSpeed', 'maxMana', 'manaRegen'] as const;
 export type ItemStat = (typeof ITEM_STATS)[number];
 
 export interface AffixDef {

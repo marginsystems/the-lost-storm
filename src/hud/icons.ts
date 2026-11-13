@@ -19,6 +19,7 @@ const GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
   ['sword', '<path d="M20 4 9 15"/><path d="M20 4h-4M20 4v4"/><path d="M7 13l4 4"/><path d="M9 15 5 19"/><circle cx="4.3" cy="19.7" r="1.2"/>'],
   ['greatsword', '<path d="M19 3l2 2-11 11-2-2z" fill="currentColor"/><path d="M5 12l7 7"/><path d="M8 16 4 20"/>'],
   ['axe', '<path d="M5 20 14 8"/><path d="M11 4l7-1 3 4-7 4z" fill="currentColor"/>'],
+  ['mace', '<path d="M4.5 19.5 13 11"/><circle cx="16" cy="8" r="3.6" fill="currentColor" stroke="none"/><path d="M16 2.6v2M21.4 8h-2M16 13.4v-2M10.6 8h2M19.8 4.2l-1.4 1.4M19.8 11.8l-1.4-1.4M12.2 4.2l1.4 1.4"/>'],
   ['armour', '<path d="M12 3l8 3v6c0 5-4 8-8 10-4-2-8-5-8-10V6z"/><path d="M12 7v11"/><path d="M8 11h8" opacity="0.6"/>'],
   ['helm', '<path d="M5 13a7 7 0 0 1 14 0v6h-4.5v-4h-5v4H5z"/><path d="M12 6v7" opacity="0.6"/>'],
   ['crown', '<path d="M4 18.5h16"/><path d="M4.6 15.5 3.4 7.5l4.8 3.6L12 4.5l3.8 6.6 4.8-3.6-1.2 8z"/><circle cx="12" cy="12.6" r="1.3" fill="currentColor" stroke="none"/>'],

@@ -178,6 +178,20 @@
     "hides": []
   },
   {
+    "id": "stormwarden_hauberk",
+    "model": "models/wear/{frame}/ranger.glb",
+    "pieces": [
+      "Ranger_Body",
+      "Ranger_Belt_1",
+      "Ranger_Belt_2",
+      "Ranger_Arms",
+      "Ranger_Pauldron"
+    ],
+    "region": "chest",
+    "tint": "#5d6f86",
+    "hides": []
+  },
+  {
     "id": "rough_breeches",
     "model": "models/wear/{frame}/ranger.glb",
     "pieces": [

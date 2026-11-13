@@ -15,7 +15,7 @@ void test('the shipped items roll only the nine item stats and every rarity fits
   assert.ok(!linesFor(content, 'weapon').some((line: AffixDef): boolean => line.stat === 'stormResist'));
 });
 
-void test('a base with a stat outside the nine, a line that rolls backwards or a rarity a slot cannot fill is reported', (): void => {
+void test('a base with a stat outside the item stats, a line that rolls backwards or a rarity a slot cannot fill is reported', (): void => {
   const blade: ItemBaseDef | undefined = content.itemBases.get('rusted_blade');
   assert.ok(blade !== undefined);
   const odd: ItemBaseDef = { ...blade, implicit: [{ stat: 'goldFind', op: 'add', value: 1 }] };
@@ -33,7 +33,7 @@ void test('a base with a stat outside the nine, a line that rolls backwards or a
 });
 
 void test('every wearable base lies on the ground as a real model except the ones listed here, which still use a generic bundle or pouch', (): void => {
-  assert.deepEqual(groundGenerics(content), ['gale_charm', 'ember_charm', 'lantern_of_second_sounds', 'crown_of_the_struck_hour']);
+  assert.deepEqual(groundGenerics(content), ['gale_charm', 'ember_charm', 'gilded_token', 'tidestone_charm', 'storm_idol', 'lantern_of_second_sounds', 'crown_of_the_struck_hour']);
   const blade: ItemBaseDef | undefined = content.itemBases.get('rusted_blade');
   assert.ok(blade !== undefined);
   const unheld: ItemBaseDef = { ...blade, visual: null };

@@ -21,6 +21,18 @@ WOOD: Color = (0.17, 0.11, 0.07)
 BONE: Color = (0.62, 0.58, 0.47)
 HEX: Color = (0.62, 0.3, 1.0)
 SHIELD_OFFSET: float = 0.07
+AXE: dict[str, float] = {
+    "head_z": 0.43,
+    "reach": 0.16,
+}
+MACE: dict[str, float] = {
+    "head_z": 0.43,
+    "flanges": 6,
+    "flange_out": 0.044,
+    "flange_depth": 0.06,
+    "flange_thickness": 0.012,
+    "flange_height": 0.13,
+}
 CROSSBOW: dict[str, float] = {
     "side": -0.003,
     "deck": 0.074,
@@ -117,6 +129,19 @@ def spike(name: str, base: Point, length: float, radius: float, made: Material) 
     obj.name = name
     obj.rotation_euler = (0.0, math.pi / 2, 0.0)
     return finish(obj, made)
+
+
+def flange(name: str, angle: float, z: float, made: Material) -> Object:
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(MACE["flange_out"] * math.cos(angle), MACE["flange_out"] * math.sin(angle), z))
+    obj: Object = bpy.context.active_object
+    obj.name = name
+    obj.scale = (MACE["flange_depth"], MACE["flange_thickness"], MACE["flange_height"])
+    obj.rotation_euler = (0.0, 0.0, angle)
+    return finish(obj, made)
+
+
+def wedge(x: float, z: float, thickness: float, height: float) -> Ring:
+    return ((x, -thickness / 2, z - height / 2), (x, thickness / 2, z - height / 2), (x, thickness / 2, z + height / 2), (x, -thickness / 2, z + height / 2))
 
 
 def across(x: float, z: float, width: float, height: float) -> Ring:
@@ -293,6 +318,35 @@ def build(directory: str) -> None:
             rod("shaft", 0.014, 0.012, 1.5, 0.35, wood, 6),
             rod("point", 0.03, 0.002, 0.3, 1.25, bone, 6),
             box("binding", (0.04, 0.04, 0.06), 1.09, leather),
+        ],
+        directory,
+    )
+    head: float = AXE["head_z"]
+    reach: float = AXE["reach"]
+    export(
+        "hand_axe",
+        [
+            rod("haft", 0.017, 0.014, 0.64, 0.17, wood, 8),
+            rod("wrap", 0.02, 0.019, 0.17, 0.0, leather, 8),
+            loft("head", [wedge(0.0, head, 0.036, 0.08), wedge(reach * 0.45, head - 0.004, 0.016, 0.075), wedge(reach * 0.8, head - 0.02, 0.008, 0.13)], steel),
+            loft("edge", [wedge(reach * 0.8, head - 0.02, 0.008, 0.13), wedge(reach, head - 0.03, 0.002, 0.19)], edge),
+            box("poll", (0.05, 0.034, 0.062), head, dark, -0.03),
+            ball("cap", 0.02, 0.49, dark, 0.8),
+            ball("butt", 0.022, -0.15, dark, 0.9),
+        ],
+        directory,
+    )
+    crown: float = MACE["head_z"]
+    export(
+        "flanged_mace",
+        [
+            rod("haft", 0.016, 0.015, 0.52, 0.12, wood, 8),
+            rod("wrap", 0.019, 0.019, 0.17, 0.0, leather, 8),
+            rod("core", 0.034, 0.03, 0.17, crown, dark, 8),
+            *[flange(f"flange_{index}", index * 2 * math.pi / MACE["flanges"], crown, steel) for index in range(int(MACE["flanges"]))],
+            ball("crown", 0.032, crown + 0.1, steel, 0.7),
+            rod("collar", 0.026, 0.026, 0.03, crown - 0.1, bronze, 8),
+            ball("pommel", 0.026, -0.12, dark, 0.8),
         ],
         directory,
     )

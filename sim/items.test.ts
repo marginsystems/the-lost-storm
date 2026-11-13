@@ -55,7 +55,8 @@ void test('bases respect their minimum level', (): void => {
   for (const id of low) assert.equal(must(content.itemBases.get(id), id).minLevel, 1);
   assert.ok(!low.has('squall_plate'));
   const high: Set<string> = new Set<string>(withoutPowers(rolls(4, 6)).map((item: ItemInstance): string => item.base));
-  assert.equal(high.size, [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.dropWeight > 0 && base.power === null).length);
+  for (const id of high) assert.ok(must(content.itemBases.get(id), id).minLevel <= 6, id);
+  assert.equal(high.size, [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.dropWeight > 0 && base.power === null && base.minLevel <= 6).length);
 });
 
 void test('generation is deterministic for a seed and honours forced choices', (): void => {
