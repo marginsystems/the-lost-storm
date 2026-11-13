@@ -10,7 +10,7 @@ export const TREE_NODES = {
   variantRim: 2,
   keystoneInset: 3,
   gap: 6,
-  neighbourReach: 2.2,
+  neighbourReach: 3.5,
 } as const;
 
 export interface NodeSpot {
