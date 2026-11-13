@@ -97,7 +97,7 @@ export const LOBBY_STAGE = {
 
 export const LOBBY_POSE: readonly PoseTurn[] = [
   ['DEF-upper_arm.L', 0, 0, -12],
-  ['DEF-upper_arm.R', 0, 0, 12],
+  ['DEF-upper_arm.R', 0, 0, 4],
   ['DEF-thigh.L', 0, 0, 5],
   ['DEF-thigh.R', 0, 0, -5],
 ];
