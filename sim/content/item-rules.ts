@@ -70,6 +70,10 @@ function variantProblems(content: Content): string[] {
       if (!content.skills.has(variant.becomes)) problems.push(`item ${base.id} turns ${variant.skill} into unknown skill ${variant.becomes}`);
       if (variant.skill === variant.becomes) problems.push(`item ${base.id} turns ${variant.skill} into itself`);
       for (const hero of content.player.heroes) for (const animation of unplayed(content, hero.rig, variant.becomes, stance)) problems.push(`item ${base.id} turns ${variant.skill} into ${variant.becomes}, but rig ${hero.rig} has no action clip ${animation} for it`);
+      for (const node of content.skillTree) for (const further of node.variants) {
+        if (further.skill !== variant.becomes) continue;
+        for (const hero of content.player.heroes) for (const animation of unplayed(content, hero.rig, further.becomes, stance)) problems.push(`tree node ${node.id} turns ${further.skill} into ${further.becomes} while ${base.id} is held, but rig ${hero.rig} has no action clip ${animation} for it`);
+      }
     }
   }
   return problems;

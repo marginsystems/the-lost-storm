@@ -79,7 +79,7 @@ function reachable(status: TreeNodeStatus): boolean {
 function kindWord(node: SkillTreeNodeDef): string {
   if (node.unlock !== null) return 'ability';
   if (node.kind === 'keystone') return 'keystone';
-  if (node.variant !== null) return 'changes a skill';
+  if (node.variants.length > 0) return 'changes a skill';
   return node.kind === 'notable' ? 'named place' : 'place';
 }
 
@@ -467,7 +467,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     button.style.left = `${centre.x}px`;
     button.style.top = `${centre.y}px`;
     button.style.setProperty('--tint', pathTint(content, node.path));
-    if (node.variant !== null) button.classList.add('variant');
+    if (node.variants.length > 0) button.classList.add('variant');
     if (node.unlock !== null) button.classList.add('ability');
     el('span', 'tree-socket-rim', button);
     el('span', 'tree-socket-well', button);

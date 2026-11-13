@@ -1,4 +1,4 @@
-import type { ChartPath, Content, SkillDef, SkillTreeNodeDef } from '../../sim/content/types.ts';
+import type { ChartPath, Content, SkillTreeNodeDef, SkillVariant } from '../../sim/content/types.ts';
 
 export const CHART_MODEL = {
   labelReach: 1.13,
@@ -28,8 +28,8 @@ function words(text: string): string[] {
 
 function searchText(content: Content, node: SkillTreeNodeDef): string {
   const path: string = content.chart.paths.find((entry: ChartPath): boolean => entry.id === node.path)?.name ?? '';
-  const variant: SkillDef | undefined = node.variant === null ? undefined : content.skills.get(node.variant.skill);
-  return [node.name, node.description, path, variant?.name ?? ''].join(' ').toLowerCase();
+  const varied: readonly string[] = node.variants.map((variant: SkillVariant): string => content.skills.get(variant.skill)?.name ?? '');
+  return [node.name, node.description, path, ...varied].join(' ').toLowerCase();
 }
 
 export function chartMatches(content: Content, query: string): ReadonlySet<string> | null {

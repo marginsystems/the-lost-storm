@@ -293,7 +293,7 @@ void test('the Skill Tree has five paths of a hundred places or more, every plac
     assert.ok(own.some((node: SkillTreeNodeDef): boolean => node.requires.length === 0), `${path.id} has an entrance`);
     assert.ok(own.filter((node: SkillTreeNodeDef): boolean => node.kind === 'notable').length >= 3, `${path.id} has named places`);
     assert.equal(own.filter((node: SkillTreeNodeDef): boolean => node.kind === 'keystone').length, 1, `${path.id} ends in one keystone`);
-    assert.ok(own.filter((node: SkillTreeNodeDef): boolean => node.variant !== null).length >= 2, `${path.id} changes at least two skills`);
+    assert.ok(own.filter((node: SkillTreeNodeDef): boolean => node.variants.length > 0).length >= 2, `${path.id} changes at least two skills`);
   }
   const crossings: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => new Set<string | undefined>(node.requires.map((id: string): string | undefined => pathOf.get(id))).size > 1);
   assert.ok(crossings.length >= content.chart.paths.length);

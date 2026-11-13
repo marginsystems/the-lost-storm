@@ -96,20 +96,34 @@ export function inGroup(content: Content, group: string, skill: string): boolean
   return content.chart.groups.some((entry: ChartGroup): boolean => entry.id === group && entry.skills.includes(skill));
 }
 
-export function modTargets(content: Content, mod: SkillMod, skill: string): boolean {
+export function modTargets(content: Content, mod: SkillMod, through: readonly string[]): boolean {
   const target: SkillTarget = mod.target;
-  return target.type === 'skill' ? target.skill === skill : inGroup(content, target.group, skill);
+  return target.type === 'skill' ? through.includes(target.skill) : through.some((skill: string): boolean => inGroup(content, target.group, skill));
+}
+
+export interface ChosenSkill {
+  readonly skill: SkillDef;
+  readonly through: readonly string[];
+}
+
+function varied(content: Content, chosen: ChosenSkill, variants: readonly SkillVariant[]): ChosenSkill {
+  const current: string = chosen.through[chosen.through.length - 1] ?? chosen.skill.id;
+  for (const entry of variants) {
+    if (entry.skill !== current) continue;
+    const variant: SkillDef | undefined = content.skills.get(entry.becomes);
+    if (variant !== undefined) return { skill: { ...variant, id: chosen.skill.id }, through: [...chosen.through, entry.becomes] };
+  }
+  return chosen;
+}
+
+export function variantChain(content: Content, skill: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = []): ChosenSkill {
+  const fromTree: readonly SkillVariant[] = allocatedNodes(content, allocated).flatMap((node: SkillTreeNodeDef): readonly SkillVariant[] => node.variants);
+  const fromPowers: readonly SkillVariant[] = powers.flatMap((power: PowerDef): readonly SkillVariant[] => power.variants);
+  return varied(content, varied(content, { skill, through: [skill.id] }, worn), [...fromPowers, ...fromTree]);
 }
 
 export function chosenVariant(content: Content, skill: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = []): SkillDef {
-  const fromTree: SkillVariant[] = allocatedNodes(content, allocated).flatMap((node: SkillTreeNodeDef): SkillVariant[] => (node.variant === null ? [] : [node.variant]));
-  const fromPowers: SkillVariant[] = powers.flatMap((power: PowerDef): readonly SkillVariant[] => power.variants);
-  for (const chosen of [...worn, ...fromPowers, ...fromTree]) {
-    if (chosen.skill !== skill.id) continue;
-    const variant: SkillDef | undefined = content.skills.get(chosen.becomes);
-    if (variant !== undefined) return { ...variant, id: skill.id };
-  }
-  return skill;
+  return variantChain(content, skill, allocated, powers, worn).skill;
 }
 
 function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
@@ -117,8 +131,8 @@ function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
 }
 
 export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = []): SkillDef {
-  const skill: SkillDef = chosenVariant(content, base, allocated, powers, worn);
-  const mods: SkillMod[] = [...allocatedNodes(content, allocated).flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, skill.id));
+  const { skill, through }: ChosenSkill = variantChain(content, base, allocated, powers, worn);
+  const mods: SkillMod[] = [...allocatedNodes(content, allocated).flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, through));
   if (mods.length === 0) return skill;
   const delivery: Delivery = scaledDelivery(skill.delivery, {
     area: scaleOf(mods, 'areaPercent'),

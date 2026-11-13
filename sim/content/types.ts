@@ -276,7 +276,7 @@ export interface SkillTreeNodeDef {
   readonly requireMode: RequireMode;
   readonly statMods: readonly StatMod[];
   readonly skillMods: readonly SkillMod[];
-  readonly variant: SkillVariant | null;
+  readonly variants: readonly SkillVariant[];
   readonly unlock: string | null;
 }
 

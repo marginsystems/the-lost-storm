@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillTreeNodeDef, XpCurve } from './content/types.ts';
-import { applyXp, canAllocate, canRefund, refundCost, refundState, respecState, findNode, requirementsMet, adoptLearned, reachablePlaces, xpToNextLevel } from './progression.ts';
+import { applyXp, canAllocate, canRefund, refundCost, refundState, respecState, findNode, requirementsMet, adoptLearned, reachablePlaces, rivalVariant, xpToNextLevel } from './progression.ts';
 import type { XpResult } from './progression.ts';
 
 const content: Content = loadContent();
 const curve: XpCurve = content.player.xp;
 
 function node(requires: readonly string[], requireMode: 'all' | 'any'): SkillTreeNodeDef {
-  return { id: 'test', name: 'Test', description: '', icon: 'lightning', kind: 'minor', path: 'storm', column: 0, row: 0, requires, requireMode, statMods: [], skillMods: [], variant: null, unlock: null };
+  return { id: 'test', name: 'Test', description: '', icon: 'lightning', kind: 'minor', path: 'storm', column: 0, row: 0, requires, requireMode, statMods: [], skillMods: [], variants: [], unlock: null };
 }
 
 void test('the xp curve grows level by level', (): void => {
@@ -109,4 +109,13 @@ void test('a skill learned before the chart gave abilities takes its place when 
   assert.deepEqual(adoptLearned(content, ['cleave', 'thunderclap', 'living_wire'], ['storm_storm_bolt']), { allocated: ['storm_storm_bolt', 'stone_thunderclap'], refund: 1 });
   assert.deepEqual(adoptLearned(content, ['storm_bolt'], ['storm_storm_bolt']), { allocated: ['storm_storm_bolt'], refund: 0 });
   assert.deepEqual(adoptLearned(content, 'junk', []), { allocated: [], refund: 0 });
+});
+
+void test('two nodes are rivals when any of the skills they change is the same', (): void => {
+  const heaving: SkillTreeNodeDef | null = findNode(content, 'heaving_cleave');
+  assert.ok(heaving !== null);
+  assert.equal(rivalVariant(content, ['whirling_cleave'], heaving)?.id, 'whirling_cleave');
+  const onlyShot: SkillTreeNodeDef = { ...heaving, id: 'only_shot', variants: [{ skill: 'quarrel', becomes: 'quarrel_heave' }] };
+  assert.equal(rivalVariant(content, ['whirling_cleave'], onlyShot)?.id, 'whirling_cleave');
+  assert.equal(rivalVariant(content, ['storm_lance'], onlyShot), null);
 });

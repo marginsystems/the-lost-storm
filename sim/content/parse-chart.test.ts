@@ -26,8 +26,9 @@ void test('a modifier names a skill or a group, never both or neither', (): void
 void test('unknown paths, groups and variant skills are problems', (): void => {
   assert.ok(chartProblems(withNode({ path: 'nowhere' })).some((line: string): boolean => line.includes('unknown path nowhere')));
   assert.ok(chartProblems(withNode({ skillMods: [{ target: { type: 'group', group: 'nothing' }, field: 'damagePercent', value: 1 }] })).some((line: string): boolean => line.includes('unknown skill group nothing')));
-  assert.ok(chartProblems(withNode({ variant: { skill: 'cleave', becomes: 'no_such' } })).some((line: string): boolean => line.includes('unknown skill no_such')));
-  assert.ok(chartProblems(withNode({ variant: { skill: 'cleave', becomes: 'cleave' } })).some((line: string): boolean => line.includes('into itself')));
+  assert.ok(chartProblems(withNode({ variants: [{ skill: 'cleave', becomes: 'no_such' }] })).some((line: string): boolean => line.includes('unknown skill no_such')));
+  assert.ok(chartProblems(withNode({ variants: [{ skill: 'cleave', becomes: 'cleave' }] })).some((line: string): boolean => line.includes('into itself')));
+  assert.ok(chartProblems(withNode({ variants: [{ skill: 'cleave', becomes: 'cleave_whirl' }, { skill: 'cleave', becomes: 'cleave_heave' }] })).some((line: string): boolean => line.includes('two ways')));
 });
 
 void test('the chart needs whole points per level and a plain colour for each path', (): void => {

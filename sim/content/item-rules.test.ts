@@ -99,4 +99,5 @@ void test('a weapon may turn one skill into another the hero can play in the sta
   const stanceless: RigDef = { ...hero, clips: { ...hero.clips, stances: {} } };
   const unplayed: string[] = itemProblems({ ...content, rigs: new Map<string, RigDef>([...content.rigs, [hero.id, stanceless]]) });
   assert.ok(unplayed.some((problem: string): boolean => problem.includes(`item hand_crossbow turns cleave into quarrel, but rig ${hero.id} has no action clip shoot`)));
+  assert.ok(unplayed.some((problem: string): boolean => problem.includes(`tree node whirling_cleave turns quarrel into quarrel_fan while hand_crossbow is held, but rig ${hero.id} has no action clip shoot`)));
 });

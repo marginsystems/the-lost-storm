@@ -25,8 +25,7 @@ export function skillMod(value: unknown, where: string): SkillMod {
   return { target: skillTarget(source, where), field: choice(source, 'field', SKILL_MOD_FIELDS, where), value: numeric(source, 'value', where) };
 }
 
-function variant(value: unknown, where: string): SkillVariant | null {
-  if (value === undefined || value === null) return null;
+function variant(value: unknown, where: string): SkillVariant {
   const source: Fields = fields(value, where);
   return { skill: text(source, 'skill', where), becomes: text(source, 'becomes', where) };
 }
@@ -46,7 +45,7 @@ export function treeNode(value: unknown, where: string): SkillTreeNodeDef {
     requireMode: choice(source, 'requireMode', REQUIRE_MODES, where),
     statMods: each(source['statMods'], `${where}.statMods`, statMod),
     skillMods: each(source['skillMods'], `${where}.skillMods`, skillMod),
-    variant: variant(source['variant'], `${where}.variant`),
+    variants: source['variants'] === undefined ? [] : each(source['variants'], `${where}.variants`, variant),
     unlock: source['unlock'] === undefined ? null : text(source, 'unlock', where),
   };
 }
@@ -98,12 +97,13 @@ function targetProblem(content: Content, groups: ReadonlySet<string>, node: Skil
 }
 
 function variantProblems(content: Content, node: SkillTreeNodeDef): string[] {
-  if (node.variant === null) return [];
-  const { skill, becomes } = node.variant;
   const problems: string[] = [];
-  if (!content.skills.has(skill)) problems.push(`tree node ${node.id} varies unknown skill ${skill}`);
-  if (!content.skills.has(becomes)) problems.push(`tree node ${node.id} turns ${skill} into unknown skill ${becomes}`);
-  if (skill === becomes) problems.push(`tree node ${node.id} turns ${skill} into itself`);
+  for (const { skill, becomes } of node.variants) {
+    if (!content.skills.has(skill)) problems.push(`tree node ${node.id} varies unknown skill ${skill}`);
+    if (!content.skills.has(becomes)) problems.push(`tree node ${node.id} turns ${skill} into unknown skill ${becomes}`);
+    if (skill === becomes) problems.push(`tree node ${node.id} turns ${skill} into itself`);
+    if (node.variants.filter((other: SkillVariant): boolean => other.skill === skill).length > 1) problems.push(`tree node ${node.id} turns ${skill} two ways`);
+  }
   return problems;
 }
 

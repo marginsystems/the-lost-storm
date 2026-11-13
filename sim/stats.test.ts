@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { CLASSIC_BAR, must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
-import type { Content, PowerDef, SkillDef, SkillMod, StatBlock } from './content/types.ts';
+import type { Content, PowerDef, SkillDef, SkillMod, SkillVariant, StatBlock } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { wornVariants } from './powers.ts';
 import { createRng } from './rng.ts';
-import { applyMods, armourReduction, averageHit, computeStats, damagePerSecond, damageTakenScale, resistanceOf, resolveSkill, resolveSkillBar } from './stats.ts';
+import { applyMods, armourReduction, averageHit, computeStats, damagePerSecond, damageTakenScale, modTargets, resistanceOf, resolveSkill, resolveSkillBar, variantChain } from './stats.ts';
 import { addToInventory, equipFromInventory } from './world/character.ts';
 import { createWorld } from './world/create.ts';
 import type { Equipment, ItemInstance, World } from './world/types.ts';
@@ -122,11 +122,12 @@ void test('a variant place swaps how a skill is delivered but keeps its id and s
   const echoed: SkillDef = resolveSkill(content, skillOf('storm_bolt'), ['first_echo', 'echo_1', 'long_squall', 'echo_4', 'twice_told_bolt']);
   assert.ok(echoed.echo > 0);
   for (const node of content.skillTree) {
-    if (node.variant === null) continue;
-    const base: SkillDef = skillOf(node.variant.skill);
-    const changed: SkillDef = resolveSkill(content, base, [node.id]);
-    assert.equal(changed.id, base.id, node.id);
-    assert.notEqual(changed.name, base.name, node.id);
+    for (const variant of node.variants) {
+      const base: SkillDef = skillOf(variant.skill);
+      const changed: SkillDef = resolveSkill(content, base, [node.id]);
+      assert.equal(changed.id, base.id, node.id);
+      assert.notEqual(changed.name, base.name, node.id);
+    }
   }
 });
 
@@ -250,6 +251,34 @@ void test('a worn weapon that turns Cleave into a shot does so only while it is 
   assert.equal(resolveSkill(content, skillOf('cleave'), [], [], []).delivery.type, 'arc');
   const whirl: readonly string[] = ['heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave'];
   assert.equal(resolveSkill(content, skillOf('cleave'), whirl, [], wornVariants(content, world.player.equipped)).delivery.type, 'projectile');
+});
+
+function rangeOf(shot: SkillDef): number {
+  return shot.delivery.type === 'projectile' ? shot.delivery.range : 0;
+}
+
+const CROSSBOW: readonly SkillVariant[] = must(content.itemBases.get('hand_crossbow'), 'hand_crossbow').variants;
+
+void test('a tree node that changes Cleave also changes the shot a crossbow makes of it', (): void => {
+  assert.deepEqual(variantChain(content, skillOf('cleave'), ['whirling_cleave'], [], CROSSBOW).through, ['cleave', 'quarrel', 'quarrel_fan']);
+  const fan: SkillDef = resolveSkill(content, skillOf('cleave'), ['whirling_cleave'], [], CROSSBOW);
+  assert.equal(fan.id, 'cleave');
+  assert.equal(fan.name, skillOf('quarrel_fan').name);
+  assert.equal(resolveSkill(content, skillOf('cleave'), ['whirling_cleave']).name, skillOf('cleave_whirl').name);
+  const heave: SkillDef = resolveSkill(content, skillOf('cleave'), ['heaving_cleave'], [], CROSSBOW);
+  assert.equal(heave.name, skillOf('quarrel_heave').name);
+  assert.equal(heave.press?.type, 'charge');
+  assert.equal(resolveSkill(content, skillOf('cleave'), [], [], CROSSBOW).name, skillOf('quarrel').name);
+});
+
+void test('bolt range from the Storm path reaches the crossbow shot, and a mod naming Cleave still reaches it', (): void => {
+  const plain: SkillDef = resolveSkill(content, skillOf('cleave'), [], [], CROSSBOW);
+  const reached: SkillDef = resolveSkill(content, skillOf('cleave'), ['storm_6'], [], CROSSBOW);
+  assert.ok(rangeOf(plain) > 0);
+  assert.ok(rangeOf(reached) > rangeOf(plain));
+  const onCleave: SkillMod = { target: { type: 'skill', skill: 'cleave' }, field: 'damagePercent', value: 0.1 };
+  assert.ok(modTargets(content, onCleave, ['cleave', 'quarrel']));
+  assert.ok(!modTargets(content, onCleave, ['quarrel']));
 });
 
 void test('buff mods add on top of everything else', (): void => {

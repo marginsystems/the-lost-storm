@@ -47,7 +47,7 @@ export function nodeDiameter(node: SkillTreeNodeDef): number {
   if (node.unlock !== null) return TREE_NODES.ability + TREE_NODES.abilityRim * 2;
   const face: number = nodeFace(node);
   const diamond: number = node.kind === 'keystone' ? (face - TREE_NODES.keystoneInset * 2) * Math.SQRT2 : 0;
-  const ring: number = node.variant === null ? 0 : face + TREE_NODES.variantRim * 2;
+  const ring: number = node.variants.length === 0 ? 0 : face + TREE_NODES.variantRim * 2;
   return Math.max(face, diamond, ring);
 }
 

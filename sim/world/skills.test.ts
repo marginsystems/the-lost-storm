@@ -255,9 +255,8 @@ void test('a channel ends when mana runs out', (): void => {
 });
 
 void test('every changed form the chart offers lands on an enemy when cast at it, and an echoed form lands twice', (): void => {
-  for (const node of SHAPE_CONTENT.skillTree) {
-    if (node.variant === null) continue;
-    const changed: SkillDef = resolveSkill(SHAPE_CONTENT, must(SHAPE_CONTENT.skills.get(node.variant.skill), node.variant.skill), [node.id]);
+  for (const node of SHAPE_CONTENT.skillTree) for (const variant of node.variants) {
+    const changed: SkillDef = resolveSkill(SHAPE_CONTENT, must(SHAPE_CONTENT.skills.get(variant.skill), variant.skill), [node.id]);
     if (changed.press !== null || changed.delivery.type === 'dash') continue;
     const world: World = shapeArena([]);
     world.player.skills = [changed];

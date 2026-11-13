@@ -32,9 +32,9 @@ export function requirementsMet(node: SkillTreeNodeDef, allocated: readonly stri
 }
 
 export function rivalVariant(content: Content, allocated: readonly string[], node: SkillTreeNodeDef): SkillTreeNodeDef | null {
-  const variant: SkillVariant | null = node.variant;
-  if (variant === null) return null;
-  return content.skillTree.find((other: SkillTreeNodeDef): boolean => other.id !== node.id && allocated.includes(other.id) && other.variant?.skill === variant.skill) ?? null;
+  const varied: ReadonlySet<string> = new Set<string>(node.variants.map((variant: SkillVariant): string => variant.skill));
+  if (varied.size === 0) return null;
+  return content.skillTree.find((other: SkillTreeNodeDef): boolean => other.id !== node.id && allocated.includes(other.id) && other.variants.some((variant: SkillVariant): boolean => varied.has(variant.skill))) ?? null;
 }
 
 export function canAllocate(content: Content, allocated: readonly string[], skillPoints: number, nodeId: string): boolean {
