@@ -44,3 +44,31 @@ export function relaxHands(hands: readonly RestHand[], weight: number, holding: 
     for (const finger of hand.fingers) finger.bone.quaternion.slerp(finger.rest, weight);
   }
 }
+
+export interface HeldBone {
+  readonly bone: Object3D;
+  readonly pose: Quaternion;
+}
+
+export interface HeldPose {
+  readonly attachment: string;
+  readonly bones: readonly HeldBone[];
+}
+
+export function heldPoses(model: Object3D, def: Pick<RigDef, 'holds'>): HeldPose[] {
+  return Object.entries(def.holds).map(([attachment, hold]: [string, RigDef['holds'][string]]): HeldPose => ({
+    attachment,
+    bones: Object.entries(hold.bones).flatMap(([name, [x, y, z, w]]: [string, readonly [number, number, number, number]]): HeldBone[] => {
+      const bone: Object3D | undefined = boneNamed(model, name);
+      return bone === undefined ? [] : [{ bone, pose: new Quaternion(x, y, z, w).normalize() }];
+    }),
+  }));
+}
+
+export function holdPoses(poses: readonly HeldPose[], weights: ReadonlyMap<string, number>): void {
+  for (const pose of poses) {
+    const weight: number = Math.min(1, Math.max(0, weights.get(pose.attachment) ?? 0));
+    if (weight <= 0) continue;
+    for (const held of pose.bones) held.bone.quaternion.slerp(held.pose, weight);
+  }
+}

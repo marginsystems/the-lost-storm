@@ -3,7 +3,7 @@ import { AnimationMixer, BufferGeometry, Color, Group, Material, Mesh, MeshBasic
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { boundSkins, disposeSkeletons } from './skeletons.ts';
-import type { AttachmentDef, AttachmentGrip, Content, RigActionClip, RigDef, RigGait, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
+import type { AttachmentDef, AttachmentGrip, Content, RigActionClip, RigDef, RigGait, RigHoldSeat, RigSocket, RigUnarmedClips, WearableDef } from '../../sim/content/types.ts';
 import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
@@ -17,10 +17,10 @@ import { createRigGlow, FLASH, flashEdge, flashLift, makeGhost } from './ghost-m
 import { createBrowserTimers } from '../browser-timers.ts';
 import { STALL, withStallLimit } from './stall-limit.ts';
 import { addBoxUvs } from './box-uv.ts';
-import { idleWeight, relaxHands, restHands } from './rest-hands.ts';
+import { heldPoses, holdPoses, idleWeight, relaxHands, restHands } from './rest-hands.ts';
 import type { GripHand } from './grip-closure.ts';
 import { clampHand, closeOnGrip, gripHand } from './grip-closure.ts';
-import type { RestHand } from './rest-hands.ts';
+import type { HeldPose, RestHand } from './rest-hands.ts';
 
 export interface ActionClip {
   readonly clip: AnimationClip;
@@ -486,6 +486,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   }
 
   const hands: readonly RestHand[] = restHands(model, def);
+  const holds: readonly HeldPose[] = heldPoses(model, def);
   const gripHands: readonly GripHand[] = [gripHand(model, 'R'), gripHand(model, 'L')].filter((found: GripHand | null): found is GripHand => found !== null);
   const idles: readonly AnimationClip[] = rig.clips.unarmed === null ? [rig.clips.idle] : [rig.clips.idle, rig.clips.unarmed.idle];
   const mixer: AnimationMixer = new AnimationMixer(model);
@@ -581,11 +582,12 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const socket: RigSocket | undefined = attachment === undefined ? undefined : def.sockets[attachment.def.socket];
         const bone: Object3D | undefined = socket === undefined ? undefined : findNode(model, socket.bone);
         if (attachment === undefined || socket === undefined || bone === undefined) continue;
+        const seat: RigHoldSeat | RigSocket = def.holds[id]?.seat ?? socket;
         const holder: Group = new Group();
-        holder.position.set(socket.position[0], socket.position[1], socket.position[2]);
-        holder.rotation.set(socket.rotationDegrees[0] * DEGREES, socket.rotationDegrees[1] * DEGREES, socket.rotationDegrees[2] * DEGREES);
-        const piece: HeldPiece = { holder, size: socket.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
-        holder.scale.setScalar(socket.scale * piece.value);
+        holder.position.set(seat.position[0], seat.position[1], seat.position[2]);
+        holder.rotation.set(seat.rotationDegrees[0] * DEGREES, seat.rotationDegrees[1] * DEGREES, seat.rotationDegrees[2] * DEGREES);
+        const piece: HeldPiece = { holder, size: seat.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
+        holder.scale.setScalar(seat.scale * piece.value);
         const copy: Object3D = attachment.template.clone(true);
         if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, glow, piece.materials));
         holder.add(copy);
@@ -659,7 +661,11 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const socket: string | undefined = library.attachments.get(id)?.def.socket;
         if (socket !== undefined) holding.add(socket);
       }
-      relaxHands(hands, idleWeight(mixer, idles), holding);
+      const idle: number = idleWeight(mixer, idles);
+      relaxHands(hands, idle, holding);
+      const holdWeights: Map<string, number> = new Map<string, number>();
+      for (const [id, piece] of held) holdWeights.set(id, idle * Math.min(1, Math.max(0, piece.value)));
+      holdPoses(holds, holdWeights);
       for (const hand of gripHands) clampHand(hand);
       for (const [id, piece] of held) {
         const attachment: LoadedAttachment | undefined = library.attachments.get(id);

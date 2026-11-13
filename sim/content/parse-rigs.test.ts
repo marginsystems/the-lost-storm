@@ -34,3 +34,22 @@ void test('a resting hand on a socket the rig lacks is refused', (): void => {
     rig(source({ hand_x: {} }), 'rig');
   }, ContentError);
 });
+
+void test('a hold reads, per attachment, a unit quaternion for each bone and an optional seat, and no hold leaves the clips alone', (): void => {
+  assert.deepEqual(rig(source(undefined), 'rig').holds, {});
+  const seat: Record<string, unknown> = { position: [0.01, 0.09, -0.02], rotationDegrees: [0, 80, 80], scale: 0.9 };
+  const held: Record<string, unknown> = { ...source(undefined), holds: { rusted_blade: { seat, bones: { 'DEF-hand.R': [0, 0, 0, 1] } }, sword_1h: { bones: {} } } };
+  assert.deepEqual(rig(held, 'rig').holds, { rusted_blade: { seat, bones: { 'DEF-hand.R': [0, 0, 0, 1] } }, sword_1h: { seat: null, bones: {} } });
+});
+
+void test('a hold with no bones, a bad seat, or a quaternion that is not unit length is refused', (): void => {
+  assert.throws((): void => {
+    rig({ ...source(undefined), holds: { rusted_blade: {} } }, 'rig');
+  }, ContentError);
+  assert.throws((): void => {
+    rig({ ...source(undefined), holds: { rusted_blade: { seat: { position: [0, 0] }, bones: {} } } }, 'rig');
+  }, ContentError);
+  assert.throws((): void => {
+    rig({ ...source(undefined), holds: { rusted_blade: { bones: { 'DEF-hand.R': [0, 0, 0, 2] } } } }, 'rig');
+  }, ContentError);
+});

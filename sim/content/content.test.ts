@@ -176,6 +176,15 @@ void test('every skill on the bar and every monster skill has an action clip on 
   }
 });
 
+void test('every hold a rig sets names an attachment that sits in one of that rig\'s sockets', (): void => {
+  for (const rig of content.rigs.values()) {
+    for (const id of Object.keys(rig.holds)) {
+      const attachment = must(content.attachments.get(id), `${rig.id} holds ${id}, which is not an attachment`);
+      assert.ok(rig.sockets[attachment.socket] !== undefined, `${rig.id} holds ${id}, but has no ${attachment.socket} socket`);
+    }
+  }
+});
+
 void test('every weapon base shows a model that exists in the attachments', (): void => {
   const weapons: ItemBaseDef[] = [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === 'weapon');
   assert.ok(weapons.length >= 3);

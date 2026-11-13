@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { AnimationClip, AnimationMixer, Bone, Group, Quaternion, QuaternionKeyframeTrack, Vector3 } from 'three';
 import type { RigDef } from '../../sim/content/types.ts';
-import { idleWeight, relaxHands, restHands } from './rest-hands.ts';
-import type { RestFinger, RestHand } from './rest-hands.ts';
+import { heldPoses, holdPoses, idleWeight, relaxHands, restHands } from './rest-hands.ts';
+import type { HeldPose, RestFinger, RestHand } from './rest-hands.ts';
 
 interface Hand {
   readonly model: Group;
@@ -24,7 +24,7 @@ function hand(): Hand {
 }
 
 function base(): RigDef {
-  return { id: 'man', url: '', clipFolder: '', scale: 1, yawOffsetDegrees: 0, height: 1.8, rootMotionBone: null, gaits: [], clips: { idle: 'Idle', run: 'Run', hit: ['Hit'], death: ['Death'], rise: null, actions: {}, unarmed: null }, sockets: {}, hiddenNodes: [], idleRate: 1, bodyParts: {}, base: [], restHands: {} };
+  return { id: 'man', url: '', clipFolder: '', scale: 1, yawOffsetDegrees: 0, height: 1.8, rootMotionBone: null, gaits: [], clips: { idle: 'Idle', run: 'Run', hit: ['Hit'], death: ['Death'], rise: null, actions: {}, unarmed: null }, sockets: {}, hiddenNodes: [], idleRate: 1, bodyParts: {}, base: [], restHands: {}, holds: {} };
 }
 
 void test('a resting hand keeps the fingers the rig names and the bend set on top of the bind pose', (): void => {
@@ -58,4 +58,23 @@ void test('the idle weight counts only idle clips the mixer is playing', (): voi
   mixer.clipAction(idle).play();
   mixer.update(0);
   assert.equal(idleWeight(mixer, [idle]), 1);
+});
+
+void test('a hold turns the bones it names toward the approved pose by the weight of its attachment, and leaves them alone at weight zero or while another attachment is held', (): void => {
+  const model: Group = new Group();
+  const wrist: Bone = new Bone();
+  wrist.name = 'DEF-handR';
+  model.add(wrist);
+  const approved: Quaternion = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), 0.8);
+  const poses: readonly HeldPose[] = heldPoses(model, { holds: { rusted_blade: { seat: null, bones: { 'DEF-hand.R': [approved.x, approved.y, approved.z, approved.w], 'DEF-absent.R': [0, 0, 0, 1] } } } });
+  assert.equal(poses[0]?.bones.length, 1);
+  holdPoses(poses, new Map<string, number>([['rusted_blade', 0]]));
+  assert.ok(wrist.quaternion.angleTo(new Quaternion()) < 1e-9);
+  holdPoses(poses, new Map<string, number>([['staff', 1]]));
+  assert.ok(wrist.quaternion.angleTo(new Quaternion()) < 1e-9);
+  holdPoses(poses, new Map<string, number>([['rusted_blade', 0.5]]));
+  assert.ok(Math.abs(wrist.quaternion.angleTo(new Quaternion()) - 0.4) < 1e-6);
+  wrist.quaternion.identity();
+  holdPoses(poses, new Map<string, number>([['rusted_blade', 1]]));
+  assert.ok(wrist.quaternion.angleTo(approved) < 1e-6);
 });
