@@ -38,6 +38,7 @@ export interface OpeningDeps {
   refreshName(): Promise<void>;
   playVoice(audio: ArrayBuffer): Promise<void>;
   setAmbience(ambience: ZoneAmbience): void;
+  setRain(rain: number): void;
 }
 
 export interface Opening {
@@ -134,6 +135,7 @@ export function createOpening(deps: OpeningDeps): Opening {
       if (shore !== null && (Math.abs(depth - shownShore) >= OPENING.ambienceStep || (depth !== shownShore && (depth === 0 || depth === 1)))) {
         shownShore = depth;
         deps.setAmbience(blendAmbience(world.zone.ambience, shore.ambience, depth));
+        deps.setRain(shore.rain * depth);
       }
       noticeBooks();
       followWorld(gate, world, reader.isOpen());

@@ -74,6 +74,7 @@ export interface VoidShore {
   readonly props: readonly ShoreProp[];
   readonly path: ShorePath | null;
   readonly room: ShoreRoom | null;
+  readonly rain: number;
 }
 
 export interface ZoneVoid {

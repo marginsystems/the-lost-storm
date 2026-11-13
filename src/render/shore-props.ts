@@ -19,14 +19,26 @@ export const SHORE_PROPS: { readonly dressing: PropDressing } = {
 export const SHORE_PATH = {
   across: 6,
   edge: 0.35,
-  strength: 0.4,
+  strength: 0.6,
+  faint: 0.25,
+  breakEvery: 0.37,
+  breakDepth: 0.75,
+  widthEvery: 0.23,
+  widthSpread: 0.45,
+  edgeEvery: 1.9,
+  edgeSpread: 0.18,
+  edgeTwist: 5.3,
+  widthPhase: 4.1,
+  breakFrom: 0.35,
+  breakTo: 0.9,
+  noise: { fast: 1.7, slow: 0.63, phase: 1.3 },
   step: 1,
   start: 1,
   fadeIn: 5,
   fadeOut: 12,
   wave: 0.11,
   lift: 0.03,
-  wet: 0.6,
+  wet: 0.9,
   renderOrder: 3,
 } as const;
 
@@ -35,9 +47,20 @@ function smoothstep(from: number, to: number, value: number): number {
   return t * t * (3 - 2 * t);
 }
 
+export function wobble(t: number): number {
+  return 0.5 + 0.5 * Math.sin(t * SHORE_PATH.noise.fast) * Math.sin(t * SHORE_PATH.noise.slow + SHORE_PATH.noise.phase);
+}
+
+export function pathWidth(path: ShorePath, along: number): number {
+  return path.width * (1 + SHORE_PATH.widthSpread * (wobble(along * SHORE_PATH.widthEvery + SHORE_PATH.widthPhase) * 2 - 1));
+}
+
 export function pathAlpha(across: number, along: number, length: number): number {
   const side: number = Math.abs(across * 2 - 1);
-  return SHORE_PATH.strength * (1 - smoothstep(SHORE_PATH.edge, 1, side)) * smoothstep(0, SHORE_PATH.fadeIn, along) * (1 - smoothstep(length - SHORE_PATH.fadeOut, length, along));
+  const ragged: number = SHORE_PATH.edge + SHORE_PATH.edgeSpread * Math.sin(along * SHORE_PATH.edgeEvery + across * SHORE_PATH.edgeTwist);
+  const broken: number = 1 - SHORE_PATH.breakDepth * smoothstep(SHORE_PATH.breakFrom, SHORE_PATH.breakTo, wobble(along * SHORE_PATH.breakEvery));
+  const toward: number = SHORE_PATH.faint + (1 - SHORE_PATH.faint) * smoothstep(0, length, along);
+  return SHORE_PATH.strength * toward * broken * (1 - smoothstep(ragged, 1, side)) * smoothstep(0, SHORE_PATH.fadeIn, along) * (1 - smoothstep(length - SHORE_PATH.fadeOut, length, along));
 }
 
 export function pathGeometry(path: ShorePath): BufferGeometry {
@@ -54,7 +77,7 @@ export function pathGeometry(path: ShorePath): BufferGeometry {
     for (let column: number = 0; column <= columns; column += 1) {
       const at: number = row * (columns + 1) + column;
       const across: number = column / columns;
-      const x: number = (across - 0.5) * path.width + sway;
+      const x: number = (across - 0.5) * pathWidth(path, along) + sway;
       const z: number = SHORE_PATH.start + along;
       positions.set([x, 0, z], at * 3);
       uvs.set([x, -z], at * 2);
