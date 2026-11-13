@@ -1,35 +1,17 @@
-import type { Content, RequireMode, SkillTreeNodeDef } from '../../sim/content/types.ts';
-import { canAllocate, findNode, requirementsMet } from '../../sim/progression.ts';
+import type { Content, SkillTreeNodeDef } from '../../sim/content/types.ts';
+import { canAllocate, joinBlock } from '../../sim/progression.ts';
+import type { JoinBlock, RefundBlock } from '../../sim/progression.ts';
 import { promptText, use } from './prompts.ts';
 
 export const TREE_NODE_COST: number = 1;
 
-export type TreeNodeStatus =
-  | { readonly kind: 'allocated' }
-  | { readonly kind: 'available' }
-  | { readonly kind: 'no_points' }
-  | { readonly kind: 'locked'; readonly missing: readonly string[]; readonly mode: RequireMode };
-
-function nodeName(content: Content, id: string): string {
-  return findNode(content, id)?.name ?? id;
-}
-
-function joined(names: readonly string[], mode: RequireMode): string {
-  return names.join(mode === 'all' ? ' and ' : ' or ');
-}
+export type TreeNodeStatus = { readonly kind: 'allocated' } | { readonly kind: 'available' } | { readonly kind: 'no_points' } | { readonly kind: 'locked'; readonly needs: JoinBlock };
 
 export function treeNodeStatus(content: Content, allocated: readonly string[], skillPoints: number, node: SkillTreeNodeDef): TreeNodeStatus {
   if (allocated.includes(node.id)) return { kind: 'allocated' };
-  if (!requirementsMet(node, allocated)) {
-    const missing: string[] = node.requires.filter((id: string): boolean => !allocated.includes(id)).map((id: string): string => nodeName(content, id));
-    return { kind: 'locked', missing, mode: node.requireMode };
-  }
+  const needs: JoinBlock | null = joinBlock(content, allocated, node);
+  if (needs !== null) return { kind: 'locked', needs };
   return canAllocate(content, allocated, skillPoints, node.id) ? { kind: 'available' } : { kind: 'no_points' };
-}
-
-export function requirementLine(content: Content, node: SkillTreeNodeDef): string | null {
-  if (node.requires.length === 0) return null;
-  return `Requires ${joined(node.requires.map((id: string): string => nodeName(content, id)), node.requireMode)}`;
 }
 
 export function costLine(): string {
@@ -42,8 +24,34 @@ const SETTLED_LINES: Readonly<Record<Exclude<TreeNodeStatus['kind'], 'locked'>, 
   no_points: 'No skill points to spend',
 };
 
+const LOCKED_LINES: Readonly<Record<JoinBlock, string>> = {
+  begin: 'Begin at a starting place first',
+  connect: 'Connect to a place you hold',
+  branch: 'Only your largest group of places can grow',
+};
+
 export function statusLine(status: TreeNodeStatus, touch: boolean): string {
-  if (status.kind === 'locked') return `Locked: allocate ${joined(status.missing, status.mode)} first`;
+  if (status.kind === 'locked') return LOCKED_LINES[status.needs];
   if (status.kind === 'available') return promptText(touch, use(SETTLED_LINES.available));
   return SETTLED_LINES[status.kind];
+}
+
+const TAKEN_LINES: Readonly<Record<RefundBlock, string>> = {
+  not_held: 'Taken',
+  split: 'Taken · giving it back would cut off places beyond it',
+  root: 'Taken · everything you hold grows from here',
+};
+
+export function takenLine(block: RefundBlock | null): string {
+  return block === null ? 'Taken' : TAKEN_LINES[block];
+}
+
+export function lockedLine(status: TreeNodeStatus, steps: number, touch: boolean): string {
+  const line: string = statusLine(status, touch);
+  return steps > 0 ? `${line} · ${steps * TREE_NODE_COST} points along the lit route` : line;
+}
+
+export function pointsPrompt(points: number, held: number): string {
+  if (held === 0) return 'Choose where you begin';
+  return `${points} ${points === 1 ? 'point' : 'points'}: choose a place`;
 }

@@ -257,9 +257,6 @@ export interface WearableDef {
 export { ARMOUR_MATERIALS, CAST_ORIGINS, GROUND_KEEPS, GROUND_MODELS, ITEM_STATS, POWER_TARGETS, POWER_TRIGGERS, RARITY_MARKERS } from './item-types.ts';
 export type { AffixDef, ArmourMaterial, BuffEffect, CastEffect, CastOrigin, FamilyDef, GroundKeep, GroundLook, GroundModel, ItemBaseDef, ItemScaling, ItemStat, PowerDef, PowerEffect, PowerTarget, PowerTrigger, PowerTriggerDef, RarityDef, RarityMarker } from './item-types.ts';
 
-export const REQUIRE_MODES = ['all', 'any'] as const;
-export type RequireMode = (typeof REQUIRE_MODES)[number];
-
 export const TREE_NODE_KINDS = ['minor', 'notable', 'keystone'] as const;
 export type TreeNodeKind = (typeof TREE_NODE_KINDS)[number];
 
@@ -273,7 +270,6 @@ export interface SkillTreeNodeDef {
   readonly column: number;
   readonly row: number;
   readonly requires: readonly string[];
-  readonly requireMode: RequireMode;
   readonly statMods: readonly StatMod[];
   readonly skillMods: readonly SkillMod[];
   readonly variants: readonly SkillVariant[];

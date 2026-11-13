@@ -2,7 +2,7 @@ import type { Content, ItemSlot, SkillDef, SkillTreeNodeDef, StatBlock } from '.
 import { slotOf } from './items.ts';
 import type { ReadonlyVec2 } from './math.ts';
 import { distance } from './math.ts';
-import { canAllocate } from './progression.ts';
+import { canAllocate, placeLinks, startingPlaces } from './progression.ts';
 import { armourReduction, computeStats, damagePerSecond } from './stats.ts';
 import { canDash } from './world/dash.ts';
 import { blockedFlask } from './world/flasks.ts';
@@ -45,14 +45,30 @@ function abilityRank(plan: BotPlan, node: SkillTreeNodeDef): number {
   return node.unlock === null ? plan.skills.length : preference(plan, node.unlock);
 }
 
-function depthOf(content: Content, node: SkillTreeNodeDef, seen: ReadonlySet<string>): number {
-  if (node.requires.length === 0 || seen.has(node.id)) return 0;
-  const next: Set<string> = new Set<string>([...seen, node.id]);
-  const depths: number[] = node.requires.flatMap((id: string): number[] => {
-    const parent: SkillTreeNodeDef | undefined = content.skillTree.find((candidate: SkillTreeNodeDef): boolean => candidate.id === id);
-    return parent === undefined ? [] : [depthOf(content, parent, next)];
-  });
-  return 1 + Math.min(...depths);
+const DEPTHS: WeakMap<Content, ReadonlyMap<string, number>> = new WeakMap<Content, ReadonlyMap<string, number>>();
+
+function depthsOf(content: Content): ReadonlyMap<string, number> {
+  const cached: ReadonlyMap<string, number> | undefined = DEPTHS.get(content);
+  if (cached !== undefined) return cached;
+  const links: ReadonlyMap<string, readonly string[]> = placeLinks(content);
+  const queue: string[] = startingPlaces(content);
+  const depths: Map<string, number> = new Map<string, number>(queue.map((id: string): [string, number] => [id, 0]));
+  for (let index: number = 0; index < queue.length; index += 1) {
+    const at: string | undefined = queue[index];
+    if (at === undefined) continue;
+    const here: number = depths.get(at) ?? 0;
+    for (const next of links.get(at) ?? []) {
+      if (depths.has(next)) continue;
+      depths.set(next, here + 1);
+      queue.push(next);
+    }
+  }
+  DEPTHS.set(content, depths);
+  return depths;
+}
+
+function depthOf(content: Content, node: SkillTreeNodeDef): number {
+  return depthsOf(content).get(node.id) ?? content.skillTree.length;
 }
 
 function weightOf(node: SkillTreeNodeDef): number {
@@ -83,7 +99,7 @@ export function nextPlace(content: Content, plan: BotPlan, allocated: readonly s
     if (node !== undefined && counts.has(node.path)) counts.set(node.path, (counts.get(node.path) ?? 0) + 1);
   }
   const open: SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => counts.has(node.path) && canAllocate(content, allocated, points, node.id));
-  const key = (node: SkillTreeNodeDef): number[] => [abilityRank(plan, node), counts.get(node.path) ?? 0, plan.paths.indexOf(node.path), depthOf(content, node, new Set<string>()), weightOf(node)];
+  const key = (node: SkillTreeNodeDef): number[] => [abilityRank(plan, node), counts.get(node.path) ?? 0, plan.paths.indexOf(node.path), depthOf(content, node), weightOf(node)];
   const ranked: SkillTreeNodeDef[] = open.toSorted((a: SkillTreeNodeDef, b: SkillTreeNodeDef): number => byKeys([...key(a), a.id.localeCompare(b.id)], [...key(b), 0]));
   return ranked[0]?.id ?? null;
 }

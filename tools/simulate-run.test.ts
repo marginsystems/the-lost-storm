@@ -20,7 +20,7 @@ const GUARD = {
   standingSurvives: 20,
   standingLimit: 60,
   farmMinutes: 30,
-  farmLevel: { min: 6, max: 12 },
+  farmLevel: { min: 6, max: 13 },
   rareShare: 2 / 3,
   strikeGap: 6,
   dormantWait: 0.5,

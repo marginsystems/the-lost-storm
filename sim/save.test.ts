@@ -4,6 +4,7 @@ import { roadContent, roadZone } from '../test/road-support.ts';
 import { must, worldIn } from '../test/support.ts';
 import type { Content, ZoneDef, ZoneVoice } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
+import { canAllocate } from './progression.ts';
 import { createRng } from './rng.ts';
 import { parseSaveText, readSave, SAVE_VERSION, toSave } from './save.ts';
 import type { SaveData } from './save.ts';
@@ -74,6 +75,18 @@ void test('a save from before the ability places gives back the points of places
   const save: SaveData = roundTrip(old);
   assert.deepEqual(save.allocated, ['tempered_body', 'stone_1', 'stone_thunderclap']);
   assert.equal(save.skillPoints, 3);
+});
+
+void test('a save holding every centre from before the one-start rule keeps them all, gives back nothing, and grows only from its largest part', (): void => {
+  const old: World = played();
+  const centres: readonly string[] = ['storm_storm_bolt', 'blade_thunderhead', 'heavy_hands', 'wind_mist_step', 'stone_thunderclap', 'echo_forkline'];
+  old.player.allocated = [...centres];
+  const save: SaveData = roundTrip(old);
+  assert.deepEqual(save.allocated, centres);
+  assert.equal(save.skillPoints, 2);
+  const restored: World = createWorld(content, { seed: 5, save });
+  assert.ok(canAllocate(content, restored.player.allocated, restored.player.skillPoints, 'blade_1'));
+  assert.ok(!canAllocate(content, restored.player.allocated, restored.player.skillPoints, 'tempered_body'));
 });
 
 void test('skills a save learned from the old offers keep their places, and one whose way is closed gives a point back', (): void => {

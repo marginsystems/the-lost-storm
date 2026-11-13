@@ -2,14 +2,16 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillTreeNodeDef, XpCurve } from './content/types.ts';
-import { applyXp, canAllocate, canRefund, refundCost, refundState, respecState, findNode, requirementsMet, adoptLearned, reachablePlaces, rivalVariant, xpToNextLevel } from './progression.ts';
+import { adoptLearned, applyXp, canAllocate, canRefund, findNode, holdingParts, holdingTrunk, joinBlock, placeLinks, reachablePlaces, refundBlock, refundCost, refundState, respecState, rivalVariant, startingPlaces, xpToNextLevel } from './progression.ts';
 import type { XpResult } from './progression.ts';
 
 const content: Content = loadContent();
 const curve: XpCurve = content.player.xp;
 
-function node(requires: readonly string[], requireMode: 'all' | 'any'): SkillTreeNodeDef {
-  return { id: 'test', name: 'Test', description: '', icon: 'lightning', kind: 'minor', path: 'storm', column: 0, row: 0, requires, requireMode, statMods: [], skillMods: [], variants: [], unlock: null };
+function node(id: string): SkillTreeNodeDef {
+  const found: SkillTreeNodeDef | null = findNode(content, id);
+  assert.ok(found !== null, id);
+  return found;
 }
 
 void test('the xp curve grows level by level', (): void => {
@@ -46,43 +48,74 @@ void test('findNode finds shipped nodes and nothing else', (): void => {
   assert.equal(findNode(content, 'nope'), null);
 });
 
-void test('requirementsMet honours the all and any modes', (): void => {
-  assert.ok(requirementsMet(node([], 'all'), []));
-  assert.ok(!requirementsMet(node(['a', 'b'], 'all'), ['a']));
-  assert.ok(requirementsMet(node(['a', 'b'], 'all'), ['b', 'a']));
-  assert.ok(!requirementsMet(node(['a', 'b'], 'any'), ['c']));
-  assert.ok(requirementsMet(node(['a', 'b'], 'any'), ['b']));
+const STARTS: readonly string[] = ['storm_storm_bolt', 'blade_thunderhead', 'wind_mist_step', 'stone_thunderclap', 'echo_forkline'];
+
+function takeAll(order: readonly string[]): string[] {
+  const taken: string[] = [];
+  for (const id of order) {
+    assert.ok(canAllocate(content, taken, 1, id), `${id} after ${taken.join(', ')}`);
+    taken.push(id);
+  }
+  return taken;
+}
+
+void test('the starting places are the nodes that list no links, one on each path', (): void => {
+  assert.deepEqual(startingPlaces(content).toSorted(), [...STARTS].toSorted());
+  assert.equal(placeLinks(content).get('heavy_hands')?.includes('blade_thunderhead'), true);
+  assert.equal(placeLinks(content).get('blade_thunderhead')?.includes('heavy_hands'), true);
 });
 
-void test('canAllocate needs a point, the requirements and an unallocated known node', (): void => {
-  assert.ok(canAllocate(content, [], 1, 'stone_thunderclap'));
+void test('with nothing held only a starting place can be taken, and a point and a known untaken node are needed', (): void => {
+  for (const start of STARTS) assert.ok(canAllocate(content, [], 1, start), start);
   assert.ok(!canAllocate(content, [], 0, 'stone_thunderclap'));
   assert.ok(!canAllocate(content, [], 1, 'tempered_body'));
-  assert.ok(!canAllocate(content, [], 1, 'bedrock'));
-  assert.ok(canAllocate(content, ['stone_thunderclap', 'tempered_body', 'stone_1'], 1, 'bedrock'));
-  assert.ok(!canAllocate(content, ['tempered_body'], 1, 'tempered_body'));
+  assert.ok(!canAllocate(content, [], 1, 'storm_blade_near'));
   assert.ok(!canAllocate(content, [], 5, 'unknown_node'));
+  assert.ok(!canAllocate(content, ['stone_thunderclap'], 1, 'stone_thunderclap'));
+  assert.equal(joinBlock(content, [], node('tempered_body')), 'begin');
+  assert.equal(joinBlock(content, [], node('stone_thunderclap')), null);
 });
 
-void test('a crossing between two paths opens from either side', (): void => {
-  assert.ok(!canAllocate(content, [], 1, 'storm_blade_near'));
-  assert.ok(canAllocate(content, ['stormcallers_focus', 'storm_1'], 1, 'storm_blade_near'));
-  assert.ok(canAllocate(content, ['heavy_hands', 'blade_1'], 1, 'storm_blade_near'));
-  assert.ok(canAllocate(content, ['heavy_hands', 'blade_1', 'storm_blade_near'], 1, 'storm_1'));
+void test('after the first pick every place must link to one already held, and the other centres are closed', (): void => {
+  const taken: string[] = takeAll(['stone_thunderclap', 'tempered_body', 'stone_1', 'bedrock']);
+  assert.equal(taken.length, 4);
+  for (const start of STARTS.filter((id: string): boolean => id !== 'stone_thunderclap')) {
+    assert.ok(!canAllocate(content, taken, 1, start), start);
+    assert.equal(joinBlock(content, taken, node(start)), 'connect');
+  }
+  assert.ok(!canAllocate(content, ['stone_thunderclap'], 1, 'stone_1'));
+  assert.ok(!canAllocate(content, ['stone_thunderclap'], 1, 'gathered_clap'));
+  assert.ok(canAllocate(content, ['stone_thunderclap'], 1, 'tempered_body'));
+});
+
+void test('a ring crosses to another path and the walk can turn inward to that path\'s centre', (): void => {
+  const taken: string[] = takeAll(['storm_storm_bolt', 'stormcallers_focus', 'storm_1', 'storm_blade_near', 'blade_1', 'heavy_hands', 'blade_thunderhead']);
+  assert.ok(taken.includes('blade_thunderhead'));
+  assert.ok(canAllocate(content, taken, 1, 'whetstone'));
+  assert.ok(canAllocate(content, ['blade_thunderhead', 'heavy_hands', 'blade_1'], 1, 'storm_blade_near'));
+  assert.ok(canAllocate(content, ['blade_thunderhead', 'heavy_hands', 'blade_1', 'storm_blade_near'], 1, 'storm_1'));
 });
 
 void test('a skill takes one changed form at a time', (): void => {
   const storm: readonly string[] = ['stormcallers_focus', 'storm_1', 'forked_bolt', 'storm_4', 'storm_lance'];
-  const echo: readonly string[] = ['first_echo', 'echo_1', 'long_squall', 'echo_4'];
+  const echo: readonly string[] = ['echo_forkline', 'first_echo', 'echo_1', 'long_squall', 'echo_4'];
   assert.ok(canAllocate(content, echo, 1, 'twice_told_bolt'));
-  assert.ok(!canAllocate(content, [...storm, ...echo], 1, 'twice_told_bolt'));
+  assert.equal(joinBlock(content, [...echo, ...storm], node('twice_told_bolt')), null);
+  assert.ok(!canAllocate(content, [...echo, ...storm], 1, 'twice_told_bolt'));
 });
 
-void test('a place can be given back only while everything taken after it still stands', (): void => {
+void test('a place can be given back only while what is left stays joined to its start', (): void => {
   const taken: readonly string[] = ['stone_thunderclap', 'tempered_body', 'stone_1', 'bedrock'];
   assert.ok(canRefund(content, taken, 'bedrock'));
-  assert.ok(!canRefund(content, taken, 'stone_1'));
-  assert.ok(!canRefund(content, taken, 'old_oak'));
+  assert.equal(refundBlock(content, taken, 'stone_1'), 'split');
+  assert.equal(refundBlock(content, taken, 'stone_thunderclap'), 'root');
+  assert.equal(refundBlock(content, taken, 'old_oak'), 'not_held');
+  assert.ok(canRefund(content, ['stone_thunderclap'], 'stone_thunderclap'));
+  const crossed: readonly string[] = ['storm_storm_bolt', 'stormcallers_focus', 'storm_1', 'storm_blade_near', 'blade_1', 'heavy_hands', 'blade_thunderhead'];
+  assert.ok(canRefund(content, crossed, 'blade_thunderhead'));
+  assert.equal(refundBlock(content, crossed, 'storm_blade_near'), 'split');
+  assert.ok(canRefund(content, crossed, 'storm_storm_bolt'));
+  assert.equal(refundBlock(content, crossed.slice(0, -1), 'storm_storm_bolt'), 'root');
   assert.equal(refundCost(content, 5, 2), 2 * (content.chart.respec.goldPerPoint + content.chart.respec.goldPerLevel * 5));
 });
 
@@ -99,9 +132,28 @@ void test('giving a place back or starting over is ready, not allowed, or short 
   assert.equal(respecState(content, { allocated: [], gold: 0, level: 5 }), 'not_allowed');
 });
 
-void test('places whose way in is gone are dropped in the order they were taken, and the rest stay', (): void => {
+void test('a holding made before the rule keeps every place, grows only from its largest part, and gives back from the leaves', (): void => {
+  const legacy: readonly string[] = ['storm_storm_bolt', 'blade_thunderhead', 'heavy_hands', 'wind_mist_step', 'stone_thunderclap', 'echo_forkline'];
+  assert.deepEqual(reachablePlaces(content, legacy), legacy);
+  assert.equal(holdingParts(content, legacy).length, 5);
+  assert.deepEqual(holdingTrunk(content, legacy).toSorted(), ['blade_thunderhead', 'heavy_hands']);
+  assert.ok(canAllocate(content, legacy, 1, 'blade_1'));
+  assert.ok(!canAllocate(content, legacy, 1, 'stormcallers_focus'));
+  assert.equal(joinBlock(content, legacy, node('tempered_body')), 'branch');
+  assert.equal(joinBlock(content, legacy, node('bedrock')), 'connect');
+  assert.deepEqual(holdingTrunk(content, ['storm_storm_bolt', 'stone_thunderclap']), ['storm_storm_bolt']);
+  assert.ok(canRefund(content, legacy, 'echo_forkline'));
+  assert.ok(canRefund(content, legacy, 'heavy_hands'));
+  assert.equal(refundBlock(content, legacy, 'blade_thunderhead'), 'root');
+  assert.equal(respecState(content, { allocated: legacy, gold: refundCost(content, 5, legacy.length), level: 5 }), 'ready');
+});
+
+void test('on load a place stays when its part of the holding reaches a starting place, in the order it was taken', (): void => {
   assert.deepEqual(reachablePlaces(content, ['stormcallers_focus', 'storm_1', 'stone_thunderclap', 'tempered_body']), ['stone_thunderclap', 'tempered_body']);
   assert.deepEqual(reachablePlaces(content, ['tempered_body', 'stone_thunderclap']), ['tempered_body', 'stone_thunderclap']);
+  const crossed: readonly string[] = ['storm_storm_bolt', 'stormcallers_focus', 'storm_1', 'storm_blade_near', 'blade_1', 'heavy_hands', 'blade_thunderhead'];
+  assert.deepEqual(reachablePlaces(content, crossed), crossed);
+  assert.deepEqual(reachablePlaces(content, ['blade_1', 'heavy_hands']), []);
   assert.deepEqual(reachablePlaces(content, []), []);
 });
 

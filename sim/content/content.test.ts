@@ -6,6 +6,7 @@ import type { Vec2 } from '../math.ts';
 import { buildNavGrid, isWalkable, setDriftOpen } from '../nav/grid.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
+import { placeLinks, startingPlaces } from '../progression.ts';
 import { clipUrl, rigClipNames } from './clips.ts';
 import { wearFrames, wearModel } from '../wear.ts';
 import { loadContent } from './content.ts';
@@ -29,6 +30,8 @@ const ARRIVAL_PUSH = {
 } as const;
 
 const content: Content = loadContent();
+
+const SKILL_TREE_CROSSING = { maxCentreSteps: 8 } as const;
 
 const SAFE = { seeds: [1, 2, 3], seconds: 1.2, dt: 1 / 60 } as const;
 
@@ -266,27 +269,35 @@ void test('every weapon base shows a model that exists in the attachments', (): 
   }
 });
 
-function reachable(nodes: readonly SkillTreeNodeDef[]): Set<string> {
-  const reached: Set<string> = new Set<string>();
-  let grew: boolean = true;
-  while (grew) {
-    grew = false;
-    for (const node of nodes) {
-      if (reached.has(node.id)) continue;
-      const has = (required: string): boolean => reached.has(required);
-      const open: boolean = node.requires.length === 0 || (node.requireMode === 'all' ? node.requires.every(has) : node.requires.some(has));
-      if (!open) continue;
-      reached.add(node.id);
-      grew = true;
+function walked(links: ReadonlyMap<string, readonly string[]>, start: string): Map<string, number> {
+  const steps: Map<string, number> = new Map<string, number>([[start, 0]]);
+  const queue: string[] = [start];
+  for (let index: number = 0; index < queue.length; index += 1) {
+    const at: string | undefined = queue[index];
+    const here: number = at === undefined ? 0 : (steps.get(at) ?? 0);
+    for (const next of at === undefined ? [] : (links.get(at) ?? [])) {
+      if (steps.has(next)) continue;
+      steps.set(next, here + 1);
+      queue.push(next);
     }
   }
-  return reached;
+  return steps;
 }
+
+void test('every place on the Skill Tree is reachable from every starting place by links walked either way, and no centre is far from another', (): void => {
+  const links: ReadonlyMap<string, readonly string[]> = placeLinks(content);
+  const starts: readonly string[] = startingPlaces(content);
+  assert.equal(starts.length, content.chart.paths.length);
+  for (const start of starts) {
+    const steps: ReadonlyMap<string, number> = walked(links, start);
+    assert.equal(steps.size, content.skillTree.length, `${start} reaches every place`);
+    for (const other of starts) assert.ok((steps.get(other) ?? Infinity) <= SKILL_TREE_CROSSING.maxCentreSteps, `${start} to ${other}`);
+  }
+});
 
 void test('the Skill Tree has five paths of a hundred places or more, every place reachable, with crossings between paths', (): void => {
   assert.equal(content.chart.title, 'The Skill Tree');
   assert.ok(content.skillTree.length >= 100);
-  assert.equal(reachable(content.skillTree).size, content.skillTree.length);
   const pathOf: ReadonlyMap<string, string> = new Map<string, string>(content.skillTree.map((node: SkillTreeNodeDef): [string, string] => [node.id, node.path]));
   for (const path of content.chart.paths) {
     const own: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.path === path.id);

@@ -3,7 +3,7 @@ import { conditions } from './parse-conditions.ts';
 import type { Fields } from './read.ts';
 import { choice, ContentError, each, fields, isFields, nonNegative, numeric, positive, text, textList } from './read.ts';
 import type { Content, SkillMod, SkillTreeNodeDef, StatMod } from './types.ts';
-import { MOD_OPS, REQUIRE_MODES, SKILL_MOD_FIELDS, STAT_IDS, TREE_NODE_KINDS } from './types.ts';
+import { MOD_OPS, SKILL_MOD_FIELDS, STAT_IDS, TREE_NODE_KINDS } from './types.ts';
 
 const TINT: RegExp = /^#[0-9a-f]{6}$/i;
 
@@ -42,7 +42,6 @@ export function treeNode(value: unknown, where: string): SkillTreeNodeDef {
     column: numeric(source, 'column', where),
     row: numeric(source, 'row', where),
     requires: textList(source, 'requires', where),
-    requireMode: choice(source, 'requireMode', REQUIRE_MODES, where),
     statMods: each(source['statMods'], `${where}.statMods`, statMod),
     skillMods: each(source['skillMods'], `${where}.skillMods`, skillMod),
     variants: source['variants'] === undefined ? [] : each(source['variants'], `${where}.variants`, variant),

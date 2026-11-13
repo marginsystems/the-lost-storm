@@ -1,4 +1,5 @@
 import type { ChartPath, Content, SkillTreeNodeDef, SkillVariant } from '../../sim/content/types.ts';
+import { holdingTrunk, placeLinks, startingPlaces } from '../../sim/progression.ts';
 
 export const CHART_MODEL = {
   labelReach: 1.13,
@@ -75,15 +76,7 @@ export function pathTint(content: Content, pathId: string): string {
   return content.chart.paths.find((path: ChartPath): boolean => path.id === pathId)?.tint ?? '#8fd8ff';
 }
 
-function dependents(nodes: readonly SkillTreeNodeDef[]): ReadonlyMap<string, readonly string[]> {
-  const links: Map<string, string[]> = new Map<string, string[]>(nodes.map((node: SkillTreeNodeDef): [string, string[]] => [node.id, []]));
-  for (const node of nodes) {
-    for (const required of node.requires) links.get(required)?.push(node.id);
-  }
-  return links;
-}
-
-function walk(links: ReadonlyMap<string, readonly string[]>, starts: readonly string[], allocated: readonly string[], target: string): string[] | null {
+function walk(links: ReadonlyMap<string, readonly string[]>, starts: readonly string[], allocated: readonly string[], target: string): string[] {
   const cameFrom: Map<string, string | null> = new Map<string, string | null>(starts.map((id: string): [string, string | null] => [id, null]));
   const queue: string[] = [...starts];
   for (let index: number = 0; index < queue.length; index += 1) {
@@ -95,11 +88,11 @@ function walk(links: ReadonlyMap<string, readonly string[]>, starts: readonly st
       queue.push(next);
     }
   }
-  if (!cameFrom.has(target)) return null;
+  if (!cameFrom.has(target)) return [];
   const route: string[] = [];
   let step: string | null = target;
-  while (step !== null && !allocated.includes(step)) {
-    route.unshift(step);
+  while (step !== null) {
+    if (!allocated.includes(step)) route.unshift(step);
     step = cameFrom.get(step) ?? null;
   }
   return route;
@@ -107,11 +100,8 @@ function walk(links: ReadonlyMap<string, readonly string[]>, starts: readonly st
 
 export function chartRoute(content: Content, allocated: readonly string[], target: string): string[] {
   if (allocated.includes(target)) return [];
-  const nodes: readonly SkillTreeNodeDef[] = content.skillTree;
-  const roots: readonly string[] = nodes.filter((node: SkillTreeNodeDef): boolean => node.requires.length === 0).map((node: SkillTreeNodeDef): string => node.id);
-  if (roots.includes(target)) return [target];
-  const links: ReadonlyMap<string, readonly string[]> = dependents(nodes);
-  return walk(links, allocated, allocated, target) ?? walk(links, [...allocated, ...roots], allocated, target) ?? [];
+  const trunk: readonly string[] = holdingTrunk(content, allocated);
+  return walk(placeLinks(content), trunk.length > 0 ? trunk : startingPlaces(content), allocated, target);
 }
 
 export function chartHere(content: Content, allocated: readonly string[]): string | null {
