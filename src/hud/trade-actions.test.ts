@@ -7,43 +7,100 @@ import { generateItem } from '../../sim/items.ts';
 import { createRng } from '../../sim/rng.ts';
 import { sellPrice } from '../../sim/world/trade.ts';
 import type { ItemInstance, World } from '../../sim/world/types.ts';
-import { inventoryCommand, inventoryHint, picksForSale } from './trade-actions.ts';
+import { bagAction, inventoryHint, offeredItem, picksForSale, SALE_WORDS, saleCommand, saleEmptyText } from './trade-actions.ts';
 
 const content: Content = loadContent();
+const CLICKS = ['click', 'ctrl', 'right'] as const;
 
-void test('an inventory click equips or drops when nothing is open, sells at a vendor and stores at a stash', (): void => {
+function sword(uid: number): ItemInstance {
+  return { ...must(generateItem(content, createRng(uid), uid, 2, 'stormsteel_sword', 'magic'), 'item'), uid };
+}
+
+function holding(items: Readonly<Record<number, ItemInstance>>): World {
   const world: World = worldIn(content, content.world.start, 2);
-  const item: ItemInstance = must(generateItem(content, createRng(3), 3, 2, 'stormsteel_sword', 'magic'), 'item');
-  assert.deepEqual(inventoryCommand(world, 4, 'click'), { type: 'equip', inventoryIndex: 4 });
-  assert.deepEqual(inventoryCommand(world, 4, 'ctrl'), { type: 'equip', inventoryIndex: 4 });
-  assert.deepEqual(inventoryCommand(world, 4, 'right'), { type: 'drop', inventoryIndex: 4 });
+  for (const [index, item] of Object.entries(items)) world.player.inventory[Number(index)] = item;
+  return world;
+}
+
+function atVendor(world: World): World {
+  world.service = { kind: 'vendor', owner: 'any', anchor: { x: 0, z: 0 } };
+  return world;
+}
+
+void test('a bag click equips whether or not the trader is open, and never sells', (): void => {
+  const item: ItemInstance = sword(4001);
+  const world: World = holding({ 4: item });
+  assert.deepEqual(bagAction(world, 4, 'click'), { kind: 'send', command: { type: 'equip', inventoryIndex: 4 } });
+  assert.deepEqual(bagAction(world, 4, 'ctrl'), { kind: 'send', command: { type: 'equip', inventoryIndex: 4 } });
+  assert.deepEqual(bagAction(world, 4, 'right'), { kind: 'send', command: { type: 'drop', inventoryIndex: 4 } });
   assert.equal(inventoryHint(world, item, false), 'Click to equip · Right click to drop');
   assert.equal(inventoryHint(world, item, true), 'Tap to equip');
-  world.service = { kind: 'vendor', owner: 'any', anchor: { x: 0, z: 0 } };
-  for (const click of ['click', 'ctrl', 'right'] as const) assert.deepEqual(inventoryCommand(world, 1, click), { type: 'trade', action: { type: 'sell', inventoryIndex: 1 } });
-  assert.ok(inventoryHint(world, item, false).includes(String(sellPrice(content, item))));
+  atVendor(world);
+  assert.deepEqual(bagAction(world, 4, 'click'), { kind: 'send', command: { type: 'equip', inventoryIndex: 4 } });
+  assert.deepEqual(bagAction(world, 4, 'ctrl'), { kind: 'send', command: { type: 'equip', inventoryIndex: 4 } });
+  for (const click of CLICKS) {
+    const action = bagAction(world, 4, click);
+    assert.ok(action.kind !== 'send' || action.command.type !== 'trade', click);
+  }
+});
+
+void test('at the trader a right click offers the item and shows its price before any sale', (): void => {
+  const item: ItemInstance = sword(4002);
+  const world: World = atVendor(holding({ 1: item }));
+  assert.deepEqual(bagAction(world, 1, 'right'), { kind: 'offer', uid: 4002 });
+  const price: number = sellPrice(content, item);
+  assert.equal(inventoryHint(world, item, false), `Click to equip · Right click to offer for ${price} gold`);
+  assert.equal(SALE_WORDS.button(price), `Sell · ${price} gold`);
+  assert.equal(saleEmptyText(false), 'Right click to offer an item from your bag');
+  assert.equal(saleEmptyText(true), 'Hold an item in your bag to offer it');
+});
+
+void test('the sell button sells the offered item wherever it sits, and nothing once it has left the bag', (): void => {
+  const item: ItemInstance = sword(4003);
+  const world: World = atVendor(holding({ 5: item }));
+  assert.deepEqual(saleCommand(world, 4003), { type: 'trade', action: { type: 'sell', inventoryIndex: 5 } });
+  assert.equal(offeredItem(world, 4003), item);
+  assert.equal(saleCommand(world, null), null);
+  world.player.inventory[5] = null;
+  world.player.inventory[2] = item;
+  assert.deepEqual(saleCommand(world, 4003), { type: 'trade', action: { type: 'sell', inventoryIndex: 2 } });
+  world.player.inventory[2] = null;
+  world.player.equipped.weapon = item;
+  assert.equal(offeredItem(world, 4003), null);
+  assert.equal(saleCommand(world, 4003), null);
+  world.player.inventory[2] = item;
+  world.service = null;
+  assert.equal(saleCommand(world, 4003), null);
+});
+
+void test('a story item is never dropped, offered or sold from the bag, though it can be stashed', (): void => {
+  const journal: ItemInstance = { uid: 5100, base: 'worn_journal', rarity: 'common', level: 1, affixes: [], ledger: null };
+  const world: World = holding({ 0: journal });
+  assert.deepEqual(bagAction(world, 0, 'right'), { kind: 'deny' });
+  atVendor(world);
+  assert.deepEqual(bagAction(world, 0, 'right'), { kind: 'deny' });
+  assert.equal(saleCommand(world, 5100), null);
   world.service = { kind: 'stash', owner: 'any', anchor: { x: 0, z: 0 } };
-  for (const click of ['click', 'ctrl', 'right'] as const) assert.deepEqual(inventoryCommand(world, 2, click), { type: 'trade', action: { type: 'stash', inventoryIndex: 2 } });
+  assert.deepEqual(bagAction(world, 0, 'right'), { kind: 'send', command: { type: 'trade', action: { type: 'stash', inventoryIndex: 0 } } });
+});
+
+void test('at the stash every bag click stores the item', (): void => {
+  const item: ItemInstance = sword(4004);
+  const world: World = holding({ 2: item });
+  world.service = { kind: 'stash', owner: 'any', anchor: { x: 0, z: 0 } };
+  for (const click of CLICKS) assert.deepEqual(bagAction(world, 2, click), { kind: 'send', command: { type: 'trade', action: { type: 'stash', inventoryIndex: 2 } } });
   assert.equal(inventoryHint(world, item, false), 'Click to stash');
 });
 
-void test('a story item is never dropped or sold from the bag, though it can be stashed', (): void => {
-  const world: World = worldIn(content, content.world.start, 2);
-  world.player.inventory[0] = { uid: 5100, base: 'worn_journal', rarity: 'common', level: 1, affixes: [], ledger: null };
-  assert.equal(inventoryCommand(world, 0, 'right'), null);
-  world.service = { kind: 'vendor', owner: 'any', anchor: { x: 0, z: 0 } };
-  for (const click of ['click', 'ctrl', 'right'] as const) assert.equal(inventoryCommand(world, 0, click), null);
-  world.service = { kind: 'stash', owner: 'any', anchor: { x: 0, z: 0 } };
-  assert.deepEqual(inventoryCommand(world, 0, 'right'), { type: 'trade', action: { type: 'stash', inventoryIndex: 0 } });
-});
-
 void test('at the auctioneer a bag click picks the item to sell instead of sending a command', (): void => {
-  const world: World = worldIn(content, content.world.start, 2);
-  const item: ItemInstance = { ...must(generateItem(content, createRng(4), 4, 2, 'stormsteel_sword', 'magic'), 'item'), ledger: 'itm_AAAAAAAAAAAAAAAAAAAAAA' };
+  const item: ItemInstance = { ...sword(4005), ledger: 'itm_AAAAAAAAAAAAAAAAAAAAAA' };
+  const world: World = holding({ 1: item });
   assert.equal(picksForSale(world), false);
   world.service = { kind: 'auction', owner: 'any', anchor: { x: 0, z: 0 } };
   assert.equal(picksForSale(world), true);
-  for (const click of ['click', 'ctrl', 'right'] as const) assert.equal(inventoryCommand(world, 1, click), null);
+  assert.deepEqual(bagAction(world, 1, 'click'), { kind: 'pick' });
+  assert.deepEqual(bagAction(world, 1, 'ctrl'), { kind: 'pick' });
+  assert.deepEqual(bagAction(world, 1, 'right'), { kind: 'deny' });
   assert.equal(inventoryHint(world, item, false), 'Click to pick to sell');
   assert.equal(inventoryHint(world, { ...item, ledger: null }, false), '');
 });

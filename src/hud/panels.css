@@ -143,6 +143,8 @@
   cursor: pointer;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.06);
+  user-select: none;
+  -webkit-touch-callout: none;
   transition: background-color var(--spring-smooth-ms) var(--spring-smooth);
 }
 

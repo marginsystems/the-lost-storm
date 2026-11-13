@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
-import type { Content, TalkDef } from '../content/types.ts';
-import { generateItem } from '../items.ts';
+import type { Content, ItemSlot, TalkDef } from '../content/types.ts';
+import { generateItem, slotOf } from '../items.ts';
 import { createRng } from '../rng.ts';
 import { stepWorld } from './step.ts';
 import type { Station } from './trade.ts';
@@ -146,6 +146,25 @@ void test('a purchase is refused with a notice when gold or space is short, and 
   assert.deepEqual(notices(trade(full, { type: 'buy', index: 0 })), ['inventory_full']);
   assert.equal(full.player.gold, 1e6);
   assert.notEqual(stockOf(full).stock[0], null);
+});
+
+void test('an item bought from the trader is put on from the bag while the stall is still open, and no gold comes back', (): void => {
+  const world: World = atVendor(8);
+  const index: number = stockOf(world).stock.findIndex((item: ItemInstance | null): boolean => item !== null && slotOf(content, item) !== null);
+  assert.ok(index >= 0);
+  const item: ItemInstance = must(stockOf(world).stock[index], 'stock item');
+  const slot: ItemSlot = must(slotOf(content, item), 'slot');
+  world.player.gold = buyPrice(content, item);
+  trade(world, { type: 'buy', index });
+  const bagIndex: number = world.player.inventory.findIndex((held: ItemInstance | null): boolean => held?.uid === item.uid);
+  assert.ok(bagIndex >= 0);
+  const before: ItemInstance | null = world.player.equipped[slot];
+  stepWorld(world, [{ type: 'equip', inventoryIndex: bagIndex }], DT);
+  assert.equal(world.service?.kind, 'vendor');
+  assert.equal(world.player.equipped[slot]?.uid, item.uid);
+  assert.equal(world.player.gold, 0);
+  assert.equal(world.player.inventory[bagIndex]?.uid ?? null, before?.uid ?? null);
+  assert.deepEqual(stockOf(world).buyback, []);
 });
 
 void test('selling pays the sale price, and the last few sales wait in the buy-back row at the same price', (): void => {

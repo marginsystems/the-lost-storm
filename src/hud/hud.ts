@@ -62,6 +62,7 @@ import { createSkillBar } from './skill-bar.ts';
 import type { SkillBar } from './skill-bar.ts';
 import { createNotices, createSurgeStatus, createXpBar } from './status.ts';
 import type { Notices, WorldStatus, XpBar } from './status.ts';
+import { createSaleOffer } from './sale-offer.ts';
 import { createTooltip } from './tooltip.ts';
 import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
@@ -118,7 +119,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   };
 
   const tooltip: Tooltip = createTooltip(root);
-  const context: HudContext = { api, tooltip };
+  const context: HudContext = { api, tooltip, sale: createSaleOffer() };
   const globes: Globes = createGlobes(root);
   const flaskKey = (slot: number): string => {
     const action: ActionId | null = flaskAction(slot);

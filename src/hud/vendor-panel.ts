@@ -1,13 +1,17 @@
 import type { NpcDef } from '../../sim/content/types.ts';
+import { itemName, rarityOf } from '../../sim/items.ts';
 import { shownTitle } from './npc-title.ts';
 import { buyPrice, sellPrice } from '../../sim/world/trade.ts';
-import type { ItemInstance, VendorStock, World } from '../../sim/world/types.ts';
+import type { Command, ItemInstance, VendorStock, World } from '../../sim/world/types.ts';
 import type { HudContext, PanelView } from './context.ts';
-import { el, label, setText } from './dom.ts';
+import { el, label, retrigger, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
 import type { ItemCell } from './item-cell.ts';
 import { createItemCell, showItem } from './item-cell.ts';
 import { promptText, use } from './prompts.ts';
+import { offeredItem, SALE_WORDS, saleCommand, saleEmptyText } from './trade-actions.ts';
+
+const SALE_HINT: string = 'take back';
 
 interface PricedCell {
   readonly view: ItemCell;
@@ -48,6 +52,28 @@ export function createVendorPanel(parent: HTMLElement, context: HudContext): Pan
   const stockGrid: HTMLDivElement = el('div', 'inv-grid', element);
   label('panel-subtitle', 'Buy back', element);
   const backGrid: HTMLDivElement = el('div', 'inv-grid', element);
+  label('panel-subtitle', 'Sell', element);
+  const sale: HTMLDivElement = el('div', 'trade-sale', element);
+  const saleCell: ItemCell = createItemCell(context, sale, (): string => promptText(context.api.touch, use(SALE_HINT)));
+  const saleSide: HTMLDivElement = el('div', 'trade-sale-side', sale);
+  const saleText: HTMLDivElement = label('trade-sale-text', '', saleSide);
+  const sellButton: HTMLButtonElement = el('button', 'trade-sell', saleSide);
+  sellButton.type = 'button';
+  saleCell.cell.addEventListener('click', (): void => {
+    if (saleCell.current === null) return;
+    context.tooltip.hide();
+    context.sale.set(null);
+  });
+  sellButton.addEventListener('click', (event: MouseEvent): void => {
+    event.stopPropagation();
+    const command: Command | null = saleCommand(context.api.world, context.sale.uid());
+    if (command === null) {
+      retrigger(sellButton, 'deny');
+      return;
+    }
+    context.sale.set(null);
+    context.api.send(command);
+  });
 
   const send = (action: { readonly type: 'buy' | 'buy_back'; readonly index: number }): void => {
     context.api.send({ type: 'trade', action });
@@ -81,6 +107,20 @@ export function createVendorPanel(parent: HTMLElement, context: HudContext): Pan
       for (const [index, cell] of backCells.entries()) {
         const item: ItemInstance | null = stock?.buyback[index] ?? null;
         if (showPriced(context, cell, item, item === null ? 0 : sellPrice(world.content, item), coins)) changed = true;
+      }
+      const offered: ItemInstance | null = offeredItem(world, context.sale.uid());
+      if (offered === null) context.sale.set(null);
+      if (showItem(context, saleCell, offered)) changed = true;
+      const wasShown: boolean = sellButton.classList.contains('shown');
+      sale.classList.toggle('offering', offered !== null);
+      sellButton.classList.toggle('shown', offered !== null);
+      if (offered === null) {
+        setText(saleText, saleEmptyText(context.api.touch), true);
+        saleText.style.removeProperty('--rarity');
+      } else {
+        setText(saleText, itemName(world.content, offered), true);
+        saleText.style.setProperty('--rarity', rarityOf(world.content, offered).color);
+        setText(sellButton, SALE_WORDS.button(sellPrice(world.content, offered)), wasShown);
       }
       if (changed) context.tooltip.hide();
     },
