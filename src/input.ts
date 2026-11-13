@@ -2,7 +2,6 @@ import type { Box3 as Box3Type } from 'three';
 import { Box3, Vector2, Vector3 } from 'three';
 import type { ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
-import { allHold } from '../sim/world/conditions.ts';
 import { exitUnder } from '../sim/world/exits.ts';
 import { aimedItem } from '../sim/world/finds.ts';
 import { readyToRepeat } from '../sim/world/skills.ts';
@@ -335,7 +334,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
             hooks.clickMarker(station.placed.x, station.placed.z, false);
           }
         } else if (exit !== null) {
-          const through: Command | null = exitPress(exit.id, { fresh: leftFresh, tick: leftTick, open: allHold(world, exit.requires), ground });
+          const through: Command | null = exitPress(exit.id, { fresh: leftFresh, travelling: world.player.intent.type === 'travel', ground });
           if (through !== null) commands.push(through);
           if (leftFresh) hooks.clickMarker(exit.x, exit.z, false);
         } else {

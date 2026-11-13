@@ -1,5 +1,5 @@
 import type { ZoneEncounter, ZoneVoid } from '../content/story-types.ts';
-import type { ItemSlot, ZoneExit } from '../content/types.ts';
+import type { ItemSlot } from '../content/types.ts';
 import { generateItem, slotOf } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, dot, length, normalize } from '../math.ts';
@@ -9,7 +9,6 @@ import { moveExit } from './exits.ts';
 import { removeGround } from './ground.ts';
 import { setFlags } from './story.ts';
 import type { EncounterState, GroundItem, ItemInstance, World, WorldEvent } from './types.ts';
-import { travelThrough } from './zones.ts';
 
 const DEGREES: number = Math.PI / 180;
 
@@ -112,21 +111,7 @@ function takeFinds(world: World, rules: ZoneVoid, events: readonly WorldEvent[])
   }
 }
 
-function enterLight(world: World, rules: ZoneVoid): void {
-  for (const met of rules.encounters) {
-    if (met.find.type !== 'exit') continue;
-    const exitId: string = met.find.exit;
-    const state: EncounterState | undefined = world.encounters.find((entry: EncounterState): boolean => entry.id === met.id);
-    const exit: ZoneExit | undefined = world.zone.exits.find((entry: ZoneExit): boolean => entry.id === exitId);
-    if (state?.pos === null || state === undefined || exit === undefined || !allHold(world, exit.requires)) continue;
-    if (distance(world.player.pos, exit) > exit.radius) continue;
-    travelThrough(world, exit);
-    return;
-  }
-}
-
 export function stepEncounters(world: World, rules: ZoneVoid, travelled: number, dt: number): void {
   takeFinds(world, rules, world.events);
   for (const met of rules.encounters) stepOne(world, rules, met, travelled, dt);
-  if (world.player.alive) enterLight(world, rules);
 }

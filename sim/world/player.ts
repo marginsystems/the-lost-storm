@@ -2,10 +2,9 @@ import type { SkillDef, ZoneExit } from '../content/types.ts';
 import { forceStrike } from './moments.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { isWalkable, lineWalkable, nearestWalkable } from '../nav/grid.ts';
+import { isWalkable, lineWalkable } from '../nav/grid.ts';
 import { directPath, findPath, nearFace } from '../nav/path.ts';
 import { blockerInReach, chasePath, chaseStalled, freshChase } from './chase.ts';
-import { exitOnLine } from './exits.ts';
 import { pastBlocks, roundPast, stillRound } from './stick.ts';
 import { allocateNode, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
@@ -27,7 +26,6 @@ import { stepWaypoints, teleport } from './waypoints.ts';
 import { findExit, stepCheckpoints, travelThrough } from './zones.ts';
 
 const PLAYER = {
-  heldExitSlack: 1.3,
   moveDeadZone: 0.7,
   faceDeadZone: 0.1,
   faceTurn: 0.35,
@@ -58,8 +56,6 @@ function setDestination(world: World, dest: Vec2): void {
 function heldAim(world: World, dest: Vec2): Vec2 {
   const player: PlayerState = world.player;
   const walkable: boolean = isWalkable(world.grid, dest.x, dest.z);
-  const exit: ZoneExit | null = exitOnLine(world, walkable ? dest : player.pos, dest, PLAYER.heldExitSlack);
-  if (exit !== null) return nearestWalkable(world.grid, exit, exit.radius) ?? dest;
   return walkable ? dest : (nearFace(world.grid, player.pos, dest) ?? dest);
 }
 
@@ -70,7 +66,7 @@ interface HeldWay {
 
 function roundWay(world: World, dest: Vec2): Vec2[] | null {
   const player: PlayerState = world.player;
-  if (lineWalkable(world.grid, player.pos, dest) || exitOnLine(world, player.pos, dest, PLAYER.heldExitSlack) !== null) return null;
+  if (lineWalkable(world.grid, player.pos, dest)) return null;
   const openings: Vec2[] = pastBlocks(world.grid, player.pos, dest);
   if (openings.length === 0) return null;
   const going: boolean = player.intent.type === 'move' && player.path.length > 0;
@@ -453,18 +449,6 @@ function collectGold(world: World): void {
   }
 }
 
-function walkIntoExit(world: World): void {
-  const player: PlayerState = world.player;
-  for (const exit of world.zone.exits) {
-    if (distance(player.pos, exit) > exit.radius) continue;
-    if (!allHold(world, exit.requires)) continue;
-    player.intent = { type: 'idle' };
-    player.path = [];
-    travelThrough(world, exit);
-    return;
-  }
-}
-
 function isBusy(player: PlayerState): boolean {
   return player.action !== null;
 }
@@ -516,7 +500,6 @@ export function stepPlayer(world: World, dt: number): void {
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.strideTravel = PLAYER.stride * PLAYER.firstStepFraction;
   collectGold(world);
-  if (player.moving) walkIntoExit(world);
   stepCheckpoints(world);
   stepWaypoints(world);
 }
