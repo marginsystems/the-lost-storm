@@ -162,6 +162,7 @@ export interface PlayerState extends ActorState {
   invulnerable: number;
   strideTravel: number;
   walked: Vec2;
+  chase: ChaseState;
   kills: number;
   flasks: FlaskState[];
   powers: PowerState;
@@ -320,6 +321,11 @@ export interface MoveCommand {
   readonly type: 'move';
   readonly held: boolean;
   readonly dest: Vec2;
+}
+
+export interface ChaseState {
+  mark: Vec2;
+  still: number;
 }
 
 export interface SkillCommand {

@@ -4,6 +4,7 @@ import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { isWalkable, nearestWalkable } from '../nav/grid.ts';
 import { directPath, findPath, nearFace } from '../nav/path.ts';
+import { blockerInReach, chasePath, chaseStalled, freshChase } from './chase.ts';
 import { exitOnLine } from './exits.ts';
 import { allocateNode, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
@@ -135,8 +136,24 @@ function useSkill(world: World, command: SkillCommand): void {
     return;
   }
   closeDialogue(world, false);
+  if (player.intent.type !== 'attack') player.chase = freshChase(player.pos);
+  const fresh: boolean = player.intent.type !== 'attack' || player.intent.targetId !== target.id;
   player.intent = { type: 'attack', slot: command.slot, targetId: target.id };
-  setDestination(world, target.pos);
+  if (fresh) faceToward(player, { x: target.pos.x - player.pos.x, z: target.pos.z - player.pos.z }, Math.PI);
+  chaseTarget(world, target);
+}
+
+function chaseTarget(world: World, target: Actor): void {
+  world.player.path = chasePath(world, target);
+  world.player.repathTimer = PLAYER.repathInterval;
+}
+
+function strikeBlocker(world: World, target: Actor, skill: SkillDef, slot: number): boolean {
+  const blocker: Actor | null = blockerInReach(world, target, skill);
+  if (blocker === null || !fire(world, skill, blocker.pos, slot)) return false;
+  world.player.intent = { type: 'attack', slot, targetId: target.id };
+  world.player.chase = freshChase(world.player.pos);
+  return true;
 }
 
 function act(world: World, command: Command): void {
@@ -324,7 +341,13 @@ function stepIntent(world: World, dt: number): void {
         }
         return;
       }
-      pursue(world, target.pos, dt);
+      if (chaseStalled(player, dt)) {
+        player.chase = freshChase(player.pos);
+        if (strikeBlocker(world, target, skill, intent.slot)) return;
+        player.repathTimer = 0;
+      }
+      player.repathTimer -= dt;
+      if (player.repathTimer <= 0) chaseTarget(world, target);
       return;
     }
     case 'pickup': {

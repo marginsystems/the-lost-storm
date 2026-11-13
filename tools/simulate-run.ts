@@ -133,7 +133,8 @@ function lootAround(bot: Bot, at: Vec2): void {
 function fightMoment(bot: Bot, moment: MomentState, until: number, loot: boolean): void {
   const world: World = bot.world;
   const zone: string = world.zone.id;
-  if (moment.phase === 'dormant') botWalkTo(bot, zone, moment.pos, Math.max(BOT.arrive, moment.def.radius * 0.4));
+  const before: number = world.time;
+  if (moment.phase === 'dormant' && botWalkTo(bot, zone, moment.pos, Math.max(BOT.arrive, moment.def.radius * 0.4)) && world.time === before) botStep(bot, []);
   const limit: number = Math.min(until, world.time + RUN.fightWait);
   while (moment.phase === 'awake' && world.time < limit && world.zone.id === zone) botFight(bot, (): boolean => moment.phase !== 'awake' || world.time >= limit, null);
   if (loot && moment.outcome === 'resolved' && world.zone.id === zone && world.player.alive) lootAround(bot, moment.pos);

@@ -84,6 +84,7 @@ function freshPlayer(content: Content, save: SaveData | null): PlayerState {
     invulnerable: 0,
     strideTravel: 0,
     walked: { x: 0, z: 0 },
+    chase: { mark: { x: 0, z: 0 }, still: 0 },
     kills: save?.kills ?? 0,
     flasks: createFlasks(content, save?.flasks ?? null),
     powers: emptyPowerState(),

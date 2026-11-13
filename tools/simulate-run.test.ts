@@ -23,6 +23,7 @@ const GUARD = {
   farmLevel: { min: 6, max: 12 },
   rareShare: 2 / 3,
   strikeGap: 6,
+  dormantWait: 0.5,
 } as const;
 
 function runs(scenario: Scenario, skill: string): RunSummary[] {
@@ -80,4 +81,16 @@ void test('a careful player farming the Hall for thirty minutes finds a rare or 
   const lucky: number = farms.filter((run: RunSummary): boolean => run.drops.some((drop): boolean => rare.has(drop.rarity))).length;
   assert.ok(lucky / farms.length >= GUARD.rareShare, `${lucky} of ${farms.length} runs found a rare`);
   for (const run of farms) assert.ok(run.endLevel >= GUARD.farmLevel.min && run.endLevel <= GUARD.farmLevel.max, `seed ${run.seed ?? '?'} ended at level ${run.endLevel}`);
+});
+
+void test('a farm that finds the hero already standing in a dormant moment lets time pass instead of spinning', (): void => {
+  const world: World = createWorld(CONTENT, { seed: 3, save: null });
+  world.monsters = [];
+  const moment: MomentState | null = forceStrike(world, { x: world.player.pos.x, z: world.player.pos.z }, 'first_fire');
+  assert.ok(moment !== null);
+  while (moment.phase === 'mark') stepWorld(world, [], BOT.step);
+  assert.equal(moment.phase, 'dormant');
+  const start: number = world.time;
+  assert.equal(farm(createBot(world), start + GUARD.dormantWait, false, (): boolean => false), true);
+  assert.ok(world.time >= start + GUARD.dormantWait);
 });
