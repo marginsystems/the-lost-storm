@@ -945,7 +945,7 @@
       "name": "Crown of the Struck Hour",
       "slot": "head",
       "material": "leather",
-      "icon": "helm",
+      "icon": "crown",
       "dropWeight": 1,
       "minLevel": 1,
       "visual": null,

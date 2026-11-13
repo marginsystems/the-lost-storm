@@ -21,6 +21,7 @@ const GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
   ['axe', '<path d="M5 20 14 8"/><path d="M11 4l7-1 3 4-7 4z" fill="currentColor"/>'],
   ['armour', '<path d="M12 3l8 3v6c0 5-4 8-8 10-4-2-8-5-8-10V6z"/><path d="M12 7v11"/><path d="M8 11h8" opacity="0.6"/>'],
   ['helm', '<path d="M5 13a7 7 0 0 1 14 0v6h-4.5v-4h-5v4H5z"/><path d="M12 6v7" opacity="0.6"/>'],
+  ['crown', '<path d="M4 18.5h16"/><path d="M4.6 15.5 3.4 7.5l4.8 3.6L12 4.5l3.8 6.6 4.8-3.6-1.2 8z"/><circle cx="12" cy="12.6" r="1.3" fill="currentColor" stroke="none"/>'],
   ['gloves', '<path d="M7 20v-5l-2-5 1.6-.8L8.5 12V5.2a1.2 1.2 0 0 1 2.4 0V10M10.9 10V4.2a1.2 1.2 0 0 1 2.4 0V10M13.3 10V5.2a1.2 1.2 0 0 1 2.4 0V11M15.7 11V7.4a1.2 1.2 0 0 1 2.3 0V15l-1 5z"/><path d="M7 17h10" opacity="0.6"/>'],
   ['legs', '<path d="M6.5 3h11l1 18h-5L12 9l-1.5 12h-5z"/><path d="M6.5 6.5h11" opacity="0.6"/>'],
   ['staff', '<path d="M6 21 16.5 6.5"/><circle cx="17.6" cy="5" r="2.6" fill="currentColor"/><path d="M13.4 8.4l3.2 2.2" opacity="0.6"/>'],
