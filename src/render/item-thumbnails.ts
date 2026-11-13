@@ -1,5 +1,5 @@
-import type { Material, Object3D, WebGLRenderTarget } from 'three';
-import { ACESFilmicToneMapping, Box3, Color, DirectionalLight, Group, Mesh, MeshStandardMaterial, OrthographicCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from 'three';
+import type { Material, Matrix4, Object3D, WebGLRenderTarget } from 'three';
+import { ACESFilmicToneMapping, Box3, BufferAttribute, BufferGeometry, Color, InterleavedBufferAttribute, DirectionalLight, Group, Mesh, MeshStandardMaterial, OrthographicCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { Timers } from '../backend/backend.ts';
 import type { CharacterLibrary, LoadedWearable } from './character-loader.ts';
@@ -26,6 +26,9 @@ export const THUMBNAIL = {
   wornTurn: -0.5,
   wornTilt: 0.12,
   wideFrom: 2,
+  sleeveLift: Math.PI / 2,
+  sleeveHang: -Math.PI / 2,
+  handShare: 0.24,
   gapMs: 0,
 } as const;
 
@@ -92,14 +95,34 @@ function boundsOf(posed: Group): Box3 {
   return new Box3().setFromObject(posed, true);
 }
 
+function outerPoints(posed: Group, from: number): Vector3[] {
+  const points: Vector3[] = [];
+  posed.updateMatrixWorld(true);
+  posed.traverse((node: Object3D): void => {
+    if (!(node instanceof Mesh)) return;
+    const geometry: unknown = node.geometry;
+    if (!(geometry instanceof BufferGeometry)) return;
+    const positions: unknown = geometry.getAttribute('position');
+    if (!(positions instanceof BufferAttribute) && !(positions instanceof InterleavedBufferAttribute)) return;
+    for (let index: number = 0; index < positions.count; index += 1) {
+      const point: Vector3 = new Vector3().fromBufferAttribute(positions, index).applyMatrix4(node.matrixWorld);
+      if (point.x >= from) points.push(point);
+    }
+  });
+  return points;
+}
+
 function oneSleeve(posed: Group): Box3 {
   const whole: Box3 = boundsOf(posed);
   const size: Vector3 = whole.getSize(new Vector3());
   if (size.x < size.y * THUMBNAIL.wideFrom) return whole;
-  const half: Box3 = new Box3(new Vector3(whole.getCenter(new Vector3()).x, whole.min.y, whole.min.z), whole.max.clone());
-  posed.rotation.z = -THUMBNAIL.diagonal;
+  const points: Vector3[] = outerPoints(posed, whole.max.x - (whole.max.x - whole.getCenter(new Vector3()).x) * THUMBNAIL.handShare);
+  if (points.length === 0) return whole;
+  const before: Matrix4 = posed.matrixWorld.clone().invert();
+  posed.rotation.set(THUMBNAIL.sleeveLift, 0, THUMBNAIL.sleeveHang, 'ZYX');
   posed.updateMatrixWorld(true);
-  return half.applyMatrix4(posed.matrixWorld);
+  const turn: Matrix4 = posed.matrixWorld.clone().multiply(before);
+  return new Box3().setFromPoints(points.map((point: Vector3): Vector3 => point.applyMatrix4(turn)));
 }
 
 export async function createItemThumbnails(library: CharacterLibrary, wearableIds: readonly string[], timers: Timers): Promise<ItemThumbnails> {
