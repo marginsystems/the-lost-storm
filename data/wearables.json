@@ -296,7 +296,7 @@
   },
   {
     "id": "mender_gloves",
-    "model": "models/wear/long_gloves.glb",
+    "model": "models/wear/long_gloves_makehuman.glb",
     "region": "hands",
     "tint": "#c9b9a0",
     "hides": [
