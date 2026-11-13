@@ -13,6 +13,8 @@ import { chooseGait, clipKindOf, clipsFor, knockPose } from './locomotion.ts';
 import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
 import type { Spring } from '../hud/character-spring.ts';
 import { springTo, stepSpring } from '../hud/character-spring.ts';
+import type { AnimationBank } from './animation-bank.ts';
+import { animationBank } from './animation-bank.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -79,6 +81,7 @@ export interface SyncOptions {
   readonly rise: number;
   readonly floor: number;
   readonly turnRate: number;
+  readonly seen: boolean;
 }
 
 export interface ActorView {
@@ -137,6 +140,8 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let dead: boolean = false;
   let lying: boolean = false;
   let woke: WakePose | null = null;
+  let settled: boolean = false;
+  const bank: AnimationBank = animationBank();
   let risen: boolean = false;
   const spare = { q: new Quaternion(), turn: new Quaternion(), v: new Vector3() };
   const side: Vector3 = new Vector3();
@@ -197,7 +202,13 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let ownShadow: MeshBasicMaterial | null = null;
   current.play();
 
+  const payOwed = (): void => {
+    const owed: number = bank.owe();
+    if (owed > 0) rig.mixer.update(owed);
+  };
+
   const play = (clip: AnimationClip, fade: number, speed: number, once: boolean, restart: boolean): void => {
+    payOwed();
     const next: AnimationAction = rig.mixer.clipAction(clip);
     const previous: AnimationAction = current;
     if (next === previous && !restart) {
@@ -256,6 +267,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       if (dead) {
         const sunk: number = Math.min(ACTOR.sinkLimit, Math.max(0, actor.deadTime - ACTOR.sinkDelay) * ACTOR.sinkSpeed);
         rig.root.position.y = options.floor - sunk;
+        settled = sunk >= ACTOR.sinkLimit && !current.isRunning();
       } else if (lying) {
         rig.root.position.y = options.floor;
         rig.root.rotation.y = yaw;
@@ -271,6 +283,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         if (follow !== null) {
           follow.left -= dt;
           if (follow.left <= 0) {
+            payOwed();
             current.timeScale = follow.speed;
             follow = null;
           }
@@ -298,8 +311,12 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       rig.setFlash(flashColor, flash);
       rig.setHover(hoverColor, Math.max(0, hoverLevel.value));
       unlayer();
-      rig.mixer.update(dt);
-      rig.relaxHands();
+      const posing: boolean = lying || woke !== null;
+      const step: number | null = settled && !posing ? null : bank.take(dt, posing || options.seen);
+      if (step !== null) {
+        rig.mixer.update(step);
+        rig.relaxHands();
+      }
       rig.stepWear(dt);
       if (lying && woke !== null) {
         layerWake(woke);
@@ -332,6 +349,8 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     },
     revive(): void {
       dead = false;
+      settled = false;
+      bank.drop();
       oneShot = 0;
       play(idleClip(rig), ACTOR.locomotionFade, 1, false, true);
     },

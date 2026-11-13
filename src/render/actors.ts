@@ -1,3 +1,5 @@
+import type { Sight } from './sight.ts';
+import { SEES_ALL } from './sight.ts';
 import type { Box3, Object3D, Scene } from 'three';
 import { knockTime } from '../../sim/world/movement.ts';
 import { Color } from 'three';
@@ -99,7 +101,7 @@ function echoLook(current: World, monster: MonsterState): EchoLook | null {
   return { ghost: createGhostUniforms(from, ACTORS.echoMix), from, to: new Color(current.content.moments.hostileTint) };
 }
 
-export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean): Actors {
+export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean, sight: Sight = SEES_ALL): Actors {
   const content: Content = world.content;
   const playerRig: LoadedRig | undefined = library.rigs.get(content.player.rig);
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
@@ -223,9 +225,11 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     },
     sync(dt: number, current: World, hoveredId: number | null): void {
       const floor: number = current.zone.floorHeight;
+      sight.refresh();
+      const seen = (view: ActorView, x: number, z: number): boolean => sight.sees(x, floor + view.height / 2, z, view.height);
       holdEquipped(content, playerView.rig, current.player.equipped);
       playerView.wake(current.wake === null ? null : wakePose(wakeStage(current.wake.plan, current.wake.elapsed), current.wake.elapsed));
-      playerView.sync(dt, poseOf(current.player), { rise: 1, floor, turnRate: ACTOR.turnRate });
+      playerView.sync(dt, poseOf(current.player), { rise: 1, floor, turnRate: ACTOR.turnRate, seen: true });
       for (const monster of current.monsters) {
         const entry: MonsterEntry | null = entryFor(current, monster);
         if (entry === null) continue;
@@ -237,7 +241,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           if (fade > 0) fadeEcho(entry.view, entry.echo.ghost, fade);
         }
         entry.view.setHover(monster.id === hoveredId);
-        entry.view.sync(dt, poseOf(monster), { rise: entry.echo === null ? turning : 1, floor, turnRate: ACTOR.turnRate });
+        entry.view.sync(dt, poseOf(monster), { rise: entry.echo === null ? turning : 1, floor, turnRate: ACTOR.turnRate, seen: seen(entry.view, monster.pos.x, monster.pos.z) });
       }
       for (let index: number = leaving.length - 1; index >= 0; index -= 1) {
         const echo: LeavingEcho | undefined = leaving[index];
@@ -258,7 +262,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         entry.shown += (1 - entry.shown) * ease;
         if (1 - entry.shown < ACTORS.npcSettledWithin) entry.shown = 1;
         entry.view.setHover(npc.id === hoveredId);
-        entry.view.sync(dt, entry.pose, { rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate });
+        entry.view.sync(dt, entry.pose, { rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate, seen: seen(entry.view, entry.pose.pos.x, entry.pose.pos.z) });
       }
       for (const [id, entry] of npcs) {
         if (current.npcs.some((npc: NpcState): boolean => npc.id === id)) continue;
@@ -269,7 +273,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           continue;
         }
         entry.view.setHover(false);
-        entry.view.sync(dt, entry.pose, { rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate });
+        entry.view.sync(dt, entry.pose, { rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate, seen: seen(entry.view, entry.pose.pos.x, entry.pose.pos.z) });
       }
     },
     handle(events: readonly WorldEvent[], current: World): void {
