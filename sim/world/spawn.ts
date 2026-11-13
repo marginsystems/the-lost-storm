@@ -77,6 +77,8 @@ export function spawnMonster(world: World, def: MonsterDef, packId: number, cent
     summonTimer: (def.summon?.cooldown ?? 0) * SPAWN.firstSummon,
     foeId: null,
     revived: origin.revived,
+    leashTime: 0,
+    returning: false,
   };
   world.nextId += 1;
   world.monsters.push(monster);

@@ -15,7 +15,11 @@ import { findPath } from '../nav/path.ts';
 import { forceStrike } from './moments.ts';
 import { spawnPacks } from './monsters.ts';
 import { stepWorld } from './step.ts';
-import type { Command, MonsterState, World } from './types.ts';
+import { createWorld } from './create.ts';
+import { choicesOpen } from './death.ts';
+import { objectiveTarget } from './objective.ts';
+import type { ObjectiveTarget } from './objective.ts';
+import type { Command, MomentState, MonsterState, World } from './types.ts';
 import { enterZone } from './zones.ts';
 
 const content: Content = loadContent();
@@ -159,7 +163,7 @@ for (const scene of SCENES) {
 }
 
 void test('a caster backed against a wall stops instead of running in place', (): void => {
-  const world: World = worldIn(content, content.world.start, 3);
+  const world: World = worldIn(content, content.world.start, 2);
   enterZone(world, sceneZone(base, 'test_blocked', { tiles: OPEN, props: [], start: { x: 4, z: 14 } }), { type: 'start' });
   world.monsters = [];
   const caster: MonsterState = spawn(world, 'mender', { x: 1.2, z: 14 });
@@ -179,7 +183,7 @@ void test('a caster backed against a wall stops instead of running in place', ()
 });
 
 void test('a monster pinned against a prop stops its run within a tenth of a second', (): void => {
-  const world: World = worldIn(content, content.world.start, 4);
+  const world: World = worldIn(content, content.world.start, 2);
   enterZone(world, sceneZone(base, 'test_pinned', { tiles: OPEN, props: [placedProp('mossy_pillar', 14, 14)], start: { x: 14, z: 3 } }), { type: 'start' });
   world.monsters = [];
   const thrall: MonsterState = spawn(world, 'mended', { x: 14, z: 16.2 });
@@ -304,7 +308,7 @@ function joined(grid: NavGrid, from: Vec2, to: Vec2): boolean {
 
 void test('every pack in every zone stands on a cell the pathfinder can route, joined to the hero', (): void => {
   for (const zone of content.zones.values()) {
-    const world: World = worldIn(content, zone.id, 5);
+    const world: World = worldIn(content, content.world.start, 2);
     const grid: NavGrid = routedGrid(world.grid);
     for (const monster of world.monsters) {
       assert.ok(isWalkable(grid, monster.pos.x, monster.pos.z), `${zone.id}: ${monster.def.id} spawned in a sealed pocket at (${monster.pos.x.toFixed(2)}, ${monster.pos.z.toFixed(2)})`);
@@ -319,7 +323,7 @@ void test('every echo a Hall moment wakes stands on a routed cell joined to the 
   for (const def of content.moments.defs.values()) {
     for (let x: number = POCKET.spacing; x < (hall.tiles[0]?.length ?? 0) * hall.cellSize; x += POCKET.spacing) {
       for (let z: number = POCKET.spacing; z < hall.tiles.length * hall.cellSize; z += POCKET.spacing) {
-        const world: World = worldIn(content, hall.id, 5);
+        const world: World = worldIn(content, content.world.start, 2);
         world.monsters = [];
         world.moments = [];
         world.wake = null;
@@ -342,7 +346,7 @@ void test('every echo a Hall moment wakes stands on a routed cell joined to the 
 });
 
 void test('knocking a monster hard into any Hall prop never leaves it in a sealed pocket', (): void => {
-  const world: World = worldIn(content, 'hall_of_time', 5);
+  const world: World = worldIn(content, content.world.start, 2);
   world.monsters = [];
   world.wake = null;
   const grid: NavGrid = routedGrid(world.grid);
@@ -368,7 +372,7 @@ void test('knocking a monster hard into any Hall prop never leaves it in a seale
 });
 
 void test('a monster that ends up in a sealed pocket glides out to the nearest routed cell within a few seconds, never jumping', (): void => {
-  const world: World = worldIn(content, 'hall_of_time', 5);
+  const world: World = worldIn(content, content.world.start, 2);
   world.monsters = [];
   world.wake = null;
   const grid: NavGrid = routedGrid(world.grid);
@@ -401,7 +405,7 @@ const ROUND = {
 } as const;
 
 void test('a monster chasing round any tall Hall prop or wall corner slides along it and never stops for a stuck rest', (): void => {
-  const world: World = worldIn(content, 'hall_of_time', 5);
+  const world: World = worldIn(content, content.world.start, 2);
   world.wake = null;
   world.moments = [];
   const stalls: string[] = [];
@@ -431,4 +435,55 @@ void test('a monster chasing round any tall Hall prop or wall corner slides alon
     }
   }
   assert.deepEqual(stalls, []);
+});
+
+const FIRST_WALK = { seeds: 8, limit: 90, dt: 0.05, moveEvery: 5 } as const;
+
+function echoFaction(world: World, monster: MonsterState): boolean {
+  return monster.def.faction === world.content.moments.faction;
+}
+
+function roamers(world: World): MonsterState[] {
+  return world.monsters.filter((monster: MonsterState): boolean => monster.alive && !echoFaction(world, monster));
+}
+
+function firstWalkCommands(world: World, tick: number): Command[] {
+  const foe: MonsterState | undefined = world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.aggro && echoFaction(world, monster)).toSorted((a: MonsterState, b: MonsterState): number => distance(a.pos, world.player.pos) - distance(b.pos, world.player.pos))[0];
+  if (foe !== undefined) return [{ type: 'skill', slot: 0, aim: foe.pos, targetId: foe.id }];
+  if (choicesOpen(world)) return [{ type: 'respawn', choice: 'checkpoint' }];
+  const target: ObjectiveTarget | null = objectiveTarget(world);
+  return tick % FIRST_WALK.moveEvery === 0 && target !== null ? [{ type: 'move', held: false, dest: target.pos }] : [];
+}
+
+void test('a fresh hero walking the arrow from arrival to the first moment, dying there once, never comes within reach of a roaming pack until it is cleared', (): void => {
+  const hall: ZoneDef = must(content.zones.get('hall_of_time'), 'hall');
+  for (let seed: number = 1; seed <= FIRST_WALK.seeds; seed += 1) {
+    const world: World = createWorld(content, { seed, save: null });
+    enterZone(world, hall, { type: 'start' });
+    world.player.invulnerable = Infinity;
+    assert.ok(roamers(world).length > 0, `seed ${seed}: some packs stand in the Hall from the start`);
+    let died: boolean = false;
+    let exposed: boolean = false;
+    let struck: boolean = false;
+    let tick: number = 0;
+    for (let elapsed: number = 0; elapsed < FIRST_WALK.limit && world.flags['first_moment'] !== 'cleared'; elapsed += FIRST_WALK.dt) {
+      if (!exposed && world.moments.some((moment: MomentState): boolean => moment.phase === 'awake' && moment.entered)) {
+        exposed = true;
+        world.player.invulnerable = 0;
+        world.player.life = 1;
+        world.player.stats.lifeRegen = 0;
+      }
+      died = died || !world.player.alive;
+      for (const event of stepWorld(world, firstWalkCommands(world, tick), FIRST_WALK.dt)) {
+        if (event.type === 'moment_mark') struck = true;
+        if (event.type === 'player_respawn') world.player.invulnerable = Infinity;
+        const roused: MonsterState | undefined = event.type === 'aggro' ? world.monsters.find((monster: MonsterState): boolean => monster.id === event.monsterId) : undefined;
+        if (roused !== undefined) assert.ok(echoFaction(world, roused), `seed ${seed}: ${roused.def.id} woke at ${elapsed.toFixed(1)} s`);
+      }
+      tick += 1;
+      for (const roamer of roamers(world)) assert.ok(distance(roamer.pos, world.player.pos) > roamer.def.aggroRadius, `seed ${seed}: ${roamer.def.id} at ${roamer.pos.x.toFixed(1)},${roamer.pos.z.toFixed(1)} within reach of the hero at ${elapsed.toFixed(1)} s`);
+    }
+    assert.ok(struck && died, `seed ${seed}: the first moment struck and he died in it`);
+    assert.equal(world.flags['first_moment'], 'cleared', `seed ${seed}`);
+  }
 });

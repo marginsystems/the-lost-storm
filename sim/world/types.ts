@@ -195,6 +195,8 @@ export interface MonsterState extends ActorState {
   summonTimer: number;
   foeId: number | null;
   readonly revived: boolean;
+  leashTime: number;
+  returning: boolean;
 }
 
 export type Actor = PlayerState | MonsterState;

@@ -15,8 +15,9 @@ import { beingKnocked, faceToward, steerAlong, steerToward, stepKnock, stepTimer
 import { blockedReason, startSkill, stepAction } from './skills.ts';
 import { SPAWN, spawnMonster } from './spawn.ts';
 import { mayStrike } from './factions.ts';
+import { LEASH, shellPoint, shutOut } from './leash.ts';
 import { revivable } from './revive.ts';
-import type { Actor, MonsterStance, MonsterState, World, WorldEvent } from './types.ts';
+import type { Actor, MomentState, MonsterStance, MonsterState, World, WorldEvent } from './types.ts';
 
 const MONSTERS = {
   repathInterval: 0.45,
@@ -274,6 +275,30 @@ function unstrand(world: World, monster: MonsterState, dt: number): void {
   monster.motion = 'stride';
 }
 
+function heldAtShell(world: World, monster: MonsterState, moment: MomentState, foe: Actor, dt: number): void {
+  monster.leashTime += dt;
+  if (monster.leashTime >= LEASH.wait) {
+    monster.aggro = false;
+    monster.foeId = null;
+    monster.returning = true;
+    monster.leashTime = 0;
+    monster.path = [];
+    return;
+  }
+  const shell: Vec2 = shellPoint(moment, monster);
+  if (distance(monster.pos, shell) > LEASH.shellGap) approach(world, monster, shell, dt);
+  else face(monster, foe.pos, dt);
+}
+
+function walkHome(world: World, monster: MonsterState, dt: number): void {
+  if (distance(monster.pos, monster.home) <= LEASH.homeReach) {
+    monster.returning = false;
+    monster.path = [];
+    return;
+  }
+  approach(world, monster, monster.home, dt);
+}
+
 export function stepMonster(world: World, monster: MonsterState, dt: number): void {
   monster.motion = 'still';
   stepKnock(routedGrid(world.grid), monster, dt);
@@ -297,14 +322,22 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   if (foe !== null && monster.summonerId === null && monster.def.summon !== null) summonOf(world, monster, monster.def.summon, local);
   if (monster.action !== null || monster.stagger > 0 || beingKnocked(monster)) return;
   if (!monster.aggro) {
-    wake(world, monster);
+    if (monster.returning) walkHome(world, monster, local);
+    else wake(world, monster);
     return;
   }
+  monster.returning = false;
   if (foe === null) {
     if (!strikes(world, monster, world.player)) monster.aggro = false;
     return;
   }
   if (support(world, monster)) return;
+  const shut: MomentState | null = foe.kind === 'player' ? shutOut(world, monster, foe.pos) : null;
+  if (shut !== null) {
+    heldAtShell(world, monster, shut, foe, local);
+    return;
+  }
+  monster.leashTime = 0;
   if (monster.restTime > 0) {
     monster.restTime = Math.max(0, monster.restTime - local);
     face(monster, foe.pos, local);

@@ -129,10 +129,10 @@
   ],
   "packs": [
     {"x": 38, "z": 22, "members": [{"monster": "unfinished_taker", "count": 1}]},
-    {"x": 44, "z": 37, "members": [{"monster": "unfinished_taker", "count": 1}, {"monster": "unfinished_thrower", "count": 1}]},
+    {"x": 46, "z": 11, "members": [{"monster": "unfinished_taker", "count": 1}, {"monster": "unfinished_thrower", "count": 1}]},
     {"x": 58, "z": 22, "members": [{"monster": "unfinished_taker", "count": 2}]},
     {"x": 60, "z": 10, "members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 2}, {"monster": "unfinished_thrower", "count": 1}]},
-    {"x": 58, "z": 52, "members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 1}, {"monster": "unfinished_thrower", "count": 1}]}
+    {"x": 70, "z": 50, "members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 1}, {"monster": "unfinished_thrower", "count": 1}]}
   ],
   "surge": null,
   "exits": [

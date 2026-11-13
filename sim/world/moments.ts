@@ -100,7 +100,8 @@ function pointNear(world: World, near: StrikeInterval): Vec2 {
 function roomFor(world: World, field: MomentField, def: MomentDef, pos: Vec2): boolean {
   if (!isWalkable(world.grid, pos.x, pos.z)) return false;
   if (safeSpots(world).some((spot: Vec2): boolean => distance(spot, pos) < def.radius + field.clearance.safe)) return false;
-  if (world.monsters.some((monster: MonsterState): boolean => monster.alive && monster.def.faction !== world.content.moments.faction && distance(monster.pos, pos) < monster.def.aggroRadius + field.clearance.packs)) return false;
+  const bubble: number = sureHolds(world, field) ? def.radius : 0;
+  if (world.monsters.some((monster: MonsterState): boolean => monster.alive && monster.def.faction !== world.content.moments.faction && distance(monster.pos, pos) < monster.def.aggroRadius + bubble + field.clearance.packs)) return false;
   if (world.zone.exits.some((exit): boolean => distance(exit, pos) < def.radius + field.clearance.exits)) return false;
   if (!clearOfTallProps(world, def, pos)) return false;
   return world.moments.every((other: MomentState): boolean => distance(other.pos, pos) >= def.radius + other.def.radius + field.clearance.between);

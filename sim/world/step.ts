@@ -17,6 +17,7 @@ import { stepTrade } from './trade.ts';
 import type { ActorState, Command, MomentState, World, WorldEvent } from './types.ts';
 import type { Vec2 } from '../math.ts';
 import { bindEchoes, heldIn, holdHero } from './bubble.ts';
+import { keepOut } from './leash.ts';
 import { stepVoid } from './void.ts';
 import { stepMoments } from './moments.ts';
 import { stepDrifts, stepTriggers } from './terrain.ts';
@@ -56,6 +57,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepEchoes(world, dt);
   stepAreas(world, dt);
   bindEchoes(world);
+  keepOut(world);
   holdHero(world, start, bubble);
   settleGaits(starts, dt);
   stepDeath(world, dt);
