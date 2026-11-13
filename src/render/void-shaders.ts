@@ -159,7 +159,7 @@ uniform vec2 uShift;
 uniform vec3 uEyeFade;
 uniform vec2 uGraze;
 uniform vec3 uRim;
-uniform vec2 uBodyClear;
+uniform vec4 uBodyClear;
 uniform float uThick;
 uniform vec4 uThickness;
 uniform vec4 uBody;
@@ -214,6 +214,9 @@ float figureDistance(vec2 p, vec2 feet, vec2 head) {
 vec2 toGround(vec2 at, float height) {
   return at + (at - cameraPosition.xz) * height / max(cameraPosition.y - height, uEyeFade.z);
 }
+vec2 toBody(vec2 at, float height) {
+  return at + (at - cameraPosition.xz) * max(uHeight - height, 0.0) / max(cameraPosition.y - uHeight, uEyeFade.z);
+}
 vec4 splineWeights(float t) {
   float s = 1.0 - t;
   return vec4(s * s * s, 4.0 + 3.0 * t * t * t - 6.0 * t * t, 4.0 + 3.0 * s * s * s - 6.0 * s * s, t * t * t) / 6.0;
@@ -261,7 +264,9 @@ void main() {
   float figure = 1.0 - smoothstep(uFigure.y * reachOut, uFigure.z * reachOut, figureDistance(p, uHero, head));
   vec2 fromCentre = abs(p - uHero);
   float inside = 1.0 - smoothstep(uFieldReach - 1.5, uFieldReach, max(fromCentre.x, fromCentre.y));
-  float aroundBody = 1.0 - smoothstep(uBodyClear.x * reachOut, uBodyClear.y * reachOut, figureDistance(p, uBody.zw, uBody.xy));
+  float toLow = figureDistance(toBody(vWorld.xz, uBodyClear.z), uBody.zw, uBody.xy);
+  float toHigh = figureDistance(toBody(vWorld.xz, uBodyClear.w), uBody.zw, uBody.xy);
+  float aroundBody = 1.0 - smoothstep(uBodyClear.x * reachOut, uBodyClear.y * reachOut, min(toLow, toHigh));
   float cleared = max(max(fieldAt((swirled + warp * uWarp) / uSpan) * inside, figure), aroundBody);
   float fray = voidFbm(swirled * uFray + roll * 2.2 + uSeed * 3.1);
   float still = 1.0 - uMotion;
