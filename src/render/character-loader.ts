@@ -8,7 +8,10 @@ import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
-import { fitToSkeleton, groupBodyParts, maskHidden, partMasks, skinnedMeshes } from './wearables.ts';
+import { fitToSkeleton, groupBodyParts, maskHidden, skinnedMeshes } from './wearables.ts';
+import type { BodyGrouping } from './wearables.ts';
+import { BODY_COVERS, coveringKeys, coversOf, groupHidden, hiddenWithCovers } from './body-covers.ts';
+import type { BodyCover, BodyGroup, CoverableWearable } from './body-covers.ts';
 import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { createRigGlow, FLASH, flashEdge, flashLift, makeGhost } from './ghost-material.ts';
 import { createBrowserTimers } from '../browser-timers.ts';
@@ -48,6 +51,8 @@ export interface LoadedRig {
   readonly template: Object3D;
   readonly clips: RigClipSet;
   readonly bodyParts: readonly string[];
+  readonly bodyGroups: readonly BodyGroup[];
+  readonly coveredModels: ReadonlySet<string>;
   readonly fitted: Map<string, readonly BufferGeometry[]>;
 }
 
@@ -256,10 +261,15 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   const actions: Map<string, ActionClip> = actionSet(def.clips.actions);
   const bare: RigUnarmedClips | null = def.clips.unarmed;
   const template: Object3D = cloneSkinned(main.scene);
-  const bodyParts: string[] = skinnedMeshes(template).reduce((names: string[], mesh: SkinnedMesh): string[] => {
-    const grouped: string[] = groupBodyParts(mesh, def.bodyParts);
-    return grouped.length > 0 ? grouped : names;
-  }, []);
+  const coveredModels: Set<string> = new Set<string>();
+  const grouping: BodyGrouping = skinnedMeshes(template).reduce((found: BodyGrouping, mesh: SkinnedMesh): BodyGrouping => {
+    const triangles: number = (mesh.geometry.getIndex()?.count ?? 0) / 3;
+    const covers: readonly BodyCover[] = coversOf(BODY_COVERS, def.url, mesh.name, triangles);
+    const grouped: BodyGrouping = groupBodyParts(mesh, def.bodyParts, coveringKeys(covers, triangles));
+    if (grouped.names.length === 0) return found;
+    for (const cover of covers) coveredModels.add(cover.wearable);
+    return grouped;
+  }, { names: [], groups: [] });
   return {
     def,
     template,
@@ -273,7 +283,9 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
       actions,
       unarmed: bare === null ? null : { idle: clip('unarmed.idle', bare.idle), actions: actionSet(bare.actions) },
     },
-    bodyParts,
+    bodyParts: grouping.names,
+    bodyGroups: grouping.groups,
+    coveredModels,
     fitted: new Map<string, readonly BufferGeometry[]>(),
   };
 }
@@ -473,7 +485,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const hide = (parts: readonly string[]): void => {
     shownParts = parts;
     for (const body of bodies) {
-      body.mesh.material = parts.length === 0 ? body.skin : Array.from({ length: partMasks(rig.bodyParts.length) }, (_: unknown, mask: number): Material => (maskHidden(mask, rig.bodyParts, parts) ? UNSEEN : body.skin));
+      body.mesh.material = parts.length === 0 ? body.skin : rig.bodyGroups.map((group: BodyGroup): Material => (groupHidden(group, parts, (mask: number): boolean => maskHidden(mask, rig.bodyParts, parts)) ? UNSEEN : body.skin));
     }
   };
   const fade = (piece: WornPiece, value: number): void => {
@@ -585,8 +597,13 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         if (!instant) fade(piece, 0);
         else fade(piece, 1);
       }
-      finalParts = [...hiddenParts];
-      hide(instant ? finalParts : shownParts.filter((part: string): boolean => hiddenParts.includes(part)));
+      const wornPieces: CoverableWearable[] = wearableIds.flatMap((id: string): CoverableWearable[] => {
+        const wearable: LoadedWearable | undefined = library.wearables.get(id);
+        return wearable === undefined ? [] : [{ model: wearable.def.model, hides: wearable.def.hides }];
+      });
+      const hiddenNow: readonly string[] = hiddenWithCovers(wornPieces, hiddenParts, rig.coveredModels);
+      finalParts = [...hiddenNow];
+      hide(instant ? finalParts : shownParts.filter((part: string): boolean => hiddenNow.includes(part)));
     },
     stepWear(dt: number): void {
       const step: number = Math.min(dt, WEAR_FADE.longestStep);

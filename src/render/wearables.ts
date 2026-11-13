@@ -1,5 +1,6 @@
 import type { Bone, InterleavedBufferAttribute, Object3D, Skeleton } from 'three';
 import { BufferAttribute, BufferGeometry, PropertyBinding, SkinnedMesh } from 'three';
+import type { BodyGroup } from './body-covers.ts';
 
 type Attribute = BufferAttribute | InterleavedBufferAttribute;
 
@@ -95,28 +96,45 @@ export function maskHidden(mask: number, names: readonly string[], hidden: reado
   return names.every((name: string, part: number): boolean => (mask & (1 << part)) === 0 || hidden.includes(name));
 }
 
-export function groupBodyParts(mesh: SkinnedMesh, bodyParts: Readonly<Record<string, readonly string[]>>): string[] {
+export interface BodyGrouping {
+  readonly names: readonly string[];
+  readonly groups: readonly BodyGroup[];
+}
+
+interface Bucket {
+  readonly group: BodyGroup;
+  readonly corners: number[];
+}
+
+export function groupBodyParts(mesh: SkinnedMesh, bodyParts: Readonly<Record<string, readonly string[]>>, triangleCovers: readonly (readonly string[])[] = []): BodyGrouping {
   const names: string[] = Object.keys(bodyParts);
   const index: BufferAttribute | null = mesh.geometry.getIndex();
-  if (names.length === 0 || index === null || Array.isArray(mesh.material)) return [];
+  if (names.length === 0 || index === null || Array.isArray(mesh.material)) return { names: [], groups: [] };
   const partOfBone: number[] = mesh.skeleton.bones.map((bone: Bone): number =>
     names.findIndex((name: string): boolean => (bodyParts[name] ?? []).some((joint: string): boolean => PropertyBinding.sanitizeNodeName(joint) === bone.name || joint === bone.name)),
   );
   const vertexPart: Int16Array = partOfVertex(mesh, partOfBone, names.length);
-  const buckets: number[][] = Array.from({ length: partMasks(names.length) }, (): number[] => []);
+  const buckets: Map<string, Bucket> = new Map<string, Bucket>();
+  for (let mask: number = 0; mask < partMasks(names.length); mask += 1) buckets.set(`${String(mask)}|`, { group: { mask, covers: [] }, corners: [] });
   for (let corner: number = 0; corner + 2 < index.count; corner += 3) {
     const corners: [number, number, number] = [index.getX(corner), index.getX(corner + 1), index.getX(corner + 2)];
-    buckets[cornerMask(corners.map((vertex: number): number => vertexPart[vertex] ?? -1))]?.push(...corners);
+    const mask: number = cornerMask(corners.map((vertex: number): number => vertexPart[vertex] ?? -1));
+    const covers: readonly string[] = triangleCovers[corner / 3] ?? [];
+    const key: string = `${String(mask)}|${covers.join(',')}`;
+    const bucket: Bucket = buckets.get(key) ?? { group: { mask, covers: [...covers] }, corners: [] };
+    bucket.corners.push(...corners);
+    buckets.set(key, bucket);
   }
-  const ordered: number[] = buckets.flat();
+  const ordered: readonly Bucket[] = [...buckets.values()];
   const vertices: number = mesh.geometry.getAttribute('position').count;
+  const flat: number[] = ordered.flatMap((bucket: Bucket): number[] => bucket.corners);
   const geometry: BufferGeometry = sharing(mesh.geometry);
-  geometry.setIndex(new BufferAttribute(vertices >= WEARABLES.wideIndexFrom ? new Uint32Array(ordered) : new Uint16Array(ordered), 1));
+  geometry.setIndex(new BufferAttribute(vertices >= WEARABLES.wideIndexFrom ? new Uint32Array(flat) : new Uint16Array(flat), 1));
   let start: number = 0;
-  buckets.forEach((bucket: number[], materialIndex: number): void => {
-    if (bucket.length > 0) geometry.addGroup(start, bucket.length, materialIndex);
-    start += bucket.length;
+  ordered.forEach((bucket: Bucket, materialIndex: number): void => {
+    if (bucket.corners.length > 0) geometry.addGroup(start, bucket.corners.length, materialIndex);
+    start += bucket.corners.length;
   });
   mesh.geometry = geometry;
-  return names;
+  return { names, groups: ordered.map((bucket: Bucket): BodyGroup => bucket.group) };
 }
