@@ -1,5 +1,5 @@
 {
-  "defaults": { "volume": 1, "maxVoices": 4, "cooldown": 0 },
+  "defaults": { "volume": 1, "maxVoices": 4, "cooldown": 0, "reach": 30 },
   "skillStart": {
     "cleave": [{ "sound": "sword_swing_light", "volume": 0.9, "maxVoices": 3 }],
     "dodge_roll": [{ "sound": "dodge_whoosh", "volume": 0.75, "maxVoices": 2 }, { "sound": "footstep_stone", "volume": 0.6, "maxVoices": 2 }],
@@ -161,8 +161,10 @@
     "quest_advanced": [{ "sound": "quest_update", "volume": 0.7, "maxVoices": 1 }],
     "quest_completed": [{ "sound": "quest_update", "volume": 0.9, "maxVoices": 1 }],
     "waypoint_unlocked": [{ "sound": "shimmer_faint", "volume": 0.6, "maxVoices": 1 }],
-    "moment_calm": [{ "sound": "bubble_calm", "volume": 0.8, "maxVoices": 1 }],
-    "moment_hostile": [{ "sound": "bubble_hostile", "volume": 0.85, "maxVoices": 1 }]
+    "moment_calm": [{ "sound": "bubble_calm", "volume": 0.45, "maxVoices": 1 }],
+    "moment_hostile": [{ "sound": "bubble_hostile", "volume": 0.85, "maxVoices": 1 }],
+    "moment_strike": [{ "sound": "thunder_crack", "volume": 0.55, "maxVoices": 2, "cooldown": 0.6, "reach": 90 }, { "sound": "ground_boom", "volume": 0.4, "maxVoices": 2, "cooldown": 0.6, "reach": 70 }, { "sound": "bubble_calm", "volume": 0.6, "maxVoices": 2, "cooldown": 0.6, "reach": 70 }],
+    "moment_strike_soft": [{ "sound": "thunder_crack", "volume": 0.25, "maxVoices": 2, "cooldown": 0.6, "reach": 60 }, { "sound": "ground_boom", "volume": 0.18, "maxVoices": 2, "cooldown": 0.6, "reach": 50 }, { "sound": "bubble_calm", "volume": 0.35, "maxVoices": 2, "cooldown": 0.6, "reach": 50 }]
   },
   "ui": {
     "click": [{ "sound": "ui_tap", "volume": 0.8, "maxVoices": 3 }],

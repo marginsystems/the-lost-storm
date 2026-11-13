@@ -16,7 +16,7 @@ const WARM_TABLES: readonly CueTableName[] = ['world', 'skillStart', 'hit', 'cri
 function cues(table: CueTable, key: string, position: Vec2 | null): readonly SoundCue[] {
   const list: readonly CueDef[] | undefined = table.get(key);
   if (list === undefined || list.length === 0) return NONE;
-  return list.map((entry: CueDef): SoundCue => ({ sound: entry.sound, volume: entry.volume, maxVoices: entry.maxVoices, cooldown: entry.cooldown, position }));
+  return list.map((entry: CueDef): SoundCue => ({ sound: entry.sound, volume: entry.volume, maxVoices: entry.maxVoices, cooldown: entry.cooldown, reach: entry.reach, position }));
 }
 
 function monsterOf(world: World, id: number): MonsterState | undefined {
@@ -118,6 +118,9 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'waypoint_unlocked':
       found = worldCues(audio, 'waypoint_unlocked', null);
       break;
+    case 'moment_strike':
+      found = worldCues(audio, event.moment.combat ? 'moment_strike' : 'moment_strike_soft', { x: event.moment.pos.x, z: event.moment.pos.z });
+      break;
     case 'moment_woke':
       found = worldCues(audio, event.turned.length > 0 ? 'moment_hostile' : 'moment_calm', event.moment.pos);
       break;
@@ -144,7 +147,6 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'silence':
     case 'zone_edited':
     case 'moment_mark':
-    case 'moment_strike':
     case 'moment_ended':
     case 'moment_gone':
     case 'path_marked':

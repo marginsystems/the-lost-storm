@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
-import { must } from '../test/support.ts';
+import { must, worldIn } from '../test/support.ts';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from './audio.ts';
 import type { SoundCue } from './audio.ts';
 import type { AudioDef } from './content/audio.ts';
@@ -9,8 +9,9 @@ import { loadAudio } from './content/audio.ts';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillDef } from './content/types.ts';
 import type { Vec2 } from './math.ts';
+import { forceStrike } from './world/moments.ts';
 import { stepWorld } from './world/step.ts';
-import type { GroundItem, MonsterState, World, WorldEvent } from './world/types.ts';
+import type { GroundItem, MomentState, MonsterState, World, WorldEvent } from './world/types.ts';
 
 const content: Content = loadContent();
 const audio: AudioDef = loadAudio(content);
@@ -177,4 +178,48 @@ void test('the warm list names every one-shot sound once, footsteps first and no
     for (const loop of zone.loops) assert.equal(ids.includes(loop.sound), false, loop.sound);
     for (const stinger of zone.stingers) assert.equal(ids.includes(stinger.sound), false, stinger.sound);
   }
+});
+
+const STRIKE_AT: Vec2 = { x: 40, z: 47 };
+
+function struck(): { readonly world: World; readonly moment: MomentState } {
+  const world: World = worldIn(content, 'hall_of_time', 1);
+  return { world, moment: must(forceStrike(world, STRIKE_AT, 'first_fire'), 'a strike') };
+}
+
+void test('a moment striking plays a thunder crack, a ground boom and the bubble forming, at the strike point, reaching across a zone', (): void => {
+  const { world, moment } = struck();
+  const found: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'moment_strike', moment });
+  assert.deepEqual(sounds(found), ['thunder_crack', 'ground_boom', 'bubble_calm']);
+  for (const cue of found) {
+    assert.deepEqual(cue.position, STRIKE_AT);
+    assert.ok(cue.reach > audio.defaults.reach, `${cue.sound} reaches only ${cue.reach} m`);
+    assert.ok(cue.cooldown > 0 && cue.maxVoices <= 2, `${cue.sound} can stack`);
+  }
+});
+
+void test('a strike with no combat, as in the mist of the In-Between, plays the same sounds, each softer', (): void => {
+  const { world, moment } = struck();
+  const loud: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'moment_strike', moment });
+  const soft: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'moment_strike', moment: { ...moment, combat: false } });
+  assert.deepEqual(sounds(soft), sounds(loud));
+  soft.forEach((cue: SoundCue, index: number): void => {
+    assert.ok(cue.volume < must(loud[index], 'loud cue').volume, cue.sound);
+  });
+});
+
+void test('a waking moment plays the hostile sound when echoes turn, and the calm one, quieter than its strike, when none do', (): void => {
+  const { world, moment } = struck();
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'moment_woke', moment, turned: [7] })), ['bubble_hostile']);
+  const calm: SoundCue = must(cuesForEvent(audio, world, { type: 'moment_woke', moment, turned: [] })[0], 'calm wake');
+  assert.equal(calm.sound, 'bubble_calm');
+  const formed: SoundCue = must(cuesForEvent(audio, world, { type: 'moment_strike', moment }).find((cue: SoundCue): boolean => cue.sound === 'bubble_calm'), 'bubble forming');
+  assert.ok(calm.volume < formed.volume);
+});
+
+void test('the strike sounds sit under the hit sounds', (): void => {
+  const { world, moment } = struck();
+  const hits: number[] = [...audio.hit.values()].flat().map((cue): number => cue.volume);
+  const loudestHit: number = Math.max(...hits);
+  for (const cue of cuesForEvent(audio, world, { type: 'moment_strike', moment })) assert.ok(cue.volume < loudestHit, `${cue.sound} at ${cue.volume}`);
 });

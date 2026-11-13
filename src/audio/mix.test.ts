@@ -33,3 +33,16 @@ void test('a sound too far to hear has no placement', (): void => {
   assert.equal(near.gain, 1);
   assert.ok(near.pan < 0);
 });
+
+void test('a sound with a longer reach is still heard across a zone, quietly, where a plain one is silent', (): void => {
+  const reach: number = 90;
+  const across: number = 70;
+  const beside: number = 6;
+  assert.equal(placement(across, 0), null);
+  const far: Placement | null = placement(across, 0, reach);
+  const near: Placement | null = placement(beside, 0, reach);
+  assert.ok(far !== null && near !== null);
+  assert.ok(far.gain < near.gain / 10, `${far.gain} against ${near.gain}`);
+  assert.equal(placement(reach, 0, reach), null);
+  assert.equal(distanceGain(MIX.nearDistance, reach), 1);
+});

@@ -233,7 +233,7 @@ async function start(): Promise<void> {
   const listener: Listener = createListener(camera, canvas, (): Vec2 => world.player.pos);
   const playCues = (cues: readonly SoundCue[]): void => {
     for (const cue of cues) {
-      const place: Placement | null = cue.position === null ? CENTRE : listener(cue.position);
+      const place: Placement | null = cue.position === null ? CENTRE : listener(cue.position, cue.reach);
       if (place !== null) audio.play(cue, place);
     }
   };

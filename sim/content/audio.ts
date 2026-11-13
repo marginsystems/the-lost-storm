@@ -7,7 +7,7 @@ import type { Content, RarityDef } from './types.ts';
 export const UI_ACTIONS = ['click', 'panel_open', 'panel_close', 'error', 'skill_point', 'equip', 'title_gone'] as const;
 export type UiAction = (typeof UI_ACTIONS)[number];
 
-export const WORLD_SOUND_EVENTS = ['hero_step', 'level_up', 'surge', 'surge_cleared', 'monster_spawn', 'player_respawn', 'flask_used', 'quest_started', 'quest_advanced', 'quest_completed', 'waypoint_unlocked', 'moment_calm', 'moment_hostile', 'wake_stir', 'wake_front', 'wake_standing'] as const;
+export const WORLD_SOUND_EVENTS = ['hero_step', 'level_up', 'surge', 'surge_cleared', 'monster_spawn', 'player_respawn', 'flask_used', 'quest_started', 'quest_advanced', 'quest_completed', 'waypoint_unlocked', 'moment_calm', 'moment_hostile', 'moment_strike', 'moment_strike_soft', 'wake_stir', 'wake_front', 'wake_standing'] as const;
 export type WorldSoundEvent = (typeof WORLD_SOUND_EVENTS)[number];
 
 const NOTICE_KEYS: Readonly<Record<NoticeReason, true>> = { no_mana: true, on_cooldown: true, inventory_full: true, flask_empty: true, life_full: true, mana_full: true, no_gold: true, stash_full: true, legendary_limit: true };
@@ -23,12 +23,15 @@ const LIMITS = {
   voicesMax: 16,
   cooldownMax: 60,
   delayMax: 600,
+  reachMin: 5,
+  reachMax: 200,
 } as const;
 
 export interface CueDefaults {
   readonly volume: number;
   readonly maxVoices: number;
   readonly cooldown: number;
+  readonly reach: number;
 }
 
 export interface CueDef {
@@ -36,6 +39,7 @@ export interface CueDef {
   readonly volume: number;
   readonly maxVoices: number;
   readonly cooldown: number;
+  readonly reach: number;
 }
 
 export type CueTable = ReadonlyMap<string, readonly CueDef[]>;
@@ -112,6 +116,7 @@ function cue(value: unknown, defaults: CueDefaults, where: string): CueDef {
     volume: ranged(source, 'volume', defaults.volume, 0.01, LIMITS.volumeMax, where),
     maxVoices,
     cooldown: ranged(source, 'cooldown', defaults.cooldown, 0, LIMITS.cooldownMax, where),
+    reach: ranged(source, 'reach', defaults.reach, LIMITS.reachMin, LIMITS.reachMax, where),
   };
 }
 
@@ -137,7 +142,8 @@ function defaultsOf(value: unknown, where: string): CueDefaults {
   const cooldown: number = numeric(source, 'cooldown', where);
   if (volume <= 0 || volume > LIMITS.volumeMax) throw new ContentError(`${where}.volume`, `expected more than 0 and at most ${LIMITS.volumeMax}`);
   if (cooldown < 0 || cooldown > LIMITS.cooldownMax) throw new ContentError(`${where}.cooldown`, `expected 0 to ${LIMITS.cooldownMax}`);
-  return { volume, maxVoices, cooldown };
+  const reach: number = required(source, 'reach', LIMITS.reachMin, LIMITS.reachMax, where);
+  return { volume, maxVoices, cooldown, reach };
 }
 
 function withExtras(ids: ReadonlySet<string>, ...extras: readonly string[]): ReadonlySet<string> {

@@ -47,11 +47,11 @@ void test('every skill the player or a monster uses has a start sound', (): void
 
 void test('cues take the defaults for what they leave out', (): void => {
   const audio: AudioDef = parseAudio(variant((draft): void => {
-    draft['ui'] = { click: [{ sound: 'ui_click' }, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1 }] };
+    draft['ui'] = { click: [{ sound: 'ui_click' }, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1, reach: 60 }] };
   }), known);
   const [plain, tuned]: readonly CueDef[] = must(audio.ui.get('click'), 'click cues');
-  assert.deepEqual(plain, { sound: 'ui_click', volume: 1, maxVoices: 4, cooldown: 0 });
-  assert.deepEqual(tuned, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1 });
+  assert.deepEqual(plain, { sound: 'ui_click', volume: 1, maxVoices: 4, cooldown: 0, reach: 30 });
+  assert.deepEqual(tuned, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1, reach: 60 });
 });
 
 void test('a table that names an id the game does not have is rejected', (): void => {
@@ -103,6 +103,9 @@ void test('bad cues are rejected with where they are', (): void => {
   reject(variant((draft): void => {
     draft['ui'] = { click: [{ sound: 'a', cooldown: -1 }] };
   }), /cooldown/);
+  reject(variant((draft): void => {
+    draft['ui'] = { click: [{ sound: 'a', reach: 1 }] };
+  }), /reach/);
   reject(variant((draft): void => {
     draft['ui'] = { click: [{}] };
   }), /sound/);

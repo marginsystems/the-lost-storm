@@ -9,7 +9,7 @@ import { createSettingsStore } from './settings.ts';
 import type { AudioSystem, Trigger } from './system.ts';
 import { createAudioSystem } from './system.ts';
 
-const CUE: SoundCue = { sound: 'bone_hit', volume: 0.9, maxVoices: 2, cooldown: 0, position: null };
+const CUE: SoundCue = { sound: 'bone_hit', volume: 0.9, maxVoices: 2, cooldown: 0, reach: 30, position: null };
 const ZONE: ZoneAmbience = { loops: [{ sound: 'ambience_wind_fort', volume: 0.8 }], stingers: [{ sound: 'thunder_distant', volume: 0.7, minDelay: 1, maxDelay: 2 }] };
 
 function controls(): AudioControls {
@@ -76,7 +76,7 @@ void test('the per-sound cap and cooldown apply before anything is announced', (
   system.onTrigger((trigger: Trigger): void => {
     seen.push(trigger.sound);
   });
-  const spaced: SoundCue = { sound: 'monsters_rising', volume: 0.7, maxVoices: 4, cooldown: 4, position: null };
+  const spaced: SoundCue = { sound: 'monsters_rising', volume: 0.7, maxVoices: 4, cooldown: 4, reach: 30, position: null };
   system.play(spaced, CENTRE);
   system.play(spaced, CENTRE);
   now = 4;

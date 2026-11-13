@@ -14,7 +14,7 @@ import { createManifestLoader } from './manifest-loader.ts';
 import type { ManifestLoader } from './manifest-loader.ts';
 import type { AssetManifest } from './manifest.ts';
 import type { Placement } from './mix.ts';
-import { CENTRE } from './mix.ts';
+import { CENTRE, MIX } from './mix.ts';
 import type { AudioControls, AudioSettings } from './settings.ts';
 import { pickVariant, pitchRate, delayBetween, volumeScale } from './variation.ts';
 import type { VoiceLimiter } from './voices.ts';
@@ -409,7 +409,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
         timer.left -= dt;
         if (timer.left > 0) continue;
         timer.left = delayBetween(timer.stinger.minDelay, timer.stinger.maxDelay, random);
-        const cue: SoundCue = { sound: timer.stinger.sound, volume: timer.stinger.volume, maxVoices: 1, cooldown: 0, position: null };
+        const cue: SoundCue = { sound: timer.stinger.sound, volume: timer.stinger.volume, maxVoices: 1, cooldown: 0, reach: MIX.farDistance, position: null };
         trigger('ambience', cue, { gain: CENTRE.gain, pan: (random() * 2 - 1) * SYSTEM.stingerPan });
       }
     },
