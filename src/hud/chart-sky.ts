@@ -8,6 +8,14 @@ export const CHART_SKY = {
   swayPeriods: 9,
   flow: 0.035,
   fallbackDriftMs: 5200,
+  coreRadius: 1.35,
+  coreGlow: 0.85,
+  armContinuity: 0.62,
+  coreStretch: 1.45,
+  coreTilt: 0.5,
+  starScale: 26,
+  starDensity: 0.022,
+  dustDepth: 0.45,
 } as const;
 
 export interface SkyArm {
@@ -103,19 +111,20 @@ void main() {
   float streak = fbm(vec2(r * 0.3 - flow * 1.4, 0.0) + heading * 5.5);
   float body = mix(billow, streak, 0.45);
   float lit = fbm(swirl * 0.55 + drift + vec2(0.09, -0.12));
-  float eyeClear = smoothstep(0.45, 1.15, r);
+  float eyeClear = mix(0.35, 1.0, smoothstep(0.2, 1.6, r));
 
   float cloud = 0.0;
   float weight = 0.0;
   vec3 tint = vec3(0.0);
   float under = 0.0;
+  float dust = 0.0;
   for (int i = 0; i < ${CHART_SKY.maxArms}; i++) {
     if (i >= count) break;
     float rch = arms[i].y;
     float t = clamp(r / (rch * 1.2), 0.0, 1.0);
     float hw = mix(3.6, 0.42, pow(t, 1.3));
     float d = wrapAngle(th - arms[i].x - twist * r - sway) * max(r, 0.35);
-    float q = abs(d) / hw + (body - 0.5) * 0.9;
+    float q = abs(d) / hw + (body - 0.5) * ${CHART_SKY.armContinuity};
     float tail = 1.0 - smoothstep(rch * 0.8, rch * 1.3, r);
     float band = max(1.0 - smoothstep(0.2, 1.0, q), (1.0 - smoothstep(0.4, 2.4, q)) * 0.35) * tail;
     float share = exp(-q * q * 2.0) * tail + 0.0001;
@@ -123,20 +132,38 @@ void main() {
     weight += share;
     tint += tints[i] * share;
     under += smoothstep(-0.2, 1.0, sign(d) * clamp(abs(d) / hw, 0.0, 1.0)) * share;
+    float lane = d / hw + 0.38;
+    dust = max(dust, exp(-lane * lane * 20.0) * tail * smoothstep(0.9, 2.2, r));
   }
   tint /= weight;
   under /= weight;
   float rim = (r - 1.3) / 0.42;
-  float wall = exp(-rim * rim) * (0.85 + 0.5 * billow);
+  float wall = exp(-rim * rim) * (0.85 + 0.5 * billow) * 0.45;
   float mass = (1.0 - smoothstep(1.8, 4.2, r)) * (0.35 + 0.65 * billow) * 0.7;
   cloud = max(max(cloud, wall), mass) * eyeClear;
   float top = clamp(0.62 + (body - lit) * 3.2 + (body - 0.5) * 0.7 + wall * 0.35, 0.3, 1.3);
   vec3 base = mix(vec3(0.46, 0.55, 0.68), tint, 0.24);
   vec3 lightCloud = base * top * mix(1.0, 0.62, under);
-  float alpha = clamp(cloud * (0.34 + 0.36 * body), 0.0, 0.66);
-  float calm = (1.0 - smoothstep(0.25, 1.0, r)) * 0.55;
+  float fine = fbm(swirl * 2.6 + drift * 2.0);
+  lightCloud *= mix(1.4, 1.05, smoothstep(1.2, 8.0, r));
+  lightCloud *= 1.0 - dust * ${CHART_SKY.dustDepth} * (0.45 + 0.55 * fine);
+  float alpha = clamp(cloud * (0.4 + 0.38 * body), 0.0, 0.76);
   lightCloud *= alpha;
-  alpha = alpha + calm * (1.0 - alpha);
+  vec2 tilted = mat2(cos(${CHART_SKY.coreTilt}), sin(${CHART_SKY.coreTilt}), -sin(${CHART_SKY.coreTilt}), cos(${CHART_SKY.coreTilt})) * c;
+  float er = length(vec2(tilted.x, tilted.y * ${CHART_SKY.coreStretch})) / ${CHART_SKY.coreRadius};
+  float core = exp(-pow(er, 1.6));
+  float halo = exp(-er * 0.75) * 0.35;
+  float bulge = (core + halo) * ${CHART_SKY.coreGlow} * (0.85 + 0.3 * (fine - 0.5));
+  vec3 glow = mix(vec3(0.72, 0.8, 1.0), vec3(1.0, 0.94, 0.82), clamp(core * 1.2, 0.0, 1.0));
+  lightCloud += glow * bulge * 0.6;
+  alpha = alpha + bulge * 0.5 * (1.0 - alpha);
+  vec2 sky = c * ${CHART_SKY.starScale}.0;
+  vec2 cell = floor(sky);
+  float pick = hash(cell + 7.3);
+  float star = step(1.0 - ${CHART_SKY.starDensity}, pick) * smoothstep(0.22, 0.0, length(fract(sky) - 0.5)) * (0.35 + 0.65 * hash(cell + 2.1));
+  star *= 0.3 + 0.7 * cloud;
+  lightCloud += vec3(0.86, 0.9, 1.0) * star * 0.7;
+  alpha = alpha + star * 0.6 * (1.0 - alpha);
   float grain = (hash(gl_FragCoord.xy + fract(flow) * 61.0) - 0.5) / 255.0;
   colour = vec4(lightCloud + grain, alpha + grain);
 }
