@@ -36,6 +36,21 @@ export const SHAPES = {
   laneStart: 0.7,
 } as const;
 
+export const BLADE = {
+  inner: 0.42,
+  band: 0.82,
+  width: 0.16,
+  tailWidth: 0.25,
+  trail: 0.7,
+  lead: 1.4,
+  front: 0.04,
+  hot: 0.1,
+  profile: 2.5,
+  body: 0.9,
+  heat: 1.6,
+  whiten: 0.45,
+} as const;
+
 const ARC_VERTEX: string = `
 attribute vec2 arc;
 varying vec2 vArc;
@@ -51,11 +66,17 @@ uniform float uProgress;
 uniform float uOpacity;
 varying vec2 vArc;
 void main() {
-  float head = uProgress * 1.4;
-  float trail = smoothstep(head - 0.6, head, vArc.x) * (1.0 - smoothstep(head, head + 0.05, vArc.x));
-  float edge = smoothstep(0.0, 0.6, vArc.y) * (1.0 - smoothstep(0.88, 1.0, vArc.y));
-  float alpha = trail * edge * uOpacity;
-  gl_FragColor = vec4(uColor * (1.0 + trail * 0.9) * alpha, alpha);
+  float head = uProgress * ${BLADE.lead.toFixed(2)};
+  float behind = clamp((vArc.x - (head - ${BLADE.trail.toFixed(2)})) / ${BLADE.trail.toFixed(2)}, 0.0, 1.0);
+  float front = 1.0 - smoothstep(head, head + ${BLADE.front.toFixed(2)}, vArc.x);
+  float along = behind * behind * front;
+  float width = ${BLADE.width.toFixed(2)} * mix(${BLADE.tailWidth.toFixed(2)}, 1.0, behind);
+  float off = (vArc.y - ${BLADE.band.toFixed(2)}) / max(width, 0.001);
+  float across = exp(-off * off * ${BLADE.profile.toFixed(2)});
+  float hot = smoothstep(head - ${BLADE.hot.toFixed(2)}, head, vArc.x) * front;
+  float alpha = along * across * uOpacity;
+  vec3 tint = mix(uColor, vec3(1.0), hot * ${BLADE.whiten.toFixed(2)});
+  gl_FragColor = vec4(tint * (${BLADE.body.toFixed(2)} + hot * ${BLADE.heat.toFixed(2)}) * alpha, alpha);
 }
 `;
 
@@ -192,7 +213,7 @@ export function slashMesh(arc: number, reach: number, color: Color): SlashMesh {
     side: DoubleSide,
     blending: AdditiveBlending,
   });
-  const mesh: Mesh = new Mesh(sectorGeometry(arc, reach * 0.42, reach), material);
+  const mesh: Mesh = new Mesh(sectorGeometry(arc, reach * BLADE.inner, reach), material);
   mesh.renderOrder = 8;
   return { mesh, material };
 }

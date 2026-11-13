@@ -93,3 +93,12 @@ void test('every effect shape draws with a shader a keeper holds, so freeing the
   const held: Set<string> = new Set<string>(programKeepers(red).map(variantOf));
   for (const shape of shapes) assert.ok(held.has(variantOf(shape)), `no keeper holds ${variantOf(shape).slice(0, 80)}`);
 });
+
+void test('a blade swing draws a thin streak along its reach with a hot leading edge that tapers behind, never a filled wedge', (): void => {
+  const { material } = slashMesh(1, 2, new Color(0xffffff));
+  assert.ok(material instanceof ShaderMaterial);
+  const shader: string = material.fragmentShader;
+  assert.match(shader, /exp\(-off \* off \*/);
+  assert.match(shader, /mix\(0\.25, 1\.0, behind\)/);
+  assert.match(shader, /float hot = smoothstep\(head - /);
+});
