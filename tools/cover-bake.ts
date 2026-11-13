@@ -19,6 +19,8 @@ export type TriangleRange = readonly [first: number, last: number];
 
 export const COVER_REACH: CoverReach = { reach: 0.15, lift: 0.03, margin: 2, island: 24, weld: 1e-4 };
 
+export const SNUG_COVER_REACH: CoverReach = { ...COVER_REACH, lift: 0.08, margin: 0 };
+
 const EPSILON: number = 1e-9;
 
 function at(values: Float32Array, index: number): number {
@@ -149,6 +151,10 @@ export function coveredTriangles(body: BodyMesh, vertices: readonly boolean[], r
     open = next;
   }
   return hidden;
+}
+
+export function withSeams(body: BodyMesh, own: readonly boolean[], joint: readonly boolean[], ownVertices: readonly boolean[]): boolean[] {
+  return own.map((hidden: boolean, face: number): boolean => hidden || ((joint[face] ?? false) && [0, 1, 2].some((offset: number): boolean => ownVertices[corner(body.indices, face * 3 + offset)] === true)));
 }
 
 export function triangleRanges(hidden: readonly boolean[]): TriangleRange[] {

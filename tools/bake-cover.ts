@@ -3,8 +3,8 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { writeFileSync } from 'node:fs';
-import { COVER_REACH, coveredTriangles, coveredVertices, triangleRanges } from './cover-bake.ts';
-import type { BodyMesh, TriangleMesh, TriangleRange } from './cover-bake.ts';
+import { COVER_REACH, SNUG_COVER_REACH, coveredTriangles, coveredVertices, triangleRanges, withSeams } from './cover-bake.ts';
+import type { BodyMesh, CoverReach, TriangleMesh, TriangleRange } from './cover-bake.ts';
 
 interface BakedCover {
   readonly body: string;
@@ -53,17 +53,25 @@ function merged(parts: readonly TriangleMesh[]): TriangleMesh {
   return { positions: new Float32Array(positions), indices: new Uint32Array(corners) };
 }
 
+async function wearableMesh(io: NodeIO, path: string): Promise<TriangleMesh> {
+  return merged((await primitives(io, path)).map(({ primitive }: NamedPrimitive): TriangleMesh => ({ positions: floats(primitive.getAttribute('POSITION'), 'wearable POSITION'), indices: indices(primitive, path) })));
+}
+
 async function main(): Promise<void> {
-  const [bodyPath, wearablePath, outPath] = process.argv.slice(2);
-  if (bodyPath === undefined || wearablePath === undefined || outPath === undefined) throw new Error('usage: bake-cover <body.glb> <wearable.glb> <out.json>');
+  const [bodyPath, wearablePath, outPath, fit, ...seamPaths] = process.argv.slice(2);
+  if (bodyPath === undefined || wearablePath === undefined || outPath === undefined) throw new Error('usage: bake-cover <body.glb> <wearable.glb> <out.json> [snug|loose] [seam-partner.glb...]');
   await MeshoptDecoder.ready;
   const io: NodeIO = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
   const [first] = await primitives(io, bodyPath);
   if (first === undefined) throw new Error(`${bodyPath} has no mesh`);
   const skin: Primitive = first.primitive;
   const body: BodyMesh = { positions: floats(skin.getAttribute('POSITION'), 'body POSITION'), normals: floats(skin.getAttribute('NORMAL'), 'body NORMAL'), indices: indices(skin, bodyPath) };
-  const cover: TriangleMesh = merged((await primitives(io, wearablePath)).map(({ primitive }: NamedPrimitive): TriangleMesh => ({ positions: floats(primitive.getAttribute('POSITION'), 'wearable POSITION'), indices: indices(primitive, wearablePath) })));
-  const hidden: boolean[] = coveredTriangles(body, coveredVertices(body, cover, COVER_REACH), COVER_REACH);
+  const cover: TriangleMesh = await wearableMesh(io, wearablePath);
+  const reach: CoverReach = fit === 'snug' ? SNUG_COVER_REACH : COVER_REACH;
+  const own: boolean[] = coveredVertices(body, cover, reach);
+  const partners: TriangleMesh[] = await Promise.all(seamPaths.map((path: string): Promise<TriangleMesh> => wearableMesh(io, path)));
+  const joint: boolean[] = partners.length === 0 ? own : coveredVertices(body, merged([cover, ...partners]), reach);
+  const hidden: boolean[] = withSeams(body, coveredTriangles(body, own, reach), coveredTriangles(body, joint, reach), own);
   const baked: BakedCover = { body: bodyPath.replace(/^.*public\//, ''), mesh: first.mesh, wearable: wearablePath.replace(/^.*public\//, ''), triangles: hidden.length, hidden: triangleRanges(hidden) };
   writeFileSync(outPath, `${JSON.stringify(baked)}\n`);
   process.stdout.write(`${outPath}: ${hidden.filter(Boolean).length} of ${hidden.length} triangles hidden in ${baked.hidden.length} ranges\n`);

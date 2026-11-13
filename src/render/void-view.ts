@@ -109,6 +109,7 @@ export const VOID_VIEW = {
   graze: { flat: 0.05, full: 0.22 },
   haze: { near: 7, far: 20 },
   land: { from: -1, to: 3, bank: 10 },
+  bankSolid: 0.95,
   landFlash: { intensity: 34, height: 14, lean: 1 },
   bank: { length: 220, height: 10, back: 2.5, color: 0xeef0f2, lit: 0xffffff, opacity: 0.8 },
   thinMist: 0.6,
@@ -238,6 +239,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
   const rock: ShoreRock | null = rockSurface === null ? null : createShoreRock(rockSurface);
   if (rock !== null) group.add(rock.mesh);
 
+  const bankSolid: IUniform<number> = { value: 0 };
   const land: IUniform<Vector3> = { value: new Vector3(VOID_VIEW.land.from, VOID_VIEW.land.to, VOID_VIEW.land.bank) };
   const landFlash: DirectionalLight = new DirectionalLight(VOID_VIEW.flashColor, 0);
   group.add(landFlash, landFlash.target);
@@ -258,7 +260,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
   const layers: Mesh[] = tier.layers.map((which: number, index: number): Mesh => {
     const layer = VOID_VIEW.layers[which] ?? VOID_VIEW.layers[0];
     const material: ShaderMaterial = new ShaderMaterial({
-      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uEyeFade: eyeFade, uRim: rim, uBodyClear: { value: new Vector4(VOID_VIEW.bodyClear.inner, VOID_VIEW.bodyClear.outer, VOID_VIEW.bodyClear.low, VOID_VIEW.bodyClear.high) }, uThick: thick, uThickness: { value: new Vector4(VOID_VIEW.thick.floor, VOID_VIEW.thick.boost, VOID_VIEW.thick.near, VOID_VIEW.thick.far) }, uBody: body, uGraze: { value: new Vector2(VOID_VIEW.graze.flat, VOID_VIEW.graze.full) }, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: which * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uDir: dir, uSpan: { value: MIST.span }, uNeed: { value: layer.need }, uTear: { value: layer.tear }, uWarp: { value: layer.warp }, uFeather: { value: VOID_VIEW.edgeFeather }, uFray: { value: VOID_VIEW.fray }, uFigure: figure, uRest: { value: new Vector4(VOID_VIEW.rest.tear, VOID_VIEW.rest.feather, VOID_VIEW.rest.breathe, VOID_VIEW.rest.curl) }, uMotion: motion, uRestWall: { value: VOID_VIEW.restWall }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uStreak: { value: layer.streak }, uWall: { value: VOID_VIEW.wallLight }, uEddyRadius: { value: MIST.eddyRadius }, uEddies: eddies, uField: fieldUniform, uFieldSize: fieldSize, uDither: dither, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor), uShore: shoreLine, uShoreLook: shoreLook, uLand: land, uPoolClear: { value: new Vector2(VOID_VIEW.poolClear.inner, VOID_VIEW.poolClear.outer) }, uThinMist: { value: VOID_VIEW.thinMist }, uHalo: { value: new Vector3(VOID_VIEW.lightHalo.spare, VOID_VIEW.lightHalo.glow, VOID_VIEW.lightHalo.amount) }, uScatter: scatter, uScatterHalo: { value: VOID_VIEW.scatter.halo }, uScatterColor: color(VOID_VIEW.scatter.color) },
+      uniforms: { uMist: color(VOID_VIEW.mistColor), uStorm: color(VOID_VIEW.stormColor), uDeep: color(VOID_VIEW.deepColor), uHero: hero, uNear: { value: new Vector2(VOID_VIEW.nearClear, VOID_VIEW.farStorm) }, uFlashColor: flashColor, uShift: shift, uEyeFade: eyeFade, uRim: rim, uBodyClear: { value: new Vector4(VOID_VIEW.bodyClear.inner, VOID_VIEW.bodyClear.outer, VOID_VIEW.bodyClear.low, VOID_VIEW.bodyClear.high) }, uThick: thick, uThickness: { value: new Vector4(VOID_VIEW.thick.floor, VOID_VIEW.thick.boost, VOID_VIEW.thick.near, VOID_VIEW.thick.far) }, uBody: body, uGraze: { value: new Vector2(VOID_VIEW.graze.flat, VOID_VIEW.graze.full) }, uFlashPos: flashPos, uFlash: flash, uFlashReach: flashReach, uTime: time, uHeight: { value: layer.height }, uOpacity: { value: layer.opacity }, uSeed: { value: which * VOID_VIEW.seedStep }, uScale: { value: layer.scale }, uDrift: { value: layer.drift }, uDir: dir, uSpan: { value: MIST.span }, uNeed: { value: layer.need }, uTear: { value: layer.tear }, uWarp: { value: layer.warp }, uFeather: { value: VOID_VIEW.edgeFeather }, uFray: { value: VOID_VIEW.fray }, uFigure: figure, uRest: { value: new Vector4(VOID_VIEW.rest.tear, VOID_VIEW.rest.feather, VOID_VIEW.rest.breathe, VOID_VIEW.rest.curl) }, uMotion: motion, uRestWall: { value: VOID_VIEW.restWall }, uFieldReach: { value: (MIST.span / 2) * MIST.edgeEnd }, uStreak: { value: layer.streak }, uWall: { value: VOID_VIEW.wallLight }, uEddyRadius: { value: MIST.eddyRadius }, uEddies: eddies, uField: fieldUniform, uFieldSize: fieldSize, uDither: dither, uLight: light.uniform, uLightColor: color(VOID_VIEW.lightColor), uShore: shoreLine, uShoreLook: shoreLook, uLand: land, uBankSolid: bankSolid, uPoolClear: { value: new Vector2(VOID_VIEW.poolClear.inner, VOID_VIEW.poolClear.outer) }, uThinMist: { value: VOID_VIEW.thinMist }, uHalo: { value: new Vector3(VOID_VIEW.lightHalo.spare, VOID_VIEW.lightHalo.glow, VOID_VIEW.lightHalo.amount) }, uScatter: scatter, uScatterHalo: { value: VOID_VIEW.scatter.halo }, uScatterColor: color(VOID_VIEW.scatter.color) },
       defines,
       vertexShader: MIST_VERTEX,
       fragmentShader: MIST_FRAGMENT,
@@ -373,6 +375,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
     hero.value.set(pos.x, pos.z);
     onLand = shore === null ? 0 : shoreLook.value.y * landShare((pos.x - shore.at.x) * shore.facing.x + (pos.z - shore.at.z) * shore.facing.z);
     moteOpacity.value = VOID_VIEW.moteOpacity * (1 - onLand);
+    bankSolid.value = VOID_VIEW.bankSolid * onLand;
     bank.group.visible = shore !== null && shoreLook.value.y > 0.01;
     if (shore !== null) {
       bank.group.position.set(shore.at.x - shore.facing.x * VOID_VIEW.bank.back, zone.floorHeight, shore.at.z - shore.facing.z * VOID_VIEW.bank.back);

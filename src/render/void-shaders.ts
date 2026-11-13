@@ -198,6 +198,7 @@ uniform float uDither;
 uniform vec3 uLight;
 uniform vec3 uLightColor;
 uniform vec3 uLand;
+uniform float uBankSolid;
 uniform vec4 uShore;
 uniform vec3 uShoreLook;
 uniform vec2 uPoolClear;
@@ -301,6 +302,7 @@ void main() {
   float bank = uShoreLook.y * smoothstep(-uLand.z, uLand.x, ashore) * (1.0 - land);
   density *= 1.0 - land;
   density *= 1.0 - uShoreLook.y * smoothstep(-1.0, 3.0, ashore) * (1.0 - smoothstep(uPoolClear.x, uPoolClear.y, away));
+  density = max(density, bank * uBankSolid * (1.0 - smoothstep(uLand.x - 3.0, uLand.x, ashore)));
   float shade = clamp(0.5 + (lit - body) * 6.0, 0.0, 1.0);
   vec3 color = mix(uStorm, uMist, near * 0.8 + shade * 0.2);
   color *= 0.82 + shade * 0.28;
