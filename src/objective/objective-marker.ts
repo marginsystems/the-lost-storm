@@ -23,14 +23,14 @@ export const OBJECTIVE = {
   screenMargin: 56,
   hudGap: 14,
   hudReadSeconds: 0.25,
-  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.minimap', '.hud-quests', '.hud-top'],
+  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.minimap', '.hud-quests', '.hud-top', '.tc-btn', '.tc-stick'],
   hintBoxes: ['.hud-hint.visible'],
 } as const;
 
-function hudRects(hud: HTMLElement, selectors: readonly string[]): Rect[] {
+function hudRects(root: ParentNode, selectors: readonly string[]): Rect[] {
   const rects: Rect[] = [];
   for (const selector of selectors) {
-    for (const element of hud.querySelectorAll(selector)) {
+    for (const element of root.querySelectorAll(selector)) {
       const box: DOMRect = element.getBoundingClientRect();
       if (box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== 'hidden') rects.push({ left: box.left, top: box.top, right: box.right, bottom: box.bottom });
     }
@@ -78,7 +78,7 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
       sinceRead += dt;
       if (target !== null) {
         if (sinceRead >= OBJECTIVE.hudReadSeconds) {
-          blockers = hudRects(hud, OBJECTIVE.hudBlockers);
+          blockers = hudRects(document, OBJECTIVE.hudBlockers);
           hints = hudRects(hud, OBJECTIVE.hintBoxes);
           sinceRead = 0;
         }
