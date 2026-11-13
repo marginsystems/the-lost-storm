@@ -6,6 +6,9 @@ import type { World, WorldEvent } from '../../sim/world/types.ts';
 import type { HintStore } from '../hints-store.ts';
 import type { ResolvedKeys } from '../settings/bindings.ts';
 import { el } from './dom.ts';
+import { createBrowserTimers } from '../browser-timers.ts';
+import { createHintSwap } from './hint-swap.ts';
+import type { HintSwap } from './hint-swap.ts';
 import hintsCss from './hints.css?inline';
 import { iconSvg } from './icons.ts';
 import type { TouchLabel } from './key-labels.ts';
@@ -52,8 +55,21 @@ export function createHints(parent: HTMLElement, defs: HintsDef, store: HintStor
     element.classList.toggle('visible', next);
   };
 
+  let latest: World | null = null;
+  const swap: HintSwap<HintDef> = createHintSwap<HintDef>(
+    {
+      fill: (hint: HintDef): void => {
+        if (latest !== null) fill(latest, hint);
+      },
+      show: setShown,
+      showing: (): boolean => showing,
+    },
+    createBrowserTimers(),
+  );
+
   return {
     update(world: World, events: readonly WorldEvent[]): void {
+      latest = world;
       if (state === null) {
         const record = store.read();
         state = createHintState(record?.seen ?? []);
@@ -61,15 +77,13 @@ export function createHints(parent: HTMLElement, defs: HintsDef, store: HintStor
       }
       const changes: HintChange[] = stepHints(defs, world, state, { events, open: openPanels(), enabled: store.isEnabled() });
       for (const change of changes) {
-        if (change.type === 'show') {
-          fill(world, change.hint);
-          setShown(true);
-        } else {
+        if (change.type === 'show') swap.show(change.hint);
+        else {
           if (change.done) store.remember(change.hint.id, [...state.seen]);
-          setShown(false);
+          swap.hide();
         }
       }
-      if (state.active !== null) setShown(world.dialogue === null);
+      if (state.active !== null && !swap.busy()) setShown(world.dialogue === null);
     },
   };
 }

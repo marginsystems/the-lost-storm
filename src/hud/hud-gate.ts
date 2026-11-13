@@ -13,11 +13,12 @@ export const HUD_GATE = {
   faintIdle: 0.12,
   faintHeld: 0.3,
   revealAnimation: 'hud-gate-reveal',
+  hideAnimation: 'hud-gate-hide',
   partAnimation: 'hud-part-in',
   partAttribute: 'data-hud-part',
 } as const;
 
-export type HudGateState = 'closed' | 'opening' | 'open';
+export type HudGateState = 'closed' | 'opening' | 'open' | 'closing';
 
 export interface HudGateTarget {
   readonly dataset: DOMStringMap;
@@ -26,7 +27,7 @@ export interface HudGateTarget {
 export interface HudGate {
   set(hidden: boolean): void;
   show(view: HudView): void;
-  settle(): void;
+  settle(animation: string): void;
   state(): HudGateState;
 }
 
@@ -34,6 +35,13 @@ function covered(): string {
   const keep: string = HUD_GATE.keep.map((name: string): string => `.${name}`).join(', ');
   const children: string[] = HUD_GATE.roots.map((root: string): string => `${root} > :not(${keep})`);
   return [...children, ...HUD_GATE.loose].join(',\n');
+}
+
+function parted(selectors: string): string {
+  return selectors
+    .split(',\n')
+    .map((selector: string): string => `${selector}[${HUD_GATE.partAttribute}]`)
+    .join(',\n');
 }
 
 function scoped(state: HudGateState, selectors: string): string {
@@ -81,7 +89,11 @@ export function shownData(view: HudView): Readonly<Record<'hudShow', string>> {
 export function hudGateCss(): string {
   const hidden: string = scoped('closed', covered());
   const revealing: string = scoped('opening', covered());
+  const hiding: string = scoped('closing', covered());
   const faint: string = `body[data-hud-gate='closed'] .${HUD_GATE.faint}`;
+  const part: string = `${HUD_GATE.partAnimation} var(--spring-snappy-ms) var(--spring-snappy)`;
+  const reveal: string = `${HUD_GATE.revealAnimation} var(--spring-smooth-ms) var(--spring-smooth) both`;
+  const hide: string = `${HUD_GATE.hideAnimation} var(--spring-smooth-ms) var(--spring-smooth) both`;
   return `${hidden} {
   filter: opacity(0) !important;
   visibility: hidden !important;
@@ -97,7 +109,20 @@ ${faint}.on {
 }
 
 ${revealing} {
-  animation: ${HUD_GATE.revealAnimation} var(--spring-smooth-ms) var(--spring-smooth) both;
+  animation: ${reveal};
+}
+
+${parted(revealing)} {
+  animation: ${reveal}, ${part};
+}
+
+${hiding} {
+  pointer-events: none !important;
+  animation: ${hide};
+}
+
+${parted(hiding)} {
+  animation: ${hide}, ${part};
 }
 
 @keyframes ${HUD_GATE.revealAnimation} {
@@ -106,6 +131,15 @@ ${revealing} {
   }
   to {
     filter: opacity(1);
+  }
+}
+
+@keyframes ${HUD_GATE.hideAnimation} {
+  from {
+    filter: opacity(1);
+  }
+  to {
+    filter: opacity(0);
   }
 }
 
@@ -123,14 +157,15 @@ export function createHudGate(body: HudGateTarget, hidden: boolean): HudGate {
       write('hudShow', shownData(view).hudShow);
     },
     set(next: boolean): void {
-      const wanted: HudGateState = next ? 'closed' : state === 'closed' ? 'opening' : state;
+      const wanted: HudGateState = next ? (state === 'closed' ? 'closed' : 'closing') : state === 'closed' || state === 'closing' ? 'opening' : state;
       if (wanted === state) return;
       state = wanted;
       body.dataset['hudGate'] = state;
     },
-    settle(): void {
-      if (state !== 'opening') return;
-      state = 'open';
+    settle(animation: string): void {
+      const settled: HudGateState | null = state === 'opening' && animation === HUD_GATE.revealAnimation ? 'open' : state === 'closing' && animation === HUD_GATE.hideAnimation ? 'closed' : null;
+      if (settled === null) return;
+      state = settled;
       body.dataset['hudGate'] = state;
     },
     state(): HudGateState {
@@ -140,6 +175,6 @@ export function createHudGate(body: HudGateTarget, hidden: boolean): HudGate {
 }
 
 export function followWorld(gate: HudGate, world: World, reading: boolean): void {
-  gate.set(hudHidden(world) || (reading && gate.state() === 'closed'));
+  gate.set(hudHidden(world) || (reading && (gate.state() === 'closed' || gate.state() === 'closing')));
   gate.show(hudView(world));
 }

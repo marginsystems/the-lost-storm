@@ -101,21 +101,55 @@ void test('only the graphics and fault notice sits above the HUD gate, so it sho
   assert.ok(escapingMounts().some((mount: Mount): boolean => MOUNT_SITES[siteOf(mount)] === '.ctx-notice'));
 });
 
-void test('the gate closes at once and opens with a reveal that settles', (): void => {
+void test('the gate eases out before it closes and eases in before it opens, and only its own animations settle it', (): void => {
   const target: HudGateTarget = body();
   const gate: HudGate = createHudGate(target, true);
   assert.equal(target.dataset['hudGate'], 'closed');
-  gate.settle();
+  gate.settle(HUD_GATE.revealAnimation);
   assert.equal(gate.state(), 'closed');
   gate.set(false);
   assert.equal(target.dataset['hudGate'], 'opening');
   gate.set(false);
   assert.equal(gate.state(), 'opening');
-  gate.settle();
+  gate.settle(HUD_GATE.partAnimation);
+  assert.equal(gate.state(), 'opening');
+  gate.settle(HUD_GATE.revealAnimation);
   assert.equal(target.dataset['hudGate'], 'open');
   gate.set(true);
+  assert.equal(target.dataset['hudGate'], 'closing');
+  gate.settle(HUD_GATE.revealAnimation);
+  assert.equal(gate.state(), 'closing');
+  gate.settle(HUD_GATE.hideAnimation);
   assert.equal(target.dataset['hudGate'], 'closed');
   assert.equal(createHudGate(body(), false).state(), 'open');
+});
+
+void test('a gate that is told to open while it eases out turns round and eases back in', (): void => {
+  const target: HudGateTarget = body();
+  const gate: HudGate = createHudGate(target, false);
+  gate.set(true);
+  assert.equal(gate.state(), 'closing');
+  gate.set(false);
+  assert.equal(gate.state(), 'opening');
+  gate.set(true);
+  assert.equal(gate.state(), 'closing');
+  gate.set(true);
+  assert.equal(gate.state(), 'closing');
+});
+
+void test('the reveal and the ease-out keep a part\'s fade by name, so it never restarts when the gate settles, and never start one on a layer that is not a part', (): void => {
+  const css: string = hudGateCss();
+  const part: string = `${HUD_GATE.partAnimation} var(--spring-snappy-ms) var(--spring-snappy)`;
+  for (const [state, name] of [['opening', HUD_GATE.revealAnimation], ['closing', HUD_GATE.hideAnimation]] as const) {
+    const fade: string = `${name} var(--spring-smooth-ms) var(--spring-smooth) both`;
+    const plain: string = css.slice(css.indexOf(`body[data-hud-gate='${state}']`));
+    assert.ok(plain.slice(0, plain.indexOf('}')).endsWith(`animation: ${fade};\n`), state);
+    const withPart: string = css.slice(css.indexOf(`[${HUD_GATE.partAttribute}] {`, css.indexOf(`body[data-hud-gate='${state}']`)));
+    assert.ok(withPart.slice(0, withPart.indexOf('}')).includes(`animation: ${fade}, ${part};`), state);
+  }
+  for (const root of HUD_GATE.roots) assert.ok(css.includes(`body[data-hud-gate='closing'] ${root} > :not(`), root);
+  const hide: string = css.slice(css.indexOf(`@keyframes ${HUD_GATE.hideAnimation}`));
+  assert.match(hide, /from \{\s*filter: opacity\(1\);\s*\}\s*to \{\s*filter: opacity\(0\);/);
 });
 
 void test('a HUD part the hero has not earned is taken out of the layout, and each has its rule', (): void => {
@@ -193,7 +227,7 @@ void test('a note read as the HUD first arrives holds the frame back until it cl
   assert.equal(gate.state(), 'closed');
   followWorld(gate, world, false);
   assert.equal(gate.state(), 'opening');
-  gate.settle();
+  gate.settle(HUD_GATE.revealAnimation);
   followWorld(gate, world, true);
   assert.equal(gate.state(), 'open');
 });

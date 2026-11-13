@@ -10,7 +10,7 @@ import { hudHidden } from '../../sim/world/hud.ts';
 import { readablePages } from '../../sim/world/story.ts';
 import type { Command, ItemInstance, WakeState, World } from '../../sim/world/types.ts';
 import type { HudGate } from '../hud/hud-gate.ts';
-import { createHudGate, followWorld, HUD_GATE, hudGateCss } from '../hud/hud-gate.ts';
+import { createHudGate, followWorld, hudGateCss } from '../hud/hud-gate.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import openingCss from './opening.css?inline';
 import type { WakeFrame } from './wake-shot.ts';
@@ -74,7 +74,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   hud.append(gateStyle);
   const gate: HudGate = createHudGate(document.body, hudHidden(world));
   document.body.addEventListener('animationend', (event: AnimationEvent): void => {
-    if (event.animationName === HUD_GATE.revealAnimation) gate.settle();
+    gate.settle(event.animationName);
   });
 
   const readBook = (item: ItemInstance): boolean => {
