@@ -390,3 +390,45 @@ void test('a monster that ends up in a sealed pocket glides out to the nearest r
   }
   assert.ok(isWalkable(grid, monster.pos.x, monster.pos.z), `it is still sealed in at (${monster.pos.x.toFixed(2)}, ${monster.pos.z.toFixed(2)})`);
 });
+
+const ROUND = {
+  tallFrom: 1.5,
+  gap: 3,
+  bearings: 12,
+  seconds: 3,
+  heroSnap: 2,
+  kinds: ['first_brute', 'unfinished_colossus'],
+} as const;
+
+void test('a monster chasing round any tall Hall prop or wall corner slides along it and never stops for a stuck rest', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 5);
+  world.wake = null;
+  world.moments = [];
+  const stalls: string[] = [];
+  for (const placed of world.zone.props) {
+    const def = content.props.get(placed.prop);
+    if (def === undefined || placed.when.length > 0 || def.height < ROUND.tallFrom) continue;
+    for (const kind of ROUND.kinds) {
+      for (let bearing: number = 0; bearing < ROUND.bearings; bearing += 1) {
+        const angle: number = (bearing / ROUND.bearings) * Math.PI * 2;
+        world.monsters = [];
+        const hero: Vec2 | null = nearestWalkable(world.grid, { x: placed.x + Math.cos(angle) * ROUND.gap, z: placed.z + Math.sin(angle) * ROUND.gap }, ROUND.heroSnap);
+        const from: Vec2 | null = nearestWalkable(routedGrid(world.grid), { x: placed.x - Math.cos(angle) * ROUND.gap, z: placed.z - Math.sin(angle) * ROUND.gap }, ROUND.heroSnap);
+        if (hero === null || from === null) continue;
+        world.player.pos = { ...hero };
+        const chaser: MonsterState = spawn(world, kind, from);
+        chaser.pos = { ...from };
+        chaser.lastPos = { ...from };
+        let rest: number = 0;
+        for (let step: number = 0; step < Math.round(ROUND.seconds / MOTION_DT) && chaser.action === null; step += 1) {
+          world.player.life = world.player.maxLife;
+          world.player.pos = { ...hero };
+          stepWorld(world, [], MOTION_DT);
+          if (chaser.restTime > rest) stalls.push(`${kind} round ${placed.prop} (${placed.x}, ${placed.z}) at bearing ${bearing}, stopped at (${chaser.pos.x.toFixed(2)}, ${chaser.pos.z.toFixed(2)})`);
+          rest = chaser.restTime;
+        }
+      }
+    }
+  }
+  assert.deepEqual(stalls, []);
+});

@@ -14,6 +14,8 @@ const MOVEMENT = {
   separationPasses: 2,
   slideAlong: 0.7,
   wallLean: 0.2,
+  turnOut: [0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.5, -1.5],
+  contact: 0.001,
 } as const;
 
 export interface Steering {
@@ -139,6 +141,17 @@ function strideWithCollision(grid: NavGrid, pos: Vec2, dx: number, dz: number): 
   const slideZ: boolean = alongZ >= MOVEMENT.slideAlong && isWalkable(grid, pos.x, pos.z + dz);
   if (slideX && (!slideZ || alongX >= alongZ)) pos.x += dx;
   else if (slideZ) pos.z += dz;
+  else turnOut(grid, pos, dx, dz);
+}
+
+function turnOut(grid: NavGrid, pos: Vec2, dx: number, dz: number): void {
+  const length: number = Math.hypot(dx, dz);
+  for (let share: number = 1 / 2; share * length >= MOVEMENT.contact; share /= 2) if (stepClear(grid, pos, dx * share, dz * share)) return;
+  for (const angle of MOVEMENT.turnOut) {
+    const cos: number = Math.cos(angle);
+    const sin: number = Math.sin(angle);
+    if (stepClear(grid, pos, dx * cos + dz * sin, dz * cos - dx * sin)) return;
+  }
 }
 
 function aroundWall(grid: NavGrid, pos: Vec2, wanted: number, probe: number): number {

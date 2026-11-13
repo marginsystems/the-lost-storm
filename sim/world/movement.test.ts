@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must } from '../../test/support.ts';
+import { must, worldIn } from '../../test/support.ts';
+import { loadContent } from '../content/content.ts';
+import type { Content } from '../content/types.ts';
+import { findPath } from '../nav/path.ts';
 import type { Vec2 } from '../math.ts';
-import { isWalkable } from '../nav/grid.ts';
+import { isWalkable, nearestWalkable } from '../nav/grid.ts';
 import type { Steering, SteerStep } from './movement.ts';
 import { alignedSpeed, separateActors, steerAlong, steerHeading, turnToward } from './movement.ts';
 import type { Bot } from '../bot.ts';
@@ -21,15 +24,27 @@ void test('turnToward turns by at most the step and takes the short way round', 
   assert.equal(turnToward(-3, 3, 0.1), -3.1);
 });
 
-void test('steerAlong reports no progress when the way is blocked', (): void => {
+void test('steerAlong reports no progress and slides nowhere when pressed head-on against a flat wall', (): void => {
+  const world: World = roadWorld(roadZone({ tiles: ['wwww www', 'wwww www', 'wwww www', 'wwww www'] }));
+  const player = world.player;
+  const path: Vec2[] = [{ x: 20, z: 14 }];
+  player.pos = { x: 20.5, z: 14 };
+  player.facing = -Math.PI / 2;
+  const step: SteerStep = steerAlong(world.grid, player, path, 0.2, 1 / 60, STEER);
+  assert.equal(step.moved, 0);
+  assert.equal(player.motion, 'still');
+  assert.deepEqual(player.pos, { x: 20.5, z: 14 });
+});
+
+void test('a step longer than the gap to a flat wall closes straight in to the wall instead of stopping short or sliding', (): void => {
   const world: World = roadWorld(roadZone({ tiles: ['wwww www', 'wwww www', 'wwww www', 'wwww www'] }));
   const player = world.player;
   const path: Vec2[] = [{ x: 20, z: 14 }];
   player.pos = { x: 20.6, z: 14 };
   player.facing = -Math.PI / 2;
-  const step: SteerStep = steerAlong(world.grid, player, path, 0.2, 1 / 60, STEER);
-  assert.equal(step.moved, 0);
-  assert.equal(player.motion, 'still');
+  steerAlong(world.grid, player, path, 0.2, 1 / 60, STEER);
+  assert.ok(player.pos.x < 20.51, `stopped at x ${player.pos.x.toFixed(3)}`);
+  assert.equal(player.pos.z, 14);
 });
 
 void test('separating a crowd never pushes anyone into a wall', (): void => {
@@ -223,4 +238,42 @@ void test('the locomotion contract: in a fight with knockbacks nobody moves whil
     }
     assert.deepEqual([...kinds.entries()].map(([key, count]: [string, number]): string => `${count}x ${key}`), [], `seed ${seed}: ${breaches.length} breaches`);
   }
+});
+
+const CORNER_WALK = {
+  tallFrom: 1.5,
+  gap: 3,
+  bearings: 12,
+  snap: 2,
+  seconds: 4,
+  dt: 1 / 60,
+  speed: 4.5,
+  still: 1e-4,
+} as const;
+
+void test('the hero walking a path round any tall Hall prop slides along its corners and is never stopped dead', (): void => {
+  const content: Content = loadContent();
+  const world: World = worldIn(content, 'hall_of_time', 5);
+  const stops: string[] = [];
+  for (const placed of world.zone.props) {
+    const def = content.props.get(placed.prop);
+    if (def === undefined || placed.when.length > 0 || def.height < CORNER_WALK.tallFrom) continue;
+    for (let bearing: number = 0; bearing < CORNER_WALK.bearings; bearing += 1) {
+      const angle: number = (bearing / CORNER_WALK.bearings) * Math.PI * 2;
+      const from: Vec2 | null = nearestWalkable(world.grid, { x: placed.x - Math.cos(angle) * CORNER_WALK.gap, z: placed.z - Math.sin(angle) * CORNER_WALK.gap }, CORNER_WALK.snap);
+      const to: Vec2 | null = nearestWalkable(world.grid, { x: placed.x + Math.cos(angle) * CORNER_WALK.gap, z: placed.z + Math.sin(angle) * CORNER_WALK.gap }, CORNER_WALK.snap);
+      if (from === null || to === null) continue;
+      const hero: ActorState = world.player;
+      hero.pos = { ...from };
+      const path: Vec2[] = findPath(world.grid, from, to);
+      for (let step: number = 0; step < Math.round(CORNER_WALK.seconds / CORNER_WALK.dt) && path.length > 0; step += 1) {
+        const moved: SteerStep = steerAlong(world.grid, hero, path, CORNER_WALK.speed * CORNER_WALK.dt, CORNER_WALK.dt, STEER);
+        if (moved.tried > CORNER_WALK.still && moved.moved <= CORNER_WALK.still) {
+          stops.push(`${placed.prop} (${placed.x}, ${placed.z}) bearing ${bearing}: stopped at (${hero.pos.x.toFixed(2)}, ${hero.pos.z.toFixed(2)})`);
+          break;
+        }
+      }
+    }
+  }
+  assert.deepEqual(stops, []);
 });
