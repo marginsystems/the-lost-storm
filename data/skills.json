@@ -125,7 +125,10 @@
     "vfx": {
       "style": "bolt",
       "color": "#9be1ff",
-      "cue": "hand"
+      "cue": "hand",
+      "lightning": { "forks": 1, "glow": 0.5, "afterglow": 0.2, "jitter": 0.55 },
+      "impact": { "sparks": 12, "flash": 1.1 },
+      "trail": 1.2
     }
   },
   {
@@ -888,7 +891,7 @@
     "shake": 0.18,
     "hitStop": 0.03,
     "category": "chain",
-    "vfx": { "style": "fork", "color": "#b8e8ff", "cue": "hand" }
+    "vfx": { "style": "fork", "color": "#b8e8ff", "cue": "hand", "lightning": { "forks": 2, "glow": 0.55, "afterglow": 0.28, "jitter": 0.85 }, "impact": { "sparks": 8, "flash": 0.9 } }
   },
   {
     "id": "mist_step",
@@ -1262,7 +1265,7 @@
     "stagger": 0.2,
     "shake": 0.14,
     "hitStop": 0.03,
-    "vfx": { "style": "bolt", "color": "#9be1ff", "cue": "hand" },
+    "vfx": { "style": "bolt", "color": "#9be1ff", "cue": "hand", "lightning": { "forks": 1, "glow": 0.5, "afterglow": 0.2, "jitter": 0.55 }, "impact": { "sparks": 12, "flash": 1.1 }, "trail": 1.2 },
     "echo": 0.5
   },
   {
@@ -1283,7 +1286,7 @@
     "stagger": 0.18,
     "shake": 0.18,
     "hitStop": 0.03,
-    "vfx": { "style": "fork", "color": "#b8e8ff", "cue": "hand" },
+    "vfx": { "style": "fork", "color": "#b8e8ff", "cue": "hand", "lightning": { "forks": 2, "glow": 0.55, "afterglow": 0.28, "jitter": 0.85 }, "impact": { "sparks": 8, "flash": 0.9 } },
     "echo": 0.6
   },
   {"id": "first_haymaker", "category": "melee", "name": "Haymaker", "description": "A long, slow, telegraphed swing: there is time to step away.", "icon": "cleave", "animation": "slam_charged", "manaCost": 0, "cooldown": 4.2, "windup": 1.9, "recovery": 0.9, "scalesWithAttackSpeed": false, "engageRange": 2.4, "delivery": {"type": "arc", "reach": 3.3, "arcDegrees": 95}, "damage": {"weaponPercent": 1.6, "flatMin": 0, "flatMax": 0}, "knockback": 11, "stagger": 0.4, "shake": 0.62, "hitStop": 0.09, "vfx": {"style": "slash", "color": "#d08a5a"}},

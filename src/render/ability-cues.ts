@@ -79,6 +79,7 @@ export interface CueKit {
   readonly add: (object: Mesh | Group, duration: number, tick: (t: number) => void, owner: number | null) => void;
   readonly spray: (x: number, y: number, z: number, color: Color, count: number, overrides: Partial<BurstOptions>) => void;
   readonly flashLight: (x: number, y: number, z: number, color: Color, intensity: number) => void;
+  readonly gather: (x: number, y: number, z: number, color: Color, intensity: number, rise: number) => void;
   readonly ring: (x: number, z: number, radius: number, color: Color, duration: number) => void;
 }
 
@@ -117,7 +118,7 @@ export function createAbilityCues(kit: CueKit): AbilityCues {
       const rise: number = (Math.random() - 0.4) * CUES.handRadius;
       kit.spray(x + dirX * CUES.handRadius, CUES.handHeight + rise, z + dirZ * CUES.handRadius, color, 1, { dirX: -dirX, dirZ: -dirZ, spread: 0.1, speed: { min: CUES.handRadius / duration, max: (CUES.handRadius / duration) * 1.15 }, lift: { min: -rise / duration, max: -rise / duration }, life: { min: duration * 0.85, max: duration }, size: { min: 0.14, max: 0.28 }, gravity: 0, drag: 0, jitter: 0 });
     }
-    kit.flashLight(x, CUES.handHeight, z, color, CUES.handLight);
+    kit.gather(x, CUES.handHeight, z, color, CUES.handLight, duration);
   };
 
   const ground = (owner: number, pos: Vec2, duration: number, color: Color): void => {

@@ -15,8 +15,9 @@ import { chartDef, chartProblems, statMod, treeNode } from './parse-chart.ts';
 import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
+import { skillVfx } from './parse-vfx.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
-import { byId, choice, colour, ContentError, each, fields, flag, fraction, nonNegative, nullableText, numeric, positive, share, text, textList } from './read.ts';
+import { byId, choice, colour, ContentError, each, fields, flag, fraction, nullableText, numeric, positive, share, text, textList } from './read.ts';
 import type {
   ActDef,
   AttachmentDef,
@@ -45,7 +46,6 @@ import type {
   SkillBinding,
   SkillCombo,
   SkillDef,
-  SkillVfx,
   StatBlock,
   SurfaceDef,
   TalkDef,
@@ -53,7 +53,7 @@ import type {
   WearRegion,
   ZoneExit,
 } from './types.ts';
-import { DAMAGE_TYPES, MANA_SHOWS, SKILL_CATEGORIES, STAT_IDS, VFX_CUES, VFX_STYLES, WEAR_REGIONS } from './types.ts';
+import { DAMAGE_TYPES, MANA_SHOWS, SKILL_CATEGORIES, STAT_IDS, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -128,16 +128,6 @@ function skillCombo(value: unknown, where: string): SkillCombo | null {
   const steps: ComboStep[] = each(source['steps'], `${where}.steps`, comboStep);
   if (steps.length === 0) throw new ContentError(`${where}.steps`, 'a combo needs at least one step after the opening hit');
   return { window: positive(source, 'window', where), steps };
-}
-
-function skillVfx(value: unknown, where: string): SkillVfx {
-  const source: Fields = fields(value, where);
-  return {
-    style: choice(source, 'style', VFX_STYLES, where),
-    color: text(source, 'color', where),
-    cue: source['cue'] === undefined ? 'none' : choice(source, 'cue', VFX_CUES, where),
-    light: source['light'] === undefined ? 1 : nonNegative(source, 'light', where),
-  };
 }
 
 function skill(value: unknown, where: string): SkillDef {

@@ -10,7 +10,9 @@ import type { AreaState, MonsterState, World, WorldEvent } from '../../sim/world
 import { glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
 import type { GroundLight } from './ground-light.ts';
 import { createGroundLight, GROUND_LIGHT } from './ground-light.ts';
+import { STRAND } from './strand-shape.ts';
 import type { BurstOptions } from './particles.ts';
+import type { EffectKit } from './effect-kit.ts';
 
 export const STORM_EFFECTS = {
   handHeight: 1.35,
@@ -47,6 +49,7 @@ export const STORM_EFFECTS = {
   chargeLightDecay: 1.6,
   arcTime: 0.22,
   releaseWave: 0.8,
+  hop: 0.035,
 } as const;
 
 export interface StormKit {
@@ -56,6 +59,7 @@ export interface StormKit {
   readonly burst: (x: number, z: number, radius: number, skill: SkillDef) => void;
   readonly flashLight: (x: number, y: number, z: number, color: Color, intensity: number) => void;
   readonly colorOf: (hex: string) => Color;
+  readonly kit: EffectKit;
   readonly addObject: (object: Object3D) => void;
   readonly trauma: (amount: number) => void;
 }
@@ -103,6 +107,18 @@ export function createStormEffects(kit: StormKit): StormEffects {
 
   const onChain = (event: Extract<WorldEvent, { type: 'chain' }>): void => {
     const color: Color = kit.colorOf(event.skill.vfx.color);
+    const lightning = event.skill.vfx.lightning;
+    if (lightning !== null) {
+      const impact = event.skill.vfx.impact;
+      event.points.forEach((point: Vec2, index: number): void => {
+        const next: Vec2 | undefined = event.points[index + 1];
+        if (next === undefined) return;
+        const delay: number = index * STORM_EFFECTS.hop;
+        kit.kit.strike({ x: point.x, y: index === 0 ? STORM_EFFECTS.handHeight : STORM_EFFECTS.bodyHeight, z: point.z }, { x: next.x, y: STORM_EFFECTS.bodyHeight, z: next.z }, color, lightning, delay);
+        if (impact !== null) kit.kit.impact(next.x, next.z, color, impact, event.skill.vfx.light, delay + STRAND.lead);
+      });
+      return;
+    }
     event.points.forEach((point: Vec2, index: number): void => {
       const next: Vec2 | undefined = event.points[index + 1];
       if (next === undefined) return;

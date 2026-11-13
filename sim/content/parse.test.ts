@@ -655,7 +655,7 @@ void test('a void recentres around the hero, so it cannot hold npcs, checkpoints
 
 void test('a skill effect with no cue or light gets no cue and full light, and a negative light is rejected', (): void => {
   const plain: Content = parseContent({ ...shipped, skills: [...skills, extraSkill] });
-  assert.deepEqual(must(plain.skills.get('ember_lash'), 'skill').vfx, { style: 'slash', color: '#ff8844', cue: 'none', light: 1 });
+  assert.deepEqual(must(plain.skills.get('ember_lash'), 'skill').vfx, { style: 'slash', color: '#ff8844', cue: 'none', light: 1, lightning: null, impact: null, trail: 0 });
   const blinding: RawContent = { ...shipped, skills: [{ ...extraSkill, vfx: { style: 'slash', color: '#ff8844', light: -1 } }] };
   assert.throws((): Content => parseContent(blinding), (error: unknown): boolean => problem(error, 'skills[0].vfx'));
 });

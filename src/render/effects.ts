@@ -1,5 +1,5 @@
 import type { Group, Object3D, Scene, Vector3 } from 'three';
-import { Color, Mesh, MeshBasicMaterial, PointLight, SphereGeometry } from 'three';
+import { Color, Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
 import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { Delivery, SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
@@ -20,6 +20,10 @@ import { CALM_WASH, stepWash, washHit } from './hurt-wash.ts';
 import type { NovaLook } from './ability-cues.ts';
 import type { GroundLight } from './ground-light.ts';
 import { createGroundLight, flare, GROUND_LIGHT, held, spread } from './ground-light.ts';
+import type { EffectKit, KitBudget, MotionWatch } from './effect-kit.ts';
+import { createEffectKit, KIT, kitBudget, watchMotion } from './effect-kit.ts';
+import type { FlashLights } from './flash-lights.ts';
+import { createFlashLights } from './flash-lights.ts';
 
 export const EFFECTS = {
   levelLight: 45,
@@ -61,7 +65,7 @@ export const EFFECTS = {
   warmFrames: 3,
   warmDepth: -30,
   warmScale: 0.001,
-  flashDecay: 9,
+  releaseSparks: 5,
   projectileHeight: 1.25,
   killStop: 0.03,
   critStop: 1.6,
@@ -148,19 +152,12 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   const transients: Transient[] = [];
   const projectiles: Map<number, ProjectileView> = new Map<number, ProjectileView>();
   const colors: Map<string, Color> = new Map<string, Color>();
-  const lights: PointLight[] = [];
-  let nextLight: number = 0;
   let hitStop: number = 0;
   let wash: HurtWash = CALM_WASH;
   let emberTimer: number = 0;
   const dashTrails: DashTrails = createDashTrails(scene, particles);
 
-  const flashCount: number = Math.max(1, Math.min(EFFECTS.flashLights, renderBudget().flashLights));
-  for (let index: number = 0; index < flashCount; index += 1) {
-    const light: PointLight = new PointLight(0xffffff, 0, 16, 1.6);
-    scene.add(light);
-    lights.push(light);
-  }
+  const flashes: FlashLights = createFlashLights(scene, Math.min(EFFECTS.flashLights, renderBudget().flashLights));
   const flameMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: glow(EMBER, 3.4) });
   const flameGeometry: SphereGeometry = new SphereGeometry(EFFECTS.flameSize, 10, 8);
   let torches: readonly Vector3[] = [];
@@ -193,14 +190,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     for (const transient of transients) if (transient.owner === owner) transient.age = transient.duration;
   };
 
-  const flashLight = (x: number, y: number, z: number, color: Color, intensity: number): void => {
-    const light: PointLight | undefined = lights[nextLight];
-    nextLight = (nextLight + 1) % flashCount;
-    if (light === undefined) return;
-    light.color.copy(color);
-    light.intensity = intensity;
-    light.position.set(x, y, z);
-  };
+  const riseLight = (x: number, y: number, z: number, color: Color, intensity: number, rise: number): void => flashes.flash(x, y, z, color, intensity, rise);
+  const flashLight = (x: number, y: number, z: number, color: Color, intensity: number): void => flashes.flash(x, y, z, color, intensity, KIT.flashRise);
+
+  const motion: MotionWatch = watchMotion();
+  const kit: EffectKit = createEffectKit(scene, particles, riseLight, (): KitBudget => kitBudget(renderBudget().name, motion.reduced));
 
   const spray = (x: number, y: number, z: number, color: Color, count: number, overrides: Partial<BurstOptions>): void => {
     particles.burst({ x, y, z, count, color, speed: { min: 2, max: 7 }, lift: { min: 1, max: 5 }, life: { min: 0.25, max: 0.6 }, size: { min: 0.25, max: 0.6 }, gravity: 14, drag: 2.2, dirX: 0, dirZ: 1, spread: Math.PI * 2, jitter: 0.3, ...overrides });
@@ -305,7 +299,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     flashLight(x, 3, z, color, EFFECTS.waveLight * light);
   };
 
-  const cues: AbilityCues = createAbilityCues({ add, spray, flashLight, ring });
+  const cues: AbilityCues = createAbilityCues({ add, spray, flashLight, gather: riseLight, ring });
 
   const burst = (x: number, z: number, radius: number, skill: SkillDef): void => {
     const color: Color = colorOf(skill.vfx.color);
@@ -375,7 +369,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         spray(event.origin.x + event.direction.x * EFFECTS.castReach, EFFECTS.castLift, event.origin.z + event.direction.z * EFFECTS.castReach, color, 12, { speed: { min: 1, max: 4 }, lift: { min: 0.5, max: 3 }, life: { min: 0.2, max: 0.5 } });
         break;
       case 'projectile':
-        spray(event.origin.x + event.direction.x, EFFECTS.projectileHeight, event.origin.z + event.direction.z, color, 10, { dirX: event.direction.x, dirZ: event.direction.z, spread: 0.9, speed: { min: 3, max: 9 }, lift: { min: -1, max: 2 }, gravity: 2 });
+        spray(event.origin.x + event.direction.x, EFFECTS.projectileHeight, event.origin.z + event.direction.z, color, event.skill.vfx.lightning === null ? 10 : EFFECTS.releaseSparks, { dirX: event.direction.x, dirZ: event.direction.z, spread: 0.9, speed: { min: 3, max: 9 }, lift: { min: -1, max: 2 }, gravity: 2 });
         if (event.team === 'player') flashLight(event.origin.x, 2, event.origin.z, color, EFFECTS.boltLight * event.skill.vfx.light);
         break;
       case 'dash':
@@ -434,7 +428,13 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       disposeObject(view.mesh);
       projectiles.delete(event.id);
     }
+    kit.drop(event.id);
     const color: Color = colorOf(event.skill.vfx.color);
+    const impact = event.skill.vfx.impact;
+    if (impact !== null) {
+      kit.impact(event.pos.x, event.pos.z, color, event.hit ? impact : { sparks: impact.sparks * KIT.impactMiss, flash: impact.flash * KIT.impactMiss }, event.skill.vfx.light * (event.hit ? 1 : KIT.impactMiss), 0);
+      return;
+    }
     spray(event.pos.x, EFFECTS.projectileHeight, event.pos.z, color, event.hit ? 20 : 8, { speed: { min: 2, max: 9 }, lift: { min: -1, max: 5 }, life: { min: 0.2, max: 0.5 }, size: { min: 0.3, max: 0.8 } });
     if (event.hit) {
       ring(event.pos.x, event.pos.z, 1.6, color, 0.24);
@@ -465,7 +465,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     if (event.broken) ring(event.pos.x, event.pos.z, EFFECTS.breakRing, SPARK, EFFECTS.ringTime);
   };
 
-  const projectileView = (projectile: ProjectileState): ProjectileView => {
+  const projectileView = (projectile: ProjectileState): ProjectileView | null => {
+    if (projectile.skill.vfx.lightning !== null) return null;
     const existing: ProjectileView | undefined = projectiles.get(projectile.id);
     if (existing !== undefined) return existing;
     const color: Color = colorOf(projectile.skill.vfx.color);
@@ -477,7 +478,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     return view;
   };
 
-  const storm: StormEffects = createStormEffects({ add, spray, ring, burst, flashLight, colorOf, addObject: (object: Object3D): void => void scene.add(object), trauma: (amount: number): void => camera.addTrauma(amount) });
+  const storm: StormEffects = createStormEffects({ add, spray, ring, burst, flashLight, colorOf, kit, addObject: (object: Object3D): void => void scene.add(object), trauma: (amount: number): void => camera.addTrauma(amount) });
 
   return {
     get hurt(): number {
@@ -634,7 +635,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       transients.length = 0;
       for (const view of projectiles.values()) disposeObject(view.mesh);
       projectiles.clear();
-      for (const light of lights) light.intensity = 0;
+      flashes.clear();
+      kit.clear();
       dashTrails.clear();
       storm.clear();
     },
@@ -650,8 +652,15 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         const transient: Transient | undefined = transients[index];
         if (transient !== undefined && transient.age >= transient.duration) transients.splice(index, 1);
       }
+      kit.update(dt);
       for (const projectile of world.projectiles) {
-        const view: ProjectileView = projectileView(projectile);
+        const lightning = projectile.skill.vfx.lightning;
+        if (lightning !== null) {
+          kit.carry(projectile.id, projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z, projectile.direction.x, projectile.direction.z, colorOf(projectile.skill.vfx.color), lightning, projectile.skill.vfx.trail, dt);
+          continue;
+        }
+        const view: ProjectileView | null = projectileView(projectile);
+        if (view === null) continue;
         view.mesh.position.set(projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z);
         view.mesh.rotation.z += dt * 14;
         spray(projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z, view.color, 2, { speed: { min: 0, max: 1.2 }, lift: { min: -0.6, max: 0.8 }, life: { min: 0.12, max: 0.32 }, size: { min: 0.3, max: 0.7 }, gravity: 0, jitter: 0.25 });
@@ -660,7 +669,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         warmFrames -= 1;
         if (warmFrames === 0) for (const keeper of keepers) keeper.visible = false;
       }
-      for (const light of lights) light.intensity *= Math.exp(-EFFECTS.flashDecay * dt);
+      flashes.update(dt);
       wash = stepWash(wash, world.player.maxLife > 0 ? world.player.life / world.player.maxLife : 1, dt);
       emberTimer -= dt;
       if (emberTimer <= 0 && torches.length > 0) {

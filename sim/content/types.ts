@@ -13,6 +13,9 @@ export type { ZoneAmbience } from './ambience-types.ts';
 import type { ActEnd, RetiredZones, ZoneDrift, ZoneTrigger, ZoneWeather } from './road-types.ts';
 import type { MomentField, MomentLibrary } from './moment-types.ts';
 import type { ChartDef, SkillTarget, SkillVariant } from './chart-types.ts';
+import type { SkillVfx } from './vfx-types.ts';
+export { VFX_CUES, VFX_MAX_FORKS, VFX_STYLES } from './vfx-types.ts';
+export type { SkillVfx, VfxCue, VfxImpact, VfxLightning, VfxStyle } from './vfx-types.ts';
 
 export const STAT_IDS = [
   'maxLife',
@@ -52,15 +55,10 @@ export interface SkillMod {
   readonly value: number;
 }
 
-export const VFX_STYLES = ['slash', 'claw', 'shockwave', 'bolt', 'orb', 'roll', 'fork', 'mist', 'wind', 'storm', 'heave', 'brand', 'beam', 'gap'] as const;
-export type VfxStyle = (typeof VFX_STYLES)[number];
-
-export const VFX_CUES = ['none', 'hand', 'ground', 'blade'] as const;
 
 export const SKILL_CATEGORIES = ['none', 'area', 'single', 'chain', 'charged', 'mark', 'movement', 'defence', 'channel', 'lasting', 'melee', 'root', 'revive'] as const;
 
 export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
-export type VfxCue = (typeof VFX_CUES)[number];
 
 export interface ArcDelivery {
   readonly type: 'arc';
@@ -101,13 +99,6 @@ export interface SkillDamage {
   readonly weaponPercent: number;
   readonly flatMin: number;
   readonly flatMax: number;
-}
-
-export interface SkillVfx {
-  readonly style: VfxStyle;
-  readonly color: string;
-  readonly cue: VfxCue;
-  readonly light: number;
 }
 
 export interface ComboStep {
