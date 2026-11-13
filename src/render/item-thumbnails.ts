@@ -30,6 +30,11 @@ export const THUMBNAIL = {
   sleeveLift: Math.PI / 2,
   sleeveHang: -Math.PI / 2,
   handShare: 0.24,
+  trunkWide: 0.92,
+  gloveFrom: 0.12,
+  gloveRaise: Math.PI / 2,
+  gloveTurn: 1.05,
+  gloveLean: -0.32,
   gapMs: 0,
 } as const;
 
@@ -77,8 +82,10 @@ function pose(template: Object3D): Group {
 }
 
 function dressed(wearable: LoadedWearable, made: Material[]): Group {
+  const glove: boolean = wearable.def.region === 'hands';
   const turned: Group = new Group();
-  turned.rotation.set(THUMBNAIL.wornTilt, THUMBNAIL.wornTurn, 0);
+  if (glove) turned.rotation.set(0, 0, THUMBNAIL.gloveRaise);
+  else turned.rotation.set(THUMBNAIL.wornTilt, THUMBNAIL.wornTurn, 0);
   for (const piece of wearable.pieces) {
     if (!(piece.material instanceof MeshStandardMaterial)) continue;
     const material: MeshStandardMaterial = piece.material.clone();
@@ -87,6 +94,7 @@ function dressed(wearable: LoadedWearable, made: Material[]): Group {
     turned.add(new Mesh(piece.geometry, material));
   }
   const upright: Group = new Group();
+  if (glove) upright.rotation.set(0, THUMBNAIL.gloveTurn, THUMBNAIL.gloveLean, 'ZYX');
   upright.add(turned);
   return upright;
 }
@@ -126,6 +134,61 @@ function oneSleeve(posed: Group): Box3 {
   return new Box3().setFromPoints(points.map((point: Vector3): Vector3 => point.applyMatrix4(turn)));
 }
 
+export function trunk(posed: Group): Box3 {
+  const whole: Box3 = boundsOf(posed);
+  const size: Vector3 = whole.getSize(new Vector3());
+  if (size.x < size.y * THUMBNAIL.wideFrom) return whole;
+  const middle: number = whole.getCenter(new Vector3()).x;
+  const half: number = (size.y * THUMBNAIL.trunkWide) / 2;
+  return new Box3(new Vector3(middle - half, whole.min.y, whole.min.z), new Vector3(middle + half, whole.max.y, whole.max.z));
+}
+
+function eachVertex(posed: Group, visit: (local: Vector3, placed: Matrix4) => void): void {
+  const point: Vector3 = new Vector3();
+  posed.traverse((node: Object3D): void => {
+    if (!(node instanceof Mesh)) return;
+    const geometry: unknown = node.geometry;
+    if (!(geometry instanceof BufferGeometry)) return;
+    const positions: unknown = geometry.getAttribute('position');
+    if (!(positions instanceof BufferAttribute) && !(positions instanceof InterleavedBufferAttribute)) return;
+    for (let index: number = 0; index < positions.count; index += 1) visit(point.fromBufferAttribute(positions, index), node.matrixWorld);
+  });
+}
+
+export function oneGlove(posed: Group): Box3 {
+  posed.updateMatrixWorld(true);
+  const modelled: Box3 = new Box3();
+  eachVertex(posed, (local: Vector3): void => {
+    modelled.expandByPoint(local);
+  });
+  if (modelled.isEmpty()) return boundsOf(posed);
+  const from: number = modelled.getCenter(new Vector3()).x + (modelled.max.x - modelled.min.x) * 0.5 * THUMBNAIL.gloveFrom;
+  const box: Box3 = new Box3();
+  eachVertex(posed, (local: Vector3, placed: Matrix4): void => {
+    if (local.x >= from) box.expandByPoint(local.applyMatrix4(placed));
+  });
+  return box.isEmpty() ? boundsOf(posed) : box;
+}
+
+function framing(wearable: LoadedWearable): (posed: Group) => Box3 {
+  let frame: (posed: Group) => Box3 = oneSleeve;
+  switch (wearable.def.region) {
+    case 'hands':
+      frame = oneGlove;
+      break;
+    case 'chest':
+      frame = trunk;
+      break;
+    case 'head':
+    case 'shoulders':
+    case 'arms':
+    case 'legs':
+    case 'feet':
+      break;
+  }
+  return frame;
+}
+
 export async function createItemThumbnails(library: CharacterLibrary, frame: string, wearableIds: readonly string[], timers: Timers): Promise<ItemThumbnails> {
   const renderer: WebGLRenderer = new WebGLRenderer({ alpha: true, antialias: true });
   renderer.setPixelRatio(1);
@@ -154,7 +217,7 @@ export async function createItemThumbnails(library: CharacterLibrary, frame: str
   const shots: Shot[] = [...library.attachments.values()].map((attachment): Shot => ({ name: attachment.def.id, posed: pose(attachment.template), frame: boundsOf }));
   for (const id of wearableIds) {
     const wearable: LoadedWearable | undefined = library.wearables.get(wearKey(frame, id));
-    if (wearable !== undefined) shots.push({ name: wornImageKey(id), posed: dressed(wearable, made), frame: oneSleeve });
+    if (wearable !== undefined) shots.push({ name: wornImageKey(id), posed: dressed(wearable, made), frame: framing(wearable) });
   }
 
   for (const shot of shots) scene.add(shot.posed);
