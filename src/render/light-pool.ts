@@ -22,6 +22,9 @@ export const LIGHT_POOL = {
   moteSize: 26,
   moteSpeed: 0.22,
   moteStrength: 1.4,
+  deepen: 0.35,
+  peak: 0.9,
+  columnPeak: 0.45,
 } as const;
 
 export const POOL_VERTEX: string = ['uniform float uExtent;', 'varying vec2 vSpot;', 'void main() {', '  vSpot = position.xy * 2.0 * uExtent;', '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);', '}'].join('\n');
@@ -42,7 +45,10 @@ export const POOL_FRAGMENT: string = [
   `  float ripple = 1.0 - ${LIGHT_POOL.rippleDepth.toFixed(3)} * d * (0.5 + 0.5 * sin(d * ${LIGHT_POOL.rippleScale.toFixed(3)} - uTime * ${LIGHT_POOL.rippleSpeed.toFixed(3)}));`,
   `  float n = noise(vSpot * ${LIGHT_POOL.breakupScale.toFixed(3)} + vec2(uTime * ${(LIGHT_POOL.drift * 3).toFixed(3)}, -uTime * ${LIGHT_POOL.drift.toFixed(3)}));`,
   `  float glow = max(core * ripple * fade * (1.0 - ${LIGHT_POOL.breakupDepth.toFixed(3)} * n * d) * uStrength, 0.0);`,
-  '  gl_FragColor = vec4(uColor * glow, 1.0);',
+  '  vec3 deep = uColor * uColor / max(max(uColor.r, max(uColor.g, uColor.b)), 0.001);',
+  `  vec3 lit = mix(uColor, deep, core * ${LIGHT_POOL.deepen.toFixed(3)}) * glow;`,
+  `  lit /= max(1.0, max(lit.r, max(lit.g, lit.b)) / ${LIGHT_POOL.peak.toFixed(3)});`,
+  '  gl_FragColor = vec4(lit, 1.0);',
   '}',
 ].join('\n');
 
@@ -70,7 +76,10 @@ export const COLUMN_FRAGMENT: string = [
   `  float streak = 0.6 + 0.4 * sin(vSheet.x * ${(LIGHT_POOL.columnStreaks * Math.PI * 2).toFixed(3)} + sin(vSheet.y * 5.0 - uTime * 2.0) * 1.5);`,
   `  float lift = 0.75 + 0.25 * sin(vSheet.y * 11.0 - uTime * ${(LIGHT_POOL.columnSpeed * 10).toFixed(3)});`,
   '  float glow = max(rise * side * side * streak * lift * uStrength, 0.0);',
-  '  gl_FragColor = vec4(uColor * glow, 1.0);',
+  '  vec3 deep = uColor * uColor / max(max(uColor.r, max(uColor.g, uColor.b)), 0.001);',
+  `  vec3 lit = mix(uColor, deep, rise * ${LIGHT_POOL.deepen.toFixed(3)}) * glow;`,
+  `  lit /= max(1.0, max(lit.r, max(lit.g, lit.b)) / ${LIGHT_POOL.columnPeak.toFixed(3)});`,
+  '  gl_FragColor = vec4(lit, 1.0);',
   '}',
 ].join('\n');
 

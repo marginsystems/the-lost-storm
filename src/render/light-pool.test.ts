@@ -27,3 +27,10 @@ void test('the light reaches a little past the trigger so its edge feathers out,
   exit.dispose();
   spot.dispose();
 });
+
+void test('the pool and the column deepen toward a pure hue at the core and cap their brightest channel, so the exit core stays saturated blue instead of tone-mapping to white', (): void => {
+  for (const source of [POOL_FRAGMENT, COLUMN_FRAGMENT]) {
+    assert.match(source, /vec3 deep = uColor \* uColor \/ max\(/);
+    assert.match(source, /lit \/= max\(1\.0, max\(lit\.r, max\(lit\.g, lit\.b\)\) \//);
+  }
+});

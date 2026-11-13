@@ -19,7 +19,7 @@ export const MARKERS = {
   pulseDepth: 0.2,
   lightHeight: 1.1,
   lightDistance: 9,
-  exitLight: 18,
+  exitLight: 10,
   checkpointLight: 16,
   idle: 0.3,
   waypointIdle: 0.7,

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, ShaderLib, Vector3 } from 'three';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { CutSpring } from './prop-cutaway.ts';
-import { aimCutaway, CUTAWAY, CUTAWAY_UNIFORMS, ghostKeep, heroBehind, isTall, patchCutawayShader, setOccluders, springCut, windowMetres, withCutaway } from './prop-cutaway.ts';
+import { aimCutaway, CUTAWAY, CUTAWAY_UNIFORMS, cutawayChunk, ghostKeep, heroBehind, isTall, patchCutawayShader, setOccluders, springCut, windowMetres, withCutaway } from './prop-cutaway.ts';
 
 function rock(x: number, z: number, height: number): Mesh {
   const mesh: Mesh = new Mesh(new BoxGeometry(2, height, 2), new MeshStandardMaterial());
@@ -105,4 +105,10 @@ void test('a prop narrower than the window keeps a faint ghost through its core,
   patchCutawayShader(shader, keep);
   assert.equal(shader.uniforms['uCutKeep'], keep);
   assert.match(shader.fragmentShader, /uniform float uCutKeep;/);
+});
+
+void test('the ghosted remainder of a cut prop is dimmed and capped, so wet highlights on it never sparkle over the hero', (): void => {
+  const chunk: string = cutawayChunk();
+  assert.match(chunk, /min\( gl_FragColor\.rgb, vec3\( /);
+  assert.match(chunk, /cutWeight \* step\( 0\.0001, uCutKeep \)/);
 });

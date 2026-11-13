@@ -23,6 +23,8 @@ export const CUTAWAY = {
   rest: 0.002,
   longestStep: 1 / 30,
   ditherLift: 0,
+  ghostCap: 0.22,
+  ghostShade: 0.8,
 } as const;
 
 export interface CutawayUniforms {
@@ -91,7 +93,9 @@ export function cutawayChunk(): string {
     'cutHash *= 3266489917u;',
     'cutHash ^= cutHash >> 16u;',
     'float cutDither = float( cutHash >> 8u ) / 16777216.0;',
-    `if ( cutRing * cutFront * cutHigh * uCutLevel * ( ${CUTAWAY.deepest.toFixed(3)} - uCutKeep ) > cutDither + ${CUTAWAY.ditherLift.toFixed(3)} ) discard;`,
+    'float cutWeight = cutRing * cutFront * cutHigh * uCutLevel;',
+    `if ( cutWeight * ( ${CUTAWAY.deepest.toFixed(3)} - uCutKeep ) > cutDither + ${CUTAWAY.ditherLift.toFixed(3)} ) discard;`,
+    `gl_FragColor.rgb = mix( gl_FragColor.rgb, min( gl_FragColor.rgb, vec3( ${CUTAWAY.ghostCap.toFixed(3)} ) ) * ${CUTAWAY.ghostShade.toFixed(3)}, cutWeight * step( 0.0001, uCutKeep ) );`,
   ].join('\n');
 }
 

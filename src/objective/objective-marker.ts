@@ -8,6 +8,7 @@ import type { LightPool } from '../render/light-pool.ts';
 import { createLightPool } from '../render/light-pool.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import { arrowToward } from './arrow-geometry.ts';
+import { glowsAt } from './objective-glow.ts';
 import type { ArrowPlacement, Point, Rect } from './arrow-geometry.ts';
 import css from './objective.css?inline';
 import type { LabelGlide } from '../render/label-glide.ts';
@@ -69,7 +70,7 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
       const target: ObjectiveTarget | null = world.player.alive ? objectiveTarget(world) : null;
       if (!sameSpot(previous, target)) level = 0;
       previous = target;
-      const goal: number = target === null ? 0 : 1;
+      const goal: number = glowsAt(target) ? 1 : 0;
       level += (goal - level) * (1 - Math.exp(-OBJECTIVE.ease * dt));
       if (target !== null) glow.place(target.pos.x, world.zone.floorHeight + OBJECTIVE.lift, target.pos.z, target.radius);
       glow.group.visible = level > 0.01;
