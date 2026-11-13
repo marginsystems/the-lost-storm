@@ -13,7 +13,7 @@ import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import { createLootTip } from './loot-tip.ts';
 import type { LootTip, TipCheck } from './loot-tip.ts';
-import { anchorInView, placeTag } from './label-edge.ts';
+import { anchorInView, keepTagInView, placeTag } from './label-edge.ts';
 import type { ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
 import { foldPiles, stackLabels } from './label-stack.ts';
 import type { LabelGlide } from './label-glide.ts';
@@ -42,7 +42,7 @@ export const OVERLAYS = {
   exitLift: 2.6,
   npcLift: 0.5,
   npcLeave: 0.52,
-  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.hud-xp', '.tc-btn', '.tc-stick', '.tc-menu', '.minimap-corner', '.hud-quests', '.hud-target.visible', '.hud-hint.visible', '.tc-stick.intro:not(.on) .tc-stick-hint', '.hud > .hud-banners'],
+  hudBlockers: ['.hud-bottom', '.hud-volume-wrap', '.hud-globe-group', '.hud-xp', '.tc-btn', '.tc-stick', '.tc-menu', '.minimap-corner', '.hud-quests', '.hud-target.visible', '.hud-hint.visible', '.tc-stick.intro:not(.on) .tc-stick-hint', '.hud > .hud-banners'],
   hudReadSeconds: 0.25,
   waypointId: 'waypoint',
   waypointName: 'Waypoint',
@@ -132,10 +132,19 @@ function place(element: HTMLElement, point: Vector2): void {
   element.style.transform = `translate3d(${point.x.toFixed(2)}px, ${point.y.toFixed(2)}px, 0)`;
 }
 
-function glidePlace(element: HTMLElement, glide: LabelGlide, anchor: Vector2, target: Vector2, dt: number): void {
+function glidePlace(element: HTMLElement, glide: LabelGlide, anchor: Vector2, target: Vector2, dt: number, bound: TagBound | null = null): void {
   glideToward(glide, target.x - anchor.x, target.y - anchor.y, dt);
   target.set(anchor.x + glide.x, anchor.y + glide.y);
+  if (bound !== null) {
+    const [x, y] = keepTagInView(target.x, target.y, bound.size.width, bound.size.height, bound.view);
+    target.set(x, y);
+  }
   place(element, target);
+}
+
+interface TagBound {
+  readonly size: TagSize;
+  readonly view: ViewSize;
 }
 
 export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: OverlayHooks): Overlays {
@@ -168,14 +177,15 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const anchor: Vector2 = new Vector2();
   const tagSizes: TagSizes<HTMLElement> = createTagSizes(browserTagMeasure());
   const tagRects: ScreenRect[] = [];
-  const keepClear = (element: HTMLElement): void => {
+  const keepClear = (element: HTMLElement): TagBound | null => {
     const tag: Element | null = element.firstElementChild;
-    if (!(tag instanceof HTMLElement)) return;
+    if (!(tag instanceof HTMLElement)) return null;
     const size: TagSize = tagSizes.size(tag);
-    if (size.width === 0) return;
+    if (size.width === 0) return null;
     const spot: TagPlace = placeTag(point.x, point.y, size.width, size.height, view, tagRects);
     point.set(spot.x, spot.y);
     tagRects.push({ left: spot.x - size.width / 2, top: spot.y - size.height, right: spot.x + size.width / 2, bottom: spot.y });
+    return { size, view };
   };
   const labelLayer: HTMLDivElement = document.createElement('div');
   const numberLayer: HTMLDivElement = document.createElement('div');
@@ -442,8 +452,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         camera.project(label.x, OVERLAYS.exitLift, label.z, point);
         anchor.copy(point);
         label.element.classList.toggle('edge', !anchorInView(point.x, point.y, view));
-        keepClear(label.element);
-        glidePlace(label.element, label.glide, anchor, point, dt);
+        glidePlace(label.element, label.glide, anchor, point, dt, keepClear(label.element));
       }
       if (peopleOf !== world.npcs) showPeople(world);
       for (const label of people) {
@@ -455,8 +464,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         label.element.classList.toggle('aimed', label.npc.id === hoveredId);
         camera.project(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z, point);
         anchor.copy(point);
-        keepClear(label.element);
-        glidePlace(label.element, label.glide, anchor, point, dt);
+        glidePlace(label.element, label.glide, anchor, point, dt, keepClear(label.element));
       }
       for (const label of leaving) {
         label.left -= dt;

@@ -4,7 +4,7 @@ import type { PhoneScreen, Rect } from '../mobile/phone-layout.ts';
 import { layoutRects, phoneLayout } from '../mobile/phone-layout.ts';
 import type { BandRect, HudBand, HudFit } from '../hud/hud-fit.ts';
 import { hudBand, hudFit } from '../hud/hud-fit.ts';
-import { anchorInView, keepBelowTop, keepInside, LABEL_EDGE, placeTag } from './label-edge.ts';
+import { anchorInView, keepBelowTop, keepInside, keepTagInView, LABEL_EDGE, placeTag } from './label-edge.ts';
 import type { ViewSize } from './label-edge.ts';
 import type { ScreenRect } from './label-stack.ts';
 
@@ -145,4 +145,12 @@ void test('the shore exit at 1280 by 800 that sat half behind the minimap moves 
   assert.ok(minimap !== undefined);
   const place = placeTag(minimap.left + 10, 120, 150, 26, view, rects);
   assert.ok(place.x + 75 <= minimap.left || place.y - 26 >= minimap.bottom);
+});
+
+void test('a gliding tag past the right or bottom edge is held fully inside the view', (): void => {
+  const view: ViewSize = { width: 1280, height: 800 };
+  const [x, y] = keepTagInView(1300, 830, 140, 25, view);
+  assert.equal(x + 70, view.width - LABEL_EDGE.side);
+  assert.equal(y, view.height - LABEL_EDGE.side);
+  assert.deepEqual(keepTagInView(640, 400, 140, 25, view), [640, 400]);
 });

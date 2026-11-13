@@ -34,6 +34,10 @@ export function keepBelowTop(bottom: number, height: number, view: ViewSize): nu
   return Math.min(view.height - LABEL_EDGE.side, Math.max(LABEL_EDGE.topClear + height, bottom));
 }
 
+export function keepTagInView(x: number, y: number, width: number, height: number, view: ViewSize): readonly [number, number] {
+  return [keepInside(x, width, view), keepBelowTop(y, height, view)];
+}
+
 function boxOf(x: number, y: number, width: number, height: number): ScreenRect {
   return { left: x - width / 2, top: y - height, right: x + width / 2, bottom: y };
 }
