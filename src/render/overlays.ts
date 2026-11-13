@@ -207,7 +207,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const pending: PendingTag[] = [];
   const reaches: WeakMap<HTMLElement, number> = new WeakMap<HTMLElement, number>();
   const settleTag = (element: HTMLElement, glide: LabelGlide, stack: LabelGlide, dt: number, shown: boolean): void => {
-    const bound: TagBound | null = keepClear(element);
+    const bound: TagBound | null = shown ? keepClear(element) : null;
     glideAt(glide, anchor, point, dt, bound);
     if (bound === null || !shown) {
       element.classList.remove('quiet');
