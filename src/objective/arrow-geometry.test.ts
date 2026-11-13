@@ -5,7 +5,7 @@ import { CAMERA } from '../render/iso-camera.ts';
 import type { ArrowPlacement, ArrowView, GroundPoint, Point, Projector } from './arrow-geometry.ts';
 import { arrowAlong, arrowToward } from './arrow-geometry.ts';
 
-const VIEW: ArrowView = { width: 1440, height: 900, margin: 56, gap: 14, blockers: [] };
+const VIEW: ArrowView = { width: 1440, height: 900, margin: 56, gap: 14, blockers: [], hints: [] };
 
 function isoProjector(player: GroundPoint, view: ArrowView): Projector {
   const camera: PerspectiveCamera = new PerspectiveCamera(CAMERA.fov, view.width / view.height, 0.1, 400);
@@ -86,4 +86,59 @@ void test('a HUD piece off the line leaves the arrow at the edge', (): void => {
   const placed: ArrowPlacement | null = arrowAlong({ x: 720, y: 450 }, { x: 0, y: 1 }, { ...VIEW, blockers: [{ left: 0, top: 800, right: 300, bottom: 900 }] });
   assert.ok(placed !== null);
   assert.equal(placed.y, VIEW.height - VIEW.margin);
+});
+
+void test('an arrow beside a hint slides along the edge until a hint height clears it, keeping its edge and its angle', (): void => {
+  const hint = { left: 580, top: 820, right: 700, bottom: 844 };
+  const placed: ArrowPlacement | null = arrowAlong({ x: 720, y: 450 }, { x: 0, y: 1 }, { ...VIEW, hints: [hint] });
+  assert.ok(placed !== null);
+  assert.equal(placed.y, VIEW.height - VIEW.margin);
+  assert.equal(placed.x, hint.right + (hint.bottom - hint.top) + VIEW.gap);
+  assert.equal(placed.angle, Math.PI / 2);
+});
+
+void test('an arrow on a side edge slides up or down off a hint, and the nearer way wins', (): void => {
+  const hint = { left: 1300, top: 430, right: 1420, bottom: 460 };
+  const placed: ArrowPlacement | null = arrowAlong({ x: 720, y: 450 }, { x: 1, y: 0 }, { ...VIEW, hints: [hint] });
+  assert.ok(placed !== null);
+  assert.equal(placed.x, VIEW.width - VIEW.margin);
+  assert.equal(placed.y, hint.bottom + (hint.bottom - hint.top) + VIEW.gap);
+  assert.equal(placed.angle, 0);
+});
+
+void test('a slide never pushes the arrow onto a HUD piece or off the inset screen', (): void => {
+  const hint = { left: 600, top: 820, right: 760, bottom: 844 };
+  const bar = { left: 760, top: 780, right: 1440, bottom: 900 };
+  const placed: ArrowPlacement | null = arrowAlong({ x: 720, y: 450 }, { x: 0, y: 1 }, { ...VIEW, blockers: [bar], hints: [hint] });
+  assert.ok(placed !== null);
+  assert.equal(placed.x, hint.left - (hint.bottom - hint.top) - VIEW.gap);
+  const cornered: ArrowPlacement | null = arrowAlong({ x: 60, y: 450 }, { x: 0, y: 1 }, { ...VIEW, hints: [{ left: 0, top: 820, right: 1440, bottom: 844 }] });
+  assert.ok(cornered !== null);
+  assert.equal(cornered.y, VIEW.height - VIEW.margin);
+  assert.equal(cornered.x, 60);
+});
+
+void test('the arrow stopped on the HUD bar under a hint slides along the bar top, beside the hint', (): void => {
+  const bar = { left: 0, top: 780, right: 1440, bottom: 900 };
+  const hint = { left: 640, top: 744, right: 760, bottom: 774 };
+  const placed: ArrowPlacement | null = arrowAlong({ x: 720, y: 450 }, { x: 0.1, y: 1 }, { ...VIEW, blockers: [bar], hints: [hint] });
+  assert.ok(placed !== null);
+  assert.ok(Math.abs(placed.y - (bar.top - VIEW.gap)) < 1e-6);
+  assert.equal(placed.x, hint.right + (hint.bottom - hint.top) + VIEW.gap);
+});
+
+void test('a steep ray that reaches a side edge slides up or down that edge, not into the screen', (): void => {
+  const hint = { left: 1340, top: 560, right: 1440, bottom: 590 };
+  const placed: ArrowPlacement | null = arrowAlong({ x: 1300, y: 450 }, { x: 1, y: 1.6 }, { ...VIEW, hints: [hint] });
+  assert.ok(placed !== null);
+  assert.equal(placed.x, VIEW.width - VIEW.margin);
+  assert.ok(placed.y <= hint.top - (hint.bottom - hint.top) - VIEW.gap + 1e-6 || placed.y >= hint.bottom + (hint.bottom - hint.top) + VIEW.gap - 1e-6);
+});
+
+void test('a slide never glides across a HUD piece on the way to the clear side', (): void => {
+  const hint = { left: 600, top: 820, right: 760, bottom: 844 };
+  const pieces = [{ left: 790, top: 830, right: 900, bottom: 900 }, { left: 560, top: 830, right: 580, bottom: 900 }];
+  const placed: ArrowPlacement | null = arrowAlong({ x: 720, y: 450 }, { x: 0, y: 1 }, { ...VIEW, blockers: pieces, hints: [hint] });
+  assert.ok(placed !== null);
+  assert.equal(placed.x, 720);
 });

@@ -24,11 +24,12 @@ export const OBJECTIVE = {
   hudGap: 14,
   hudReadSeconds: 0.25,
   hudBlockers: ['.hud-bottom', '.hud-globe-group', '.minimap', '.hud-quests', '.hud-top'],
+  hintBoxes: ['.hud-hint.visible'],
 } as const;
 
-function hudRects(hud: HTMLElement): Rect[] {
+function hudRects(hud: HTMLElement, selectors: readonly string[]): Rect[] {
   const rects: Rect[] = [];
-  for (const selector of OBJECTIVE.hudBlockers) {
+  for (const selector of selectors) {
     for (const element of hud.querySelectorAll(selector)) {
       const box: DOMRect = element.getBoundingClientRect();
       if (box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== 'hidden') rects.push({ left: box.left, top: box.top, right: box.right, bottom: box.bottom });
@@ -57,6 +58,7 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
   const screen: Vector2 = new Vector2();
   const project = (x: number, y: number, z: number): Point | null => (camera.project(x, y, z, screen) ? { x: screen.x, y: screen.y } : null);
   let blockers: Rect[] = [];
+  let hints: Rect[] = [];
   let sinceRead: number = Infinity;
   let previous: ObjectiveTarget | null = null;
   let level: number = 0;
@@ -76,10 +78,11 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
       sinceRead += dt;
       if (target !== null) {
         if (sinceRead >= OBJECTIVE.hudReadSeconds) {
-          blockers = hudRects(hud);
+          blockers = hudRects(hud, OBJECTIVE.hudBlockers);
+          hints = hudRects(hud, OBJECTIVE.hintBoxes);
           sinceRead = 0;
         }
-        placement = arrowToward(project, world.player.pos, target.pos, world.zone.floorHeight, { width: window.innerWidth, height: window.innerHeight, margin: OBJECTIVE.screenMargin, gap: OBJECTIVE.hudGap, blockers });
+        placement = arrowToward(project, world.player.pos, target.pos, world.zone.floorHeight, { width: window.innerWidth, height: window.innerHeight, margin: OBJECTIVE.screenMargin, gap: OBJECTIVE.hudGap, blockers, hints });
       }
       arrow.classList.toggle('visible', placement !== null);
       if (placement === null) glide.started = false;

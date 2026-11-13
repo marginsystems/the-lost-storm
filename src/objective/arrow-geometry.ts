@@ -22,6 +22,7 @@ export interface ArrowView {
   readonly margin: number;
   readonly gap: number;
   readonly blockers: readonly Rect[];
+  readonly hints: readonly Rect[];
 }
 
 export interface GroundPoint {
@@ -60,6 +61,40 @@ function grown(rect: Rect, by: number): Rect {
   return { left: rect.left - by, top: rect.top - by, right: rect.right + by, bottom: rect.bottom + by };
 }
 
+function inView(point: Point, view: ArrowView): boolean {
+  return point.x >= view.margin - ARROW_GEOMETRY.epsilon && point.x <= view.width - view.margin + ARROW_GEOMETRY.epsilon && point.y >= view.margin - ARROW_GEOMETRY.epsilon && point.y <= view.height - view.margin + ARROW_GEOMETRY.epsilon;
+}
+
+type Axis = 'x' | 'y';
+
+function slidOff(point: Point, along: Axis, zone: Rect): Point[] {
+  return along === 'x' ? [{ x: zone.left, y: point.y }, { x: zone.right, y: point.y }] : [{ x: point.x, y: zone.top }, { x: point.x, y: zone.bottom }];
+}
+
+function overlaps(low: number, high: number, from: number, to: number): boolean {
+  return Math.max(low, Math.min(from, to)) < Math.min(high, Math.max(from, to)) - ARROW_GEOMETRY.epsilon;
+}
+
+function crosses(rect: Rect, from: Point, to: Point): boolean {
+  const spanX: boolean = from.x === to.x ? from.x > rect.left + ARROW_GEOMETRY.epsilon && from.x < rect.right - ARROW_GEOMETRY.epsilon : overlaps(rect.left, rect.right, from.x, to.x);
+  const spanY: boolean = from.y === to.y ? from.y > rect.top + ARROW_GEOMETRY.epsilon && from.y < rect.bottom - ARROW_GEOMETRY.epsilon : overlaps(rect.top, rect.bottom, from.y, to.y);
+  return spanX && spanY;
+}
+
+function clearOfHints(point: Point, along: Axis, view: ArrowView, blockers: readonly Rect[]): Point {
+  let placed: Point = point;
+  for (let pass = 0; pass < ARROW_GEOMETRY.passes; pass++) {
+    const zone: Rect | undefined = view.hints.map((rect: Rect): Rect => grown(rect, rect.bottom - rect.top + view.gap)).find((rect: Rect): boolean => contains(rect, placed));
+    if (zone === undefined) return placed;
+    const from: Point = placed;
+    const options: Point[] = slidOff(from, along, zone).filter((option: Point): boolean => inView(option, view) && !blockers.some((rect: Rect): boolean => crosses(rect, from, option)));
+    const nearest: Point | undefined = options.toSorted((a: Point, b: Point): number => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
+    if (nearest === undefined) return placed;
+    placed = nearest;
+  }
+  return placed;
+}
+
 export function arrowAlong(origin: Point, direction: Point, view: ArrowView): ArrowPlacement | null {
   const length: number = Math.hypot(direction.x, direction.y);
   if (length === 0) return null;
@@ -69,22 +104,28 @@ export function arrowAlong(origin: Point, direction: Point, view: ArrowView): Ar
     x: Math.min(view.width - view.margin, Math.max(view.margin, origin.x)),
     y: Math.min(view.height - view.margin, Math.max(view.margin, origin.y)),
   };
-  let reach: number = Math.max(0, Math.min(edgeDistance(start.x, ux, view.margin, view.width - view.margin), edgeDistance(start.y, uy, view.margin, view.height - view.margin)));
+  const sideReach: number = edgeDistance(start.x, ux, view.margin, view.width - view.margin);
+  const rowReach: number = edgeDistance(start.y, uy, view.margin, view.height - view.margin);
+  let reach: number = Math.max(0, Math.min(sideReach, rowReach));
+  let along: Axis = rowReach <= sideReach ? 'x' : 'y';
   const blockers: readonly Rect[] = view.blockers.map((rect: Rect): Rect => grown(rect, view.gap));
   const at = (distance: number): Point => ({ x: start.x + ux * distance, y: start.y + uy * distance });
   for (let pass = 0; pass < ARROW_GEOMETRY.passes; pass++) {
     let moved: boolean = false;
     for (const rect of blockers) {
       if (!contains(rect, at(reach))) continue;
-      const enter: number = Math.max(entry(start.x, ux, rect.left, rect.right), entry(start.y, uy, rect.top, rect.bottom));
+      const throughSide: number = entry(start.x, ux, rect.left, rect.right);
+      const throughRow: number = entry(start.y, uy, rect.top, rect.bottom);
+      const enter: number = Math.max(throughSide, throughRow);
       if (enter >= 0 && enter < reach - ARROW_GEOMETRY.epsilon) {
         reach = enter;
+        along = throughRow >= throughSide ? 'x' : 'y';
         moved = true;
       }
     }
     if (!moved) break;
   }
-  const point: Point = at(reach);
+  const point: Point = clearOfHints(at(reach), along, view, blockers);
   return { x: point.x, y: point.y, angle: Math.atan2(uy, ux) };
 }
 
