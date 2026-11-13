@@ -34,7 +34,9 @@ void test('every server message the protocol names is read', (): void => {
   assert.deepEqual(read({ type: 'refused', reason: 'slow_down' }), { type: 'refused', reason: 'slow_down' });
   assert.deepEqual(read({ type: 'joined', player: { ...WREN, hero: null, worn: {} } }), { type: 'joined', player: { ...WREN, hero: null, worn: {} } });
   assert.deepEqual(read({ type: 'left', id: 'h1' }), { type: 'left', id: 'h1' });
-  assert.deepEqual(read({ type: 'look', id: 'h1', hero: 'man', worn: { chest: 'tunic' } }), { type: 'look', id: 'h1', hero: 'man', worn: { chest: 'tunic' } });
+  assert.deepEqual(read({ type: 'look', id: 'h1', hero: 'man', worn: { chest: 'tunic' } }), { type: 'look', id: 'h1', name: null, hero: 'man', worn: { chest: 'tunic' } });
+  assert.deepEqual(read({ type: 'look', id: 'h1', name: 'Rook', hero: 'man', worn: {} }), { type: 'look', id: 'h1', name: 'Rook', hero: 'man', worn: {} });
+  assert.equal(read({ type: 'look', id: 'h1', name: 7, hero: 'man', worn: {} }), null);
   assert.deepEqual(read({ type: 'moves', players: [['h1', 20.4, 18.1, 1.2]] }), { type: 'moves', moves: [{ id: 'h1', x: 20.4, z: 18.1, facing: 1.2 }] });
   assert.deepEqual(read({ type: 'refused', reason: 'off_floor' }), { type: 'refused', reason: 'off_floor' });
 });

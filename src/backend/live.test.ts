@@ -285,3 +285,10 @@ void test('a friends nudge is passed on and keeps the socket open', (): void => 
   assert.equal(h.events[h.events.length - 1]?.type, 'friends');
   assert.equal(socket.closed, false);
 });
+
+void test('a new look passes on the name it carries', (): void => {
+  const h: Harness = harness();
+  const socket: FakeSocket = welcomed(h);
+  say(socket, { type: 'look', id: 'h1', name: 'Rook', hero: 'man', worn: {} });
+  assert.deepEqual(h.events[h.events.length - 1], { type: 'look', id: 'h1', name: 'Rook', hero: 'man', worn: {} });
+});

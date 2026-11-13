@@ -63,7 +63,7 @@ export type ServerFrame =
   | { readonly type: 'said'; readonly line: ChatLine }
   | { readonly type: 'joined'; readonly player: LivePlayer }
   | { readonly type: 'left'; readonly id: string }
-  | { readonly type: 'look'; readonly id: string; readonly hero: string | null; readonly worn: Worn }
+  | { readonly type: 'look'; readonly id: string; readonly name: string | null; readonly hero: string | null; readonly worn: Worn }
   | { readonly type: 'moves'; readonly moves: readonly LiveMove[] }
   | { readonly type: 'full' }
   | { readonly type: 'replaced' }
@@ -178,7 +178,9 @@ function readFields(source: Fields): ServerFrame | null {
       const id: string | null = shortText(source['id'], LIVE_LIMITS.idChars);
       const hero: string | null | undefined = readHero(source['hero']);
       const worn: Worn | null = readWorn(source['worn']);
-      return id === null || hero === undefined || worn === null ? null : { type: 'look', id, hero, worn };
+      const named: boolean = source['name'] !== undefined;
+      const name: string | null = named ? shortText(source['name'], LIVE_LIMITS.nameChars) : null;
+      return id === null || hero === undefined || worn === null || (named && name === null) ? null : { type: 'look', id, name, hero, worn };
     }
     case 'moves': {
       const moves: readonly LiveMove[] | null = readEach(source['players'], readMove);

@@ -30,7 +30,7 @@ export type LiveEvent =
   | { readonly type: 'refused'; readonly reason: ChatRefusal }
   | { readonly type: 'joined'; readonly player: LivePlayer }
   | { readonly type: 'left'; readonly id: string }
-  | { readonly type: 'look'; readonly id: string; readonly hero: string | null; readonly worn: Worn }
+  | { readonly type: 'look'; readonly id: string; readonly name: string | null; readonly hero: string | null; readonly worn: Worn }
   | { readonly type: 'moves'; readonly moves: readonly LiveMove[]; readonly at: number }
   | { readonly type: 'friends' }
   | { readonly type: 'gone' };
@@ -159,7 +159,7 @@ export function createLive(options: LiveOptions): Live {
         emit({ type: 'left', id: frame.id });
         return;
       case 'look':
-        emit({ type: 'look', id: frame.id, hero: frame.hero, worn: frame.worn });
+        emit({ type: 'look', id: frame.id, name: frame.name, hero: frame.hero, worn: frame.worn });
         return;
       case 'moves':
         emit({ type: 'moves', moves: frame.moves, at: clock() });

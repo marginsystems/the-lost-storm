@@ -7,6 +7,7 @@
 }
 
 .player-label span {
+  position: relative;
   display: flex;
   align-items: center;
   transform: translate(-50%, -100%);
@@ -25,4 +26,29 @@
   letter-spacing: 0.05em;
   color: #d9e6f2;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.player-label b {
+  animation: label-name-in var(--spring-snappy-ms) var(--spring-snappy) backwards;
+}
+
+.player-label b:first-child {
+  animation: none;
+}
+
+.player-label b.leaving {
+  position: absolute;
+  left: 9px;
+  opacity: 0;
+  translate: 0 -5px;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    translate var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+@keyframes label-name-in {
+  from {
+    opacity: 0;
+    translate: 0 5px;
+  }
 }

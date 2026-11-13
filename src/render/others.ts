@@ -22,6 +22,8 @@ export const OTHERS = {
   labelLift: 0.45,
   hiddenBelow: 0.01,
   labelClass: 'player-label',
+  leavingClass: 'leaving',
+  leaveMs: 400,
 } as const;
 
 export type LoadNeeds = (needs: CharacterNeeds) => Promise<void>;
@@ -61,7 +63,7 @@ interface Other {
   readonly id: string;
   readonly track: Track;
   readonly label: HTMLDivElement;
-  readonly name: HTMLElement;
+  name: HTMLElement;
   readonly shown: Fade;
   readonly old: Figure[];
   hero: string | null;
@@ -145,6 +147,17 @@ export function createOthers(options: OthersOptions): Others {
     other.figure = made;
   };
 
+  const rename = (other: Other, name: string): void => {
+    if (other.name.textContent === name) return;
+    const old: HTMLElement = other.name;
+    const fresh: HTMLElement = document.createElement('b');
+    fresh.textContent = name;
+    old.after(fresh);
+    old.classList.add(OTHERS.leavingClass);
+    window.setTimeout((): void => old.remove(), OTHERS.leaveMs);
+    other.name = fresh;
+  };
+
   const arrive = (player: LivePlayer): void => {
     const sample: TrackSample = { at: options.clock(), x: player.x, z: player.z, facing: player.facing };
     const known: Other | undefined = others.get(player.id);
@@ -152,7 +165,7 @@ export function createOthers(options: OthersOptions): Others {
       known.here = true;
       known.hero = player.hero;
       known.worn = player.worn;
-      known.name.textContent = player.name;
+      rename(known, player.name);
       known.shown.target = 1;
       if (known.figure !== null) known.figure.presence.target = 1;
       return;
@@ -216,6 +229,7 @@ export function createOthers(options: OthersOptions): Others {
           if (other === undefined) return;
           other.hero = event.hero;
           other.worn = event.worn;
+          if (event.name !== null) rename(other, event.name);
           return;
         }
         case 'moves':
