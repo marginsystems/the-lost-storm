@@ -60,7 +60,7 @@ type LootEntry = GoldEntry | ModelEntry | KeepsakeEntry;
 
 export interface LootView {
   sync(world: World): void;
-  standIns(): Object3D[];
+  standIns(world: World): Object3D[];
 }
 
 function tossOffset(age: number): number {
@@ -75,6 +75,18 @@ function tossOffset(age: number): number {
 
 function baseFor(world: World, ground: GroundItem): ItemBaseDef | null {
   return ground.content.kind === 'item' ? baseOf(world.content, ground.content.item) : null;
+}
+
+export function keptAsKeepsake(base: ItemBaseDef | null): boolean {
+  return base === null || base.ground.model === 'bundle' || base.ground.model === 'pouch';
+}
+
+export function zoneFinds(world: World): ItemBaseDef[] {
+  return (world.zone.void?.encounters ?? []).flatMap((met): ItemBaseDef[] => {
+    if (met.find.type !== 'item') return [];
+    const base: ItemBaseDef | undefined = world.content.itemBases.get(met.find.item);
+    return base === undefined ? [] : [base];
+  });
 }
 
 function seededYaw(id: number, jitterDegrees: number): number {
@@ -94,6 +106,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   let lastTime: number | null = null;
   let lastZone: string | null = null;
   const templates: Map<string, GroundTemplate> = new Map<string, GroundTemplate>();
+  const keepsakeStandIn: Keepsake = createKeepsake();
 
   const templateFor = (world: World, base: ItemBaseDef): GroundTemplate => {
     const cached: GroundTemplate | undefined = templates.get(base.id);
@@ -120,7 +133,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
       return { kind: 'gold', group };
     }
     const base: ItemBaseDef | null = baseFor(world, ground);
-    if (ground.find !== null && (base === null || base.ground.model === 'bundle' || base.ground.model === 'pouch')) {
+    if (ground.find !== null && keptAsKeepsake(base)) {
       const keepsake: Keepsake = createKeepsake();
       group.add(keepsake.group);
       return { kind: 'keepsake', group, keepsake, light: lightFor(world, ground) };
@@ -156,8 +169,13 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   };
 
   return {
-    standIns(): Object3D[] {
-      return [coins.clone(), ...lights.standIns()];
+    standIns(world: World): Object3D[] {
+      const finds: Object3D[] = zoneFinds(world).flatMap((base: ItemBaseDef): Object3D[] => {
+        if (keptAsKeepsake(base)) return [];
+        const template: GroundTemplate = templateFor(world, base);
+        return template.waiting ? [] : [template.model.clone(true)];
+      });
+      return [coins.clone(), contactShadow(), keepsakeStandIn.group, ...finds, ...lights.standIns()];
     },
     sync(world: World): void {
       const dt: number = lastTime === null ? 0 : Math.min(LOOT.longestFrame, Math.max(0, world.time - lastTime));

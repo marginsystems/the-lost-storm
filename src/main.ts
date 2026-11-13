@@ -461,7 +461,7 @@ async function start(): Promise<void> {
     zoneView.setLightBudget(gameSettings.preset().lights);
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
-    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs);
+    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world)], createBrowserTimers(), WARM_UP.zoneWaitMs);
     startZoneAmbience();
     glitches.refresh();
     camera.snap(world.player.pos.x, world.player.pos.z);
@@ -582,10 +582,11 @@ async function start(): Promise<void> {
     },
     { request: (callback: (now: number) => void): void => void requestAnimationFrame(callback) },
   );
-  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns()]);
+  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world)]);
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library);
     actors.refreshWear(world);
+    await warmUp(stage, stage.scene, stage.camera, loot.standIns(world));
     thumbnails = await createItemThumbnails(library, shownPieces, createBrowserTimers());
     hud.refreshItems();
   };
