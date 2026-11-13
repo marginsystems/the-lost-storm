@@ -65,6 +65,7 @@ export interface LoadedWearable {
   readonly frame: string;
   readonly model: string;
   readonly pieces: readonly SkinnedMesh[];
+  readonly iconWith: readonly SkinnedMesh[];
 }
 
 export interface CharacterLibrary {
@@ -294,7 +295,9 @@ async function loadWearable(loader: GLTFLoader, def: WearableDef, frame: string)
   const names: Set<string> = new Set<string>(def.pieces.map((name: string): string => PropertyBinding.sanitizeNodeName(name)));
   const pieces: SkinnedMesh[] = skinnedMeshes(model.scene).filter((mesh: SkinnedMesh): boolean => isPiece(mesh, names));
   if (pieces.length === 0) throw new Error(`Wearable "${def.id}" has no skinned mesh in ${path}`);
-  return { def, frame, model: path, pieces };
+  const beside: Set<string> = new Set<string>(def.iconWith.map((name: string): string => PropertyBinding.sanitizeNodeName(name)));
+  const iconWith: SkinnedMesh[] = beside.size === 0 ? [] : skinnedMeshes(model.scene).filter((mesh: SkinnedMesh): boolean => isPiece(mesh, beside));
+  return { def, frame, model: path, pieces, iconWith };
 }
 
 interface FramedWearable {

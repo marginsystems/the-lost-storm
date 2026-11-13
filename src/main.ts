@@ -602,7 +602,7 @@ async function start(): Promise<void> {
   let restLoaded: boolean = false;
   const paintThumbnails = async (): Promise<void> => {
     const hero: string = chosenHero;
-    const painted: ItemThumbnails = await createItemThumbnails(library, frameOf(content, heroRig(content, hero)), shownPieces, createBrowserTimers());
+    const painted: ItemThumbnails = await createItemThumbnails(library, frameOf(content, heroRig(content, hero)), shownPieces, content.player.tint, createBrowserTimers());
     if (hero !== chosenHero) return;
     thumbnails = painted;
     hud.refreshItems();

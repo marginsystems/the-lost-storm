@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Box3 } from 'three';
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Vector3 } from 'three';
+import type { Box3, BufferGeometry } from 'three';
+import { BoxGeometry, BufferAttribute, Group, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import type { Timers } from '../backend/backend.ts';
-import { oneAtATime, oneGlove, THUMBNAIL, trunk } from './item-thumbnails.ts';
+import { beyond, oneAtATime, oneGlove, THUMBNAIL, trunk } from './item-thumbnails.ts';
 
 interface ManualTimers extends Timers {
   readonly due: (() => void)[];
@@ -107,4 +107,29 @@ void test('a pair of gloves is framed on one glove only', (): void => {
   const half: Box3 = oneGlove(merged);
   assert.ok(half.min.x >= 0.85 * THUMBNAIL.gloveFrom - 0.11);
   assert.ok(half.max.x > 0.84);
+});
+
+function count(geometry: BufferGeometry, name: string): number {
+  const held: unknown = geometry.getAttribute(name);
+  return held instanceof BufferAttribute ? held.count : 0;
+}
+
+void test('the hand drawn with a glove is the arm piece cut at the wrist: only whole triangles past the cut are kept', (): void => {
+  const arm: BoxGeometry = new BoxGeometry(2, 0.1, 0.1, 20, 1, 1);
+  const hand: BufferGeometry = beyond(arm, 0.5);
+  const positions: unknown = hand.getAttribute('position');
+  assert.ok(positions instanceof BufferAttribute);
+  assert.ok(positions.count > 0 && positions.count % 3 === 0);
+  let least: number = Infinity;
+  let most: number = -Infinity;
+  for (let index: number = 0; index < positions.count; index += 1) {
+    least = Math.min(least, positions.getX(index));
+    most = Math.max(most, positions.getX(index));
+  }
+  assert.ok(least >= 0.5 - 1e-6, `a triangle reaches back to ${least}`);
+  assert.ok(Math.abs(most - 1) < 1e-6);
+  assert.equal(count(hand, 'normal'), positions.count);
+  assert.equal(count(hand, 'uv'), positions.count);
+  assert.equal(hand.index, null);
+  assert.equal(count(beyond(arm, 2), 'position'), 0);
 });

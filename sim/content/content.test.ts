@@ -103,7 +103,7 @@ void test('every wearable finds each piece it names in the model of every body f
       const names: Set<string> = known.get(path) ?? meshNodeNames(path);
       known.set(path, names);
       assert.ok(names.size > 0, `${path} has no mesh`);
-      for (const piece of worn.pieces) assert.ok(names.has(piece), `${worn.id} on ${frame}: ${path} has no mesh named ${piece}`);
+      for (const piece of [...worn.pieces, ...worn.iconWith]) assert.ok(names.has(piece), `${worn.id} on ${frame}: ${path} has no mesh named ${piece}`);
     }
   }
 });

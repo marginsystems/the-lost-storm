@@ -266,6 +266,7 @@ function wearable(value: unknown, where: string): WearableDef {
     tint: text(source, 'tint', where),
     hides: textList(source, 'hides', where),
     wakeLamps: source['wakeLamps'] === undefined ? 1 : share(source, 'wakeLamps', where),
+    iconWith: source['iconWith'] === undefined ? [] : textList(source, 'iconWith', where),
   };
 }
 

@@ -35,6 +35,8 @@ export const THUMBNAIL = {
   gloveRaise: Math.PI / 2,
   gloveTurn: 1.05,
   gloveLean: -0.32,
+  gloveUnder: 0.2,
+  skinMaterial: 'skin',
   gapMs: 0,
 } as const;
 
@@ -81,17 +83,81 @@ function pose(template: Object3D): Group {
   return diagonal;
 }
 
-function dressed(wearable: LoadedWearable, made: Material[]): Group {
+function side(geometry: BufferGeometry): { readonly from: number; readonly inner: number; readonly outer: number } | null {
+  const positions: unknown = geometry.getAttribute('position');
+  if (!(positions instanceof BufferAttribute) && !(positions instanceof InterleavedBufferAttribute)) return null;
+  let least: number = Infinity;
+  let most: number = -Infinity;
+  for (let index: number = 0; index < positions.count; index += 1) {
+    least = Math.min(least, positions.getX(index));
+    most = Math.max(most, positions.getX(index));
+  }
+  if (most <= least) return null;
+  const from: number = (least + most) / 2 + ((most - least) / 2) * THUMBNAIL.gloveFrom;
+  let inner: number = most;
+  for (let index: number = 0; index < positions.count; index += 1) {
+    const x: number = positions.getX(index);
+    if (x >= from) inner = Math.min(inner, x);
+  }
+  return { from, inner, outer: most };
+}
+
+export function beyond(geometry: BufferGeometry, cut: number): BufferGeometry {
+  const flat: BufferGeometry = geometry.index === null ? geometry.clone() : geometry.toNonIndexed();
+  const positions: unknown = flat.getAttribute('position');
+  const kept: BufferGeometry = new BufferGeometry();
+  if (!(positions instanceof BufferAttribute)) {
+    flat.dispose();
+    return kept;
+  }
+  const corners: number[] = [];
+  for (let corner: number = 0; corner + 2 < positions.count; corner += 3) {
+    if (positions.getX(corner) >= cut && positions.getX(corner + 1) >= cut && positions.getX(corner + 2) >= cut) corners.push(corner, corner + 1, corner + 2);
+  }
+  for (const name of ['position', 'normal', 'uv']) {
+    const source: unknown = flat.getAttribute(name);
+    if (!(source instanceof BufferAttribute)) continue;
+    const values: Float32Array = new Float32Array(corners.length * source.itemSize);
+    corners.forEach((corner: number, index: number): void => {
+      for (let part: number = 0; part < source.itemSize; part += 1) values[index * source.itemSize + part] = source.getComponent(corner, part);
+    });
+    kept.setAttribute(name, new BufferAttribute(values, source.itemSize));
+  }
+  flat.dispose();
+  return kept;
+}
+
+interface Made {
+  readonly materials: Material[];
+  readonly geometries: BufferGeometry[];
+}
+
+function tinted(source: MeshStandardMaterial, tint: string, made: Made): MeshStandardMaterial {
+  const material: MeshStandardMaterial = source.clone();
+  material.color.multiply(new Color(tint));
+  made.materials.push(material);
+  return material;
+}
+
+function dressed(wearable: LoadedWearable, skinTint: string, made: Made): Group {
   const glove: boolean = wearable.def.region === 'hands';
   const turned: Group = new Group();
   if (glove) turned.rotation.set(0, 0, THUMBNAIL.gloveRaise);
   else turned.rotation.set(THUMBNAIL.wornTilt, THUMBNAIL.wornTurn, 0);
+  let cuff: { readonly from: number; readonly inner: number; readonly outer: number } | null = null;
   for (const piece of wearable.pieces) {
     if (!(piece.material instanceof MeshStandardMaterial)) continue;
-    const material: MeshStandardMaterial = piece.material.clone();
-    material.color.multiply(new Color(wearable.def.tint));
-    made.push(material);
-    turned.add(new Mesh(piece.geometry, material));
+    cuff ??= side(piece.geometry);
+    turned.add(new Mesh(piece.geometry, tinted(piece.material, wearable.def.tint, made)));
+  }
+  if (cuff !== null) {
+    const cut: number = cuff.outer - (cuff.outer - cuff.inner) * THUMBNAIL.gloveUnder;
+    for (const piece of wearable.iconWith) {
+      if (!(piece.material instanceof MeshStandardMaterial)) continue;
+      const hand: BufferGeometry = beyond(piece.geometry, cut);
+      made.geometries.push(hand);
+      turned.add(new Mesh(hand, tinted(piece.material, piece.material.name === THUMBNAIL.skinMaterial ? skinTint : wearable.def.tint, made)));
+    }
   }
   const upright: Group = new Group();
   if (glove) upright.rotation.set(0, THUMBNAIL.gloveTurn, THUMBNAIL.gloveLean, 'ZYX');
@@ -189,7 +255,7 @@ function framing(wearable: LoadedWearable): (posed: Group) => Box3 {
   return frame;
 }
 
-export async function createItemThumbnails(library: CharacterLibrary, frame: string, wearableIds: readonly string[], timers: Timers): Promise<ItemThumbnails> {
+export async function createItemThumbnails(library: CharacterLibrary, frame: string, wearableIds: readonly string[], skinTint: string, timers: Timers): Promise<ItemThumbnails> {
   const renderer: WebGLRenderer = new WebGLRenderer({ alpha: true, antialias: true });
   renderer.setPixelRatio(1);
   renderer.setSize(THUMBNAIL.size, THUMBNAIL.size, false);
@@ -213,11 +279,11 @@ export async function createItemThumbnails(library: CharacterLibrary, frame: str
   const camera: OrthographicCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, THUMBNAIL.distance * 2);
   camera.position.set(0, 0, THUMBNAIL.distance);
 
-  const made: Material[] = [];
+  const made: Made = { materials: [], geometries: [] };
   const shots: Shot[] = [...library.attachments.values()].map((attachment): Shot => ({ name: attachment.def.id, posed: pose(attachment.template), frame: boundsOf }));
   for (const id of wearableIds) {
     const wearable: LoadedWearable | undefined = library.wearables.get(wearKey(frame, id));
-    if (wearable !== undefined) shots.push({ name: wornImageKey(id), posed: dressed(wearable, made), frame: framing(wearable) });
+    if (wearable !== undefined) shots.push({ name: wornImageKey(id), posed: dressed(wearable, skinTint, made), frame: framing(wearable) });
   }
 
   for (const shot of shots) scene.add(shot.posed);
@@ -243,7 +309,8 @@ export async function createItemThumbnails(library: CharacterLibrary, frame: str
     const url: string | null = await encoded;
     if (url !== null) images.set(shot.name, url);
   });
-  for (const material of made) material.dispose();
+  for (const material of made.materials) material.dispose();
+  for (const geometry of made.geometries) geometry.dispose();
 
   reflections.dispose();
   room.dispose();

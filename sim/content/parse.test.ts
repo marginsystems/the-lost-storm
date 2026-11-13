@@ -685,4 +685,7 @@ void test('a wearable keeps all the wake light unless its data gives it a share,
   const shy: Content = parseContent({ ...shipped, wearables: [...wearables, { ...extraWearable, wakeLamps: 0.45 }] });
   assert.equal(must(shy.wearables.get('ash_shroud'), 'ash_shroud').wakeLamps, 0.45);
   assert.throws((): Content => parseContent({ ...shipped, wearables: [...wearables, { ...extraWearable, wakeLamps: 1.5 }] }), (error: unknown): boolean => problem(error, 'wakeLamps'));
+  assert.deepEqual(must(plain.wearables.get('ash_shroud'), 'ash_shroud').iconWith, []);
+  const shown: Content = parseContent({ ...shipped, wearables: [...wearables, { ...extraWearable, iconWith: ['Ranger_Arms'] }] });
+  assert.deepEqual(must(shown.wearables.get('ash_shroud'), 'ash_shroud').iconWith, ['Ranger_Arms']);
 });

@@ -102,6 +102,9 @@
       "Ranger_Bracers"
     ],
     "region": "hands",
+    "iconWith": [
+      "Ranger_Arms"
+    ],
     "tint": "#7a583e",
     "hides": []
   },
@@ -191,6 +194,9 @@
       "Ranger_Bracers"
     ],
     "region": "hands",
+    "iconWith": [
+      "Ranger_Arms"
+    ],
     "tint": "#ffffff",
     "hides": []
   },
@@ -279,6 +285,9 @@
       "Ranger_Bracers"
     ],
     "region": "hands",
+    "iconWith": [
+      "Ranger_Arms"
+    ],
     "tint": "#3c3a36",
     "hides": []
   },
@@ -354,6 +363,9 @@
       "Ranger_Bracers"
     ],
     "region": "hands",
+    "iconWith": [
+      "Ranger_Arms"
+    ],
     "tint": "#c9b9a0",
     "hides": []
   },
@@ -416,6 +428,9 @@
       "Ranger_Bracers"
     ],
     "region": "hands",
+    "iconWith": [
+      "Ranger_Arms"
+    ],
     "tint": "#6a5238",
     "hides": []
   },
@@ -469,6 +484,9 @@
       "Ranger_Bracers"
     ],
     "region": "hands",
+    "iconWith": [
+      "Ranger_Arms"
+    ],
     "tint": "#ffffff",
     "hides": []
   },
