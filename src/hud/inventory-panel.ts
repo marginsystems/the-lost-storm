@@ -2,7 +2,7 @@ import { bookOf } from '../../sim/content/story.ts';
 import type { ItemBaseDef, ItemSlot } from '../../sim/content/types.ts';
 import { ITEM_SLOTS } from '../../sim/content/types.ts';
 import { baseOf, rarityOf, slotOf } from '../../sim/items.ts';
-import type { ItemInstance, PlayerState } from '../../sim/world/types.ts';
+import type { Command, ItemInstance, PlayerState } from '../../sim/world/types.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger } from './dom.ts';
 import { setPicture } from './item-picture.ts';
@@ -13,6 +13,8 @@ import { inventoryCommand, inventoryHint } from './trade-actions.ts';
 
 const INVENTORY = {
   hintEquipped: 'unequip',
+  dropAsk: 'Drop?',
+  dropConfirmMs: 2600,
 } as const;
 
 const SLOT_TITLES: Readonly<Record<ItemSlot, string>> = {
@@ -87,8 +89,21 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
   }
 
   const inventoryCells: CellView[] = [];
+  let armed: { readonly index: number; readonly uid: number; readonly timer: number } | null = null;
+  const disarm = (): void => {
+    if (armed === null) return;
+    window.clearTimeout(armed.timer);
+    inventoryCells[armed.index]?.cell.classList.remove('arming');
+    armed = null;
+  };
+  const arm = (index: number, view: CellView, item: ItemInstance): void => {
+    disarm();
+    view.cell.classList.add('arming');
+    armed = { index, uid: item.uid, timer: window.setTimeout(disarm, INVENTORY.dropConfirmMs) };
+  };
   for (let index: number = 0; index < context.api.world.content.player.inventorySize; index += 1) {
     const view: CellView = buildCell(grid, 'cell');
+    label('cell-drop', INVENTORY.dropAsk, view.cell);
     inventoryCells.push(view);
     attachTooltip(context.tooltip, view.cell, (): HTMLElement | null => {
       const item: ItemInstance | null = view.current;
@@ -99,18 +114,33 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       return itemTooltip(context.api, item, equipped, inventoryHint(context.api.world, item, context.api.touch));
     });
     view.cell.addEventListener('click', (event: MouseEvent): void => {
+      disarm();
       if (view.current === null) return;
       context.tooltip.hide();
       if (bookOf(context.api.world.content, baseOf(context.api.world.content, view.current)) !== null) {
         context.api.readBook(view.current);
         return;
       }
-      context.api.send(inventoryCommand(context.api.world, index, event.ctrlKey || event.metaKey ? 'ctrl' : 'click'));
+      const command: Command | null = inventoryCommand(context.api.world, index, event.ctrlKey || event.metaKey ? 'ctrl' : 'click');
+      if (command === null) retrigger(view.cell, 'deny');
+      else context.api.send(command);
     });
     view.cell.addEventListener('contextmenu', (): void => {
-      if (view.current === null) return;
+      const item: ItemInstance | null = view.current;
+      if (item === null) return;
       context.tooltip.hide();
-      context.api.send(inventoryCommand(context.api.world, index, 'right'));
+      const command: Command | null = inventoryCommand(context.api.world, index, 'right');
+      if (command === null) {
+        disarm();
+        retrigger(view.cell, 'deny');
+        return;
+      }
+      if (command.type === 'drop' && (armed === null || armed.index !== index || armed.uid !== item.uid)) {
+        arm(index, view, item);
+        return;
+      }
+      disarm();
+      context.api.send(command);
     });
   }
 
@@ -126,6 +156,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       inventoryCells.forEach((view: CellView, index: number): void => {
         if (setItem(view, player.inventory[index] ?? null)) changed = true;
       });
+      if (armed !== null && (player.inventory[armed.index]?.uid !== armed.uid || !element.classList.contains('open'))) disarm();
       if (changed) context.tooltip.hide();
     },
   };

@@ -77,3 +77,27 @@ void test('a fourth Legendary stays in the bag with a notice, and the three worn
   assert.equal(world.player.inventory[3]?.base, 'the_millwheel');
   assert.deepEqual([world.player.equipped.hands?.base, world.player.equipped.charm?.base, world.player.equipped.head?.base], ['wirethread_gloves', 'lantern_of_second_sounds', 'crown_of_the_struck_hour']);
 });
+
+void test('a dropped item lies at the hero feet and a pickup puts it back in the bag', (): void => {
+  const world: World = armed(worldIn(content, 'hideout', 1));
+  world.monsters = [];
+  const blade: ItemInstance = { uid: 4100, base: 'rusted_blade', rarity: 'common', level: 1, affixes: [] };
+  world.player.inventory.fill(null);
+  world.player.inventory[0] = blade;
+  send(world, { type: 'drop', inventoryIndex: 0 });
+  assert.equal(world.player.inventory[0], null);
+  const ground = world.ground.find((entry): boolean => entry.content.kind === 'item' && entry.content.item.uid === blade.uid);
+  assert.ok(ground !== undefined);
+  for (let tick: number = 0; tick < 240 && !world.player.inventory.some((item): boolean => item?.uid === blade.uid); tick += 1) send(world, { type: 'pickup', groundId: ground.id });
+  assert.ok(world.player.inventory.some((item): boolean => item?.uid === blade.uid));
+});
+
+void test('a story item never leaves the bag by a drop', (): void => {
+  const world: World = armed(worldIn(content, 'hideout', 1));
+  const journal: ItemInstance = { uid: 4200, base: 'worn_journal', rarity: 'common', level: 1, affixes: [] };
+  world.player.inventory.fill(null);
+  world.player.inventory[2] = journal;
+  send(world, { type: 'drop', inventoryIndex: 2 });
+  assert.equal(world.player.inventory[2], journal);
+  assert.ok(!world.ground.some((entry): boolean => entry.content.kind === 'item' && entry.content.item.uid === journal.uid));
+});

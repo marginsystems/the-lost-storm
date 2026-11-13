@@ -1,6 +1,6 @@
 import { bookOf } from '../../sim/content/story.ts';
 import type { ServiceKind } from '../../sim/content/trade-types.ts';
-import { baseOf } from '../../sim/items.ts';
+import { baseOf, isStoryItem } from '../../sim/items.ts';
 import { sellPrice } from '../../sim/world/trade.ts';
 import type { Command, ItemInstance, World } from '../../sim/world/types.ts';
 import type { Prompt } from './prompts.ts';
@@ -25,10 +25,16 @@ const SERVICE_HINTS: Readonly<Record<ServiceKind, (world: World, item: ItemInsta
   stash: (): readonly Prompt[] => INVENTORY_HINTS.stash,
 };
 
-export function inventoryCommand(world: World, inventoryIndex: number, click: InventoryClick): Command {
+export function inventoryCommand(world: World, inventoryIndex: number, click: InventoryClick): Command | null {
+  const item: ItemInstance | null = world.player.inventory[inventoryIndex] ?? null;
+  const story: boolean = item !== null && isStoryItem(world.content, item);
   const kind: ServiceKind | null = serviceOf(world);
-  if (kind === null) return click === 'right' ? { type: 'drop', inventoryIndex } : { type: 'equip', inventoryIndex };
-  return { type: 'trade', action: { type: INVENTORY_ACTIONS[kind], inventoryIndex } };
+  if (kind === null) {
+    if (click !== 'right') return { type: 'equip', inventoryIndex };
+    return story ? null : { type: 'drop', inventoryIndex };
+  }
+  const action: 'sell' | 'stash' = INVENTORY_ACTIONS[kind];
+  return story && action === 'sell' ? null : { type: 'trade', action: { type: action, inventoryIndex } };
 }
 
 function inventoryPrompts(world: World, item: ItemInstance): readonly Prompt[] {

@@ -1,5 +1,5 @@
 import type { ItemSlot } from '../content/types.ts';
-import { slotOf } from '../items.ts';
+import { isStoryItem, slotOf } from '../items.ts';
 import { applyXp, canAllocate, findNode, refundCost, refundState, respecState } from '../progression.ts';
 import type { ChartChange } from '../progression.ts';
 import type { XpResult } from '../progression.ts';
@@ -77,7 +77,7 @@ export function unequip(world: World, slot: ItemSlot): void {
 export function dropFromInventory(world: World, inventoryIndex: number): void {
   const player: PlayerState = world.player;
   const item: ItemInstance | null = player.inventory[inventoryIndex] ?? null;
-  if (item === null) return;
+  if (item === null || isStoryItem(world.content, item)) return;
   player.inventory[inventoryIndex] = null;
   dropOnGround(world, player.pos, { kind: 'item', item });
   world.events.push({ type: 'character_changed' });

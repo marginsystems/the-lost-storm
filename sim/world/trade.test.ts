@@ -259,3 +259,14 @@ void test('items move between the inventory and the stash, and a full side refus
   assert.deepEqual(notices(trade(world, { type: 'stash', inventoryIndex: 2 })), ['stash_full']);
   assert.deepEqual(world.player.inventory[2], item);
 });
+
+void test('a story item cannot be sold', (): void => {
+  const world: World = atVendor(8);
+  const journal: ItemInstance = { uid: 4300, base: 'worn_journal', rarity: 'common', level: 1, affixes: [] };
+  world.player.inventory[0] = journal;
+  world.player.gold = 0;
+  trade(world, { type: 'sell', inventoryIndex: 0 });
+  assert.equal(world.player.inventory[0], journal);
+  assert.equal(world.player.gold, 0);
+  assert.equal(stockOf(world).buyback.length, 0);
+});

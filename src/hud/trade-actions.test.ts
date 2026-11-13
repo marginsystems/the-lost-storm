@@ -26,3 +26,13 @@ void test('an inventory click equips or drops when nothing is open, sells at a v
   for (const click of ['click', 'ctrl', 'right'] as const) assert.deepEqual(inventoryCommand(world, 2, click), { type: 'trade', action: { type: 'stash', inventoryIndex: 2 } });
   assert.equal(inventoryHint(world, item, false), 'Click to stash');
 });
+
+void test('a story item is never dropped or sold from the bag, though it can be stashed', (): void => {
+  const world: World = worldIn(content, content.world.start, 2);
+  world.player.inventory[0] = { uid: 5100, base: 'worn_journal', rarity: 'common', level: 1, affixes: [] };
+  assert.equal(inventoryCommand(world, 0, 'right'), null);
+  world.service = { kind: 'vendor', owner: 'any', anchor: { x: 0, z: 0 } };
+  for (const click of ['click', 'ctrl', 'right'] as const) assert.equal(inventoryCommand(world, 0, click), null);
+  world.service = { kind: 'stash', owner: 'any', anchor: { x: 0, z: 0 } };
+  assert.deepEqual(inventoryCommand(world, 0, 'right'), { type: 'trade', action: { type: 'stash', inventoryIndex: 0 } });
+});

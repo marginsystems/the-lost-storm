@@ -837,6 +837,7 @@
       "name": "Worn Journal",
       "slot": null,
       "book": "journal",
+      "story": true,
       "material": null,
       "icon": "book",
       "dropWeight": 0,

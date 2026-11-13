@@ -1,6 +1,6 @@
 import type { ServiceKind, StockRarity } from '../content/trade-types.ts';
 import type { Content, LineDef, PropDef, TalkDef, ZoneProp } from '../content/types.ts';
-import { generateItem } from '../items.ts';
+import { generateItem, isStoryItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import { pickWeighted } from '../rng.ts';
@@ -153,7 +153,7 @@ function buy(world: World, vendor: VendorStock, index: number): void {
 function sell(world: World, vendor: VendorStock, inventoryIndex: number): void {
   const player: PlayerState = world.player;
   const item: ItemInstance | null = player.inventory[inventoryIndex] ?? null;
-  if (item === null) return;
+  if (item === null || isStoryItem(world.content, item)) return;
   player.inventory[inventoryIndex] = null;
   player.gold += sellPrice(world.content, item);
   vendor.buyback = [item, ...vendor.buyback].slice(0, world.content.trade.buybackSize);

@@ -25,6 +25,10 @@ export function baseOf(content: Content, item: ItemInstance): ItemBaseDef | null
   return content.itemBases.get(item.base) ?? null;
 }
 
+export function isStoryItem(content: Content, item: ItemInstance): boolean {
+  return baseOf(content, item)?.story === true;
+}
+
 export function slotOf(content: Content, item: ItemInstance): ItemSlot | null {
   return baseOf(content, item)?.slot ?? null;
 }
