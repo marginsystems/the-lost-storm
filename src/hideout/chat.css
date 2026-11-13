@@ -121,6 +121,7 @@
 }
 
 .chat-name-form {
+  pointer-events: auto;
   display: flex;
   gap: 6px;
   margin: 4px 0 2px;
@@ -133,6 +134,7 @@
 
 .chat-menu {
   position: absolute;
+  visibility: hidden;
   display: flex;
   flex-direction: column;
   min-width: 140px;
@@ -146,13 +148,19 @@
   transform-origin: left bottom;
   transition:
     opacity var(--spring-snappy-ms) var(--spring-snappy),
-    scale var(--spring-snappy-ms) var(--spring-snappy);
+    scale var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-snappy-ms);
 }
 
 .chat-menu.open {
+  visibility: visible;
   pointer-events: auto;
   opacity: 1;
   scale: 1;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear 0s;
 }
 
 .chat-menu-item,
@@ -165,7 +173,6 @@
   border-radius: 3px;
   padding: 5px 8px;
   cursor: pointer;
-  pointer-events: auto;
   transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
 }
 
