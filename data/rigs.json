@@ -176,11 +176,13 @@
     "gaits": [
       {
         "clip": "Walk_Loop",
-        "groundSpeed": 1.14
+        "groundSpeed": 1.14,
+        "stride": 0.76
       },
       {
         "clip": "Jog_Fwd_Loop",
-        "groundSpeed": 7.08
+        "groundSpeed": 7.08,
+        "stride": 3.304
       }
     ],
     "clips": {
@@ -401,11 +403,13 @@
     "gaits": [
       {
         "clip": "Walk_Loop",
-        "groundSpeed": 1.14
+        "groundSpeed": 1.14,
+        "stride": 0.76
       },
       {
         "clip": "Jog_Fwd_Loop",
-        "groundSpeed": 7.08
+        "groundSpeed": 7.08,
+        "stride": 3.304
       }
     ],
     "clips": {

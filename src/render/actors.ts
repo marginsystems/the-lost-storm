@@ -5,7 +5,7 @@ import { knockTime } from '../../sim/world/movement.ts';
 import { Color } from 'three';
 import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import type { Look } from '../../sim/wear.ts';
-import { heroRig } from '../../sim/hero.ts';
+import { HERO, heroRig } from '../../sim/hero.ts';
 import { heroBase, lookOf, wornWearables } from '../../sim/wear.ts';
 import { wakeStage } from '../../sim/world/wake.ts';
 import { wakePose } from './wake-pose.ts';
@@ -105,7 +105,7 @@ function echoLook(current: World, monster: MonsterState): EchoLook | null {
 export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean, sight: Sight = SEES_ALL): Actors {
   const content: Content = world.content;
   const heroView = (loaded: LoadedRig, current: World): ActorView => {
-    const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather }), 1, current.player.facing);
+    const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather }), HERO.size, current.player.facing);
     holdEquipped(content, view.rig, current.player.equipped);
     dress(content, loaded.def.id, view.rig, heroBase(content, loaded.def.id), current.player.equipped);
     scene.add(view.rig.root);

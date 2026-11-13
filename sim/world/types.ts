@@ -165,7 +165,8 @@ export interface PlayerState extends ActorState {
   queued: Command | null;
   held: number[];
   invulnerable: number;
-  strideTravel: number;
+  stridePhase: number;
+  strideGait: number;
   walked: Vec2;
   chase: ChaseState;
   kills: number;

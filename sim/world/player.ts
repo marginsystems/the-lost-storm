@@ -1,4 +1,4 @@
-import type { SkillDef, ZoneExit } from '../content/types.ts';
+import type { RigDef, SkillDef, ZoneExit } from '../content/types.ts';
 import { forceStrike } from './moments.ts';
 import { chestOf, chestReach, chestSpot, openChest } from './moment-chest.ts';
 import type { Vec2 } from '../math.ts';
@@ -23,7 +23,9 @@ import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './tr
 import type { Station } from './trade.ts';
 import { requestGlitch, setGlitchesEnabled, setOverlay } from './glitch.ts';
 import { readPage } from './story.ts';
-import { chooseHero } from '../hero.ts';
+import { chooseGait } from '../gait.ts';
+import type { GaitChoice } from '../gait.ts';
+import { chooseHero, HERO, heroRig } from '../hero.ts';
 import { stepWaypoints, teleport } from './waypoints.ts';
 import { findExit, stepCheckpoints, travelThrough } from './zones.ts';
 
@@ -35,7 +37,7 @@ const PLAYER = {
   repathInterval: 0.2,
   goldDelay: 0.45,
   stride: 2.5,
-  firstStepFraction: 0.6,
+  firstStepFraction: 0.95,
   stuckStep: 1e-4,
 } as const;
 
@@ -485,10 +487,27 @@ function isBusy(player: PlayerState): boolean {
   return player.action !== null;
 }
 
+export interface StepStride {
+  readonly gait: number;
+  readonly metres: number | null;
+}
+
+export function stepStride(rig: RigDef | undefined, speed: number, held: number): StepStride {
+  if (rig === undefined || rig.gaits.length === 0) return { gait: held, metres: PLAYER.stride };
+  const choice: GaitChoice | null = chooseGait(rig.gaits, HERO.size, speed, held);
+  if (choice === null) return { gait: held, metres: null };
+  const stride: number | null = rig.gaits[choice.index]?.stride ?? null;
+  return { gait: choice.index, metres: stride === null ? PLAYER.stride : stride * HERO.size };
+}
+
 function emitSteps(world: World, player: PlayerState, travelled: number): void {
-  player.strideTravel += travelled;
-  while (player.strideTravel >= PLAYER.stride) {
-    player.strideTravel -= PLAYER.stride;
+  const stride: StepStride = stepStride(world.content.rigs.get(heroRig(world.content, player.hero)), player.gait, player.strideGait);
+  if (stride.gait !== player.strideGait || stride.metres === null) player.stridePhase = PLAYER.firstStepFraction;
+  player.strideGait = stride.gait;
+  if (stride.metres === null) return;
+  player.stridePhase += travelled / stride.metres;
+  while (player.stridePhase >= 1) {
+    player.stridePhase -= 1;
     world.events.push({ type: 'hero_step', pos: { x: player.pos.x, z: player.pos.z } });
   }
 }
@@ -530,7 +549,7 @@ export function stepPlayer(world: World, dt: number): void {
   }
   player.walked = player.moving ? { x: player.pos.x - startX, z: player.pos.z - startZ } : { x: 0, z: 0 };
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
-  else player.strideTravel = PLAYER.stride * PLAYER.firstStepFraction;
+  else player.stridePhase = PLAYER.firstStepFraction;
   collectGold(world);
   stepCheckpoints(world);
   stepWaypoints(world);

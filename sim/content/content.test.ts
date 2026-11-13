@@ -113,6 +113,39 @@ void test('no clip a rig plays is keyed with cubic splines, the one kind the loa
   for (const path of paths) assert.ok(!clipInterpolations(path).has('CUBICSPLINE'), path);
 });
 
+function clipSeconds(path: string): number {
+  const json: Fields = glbJson(path);
+  const accessors: readonly unknown[] = items(json['accessors'], `${path}.accessors`);
+  let longest: number = 0;
+  for (const entry of items(json['animations'], `${path}.animations`)) {
+    for (const sampler of items(fields(entry, path)['samplers'], `${path}.samplers`)) {
+      const input: unknown = fields(sampler, path)['input'];
+      const max: unknown = typeof input === 'number' ? fields(accessors[input], path)['max'] : undefined;
+      const end: unknown = Array.isArray(max) ? max[0] : undefined;
+      if (typeof end === 'number') longest = Math.max(longest, end);
+    }
+  }
+  return longest;
+}
+
+const STRIDE = { tolerance: 0.02, footfallsPerCycle: 2 } as const;
+
+void test('a gait that names a stride names the ground covered between two footfalls of its clip, so step sounds land with the feet', (): void => {
+  let checked: number = 0;
+  for (const rig of content.rigs.values()) {
+    for (const gait of rig.gaits) {
+      if (gait.stride === null) continue;
+      const seconds: number = clipSeconds(`public/${clipUrl(rig, gait.clip)}`);
+      assert.ok(seconds > 0, `${rig.id} ${gait.clip} has no length`);
+      const covered: number = (gait.groundSpeed * seconds) / STRIDE.footfallsPerCycle;
+      assert.ok(Math.abs(gait.stride - covered) <= covered * STRIDE.tolerance, `${rig.id} ${gait.clip}: stride ${gait.stride} but the clip covers ${covered.toFixed(3)} m a footfall`);
+      checked += 1;
+    }
+  }
+  for (const hero of content.player.heroes) assert.ok(must(content.rigs.get(hero.rig), hero.rig).gaits.every((gait): boolean => gait.stride !== null), `${hero.id} has a gait with no stride`);
+  assert.ok(checked > 0);
+});
+
 const FOOTPRINT = { solid: 1, cover: 0.4 } as const;
 
 function footprint(path: string, scale: number): number {

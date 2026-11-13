@@ -10,6 +10,9 @@ import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import { blockerGap, buildNavGrid, isWalkable, moveWithCollision, nearestWalkable, paceAt, propBlockers } from '../nav/grid.ts';
 import type { Blocker, NavGrid } from '../nav/grid.ts';
+import { GAIT } from '../gait.ts';
+import { HERO } from '../hero.ts';
+import { stepStride } from './player.ts';
 import { stepWorld } from './step.ts';
 import type { Command, World } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -385,3 +388,47 @@ for (const start of RUIN.starts) {
     assert.ok(gap >= radius - 0.02, 'he walked into the wall ruin');
   });
 }
+
+void test('a step sounds once for every footfall of the gait the hero is moving at, whatever his speed', (): void => {
+  const rig = must(content.rigs.get(content.player.hero.rig), 'hero rig');
+  const [first, second] = rig.gaits;
+  const slow = must(first, 'walk');
+  const fast = must(second, 'jog');
+  assert.deepEqual(stepStride(rig, fast.groundSpeed * HERO.size, -1), { gait: 1, metres: must(fast.stride, 'jog stride') * HERO.size });
+  assert.deepEqual(stepStride(rig, slow.groundSpeed * HERO.size, -1), { gait: 0, metres: must(slow.stride, 'walk stride') * HERO.size });
+  assert.equal(stepStride(rig, 2.2, 1).gait, 1);
+  assert.equal(stepStride(rig, 2.8, 0).gait, 1);
+  assert.deepEqual(stepStride(rig, 0, 1), { gait: 1, metres: null });
+  assert.deepEqual(stepStride(rig, GAIT.minSpeed / 2, 0), { gait: 0, metres: null });
+  assert.ok(must(stepStride(undefined, 5, -1).metres, 'a rig with no gaits still steps') > 0);
+  const open: string[] = Array.from({ length: 12 }, (): string => '............');
+  const world: World = worldIn(content, content.world.start, 9);
+  enterZone(world, sceneZone(base, 'test_open_run', { tiles: open, props: [], start: { x: 6, z: 24 } }), { type: 'start' });
+  world.monsters = [];
+  let steps: number = 0;
+  let travelled: number = 0;
+  let last: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  for (let tick: number = 0; tick < 180; tick += 1) {
+    const events = stepWorld(world, [{ type: 'move', held: true, dest: { x: 42, z: 24 } }], MOTION_DT);
+    steps += events.filter((event): boolean => event.type === 'hero_step').length;
+    travelled += Math.hypot(world.player.pos.x - last.x, world.player.pos.z - last.z);
+    last = { x: world.player.pos.x, z: world.player.pos.z };
+  }
+  const stride: number = must(fast.stride, 'jog stride') * HERO.size;
+  assert.ok(travelled > stride * 3, `only moved ${travelled.toFixed(1)} m`);
+  assert.ok(Math.abs(steps - travelled / stride) <= 1.5, `${steps} steps over ${travelled.toFixed(1)} m at ${stride.toFixed(2)} m a step`);
+});
+
+void test('a change of gait starts the step count again, as the clip starts again, and never bursts', (): void => {
+  const world: World = worldIn(content, content.world.start, 11);
+  enterZone(world, sceneZone(base, 'test_gait_change', { tiles: Array.from({ length: 12 }, (): string => '............'), props: [], start: { x: 6, z: 24 } }), { type: 'start' });
+  world.monsters = [];
+  for (let tick: number = 0; tick < 40; tick += 1) stepWorld(world, [{ type: 'move', held: true, dest: { x: 42, z: 24 } }], MOTION_DT);
+  assert.equal(world.player.strideGait, 1);
+  world.player.strideGait = 0;
+  world.player.stridePhase = 0.4;
+  const events = stepWorld(world, [{ type: 'move', held: true, dest: { x: 42, z: 24 } }], MOTION_DT);
+  assert.equal(world.player.strideGait, 1);
+  assert.ok(events.filter((event): boolean => event.type === 'hero_step').length <= 1);
+  assert.ok(world.player.stridePhase < 0.2 || world.player.stridePhase >= 0.95);
+});

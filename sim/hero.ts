@@ -2,6 +2,8 @@ import type { ZoneEncounter } from './content/story-types.ts';
 import type { Condition, Content, HeroDef } from './content/types.ts';
 import type { PlayerState, World } from './world/types.ts';
 
+export const HERO = { size: 1 } as const;
+
 export function heroOf(content: Content, id: string | null): HeroDef {
   return content.player.heroes.find((hero: HeroDef): boolean => hero.id === id) ?? content.player.hero;
 }
