@@ -8,6 +8,8 @@ import { copyToDocument, dedup, prune } from '@gltf-transform/functions';
 import { Color, Matrix3, Matrix4, Vector3 } from 'three';
 import type { Fields } from '../sim/content/read.ts';
 import { each, fields, numeric, text, textList } from '../sim/content/read.ts';
+import type { FitOptions } from './fit-over.ts';
+import { bodySurface, elementsOf, fitDocument, meshNodes, prepareBody } from './fit-over.ts';
 
 const ASSEMBLE = {
   influences: 4,
@@ -31,8 +33,14 @@ interface MaterialPlan {
   readonly tint: string | null;
 }
 
+interface OverPlan extends FitOptions {
+  readonly body: string;
+  readonly material: string;
+}
+
 interface BodyPlan {
   readonly out: string;
+  readonly over: OverPlan | null;
   readonly skeleton: string;
   readonly keep: readonly string[];
   readonly parts: readonly PartPlan[];
@@ -83,12 +91,26 @@ function readMaterial(value: unknown, where: string): MaterialPlan {
   };
 }
 
+function readOver(value: unknown, where: string): OverPlan {
+  const source: Fields = fields(value, where);
+  return {
+    body: text(source, 'body', where),
+    material: text(source, 'material', where),
+    gap: numeric(source, 'gap', where),
+    depth: numeric(source, 'depth', where),
+    reach: numeric(source, 'reach', where),
+    blend: numeric(source, 'blend', where),
+    follow: numeric(source, 'follow', where),
+  };
+}
+
 function readPlans(path: string): BodyPlan[] {
   const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
   return each(parsed, 'plans', (entry: unknown, where: string): BodyPlan => {
     const source: Fields = fields(entry, where);
     return {
       out: text(source, 'out', where),
+      over: source['over'] === undefined ? null : readOver(source['over'], `${where}.over`),
       skeleton: text(source, 'skeleton', where),
       keep: textList(source, 'keep', where),
       parts: source['parts'] === undefined ? [] : each(source['parts'], `${where}.parts`, readPart),
@@ -114,13 +136,6 @@ function skinOf(document: Document, path: string): Skin {
   const skin: Skin | undefined = document.getRoot().listSkins()[0];
   if (skin === undefined) throw new Error(`${path} has no skin`);
   return skin;
-}
-
-function meshNodes(document: Document): Node[] {
-  return document
-    .getRoot()
-    .listNodes()
-    .filter((node: Node): boolean => node.getMesh() !== null);
 }
 
 function openTarget(document: Document, path: string, keep: readonly string[]): Target {
@@ -153,17 +168,6 @@ function openTarget(document: Document, path: string, keep: readonly string[]): 
     jointOf: new Map<string, number>(joints.map((joint: Node, index: number): [string, number] => [joint.getName(), index])),
     binds: inverse.map((matrix: Matrix4): Matrix4 => matrix.clone().invert()),
   };
-}
-
-function elementsOf(accessor: Accessor | null, width: number): number[] {
-  const values: number[] = [];
-  if (accessor === null) return values;
-  const element: number[] = [];
-  for (let index: number = 0; index < accessor.getCount(); index += 1) {
-    accessor.getElement(index, element);
-    for (let slot: number = 0; slot < width; slot += 1) values.push(element[slot] ?? 0);
-  }
-  return values;
 }
 
 interface Refit {
@@ -373,7 +377,7 @@ function renameMeshes(document: Document, names: ReadonlyMap<string, string>): v
   }
 }
 
-async function assemble(io: NodeIO, plan: BodyPlan, root: string): Promise<void> {
+async function build(io: NodeIO, plan: BodyPlan, root: string, bodies: ReadonlyMap<string, Document>): Promise<Document> {
   const path: string = join(root, plan.skeleton);
   const target: Target = openTarget(await io.read(path), path, plan.keep);
   const added: string[] = [...plan.keep];
@@ -384,19 +388,40 @@ async function assemble(io: NodeIO, plan: BodyPlan, root: string): Promise<void>
   });
   renameMeshes(target.document, plan.names);
   dressMaterials(target.document, plan.materials, root, plan.out);
-  await target.document.transform(prune({ keepLeaves: true }), dedup());
-  shrinkTextures(target.document, plan.textureSize);
-  mkdirSync(dirname(plan.out), { recursive: true });
-  await io.write(plan.out, target.document);
+  if (plan.over !== null) {
+    const body: Document | undefined = bodies.get(plan.over.body);
+    if (body === undefined) throw new Error(`${plan.out}: no plan builds the body ${plan.over.body}`);
+    fitDocument(target.document, prepareBody(bodySurface(body, plan.over.material, plan.out)), plan.over);
+  }
   console.log(`${plan.out}: ${added.join(', ')}`);
+  return target.document;
+}
+
+async function write(io: NodeIO, plan: BodyPlan, document: Document): Promise<void> {
+  await document.transform(prune({ keepLeaves: true }), dedup());
+  shrinkTextures(document, plan.textureSize);
+  mkdirSync(dirname(plan.out), { recursive: true });
+  await io.write(plan.out, document);
 }
 
 async function main(): Promise<void> {
   const [planPath, root, ...only] = process.argv.slice(2);
   if (planPath === undefined || root === undefined) usage();
   const io: NodeIO = new NodeIO();
-  const plans: BodyPlan[] = readPlans(planPath).filter((plan: BodyPlan): boolean => only.length === 0 || only.includes(plan.out));
-  await Promise.all(plans.map((plan: BodyPlan): Promise<void> => assemble(io, plan, root)));
+  const all: BodyPlan[] = readPlans(planPath);
+  const chosen: BodyPlan[] = all.filter((plan: BodyPlan): boolean => only.length === 0 || only.includes(plan.out));
+  const under: Set<string> = new Set<string>(chosen.flatMap((plan: BodyPlan): string[] => (plan.over === null ? [] : [plan.over.body])));
+  const bodies: Map<string, Document> = new Map<string, Document>();
+  const first: BodyPlan[] = all.filter((plan: BodyPlan): boolean => plan.over === null && (chosen.includes(plan) || under.has(plan.out)));
+  const built: Document[] = await Promise.all(first.map((plan: BodyPlan): Promise<Document> => build(io, plan, root, bodies)));
+  first.forEach((plan: BodyPlan, index: number): void => {
+    const document: Document | undefined = built[index];
+    if (document !== undefined) bodies.set(plan.out, document);
+  });
+  const fitted: BodyPlan[] = chosen.filter((plan: BodyPlan): boolean => plan.over !== null);
+  const dressed: Document[] = await Promise.all(fitted.map((plan: BodyPlan): Promise<Document> => build(io, plan, root, bodies)));
+  const outputs: [BodyPlan, Document | undefined][] = [...first.filter((plan: BodyPlan): boolean => chosen.includes(plan)).map((plan: BodyPlan): [BodyPlan, Document | undefined] => [plan, bodies.get(plan.out)]), ...fitted.map((plan: BodyPlan, index: number): [BodyPlan, Document | undefined] => [plan, dressed[index]])];
+  for (const [plan, document] of outputs) if (document !== undefined) await write(io, plan, document);
 }
 
 await main();

@@ -14,8 +14,7 @@
           "Head",
           "neck_01"
         ],
-        "share": 0.5,
-        "material": "MI_Regular_Male"
+        "share": 0.5
       },
       {
         "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
@@ -30,7 +29,7 @@
     },
     "materials": [
       {
-        "material": "MI_Regular_Male",
+        "material": "MI_Superhero_Male",
         "name": "skin"
       },
       {
@@ -47,6 +46,15 @@
   },
   {
     "out": "public/models/wear/man/ranger.glb",
+    "over": {
+      "body": "public/models/characters/man.glb",
+      "material": "skin",
+      "gap": 0.003,
+      "depth": 0.012,
+      "reach": 0.03,
+      "blend": 0.015,
+      "follow": 0.03
+    },
     "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Male_Ranger.gltf",
     "keep": [
       "Male_Ranger_Acc_Pauldron",
@@ -80,6 +88,15 @@
   },
   {
     "out": "public/models/wear/man/peasant.glb",
+    "over": {
+      "body": "public/models/characters/man.glb",
+      "material": "skin",
+      "gap": 0.003,
+      "depth": 0.012,
+      "reach": 0.03,
+      "blend": 0.015,
+      "follow": 0.03
+    },
     "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Male_Peasant.gltf",
     "keep": [
       "Male_Peasant_Arms",
@@ -142,8 +159,7 @@
           "Head",
           "neck_01"
         ],
-        "share": 0.5,
-        "material": "MI_Regular_Female"
+        "share": 0.5
       },
       {
         "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Base Characters/Godot - UE/Superhero_Female_FullBody.gltf",
@@ -158,7 +174,7 @@
     },
     "materials": [
       {
-        "material": "MI_Regular_Female",
+        "material": "MI_Superhero_Female",
         "name": "skin"
       },
       {
@@ -175,6 +191,15 @@
   },
   {
     "out": "public/models/wear/woman/ranger.glb",
+    "over": {
+      "body": "public/models/characters/woman.glb",
+      "material": "skin",
+      "gap": 0.003,
+      "depth": 0.012,
+      "reach": 0.03,
+      "blend": 0.015,
+      "follow": 0.03
+    },
     "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Female_Ranger.gltf",
     "keep": [
       "Female_Ranger_Acc_Pauldrons",
@@ -208,6 +233,15 @@
   },
   {
     "out": "public/models/wear/woman/peasant.glb",
+    "over": {
+      "body": "public/models/characters/woman.glb",
+      "material": "skin",
+      "gap": 0.003,
+      "depth": 0.012,
+      "reach": 0.03,
+      "blend": 0.015,
+      "follow": 0.03
+    },
     "skeleton": "quaternius-outfits-fantasy-20261111/extracted/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/Female_Peasant.gltf",
     "keep": [
       "Female_Peasant_Arms",
