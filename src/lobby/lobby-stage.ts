@@ -1,5 +1,5 @@
 import type { AnimationClip, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, SpotLight, Vector2 } from 'three';
+import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
@@ -16,6 +16,8 @@ import type { LobbyPipeline } from './lobby-render.ts';
 import { poseBones, settlePose, turnPose } from './lobby-pose.ts';
 import type { PosedBone, PoseTurn } from './lobby-pose.ts';
 import { placeRocks } from './lobby-scenery.ts';
+import { createLobbyLights } from './lobby-lights.ts';
+import type { LobbyLights } from './lobby-lights.ts';
 import { createLobbyMist } from './lobby-mist.ts';
 import { createLobbyLife } from './lobby-life.ts';
 import type { LobbyLife } from './lobby-life.ts';
@@ -34,35 +36,7 @@ export const LOBBY_STAGE = {
   near: 0.1,
   far: 40,
   facing: 0.32,
-  skyColor: 0x5d6574,
-  groundColor: 0x08090b,
-  skyIntensity: 0.28,
-  keyColor: 0xf3e6d4,
-  keyIntensity: 3.4,
-  keyAt: [1.9, 3.3, 4.6],
-  keyAim: [0, 1.3, 0],
-  keyAngle: 0.3,
-  keyPenumbra: 0.9,
-  shadowSize: 2048,
-  shadowRadius: 5,
-  shadowBias: -0.0004,
-  shadowNormalBias: 0.02,
-  rimShadowNormalBias: 0,
-  shadowNear: 2,
-  shadowFar: 12,
-  rimColor: 0x7d93c4,
-  rimIntensity: 1.2,
-  rimAt: [-1.4, 2.2, -4.8],
-  rimAim: [0, 1.6, 0],
-  rimAngle: 0.3,
-  rimPenumbra: 1,
   rimGlow: 0x000000,
-  poolColor: 0xf3e6d4,
-  poolIntensity: 4.5,
-  poolAt: [0.4, 6, 1.2],
-  poolAim: [0, 0, 0.15],
-  poolAngle: 0.2,
-  poolPenumbra: 1,
   groundSurface: 'black_rock',
   groundWet: 0.3,
   groundShade: 0.6,
@@ -257,16 +231,6 @@ function take(event: Event): void {
   event.stopImmediatePropagation();
 }
 
-function castShadow(light: SpotLight, normalBias: number): void {
-  light.castShadow = true;
-  light.shadow.mapSize.set(LOBBY_STAGE.shadowSize, LOBBY_STAGE.shadowSize);
-  light.shadow.radius = LOBBY_STAGE.shadowRadius;
-  light.shadow.bias = LOBBY_STAGE.shadowBias;
-  light.shadow.normalBias = normalBias;
-  light.shadow.camera.near = LOBBY_STAGE.shadowNear;
-  light.shadow.camera.far = LOBBY_STAGE.shadowFar;
-}
-
 export function createLobbyStage(content: Content, library: CharacterLibrary, loader: GLTFLoader, random: () => number = Math.random): LobbyStage {
   const scene: Scene = new Scene();
   scene.fog = new Fog(LOBBY_STAGE.background, LOBBY_STAGE.fogNear, LOBBY_STAGE.fogFar);
@@ -276,24 +240,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   camera.position.set(0, LOBBY_STAGE.cameraHeight, LOBBY_STAGE.cameraDistance);
   camera.lookAt(0, LOBBY_STAGE.lookHeight, 0);
 
-  scene.add(new HemisphereLight(LOBBY_STAGE.skyColor, LOBBY_STAGE.groundColor, LOBBY_STAGE.skyIntensity));
-  const key: SpotLight = new SpotLight(LOBBY_STAGE.keyColor, LOBBY_STAGE.keyIntensity, 0, LOBBY_STAGE.keyAngle, LOBBY_STAGE.keyPenumbra, 0);
-  key.position.set(LOBBY_STAGE.keyAt[0], LOBBY_STAGE.keyAt[1], LOBBY_STAGE.keyAt[2]);
-  key.target.position.set(LOBBY_STAGE.keyAim[0], LOBBY_STAGE.keyAim[1], LOBBY_STAGE.keyAim[2]);
-  castShadow(key, LOBBY_STAGE.shadowNormalBias);
-  scene.add(key);
-  scene.add(key.target);
-  const rim: SpotLight = new SpotLight(LOBBY_STAGE.rimColor, LOBBY_STAGE.rimIntensity, 0, LOBBY_STAGE.rimAngle, LOBBY_STAGE.rimPenumbra, 0);
-  rim.position.set(LOBBY_STAGE.rimAt[0], LOBBY_STAGE.rimAt[1], LOBBY_STAGE.rimAt[2]);
-  rim.target.position.set(LOBBY_STAGE.rimAim[0], LOBBY_STAGE.rimAim[1], LOBBY_STAGE.rimAim[2]);
-  castShadow(rim, LOBBY_STAGE.rimShadowNormalBias);
-  scene.add(rim);
-  scene.add(rim.target);
-  const pool: SpotLight = new SpotLight(LOBBY_STAGE.poolColor, LOBBY_STAGE.poolIntensity, 0, LOBBY_STAGE.poolAngle, LOBBY_STAGE.poolPenumbra, 0);
-  pool.position.set(LOBBY_STAGE.poolAt[0], LOBBY_STAGE.poolAt[1], LOBBY_STAGE.poolAt[2]);
-  pool.target.position.set(LOBBY_STAGE.poolAim[0], LOBBY_STAGE.poolAim[1], LOBBY_STAGE.poolAim[2]);
-  scene.add(pool);
-  scene.add(pool.target);
+  const lights: LobbyLights = createLobbyLights(scene);
 
   scene.add(groundMesh(content.surfaces.get(LOBBY_STAGE.groundSurface)));
   const rain: RainLayer = rainLayer(random);
@@ -406,6 +353,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       plantFeet(rig, clip);
     },
     render(renderer: WebGLRenderer, dt: number, tier: QualityName, devicePixelRatio: number): void {
+      lights.step(dt);
       stepRain(rain, dt);
       mists.forEach((mist: Mesh, index: number): void => {
         mist.position.x += LOBBY_STAGE.mistDrift * dt * (index % 2 === 0 ? 1 : -1);
