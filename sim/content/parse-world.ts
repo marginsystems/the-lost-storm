@@ -35,7 +35,7 @@ import type {
   ZoneWaypoint,
 } from './types.ts';
 import { service } from './parse-trade.ts';
-import type { VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
+import type { ShorePath, ShoreProp, VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { zoneScatter } from './parse-scatter.ts';
 import { encounter, storyFlags } from './parse-story.ts';
@@ -151,10 +151,21 @@ function zoneWake(value: unknown, where: string): ZoneWake | null {
   return { still: positive(source, 'still', where), stir: positive(source, 'stir', where), rise: positive(source, 'rise', where), front, settle: positive(source, 'settle', where), hurry: positive(source, 'hurry', where) };
 }
 
+function shoreProp(value: unknown, where: string): ShoreProp {
+  const source: Fields = fields(value, where);
+  return { prop: text(source, 'prop', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), rotationDegrees: numeric(source, 'rotationDegrees', where) };
+}
+
+function shorePath(value: unknown, where: string): ShorePath | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { surface: text(source, 'surface', where), width: positive(source, 'width', where), length: positive(source, 'length', where), sway: nonNegative(source, 'sway', where) };
+}
+
 function voidShore(value: unknown, where: string): VoidShore | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
-  return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where), surface: source['surface'] === undefined ? null : text(source, 'surface', where), ambience: zoneAmbience(source['ambience'], `${where}.ambience`) };
+  return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where), surface: source['surface'] === undefined ? null : text(source, 'surface', where), ambience: zoneAmbience(source['ambience'], `${where}.ambience`), props: each(source['props'] ?? [], `${where}.props`, shoreProp), path: shorePath(source['path'], `${where}.path`) };
 }
 
 function zoneVoid(value: unknown, where: string): ZoneVoid {

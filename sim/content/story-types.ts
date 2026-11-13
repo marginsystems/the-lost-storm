@@ -45,12 +45,28 @@ export interface VoidWander {
   readonly farther: number;
 }
 
+export interface ShoreProp {
+  readonly prop: string;
+  readonly x: number;
+  readonly z: number;
+  readonly rotationDegrees: number;
+}
+
+export interface ShorePath {
+  readonly surface: string;
+  readonly width: number;
+  readonly length: number;
+  readonly sway: number;
+}
+
 export interface VoidShore {
   readonly when: readonly Condition[];
   readonly ahead: number;
   readonly thin: number;
   readonly surface: string | null;
   readonly ambience: ZoneAmbience;
+  readonly props: readonly ShoreProp[];
+  readonly path: ShorePath | null;
 }
 
 export interface ZoneVoid {

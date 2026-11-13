@@ -24,3 +24,17 @@ void test('the mist noise never takes the sine of a large number, so no GPU draw
   for (const shader of shaders) assert.doesNotMatch(shader, /sin\(/);
   view.dispose();
 });
+
+void test('a mist wall fades with its share and comes back at full strength', (): void => {
+  const view = buildMistWall({ from: { x: 0, z: 0 }, to: { x: 0, z: 40 }, height: 9 }, { color: 0xffffff, lit: 0xffffff, opacity: 0.8 });
+  const strengths = (): number[] => view.group.children.flatMap((child): number[] => {
+    if (!(child instanceof Mesh) || !(child.material instanceof ShaderMaterial)) return [];
+    const value: unknown = child.material.uniforms['uOpacity']?.value;
+    return typeof value === 'number' ? [value] : [];
+  });
+  view.update(1, 0, 0);
+  assert.ok(strengths().every((value: number): boolean => value === 0));
+  view.update(1, 0);
+  assert.equal(strengths()[0], 0.8);
+  view.dispose();
+});

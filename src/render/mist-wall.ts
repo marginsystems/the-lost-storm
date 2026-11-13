@@ -83,9 +83,17 @@ void main() {
 }
 `;
 
+export interface MistWallTone {
+  readonly color: number;
+  readonly lit: number;
+  readonly opacity: number;
+}
+
+export const STORM_WALL: MistWallTone = { color: MIST_WALL.color, lit: MIST_WALL.litColor, opacity: MIST_WALL.opacity };
+
 export interface MistWallView {
   readonly group: Group;
-  update(time: number, flash: number): void;
+  update(time: number, flash: number, share?: number): void;
   dispose(): void;
 }
 
@@ -96,18 +104,20 @@ export function mistWallFrame(wall: ZoneMistWall): { readonly length: number; re
   return { length, angle: -Math.atan2(dz, dx), midX: (wall.from.x + wall.to.x) / 2, midZ: (wall.from.z + wall.to.z) / 2, outX: length === 0 ? 0 : -dz / length, outZ: length === 0 ? 0 : dx / length };
 }
 
-export function buildMistWall(wall: ZoneMistWall): MistWallView {
+export function buildMistWall(wall: ZoneMistWall, tone: MistWallTone = STORM_WALL): MistWallView {
   const frame = mistWallFrame(wall);
   const group: Group = new Group();
   const geometry: PlaneGeometry = new PlaneGeometry(frame.length, wall.height, MIST_WALL.segments, 1);
   const materials: ShaderMaterial[] = [];
+  const strengths: number[] = [];
   const layers: number = renderBudget().mistLayers;
   for (let layer: number = 0; layer < layers; layer += 1) {
+    strengths.push(tone.opacity * (1 - layer / (layers + 1)));
     const material: ShaderMaterial = new ShaderMaterial({
       uniforms: {
-        uColor: { value: new Color(MIST_WALL.color) },
-        uLit: { value: new Color(MIST_WALL.litColor) },
-        uOpacity: { value: MIST_WALL.opacity * (1 - layer / (layers + 1)) },
+        uColor: { value: new Color(tone.color) },
+        uLit: { value: new Color(tone.lit) },
+        uOpacity: { value: tone.opacity * (1 - layer / (layers + 1)) },
         uTime: { value: 0 },
         uSeed: { value: layer * 3.7 },
         uFlash: { value: 0 },
@@ -135,13 +145,15 @@ export function buildMistWall(wall: ZoneMistWall): MistWallView {
   }
   return {
     group,
-    update(time: number, flash: number): void {
-      for (const material of materials) {
+    update(time: number, flash: number, share: number = 1): void {
+      materials.forEach((material: ShaderMaterial, index: number): void => {
+        const strength = material.uniforms['uOpacity'];
+        if (strength !== undefined) strength.value = (strengths[index] ?? 0) * share;
         const drift = material.uniforms['uTime'];
         if (drift !== undefined) drift.value = time * MIST_WALL.driftSpeed;
         const lit = material.uniforms['uFlash'];
         if (lit !== undefined) lit.value = flash;
-      }
+      });
     },
     dispose(): void {
       group.removeFromParent();

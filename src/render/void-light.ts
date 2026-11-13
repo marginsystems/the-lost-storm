@@ -3,7 +3,7 @@ import { AdditiveBlending, Color, DoubleSide, Group, Mesh, PlaneGeometry, PointL
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ZoneExit } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
-import type { EncounterState, World } from '../../sim/world/types.ts';
+import type { EncounterState, ShoreState, World } from '../../sim/world/types.ts';
 
 export const VOID_LIGHT = {
   color: 0xffc27a,
@@ -27,6 +27,7 @@ export const VOID_LIGHT = {
   fireDistance: 30,
   fireDecay: 1.2,
   fireHeight: 3,
+  land: { from: -1, to: 3, pool: 0.15, pillar: 0.35, fire: 1.6 },
 } as const;
 
 export interface VoidLight {
@@ -101,6 +102,23 @@ function columnGeometry(): BufferGeometry {
   return mergeGeometries(planes);
 }
 
+export interface LightLook {
+  readonly pool: number;
+  readonly pillar: number;
+  readonly fire: number;
+}
+
+export function lightLook(ashore: number | null): LightLook {
+  const t: number = ashore === null ? 0 : Math.min(1, Math.max(0, (ashore - VOID_LIGHT.land.from) / (VOID_LIGHT.land.to - VOID_LIGHT.land.from)));
+  const land: number = t * t * (3 - 2 * t);
+  return { pool: 1 + (VOID_LIGHT.land.pool - 1) * land, pillar: 1 + (VOID_LIGHT.land.pillar - 1) * land, fire: 1 + (VOID_LIGHT.land.fire - 1) * land };
+}
+
+function exitAshore(world: World, exit: ZoneExit): number | null {
+  const shore: ShoreState | null = world.shore;
+  return shore === null ? null : (exit.x - shore.at.x) * shore.facing.x + (exit.z - shore.at.z) * shore.facing.z;
+}
+
 function placedLight(world: World): ZoneExit | null {
   for (const met of world.zone.void?.encounters ?? []) {
     if (met.find.type !== 'exit') continue;
@@ -142,6 +160,7 @@ export function createVoidLight(floor: number): VoidLight {
   pool.visible = false;
   const uniform: IUniform<Vector3> = { value: new Vector3() };
   let strength: number = 0;
+  let look: LightLook = lightLook(null);
 
   return {
     group,
@@ -153,15 +172,16 @@ export function createVoidLight(floor: number): VoidLight {
       if (exit !== null) {
         group.position.set(exit.x, floor, exit.z);
         uniform.value.set(exit.x, exit.z, strength);
+        look = lightLook(exitAshore(world, exit));
       } else {
         uniform.value.z = strength;
       }
       const lit: number = strength * firelight(now);
-      columnUniforms.uOpacity.value = VOID_LIGHT.pillarOpacity * lit;
-      poolUniforms.uOpacity.value = VOID_LIGHT.glowOpacity * lit;
+      columnUniforms.uOpacity.value = VOID_LIGHT.pillarOpacity * lit * look.pillar;
+      poolUniforms.uOpacity.value = VOID_LIGHT.glowOpacity * lit * look.pool;
       column.visible = strength > 1e-3;
       pool.visible = column.visible;
-      fire.intensity = VOID_LIGHT.fireIntensity * lit;
+      fire.intensity = VOID_LIGHT.fireIntensity * lit * look.fire;
     },
     dispose(): void {
       group.removeFromParent();

@@ -663,6 +663,7 @@ export interface World {
   heading: Vec2;
   encounters: EncounterState[];
   shore: ShoreState | null;
+  shoreBlocks: GridStamp | null;
   flags: Record<string, string>;
   events: WorldEvent[];
   service: OpenService | null;

@@ -166,6 +166,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     heading: { x: 0, z: 1 },
     encounters: [],
     shore: null,
+    shoreBlocks: null,
     flags: save === null ? { [content.player.dressedFlag]: 'yes' } : { ...save.flags },
     events: [],
     service: null,

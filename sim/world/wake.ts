@@ -42,6 +42,7 @@ export function beginVoid(world: World, arrival: VoidArrival): void {
   world.heading = { x: Math.sin(world.player.facing), z: Math.cos(world.player.facing) };
   world.encounters = [];
   world.shore = null;
+  world.shoreBlocks = null;
   for (const [key, value] of Object.entries(rules.sets)) world.flags[key] ??= value;
   if (arrival === 'return') returnToShore(world, rules);
 }

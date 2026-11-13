@@ -1,4 +1,4 @@
-import { BufferAttribute, CustomBlending, MaxEquation, Mesh, PlaneGeometry } from 'three';
+import { BufferAttribute, Mesh, PlaneGeometry } from 'three';
 import type { MeshStandardMaterial } from 'three';
 import type { SurfaceDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
@@ -6,15 +6,13 @@ import { surfaceMaterial } from './surfaces.ts';
 import { wetGround } from './wet-ground.ts';
 
 export const SHORE_ROCK = {
-  size: 30,
-  cells: 60,
-  inner: 1,
-  outer: 3.4,
-  lineFrom: -2,
-  lineTo: 5,
+  size: 104,
+  cells: 52,
+  lineFrom: -1,
+  lineTo: 3,
   lift: 0.015,
-  wet: 0.2,
-  opacity: 0.9,
+  wet: 0.6,
+  opacity: 1,
   renderOrder: 2,
 } as const;
 
@@ -39,21 +37,17 @@ function smoothstep(from: number, to: number, value: number): number {
 
 export function rockAlpha(point: Vec2, frame: RockFrame): number {
   const ashore: number = (point.x - frame.at.x) * frame.facing.x + (point.z - frame.at.z) * frame.facing.z;
-  const onRock: number = smoothstep(SHORE_ROCK.lineFrom, SHORE_ROCK.lineTo, ashore);
-  const near: number = 1 - smoothstep(SHORE_ROCK.inner, SHORE_ROCK.outer, Math.hypot(point.x - frame.hero.x, point.z - frame.hero.z));
-  return SHORE_ROCK.opacity * onRock * near * frame.shown;
+  return SHORE_ROCK.opacity * smoothstep(SHORE_ROCK.lineFrom, SHORE_ROCK.lineTo, ashore) * frame.shown;
 }
 
 export function snapped(value: number, tile: number): number {
   return Math.round(value / tile) * tile;
 }
 
-export function brighterOnly(source: MeshStandardMaterial, wet: number): MeshStandardMaterial {
+export function wetStone(source: MeshStandardMaterial, wet: number): MeshStandardMaterial {
   const material: MeshStandardMaterial = source.clone();
   wetGround(material, wet);
-  material.premultipliedAlpha = true;
-  material.blending = CustomBlending;
-  material.blendEquation = MaxEquation;
+  material.transparent = true;
   return material;
 }
 
@@ -76,7 +70,7 @@ export function createShoreRock(def: SurfaceDef): ShoreRock {
   geometry.setAttribute('uv', new BufferAttribute(uv, 2));
   const colours: BufferAttribute = new BufferAttribute(new Float32Array(count * 4).fill(1), 4);
   geometry.setAttribute('color', colours);
-  const material: MeshStandardMaterial = brighterOnly(surfaceMaterial(def, 'overlay', SHORE_ROCK.wet), SHORE_ROCK.wet);
+  const material: MeshStandardMaterial = wetStone(surfaceMaterial(def, 'overlay', SHORE_ROCK.wet), SHORE_ROCK.wet);
   const mesh: Mesh = new Mesh(geometry, material);
   mesh.renderOrder = SHORE_ROCK.renderOrder;
   mesh.receiveShadow = true;

@@ -77,6 +77,7 @@ uniform vec4 uShore;
 uniform vec3 uShoreLook;
 uniform vec3 uRock;
 uniform vec3 uRockShade;
+uniform vec3 uLand;
 uniform vec3 uLight;
 uniform vec3 uLightColor;
 uniform vec3 uWarmCore;
@@ -122,6 +123,7 @@ void main() {
   color *= 1.0 - uBed.x * uBed.z * (1.0 - smoothstep(0.05, uBed.w, touch)) * (0.75 + fine * 0.25);
   float ashore = dot(q - uShore.xy, uShore.zw) + (voidFbm(q * 0.09 + 3.0) - 0.5) * uShoreLook.z;
   float rock = uShoreLook.y * smoothstep(-2.0, 5.0, ashore);
+  float land = uShoreLook.y * smoothstep(uLand.x, uLand.y, dot(q - uShore.xy, uShore.zw));
   vec3 stone = mix(uRockShade, uRock, 0.55 + mottle * 0.45) * (0.82 + fine * 0.18 + ripple * 0.08);
   color = mix(color, stone, rock);
   vec2 toPool = vWorld.xz - uHero;
@@ -134,7 +136,7 @@ void main() {
   color += uFlashColor * uFlash * 0.18 * exp(-dot(toFlash, toFlash) / (uFlashReach * uFlashReach));
   float glow = lightScatter(vWorld.xz, uHero, uLight, uScatter.xyz, uScatterHalo);
   vec3 haze = mix(uMist, uScatterColor, glow * uScatter.z);
-  color = mix(color, haze, max(smoothstep(uHaze.x, uHaze.y, distance(vWorld.xz, uHero)), glow * uScatter.w));
+  color = mix(color, haze, max(smoothstep(uHaze.x, uHaze.y, distance(vWorld.xz, uHero)), glow * uScatter.w) * (1.0 - land));
   gl_FragColor = vec4(color, 1.0);
   #include <fog_fragment>
   gl_FragColor.rgb += voidDither(gl_FragCoord.xy) * uDither;
@@ -195,6 +197,7 @@ uniform float uFieldSize;
 uniform float uDither;
 uniform vec3 uLight;
 uniform vec3 uLightColor;
+uniform vec3 uLand;
 uniform vec4 uShore;
 uniform vec3 uShoreLook;
 uniform vec2 uPoolClear;
@@ -294,12 +297,14 @@ void main() {
   float rim = uRim.y * exp(-rimOff * rimOff) * (1.0 - max(aroundBody, figure));
   density = max(density, rim * (0.55 + puff * 0.45));
   float ashore = dot(q - uShore.xy, uShore.zw) + (voidFbm(q * 0.09 + 3.0) - 0.5) * uShoreLook.z + (body - 0.5) * 4.0;
-  density *= 1.0 - uShoreLook.y * smoothstep(0.0, uShoreLook.x * 0.6, ashore);
+  float land = uShoreLook.y * smoothstep(uLand.x, uLand.y, ashore);
+  float bank = uShoreLook.y * smoothstep(-uLand.z, uLand.x, ashore) * (1.0 - land);
+  density *= 1.0 - land;
   density *= 1.0 - uShoreLook.y * smoothstep(-1.0, 3.0, ashore) * (1.0 - smoothstep(uPoolClear.x, uPoolClear.y, away));
   float shade = clamp(0.5 + (lit - body) * 6.0, 0.0, 1.0);
   vec3 color = mix(uStorm, uMist, near * 0.8 + shade * 0.2);
   color *= 0.82 + shade * 0.28;
-  color = mix(color, uDeep, smoothstep(0.36, 0.58, storm) * (1.0 - near * 0.8) * (1.0 - open));
+  color = mix(color, uDeep, smoothstep(0.36, 0.58, storm) * (1.0 - near * 0.8) * (1.0 - open) * (1.0 - bank));
   color = mix(color, uMist, (1.0 - smoothstep(0.0, uThinMist, density)) * (1.0 - near));
   color = mix(color, uMist * 1.06, wall * uWall);
   color = mix(color, uMist * 1.08, rim * 0.6);
@@ -310,7 +315,7 @@ void main() {
   vec2 nearLight = vWorld.xz - uLight.xy;
   float scatter = lightScatter(p, uHero, uLight, uScatter.xyz, uScatterHalo);
   float spared = max(exp(-dot(nearLight, nearLight) / (uHalo.x * uHalo.x)), scatter);
-  color = mix(color, uDeep * 0.75, uLight.z * 0.72 * (1.0 - near * 0.55) * (1.0 - pull * 0.8) * (1.0 - spared));
+  color = mix(color, uDeep * 0.75, uLight.z * 0.72 * (1.0 - near * 0.55) * (1.0 - pull * 0.8) * (1.0 - spared) * (1.0 - bank));
   color = mix(color, uScatterColor, scatter * uScatter.z);
   color = mix(color, uLightColor, uLight.z * uHalo.z * exp(-dot(nearLight, nearLight) / (uHalo.y * uHalo.y)));
   float eye = smoothstep(uEyeFade.x, uEyeFade.y, distance(vWorld, cameraPosition)) * smoothstep(0.0, uEyeFade.z, cameraPosition.y - vWorld.y) * smoothstep(uGraze.x, uGraze.y, abs(normalize(vWorld - cameraPosition).y));

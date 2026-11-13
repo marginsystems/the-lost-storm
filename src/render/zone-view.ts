@@ -12,6 +12,8 @@ import { buildGround } from './ground.ts';
 import type { MistWallView } from './mist-wall.ts';
 import { buildMistWall } from './mist-wall.ts';
 import { buildVoidView } from './void-view.ts';
+import type { ShoreProps } from './shore-props.ts';
+import { createShoreProps } from './shore-props.ts';
 import type { ReadonlyVec2, Vec2 } from '../../sim/math.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Ground } from './ground.ts';
@@ -139,8 +141,26 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   if (zone.kind === 'void') {
     const rockId: string | null = zone.void?.shore?.surface ?? null;
     const empty: ZoneView = buildVoidView(zone, quality, rockId === null ? null : (content.surfaces.get(rockId) ?? null));
+    const rocks: ShoreProps = createShoreProps(loader, content, zone.void?.shore ?? null, zone.floorHeight);
+    empty.group.add(rocks.group);
     scene.add(empty.group);
-    return empty;
+    return {
+      zone: empty.zone,
+      group: empty.group,
+      torches: empty.torches,
+      lightsVersion: empty.lightsVersion,
+      setLightBudget(count: number): void {
+        empty.setLightBudget(count);
+      },
+      update(time: number, dt: number, world: World, focus: ViewFocus): void {
+        rocks.follow(world);
+        empty.update(time, dt, world, focus);
+      },
+      dispose(): void {
+        rocks.dispose();
+        empty.dispose();
+      },
+    };
   }
   const placements: Map<string, Placement[]> = new Map<string, Placement[]>();
   const group: Group = new Group();

@@ -6,6 +6,7 @@ import { distance, dot, length, normalize } from '../math.ts';
 import { allHold } from './conditions.ts';
 import { equipFromInventory } from './character.ts';
 import { moveExit } from './exits.ts';
+import { isWalkable, nearestWalkable } from '../nav/grid.ts';
 import { removeGround } from './ground.ts';
 import { setFlags } from './story.ts';
 import type { EncounterState, GroundItem, ItemInstance, World, WorldEvent } from './types.ts';
@@ -14,6 +15,7 @@ const DEGREES: number = Math.PI / 180;
 
 const ENCOUNTER = {
   closeShare: 0.5,
+  clearReach: 8,
 } as const;
 
 function groundOf(world: World, state: EncounterState): GroundItem | null {
@@ -39,7 +41,8 @@ function layItem(world: World, met: ZoneEncounter, state: EncounterState, base: 
 }
 
 function place(world: World, met: ZoneEncounter, state: EncounterState, ahead: number): void {
-  const pos: Vec2 = { x: world.player.pos.x + world.heading.x * ahead, z: world.player.pos.z + world.heading.z * ahead };
+  const aim: Vec2 = { x: world.player.pos.x + world.heading.x * ahead, z: world.player.pos.z + world.heading.z * ahead };
+  const pos: Vec2 = isWalkable(world.grid, aim.x, aim.z) ? aim : (nearestWalkable(world.grid, aim, ENCOUNTER.clearReach) ?? aim);
   state.pos = pos;
   state.off = 0;
   switch (met.find.type) {

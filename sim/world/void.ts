@@ -5,6 +5,7 @@ import { allHold } from './conditions.ts';
 import { stepEncounters } from './encounters.ts';
 import { moveExit } from './exits.ts';
 import { shiftMoments } from './moments.ts';
+import { lowerShore, raiseShore } from './shore-props.ts';
 import type { Command, Intent, PlayerState, World } from './types.ts';
 import { stepWake } from './wake.ts';
 
@@ -31,11 +32,13 @@ export function shiftWorld(world: World, by: Vec2): void {
     ground.from = moved(ground.from, by);
   }
   for (const state of world.encounters) if (state.pos !== null) state.pos = moved(state.pos, by);
+  lowerShore(world);
   if (world.shore !== null) world.shore = { at: moved(world.shore.at, by), facing: world.shore.facing };
   for (const exit of world.zone.exits) moveExit(world, exit.id, moved(exit, by));
   shiftMoments(world, by);
   world.trail = moved(world.trail, by);
   world.shift = moved(world.shift, by);
+  raiseShore(world);
 }
 
 function placeShore(world: World, rules: ZoneVoid): void {
@@ -66,6 +69,7 @@ export function stepVoid(world: World, dt: number): void {
   const zone: string = world.zone.id;
   stepEncounters(world, rules, steer(world, rules, dt), dt);
   placeShore(world, rules);
+  raiseShore(world);
   if (world.zone.id !== zone) return;
   const home: Vec2 = world.zone.playerStart;
   const offX: number = world.player.pos.x - home.x;
