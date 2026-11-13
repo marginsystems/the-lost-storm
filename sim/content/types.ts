@@ -614,6 +614,7 @@ export interface PlayerDef {
   readonly startingItems: readonly string[];
   readonly dressedFlag: string;
   readonly firstDrop: FirstDropDef;
+  readonly neverWears: readonly string[];
   readonly unarmedVisual: string | null;
   readonly tint: string;
   readonly color: string;

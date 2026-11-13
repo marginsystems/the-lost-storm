@@ -57,5 +57,5 @@ export function powerRuleProblems(content: Content): string[] {
 }
 
 export function familyPieces(content: Content, family: string): readonly ItemBaseDef[] {
-  return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.power?.family === family);
+  return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.power?.family === family && base.dropWeight > 0);
 }

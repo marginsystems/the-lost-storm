@@ -207,7 +207,7 @@
       "slot": "head",
       "material": "cloth",
       "icon": "helm",
-      "dropWeight": 7,
+      "dropWeight": 0,
       "minLevel": 1,
       "visual": null,
       "wear": [
@@ -239,7 +239,7 @@
       "slot": "head",
       "material": "leather",
       "icon": "helm",
-      "dropWeight": 6,
+      "dropWeight": 0,
       "minLevel": 2,
       "visual": null,
       "wear": [
@@ -948,9 +948,8 @@
       "dropWeight": 1,
       "minLevel": 1,
       "visual": null,
-      "wear": [
-        "keeper_hood"
-      ],
+      "wear": [],
+      "wornModel": false,
       "implicit": [
         {
           "stat": "armour",
@@ -963,13 +962,6 @@
           "value": 0.02
         }
       ],
-      "ground": {
-        "model": "worn",
-        "scale": 1.3,
-        "pitch": -90,
-        "roll": 0,
-        "yawJitter": 180
-      },
       "power": {
         "family": "forkweather",
         "text": "Storm Bolt splits into a Forkline on its first hit.",
