@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { enterFrame, helloFrame, leaveFrame, liveUrl, moveFrame, readPlayer, readServerFrame } from './live-protocol.ts';
+import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_LIMITS, liveUrl, moveFrame, readPlayer, readServerFrame, sayable, sayFrame } from './live-protocol.ts';
 import type { ServerFrame } from './live-protocol.ts';
 
 const WREN: Readonly<Record<string, unknown>> = { id: 'h1', name: 'Wren', hero: 'woman', worn: { weapon: 'hand_crossbow' }, x: 20, z: 18.5, facing: 1.2 };
+
+const LINE: Readonly<Record<string, unknown>> = { id: 4, from: 'h1', name: 'Wren', text: 'hello', at: '2026-11-14T10:00:00.000Z' };
 
 function read(value: unknown): ServerFrame | null {
   return readServerFrame(JSON.stringify(value));
@@ -25,7 +27,10 @@ void test('every server message the protocol names is read', (): void => {
   assert.deepEqual(read({ type: 'welcome' }), { type: 'welcome' });
   assert.deepEqual(read({ type: 'full' }), { type: 'full' });
   assert.deepEqual(read({ type: 'replaced' }), { type: 'replaced' });
-  assert.deepEqual(read({ type: 'present', zone: 'hideout', you: 'me', players: [WREN] }), { type: 'present', zone: 'hideout', you: 'me', players: [WREN] });
+  assert.deepEqual(read({ type: 'present', zone: 'hideout', you: 'me', players: [WREN] }), { type: 'present', zone: 'hideout', you: 'me', players: [WREN], chat: null });
+  assert.deepEqual(read({ type: 'present', zone: 'hideout', you: 'me', players: [], chat: [LINE, { id: 'x' }] }), { type: 'present', zone: 'hideout', you: 'me', players: [], chat: [LINE] });
+  assert.deepEqual(read({ type: 'said', line: LINE }), { type: 'said', line: LINE });
+  assert.deepEqual(read({ type: 'refused', reason: 'slow_down' }), { type: 'refused', reason: 'slow_down' });
   assert.deepEqual(read({ type: 'joined', player: { ...WREN, hero: null, worn: {} } }), { type: 'joined', player: { ...WREN, hero: null, worn: {} } });
   assert.deepEqual(read({ type: 'left', id: 'h1' }), { type: 'left', id: 'h1' });
   assert.deepEqual(read({ type: 'look', id: 'h1', hero: 'man', worn: { chest: 'tunic' } }), { type: 'look', id: 'h1', hero: 'man', worn: { chest: 'tunic' } });
@@ -62,4 +67,18 @@ void test('a player with an endless number or an overlong name is refused', (): 
   assert.equal(readPlayer({ ...WREN, name: 'x'.repeat(40) }), null);
   assert.equal(readPlayer({ ...WREN, name: '' }), null);
   assert.equal(readPlayer({ ...WREN, hero: 3 }), null);
+});
+
+void test('a line to say is trimmed, never empty and at most 200 characters, counting an emoji once', (): void => {
+  assert.equal(sayable('  hello  '), 'hello');
+  assert.equal(sayable('   '), null);
+  assert.equal(sayable('a'.repeat(LIVE_LIMITS.sayChars)), 'a'.repeat(LIVE_LIMITS.sayChars));
+  assert.equal(sayable('a'.repeat(LIVE_LIMITS.sayChars + 1)), null);
+  assert.equal(sayable('\u{1F600}'.repeat(LIVE_LIMITS.sayChars)), '\u{1F600}'.repeat(LIVE_LIMITS.sayChars));
+  assert.deepEqual(JSON.parse(sayFrame('hi')), { type: 'say', text: 'hi' });
+});
+
+void test('chat refusals are told apart from enter refusals', (): void => {
+  assert.equal(chatRefusal('name_needed'), 'name_needed');
+  assert.equal(chatRefusal('off_floor'), null);
 });

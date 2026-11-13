@@ -1,6 +1,6 @@
 import type { Clock, Timers } from './backend.ts';
-import { enterFrame, helloFrame, leaveFrame, LIVE_ZONE, liveUrl, moveFrame, readServerFrame } from './live-protocol.ts';
-import type { LiveMove, LivePlayer, Place, ServerFrame, Worn } from './live-protocol.ts';
+import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_ZONE, liveUrl, moveFrame, readServerFrame, sayable, sayFrame } from './live-protocol.ts';
+import type { ChatLine, ChatRefusal, LiveMove, LivePlayer, Place, ServerFrame, Worn } from './live-protocol.ts';
 
 export const LIVE = {
   moveEveryMs: 100,
@@ -25,7 +25,9 @@ export interface LiveSocket {
 export type OpenSocket = (url: string, handlers: SocketHandlers) => LiveSocket;
 
 export type LiveEvent =
-  | { readonly type: 'present'; readonly players: readonly LivePlayer[] }
+  | { readonly type: 'present'; readonly you: string; readonly players: readonly LivePlayer[]; readonly chat: readonly ChatLine[] | null }
+  | { readonly type: 'said'; readonly line: ChatLine }
+  | { readonly type: 'refused'; readonly reason: ChatRefusal }
   | { readonly type: 'joined'; readonly player: LivePlayer }
   | { readonly type: 'left'; readonly id: string }
   | { readonly type: 'look'; readonly id: string; readonly hero: string | null; readonly worn: Worn }
@@ -43,6 +45,7 @@ export interface Stand {
 
 export interface Live {
   update(stand: Stand): void;
+  say(text: string): boolean;
   subscribe(listener: LiveListener): () => void;
 }
 
@@ -79,6 +82,7 @@ export function createLive(options: LiveOptions): Live {
   let welcomed: boolean = false;
   let entered: boolean = false;
   let shown: boolean = false;
+  let present: boolean = false;
   let standDown: boolean = false;
   let failures: number = 0;
   let refusals: number = 0;
@@ -112,6 +116,7 @@ export function createLive(options: LiveOptions): Live {
     socket = null;
     welcomed = false;
     entered = false;
+    present = false;
     sent = null;
     if (closing !== null) quietly((): void => closing.close());
     emit({ type: 'gone' });
@@ -137,7 +142,11 @@ export function createLive(options: LiveOptions): Live {
         return;
       case 'present':
         refusals = 0;
-        emit({ type: 'present', players: frame.players.filter((player: LivePlayer): boolean => player.id !== frame.you) });
+        present = frame.chat !== null;
+        emit({ type: 'present', you: frame.you, players: frame.players.filter((player: LivePlayer): boolean => player.id !== frame.you), chat: frame.chat });
+        return;
+      case 'said':
+        emit({ type: 'said', line: frame.line });
         return;
       case 'joined':
         emit({ type: 'joined', player: frame.player });
@@ -156,12 +165,19 @@ export function createLive(options: LiveOptions): Live {
         standDown = true;
         drop();
         return;
-      case 'refused':
+      case 'refused': {
+        const chat: ChatRefusal | null = chatRefusal(frame.reason);
+        if (chat !== null) {
+          emit({ type: 'refused', reason: chat });
+          return;
+        }
         entered = false;
+        present = false;
         sent = null;
         enterAfter = clock() + retryDelayMs(refusals, options.random());
         refusals += 1;
         return;
+      }
     }
   };
 
@@ -234,6 +250,12 @@ export function createLive(options: LiveOptions): Live {
       here = { x: stand.x, z: stand.z, facing: stand.facing };
       if (stand.zone === LIVE_ZONE) stay();
       else if (socket !== null || retry !== null || standDown) leave();
+    },
+    say(text: string): boolean {
+      const line: string | null = sayable(text);
+      if (line === null || !present) return false;
+      send(sayFrame(line));
+      return true;
     },
     subscribe(listener: LiveListener): () => void {
       listeners.add(listener);

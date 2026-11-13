@@ -1,7 +1,7 @@
 import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
 
-export const LIVE_LIMITS: { readonly idChars: number; readonly nameChars: number; readonly baseChars: number; readonly wornSlots: number; readonly players: number; readonly frameChars: number; readonly centimetres: number } = {
+export const LIVE_LIMITS: { readonly idChars: number; readonly nameChars: number; readonly baseChars: number; readonly wornSlots: number; readonly players: number; readonly frameChars: number; readonly centimetres: number; readonly sayChars: number; readonly lineChars: number; readonly history: number } = {
   idChars: 64,
   nameChars: 32,
   baseChars: 64,
@@ -9,6 +9,9 @@ export const LIVE_LIMITS: { readonly idChars: number; readonly nameChars: number
   players: 400,
   frameChars: 262144,
   centimetres: 100,
+  sayChars: 200,
+  lineChars: 800,
+  history: 200,
 };
 
 export const LIVE_ZONE: string = 'hideout';
@@ -34,18 +37,37 @@ export interface LiveMove {
 
 export type EnterRefusal = 'no_such_zone' | 'no_character' | 'off_floor';
 
-const ENTER_REFUSALS: readonly EnterRefusal[] = ['no_such_zone', 'no_character', 'off_floor'];
+export type ChatRefusal = 'slow_down' | 'blocked' | 'name_needed' | 'bad_text';
+
+export type Refusal = EnterRefusal | ChatRefusal;
+
+const REFUSALS: readonly Refusal[] = ['no_such_zone', 'no_character', 'off_floor', 'slow_down', 'blocked', 'name_needed', 'bad_text'];
+
+const CHAT_REFUSALS: readonly ChatRefusal[] = ['slow_down', 'blocked', 'name_needed', 'bad_text'];
+
+export function chatRefusal(reason: Refusal): ChatRefusal | null {
+  return CHAT_REFUSALS.find((known: ChatRefusal): boolean => known === reason) ?? null;
+}
+
+export interface ChatLine {
+  readonly id: number;
+  readonly from: string;
+  readonly name: string;
+  readonly text: string;
+  readonly at: string;
+}
 
 export type ServerFrame =
   | { readonly type: 'welcome' }
-  | { readonly type: 'present'; readonly zone: string; readonly you: string; readonly players: readonly LivePlayer[] }
+  | { readonly type: 'present'; readonly zone: string; readonly you: string; readonly players: readonly LivePlayer[]; readonly chat: readonly ChatLine[] | null }
+  | { readonly type: 'said'; readonly line: ChatLine }
   | { readonly type: 'joined'; readonly player: LivePlayer }
   | { readonly type: 'left'; readonly id: string }
   | { readonly type: 'look'; readonly id: string; readonly hero: string | null; readonly worn: Worn }
   | { readonly type: 'moves'; readonly moves: readonly LiveMove[] }
   | { readonly type: 'full' }
   | { readonly type: 'replaced' }
-  | { readonly type: 'refused'; readonly reason: EnterRefusal };
+  | { readonly type: 'refused'; readonly reason: Refusal };
 
 export interface Place {
   readonly x: number;
@@ -92,6 +114,17 @@ export function readPlayer(value: unknown): LivePlayer | null {
   return { id, name, hero, worn, x, z, facing };
 }
 
+export function readLine(value: unknown): ChatLine | null {
+  if (!isFields(value)) return null;
+  const id: unknown = value['id'];
+  const from: string | null = shortText(value['from'], LIVE_LIMITS.idChars);
+  const name: string | null = shortText(value['name'], LIVE_LIMITS.nameChars);
+  const text: string | null = shortText(value['text'], LIVE_LIMITS.lineChars);
+  const at: string | null = shortText(value['at'], LIVE_LIMITS.idChars);
+  if (typeof id !== 'number' || !Number.isSafeInteger(id) || from === null || name === null || text === null || at === null) return null;
+  return { id, from, name, text, at };
+}
+
 function readMove(value: unknown): LiveMove | null {
   if (!Array.isArray(value)) return null;
   const entry: readonly unknown[] = value;
@@ -102,10 +135,10 @@ function readMove(value: unknown): LiveMove | null {
   return id === null || x === null || z === null || facing === null ? null : { id, x, z, facing };
 }
 
-function readEach<T>(value: unknown, read: (entry: unknown) => T | null): readonly T[] | null {
+function readEach<T>(value: unknown, read: (entry: unknown) => T | null, limit: number = LIVE_LIMITS.players): readonly T[] | null {
   if (!Array.isArray(value)) return null;
   const list: readonly unknown[] = value;
-  return list.slice(0, LIVE_LIMITS.players).flatMap((entry: unknown): T[] => {
+  return list.slice(-limit).flatMap((entry: unknown): T[] => {
     const found: T | null = read(entry);
     return found === null ? [] : [found];
   });
@@ -123,7 +156,12 @@ function readFields(source: Fields): ServerFrame | null {
       const zone: string | null = shortText(source['zone'], LIVE_LIMITS.idChars);
       const you: string | null = shortText(source['you'], LIVE_LIMITS.idChars);
       const players: readonly LivePlayer[] | null = readEach(source['players'], readPlayer);
-      return zone === null || you === null || players === null ? null : { type: 'present', zone, you, players };
+      const chat: readonly ChatLine[] | null = readEach(source['chat'], readLine, LIVE_LIMITS.history);
+      return zone === null || you === null || players === null ? null : { type: 'present', zone, you, players, chat };
+    }
+    case 'said': {
+      const line: ChatLine | null = readLine(source['line']);
+      return line === null ? null : { type: 'said', line };
     }
     case 'joined': {
       const player: LivePlayer | null = readPlayer(source['player']);
@@ -144,7 +182,7 @@ function readFields(source: Fields): ServerFrame | null {
       return moves === null ? null : { type: 'moves', moves };
     }
     case 'refused': {
-      const reason: EnterRefusal | undefined = ENTER_REFUSALS.find((known: EnterRefusal): boolean => known === source['reason']);
+      const reason: Refusal | undefined = REFUSALS.find((known: Refusal): boolean => known === source['reason']);
       return reason === undefined ? null : { type: 'refused', reason };
     }
     default:
@@ -177,6 +215,15 @@ export function enterFrame(place: Place): string {
 
 export function moveFrame(place: Place): string {
   return JSON.stringify({ type: 'move', x: rounded(place.x), z: rounded(place.z), facing: rounded(place.facing) });
+}
+
+export function sayable(text: string): string | null {
+  const trimmed: string = text.trim();
+  return trimmed === '' || trimmed.replaceAll(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '_').length > LIVE_LIMITS.sayChars ? null : trimmed;
+}
+
+export function sayFrame(text: string): string {
+  return JSON.stringify({ type: 'say', text });
 }
 
 export function leaveFrame(): string {

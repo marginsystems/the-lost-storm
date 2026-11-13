@@ -105,6 +105,16 @@ export interface Leaderboard {
 
 export type NameRefusal = 'name_length' | 'name_characters' | 'name_blocked' | 'name_taken';
 
+export type ReportReason = 'abuse' | 'spam' | 'other';
+
+export type ReportResult = 'reported' | 'gone' | 'own' | 'slow' | 'unsupported' | 'failed';
+
+export type FriendState = 'requested' | 'friends' | 'none';
+
+export type FriendRefusal = 'name_needed' | 'own_name' | 'no_such_character' | 'friend_limit';
+
+export type FriendResult = { readonly kind: 'ok'; readonly state: FriendState } | { readonly kind: 'refused'; readonly reason: FriendRefusal } | { readonly kind: 'unsupported' } | { readonly kind: 'failed' };
+
 export type LeaderboardResult = { readonly kind: 'ok'; readonly board: Leaderboard } | Failure;
 export type NameResult = { readonly kind: 'ok'; readonly name: string } | { readonly kind: 'invalid'; readonly reason: NameRefusal } | { readonly kind: 'limited' } | Failure;
 

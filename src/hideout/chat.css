@@ -1,0 +1,206 @@
+.hideout-chat {
+  position: absolute;
+  left: calc(14px * var(--hud-s, 1));
+  bottom: calc(12px + 172px * var(--hud-s, 1));
+  width: min(340px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  opacity: 0;
+  translate: 0 12px;
+  visibility: hidden;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--text);
+  z-index: 3;
+}
+
+.hideout-chat.open {
+  opacity: 1;
+  translate: 0 0;
+  visibility: visible;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear 0s;
+}
+
+.chat-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 168px;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 36px);
+}
+
+.chat-row {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  animation: chat-row-in var(--spring-snappy-ms) var(--spring-snappy) backwards;
+  transition:
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.chat-row.muted {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+@keyframes chat-row-in {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
+.chat-row-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 2px;
+  line-height: 1.5;
+  text-shadow: var(--legible-shadow);
+  overflow-wrap: anywhere;
+}
+
+.chat-name {
+  font: inherit;
+  font-weight: 700;
+  color: #9fc6e8;
+  background: none;
+  border: 0;
+  padding: 0 6px 0 0;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chat-name:hover {
+  color: #d4e6f6;
+}
+
+.chat-name.own {
+  color: var(--ember);
+  cursor: default;
+}
+
+.chat-note .chat-text {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.chat-field {
+  pointer-events: auto;
+  font: inherit;
+  color: var(--text);
+  background: rgba(10, 14, 20, 0.42);
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 9px;
+  outline: none;
+  transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chat-field::placeholder {
+  color: var(--text-dim);
+}
+
+.hideout-chat.typing .chat-field,
+.chat-name-field:focus {
+  background: rgba(10, 14, 20, 0.72);
+}
+
+.chat-name-form {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 2px;
+}
+
+.chat-name-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-menu {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  padding: 4px;
+  border-radius: 4px;
+  background: rgba(12, 16, 24, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.94;
+  transform-origin: left bottom;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chat-menu.open {
+  pointer-events: auto;
+  opacity: 1;
+  scale: 1;
+}
+
+.chat-menu-item,
+.chat-reason {
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  padding: 5px 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chat-menu-item:hover,
+.chat-reason:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.chat-menu-item[hidden] {
+  display: none;
+}
+
+.chat-reasons {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--spring-snappy-ms) var(--spring-snappy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chat-menu.reasons-open .chat-reasons {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.chat-reasons-row {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  gap: 2px;
+  padding-left: 8px;
+}
+
+.chat-reason {
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.04);
+}

@@ -132,6 +132,7 @@ void test('leaving the Hideout says leave, closes the socket and lets the others
   assert.deepEqual(h.events.map((event: LiveEvent): string => event.type), ['present']);
   const present: LiveEvent | undefined = h.events[0];
   assert.equal(present?.type === 'present' ? present.players.length : -1, 1);
+  assert.equal(present?.type === 'present' ? present.you : '', 'me');
   h.live.update(ROAD);
   assert.deepEqual(socket.sent[socket.sent.length - 1], { type: 'leave' });
   assert.equal(socket.closed, true);
@@ -257,4 +258,22 @@ void test('frames from a socket that was replaced by a newer one are ignored', (
   first.handlers.closed(1006);
   say(first, { type: 'joined', player: PLAYER });
   assert.deepEqual(h.events, []);
+});
+
+void test('a line is said only once the player is present, and chat refusals reach the chat', (): void => {
+  const h: Harness = harness();
+  const socket: FakeSocket = welcomed(h);
+  assert.equal(h.live.say('too early'), false);
+  say(socket, { type: 'present', zone: 'hideout', you: 'me', players: [] });
+  assert.equal(h.live.say('a server without chat'), false);
+  say(socket, { type: 'present', zone: 'hideout', you: 'me', players: [], chat: [] });
+  assert.equal(h.live.say('   '), false);
+  assert.equal(h.live.say('  hello  '), true);
+  assert.deepEqual(socket.sent[socket.sent.length - 1], { type: 'say', text: 'hello' });
+  say(socket, { type: 'refused', reason: 'slow_down' });
+  assert.deepEqual(h.events[h.events.length - 1], { type: 'refused', reason: 'slow_down' });
+  say(socket, { type: 'said', line: { id: 1, from: 'me', name: 'Wren', text: 'hello', at: '2026-11-14T10:00:00.000Z' } });
+  assert.equal(h.events[h.events.length - 1]?.type, 'said');
+  h.live.update(ROAD);
+  assert.equal(h.live.say('gone'), false);
 });

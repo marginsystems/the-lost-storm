@@ -224,6 +224,9 @@ export function createOthers(options: OthersOptions): Others {
         case 'gone':
           for (const other of others.values()) depart(other);
           return;
+        case 'said':
+        case 'refused':
+          return;
       }
     },
     update(dt: number, floor: number): void {

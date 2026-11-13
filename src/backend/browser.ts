@@ -4,6 +4,10 @@ import { createBrowserStore } from '../storage.ts';
 import { createAccountService } from './account.ts';
 import type { AccountService } from './account.ts';
 import { createApi } from './api.ts';
+import { createHideoutApi } from './hideout-api.ts';
+import type { HideoutApi } from './hideout-api.ts';
+import { createLobbyApi } from './lobby-api.ts';
+import type { LobbyApi } from './lobby-api.ts';
 import type { Backend, KeyValueStore } from './backend.ts';
 import { createConsoleLogger } from './console-log.ts';
 import { createLedgerApi } from './ledger-api.ts';
@@ -45,6 +49,10 @@ export function createBrowserMinter(content: Content, rawUrl: string | undefined
   });
 }
 
+function browserFetch(url: string, init: RequestInit): Promise<Response> {
+  return fetch(url, init);
+}
+
 function openBrowserSocket(url: string, handlers: SocketHandlers): LiveSocket {
   const socket: WebSocket = new WebSocket(url);
   socket.addEventListener('open', (): void => handlers.open());
@@ -60,19 +68,25 @@ function openBrowserSocket(url: string, handlers: SocketHandlers): LiveSocket {
   };
 }
 
-export function createBrowserLive(rawUrl: string | undefined): Live | null {
+export interface HideoutServer {
+  readonly live: Live;
+  readonly api: HideoutApi;
+  readonly lobby: LobbyApi;
+  token(): string | null;
+}
+
+export function createBrowserHideoutServer(rawUrl: string | undefined): HideoutServer | null {
   const server: ServerUrl = readServerUrl(rawUrl);
   if (server.kind !== 'ok') return null;
   const store: KeyValueStore = createBrowserStore();
-  return createLive({
-    serverUrl: server.url,
-    open: openBrowserSocket,
-    token: (): string | null => {
-      const record: SyncRecord | null = parseSyncRecord(store.read(SYNC_KEY), server.url);
-      return record === null ? null : record.token;
-    },
-    clock: (): number => performance.now(),
-    timers: createBrowserTimers(),
-    random: Math.random,
-  });
+  const token = (): string | null => {
+    const record: SyncRecord | null = parseSyncRecord(store.read(SYNC_KEY), server.url);
+    return record === null ? null : record.token;
+  };
+  return {
+    live: createLive({ serverUrl: server.url, open: openBrowserSocket, token, clock: (): number => performance.now(), timers: createBrowserTimers(), random: Math.random }),
+    api: createHideoutApi(server.url, browserFetch),
+    lobby: createLobbyApi(server.url, browserFetch),
+    token,
+  };
 }
