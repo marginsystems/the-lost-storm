@@ -16,7 +16,7 @@ export const LOBBY_ORBIT = {
   zoomSpring: { freq: 1.6, damping: 1 },
   zoomPerWheelPixel: 0.0016,
   far: { distance: 10.2, lookHeight: 0.98 },
-  near: { distance: 2.6, lookHeight: 1.85 },
+  near: { distance: 3.4, lookHeight: 1.85 },
   height: 1.4,
   activeWithinMs: 250,
   maxSubstepsPerSecond: 480,

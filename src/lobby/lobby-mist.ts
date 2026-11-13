@@ -1,10 +1,10 @@
-import type { Camera, Texture, WebGLRenderer } from 'three';
+import type { Camera, Object3D, Texture, WebGLRenderer } from 'three';
 import { BufferAttribute, BufferGeometry, LinearFilter, Mesh, OrthographicCamera, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderTarget } from 'three';
 
 export const LOBBY_MIST = {
   lightAboveTop: 0.14,
-  lightLean: 0.12,
-  aimHeight: 1.35,
+  lightLean: 0.03,
+  aimHeight: 1.7,
   renderScale: 0.5,
   maxPixelRatio: 2,
   maxPixels: 900_000,
@@ -22,7 +22,7 @@ export interface MistSize {
 
 export interface LobbyMist {
   readonly texture: Texture;
-  draw(renderer: WebGLRenderer, dt: number, cssWidth: number, cssHeight: number, pixelRatio: number, camera: Camera): void;
+  draw(renderer: WebGLRenderer, dt: number, cssWidth: number, cssHeight: number, pixelRatio: number, camera: Camera, head: Object3D | null): void;
 }
 
 export const MIST_VERTEX: string = `
@@ -154,12 +154,14 @@ export function createLobbyMist(): LobbyMist {
   const aim: Vector3 = new Vector3();
   return {
     texture: surface.texture,
-    draw(renderer: WebGLRenderer, dt: number, cssWidth: number, cssHeight: number, pixelRatio: number, camera: Camera): void {
+    draw(renderer: WebGLRenderer, dt: number, cssWidth: number, cssHeight: number, pixelRatio: number, camera: Camera, head: Object3D | null): void {
       time.value += dt;
       const size: MistSize = mistSize(cssWidth, cssHeight, pixelRatio);
       if (surface.width !== size.width || surface.height !== size.height) surface.setSize(size.width, size.height);
       resolution.set(size.width, size.height);
-      aim.set(0, LOBBY_MIST.aimHeight, 0).project(camera);
+      if (head === null) aim.set(0, LOBBY_MIST.aimHeight, 0);
+      else head.getWorldPosition(aim);
+      aim.project(camera);
       const anchor: MistAnchor = mistAnchor([(aim.x + 1) / 2, (aim.y + 1) / 2]);
       light.set(anchor.light[0], anchor.light[1]);
       target.set(anchor.target[0], anchor.target[1]);

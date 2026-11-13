@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { floorLift, LOBBY_FRAMING, lobbyFraming } from './lobby-stage.ts';
 import type { Framing } from './lobby-stage.ts';
 
-void test('a wide screen stands the hero in the middle at full size', (): void => {
+void test('a wide screen stands the hero larger and right of centre, clear of the dock under the middle', (): void => {
   assert.deepEqual(lobbyFraming(1440, 900), LOBBY_FRAMING.wide);
   assert.deepEqual(lobbyFraming(844, 390), LOBBY_FRAMING.wide);
 });

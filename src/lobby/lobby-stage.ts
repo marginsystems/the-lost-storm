@@ -1,5 +1,5 @@
 import type { AnimationClip, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2 } from 'three';
+import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, PropertyBinding, RGBAFormat, Scene, SkinnedMesh, Vector2 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
@@ -19,7 +19,7 @@ import { placeRocks } from './lobby-scenery.ts';
 import { createLobbyLights } from './lobby-lights.ts';
 import type { LobbyLights } from './lobby-lights.ts';
 import { createLobbyMist } from './lobby-mist.ts';
-import { createLobbyLife } from './lobby-life.ts';
+import { createLobbyLife, LOBBY_LIFE } from './lobby-life.ts';
 import type { LobbyLife } from './lobby-life.ts';
 import type { LobbyMist } from './lobby-mist.ts';
 import { createLobbyOrbit, grab, LOBBY_ORBIT, orbitBy, release, stepOrbit, zoomBy } from './lobby-orbit.ts';
@@ -35,7 +35,7 @@ export const LOBBY_STAGE = {
   lookHeight: 0.98,
   near: 0.1,
   far: 40,
-  facing: 0.32,
+  facing: -0.34,
   rimGlow: 0x000000,
   groundSurface: 'black_rock',
   groundWet: 0.3,
@@ -79,7 +79,7 @@ export const LOBBY_POSE: readonly PoseTurn[] = [
 export const LOBBY_ORBIT_UI: string = '.lobby-sheet, .lobby-ladder, .lobby-dock, #title, button, a, input, select, textarea, [role="dialog"]:not(#lobby)';
 
 export const LOBBY_FRAMING = {
-  wide: { across: 0.5, down: 0, zoom: 1 },
+  wide: { across: 0.66, down: -0.01, zoom: 1.2 },
   tall: { across: 0.5, down: 0.2, zoom: 0.68 },
   tallBelow: 0.8,
 } as const;
@@ -263,6 +263,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   let scenery: Promise<void> | null = null;
   let posed: readonly PosedBone[] = [];
   let life: LobbyLife | null = null;
+  let head: Object3D | null = null;
   const orbit: LobbyOrbit = createLobbyOrbit();
   let drawnAt: number = Number.NEGATIVE_INFINITY;
   let listening: boolean = false;
@@ -330,6 +331,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     castShadows(made.root);
     posed = poseBones(made.root, LOBBY_POSE);
     life = createLobbyLife(made.root, random());
+    head = made.root.getObjectByName(PropertyBinding.sanitizeNodeName(LOBBY_LIFE.head)) ?? null;
     scene.add(contactShadow());
     scene.add(made.root);
     hero = made;
@@ -381,7 +383,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       camera.zoom = framing.zoom;
       camera.setViewOffset(size.x, size.y, (0.5 - framing.across) * size.x, framing.down * size.y, size.x, size.y);
       camera.updateProjectionMatrix();
-      sky.draw(renderer, dt, size.x, size.y, devicePixelRatio, camera);
+      sky.draw(renderer, dt, size.x, size.y, devicePixelRatio, camera, head);
       RIM_LIGHT.value.copy(rimGlow);
       pipeline ??= createLobbyPipeline(renderer, scene, camera);
       pipeline.render(tier, devicePixelRatio);

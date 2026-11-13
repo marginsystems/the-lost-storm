@@ -354,7 +354,14 @@ body[data-lobby] #vignette {
 }
 
 .lobby-screen {
-  --lobby-zoom-fade: 0.82;
+  --lobby-zoom-fade: 1;
+  background: radial-gradient(ellipse 70% 85% at 66% 46%, rgba(4, 8, 14, 0) 45%, rgba(4, 8, 14, 0.62) 100%);
+}
+
+@media (max-width: 860px) and (orientation: portrait) {
+  .lobby-screen {
+    background: radial-gradient(ellipse 90% 60% at 50% 26%, rgba(4, 8, 14, 0) 45%, rgba(4, 8, 14, 0.62) 100%);
+  }
 }
 
 .lobby-screen .lobby-primary,
