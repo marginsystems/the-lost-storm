@@ -1,20 +1,19 @@
 import { pixelRatioFor, renderBudget } from '../mobile/quality.ts';
 import type { ArmShape, Colour } from './chart-storm.ts';
+import { durationMs } from './overlays.ts';
 
 export const CHART_SKY = {
   resolution: 0.75,
   maxArms: 8,
-  sway: 0.018,
   fallbackDriftMs: 5200,
-  swayDrifts: 46,
-  flowPerDrift: 0.009,
-  warpRateA: 0.011,
-  warpRateB: 0.0083,
+  minDriftMs: 1000,
+  maxDriftMs: 60000,
+  flowPerDrift: 0.047,
+  streakScale: 0.3,
+  streakMix: 0.45,
   warpScale: 0.4,
   warpDepth: 0.9,
   armWarp: 0.5,
-  breathRateA: 0.0099,
-  breathRateB: 0.014,
   breathScale: 0.28,
   breathDepth: 0.16,
   coreRadius: 1.35,
@@ -47,12 +46,7 @@ export interface SkyView {
 }
 
 export interface SkyMotion {
-  readonly flow: number;
-  readonly sway: number;
-  readonly warpX: number;
-  readonly warpY: number;
-  readonly breathX: number;
-  readonly breathY: number;
+  readonly phase: number;
 }
 
 export interface ChartSky {
@@ -60,20 +54,16 @@ export interface ChartSky {
 }
 
 export function skyMotion(seconds: number, drift: number): SkyMotion {
-  const drifts: number = seconds / drift;
-  return {
-    flow: drifts * CHART_SKY.flowPerDrift,
-    sway: Math.sin((drifts / CHART_SKY.swayDrifts) * Math.PI * 2) * CHART_SKY.sway,
-    warpX: drifts * CHART_SKY.warpRateA,
-    warpY: drifts * CHART_SKY.warpRateB,
-    breathX: drifts * CHART_SKY.breathRateA,
-    breathY: drifts * CHART_SKY.breathRateB,
-  };
+  return { phase: (seconds / drift) * CHART_SKY.flowPerDrift };
+}
+
+export function driftMs(token: string): number {
+  const value: number | null = durationMs(token);
+  return value !== null && value >= CHART_SKY.minDriftMs && value <= CHART_SKY.maxDriftMs ? value : CHART_SKY.fallbackDriftMs;
 }
 
 function driftSeconds(host: HTMLElement): number {
-  const value: number = Number.parseFloat(getComputedStyle(host).getPropertyValue('--drift-ms'));
-  return (Number.isFinite(value) && value > 0 ? value : CHART_SKY.fallbackDriftMs) / 1000;
+  return driftMs(getComputedStyle(host).getPropertyValue('--drift-ms')) / 1000;
 }
 
 const VERTEX: string = `#version 300 es
@@ -83,7 +73,7 @@ void main() {
 }
 `;
 
-const FRAGMENT: string = `#version 300 es
+export const SKY_FRAGMENT: string = `#version 300 es
 precision highp float;
 uniform vec2 size;
 uniform float density;
@@ -92,10 +82,7 @@ uniform float zoom;
 uniform vec2 eye;
 uniform float unit;
 uniform float twist;
-uniform float flow;
-uniform float sway;
-uniform vec2 warpShift;
-uniform vec2 breathShift;
+uniform float phase;
 uniform int count;
 uniform vec2 arms[${CHART_SKY.maxArms}];
 uniform vec3 tints[${CHART_SKY.maxArms}];
@@ -131,8 +118,16 @@ float wrapAngle(float a) {
 }
 
 vec2 untwist(vec2 c, float r) {
-  float a = -twist * r - sway;
+  float a = -twist * r;
   return mat2(cos(a), sin(a), -sin(a), cos(a)) * c;
+}
+
+float armOffset(float th, float r, float base) {
+  return wrapAngle(th - base - twist * r) * max(r, 0.35);
+}
+
+float streakAt(float r, vec2 heading, vec2 gas, float along) {
+  return fbm(vec2(r * ${CHART_SKY.streakScale} - along, 0.0) + heading * 5.5 + gas * ${CHART_SKY.warpDepth});
 }
 
 void main() {
@@ -142,15 +137,14 @@ void main() {
   float th = atan(c.y, c.x);
 
   vec2 swirl = untwist(c, r);
-  vec2 drift = vec2(-flow, flow * 0.6);
-  vec2 gas = vec2(noise(swirl * ${CHART_SKY.warpScale} + warpShift), noise(swirl * ${CHART_SKY.warpScale} + warpShift.yx + 31.7)) - 0.5;
-  float breath = 1.0 + ${CHART_SKY.breathDepth} * (noise(swirl * ${CHART_SKY.breathScale} + breathShift) * 2.0 - 1.0);
+  vec2 gas = vec2(noise(swirl * ${CHART_SKY.warpScale}), noise(swirl * ${CHART_SKY.warpScale} + 31.7)) - 0.5;
+  float breath = 1.0 + ${CHART_SKY.breathDepth} * (noise(swirl * ${CHART_SKY.breathScale} + 17.3) * 2.0 - 1.0);
   vec2 warped = swirl + gas * ${CHART_SKY.warpDepth};
-  float billow = fbm(warped * 0.55 + drift);
+  float billow = fbm(warped * 0.55);
   vec2 heading = swirl / max(r, 0.001);
-  float streak = fbm(vec2(r * 0.3 - flow * 1.4, 0.0) + heading * 5.5 + gas * ${CHART_SKY.warpDepth});
-  float body = mix(billow, streak, 0.45);
-  float lit = fbm(warped * 0.55 + drift + vec2(0.09, -0.12));
+  float shape = mix(billow, streakAt(r, heading, gas, 0.0), ${CHART_SKY.streakMix});
+  float body = mix(billow, streakAt(r, heading, gas, phase), ${CHART_SKY.streakMix});
+  float lit = fbm(warped * 0.55 + vec2(0.09, -0.12));
   float eyeClear = mix(0.35, 1.0, smoothstep(0.2, 1.6, r));
 
   float cloud = 0.0;
@@ -163,8 +157,8 @@ void main() {
     float rch = arms[i].y;
     float t = clamp(r / (rch * 1.2), 0.0, 1.0);
     float hw = mix(3.6, 0.42, pow(t, 1.3));
-    float d = wrapAngle(th - arms[i].x - twist * r - sway) * max(r, 0.35) + gas.x * hw * ${CHART_SKY.armWarp};
-    float q = abs(d) / hw + (body - 0.5) * ${CHART_SKY.armContinuity};
+    float d = armOffset(th, r, arms[i].x) + gas.x * hw * ${CHART_SKY.armWarp};
+    float q = abs(d) / hw + (shape - 0.5) * ${CHART_SKY.armContinuity};
     float tail = 1.0 - smoothstep(rch * 0.8, rch * 1.3, r);
     float band = max(1.0 - smoothstep(0.2, 1.0, q), (1.0 - smoothstep(0.4, 2.4, q)) * 0.35) * tail;
     float share = exp(-q * q * 2.0) * tail + 0.0001;
@@ -184,13 +178,13 @@ void main() {
   float top = clamp(0.62 + (body - lit) * 3.2 + (body - 0.5) * 0.7 + wall * 0.35, 0.3, 1.3);
   vec3 base = mix(vec3(0.46, 0.55, 0.68), tint, 0.24);
   vec3 lightCloud = base * top * mix(1.0, 0.62, under);
-  float fine = fbm(swirl * 2.6 + drift * 2.0);
+  float fine = fbm(swirl * 2.6);
   lightCloud *= mix(1.4, 1.05, smoothstep(1.2, 8.0, r));
   lightCloud *= 1.0 - dust * ${CHART_SKY.dustDepth} * (0.45 + 0.55 * fine);
   float alpha = clamp(cloud * (0.4 + 0.38 * body) * breath, 0.0, 0.76);
   lightCloud *= alpha;
   vec2 tilted = mat2(cos(${CHART_SKY.coreTilt}), sin(${CHART_SKY.coreTilt}), -sin(${CHART_SKY.coreTilt}), cos(${CHART_SKY.coreTilt})) * c;
-  float er = length(vec2(tilted.x, tilted.y * ${CHART_SKY.coreStretch})) / ${CHART_SKY.coreRadius};
+  float er = max(length(vec2(tilted.x, tilted.y * ${CHART_SKY.coreStretch})) / ${CHART_SKY.coreRadius}, 0.0);
   float core = exp(-pow(er, 1.6));
   float halo = exp(-er * 0.75) * 0.35;
   float bulge = (core + halo) * ${CHART_SKY.coreGlow} * (0.85 + 0.3 * (fine - 0.5));
@@ -200,11 +194,11 @@ void main() {
   vec2 sky = c * ${CHART_SKY.starScale}.0;
   vec2 cell = floor(sky);
   float pick = hash(cell + 7.3);
-  float star = step(1.0 - ${CHART_SKY.starDensity}, pick) * smoothstep(0.22, 0.0, length(fract(sky) - 0.5)) * (0.35 + 0.65 * hash(cell + 2.1));
+  float star = step(1.0 - ${CHART_SKY.starDensity}, pick) * (1.0 - smoothstep(0.0, 0.22, length(fract(sky) - 0.5))) * (0.35 + 0.65 * hash(cell + 2.1));
   star *= 0.3 + 0.7 * cloud;
   lightCloud += vec3(0.86, 0.9, 1.0) * star * 0.7;
   alpha = alpha + star * 0.6 * (1.0 - alpha);
-  float grain = (hash(gl_FragCoord.xy + fract(flow) * 61.0) - 0.5) / 255.0;
+  float grain = (hash(gl_FragCoord.xy) - 0.5) / 255.0;
   colour = vec4(lightCloud + grain, alpha + grain);
 }
 `;
@@ -219,7 +213,7 @@ function compile(gl: WebGL2RenderingContext, kind: number, source: string): WebG
 
 function link(gl: WebGL2RenderingContext): WebGLProgram | null {
   const vertex: WebGLShader | null = compile(gl, gl.VERTEX_SHADER, VERTEX);
-  const fragment: WebGLShader | null = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT);
+  const fragment: WebGLShader | null = compile(gl, gl.FRAGMENT_SHADER, SKY_FRAGMENT);
   if (vertex === null || fragment === null) return null;
   const program: WebGLProgram = gl.createProgram();
   gl.attachShader(program, vertex);
@@ -274,10 +268,7 @@ export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | n
       gl.uniform2f(at('origin'), view.cornerX, view.cornerY);
       gl.uniform1f(at('zoom'), view.scale);
       const motion: SkyMotion = skyMotion(time, drift);
-      gl.uniform1f(at('flow'), motion.flow);
-      gl.uniform1f(at('sway'), motion.sway);
-      gl.uniform2f(at('warpShift'), motion.warpX, motion.warpY);
-      gl.uniform2f(at('breathShift'), motion.breathX, motion.breathY);
+      gl.uniform1f(at('phase'), motion.phase);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
   };
