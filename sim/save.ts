@@ -15,6 +15,7 @@ import { glitchToSave } from './world/glitch.ts';
 import type { GlitchSave, PathLogSave } from './world/glitch-types.ts';
 import { readGlitchSave } from './world/glitch-save.ts';
 import { emptyPathLog, pathToSave, readPathLog } from './world/path-log.ts';
+import { LEDGER_ID } from './world/ledger.ts';
 import { decodeExplored, encodeExplored, exploredSize } from './world/exploration.ts';
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, VendorStock, World } from './world/types.ts';
 
@@ -117,13 +118,15 @@ function readItem(content: Content, value: unknown): ItemInstance | null {
   const base: unknown = value['base'];
   const rarity: unknown = value['rarity'];
   const affixes: unknown = value['affixes'];
+  const ledger: unknown = value['ledger'];
   if (uid === null || level === null || typeof base !== 'string' || typeof rarity !== 'string' || !Array.isArray(affixes)) return null;
   if (!content.itemBases.has(base) || !content.rarities.some((candidate): boolean => candidate.id === rarity)) return null;
   const list: readonly unknown[] = affixes;
   const rolled: RolledAffix[] = list.map((entry: unknown): RolledAffix | null => readAffix(content, entry)).filter((entry: RolledAffix | null): entry is RolledAffix => entry !== null);
-  if (rolled.length === list.length) return { uid, base, rarity, level, affixes: rolled };
+  const minted: string | null = typeof ledger === 'string' && LEDGER_ID.test(ledger) ? ledger : null;
+  if (rolled.length === list.length) return { uid, base, rarity, level, affixes: rolled, ledger: minted };
   const fresh: ItemInstance | null = generateItem(content, createRng(uid), uid, level, base, rarity);
-  return { uid, base, rarity, level, affixes: fresh === null ? rolled : fresh.affixes };
+  return { uid, base, rarity, level, affixes: fresh === null ? rolled : fresh.affixes, ledger: null };
 }
 
 function readEquipped(content: Content, value: unknown, inventory: (ItemInstance | null)[]): Worn {

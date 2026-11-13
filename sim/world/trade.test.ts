@@ -262,7 +262,7 @@ void test('items move between the inventory and the stash, and a full side refus
 
 void test('a story item cannot be sold', (): void => {
   const world: World = atVendor(8);
-  const journal: ItemInstance = { uid: 4300, base: 'worn_journal', rarity: 'common', level: 1, affixes: [] };
+  const journal: ItemInstance = { uid: 4300, base: 'worn_journal', rarity: 'common', level: 1, affixes: [], ledger: null };
   world.player.inventory[0] = journal;
   world.player.gold = 0;
   trade(world, { type: 'sell', inventoryIndex: 0 });

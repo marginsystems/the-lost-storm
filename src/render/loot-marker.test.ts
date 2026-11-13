@@ -14,7 +14,7 @@ function zone(id: string): ZoneDef {
 }
 
 function drop(rarity: string, find: string | null = null): GroundItem {
-  const item: ItemInstance = { uid: 1, base: 'rusted_blade', rarity, level: 1, affixes: [] };
+  const item: ItemInstance = { uid: 1, base: 'rusted_blade', rarity, level: 1, affixes: [], ledger: null };
   return { id: 1, pos: { x: 0, z: 0 }, from: { x: 0, z: 0 }, content: { kind: 'item', item }, age: 0, kept: false, find };
 }
 

@@ -81,7 +81,7 @@ void test('a fourth Legendary stays in the bag with a notice, and the three worn
 void test('a dropped item lies at the hero feet and a pickup puts it back in the bag', (): void => {
   const world: World = armed(worldIn(content, 'hideout', 1));
   world.monsters = [];
-  const blade: ItemInstance = { uid: 4100, base: 'rusted_blade', rarity: 'common', level: 1, affixes: [] };
+  const blade: ItemInstance = { uid: 4100, base: 'rusted_blade', rarity: 'common', level: 1, affixes: [], ledger: null };
   world.player.inventory.fill(null);
   world.player.inventory[0] = blade;
   send(world, { type: 'drop', inventoryIndex: 0 });
@@ -94,7 +94,7 @@ void test('a dropped item lies at the hero feet and a pickup puts it back in the
 
 void test('a story item never leaves the bag by a drop', (): void => {
   const world: World = armed(worldIn(content, 'hideout', 1));
-  const journal: ItemInstance = { uid: 4200, base: 'worn_journal', rarity: 'common', level: 1, affixes: [] };
+  const journal: ItemInstance = { uid: 4200, base: 'worn_journal', rarity: 'common', level: 1, affixes: [], ledger: null };
   world.player.inventory.fill(null);
   world.player.inventory[2] = journal;
   send(world, { type: 'drop', inventoryIndex: 2 });

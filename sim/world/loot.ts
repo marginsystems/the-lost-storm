@@ -1,6 +1,8 @@
 import type { Content, ItemBaseDef, RarityDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import { pickWeighted } from '../rng.ts';
+import { makeItem } from './ledger.ts';
+import type { ItemSource } from './ledger.ts';
 import type { ItemInstance, PlayerState, World } from './types.ts';
 
 function held(player: PlayerState): ReadonlySet<string> {
@@ -30,12 +32,12 @@ function firstDrop(world: World, level: number, rarity: string | null): ItemInst
   return generateItem(content, world.rng, world.nextItemUid, level, base.id, chosen);
 }
 
-export function rollDrop(world: World, level: number, rarity: string | null): ItemInstance | null {
+export function rollDrop(world: World, level: number, rarity: string | null, source: ItemSource): ItemInstance | null {
   const flag: string = world.content.player.firstDrop.flag;
   const first: ItemInstance | null = world.flags[flag] === undefined ? firstDrop(world, level, rarity) : null;
-  const item: ItemInstance | null = first ?? generateItem(world.content, world.rng, world.nextItemUid, level, null, rarity);
+  if (first !== null) world.nextItemUid += 1;
+  const item: ItemInstance | null = first ?? makeItem(world, level, null, rarity, source);
   if (item === null) return null;
   world.flags[flag] = 'yes';
-  world.nextItemUid += 1;
   return item;
 }

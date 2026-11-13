@@ -230,7 +230,7 @@ function reward(world: World, moment: MomentState, share: number, items: boolean
   if (!items) return;
   for (let index: number = 0; index < table.items; index += 1) {
     if (!world.rng.chance(table.itemChance)) continue;
-    const item: ItemInstance | null = rollDrop(world, moment.level, table.rarity);
+    const item: ItemInstance | null = rollDrop(world, moment.level, table.rarity, { kind: 'moment', moment: moment.def.id, zone: world.zone.id });
     if (item === null) continue;
     dropOnGround(world, moment.pos, { kind: 'item', item });
   }
