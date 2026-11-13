@@ -194,8 +194,8 @@ function reachable(nodes: readonly SkillTreeNodeDef[]): Set<string> {
   return reached;
 }
 
-void test('the Storm Chart has five paths of a hundred places or more, every place reachable, with crossings between paths', (): void => {
-  assert.equal(content.chart.title, 'The Storm Chart');
+void test('the Skill Tree has five paths of a hundred places or more, every place reachable, with crossings between paths', (): void => {
+  assert.equal(content.chart.title, 'The Skill Tree');
   assert.ok(content.skillTree.length >= 100);
   assert.equal(reachable(content.skillTree).size, content.skillTree.length);
   const pathOf: ReadonlyMap<string, string> = new Map<string, string>(content.skillTree.map((node: SkillTreeNodeDef): [string, string] => [node.id, node.path]));

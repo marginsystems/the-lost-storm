@@ -1,6 +1,6 @@
 # The balance simulator
 
-The simulator answers tuning questions without playing the game: how long a level takes, how often an item drops, whether one Storm Chart path is weaker than another, whether a fight is too easy. It runs seeded bot players through the real game logic in `sim/`, many times faster than real time, in parallel worker threads. It has no rendering and no browser.
+The simulator answers tuning questions without playing the game: how long a level takes, how often an item drops, whether one Skill Tree path is weaker than another, whether a fight is too easy. It runs seeded bot players through the real game logic in `sim/`, many times faster than real time, in parallel worker threads. It has no rendering and no browser.
 
 ## Running it
 
@@ -28,7 +28,7 @@ Plain `npm run simulate -- <scenario> [options]` works too. It uses half the cor
 |---|---|---|
 | `--runs N` | 12 | Runs for each policy |
 | `--skill a,b` or `all` | `careful,average,poor` | Player skill policies |
-| `--build a,b` or `all` | `mixed` | Storm Chart builds |
+| `--build a,b` or `all` | `mixed` | Skill Tree builds |
 | `--seed N` | 1 | First seed. Run `i` uses seed `N + i`, so every policy plays the same seeds |
 | `--workers N` | half the cores | Worker threads |
 | `--out FILE` | `simulate-out/<scenario>-<time>.json` | Where to write the JSON report (`simulate-out/` is git-ignored) |
@@ -100,7 +100,7 @@ The simulator does not read the game's log output. `sim/measure.ts` turns each s
 | `fight` | `id`, `moment`, `level`, `foes` | A moment wakes and some of its echoes turn |
 | `moment` | `id`, `moment`, `outcome` | A moment ends: `resolved`, `expired`, `played` or `faded` |
 | `skill` | `skill` | A skill is learned |
-| `chart` | `place`, `path`, `points` | A Storm Chart place is taken |
+| `chart` | `place`, `path`, `points` | A Skill Tree place is taken |
 | `power` | `dps`, `toughness`, `itemLevels` | The hero's power changes |
 | `end` | `reason` | Last line: `done`, or why the run stopped |
 

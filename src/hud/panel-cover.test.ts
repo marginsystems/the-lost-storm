@@ -63,7 +63,7 @@ void test('covered corner pieces stop taking clicks at once, the minimap frame i
   }
 });
 
-void test('the Storm Chart is a full screen, like the map', (): void => {
+void test('the Skill Tree is a full screen, like the map', (): void => {
   assert.equal(PANEL_COVER.tree, 'full');
   assert.equal(PANEL_COVER.map, 'full');
 });

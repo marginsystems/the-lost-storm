@@ -36,7 +36,7 @@ export function touchLabel(world: World, name: string): TouchLabel {
     case 'inventory':
       return { kind: 'icon', icon: PANEL_ICONS.inventory, name: 'Inventory' };
     case 'tree':
-      return { kind: 'icon', icon: PANEL_ICONS.tree, name: 'Chart' };
+      return { kind: 'icon', icon: PANEL_ICONS.tree, name: 'Skill Tree' };
     case 'map':
       return { kind: 'icon', icon: PANEL_ICONS.map, name: 'Map' };
     case 'flask':

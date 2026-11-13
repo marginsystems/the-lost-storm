@@ -51,7 +51,7 @@ const FIXED_DEFS: readonly (Omit<ActionDef, 'locked'> & { readonly group: Action
   { id: 'flask5', label: 'Flask 5', group: 'Flasks', defaults: ['Digit5'] },
   { id: 'inventory', label: 'Inventory', group: 'Panels', defaults: ['KeyI'] },
   { id: 'character', label: 'Character', group: 'Panels', defaults: ['KeyC'] },
-  { id: 'tree', label: 'Storm Chart', group: 'Panels', defaults: ['KeyT'] },
+  { id: 'tree', label: 'Skill Tree', group: 'Panels', defaults: ['KeyT'] },
   { id: 'map', label: 'World map', group: 'Panels', defaults: ['KeyM'] },
   { id: 'minimap', label: 'Minimap', group: 'Panels', defaults: ['Tab'] },
   { id: 'ladder', label: 'Ladder', group: 'Panels', defaults: ['KeyL'] },

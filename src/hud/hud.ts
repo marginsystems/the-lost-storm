@@ -95,7 +95,7 @@ const PANEL_OVERLAY: Readonly<Record<HudPanel, OverlayId>> = {
 const PANEL_NAME: Readonly<Record<HudPanel, string>> = {
   inventory: 'Inventory',
   character: 'Character',
-  tree: 'Storm Chart',
+  tree: 'Skill Tree',
   map: 'Map',
 };
 
@@ -233,7 +233,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   buttons.inventory = createMenuButton(row, 'inventory', 'Inventory', keyOf('inventory'), (): void => fromRow((): void => toggle('inventory')), track);
   buttons.character = createMenuButton(row, 'character', 'Character', keyOf('character'), (): void => fromRow((): void => toggle('character')), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
-  buttons.tree = createMenuButton(row, 'tree', 'Chart', keyOf('tree'), (): void => fromRow((): void => toggle('tree')), track);
+  buttons.tree = createMenuButton(row, 'tree', 'Skill Tree', keyOf('tree'), (): void => fromRow((): void => toggle('tree')), track);
   buttons.map = createMenuButton(row, 'map', 'Map', keyOf('map'), (): void => fromRow((): void => toggle('map')), track);
   createVolumeButton(row, api.audio, track, (): void => fromRow((): void => api.openSettings('sound')));
   const showKeys = (): void => {
@@ -353,11 +353,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             banners.show(api.world.content.skills.get(event.skill)?.name ?? event.skill, event.slot === null ? 'New skill · bar full' : 'New skill', 'quest');
             break;
           case 'level_up':
-            banners.show(`LEVEL ${event.level}`, 'Chart point gained', 'level');
+            banners.show(`LEVEL ${event.level}`, 'Skill point gained', 'level');
             refreshOpen('character');
             break;
           case 'chart_point':
-            if (event.source !== 'level' && !hints.teaches('skill_point')) notices.say(`${openWith(api.touch, 'chart', keyOf('tree'))} to choose a place`);
+            if (event.source !== 'level' && !hints.teaches('skill_point')) notices.say(`${openWith(api.touch, 'skill tree', keyOf('tree'))} to choose a place`);
             refreshOpen('tree');
             break;
           case 'notice':

@@ -101,7 +101,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   const search: HTMLInputElement = el('input', 'chart-search', head);
   search.type = 'search';
   search.placeholder = 'Find a place';
-  search.setAttribute('aria-label', 'Find a place on the chart');
+  search.setAttribute('aria-label', 'Find a place on the skill tree');
   const zoomOut: HTMLButtonElement = el('button', 'chart-zoom', head);
   zoomOut.type = 'button';
   zoomOut.textContent = '−';
@@ -113,13 +113,13 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   const recentre: HTMLButtonElement = el('button', 'chart-zoom chart-centre', head);
   recentre.type = 'button';
   recentre.textContent = 'Centre';
-  recentre.setAttribute('aria-label', 'Centre the chart on where you are');
+  recentre.setAttribute('aria-label', 'Centre the skill tree on where you are');
   const restart: HTMLButtonElement = el('button', 'chart-restart', head);
   restart.type = 'button';
   const shut: HTMLButtonElement = el('button', 'chart-close', head);
   shut.type = 'button';
   shut.textContent = '×';
-  shut.setAttribute('aria-label', 'Close the chart');
+  shut.setAttribute('aria-label', 'Close the skill tree');
   shut.addEventListener('click', (event: MouseEvent): void => {
     event.stopPropagation();
     close();

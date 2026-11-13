@@ -26,7 +26,7 @@ export const USAGE: string = [
   'options',
   '  --runs N              runs per policy (default 12)',
   '  --skill a,b|all       player skill policies (default careful,average,poor)',
-  '  --build a,b|all       Storm Chart build policies (default mixed)',
+  '  --build a,b|all       Skill Tree build policies (default mixed)',
   '  --seed N              first seed; run i uses seed N+i (default 1)',
   '  --workers N           worker threads (default half the cores)',
   '  --out FILE            where to write the JSON report (default simulate-out/<scenario>-<time>.json)',
