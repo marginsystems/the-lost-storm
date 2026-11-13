@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
+import { heroWears } from './content/item-rules.ts';
 import type { AffixDef, ArmourMaterial, Content, ItemBaseDef, ItemSlot, RarityDef, StatId, StatMod } from './content/types.ts';
 import { ARMOUR_MATERIALS, ITEM_SLOTS } from './content/types.ts';
 import { baseOf, emptyEquipment, generateItem, itemLines, itemMods, itemName, rarityOf, slotOf } from './items.ts';
@@ -119,10 +120,15 @@ void test('item lines put the damage range first, then every stat in the fixed o
   );
 });
 
-void test('every slot has a base that drops and enough lines for every rarity', (): void => {
+function heroCanFill(slot: ItemSlot): boolean {
+  return [...content.itemBases.values()].some((base: ItemBaseDef): boolean => base.slot === slot && heroWears(content, base));
+}
+
+void test('every slot the hero can wear something in drops, and the head drops nothing while its only models are hoods', (): void => {
   assert.deepEqual(Object.keys(emptyEquipment()).toSorted(), [...ITEM_SLOTS].toSorted());
   const dropped: Set<ItemSlot> = new Set<ItemSlot>(rolls(6, 6).map((item: ItemInstance): ItemSlot => must(slotOf(content, item), 'slot')));
-  for (const slot of ITEM_SLOTS) assert.ok(dropped.has(slot), `${slot} drops`);
+  for (const slot of ITEM_SLOTS) assert.equal(dropped.has(slot), heroCanFill(slot), `${slot} drops`);
+  assert.ok(!dropped.has('head'));
 });
 
 void test('a held weapon shows a model and never wears clothes, and armour is the reverse', (): void => {
@@ -138,7 +144,7 @@ function implicitOf(base: ItemBaseDef, stat: StatId): number {
 }
 
 function armourBases(slot: ItemSlot, material: ArmourMaterial): ItemBaseDef[] {
-  return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === slot && base.material === material && base.power === null);
+  return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === slot && base.material === material && base.power === null && base.dropWeight > 0);
 }
 
 function tiers(slot: ItemSlot): [ItemBaseDef[], ItemBaseDef[]][] {

@@ -5,6 +5,7 @@ import type { RetiredZones } from './content/road-types.ts';
 import type { Content, ItemSlot } from './content/types.ts';
 import { emptyEquipment, generateItem, slotOf } from './items.ts';
 import { createRng } from './rng.ts';
+import { retireUnworn } from './save-retire.ts';
 import { adoptLearned, findNode, reachablePlaces } from './progression.ts';
 import type { AdoptedPlaces } from './progression.ts';
 import { readBar, readLearned } from './skill-book.ts';
@@ -308,7 +309,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const taken: string[] = [...adopted.allocated];
   const learned: string[] = readLearned(content, value['learned'], taken);
   const dressed: Dressed = dressOnce(content, worn.equipped, { ...readFlags(content, value['flags'], legacy), ...retired?.flags }, Math.floor(nextItemUid));
-  return {
+  return retireUnworn(content, {
     version: SAVE_VERSION,
     level: reached,
     xp,
@@ -337,7 +338,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     flags: dressed.flags,
     glitch: readGlitchSave(value['glitch']),
     path: value['version'] === SAVE_VERSION ? pathToSave(readPathLog(value['path'], new Set<string>(content.zones.keys()))) : pathToSave(emptyPathLog()),
-  };
+  });
 }
 
 export function parseSaveText(content: Content, textValue: string | null): SaveData | null {

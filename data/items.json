@@ -207,7 +207,7 @@
       "slot": "head",
       "material": "cloth",
       "icon": "helm",
-      "dropWeight": 7,
+      "dropWeight": 0,
       "minLevel": 1,
       "visual": null,
       "wear": [
@@ -239,7 +239,7 @@
       "slot": "head",
       "material": "leather",
       "icon": "helm",
-      "dropWeight": 6,
+      "dropWeight": 0,
       "minLevel": 2,
       "visual": null,
       "wear": [
@@ -945,7 +945,7 @@
       "slot": "head",
       "material": "leather",
       "icon": "helm",
-      "dropWeight": 1,
+      "dropWeight": 0,
       "minLevel": 1,
       "visual": null,
       "wear": [

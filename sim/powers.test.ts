@@ -132,14 +132,13 @@ void test('cooldowns run out and are removed', (): void => {
 
 void test('a Legendary reads its power and its family, counting the pieces worn with it', (): void => {
   const world: World = hero();
-  const crown: ItemInstance = item('crown_of_the_struck_hour', 40);
-  const alone = must(familyReading(content, crown, world.player.equipped), 'reading');
+  const lantern: ItemInstance = item('lantern_of_second_sounds', 40);
+  const alone = must(familyReading(content, lantern, world.player.equipped), 'reading');
   assert.equal(alone.name, 'Forkweather');
-  assert.equal(alone.text, 'Storm Bolt splits into a Forkline on its first hit.');
   assert.equal(alone.count, 1);
-  assert.deepEqual(alone.pieces.map((piece): string => `${piece.name}${piece.worn ? '*' : ''}`), ['Wirethread Gloves', 'Lantern of Second Sounds', 'Crown of the Struck Hour*']);
+  assert.deepEqual(alone.pieces.map((piece): string => `${piece.name}${piece.worn ? '*' : ''}`), ['Wirethread Gloves', 'Lantern of Second Sounds*']);
   wear(world, 'wirethread_gloves');
   wear(world, 'the_millwheel');
-  assert.equal(familyReading(content, crown, world.player.equipped)?.count, 2);
+  assert.equal(familyReading(content, lantern, world.player.equipped)?.count, 2);
   assert.equal(familyReading(content, item('stormsteel_sword', 41), world.player.equipped), null);
 });

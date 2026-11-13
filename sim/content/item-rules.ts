@@ -26,6 +26,10 @@ export function basesWithoutLook(content: Content): string[] {
     .map((base: ItemBaseDef): string => base.id);
 }
 
+export function heroWears(content: Content, base: ItemBaseDef): boolean {
+  return !base.wear.some((id: string): boolean => content.player.neverWears.includes(id));
+}
+
 export function handedBases(content: Content): ReadonlySet<string> {
   const handed: Set<string> = new Set<string>(content.player.startingItems);
   for (const zone of content.zones.values()) {
@@ -38,6 +42,10 @@ function handedProblems(content: Content): string[] {
   const problems: string[] = [];
   for (const id of handedBases(content)) {
     if ((content.itemBases.get(id)?.dropWeight ?? 0) > 0) problems.push(`item ${id} is handed to the player, so it cannot also drop at random`);
+  }
+  for (const id of content.player.neverWears) if (!content.wearables.has(id)) problems.push(`the hero never wears ${id}, which is not a wearable`);
+  for (const base of content.itemBases.values()) {
+    if ((base.dropWeight > 0 || handedBases(content).has(base.id)) && !heroWears(content, base)) problems.push(`item ${base.id} reaches the hero but wears something he never wears`);
   }
   const rarity: RarityDef | undefined = content.rarities.find((candidate: RarityDef): boolean => candidate.id === content.player.firstDrop.rarity);
   if (rarity === undefined) problems.push(`the first drop names unknown rarity ${content.player.firstDrop.rarity}`);

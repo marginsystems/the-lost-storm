@@ -64,6 +64,7 @@
     "traveller_boots"
   ],
   "dressedFlag": "traveller_dressed",
+  "neverWears": ["leather_hood", "sackcloth_cowl", "torn_hood", "still_hood", "mender_hood", "keeper_hood", "warden_hood", "traveller_hood"],
   "firstDrop": {"flag": "first_drop", "rarity": "magic"},
   "unarmedVisual": null,
   "inventorySize": 24,

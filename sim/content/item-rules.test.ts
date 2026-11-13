@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content.ts';
-import { basesWithoutLook, groundGenerics, handedBases, itemProblems, linesFor } from './item-rules.ts';
+import { basesWithoutLook, groundGenerics, handedBases, heroWears, itemProblems, linesFor } from './item-rules.ts';
 import type { AffixDef, Content, ItemBaseDef } from './types.ts';
 import { ITEM_STATS } from './types.ts';
 import { must } from '../../test/support.ts';
@@ -68,4 +68,14 @@ void test('a base handed to the player cannot also drop at random, and the first
     'item rusted_blade is handed to the player, so it cannot also drop at random',
     'the first drop names stormtouched, which only powered bases carry',
   ]);
+});
+
+void test('no base that can reach the hero wears a hood, and a hood that could is reported', (): void => {
+  for (const base of content.itemBases.values()) {
+    if (base.dropWeight > 0 || handedBases(content).has(base.id)) assert.ok(heroWears(content, base), base.id);
+  }
+  assert.ok(content.player.neverWears.includes('leather_hood'));
+  const hood: ItemBaseDef = must(content.itemBases.get('wayfarer_hood'), 'hood');
+  const back: Content = { ...content, itemBases: new Map<string, ItemBaseDef>([...content.itemBases, [hood.id, { ...hood, dropWeight: 6 }]]) };
+  assert.ok(itemProblems(back).includes('item wayfarer_hood reaches the hero but wears something he never wears'));
 });
