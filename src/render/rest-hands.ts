@@ -12,6 +12,8 @@ export interface RestHand {
   readonly fingers: readonly RestFinger[];
 }
 
+export const REST_HANDS = { towardRest: 0.5 } as const;
+
 const DEGREES: number = Math.PI / 180;
 
 function boneNamed(model: Object3D, name: string): Object3D | undefined {
@@ -41,6 +43,6 @@ export function relaxHands(hands: readonly RestHand[], weight: number, holding: 
   if (weight <= 0) return;
   for (const hand of hands) {
     if (holding.has(hand.socket)) continue;
-    for (const finger of hand.fingers) finger.bone.quaternion.slerp(finger.rest, weight);
+    for (const finger of hand.fingers) finger.bone.quaternion.slerp(finger.rest, weight * REST_HANDS.towardRest);
   }
 }
