@@ -111,7 +111,6 @@ const extraNode = {
   column: 0,
   row: -15.2,
   requires: ['eye_of_the_storm'],
-  requireMode: 'all',
   statMods: [{ stat: 'maxLife', op: 'add', value: 10 }],
   skillMods: [],
 };

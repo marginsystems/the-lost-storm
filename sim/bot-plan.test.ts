@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import type { BotPlan } from './bot-plan.ts';
 import { flaskCommands, junkIndex, nextPlace, powerOf, releaseCommands, rollCommand } from './bot-plan.ts';
 import { generateItem } from './items.ts';
+import { holdingParts } from './progression.ts';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillTreeNodeDef } from './content/types.ts';
 import { createWorld } from './world/create.ts';
@@ -28,17 +29,23 @@ void test('a build spends every point on its own path, nearest the root first', 
   assert.equal(nextPlace(content, PLAN, allocated, 0), null);
 });
 
-void test('a mixed build takes turns between its paths', (): void => {
+void test('a mixed build begins on its first path and walks across to the second, every place joined to what it holds', (): void => {
   const mixed: BotPlan = { ...PLAN, paths: ['storm', 'blade'] };
-  const first: string | null = nextPlace(content, mixed, [], 2);
-  const second: string | null = first === null ? null : nextPlace(content, mixed, [first], 1);
-  assert.deepEqual([first, second].map((id: string | null): string => pathOf(id ?? '')), ['storm', 'blade']);
+  const taken: string[] = [];
+  for (let pick: number = 0; pick < 6; pick += 1) {
+    const next: string | null = nextPlace(content, mixed, taken, 1);
+    assert.ok(next !== null);
+    taken.push(next);
+  }
+  assert.equal(pathOf(taken[0] ?? ''), 'storm');
+  assert.ok(taken.some((id: string): boolean => pathOf(id) === 'blade'));
+  assert.equal(holdingParts(content, taken).length, 1);
 });
 
-void test('a build takes the ability place it prefers before other places, and goes by path when it names none', (): void => {
+void test('a build begins at the ability place it prefers, then grows from it, and goes by path when it names none', (): void => {
   const both: BotPlan = { ...PLAN, paths: ['storm', 'stone'], skills: ['thunderclap', 'storm_bolt'] };
   assert.equal(nextPlace(content, both, [], 1), 'stone_thunderclap');
-  assert.equal(nextPlace(content, both, ['stone_thunderclap'], 1), 'storm_storm_bolt');
+  assert.equal(nextPlace(content, both, ['stone_thunderclap'], 1), 'tempered_body');
   assert.equal(pathOf(nextPlace(content, { ...both, skills: [] }, [], 1) ?? ''), 'storm');
 });
 

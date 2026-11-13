@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content } from '../../sim/content/types.ts';
+import { canAllocate } from '../../sim/progression.ts';
 import { chartBounds, chartFocus, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
 
 const content: Content = loadContent();
@@ -34,28 +35,33 @@ void test('every path is named past its farthest place, in its own tint', (): vo
   }
 });
 
-void test('the route to a place starts beside what is taken and ends on the place, and a taken place needs none', (): void => {
+void test('the route to a place starts beside what is held and ends on the place, and a held place needs none', (): void => {
   assert.deepEqual(chartRoute(content, [], 'storm_storm_bolt'), ['storm_storm_bolt']);
   assert.deepEqual(chartRoute(content, [], 'stormcallers_focus'), ['storm_storm_bolt', 'stormcallers_focus']);
-  assert.deepEqual(chartRoute(content, ['stormcallers_focus'], 'stormcallers_focus'), []);
-  const far: string[] = chartRoute(content, ['stormcallers_focus'], 'storm_2');
+  const held: readonly string[] = ['storm_storm_bolt', 'stormcallers_focus'];
+  assert.deepEqual(chartRoute(content, held, 'stormcallers_focus'), []);
+  const far: string[] = chartRoute(content, held, 'storm_2');
   assert.equal(far.at(-1), 'storm_2');
-  assert.ok(!far.includes('stormcallers_focus'));
-  const first: string | undefined = far[0];
-  assert.ok(first !== undefined && content.skillTree.find((node) => node.id === first)?.requires.includes('stormcallers_focus') === true);
+  assert.ok(!far.some((id: string): boolean => held.includes(id)));
 });
 
-void test('a route only walks forward along what each place requires, and an entrance is reached directly', (): void => {
-  assert.deepEqual(chartRoute(content, ['storm_storm_bolt', 'stormcallers_focus', 'storm_1'], 'blade_thunderhead'), ['blade_thunderhead']);
-  assert.deepEqual(chartRoute(content, ['storm_storm_bolt', 'stormcallers_focus', 'storm_1'], 'heavy_hands'), ['blade_thunderhead', 'heavy_hands']);
-  const route: string[] = chartRoute(content, ['stormcallers_focus'], 'forked_bolt');
-  assert.deepEqual(route, ['storm_1', 'forked_bolt']);
-  const taken: string[] = ['stormcallers_focus'];
-  for (const id of chartRoute(content, ['stormcallers_focus'], 'storm_lance')) {
-    const node = content.skillTree.find((entry) => entry.id === id);
-    assert.ok(node !== undefined && node.requires.some((required: string): boolean => taken.includes(required)), id);
+void test('a route walks links either way, so it crosses a ring and turns inward to another centre, each step joined to the last', (): void => {
+  const held: readonly string[] = ['storm_storm_bolt', 'stormcallers_focus', 'storm_1'];
+  assert.deepEqual(chartRoute(content, held, 'blade_thunderhead'), ['storm_blade_near', 'blade_1', 'heavy_hands', 'blade_thunderhead']);
+  assert.deepEqual(chartRoute(content, held, 'forked_bolt'), ['forked_bolt']);
+  const taken: string[] = [...held];
+  for (const id of chartRoute(content, held, 'storm_lance')) {
+    assert.ok(canAllocate(content, taken, 1, id), id);
     taken.push(id);
   }
+});
+
+void test('a legacy holding routes from its trunk and counts its other held parts as already paid', (): void => {
+  const legacy: readonly string[] = ['storm_storm_bolt', 'blade_thunderhead', 'heavy_hands'];
+  const route: string[] = chartRoute(content, legacy, 'stormcallers_focus');
+  assert.equal(route.at(-1), 'stormcallers_focus');
+  assert.ok(route.includes('blade_1'));
+  assert.ok(!route.includes('storm_storm_bolt'));
 });
 
 void test('you are at the last place you took, and nowhere before the first', (): void => {

@@ -5,7 +5,7 @@ import { loadContent } from './content/content.ts';
 import type { SkillUnlock } from './content/shape-types.ts';
 import type { Content } from './content/types.ts';
 import { grantXp } from './world/character.ts';
-import { xpToNextLevel } from './progression.ts';
+import { placeLinks, xpToNextLevel } from './progression.ts';
 import { parseSaveText, toSave } from './save.ts';
 import { assignSlot, chartSkills, defaultBar, everySkill, placeLearned, placeOf, readBar, readLearned, startingSkills } from './skill-book.ts';
 import { stepWorld } from './world/step.ts';
@@ -66,7 +66,7 @@ void test('levels give points but never a skill; a skill is learned only by taki
   assert.equal(world.player.skillPoints, 2 * content.chart.pointsPerLevel);
 });
 
-void test('the roll is taught by play; the first moment and the lesson each grant a chart point, and a place turns a point into a skill on the bar', (): void => {
+void test('the roll is taught by play; the first moment and the lesson each grant a chart point, a place turns a point into a skill on the bar, and the next point must join it', (): void => {
   const world: World = worldIn(content, 'hall_of_time', 3);
   const roll: WorldEvent[] = finish(world, 'out_of_the_mist');
   assert.deepEqual(roll.filter((event: WorldEvent): boolean => event.type === 'skill_unlocked'), [{ type: 'skill_unlocked', skill: 'dodge_roll', slot: 5 }]);
@@ -83,7 +83,12 @@ void test('the roll is taught by play; the first moment and the lesson each gran
   assert.equal(world.player.skillPoints, 1);
   const clap = must(placeOf(content, 'thunderclap'), 'clap place');
   stepWorld(world, [{ type: 'allocate', node: clap.id }], 1 / 60);
-  assert.equal(world.player.bar[2], 'thunderclap');
+  assert.ok(!world.player.learned.includes('thunderclap'));
+  assert.equal(world.player.skillPoints, 1);
+  const next: string = must(placeLinks(content).get(bolt.id)?.[0], 'place beside the bolt');
+  stepWorld(world, [{ type: 'allocate', node: next }], 1 / 60);
+  assert.ok(world.player.allocated.includes(next));
+  assert.equal(world.player.skillPoints, 0);
 });
 
 void test('giving a place back forgets its skill and clears it from the bar', (): void => {

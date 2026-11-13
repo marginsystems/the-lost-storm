@@ -1,6 +1,6 @@
 import type { ChartPath, SkillTreeNodeDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
-import { canRefund, refundCost, refundState, respecState } from '../../sim/progression.ts';
+import { refundBlock, refundCost, refundState, respecState } from '../../sim/progression.ts';
 import type { ChartChange } from '../../sim/progression.ts';
 import { ATLAS_VIEW, atRest, stepMotion, still, toMap, toScreen } from './atlas-view.ts';
 import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-view.ts';
@@ -19,7 +19,7 @@ import { slotAction } from '../settings/bindings.ts';
 import { placeGlyph } from './tree-glyphs.ts';
 import { cardSpot, nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
 import type { CardSpot, NodeSpot } from './tree-nodes.ts';
-import { statusLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
+import { lockedLine, pointsPrompt, statusLine, takenLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
 
 const CHART = {
@@ -203,11 +203,11 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   let dwell: number | undefined;
 
   const costLine = (node: SkillTreeNodeDef, status: TreeNodeStatus): string => {
-    if (status.kind === 'allocated') return canRefund(content, player().allocated, node.id) ? 'Taken' : 'Taken · places after it hold on to it';
+    if (status.kind === 'allocated') return takenLine(refundBlock(content, player().allocated, node.id));
     const steps: number = chartRoute(content, player().allocated, node.id).length;
     if (status.kind === 'available') return `${statusLine(status, context.api.touch)} · ${TREE_NODE_COST} point`;
     if (status.kind === 'no_points') return `Needs ${TREE_NODE_COST} point · you have none`;
-    return steps > 0 ? `${steps * TREE_NODE_COST} points along the lit route` : statusLine(status, context.api.touch);
+    return lockedLine(status, steps, context.api.touch);
   };
 
   const showRoute = (target: string | null): void => {
@@ -581,7 +581,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const fresh: boolean = you.skillPoints === 0 && you.allocated.length === 0;
     prompt.classList.toggle('shown', you.skillPoints > 0 || fresh);
     prompt.classList.toggle('empty', fresh);
-    if (you.skillPoints > 0) setText(prompt, `${you.skillPoints} ${you.skillPoints === 1 ? 'point' : 'points'}: choose a place`, false);
+    if (you.skillPoints > 0) setText(prompt, pointsPrompt(you.skillPoints, you.allocated.length), true);
     else if (fresh) setText(prompt, CHART.emptyLine, false);
     restart.classList.toggle('shown', you.allocated.length > 0);
     if (performance.now() >= confirmUntil) restart.classList.remove('confirm');
