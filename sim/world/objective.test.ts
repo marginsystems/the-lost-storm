@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { worldIn } from '../../test/support.ts';
 import { TOWN_CONTENT } from '../../test/town-support.ts';
-import type { Content, QuestDef } from '../content/types.ts';
+import type { Content, QuestDef, ZoneExit } from '../content/types.ts';
+import { moveExit } from './exits.ts';
 import { nextAction, objectiveTarget } from './objective.ts';
 import type { ObjectiveTarget } from './objective.ts';
 import { startQuests } from './quests.ts';
@@ -41,6 +42,16 @@ void test('an objective in another zone points at the exit that leads there', ()
   assert.ok(target !== null);
   assert.equal(target.kind, 'exit');
   assert.ok(world.zone.exits.some((exit): boolean => exit.x === target.pos.x && exit.z === target.pos.z));
+});
+
+void test('an exit moved in this zone moves the target with it', (): void => {
+  const world: World = fresh(content.world.start);
+  world.quests['errand'] = 1;
+  const exit: ZoneExit | undefined = world.zone.exits.find((candidate: ZoneExit): boolean => candidate.to === 'outpost');
+  assert.ok(exit !== undefined);
+  moveExit(world, exit.id, { x: exit.x + 40, z: exit.z - 25 });
+  const target: ObjectiveTarget | null = objectiveTarget(world);
+  assert.deepEqual(target?.pos, { x: exit.x + 40, z: exit.z - 25 });
 });
 
 void test('with no active quest there is no target and the fallback text stays', (): void => {

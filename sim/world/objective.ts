@@ -61,7 +61,8 @@ export function exitToward(world: World, goals: readonly string[]): ZoneExit | n
   const queue: string[] = [world.zone.id];
   const reached: Set<string> = new Set<string>(queue);
   for (let index: number = 0; index < queue.length; index += 1) {
-    const zone: ZoneDef | undefined = world.content.zones.get(queue[index] ?? '');
+    const id: string = queue[index] ?? '';
+    const zone: ZoneDef | undefined = id === world.zone.id ? world.zone : world.content.zones.get(id);
     if (zone === undefined) continue;
     for (const exit of zone.exits) {
       if (reached.has(exit.to) || !allHold(world, exit.requires)) continue;
