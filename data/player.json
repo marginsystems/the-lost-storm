@@ -75,7 +75,7 @@
   "goldMagnetRadius": 3.2,
   "respawnDelay": 1.4,
   "respawnInvulnerability": 3,
-  "deathPenalty": {"minLevel": 5, "xpPercent": 0.1},
+  "deathPenalty": {"minLevel": 1, "xpPercent": 0.1},
   "resistance": {"armourCap": 0.75, "cap": 0.75, "floor": -1, "tierPenalty": 0.2},
   "caps": [
     {"stat": "attackSpeed", "max": 2},

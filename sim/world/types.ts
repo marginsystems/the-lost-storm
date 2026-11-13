@@ -439,6 +439,7 @@ export interface DeathState {
   readonly killer: string;
   readonly skill: string;
   elapsed: number;
+  readonly xpLost: number;
 }
 
 export interface StrikeCommand {

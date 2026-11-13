@@ -30,12 +30,19 @@ function causeText(world: World): string {
   return `Slain by ${death.killer} with ${death.skill}`;
 }
 
+function costText(world: World): string {
+  const death = world.death;
+  if (death === null || death.xpLost <= 0) return '';
+  return `${death.xpLost.toLocaleString('en-US')} experience lost`;
+}
+
 export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus {
   const screen: HTMLDivElement = el('div', 'death-screen', parent);
   const backdrop: DitherLayer = mountDither(screen, { className: 'death-backdrop', layers: BACKDROPS.death, eager: false, marks: 'dithered', maxRatio: DEATH_PANEL.backdropRatio });
   const panel: HTMLDivElement = el('div', 'death-panel', screen);
   label('death-title', 'You have fallen', panel);
   const cause: HTMLDivElement = el('div', 'death-cause', panel);
+  const cost: HTMLDivElement = el('div', 'death-cost', panel);
   const actions: HTMLDivElement = el('div', 'death-actions', panel);
   const buttons: HTMLButtonElement[] = [];
   let visible: boolean = false;
@@ -80,7 +87,12 @@ export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus 
   return {
     update(world: World): void {
       const fallen: boolean = !world.player.alive && world.death !== null;
-      if (fallen) setText(cause, causeText(world), false);
+      if (fallen) {
+        setText(cause, causeText(world), false);
+        const lost: string = costText(world);
+        setText(cost, lost, false);
+        cost.classList.toggle('shown', lost !== '');
+      }
       const open: boolean = fallen && choicesOpen(world);
       if (open !== ready) {
         ready = open;

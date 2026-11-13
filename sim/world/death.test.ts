@@ -8,6 +8,7 @@ import { choicesOpen, penaltyFor } from './death.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
+import { xpToNextLevel } from '../progression.ts';
 
 const content: Content = OUTPOST_CONTENT;
 const DT: number = 1 / 60;
@@ -140,18 +141,44 @@ void test('a boss comes back at full life and in its first phase', (): void => {
   assert.equal(boss.aggro, false);
 });
 
-void test('the experience penalty is zero below the threshold and a share of the level progress at or above it', (): void => {
+void test('each death takes a tenth of the experience the level needs, never more than the hero holds and never a level', (): void => {
   const penalty = content.player.deathPenalty;
-  assert.equal(penaltyFor(penalty, penalty.minLevel - 1, 500), 0);
-  assert.equal(penaltyFor(penalty, penalty.minLevel, 500), Math.round(500 * penalty.xpPercent));
-  assert.equal(penaltyFor(penalty, penalty.minLevel, 0), 0);
-  const world: World = dead('outpost');
-  world.player.level = penalty.minLevel;
-  world.player.xp = 200;
+  const curve = content.player.xp;
+  assert.equal(penalty.minLevel, 1);
+  const tenth = (level: number): number => Math.round(xpToNextLevel(curve, level) * penalty.xpPercent);
+  assert.equal(penaltyFor(penalty, curve, 1, 500), tenth(1));
+  assert.equal(penaltyFor(penalty, curve, 6, xpToNextLevel(curve, 6) - 1), tenth(6));
+  assert.equal(penaltyFor(penalty, curve, 4, 3), 3);
+  assert.equal(penaltyFor(penalty, curve, 4, 0), 0);
+  assert.equal(penaltyFor({ minLevel: 3, xpPercent: 0.1 }, curve, 2, 500), 0);
+});
+
+void test('the experience is lost the moment the hero falls and stays lost after the return', (): void => {
+  const curve = content.player.xp;
+  const world: World = worldIn(content, 'outpost', 3);
+  world.player.level = 3;
+  const monster: MonsterState = must(world.monsters.find((candidate: MonsterState): boolean => candidate.def.boss === null && candidate.alive), 'monster');
+  const held: number = Math.round(xpToNextLevel(curve, 3) * 0.5);
+  world.player.xp = held;
+  killedBy(world, monster);
+  const lost: number = Math.round(xpToNextLevel(curve, 3) * content.player.deathPenalty.xpPercent);
+  assert.equal(must(world.death, 'death').xpLost, lost);
+  assert.equal(world.player.xp, held - lost);
   advance(world, content.player.respawnDelay + 0.1);
   advance(world, 0.05, [{ type: 'respawn', choice: 'checkpoint' }]);
-  assert.equal(world.player.level, penalty.minLevel);
-  assert.equal(world.player.xp, 200 - Math.round(200 * penalty.xpPercent));
+  assert.equal(world.player.level, 3);
+  assert.equal(world.player.xp, held - lost);
+});
+
+void test('dying with little experience empties the bar and keeps the level', (): void => {
+  const world: World = worldIn(content, 'outpost', 5);
+  world.player.level = 5;
+  const monster: MonsterState = must(world.monsters.find((candidate: MonsterState): boolean => candidate.def.boss === null && candidate.alive), 'monster');
+  world.player.xp = 2;
+  killedBy(world, monster);
+  assert.equal(must(world.death, 'death').xpLost, 2);
+  assert.equal(world.player.xp, 0);
+  assert.equal(world.player.level, 5);
 });
 
 void test('returning to town leaves the wilds for the town', (): void => {
@@ -175,7 +202,7 @@ void test('touching a waypoint makes it the checkpoint and the hero returns to i
   world.player.pos = { x: waypoint.x + 6, z: waypoint.z };
   world.player.life = 0;
   world.player.alive = false;
-  world.death = { killer: 'x', skill: 'y', elapsed: 99 };
+  world.death = { killer: 'x', skill: 'y', elapsed: 99, xpLost: 0 };
   stepWorld(world, [{ type: 'respawn', choice: 'checkpoint' }], DT);
   assert.deepEqual(world.player.pos, { x: waypoint.x, z: waypoint.z });
 });
@@ -191,7 +218,7 @@ void test('entering a zone through an exit makes that entrance the checkpoint', 
   assert.deepEqual(world.respawn, { type: 'exit', exit: exit.toExit });
   world.player.life = 0;
   world.player.alive = false;
-  world.death = { killer: 'x', skill: 'y', elapsed: 99 };
+  world.death = { killer: 'x', skill: 'y', elapsed: 99, xpLost: 0 };
   world.player.pos = { x: 1, z: 1 };
   stepWorld(world, [{ type: 'respawn', choice: 'checkpoint' }], DT);
   const arrival = must(wild.exits.find((candidate) => candidate.id === exit.toExit), 'arrival').arrival;

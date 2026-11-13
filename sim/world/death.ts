@@ -1,4 +1,5 @@
-import type { DeathPenalty } from '../content/types.ts';
+import type { DeathPenalty, XpCurve } from '../content/types.ts';
+import { xpToNextLevel } from '../progression.ts';
 import { clearAreas } from './areas.ts';
 import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
@@ -10,9 +11,9 @@ export function choicesOpen(world: World): boolean {
   return !world.player.alive && world.death !== null && world.death.elapsed >= world.content.player.respawnDelay;
 }
 
-export function penaltyFor(penalty: DeathPenalty, level: number, xp: number): number {
+export function penaltyFor(penalty: DeathPenalty, curve: XpCurve, level: number, xp: number): number {
   if (level < penalty.minLevel) return 0;
-  return Math.min(xp, Math.round(xp * penalty.xpPercent));
+  return Math.max(0, Math.min(xp, Math.round(xpToNextLevel(curve, level) * penalty.xpPercent)));
 }
 
 function resetMonster(monster: MonsterState): void {
@@ -43,7 +44,6 @@ function resetMonster(monster: MonsterState): void {
 
 function revive(world: World): void {
   const player: PlayerState = world.player;
-  player.xp -= penaltyFor(world.content.player.deathPenalty, player.level, player.xp);
   player.alive = true;
   player.life = player.maxLife;
   player.mana = player.stats.maxMana;
@@ -81,8 +81,12 @@ export function respawnPlayer(world: World, choice: RespawnChoice): void {
 }
 
 function recordDeath(world: World, event: Extract<WorldEvent, { readonly type: 'damage' }>): void {
+  if (world.death !== null) return;
   const source: MonsterState | undefined = world.monsters.find((monster: MonsterState): boolean => monster.id === event.sourceId);
-  world.death = { killer: source?.def.name ?? 'The storm', skill: event.skill.name, elapsed: 0 };
+  const player: PlayerState = world.player;
+  const xpLost: number = penaltyFor(world.content.player.deathPenalty, world.content.player.xp, player.level, player.xp);
+  player.xp -= xpLost;
+  world.death = { killer: source?.def.name ?? 'The storm', skill: event.skill.name, elapsed: 0, xpLost };
   for (const monster of world.monsters) monster.aggro = false;
 }
 

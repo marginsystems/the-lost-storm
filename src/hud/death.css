@@ -53,6 +53,25 @@
   margin-bottom: 4px;
 }
 
+.death-cost {
+  max-height: 0;
+  margin-top: -10px;
+  font-size: 13px;
+  color: var(--storm);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy), max-height var(--spring-smooth-ms) var(--spring-smooth), margin var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.death-screen.visible .death-cost.shown {
+  max-height: 20px;
+  margin-top: -6px;
+  margin-bottom: 4px;
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--spring-smooth-ms) * 2);
+}
+
 .death-actions {
   display: flex;
   flex-direction: column;
