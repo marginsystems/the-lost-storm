@@ -30,12 +30,23 @@ export const WAKE_WISPS = {
   glowUntil: 0.55,
   flatten: 0.5,
   floorFade: 0.3,
-  eye: { near: 0.9, far: 2.2 },
-  body: { inner: 0.2, outer: 0.95, keep: 0.4, ragged: 0.5, heights: [0.15, 0.85, 1.65] },
+  soft: {
+    desktop: { edge: [0.3, 0.58], eye: [0.9, 2.2], outer: 0.95, keep: 0.4, drop: 0 },
+    mobile: { edge: [0.16, 0.76], eye: [1.7, 3.8], outer: 1.6, keep: 0.2, drop: 2 },
+  },
+  body: { inner: 0.2, ragged: 0.5, heights: [0.15, 0.85, 1.65] },
   shade: 0xb4bbc4,
   keySide: [-0.8, 0.6],
   mist: 0xeef0f2,
 } as const;
+
+export interface WispSoftness {
+  readonly edge: readonly [number, number];
+  readonly eye: readonly [number, number];
+  readonly outer: number;
+  readonly keep: number;
+  readonly drop: number;
+}
 
 export interface Wisp {
   readonly angle: number;
@@ -94,9 +105,20 @@ export function wispPush(front: number): number {
   return 1 - (1 - t) * (1 - t) * (1 - t);
 }
 
-export function wispKeep(stage: WakeStage | null): number {
-  if (stage === null) return WAKE_WISPS.body.keep;
-  return WAKE_WISPS.body.keep * (1 - wispPush(stage.front));
+export function wispKeep(soft: WispSoftness, stage: WakeStage | null): number {
+  if (stage === null) return soft.keep;
+  return soft.keep * (1 - wispPush(stage.front));
+}
+
+export function lensDistance(wisp: Wisp): number {
+  const toward: number = (WAKE_SHOT.start.yawDegrees * Math.PI) / 180;
+  const across: number = WAKE_SHOT.start.distance * Math.cos((WAKE_SHOT.start.pitchDegrees * Math.PI) / 180);
+  return Math.hypot(Math.sin(wisp.angle) * wisp.radius - Math.sin(toward) * across, Math.cos(wisp.angle) * wisp.radius - Math.cos(toward) * across);
+}
+
+export function wispsAwayFromLens(wisps: readonly Wisp[], drop: number): Wisp[] {
+  const nearest: ReadonlySet<Wisp> = new Set(wisps.toSorted((a: Wisp, b: Wisp): number => lensDistance(a) - lensDistance(b)).slice(0, drop));
+  return wisps.filter((wisp: Wisp): boolean => !nearest.has(wisp));
 }
 
 export function wispState(wisp: Wisp, stage: WakeStage | null, time: number): WispState {
@@ -117,8 +139,9 @@ export function wispState(wisp: Wisp, stage: WakeStage | null, time: number): Wi
 }
 
 export function createWakeWisps(quality: QualityName, time: IUniform<number>, body: IUniform<Vector4>, dither: IUniform<number>): WakeWisps {
-  const count: number = WAKE_WISPS.counts[quality];
-  const wisps: Wisp[] = wispLayout(count, createRng(WAKE_WISPS.seed));
+  const soft: WispSoftness = WAKE_WISPS.soft[quality];
+  const wisps: Wisp[] = wispsAwayFromLens(wispLayout(WAKE_WISPS.counts[quality], createRng(WAKE_WISPS.seed)), soft.drop);
+  const count: number = wisps.length;
   const plane: PlaneGeometry = new PlaneGeometry(1, 1);
   const geometry: InstancedBufferGeometry = new InstancedBufferGeometry();
   geometry.index = plane.index;
@@ -131,7 +154,7 @@ export function createWakeWisps(quality: QualityName, time: IUniform<number>, bo
   geometry.setAttribute('aCentre', centres);
   geometry.setAttribute('aLook', looks);
   const ground: IUniform<number> = { value: 0 };
-  const bodyClear: IUniform<Vector4> = { value: new Vector4(WAKE_WISPS.body.inner, WAKE_WISPS.body.outer, WAKE_WISPS.body.keep, WAKE_WISPS.body.ragged) };
+  const bodyClear: IUniform<Vector4> = { value: new Vector4(WAKE_WISPS.body.inner, soft.outer, soft.keep, WAKE_WISPS.body.ragged) };
   const material: ShaderMaterial = new ShaderMaterial({
     uniforms: {
       uTime: time,
@@ -141,9 +164,10 @@ export function createWakeWisps(quality: QualityName, time: IUniform<number>, bo
       uShade: { value: new Color(WAKE_WISPS.shade) },
       uFlatten: { value: WAKE_WISPS.flatten },
       uKeySide: { value: new Vector2(WAKE_WISPS.keySide[0], WAKE_WISPS.keySide[1]) },
-      uEye: { value: new Vector4(WAKE_WISPS.eye.near, WAKE_WISPS.eye.far, 0, 0) },
+      uEye: { value: new Vector4(soft.eye[0], soft.eye[1], 0, 0) },
       uBodyClear: bodyClear,
       uReach: { value: new Vector3(WAKE_WISPS.body.heights[0], WAKE_WISPS.body.heights[1], WAKE_WISPS.body.heights[2]) },
+      uEdge: { value: new Vector2(soft.edge[0], soft.edge[1]) },
       uGround: ground,
       uFloorFade: { value: WAKE_WISPS.floorFade },
     },
@@ -161,7 +185,7 @@ export function createWakeWisps(quality: QualityName, time: IUniform<number>, bo
     mesh,
     update(hero: Vec2, floor: number, stage: WakeStage | null, elapsed: number): void {
       ground.value = floor;
-      bodyClear.value.z = wispKeep(stage);
+      bodyClear.value.z = wispKeep(soft, stage);
       let shown: boolean = false;
       wisps.forEach((wisp: Wisp, index: number): void => {
         const state: WispState = wispState(wisp, stage, elapsed);

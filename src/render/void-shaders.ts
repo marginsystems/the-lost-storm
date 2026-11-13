@@ -350,6 +350,7 @@ uniform vec2 uKeySide;
 uniform vec3 uReach;
 uniform float uGround;
 uniform float uFloorFade;
+uniform vec2 uEdge;
 varying vec2 vUv;
 varying vec3 vWorld;
 varying float vAlpha;
@@ -372,7 +373,7 @@ void main() {
   float mass = broad * 0.65 + fine * 0.35 + (1.0 - length(vUv)) * 0.3;
   vec2 edge = abs(vUv);
   float window = (1.0 - smoothstep(0.62, 0.98, max(edge.x, edge.y))) * smoothstep(0.0, uFloorFade, vWorld.y - uGround);
-  float shape = (1.0 - smoothstep(0.25, 1.0, reach)) * smoothstep(0.3, 0.58, mass) * window;
+  float shape = (1.0 - smoothstep(0.25, 1.0, reach)) * smoothstep(uEdge.x, uEdge.y, mass) * window;
   float lee = voidFbm(vUv * 1.6 + vSeed * 31.0 + drift - uKeySide * 0.35);
   float lit = clamp(0.5 + (broad - lee) * 5.0 + vUv.y * 0.25, 0.0, 1.0);
   float touch = min(min(bodyAt(uReach.x), bodyAt(uReach.y)), bodyAt(uReach.z)) + (fine - 0.5) * uBodyClear.w;

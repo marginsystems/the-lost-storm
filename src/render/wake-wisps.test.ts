@@ -3,8 +3,8 @@ import { test } from 'node:test';
 import { createRng } from '../../sim/rng.ts';
 import type { WakeStage } from '../../sim/world/wake.ts';
 import { WAKE_SHOT } from '../opening/wake-shot.ts';
-import type { Wisp } from './wake-wisps.ts';
-import { WAKE_WISPS, wispKeep, wispLayout, wispPush, wispState } from './wake-wisps.ts';
+import type { Wisp, WispSoftness } from './wake-wisps.ts';
+import { WAKE_WISPS, lensDistance, wispKeep, wispLayout, wispPush, wispsAwayFromLens, wispState } from './wake-wisps.ts';
 
 function stage(stir: number, front: number): WakeStage {
   return { phase: front > 0 ? 'rise' : 'stir', stir, rise: front, front, settle: 0, through: 0.3 };
@@ -51,13 +51,31 @@ void test('the wisps keep their layout at the start of the wake however long the
 });
 
 void test('a wisp over him thins only part way while he lies and clears off him smoothly as he rises', (): void => {
-  assert.equal(wispKeep(stage(0, 0)), WAKE_WISPS.body.keep);
-  assert.equal(wispKeep(stage(1, 1)), 0);
-  let before: number = wispKeep(stage(1, 0));
+  assert.equal(wispKeep(WAKE_WISPS.soft.desktop, stage(0, 0)), WAKE_WISPS.soft.desktop.keep);
+  assert.equal(wispKeep(WAKE_WISPS.soft.desktop, stage(1, 1)), 0);
+  let before: number = wispKeep(WAKE_WISPS.soft.desktop, stage(1, 0));
   for (let front: number = 0.01; front <= 1; front += 0.01) {
-    const now: number = wispKeep(stage(1, front));
+    const now: number = wispKeep(WAKE_WISPS.soft.desktop, stage(1, front));
     assert.ok(now <= before + 1e-9);
     assert.ok(before - now < 0.02);
     before = now;
   }
+});
+
+void test('the phone wisps have softer edges and fade out sooner near the lens than the desktop ones', (): void => {
+  const desk: WispSoftness = WAKE_WISPS.soft.desktop;
+  const phone: WispSoftness = WAKE_WISPS.soft.mobile;
+  assert.ok(phone.edge[1] - phone.edge[0] > desk.edge[1] - desk.edge[0]);
+  assert.ok(phone.eye[0] > desk.eye[0] && phone.eye[1] > desk.eye[1]);
+  assert.ok(phone.outer > desk.outer);
+  assert.ok(phone.keep < desk.keep);
+});
+
+void test('the phone tier drops the wisps nearest the lens and keeps the rest in order', (): void => {
+  const laid: Wisp[] = wispLayout(WAKE_WISPS.counts.mobile, createRng(WAKE_WISPS.seed));
+  const kept: Wisp[] = wispsAwayFromLens(laid, WAKE_WISPS.soft.mobile.drop);
+  assert.equal(kept.length, laid.length - WAKE_WISPS.soft.mobile.drop);
+  const dropped: Wisp[] = laid.filter((wisp: Wisp): boolean => !kept.includes(wisp));
+  for (const gone of dropped) for (const wisp of kept) assert.ok(lensDistance(gone) <= lensDistance(wisp));
+  assert.deepEqual(wispsAwayFromLens(laid, WAKE_WISPS.soft.desktop.drop), laid);
 });
