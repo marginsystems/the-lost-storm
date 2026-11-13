@@ -25,6 +25,11 @@ export type RemoveOutcome = 'removed' | 'listed' | 'offline';
 
 export type ReconcileMode = 'boot' | 'live';
 
+export interface Reconciliation {
+  readonly roster: Roster;
+  readonly server: ServerRoster | null;
+}
+
 export function parkedKey(key: string, slot: string): string {
   return `${key}.slot.${slot}`;
 }
@@ -199,12 +204,12 @@ export function firstOnServer(server: ServerRoster): boolean {
   return server.characters.some((character: ServerCharacter): boolean => character.id === server.defaultId);
 }
 
-export async function reconcileRoster(place: RosterPlace, api: CharactersApi, signal: AbortSignal, mode: ReconcileMode): Promise<Roster> {
+export async function reconcileWithServer(place: RosterPlace, api: CharactersApi, signal: AbortSignal, mode: ReconcileMode): Promise<Reconciliation> {
   const before: Roster = mode === 'boot' ? prepareRoster(place) : loadRoster(place.store);
   const record: SyncRecord | null = syncRecord(place);
-  if (record === null || (mode === 'boot' && !needsList(before))) return before;
+  if (record === null || (mode === 'boot' && !needsList(before))) return { roster: before, server: null };
   const listed: ListResult = await api.list(sessionOf(record.token), signal);
-  if (listed.kind !== 'ok') return before;
+  if (listed.kind !== 'ok') return { roster: before, server: null };
   const fixed: string | null = mode === 'live' ? before.active : null;
   const settled: Reconciled = reconcile(loadRoster(place.store), listed.roster, (key: string): boolean => pendingOf(place, before, key), fixed);
   if (settled.dropped.includes(before.active)) {
@@ -212,15 +217,19 @@ export async function reconcileRoster(place: RosterPlace, api: CharactersApi, si
     const saved: ReadonlyMap<string, string | null> = snapshot(place, touchedBy(place, before.active, next.key));
     if (!replaceActive(place, settled.roster, next, { ...record, revision: 0, updatedAt: null, savedAt: null, pending: false, overwriteCloud: false })) {
       restore(place, saved);
-      return before;
+      return { roster: before, server: listed.roster };
     }
   }
   for (const key of settled.dropped) forget(place, key);
-  const room: number = firstOnServer(listed.roster) ? listed.roster.max - settled.roster.slots.filter((slot: Slot): boolean => slot.id !== null).length : 0;
+  const room: number = firstOnServer(listed.roster) ? listed.roster.max - settled.roster.slots.filter((slot: Slot): boolean => slot.id !== null || slot.legacy).length : 0;
   const roster: Roster = await bindUnbound(api, sessionOf(record.token), settled.roster, room, 0, signal);
-  if (!keep(place.store, roster)) return settled.roster;
+  if (!keep(place.store, roster)) return { roster: settled.roster, server: listed.roster };
   if (mode === 'boot') suffixed(place, roster);
-  return roster;
+  return { roster, server: listed.roster };
+}
+
+export async function reconcileRoster(place: RosterPlace, api: CharactersApi, signal: AbortSignal, mode: ReconcileMode): Promise<Roster> {
+  return (await reconcileWithServer(place, api, signal, mode)).roster;
 }
 
 export function noteActive(place: RosterPlace, summary: Summary): Roster {
@@ -242,10 +251,17 @@ export function switchCharacter(place: RosterPlace, key: string): boolean {
   return false;
 }
 
+function freshKey(roster: Roster, random: () => number): string {
+  const base: string = newKey(random);
+  let key: string = base;
+  for (let n: number = 2; slotByKey(roster, key) !== null; n += 1) key = `${base}${n}`;
+  return key;
+}
+
 export function addCharacter(place: RosterPlace, name: string, id: string | null, random: () => number): string | null {
   const roster: Roster = loadRoster(place.store);
   if (!hasRoom(roster)) return null;
-  const key: string = newKey(random);
+  const key: string = freshKey(roster, random);
   const slot: Slot = { key, id, legacy: false, name, hero: null, level: null };
   if (!keep(place.store, { ...roster, slots: [...roster.slots, slot] })) return null;
   return switchCharacter(place, key) ? key : null;

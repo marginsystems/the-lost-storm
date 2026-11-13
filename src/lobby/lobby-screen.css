@@ -436,3 +436,228 @@ body[data-lobby] #vignette {
 .lobby-screen .lobby-quiet {
   filter: opacity(calc(1 - var(--lobby-zoom, 0) * var(--lobby-zoom-fade)));
 }
+
+.lobby-side {
+  grid-area: sheet;
+  align-self: center;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lobby-side .lobby-sheet {
+  grid-area: auto;
+  align-self: auto;
+}
+
+.lobby-strip {
+  transform: translateY(10px);
+  opacity: 0;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.lobby-screen.shown .lobby-strip {
+  transform: none;
+  opacity: 1;
+}
+
+.strip-list {
+  display: grid;
+  gap: 6px;
+}
+
+.strip-new {
+  display: grid;
+  border-radius: 4px;
+  background: rgba(8, 11, 17, 0.42);
+  transition: background-color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.strip-new.open {
+  background: var(--sheet-bg);
+}
+
+.strip-card {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 14px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(8, 11, 17, 0.42);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(6px);
+  font-family: var(--sans);
+  text-align: left;
+  color: var(--sheet-soft);
+  cursor: pointer;
+  transition:
+    background-color var(--spring-smooth-ms) var(--spring-smooth),
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.strip-card.entering {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.strip-card:hover,
+.strip-card:focus-visible {
+  background: rgba(22, 27, 36, 0.62);
+  outline: none;
+}
+
+.strip-card.lit {
+  background: rgba(232, 184, 102, 0.12);
+  color: var(--text);
+  cursor: default;
+}
+
+.strip-new .strip-empty {
+  background: none;
+  box-shadow: none;
+}
+
+.strip-new.held .strip-empty {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.lobby-strip.busy .strip-card {
+  cursor: progress;
+}
+
+.strip-name {
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.strip-card.lit .strip-name {
+  color: var(--ember, #e8b866);
+}
+
+.strip-detail {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--sheet-dim);
+}
+
+.strip-note,
+.strip-error {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  transition:
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.strip-note {
+  color: rgba(232, 184, 102, 0.78);
+}
+
+.strip-error {
+  color: #f0b4a0;
+}
+
+.strip-note.shown,
+.strip-error.shown {
+  max-height: 40px;
+  opacity: 1;
+}
+
+.lobby-strip .tick,
+.lobby-dock .tick {
+  animation: strip-tick var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+@keyframes strip-tick {
+  from {
+    opacity: 0.2;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.strip-form {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.strip-new.open .strip-form {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.strip-form-inner {
+  display: grid;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 14px;
+}
+
+.strip-field {
+  box-sizing: border-box;
+  width: 100%;
+  height: 34px;
+  margin-top: 2px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.strip-field:focus {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.strip-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 0 -6px 8px;
+}
+
+.lobby-account {
+  max-height: 0;
+  margin: -6px 0 0;
+  overflow: hidden;
+  opacity: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--sheet-dim);
+  transition:
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    margin var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.lobby-account.shown {
+  max-height: 24px;
+  margin: -4px 0 10px;
+  opacity: 1;
+}

@@ -1,5 +1,9 @@
 import { mountThresholdBloom } from '../dither/mount.ts';
 import { el, label, setText } from '../hud/dom.ts';
+import { createCharacterStrip } from './character-strip.ts';
+import type { CharacterStrip } from './character-strip.ts';
+import { deleteWording, STRIP_TEXT } from './character-strip-model.ts';
+import type { CardView, DeleteWording } from './character-strip-model.ts';
 import type { Lobby } from './compact.ts';
 import type { HeroChoice, HeroOption } from './hero-choice.ts';
 import type { LobbyHero, LobbyStat } from './lobby-sheet.ts';
@@ -15,12 +19,10 @@ export const LOBBY_SCREEN = {
   offline: 'Offline. The ladder needs a connection; your character is kept on this device.',
   enterNew: 'Enter the storm',
   enterKnown: 'Continue',
-  startOver: 'Start over',
+  startOver: STRIP_TEXT.deleteLabel,
   settings: 'Settings',
   back: 'Back to title',
-  confirmAsk: 'Start over? This character and everything it carries is gone for good.',
-  confirmYes: 'Erase and start over',
-  confirmNo: 'Keep this character',
+  confirmNo: STRIP_TEXT.keep,
   playedLabel: 'Played',
   seenLabel: 'Last seen',
   levelLabel: 'Level',
@@ -30,16 +32,25 @@ export const LOBBY_SCREEN = {
   countProperty: '--heroes',
 } as const;
 
-export interface LobbyView {
+export interface SheetView {
   readonly name: string | null;
   readonly hero: LobbyHero;
   readonly known: boolean;
   readonly heroes: HeroChoice | null;
 }
 
+export interface LobbyView extends SheetView {
+  readonly cards: readonly CardView[];
+  readonly username: string | null;
+  readonly only: boolean;
+}
+
 export interface LobbyActions {
   primary(): void;
   startOver(): void;
+  pick(key: string): void;
+  create(name: string): Promise<string | null>;
+  suggest(): string | null;
   settings(): void;
   back(): void;
   chooseHero(id: string): void;
@@ -52,6 +63,9 @@ export interface LobbyScreen {
   hide(): void;
   setBusy(busy: boolean): void;
   setHeroes(choice: HeroChoice | null): void;
+  setCards(cards: readonly CardView[]): void;
+  setUsername(username: string | null): void;
+  refuse(text: string): void;
 }
 
 function button(parent: HTMLElement, className: string, text: string, onClick: () => void): HTMLButtonElement {
@@ -90,9 +104,16 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
   root.setAttribute('aria-label', 'Lobby');
   root.inert = true;
 
-  const sheet: HTMLElement = el('section', 'lobby-sheet', root);
+  const side: HTMLDivElement = el('div', 'lobby-side', root);
+  const strip: CharacterStrip = createCharacterStrip(side, { pick: (key: string): void => actions.pick(key), create: (text: string): Promise<string | null> => actions.create(text), suggest: (): string | null => actions.suggest() });
+  const sheet: HTMLElement = el('section', 'lobby-sheet', side);
   sheet.setAttribute('aria-label', 'Your character');
   const name: HTMLHeadingElement = el('h2', 'lobby-name', sheet);
+  const account: HTMLDivElement = label('lobby-account', '', sheet);
+  const setUsername = (username: string | null): void => {
+    if (username !== null) setText(account, username, false);
+    account.classList.toggle(LOBBY_SCREEN.shownClass, username !== null);
+  };
   const level: HTMLDivElement = el('div', 'lobby-level', sheet);
   const levelText: HTMLSpanElement = el('span', 'lobby-level-text', level);
   const bar: HTMLDivElement = el('div', 'lobby-xp', level);
@@ -144,6 +165,8 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
   mountThresholdBloom(primary);
   const quiet: HTMLDivElement = el('div', 'lobby-quiet', dock);
   const reset: HTMLButtonElement = button(quiet, 'lobby-link', LOBBY_SCREEN.startOver, (): void => {
+    strip.close();
+    setText(ask, wording.ask, false);
     dock.classList.add(LOBBY_SCREEN.confirmClass);
     confirm.inert = false;
     no.focus();
@@ -153,9 +176,11 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
   const confirm: HTMLDivElement = el('div', 'lobby-confirm', dock);
   confirm.inert = true;
   const confirmInner: HTMLDivElement = el('div', 'lobby-confirm-inner', confirm);
-  label('lobby-confirm-ask', LOBBY_SCREEN.confirmAsk, confirmInner);
+  let wording: DeleteWording = deleteWording(LOBBY_SCREEN.unnamed, true);
+  const ask: HTMLDivElement = label('lobby-confirm-ask', wording.ask, confirmInner);
+  ask.setAttribute('aria-live', 'polite');
   const confirmRow: HTMLDivElement = el('div', 'lobby-confirm-row', confirmInner);
-  const yes: HTMLButtonElement = button(confirmRow, 'lobby-link danger', LOBBY_SCREEN.confirmYes, (): void => actions.startOver());
+  const yes: HTMLButtonElement = button(confirmRow, 'lobby-link danger', wording.yes, (): void => actions.startOver());
   const no: HTMLButtonElement = button(confirmRow, 'lobby-link', LOBBY_SCREEN.confirmNo, (): void => closeConfirm());
 
   const closeConfirm = (): void => {
@@ -185,8 +210,13 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
     },
     show(view: LobbyView): void {
       setText(name, view.name ?? LOBBY_SCREEN.unnamed, false);
+      setUsername(view.username);
+      strip.render(view.cards);
+      wording = deleteWording(view.name ?? LOBBY_SCREEN.unnamed, view.only);
+      setText(ask, wording.ask, false);
+      yes.textContent = wording.yes;
       primary.textContent = view.known ? LOBBY_SCREEN.enterKnown : LOBBY_SCREEN.enterNew;
-      reset.hidden = !view.known;
+      reset.hidden = !view.known && view.only;
       const hero: LobbyHero = view.hero;
       sheet.dataset['state'] = hero.kind;
       switch (hero.kind) {
@@ -218,7 +248,16 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
     },
     setBusy(busy: boolean): void {
       for (const control of [primary, reset, settings, back, yes, no, ...heroButtons.values()]) control.disabled = busy;
+      strip.setBusy(busy);
     },
     setHeroes,
+    setCards(cards: readonly CardView[]): void {
+      strip.render(cards);
+    },
+    setUsername,
+    refuse(text: string): void {
+      setText(ask, text, true);
+      no.focus();
+    },
   };
 }

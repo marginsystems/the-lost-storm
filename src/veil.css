@@ -49,3 +49,11 @@
 :where(.lobby-screen) {
   visibility: hidden;
 }
+
+html.lobby-resume .lobby-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 66;
+  background: #05070b;
+  opacity: 1;
+}

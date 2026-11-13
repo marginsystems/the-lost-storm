@@ -12,6 +12,7 @@ interface RowParts {
   readonly dot: HTMLSpanElement;
   readonly name: HTMLSpanElement;
   readonly place: HTMLSpanElement;
+  readonly account: HTMLSpanElement;
   readonly level: HTMLSpanElement;
 }
 
@@ -23,8 +24,9 @@ function makeRow(list: HTMLOListElement): RowParts {
   const dot: HTMLSpanElement = el('span', 'board-dot', item);
   const name: HTMLSpanElement = el('span', 'board-name', item);
   const place: HTMLSpanElement = el('span', 'board-place', item);
+  const account: HTMLSpanElement = el('span', 'board-account', item);
   const level: HTMLSpanElement = el('span', 'board-level', item);
-  return { item, rank, dot, name, place, level };
+  return { item, rank, dot, name, place, account, level };
 }
 
 function fill(parts: RowParts, row: BoardRow, you: string | null, animate: boolean): void {
@@ -32,7 +34,10 @@ function fill(parts: RowParts, row: BoardRow, you: string | null, animate: boole
   setText(parts.name, row.name, false);
   setText(parts.place, row.furthest, animate);
   setText(parts.level, String(row.level), animate);
-  parts.item.title = `${row.name} · level ${row.level} · ${row.furthest}`;
+  parts.item.title = row.account === null ? `${row.name} · level ${row.level} · ${row.furthest}` : `${row.name} · level ${row.level} · ${row.furthest} · played by ${row.account}`;
+  setText(parts.account, row.account ?? '', false);
+  parts.item.toggleAttribute('data-account', row.account !== null);
+  parts.item.tabIndex = row.account === null ? -1 : 0;
   parts.dot.classList.toggle('on', row.online);
   parts.item.classList.toggle('you', row.name === you);
 }

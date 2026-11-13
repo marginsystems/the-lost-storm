@@ -167,6 +167,48 @@
   text-align: right;
 }
 
+.board-place,
+.board-account {
+  grid-row: 1;
+  grid-column: 4;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.board-account {
+  justify-self: end;
+  overflow: hidden;
+  max-width: 120px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--lobby-soft);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+}
+
+.board-row[data-account] {
+  cursor: default;
+}
+
+.board-row[data-account]:focus-visible {
+  outline: none;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.board-row[data-account]:is(:hover, :focus-visible) .board-place {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.board-row[data-account]:is(:hover, :focus-visible) .board-account {
+  opacity: 1;
+  transform: none;
+}
+
 .board-level {
   text-align: right;
   color: var(--ember, #e8b866);

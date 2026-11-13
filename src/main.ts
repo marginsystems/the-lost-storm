@@ -69,7 +69,7 @@ import type { GameBoard } from './lobby/game-board.ts';
 import { mountBackdrops } from './dither/mount.ts';
 import { createLobbyFlow } from './lobby/lobby-flow.ts';
 import type { LobbyFlow } from './lobby/lobby-flow.ts';
-import type { LobbyView } from './lobby/lobby-screen.ts';
+import type { SheetView } from './lobby/lobby-screen.ts';
 import type { LobbyLook } from './lobby/lobby-stage.ts';
 import { lobbyHero } from './lobby/lobby-sheet.ts';
 import { PLAYED_KEY, readPlayed } from './launch/played.ts';
@@ -670,10 +670,10 @@ async function start(): Promise<void> {
     flow.restage();
     if (restLoaded) await paintThumbnails();
   };
-  const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped, rig: heroRig(content, chosenHero) }), view: (): LobbyView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: entered ? null : heroChoice(content, world.player, chosenHero) }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
+  const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped, rig: heroRig(content, chosenHero) }), view: (): SheetView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: entered ? null : heroChoice(content, world.player, chosenHero) }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
     entered = true;
     begin();
-  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), chooseHero: (id: string): void => void chooseHero(id), openSettings: (): void => pauseMenu.open('graphics') });
+  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), characters: { serverUrl: import.meta.env.VITE_SERVER_URL, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string => chosenHero }, chooseHero: (id: string): void => void chooseHero(id), openSettings: (): void => pauseMenu.open('graphics') });
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();
