@@ -47,10 +47,11 @@ void test('with no asset base nothing is requested, nothing throws and nothing i
     system.warm(['bone_hit']);
     system.update(10);
     system.stopAmbience();
-    await system.playVoice('anything');
+    await system.playVoice('warden_guide', 'anything');
     system.stopVoice();
-    await Promise.all([system.playVoice('one'), system.playVoice('two')]);
+    await Promise.all([system.playVoice('warden_guide', 'one'), system.playVoice('warden_guide', 'two'), system.playVoice('warden_trader', 'three')]);
     system.stopVoice();
+    assert.deepEqual(system.speaking(), []);
     assert.deepEqual(requests, []);
   });
 });
@@ -108,7 +109,7 @@ void test('a base with no Web Audio available stays silent and requests nothing'
     system.play(CUE, CENTRE);
     system.warm(['bone_hit']);
     system.update(30);
-    await system.playVoice('greeting');
+    await system.playVoice('warden_guide', 'greeting');
     assert.deepEqual(requests, []);
   });
 });

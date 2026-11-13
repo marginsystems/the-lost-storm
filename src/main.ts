@@ -14,7 +14,7 @@ import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
 import { loadContent } from '../sim/content/content.ts';
-import type { Content, ItemBaseDef } from '../sim/content/types.ts';
+import type { Content, ItemBaseDef, LineDef } from '../sim/content/types.ts';
 import { baseOf } from '../sim/items.ts';
 import type { Vec2 } from '../sim/math.ts';
 import type { SaveData } from '../sim/save.ts';
@@ -284,8 +284,8 @@ async function start(): Promise<void> {
     return piece === null ? null : (thumbnails.get(wornImageKey(piece)) ?? null);
   };
   const voice: VoicePlayer = {
-    play(lineId: string): void {
-      audio.playVoice(lineId).catch((): void => undefined);
+    play(line: LineDef): void {
+      audio.playVoice(line.speaker, line.id).catch((): void => undefined);
     },
     stop(): void {
       audio.stopVoice();

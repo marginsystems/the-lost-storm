@@ -17,6 +17,8 @@ import type { Placement } from './mix.ts';
 import { CENTRE, MIX } from './mix.ts';
 import type { AudioControls, AudioSettings } from './settings.ts';
 import { pickVariant, pitchRate, delayBetween, volumeScale } from './variation.ts';
+import type { SpokenClip, VoiceLines } from './voice-lines.ts';
+import { createVoiceLines } from './voice-lines.ts';
 import type { VoiceLimiter } from './voices.ts';
 import { createVoiceLimiter } from './voices.ts';
 import { warmPaths } from './warm.ts';
@@ -42,6 +44,7 @@ const SYSTEM = {
   soundTimeoutMs: 20000,
   warmLanes: 2,
   warmFill: 0.75,
+  fadeTimeConstants: 4,
 } as const;
 
 export interface Trigger {
@@ -58,10 +61,11 @@ export interface AudioSystem {
   readonly health: LoadHealth;
   unlock(): void;
   play(cue: SoundCue, place: Placement): void;
-  playVoice(lineId: string): Promise<void>;
+  playVoice(speaker: string, clipId: string): Promise<void>;
   playEcho(audio: ArrayBuffer): Promise<void>;
   warm(ids: readonly string[]): void;
   stopVoice(): void;
+  speaking(): readonly string[];
   startAmbience(zone: ZoneAmbience): void;
   stopAmbience(): void;
   update(dt: number): void;
@@ -123,8 +127,6 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   let loopRetryLeft: number = 0;
   let warmIds: readonly string[] = [];
   let warming: boolean = false;
-  let speaking: AudioBufferSourceNode | null = null;
-  let voiceRequest: number = 0;
 
   const report = (cue: SoundCue, place: Placement): void => {
     const trigger: Trigger = { sound: cue.sound, time: clock(), volume: cue.volume, gain: place.gain, pan: place.pan };
@@ -267,6 +269,53 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     Promise.all(Array.from({ length: SYSTEM.warmLanes }, lane)).catch((): void => undefined);
   };
 
+  const speak = (buffer: AudioBuffer, current: Graph): SpokenClip => {
+    const source: AudioBufferSourceNode = current.context.createBufferSource();
+    source.buffer = buffer;
+    const gain: GainNode = current.context.createGain();
+    source.connect(gain);
+    gain.connect(current.voice);
+    duck(1);
+    const ended: Promise<void> = new Promise<void>((resolve: () => void): void => {
+      source.addEventListener('ended', (): void => {
+        source.disconnect();
+        gain.disconnect();
+        duck(-1);
+        resolve();
+      });
+    });
+    source.start();
+    return {
+      ended,
+      fadeOut(seconds: number): void {
+        const now: number = current.context.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value, now);
+        gain.gain.setTargetAtTime(0, now, seconds / SYSTEM.fadeTimeConstants);
+        try {
+          source.stop(now + seconds);
+        } catch {
+          return;
+        }
+      },
+    };
+  };
+
+  const lines: VoiceLines = createVoiceLines<AudioBuffer>({
+    find: async (clipId: string): Promise<string | null> => {
+      ensureManifest();
+      if (graph === null) return null;
+      if (loader.current() === null) await loader.ready();
+      return loader.current()?.voice.get(clipId) ?? null;
+    },
+    load: (path: string): Promise<AudioBuffer | null> => (graph === null ? Promise.resolve(null) : load(path)),
+    play: (buffer: AudioBuffer): SpokenClip => {
+      const current: Graph | null = graph;
+      if (current === null) return { ended: Promise.resolve(), fadeOut: (): void => undefined };
+      return speak(buffer, current);
+    },
+  });
+
   loader.onFailed((): void => health.note(false));
   loader.onLoaded((): void => {
     health.note(true);
@@ -308,28 +357,8 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     play(cue: SoundCue, place: Placement): void {
       trigger('effects', cue, place);
     },
-    async playVoice(lineId: string): Promise<void> {
-      this.stopVoice();
-      const request: number = voiceRequest;
-      ensureManifest();
-      await loader.ready();
-      const current: Graph | null = graph;
-      const path: string | undefined = loader.current()?.voice.get(lineId);
-      if (current === null || path === undefined) return;
-      const buffer: AudioBuffer | null = await load(path);
-      if (buffer === null || request !== voiceRequest) return;
-      const source: AudioBufferSourceNode = current.context.createBufferSource();
-      source.buffer = buffer;
-      speaking = source;
-      await new Promise<void>((resolve: () => void): void => {
-        connect(source, 1, 0, current.voice, current, (): void => {
-          if (speaking === source) speaking = null;
-          duck(-1);
-          resolve();
-        });
-        duck(1);
-        source.start();
-      });
+    playVoice(speaker: string, clipId: string): Promise<void> {
+      return lines.say(speaker, clipId);
     },
     async playEcho(audio: ArrayBuffer): Promise<void> {
       const current: Graph | null = graph;
@@ -362,15 +391,10 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       startWarm();
     },
     stopVoice(): void {
-      voiceRequest += 1;
-      const source: AudioBufferSourceNode | null = speaking;
-      speaking = null;
-      if (source === null) return;
-      try {
-        source.stop();
-      } catch {
-        return;
-      }
+      lines.hush();
+    },
+    speaking(): readonly string[] {
+      return lines.speaking();
     },
     startAmbience(zone: ZoneAmbience): void {
       this.stopAmbience();

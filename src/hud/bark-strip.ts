@@ -50,7 +50,7 @@ export function createBarkStrip(root: HTMLElement, context: HudContext): BarkStr
     text.textContent = bark.line.text;
     retrigger(text, 'line');
     element.classList.add('visible');
-    context.api.voice.play(bark.line.id);
+    context.api.voice.play(bark.line);
     timer = window.setTimeout(next, readingTime(bark.line.text) + BARKS.gapMs);
   };
 

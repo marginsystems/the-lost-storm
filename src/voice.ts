@@ -1,4 +1,6 @@
+import type { LineDef } from '../sim/content/types.ts';
+
 export interface VoicePlayer {
-  play(lineId: string): void;
+  play(line: LineDef): void;
   stop(): void;
 }
