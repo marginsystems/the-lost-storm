@@ -16,6 +16,8 @@ import type { LobbyPipeline } from './lobby-render.ts';
 import { poseBones, settlePose, turnPose } from './lobby-pose.ts';
 import type { PosedBone, PoseTurn } from './lobby-pose.ts';
 import { placeRocks } from './lobby-scenery.ts';
+import { createLobbyOrbit, grab, LOBBY_ORBIT, orbitBy, release, stepOrbit, zoomBy } from './lobby-orbit.ts';
+import type { LobbyOrbit, OrbitView } from './lobby-orbit.ts';
 
 export const LOBBY_STAGE = {
   background: 0x05070b,
@@ -29,10 +31,6 @@ export const LOBBY_STAGE = {
   near: 0.1,
   far: 40,
   facing: 0.32,
-  sway: 0.05,
-  swayRate: 0.21,
-  drift: 0.07,
-  driftRate: 0.067,
   skyColor: 0x5d6574,
   groundColor: 0x08090b,
   skyIntensity: 0.28,
@@ -103,6 +101,8 @@ export const LOBBY_POSE: readonly PoseTurn[] = [
   ['DEF-thigh.L', 0, 0, 5],
   ['DEF-thigh.R', 0, 0, -5],
 ];
+
+export const LOBBY_ORBIT_UI: string = '#lobby, #title, button, a, input, select, textarea';
 
 export const LOBBY_FRAMING = {
   wide: { across: 0.5, down: 0, zoom: 1 },
@@ -272,6 +272,14 @@ function idleClip(rig: RigInstance, equipped: Equipment): AnimationClip {
   return equipped.weapon === null ? (rig.clips.unarmed?.idle ?? rig.clips.idle) : rig.clips.idle;
 }
 
+function fromStage(event: Event): boolean {
+  return !(event.target instanceof Element && event.target.closest(LOBBY_ORBIT_UI) !== null);
+}
+
+function take(event: Event): void {
+  event.stopImmediatePropagation();
+}
+
 export function createLobbyStage(content: Content, library: CharacterLibrary, loader: GLTFLoader, random: () => number = Math.random): LobbyStage {
   const scene: Scene = new Scene();
   scene.background = new Color(LOBBY_STAGE.background);
@@ -320,12 +328,51 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
 
   let hero: RigInstance | null = null;
   let heroKey: string = '';
-  let time: number = 0;
   const rimGlow: Color = new Color(LOBBY_STAGE.rimGlow);
   const size: Vector2 = new Vector2();
   let pipeline: LobbyPipeline | null = null;
   let scenery: Promise<void> | null = null;
   let posed: readonly PosedBone[] = [];
+  const orbit: LobbyOrbit = createLobbyOrbit();
+  let drawnAt: number = Number.NEGATIVE_INFINITY;
+  let listening: boolean = false;
+  const pointers: Map<number, { x: number; y: number }> = new Map<number, { x: number; y: number }>();
+  const active = (): boolean => performance.now() - drawnAt < LOBBY_ORBIT.activeWithinMs;
+  const spread = (): number => {
+    const [first, second] = [...pointers.values()];
+    return first === undefined || second === undefined ? 0 : Math.hypot(first.x - second.x, first.y - second.y);
+  };
+  const lift = (event: PointerEvent): void => {
+    if (!pointers.delete(event.pointerId)) return;
+    if (pointers.size === 0) release(orbit);
+    take(event);
+  };
+  const listen = (target: Window): void => {
+    if (listening) return;
+    listening = true;
+    target.addEventListener('pointerdown', (event: PointerEvent): void => {
+      if (!active() || !fromStage(event)) return;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (pointers.size === 1) grab(orbit);
+      take(event);
+    }, { capture: true });
+    target.addEventListener('pointermove', (event: PointerEvent): void => {
+      const last: { x: number; y: number } | undefined = pointers.get(event.pointerId);
+      if (last === undefined || !active()) return;
+      const before: number = spread();
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (pointers.size === 1) orbitBy(orbit, event.clientX - last.x, event.clientY - last.y);
+      else if (before > 0) zoomBy(orbit, (spread() - before) * LOBBY_ORBIT.zoomPerWheelPixel * 2);
+      take(event);
+    }, { capture: true });
+    target.addEventListener('pointerup', lift, { capture: true });
+    target.addEventListener('pointercancel', lift, { capture: true });
+    target.addEventListener('wheel', (event: WheelEvent): void => {
+      if (!active() || !fromStage(event)) return;
+      zoomBy(orbit, -event.deltaY * LOBBY_ORBIT.zoomPerWheelPixel);
+      take(event);
+    }, { capture: true, passive: true });
+  };
 
   const plantFeet = (rig: RigInstance, clip: AnimationClip): void => {
     const action = rig.mixer.clipAction(clip);
@@ -375,7 +422,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       plantFeet(rig, clip);
     },
     render(renderer: WebGLRenderer, dt: number, tier: QualityName, devicePixelRatio: number): void {
-      time += dt;
       stepRain(rain, dt);
       mists.forEach((mist: Mesh, index: number): void => {
         mist.position.x += LOBBY_STAGE.mistDrift * dt * (index % 2 === 0 ? 1 : -1);
@@ -387,8 +433,13 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
         hero.relaxHands();
         turnPose(posed);
         hero.stepWear(dt);
-        hero.root.rotation.y = LOBBY_STAGE.facing + Math.sin(time * LOBBY_STAGE.swayRate) * LOBBY_STAGE.sway + Math.sin(time * LOBBY_STAGE.driftRate) * LOBBY_STAGE.drift;
+        hero.root.rotation.y = LOBBY_STAGE.facing;
       }
+      listen(window);
+      drawnAt = performance.now();
+      const view: OrbitView = stepOrbit(orbit, dt);
+      camera.position.set(view.x, view.y, view.z);
+      camera.lookAt(0, view.lookHeight, 0);
       renderer.getSize(size);
       if (size.x <= 0 || size.y <= 0) return;
       camera.aspect = size.x / size.y;
