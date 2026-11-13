@@ -1,4 +1,4 @@
-import type { Api, EmailStartAnswer, EmailVerifyAnswer, NonceResult, ProfileResult, Providers, ProvidersResult, Session, SessionResult, SignInMethod } from './api.ts';
+import type { Api, EmailStartAnswer, EmailVerifyAnswer, ProfileResult, Providers, ProvidersResult, Session, SessionResult, SignInMethod } from './api.ts';
 import type { KeyValueStore } from './backend.ts';
 import { SAVE_KEY } from './local.ts';
 import { parseSyncRecord, serializeSyncRecord, SYNC_KEY } from './sync-record.ts';
@@ -6,7 +6,6 @@ import type { SyncRecord } from './sync-record.ts';
 
 export interface GoogleOffer {
   readonly clientId: string;
-  readonly nonce: string;
 }
 
 export interface EmailOffer {
@@ -39,7 +38,7 @@ export type SignOutResult = 'reload' | 'unsynced';
 
 export interface AccountService {
   load(): Promise<AccountState>;
-  signIn(credential: string): Promise<SignInResult>;
+  signIn(accessToken: string): Promise<SignInResult>;
   startEmail(email: string, turnstileToken: string): Promise<EmailStartResult>;
   verifyEmail(email: string, code: string): Promise<EmailVerifyResult>;
   signOut(): Promise<SignOutResult>;
@@ -93,10 +92,7 @@ export function createAccountService(options: AccountOptions): AccountService {
     if (who.profile.kind !== 'guest') return { kind: 'signed-in', method: who.profile.kind, name: who.profile.name };
     const email: EmailOffer | null = offered.providers.emailSiteKey === null ? null : { siteKey: offered.providers.emailSiteKey };
     const clientId: string | null = offered.providers.googleClientId;
-    if (clientId === null) return { kind: 'guest', google: null, email };
-    const issued: NonceResult = await api.googleNonce(record.token, timeout());
-    if (issued.kind !== 'ok') return email === null ? UNREACHABLE : { kind: 'guest', google: null, email };
-    return { kind: 'guest', google: { clientId, nonce: issued.nonce }, email };
+    return { kind: 'guest', google: clientId === null ? null : { clientId }, email };
   };
 
   const adopt = async (asked: SyncRecord, session: Session | null): Promise<SignInResult> => {
@@ -108,10 +104,10 @@ export function createAccountService(options: AccountOptions): AccountService {
 
   return {
     load,
-    async signIn(credential: string): Promise<SignInResult> {
+    async signIn(accessToken: string): Promise<SignInResult> {
       const asked: SyncRecord | null = held();
       if (asked === null) return { kind: 'failed', state: UNREACHABLE };
-      const result: SessionResult = await api.googleSignIn(asked.token, credential, AbortSignal.timeout(ACCOUNT_TIMING.signInMs));
+      const result: SessionResult = await api.googleSignIn(asked.token, accessToken, AbortSignal.timeout(ACCOUNT_TIMING.signInMs));
       return adopt(asked, result.kind === 'ok' ? result.session : null);
     },
     async startEmail(email: string, turnstileToken: string): Promise<EmailStartResult> {

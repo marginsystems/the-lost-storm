@@ -228,25 +228,13 @@ void test('the email verify call reads a session, a wrong code with the tries le
   assert.deepEqual(await expired.client.emailVerify('tok', 'a@b.co', '000000', SIGNAL), { kind: 'refused', status: 410, code: 'code_expired', retryAfterMs: null });
 });
 
-void test('the nonce call is a POST with the token and refuses an answer without a nonce', async (): Promise<void> => {
-  const issued = api((): Response => reply(200, { nonce: 'n-1' }));
-  assert.deepEqual(await issued.client.googleNonce('tok', SIGNAL), { kind: 'ok', nonce: 'n-1' });
-  assert.equal(sent(issued.seen).url, 'http://localhost:8787/v1/auth/google/nonce');
-  assert.equal(sent(issued.seen).init.method, 'POST');
-  assert.equal(new Headers(sent(issued.seen).init.headers).get('authorization'), 'Bearer tok');
-  const empty = api((): Response => reply(200, { nonce: '' }));
-  assert.deepEqual(await empty.client.googleNonce('tok', SIGNAL), { kind: 'refused', status: 200 });
-  const off = api((): Response => reply(503, {}));
-  assert.deepEqual(await off.client.googleNonce('tok', SIGNAL), { kind: 'retry', afterMs: null });
-});
-
-void test('the sign-in call posts the credential with the stored token and reads the session', async (): Promise<void> => {
+void test('the sign-in call posts the access token with the stored token and reads the session', async (): Promise<void> => {
   const ok = api((): Response => reply(200, { accountId: 'a', token: 's', outcome: 'linked', name: null }));
   assert.deepEqual(await ok.client.googleSignIn('tok', 'cred', SIGNAL), { kind: 'ok', session: { accountId: 'a', token: 's', outcome: 'linked', name: null } });
   assert.equal(sent(ok.seen).url, 'http://localhost:8787/v1/auth/google');
   assert.equal(sent(ok.seen).init.method, 'POST');
   assert.equal(new Headers(sent(ok.seen).init.headers).get('authorization'), 'Bearer tok');
-  assert.deepEqual(bodyOf(sent(ok.seen).init), { credential: 'cred' });
+  assert.deepEqual(bodyOf(sent(ok.seen).init), { accessToken: 'cred' });
   for (const body of [{ accountId: 'a', token: 's', outcome: 'merged', name: null }, { accountId: 'a', outcome: 'linked' }, { token: 's', outcome: 'existing' }, { accountId: 'a', token: '', outcome: 'linked' }]) {
     assert.deepEqual(readSession(body), null);
   }

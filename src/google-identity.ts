@@ -1,33 +1,45 @@
+export type AskEnd = 'closed' | 'blocked' | 'failed';
+
 export interface IdentityOptions {
   readonly clientId: string;
-  readonly nonce: string;
-  readonly onCredential: (credential: string) => void;
+  readonly onToken: (accessToken: string) => void;
+  readonly onEnd: (end: AskEnd) => void;
+}
+
+export interface GoogleAsk {
+  ask(): void;
 }
 
 export interface GoogleIdentity {
-  start(options: IdentityOptions, mount: HTMLElement): void;
+  start(options: IdentityOptions): GoogleAsk;
 }
 
-interface IdentityApi {
-  readonly initialize: (options: unknown) => void;
-  readonly renderButton: (mount: HTMLElement, options: unknown) => void;
+interface TokenApi {
+  readonly initTokenClient: (options: unknown) => unknown;
+}
+
+interface TokenClient {
+  readonly requestAccessToken: () => void;
 }
 
 export interface MarkImage {
   src: string;
   readonly classList: { add(token: string): void };
-  addEventListener(type: 'load', listener: () => void, options: { readonly once: boolean }): void;
+  addEventListener(type: 'load' | 'error', listener: () => void, options: { readonly once: boolean }): void;
 }
 
-export const GOOGLE_IDENTITY: { readonly script: string; readonly mark: string; readonly markLoaded: string; readonly attempts: number; readonly retryMs: number; readonly buttonWidth: number; readonly locale: string } = {
+export const GOOGLE_IDENTITY: { readonly script: string; readonly mark: string; readonly markLoaded: string; readonly attempts: number; readonly retryMs: number; readonly scope: string; readonly prompt: string } = {
   script: 'https://accounts.google.com/gsi/client?hl=en',
   mark: 'https://www.gstatic.com/images/branding/googleg/svg/googleg_standard_clr_18px.svg',
   markLoaded: 'loaded',
   attempts: 4,
   retryMs: 1500,
-  buttonWidth: 220,
-  locale: 'en',
+  scope: 'openid profile',
+  prompt: 'select_account',
 };
+
+const POPUP_ENDS: Readonly<Record<string, AskEnd>> = { popup_closed: 'closed', popup_failed_to_open: 'blocked' };
+const DECLINED: string = 'access_denied';
 
 function fieldOf(source: unknown, key: string): unknown {
   if ((typeof source !== 'object' && typeof source !== 'function') || source === null) return undefined;
@@ -35,45 +47,67 @@ function fieldOf(source: unknown, key: string): unknown {
   return value;
 }
 
-function isIdentityApi(value: unknown): value is IdentityApi {
-  return typeof fieldOf(value, 'initialize') === 'function' && typeof fieldOf(value, 'renderButton') === 'function';
+function isTokenApi(value: unknown): value is TokenApi {
+  return typeof fieldOf(value, 'initTokenClient') === 'function';
 }
 
-export function readCredential(response: unknown): string | null {
-  const credential: unknown = fieldOf(response, 'credential');
-  return typeof credential === 'string' && credential !== '' ? credential : null;
+function isTokenClient(value: unknown): value is TokenClient {
+  return typeof fieldOf(value, 'requestAccessToken') === 'function';
+}
+
+export function readAccessToken(response: unknown): string | null {
+  const token: unknown = fieldOf(response, 'access_token');
+  return typeof token === 'string' && token !== '' ? token : null;
+}
+
+export function readEnd(error: unknown): AskEnd {
+  const type: unknown = fieldOf(error, 'type');
+  const code: unknown = fieldOf(error, 'error');
+  if (code === DECLINED) return 'closed';
+  return (typeof type === 'string' ? POPUP_ENDS[type] : undefined) ?? 'failed';
 }
 
 export function readIdentityApi(globals: unknown): GoogleIdentity | null {
-  const api: unknown = fieldOf(fieldOf(fieldOf(globals, 'google'), 'accounts'), 'id');
-  if (!isIdentityApi(api)) return null;
+  const api: unknown = fieldOf(fieldOf(fieldOf(globals, 'google'), 'accounts'), 'oauth2');
+  if (!isTokenApi(api)) return null;
   return {
-    start(options: IdentityOptions, mount: HTMLElement): void {
-      api.initialize({
+    start(options: IdentityOptions): GoogleAsk {
+      const client: unknown = api.initTokenClient({
         client_id: options.clientId,
-        nonce: options.nonce,
-        auto_select: false,
-        ux_mode: 'popup',
+        scope: GOOGLE_IDENTITY.scope,
+        prompt: GOOGLE_IDENTITY.prompt,
         callback: (response: unknown): void => {
-          const credential: string | null = readCredential(response);
-          if (credential !== null) options.onCredential(credential);
+          const token: string | null = readAccessToken(response);
+          if (token === null) options.onEnd(readEnd(response));
+          else options.onToken(token);
+        },
+        error_callback: (error: unknown): void => {
+          options.onEnd(readEnd(error));
         },
       });
-      mount.replaceChildren();
-      api.renderButton(mount, { type: 'standard', theme: 'filled_black', size: 'medium', shape: 'rectangular', text: 'signin_with', logo_alignment: 'left', locale: GOOGLE_IDENTITY.locale, width: GOOGLE_IDENTITY.buttonWidth });
+      return {
+        ask(): void {
+          if (isTokenClient(client)) client.requestAccessToken();
+          else options.onEnd('failed');
+        },
+      };
     },
   };
 }
 
-export function showGoogleMark(image: MarkImage): void {
-  image.addEventListener(
-    'load',
-    (): void => {
-      image.classList.add(GOOGLE_IDENTITY.markLoaded);
-    },
-    { once: true },
-  );
-  image.src = GOOGLE_IDENTITY.mark;
+export function showGoogleMark(image: MarkImage): Promise<void> {
+  return new Promise<void>((resolve: () => void): void => {
+    image.addEventListener(
+      'load',
+      (): void => {
+        image.classList.add(GOOGLE_IDENTITY.markLoaded);
+        resolve();
+      },
+      { once: true },
+    );
+    image.addEventListener('error', resolve, { once: true });
+    image.src = GOOGLE_IDENTITY.mark;
+  });
 }
 
 function fetchScript(): Promise<GoogleIdentity | null> {

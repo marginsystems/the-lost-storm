@@ -26,12 +26,16 @@ export interface TitleAccountParts {
   readonly note: AccountPart;
 }
 
+export type SigningIn = 'idle' | 'asking' | 'exchanging';
+
 export interface TitleAccount {
   show(view: AccountView, note: string): void;
+  signingIn(state: SigningIn): void;
 }
 
-export const TITLE_ACCOUNT: { readonly swapMs: number; readonly fallbackName: string; readonly methods: Readonly<Record<SignInMethod, string>> } = {
+export const TITLE_ACCOUNT: { readonly swapMs: number; readonly busyAttribute: string; readonly fallbackName: string; readonly methods: Readonly<Record<SignInMethod, string>> } = {
   swapMs: 280,
+  busyAttribute: 'data-busy',
   fallbackName: 'Signed in',
   methods: { google: 'Google', email: 'Email' },
 };
@@ -63,6 +67,11 @@ export function createTitleAccount(parts: TitleAccountParts, timers: Timers): Ti
   };
 
   return {
+    signingIn(state: SigningIn): void {
+      parts.button.toggleAttribute(TITLE_ACCOUNT.busyAttribute, state !== 'idle');
+      parts.button.toggleAttribute('aria-busy', state !== 'idle');
+      parts.button.toggleAttribute('disabled', state === 'exchanging');
+    },
     show(view: AccountView, note: string): void {
       if (sameView(shown, view) && note === shownNote) return;
       const first: boolean = shown === null;

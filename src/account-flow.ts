@@ -1,12 +1,18 @@
 import type { AccountService, AccountState, EmailOffer, EmailStartResult, EmailVerifyResult, SignInResult, SignOutResult } from './backend/account.ts';
 import type { Timers } from './backend/backend.ts';
+import type { AskEnd } from './google-identity.ts';
 import type { AccountView, TitleAccount } from './title-account.ts';
+
+export interface GoogleAnswer {
+  readonly onToken: (accessToken: string) => void;
+  readonly onEnd: (end: AskEnd) => void;
+}
 
 export interface AccountFlowOptions {
   readonly account: AccountService;
   readonly view: TitleAccount;
   readonly timers: Timers;
-  readonly showButton: (clientId: string, nonce: string, onCredential: (credential: string) => void) => Promise<boolean>;
+  readonly showButton: (clientId: string, answer: GoogleAnswer) => Promise<boolean>;
   readonly offerEmail: (offer: EmailOffer | null) => void;
   readonly reload: () => void;
   readonly setBusy: (busy: boolean) => void;
@@ -16,14 +22,16 @@ export interface AccountFlowOptions {
 export interface AccountFlow {
   start(): Promise<void>;
   refresh(note: string): Promise<void>;
+  ask(): boolean;
   signOut(): Promise<void>;
   sendEmailCode(email: string, turnstileToken: string): Promise<EmailStartResult>;
   verifyEmailCode(email: string, code: string): Promise<EmailVerifyResult>;
 }
 
-export const ACCOUNT_NOTES: { readonly none: string; readonly failed: string; readonly unsynced: string } = {
+export const ACCOUNT_NOTES: { readonly none: string; readonly failed: string; readonly blocked: string; readonly unsynced: string } = {
   none: '',
   failed: 'Sign-in did not work. Try again.',
+  blocked: 'Your browser blocked the Google window. Allow pop-ups for this site and try again.',
   unsynced: 'Your latest progress has not reached the cloud yet. Try again in a moment.',
 };
 
@@ -42,6 +50,7 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
   let turn: number = 0;
   let retries: number = 0;
   let cancelRetry: (() => void) | null = null;
+  let offered: boolean = false;
 
   const hold = (next: boolean): void => {
     busy = next;
@@ -66,11 +75,13 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
     current = state;
     let google: boolean = false;
     if (state.kind === 'guest') {
-      google = state.google !== null && (await showButton(state.google.clientId, state.google.nonce, onCredential));
+      google = state.google !== null && (await showButton(state.google.clientId, { onToken, onEnd }));
       if (mine !== turn) return;
       if (!google && state.email === null) current = { kind: 'unreachable' };
     }
     offerEmail(current.kind === 'guest' ? current.email : null);
+    offered = google;
+    view.signingIn('idle');
     view.show(viewOf(current, google), note);
     if (current.kind === 'unreachable') retryLater(note);
     else retries = 0;
@@ -84,11 +95,12 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
     await present(state, note);
   };
 
-  const exchange = async (credential: string): Promise<void> => {
+  const exchange = async (accessToken: string): Promise<void> => {
     if (busy) return;
     hold(true);
+    view.signingIn('exchanging');
     beforeSignIn();
-    const result: SignInResult = await account.signIn(credential);
+    const result: SignInResult = await account.signIn(accessToken);
     if (result.kind === 'reload') {
       reload();
       return;
@@ -98,8 +110,15 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
     await present(result.state, ACCOUNT_NOTES.failed);
   };
 
-  function onCredential(credential: string): void {
-    void exchange(credential);
+  function onToken(accessToken: string): void {
+    void exchange(accessToken);
+  }
+
+  function onEnd(end: AskEnd): void {
+    if (busy) return;
+    view.signingIn('idle');
+    if (end === 'closed') return;
+    view.show(viewOf(current, offered), end === 'blocked' ? ACCOUNT_NOTES.blocked : ACCOUNT_NOTES.failed);
   }
 
   const verifyEmailCode = async (email: string, code: string): Promise<EmailVerifyResult> => {
@@ -124,6 +143,11 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
       await present(await account.load(), ACCOUNT_NOTES.none);
     },
     refresh,
+    ask(): boolean {
+      if (busy || current.kind !== 'guest' || !offered) return false;
+      view.signingIn('asking');
+      return true;
+    },
     sendEmailCode: (email: string, turnstileToken: string): Promise<EmailStartResult> => account.startEmail(email, turnstileToken),
     verifyEmailCode,
     async signOut(): Promise<void> {

@@ -74,6 +74,7 @@
   transform: none;
 }
 
+.title-card .title-google.title-signin,
 .title-card .title-email-open.title-signin {
   --signin-text: rgba(239, 230, 214, 0.78);
   background: rgba(8, 13, 22, 0.55);
@@ -85,15 +86,14 @@
     color var(--spring-smooth-ms) var(--spring-smooth);
 }
 
+.title-card .title-google.title-signin:not(:disabled):hover,
+.title-card .title-google.title-signin:focus-visible,
+.title-card .title-google.title-signin[data-busy],
 .title-card .title-email-open.title-signin:not(:disabled):hover,
 .title-card .title-email-open.title-signin:focus-visible,
 .title-card .title-account.emailing .title-email-open.title-signin {
   color: #f4ecdc;
   background: rgba(18, 28, 44, 0.72);
-}
-
-.title-email-open .title-signin-face {
-  font-family: var(--sans);
 }
 
 .title-signin-face {
@@ -102,7 +102,7 @@
   gap: 10px;
   height: 100%;
   padding: 0 12px;
-  font-family: 'Google Sans', Roboto, var(--sans);
+  font-family: var(--sans);
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
@@ -132,21 +132,34 @@
   opacity: 1;
 }
 
-.title-card .title-google.title-signin,
-.title-card .title-google.title-signin:hover,
-.title-card .title-google.title-signin:focus-within {
-  background: none;
-  box-shadow: none;
+.title-signin-text {
+  display: grid;
 }
 
-.title-google .title-signin-face {
-  display: none;
+.title-signin-idle,
+.title-signin-busy {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-.title-google-official {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+.title-signin-busy,
+.title-google[data-busy] .title-signin-idle {
+  opacity: 0;
+}
+
+.title-signin-busy {
+  transform: translateY(5px);
+}
+
+.title-google[data-busy] .title-signin-idle {
+  transform: translateY(-5px);
+}
+
+.title-google[data-busy] .title-signin-busy {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .title-email {
@@ -354,7 +367,7 @@
   margin: 0;
   padding: 0 4px 0 12px;
   overflow: hidden;
-  font-family: 'Google Sans', Roboto, var(--sans);
+  font-family: var(--sans);
   font-size: 13px;
   line-height: 20px;
   letter-spacing: 0.01em;

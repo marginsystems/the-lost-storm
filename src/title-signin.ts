@@ -1,41 +1,25 @@
 import type { AccountService, EmailOffer, EmailStartResult, EmailVerifyResult } from './backend/account.ts';
 import { createBrowserTimers } from './browser-timers.ts';
 import { createAccountFlow } from './account-flow.ts';
-import type { AccountFlow } from './account-flow.ts';
-import { loadGoogleIdentity } from './google-identity.ts';
+import type { AccountFlow, GoogleAnswer } from './account-flow.ts';
+import { loadGoogleIdentity, showGoogleMark } from './google-identity.ts';
 import { createTitleEmail, digitInputs } from './title-email.ts';
 import type { TitleEmail } from './title-email.ts';
 import { createTurnstileGate, loadTurnstile } from './turnstile.ts';
 import type { TurnstileApi, TurnstileGate } from './turnstile.ts';
-import type { GoogleIdentity } from './google-identity.ts';
+import type { GoogleAsk, GoogleIdentity } from './google-identity.ts';
 import { createTitleAccount, offersSignIn } from './title-account.ts';
-import type { AccountView, TitleAccount } from './title-account.ts';
+import type { AccountView, SigningIn, TitleAccount } from './title-account.ts';
 import { element } from './dom-element.ts';
 
 export const GOOGLE_BUTTON = {
   drawnWithinMs: 1500,
 } as const;
 
-function drawn(mount: HTMLElement): Promise<void> {
+function within(ms: number, work: Promise<void>): Promise<void> {
   return new Promise<void>((resolve: () => void): void => {
-    let settled: boolean = false;
-    const done = (): void => {
-      if (settled) return;
-      settled = true;
-      watcher.disconnect();
-      resolve();
-    };
-    const listen = (): boolean => {
-      const frame: HTMLIFrameElement | null = mount.querySelector('iframe');
-      if (frame === null) return false;
-      frame.addEventListener('load', done, { once: true });
-      return true;
-    };
-    const watcher: MutationObserver = new MutationObserver((): void => {
-      if (listen()) watcher.disconnect();
-    });
-    if (!listen()) watcher.observe(mount, { childList: true, subtree: true });
-    window.setTimeout(done, GOOGLE_BUTTON.drawnWithinMs);
+    window.setTimeout(resolve, ms);
+    void work.then(resolve);
   });
 }
 
@@ -77,7 +61,9 @@ export interface TitleSignInOptions {
 }
 
 export function startTitleAccount(account: AccountService, options: TitleSignInOptions): TitleSignIn {
-  const mount: HTMLDivElement = element('title-google', HTMLDivElement);
+  const mount: HTMLButtonElement = element('title-google', HTMLButtonElement);
+  const marked: Promise<void> = within(GOOGLE_BUTTON.drawnWithinMs, showGoogleMark(element('title-google-mark', HTMLImageElement)));
+  const google: { ask: GoogleAsk | null } = { ask: null };
   const seen: { current: AccountView } = { current: { kind: 'hidden' } };
   const control: TitleAccount = createTitleAccount(
     {
@@ -96,6 +82,9 @@ export function startTitleAccount(account: AccountService, options: TitleSignInO
       seen.current = next;
       control.show(next, note);
     },
+    signingIn(state: SigningIn): void {
+      control.signingIn(state);
+    },
   };
   const email: { current: TitleEmail | null } = { current: null };
   const flow: AccountFlow = createAccountFlow({
@@ -110,16 +99,18 @@ export function startTitleAccount(account: AccountService, options: TitleSignInO
     reload: (): void => {
       window.location.reload();
     },
-    showButton: async (clientId: string, nonce: string, onCredential: (credential: string) => void): Promise<boolean> => {
+    showButton: async (clientId: string, answer: GoogleAnswer): Promise<boolean> => {
       const identity: GoogleIdentity | null = await loadGoogleIdentity();
       if (identity === null) return false;
-      const official: HTMLDivElement = element('title-google-official', HTMLDivElement);
-      identity.start({ clientId, nonce, onCredential }, official);
-      await drawn(official);
+      google.ask = identity.start({ clientId, onToken: answer.onToken, onEnd: answer.onEnd });
+      await marked;
       return true;
     },
   });
   email.current = startTitleEmail(flow);
+  mount.addEventListener('click', (): void => {
+    if (google.ask !== null && flow.ask()) google.ask.ask();
+  });
   element('title-signout', HTMLButtonElement).addEventListener('click', (): void => {
     void flow.signOut();
   });

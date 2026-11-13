@@ -71,7 +71,6 @@ export interface Session {
 
 export type ProvidersResult = { readonly kind: 'ok'; readonly providers: Providers } | Failure;
 export type ProfileResult = { readonly kind: 'ok'; readonly profile: Profile } | Failure;
-export type NonceResult = { readonly kind: 'ok'; readonly nonce: string } | Failure;
 export type SessionResult = { readonly kind: 'ok'; readonly session: Session } | Failure;
 export type SignOutResult = { readonly kind: 'ok' } | Failure;
 
@@ -139,8 +138,7 @@ export interface Api {
   writeSave(token: string, save: SaveData, baseRevision: number, epoch: number, signal: AbortSignal): Promise<WriteResult>;
   providers(signal: AbortSignal): Promise<ProvidersResult>;
   profile(token: string, signal: AbortSignal): Promise<ProfileResult>;
-  googleNonce(token: string, signal: AbortSignal): Promise<NonceResult>;
-  googleSignIn(token: string, credential: string, signal: AbortSignal): Promise<SessionResult>;
+  googleSignIn(token: string, accessToken: string, signal: AbortSignal): Promise<SessionResult>;
   signOut(token: string, signal: AbortSignal): Promise<SignOutResult>;
   emailStart(token: string, email: string, turnstileToken: string, signal: AbortSignal): Promise<EmailStartAnswer>;
   emailVerify(token: string, email: string, code: string, signal: AbortSignal): Promise<EmailVerifyAnswer>;
@@ -332,14 +330,8 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
       const profile: Profile | null = readProfile(answer.body);
       return profile === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', profile };
     },
-    async googleNonce(token: string, signal: AbortSignal): Promise<NonceResult> {
-      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/auth/google/nonce`, { method: 'POST', headers: headers(token), signal });
-      if (!succeeded(answer)) return failureOf(answer);
-      const nonce: string | null = isFields(answer.body) ? textOf(answer.body, 'nonce') : null;
-      return nonce === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', nonce };
-    },
-    async googleSignIn(token: string, credential: string, signal: AbortSignal): Promise<SessionResult> {
-      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/auth/google`, { method: 'POST', headers: headers(token), body: JSON.stringify({ credential }), signal });
+    async googleSignIn(token: string, accessToken: string, signal: AbortSignal): Promise<SessionResult> {
+      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/auth/google`, { method: 'POST', headers: headers(token), body: JSON.stringify({ accessToken }), signal });
       if (!succeeded(answer)) return failureOf(answer);
       const session: Session | null = readSession(answer.body);
       return session === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', session };

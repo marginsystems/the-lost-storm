@@ -3,14 +3,15 @@ import { test } from 'node:test';
 import { content, createFakeClock, createFakeTimers, createHarness, makeSave } from '../test/backend-support.ts';
 import type { FakeTimers, Harness, RecordedRequest } from '../test/backend-support.ts';
 import { ACCOUNT_NOTES, ACCOUNT_RETRY, createAccountFlow } from './account-flow.ts';
-import type { AccountFlow } from './account-flow.ts';
+import type { AccountFlow, GoogleAnswer } from './account-flow.ts';
 import { createAccountService } from './backend/account.ts';
 import type { AccountService, AccountState, EmailOffer, EmailStartResult, EmailVerifyResult, SignInResult, SignOutResult } from './backend/account.ts';
 import { createApi } from './backend/api.ts';
 import type { Backend } from './backend/backend.ts';
 import type { SaveData } from '../sim/save.ts';
 import { must } from '../test/support.ts';
-import type { AccountView } from './title-account.ts';
+import type { AskEnd } from './google-identity.ts';
+import type { AccountView, SigningIn } from './title-account.ts';
 
 interface Shown {
   readonly view: AccountView;
@@ -19,14 +20,15 @@ interface Shown {
 
 interface Button {
   readonly clientId: string;
-  readonly nonce: string;
-  readonly press: (credential: string) => void;
+  readonly press: (accessToken: string) => void;
+  readonly end: (end: AskEnd) => void;
 }
 
 interface Stage {
   readonly flow: AccountFlow;
   readonly shown: Shown[];
   readonly buttons: Button[];
+  readonly signing: SigningIn[];
   readonly credentials: string[];
   readonly reloads: () => number;
   readonly signOuts: () => number;
@@ -48,7 +50,7 @@ interface Script {
   readonly verify?: EmailVerifyResult;
 }
 
-const GUEST: AccountState = { kind: 'guest', google: { clientId: 'client-1', nonce: 'nonce-1' }, email: null };
+const GUEST: AccountState = { kind: 'guest', google: { clientId: 'client-1' }, email: null };
 
 function settle(): Promise<void> {
   return new Promise<void>((resolve: () => void): void => {
@@ -67,6 +69,7 @@ function stage(script: Script): Stage {
   const shown: Shown[] = [];
   const buttons: Button[] = [];
   const credentials: string[] = [];
+  const signing: SigningIn[] = [];
   const busy: boolean[] = [];
   const offers: (EmailOffer | null)[] = [];
   const verifies: string[] = [];
@@ -103,6 +106,9 @@ function stage(script: Script): Stage {
       show: (view: AccountView, note: string): void => {
         shown.push({ view, note });
       },
+      signingIn: (state: SigningIn): void => {
+        signing.push(state);
+      },
     },
     timers: timers.timers,
     reload: (): void => {
@@ -114,26 +120,26 @@ function stage(script: Script): Stage {
     beforeSignIn: (): void => {
       order.push('flush');
     },
-    showButton: (clientId: string, nonce: string, press: (credential: string) => void): Promise<boolean> => {
+    showButton: (clientId: string, answer: GoogleAnswer): Promise<boolean> => {
       asked += 1;
       if (script.scriptLoads === false || script.renders?.[asked - 1] === false) return Promise.resolve(false);
-      buttons.push({ clientId, nonce, press });
+      buttons.push({ clientId, press: answer.onToken, end: answer.onEnd });
       return Promise.resolve(true);
     },
     offerEmail: (offer: EmailOffer | null): void => {
       offers.push(offer);
     },
   });
-  return { flow, shown, buttons, credentials, reloads: (): number => reloads, signOuts: (): number => signOuts, busy, timers, loads: (): number => loads, offers, verifies, order };
+  return { flow, shown, buttons, signing, credentials, reloads: (): number => reloads, signOuts: (): number => signOuts, busy, timers, loads: (): number => loads, offers, verifies, order };
 }
 
-void test('a guest gets a button made with the client id and the nonce from the server', async (): Promise<void> => {
+void test('a guest gets a button made with the client id from the server', async (): Promise<void> => {
   const { flow, shown, buttons } = stage({ initial: GUEST });
   await flow.start();
   assert.deepEqual(shown, [{ view: { kind: 'guest', google: true, email: false }, note: '' }]);
   assert.deepEqual(
-    buttons.map((button: Button): readonly string[] => [button.clientId, button.nonce]),
-    [['client-1', 'nonce-1']],
+    buttons.map((button: Button): string => button.clientId),
+    ['client-1'],
   );
 });
 
@@ -154,14 +160,14 @@ void test('when the sign-in script does not load the control stays hidden and st
   assert.ok(shown.every((entry: Shown): boolean => entry.view.kind === 'hidden'));
 });
 
-void test('a sign-in script that arrives late still gets its button, with the nonce asked for then', async (): Promise<void> => {
-  const later: AccountState = { kind: 'guest', google: { clientId: 'client-1', nonce: 'nonce-2' }, email: null };
+void test('a sign-in script that arrives late still gets its button', async (): Promise<void> => {
+  const later: AccountState = { kind: 'guest', google: { clientId: 'client-1' }, email: null };
   const { flow, shown, buttons, timers } = stage({ initial: GUEST, later: [later], renders: [false, true] });
   await flow.start();
   assert.equal(buttons.length, 0);
   await timers.advance(must(ACCOUNT_RETRY.delaysMs[0], 'the first retry delay'));
   assert.deepEqual(shown.at(-1), { view: { kind: 'guest', google: true, email: false }, note: '' });
-  assert.equal(buttons.at(-1)?.nonce, 'nonce-2');
+  assert.equal(buttons.length, 1);
   assert.equal(timers.pending(), 0);
 });
 
@@ -184,7 +190,7 @@ void test('a server without sign-in is not asked again', async (): Promise<void>
 });
 
 void test('after a failed sign-in with the server out of reach the button comes back beside the note, so trying again is possible', async (): Promise<void> => {
-  const retry: AccountState = { kind: 'guest', google: { clientId: 'client-1', nonce: 'nonce-2' }, email: null };
+  const retry: AccountState = { kind: 'guest', google: { clientId: 'client-1' }, email: null };
   const { flow, shown, buttons, timers, credentials } = stage({ initial: GUEST, signIn: { kind: 'failed', state: { kind: 'unreachable' } }, later: [retry] });
   await flow.start();
   buttons[0]?.press('lost');
@@ -192,13 +198,13 @@ void test('after a failed sign-in with the server out of reach the button comes 
   assert.deepEqual(shown.at(-1), { view: { kind: 'hidden' }, note: ACCOUNT_NOTES.failed });
   await timers.advance(must(ACCOUNT_RETRY.delaysMs[0], 'the first retry delay'));
   assert.deepEqual(shown.at(-1), { view: { kind: 'guest', google: true, email: false }, note: ACCOUNT_NOTES.failed });
-  assert.equal(buttons.at(-1)?.nonce, 'nonce-2');
+  assert.equal(buttons.length, 2);
   buttons.at(-1)?.press('again');
   await settle();
   assert.deepEqual(credentials, ['lost', 'again']);
 });
 
-void test('a credential from the button is exchanged and the page reloads', async (): Promise<void> => {
+void test('a token from Google is exchanged and the page reloads', async (): Promise<void> => {
   const { flow, buttons, credentials, reloads } = stage({ initial: GUEST });
   await flow.start();
   buttons[0]?.press('the-credential');
@@ -207,15 +213,68 @@ void test('a credential from the button is exchanged and the page reloads', asyn
   assert.equal(reloads(), 1);
 });
 
-void test('a refused sign-in says so and offers a button with the new nonce', async (): Promise<void> => {
-  const retry: AccountState = { kind: 'guest', google: { clientId: 'client-1', nonce: 'nonce-2' }, email: null };
+void test('a refused sign-in says so and offers the button again', async (): Promise<void> => {
+  const retry: AccountState = { kind: 'guest', google: { clientId: 'client-1' }, email: null };
   const { flow, shown, buttons, reloads } = stage({ initial: GUEST, signIn: { kind: 'failed', state: retry } });
   await flow.start();
   buttons[0]?.press('bad');
   await settle();
   assert.equal(reloads(), 0);
   assert.deepEqual(shown.at(-1), { view: { kind: 'guest', google: true, email: false }, note: ACCOUNT_NOTES.failed });
-  assert.equal(buttons.at(-1)?.nonce, 'nonce-2');
+  assert.equal(buttons.length, 2);
+});
+
+void test('pressing the button says Signing in while Google\'s window is open, and closing the window puts the button back with no note', async (): Promise<void> => {
+  const { flow, shown, buttons, signing, credentials } = stage({ initial: GUEST });
+  await flow.start();
+  assert.deepEqual(signing, ['idle']);
+  assert.equal(flow.ask(), true);
+  assert.deepEqual(signing, ['idle', 'asking']);
+  buttons[0]?.end('closed');
+  assert.deepEqual(signing, ['idle', 'asking', 'idle']);
+  assert.equal(shown.length, 1);
+  assert.deepEqual(credentials, []);
+});
+
+void test('a blocked window and a failed answer each put the button back with a note that says what happened', async (): Promise<void> => {
+  const blocked = stage({ initial: GUEST });
+  await blocked.flow.start();
+  blocked.flow.ask();
+  blocked.buttons[0]?.end('blocked');
+  assert.deepEqual(blocked.shown.at(-1), { view: { kind: 'guest', google: true, email: false }, note: ACCOUNT_NOTES.blocked });
+  assert.equal(blocked.signing.at(-1), 'idle');
+  const failed = stage({ initial: GUEST });
+  await failed.flow.start();
+  failed.flow.ask();
+  failed.buttons[0]?.end('failed');
+  assert.deepEqual(failed.shown.at(-1), { view: { kind: 'guest', google: true, email: false }, note: ACCOUNT_NOTES.failed });
+});
+
+void test('the button keeps saying Signing in from the token until the page reloads, and goes back when the sign-in is refused', async (): Promise<void> => {
+  const reloading = stage({ initial: GUEST });
+  await reloading.flow.start();
+  reloading.flow.ask();
+  reloading.buttons[0]?.press('token');
+  await settle();
+  assert.deepEqual(reloading.signing, ['idle', 'asking', 'exchanging']);
+  assert.equal(reloading.reloads(), 1);
+  assert.equal(reloading.flow.ask(), false);
+  const refused = stage({ initial: GUEST, signIn: { kind: 'failed', state: GUEST } });
+  await refused.flow.start();
+  refused.flow.ask();
+  refused.buttons[0]?.press('token');
+  await settle();
+  assert.deepEqual(refused.signing, ['idle', 'asking', 'exchanging', 'idle']);
+  assert.equal(refused.flow.ask(), true);
+});
+
+void test('a signed-in player or a hidden control has no button to press', async (): Promise<void> => {
+  const signedIn = stage({ initial: { kind: 'signed-in', method: 'google', name: 'Ada' } });
+  await signedIn.flow.start();
+  assert.equal(signedIn.flow.ask(), false);
+  const hidden = stage({ initial: { kind: 'hidden' } });
+  await hidden.flow.start();
+  assert.equal(hidden.flow.ask(), false);
 });
 
 void test('a signed-in player sees their name, and sign-out reloads', async (): Promise<void> => {
@@ -274,7 +333,7 @@ void test('a guest on a server that offers only email gets the email entry and n
 });
 
 void test('email stays offered when the Google script does not load', async (): Promise<void> => {
-  const both: AccountState = { kind: 'guest', google: { clientId: 'client-1', nonce: 'nonce-1' }, email: { siteKey: '0x4AAA' } };
+  const both: AccountState = { kind: 'guest', google: { clientId: 'client-1' }, email: { siteKey: '0x4AAA' } };
   const { flow, shown, timers } = stage({ initial: both, scriptLoads: false });
   await flow.start();
   assert.deepEqual(shown, [{ view: { kind: 'guest', google: false, email: true }, note: '' }]);
@@ -326,13 +385,13 @@ void test('the save is flushed before a Google credential or an email code is se
   assert.deepEqual(email.order, ['flush', 'verify']);
 });
 
-void test('asking again shows the control with a note and a button made with a new nonce', async (): Promise<void> => {
-  const later: AccountState = { kind: 'guest', google: { clientId: 'client-1', nonce: 'nonce-2' }, email: null };
+void test('asking again shows the control with a note and a fresh button', async (): Promise<void> => {
+  const later: AccountState = { kind: 'guest', google: { clientId: 'client-1' }, email: null };
   const { flow, shown, buttons } = stage({ initial: GUEST, later: [later] });
   await flow.start();
   await flow.refresh('Sign in to keep this character.');
   assert.deepEqual(shown.at(-1), { view: { kind: 'guest', google: true, email: false }, note: 'Sign in to keep this character.' });
-  assert.equal(buttons.at(-1)?.nonce, 'nonce-2');
+  assert.equal(buttons.length, 2);
 });
 
 interface LiveGuest {
@@ -354,7 +413,7 @@ async function liveGuest(flushes: boolean): Promise<LiveGuest> {
   let reloads: number = 0;
   const flow: AccountFlow = createAccountFlow({
     account: createAccountService({ serverUrl: SERVER_URL, api: createApi(SERVER_URL, harness.server.fetch, content), store: harness.store }),
-    view: { show: (): void => undefined },
+    view: { show: (): void => undefined, signingIn: (): void => undefined },
     timers: harness.timers.timers,
     reload: (): void => {
       reloads += 1;
@@ -363,8 +422,8 @@ async function liveGuest(flushes: boolean): Promise<LiveGuest> {
     beforeSignIn: (): void => {
       if (flushes) backend.flush();
     },
-    showButton: (clientId: string, nonce: string, press: (credential: string) => void): Promise<boolean> => {
-      buttons.push({ clientId, nonce, press });
+    showButton: (clientId: string, answer: GoogleAnswer): Promise<boolean> => {
+      buttons.push({ clientId, press: answer.onToken, end: answer.onEnd });
       return Promise.resolve(true);
     },
     offerEmail: (): void => undefined,
@@ -375,7 +434,7 @@ async function liveGuest(flushes: boolean): Promise<LiveGuest> {
 
 async function signInWithGoogle(guest: LiveGuest, subject: string): Promise<void> {
   const button: Button = must(guest.buttons.at(-1), 'the sign-in button');
-  button.press(`google|${subject}|${button.nonce}|Ada`);
+  button.press(`google|${subject}|Ada`);
   await settle();
   await settle();
   await settle();
@@ -440,13 +499,13 @@ void test('a sign-in to an identity that already has a further-along character l
   const buttons: Button[] = [];
   const flow: AccountFlow = createAccountFlow({
     account: createAccountService({ serverUrl: SERVER_URL, api: createApi(SERVER_URL, second.server.fetch, content), store: second.store }),
-    view: { show: (): void => undefined },
+    view: { show: (): void => undefined, signingIn: (): void => undefined },
     timers: second.timers.timers,
     reload: (): void => undefined,
     setBusy: (): void => undefined,
     beforeSignIn: (): void => backend.flush(),
-    showButton: (clientId: string, nonce: string, press: (credential: string) => void): Promise<boolean> => {
-      buttons.push({ clientId, nonce, press });
+    showButton: (clientId: string, answer: GoogleAnswer): Promise<boolean> => {
+      buttons.push({ clientId, press: answer.onToken, end: answer.onEnd });
       return Promise.resolve(true);
     },
     offerEmail: (): void => undefined,
@@ -454,7 +513,7 @@ void test('a sign-in to an identity that already has a further-along character l
   await flow.start();
   backend.save(makeSave(3, 0));
   const button: Button = must(buttons.at(-1), 'the second sign-in button');
-  button.press(`google|ada|${button.nonce}|Ada`);
+  button.press('google|ada|Ada');
   await settle();
   await settle();
   await settle();

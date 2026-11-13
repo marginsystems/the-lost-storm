@@ -188,18 +188,53 @@ void test('a rule nested in a media query is read like any other', (): void => {
   assert.deepEqual(rulesFor('.a { x: 1; } @media (max-width: 9px) { .a { x: 2; } .b .a { x: 3; } }', '.a'), [' x: 1; ', ' x: 2; ', ' x: 3; ']);
 });
 
-void test('Google\'s own button is drawn fully visible, because it ignores a click while it is transparent, hidden or filtered', (): void => {
+void test('the Google control is the page\'s own button, dressed by the same rules as the email button, so the two can never differ', (): void => {
   const css: string = readFileSync(new URL('./title-account.css', import.meta.url), 'utf8');
-  const official: string[] = rulesFor(css, '.title-google-official');
-  assert.ok(official.length > 0);
-  for (const body of official) {
-    assert.ok(!/\bopacity\s*:/.test(body), body);
-    assert.ok(!/\bvisibility\s*:\s*hidden/.test(body), body);
-    assert.ok(!/\b(filter|clip-path|mask)\s*:/.test(body), body);
-    assert.ok(!/\bdisplay\s*:\s*none/.test(body), body);
+  const page: string = readFileSync(new URL('../play/index.html', import.meta.url), 'utf8');
+  assert.match(page, /<button id="title-google" type="button" class="title-google title-signin" hidden>/);
+  assert.ok(!page.includes('title-google-official'), 'the page still mounts Google\'s own widget');
+  assert.ok(!css.includes('title-google-official'));
+  const heads: string[] = [...css.matchAll(/([^{}]+)\{[^{}]*\}/g)].map((rule: RegExpMatchArray): string => rule[1] ?? '');
+  const dressed = (name: string): string[] =>
+    heads
+      .filter((head: string): boolean => head.includes(`.${name}.title-signin`))
+      .map((head: string): string =>
+        head
+          .split(',')
+          .map((piece: string): string => piece.trim())
+          .filter((piece: string): boolean => piece.includes('.title-signin') && !piece.includes('.emailing') && !piece.includes('[data-busy]'))
+          .map((piece: string): string => piece.replace(`.${name}`, '.it'))
+          .filter((piece: string): boolean => piece.includes('.it'))
+          .join(' | '),
+      );
+  assert.ok(dressed('title-google').length >= 2);
+  assert.deepEqual(dressed('title-google'), dressed('title-email-open'));
+  const radii: string[] = rulesFor(css, '.title-signin').flatMap((body: string): string[] => [...body.matchAll(/border-radius\s*:\s*([^;]+);/g)].map((found: RegExpMatchArray): string => (found[1] ?? '').trim()));
+  assert.ok(radii.length > 0);
+  for (const radius of radii) assert.ok(Number.parseFloat(radius) <= 4, `a sign-in button has a ${radius} radius`);
+});
+
+void test('the Signing in label swaps with the idle label by a spring fade, never as a jump', (): void => {
+  const css: string = readFileSync(new URL('./title-account.css', import.meta.url), 'utf8');
+  const page: string = readFileSync(new URL('../play/index.html', import.meta.url), 'utf8');
+  assert.match(page, /<span class="title-signin-idle">Sign in with Google<\/span><span class="title-signin-busy" aria-hidden="true">Signing in…<\/span>/);
+  for (const label of ['.title-signin-idle', '.title-signin-busy']) {
+    const moving: string[] = rulesFor(css, label).filter((body: string): boolean => /transition\s*:/.test(body));
+    assert.ok(moving.length > 0, `${label} has no transition`);
+    for (const body of moving) assert.ok(body.includes('var(--spring-smooth-ms) var(--spring-smooth)'), body);
   }
-  assert.ok(css.replaceAll(/\s+/g, ' ').includes('.title-google .title-signin-face { display: none; }'), 'the page draws no face of its own for Google, so the control never changes look after it loads');
-  for (const holder of ['.title-google', '.title-methods', '.title-account']) {
-    for (const body of rulesFor(css, holder)) assert.ok(!/\b(filter|clip-path|mask)\s*:/.test(body), `${holder} ${body}`);
-  }
+});
+
+void test('the button is marked busy from the press, and cannot be pressed again only while the server is answering', (): void => {
+  const ui: Screen = screen();
+  ui.view.show({ kind: 'guest', google: true, email: false }, '');
+  const state = (): readonly boolean[] => [ui.button.attributes.has(TITLE_ACCOUNT.busyAttribute), ui.button.attributes.has('disabled')];
+  assert.deepEqual(state(), [false, false]);
+  ui.view.signingIn('asking');
+  assert.deepEqual(state(), [true, false]);
+  ui.view.signingIn('exchanging');
+  assert.deepEqual(state(), [true, true]);
+  ui.view.signingIn('idle');
+  assert.deepEqual(state(), [false, false]);
+  assert.ok(visible(ui.button));
 });

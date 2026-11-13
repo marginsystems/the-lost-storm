@@ -125,7 +125,6 @@ export interface ServerAccount {
   email: string | null;
   method: 'google' | 'email' | null;
   name: string | null;
-  nonce: string | null;
   character: string | null;
 }
 
@@ -237,11 +236,9 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   const feedback: StoredFeedback[] = [];
   const counted: unknown[] = [];
   const ledger: FakeLedger = createFakeLedger(content);
-  const signIn = (owner: ServerAccount, credential: unknown): Response => {
-    const [scheme, subject, nonce, name]: readonly string[] = typeof credential === 'string' ? credential.split('|') : [];
-    const expected: string | null = owner.nonce;
-    owner.nonce = null;
-    if (scheme !== 'google' || subject === undefined || subject === '' || expected === null || nonce !== expected) return json(401, { error: { code: 'invalid_google_token', message: 'no' } });
+  const signIn = (owner: ServerAccount, accessToken: unknown): Response => {
+    const [scheme, subject, name]: readonly string[] = typeof accessToken === 'string' ? accessToken.split('|') : [];
+    if (scheme !== 'google' || subject === undefined || subject === '') return json(401, { error: { code: 'invalid_google_token', message: 'no' } });
     const known: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => account.google === subject);
     if (known === undefined && owner.google !== null) return json(409, { error: { code: 'already_signed_in', message: 'no' } });
     const target: ServerAccount = known ?? owner;
@@ -321,7 +318,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     }
     if (method === 'POST' && path === '/v1/guest') {
       created += 1;
-      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, email: null, method: null, name: null, nonce: null, character: null };
+      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, email: null, method: null, name: null, character: null };
       accounts.push(account);
       return json(201, { accountId: account.accountId, token: account.token });
     }
@@ -347,12 +344,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     }
     if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.method ?? 'guest', name: owner.name, createdAt: stamp(), saveEpoch: epoch });
     if (path.startsWith('/v1/auth/google') && googleClientId === null) return json(503, { error: { code: 'sign_in_unavailable', message: 'no' } });
-    if (method === 'POST' && path === '/v1/auth/google/nonce') {
-      issued += 1;
-      owner.nonce = `nonce-${issued}`;
-      return json(200, { nonce: owner.nonce });
-    }
-    if (method === 'POST' && path === '/v1/auth/google') return signIn(owner, isFields(body) ? body['credential'] : null);
+    if (method === 'POST' && path === '/v1/auth/google') return signIn(owner, isFields(body) ? body['accessToken'] : null);
     if (path.startsWith('/v1/auth/email') && emailSiteKey === null) return failed(503, 'sign_in_unavailable');
     if (method === 'POST' && path === '/v1/auth/email/start') return startEmail(owner, body);
     if (method === 'POST' && path === '/v1/auth/email/verify') return verifyEmail(owner, body);

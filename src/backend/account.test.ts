@@ -43,7 +43,7 @@ function record(harness: Harness): SyncRecord {
 
 function credential(state: AccountState, subject: string, name: string = 'Ada'): string {
   assert.ok(state.kind === 'guest');
-  return `google|${subject}|${state.google?.nonce ?? ''}|${name}`;
+  return `google|${subject}|${name}`;
 }
 
 async function signInAs(service: AccountService, subject: string): Promise<SignInResult> {
@@ -54,9 +54,9 @@ function owner(harness: Harness, index: number): ServerAccount {
   return must(harness.server.accounts[index], 'the server account');
 }
 
-void test('a guest on a server that offers Google gets the client id and a nonce', async (): Promise<void> => {
+void test('a guest on a server that offers Google gets the client id', async (): Promise<void> => {
   const { service } = await browser();
-  assert.deepEqual(await service.load(), { kind: 'guest', google: { clientId: CLIENT_ID, nonce: 'nonce-1' }, email: null });
+  assert.deepEqual(await service.load(), { kind: 'guest', google: { clientId: CLIENT_ID }, email: null });
 });
 
 void test('nothing is offered without a stored account, on a server without sign-in, or when the server is unreachable', async (): Promise<void> => {
@@ -68,7 +68,6 @@ void test('nothing is offered without a stored account, on a server without sign
   const plain: Harness = createHarness();
   await plain.open().load();
   assert.deepEqual(await serviceFor(plain).load(), { kind: 'hidden' });
-  assert.equal(plain.server.count('POST', '/v1/auth/google/nonce'), 0);
 
   const { harness, service } = await browser();
   harness.server.goDown();
@@ -87,7 +86,7 @@ void test('signing in as a guest keeps the account and the save and swaps only t
   const before: SyncRecord = record(harness);
   assert.deepEqual(await signInAs(service, 'ada'), { kind: 'reload' });
   const after: SyncRecord = record(harness);
-  assert.deepEqual(after, { ...before, token: 'session-2' });
+  assert.deepEqual(after, { ...before, token: 'session-1' });
   assert.equal(owner(harness, 0).google, 'ada');
   assert.notEqual(harness.store.read(SAVE_KEY), null);
   assert.deepEqual(await service.load(), { kind: 'signed-in', method: 'google', name: 'Ada' });
@@ -96,7 +95,7 @@ void test('signing in as a guest keeps the account and the save and swaps only t
   assert.equal(harness.server.accounts.length, 1);
 });
 
-void test('the sign-in request carries the stored token and the credential', async (): Promise<void> => {
+void test('the sign-in request carries the stored token and the access token from Google', async (): Promise<void> => {
   const { harness, service } = await browser();
   const guestToken: string = record(harness).token;
   await signInAs(service, 'ada');
@@ -105,7 +104,7 @@ void test('the sign-in request carries the stored token and the credential', asy
     'the sign-in request',
   );
   assert.equal(request.token, guestToken);
-  assert.deepEqual(request.body, { credential: 'google|ada|nonce-1|Ada' });
+  assert.deepEqual(request.body, { accessToken: 'google|ada|Ada' });
 });
 
 void test('a switch to another account starts a clean record and carries over only whether this browser has unsynced progress', (): void => {
@@ -153,11 +152,11 @@ void test('a browser that switches to an account with no cloud save uploads its 
   assert.equal(owner(harness, 0).save?.level, 3);
 });
 
-void test('a refused credential changes nothing and comes back with a fresh nonce', async (): Promise<void> => {
+void test('a refused token changes nothing and leaves the guest able to try again', async (): Promise<void> => {
   const { harness, service } = await browser(makeSave(4, 10));
   const before: SyncRecord = record(harness);
-  const result: SignInResult = await service.signIn('google|ada|not-the-nonce|Ada');
-  assert.deepEqual(result, { kind: 'failed', state: { kind: 'guest', google: { clientId: CLIENT_ID, nonce: 'nonce-1' }, email: null } });
+  const result: SignInResult = await service.signIn('not-google|ada|Ada');
+  assert.deepEqual(result, { kind: 'failed', state: { kind: 'guest', google: { clientId: CLIENT_ID }, email: null } });
   assert.deepEqual(record(harness), before);
   assert.deepEqual(await service.signIn(credential(result.kind === 'failed' ? result.state : { kind: 'hidden' }, 'ada')), { kind: 'reload' });
 });
@@ -197,7 +196,7 @@ void test('a sign-in whose answer is lost while the server stays out of reach is
   assert.deepEqual(await service.load(), { kind: 'signed-in', method: 'google', name: 'Ada' });
 });
 
-void test('a lost answer for a sign-in to another account leaves this browser a guest with a fresh nonce', async (): Promise<void> => {
+void test('a lost answer for a sign-in to another account leaves this browser a guest who can try again', async (): Promise<void> => {
   const first: Browser = await browser();
   assert.deepEqual(await signInAs(first.service, 'ada'), { kind: 'reload' });
   const harness: Harness = createSecondBrowser(first.harness);
@@ -302,7 +301,7 @@ void test('a save made while the sign-in request is in flight is not undone by t
   release();
   assert.deepEqual(await signing, { kind: 'reload' });
   const after: SyncRecord = record(harness);
-  assert.deepEqual([after.revision, after.pending, after.token], [during.revision + 1, true, 'session-2']);
+  assert.deepEqual([after.revision, after.pending, after.token], [during.revision + 1, true, 'session-1']);
 });
 
 void test('progress saved while the sign-out request is in flight is kept, and the sign-out still finishes', async (): Promise<void> => {
@@ -343,15 +342,18 @@ async function emailSignIn(made: Browser, email: string = ADA_EMAIL): Promise<st
 void test('a server that offers email gives a guest the site key, with or without Google', async (): Promise<void> => {
   const only: Browser = await emailBrowser();
   assert.deepEqual(await only.service.load(), { kind: 'guest', google: null, email: { siteKey: SITE_KEY } });
-  assert.equal(only.harness.server.count('POST', '/v1/auth/google/nonce'), 0);
   const both: Browser = await emailBrowser(true);
-  assert.deepEqual(await both.service.load(), { kind: 'guest', google: { clientId: CLIENT_ID, nonce: 'nonce-1' }, email: { siteKey: SITE_KEY } });
+  assert.deepEqual(await both.service.load(), { kind: 'guest', google: { clientId: CLIENT_ID }, email: { siteKey: SITE_KEY } });
 });
 
-void test('a guest that cannot get a Google nonce is still offered email', async (): Promise<void> => {
+void test('offering sign-in asks the server for nothing but what it offers and who this is', async (): Promise<void> => {
   const made: Browser = await emailBrowser(true);
-  made.harness.server.plan(503, {}, 'POST');
-  assert.deepEqual(await made.service.load(), { kind: 'guest', google: null, email: { siteKey: SITE_KEY } });
+  const before: number = made.harness.server.requests.length;
+  await made.service.load();
+  assert.deepEqual(
+    made.harness.server.requests.slice(before).map((request): string => request.path),
+    ['/v1/auth/providers', '/v1/me'],
+  );
 });
 
 void test('a right email code keeps the account and the save and swaps only the token, like Google', async (): Promise<void> => {
