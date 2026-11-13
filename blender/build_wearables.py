@@ -9,6 +9,7 @@ from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from wearable_hands import HandSource, graft_hands
 from wearable_fit import SKELETONS, Shade, SourceSkeleton, Span, inflate, keep_above, keep_below, paint_shade, refit, shade_under, simplify, trim_faces
 from wearable_makehuman import Garment
 from wearable_makehuman import load as load_makehuman
@@ -20,6 +21,7 @@ WEBP_QUALITY: int = 88
 MAKEHUMAN: str = "makehuman"
 EYE_TEXTURE_SIZE: int = 128
 EYE_SUFFIX: str = "_eyes"
+HAND_SUFFIX: str = "_hands"
 
 Shape = tuple[tuple[str, float], ...]
 
@@ -28,6 +30,20 @@ Shape = tuple[tuple[str, float], ...]
 class SourceObject:
     name: str
     keep_abs_x: Span | None
+
+
+@dataclass(frozen=True)
+class HandRef:
+    pack: str
+    file: str
+    mesh: str
+    material: str
+
+
+def read_hands(raw: object) -> HandRef | None:
+    if raw is None:
+        return None
+    return HandRef(str(raw["pack"]), str(raw["file"]), str(raw["mesh"]), str(raw["material"]))
 
 
 @dataclass(frozen=True)
@@ -53,6 +69,7 @@ class Part:
     keep_above: float | None
     scalp: str | None
     scalp_shade: Shade | None
+    hands: HandRef | None
 
 
 def read_span(raw: object) -> Span | None:
@@ -89,6 +106,7 @@ def read_part(raw: dict[str, object]) -> Part:
         keep_above=None if raw.get("keepAbove") is None else float(raw["keepAbove"]),
         scalp=None if raw.get("scalp") is None else str(raw["scalp"]["hair"]),
         scalp_shade=None if raw.get("scalp") is None else Shade(float(raw["scalp"]["depth"]), float(raw["scalp"]["reach"]), float(raw["scalp"]["soft"])),
+        hands=read_hands(raw.get("hands")),
     )
 
 
@@ -223,7 +241,7 @@ def load_garment(part: Part, pack: Pack) -> list[Source]:
     return made
 
 
-def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path) -> None:
+def build_part(part: Part, pack: Pack, hands: HandSource | None, rig_path: Path, out: Path, scratch: Path) -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     rig_objects: list[Object] = import_model(rig_path)
     rig: Object = only_armature(rig_objects, "rig")
@@ -247,10 +265,25 @@ def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path)
             if leftover is not None and leftover != source.obj:
                 bpy.data.objects.remove(leftover)
     obj: Object = sources[0].obj
+    built: list[Object] = [source.obj for source in sources]
+    if hands is not None:
+        name: str = f"{part.id}{HAND_SUFFIX}"
+        grafted: Object = graft_hands(obj, rig_path, hands, name, part.texture_size, scratch)
+        bind(grafted, rig, name)
+        built.append(grafted)
     path: Path = out / f"{part.id}.glb"
-    export([source.obj for source in sources], rig, path, part.scalp is not None)
+    export(built, rig, path, part.scalp is not None)
     triangles: int = sum(len(polygon.vertices) - 2 for polygon in obj.data.polygons)
     print(f"WEARABLE {part.id} vertices={len(obj.data.vertices)} triangles={triangles} bytes={path.stat().st_size}")
+
+
+def hand_source(part: Part, roots: dict[str, Path]) -> HandSource | None:
+    if part.hands is None:
+        return None
+    root: Path | None = roots.get(part.hands.pack)
+    if root is None:
+        raise SystemExit(f"{part.id}: its hands come from pack {part.hands.pack}, which has no <pack>=<dir> argument")
+    return HandSource(root / part.hands.file, part.hands.mesh, part.hands.material)
 
 
 def build(arguments: list[str]) -> None:
@@ -287,7 +320,7 @@ def build(arguments: list[str]) -> None:
     for part in buildable:
         described = manifest["packs"][part.pack]
         pack: Pack = Pack(roots[part.pack], str(described["skeleton"]), roots.get(str(described.get("rig", ""))), float(described.get("girth", 1.0)))
-        build_part(part, pack, rig_path, out, scratch)
+        build_part(part, pack, hand_source(part, roots), rig_path, out, scratch)
 
 
 build(sys.argv[sys.argv.index("--") + 1 :])
