@@ -1,7 +1,13 @@
-import type { PackReturn } from '../content/types.ts';
+import type { PackReturn, ZonePack } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { spawnPacks } from './monsters.ts';
-import type { MonsterState, PackTimer, World } from './types.ts';
+import type { MonsterState, World } from './types.ts';
+
+export interface PackTimer {
+  readonly pack: ZonePack;
+  readonly packId: number;
+  left: number | null;
+}
 
 function cleared(world: World, timer: PackTimer): boolean {
   return !world.monsters.some((monster: MonsterState): boolean => monster.alive && monster.packId === timer.packId);

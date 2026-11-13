@@ -7,6 +7,13 @@ import type { MonsterState, PlayerState, RespawnChoice, World, WorldEvent } from
 import { enterZone, placePlayer, townZone } from './zones.ts';
 import { restEchoes } from './moments.ts';
 
+export interface DeathState {
+  readonly killer: string;
+  readonly skill: string;
+  elapsed: number;
+  readonly xpLost: number;
+}
+
 export function choicesOpen(world: World): boolean {
   return !world.player.alive && world.death !== null && world.death.elapsed >= world.content.player.respawnDelay;
 }

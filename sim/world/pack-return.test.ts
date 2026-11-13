@@ -5,7 +5,8 @@ import { must } from '../../test/support.ts';
 import type { Content, ZoneDef, ZonePack } from '../content/types.ts';
 import { createWorld } from './create.ts';
 import { stepPackReturns } from './pack-return.ts';
-import type { MonsterState, PackTimer, World } from './types.ts';
+import type { PackTimer } from './pack-return.ts';
+import type { MonsterState, World } from './types.ts';
 import { enterZone } from './zones.ts';
 
 const RULES = { after: 20, away: 10 } as const;

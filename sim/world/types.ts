@@ -6,7 +6,9 @@ import type { ServiceKind } from '../content/trade-types.ts';
 import type { MomentDef } from '../content/moment-types.ts';
 import type { ZoneWake } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
+import type { DeathState } from './death.ts';
 import type { LedgerState } from './ledger.ts';
+import type { PackTimer } from './pack-return.ts';
 import type { GridStamp, NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
 
@@ -435,13 +437,6 @@ export interface RespawnCommand {
   readonly choice: RespawnChoice;
 }
 
-export interface DeathState {
-  readonly killer: string;
-  readonly skill: string;
-  elapsed: number;
-  readonly xpLost: number;
-}
-
 export interface StrikeCommand {
   readonly type: 'strike';
   readonly at: Vec2;
@@ -645,12 +640,6 @@ export interface WakeState {
 export interface ShoreState {
   readonly at: Vec2;
   readonly facing: Vec2;
-}
-
-export interface PackTimer {
-  readonly pack: ZonePack;
-  readonly packId: number;
-  left: number | null;
 }
 
 export interface World {
