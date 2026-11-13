@@ -1,6 +1,7 @@
 export const ATLAS_VIEW = {
   zoomRange: 3.4,
-  openZoom: 1.3,
+  openZoom: 1,
+  openSettle: 1.14,
   wheelRate: 0.0016,
   stiffness: 210,
   damping: 29,
@@ -58,6 +59,10 @@ export function clampView(view: AtlasView, frame: AtlasFrame): AtlasView {
 
 export function openView(frame: AtlasFrame, x: number, y: number): AtlasView {
   return clampView({ x, y, scale: minScale(frame) * ATLAS_VIEW.openZoom }, frame);
+}
+
+export function settleView(target: AtlasView, frame: AtlasFrame): AtlasView {
+  return clampView({ x: target.x, y: target.y, scale: target.scale * ATLAS_VIEW.openSettle }, frame);
 }
 
 export function toMap(view: AtlasView, frame: AtlasFrame, screen: ScreenPoint): ScreenPoint {

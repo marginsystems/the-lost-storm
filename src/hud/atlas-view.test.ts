@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { atRest, ATLAS_VIEW, clampView, maxScale, minScale, openView, panBy, pinchTo, still, stepMotion, toMap, toScreen, zoomAt } from './atlas-view.ts';
+import { atRest, ATLAS_VIEW, clampView, maxScale, minScale, openView, panBy, pinchTo, settleView, still, stepMotion, toMap, toScreen, zoomAt } from './atlas-view.ts';
 import type { AtlasFrame, AtlasMotion, AtlasView, Pinch, ScreenPoint } from './atlas-view.ts';
 
 const frame: AtlasFrame = { width: 800, height: 600, mapWidth: 1600, mapHeight: 1000 };
@@ -14,6 +14,25 @@ void test('the map always covers the window: the smallest zoom fits the tighter 
   assert.ok(Math.abs(far.x - 400 / 0.6) < CLOSE);
   assert.equal(far.y, 500);
   assert.equal(clampView({ x: 800, y: 500, scale: 99 }, frame).scale, maxScale(frame));
+});
+
+void test('the map opens at its smallest scale, with the current place on screen, and settles out to it from a slightly closer view', (): void => {
+  const opened: AtlasView = openView(frame, 360, 540);
+  assert.equal(opened.scale, minScale(frame));
+  const settling: AtlasView = settleView(opened, frame);
+  assert.ok(settling.scale > opened.scale && settling.scale < maxScale(frame));
+  const phone: AtlasFrame = { width: 390, height: 844, mapWidth: 1600, mapHeight: 1000 };
+  const onPhone: AtlasView = openView(phone, 360, 540);
+  assert.equal(onPhone.scale, minScale(phone));
+  assert.ok(onPhone.scale >= 11 / 14);
+  const place: ScreenPoint = toScreen(onPhone, phone, { x: 360, y: 540 });
+  assert.ok(place.x >= 0 && place.x <= phone.width && place.y >= 0 && place.y <= phone.height);
+  const wide: AtlasFrame = { width: 2000, height: 1160, mapWidth: 1600, mapHeight: 1000 };
+  const desktop: AtlasView = openView(wide, 360, 540);
+  assert.equal(desktop.scale, 1.25);
+  assert.equal(desktop.x, 800);
+  const spot: ScreenPoint = toScreen(desktop, wide, { x: 360, y: 540 });
+  assert.ok(spot.x >= 0 && spot.x <= wide.width && spot.y >= 0 && spot.y <= wide.height);
 });
 
 void test('zooming keeps the point under the cursor where it is', (): void => {

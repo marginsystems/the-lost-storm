@@ -8,7 +8,7 @@ import { drawAtlasArt } from './atlas-art.ts';
 import { smoothPath } from './atlas-geometry.ts';
 import { drawNode, NODE } from './atlas-nodes.ts';
 import type { NodeParts } from './atlas-nodes.ts';
-import { atRest, clampView, openView, panBy, pinchTo, stepMotion, still, toScreen, zoomAt } from './atlas-view.ts';
+import { atRest, clampView, openView, panBy, pinchTo, settleView, stepMotion, still, toScreen, zoomAt } from './atlas-view.ts';
 import type { AtlasFrame, AtlasMotion, AtlasView, Pinch, ScreenPoint } from './atlas-view.ts';
 import { ATLAS_VIEW } from './atlas-view.ts';
 import type { HudContext, PanelView } from './context.ts';
@@ -355,7 +355,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     measure();
     const here: MapPlace | undefined = act.atlas.places.find((place: MapPlace): boolean => place.zone === world.zone.id);
     target = openView(frame, here?.x ?? act.atlas.width / 2, here?.y ?? act.atlas.height / 2);
-    motion = still(target);
+    motion = still(settleView(target, frame));
     hover(null);
     sync();
     apply();
