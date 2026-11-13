@@ -1,4 +1,5 @@
 import type { Color, IUniform, Material } from 'three';
+import { createGroundLight } from './ground-light.ts';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CylinderGeometry, DoubleSide, Group, IcosahedronGeometry, Mesh, MeshBasicMaterial, NormalBlending, PlaneGeometry, ShaderMaterial, Vector3 } from 'three';
 import type { Delivery } from '../../sim/content/types.ts';
 import { SKILLS } from '../../sim/world/skills.ts';
@@ -539,7 +540,7 @@ export function programKeepers(color: Color): Mesh[] {
   const bare: BufferGeometry = new BufferGeometry();
   bare.setAttribute('position', new BufferAttribute(new Float32Array(9), 3));
   const telegraph: TelegraphPart = softPart(featheredSector(Math.PI * 2, bodyRings(0, 1)), color, 0, 5);
-  return [shockwaveMesh(color, 1, 1).mesh, scorchMesh(color).mesh, markerMesh(color).mesh, slashMesh(1, 1, color).mesh, new Mesh(bare, additive(color, 0)), new Mesh(bare, flat(color, 0)), projectileMesh('orb', color), pillarMesh(color, 1, 1), telegraph];
+  return [createGroundLight(color, { kind: 'round', radius: 1, inner: 0, arc: Math.PI * 2 }, { fill: 1, band: 1, width: 0.2, wobble: 0.1 }).mesh, shockwaveMesh(color, 1, 1).mesh, scorchMesh(color).mesh, markerMesh(color).mesh, slashMesh(1, 1, color).mesh, new Mesh(bare, additive(color, 0)), new Mesh(bare, flat(color, 0)), projectileMesh('orb', color), pillarMesh(color, 1, 1), telegraph];
 }
 
 export function disposeObject(object: Mesh | Group): void {

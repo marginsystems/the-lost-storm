@@ -7,7 +7,9 @@ import type { Vec2 } from '../../sim/math.ts';
 import { areaOf } from '../../sim/world/areas.ts';
 import { chargeOf } from '../../sim/world/skills.ts';
 import type { AreaState, MonsterState, World, WorldEvent } from '../../sim/world/types.ts';
-import { bandMesh, disposeObject, discMesh, glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
+import { disposeObject, discMesh, glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
+import type { GroundLight } from './ground-light.ts';
+import { createGroundLight, GROUND_LIGHT } from './ground-light.ts';
 import type { BurstOptions } from './particles.ts';
 
 export const STORM_EFFECTS = {
@@ -20,13 +22,13 @@ export const STORM_EFFECTS = {
   beamWidth: 0.18,
   beamHold: 0.24,
   blinkTime: 0.3,
-  areaFill: 0.05,
-  areaEdge: 0.26,
-  areaFadeIn: 0.12,
-  areaFadeOut: 0.25,
-  areaEdgeWidth: 0.06,
-  gapFill: 0.035,
-  areaBandInner: 0.84,
+  areaGlow: 0.34,
+  areaFill: 0.2,
+  gapFill: 0.14,
+  areaBandWidth: 0.1,
+  areaWobble: 0.07,
+  areaFadeOut: 0.3,
+  areaGoneBelow: 0.004,
   windSpin: 2.6,
   windMotes: 3,
   stormMotes: 1,
@@ -61,8 +63,7 @@ export interface StormEffects {
 }
 
 interface AreaView {
-  readonly disc: Mesh<BufferGeometry, MeshBasicMaterial>;
-  readonly edge: Mesh<BufferGeometry, MeshBasicMaterial>;
+  readonly light: GroundLight;
   readonly color: Color;
   readonly delivery: AreaDelivery;
   readonly duration: number;
@@ -78,6 +79,7 @@ const MIST: Color = new Color(0xc9d6e2);
 
 export function createStormEffects(kit: StormKit): StormEffects {
   const areas: Map<number, AreaView> = new Map<number, AreaView>();
+  const fading: GroundLight[] = [];
   const brands: Map<number, BrandView> = new Map<number, BrandView>();
   const at: Vector3 = new Vector3();
   const chargeGlow: PointLight = new PointLight(0xffffff, 0, STORM_EFFECTS.chargeLightRange, STORM_EFFECTS.chargeLightDecay);
@@ -142,14 +144,12 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const delivery: AreaDelivery | null = areaOf(area.skill);
     if (delivery === null) return;
     const color: Color = areaColor(area);
-    const disc = bandMesh(color, delivery.radius * STORM_EFFECTS.areaBandInner, delivery.radius, 0);
-    const edge = bandMesh(color, delivery.radius * (1 - STORM_EFFECTS.areaEdgeWidth), delivery.radius, 0);
-    edge.scale.setScalar(1);
-    disc.position.set(area.pos.x, 0.07, area.pos.z);
-    edge.position.set(area.pos.x, 0.075, area.pos.z);
-    kit.addObject(disc);
-    kit.addObject(edge);
-    areas.set(area.id, { disc, edge, color, delivery, duration: delivery.duration, age: 0, moteTimer: 0 });
+    const gap: boolean = delivery.pulse === 0 && delivery.pull === 0;
+    const light: GroundLight = createGroundLight(color, { kind: 'round', radius: delivery.radius, inner: 0, arc: Math.PI * 2 }, { fill: gap ? STORM_EFFECTS.gapFill : STORM_EFFECTS.areaFill, band: 1, width: delivery.radius * STORM_EFFECTS.areaBandWidth, wobble: delivery.radius * STORM_EFFECTS.areaWobble });
+    light.mesh.position.set(area.pos.x, GROUND_LIGHT.height, area.pos.z);
+    light.show(STORM_EFFECTS.areaGlow);
+    kit.addObject(light.mesh);
+    areas.set(area.id, { light, color, delivery, duration: delivery.duration, age: 0, moteTimer: 0 });
     if (delivery.slow < 1 && delivery.pulse === 0) {
       kit.ring(area.pos.x, area.pos.z, delivery.radius, color, 0.6);
       kit.flashLight(area.pos.x, 3, area.pos.z, color, 60);
@@ -184,8 +184,8 @@ export function createStormEffects(kit: StormKit): StormEffects {
   const dropArea = (id: number): void => {
     const view: AreaView | undefined = areas.get(id);
     if (view === undefined) return;
-    disposeObject(view.disc);
-    disposeObject(view.edge);
+    view.light.show(0);
+    fading.push(view.light);
     areas.delete(id);
   };
 
@@ -246,21 +246,17 @@ export function createStormEffects(kit: StormKit): StormEffects {
       const view: AreaView | undefined = areas.get(area.id);
       if (view === undefined) continue;
       view.age += dt;
-      const fadeIn: number = Math.min(1, view.age / STORM_EFFECTS.areaFadeIn);
-      const fadeOut: number = Math.min(1, area.timeLeft / STORM_EFFECTS.areaFadeOut);
-      const strength: number = Math.max(0, Math.min(fadeIn, fadeOut));
-      const fill: number = view.delivery.pulse === 0 && view.delivery.pull === 0 ? STORM_EFFECTS.gapFill : STORM_EFFECTS.areaFill;
-      view.disc.material.opacity = fill * strength;
-      view.edge.material.opacity = STORM_EFFECTS.areaEdge * strength;
-      view.disc.position.set(area.pos.x, 0.07, area.pos.z);
-      view.edge.position.set(area.pos.x, 0.075, area.pos.z);
-      const breathe: number = view.delivery.pull > 0 ? 1 - Math.min(1, view.age / view.duration) * 0.55 : 1;
-      view.disc.scale.setScalar(breathe);
-      view.edge.scale.setScalar(breathe);
-      view.edge.rotation.y += dt * STORM_EFFECTS.windSpin;
+      view.light.show(area.timeLeft > STORM_EFFECTS.areaFadeOut ? STORM_EFFECTS.areaGlow : 0);
+      view.light.mesh.position.set(area.pos.x, GROUND_LIGHT.height, area.pos.z);
+      view.light.step(dt, world.time);
       motes(view, area, dt);
     }
     for (const id of areas.keys()) if (!world.areas.some((area: AreaState): boolean => area.id === id)) dropArea(id);
+    for (const light of fading) light.step(dt, world.time);
+    for (const light of fading.filter((faded: GroundLight): boolean => faded.strength < STORM_EFFECTS.areaGoneBelow)) {
+      light.dispose();
+      fading.splice(fading.indexOf(light), 1);
+    }
   };
 
   const updateBrands = (dt: number, world: World): void => {
@@ -326,7 +322,9 @@ export function createStormEffects(kit: StormKit): StormEffects {
       updateCharge(world);
     },
     clear(): void {
-      for (const id of areas.keys()) dropArea(id);
+      for (const view of areas.values()) view.light.dispose();
+      areas.clear();
+      for (const light of fading.splice(0, fading.length)) light.dispose();
       for (const view of brands.values()) disposeObject(view.mark);
       brands.clear();
       chargeGlow.intensity = 0;
