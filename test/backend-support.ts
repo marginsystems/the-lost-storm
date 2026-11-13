@@ -150,6 +150,7 @@ export interface FakeServer {
   goDown(): void;
   comeUp(): void;
   fallBehind(): void;
+  foldNext(extra: Readonly<Record<string, unknown>>): void;
   catchUp(): void;
   plan(status: number, headers?: Readonly<Record<string, string>>, method?: string): void;
   holdNext(): () => void;
@@ -226,6 +227,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   let issued: number = 0;
   let down: boolean = false;
   let behind: boolean = false;
+  let fold: Readonly<Record<string, unknown>> | null = null;
   let googleClientId: string | null = null;
   let emailSiteKey: string | null = null;
   const codes: SentCode[] = [];
@@ -361,7 +363,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       if (retiresGuest) owner.guestRetired = true;
       return json(200, { signedOut: index >= 0 || retiresGuest });
     }
-    const view = (): unknown => ({ save: owner.save, revision: owner.revision, updatedAt: owner.updatedAt, epoch });
+    const view = (): Readonly<Record<string, unknown>> => ({ save: owner.save, revision: owner.revision, updatedAt: owner.updatedAt, epoch });
     if (method === 'GET' && path === '/v1/save') return json(200, view());
     if (method === 'PUT' && path === '/v1/save' && isFields(body)) {
       const written: number | null = epochOf(body, 'epoch');
@@ -374,7 +376,9 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       owner.save = save;
       owner.revision += 1;
       owner.updatedAt = stamp();
-      return json(200, view());
+      const extra: Readonly<Record<string, unknown>> = fold ?? {};
+      fold = null;
+      return json(200, { ...view(), ...extra });
     }
     return json(404, { error: { code: 'not_found', message: 'no' } });
   };
@@ -414,6 +418,9 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     },
     fallBehind: (): void => {
       behind = true;
+    },
+    foldNext: (extra: Readonly<Record<string, unknown>>): void => {
+      fold = extra;
     },
     catchUp: (): void => {
       behind = false;

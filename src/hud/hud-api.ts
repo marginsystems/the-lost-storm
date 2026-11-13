@@ -1,5 +1,6 @@
 import type { UiAction } from '../../sim/content/audio.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../../sim/world/types.ts';
+import type { AuctionFlow } from '../auction/auction-flow.ts';
 import type { AudioControls } from '../audio/settings.ts';
 import type { SettingsSection } from '../settings/settings.ts';
 import type { SettingsStore } from '../settings/store.ts';
@@ -23,6 +24,7 @@ export interface HudApi {
   readBook(item: ItemInstance): void;
   qualityTier(): string;
   readonly overlays: OverlayManager;
+  readonly auction: AuctionFlow | null;
 }
 
 export interface Hud {

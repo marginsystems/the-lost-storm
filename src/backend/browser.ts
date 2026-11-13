@@ -10,6 +10,9 @@ import { createLobbyApi } from './lobby-api.ts';
 import type { LobbyApi } from './lobby-api.ts';
 import type { Backend, KeyValueStore } from './backend.ts';
 import { createConsoleLogger } from './console-log.ts';
+import { createAuctionApi } from './auction-api.ts';
+import { createAuctionHouse } from './auction.ts';
+import type { AuctionHouse } from './auction.ts';
 import { createLedgerApi } from './ledger-api.ts';
 import { createLive } from './live.ts';
 import type { Live, LiveSocket, SocketHandlers } from './live.ts';
@@ -89,4 +92,10 @@ export function createBrowserHideoutServer(rawUrl: string | undefined): HideoutS
     lobby: createLobbyApi(server.url, browserFetch),
     token,
   };
+}
+
+export function createBrowserAuctionHouse(content: Content, rawUrl: string | undefined): AuctionHouse | null {
+  const server: ServerUrl = readServerUrl(rawUrl);
+  if (server.kind !== 'ok') return null;
+  return createAuctionHouse({ serverUrl: server.url, store: createBrowserStore(), api: createAuctionApi(server.url, (url: string, init: RequestInit): Promise<Response> => fetch(url, init), content) });
 }

@@ -4,6 +4,8 @@ import { isFields } from '../../sim/content/read.ts';
 import type { SaveData } from '../../sim/save.ts';
 import { readSave } from '../../sim/save.ts';
 import { epochOf, isEpoch } from './epoch.ts';
+import { readFold } from './purse-read.ts';
+import type { SaveFold } from './purse-read.ts';
 
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
 
@@ -75,7 +77,7 @@ export type SignOutResult = { readonly kind: 'ok' } | Failure;
 
 export type GuestResult = { readonly kind: 'ok'; readonly account: GuestAccount } | Failure;
 export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | { readonly kind: 'unreadable' } | Failure;
-export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stale'; readonly epoch: number } | { readonly kind: 'behind' } | Failure;
+export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy; readonly fold: SaveFold } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stale'; readonly epoch: number } | { readonly kind: 'behind' } | Failure;
 
 export interface BoardRow {
   readonly rank: number;
@@ -316,7 +318,7 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
       }
       if (!succeeded(answer)) return failureOf(answer);
       const state: CloudState | null = readCloudState(content, answer.body);
-      return state === null || state.save === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', copy: state };
+      return state === null || state.save === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', copy: state, fold: readFold(content, answer.body) };
     },
     async providers(signal: AbortSignal): Promise<ProvidersResult> {
       const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/auth/providers`, { method: 'GET', signal });

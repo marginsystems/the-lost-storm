@@ -9,7 +9,7 @@ import { setPicture } from './item-picture.ts';
 import { itemTooltip } from './item-tooltip.ts';
 import { attachTooltip } from './tooltip.ts';
 import { promptText, use } from './prompts.ts';
-import { inventoryCommand, inventoryHint } from './trade-actions.ts';
+import { inventoryCommand, inventoryHint, picksForSale } from './trade-actions.ts';
 
 const INVENTORY = {
   hintEquipped: 'unequip',
@@ -119,6 +119,10 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       context.tooltip.hide();
       if (bookOf(context.api.world.content, baseOf(context.api.world.content, view.current)) !== null) {
         context.api.readBook(view.current);
+        return;
+      }
+      if (picksForSale(context.api.world) && context.api.auction !== null) {
+        context.api.auction.pick({ place: 'bag', index });
         return;
       }
       const command: Command | null = inventoryCommand(context.api.world, index, event.ctrlKey || event.metaKey ? 'ctrl' : 'click');

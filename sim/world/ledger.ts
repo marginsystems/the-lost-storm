@@ -32,6 +32,25 @@ export interface LedgerItem {
   readonly affixes: readonly RolledAffix[];
 }
 
+export type PurseKind = 'list' | 'cancel' | 'buy' | 'collect';
+
+export type PurseDirection = 'in' | 'out';
+
+export interface PurseEntry {
+  readonly id: number;
+  readonly kind: PurseKind;
+  readonly gold: number;
+  readonly item: LedgerItem | null;
+  readonly direction: PurseDirection | null;
+}
+
+export interface PurseCommand {
+  readonly type: 'purse';
+  readonly entries: readonly PurseEntry[];
+  readonly stripped: readonly string[];
+  readonly unverified: readonly string[];
+}
+
 export interface WaitingClaim {
   readonly uid: number;
   readonly source: ItemSource;

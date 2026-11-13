@@ -62,10 +62,18 @@ void test('reading the save sends the token and understands a copy and an empty 
 
 void test('writing sends the save and the base revision and returns the stored copy', async (): Promise<void> => {
   const { client, seen } = api((): Response => reply(200, COPY));
-  assert.deepEqual(await client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'ok', copy: COPY });
+  assert.deepEqual(await client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'ok', copy: COPY, fold: { folded: [], stripped: [], unverified: [] } });
   assert.equal(sent(seen).init.method, 'PUT');
   assert.deepEqual(bodyOf(sent(seen).init), { save: SAVE, baseRevision: 1, epoch: 2 });
   assert.equal(sent(seen).init.keepalive, true);
+});
+
+void test('every save written carries the purse cursor', async (): Promise<void> => {
+  const { client, seen } = api((): Response => reply(200, COPY));
+  await client.writeSave('tok', { ...SAVE, purse: 17 }, 1, 2, SIGNAL);
+  const body: unknown = bodyOf(sent(seen).init);
+  const save: unknown = typeof body === 'object' && body !== null && 'save' in body ? body.save : null;
+  assert.equal(typeof save === 'object' && save !== null && 'purse' in save ? save.purse : null, 17);
 });
 
 void test('keepalive is only asked for when the body is small enough for the browser to allow it', async (): Promise<void> => {

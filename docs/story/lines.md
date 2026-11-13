@@ -27,6 +27,14 @@ The trader keeps the stall by the fire at the edge of the Hall of Time.
 |---|---|---|
 | `warden_lookout_ahead` | Keep your eyes open. | Conversation, any talk. |
 
+## Warden Auctioneer (`warden_auctioneer`)
+
+The auctioneer keeps the auction house in the Hideout, where players list items for each other.
+
+| Id | Line | When |
+|---|---|---|
+| `warden_auctioneer_trade` | Others left these. Name your price, or pay theirs. | Bark on opening the auction house. |
+
 ## Unfinished Borrower (`unfinished_borrower`)
 
 Placeholder sentences borrowed from other people's lives; the owner decides the final words.

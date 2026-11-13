@@ -5,6 +5,7 @@ import type { Harness, RecordedRequest, ServerAccount } from '../../test/backend
 import { isFields } from '../../sim/content/read.ts';
 import { must } from '../../test/support.ts';
 import type { Backend } from './backend.ts';
+import type { SaveFold } from './purse-read.ts';
 import { SAVE_KEY } from './local.ts';
 import { TIMING } from './remote.ts';
 import { parseSyncRecord, SYNC_KEY } from './sync-record.ts';
@@ -598,4 +599,82 @@ void test('a cloud save on an older game keeps this device saving locally, says 
   await harness.timers.advance(4000);
   assert.equal(account(harness).save?.level, 3);
   assert.equal(account(harness).save?.xp, 4);
+});
+
+const FOLDED_ITEM: string = 'itm_FFFFFFFFFFFFFFFFFFFFFF';
+const CLEARED_ITEM: string = 'itm_EEEEEEEEEEEEEEEEEEEEEE';
+
+void test('the entries a save answer folded and the ledger ids it stripped or cleared reach the game once', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 3);
+  const heard: SaveFold[] = [];
+  backend.onFold((fold: SaveFold): void => void heard.push(fold));
+  harness.server.foldNext({ folded: [{ id: 4, kind: 'collect', gold: 30, item: null, direction: null }], stripped: [FOLDED_ITEM], unverified: [CLEARED_ITEM] });
+  backend.save(makeSave(4, 0));
+  await harness.timers.advance(1000);
+  backend.save(makeSave(5, 0));
+  await harness.timers.advance(1000);
+  assert.deepEqual(heard, [{ folded: [{ id: 4, kind: 'collect', gold: 30, item: null, direction: null }], stripped: [FOLDED_ITEM], unverified: [CLEARED_ITEM] }]);
+});
+
+void test('a fold that arrives before the game listens is handed over when it does', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 3);
+  harness.server.foldNext({ folded: [], stripped: [], unverified: [CLEARED_ITEM] });
+  backend.save(makeSave(4, 0));
+  await harness.timers.advance(1000);
+  const heard: SaveFold[] = [];
+  backend.onFold((fold: SaveFold): void => void heard.push(fold));
+  assert.deepEqual(heard, [{ folded: [], stripped: [], unverified: [CLEARED_ITEM] }]);
+});
+
+void test('an old server that sends no fold changes nothing in the game', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 3);
+  const heard: SaveFold[] = [];
+  backend.onFold((fold: SaveFold): void => void heard.push(fold));
+  backend.save(makeSave(4, 0));
+  await harness.timers.advance(1000);
+  assert.deepEqual(heard, []);
+});
+
+void test('sync sends the waiting save at once and settles when the server has it', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 3);
+  backend.save(makeSave(6, 0));
+  const before: number = harness.server.count('PUT', '/v1/save');
+  await backend.sync();
+  assert.equal(harness.server.count('PUT', '/v1/save'), before + 1);
+  assert.equal(lastPut(harness).level, 6);
+  assert.equal(record(harness).pending, false);
+});
+
+void test('sync waits for a push already in flight instead of sending twice', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 3);
+  backend.save(makeSave(7, 0));
+  const release: () => void = harness.server.holdNext();
+  await harness.timers.advance(1000);
+  let done: boolean = false;
+  const waiting: Promise<void> = (async (): Promise<void> => {
+    await backend.sync();
+    done = true;
+  })();
+  await settle();
+  assert.equal(done, false);
+  release();
+  await waiting;
+  assert.equal(done, true);
+  assert.equal(record(harness).pending, false);
+});
+
+void test('sync does not wait on a server that is down', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 3);
+  harness.server.goDown();
+  backend.save(makeSave(8, 0));
+  await harness.timers.advance(1000);
+  const before: number = harness.server.requests.length;
+  await backend.sync();
+  assert.equal(harness.server.requests.length, before);
 });

@@ -2,6 +2,7 @@ import type { ServiceKind } from '../../sim/content/trade-types.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { markOverlay } from './overlay-mark.ts';
 import type { OverlayManager } from './overlays.ts';
+import { createAuctionPanel } from './auction-panel.ts';
 import { createStashPanel } from './stash-panel.ts';
 import { createVendorPanel } from './vendor-panel.ts';
 
@@ -19,6 +20,7 @@ export function createTradeHud(root: HTMLElement, context: HudContext, track: (e
   const panels: Record<ServiceKind, PanelView> = {
     vendor: createVendorPanel(root, context),
     stash: createStashPanel(root, context),
+    auction: createAuctionPanel(root, context),
   };
   for (const panel of Object.values(panels)) track(panel.element);
   let kind: ServiceKind = 'vendor';
@@ -68,6 +70,11 @@ export function createTradeHud(root: HTMLElement, context: HudContext, track: (e
         return;
       }
       if (closing) return;
+      if (next === 'auction' && context.api.auction === null) {
+        closing = true;
+        context.api.send({ type: 'trade', action: { type: 'close' } });
+        return;
+      }
       if (!overlays.shown('trade')) {
         kind = next;
         openedInventory = !overlays.shown('inventory');
@@ -75,10 +82,13 @@ export function createTradeHud(root: HTMLElement, context: HudContext, track: (e
           openedInventory = false;
           closing = true;
           context.api.send({ type: 'trade', action: { type: 'close' } });
+          return;
         }
+        if (next === 'auction') context.api.auction?.open();
         return;
       }
       if (next !== kind) {
+        if (next === 'auction') context.api.auction?.open();
         place(next);
         panels[kind].element.classList.add('open');
         markOverlay(panels[kind].element, true);

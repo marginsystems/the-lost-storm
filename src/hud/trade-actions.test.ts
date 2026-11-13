@@ -7,7 +7,7 @@ import { generateItem } from '../../sim/items.ts';
 import { createRng } from '../../sim/rng.ts';
 import { sellPrice } from '../../sim/world/trade.ts';
 import type { ItemInstance, World } from '../../sim/world/types.ts';
-import { inventoryCommand, inventoryHint } from './trade-actions.ts';
+import { inventoryCommand, inventoryHint, picksForSale } from './trade-actions.ts';
 
 const content: Content = loadContent();
 
@@ -35,4 +35,15 @@ void test('a story item is never dropped or sold from the bag, though it can be 
   for (const click of ['click', 'ctrl', 'right'] as const) assert.equal(inventoryCommand(world, 0, click), null);
   world.service = { kind: 'stash', owner: 'any', anchor: { x: 0, z: 0 } };
   assert.deepEqual(inventoryCommand(world, 0, 'right'), { type: 'trade', action: { type: 'stash', inventoryIndex: 0 } });
+});
+
+void test('at the auctioneer a bag click picks the item to sell instead of sending a command', (): void => {
+  const world: World = worldIn(content, content.world.start, 2);
+  const item: ItemInstance = { ...must(generateItem(content, createRng(4), 4, 2, 'stormsteel_sword', 'magic'), 'item'), ledger: 'itm_AAAAAAAAAAAAAAAAAAAAAA' };
+  assert.equal(picksForSale(world), false);
+  world.service = { kind: 'auction', owner: 'any', anchor: { x: 0, z: 0 } };
+  assert.equal(picksForSale(world), true);
+  for (const click of ['click', 'ctrl', 'right'] as const) assert.equal(inventoryCommand(world, 1, click), null);
+  assert.equal(inventoryHint(world, item, false), 'Click to pick to sell');
+  assert.equal(inventoryHint(world, { ...item, ledger: null }, false), '');
 });

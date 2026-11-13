@@ -7,7 +7,7 @@ import type { MomentDef } from '../content/moment-types.ts';
 import type { ZoneWake } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
 import type { DeathState } from './death.ts';
-import type { LedgerState } from './ledger.ts';
+import type { LedgerState, PurseCommand } from './ledger.ts';
 import type { PackTimer } from './pack-return.ts';
 import type { GridStamp, NavGrid } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
@@ -521,7 +521,7 @@ export interface OverlayCommand {
   readonly open: boolean;
 }
 
-export type Command = HeroCommand | StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand;
+export type Command = HeroCommand | StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
@@ -686,6 +686,7 @@ export interface World {
   service: OpenService | null;
   vendors: Record<string, VendorStock>;
   stash: (ItemInstance | null)[];
+  purse: number;
   tradeZone: string;
   readonly glitch: GlitchState;
   readonly path: PathLog;

@@ -6,6 +6,7 @@
   {"id": "unfinished_borrower_said_5", "speaker": "unfinished_borrower", "text": "Who let the dog out?"},
   {"id": "warden_guide_road", "speaker": "warden_guide", "text": "Stay close."},
   {"id": "warden_trader_goods", "speaker": "warden_trader", "text": "Not much today."},
+  {"id": "warden_auctioneer_trade", "speaker": "warden_auctioneer", "text": "Others left these. Name your price, or pay theirs."},
   {"id": "warden_lookout_ahead", "speaker": "warden_lookout", "text": "Keep your eyes open."},
   {"id": "warden_guide_lesson", "speaker": "warden_guide", "text": "You carry the storm and swing it like a stick. Hold it so, and throw. There. It goes where you look."}
 ]

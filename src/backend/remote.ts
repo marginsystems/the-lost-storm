@@ -6,6 +6,8 @@ import { createWorld } from '../../sim/world/create.ts';
 import type { Api, CloudState, GuestResult, ReadResult, WriteResult } from './api.ts';
 import type { Backend, BackendState, Clock, KeyValueStore, Logger, Timers } from './backend.ts';
 import type { Epochs } from './epoch.ts';
+import { emptyFold } from './purse-read.ts';
+import type { SaveFold } from './purse-read.ts';
 import { chooseOnConflict, chooseOnLoad, describe } from './merge.ts';
 import type { Decision, LoadDecision } from './merge.ts';
 import { parseSyncRecord, serializeSyncRecord, SYNC_KEY } from './sync-record.ts';
@@ -32,6 +34,7 @@ export const TIMING: {
   readonly retryMaxMs: number;
   readonly maxQuickRetries: number;
   readonly maxEnrolRetries: number;
+  readonly syncTries: number;
 } = {
   loadMs: 3000,
   resetMs: 3000,
@@ -41,6 +44,7 @@ export const TIMING: {
   retryMaxMs: 60_000,
   maxQuickRetries: 3,
   maxEnrolRetries: 8,
+  syncTries: 2,
 };
 
 function canonical(value: unknown): string {
@@ -84,6 +88,15 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   let cancelEnrol: (() => void) | null = null;
   let unsent: SaveData | null = null;
   let restarted: boolean = false;
+  let inFlight: Promise<void> | null = null;
+  const foldListeners: ((fold: SaveFold) => void)[] = [];
+  const heldFolds: SaveFold[] = [];
+
+  const deliver = (fold: SaveFold): void => {
+    if (emptyFold(fold)) return;
+    if (foldListeners.length === 0) heldFolds.push(fold);
+    for (const listener of foldListeners) listener(fold);
+  };
 
   const now = (): string => new Date(clock()).toISOString();
   const setState = (next: BackendState): void => {
@@ -228,6 +241,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     switch (result.kind) {
       case 'ok':
         succeed(sending, result.copy);
+        deliver(result.fold);
         return;
       case 'conflict':
         setState('cloud');
@@ -266,16 +280,31 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     return { held, result: await api.writeSave(held.token, sending, held.revision, epochs.current(), timeout(TIMING.requestMs)) };
   };
 
-  const push = async (): Promise<void> => {
-    if (pushing || latest === null || frozen || blocked || cloudUnreadable) return;
-    pushing = true;
+  const sendLatest = async (sending: SaveData): Promise<void> => {
     const mine: number = epoch;
-    const sending: SaveData = latest;
     const sent = await send(sending);
     if (mine !== epoch) return;
     pushing = false;
+    inFlight = null;
     if (sent === null) fail(null);
     else handle(sending, sent.held, sent.result);
+  };
+
+  const push = (): Promise<void> => {
+    if (pushing) return inFlight ?? Promise.resolve();
+    if (latest === null || frozen || blocked || cloudUnreadable) return Promise.resolve();
+    pushing = true;
+    const run: Promise<void> = sendLatest(latest);
+    inFlight = run;
+    return run;
+  };
+
+  const syncFrom = async (tries: number): Promise<void> => {
+    if (tries >= TIMING.syncTries || latest === null || frozen || blocked || cloudUnreadable || failures > 0) return;
+    cancelTimer?.();
+    cancelTimer = null;
+    await push();
+    await syncFrom(tries + 1);
   };
 
   const adopt = (cloud: CloudState): void => {
@@ -287,6 +316,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     if (result.kind === 'ok') {
       keep({ ...held, revision: result.copy.revision, updatedAt: result.copy.updatedAt, savedAt: now(), pending: false, overwriteCloud: false });
       setState('cloud');
+      deliver(result.fold);
       return;
     }
     keep({ ...held, revision: cloud.revision, updatedAt: cloud.updatedAt });
@@ -426,6 +456,11 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       cancelTimer?.();
       cancelTimer = null;
       void push();
+    },
+    sync: (): Promise<void> => syncFrom(0),
+    onFold(listener: (fold: SaveFold) => void): void {
+      foldListeners.push(listener);
+      for (const fold of heldFolds.splice(0, heldFolds.length)) listener(fold);
     },
     state: (): BackendState => state,
     subscribe(listener: (state: BackendState) => void): void {

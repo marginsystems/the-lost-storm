@@ -54,6 +54,7 @@ export interface SaveData {
   readonly flags: StoryFlags;
   readonly glitch: GlitchSave;
   readonly path: PathLogSave;
+  readonly purse: number;
 }
 
 interface Worn {
@@ -97,6 +98,7 @@ export function toSave(world: World): SaveData {
     flags: { ...world.flags },
     glitch: glitchToSave(world.glitch),
     path: pathToSave(world.path),
+    purse: world.purse,
   };
 }
 
@@ -280,6 +282,10 @@ function readFlags(content: Content, value: unknown, legacy: boolean): StoryFlag
   return flags;
 }
 
+function readPurse(value: unknown): number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : 0;
+}
+
 export function readSave(content: Content, value: unknown): SaveData | null {
   if (!isFields(value) || !READABLE_VERSIONS.has(value['version'])) return null;
   const level: number | null = count(value, 'level', 1);
@@ -346,6 +352,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     flags: dressed.flags,
     glitch: readGlitchSave(value['glitch']),
     path: value['version'] === SAVE_VERSION ? pathToSave(readPathLog(value['path'], new Set<string>(content.zones.keys()))) : pathToSave(emptyPathLog()),
+    purse: readPurse(value['purse']),
   });
 }
 

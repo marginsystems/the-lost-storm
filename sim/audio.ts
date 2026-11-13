@@ -201,6 +201,8 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'trade':
       action = command.action.type === 'close' ? null : 'equip';
       break;
+    case 'purse':
+      break;
     case 'move':
     case 'walk':
     case 'skill':

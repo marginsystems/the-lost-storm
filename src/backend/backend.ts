@@ -1,4 +1,5 @@
 import type { SaveData } from '../../sim/save.ts';
+import type { SaveFold } from './purse-read.ts';
 
 export type BackendState = 'offline' | 'cloud';
 
@@ -7,6 +8,8 @@ export interface Backend {
   save(save: SaveData): boolean;
   reset(): Promise<void>;
   flush(): void;
+  sync(): Promise<void>;
+  onFold(listener: (fold: SaveFold) => void): void;
   state(): BackendState;
   subscribe(listener: (state: BackendState) => void): void;
   freshStart(): boolean;

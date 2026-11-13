@@ -1,0 +1,425 @@
+.auction-panel {
+  width: 560px;
+}
+
+.auction-tabs {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-tabs.closed {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.auction-tab {
+  padding: 5px 12px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition:
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    background var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-tab:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.auction-tab.active {
+  color: var(--ember);
+}
+
+.auction-tab-mark {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--mark-w, 0);
+  height: 1px;
+  background: rgba(232, 184, 102, 0.55);
+  transform: translateX(var(--mark-x, 0));
+  pointer-events: none;
+  transition:
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    width var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-line {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
+  font-size: 12px;
+  color: var(--text-dim);
+  transition:
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-line.shown {
+  max-height: 40px;
+  margin-bottom: 6px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.auction-line[data-tone='refusal'] {
+  color: #d98b7e;
+}
+
+.auction-line[data-tone='done'] {
+  color: var(--storm);
+}
+
+.auction-views {
+  display: grid;
+}
+
+.auction-view {
+  grid-area: 1 / 1;
+  min-width: 0;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s var(--spring-snappy) var(--spring-snappy-ms);
+}
+
+.auction-view.shown {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s var(--spring-snappy) 0s;
+}
+
+.auction-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.auction-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.auction-field-name {
+  min-height: 13px;
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+
+.auction-input {
+  box-sizing: border-box;
+  height: 26px;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 3px;
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  transition: background var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-input:focus,
+.auction-input:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.auction-input option {
+  color: var(--text);
+  background: #121722;
+}
+
+.auction-input.narrow {
+  width: 62px;
+}
+
+.auction-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 320px;
+  overflow-y: auto;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-rows.loading {
+  opacity: 0.55;
+}
+
+.auction-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 6px 3px 3px;
+  border-radius: 4px;
+  background: var(--row-bg);
+  animation: auction-row-in var(--spring-smooth-ms) var(--spring-smooth) both;
+}
+
+.auction-row.sale {
+  grid-template-columns: 44px 1fr auto;
+}
+
+.auction-history {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-history.shown {
+  max-height: 360px;
+  overflow-y: auto;
+  opacity: 1;
+}
+
+.auction-row.leaving {
+  pointer-events: none;
+  animation: auction-row-out var(--spring-snappy-ms) var(--spring-snappy) both;
+}
+
+@keyframes auction-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auction-row-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.auction-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.auction-row-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--rarity, var(--text));
+  transition: color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-row-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.auction-row-price {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ember);
+  transition: color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-row-price.short {
+  color: #c4675c;
+}
+
+.auction-row-price .gold-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.auction-act {
+  position: relative;
+  display: grid;
+  min-width: 70px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(232, 184, 102, 0.12);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ember);
+  cursor: pointer;
+  transition:
+    background var(--spring-smooth-ms) var(--spring-smooth),
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.auction-act:hover:not(:disabled) {
+  background: rgba(232, 184, 102, 0.2);
+}
+
+.auction-act:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.auction-act:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.auction-act.busy {
+  opacity: 0.6;
+}
+
+.auction-act.confirming {
+  background: rgba(127, 212, 255, 0.16);
+  color: var(--storm);
+}
+
+.act-face {
+  grid-area: 1 / 1;
+  text-align: center;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.act-sure {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.auction-act.confirming .act-ask {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.auction-act.confirming .act-sure {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.auction-empty {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  transition:
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    padding var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-empty.shown,
+.auction-closed .auction-empty {
+  max-height: 40px;
+  padding: 10px 2px;
+  opacity: 1;
+}
+
+.auction-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.auction-page {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.auction-picked {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.auction-picked-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.auction-pricing {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.auction-pricing .auction-input.narrow {
+  width: 110px;
+}
+
+.auction-terms {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.auction-stash .cell {
+  cursor: pointer;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    background var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-stash .cell.unpickable {
+  opacity: 0.4;
+}
+
+.auction-stash .cell.picked {
+  background: rgba(232, 184, 102, 0.16);
+}
+
+.auction-waiting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: var(--row-bg);
+}
+
+.auction-waiting-text {
+  font-size: 12.5px;
+  color: var(--text);
+}

@@ -1,11 +1,12 @@
 import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
 import type { Content } from '../../sim/content/types.ts';
-import { LEDGER_ID } from '../../sim/world/ledger.ts';
 import type { ItemSource, LedgerItem, LootTicket, MintClaim } from '../../sim/world/ledger.ts';
-import type { RolledAffix } from '../../sim/world/types.ts';
 import { exchange, headers } from './api.ts';
 import type { Answer, FetchFn } from './api.ts';
+import { LEDGER_READ, readLedgerItem } from './ledger-read.ts';
+
+export { readLedgerItem };
 
 export interface TicketHand {
   readonly tickets: readonly LootTicket[];
@@ -25,7 +26,7 @@ export const LEDGER_API: { readonly ticketsPath: string; readonly mintPath: stri
   ticketsPath: '/v1/items/tickets',
   mintPath: '/v1/items/mint',
   maxTickets: 64,
-  maxAffixes: 16,
+  maxAffixes: LEDGER_READ.maxAffixes,
   maxSeed: 4_294_967_295,
   busyCode: 'rate_limited',
 };
@@ -50,30 +51,6 @@ export function readTicketHand(value: unknown): TicketHand | null {
   const tickets: (LootTicket | null)[] = list.map(readTicket);
   if (!tickets.every((ticket: LootTicket | null): boolean => ticket !== null)) return null;
   return { tickets: tickets.filter((ticket: LootTicket | null): ticket is LootTicket => ticket !== null), lifeMs };
-}
-
-function readAffix(content: Content, value: unknown): RolledAffix | null {
-  if (!isFields(value)) return null;
-  const affix: unknown = value['affix'];
-  const rolled: unknown = value['value'];
-  if (typeof affix !== 'string' || !content.affixes.has(affix) || typeof rolled !== 'number' || !Number.isFinite(rolled)) return null;
-  return { affix, value: rolled };
-}
-
-export function readLedgerItem(content: Content, value: unknown): LedgerItem | null {
-  if (!isFields(value)) return null;
-  const id: unknown = value['id'];
-  const base: unknown = value['base'];
-  const rarity: unknown = value['rarity'];
-  const level: number | null = whole(value, 'level', 1, content.player.xp.maxLevel);
-  const affixes: unknown = value['affixes'];
-  if (typeof id !== 'string' || !LEDGER_ID.test(id) || typeof base !== 'string' || !content.itemBases.has(base) || level === null) return null;
-  if (typeof rarity !== 'string' || !content.rarities.some((entry): boolean => entry.id === rarity)) return null;
-  if (!Array.isArray(affixes) || affixes.length > LEDGER_API.maxAffixes) return null;
-  const list: readonly unknown[] = affixes;
-  const rolled: (RolledAffix | null)[] = list.map((entry: unknown): RolledAffix | null => readAffix(content, entry));
-  if (!rolled.every((entry: RolledAffix | null): boolean => entry !== null)) return null;
-  return { id, base, rarity, level, affixes: rolled.filter((entry: RolledAffix | null): entry is RolledAffix => entry !== null) };
 }
 
 function sourceBody(source: ItemSource): Readonly<Record<string, string>> {

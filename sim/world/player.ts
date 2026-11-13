@@ -19,6 +19,7 @@ import { beingKnocked, faceToward, steerAlong, stepKnock, stepTimers } from './m
 import { allHold } from './conditions.ts';
 import { blockedReason, startSkill, steerAction, stepAction } from './skills.ts';
 import type { Actor, Command, GroundItem, MomentState, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
+import { handlePurse } from './purse.ts';
 import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './trade.ts';
 import type { Station } from './trade.ts';
 import { requestGlitch, setGlitchesEnabled, setOverlay } from './glitch.ts';
@@ -242,6 +243,7 @@ function act(world: World, command: Command): void {
     case 'hold':
     case 'steer':
     case 'trade':
+    case 'purse':
     case 'read':
     case 'glitch':
     case 'glitch_setting':
@@ -301,6 +303,9 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'trade':
       handleTrade(world, command.action);
+      return;
+    case 'purse':
+      handlePurse(world, command);
       return;
     case 'read':
       readPage(world, command.book, command.page);

@@ -1,4 +1,4 @@
-export const SERVICE_KINDS = ['vendor', 'stash'] as const;
+export const SERVICE_KINDS = ['vendor', 'stash', 'auction'] as const;
 export type ServiceKind = (typeof SERVICE_KINDS)[number];
 
 export interface TradePricing {

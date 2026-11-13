@@ -18,12 +18,22 @@ function serviceOf(world: World): ServiceKind | null {
   return world.service === null ? null : world.service.kind;
 }
 
-const INVENTORY_ACTIONS: Readonly<Record<ServiceKind, 'sell' | 'stash'>> = { vendor: 'sell', stash: 'stash' };
+type InventoryAction = 'sell' | 'stash' | 'pick';
+
+const INVENTORY_ACTIONS: Readonly<Record<ServiceKind, InventoryAction>> = { vendor: 'sell', stash: 'stash', auction: 'pick' };
+
+const AUCTION_PICK: string = 'pick to sell';
 
 const SERVICE_HINTS: Readonly<Record<ServiceKind, (world: World, item: ItemInstance) => readonly Prompt[]>> = {
   vendor: (world: World, item: ItemInstance): readonly Prompt[] => [use(`sell for ${sellPrice(world.content, item)} gold`)],
   stash: (): readonly Prompt[] => INVENTORY_HINTS.stash,
+  auction: (world: World, item: ItemInstance): readonly Prompt[] => (item.ledger === null || isStoryItem(world.content, item) ? [] : [use(AUCTION_PICK)]),
 };
+
+export function picksForSale(world: World): boolean {
+  const kind: ServiceKind | null = serviceOf(world);
+  return kind !== null && INVENTORY_ACTIONS[kind] === 'pick';
+}
 
 export function inventoryCommand(world: World, inventoryIndex: number, click: InventoryClick): Command | null {
   const item: ItemInstance | null = world.player.inventory[inventoryIndex] ?? null;
@@ -33,7 +43,8 @@ export function inventoryCommand(world: World, inventoryIndex: number, click: In
     if (click !== 'right') return { type: 'equip', inventoryIndex };
     return story ? null : { type: 'drop', inventoryIndex };
   }
-  const action: 'sell' | 'stash' = INVENTORY_ACTIONS[kind];
+  const action: InventoryAction = INVENTORY_ACTIONS[kind];
+  if (action === 'pick') return null;
   return story && action === 'sell' ? null : { type: 'trade', action: { type: action, inventoryIndex } };
 }
 

@@ -119,7 +119,7 @@ export function hurryWake(world: World, command: Command): void {
 
 export function acceptsCommand(world: World, command: Command): boolean {
   if (command.type === 'hold' && !command.down) return true;
-  if (command.type === 'overlay' || command.type === 'hero') return true;
+  if (command.type === 'overlay' || command.type === 'hero' || command.type === 'purse') return true;
   if (world.wake !== null) return false;
   return !(world.zone.kind === 'void' && command.type === 'skill');
 }

@@ -69,6 +69,8 @@ export function createLocalBackend(content: Content, store: KeyValueStore, epoch
       return Promise.resolve();
     },
     flush: (): void => undefined,
+    sync: (): Promise<void> => Promise.resolve(),
+    onFold: (): void => undefined,
     state: (): BackendState => 'offline',
     subscribe: (): void => undefined,
     freshStart: (): boolean => epochs.dropped(),

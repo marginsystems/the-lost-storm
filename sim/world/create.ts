@@ -178,6 +178,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     service: null,
     vendors: save === null ? {} : copyVendors(save.vendors),
     stash: save === null ? emptyStash(content) : [...save.stash],
+    purse: save === null ? 0 : save.purse,
     tradeZone: zone.id,
     glitch: createGlitchState(options.glitches ?? loadGlitches(), options.seed, save?.glitch ?? null),
     path: save === null ? emptyPathLog() : readPathLog(save.path, new Set<string>(content.zones.keys())),

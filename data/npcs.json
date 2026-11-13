@@ -104,5 +104,35 @@
         ]
       }
     ]
+  },
+  {
+    "id": "warden_auctioneer",
+    "name": "Warden Auctioneer",
+    "title": "Auctioneer",
+    "faction": "wardens",
+    "rig": "warden",
+    "scale": 1.0,
+    "tint": "#f2e2d0",
+    "color": "#f0c070",
+    "gear": [
+      "warden_lantern"
+    ],
+    "wear": [
+      "warden_jerkin",
+      "warden_breeches",
+      "warden_boots",
+      "warden_hood"
+    ],
+    "talks": [
+      {
+        "id": "warden_auctioneer_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "warden_auctioneer_trade"
+        ]
+      }
+    ],
+    "service": "auction"
   }
 ]

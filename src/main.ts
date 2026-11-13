@@ -40,6 +40,7 @@ import { createSettingsStore as createGameSettings } from './settings/store.ts';
 import type { Backend, BackendState } from './backend/backend.ts';
 import { createBrowserAccount, createBrowserBackend, createBrowserMinter } from './backend/browser.ts';
 import { startHideout } from './hideout/hideout.ts';
+import { startAuction } from './auction/auction-start.ts';
 import type { Minter } from './backend/minter.ts';
 import { createHud } from './hud/hud.ts';
 import { findLabel } from './hud/pickup-notes.ts';
@@ -314,12 +315,11 @@ async function start(): Promise<void> {
     openSettings: (section: SettingsSection): void => pauseMenu.open(section),
     playUi,
     voice,
-    readBook: (item: ItemInstance): void => {
-      opening.readBook(item);
-    },
+    readBook: (item: ItemInstance): void => void opening.readBook(item),
     touch: mobile.touch,
     qualityTier: (): string => (mobile.quality.tier.name === 'desktop' ? gameSettings.get().graphics.quality : `${gameSettings.get().graphics.quality} ${mobile.quality.tier.name}`),
     overlays: overlayManager,
+    auction: startAuction({ content, serverUrl: import.meta.env.VITE_SERVER_URL, backend, world, send, save: (): void => saveNow() }),
   });
   const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
     findLabel: findLabel(mobile.touch),
