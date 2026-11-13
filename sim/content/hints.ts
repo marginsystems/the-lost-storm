@@ -47,6 +47,7 @@ export interface HintDef {
   readonly done: HintDone;
   readonly after: readonly string[];
   readonly forNewPlayers: boolean;
+  readonly lapses: boolean;
 }
 
 export interface HintsDef {
@@ -150,6 +151,7 @@ function readHint(value: unknown, where: string): HintDef {
     done: readDone(source['done'], `${where}.done`),
     after: textList(source, 'after', where),
     forNewPlayers: flag(source, 'forNewPlayers', where),
+    lapses: flag(source, 'lapses', where),
   };
 }
 

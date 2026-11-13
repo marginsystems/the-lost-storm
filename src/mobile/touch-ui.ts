@@ -21,6 +21,7 @@ import { aimedSkill, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap
 import type { PhoneLayout, Rect, SafeInsets } from './phone-layout.ts';
 import { PHONE, phoneLayout } from './phone-layout.ts';
 import touchCss from './touch.css?inline';
+import touchSheetCss from './touch-sheet.css?inline';
 
 export interface TouchSetup {
   readonly canvas: HTMLCanvasElement;
@@ -140,7 +141,7 @@ const signature = (buttons: readonly TouchButton[]): string => buttons.map((butt
 
 export function createTouchControls(setup: TouchSetup): TouchControls {
   const style: HTMLStyleElement = document.createElement('style');
-  style.textContent = touchCss;
+  style.textContent = touchCss + touchSheetCss;
   document.head.append(style);
   const { canvas, hudRoot, world, input, hud } = setup;
   document.body.classList.add('touch');

@@ -193,7 +193,7 @@ export function stepHints(defs: HintsDef, world: World, state: HintState, input:
       state.seen.add(current.id);
       state.active = null;
       changes.push({ type: 'hide', hint: current, done: true });
-    } else if (!input.enabled || (!world.player.alive && current.trigger.type !== 'player_dead')) {
+    } else if (!input.enabled || (!world.player.alive && current.trigger.type !== 'player_dead') || (current.lapses && !triggered(current.trigger, world, objectiveTarget(world)))) {
       state.active = null;
       changes.push({ type: 'hide', hint: current, done: false });
     }

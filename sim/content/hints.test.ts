@@ -22,13 +22,13 @@ void test('text splits into words and keys', (): void => {
 
 void test('an unknown key or slot is a problem', (): void => {
   const defs: HintsDef = parseHints({
-    hints: [{ id: 'a', trigger: { type: 'game_started' }, text: 'Use {nothing} and {slot_9}', touch: 'Tap and hold', done: { type: 'skills_used', slots: [7] }, after: [], forNewPlayers: true }],
+    hints: [{ id: 'a', trigger: { type: 'game_started' }, text: 'Use {nothing} and {slot_9}', touch: 'Tap and hold', done: { type: 'skills_used', slots: [7] }, after: [], forNewPlayers: true, lapses: false }],
   });
   assert.equal(hintProblems(defs, loadContent()).length, 3);
 });
 
 function filled(slot: number): HintsDef {
-  return parseHints({ hints: [{ id: 'a', trigger: { type: 'slot_filled', slot }, text: 'Cast it', touch: 'Tap it', done: { type: 'skills_used', slots: [0] }, after: [], forNewPlayers: true }] });
+  return parseHints({ hints: [{ id: 'a', trigger: { type: 'slot_filled', slot }, text: 'Cast it', touch: 'Tap it', done: { type: 'skills_used', slots: [0] }, after: [], forNewPlayers: true, lapses: false }] });
 }
 
 void test('a filled-slot hint must name a slot on the bar', (): void => {
@@ -38,7 +38,7 @@ void test('a filled-slot hint must name a slot on the bar', (): void => {
 
 void test('a hint may only come after an earlier one', (): void => {
   assert.throws(
-    (): HintsDef => parseHints({ hints: [{ id: 'a', trigger: { type: 'game_started' }, text: 'x', touch: 'x', done: { type: 'alive' }, after: ['b'], forNewPlayers: true }] }),
+    (): HintsDef => parseHints({ hints: [{ id: 'a', trigger: { type: 'game_started' }, text: 'x', touch: 'x', done: { type: 'alive' }, after: ['b'], forNewPlayers: true, lapses: false }] }),
     ContentError,
   );
 });
@@ -59,7 +59,7 @@ void test('touch devices get the touch wording and everything else the desktop w
 
 void test('touch wording that says click or press, or names an unknown button, is a problem', (): void => {
   const defs: HintsDef = parseHints({
-    hints: [{ id: 'a', trigger: { type: 'game_started' }, text: 'Press {map}', touch: 'Click {nowhere}', done: { type: 'alive' }, after: [], forNewPlayers: true }],
+    hints: [{ id: 'a', trigger: { type: 'game_started' }, text: 'Press {map}', touch: 'Click {nowhere}', done: { type: 'alive' }, after: [], forNewPlayers: true, lapses: false }],
   });
   const problems: string[] = hintProblems(defs, loadContent());
   assert.ok(problems.some((problem: string): boolean => problem.includes('mouse or keyboard')));
@@ -68,7 +68,7 @@ void test('touch wording that says click or press, or names an unknown button, i
 
 void test('touch wording may only name the buttons its desk wording names', (): void => {
   const defs: HintsDef = parseHints({
-    hints: [{ id: 'a', trigger: { type: 'game_started' }, text: 'Press {map}', touch: 'Tap {map} or {inventory}', done: { type: 'alive' }, after: [], forNewPlayers: true }],
+    hints: [{ id: 'a', trigger: { type: 'game_started' }, text: 'Press {map}', touch: 'Tap {map} or {inventory}', done: { type: 'alive' }, after: [], forNewPlayers: true, lapses: false }],
   });
   assert.deepEqual(hintProblems(defs, loadContent()), ['a: touch wording names {inventory}, which the desk wording does not']);
 });

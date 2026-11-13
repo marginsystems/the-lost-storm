@@ -1,0 +1,37 @@
+body.touch .world-layer {
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+body.touch:has(.hud-panel.open) .tc-stick,
+body.touch:has(.hud-panel.open) .tc-btn,
+body.touch:has(.hud-panel.open) .hud-hint,
+body.touch:has(.hud-panel.open) .hud-bark,
+body.touch:has(.hud-panel.open) .tc-rotate,
+body.touch:has(.hud-panel.open) .world-layer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 900px), (max-height: 500px) {
+  body.touch .hud-panel.right {
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
+  }
+
+  body.touch .hud-panel.right > .panel-title,
+  body.touch .hud-panel.right > .trade-head,
+  body.touch .hud-panel.right > .cs-head {
+    padding-right: 44px;
+  }
+
+  body.touch .inv-grid,
+  body.touch .inv-grid.stash-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  body.touch .inv-grid > .cell {
+    width: auto;
+    height: auto;
+    aspect-ratio: 1;
+  }
+}

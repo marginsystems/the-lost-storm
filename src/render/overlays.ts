@@ -42,7 +42,7 @@ export const OVERLAYS = {
   exitLift: 2.6,
   npcLift: 0.5,
   npcLeave: 0.52,
-  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.hud-xp', '.tc-btn', '.tc-stick', '.tc-menu', '.minimap-corner', '.hud-quests', '.hud-target.visible', '.hud-hint.visible', '.hud > .hud-banners'],
+  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.hud-xp', '.tc-btn', '.tc-stick', '.tc-menu', '.minimap-corner', '.hud-quests', '.hud-target.visible', '.hud-hint.visible', '.tc-stick.intro:not(.on) .tc-stick-hint', '.hud > .hud-banners'],
   hudReadSeconds: 0.25,
   waypointId: 'waypoint',
   waypointName: 'Waypoint',

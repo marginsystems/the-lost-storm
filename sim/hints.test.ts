@@ -10,7 +10,7 @@ import type { Content, QuestDef } from './content/types.ts';
 import type { HintChange, HintInput, HintState } from './hints.ts';
 import { createHintState, HINTS, seedVeteran, stepHints } from './hints.ts';
 import { startQuests } from './world/quests.ts';
-import type { ItemInstance, MomentState, World, WorldEvent } from './world/types.ts';
+import type { ItemInstance, MomentState, MonsterState, World, WorldEvent } from './world/types.ts';
 import { forceStrike } from './world/moments.ts';
 
 const content: Content = loadContent();
@@ -229,4 +229,22 @@ void test('learning the roll shows its hint, and the first roll puts it away for
   assert.equal(stepHints(defs, world, state, { ...IDLE, events: [rolled] })[0]?.type, 'hide');
   assert.ok(state.seen.has('roll'));
   assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+});
+
+void test('the attack hint leaves when no monster is near and comes back with one, without counting as seen', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 1);
+  startQuests(world);
+  const monster: MonsterState = must(world.monsters[0], 'a monster in the Hall');
+  world.monsters = [monster];
+  world.player.skillPoints = 0;
+  const state: HintState = createHintState(allBut('attack'));
+  monster.pos = { x: world.player.pos.x + 2, z: world.player.pos.z };
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'attack');
+  monster.pos = { x: world.player.pos.x + 400, z: world.player.pos.z };
+  const gone: HintChange[] = stepHints(defs, world, state, IDLE);
+  assert.deepEqual(gone.map((change: HintChange): string => change.type), ['hide']);
+  assert.equal(state.seen.has('attack'), false);
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+  monster.pos = { x: world.player.pos.x + 2, z: world.player.pos.z };
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'attack');
 });
