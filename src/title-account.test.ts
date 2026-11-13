@@ -177,13 +177,16 @@ void test('a signed-in player sees which method was used beside the name', (): v
 
 function rulesFor(css: string, selector: string): string[] {
   const bodies: string[] = [];
-  for (const block of css.split('}')) {
-    const [head, body] = block.split('{');
+  for (const [, head, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     if (head === undefined || body === undefined) continue;
-    if (head.split(",").some((piece: string): boolean => piece.trim().split(/\s+/).at(-1)?.split(':')[0] === selector)) bodies.push(body);
+    if (head.split(',').some((piece: string): boolean => piece.trim().split(/\s+/).at(-1)?.split(':')[0] === selector)) bodies.push(body);
   }
   return bodies;
 }
+
+void test('a rule nested in a media query is read like any other', (): void => {
+  assert.deepEqual(rulesFor('.a { x: 1; } @media (max-width: 9px) { .a { x: 2; } .b .a { x: 3; } }', '.a'), [' x: 1; ', ' x: 2; ', ' x: 3; ']);
+});
 
 void test('Google\'s own button is drawn fully visible, because it ignores a click while it is transparent, hidden or filtered', (): void => {
   const css: string = readFileSync(new URL('./title-account.css', import.meta.url), 'utf8');
@@ -195,6 +198,7 @@ void test('Google\'s own button is drawn fully visible, because it ignores a cli
     assert.ok(!/\b(filter|clip-path|mask)\s*:/.test(body), body);
     assert.ok(!/\bdisplay\s*:\s*none/.test(body), body);
   }
+  assert.ok(css.replaceAll(/\s+/g, ' ').includes('.title-google .title-signin-face { display: none; }'), 'the page draws no face of its own for Google, so the control never changes look after it loads');
   for (const holder of ['.title-google', '.title-methods', '.title-account']) {
     for (const body of rulesFor(css, holder)) assert.ok(!/\b(filter|clip-path|mask)\s*:/.test(body), `${holder} ${body}`);
   }

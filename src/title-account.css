@@ -132,6 +132,17 @@
   opacity: 1;
 }
 
+.title-card .title-google.title-signin,
+.title-card .title-google.title-signin:hover,
+.title-card .title-google.title-signin:focus-within {
+  background: none;
+  box-shadow: none;
+}
+
+.title-google .title-signin-face {
+  display: none;
+}
+
 .title-google-official {
   position: absolute;
   inset: 0;

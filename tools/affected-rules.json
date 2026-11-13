@@ -26,7 +26,7 @@
     { "kind": "importers", "paths": ["src/**"], "alsoRun": ["src/hud/hud.test.ts", "src/hud/hud-gate.test.ts"] },
     { "kind": "importers", "paths": ["src/hud/**"], "alsoRun": ["src/hud/**/*.test.ts"] },
     { "kind": "importers", "paths": ["src/backend/**"], "alsoRun": ["src/backend/**/*.test.ts"] },
-    { "kind": "importers", "paths": ["src/**/*.css"], "alsoRun": ["src/title-screen.test.ts", "src/landing/leave.test.ts", "src/hud/panel-cover.test.ts", "src/opening/opening.test.ts", "src/title-account.test.ts"] },
+    { "kind": "importers", "paths": ["src/**/*.css"], "alsoRun": ["src/title-screen.test.ts", "src/landing/leave.test.ts", "src/hud/panel-cover.test.ts", "src/opening/opening.test.ts", "src/title-account.test.ts", "src/veil.test.ts"] },
     { "kind": "importers", "paths": ["src/input.ts"], "alsoRun": ["src/input.test.ts"] },
     { "kind": "only", "paths": ["index.html", "play/**"], "run": ["src/launch/data.test.ts"] },
     { "kind": "only", "paths": ["public/**"], "run": ["sim/content/content.test.ts"] },

@@ -2,7 +2,7 @@ import type { AccountService, EmailOffer, EmailStartResult, EmailVerifyResult } 
 import { createBrowserTimers } from './browser-timers.ts';
 import { createAccountFlow } from './account-flow.ts';
 import type { AccountFlow } from './account-flow.ts';
-import { loadGoogleIdentity, showGoogleMark } from './google-identity.ts';
+import { loadGoogleIdentity } from './google-identity.ts';
 import { createTitleEmail, digitInputs } from './title-email.ts';
 import type { TitleEmail } from './title-email.ts';
 import { createTurnstileGate, loadTurnstile } from './turnstile.ts';
@@ -11,6 +11,33 @@ import type { GoogleIdentity } from './google-identity.ts';
 import { createTitleAccount, offersSignIn } from './title-account.ts';
 import type { AccountView, TitleAccount } from './title-account.ts';
 import { element } from './dom-element.ts';
+
+export const GOOGLE_BUTTON = {
+  drawnWithinMs: 1500,
+} as const;
+
+function drawn(mount: HTMLElement): Promise<void> {
+  return new Promise<void>((resolve: () => void): void => {
+    let settled: boolean = false;
+    const done = (): void => {
+      if (settled) return;
+      settled = true;
+      watcher.disconnect();
+      resolve();
+    };
+    const listen = (): boolean => {
+      const frame: HTMLIFrameElement | null = mount.querySelector('iframe');
+      if (frame === null) return false;
+      frame.addEventListener('load', done, { once: true });
+      return true;
+    };
+    const watcher: MutationObserver = new MutationObserver((): void => {
+      if (listen()) watcher.disconnect();
+    });
+    if (!listen()) watcher.observe(mount, { childList: true, subtree: true });
+    window.setTimeout(done, GOOGLE_BUTTON.drawnWithinMs);
+  });
+}
 
 function startTitleEmail(flow: AccountFlow): TitleEmail {
   const timers = createBrowserTimers();
@@ -86,8 +113,9 @@ export function startTitleAccount(account: AccountService, options: TitleSignInO
     showButton: async (clientId: string, nonce: string, onCredential: (credential: string) => void): Promise<boolean> => {
       const identity: GoogleIdentity | null = await loadGoogleIdentity();
       if (identity === null) return false;
-      showGoogleMark(element('title-google-mark', HTMLImageElement));
-      identity.start({ clientId, nonce, onCredential }, element('title-google-official', HTMLDivElement));
+      const official: HTMLDivElement = element('title-google-official', HTMLDivElement);
+      identity.start({ clientId, nonce, onCredential }, official);
+      await drawn(official);
       return true;
     },
   });
