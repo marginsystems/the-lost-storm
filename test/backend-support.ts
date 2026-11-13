@@ -126,6 +126,9 @@ export interface ServerAccount {
   method: 'google' | 'email' | null;
   name: string | null;
   character: string | null;
+  owner: string | null;
+  retired: boolean;
+  username: string | null;
 }
 
 export interface SentCode {
@@ -138,6 +141,7 @@ export interface SentCode {
 
 interface Planned {
   readonly method: string | null;
+  readonly path: string | null;
   readonly status: number;
   readonly headers: Readonly<Record<string, string>>;
 }
@@ -151,7 +155,10 @@ export interface FakeServer {
   fallBehind(): void;
   foldNext(extra: Readonly<Record<string, unknown>>): void;
   catchUp(): void;
-  plan(status: number, headers?: Readonly<Record<string, string>>, method?: string): void;
+  plan(status: number, headers?: Readonly<Record<string, string>>, method?: string, path?: string): void;
+  characterOf(name: string): ServerAccount;
+  readonly auctionBusy: Set<string>;
+  live(login: ServerAccount): readonly ServerAccount[];
   holdNext(): () => void;
   loseNextAnswer(method: string, path: string): void;
   plant(account: ServerAccount, save: SaveData): void;
@@ -174,31 +181,39 @@ const EMAIL_CODE_MS: number = 600_000;
 const EMAIL_ATTEMPTS: number = 5;
 
 const FAKE_NAME: RegExp = /^[A-Za-z0-9 ]+$/;
+const FAKE_ROSTER_MAX: number = 3;
+const CHARACTER_PATH: string = '/v1/characters';
+const LOGIN_PATHS: readonly string[] = [CHARACTER_PATH, '/v1/me', '/v1/auth/', '/v1/signout', '/v1/account/'];
+
+function guestName(account: ServerAccount): string {
+  return `Guest ${account.accountId.replace('account-', '')}`;
+}
 
 function characterKey(name: string): string {
   return name.toLowerCase().replaceAll(' ', '');
 }
 
 function ladder(accounts: readonly ServerAccount[], viewer: ServerAccount | undefined): unknown {
+  const usernameOf = (account: ServerAccount): string | null => accounts.find((other: ServerAccount): boolean => other.accountId === (account.owner ?? account.accountId))?.username ?? null;
   const ranked: ServerAccount[] = accounts
-    .filter((account: ServerAccount): boolean => account.save !== null || account.character !== null)
+    .filter((account: ServerAccount): boolean => !account.retired && (account.save !== null || account.character !== null))
     .toSorted((left: ServerAccount, right: ServerAccount): number => {
       const byLevel: number = (right.save?.level ?? 1) - (left.save?.level ?? 1);
       return byLevel === 0 ? (right.save?.xp ?? 0) - (left.save?.xp ?? 0) : byLevel;
     });
   const rankOf = (account: ServerAccount): number => 1 + ranked.filter((other: ServerAccount): boolean => (other.save?.level ?? 1) > (account.save?.level ?? 1) || ((other.save?.level ?? 1) === (account.save?.level ?? 1) && (other.save?.xp ?? 0) > (account.save?.xp ?? 0))).length;
-  const row = (account: ServerAccount): Record<string, unknown> => ({ rank: rankOf(account), name: account.character ?? `Guest ${account.accountId.replace('account-', '')}`, level: account.save?.level ?? 1, furthest: 'The Waystation', online: account === viewer });
+  const row = (account: ServerAccount): Record<string, unknown> => ({ rank: rankOf(account), name: account.character ?? guestName(account), account: usernameOf(account), level: account.save?.level ?? 1, furthest: 'The Waystation', online: account === viewer });
   const you: unknown = viewer === undefined || !ranked.includes(viewer) ? null : { ...row(viewer), chosen: viewer.character !== null };
   return { top: ranked.slice(0, 25).map(row), you, online: viewer === undefined ? 0 : 1, characters: ranked.length, levelUps: [] };
 }
 
-function nameRefusal(accounts: readonly ServerAccount[], owner: ServerAccount, raw: unknown): string | null {
+function nameRefusal(accounts: readonly ServerAccount[], owner: ServerAccount | null, raw: unknown): string | null {
   if (typeof raw !== 'string') return 'bad_request';
   const name: string = raw.trim();
   if (name.length < 3 || name.length > 16) return 'name_length';
   if (!FAKE_NAME.test(name)) return 'name_characters';
   if (characterKey(name).includes('admin')) return 'name_blocked';
-  const taken: boolean = accounts.some((account: ServerAccount): boolean => account !== owner && account.character !== null && characterKey(account.character) === characterKey(name));
+  const taken: boolean = accounts.some((account: ServerAccount): boolean => account !== owner && !account.retired && account.character !== null && characterKey(account.character) === characterKey(name));
   return taken ? 'name_taken' : null;
 }
 
@@ -236,6 +251,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   const feedback: StoredFeedback[] = [];
   const counted: unknown[] = [];
   const ledger: FakeLedger = createFakeLedger(content);
+  const auctionBusy: Set<string> = new Set<string>();
   const signIn = (owner: ServerAccount, accessToken: unknown): Response => {
     const [scheme, subject, name]: readonly string[] = typeof accessToken === 'string' ? accessToken.split('|') : [];
     if (scheme !== 'google' || subject === undefined || subject === '') return json(401, { error: { code: 'invalid_google_token', message: 'no' } });
@@ -293,6 +309,47 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     return json(200, { accountId: target.accountId, token, outcome: known === undefined ? 'linked' : 'existing', name: target.name });
   };
   const stamp = (): string => new Date(clock.now).toISOString();
+  const liveOf = (login: ServerAccount): readonly ServerAccount[] => accounts.filter((account: ServerAccount): boolean => !account.retired && (account === login || account.owner === login.accountId) && (account.character !== null || account.save !== null));
+  const subAccount = (login: ServerAccount): ServerAccount => {
+    const latent: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => account.owner === login.accountId && !account.retired && account.character === null && account.save === null);
+    if (latent !== undefined) return latent;
+    created += 1;
+    const account: ServerAccount = { accountId: `account-${created}`, token: `character-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: true, google: null, email: null, method: null, name: null, character: null, owner: login.accountId, retired: false, username: null };
+    accounts.push(account);
+    return account;
+  };
+  const defaultOf = (login: ServerAccount): ServerAccount => liveOf(login)[0] ?? (login.retired ? subAccount(login) : login);
+  const seedUsername = (account: ServerAccount): void => {
+    const login: ServerAccount | undefined = accounts.find((other: ServerAccount): boolean => other.accountId === (account.owner ?? account.accountId));
+    if (login === undefined || login.username !== null || account.character === null) return;
+    const wanted: string = account.character;
+    if (accounts.some((other: ServerAccount): boolean => other.username !== null && characterKey(other.username) === characterKey(wanted))) return;
+    login.username = wanted;
+  };
+  const listed = (account: ServerAccount): Record<string, unknown> => ({ id: account.accountId, name: account.character ?? guestName(account), chosen: account.character !== null, hero: account.save?.hero ?? null, level: account.save?.level ?? 1, furthest: 'The Waystation', createdAt: stamp(), playedAt: account.updatedAt });
+  const answerCharacters = (login: ServerAccount, method: string, path: string, body: unknown): Response => {
+    if (method === 'GET' && path === CHARACTER_PATH) return json(200, { characters: liveOf(login).map(listed), max: FAKE_ROSTER_MAX, default: defaultOf(login).accountId, username: login.username });
+    if (method === 'POST' && path === CHARACTER_PATH) {
+      const raw: unknown = isFields(body) ? body['name'] : null;
+      const refusal: string | null = nameRefusal(accounts, null, raw);
+      if (refusal !== null) return failed(refusal === 'name_taken' ? 409 : 400, refusal);
+      if (liveOf(login).length >= FAKE_ROSTER_MAX) return failed(409, 'character_limit');
+      const target: ServerAccount = login.character === null && login.save === null && !login.retired ? login : subAccount(login);
+      target.character = typeof raw === 'string' ? raw.trim() : null;
+      seedUsername(target);
+      return json(201, listed(target));
+    }
+    const parts: readonly string[] = path.slice(CHARACTER_PATH.length + 1).split('/');
+    const victim: ServerAccount | undefined = liveOf(login).find((account: ServerAccount): boolean => account.accountId === parts[0]);
+    if (method === 'POST' && parts.length === 2 && parts[1] === 'delete') {
+      if (victim === undefined) return failed(404, 'no_such_character');
+      if (auctionBusy.has(victim.accountId)) return failed(409, 'character_has_listings');
+      victim.retired = true;
+      victim.character = null;
+      return json(200, { deleted: true });
+    }
+    return failed(404, 'not_found');
+  };
   const tallied: Set<string> = new Set<string>();
   const tally = (owner: ServerAccount | undefined): Response => json(200, { count: tallied.size, others: tallied.size - (owner !== undefined && tallied.has(owner.accountId) ? 1 : 0) });
   const handle = (url: string, init: RequestInit): Response => {
@@ -303,7 +360,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     let body: unknown = null;
     if (typeof init.body === 'string') body = JSON.parse(init.body);
     requests.push({ method, path, token, body });
-    const planIndex: number = planned.findIndex((entry: Planned): boolean => entry.method === null || entry.method === method);
+    const planIndex: number = planned.findIndex((entry: Planned): boolean => (entry.method === null || entry.method === method) && (entry.path === null ? !path.startsWith(CHARACTER_PATH) : entry.path === path));
     const plan: Planned | undefined = planIndex < 0 ? undefined : planned.splice(planIndex, 1)[0];
     if (plan !== undefined) return json(plan.status, { error: { code: 'planned', message: 'planned' } }, plan.headers);
     if (method === 'POST' && path === '/v1/feedback') {
@@ -318,14 +375,21 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     }
     if (method === 'POST' && path === '/v1/guest') {
       created += 1;
-      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, email: null, method: null, name: null, character: null };
+      const account: ServerAccount = { accountId: `account-${created}`, token: `token-${created}`, save: null, revision: 0, updatedAt: null, sessions: [], guestRetired: false, google: null, email: null, method: null, name: null, character: null, owner: null, retired: false, username: null };
       accounts.push(account);
       return json(201, { accountId: account.accountId, token: account.token });
     }
     if (method === 'GET' && path === '/v1/auth/providers') {
       return json(200, { google: googleClientId === null ? null : { clientId: googleClientId }, email: emailSiteKey === null ? null : { turnstileSiteKey: emailSiteKey } });
     }
-    const owner: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => token !== null && ((account.token === token && !account.guestRetired) || account.sessions.includes(token)));
+    const dot: number = token === null ? -1 : token.indexOf('.');
+    const session: string | null = token === null || dot < 0 ? token : token.slice(0, dot);
+    const suffix: string | null = token === null || dot < 0 ? null : token.slice(dot + 1);
+    const login: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => session !== null && account.owner === null && ((account.token === session && !account.guestRetired) || account.sessions.includes(session)));
+    const loginScoped: boolean = LOGIN_PATHS.some((prefix: string): boolean => path.startsWith(prefix));
+    const character: ServerAccount | null | undefined = login === undefined || loginScoped ? login : suffix === null ? defaultOf(login) : accounts.find((account: ServerAccount): boolean => account.accountId === suffix && !account.retired && (account === login || account.owner === login.accountId)) ?? null;
+    if (character === null) return failed(404, 'no_such_character');
+    const owner: ServerAccount | undefined = character;
     if (method === 'GET' && path === '/v1/leaderboard') return json(200, ladder(accounts, owner));
     if (method === 'GET' && path === '/v1/tallies/journal') return tally(owner);
     if (owner === undefined) return json(401, { error: { code: 'unauthorized', message: 'no' } });
@@ -340,16 +404,18 @@ export function createFakeServer(clock: FakeClock): FakeServer {
       const refusal: string | null = nameRefusal(accounts, owner, raw);
       if (refusal !== null) return json(refusal === 'name_taken' ? 409 : 400, { error: { code: refusal, message: 'no' } });
       owner.character = typeof raw === 'string' ? raw.trim() : null;
+      seedUsername(owner);
       return json(200, { name: owner.character, chosen: true });
     }
-    if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.method ?? 'guest', name: owner.name, createdAt: stamp(), saveEpoch: epoch });
+    if (method === 'GET' && path === '/v1/me') return json(200, { accountId: owner.accountId, kind: owner.method ?? 'guest', name: owner.name, createdAt: stamp(), saveEpoch: epoch, username: owner.username });
+    if (path === CHARACTER_PATH || path.startsWith(`${CHARACTER_PATH}/`)) return answerCharacters(owner, method, path, body);
     if (path.startsWith('/v1/auth/google') && googleClientId === null) return json(503, { error: { code: 'sign_in_unavailable', message: 'no' } });
     if (method === 'POST' && path === '/v1/auth/google') return signIn(owner, isFields(body) ? body['accessToken'] : null);
     if (path.startsWith('/v1/auth/email') && emailSiteKey === null) return failed(503, 'sign_in_unavailable');
     if (method === 'POST' && path === '/v1/auth/email/start') return startEmail(owner, body);
     if (method === 'POST' && path === '/v1/auth/email/verify') return verifyEmail(owner, body);
     if (method === 'POST' && path === '/v1/signout') {
-      const index: number = token === null ? -1 : owner.sessions.indexOf(token);
+      const index: number = session === null ? -1 : owner.sessions.indexOf(session);
       if (index >= 0) owner.sessions.splice(index, 1);
       const retiresGuest: boolean = index < 0 && owner.method !== null;
       if (retiresGuest) owner.guestRetired = true;
@@ -377,7 +443,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
   return {
     fetch: async (url: string, init: RequestInit): Promise<Response> => {
       if (down) throw new TypeError('network down');
-      const gate: Promise<void> | undefined = gates.shift();
+      const gate: Promise<void> | undefined = new URL(url).pathname.startsWith(CHARACTER_PATH) ? undefined : gates.shift();
       if (gate !== undefined) await gate;
       const answer: Response = handle(url, init);
       if (lost !== null && lost.method === (init.method ?? 'GET') && lost.path === new URL(url).pathname) {
@@ -417,9 +483,16 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     catchUp: (): void => {
       behind = false;
     },
-    plan: (status: number, headers: Readonly<Record<string, string>> = {}, method?: string): void => {
-      planned.push({ method: method ?? null, status, headers });
+    plan: (status: number, headers: Readonly<Record<string, string>> = {}, method?: string, path?: string): void => {
+      planned.push({ method: method ?? null, path: path ?? null, status, headers });
     },
+    characterOf: (name: string): ServerAccount => {
+      const found: ServerAccount | undefined = accounts.find((account: ServerAccount): boolean => !account.retired && account.character === name);
+      if (found === undefined) throw new Error(`no character named ${name}`);
+      return found;
+    },
+    live: liveOf,
+    auctionBusy,
     plant: (account: ServerAccount, save: SaveData): void => {
       account.save = save;
       account.revision += 1;
@@ -495,6 +568,6 @@ export function createHarness(sharing: Harness | null = null): Harness {
     logs,
     infos,
     warns,
-    open: (url: string = 'http://localhost:8787'): Backend => createBackend(content, url, { fetch: server.fetch, store, clock: clock.read, timers: timers.timers, log }),
+    open: (url: string = 'http://localhost:8787'): Backend => createBackend(content, url, { fetch: server.fetch, store, clock: clock.read, timers: timers.timers, log, characterKeys: [] }),
   };
 }
