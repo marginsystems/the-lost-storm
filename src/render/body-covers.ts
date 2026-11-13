@@ -1,6 +1,10 @@
 import jerkinOnMan from '../../data/covers/human_man/leather_jerkin.json' with { type: 'json' };
 import undertunicOnMan from '../../data/covers/human_man/undertunic.json' with { type: 'json' };
 import braiesOnMan from '../../data/covers/human_man/braies.json' with { type: 'json' };
+import leatherGlovesOnMan from '../../data/covers/human_man/leather_gloves.json' with { type: 'json' };
+import leatherGlovesOnManHands from '../../data/covers/human_man/leather_gloves-hands.json' with { type: 'json' };
+import longGlovesOnMan from '../../data/covers/human_man/long_gloves.json' with { type: 'json' };
+import longGlovesOnManHands from '../../data/covers/human_man/long_gloves-hands.json' with { type: 'json' };
 import undertunicOnWoman from '../../data/covers/human_woman/undertunic_woman.json' with { type: 'json' };
 import braiesOnWoman from '../../data/covers/human_woman/braies.json' with { type: 'json' };
 import undertunicOnElder from '../../data/covers/human_elder/undertunic.json' with { type: 'json' };
@@ -58,6 +62,10 @@ export const BODY_COVERS: readonly BodyCover[] = [
   readCover(jerkinOnMan, 'data/covers/human_man/leather_jerkin.json'),
   readCover(undertunicOnMan, 'data/covers/human_man/undertunic.json'),
   readCover(braiesOnMan, 'data/covers/human_man/braies.json'),
+  readCover(leatherGlovesOnMan, 'data/covers/human_man/leather_gloves.json'),
+  readCover(leatherGlovesOnManHands, 'data/covers/human_man/leather_gloves-hands.json'),
+  readCover(longGlovesOnMan, 'data/covers/human_man/long_gloves.json'),
+  readCover(longGlovesOnManHands, 'data/covers/human_man/long_gloves-hands.json'),
   readCover(undertunicOnWoman, 'data/covers/human_woman/undertunic_woman.json'),
   readCover(braiesOnWoman, 'data/covers/human_woman/braies.json'),
   readCover(undertunicOnElder, 'data/covers/human_elder/undertunic.json'),

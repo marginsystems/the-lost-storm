@@ -53,16 +53,21 @@ function merged(parts: readonly TriangleMesh[]): TriangleMesh {
   return { positions: new Float32Array(positions), indices: new Uint32Array(corners) };
 }
 
+const MESH_OPTION: string = 'mesh=';
+
 async function wearableMesh(io: NodeIO, path: string): Promise<TriangleMesh> {
   return merged((await primitives(io, path)).map(({ primitive }: NamedPrimitive): TriangleMesh => ({ positions: floats(primitive.getAttribute('POSITION'), 'wearable POSITION'), indices: indices(primitive, path) })));
 }
 
 async function main(): Promise<void> {
-  const [bodyPath, wearablePath, outPath, fit, ...seamPaths] = process.argv.slice(2);
-  if (bodyPath === undefined || wearablePath === undefined || outPath === undefined) throw new Error('usage: bake-cover <body.glb> <wearable.glb> <out.json> [snug|loose] [seam-partner.glb...]');
+  const [bodyPath, wearablePath, outPath, ...options] = process.argv.slice(2);
+  const fit: string | undefined = options.find((option: string): boolean => option === 'snug');
+  const meshName: string | undefined = options.find((option: string): boolean => option.startsWith(MESH_OPTION))?.slice(MESH_OPTION.length);
+  const seamPaths: string[] = options.filter((option: string): boolean => option.endsWith('.glb'));
+  if (bodyPath === undefined || wearablePath === undefined || outPath === undefined) throw new Error('usage: bake-cover <body.glb> <wearable.glb> <out.json> [snug] [mesh=<name>] [seam-partner.glb...]');
   await MeshoptDecoder.ready;
   const io: NodeIO = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
-  const [first] = await primitives(io, bodyPath);
+  const first: NamedPrimitive | undefined = (await primitives(io, bodyPath)).find((candidate: NamedPrimitive): boolean => meshName === undefined || candidate.mesh === meshName);
   if (first === undefined) throw new Error(`${bodyPath} has no mesh`);
   const skin: Primitive = first.primitive;
   const body: BodyMesh = { positions: floats(skin.getAttribute('POSITION'), 'body POSITION'), normals: floats(skin.getAttribute('NORMAL'), 'body NORMAL'), indices: indices(skin, bodyPath) };
