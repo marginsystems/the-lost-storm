@@ -15,7 +15,7 @@ import { beingKnocked, faceToward, steerAlong, steerToward, stepKnock, stepTimer
 import { blockedReason, startSkill, stepAction } from './skills.ts';
 import { SPAWN, spawnMonster } from './spawn.ts';
 import { mayStrike } from './factions.ts';
-import { LEASH, shellPoint, shutOut } from './leash.ts';
+import { homeReached, LEASH, shellPoint, shutOut } from './leash.ts';
 import { revivable } from './revive.ts';
 import { roomAhead } from './queue.ts';
 import { insideShell } from './shell.ts';
@@ -253,13 +253,10 @@ function fighting(actor: Actor): boolean {
   return actor.kind === 'player' || actor.aggro;
 }
 
-function wake(world: World, monster: MonsterState): void {
-  if (monster.def.dormant !== null) {
-    if (heard(world, monster, monster.def.dormant.noiseRadius)) rouse(world, monster);
-    return;
-  }
-  const seen: boolean = [world.player, ...world.monsters].some((actor: Actor): boolean => fighting(actor) && distance(monster.pos, actor.pos) <= monster.def.aggroRadius && strikes(world, monster, actor) && lineOfSight(world.grid, monster.pos, actor.pos));
-  if (seen) rouse(world, monster);
+function wake(world: World, monster: MonsterState): boolean {
+  const roused: boolean = monster.def.dormant !== null ? heard(world, monster, monster.def.dormant.noiseRadius) : [world.player, ...world.monsters].some((actor: Actor): boolean => fighting(actor) && distance(monster.pos, actor.pos) <= monster.def.aggroRadius && strikes(world, monster, actor) && lineOfSight(world.grid, monster.pos, actor.pos));
+  if (roused) rouse(world, monster);
+  return roused;
 }
 
 function support(world: World, monster: MonsterState): boolean {
@@ -305,7 +302,7 @@ function heldAtShell(world: World, monster: MonsterState, moment: MomentState, f
 }
 
 function walkHome(world: World, monster: MonsterState, dt: number): void {
-  if (distance(monster.pos, monster.home) <= LEASH.homeReach) {
+  if (homeReached(world, monster)) {
     monster.returning = false;
     monster.path = [];
     return;
@@ -336,8 +333,8 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   if (foe !== null && monster.summonerId === null && monster.def.summon !== null) summonOf(world, monster, monster.def.summon, local);
   if (monster.action !== null || monster.stagger > 0 || beingKnocked(monster)) return;
   if (!monster.aggro) {
-    if (monster.returning) walkHome(world, monster, local);
-    else wake(world, monster);
+    const roused: boolean = (!monster.returning || shutOut(world, monster, world.player.pos) === null) && wake(world, monster);
+    if (!roused && monster.returning) walkHome(world, monster, local);
     return;
   }
   monster.returning = false;

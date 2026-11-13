@@ -1,11 +1,12 @@
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import type { MomentFigure, MomentState, MonsterState, World } from './types.ts';
+import type { Actor, MomentFigure, MomentState, MonsterState, World } from './types.ts';
 
 export const LEASH = {
   wait: 3,
   shellGap: 0.4,
   homeReach: 0.6,
+  crowdReach: 3,
   rest: 1e-6,
 } as const;
 
@@ -50,4 +51,15 @@ export function keepOut(world: World): void {
       monster.knock.z += out.z * inward;
     }
   }
+}
+
+function settledBody(actor: Actor): boolean {
+  return actor.kind === 'player' ? actor.life > 0 : actor.alive && !actor.returning;
+}
+
+export function homeReached(world: World, monster: MonsterState): boolean {
+  const gap: number = distance(monster.pos, monster.home);
+  if (gap <= LEASH.homeReach) return true;
+  if (gap > LEASH.crowdReach) return false;
+  return [world.player, ...world.monsters].some((body: Actor): boolean => body !== monster && settledBody(body) && distance(body.pos, monster.home) < gap && distance(body.pos, monster.pos) <= body.radius + monster.radius + LEASH.homeReach);
 }
