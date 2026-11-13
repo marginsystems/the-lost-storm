@@ -1,5 +1,6 @@
 import type { Content } from '../../sim/content/types.ts';
 import { createBrowserTimers } from '../browser-timers.ts';
+import { CHARACTER_KEYS } from '../character-keys.ts';
 import { createBrowserStore } from '../storage.ts';
 import { createAccountService } from './account.ts';
 import type { AccountService } from './account.ts';
@@ -30,6 +31,7 @@ export function createBrowserBackend(content: Content, rawUrl: string | undefine
     clock: (): number => Date.now(),
     timers: createBrowserTimers(),
     log: createConsoleLogger(),
+    characterKeys: CHARACTER_KEYS,
   });
 }
 

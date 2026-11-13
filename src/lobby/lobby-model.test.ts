@@ -4,7 +4,7 @@ import type { BoardRow, Leaderboard } from '../backend/api.ts';
 import { agoText, asksForName, charactersText, CHOSEN_NAMES, chooseName, levelUpText, nameProblem, passedNames, spokenName, tidyName } from './lobby-model.ts';
 
 function row(rank: number, name: string, level: number): BoardRow {
-  return { rank, name, level, furthest: 'The Waystation', online: false };
+  return { rank, name, level, furthest: 'The Waystation', online: false, account: null };
 }
 
 function board(top: readonly BoardRow[], you: string | null, chosen: boolean = true): Leaderboard {

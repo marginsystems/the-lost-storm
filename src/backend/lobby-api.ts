@@ -30,7 +30,7 @@ function readRow(value: unknown): BoardRow | null {
   const furthest: string | null = shortText(value, 'furthest');
   const online: unknown = value['online'];
   if (rank === null || level === null || name === null || furthest === null || typeof online !== 'boolean') return null;
-  return { rank, name, level, furthest, online };
+  return { rank, name, level, furthest, online, account: shortText(value, 'account') };
 }
 
 function readYou(value: unknown): YourRow | null | undefined {
