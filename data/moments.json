@@ -267,18 +267,6 @@
       "turnChance": 0.4,
       "props": [
         {
-          "prop": "stall_red",
-          "x": -4.5,
-          "z": 1.5,
-          "rotationDegrees": 90
-        },
-        {
-          "prop": "stall_pale",
-          "x": 4.5,
-          "z": -1.5,
-          "rotationDegrees": -90
-        },
-        {
           "prop": "basket",
           "x": -3.2,
           "z": -0.8,
@@ -291,21 +279,9 @@
           "rotationDegrees": 15
         },
         {
-          "prop": "barrel",
-          "x": -5.2,
-          "z": -2.4,
-          "rotationDegrees": 0
-        },
-        {
           "prop": "jug",
           "x": 3.8,
           "z": 0.6,
-          "rotationDegrees": 0
-        },
-        {
-          "prop": "cask",
-          "x": 5.4,
-          "z": 2.8,
           "rotationDegrees": 0
         }
       ],
@@ -436,18 +412,6 @@
       "turnChance": 0.85,
       "props": [
         {
-          "prop": "banner_red",
-          "x": -4.6,
-          "z": 0.5,
-          "rotationDegrees": 90
-        },
-        {
-          "prop": "castle_rubble_small",
-          "x": 2.6,
-          "z": -2.4,
-          "rotationDegrees": 40
-        },
-        {
           "prop": "rock_2",
           "x": 3.2,
           "z": 2.6,
@@ -553,27 +517,9 @@
           "blocks": true
         },
         {
-          "prop": "gravestone",
-          "x": 0,
-          "z": -1.6,
-          "rotationDegrees": 0
-        },
-        {
           "prop": "candles",
           "x": 1.2,
           "z": -1.2,
-          "rotationDegrees": 0
-        },
-        {
-          "prop": "candlestick",
-          "x": -1.2,
-          "z": -1.2,
-          "rotationDegrees": 0
-        },
-        {
-          "prop": "grave_cross",
-          "x": 3.6,
-          "z": -3,
           "rotationDegrees": 0
         }
       ],
@@ -681,18 +627,6 @@
       "turnChance": 0.7,
       "props": [
         {
-          "prop": "post",
-          "x": -3.6,
-          "z": 2.8,
-          "rotationDegrees": 0
-        },
-        {
-          "prop": "post",
-          "x": 3.6,
-          "z": 2.8,
-          "rotationDegrees": 0
-        },
-        {
           "prop": "bench",
           "x": 0,
           "z": -3.8,
@@ -798,12 +732,6 @@
           "x": -2.6,
           "z": 2,
           "rotationDegrees": 0
-        },
-        {
-          "prop": "broom",
-          "x": -0.4,
-          "z": -3.2,
-          "rotationDegrees": 60
         }
       ],
       "echoes": [
@@ -880,24 +808,6 @@
           "x": -3,
           "z": 2.2,
           "rotationDegrees": 10
-        },
-        {
-          "prop": "barrel",
-          "x": 3.4,
-          "z": -2.2,
-          "rotationDegrees": 0
-        },
-        {
-          "prop": "cask",
-          "x": 2.6,
-          "z": 2.8,
-          "rotationDegrees": 70
-        },
-        {
-          "prop": "post",
-          "x": -4.4,
-          "z": -2.4,
-          "rotationDegrees": 0
         },
         {
           "prop": "crate",
@@ -1015,34 +925,10 @@
       "turnChance": 0.9,
       "props": [
         {
-          "prop": "post_lantern_lit",
-          "x": -2.8,
-          "z": -2.6,
-          "rotationDegrees": 0
-        },
-        {
-          "prop": "brazier",
-          "x": 2.2,
-          "z": -1.6,
-          "rotationDegrees": 0
-        },
-        {
-          "prop": "banner_blue",
-          "x": -3.4,
-          "z": 2.4,
-          "rotationDegrees": 30
-        },
-        {
           "prop": "crate_tall",
           "x": 3.2,
           "z": 2.4,
           "rotationDegrees": -20
-        },
-        {
-          "prop": "castle_wall_low",
-          "x": 0,
-          "z": -4.4,
-          "rotationDegrees": 0
         }
       ],
       "echoes": [

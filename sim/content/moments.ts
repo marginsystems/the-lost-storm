@@ -39,7 +39,7 @@ function echoProblems(content: Content, at: string, entry: MomentEcho): string[]
   return problems;
 }
 
-export const MOMENT_PROPS = { blockingMost: 1, centreReach: 1 } as const;
+export const MOMENT_PROPS = { blockingMost: 1, centreReach: 1, lowHeight: 0.62 } as const;
 
 function centreProblems(at: string, def: MomentDef): string[] {
   const blocking: MomentProp[] = def.props.filter((placed: MomentProp): boolean => placed.blocks);
@@ -54,6 +54,12 @@ function defProblems(content: Content, def: MomentDef): string[] {
   if (!content.surfaces.has(def.ground)) problems.push(`${at} stands on unknown surface ${def.ground}`);
   for (const placed of def.props) if (!content.props.has(placed.prop)) problems.push(`${at} places unknown prop ${placed.prop}`);
   problems.push(...centreProblems(at, def));
+  for (const placed of def.props) {
+    const height: number | undefined = content.props.get(placed.prop)?.height;
+    if (placed.blocks || height === undefined) continue;
+    if (height <= 0) problems.push(`${at} places ${placed.prop}, which has no measured height and does not block`);
+    else if (height > MOMENT_PROPS.lowHeight) problems.push(`${at} places ${placed.prop}, ${height.toFixed(2)} m tall, which does not block and stands above ${MOMENT_PROPS.lowHeight} m`);
+  }
   def.echoes.forEach((entry: MomentEcho, index: number): void => {
     problems.push(...echoProblems(content, `${at} echo ${index}`, entry));
   });
