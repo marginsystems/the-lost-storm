@@ -155,32 +155,24 @@ void test('a texture neither path can load reports one failure and is not marked
   assert.deepEqual(loaded.arrivals, []);
 });
 
-void test('a bitmap is closed once it is uploaded, and a restored context decodes it again', async (): Promise<void> => {
+void test('a bitmap stays open through every upload, so a second renderer or a later update still finds its pixels', async (): Promise<void> => {
   const seen: Fakes = fakes();
-  const textures: BitmapTextures = createBitmapTextures(source(seen, WORKS), imageLoad(seen, WORKS));
-  const loaded: Loaded = load(textures, 'textures/dirt_color.webp');
+  const loaded: Loaded = load(createBitmapTextures(source(seen, WORKS), imageLoad(seen, WORKS)), 'textures/dirt_color.webp');
   await settle();
-  const first: FakeBitmap | undefined = seen.bitmaps[0];
   uploaded(loaded.texture);
-  assert.equal(first?.open, false);
-  assert.equal(loaded.texture.image, null);
-  assert.equal(textures.restore(), 1);
-  await settle();
-  assert.equal(seen.bitmaps.length, 2);
-  assert.equal(loaded.texture.image, seen.bitmaps[1]);
-  assert.equal(loaded.texture.version, 2);
-  assert.equal(loaded.arrivals.length, 2);
-  assert.equal(textures.restore(), 0);
+  uploaded(loaded.texture);
+  loaded.texture.needsUpdate = true;
+  assert.equal(loaded.texture.image, seen.bitmaps[0]);
+  assert.equal(seen.bitmaps[0]?.open, true);
+  assert.equal(seen.bitmaps.length, 1);
 });
 
-void test('a released texture is forgotten and never decoded again on a restored context', async (): Promise<void> => {
+void test('a bitmap is closed when its texture is released, so memory does not grow', async (): Promise<void> => {
   const seen: Fakes = fakes();
-  const textures: BitmapTextures = createBitmapTextures(source(seen, WORKS), imageLoad(seen, WORKS));
-  const loaded: Loaded = load(textures, 'textures/dirt_color.webp');
+  const loaded: Loaded = load(createBitmapTextures(source(seen, WORKS), imageLoad(seen, WORKS)), 'textures/dirt_color.webp');
   await settle();
-  uploaded(loaded.texture);
   loaded.texture.dispose();
-  assert.equal(textures.restore(), 0);
+  assert.equal(seen.bitmaps[0]?.open, false);
 });
 
 void test('without createImageBitmap the old image loader is used as it is', (): void => {
@@ -188,5 +180,4 @@ void test('without createImageBitmap the old image loader is used as it is', ():
   const textures: BitmapTextures = createBitmapTextures(null, imageLoad(seen, WORKS));
   textures.load('textures/a.webp', (): void => undefined, (): void => undefined);
   assert.deepEqual(seen.images, ['textures/a.webp']);
-  assert.equal(textures.restore(), 0);
 });

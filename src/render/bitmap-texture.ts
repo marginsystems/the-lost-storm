@@ -18,7 +18,6 @@ export type ImageLoad = (url: string, loaded: (texture: Texture) => void, failed
 
 export interface BitmapTextures {
   load(url: string, loaded: (texture: Texture) => void, failed: () => void): Texture;
-  restore(): number;
 }
 
 async function browserFlipsRows(): Promise<boolean> {
@@ -64,15 +63,9 @@ export function browserImageLoad(url: string, loaded: (texture: Texture) => void
   return imageLoader.load(url, loaded, undefined, failed);
 }
 
-interface Restorable {
-  readonly url: string;
-  readonly loaded: (texture: Texture) => void;
-}
-
 export function createBitmapTextures<Decoded extends object>(source: BitmapSource<Decoded> | null, image: ImageLoad): BitmapTextures {
-  if (source === null) return { load: image, restore: (): number => 0 };
+  if (source === null) return { load: image };
   let flips: Promise<boolean> | null = null;
-  const closed: Map<Texture, Restorable> = new Map<Texture, Restorable>();
 
   const fromImage = (texture: Texture, url: string, loaded: (texture: Texture) => void, failed: () => void): void => {
     image(
@@ -98,12 +91,9 @@ export function createBitmapTextures<Decoded extends object>(source: BitmapSourc
     }
     texture.flipY = false;
     texture.image = decoded;
-    texture.onUpdate = (): void => {
-      if (texture.image !== decoded) return;
+    texture.addEventListener('dispose', (): void => {
       source.close(decoded);
-      texture.image = null;
-      closed.set(texture, { url, loaded });
-    };
+    });
     texture.needsUpdate = true;
     loaded(texture);
     return true;
@@ -117,19 +107,8 @@ export function createBitmapTextures<Decoded extends object>(source: BitmapSourc
   return {
     load(url: string, loaded: (texture: Texture) => void, failed: () => void): Texture {
       const texture: Texture = new Texture();
-      texture.addEventListener('dispose', (): void => {
-        closed.delete(texture);
-      });
       void arrive(texture, url, loaded, failed);
       return texture;
-    },
-    restore(): number {
-      const waiting: [Texture, Restorable][] = [...closed];
-      closed.clear();
-      for (const [texture, kept] of waiting) {
-        void arrive(texture, kept.url, kept.loaded, (): void => undefined);
-      }
-      return waiting.length;
     },
   };
 }

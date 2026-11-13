@@ -39,10 +39,6 @@ interface Loading {
 
 const textures: Map<string, Loading> = new Map<string, Loading>();
 const bitmaps: BitmapTextures = createBitmapTextures(browserBitmaps(), browserImageLoad);
-
-export function restoreSurfaceTextures(): number {
-  return bitmaps.restore();
-}
 interface Made {
   readonly surface: string;
   readonly material: MeshStandardMaterial;
