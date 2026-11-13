@@ -42,10 +42,6 @@
   border-radius: 14px;
 }
 
-.tree-viewport.choosing .tree-socket.locked:not(.route):not(.match) {
-  opacity: 0.32;
-}
-
 .tree-viewport.choosing .tree-flow:not(.lit):not(.open) {
   opacity: 0.4;
 }
