@@ -56,7 +56,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepHazards(world, dt);
   stepEchoes(world, dt);
   stepAreas(world, dt);
-  bindEchoes(world);
+  bindEchoes(world, dt, starts);
   keepOut(world);
   holdHero(world, start, bubble);
   settleGaits(starts, dt);

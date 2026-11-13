@@ -18,6 +18,7 @@ import { mayStrike } from './factions.ts';
 import { LEASH, shellPoint, shutOut } from './leash.ts';
 import { revivable } from './revive.ts';
 import { roomAhead } from './queue.ts';
+import { insideShell } from './shell.ts';
 import type { Actor, MomentState, MonsterStance, MonsterState, World, WorldEvent } from './types.ts';
 
 const MONSTERS = {
@@ -142,7 +143,7 @@ function keepRange(world: World, monster: MonsterState, behaviour: RangedBehavio
   if (sight && gap <= reach && attack(world, monster, skill, foe)) return;
   const probe: number = MONSTERS.retreatProbe + (monster.stance === 'retreat' ? 0 : MONSTERS.roomBand);
   const behind: Vec2 = { x: monster.pos.x - toward.x * probe, z: monster.pos.z - toward.z * probe };
-  monster.stance = rangeStance(monster, behaviour, gap, sight, lineWalkable(routedGrid(world.grid), monster.pos, behind), reach);
+  monster.stance = rangeStance(monster, behaviour, gap, sight, lineWalkable(routedGrid(world.grid), monster.pos, behind) && insideShell(world, monster, behind), reach);
   switch (monster.stance) {
     case 'approach':
     case 'engage':
