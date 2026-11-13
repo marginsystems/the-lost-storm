@@ -1,5 +1,5 @@
 import type { AnimationClip, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, SpotLight, Vector2 } from 'three';
+import { AdditiveBlending, BackSide, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, HemisphereLight, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, SphereGeometry, SpotLight, Vector2 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
@@ -85,12 +85,13 @@ export const LOBBY_STAGE = {
   mistFirstDepth: -1.6,
   mistDepthStep: -1.4,
   mistTextureSize: 64,
-  backdropDepth: -16,
-  backdropWidth: 80,
-  backdropHeight: 26,
-  backdropFloor: -2,
-  hazeTop: 0.6,
-  hazeSize: 128,
+  domeRadius: 30,
+  domeWidthSegments: 48,
+  domeHeightSegments: 32,
+  hazeFloor: -0.02,
+  hazePeak: 0.03,
+  hazeTop: 0.32,
+  hazeStrength: 0.85,
   footSamples: 16,
   soleClearance: 0.002,
 } as const;
@@ -159,25 +160,23 @@ function mistTexture(): DataTexture {
   return texture;
 }
 
-function hazeTexture(): DataTexture {
-  const size: number = LOBBY_STAGE.hazeSize;
-  const data: Uint8Array = new Uint8Array(size * 4);
-  for (let row: number = 0; row < size; row += 1) {
-    const rise: number = Math.min(1, (row + 0.5) / size / LOBBY_STAGE.hazeTop);
-    const value: number = Math.round((1 - rise * rise * (3 - 2 * rise)) * 255);
-    data.set([value, value, value, 255], row * 4);
-  }
-  const texture: DataTexture = new DataTexture(data, 1, size, RGBAFormat);
-  texture.magFilter = LinearFilter;
-  texture.minFilter = LinearFilter;
-  texture.needsUpdate = true;
-  return texture;
-}
-
 function backdrop(): Mesh {
-  const material: MeshBasicMaterial = new MeshBasicMaterial({ color: LOBBY_STAGE.haze, alphaMap: hazeTexture(), transparent: true, depthWrite: false, fog: false });
-  const mesh: Mesh = new Mesh(new PlaneGeometry(LOBBY_STAGE.backdropWidth, LOBBY_STAGE.backdropHeight), material);
-  mesh.position.set(0, LOBBY_STAGE.backdropFloor + LOBBY_STAGE.backdropHeight / 2, LOBBY_STAGE.backdropDepth);
+  const geometry: SphereGeometry = new SphereGeometry(LOBBY_STAGE.domeRadius, LOBBY_STAGE.domeWidthSegments, LOBBY_STAGE.domeHeightSegments);
+  const positions: BufferAttribute | ReturnType<BufferGeometry['getAttribute']> = geometry.getAttribute('position');
+  const colours: Float32Array = new Float32Array(positions.count * 3);
+  const dark: Color = new Color(LOBBY_STAGE.background);
+  const haze: Color = new Color(LOBBY_STAGE.haze);
+  const shade: Color = new Color();
+  for (let index: number = 0; index < positions.count; index += 1) {
+    const rise: number = positions.getY(index) / LOBBY_STAGE.domeRadius;
+    const below: number = Math.min(1, Math.max(0, (rise - LOBBY_STAGE.hazeFloor) / (LOBBY_STAGE.hazePeak - LOBBY_STAGE.hazeFloor)));
+    const above: number = Math.min(1, Math.max(0, (LOBBY_STAGE.hazeTop - rise) / (LOBBY_STAGE.hazeTop - LOBBY_STAGE.hazePeak)));
+    const glow: number = rise < LOBBY_STAGE.hazePeak ? below * below * (3 - 2 * below) : above * above * (3 - 2 * above);
+    shade.copy(dark).lerp(haze, glow * LOBBY_STAGE.hazeStrength);
+    colours.set([shade.r, shade.g, shade.b], index * 3);
+  }
+  geometry.setAttribute('color', new BufferAttribute(colours, 3));
+  const mesh: Mesh = new Mesh(geometry, new MeshBasicMaterial({ vertexColors: true, side: BackSide, depthWrite: false, fog: false }));
   mesh.renderOrder = -1;
   return mesh;
 }
@@ -283,8 +282,9 @@ function take(event: Event): void {
 export function createLobbyStage(content: Content, library: CharacterLibrary, loader: GLTFLoader, random: () => number = Math.random): LobbyStage {
   const scene: Scene = new Scene();
   scene.background = new Color(LOBBY_STAGE.background);
-  scene.fog = new Fog(LOBBY_STAGE.haze, LOBBY_STAGE.fogNear, LOBBY_STAGE.fogFar);
-  scene.add(backdrop());
+  scene.fog = new Fog(LOBBY_STAGE.background, LOBBY_STAGE.fogNear, LOBBY_STAGE.fogFar);
+  const dome: Mesh = backdrop();
+  scene.add(dome);
   const camera: PerspectiveCamera = new PerspectiveCamera(LOBBY_STAGE.fov, 1, LOBBY_STAGE.near, LOBBY_STAGE.far);
   camera.position.set(0, LOBBY_STAGE.cameraHeight, LOBBY_STAGE.cameraDistance);
   camera.lookAt(0, LOBBY_STAGE.lookHeight, 0);
@@ -439,6 +439,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       drawnAt = performance.now();
       const view: OrbitView = stepOrbit(orbit, dt);
       camera.position.set(view.x, view.y, view.z);
+      dome.position.copy(camera.position);
       camera.lookAt(0, view.lookHeight, 0);
       renderer.getSize(size);
       if (size.x <= 0 || size.y <= 0) return;
