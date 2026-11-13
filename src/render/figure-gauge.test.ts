@@ -84,3 +84,21 @@ void test('a figure with a head and feet reports where they rest on the ground, 
   near(moved.head.x, 0.2);
   assert.equal(gauge.measure(figureOf(1.7), 1).span, null);
 });
+
+void test('a rising figure is as tall as its head every frame, so the mist clear reaches his face before the next measurement', (): void => {
+  const gauge = createFigureGauge();
+  const figure: Group = lyingOf(1.8);
+  const head: Object3D = new Object3D();
+  head.name = FIGURE_GAUGE.head;
+  head.position.set(1.7, 0.2, 0);
+  figure.add(head);
+  const foot: Object3D = new Object3D();
+  foot.name = FIGURE_GAUGE.feet[0];
+  figure.add(foot);
+  figure.updateMatrixWorld(true);
+  const lying: number = gauge.measure(figure, 0).height;
+  head.position.set(0, 1.6, 0);
+  figure.updateMatrixWorld(true);
+  near(gauge.measure(figure, FIGURE_GAUGE.everySeconds / 4).height, Math.max(lying, 1.6 + FIGURE_GAUGE.crown));
+  assert.ok(gauge.measure(figure, FIGURE_GAUGE.everySeconds / 4).height >= 1.6 + FIGURE_GAUGE.crown - 1e-9);
+});

@@ -9,6 +9,7 @@ export const FIGURE_GAUGE = {
   maxReach: 3,
   everySeconds: 0.5,
   head: 'DEF-head',
+  crown: 0.25,
   feet: ['DEF-foot.L', 'DEF-foot.R'],
 } as const;
 
@@ -63,6 +64,17 @@ function spanBones(figure: Object3D): SpanBones | null {
   return head === undefined || feet.length === 0 ? null : { head, feet };
 }
 
+function headHeight(bones: SpanBones, figure: Object3D, at: Vector3, root: Vector3): number {
+  figure.getWorldPosition(root);
+  bones.head.getWorldPosition(at);
+  return at.y - root.y + FIGURE_GAUGE.crown;
+}
+
+function withBones(measured: FigureSize, bones: SpanBones | null, figure: Object3D, at: Vector3, root: Vector3): FigureSize {
+  if (bones === null) return measured;
+  return { ...measured, height: clampFigure(Math.max(measured.height, headHeight(bones, figure, at, root))), span: spanOf(bones, at) };
+}
+
 function spanOf(bones: SpanBones, at: Vector3): BodySpan {
   bones.head.getWorldPosition(at);
   const head: Vec2 = { x: at.x, z: at.z };
@@ -87,7 +99,7 @@ export function createFigureGauge(): FigureGauge {
   return {
     measure(figure: Object3D, now: number): FigureSize {
       if (figure !== measuredFigure) bones = spanBones(figure);
-      if (figure === measuredFigure && now - measuredAt < FIGURE_GAUGE.everySeconds) return bones === null ? measured : { ...measured, span: spanOf(bones, at) };
+      if (figure === measuredFigure && now - measuredAt < FIGURE_GAUGE.everySeconds) return withBones(measured, bones, figure, at, root);
       measuredFigure = figure;
       measuredAt = now;
       box.setFromObject(figure);
@@ -96,8 +108,8 @@ export function createFigureGauge(): FigureGauge {
         return measured;
       }
       figure.getWorldPosition(root);
-      measured = { height: clampFigure(box.max.y - box.min.y), reach: clampReach(reachOf(box, root)), span: bones === null ? null : spanOf(bones, at) };
-      return measured;
+      measured = { height: clampFigure(box.max.y - box.min.y), reach: clampReach(reachOf(box, root)), span: null };
+      return withBones(measured, bones, figure, at, root);
     },
   };
 }
