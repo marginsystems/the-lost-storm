@@ -27,6 +27,15 @@ void test('a baked list is read only when every range sits inside the body it na
 void test('the shipped coat list names the man and the coat model', (): void => {
   const coats: readonly BodyCover[] = BODY_COVERS.filter((entry: BodyCover): boolean => entry.wearable === COAT);
   assert.deepEqual(coats.map((entry: BodyCover): string => `${entry.body}#${entry.mesh}`), ['models/characters/human_man.glb#human_man']);
+  const layers: readonly string[] = BODY_COVERS.filter((entry: BodyCover): boolean => entry.wearable !== COAT).map((entry: BodyCover): string => `${entry.mesh}:${entry.wearable}`);
+  assert.deepEqual(layers.toSorted(), [
+    'human_elder:models/wear/braies.glb',
+    'human_elder:models/wear/undertunic.glb',
+    'human_man:models/wear/braies.glb',
+    'human_man:models/wear/undertunic.glb',
+    'human_woman:models/wear/braies.glb',
+    'human_woman:models/wear/undertunic_woman.glb',
+  ]);
 });
 
 void test('a list applies only to the body, mesh and triangle count it was baked on', (): void => {

@@ -66,6 +66,7 @@ export interface RawContent {
   readonly rigs: unknown;
   readonly attachments: unknown;
   readonly wearables: unknown;
+  readonly baseLayers: unknown;
   readonly surfaces: unknown;
   readonly props: unknown;
   readonly zones: readonly unknown[];
@@ -267,6 +268,18 @@ function wearable(value: unknown, where: string): WearableDef {
   };
 }
 
+function baseLayers(value: unknown, where: string): ReadonlyMap<string, readonly string[]> {
+  const layers: Map<string, readonly string[]> = new Map<string, readonly string[]>();
+  each(value, where, (entry: unknown, at: string): null => {
+    const source: Fields = fields(entry, at);
+    const body: string = text(source, 'body', at);
+    if (layers.has(body)) throw new ContentError(`${at}.body`, `${body} has two base layers`);
+    layers.set(body, textList(source, 'wear', at));
+    return null;
+  });
+  return layers;
+}
+
 function propLight(value: unknown, where: string): PropLight | null {
   if (value === null || value === undefined) return null;
   const source: Fields = fields(value, where);
@@ -415,6 +428,7 @@ export function parseContent(raw: RawContent): Content {
     rigs: byId(each(raw.rigs, 'rigs', rig), 'rigs'),
     attachments: byId(each(raw.attachments, 'attachments', attachment), 'attachments'),
     wearables: byId(each(raw.wearables, 'wearables', wearable), 'wearables'),
+    baseLayers: baseLayers(raw.baseLayers, 'baseLayers'),
     surfaces: byId(each(raw.surfaces, 'surfaces', surface), 'surfaces'),
     props: byId(each(raw.props, 'props', prop), 'props'),
     zones: byId(each(raw.zones, 'zones', zone), 'zones'),
@@ -483,6 +497,11 @@ export function contentProblems(content: Content): string[] {
     need((base.slot !== null && WORN_SLOTS.has(base.slot)) === (base.material !== null), `item ${base.id} in slot ${base.slot ?? 'none'} ${base.material === null ? 'needs a material' : 'cannot have a material'}`);
   }
   for (const worn of content.wearables.values()) wears(`wearable ${worn.id}`, content.player.rig, [worn.id]);
+  for (const [body, layer] of content.baseLayers) {
+    const rigDef: RigDef | undefined = [...content.rigs.values()].find((candidate: RigDef): boolean => candidate.url === body);
+    need(rigDef !== undefined, `base layer names body ${body}, which no rig uses`);
+    if (rigDef !== undefined) wears(`base layer of ${body}`, rigDef.id, layer);
+  }
   for (const entry of content.player.skillBook) {
     need(content.skills.has(entry.skill), `skill book uses unknown skill ${entry.skill}`);
     animates('skill book', content.player.rig, entry.skill);

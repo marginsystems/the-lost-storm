@@ -1,0 +1,5 @@
+[
+  { "body": "models/characters/human_man.glb", "wear": ["undertunic", "braies"] },
+  { "body": "models/characters/human_woman.glb", "wear": ["undertunic_woman", "braies"] },
+  { "body": "models/characters/human_elder.glb", "wear": ["undertunic", "braies"] }
+]

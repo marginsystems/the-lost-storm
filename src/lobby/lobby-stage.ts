@@ -362,7 +362,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     dress(look: LobbyLook): void {
       const rig: RigInstance | null = build();
       if (rig === null) return;
-      const worn: Look = lookOf(content, heroBase(content), look.equipped);
+      const worn: Look = lookOf(content, content.player.rig, heroBase(content), look.equipped);
       const lookKey: string = `${worn.wearables.join('|')}#${worn.held.join('|')}#${library.wearables.size}`;
       if (lookKey === heroKey) return;
       heroKey = lookKey;

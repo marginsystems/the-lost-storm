@@ -6,7 +6,7 @@ import type { Content, WearableDef } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import type { Look } from './wear.ts';
-import { heldGear, heroBase, hiddenBodyParts, lookOf, wornWearables, zoneCharacterNeeds } from './wear.ts';
+import { baseLayerOf, heldGear, heroBase, hiddenBodyParts, lookOf, wornWearables, zoneCharacterNeeds } from './wear.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import type { ItemSlot } from './content/types.ts';
 import type { Equipment, ItemInstance } from './world/types.ts';
@@ -22,6 +22,7 @@ function regions(ids: readonly string[]): string[] {
 }
 
 const BASE_LAYER: readonly string[] = ['rag_trousers'];
+const UNLAYERED: string = 'skeleton_hero';
 
 function starter(): Equipment {
   const equipped: Equipment = emptyEquipment();
@@ -34,24 +35,24 @@ function starter(): Equipment {
 }
 
 void test('with nothing equipped the hero shows only the base layer of the body', (): void => {
-  assert.deepEqual(lookOf(content, [], emptyEquipment()).wearables, []);
-  assert.deepEqual(lookOf(content, [], null).wearables, []);
-  assert.deepEqual(lookOf(content, BASE_LAYER, emptyEquipment()), { wearables: ['rag_trousers'], hidden: ['legs'], held: heldGear(content, emptyEquipment()) });
+  assert.deepEqual(lookOf(content, UNLAYERED, [], emptyEquipment()).wearables, []);
+  assert.deepEqual(lookOf(content, UNLAYERED, [], null).wearables, []);
+  assert.deepEqual(lookOf(content, UNLAYERED, BASE_LAYER, emptyEquipment()), { wearables: ['rag_trousers'], hidden: ['legs'], held: heldGear(content, emptyEquipment()) });
 });
 
 void test('the starting items dress the hero in the traveller clothes and the blade', (): void => {
-  const look: Look = lookOf(content, BASE_LAYER, starter());
+  const look: Look = lookOf(content, UNLAYERED, BASE_LAYER, starter());
   assert.deepEqual([...look.wearables].toSorted(), ['traveller_boots', 'traveller_coat', 'traveller_trousers']);
   assert.deepEqual([...look.hidden].toSorted(), ['arms', 'feet', 'legs', 'torso']);
   assert.ok(look.held.includes(must(must(content.itemBases.get('rusted_blade'), 'blade').visual, 'blade visual')));
 });
 
 void test('taking off each slot in turn shows the base layer there and leaves the rest', (): void => {
-  const dressed: Look = lookOf(content, BASE_LAYER, starter());
+  const dressed: Look = lookOf(content, UNLAYERED, BASE_LAYER, starter());
   for (const slot of ITEM_SLOTS) {
     const worn: ItemInstance | null = starter()[slot];
     if (worn === null) continue;
-    const bare: Look = lookOf(content, BASE_LAYER, { ...starter(), [slot]: null });
+    const bare: Look = lookOf(content, UNLAYERED, BASE_LAYER, { ...starter(), [slot]: null });
     const removed: readonly string[] = must(content.itemBases.get(worn.base), slot).wear;
     for (const id of dressed.wearables) assert.equal(bare.wearables.includes(id), !removed.includes(id), `${slot} ${id}`);
     if (slot === 'legs') assert.ok(bare.wearables.includes('rag_trousers'));
@@ -63,16 +64,16 @@ void test('every slot filled with a drop shows that drop, and everything removed
   for (const slot of slots) {
     for (const base of content.itemBases.values()) {
       if (base.slot !== slot || base.wear.length === 0) continue;
-      const look: Look = lookOf(content, BASE_LAYER, { ...emptyEquipment(), [slot]: item(base.id) });
+      const look: Look = lookOf(content, UNLAYERED, BASE_LAYER, { ...emptyEquipment(), [slot]: item(base.id) });
       for (const id of base.wear) assert.ok(look.wearables.includes(id), `${slot} ${base.id}`);
     }
   }
-  assert.deepEqual(lookOf(content, BASE_LAYER, emptyEquipment()).wearables, ['rag_trousers']);
+  assert.deepEqual(lookOf(content, UNLAYERED, BASE_LAYER, emptyEquipment()).wearables, ['rag_trousers']);
 });
 
 void test('an equipped piece replaces the clothes on the same region and leaves the rest', (): void => {
   const equipped: Equipment = { ...emptyEquipment(), chest: item('drowned_leathers') };
-  const worn: string[] = wornWearables(content, ['dirty_shirt', 'dirty_trousers'], equipped);
+  const worn: string[] = wornWearables(content, UNLAYERED, ['dirty_shirt', 'dirty_trousers'], equipped);
   assert.deepEqual(worn.toSorted(), ['dirty_trousers', 'leather_vest']);
   const covered: string[] = regions(worn);
   assert.equal(new Set<string>(covered).size, covered.length);
@@ -87,17 +88,17 @@ void test('every slot can dress its own region and unequipping brings the clothe
     legs: item('stalker_leggings'),
     feet: item('strider_boots'),
   };
-  const worn: string[] = wornWearables(content, BASE_LAYER, equipped);
+  const worn: string[] = wornWearables(content, UNLAYERED, BASE_LAYER, equipped);
   assert.deepEqual(worn.toSorted(), ['leather_boots', 'leather_bracers', 'leather_hood', 'leather_leggings', 'linen_shirt']);
-  const bare: string[] = wornWearables(content, BASE_LAYER, { ...equipped, chest: null, legs: null });
+  const bare: string[] = wornWearables(content, UNLAYERED, BASE_LAYER, { ...equipped, chest: null, legs: null });
   assert.ok(!bare.includes('linen_shirt') && bare.includes('rag_trousers'));
 });
 
 void test('unknown ids are ignored and a weapon wears nothing', (): void => {
-  assert.deepEqual(wornWearables(content, ['no_such_piece'], null), []);
-  assert.deepEqual(wornWearables(content, [], { ...emptyEquipment(), weapon: item('rusted_blade') }), []);
+  assert.deepEqual(wornWearables(content, UNLAYERED, ['no_such_piece'], null), []);
+  assert.deepEqual(wornWearables(content, UNLAYERED, [], { ...emptyEquipment(), weapon: item('rusted_blade') }), []);
   const ghost: ItemInstance = { ...item('rusted_blade'), base: 'gone' };
-  assert.deepEqual(wornWearables(content, [], { ...emptyEquipment(), chest: ghost }), []);
+  assert.deepEqual(wornWearables(content, UNLAYERED, [], { ...emptyEquipment(), chest: ghost }), []);
 });
 
 void test('worn pieces name the body parts they hide, each once', (): void => {
@@ -110,8 +111,8 @@ void test('worn pieces name the body parts they hide, each once', (): void => {
 
 void test('monsters are dressed from the same pool', (): void => {
   for (const monster of content.monsters.values()) {
-    const worn: string[] = wornWearables(content, monster.wear, null);
-    assert.deepEqual(worn, [...monster.wear], monster.id);
+    const worn: string[] = wornWearables(content, monster.rig, monster.wear, null);
+    for (const id of monster.wear) assert.ok(worn.includes(id), `${monster.id} ${id}`);
     assert.ok(worn.length > 0, monster.id);
   }
 });
@@ -141,7 +142,7 @@ void test('the equipped pieces are needed too', (): void => {
   const zone = must(content.zones.values().next().value, 'a zone');
   const equipped: Equipment = { ...emptyEquipment(), chest: item('drowned_leathers') };
   const needs = zoneCharacterNeeds(content, zone, equipped);
-  for (const id of lookOf(content, [], equipped).wearables) assert.ok(needs.wearables.has(id));
+  for (const id of lookOf(content, UNLAYERED, [], equipped).wearables) assert.ok(needs.wearables.has(id));
 });
 
 void test('the hero holds his weapon, or his bare-handed gear without one', (): void => {
@@ -168,7 +169,34 @@ void test('a zone with a moment field needs the bodies, clothes and gear of its 
 void test('the hero body brings its own hair, and a hood worn on the head takes its place', (): void => {
   const base: readonly string[] = heroBase(content);
   assert.deepEqual(regions(base), ['head']);
-  assert.deepEqual(lookOf(content, base, emptyEquipment()).wearables, [...base]);
-  const hooded: readonly string[] = lookOf(content, base, { ...emptyEquipment(), head: item('wayfarer_hood') }).wearables;
-  assert.deepEqual(hooded, ['leather_hood']);
+  assert.ok(lookOf(content, content.player.rig, base, emptyEquipment()).wearables.includes('hair_short'));
+  const hooded: readonly string[] = lookOf(content, content.player.rig, base, { ...emptyEquipment(), head: item('wayfarer_hood') }).wearables;
+  assert.ok(hooded.includes('leather_hood') && !hooded.includes('hair_short'));
+});
+
+void test('with nothing equipped the hero wears his undertunic and braies, and each garment takes the place of the layer on its region', (): void => {
+  const hero: string = content.player.rig;
+  assert.deepEqual([...baseLayerOf(content, hero)], ['undertunic', 'braies']);
+  const bare: Look = lookOf(content, hero, heroBase(content), emptyEquipment());
+  assert.deepEqual([...bare.wearables].toSorted(), ['braies', 'hair_short', 'undertunic']);
+  const dressed: Look = lookOf(content, hero, heroBase(content), starter());
+  assert.ok(!dressed.wearables.includes('undertunic') && !dressed.wearables.includes('braies'));
+  const coatOnly: Look = lookOf(content, hero, heroBase(content), { ...starter(), legs: null });
+  assert.ok(coatOnly.wearables.includes('braies') && !coatOnly.wearables.includes('undertunic'));
+  const trousersOnly: Look = lookOf(content, hero, heroBase(content), { ...starter(), chest: null });
+  assert.ok(trousersOnly.wearables.includes('undertunic') && !trousersOnly.wearables.includes('braies'));
+});
+
+void test('every human body has a base layer for its chest and legs, and a body with none wears nothing extra', (): void => {
+  for (const rig of content.rigs.values()) {
+    if (!rig.url.includes('human_')) continue;
+    assert.deepEqual(regions(baseLayerOf(content, rig.id)).toSorted(), ['chest', 'legs'], rig.id);
+  }
+  assert.deepEqual(baseLayerOf(content, UNLAYERED), []);
+  assert.deepEqual(baseLayerOf(content, 'no_such_rig'), []);
+});
+
+void test('the base layer is never an item, so it cannot be put in the bag, sold or dropped', (): void => {
+  const layered: ReadonlySet<string> = new Set<string>([...content.baseLayers.values()].flat());
+  for (const base of content.itemBases.values()) for (const id of base.wear) assert.ok(!layered.has(id), `${base.id} wears ${id}`);
 });

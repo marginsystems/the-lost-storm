@@ -60,6 +60,21 @@ public/models/wear/wool_trousers.glb
     # author MRT
     # license CC0
 
+public/models/wear/undertunic.glb
+  shirts01_cc0.zip, clothes/toigo_basic_tucked_t-shirt/toigo_basic_tucked_t-shirt.mhclo
+    # author MRT
+    # license CC0
+
+public/models/wear/undertunic_woman.glb
+  shirts01_cc0.zip, clothes/joepal_crude_t-shirt_female/joepal_crude_t-shirt_female.mhclo
+    # author Joel Palmius
+    # license CC0
+
+public/models/wear/braies.glb
+  pants01_cc0.zip, clothes/toigo_wool_pants/toigo_wool_pants.mhclo
+    # author MRT
+    # license CC0
+
 public/models/wear/tall_boots.glb
   shoes01_cc0.zip, clothes/culturalibre_male_boots/culturalibre_male_boots.mhclo
     # author culturalibre

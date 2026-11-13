@@ -9,7 +9,7 @@ from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from wearable_fit import SKELETONS, Shade, SourceSkeleton, Span, inflate, keep_below, paint_shade, refit, shade_under, simplify, trim_faces
+from wearable_fit import SKELETONS, Shade, SourceSkeleton, Span, inflate, keep_above, keep_below, paint_shade, refit, shade_under, simplify, trim_faces
 from wearable_makehuman import Garment
 from wearable_makehuman import load as load_makehuman
 from wearable_makehuman import load_body
@@ -50,6 +50,7 @@ class Part:
     luma: float | None
     cutout: bool
     keep_below: float | None
+    keep_above: float | None
     scalp: str | None
     scalp_shade: Shade | None
 
@@ -85,6 +86,7 @@ def read_part(raw: dict[str, object]) -> Part:
         luma=None if raw.get("luma") is None else float(raw["luma"]),
         cutout=bool(raw.get("cutout", False)),
         keep_below=None if raw.get("keepBelow") is None else float(raw["keepBelow"]),
+        keep_above=None if raw.get("keepAbove") is None else float(raw["keepAbove"]),
         scalp=None if raw.get("scalp") is None else str(raw["scalp"]["hair"]),
         scalp_shade=None if raw.get("scalp") is None else Shade(float(raw["scalp"]["depth"]), float(raw["scalp"]["reach"]), float(raw["scalp"]["soft"])),
     )
@@ -234,6 +236,7 @@ def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path)
         refit(source.obj, source.skeleton, source.heads, target, pack.girth if part.girth is None else part.girth)
         source.obj.data.transform(Matrix.Translation(part.shift))
         keep_below(source.obj, source.name, part.keep_below if source.name == part.id else None)
+        keep_above(source.obj, source.name, part.keep_above if source.name == part.id else None)
         inflate(source.obj, part.inflate)
         simplify(source.obj, part.decimate if source.name == part.id else 1.0)
         retexture(source.obj, source.name, source.size, source.images, scratch, part.desaturate, part.luma if source.name == part.id else None, part.cutout and source.name == part.id)

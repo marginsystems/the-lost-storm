@@ -8,12 +8,18 @@ export interface Look {
   readonly held: readonly string[];
 }
 
-export function wornWearables(content: Content, clothes: readonly string[], equipped: Equipment | null): string[] {
+export function baseLayerOf(content: Content, rig: string): readonly string[] {
+  const body: string | undefined = content.rigs.get(rig)?.url;
+  return body === undefined ? [] : (content.baseLayers.get(body) ?? []);
+}
+
+export function wornWearables(content: Content, rig: string, clothes: readonly string[], equipped: Equipment | null): string[] {
   const worn: Map<WearRegion, string> = new Map<WearRegion, string>();
   const put = (id: string): void => {
     const def: WearableDef | undefined = content.wearables.get(id);
     if (def !== undefined) worn.set(def.region, id);
   };
+  for (const id of baseLayerOf(content, rig)) put(id);
   for (const id of clothes) put(id);
   if (equipped !== null) {
     for (const slot of ITEM_SLOTS) {
@@ -37,8 +43,8 @@ export function heroBase(content: Content): readonly string[] {
   return content.rigs.get(content.player.rig)?.base ?? [];
 }
 
-export function lookOf(content: Content, base: readonly string[], equipped: Equipment | null): Look {
-  const wearables: string[] = wornWearables(content, base, equipped);
+export function lookOf(content: Content, rig: string, base: readonly string[], equipped: Equipment | null): Look {
+  const wearables: string[] = wornWearables(content, rig, base, equipped);
   return { wearables, hidden: hiddenBodyParts(content, wearables), held: heldGear(content, equipped) };
 }
 
@@ -56,12 +62,12 @@ export function heldGear(content: Content, equipped: Equipment | null): string[]
 
 export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Equipment | null): CharacterNeeds {
   const rigs: Set<string> = new Set<string>([content.player.rig]);
-  const look: Look = lookOf(content, heroBase(content), equipped);
+  const look: Look = lookOf(content, content.player.rig, heroBase(content), equipped);
   const wearables: Set<string> = new Set<string>(look.wearables);
   const attachments: Set<string> = new Set<string>(look.held);
   const add = (rig: string, wear: readonly string[], gear: readonly string[]): void => {
     rigs.add(rig);
-    for (const id of wornWearables(content, wear, null)) wearables.add(id);
+    for (const id of wornWearables(content, rig, wear, null)) wearables.add(id);
     for (const id of gear) attachments.add(id);
   };
   for (const placed of zone.npcs) {

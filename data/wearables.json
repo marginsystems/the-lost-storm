@@ -482,5 +482,26 @@
     "tint": "#9c7c66",
     "hides": [],
     "wakeLamps": 0.45
+  },
+  {
+    "id": "undertunic",
+    "model": "models/wear/undertunic.glb",
+    "region": "chest",
+    "tint": "#b9ab8f",
+    "hides": ["torso"]
+  },
+  {
+    "id": "undertunic_woman",
+    "model": "models/wear/undertunic_woman.glb",
+    "region": "chest",
+    "tint": "#b9ab8f",
+    "hides": ["torso"]
+  },
+  {
+    "id": "braies",
+    "model": "models/wear/braies.glb",
+    "region": "legs",
+    "tint": "#a99b80",
+    "hides": []
   }
 ]

@@ -83,8 +83,8 @@ function npcPose(npc: NpcState): ActorPose {
 }
 
 
-function dress(content: Content, rig: RigInstance, clothes: readonly string[], equipped: Equipment | null): void {
-  const look: Look = lookOf(content, clothes, equipped);
+function dress(content: Content, rigId: string, rig: RigInstance, clothes: readonly string[], equipped: Equipment | null): void {
+  const look: Look = lookOf(content, rigId, clothes, equipped);
   rig.setWear(look.wearables, look.hidden);
 }
 
@@ -107,7 +107,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   if (playerRig === undefined) throw new Error(`Player rig "${content.player.rig}" was not loaded`);
   const playerView: ActorView = createActorView(instantiateRig(playerRig, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather }), 1, world.player.facing);
   holdEquipped(content, playerView.rig, world.player.equipped);
-  dress(content, playerView.rig, heroBase(content), world.player.equipped);
+  dress(content, content.player.rig, playerView.rig, heroBase(content), world.player.equipped);
   scene.add(playerView.rig.root);
   const monsters: Map<number, MonsterEntry> = new Map<number, MonsterEntry>();
   const npcs: Map<number, NpcEntry> = new Map<number, NpcEntry>();
@@ -117,10 +117,10 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     const existing: NpcEntry | undefined = npcs.get(npc.id);
     if (existing !== undefined) return existing;
     const rig: LoadedRig | undefined = library.rigs.get(npc.def.rig);
-    if (rig === undefined || !hasWear(library, wornWearables(content, npc.def.wear, null), npc.def.gear)) return null;
+    if (rig === undefined || !hasWear(library, wornWearables(content, npc.def.rig, npc.def.wear, null), npc.def.gear)) return null;
     const view: ActorView = createActorView(instantiateRig(rig, library, { tint: npc.def.tint, glow: npc.def.color, ghost: null, feather }), npc.def.scale, npc.facing, ACTOR.friendlyHover);
     view.rig.setGear(npc.def.gear);
-    dress(content, view.rig, npc.def.wear, null);
+    dress(content, npc.def.rig, view.rig, npc.def.wear, null);
     scene.add(view.rig.root);
     const entry: NpcEntry = { view, pose: npcPose(npc), shown: arriving ? 0 : 1 };
     npcs.set(npc.id, entry);
@@ -133,10 +133,10 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
 
   const makeMonsterView = (def: MonsterDef, facing: number, echo: EchoLook | null): ActorView | null => {
     const rig: LoadedRig | undefined = library.rigs.get(def.rig);
-    if (rig === undefined || !hasWear(library, wornWearables(content, def.wear, null), def.gear)) return null;
+    if (rig === undefined || !hasWear(library, wornWearables(content, def.rig, def.wear, null), def.gear)) return null;
     const view: ActorView = createActorView(instantiateRig(rig, library, { tint: echo === null ? def.tint : '#ffffff', glow: echo === null ? def.color : '#ffffff', ghost: echo?.ghost ?? null, feather }), def.scale, facing);
     view.rig.setGear(def.gear);
-    dress(content, view.rig, def.wear, null);
+    dress(content, def.rig, view.rig, def.wear, null);
     view.rig.setOpacity(ACTORS.echoOpacity);
     if (echo !== null) view.setShadowOpacity(ACTORS.echoOpacity);
     return view;
@@ -212,7 +212,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     },
     refreshWear(current: World): void {
       holdEquipped(content, playerView.rig, current.player.equipped);
-      dress(content, playerView.rig, heroBase(content), current.player.equipped);
+      dress(content, content.player.rig, playerView.rig, heroBase(content), current.player.equipped);
     },
     boundsOf(actorId: number, out: Box3): boolean {
       const view: ActorView | null = viewOf(actorId);
@@ -310,7 +310,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             break;
           case 'character_changed':
             holdEquipped(content, playerView.rig, current.player.equipped);
-            dress(content, playerView.rig, heroBase(content), current.player.equipped);
+            dress(content, content.player.rig, playerView.rig, heroBase(content), current.player.equipped);
             break;
           case 'monster_remove': {
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);

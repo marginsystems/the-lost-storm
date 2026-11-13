@@ -19,6 +19,7 @@ import trade from '../../data/trade.json' with { type: 'json' };
 import surfaces from '../../data/surfaces.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
+import baseLayers from '../../data/base-layers.json' with { type: 'json' };
 import world from '../../data/world.json' with { type: 'json' };
 import between from '../../data/zones/between.json' with { type: 'json' };
 import hallOfTime from '../../data/zones/hall_of_time.json' with { type: 'json' };
@@ -29,7 +30,7 @@ import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 import { modelFootprints, withFootprints } from './footprints.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, surfaces, props, zones: [between, hallOfTime, hideout], world, npcs, lines, quests, player, flasks, trade, books, moments };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, hallOfTime, hideout], world, npcs, lines, quests, player, flasks, trade, books, moments };
 
 export function loadContent(): Content {
   const parsed: Content = parseContent(RAW_CONTENT);

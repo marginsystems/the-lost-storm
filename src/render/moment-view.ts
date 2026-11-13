@@ -333,11 +333,11 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     const wear: readonly string[] = echo.look?.wear ?? monster.wear;
     const gear: readonly string[] = echo.look?.gear ?? monster.gear;
     const loaded: LoadedRig | undefined = library.rigs.get(rigId);
-    if (loaded === undefined || !hasWear(library, wornWearables(content, wear, null), gear)) return null;
+    if (loaded === undefined || !hasWear(library, wornWearables(content, rigId, wear, null), gear)) return null;
     const ghost: GhostUniforms = createGhostUniforms(STILL, MOMENT_VIEW.echoMix);
     const rig: RigInstance = instantiateRig(loaded, library, { tint: '#ffffff', glow: '#ffffff', ghost, feather: deps.tier.msaaSamples > 0 });
     rig.setGear(gear);
-    const worn: string[] = wornWearables(content, wear, null);
+    const worn: string[] = wornWearables(content, rigId, wear, null);
     rig.setWear(worn, hiddenBodyParts(content, worn));
     rig.root.position.set(figure.pos.x - entry.group.position.x, 0, figure.pos.z - entry.group.position.z);
     rig.root.rotation.y = figure.facing;

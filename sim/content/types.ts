@@ -668,6 +668,7 @@ export interface Content {
   readonly rigs: ReadonlyMap<string, RigDef>;
   readonly attachments: ReadonlyMap<string, AttachmentDef>;
   readonly wearables: ReadonlyMap<string, WearableDef>;
+  readonly baseLayers: ReadonlyMap<string, readonly string[]>;
   readonly surfaces: ReadonlyMap<string, SurfaceDef>;
   readonly props: ReadonlyMap<string, PropDef>;
   readonly zones: ReadonlyMap<string, ZoneDef>;

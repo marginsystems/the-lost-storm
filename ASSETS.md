@@ -119,6 +119,9 @@ MakeHuman community garments come as a mesh fitted to the MakeHuman base body, w
 | `public/models/wear/long_gloves.glb` | Long gloves worn as bracers | "Gloves_Long" by MRT, `gloves01_cc0.zip`, decimated to 50%, colour desaturated | CC0 1.0 |
 | `public/models/wear/wool_tunic.glb` | Knitted wool tunic | "Sweater_Fisherman" by MRT, `shirts01_cc0.zip`, colour desaturated | CC0 1.0 |
 | `public/models/wear/wool_trousers.glb` | Wool trousers | "Pants_Wool" by MRT, `pants01_cc0.zip`, colour partly desaturated | CC0 1.0 |
+| `public/models/wear/undertunic.glb` | Plain short-sleeved undertunic, the base layer of the man and the elder | "T-shirt_basic_tucked" by MRT, `shirts01_cc0.zip`, colour desaturated | CC0 1.0 |
+| `public/models/wear/undertunic_woman.glb` | Plain short-sleeved undertunic, the base layer of the woman | "CrudeFemaleTshirt" by Joel Palmius, `shirts01_cc0.zip`, colour desaturated | CC0 1.0 |
+| `public/models/wear/braies.glb` | Knee-length linen braies, the base layer of every body | "Pants_Wool" by MRT, `pants01_cc0.zip`, cut above the knee (`keepAbove`), colour desaturated | CC0 1.0 |
 | `public/models/wear/tall_boots.glb` | Tall leather boots with folded cuffs | "male_boots" by culturalibre after Roachburn, `shoes01_cc0.zip`, decimated to 20% | CC0 1.0 |
 
 Rebuild with the packs unpacked somewhere outside this repository:
