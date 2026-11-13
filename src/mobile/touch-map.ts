@@ -125,6 +125,30 @@ export function touchButtons(skillBar: readonly SkillBarEntry[], attackBinding: 
   return buttons;
 }
 
+export function buttonKey(button: TouchButton): string {
+  return `${button.kind}${button.slot}`;
+}
+
+export function movedIndex(before: readonly string[], after: readonly string[], index: number): number {
+  const key: string | undefined = before[index];
+  return key === undefined ? -1 : after.indexOf(key);
+}
+
+export interface ButtonPlan {
+  readonly kept: readonly string[];
+  readonly added: readonly string[];
+  readonly dropped: readonly string[];
+}
+
+export function planButtons(shown: readonly string[], next: readonly TouchButton[]): ButtonPlan {
+  const wanted: string[] = next.map(buttonKey);
+  return {
+    kept: wanted.filter((key: string): boolean => shown.includes(key)),
+    added: wanted.filter((key: string): boolean => !shown.includes(key)),
+    dropped: shown.filter((key: string): boolean => !wanted.includes(key)),
+  };
+}
+
 export function pinchWheelDelta(previous: number, next: number, zoomStep: number): number {
   if (previous <= 0 || next <= 0 || zoomStep <= 0) return 0;
   return (previous / next - 1) / zoomStep;

@@ -1,7 +1,7 @@
 import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { HudView } from '../../sim/world/hud.ts';
 import { hudView } from '../../sim/world/hud.ts';
-import { panelPart, tagPart } from '../hud/hud-gate.ts';
+import { HUD_GATE, panelPart, tagPart } from '../hud/hud-gate.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { readyToRepeat } from '../../sim/world/skills.ts';
@@ -16,8 +16,8 @@ import type { Input } from '../input.ts';
 import { INPUT } from '../input.ts';
 import { createBrowserStore } from '../storage.ts';
 import { TITLE_SCREEN } from '../title-screen.ts';
-import type { Candidate, FlaskEntry, SkillBarEntry, StickReading, TouchButton } from './touch-map.ts';
-import { aimedSkill, autoAimTarget, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, pinchWheelDelta, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import type { ButtonPlan, Candidate, FlaskEntry, SkillBarEntry, StickReading, TouchButton } from './touch-map.ts';
+import { aimedSkill, autoAimTarget, buttonKey, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, movedIndex, pinchWheelDelta, planButtons, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 import type { PhoneLayout, Rect, SafeInsets } from './phone-layout.ts';
 import { PHONE, phoneLayout } from './phone-layout.ts';
 import touchCss from './touch.css?inline';
@@ -138,6 +138,15 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
 }
 
 const signature = (buttons: readonly TouchButton[]): string => buttons.map((button: TouchButton): string => `${button.kind}${button.slot}${button.kind === 'flask' || button.filled ? '' : '-'}`).join('|');
+
+function retire(root: HTMLElement): void {
+  root.removeAttribute(HUD_GATE.partAttribute);
+  root.classList.remove('arriving');
+  root.classList.add('leaving');
+  root.addEventListener('transitionend', (event: TransitionEvent): void => {
+    if (event.target === root && event.propertyName === 'opacity') root.remove();
+  });
+}
 
 export function createTouchControls(setup: TouchSetup): TouchControls {
   const style: HTMLStyleElement = document.createElement('style');
@@ -282,27 +291,64 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   };
   new ResizeObserver(place).observe(hudRoot);
 
+  const dress = (view: ButtonView, spec: TouchButton): void => {
+    const icon: HTMLElement | null = view.root.querySelector('.tc-icon');
+    if (icon === null || spec.kind === 'flask') return;
+    const skill: SkillDef | undefined = spec.filled ? (world.player.skills[spec.slot] ?? undefined) : undefined;
+    const drawn: string = skill?.icon ?? '';
+    if ((icon.dataset['icon'] ?? '') !== drawn) {
+      const next: HTMLElement = document.createElement('span');
+      next.className = 'tc-icon arriving';
+      next.dataset['icon'] = drawn;
+      next.innerHTML = skill === undefined ? '' : iconSvg(skill.icon);
+      icon.replaceWith(next);
+    }
+    view.root.classList.toggle('empty', skill === undefined);
+    view.root.setAttribute('aria-label', skill?.name ?? 'Empty skill slot');
+  };
+
+  const createButton = (spec: TouchButton): ButtonView => {
+    const root: HTMLDivElement = el('div', `tc-btn ${spec.kind} arriving`, actions);
+    root.setAttribute('role', 'button');
+    const ringEl: HTMLElement = el('i', 'tc-cd', root);
+    const icon: HTMLElement = el('span', 'tc-icon', root);
+    if (spec.kind === 'flask') {
+      const resource: FlaskResource | undefined = world.player.flasks[spec.slot]?.def.resource;
+      if (resource !== undefined) tagPart(root, resource);
+      root.setAttribute('aria-label', spec.label);
+    }
+    return { spec, root, ring: ringEl, count: spec.kind === 'flask' ? icon : null, turn: -1, dim: null, uses: -1 };
+  };
+
   const buildButtons = (specs: readonly TouchButton[]): void => {
-    actions.replaceChildren();
+    for (const stale of actions.querySelectorAll('.tc-btn.leaving')) stale.remove();
+    const shown: Map<string, ButtonView> = new Map<string, ButtonView>(views.map((view: ButtonView): [string, ButtonView] => [buttonKey(view.spec), view]));
+    const before: string[] = [...shown.keys()];
+    const plan: ButtonPlan = planButtons(before, specs);
+    for (const key of plan.dropped) {
+      const gone: ButtonView | undefined = shown.get(key);
+      if (gone !== undefined) retire(gone.root);
+    }
     views = specs.map((spec: TouchButton, index: number): ButtonView => {
-      const root: HTMLDivElement = el('div', `tc-btn ${spec.kind}`, actions);
-      root.dataset['index'] = String(index);
-      root.setAttribute('role', 'button');
-      const ringEl: HTMLElement = el('i', 'tc-cd', root);
-      const icon: HTMLElement = el('span', 'tc-icon', root);
-      const count: HTMLElement | null = spec.kind === 'flask' ? icon : null;
-      if (spec.kind === 'flask') {
-        const resource: FlaskResource | undefined = world.player.flasks[spec.slot]?.def.resource;
-        if (resource !== undefined) tagPart(root, resource);
-        root.setAttribute('aria-label', spec.label);
-      } else {
-        const skill: SkillDef | undefined = spec.filled ? (world.player.skills[spec.slot] ?? undefined) : undefined;
-        icon.innerHTML = skill === undefined ? '' : iconSvg(skill.icon);
-        root.classList.toggle('empty', skill === undefined);
-        root.setAttribute('aria-label', skill?.name ?? 'Empty skill slot');
-      }
-      return { spec, root, ring: ringEl, count, turn: -1, dim: null, uses: -1 };
+      const kept: ButtonView | undefined = shown.get(buttonKey(spec));
+      const view: ButtonView = kept === undefined ? createButton(spec) : { ...kept, spec, turn: -1, dim: null, uses: -1 };
+      view.root.dataset['index'] = String(index);
+      dress(view, spec);
+      return view;
     });
+    const after: string[] = views.map((view: ButtonView): string => buttonKey(view.spec));
+    for (const [id, track] of tracks) {
+      if (track.kind !== 'button') continue;
+      const index: number = movedIndex(before, after, track.index);
+      if (index < 0) tracks.delete(id);
+      else tracks.set(id, { kind: 'button', index });
+    }
+    const pressed: number[] = [...fresh];
+    fresh.clear();
+    for (const index of pressed) {
+      const moved: number = movedIndex(before, after, index);
+      if (moved >= 0) fresh.add(moved);
+    }
     place();
   };
 

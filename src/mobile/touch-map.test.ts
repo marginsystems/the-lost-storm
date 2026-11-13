@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Candidate } from './touch-map.ts';
-import { aimedSkill, autoAimTarget, clampKnob, cooldownTurn, isTap, joinsPinch, pinchWheelDelta, prefersTouch, readStick, rotateHintShows, sideForPoint, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import { aimedSkill, autoAimTarget, buttonKey, clampKnob, cooldownTurn, isTap, joinsPinch, movedIndex, pinchWheelDelta, planButtons, prefersTouch, readStick, rotateHintShows, sideForPoint, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 
 const YAW: number = Math.PI / 4;
 const near = (actual: number, expected: number): void => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
@@ -144,4 +144,25 @@ void test('a phone-sized screen takes the phone layout even when no coarse point
 void test('a short but wide desktop window keeps the desktop HUD', (): void => {
   assert.equal(prefersTouch('', false, 480, 1440), false);
   assert.equal(prefersTouch('', false, 390, TOUCH.phoneLongSide + 1), false);
+});
+
+void test('a new bar keeps every button that is still wanted, adds only the new ones and drops only the gone ones', (): void => {
+  const before = touchButtons([{ bindings: ['Mouse0'], filled: false }, { bindings: ['KeyQ'], filled: false }], 'Mouse0', [null]);
+  const after = touchButtons([{ bindings: ['Mouse0'], filled: true }, { bindings: ['KeyQ'], filled: false }], 'Mouse0', [{ name: 'Life flask' }]);
+  const plan = planButtons(before.map(buttonKey), after);
+  assert.deepEqual(plan.kept, ['attack0', 'skill1']);
+  assert.deepEqual(plan.added, ['flask0']);
+  assert.deepEqual(plan.dropped, []);
+  const back = planButtons(after.map(buttonKey), before);
+  assert.deepEqual(back.dropped, ['flask0']);
+  assert.deepEqual(back.added, []);
+});
+
+void test('a held button keeps its finger when the bar moves it, and loses it only when it leaves', (): void => {
+  const before = ['attack0', 'skill1', 'flask0', 'flask1'];
+  const after = ['attack0', 'skill1', 'flask1'];
+  assert.equal(movedIndex(before, after, 3), 2);
+  assert.equal(movedIndex(before, after, 2), -1);
+  assert.equal(movedIndex(before, after, 0), 0);
+  assert.equal(movedIndex(before, after, 9), -1);
 });

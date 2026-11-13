@@ -35,3 +35,30 @@ body.touch:has(.hud-panel.open) .world-layer {
     aspect-ratio: 1;
   }
 }
+
+.tc-btn.arriving:not([data-hud-part]) {
+  animation: tc-btn-in var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tc-btn.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes tc-btn-in {
+  from {
+    opacity: 0;
+    scale: 0.88;
+  }
+}
+
+.tc-icon.arriving {
+  animation: tc-icon-in var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+@keyframes tc-icon-in {
+  from {
+    opacity: 0;
+    scale: 0.7;
+  }
+}
