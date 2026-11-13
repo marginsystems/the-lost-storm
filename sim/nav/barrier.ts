@@ -1,4 +1,5 @@
-import type { BarrierFace, BarrierRow, BarrierSide, PropDef, ZoneBarrier, ZoneDef, ZoneExit } from '../content/types.ts';
+import type { BarrierFace, BarrierRow, BarrierSide, ZoneBarrier } from '../content/barrier-types.ts';
+import type { PropDef, ZoneDef, ZoneExit } from '../content/types.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import type { WallEdge } from './layout.ts';
 import { isFloorCell, wallEdges } from './layout.ts';
@@ -10,8 +11,10 @@ export const BARRIER = {
   reachCells: 2,
   joint: 1e-6,
   sample: 0.5,
-  sizes: [1, 0.72, 0.5],
+  sizes: [1, 0.72, 0.5, 0.35, 0.25],
   fill: 0.2,
+  propClear: 0.3,
+  corridor: 40,
 } as const;
 
 export interface BarrierPiece {
@@ -141,11 +144,65 @@ function pieceOutlines(props: ReadonlyMap<string, PropDef>, piece: BarrierPiece)
   return turned(sizedProp(def, piece.size).footprints, piece.rotationDegrees).map((outline: readonly ReadonlyVec2[]): ReadonlyVec2[] => outline.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: piece.x + point.x, z: piece.z + point.z })));
 }
 
-function nearExit(exits: readonly ZoneExit[], points: readonly ReadonlyVec2[], clear: number): boolean {
-  return exits.some((exit: ZoneExit): boolean => points.some((point: ReadonlyVec2): boolean => Math.hypot(point.x - exit.x, point.z - exit.z) < exit.radius + clear));
+interface Lane {
+  readonly from: ReadonlyVec2;
+  readonly to: ReadonlyVec2;
+  readonly clear: number;
 }
 
-function fitted(zone: ZoneDef, barrier: ZoneBarrier, face: BarrierFace, def: PropDef, run: BarrierRun, along: number, rotationDegrees: number): ReadonlyVec2 | null {
+interface Keepout {
+  readonly lanes: readonly Lane[];
+  readonly outlines: readonly (readonly ReadonlyVec2[])[];
+  readonly discs: readonly Lane[];
+}
+
+function segmentGap(point: ReadonlyVec2, from: ReadonlyVec2, to: ReadonlyVec2): number {
+  const dx: number = to.x - from.x;
+  const dz: number = to.z - from.z;
+  const span: number = dx * dx + dz * dz;
+  const t: number = span <= 0 ? 0 : Math.min(1, Math.max(0, ((point.x - from.x) * dx + (point.z - from.z) * dz) / span));
+  return Math.hypot(point.x - (from.x + dx * t), point.z - (from.z + dz * t));
+}
+
+function runGap(run: BarrierRun, point: ReadonlyVec2): number {
+  return segmentGap(point, runPoint(run, run.from), runPoint(run, run.to));
+}
+
+function exitLane(runs: readonly BarrierRun[], exit: ZoneExit, clear: number): Lane {
+  const from: ReadonlyVec2 = { x: exit.x, z: exit.z };
+  const nearest: BarrierRun | undefined = runs.toSorted((a: BarrierRun, b: BarrierRun): number => runGap(a, from) - runGap(b, from))[0];
+  const out: ReadonlyVec2 = nearest === undefined ? { x: 0, z: 0 } : outwardOf(nearest.side);
+  return { from, to: { x: exit.x + out.x * BARRIER.corridor, z: exit.z + out.z * BARRIER.corridor }, clear: exit.radius + clear };
+}
+
+function keepout(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: ZoneBarrier, runs: readonly BarrierRun[]): Keepout {
+  const outlines: ReadonlyVec2[][] = [];
+  const discs: Lane[] = [];
+  for (const placed of zone.props) {
+    if (placed.when.length > 0) continue;
+    const def: PropDef | undefined = props.get(placed.prop);
+    if (def === undefined) continue;
+    const shapes: ReadonlyVec2[][] = turned(def.footprints, placed.rotationDegrees).filter((outline: readonly ReadonlyVec2[]): boolean => outline.length >= 3);
+    const touches: boolean = [{ x: 0, z: 0 }, ...shapes.flat()].some((point: ReadonlyVec2): boolean => isFloorCell(zone, Math.floor((placed.x + point.x) / zone.cellSize), Math.floor((placed.z + point.z) / zone.cellSize)));
+    if (!touches) continue;
+    for (const outline of shapes) outlines.push(outline.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: placed.x + point.x, z: placed.z + point.z })));
+    if (shapes.length === 0 && def.blockRadius > 0) discs.push({ from: { x: placed.x, z: placed.z }, to: { x: placed.x, z: placed.z }, clear: def.blockRadius + def.blockLength / 2 + BARRIER.propClear });
+  }
+  return { lanes: zone.exits.map((exit: ZoneExit): Lane => exitLane(runs, exit, barrier.exitClear)), outlines, discs };
+}
+
+function blocked(keep: Keepout, points: readonly ReadonlyVec2[]): boolean {
+  const xs: number[] = points.map((point: ReadonlyVec2): number => point.x);
+  const zs: number[] = points.map((point: ReadonlyVec2): number => point.z);
+  const low: ReadonlyVec2 = { x: Math.min(...xs), z: Math.min(...zs) };
+  const high: ReadonlyVec2 = { x: Math.max(...xs), z: Math.max(...zs) };
+  const lanes: readonly Lane[] = [...keep.lanes, ...keep.discs];
+  if (points.some((point: ReadonlyVec2): boolean => lanes.some((lane: Lane): boolean => segmentGap(point, lane.from, lane.to) < lane.clear))) return true;
+  const near: readonly (readonly ReadonlyVec2[])[] = keep.outlines.filter((outline: readonly ReadonlyVec2[]): boolean => outline.some((point: ReadonlyVec2): boolean => point.x > low.x - BARRIER.propClear && point.x < high.x + BARRIER.propClear && point.z > low.z - BARRIER.propClear && point.z < high.z + BARRIER.propClear));
+  return near.some((outline: readonly ReadonlyVec2[]): boolean => points.some((point: ReadonlyVec2): boolean => outlineGap(outline, point.x, point.z) < BARRIER.propClear));
+}
+
+function fitted(zone: ZoneDef, keep: Keepout, face: BarrierFace, def: PropDef, run: BarrierRun, along: number, rotationDegrees: number): ReadonlyVec2 | null {
   const outlines: ReadonlyVec2[][] = turned(def.footprints, rotationDegrees);
   const shape: ReadonlyVec2[] = outlines.flat();
   if (shape.length === 0) return null;
@@ -156,24 +213,24 @@ function fitted(zone: ZoneDef, barrier: ZoneBarrier, face: BarrierFace, def: Pro
   const world: ReadonlyVec2[] = outlines.flatMap((outline: readonly ReadonlyVec2[]): ReadonlyVec2[] => coveredPoints(outline.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: centre.x + point.x, z: centre.z + point.z }))));
   const allowance: number = Math.max(0, -face.out) + BARRIER.tolerance;
   if (world.some((point: ReadonlyVec2): boolean => floorDepth(zone, point.x, point.z) > allowance)) return null;
-  if (nearExit(zone.exits, [...world, centre], barrier.exitClear)) return null;
+  if (blocked(keep, [...world, centre])) return null;
   return centre;
 }
 
-function firstFit(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: ZoneBarrier, face: BarrierFace, run: BarrierRun, along: number, rotationDegrees: number, first: number): BarrierPiece | null {
+function firstFit(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, keep: Keepout, face: BarrierFace, run: BarrierRun, along: number, rotationDegrees: number, first: number): BarrierPiece | null {
   for (const size of BARRIER.sizes) {
     for (let attempt: number = 0; attempt < face.props.length; attempt += 1) {
       const prop: string | undefined = face.props[(first + attempt) % face.props.length];
       const def: PropDef | undefined = prop === undefined ? undefined : props.get(prop);
       if (prop === undefined || def === undefined) continue;
-      const centre: ReadonlyVec2 | null = fitted(zone, barrier, face, sizedProp(def, size), run, along, rotationDegrees);
+      const centre: ReadonlyVec2 | null = fitted(zone, keep, face, sizedProp(def, size), run, along, rotationDegrees);
       if (centre !== null) return { prop, x: centre.x, z: centre.z, rotationDegrees, size, side: run.side, row: 0, collide: false, shadow: false };
     }
   }
   return null;
 }
 
-function rowPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: ZoneBarrier, row: BarrierRow, rowIndex: number, run: BarrierRun, runIndex: number): BarrierPiece[] {
+function rowPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: ZoneBarrier, keep: Keepout, row: BarrierRow, rowIndex: number, run: BarrierRun, runIndex: number): BarrierPiece[] {
   const face: BarrierFace = barrier.nearSides.includes(run.side) ? row.near : row.far;
   if (face.props.length === 0) return [];
   const placed: BarrierPiece[] = [];
@@ -183,7 +240,7 @@ function rowPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: 
     const along: number = start + index * face.step + (noise(runIndex, index, rowIndex + 3) - 0.5) * face.step * BARRIER.slide;
     const rotationDegrees: number = (noise(index, runIndex + 7, rowIndex + 5) - 0.5) * face.turn;
     const first: number = Math.floor(noise(runIndex + 11, index, rowIndex + 9) * face.props.length);
-    const piece: BarrierPiece | null = firstFit(zone, props, barrier, face, run, along, rotationDegrees, first);
+    const piece: BarrierPiece | null = firstFit(zone, props, keep, face, run, along, rotationDegrees, first);
     if (piece !== null) placed.push({ ...piece, row: rowIndex, collide: row.collide, shadow: row.shadow });
   }
   if (!row.collide) return placed;
@@ -196,7 +253,7 @@ function rowPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: 
     if (gap <= BARRIER.fill) continue;
     const salt: number = Math.round(along / BARRIER.sample);
     const rotationDegrees: number = (noise(salt, runIndex + 13, rowIndex + 5) - 0.5) * face.turn;
-    const piece: BarrierPiece | null = firstFit(zone, props, barrier, face, run, along, rotationDegrees, Math.floor(noise(runIndex + 17, salt, rowIndex) * face.props.length));
+    const piece: BarrierPiece | null = firstFit(zone, props, keep, face, run, along, rotationDegrees, Math.floor(noise(runIndex + 17, salt, rowIndex) * face.props.length));
     if (piece === null) continue;
     const filled: BarrierPiece = { ...piece, row: rowIndex, collide: row.collide, shadow: row.shadow };
     placed.push(filled);
@@ -209,5 +266,6 @@ export function barrierPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>
   const barrier: ZoneBarrier | null = zone.outside?.barrier ?? null;
   if (barrier === null) return [];
   const runs: BarrierRun[] = barrierRuns(zone);
-  return barrier.rows.flatMap((row: BarrierRow, rowIndex: number): BarrierPiece[] => runs.flatMap((run: BarrierRun, runIndex: number): BarrierPiece[] => rowPieces(zone, props, barrier, row, rowIndex, run, runIndex)));
+  const keep: Keepout = keepout(zone, props, barrier, runs);
+  return barrier.rows.flatMap((row: BarrierRow, rowIndex: number): BarrierPiece[] => runs.flatMap((run: BarrierRun, runIndex: number): BarrierPiece[] => rowPieces(zone, props, barrier, keep, row, rowIndex, run, runIndex)));
 }

@@ -1,7 +1,7 @@
 import type { Fields } from './read.ts';
 import { choiceList, ContentError, each, fields, flag, nonNegative, numeric, positive, textList } from './read.ts';
-import type { BarrierFace, BarrierRow, ZoneBarrier } from './types.ts';
-import { BARRIER_SIDES } from './types.ts';
+import type { BarrierFace, BarrierRow, ZoneBarrier } from './barrier-types.ts';
+import { BARRIER_SIDES } from './barrier-types.ts';
 
 function barrierFace(value: unknown, where: string): BarrierFace {
   const source: Fields = fields(value, where);

@@ -66,14 +66,14 @@ for (const zone of fenced) {
   });
 
   void test(`${zone.id}: the hero walks up to the barrier on every edge away from the exits`, (): void => {
-    const blockers: Blocker[] = walls(zone, pieces);
+    const blockers: Blocker[] = [...walls(zone, pieces), ...zone.props.filter((placed): boolean => placed.when.length === 0).flatMap((placed): Blocker[] => propBlockers(must(content.props.get(placed.prop), placed.prop), placed.x, placed.z, placed.rotationDegrees))];
     let worst: number = 0;
     let at: ReadonlyVec2 = { x: 0, z: 0 };
-    for (let index: number = 0; index < bare.walkable.length; index += 1) {
-      if (bare.walkable[index] !== 1) continue;
-      const centre: ReadonlyVec2 = cellCenter(bare, index);
+    for (let index: number = 0; index < full.walkable.length; index += 1) {
+      if (full.walkable[index] !== 1) continue;
+      const centre: ReadonlyVec2 = cellCenter(full, index);
       if (floorDepth(zone, centre.x, centre.z) > EDGE.edgeBand || nearExit(zone, centre, EDGE.exitBand)) continue;
-      if (EDGE.neighbours.every((step: ReadonlyVec2): boolean => isWalkable(bare, centre.x + step.x, centre.z + step.z))) continue;
+      if (EDGE.neighbours.every((step: ReadonlyVec2): boolean => isWalkable(full, centre.x + step.x, centre.z + step.z))) continue;
       const gap: number = Math.min(...blockers.map((blocker: Blocker): number => blockerGap(blocker, centre.x, centre.z))) - content.player.radius;
       if (gap > worst) {
         worst = gap;

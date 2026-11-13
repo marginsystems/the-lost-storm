@@ -362,12 +362,12 @@ for (const { prop, rotationDegrees } of FACE_PROPS) {
 }
 
 const RUIN = {
-  at: { x: 66.5, z: 13 },
+  at: { x: 66.5, z: 14 },
   starts: [
-    { name: 'north, at the floor edge', x: 66.5, z: 8 },
-    { name: 'south', x: 66.5, z: 17 },
-    { name: 'west', x: 61, z: 13 },
-    { name: 'east', x: 72, z: 13 },
+    { name: 'north, at the floor edge', x: 66.5, z: 9.8 },
+    { name: 'south', x: 66.5, z: 18 },
+    { name: 'west', x: 61, z: 14 },
+    { name: 'east', x: 71.2, z: 14 },
   ],
 } as const;
 
