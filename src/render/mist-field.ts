@@ -133,7 +133,7 @@ export function going(input: Pick<MistInput, 'speed' | 'maxSpeed'>): number {
 export function wantedDir(drive: Pick<MistDrive, 'dir'>, input: Pick<MistInput, 'moveDir' | 'look'>): Vec2 {
   const move: Vec2 | null = input.moveDir;
   const look: Vec2 | null = input.look;
-  if (move === null) return look ?? drive.dir;
+  if (move === null) return drive.dir;
   if (look === null) return move;
   return unit(move.x * (1 - MIST.lookShare) + look.x * MIST.lookShare, move.z * (1 - MIST.lookShare) + look.z * MIST.lookShare) ?? move;
 }

@@ -136,8 +136,20 @@ void test('the cursor bends the opening toward where he looks', (): void => {
   const drive: MistDrive = createMistDrive();
   const bent: Vec2 = wantedDir(drive, { moveDir: EAST, look: NORTH });
   assert.ok(bent.x > bent.z && bent.z > 0.2);
-  assert.deepEqual(wantedDir(drive, { moveDir: null, look: NORTH }), NORTH);
   assert.deepEqual(wantedDir(drive, { moveDir: null, look: null }), drive.dir);
+});
+
+void test('the cursor does not turn the mist while he stands still', (): void => {
+  const state: Walk = fresh();
+  walk(state, EAST, 1);
+  walk(state, null, 3);
+  const settled: Vec2 = { x: state.drive.dir.x, z: state.drive.dir.z };
+  const around: readonly Vec2[] = [NORTH, { x: -1, z: 0 }, { x: 0, z: -1 }, EAST];
+  for (const look of around) {
+    stepDrive(state.drive, { hero: state.hero, speed: 0, maxSpeed: SPEED, moveDir: null, look, finds: [], wake: null, dt: DT, random: (): number => 0.5 });
+    assert.deepEqual(state.drive.dir, settled);
+  }
+  assert.deepEqual(wantedDir(state.drive, { moveDir: null, look: NORTH }), state.drive.dir);
 });
 
 void test('momentum builds with pace and drains when he stops', (): void => {
