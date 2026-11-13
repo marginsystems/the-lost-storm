@@ -431,7 +431,7 @@ function fittedPieces(rig: LoadedRig, worn: LoadedWearable, anchor: SkinnedMesh)
   return made;
 }
 
-function findNode(model: Object3D, name: string): Object3D | undefined {
+export function findNode(model: Object3D, name: string): Object3D | undefined {
   return model.getObjectByName(PropertyBinding.sanitizeNodeName(name)) ?? model.getObjectByName(name);
 }
 

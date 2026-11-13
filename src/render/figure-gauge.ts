@@ -1,5 +1,5 @@
 import type { Object3D } from 'three';
-import { Box3, Vector3 } from 'three';
+import { Box3, PropertyBinding, Vector3 } from 'three';
 import type { Vec2 } from '../../sim/math.ts';
 
 export const FIGURE_GAUGE = {
@@ -45,15 +45,19 @@ function reachOf(box: Box3, root: Vector3): number {
   return Math.hypot(x, z);
 }
 
+function boneNamed(root: Object3D, name: string): Object3D | undefined {
+  return root.getObjectByName(PropertyBinding.sanitizeNodeName(name)) ?? root.getObjectByName(name);
+}
+
 interface SpanBones {
   readonly head: Object3D;
   readonly feet: readonly Object3D[];
 }
 
 function spanBones(figure: Object3D): SpanBones | null {
-  const head: Object3D | undefined = figure.getObjectByName(FIGURE_GAUGE.head);
+  const head: Object3D | undefined = boneNamed(figure, FIGURE_GAUGE.head);
   const feet: Object3D[] = FIGURE_GAUGE.feet.flatMap((name: string): Object3D[] => {
-    const bone: Object3D | undefined = figure.getObjectByName(name);
+    const bone: Object3D | undefined = boneNamed(figure, name);
     return bone === undefined ? [] : [bone];
   });
   return head === undefined || feet.length === 0 ? null : { head, feet };

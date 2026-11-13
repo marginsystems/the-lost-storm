@@ -3,7 +3,10 @@ import { test } from 'node:test';
 import type { WakeStage } from '../../sim/world/wake.ts';
 import { WAKE_SHOT } from '../opening/wake-shot.ts';
 import type { LampOffset } from './wake-light.ts';
-import { createWakeLights, lampOffset, WAKE_LIGHT, wakeLit } from './wake-light.ts';
+import { createWakeLights, lampOffset, wakeCameraYaw, WAKE_LIGHT, wakeLit } from './wake-light.ts';
+import { CAMERA } from './iso-camera.ts';
+import type { ZoneWake } from '../../sim/content/story-types.ts';
+import { wakeLength } from '../../sim/world/wake.ts';
 
 function stage(settle: number): WakeStage {
   return { phase: settle > 0 ? 'settle' : 'rise', stir: 1, rise: settle > 0 ? 1 : 0.5, front: 0.5, settle, through: 0.5 };
@@ -28,24 +31,36 @@ void test('the wake lights hold full through the rise and ease out over the sett
 });
 
 void test('the key comes from in front of the camera and to its left, the rim from behind him', (): void => {
-  const key = cameraSide(lampOffset(WAKE_LIGHT.key));
-  const rim = cameraSide(lampOffset(WAKE_LIGHT.rim));
+  const key = cameraSide(lampOffset(WAKE_LIGHT.key, WAKE_SHOT.start.yawDegrees));
+  const rim = cameraSide(lampOffset(WAKE_LIGHT.rim, WAKE_SHOT.start.yawDegrees));
   assert.ok(key.toward > 0);
   assert.ok(key.right < 0);
   assert.ok(rim.toward < 0);
-  assert.ok(lampOffset(WAKE_LIGHT.key).y > 0 && lampOffset(WAKE_LIGHT.rim).y > 0);
+  assert.ok(lampOffset(WAKE_LIGHT.key, WAKE_SHOT.start.yawDegrees).y > 0 && lampOffset(WAKE_LIGHT.rim, WAKE_SHOT.start.yawDegrees).y > 0);
 });
 
 void test('the lights follow him and keep their count when they go dark, so no material recompiles at control', (): void => {
   const lights = createWakeLights();
-  lights.update({ x: 4, z: -2 }, 0, 1);
+  lights.update({ x: 4, z: -2 }, 0, 1, WAKE_SHOT.start.yawDegrees);
   const key = lights.group.children[0];
   assert.ok(key !== undefined);
-  const offset: LampOffset = lampOffset(WAKE_LIGHT.key);
+  const offset: LampOffset = lampOffset(WAKE_LIGHT.key, WAKE_SHOT.start.yawDegrees);
   assert.ok(Math.abs(key.position.x - (4 + offset.x)) < 1e-9);
   const before: number = lights.group.children.length;
-  lights.update({ x: 4, z: -2 }, 0, 0);
+  lights.update({ x: 4, z: -2 }, 0, 0, WAKE_SHOT.start.yawDegrees);
   assert.equal(lights.group.children.length, before);
   assert.ok(lights.group.children.every((child): boolean => child.visible));
   lights.dispose();
+});
+
+void test('the lamps turn with the wake camera as it pulls back, so the key keeps its side of his face', (): void => {
+  const plan: ZoneWake = { still: 1.2, stir: 1.2, rise: 3.8, front: 0.18, settle: 3, hurry: 1.2 };
+  assert.equal(wakeCameraYaw(plan, 0), WAKE_SHOT.start.yawDegrees);
+  assert.ok(Math.abs(wakeCameraYaw(plan, wakeLength(plan)) - CAMERA.yawDegrees) < 1e-9);
+  let before: number = wakeCameraYaw(plan, 0);
+  for (let elapsed: number = 0; elapsed <= wakeLength(plan); elapsed += 1 / 60) {
+    const yaw: number = wakeCameraYaw(plan, elapsed);
+    assert.ok(Math.abs(yaw - before) < 0.5);
+    before = yaw;
+  }
 });

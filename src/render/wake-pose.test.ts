@@ -3,7 +3,11 @@ import { test } from 'node:test';
 import type { ZoneWake } from '../../sim/content/story-types.ts';
 import { wakeLength, wakeStage } from '../../sim/world/wake.ts';
 import type { WakePose } from './wake-pose.ts';
-import { stirShare, throughKnots, WAKE_POSE, wakePose } from './wake-pose.ts';
+import { restOffset, restWeight, stirShare, throughKnots, WAKE_POSE, wakePose } from './wake-pose.ts';
+
+function near(actual: number, expected: number): void {
+  assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
+}
 
 const PLAN: ZoneWake = { still: 2, stir: 1.2, rise: 3.8, front: 0.18, settle: 3, hurry: 1.2 };
 const STEP: number = 1 / 60;
@@ -75,4 +79,22 @@ void test('he breathes while he lies there, and the breath is gone by the time h
   assert.ok(Math.min(...lying) < -WAKE_POSE.breath.amount * 0.9);
   assert.equal(Math.abs(at(PLAN.still + PLAN.stir + PLAN.rise / 2).breath), 0);
   for (let elapsed: number = STEP; elapsed < wakeLength(PLAN); elapsed += STEP) assert.ok(Math.abs(at(elapsed).breath - at(elapsed - STEP).breath) < 0.01);
+});
+
+void test('the lying body is set down until its lowest contact rests on the floor, and lifted if it sinks', (): void => {
+  near(restOffset([{ y: 0.42, radius: 0.12 }, { y: 0.4, radius: 0.07 }, { y: 0.5, radius: 0.11 }], 0), -0.3);
+  near(restOffset([{ y: -0.05, radius: 0.12 }], 0), 0.17);
+  assert.equal(restOffset([], 0), 0);
+});
+
+void test('the setting-down holds through the push-up and lets go smoothly as he stands', (): void => {
+  assert.equal(restWeight(0), 1);
+  assert.equal(restWeight(WAKE_POSE.restUntil.from), 1);
+  assert.equal(restWeight(1), 0);
+  let before: number = 1;
+  for (let share: number = 0; share <= 1; share += 0.01) {
+    const weight: number = restWeight(share);
+    assert.ok(weight <= before + 1e-12 && before - weight < 0.06);
+    before = weight;
+  }
 });
