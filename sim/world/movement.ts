@@ -12,9 +12,12 @@ const MOVEMENT = {
   readablePush: 0.05,
   arrive: 1e-4,
   separationPasses: 2,
-  slideAlong: 0.7,
+  slideAlong: 0.76,
   wallLean: 0.2,
-  turnOut: [0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.5, -1.5],
+  turnOut: [0.35, -0.35, 0.7, -0.7],
+  headOut: [0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.5, -1.5],
+  strideCos: 0.76,
+  closeShare: 0.25,
   contact: 0.001,
 } as const;
 
@@ -134,7 +137,7 @@ const NO_STEP: SteerStep = { moved: 0, tried: 0 };
 function strideWithCollision(grid: NavGrid, pos: Vec2, dx: number, dz: number): void {
   const length: number = Math.hypot(dx, dz);
   if (length <= MOVEMENT.arrive) return;
-  if (stepClear(grid, pos, dx, dz) || slideOnBody(grid, pos, dx, dz)) return;
+  if (stepClear(grid, pos, dx, dz) || (closeSlide(grid, pos, dx, dz) && slideOnBody(grid, pos, dx, dz))) return;
   const alongX: number = Math.abs(dx) / length;
   const alongZ: number = Math.abs(dz) / length;
   const slideX: boolean = alongX >= MOVEMENT.slideAlong && isWalkable(grid, pos.x + dx, pos.z);
@@ -142,6 +145,25 @@ function strideWithCollision(grid: NavGrid, pos: Vec2, dx: number, dz: number): 
   if (slideX && (!slideZ || alongX >= alongZ)) pos.x += dx;
   else if (slideZ) pos.z += dz;
   else turnOut(grid, pos, dx, dz);
+}
+
+function closeSlide(grid: NavGrid, pos: Vec2, dx: number, dz: number): boolean {
+  const along: Vec2 | null = slideAlong(grid, pos, dx, dz);
+  return along !== null && Math.hypot(along.x, along.z) >= Math.hypot(dx, dz) * MOVEMENT.strideCos;
+}
+
+function closesIn(grid: NavGrid, pos: Vec2, dx: number, dz: number): boolean {
+  for (let share: number = 1; share >= MOVEMENT.closeShare; share /= 2) if (stepClear(grid, { x: pos.x, z: pos.z }, dx * share, dz * share)) return true;
+  return false;
+}
+
+function freeHeading(grid: NavGrid, pos: Vec2, wanted: number, probe: number): number {
+  if (closesIn(grid, pos, Math.sin(wanted) * probe, Math.cos(wanted) * probe)) return wanted;
+  for (const angle of MOVEMENT.headOut) {
+    const turned: number = wanted + angle;
+    if (stepClear(grid, { x: pos.x, z: pos.z }, Math.sin(turned) * probe, Math.cos(turned) * probe)) return turned;
+  }
+  return wanted;
 }
 
 function turnOut(grid: NavGrid, pos: Vec2, dx: number, dz: number): void {
@@ -154,10 +176,10 @@ function turnOut(grid: NavGrid, pos: Vec2, dx: number, dz: number): void {
   }
 }
 
-function aroundWall(grid: NavGrid, pos: Vec2, wanted: number, probe: number): number {
+function aroundWall(grid: NavGrid, pos: Vec2, wanted: number, probe: number, reachable: boolean): number {
   const dx: number = Math.sin(wanted);
   const dz: number = Math.cos(wanted);
-  if (probe <= MOVEMENT.arrive || isWalkable(grid, pos.x + dx * probe, pos.z + dz * probe)) return wanted;
+  if (probe <= MOVEMENT.arrive || stepClear(grid, { x: pos.x, z: pos.z }, dx * probe, dz * probe)) return wanted;
   const along: Vec2 | null = slideAlong(grid, pos, dx * probe, dz * probe);
   if (along !== null && Math.hypot(along.x, along.z) > MOVEMENT.arrive) return facingOf(along);
   const alongX: number = Math.abs(dx) >= MOVEMENT.wallLean ? Math.sign(dx) * probe : 0;
@@ -166,12 +188,12 @@ function aroundWall(grid: NavGrid, pos: Vec2, wanted: number, probe: number): nu
   const openZ: boolean = alongZ !== 0 && isWalkable(grid, pos.x, pos.z + alongZ);
   if (openX && (!openZ || Math.abs(dx) >= Math.abs(dz))) return facingOf({ x: alongX, z: 0 });
   if (openZ) return facingOf({ x: 0, z: alongZ });
-  return wanted;
+  return reachable ? freeHeading(grid, pos, wanted, probe) : wanted;
 }
 
 export function steerToward(grid: NavGrid, actor: ActorState, wanted: number, travel: number, dt: number, steering: Steering): SteerStep {
   const pace: number = travel * paceAt(grid, actor.pos.x, actor.pos.z);
-  const heading: number = aroundWall(grid, actor.pos, wanted, pace);
+  const heading: number = aroundWall(grid, actor.pos, wanted, pace, true);
   actor.facing = steerHeading(actor.facing, heading, dt, steering);
   const reach: number = pace * alignedSpeed(angleBetween(actor.facing, heading), steering);
   const fromX: number = actor.pos.x;
@@ -200,14 +222,22 @@ export function steerAlong(grid: NavGrid, actor: ActorState, path: Vec2[], trave
   }
   const settling: boolean = path.length === 1 && gap <= steering.settleRadius;
   const pace: number = travel * paceAt(grid, actor.pos.x, actor.pos.z);
-  const wanted: number = settling ? facingOf({ x: dx, z: dz }) : aroundWall(grid, actor.pos, facingOf({ x: dx, z: dz }), Math.min(pace, gap));
+  const wanted: number = settling ? facingOf({ x: dx, z: dz }) : aroundWall(grid, actor.pos, facingOf({ x: dx, z: dz }), Math.min(pace, gap), isWalkable(grid, next.x, next.z));
   if (!settling) actor.facing = steerHeading(actor.facing, wanted, dt, steering);
   const reach: number = pace * (settling ? 1 : alignedSpeed(angleBetween(actor.facing, wanted), steering));
   const fromX: number = actor.pos.x;
   const fromZ: number = actor.pos.z;
-  if (gap <= reach || settling) {
+  const facingNext: boolean = Math.cos(angleBetween(actor.facing, facingOf({ x: dx, z: dz }))) >= MOVEMENT.strideCos;
+  if (settling && !facingNext) {
+    path.shift();
+    return NO_STEP;
+  }
+  if (settling) {
     const share: number = Math.min(1, reach / gap);
     moveWithCollision(grid, actor.pos, dx * share, dz * share);
+    if (distance(actor.pos, next) <= MOVEMENT.arrive) path.shift();
+  } else if (gap <= reach && facingNext) {
+    strideWithCollision(grid, actor.pos, dx, dz);
     if (distance(actor.pos, next) <= MOVEMENT.arrive) path.shift();
   } else {
     strideWithCollision(grid, actor.pos, Math.sin(actor.facing) * reach, Math.cos(actor.facing) * reach);

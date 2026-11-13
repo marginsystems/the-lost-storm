@@ -179,7 +179,7 @@ void test('steerAlong drops a waypoint it has nearly reached and steers for the 
 });
 
 const CONTRACT = {
-  seeds: [3, 5, 8],
+  seeds: [1, 3, 5, 8, 10, 14],
   fighters: ['unfinished_brute', 'unfinished_taker', 'unfinished_thrower', 'first_brute', 'first_thrower', 'unfinished_borrower', 'timekeeper_duelist', 'mended', 'mender', 'still_standing'],
   ring: 7,
   still: 1e-4,
