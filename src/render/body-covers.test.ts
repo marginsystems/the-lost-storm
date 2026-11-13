@@ -53,3 +53,14 @@ void test('a group hides when its parts are hidden or a worn list covers it', ()
   assert.equal(groupHidden({ mask: 1, covers: [coverKey(COAT)] }, ['legs'], never), false);
   assert.equal(groupHidden({ mask: 1, covers: [] }, ['legs'], (): boolean => true), true);
 });
+
+void test('taking every piece off brings the hidden set back to exactly what the base pieces hide', (): void => {
+  const listed: ReadonlySet<string> = new Set<string>([COAT]);
+  const base: readonly string[] = ['feet'];
+  const boots: CoverableWearable = { model: 'models/wear/tall_boots.glb', hides: ['feet'] };
+  for (const piece of [JERKIN, TROUSERS, VEST]) {
+    const on: string[] = hiddenWithCovers([boots, piece], [...base, ...piece.hides], listed);
+    assert.notDeepEqual(on, base);
+    assert.deepEqual(hiddenWithCovers([boots], base, listed), base);
+  }
+});

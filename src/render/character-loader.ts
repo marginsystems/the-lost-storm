@@ -8,8 +8,8 @@ import type { CharacterNeeds } from '../../sim/wear.ts';
 import { clipUrl, rigClipNames } from '../../sim/content/clips.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { disposeMaterialTextures, shrinkModelTextures } from '../mobile/textures.ts';
-import { fitToSkeleton, groupBodyParts, maskHidden, skinnedMeshes } from './wearables.ts';
-import type { BodyGrouping } from './wearables.ts';
+import { fitToSkeleton, groupBodies, maskHidden, skinnedMeshes } from './wearables.ts';
+import type { BodyGroupings } from './wearables.ts';
 import { BODY_COVERS, coveringKeys, coversOf, groupHidden, hiddenWithCovers } from './body-covers.ts';
 import type { BodyCover, BodyGroup, CoverableWearable } from './body-covers.ts';
 import type { GhostUniforms, RigGlow } from './ghost-material.ts';
@@ -51,7 +51,7 @@ export interface LoadedRig {
   readonly template: Object3D;
   readonly clips: RigClipSet;
   readonly bodyParts: readonly string[];
-  readonly bodyGroups: readonly BodyGroup[];
+  readonly bodyGroups: ReadonlyMap<string, readonly BodyGroup[]>;
   readonly coveredModels: ReadonlySet<string>;
   readonly fitted: Map<string, readonly BufferGeometry[]>;
 }
@@ -262,14 +262,12 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   const bare: RigUnarmedClips | null = def.clips.unarmed;
   const template: Object3D = cloneSkinned(main.scene);
   const coveredModels: Set<string> = new Set<string>();
-  const grouping: BodyGrouping = skinnedMeshes(template).reduce((found: BodyGrouping, mesh: SkinnedMesh): BodyGrouping => {
+  const grouping: BodyGroupings = groupBodies(skinnedMeshes(template), def.bodyParts, (mesh: SkinnedMesh): readonly (readonly string[])[] => {
     const triangles: number = (mesh.geometry.getIndex()?.count ?? 0) / 3;
     const covers: readonly BodyCover[] = coversOf(BODY_COVERS, def.url, mesh.name, triangles);
-    const grouped: BodyGrouping = groupBodyParts(mesh, def.bodyParts, coveringKeys(covers, triangles));
-    if (grouped.names.length === 0) return found;
     for (const cover of covers) coveredModels.add(cover.wearable);
-    return grouped;
-  }, { names: [], groups: [] });
+    return coveringKeys(covers, triangles);
+  });
   return {
     def,
     template,
@@ -485,7 +483,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const hide = (parts: readonly string[]): void => {
     shownParts = parts;
     for (const body of bodies) {
-      body.mesh.material = parts.length === 0 ? body.skin : rig.bodyGroups.map((group: BodyGroup): Material => (groupHidden(group, parts, (mask: number): boolean => maskHidden(mask, rig.bodyParts, parts)) ? UNSEEN : body.skin));
+      const groups: readonly BodyGroup[] | undefined = rig.bodyGroups.get(body.mesh.name);
+      body.mesh.material = parts.length === 0 || groups === undefined ? body.skin : groups.map((group: BodyGroup): Material => (groupHidden(group, parts, (mask: number): boolean => maskHidden(mask, rig.bodyParts, parts)) ? UNSEEN : body.skin));
     }
   };
   const fade = (piece: WornPiece, value: number): void => {

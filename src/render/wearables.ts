@@ -106,6 +106,23 @@ interface Bucket {
   readonly corners: number[];
 }
 
+export interface BodyGroupings {
+  readonly names: readonly string[];
+  readonly groups: ReadonlyMap<string, readonly BodyGroup[]>;
+}
+
+export function groupBodies(meshes: readonly SkinnedMesh[], bodyParts: Readonly<Record<string, readonly string[]>>, coversFor: (mesh: SkinnedMesh) => readonly (readonly string[])[]): BodyGroupings {
+  let names: readonly string[] = [];
+  const groups: Map<string, readonly BodyGroup[]> = new Map<string, readonly BodyGroup[]>();
+  for (const mesh of meshes) {
+    const grouped: BodyGrouping = groupBodyParts(mesh, bodyParts, coversFor(mesh));
+    if (grouped.names.length === 0) continue;
+    names = grouped.names;
+    groups.set(mesh.name, grouped.groups);
+  }
+  return { names, groups };
+}
+
 export function groupBodyParts(mesh: SkinnedMesh, bodyParts: Readonly<Record<string, readonly string[]>>, triangleCovers: readonly (readonly string[])[] = []): BodyGrouping {
   const names: string[] = Object.keys(bodyParts);
   const index: BufferAttribute | null = mesh.geometry.getIndex();
