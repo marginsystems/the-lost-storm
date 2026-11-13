@@ -102,7 +102,7 @@ export const LOBBY_POSE: readonly PoseTurn[] = [
   ['DEF-thigh.R', 0, 0, -5],
 ];
 
-export const LOBBY_ORBIT_UI: string = '#lobby, #title, button, a, input, select, textarea';
+export const LOBBY_ORBIT_UI: string = '.lobby-sheet, .lobby-ladder, .lobby-dock, #title, button, a, input, select, textarea, [role="dialog"]:not(#lobby)';
 
 export const LOBBY_FRAMING = {
   wide: { across: 0.5, down: 0, zoom: 1 },
