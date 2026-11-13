@@ -8,6 +8,7 @@ import type { AccountPart, TitleAccount, TitleAccountParts } from './title-accou
 
 interface Part extends AccountPart {
   readonly attributes: Set<string>;
+  readonly values: Map<string, string>;
 }
 
 interface Screen {
@@ -26,9 +27,14 @@ interface Screen {
 
 function part(): Part {
   const attributes: Set<string> = new Set<string>(['hidden']);
+  const values: Map<string, string> = new Map<string, string>();
   return {
     textContent: '',
     attributes,
+    values,
+    setAttribute: (name: string, value: string): void => {
+      values.set(name, value);
+    },
     toggleAttribute: (name: string, force: boolean): boolean => {
       if (force) attributes.add(name);
       else attributes.delete(name);
@@ -228,13 +234,14 @@ void test('the Signing in label swaps with the idle label by a spring fade, neve
 void test('the button is marked busy from the press, and cannot be pressed again only while the server is answering', (): void => {
   const ui: Screen = screen();
   ui.view.show({ kind: 'guest', google: true, email: false }, '');
-  const state = (): readonly boolean[] => [ui.button.attributes.has(TITLE_ACCOUNT.busyAttribute), ui.button.attributes.has('disabled')];
-  assert.deepEqual(state(), [false, false]);
+  const state = (): readonly (boolean | string | undefined)[] => [ui.button.attributes.has(TITLE_ACCOUNT.busyAttribute), ui.button.attributes.has('disabled'), ui.button.values.get('aria-busy')];
+  assert.deepEqual(state(), [false, false, undefined]);
   ui.view.signingIn('asking');
-  assert.deepEqual(state(), [true, false]);
+  assert.deepEqual(state(), [true, false, 'true']);
   ui.view.signingIn('exchanging');
-  assert.deepEqual(state(), [true, true]);
+  assert.deepEqual(state(), [true, true, 'true']);
   ui.view.signingIn('idle');
-  assert.deepEqual(state(), [false, false]);
+  assert.deepEqual(state(), [false, false, 'false']);
+  assert.ok(!ui.button.attributes.has('aria-busy'), 'aria-busy was written as an empty attribute, which reads as false');
   assert.ok(visible(ui.button));
 });

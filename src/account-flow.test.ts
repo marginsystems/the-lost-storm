@@ -268,6 +268,40 @@ void test('the button keeps saying Signing in from the token until the page relo
   assert.equal(refused.flow.ask(), true);
 });
 
+void test('a Google answer that arrives while an email code is being checked puts the button back, so it never stays on Signing in', async (): Promise<void> => {
+  const both: AccountState = { kind: 'guest', google: { clientId: 'client-1' }, email: { siteKey: '0x4AAA' } };
+  const token = stage({ initial: both, verify: { kind: 'wrong', attemptsLeft: 2 } });
+  await token.flow.start();
+  token.flow.ask();
+  const checking: Promise<EmailVerifyResult> = token.flow.verifyEmailCode('ada@example.com', '123456');
+  token.buttons[0]?.press('late-token');
+  await checking;
+  await settle();
+  assert.equal(token.signing.at(-1), 'idle');
+  assert.deepEqual(token.credentials, []);
+  assert.equal(token.flow.ask(), true);
+  const closed = stage({ initial: both, verify: { kind: 'wrong', attemptsLeft: 2 } });
+  await closed.flow.start();
+  closed.flow.ask();
+  const again: Promise<EmailVerifyResult> = closed.flow.verifyEmailCode('ada@example.com', '123456');
+  const before: number = closed.shown.length;
+  closed.buttons[0]?.end('failed');
+  assert.equal(closed.signing.at(-1), 'idle');
+  assert.equal(closed.shown.length, before);
+  await again;
+});
+
+void test('a window that reports closing after its token was taken does not undo Signing in', async (): Promise<void> => {
+  const held = stage({ initial: GUEST });
+  await held.flow.start();
+  held.flow.ask();
+  held.buttons[0]?.press('token');
+  held.buttons[0]?.end('closed');
+  assert.equal(held.signing.at(-1), 'exchanging');
+  await settle();
+  assert.equal(held.reloads(), 1);
+});
+
 void test('a signed-in player or a hidden control has no button to press', async (): Promise<void> => {
   const signedIn = stage({ initial: { kind: 'signed-in', method: 'google', name: 'Ada' } });
   await signedIn.flow.start();

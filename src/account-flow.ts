@@ -51,6 +51,7 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
   let retries: number = 0;
   let cancelRetry: (() => void) | null = null;
   let offered: boolean = false;
+  let exchanging: boolean = false;
 
   const hold = (next: boolean): void => {
     busy = next;
@@ -96,8 +97,12 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
   };
 
   const exchange = async (accessToken: string): Promise<void> => {
-    if (busy) return;
+    if (busy) {
+      view.signingIn('idle');
+      return;
+    }
     hold(true);
+    exchanging = true;
     view.signingIn('exchanging');
     beforeSignIn();
     const result: SignInResult = await account.signIn(accessToken);
@@ -105,6 +110,7 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
       reload();
       return;
     }
+    exchanging = false;
     hold(false);
     retries = 0;
     await present(result.state, ACCOUNT_NOTES.failed);
@@ -115,9 +121,9 @@ export function createAccountFlow(options: AccountFlowOptions): AccountFlow {
   }
 
   function onEnd(end: AskEnd): void {
-    if (busy) return;
+    if (exchanging) return;
     view.signingIn('idle');
-    if (end === 'closed') return;
+    if (busy || end === 'closed') return;
     view.show(viewOf(current, offered), end === 'blocked' ? ACCOUNT_NOTES.blocked : ACCOUNT_NOTES.failed);
   }
 

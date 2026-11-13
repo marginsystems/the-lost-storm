@@ -9,6 +9,7 @@ export type AccountView =
 export interface AccountPart {
   textContent: string | null;
   toggleAttribute(name: string, force: boolean): boolean;
+  setAttribute(name: string, value: string): void;
 }
 
 export interface AccountRoot {
@@ -69,7 +70,7 @@ export function createTitleAccount(parts: TitleAccountParts, timers: Timers): Ti
   return {
     signingIn(state: SigningIn): void {
       parts.button.toggleAttribute(TITLE_ACCOUNT.busyAttribute, state !== 'idle');
-      parts.button.toggleAttribute('aria-busy', state !== 'idle');
+      parts.button.setAttribute('aria-busy', state === 'idle' ? 'false' : 'true');
       parts.button.toggleAttribute('disabled', state === 'exchanging');
     },
     show(view: AccountView, note: string): void {
