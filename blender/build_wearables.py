@@ -9,7 +9,7 @@ from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from wearable_fit import SKELETONS, SourceSkeleton, Span, inflate, keep_below, refit, simplify, trim_faces
+from wearable_fit import SKELETONS, Shade, SourceSkeleton, Span, inflate, keep_below, paint_shade, refit, shade_under, simplify, trim_faces
 from wearable_makehuman import Garment
 from wearable_makehuman import load as load_makehuman
 from wearable_makehuman import load_body
@@ -50,6 +50,8 @@ class Part:
     luma: float | None
     cutout: bool
     keep_below: float | None
+    scalp: str | None
+    scalp_shade: Shade | None
 
 
 def read_span(raw: object) -> Span | None:
@@ -83,6 +85,8 @@ def read_part(raw: dict[str, object]) -> Part:
         luma=None if raw.get("luma") is None else float(raw["luma"]),
         cutout=bool(raw.get("cutout", False)),
         keep_below=None if raw.get("keepBelow") is None else float(raw["keepBelow"]),
+        scalp=None if raw.get("scalp") is None else str(raw["scalp"]["hair"]),
+        scalp_shade=None if raw.get("scalp") is None else Shade(float(raw["scalp"]["depth"]), float(raw["scalp"]["reach"]), float(raw["scalp"]["soft"])),
     )
 
 
@@ -145,7 +149,7 @@ def bind(obj: Object, rig: Object, name: str) -> None:
     modifier.object = rig
 
 
-def export(objects: list[Object], rig: Object, path: Path) -> None:
+def export(objects: list[Object], rig: Object, path: Path, colors: bool) -> None:
     bpy.ops.object.select_all(action="DESELECT")
     for obj in objects:
         obj.select_set(True)
@@ -160,7 +164,7 @@ def export(objects: list[Object], rig: Object, path: Path) -> None:
         export_yup=True,
         export_apply=False,
         export_tangents=False,
-        export_vertex_color="NONE",
+        export_vertex_color="ACTIVE" if colors else "NONE",
         export_image_format="WEBP",
         export_image_quality=WEBP_QUALITY,
     )
@@ -205,6 +209,10 @@ def load_garment(part: Part, pack: Pack) -> list[Source]:
         return [Source(garment.obj, garment.heads, garment.images, makehuman_skeleton(), [], part.texture_size, part.id)]
     body: Garment = load_body(part.id, pack.root / part.file, pack.rig_root, part.shape)
     trim_faces(body.obj, part.id, (), None)
+    if part.scalp is not None and part.scalp_shade is not None:
+        hair: Garment = load_makehuman(f"{part.id}_scalp", pack.root / part.scalp, pack.rig_root, part.shape)
+        shade_under(body.obj, hair.obj, part.scalp_shade)
+        bpy.data.objects.remove(hair.obj)
     made: list[Source] = [Source(body.obj, body.heads, body.images, makehuman_skeleton(), [], part.texture_size, part.id)]
     if part.eyes is not None:
         name: str = f"{part.id}{EYE_SUFFIX}"
@@ -229,6 +237,7 @@ def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path)
         inflate(source.obj, part.inflate)
         simplify(source.obj, part.decimate if source.name == part.id else 1.0)
         retexture(source.obj, source.name, source.size, source.images, scratch, part.desaturate, part.luma if source.name == part.id else None, part.cutout and source.name == part.id)
+        paint_shade(source.obj)
         bind(source.obj, rig, source.name)
         for name in source.leftovers:
             leftover: Object | None = bpy.data.objects.get(name)
@@ -236,7 +245,7 @@ def build_part(part: Part, pack: Pack, rig_path: Path, out: Path, scratch: Path)
                 bpy.data.objects.remove(leftover)
     obj: Object = sources[0].obj
     path: Path = out / f"{part.id}.glb"
-    export([source.obj for source in sources], rig, path)
+    export([source.obj for source in sources], rig, path, part.scalp is not None)
     triangles: int = sum(len(polygon.vertices) - 2 for polygon in obj.data.polygons)
     print(f"WEARABLE {part.id} vertices={len(obj.data.vertices)} triangles={triangles} bytes={path.stat().st_size}")
 
