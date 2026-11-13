@@ -44,6 +44,7 @@ export const LOBBY_STAGE = {
   shadowRadius: 5,
   shadowBias: -0.0004,
   shadowNormalBias: 0.02,
+  rimShadowNormalBias: 0,
   shadowNear: 2,
   shadowFar: 12,
   rimColor: 0x7d93c4,
@@ -281,6 +282,16 @@ function take(event: Event): void {
   event.stopImmediatePropagation();
 }
 
+function castShadow(light: SpotLight, normalBias: number): void {
+  light.castShadow = true;
+  light.shadow.mapSize.set(LOBBY_STAGE.shadowSize, LOBBY_STAGE.shadowSize);
+  light.shadow.radius = LOBBY_STAGE.shadowRadius;
+  light.shadow.bias = LOBBY_STAGE.shadowBias;
+  light.shadow.normalBias = normalBias;
+  light.shadow.camera.near = LOBBY_STAGE.shadowNear;
+  light.shadow.camera.far = LOBBY_STAGE.shadowFar;
+}
+
 export function createLobbyStage(content: Content, library: CharacterLibrary, loader: GLTFLoader, random: () => number = Math.random): LobbyStage {
   const scene: Scene = new Scene();
   scene.background = new Color(LOBBY_STAGE.background);
@@ -295,18 +306,13 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   const key: SpotLight = new SpotLight(LOBBY_STAGE.keyColor, LOBBY_STAGE.keyIntensity, 0, LOBBY_STAGE.keyAngle, LOBBY_STAGE.keyPenumbra, 0);
   key.position.set(LOBBY_STAGE.keyAt[0], LOBBY_STAGE.keyAt[1], LOBBY_STAGE.keyAt[2]);
   key.target.position.set(LOBBY_STAGE.keyAim[0], LOBBY_STAGE.keyAim[1], LOBBY_STAGE.keyAim[2]);
-  key.castShadow = true;
-  key.shadow.mapSize.set(LOBBY_STAGE.shadowSize, LOBBY_STAGE.shadowSize);
-  key.shadow.radius = LOBBY_STAGE.shadowRadius;
-  key.shadow.bias = LOBBY_STAGE.shadowBias;
-  key.shadow.normalBias = LOBBY_STAGE.shadowNormalBias;
-  key.shadow.camera.near = LOBBY_STAGE.shadowNear;
-  key.shadow.camera.far = LOBBY_STAGE.shadowFar;
+  castShadow(key, LOBBY_STAGE.shadowNormalBias);
   scene.add(key);
   scene.add(key.target);
   const rim: SpotLight = new SpotLight(LOBBY_STAGE.rimColor, LOBBY_STAGE.rimIntensity, 0, LOBBY_STAGE.rimAngle, LOBBY_STAGE.rimPenumbra, 0);
   rim.position.set(LOBBY_STAGE.rimAt[0], LOBBY_STAGE.rimAt[1], LOBBY_STAGE.rimAt[2]);
   rim.target.position.set(LOBBY_STAGE.rimAim[0], LOBBY_STAGE.rimAim[1], LOBBY_STAGE.rimAim[2]);
+  castShadow(rim, LOBBY_STAGE.rimShadowNormalBias);
   scene.add(rim);
   scene.add(rim.target);
   const pool: SpotLight = new SpotLight(LOBBY_STAGE.poolColor, LOBBY_STAGE.poolIntensity, 0, LOBBY_STAGE.poolAngle, LOBBY_STAGE.poolPenumbra, 0);
