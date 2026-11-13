@@ -56,6 +56,17 @@ export function sharpenTextures(root: Object3D, anisotropy: number): void {
   });
 }
 
+export interface Retiring {
+  readonly passes: readonly { dispose(): void }[];
+  dispose(): void;
+}
+
+export function retire(old: Retiring | null): void {
+  if (old === null) return;
+  for (const pass of old.passes) pass.dispose();
+  old.dispose();
+}
+
 export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camera: Camera): LobbyPipeline {
   let composer: EffectComposer | null = null;
   let builtSamples: number = -1;
@@ -66,7 +77,7 @@ export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camer
   const drawn: Vector2 = new Vector2();
 
   const build = (samples: number, bloom: LobbyBloom | null): EffectComposer => {
-    composer?.dispose();
+    retire(composer);
     const made: EffectComposer = new EffectComposer(renderer, new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples }));
     made.addPass(new RenderPass(scene, camera));
     if (bloom !== null) made.addPass(new UnrealBloomPass(new Vector2(1, 1), bloom.strength, bloom.radius, bloom.threshold));

@@ -3,7 +3,7 @@ import { Mesh, MeshStandardMaterial } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, PropDef } from '../../sim/content/types.ts';
 import { loadModel } from '../render/character-loader.ts';
-import { rockHeight } from './lobby-ground.ts';
+import { groundHeight, rockHeight } from './lobby-ground.ts';
 import { lookOf, withPropLook } from '../render/prop-surface.ts';
 import type { PropLook } from '../render/prop-surface.ts';
 import { dressedProp } from '../render/surfaces.ts';
@@ -17,8 +17,8 @@ export interface LobbyRock {
   readonly size: number;
 }
 
-export const LOBBY_SCENERY: { readonly dressing: PropDressing; readonly stone: string; readonly shade: number; readonly rocks: readonly LobbyRock[] } = {
-  dressing: { wet: 0.18, ground: 0 },
+export const LOBBY_SCENERY: { readonly wet: number; readonly stone: string; readonly shade: number; readonly rocks: readonly LobbyRock[] } = {
+  wet: 0.18,
   stone: 'black_rock',
   shade: 0.6,
   rocks: [
@@ -32,8 +32,12 @@ export const LOBBY_SCENERY: { readonly dressing: PropDressing; readonly stone: s
   ],
 };
 
-function dress(content: Content, material: Material): Material {
-  const made: Material = dressedProp(content, { [material.name]: LOBBY_SCENERY.stone }, material, LOBBY_SCENERY.dressing);
+export function rockDressing(rock: LobbyRock, rocks: readonly LobbyRock[]): PropDressing {
+  return { wet: LOBBY_SCENERY.wet, ground: groundHeight(rock.x, rock.z, rocks) };
+}
+
+function dress(content: Content, material: Material, dressing: PropDressing): Material {
+  const made: Material = dressedProp(content, { [material.name]: LOBBY_SCENERY.stone }, material, dressing);
   if (!(made instanceof MeshStandardMaterial)) return made;
   const look: PropLook | undefined = lookOf(made);
   const own: MeshStandardMaterial = look === undefined ? made.clone() : withPropLook(made.clone(), look);
@@ -43,10 +47,11 @@ function dress(content: Content, material: Material): Material {
 
 function placed(content: Content, def: PropDef, gltf: GLTF, rock: LobbyRock): Object3D {
   const copy: Object3D = gltf.scene.clone(true);
+  const dressing: PropDressing = rockDressing(rock, LOBBY_SCENERY.rocks);
   copy.traverse((node: Object3D): void => {
     if (!(node instanceof Mesh)) return;
     const material: unknown = node.material;
-    if (material instanceof MeshStandardMaterial) node.material = dress(content, material);
+    if (material instanceof MeshStandardMaterial) node.material = dress(content, material, dressing);
     node.castShadow = true;
     node.receiveShadow = true;
   });
