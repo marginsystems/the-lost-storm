@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, ShaderLib, Vector3 } from 'three';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { CutSpring } from './prop-cutaway.ts';
-import { aimCutaway, CUTAWAY, CUTAWAY_UNIFORMS, heroBehind, isTall, patchCutawayShader, setOccluders, springCut, withCutaway } from './prop-cutaway.ts';
+import { aimCutaway, CUTAWAY, CUTAWAY_UNIFORMS, ghostKeep, heroBehind, isTall, patchCutawayShader, setOccluders, springCut, windowMetres, withCutaway } from './prop-cutaway.ts';
 
 function rock(x: number, z: number, height: number): Mesh {
   const mesh: Mesh = new Mesh(new BoxGeometry(2, height, 2), new MeshStandardMaterial());
@@ -92,4 +92,17 @@ void test('aiming at a hero in the middle of the view puts the cutaway in the mi
   for (let frame: number = 0; frame < 30; frame += 1) aimCutaway(camera, 0, 0, 1600, 800, 1 / 60);
   assert.ok(cutLevel() > 0.5);
   setOccluders([]);
+});
+
+void test('a prop narrower than the window keeps a faint ghost through its core, and a wide prop opens fully', (): void => {
+  assert.equal(ghostKeep(1.6, 3), CUTAWAY.ghost);
+  assert.equal(ghostKeep(6, 3), 0);
+  assert.equal(ghostKeep(Infinity, 3), 0);
+  const camera: PerspectiveCamera = new PerspectiveCamera(30, 2, 1, 220);
+  assert.ok(Math.abs(windowMetres(camera, 20) - (4 * CUTAWAY.radius * 20 * Math.tan(Math.PI / 12)) / CUTAWAY.narrow) < 1e-9);
+  const shader: { fragmentShader: string; uniforms: Record<string, { value: unknown }> } = { fragmentShader: ShaderLib.physical.fragmentShader, uniforms: {} };
+  const keep = { value: 0.2 };
+  patchCutawayShader(shader, keep);
+  assert.equal(shader.uniforms['uCutKeep'], keep);
+  assert.match(shader.fragmentShader, /uniform float uCutKeep;/);
 });

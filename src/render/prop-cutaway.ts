@@ -4,12 +4,13 @@ import { Matrix4, MeshStandardMaterial, Raycaster, Vector2, Vector3 } from 'thre
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 
 export const CUTAWAY = {
-  radius: 0.075,
-  narrow: 1.5,
-  deepest: 0.9,
+  radius: 0.115,
+  narrow: 1.2,
+  deepest: 1,
+  ghost: 0.2,
   waist: 0.95,
   waistFeather: 0.45,
-  feather: 0.85,
+  feather: 0.55,
   margin: 0.6,
   depthFeather: 1.2,
   heroHeight: 1,
@@ -21,7 +22,7 @@ export const CUTAWAY = {
   damping: 18,
   rest: 0.002,
   longestStep: 1 / 30,
-  ditherLift: 0.03,
+  ditherLift: 0,
 } as const;
 
 export interface CutawayUniforms {
@@ -82,35 +83,57 @@ export function cutawayChunk(): string {
     `float cutRing = 1.0 - smoothstep( uCutRadius * ${(1 - CUTAWAY.feather).toFixed(3)}, uCutRadius, length( ( gl_FragCoord.xy - uCutCentre ) * vec2( ${CUTAWAY.narrow.toFixed(3)}, 1.0 ) ) );`,
     `float cutFront = 1.0 - smoothstep( uCutDepth - ${(CUTAWAY.margin + CUTAWAY.depthFeather).toFixed(3)}, uCutDepth - ${CUTAWAY.margin.toFixed(3)}, vViewPosition.z );`,
     `float cutHigh = smoothstep( ${CUTAWAY.waist.toFixed(3)}, ${(CUTAWAY.waist + CUTAWAY.waistFeather).toFixed(3)}, ( uCutWorld * vec4( -vViewPosition, 1.0 ) ).y );`,
-    'vec2 cutCell = floor( gl_FragCoord.xy );',
-    'float cutHalf = fract( dot( floor( cutCell * 0.5 ), vec2( 0.5, floor( cutCell.y * 0.5 ) * 0.75 ) ) );',
-    'float cutWhole = fract( dot( cutCell, vec2( 0.5, cutCell.y * 0.75 ) ) );',
-    'float cutDither = cutHalf * 0.25 + cutWhole;',
-    `if ( cutRing * cutFront * cutHigh * uCutLevel * ${CUTAWAY.deepest.toFixed(3)} > cutDither + ${CUTAWAY.ditherLift.toFixed(3)} ) discard;`,
+    'uvec2 cutPixel = uvec2( gl_FragCoord.xy );',
+    'uint cutHash = cutPixel.x * 1664525u + cutPixel.y * 1013904223u;',
+    'cutHash ^= cutHash >> 16u;',
+    'cutHash *= 2246822519u;',
+    'cutHash ^= cutHash >> 13u;',
+    'cutHash *= 3266489917u;',
+    'cutHash ^= cutHash >> 16u;',
+    'float cutDither = float( cutHash >> 8u ) / 16777216.0;',
+    `if ( cutRing * cutFront * cutHigh * uCutLevel * ( ${CUTAWAY.deepest.toFixed(3)} - uCutKeep ) > cutDither + ${CUTAWAY.ditherLift.toFixed(3)} ) discard;`,
   ].join('\n');
 }
 
 const patched: WeakSet<Material> = new WeakSet<Material>();
 
-export function patchCutawayShader(shader: Pick<WebGLProgramParametersWithUniforms, 'fragmentShader' | 'uniforms'>): void {
+export function patchCutawayShader(shader: Pick<WebGLProgramParametersWithUniforms, 'fragmentShader' | 'uniforms'>, keep: IUniform<number> = { value: 0 }): void {
+  shader.uniforms['uCutKeep'] = keep;
   shader.uniforms['uCutCentre'] = CUTAWAY_UNIFORMS.uCutCentre;
   shader.uniforms['uCutRadius'] = CUTAWAY_UNIFORMS.uCutRadius;
   shader.uniforms['uCutDepth'] = CUTAWAY_UNIFORMS.uCutDepth;
   shader.uniforms['uCutLevel'] = CUTAWAY_UNIFORMS.uCutLevel;
   shader.uniforms['uCutWorld'] = CUTAWAY_UNIFORMS.uCutWorld;
   shader.fragmentShader = shader.fragmentShader
-    .replace('void main() {', 'uniform vec2 uCutCentre;\nuniform float uCutRadius;\nuniform float uCutDepth;\nuniform float uCutLevel;\nuniform mat4 uCutWorld;\nvoid main() {')
+    .replace('void main() {', 'uniform vec2 uCutCentre;\nuniform float uCutRadius;\nuniform float uCutDepth;\nuniform float uCutLevel;\nuniform mat4 uCutWorld;\nuniform float uCutKeep;\nvoid main() {')
     .replace('#include <dithering_fragment>', `#include <dithering_fragment>\n${cutawayChunk()}`);
 }
 
-export function withCutaway(material: Material): Material {
+interface Ghost {
+  readonly keep: IUniform<number>;
+  readonly width: number;
+}
+
+let ghosts: Ghost[] = [];
+
+export function ghostKeep(propWidth: number, windowWidth: number): number {
+  return propWidth < windowWidth ? CUTAWAY.ghost : 0;
+}
+
+export function windowMetres(camera: PerspectiveCamera, depth: number): number {
+  return (2 * CUTAWAY.radius * depth * Math.tan((camera.fov * Math.PI) / 360) * 2) / CUTAWAY.narrow;
+}
+
+export function withCutaway(material: Material, width: number = Infinity): Material {
   if (!(material instanceof MeshStandardMaterial) || patched.has(material)) return material;
   patched.add(material);
+  const keep: IUniform<number> = { value: 0 };
+  ghosts.push({ keep, width });
   const before: MeshStandardMaterial['onBeforeCompile'] = material.onBeforeCompile.bind(material);
   const key: string = material.customProgramCacheKey();
   material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms, renderer: WebGLRenderer): void => {
     before(shader, renderer);
-    patchCutawayShader(shader);
+    patchCutawayShader(shader, keep);
   };
   material.customProgramCacheKey = (): string => `${key}|cutaway`;
   return material;
@@ -130,6 +153,11 @@ export function setOccluders(list: readonly Object3D[]): void {
   occluders = list;
 }
 
+export function resetCutaway(): void {
+  occluders = [];
+  ghosts = [];
+}
+
 export function aimCutaway(camera: PerspectiveCamera, heroX: number, heroZ: number, width: number, height: number, dt: number): void {
   camera.updateMatrixWorld();
   camera.getWorldPosition(eye);
@@ -142,4 +170,6 @@ export function aimCutaway(camera: PerspectiveCamera, heroX: number, heroZ: numb
   CUTAWAY_UNIFORMS.uCutCentre.value.set((heroPoint.x * 0.5 + 0.5) * width, (heroPoint.y * 0.5 + 0.5) * height);
   CUTAWAY_UNIFORMS.uCutRadius.value = CUTAWAY.radius * height;
   CUTAWAY_UNIFORMS.uCutDepth.value = -viewPoint.z;
+  const across: number = windowMetres(camera, -viewPoint.z);
+  for (const ghost of ghosts) ghost.keep.value = ghostKeep(ghost.width, across);
 }
