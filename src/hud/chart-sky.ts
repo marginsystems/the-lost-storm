@@ -5,9 +5,18 @@ export const CHART_SKY = {
   resolution: 0.75,
   maxArms: 8,
   sway: 0.018,
-  swayPeriods: 9,
-  flow: 0.035,
   fallbackDriftMs: 5200,
+  swayDrifts: 46,
+  flowPerDrift: 0.009,
+  warpRateA: 0.011,
+  warpRateB: 0.0083,
+  warpScale: 0.4,
+  warpDepth: 0.9,
+  armWarp: 0.5,
+  breathRateA: 0.0099,
+  breathRateB: 0.014,
+  breathScale: 0.28,
+  breathDepth: 0.16,
   coreRadius: 1.35,
   coreGlow: 0.85,
   armContinuity: 0.62,
@@ -37,8 +46,34 @@ export interface SkyView {
   readonly scale: number;
 }
 
+export interface SkyMotion {
+  readonly flow: number;
+  readonly sway: number;
+  readonly warpX: number;
+  readonly warpY: number;
+  readonly breathX: number;
+  readonly breathY: number;
+}
+
 export interface ChartSky {
   draw(view: SkyView, seconds: number): void;
+}
+
+export function skyMotion(seconds: number, drift: number): SkyMotion {
+  const drifts: number = seconds / drift;
+  return {
+    flow: drifts * CHART_SKY.flowPerDrift,
+    sway: Math.sin((drifts / CHART_SKY.swayDrifts) * Math.PI * 2) * CHART_SKY.sway,
+    warpX: drifts * CHART_SKY.warpRateA,
+    warpY: drifts * CHART_SKY.warpRateB,
+    breathX: drifts * CHART_SKY.breathRateA,
+    breathY: drifts * CHART_SKY.breathRateB,
+  };
+}
+
+function driftSeconds(host: HTMLElement): number {
+  const value: number = Number.parseFloat(getComputedStyle(host).getPropertyValue('--drift-ms'));
+  return (Number.isFinite(value) && value > 0 ? value : CHART_SKY.fallbackDriftMs) / 1000;
 }
 
 const VERTEX: string = `#version 300 es
@@ -59,6 +94,8 @@ uniform float unit;
 uniform float twist;
 uniform float flow;
 uniform float sway;
+uniform vec2 warpShift;
+uniform vec2 breathShift;
 uniform int count;
 uniform vec2 arms[${CHART_SKY.maxArms}];
 uniform vec3 tints[${CHART_SKY.maxArms}];
@@ -106,11 +143,14 @@ void main() {
 
   vec2 swirl = untwist(c, r);
   vec2 drift = vec2(-flow, flow * 0.6);
-  float billow = fbm(swirl * 0.55 + drift);
+  vec2 gas = vec2(noise(swirl * ${CHART_SKY.warpScale} + warpShift), noise(swirl * ${CHART_SKY.warpScale} + warpShift.yx + 31.7)) - 0.5;
+  float breath = 1.0 + ${CHART_SKY.breathDepth} * (noise(swirl * ${CHART_SKY.breathScale} + breathShift) * 2.0 - 1.0);
+  vec2 warped = swirl + gas * ${CHART_SKY.warpDepth};
+  float billow = fbm(warped * 0.55 + drift);
   vec2 heading = swirl / max(r, 0.001);
-  float streak = fbm(vec2(r * 0.3 - flow * 1.4, 0.0) + heading * 5.5);
+  float streak = fbm(vec2(r * 0.3 - flow * 1.4, 0.0) + heading * 5.5 + gas * ${CHART_SKY.warpDepth});
   float body = mix(billow, streak, 0.45);
-  float lit = fbm(swirl * 0.55 + drift + vec2(0.09, -0.12));
+  float lit = fbm(warped * 0.55 + drift + vec2(0.09, -0.12));
   float eyeClear = mix(0.35, 1.0, smoothstep(0.2, 1.6, r));
 
   float cloud = 0.0;
@@ -123,7 +163,7 @@ void main() {
     float rch = arms[i].y;
     float t = clamp(r / (rch * 1.2), 0.0, 1.0);
     float hw = mix(3.6, 0.42, pow(t, 1.3));
-    float d = wrapAngle(th - arms[i].x - twist * r - sway) * max(r, 0.35);
+    float d = wrapAngle(th - arms[i].x - twist * r - sway) * max(r, 0.35) + gas.x * hw * ${CHART_SKY.armWarp};
     float q = abs(d) / hw + (body - 0.5) * ${CHART_SKY.armContinuity};
     float tail = 1.0 - smoothstep(rch * 0.8, rch * 1.3, r);
     float band = max(1.0 - smoothstep(0.2, 1.0, q), (1.0 - smoothstep(0.4, 2.4, q)) * 0.35) * tail;
@@ -147,7 +187,7 @@ void main() {
   float fine = fbm(swirl * 2.6 + drift * 2.0);
   lightCloud *= mix(1.4, 1.05, smoothstep(1.2, 8.0, r));
   lightCloud *= 1.0 - dust * ${CHART_SKY.dustDepth} * (0.45 + 0.55 * fine);
-  float alpha = clamp(cloud * (0.4 + 0.38 * body), 0.0, 0.76);
+  float alpha = clamp(cloud * (0.4 + 0.38 * body) * breath, 0.0, 0.76);
   lightCloud *= alpha;
   vec2 tilted = mat2(cos(${CHART_SKY.coreTilt}), sin(${CHART_SKY.coreTilt}), -sin(${CHART_SKY.coreTilt}), cos(${CHART_SKY.coreTilt})) * c;
   float er = length(vec2(tilted.x, tilted.y * ${CHART_SKY.coreStretch})) / ${CHART_SKY.coreRadius};
@@ -188,11 +228,6 @@ function link(gl: WebGL2RenderingContext): WebGLProgram | null {
   return gl.getProgramParameter(program, gl.LINK_STATUS) === true ? program : null;
 }
 
-function driftSeconds(host: HTMLElement): number {
-  const value: number = Number.parseFloat(getComputedStyle(host).getPropertyValue('--drift-ms'));
-  return (Number.isFinite(value) && value > 0 ? value : CHART_SKY.fallbackDriftMs) / 1000;
-}
-
 export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | null {
   const canvas: HTMLCanvasElement = document.createElement('canvas');
   canvas.className = 'chart-sky';
@@ -216,8 +251,8 @@ export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | n
   gl.uniform2f(at('eye'), shape.eyeX, shape.eyeY);
   gl.uniform1f(at('unit'), shape.unit);
   gl.uniform1f(at('twist'), shape.twist);
+  const drift: number = driftSeconds(host);
   const still: MediaQueryList = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const period: number = driftSeconds(host) * CHART_SKY.swayPeriods;
   let drawn: string = '';
   return {
     draw(view: SkyView, seconds: number): void {
@@ -238,8 +273,11 @@ export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | n
       gl.uniform1f(at('density'), density);
       gl.uniform2f(at('origin'), view.cornerX, view.cornerY);
       gl.uniform1f(at('zoom'), view.scale);
-      gl.uniform1f(at('flow'), (time / period) * CHART_SKY.flow * CHART_SKY.swayPeriods);
-      gl.uniform1f(at('sway'), Math.sin((time / period) * Math.PI * 2) * CHART_SKY.sway);
+      const motion: SkyMotion = skyMotion(time, drift);
+      gl.uniform1f(at('flow'), motion.flow);
+      gl.uniform1f(at('sway'), motion.sway);
+      gl.uniform2f(at('warpShift'), motion.warpX, motion.warpY);
+      gl.uniform2f(at('breathShift'), motion.breathX, motion.breathY);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
   };
