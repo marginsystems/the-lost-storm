@@ -8,7 +8,7 @@ import { blockerGap, isWalkable } from '../nav/grid.ts';
 import type { Blocker } from '../nav/grid.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { createWorld } from './create.ts';
-import { momentBlockers, momentFootprint, tallBlockers } from './moment-ground.ts';
+import { inSight, MOMENT_GROUND, momentBlockers, momentFootprint, tallBlockers } from './moment-ground.ts';
 import { clearMoments, forceStrike, stepMoments } from './moments.ts';
 import { setFlags } from './story.ts';
 import { stepWorld } from './step.ts';
@@ -82,4 +82,63 @@ void test('no strike lands with its bubble or its props over a prop of 1.5 m or 
   }
   assert.ok(placed >= SITES.seeds * SITES.rounds / 2, `only ${placed} strikes landed`);
   assert.deepEqual(overlaps, []);
+});
+
+const SIGHT = { seeds: 2, lattice: 2, sample: 0.1, landed: 0.8, side: 5 } as const;
+
+function sightGap(tall: readonly Blocker[], from: Vec2, to: Vec2): number {
+  const span: number = distance(from, to);
+  let gap: number = Infinity;
+  for (let along: number = MOMENT_GROUND.sightFrom; along <= span; along += SIGHT.sample) {
+    const x: number = from.x + ((to.x - from.x) * along) / span;
+    const z: number = from.z + ((to.z - from.z) * along) / span;
+    for (const blocker of tall) gap = Math.min(gap, blockerGap(blocker, x, z));
+  }
+  return gap;
+}
+
+void test('wherever the hero stands when a first moment strikes beside him, no prop of 1.5 m or taller stands between him and the bubble centre', (): void => {
+  const content: Content = loadContent();
+  const hidden: string[] = [];
+  let spots: number = 0;
+  let placed: number = 0;
+  for (const [zoneId, zone] of content.zones) {
+    if (zone.moments === null || zone.moments.near === null) continue;
+    for (let seed: number = 1; seed <= SIGHT.seeds; seed += 1) {
+      const world: World = worldIn(content, zoneId, seed);
+      world.monsters = [];
+      const tall: Blocker[] = tallBlockers(world);
+      const width: number = world.grid.columns * world.grid.cellSize;
+      const depth: number = world.grid.rows * world.grid.cellSize;
+      for (let x: number = 0; x <= width; x += SIGHT.lattice) {
+        for (let z: number = 0; z <= depth; z += SIGHT.lattice) {
+          if (!isWalkable(world.grid, x, z)) continue;
+          spots += 1;
+          world.player.pos = { x, z };
+          clearMoments(world);
+          world.strikeTimer = 0;
+          stepMoments(world, SITES.tick);
+          const moment: MomentState | undefined = world.moments[0];
+          if (moment === undefined) continue;
+          placed += 1;
+          const gap: number = sightGap(tall, world.player.pos, moment.pos);
+          if (gap < MOMENT_GROUND.sightMargin) hidden.push(`${zoneId} seed ${seed}: hero (${x}, ${z}) to ${moment.def.id} at (${moment.pos.x.toFixed(1)}, ${moment.pos.z.toFixed(1)}) passes ${gap.toFixed(2)} m from a tall prop`);
+        }
+      }
+    }
+  }
+  assert.ok(spots > 0);
+  assert.ok(placed >= spots * SIGHT.landed, `${placed} of ${spots} spots got a strike`);
+  assert.deepEqual(hidden, []);
+});
+
+void test('the sight line to a strike is blocked by a tall prop that stands across it', (): void => {
+  const { world } = hallWorld();
+  const tall: Blocker[] = tallBlockers(world);
+  assert.ok(tall.length > 0);
+  for (const blocker of tall) {
+    const points: readonly Vec2[] = blocker.kind === 'capsule' ? [blocker.from, blocker.to] : blocker.outline;
+    const centre: Vec2 = { x: points.reduce((sum: number, point: Vec2): number => sum + point.x, 0) / points.length, z: points.reduce((sum: number, point: Vec2): number => sum + point.z, 0) / points.length };
+    assert.equal(inSight(world, { x: centre.x - SIGHT.side, z: centre.z }, { x: centre.x + SIGHT.side, z: centre.z }), false, `(${centre.x.toFixed(1)}, ${centre.z.toFixed(1)})`);
+  }
 });

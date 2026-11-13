@@ -8,7 +8,7 @@ import { pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
 import { grantXp, killXp } from './character.ts';
 import { dropOnGround } from './ground.ts';
-import { clearOfTallProps, lowerProps, raiseProps, standClear } from './moment-ground.ts';
+import { clearOfTallProps, inSight, lowerProps, raiseProps, standClear } from './moment-ground.ts';
 import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
 import type { EchoState, ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, NpcState, ProjectileState, World } from './types.ts';
@@ -114,7 +114,7 @@ function clear(world: World, field: MomentField, def: MomentDef, pos: Vec2): boo
 }
 
 function clearNear(world: World, field: MomentField, def: MomentDef, pos: Vec2): boolean {
-  return roomFor(world, field, def, pos) && lineWalkable(world.grid, world.player.pos, pos);
+  return roomFor(world, field, def, pos) && lineWalkable(world.grid, world.player.pos, pos) && inSight(world, world.player.pos, pos);
 }
 
 function sureHolds(world: World, field: MomentField | null): boolean {

@@ -10,6 +10,9 @@ import type { Actor, MomentState, World } from './types.ts';
 export const MOMENT_GROUND = {
   shoveReach: 6,
   tallProp: 1.5,
+  sightMargin: 1,
+  sightFrom: 1,
+  sightStep: 0.25,
 } as const;
 
 function propExtent(def: PropDef): number {
@@ -39,6 +42,18 @@ export function tallBlockers(world: World): Blocker[] {
 export function clearOfTallProps(world: World, def: MomentDef, pos: Vec2): boolean {
   const reach: number = momentFootprint(world, def);
   return tallBlockers(world).every((blocker: Blocker): boolean => blockerGap(blocker, pos.x, pos.z) >= reach);
+}
+
+export function inSight(world: World, from: Vec2, to: Vec2): boolean {
+  const span: number = Math.hypot(to.x - from.x, to.z - from.z);
+  const tall: Blocker[] = tallBlockers(world);
+  for (let along: number = MOMENT_GROUND.sightFrom; along < span + MOMENT_GROUND.sightStep; along += MOMENT_GROUND.sightStep) {
+    const share: number = Math.min(1, along / span);
+    const x: number = from.x + (to.x - from.x) * share;
+    const z: number = from.z + (to.z - from.z) * share;
+    if (tall.some((blocker: Blocker): boolean => blockerGap(blocker, x, z) < MOMENT_GROUND.sightMargin)) return false;
+  }
+  return true;
 }
 
 export function momentBlockers(world: World, moment: MomentState): Blocker[] {
