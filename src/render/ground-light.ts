@@ -1,16 +1,27 @@
 import type { Color, IUniform } from 'three';
-import { AdditiveBlending, DoubleSide, Mesh, NormalBlending, PlaneGeometry, ShaderMaterial } from 'three';
+import { CustomBlending, DoubleSide, Mesh, NormalBlending, OneFactor, OneMinusSrcAlphaFactor, PlaneGeometry, ShaderMaterial } from 'three';
 import type { Spring } from '../hud/character-spring.ts';
 import { springTo, stepSpring } from '../hud/character-spring.ts';
 
 export const GROUND_LIGHT = {
   reachWidths: 3.2,
   minWidth: 0.12,
-  outlineScale: 1.7,
+  outlineScale: 1.5,
   outlineSpeed: 0.18,
   insideScale: 0.55,
   insideSpeed: 0.22,
-  insideDepth: 0.35,
+  insideDepth: 0.55,
+  wobbleBoost: 1.8,
+  meanderScale: 0.45,
+  meanderSpeed: 0.12,
+  meanderShare: 0.8,
+  innerSpread: 2.2,
+  outerSpread: 0.85,
+  bandBreakScale: 2.2,
+  bandBreakSpeed: 0.15,
+  bandBreakDepth: 0.8,
+  laneBreakScale: 0.45,
+  cover: 0.45,
   laneSoftening: 0.6,
   peak: 0.95,
   height: 0.06,
@@ -113,15 +124,20 @@ export const GROUND_LIGHT_FRAGMENT: string = [
   'void main() {',
   '  float r = length(vSpot);',
   '  vec2 dir = vSpot / max(r, 0.001);',
-  `  float outline = groundFbm(dir * ${glsl(GROUND_LIGHT.outlineScale)} + vec2(uSeed, uTime * ${glsl(GROUND_LIGHT.outlineSpeed)})) - 0.5;`,
+  '  vec2 scaled = vSpot / max(uRadius, 0.5);',
+  `  float outline = groundFbm(scaled * ${glsl(GROUND_LIGHT.outlineScale)} + vec2(uSeed, uTime * ${glsl(GROUND_LIGHT.outlineSpeed)})) - 0.5;`,
   `  float inside = groundFbm(vSpot * ${glsl(GROUND_LIGHT.insideScale)} + vec2(uSeed * 1.7 + uTime * ${glsl(GROUND_LIGHT.insideSpeed)}, -uTime * ${glsl(GROUND_LIGHT.insideSpeed * 0.6)}));`,
   '  float w = max(uWidth, 0.001);',
   '  float reach = uRadius * uFront;',
-  '  float at = r + outline * uWobble;',
-  '  float across = abs(vSpot.x) + outline * uWobble;',
+  `  float meander = groundFbm(vSpot * ${glsl(GROUND_LIGHT.meanderScale)} + vec2(uSeed * 0.7, uTime * ${glsl(GROUND_LIGHT.meanderSpeed)})) - 0.5;`,
+  `  float wobble = (outline + meander * ${glsl(GROUND_LIGHT.meanderShare)}) * uWobble * ${glsl(GROUND_LIGHT.wobbleBoost)};`,
+  '  float at = r + wobble;',
+  '  float across = abs(vSpot.x) + wobble;',
   `  float along = vSpot.y + outline * uWobble * ${glsl(GROUND_LIGHT.laneSoftening)};`,
   '  float roundFill = soft(reach, w * 1.5, at) * (1.0 - soft(uInner, w, at));',
-  '  float roundBand = exp(-((at - reach) * (at - reach)) / (w * w));',
+  '  float off = at - reach;',
+  `  float spreadW = w * (off < 0.0 ? ${glsl(GROUND_LIGHT.innerSpread)} : ${glsl(GROUND_LIGHT.outerSpread)});`,
+  '  float roundBand = exp(-(off * off) / (spreadW * spreadW));',
   '  float angle = abs(atan(vSpot.x, vSpot.y));',
   '  float sector = uArc >= 6.28 ? 1.0 : soft(uArc * 0.5, w / max(r, w), angle);',
   '  float laneSide = soft(uRadius, w, across);',
@@ -129,17 +145,19 @@ export const GROUND_LIGHT_FRAGMENT: string = [
   '  float laneFill = laneSide * laneEnds;',
   '  float laneBand = exp(-((across - uRadius) * (across - uRadius)) / (w * w)) * laneEnds;',
   '  float fill = mix(roundFill * sector, laneFill, uLane);',
-  '  float band = mix(roundBand * sector, laneBand, uLane);',
+  `  vec2 breakAt = mix(scaled * ${glsl(GROUND_LIGHT.bandBreakScale)}, vec2(vSpot.y * ${glsl(GROUND_LIGHT.laneBreakScale)}, uSeed), uLane);`,
+  `  float broken = smoothstep(0.2, 0.8, groundFbm(breakAt + vec2(uSeed * 0.3, uTime * ${glsl(GROUND_LIGHT.bandBreakSpeed)})));`,
+  `  float band = mix(roundBand * sector, laneBand, uLane) * mix(1.0, broken * 1.5, ${glsl(GROUND_LIGHT.bandBreakDepth)});`,
   `  float life = 1.0 - ${glsl(GROUND_LIGHT.insideDepth)} * inside;`,
   '  float glow = max((fill * uFill + band * uBand) * life * uStrength, 0.0);',
   '  vec3 lit = uColor * glow;',
   `  lit /= max(1.0, max(lit.r, max(lit.g, lit.b)) / ${glsl(GROUND_LIGHT.peak)});`,
-  '  gl_FragColor = uShade > 0.5 ? vec4(uColor, clamp(glow, 0.0, 1.0)) : vec4(lit, 1.0);',
+  `  gl_FragColor = uShade > 0.5 ? vec4(uColor, clamp(glow, 0.0, 1.0)) : vec4(lit, clamp(glow * ${glsl(GROUND_LIGHT.cover)}, 0.0, 1.0));`,
   '}',
 ].join('\n');
 
 export function groundLightExtent(form: GroundLightForm, look: GroundLightLook): number {
-  const margin: number = Math.max(look.width, GROUND_LIGHT.minWidth) * GROUND_LIGHT.reachWidths + look.wobble;
+  const margin: number = Math.max(look.width, GROUND_LIGHT.minWidth) * GROUND_LIGHT.reachWidths + look.wobble * GROUND_LIGHT.wobbleBoost;
   const reach: number = form.kind === 'round' ? form.radius : Math.max(form.halfWidth, form.start + form.length);
   return reach + margin;
 }
@@ -165,7 +183,7 @@ export function groundLightMaterial(color: Color, form: GroundLightForm, look: G
     uFront: { value: 1 },
     uShade: { value: tone === 'shade' ? 1 : 0 },
   };
-  return new ShaderMaterial({ uniforms, vertexShader: GROUND_LIGHT_VERTEX, fragmentShader: GROUND_LIGHT_FRAGMENT, transparent: true, depthWrite: false, blending: tone === 'shade' ? NormalBlending : AdditiveBlending, side: DoubleSide });
+  return new ShaderMaterial({ uniforms, vertexShader: GROUND_LIGHT_VERTEX, fragmentShader: GROUND_LIGHT_FRAGMENT, transparent: true, depthWrite: false, blending: tone === 'shade' ? NormalBlending : CustomBlending, blendSrc: OneFactor, blendDst: OneMinusSrcAlphaFactor, side: DoubleSide });
 }
 
 function setUniform(material: ShaderMaterial, name: string, value: number): void {
