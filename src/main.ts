@@ -39,6 +39,7 @@ import type { ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
 import type { Backend, BackendState } from './backend/backend.ts';
 import { createBrowserAccount, createBrowserBackend, createBrowserMinter } from './backend/browser.ts';
+import { startHideout } from './hideout/hideout.ts';
 import type { Minter } from './backend/minter.ts';
 import { createHud } from './hud/hud.ts';
 import { findLabel } from './hud/pickup-notes.ts';
@@ -226,7 +227,6 @@ async function start(): Promise<void> {
   let markers: ZoneMarkers = createZoneMarkers(stage.scene, world.zone);
   stage.setAmbience(world.zone.ambience);
   placeLine.show(world.zone.name);
-
   const audioDef: AudioDef = loadAudio(content);
   const controls: AudioControls = createSettingsStore(browserSettingsStorage());
   const audio: AudioSystem = createAudioSystem({
@@ -340,6 +340,7 @@ async function start(): Promise<void> {
       hud.requestMap(true);
     },
   });
+  const hideout = startHideout(import.meta.env.VITE_SERVER_URL, { scene: stage.scene, library, content, feather: mobile.quality.tier.msaaSamples > 0, camera, labels: element('overlays', HTMLDivElement), loader, dresser, sight: cameraSight(stage.camera) });
   const objectiveMarker: ObjectiveMarker = createObjectiveMarker(stage.scene, camera, element('hud', HTMLDivElement));
   const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby, { isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'ladder', overlays: overlayManager });
   const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
@@ -527,6 +528,7 @@ async function start(): Promise<void> {
       }
     }
     debug.record(events);
+    hideout?.frame(dt, playing, world, transition.presenting);
     if (minter?.pump(world) === true) dirty = true;
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;

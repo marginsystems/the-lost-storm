@@ -1,0 +1,28 @@
+.player-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.player-label span {
+  display: flex;
+  align-items: center;
+  transform: translate(-50%, -100%);
+  transform-origin: 0 0;
+  padding: 2px 9px 3px;
+  border-radius: 4px;
+  background: rgba(8, 10, 16, 0.5);
+  white-space: nowrap;
+  animation: label-in var(--spring-bouncy-ms) var(--spring-bouncy) backwards;
+}
+
+.player-label b {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: #d9e6f2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}

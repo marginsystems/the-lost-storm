@@ -6,7 +6,7 @@ import type { Content, WearableDef } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import type { Look } from './wear.ts';
-import { baseLayerOf, frameOf, heldGear, heroBase, hiddenBodyParts, lookOf, wearKey, wornWearables, zoneCharacterNeeds } from './wear.ts';
+import { baseLayerOf, frameOf, heldGear, heroBase, hiddenBodyParts, lookOf, wearKey, wornBasesOf, wornWearables, zoneCharacterNeeds } from './wear.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import type { ItemSlot } from './content/types.ts';
 import type { Equipment, ItemInstance } from './world/types.ts';
@@ -203,4 +203,16 @@ void test('every human body has a base layer for its chest and legs, and a body 
 void test('the base layer is never an item, so it cannot be put in the bag, sold or dropped', (): void => {
   const layered: ReadonlySet<string> = new Set<string>([...content.baseLayers.values()].flat());
   for (const base of content.itemBases.values()) for (const id of base.wear) assert.ok(!layered.has(id), `${base.id} wears ${id}`);
+});
+
+void test('another player is dressed from base ids alone, the same as from item instances', (): void => {
+  const equipped: Equipment = starter();
+  const worn: Record<string, string> = { moon: 'ignored' };
+  for (const slot of ITEM_SLOTS) {
+    const held: ItemInstance | null = equipped[slot];
+    if (held !== null) worn[slot] = held.base;
+  }
+  const rig: string = must(content.player.heroes[0], 'hero').rig;
+  assert.deepEqual(lookOf(content, rig, heroBase(content, rig), wornBasesOf(worn)), lookOf(content, rig, heroBase(content, rig), equipped));
+  assert.deepEqual(lookOf(content, rig, heroBase(content, rig), wornBasesOf({})), lookOf(content, rig, heroBase(content, rig), emptyEquipment()));
 });

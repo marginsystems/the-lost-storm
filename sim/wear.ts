@@ -1,7 +1,20 @@
-import type { Content, ItemBaseDef, MonsterDef, NpcDef, WearableDef, WearRegion, ZoneDef } from './content/types.ts';
+import type { Content, ItemBaseDef, ItemSlot, MonsterDef, NpcDef, WearableDef, WearRegion, ZoneDef } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { heroRig } from './hero.ts';
-import type { Equipment } from './world/types.ts';
+
+export interface WornBase {
+  readonly base: string;
+}
+
+export type WornBases = Readonly<Record<ItemSlot, WornBase | null>>;
+
+export function wornBasesOf(worn: Readonly<Record<string, string>>): WornBases {
+  const pick = (slot: ItemSlot): WornBase | null => {
+    const base: string | undefined = worn[slot];
+    return base === undefined ? null : { base };
+  };
+  return { weapon: pick('weapon'), head: pick('head'), chest: pick('chest'), hands: pick('hands'), legs: pick('legs'), feet: pick('feet'), charm: pick('charm') };
+}
 
 export interface Look {
   readonly wearables: readonly string[];
@@ -32,7 +45,7 @@ export function baseLayerOf(content: Content, rig: string): readonly string[] {
   return body === undefined ? [] : (content.baseLayers.get(body) ?? []);
 }
 
-export function wornWearables(content: Content, rig: string, clothes: readonly string[], equipped: Equipment | null): string[] {
+export function wornWearables(content: Content, rig: string, clothes: readonly string[], equipped: WornBases | null): string[] {
   const worn: Map<WearRegion, string> = new Map<WearRegion, string>();
   const put = (id: string): void => {
     const def: WearableDef | undefined = content.wearables.get(id);
@@ -62,7 +75,7 @@ export function heroBase(content: Content, rig: string): readonly string[] {
   return content.rigs.get(rig)?.base ?? [];
 }
 
-export function lookOf(content: Content, rig: string, base: readonly string[], equipped: Equipment | null): Look {
+export function lookOf(content: Content, rig: string, base: readonly string[], equipped: WornBases | null): Look {
   const wearables: string[] = wornWearables(content, rig, base, equipped);
   return { wearables, hidden: hiddenBodyParts(content, wearables), held: heldGear(content, equipped) };
 }
@@ -73,13 +86,13 @@ export interface CharacterNeeds {
   readonly attachments: ReadonlySet<string>;
 }
 
-export function heldGear(content: Content, equipped: Equipment | null): string[] {
+export function heldGear(content: Content, equipped: WornBases | null): string[] {
   const weapon = equipped?.weapon ?? null;
   const held: string | null = weapon === null ? content.player.unarmedVisual : (content.itemBases.get(weapon.base)?.visual ?? content.player.unarmedVisual);
   return held === null ? [...content.player.gear] : [...content.player.gear, held];
 }
 
-export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Equipment | null, hero: string | null = null): CharacterNeeds {
+export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: WornBases | null, hero: string | null = null): CharacterNeeds {
   const rig: string = heroRig(content, hero);
   const rigs: Set<string> = new Set<string>([rig]);
   const look: Look = lookOf(content, rig, heroBase(content, rig), equipped);
