@@ -17,7 +17,7 @@ function shiftedIntent(intent: Intent, by: Vec2): Intent {
 }
 
 function shiftedQueue(queued: Command | null, by: Vec2): Command | null {
-  return queued !== null && queued.type === 'move' ? { ...queued, dest: moved(queued.dest, by) } : queued;
+  return queued !== null && (queued.type === 'move' || queued.type === 'walk') ? { ...queued, dest: moved(queued.dest, by) } : queued;
 }
 
 export function shiftWorld(world: World, by: Vec2): void {

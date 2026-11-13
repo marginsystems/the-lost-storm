@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { CAMERA } from '../render/iso-camera.ts';
 import type { ArrowPlacement, ArrowView, GroundPoint, Point, Projector } from './arrow-geometry.ts';
-import { arrowAlong, arrowToward } from './arrow-geometry.ts';
+import { arrowAlong, arrowToward, bearingOf, easeBearing } from './arrow-geometry.ts';
 
 const VIEW: ArrowView = { width: 1440, height: 900, margin: 56, gap: 14, blockers: [], hints: [] };
 
@@ -37,7 +37,7 @@ function turn(a: number, b: number): number {
 
 void test('a target inside the inset screen needs no arrow', (): void => {
   const player: GroundPoint = { x: 40, z: 30 };
-  assert.equal(arrowToward(isoProjector(player, VIEW), player, { x: 42, z: 31 }, 0, VIEW), null);
+  assert.equal(arrowToward(isoProjector(player, VIEW), player, { x: 42, z: 31 }, bearingOf(player, { x: 42, z: 31 }), 0, VIEW), null);
 });
 
 void test('the arrow points the way the target lies at every distance and heading, behind the camera included', (): void => {
@@ -49,7 +49,7 @@ void test('the arrow points the way the target lies at every distance and headin
     for (const distance of [20, 46, 56, 62, 120, 300]) {
       const target: GroundPoint = { x: player.x + Math.cos(heading) * distance, z: player.z + Math.sin(heading) * distance };
       if (project(target.x, 0, target.z) === null) behind += 1;
-      const placed: ArrowPlacement | null = arrowToward(project, player, target, 0, VIEW);
+      const placed: ArrowPlacement | null = arrowToward(project, player, target, bearingOf(player, target), 0, VIEW);
       assert.ok(placed !== null, `heading ${step}, distance ${distance}: an arrow`);
       assert.ok(turn(placed.angle, screenAngleOf(player, heading)) < 0.05, `heading ${step}, distance ${distance}: angle ${placed.angle}`);
     }
@@ -60,7 +60,7 @@ void test('the arrow points the way the target lies at every distance and headin
 void test('the arrival point in the Hall sends the arrow toward the waypoint, not away from it', (): void => {
   const player: GroundPoint = { x: 8, z: 30 };
   const waypoint: GroundPoint = { x: 70, z: 25.5 };
-  const placed: ArrowPlacement | null = arrowToward(isoProjector(player, VIEW), player, waypoint, 0, VIEW);
+  const placed: ArrowPlacement | null = arrowToward(isoProjector(player, VIEW), player, waypoint, bearingOf(player, waypoint), 0, VIEW);
   assert.ok(placed !== null);
   assert.ok(turn(placed.angle, screenAngleOf(player, Math.atan2(waypoint.z - player.z, waypoint.x - player.x))) < 0.05);
 });
@@ -141,4 +141,31 @@ void test('a blocked nearer side keeps the arrow where it is: it never glides ac
   const placed: ArrowPlacement | null = arrowAlong({ x: 720, y: 450 }, { x: 0, y: 1 }, { ...VIEW, blockers: pieces, hints: [hint] });
   assert.ok(placed !== null);
   assert.equal(placed.x, 720);
+});
+
+void test('an off-screen target shows the arrow along the bearing it is given, the next corner of the route, not the straight line to the target', (): void => {
+  const player: GroundPoint = { x: 8, z: 30 };
+  const target: GroundPoint = { x: 78, z: 30 };
+  const corner: GroundPoint = { x: 20, z: 40 };
+  const placed: ArrowPlacement | null = arrowToward(isoProjector(player, VIEW), player, target, bearingOf(player, corner), 0, VIEW);
+  assert.ok(placed !== null);
+  assert.ok(turn(placed.angle, screenAngleOf(player, Math.atan2(corner.z - player.z, corner.x - player.x))) < 0.05);
+  assert.ok(turn(placed.angle, screenAngleOf(player, Math.atan2(target.z - player.z, target.x - player.x))) > 0.2);
+});
+
+void test('the arrow eases to a new corner the short way round, every frame a little closer, without overshooting', (): void => {
+  assert.equal(easeBearing(null, 1, 0.016), 1);
+  const from: number = Math.PI - 0.1;
+  const wanted: number = -Math.PI + 0.1;
+  let bearing: number = from;
+  let gap: number = turn(bearing, wanted);
+  for (let frame = 0; frame < 120; frame++) {
+    bearing = easeBearing(bearing, wanted, 1 / 60);
+    const next: number = turn(bearing, wanted);
+    assert.ok(next <= gap + 1e-12, `frame ${frame}: the gap grew`);
+    assert.ok(Math.abs(Math.sin(bearing) - Math.sin(Math.PI)) < 0.11, `frame ${frame}: it went the long way round`);
+    gap = next;
+  }
+  assert.ok(gap < 1e-3);
+  assert.ok(turn(easeBearing(0, 1, 1 / 60), 0) > 0 && turn(easeBearing(0, 1, 1 / 60), 1) > 0);
 });

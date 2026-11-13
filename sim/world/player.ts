@@ -2,10 +2,11 @@ import type { SkillDef, ZoneExit } from '../content/types.ts';
 import { forceStrike } from './moments.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { isWalkable, nearestWalkable } from '../nav/grid.ts';
+import { isWalkable, lineWalkable, nearestWalkable } from '../nav/grid.ts';
 import { directPath, findPath, nearFace } from '../nav/path.ts';
 import { blockerInReach, chasePath, chaseStalled, freshChase } from './chase.ts';
 import { exitOnLine } from './exits.ts';
+import { pastBlocks, roundPast, stillRound } from './stick.ts';
 import { allocateNode, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
@@ -62,24 +63,45 @@ function heldAim(world: World, dest: Vec2): Vec2 {
   return walkable ? dest : (nearFace(world.grid, player.pos, dest) ?? dest);
 }
 
-function heldPath(world: World, dest: Vec2): Vec2[] | null {
-  const player: PlayerState = world.player;
-  const aim: Vec2 = heldAim(world, dest);
-  const direct: Vec2[] | null = directPath(world.grid, player.pos, aim);
-  if (direct !== null) return direct;
-  if (player.repathTimer > 0) return player.path.length > 0 ? player.path : null;
-  player.repathTimer = PLAYER.repathInterval;
-  return findPath(world.grid, player.pos, aim);
+interface HeldWay {
+  readonly path: Vec2[] | null;
+  readonly pressing: boolean;
 }
 
-function startMove(world: World, dest: Vec2, held: boolean): void {
+function roundWay(world: World, dest: Vec2): Vec2[] | null {
   const player: PlayerState = world.player;
-  const path: Vec2[] | null = held ? heldPath(world, dest) : findPath(world.grid, player.pos, dest);
+  if (lineWalkable(world.grid, player.pos, dest) || exitOnLine(world, player.pos, dest, PLAYER.heldExitSlack) !== null) return null;
+  const openings: Vec2[] = pastBlocks(world.grid, player.pos, dest);
+  if (openings.length === 0) return null;
+  const going: boolean = player.intent.type === 'move' && player.path.length > 0;
+  if (going && (stillRound(player.path, openings) || player.repathTimer > 0)) return player.path;
+  if (player.repathTimer > 0) return null;
+  player.repathTimer = PLAYER.repathInterval;
+  return roundPast(world.grid, player.pos, openings);
+}
+
+function heldWay(world: World, dest: Vec2, around: boolean): HeldWay {
+  const player: PlayerState = world.player;
+  const round: Vec2[] | null = around ? roundWay(world, dest) : null;
+  if (round !== null) return { path: round, pressing: false };
+  const pressing: boolean = !isWalkable(world.grid, dest.x, dest.z);
+  const aim: Vec2 = heldAim(world, dest);
+  const direct: Vec2[] | null = directPath(world.grid, player.pos, aim);
+  if (direct !== null) return { path: direct, pressing };
+  if (player.repathTimer > 0) return { path: player.path.length > 0 ? player.path : null, pressing };
+  player.repathTimer = PLAYER.repathInterval;
+  return { path: findPath(world.grid, player.pos, aim), pressing };
+}
+
+function startMove(world: World, dest: Vec2, held: boolean, around: boolean): void {
+  const player: PlayerState = world.player;
+  const way: HeldWay = held || around ? heldWay(world, dest, around) : { path: findPath(world.grid, player.pos, dest), pressing: false };
+  const path: Vec2[] | null = way.path;
   if (path === null) return;
   const goal: Vec2 = path.at(-1) ?? player.pos;
   const reach: number = distance(player.pos, goal);
   const standing: boolean = player.path.length === 0;
-  const pressing: boolean = held && !isWalkable(world.grid, dest.x, dest.z);
+  const pressing: boolean = way.pressing;
   const deadZone: number = pressing ? PLAYER.faceDeadZone : PLAYER.moveDeadZone;
   const tooClose: boolean = reach < deadZone || (held && !pressing && standing && reach < PLAYER.resumeDistance);
   if (tooClose) {
@@ -92,7 +114,7 @@ function startMove(world: World, dest: Vec2, held: boolean): void {
   }
   player.intent = { type: 'move', dest };
   player.path = path;
-  if (!held) player.repathTimer = PLAYER.repathInterval;
+  if (!held && !around) player.repathTimer = PLAYER.repathInterval;
 }
 
 function fire(world: World, skill: SkillDef, aim: Vec2, slot: number): boolean {
@@ -160,7 +182,10 @@ function act(world: World, command: Command): void {
   const player: PlayerState = world.player;
   switch (command.type) {
     case 'move':
-      startMove(world, command.dest, command.held);
+      startMove(world, command.dest, command.held, false);
+      return;
+    case 'walk':
+      startMove(world, command.dest, command.held, true);
       return;
     case 'stop':
       player.intent = { type: 'idle' };
@@ -291,6 +316,7 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'use':
     case 'move':
+    case 'walk':
     case 'stop':
     case 'pickup':
     case 'skill':

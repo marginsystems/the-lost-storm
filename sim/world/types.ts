@@ -323,6 +323,12 @@ export interface MoveCommand {
   readonly dest: Vec2;
 }
 
+export interface WalkCommand {
+  readonly type: 'walk';
+  readonly held: boolean;
+  readonly dest: Vec2;
+}
+
 export interface ChaseState {
   mark: Vec2;
   still: number;
@@ -502,7 +508,7 @@ export interface OverlayCommand {
   readonly open: boolean;
 }
 
-export type Command = StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
+export type Command = StrikeCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | TravelCommand | TalkCommand | AdvanceCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | TradeCommand;
 
 export interface StartRespawn {
   readonly type: 'start';

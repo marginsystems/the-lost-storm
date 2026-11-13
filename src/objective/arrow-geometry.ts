@@ -36,7 +36,18 @@ const ARROW_GEOMETRY = {
   probe: 1,
   passes: 8,
   epsilon: 1e-6,
+  turnRate: 7,
 } as const;
+
+export function bearingOf(from: GroundPoint, to: GroundPoint): number {
+  return Math.atan2(to.x - from.x, to.z - from.z);
+}
+
+export function easeBearing(current: number | null, wanted: number, dt: number): number {
+  if (current === null) return wanted;
+  const delta: number = Math.atan2(Math.sin(wanted - current), Math.cos(wanted - current));
+  return current + delta * (1 - Math.exp(-ARROW_GEOMETRY.turnRate * dt));
+}
 
 export function insideInset(point: Point, view: ArrowView): boolean {
   return point.x >= view.margin && point.x <= view.width - view.margin && point.y >= view.margin && point.y <= view.height - view.margin;
@@ -128,15 +139,12 @@ export function arrowAlong(origin: Point, direction: Point, view: ArrowView): Ar
   return { x: point.x, y: point.y, angle: Math.atan2(uy, ux) };
 }
 
-export function arrowToward(project: Projector, from: GroundPoint, to: GroundPoint, floor: number, view: ArrowView): ArrowPlacement | null {
+export function arrowToward(project: Projector, from: GroundPoint, to: GroundPoint, bearing: number, floor: number, view: ArrowView): ArrowPlacement | null {
   const target: Point | null = project(to.x, floor, to.z);
   if (target !== null && insideInset(target, view)) return null;
-  const dx: number = to.x - from.x;
-  const dz: number = to.z - from.z;
-  const distance: number = Math.hypot(dx, dz);
-  if (distance === 0) return null;
+  if (to.x === from.x && to.z === from.z) return null;
   const origin: Point | null = project(from.x, floor, from.z);
-  const probe: Point | null = project(from.x + (dx / distance) * ARROW_GEOMETRY.probe, floor, from.z + (dz / distance) * ARROW_GEOMETRY.probe);
+  const probe: Point | null = project(from.x + Math.sin(bearing) * ARROW_GEOMETRY.probe, floor, from.z + Math.cos(bearing) * ARROW_GEOMETRY.probe);
   if (origin === null || probe === null) return null;
   return arrowAlong(origin, { x: probe.x - origin.x, y: probe.y - origin.y }, view);
 }

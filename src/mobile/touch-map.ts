@@ -1,5 +1,5 @@
 import type { Vec2 } from '../../sim/math.ts';
-import type { MoveCommand, SkillCommand } from '../../sim/world/types.ts';
+import type { SkillCommand, WalkCommand } from '../../sim/world/types.ts';
 
 export const TOUCH = {
   stickRadius: 52,
@@ -77,9 +77,9 @@ export function stickDirection(reading: StickReading, yaw: number): Vec2 | null 
   return { x: Math.cos(yaw) * sx + Math.sin(yaw) * sy, z: -Math.sin(yaw) * sx + Math.cos(yaw) * sy };
 }
 
-export function stickMove(from: Vec2, direction: Vec2 | null, wasMoving: boolean): MoveCommand | null {
+export function stickMove(from: Vec2, direction: Vec2 | null, wasMoving: boolean): WalkCommand | null {
   if (direction === null) return null;
-  return { type: 'move', held: wasMoving, dest: { x: from.x + direction.x * TOUCH.stickReach, z: from.z + direction.z * TOUCH.stickReach } };
+  return { type: 'walk', held: wasMoving, dest: { x: from.x + direction.x * TOUCH.stickReach, z: from.z + direction.z * TOUCH.stickReach } };
 }
 
 export function facingVector(facing: number): Vec2 {

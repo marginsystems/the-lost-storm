@@ -40,7 +40,7 @@ void test('a small push inside the dead zone moves nothing', (): void => {
 
 void test('a stick move heads a fixed reach ahead and is held after the first one', (): void => {
   const first = stickMove({ x: 1, z: 2 }, { x: 1, z: 0 }, false);
-  assert.deepEqual(first, { type: 'move', held: false, dest: { x: 1 + TOUCH.stickReach, z: 2 } });
+  assert.deepEqual(first, { type: 'walk', held: false, dest: { x: 1 + TOUCH.stickReach, z: 2 } });
   assert.equal(stickMove({ x: 1, z: 2 }, { x: 1, z: 0 }, true)?.held, true);
 });
 

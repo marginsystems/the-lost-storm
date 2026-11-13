@@ -2,12 +2,14 @@ import type { Scene } from 'three';
 import { Color, Vector2 } from 'three';
 import type { ObjectiveTarget } from '../../sim/world/objective.ts';
 import { objectiveTarget } from '../../sim/world/objective.ts';
+import { routeCorner } from '../../sim/world/route-corner.ts';
+import type { Vec2 } from '../../sim/math.ts';
 import type { World } from '../../sim/world/types.ts';
 import { el } from '../hud/dom.ts';
 import type { LightPool } from '../render/light-pool.ts';
 import { createLightPool } from '../render/light-pool.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
-import { arrowToward } from './arrow-geometry.ts';
+import { arrowToward, bearingOf, easeBearing } from './arrow-geometry.ts';
 import { glowsAt } from './objective-glow.ts';
 import type { ArrowPlacement, Point, Rect } from './arrow-geometry.ts';
 import css from './objective.css?inline';
@@ -24,6 +26,7 @@ export const OBJECTIVE = {
   screenMargin: 56,
   hudGap: 14,
   hudReadSeconds: 0.25,
+  routeSeconds: 0.25,
   hudBlockers: ['.hud-bottom', '.hud-globe-group', '.minimap', '.hud-quests', '.hud-top', '.tc-btn', '.tc-stick', '.tc-rotate', '.npc-label > span'],
   hintBoxes: ['.hud-hint.visible'],
 } as const;
@@ -63,12 +66,19 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
   let sinceRead: number = Infinity;
   let previous: ObjectiveTarget | null = null;
   let level: number = 0;
+  let corner: Vec2 | null = null;
+  let sinceRoute: number = Infinity;
+  let bearing: number | null = null;
   const glide: LabelGlide = createGlide();
 
   return {
     update(dt: number, time: number, world: World): void {
       const target: ObjectiveTarget | null = world.player.alive ? objectiveTarget(world) : null;
-      if (!sameSpot(previous, target)) level = 0;
+      if (!sameSpot(previous, target)) {
+        level = 0;
+        corner = null;
+        bearing = null;
+      }
       previous = target;
       const goal: number = glowsAt(target) ? 1 : 0;
       level += (goal - level) * (1 - Math.exp(-OBJECTIVE.ease * dt));
@@ -77,13 +87,19 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
       glow.set(level * OBJECTIVE.glowStrength * (1 + Math.sin(time * OBJECTIVE.pulseSpeed) * OBJECTIVE.pulseDepth), time);
       let placement: ArrowPlacement | null = null;
       sinceRead += dt;
+      sinceRoute += dt;
       if (target !== null) {
+        if (corner === null || sinceRoute >= OBJECTIVE.routeSeconds) {
+          corner = routeCorner(world, target.pos);
+          sinceRoute = 0;
+        }
+        bearing = easeBearing(bearing, bearingOf(world.player.pos, corner), dt);
         if (sinceRead >= OBJECTIVE.hudReadSeconds) {
           blockers = hudRects(document, OBJECTIVE.hudBlockers);
           hints = hudRects(hud, OBJECTIVE.hintBoxes);
           sinceRead = 0;
         }
-        placement = arrowToward(project, world.player.pos, target.pos, world.zone.floorHeight, { width: window.innerWidth, height: window.innerHeight, margin: OBJECTIVE.screenMargin, gap: OBJECTIVE.hudGap, blockers, hints });
+        placement = arrowToward(project, world.player.pos, target.pos, bearing, world.zone.floorHeight, { width: window.innerWidth, height: window.innerHeight, margin: OBJECTIVE.screenMargin, gap: OBJECTIVE.hudGap, blockers, hints });
       }
       arrow.classList.toggle('visible', placement !== null);
       if (placement === null) glide.started = false;

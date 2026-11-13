@@ -197,6 +197,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
       action = command.action.type === 'close' ? null : 'equip';
       break;
     case 'move':
+    case 'walk':
     case 'skill':
     case 'pickup':
     case 'stop':
