@@ -7,6 +7,7 @@ import { buildNavGrid, isWalkable, setDriftOpen } from '../nav/grid.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { clipUrl, rigClipNames } from './clips.ts';
+import { wearFrames, wearModel } from '../wear.ts';
 import { loadContent } from './content.ts';
 import { contentProblems } from './parse.ts';
 import { objectivePaths } from './road.ts';
@@ -65,6 +66,52 @@ function clipNames(path: string): string[] {
   const parsed: unknown = JSON.parse(file.subarray(GLB.jsonStart, GLB.jsonStart + file.readUInt32LE(GLB.jsonLength)).toString('utf8'));
   return items(fields(parsed, path)['animations'], `${path}.animations`).map((entry: unknown): string => text(fields(entry, path), 'name', path));
 }
+
+function glbJson(path: string): Fields {
+  const file: Buffer = readFileSync(path);
+  return fields(JSON.parse(file.subarray(GLB.jsonStart, GLB.jsonStart + file.readUInt32LE(GLB.jsonLength)).toString('utf8')), path);
+}
+
+function meshNodeNames(path: string): Set<string> {
+  const names: Set<string> = new Set<string>();
+  for (const entry of items(glbJson(path)['nodes'], `${path}.nodes`)) {
+    const node: Fields = fields(entry, path);
+    if (node['mesh'] !== undefined) names.add(text(node, 'name', path));
+  }
+  return names;
+}
+
+function clipInterpolations(path: string): Set<string> {
+  const found: Set<string> = new Set<string>();
+  for (const entry of items(glbJson(path)['animations'], `${path}.animations`)) {
+    for (const sampler of items(fields(entry, path)['samplers'], `${path}.samplers`)) {
+      const kind: unknown = fields(sampler, path)['interpolation'];
+      found.add(typeof kind === 'string' ? kind : 'LINEAR');
+    }
+  }
+  return found;
+}
+
+void test('every wearable finds each piece it names in the model of every body frame, so no frame is left undressed', (): void => {
+  const frames: string[] = wearFrames(content);
+  assert.ok(frames.length > 0, 'no rig has a body frame');
+  const known: Map<string, Set<string>> = new Map<string, Set<string>>();
+  for (const frame of frames) {
+    for (const worn of content.wearables.values()) {
+      const path: string = `public/${wearModel(worn, frame)}`;
+      assert.ok(existsSync(path), `${worn.id} on ${frame}: ${path} is missing`);
+      const names: Set<string> = known.get(path) ?? meshNodeNames(path);
+      known.set(path, names);
+      assert.ok(names.size > 0, `${path} has no mesh`);
+      for (const piece of worn.pieces) assert.ok(names.has(piece), `${worn.id} on ${frame}: ${path} has no mesh named ${piece}`);
+    }
+  }
+});
+
+void test('no clip a rig plays is keyed with cubic splines, the one kind the loader cannot fit to a body', (): void => {
+  const paths: Set<string> = new Set<string>([...content.rigs.values()].flatMap((rig: RigDef): string[] => rigClipNames(rig).map((clip: string): string => `public/${clipUrl(rig, clip)}`)));
+  for (const path of paths) assert.ok(!clipInterpolations(path).has('CUBICSPLINE'), path);
+});
 
 const FOOTPRINT = { solid: 1, cover: 0.4 } as const;
 
