@@ -4,8 +4,8 @@ import type { PhoneScreen, Rect } from '../mobile/phone-layout.ts';
 import { layoutRects, phoneLayout } from '../mobile/phone-layout.ts';
 import type { BandRect, HudBand, HudFit } from '../hud/hud-fit.ts';
 import { hudBand, hudFit } from '../hud/hud-fit.ts';
-import { anchorInView, keepBelowTop, keepInside, keepTagInView, LABEL_EDGE, placeTag } from './label-edge.ts';
-import type { ViewSize } from './label-edge.ts';
+import { anchorInView, heldReach, keepApart, keepBelowTop, keepInside, keepTagInView, LABEL_EDGE, placeTag, stackAtEdges } from './label-edge.ts';
+import type { EdgeStack, EdgeTag, ViewSize } from './label-edge.ts';
 import type { ScreenRect } from './label-stack.ts';
 
 const VIEW = { width: 844, height: 390 };
@@ -153,4 +153,75 @@ void test('a gliding tag past the right or bottom edge is held fully inside the 
   assert.equal(x + 70, view.width - LABEL_EDGE.side);
   assert.equal(y, view.height - LABEL_EDGE.side);
   assert.deepEqual(keepTagInView(640, 400, 140, 25, view), [640, 400]);
+});
+
+function corner(id: number, reach: number, offscreen: boolean): EdgeTag {
+  return { id, x: 1200, y: 792, width: 140, height: 25, reach, offscreen };
+}
+
+function boxesOf(tags: readonly EdgeTag[], stack: EdgeStack): { top: number; bottom: number; id: number }[] {
+  return tags.map((tag: EdgeTag): { top: number; bottom: number; id: number } => {
+    const scale: number = stack.quiet.has(tag.id) ? LABEL_EDGE.quietScale : 1;
+    const bottom: number = tag.y + (stack.lift.get(tag.id) ?? 0);
+    return { id: tag.id, bottom, top: bottom - tag.height * scale };
+  });
+}
+
+void test('labels clamped to the same edge stack with a gap, the one nearest its anchor keeping the edge spot', (): void => {
+  const view: ViewSize = { width: 1280, height: 800 };
+  const tags: EdgeTag[] = [corner(1, 40, false), corner(2, 5, false)];
+  const stack: EdgeStack = stackAtEdges(tags, view);
+  assert.equal(stack.lift.get(2), 0);
+  const [far, near] = boxesOf(tags, stack);
+  assert.ok(far !== undefined && near !== undefined);
+  assert.ok(far.bottom <= near.top - LABEL_EDGE.stackGap);
+  assert.equal(stack.quiet.size, 0);
+});
+
+void test('three labels piled on one edge never overlap, and only the ones whose people are off screen go quiet', (): void => {
+  const view: ViewSize = { width: 1280, height: 800 };
+  const tags: EdgeTag[] = [corner(1, 10, false), corner(2, 60, true), corner(3, 90, true)];
+  const stack: EdgeStack = stackAtEdges(tags, view);
+  assert.deepEqual([...stack.quiet].toSorted((a: number, b: number): number => a - b), [2, 3]);
+  const boxes = boxesOf(tags, stack).toSorted((a, b) => b.bottom - a.bottom);
+  for (let index: number = 1; index < boxes.length; index += 1) {
+    const lower = boxes[index - 1];
+    const upper = boxes[index];
+    assert.ok(lower !== undefined && upper !== undefined && upper.bottom <= lower.top - LABEL_EDGE.stackGap + 1e-9);
+  }
+});
+
+function nearTop(id: number, reach: number): EdgeTag {
+  return { id, x: 640, y: 60, width: 140, height: 25, reach, offscreen: false };
+}
+
+void test('a label near the top edge stacks downward, away from the edge', (): void => {
+  const view: ViewSize = { width: 1280, height: 800 };
+  const stack: EdgeStack = stackAtEdges([nearTop(1, 1), nearTop(2, 9)], view);
+  assert.ok((stack.lift.get(2) ?? 0) > 0);
+});
+
+function shownTag(id: number, y: number): EdgeTag {
+  return { id, x: 1200, y, width: 120, height: 25, reach: 0, offscreen: true };
+}
+
+void test('labels still easing apart are kept apart, the lower one holding its place', (): void => {
+  const view: ViewSize = { width: 1280, height: 800 };
+  const apart: ReadonlyMap<number, number> = keepApart([shownTag(1, 741), shownTag(2, 735)], [], view);
+  assert.equal(apart.get(1), 0);
+  const lifted: number = 735 + (apart.get(2) ?? 0);
+  assert.ok(lifted <= 741 - 25 - LABEL_EDGE.stackGap + 1e-9);
+});
+
+void test('a label kept apart steps above a HUD button instead of covering it', (): void => {
+  const view: ViewSize = { width: 1280, height: 800 };
+  const button: ScreenRect = { left: 1180, top: 740, right: 1230, bottom: 790 };
+  const apart: ReadonlyMap<number, number> = keepApart([shownTag(1, 780)], [button], view);
+  assert.ok(780 + (apart.get(1) ?? 0) <= button.top - LABEL_EDGE.stackGap + 1e-9);
+});
+
+void test('a label keeps its place in the order until its reach moves past the hold', (): void => {
+  assert.equal(heldReach(undefined, 300), 300);
+  assert.equal(heldReach(300, 300 + LABEL_EDGE.reachHold - 1), 300);
+  assert.equal(heldReach(300, 300 + LABEL_EDGE.reachHold + 1), 300 + LABEL_EDGE.reachHold + 1);
 });

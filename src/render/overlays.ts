@@ -13,8 +13,8 @@ import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import { createLootTip } from './loot-tip.ts';
 import type { LootTip, TipCheck } from './loot-tip.ts';
-import { anchorInView, keepTagInView, placeTag } from './label-edge.ts';
-import type { ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
+import { anchorInView, heldReach, keepApart, keepTagInView, LABEL_EDGE, placeTag, stackAtEdges } from './label-edge.ts';
+import type { EdgeStack, EdgeTag, ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
 import { foldPiles, stackLabels } from './label-stack.ts';
 import type { LabelGlide } from './label-glide.ts';
 import { createGlide, glideToward } from './label-glide.ts';
@@ -78,6 +78,7 @@ interface ExitLabel {
   readonly open: (world: World) => boolean;
   readonly secret: boolean;
   readonly glide: LabelGlide;
+  readonly stack: LabelGlide;
 }
 
 interface NpcLabel {
@@ -85,6 +86,18 @@ interface NpcLabel {
   readonly npc: NpcState;
   news: boolean | null;
   readonly glide: LabelGlide;
+  readonly stack: LabelGlide;
+}
+
+interface PendingTag {
+  readonly element: HTMLElement;
+  readonly stack: LabelGlide;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly reach: number;
+  readonly offscreen: boolean;
 }
 
 interface LeavingLabel {
@@ -132,13 +145,17 @@ function place(element: HTMLElement, point: Vector2): void {
   element.style.transform = `translate3d(${point.x.toFixed(2)}px, ${point.y.toFixed(2)}px, 0)`;
 }
 
-function glidePlace(element: HTMLElement, glide: LabelGlide, anchor: Vector2, target: Vector2, dt: number, bound: TagBound | null = null): void {
+function glideAt(glide: LabelGlide, anchor: Vector2, target: Vector2, dt: number, bound: TagBound | null): void {
   glideToward(glide, target.x - anchor.x, target.y - anchor.y, dt);
   target.set(anchor.x + glide.x, anchor.y + glide.y);
   if (bound !== null) {
     const [x, y] = keepTagInView(target.x, target.y, bound.size.width, bound.size.height, bound.view);
     target.set(x, y);
   }
+}
+
+function glidePlace(element: HTMLElement, glide: LabelGlide, anchor: Vector2, target: Vector2, dt: number): void {
+  glideAt(glide, anchor, target, dt, null);
   place(element, target);
 }
 
@@ -186,6 +203,43 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     point.set(spot.x, spot.y);
     tagRects.push({ left: spot.x - size.width / 2, top: spot.y - size.height, right: spot.x + size.width / 2, bottom: spot.y });
     return { size, view };
+  };
+  const pending: PendingTag[] = [];
+  const reaches: WeakMap<HTMLElement, number> = new WeakMap<HTMLElement, number>();
+  const settleTag = (element: HTMLElement, glide: LabelGlide, stack: LabelGlide, dt: number, shown: boolean): void => {
+    const bound: TagBound | null = keepClear(element);
+    glideAt(glide, anchor, point, dt, bound);
+    if (bound === null || !shown) {
+      element.classList.remove('quiet');
+      const plate: Element | null = element.firstElementChild;
+      if (plate instanceof HTMLElement) plate.style.scale = '';
+      place(element, point);
+      return;
+    }
+    const reach: number = heldReach(reaches.get(element), Math.hypot(point.x - anchor.x, point.y - anchor.y));
+    reaches.set(element, reach);
+    pending.push({ element, stack, x: point.x, y: point.y, width: bound.size.width, height: bound.size.height, reach, offscreen: !anchorInView(anchor.x, anchor.y, view) });
+  };
+  const stackTags = (dt: number): void => {
+    const stacked: EdgeStack = stackAtEdges(pending.map((tag: PendingTag, id: number): EdgeTag => ({ id, x: tag.x, y: tag.y, width: tag.width, height: tag.height, reach: tag.reach, offscreen: tag.offscreen })), view);
+    const shown: EdgeTag[] = pending.map((tag: PendingTag, id: number): EdgeTag => {
+      glideToward(tag.stack, 0, stacked.lift.get(id) ?? 0, dt);
+      const quiet: boolean = stacked.quiet.has(id);
+      tag.element.classList.toggle('quiet', quiet);
+      const plate: Element | null = tag.element.firstElementChild;
+      if (plate instanceof HTMLElement) plate.style.scale = quiet ? String(LABEL_EDGE.quietScale) : '';
+      const scale: number = quiet ? LABEL_EDGE.quietScale : 1;
+      return { id, x: tag.x, y: tag.y + tag.stack.y, width: tag.width * scale, height: tag.height * scale, reach: tag.reach, offscreen: tag.offscreen };
+    });
+    const apart: ReadonlyMap<number, number> = keepApart(shown, hudRects, view);
+    for (const tag of shown) {
+      const element: HTMLElement | undefined = pending[tag.id]?.element;
+      if (element === undefined) continue;
+      const [x, y] = keepTagInView(tag.x, tag.y + (apart.get(tag.id) ?? 0), tag.width, tag.height, view);
+      point.set(x, y);
+      place(element, point);
+    }
+    pending.length = 0;
   };
   const labelLayer: HTMLDivElement = document.createElement('div');
   const numberLayer: HTMLDivElement = document.createElement('div');
@@ -276,7 +330,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         if (event.button === 0) hooks.onTravel(exit.id);
       });
       labelLayer.append(element);
-      return { element, id: exit.id, x: exit.x, z: exit.z, open: (current: World): boolean => allHold(current, exit.requires), secret: exit.hiddenWhenLocked, glide: createGlide() };
+      return { element, id: exit.id, x: exit.x, z: exit.z, open: (current: World): boolean => allHold(current, exit.requires), secret: exit.hiddenWhenLocked, glide: createGlide(), stack: createGlide() };
     });
     const waypoint = world.zone.waypoint;
     if (waypoint === null) return;
@@ -291,7 +345,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       if (event.button === 0) hooks.onWaypoint();
     });
     labelLayer.append(element);
-    exits.push({ element, id: OVERLAYS.waypointId, x: waypoint.x, z: waypoint.z, open: (current: World): boolean => current.waypoints.includes(current.zone.id), secret: false, glide: createGlide() });
+    exits.push({ element, id: OVERLAYS.waypointId, x: waypoint.x, z: waypoint.z, open: (current: World): boolean => current.waypoints.includes(current.zone.id), secret: false, glide: createGlide(), stack: createGlide() });
   };
 
   const showPeople = (world: World): void => {
@@ -337,7 +391,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         if (event.button === 0) hooks.onTalk(npc.id);
       });
       labelLayer.append(element);
-      return { element, npc, news: null, glide: createGlide() };
+      return { element, npc, news: null, glide: createGlide(), stack: createGlide() };
     });
   };
 
@@ -451,8 +505,9 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         label.element.classList.toggle('secret', !open && label.secret);
         camera.project(label.x, OVERLAYS.exitLift, label.z, point);
         anchor.copy(point);
-        label.element.classList.toggle('edge', !anchorInView(point.x, point.y, view));
-        glidePlace(label.element, label.glide, anchor, point, dt, keepClear(label.element));
+        const edge: boolean = !anchorInView(point.x, point.y, view);
+        label.element.classList.toggle('edge', edge);
+        settleTag(label.element, label.glide, label.stack, dt, !edge && (open || !label.secret));
       }
       if (peopleOf !== world.npcs) showPeople(world);
       for (const label of people) {
@@ -464,8 +519,9 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         label.element.classList.toggle('aimed', label.npc.id === hoveredId);
         camera.project(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z, point);
         anchor.copy(point);
-        glidePlace(label.element, label.glide, anchor, point, dt, keepClear(label.element));
+        settleTag(label.element, label.glide, label.stack, dt, true);
       }
+      stackTags(dt);
       for (const label of leaving) {
         label.left -= dt;
         if (label.left <= 0) {
