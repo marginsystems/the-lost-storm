@@ -7,6 +7,7 @@ import { allHold } from './conditions.ts';
 import { equipFromInventory } from './character.ts';
 import { moveExit } from './exits.ts';
 import { isWalkable, nearestWalkable } from '../nav/grid.ts';
+import { insideRoom } from './shore-props.ts';
 import { removeGround } from './ground.ts';
 import { setFlags } from './story.ts';
 import type { EncounterState, GroundItem, ItemInstance, World, WorldEvent } from './types.ts';
@@ -41,7 +42,7 @@ function layItem(world: World, met: ZoneEncounter, state: EncounterState, base: 
 }
 
 function place(world: World, met: ZoneEncounter, state: EncounterState, ahead: number): void {
-  const aim: Vec2 = { x: world.player.pos.x + world.heading.x * ahead, z: world.player.pos.z + world.heading.z * ahead };
+  const aim: Vec2 = insideRoom(world, { x: world.player.pos.x + world.heading.x * ahead, z: world.player.pos.z + world.heading.z * ahead });
   const pos: Vec2 = isWalkable(world.grid, aim.x, aim.z) ? aim : (nearestWalkable(world.grid, aim, ENCOUNTER.clearReach) ?? aim);
   state.pos = pos;
   state.off = 0;

@@ -35,7 +35,7 @@ import type {
   ZoneWaypoint,
 } from './types.ts';
 import { service } from './parse-trade.ts';
-import type { ShorePath, ShoreProp, VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
+import type { ShorePath, ShoreProp, ShoreRoom, VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { zoneScatter } from './parse-scatter.ts';
 import { encounter, storyFlags } from './parse-story.ts';
@@ -162,10 +162,16 @@ function shorePath(value: unknown, where: string): ShorePath | null {
   return { surface: text(source, 'surface', where), width: positive(source, 'width', where), length: positive(source, 'length', where), sway: nonNegative(source, 'sway', where) };
 }
 
+function shoreRoom(value: unknown, where: string): ShoreRoom | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { half: positive(source, 'half', where), depth: positive(source, 'depth', where), margin: nonNegative(source, 'margin', where) };
+}
+
 function voidShore(value: unknown, where: string): VoidShore | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
-  return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where), surface: source['surface'] === undefined ? null : text(source, 'surface', where), ambience: zoneAmbience(source['ambience'], `${where}.ambience`), props: each(source['props'] ?? [], `${where}.props`, shoreProp), path: shorePath(source['path'], `${where}.path`) };
+  return { when: conditions(source, 'when', where), ahead: positive(source, 'ahead', where), thin: positive(source, 'thin', where), surface: source['surface'] === undefined ? null : text(source, 'surface', where), ambience: zoneAmbience(source['ambience'], `${where}.ambience`), props: each(source['props'] ?? [], `${where}.props`, shoreProp), path: shorePath(source['path'], `${where}.path`), room: shoreRoom(source['room'], `${where}.room`) };
 }
 
 function zoneVoid(value: unknown, where: string): ZoneVoid {

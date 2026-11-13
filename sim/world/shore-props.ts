@@ -1,4 +1,5 @@
-import type { ShoreProp, VoidShore } from '../content/story-types.ts';
+import type { ShoreProp, ShoreRoom, VoidShore } from '../content/story-types.ts';
+import type { Vec2 } from '../math.ts';
 import type { PropDef } from '../content/types.ts';
 import type { Blocker } from '../nav/grid.ts';
 import { liftStamp, propBlockers, stampBlockers } from '../nav/grid.ts';
@@ -37,4 +38,18 @@ export function lowerShore(world: World): void {
   if (world.shoreBlocks === null) return;
   liftStamp(world.grid, world.shoreBlocks);
   world.shoreBlocks = null;
+}
+
+export function insideRoom(world: World, point: Vec2): Vec2 {
+  const shore: ShoreState | null = world.shore;
+  const room: ShoreRoom | null = world.zone.void?.shore?.room ?? null;
+  if (shore === null || room === null) return point;
+  const dx: number = point.x - shore.at.x;
+  const dz: number = point.z - shore.at.z;
+  const across: number = dx * shore.facing.z - dz * shore.facing.x;
+  const ashore: number = dx * shore.facing.x + dz * shore.facing.z;
+  if (ashore <= 0) return point;
+  const x: number = Math.min(room.half - room.margin, Math.max(room.margin - room.half, across));
+  const z: number = Math.min(room.depth - room.margin, Math.max(room.margin, ashore));
+  return { x: shore.at.x + shore.facing.z * x + shore.facing.x * z, z: shore.at.z - shore.facing.x * x + shore.facing.z * z };
 }

@@ -59,6 +59,12 @@ export interface ShorePath {
   readonly sway: number;
 }
 
+export interface ShoreRoom {
+  readonly half: number;
+  readonly depth: number;
+  readonly margin: number;
+}
+
 export interface VoidShore {
   readonly when: readonly Condition[];
   readonly ahead: number;
@@ -67,6 +73,7 @@ export interface VoidShore {
   readonly ambience: ZoneAmbience;
   readonly props: readonly ShoreProp[];
   readonly path: ShorePath | null;
+  readonly room: ShoreRoom | null;
 }
 
 export interface ZoneVoid {

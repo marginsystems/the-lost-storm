@@ -1,10 +1,11 @@
 import type { Material, Object3D } from 'three';
-import { BufferAttribute, BufferGeometry, Color, Group, Mesh, MeshStandardMaterial } from 'three';
+import { BufferAttribute, BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Quaternion, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ShorePath, ShoreProp, VoidShore } from '../../sim/content/story-types.ts';
 import type { Content, PropDef, SurfaceDef } from '../../sim/content/types.ts';
 import type { ShoreState, World } from '../../sim/world/types.ts';
 import { loadModel } from './character-loader.ts';
+import { isTall, resetCutaway, setOccluders, withCutaway } from './prop-cutaway.ts';
 import { lookOf, withPropLook } from './prop-surface.ts';
 import type { PropLook } from './prop-surface.ts';
 import { dressedProp, surfaceMaterial } from './surfaces.ts';
@@ -97,19 +98,41 @@ function dress(content: Content, def: PropDef, material: Material): Material {
   return own;
 }
 
-export function placeShoreProp(content: Content, def: PropDef, gltf: GLTF, placed: ShoreProp): Object3D {
-  const copy: Object3D = gltf.scene.clone(true);
-  copy.traverse((node: Object3D): void => {
+export function shoreMatrix(placed: ShoreProp, scale: number): Matrix4 {
+  return new Matrix4().compose(new Vector3(placed.x, 0, placed.z), new Quaternion().setFromEuler(new Euler(0, placed.rotationDegrees * RADIANS, 0)), new Vector3(scale, scale, scale));
+}
+
+function propWidth(def: PropDef): number {
+  const xs: number[] = def.footprints.flat().map((point): number => point.x);
+  const zs: number[] = def.footprints.flat().map((point): number => point.z);
+  return xs.length === 0 ? Infinity : Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs));
+}
+
+function isGeometry(value: unknown): value is BufferGeometry {
+  return value instanceof BufferGeometry;
+}
+
+function instanced(content: Content, def: PropDef, gltf: GLTF, list: readonly ShoreProp[]): InstancedMesh[] {
+  const made: InstancedMesh[] = [];
+  gltf.scene.updateMatrixWorld(true);
+  gltf.scene.traverse((node: Object3D): void => {
     if (!(node instanceof Mesh)) return;
-    const material: unknown = node.material;
-    if (material instanceof MeshStandardMaterial) node.material = dress(content, def, material);
-    node.castShadow = false;
-    node.receiveShadow = false;
+    const geometry: unknown = node.geometry;
+    const source: unknown = node.material;
+    if (!(source instanceof MeshStandardMaterial) || !isGeometry(geometry)) return;
+    const dressed: Material = dress(content, def, source);
+    const material: Material = isTall(def.height) && dressed instanceof MeshStandardMaterial ? withCutaway(dressed.clone(), propWidth(def)) : dressed;
+    const mesh: InstancedMesh = new InstancedMesh(geometry, material, list.length);
+    list.forEach((placed: ShoreProp, index: number): void => {
+      mesh.setMatrixAt(index, new Matrix4().multiplyMatrices(shoreMatrix(placed, def.scale), node.matrixWorld));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    mesh.computeBoundingSphere();
+    made.push(mesh);
   });
-  copy.position.set(placed.x, 0, placed.z);
-  copy.rotation.y = placed.rotationDegrees * RADIANS;
-  copy.scale.setScalar(def.scale);
-  return copy;
+  return made;
 }
 
 export function createShoreProps(loader: GLTFLoader, content: Content, rules: VoidShore | null, floorHeight: number): ShoreProps {
@@ -119,24 +142,36 @@ export function createShoreProps(loader: GLTFLoader, content: Content, rules: Vo
   const surface: SurfaceDef | undefined = path === null ? undefined : content.surfaces.get(path.surface);
   const worn: Mesh | null = path === null || surface === undefined ? null : pathMesh(path, surface);
   if (worn !== null) group.add(worn);
+  const occluders: InstancedMesh[] = [];
+  const byProp: Map<string, ShoreProp[]> = new Map<string, ShoreProp[]>();
+  for (const placed of rules?.props ?? []) byProp.set(placed.prop, [...(byProp.get(placed.prop) ?? []), placed]);
+  let shown: boolean = false;
   void Promise.all(
-    (rules?.props ?? []).map(async (placed: ShoreProp): Promise<void> => {
-      const def: PropDef | undefined = content.props.get(placed.prop);
+    [...byProp].map(async ([propId, list]: [string, ShoreProp[]]): Promise<void> => {
+      const def: PropDef | undefined = content.props.get(propId);
       if (def === undefined) return;
       const gltf: GLTF | null = await loadModel(loader, def.model).catch((): null => null);
-      if (gltf !== null) group.add(placeShoreProp(content, def, gltf, placed));
+      if (gltf === null) return;
+      for (const mesh of instanced(content, def, gltf, list)) {
+        group.add(mesh);
+        if (isTall(def.height)) occluders.push(mesh);
+      }
+      if (shown) setOccluders(occluders);
     }),
   );
   return {
     group,
     follow(world: World): void {
       const shore: ShoreState | null = world.shore;
-      group.visible = shore !== null;
+      if (shown !== (shore !== null)) setOccluders(shore === null ? [] : occluders);
+      shown = shore !== null;
+      group.visible = shown;
       if (shore === null) return;
       group.position.set(shore.at.x, floorHeight, shore.at.z);
       group.rotation.y = Math.atan2(shore.facing.x, shore.facing.z);
     },
     dispose(): void {
+      resetCutaway();
       group.removeFromParent();
       worn?.geometry.dispose();
       if (worn !== null && worn.material instanceof MeshStandardMaterial) worn.material.dispose();
