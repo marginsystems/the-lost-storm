@@ -132,10 +132,10 @@ void test('every shipped model and texture is listed in ASSETS.md', (): void => 
   for (const path of [...models('public/models'), ...models('public/textures')]) assert.ok(assets.includes(path), `${path} is missing from ASSETS.md`);
 });
 
-const BANNED_BODY: RegExp = new RegExp(joined('make', '\\s?human'), 'i');
+const BANNED_BODY: RegExp = new RegExp(joined('make', '[\\s_.-]*human'), 'i');
 const BANNED_BODY_ROOTS: readonly string[] = ['src', 'sim', 'tools', 'data', 'blender', 'play'];
 const BANNED_BODY_REMAINS: readonly string[] = ['public/models/world/still_figure.glb', 'public/models/world/still_figure_bowed.glb'];
-const BANNED_BODY_TEXT: RegExp = /\.(ts|css|json|py|html|sh|md|glsl)$/;
+const BANNED_BODY_BINARY: RegExp = /\.(glb|gltf|bin|png|jpe?g|webp|avif|ktx2|hdr|exr|ico|woff2?|ttf|otf|mp3|ogg|wav|pyc|blend)$/i;
 const MODEL_ROW: RegExp = /^\| `public\//;
 
 function everyFile(dir: string): string[] {
@@ -147,7 +147,7 @@ function everyFile(dir: string): string[] {
 
 void test('no code, data or build script names the banned body generator, and only the two old still figures were built from it', (): void => {
   for (const path of BANNED_BODY_ROOTS.flatMap(everyFile)) {
-    if (!BANNED_BODY_TEXT.test(path)) continue;
+    if (BANNED_BODY_BINARY.test(path)) continue;
     assert.ok(!BANNED_BODY.test(readFileSync(path, 'utf8')), `${path} names it`);
   }
   for (const row of readFileSync('ASSETS.md', 'utf8').split('\n')) {
