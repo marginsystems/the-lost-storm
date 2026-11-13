@@ -6,7 +6,7 @@ import type { Leaderboard, LeaderboardResult, NameResult } from './api.ts';
 import { createLobbyApi, LOBBY_LIMITS, readLeaderboard } from './lobby-api.ts';
 
 const URL_A: string = 'http://localhost:8787';
-const ROW: Readonly<Record<string, unknown>> = { rank: 1, name: 'Grey Heron', level: 7, furthest: 'The Shallows', online: true };
+const ROW: Readonly<Record<string, unknown>> = { rank: 1, name: 'Grey Heron', level: 7, furthest: 'The Shallows', online: true, account: 'heron' };
 const BOARD: Readonly<Record<string, unknown>> = {
   top: [ROW, { rank: 2, name: 'Ashen Wolf', level: 5, furthest: 'The Shallows', online: false }],
   you: { ...ROW, chosen: true },
@@ -28,6 +28,14 @@ void test('a well-formed answer reads into a leaderboard and keeps only the know
   assert.equal(board.characters, 40);
   assert.deepEqual(board.levelUps, [{ name: 'Grey Heron', level: 7, minutesAgo: 2 }]);
   assert.equal(readLeaderboard({ ...BOARD, you: null })?.you, null);
+});
+
+void test('a row carries the username of the account that plays it, and an older server without one reads as no username', (): void => {
+  const owned: Leaderboard | null = readLeaderboard({ ...BOARD, top: [{ ...ROW, account: 'marginsystems' }] });
+  assert.equal(owned?.top[0]?.account, 'marginsystems');
+  const older: Record<string, unknown> = { rank: ROW.rank, name: ROW.name, level: ROW.level, furthest: ROW.furthest, online: ROW.online };
+  assert.equal(readLeaderboard({ ...BOARD, top: [older] })?.top[0]?.account, null);
+  assert.equal(readLeaderboard({ ...BOARD, top: [{ ...ROW, account: 7 }] })?.top[0]?.account, null);
 });
 
 void test('a name that appears twice on the board is kept once, so rows stay one per character', (): void => {

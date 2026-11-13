@@ -84,6 +84,7 @@ export interface BoardRow {
   readonly level: number;
   readonly furthest: string;
   readonly online: boolean;
+  readonly account: string | null;
 }
 
 export interface YourRow extends BoardRow {

@@ -23,6 +23,7 @@ export interface RemoteOptions {
   readonly timers: Timers;
   readonly log: Logger;
   readonly epochs: Epochs;
+  readonly prepare?: (signal: AbortSignal) => Promise<void>;
 }
 
 export const TIMING: {
@@ -122,6 +123,16 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   };
   const freshSave = (): SaveData => toSave(createWorld(content, { seed: 0, save: null }));
 
+  const prepared = async (signal: AbortSignal): Promise<void> => {
+    if (options.prepare === undefined) return;
+    try {
+      await options.prepare(signal);
+    } catch {
+      log.warn('the character list could not be read from the server; this device keeps its own list until the next reload');
+    }
+    record = parseSyncRecord(store.read(SYNC_KEY), serverUrl);
+  };
+
   const create = async (signal: AbortSignal): Promise<SyncRecord | null> => {
     const result: GuestResult = await api.createGuest(signal);
     creating = null;
@@ -129,7 +140,8 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     if (result.kind !== 'ok') return null;
     const created: SyncRecord = { serverUrl, accountId: result.account.accountId, token: result.account.token, revision: 0, updatedAt: null, savedAt: latest === null ? null : now(), pending: latest !== null, overwriteCloud: false };
     keep(created);
-    return created;
+    await prepared(signal);
+    return record;
   };
 
   const account = (signal: AbortSignal): Promise<SyncRecord | null> => {
@@ -355,8 +367,9 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   };
 
   const load = async (): Promise<SaveData | null> => {
-    let localSave: SaveData | null = await local.load();
     const signal: AbortSignal = timeout(TIMING.loadMs);
+    await prepared(signal);
+    let localSave: SaveData | null = await local.load();
     const tokenBefore: string | null = record?.token ?? null;
     restarted = restarted || record?.overwriteCloud === true;
     const reached = await reachCloud(signal, false);

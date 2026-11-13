@@ -21,6 +21,7 @@ function environment(calls: string[], warnings: string[]): BackendEnvironment {
         warnings.push(message);
       },
     },
+    characterKeys: [],
   };
 }
 
