@@ -1,8 +1,9 @@
 import type { Material, Object3D, Scene } from 'three';
-import { Color, Mesh, MeshStandardMaterial } from 'three';
+import { Mesh, MeshStandardMaterial } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, PropDef } from '../../sim/content/types.ts';
 import { loadModel } from '../render/character-loader.ts';
+import { rockHeight } from './lobby-ground.ts';
 import { lookOf, withPropLook } from '../render/prop-surface.ts';
 import type { PropLook } from '../render/prop-surface.ts';
 import { dressedProp } from '../render/surfaces.ts';
@@ -16,25 +17,27 @@ export interface LobbyRock {
   readonly size: number;
 }
 
-export const LOBBY_SCENERY: { readonly dressing: PropDressing; readonly rocks: readonly LobbyRock[] } = {
-  dressing: { wet: 0.6, ground: 0 },
+export const LOBBY_SCENERY: { readonly dressing: PropDressing; readonly stone: string; readonly shade: number; readonly rocks: readonly LobbyRock[] } = {
+  dressing: { wet: 0.18, ground: 0 },
+  stone: 'black_rock',
+  shade: 0.6,
   rocks: [
     { prop: 'boulder_2', x: -3.6, z: -4.6, yawDegrees: 40, size: 0.9 },
     { prop: 'crag_low', x: -7.4, z: -9.5, yawDegrees: 110, size: 0.8 },
     { prop: 'boulder_3', x: 3.9, z: -5.4, yawDegrees: 200, size: 1 },
     { prop: 'crag_low', x: 8.2, z: -11, yawDegrees: 20, size: 0.9 },
-    { prop: 'boulder_1', x: -1.4, z: -11.5, yawDegrees: 300, size: 1.2 },
+    { prop: 'boulder_1', x: -6.8, z: -12.5, yawDegrees: 300, size: 1.2 },
     { prop: 'rock_4', x: 2, z: -2.8, yawDegrees: 75, size: 0.7 },
     { prop: 'rock_5', x: -2.3, z: -1.6, yawDegrees: 160, size: 0.5 },
   ],
 };
 
-function dress(content: Content, def: PropDef, material: Material): Material {
-  const made: Material = dressedProp(content, def.surfaces, material, LOBBY_SCENERY.dressing);
-  if (def.tint === null || !(made instanceof MeshStandardMaterial)) return made;
+function dress(content: Content, material: Material): Material {
+  const made: Material = dressedProp(content, { [material.name]: LOBBY_SCENERY.stone }, material, LOBBY_SCENERY.dressing);
+  if (!(made instanceof MeshStandardMaterial)) return made;
   const look: PropLook | undefined = lookOf(made);
   const own: MeshStandardMaterial = look === undefined ? made.clone() : withPropLook(made.clone(), look);
-  own.color.multiply(new Color(def.tint));
+  own.color.multiplyScalar(LOBBY_SCENERY.shade);
   return own;
 }
 
@@ -43,11 +46,11 @@ function placed(content: Content, def: PropDef, gltf: GLTF, rock: LobbyRock): Ob
   copy.traverse((node: Object3D): void => {
     if (!(node instanceof Mesh)) return;
     const material: unknown = node.material;
-    if (material instanceof MeshStandardMaterial) node.material = dress(content, def, material);
+    if (material instanceof MeshStandardMaterial) node.material = dress(content, material);
     node.castShadow = true;
     node.receiveShadow = true;
   });
-  copy.position.set(rock.x, 0, rock.z);
+  copy.position.set(rock.x, rockHeight(rock, LOBBY_SCENERY.rocks), rock.z);
   copy.rotation.y = (rock.yawDegrees * Math.PI) / 180;
   copy.scale.setScalar(def.scale * rock.size);
   return copy;

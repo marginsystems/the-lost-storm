@@ -1,5 +1,5 @@
 import type { AnimationClip, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, CircleGeometry, Color, DataTexture, Fog, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2, Vector3 } from 'three';
+import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, Color, DataTexture, Fog, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2, Vector3 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
@@ -13,7 +13,8 @@ import { surfaceMaterial } from '../render/surfaces.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import { createLobbyPipeline } from './lobby-render.ts';
 import type { LobbyPipeline } from './lobby-render.ts';
-import { placeRocks } from './lobby-scenery.ts';
+import { groundGeometry, valueNoise } from './lobby-ground.ts';
+import { LOBBY_SCENERY, placeRocks } from './lobby-scenery.ts';
 import { createLobbyLights } from './lobby-lights.ts';
 import type { LobbyLights } from './lobby-lights.ts';
 import { createLobbyMist } from './lobby-mist.ts';
@@ -36,9 +37,9 @@ export const LOBBY_STAGE = {
   facing: -0.34,
   rimGlow: 0x000000,
   groundSurface: 'black_rock',
-  groundWet: 0.3,
+  groundWet: 0.18,
   groundShade: 0.6,
-  groundRelief: 0.8,
+  groundRelief: 0.55,
   groundRadius: 14,
   groundSegments: 72,
   groundEdge: 0.06,
@@ -52,15 +53,18 @@ export const LOBBY_STAGE = {
   rainSlant: 0.08,
   rainColor: 0x9aa8c2,
   rainOpacity: 0.22,
-  mistLayers: 4,
-  mistWidth: 18,
-  mistHeight: 2.6,
-  mistColor: 0x7a879c,
-  mistOpacity: 0.045,
-  mistDrift: 0.12,
-  mistFirstDepth: -1.6,
-  mistDepthStep: -1.4,
-  mistTextureSize: 64,
+  mistDepths: [2.4, 0.9, -1.2, -2.6, -4.2, -6.2, -8.6, -11],
+  mistWidth: 16,
+  mistHeight: 2.2,
+  mistLift: 0.32,
+  mistColor: 0x8394b0,
+  mistOpacity: 0.11,
+  mistNearOpacity: 0.05,
+  mistDrift: 0.1,
+  mistTextureWide: 128,
+  mistTextureTall: 48,
+  mistWisps: 5.5,
+  mistWispRise: 2.2,
   rootId: 'lobby',
   zoomProperty: '--lobby-zoom',
   footSamples: 16,
@@ -143,23 +147,29 @@ function coverMesh(): Mesh<PlaneGeometry, MeshBasicMaterial> {
   return mesh;
 }
 
+export function mistShare(across: number, up: number, wisp: number): number {
+  const side: number = Math.max(0, 1 - Math.abs(across * 2 - 1) ** 2.4);
+  const low: number = Math.max(0, 1 - up) ** 1.6 * Math.min(1, up * 9);
+  const body: number = Math.min(1, Math.max(0, (wisp - 0.32) / 0.5));
+  return side * low * body * body * (3 - 2 * body);
+}
+
 function mistTexture(): DataTexture {
-  const size: number = LOBBY_STAGE.mistTextureSize;
-  const data: Uint8Array = new Uint8Array(size * size * 4);
-  for (let y: number = 0; y < size; y += 1) {
-    for (let x: number = 0; x < size; x += 1) {
-      const dx: number = ((x + 0.5) / size) * 2 - 1;
-      const dy: number = ((y + 0.5) / size) * 2 - 1;
-      const fall: number = Math.max(0, 1 - Math.hypot(dx, dy * 1.4));
-      const value: number = Math.round(fall * fall * (3 - 2 * fall) * 255);
-      const at: number = (y * size + x) * 4;
-      data[at] = value;
-      data[at + 1] = value;
-      data[at + 2] = value;
+  const wide: number = LOBBY_STAGE.mistTextureWide;
+  const tall: number = LOBBY_STAGE.mistTextureTall;
+  const data: Uint8Array = new Uint8Array(wide * tall * 4);
+  for (let y: number = 0; y < tall; y += 1) {
+    for (let x: number = 0; x < wide; x += 1) {
+      const across: number = (x + 0.5) / wide;
+      const up: number = (y + 0.5) / tall;
+      const wisp: number = 0.6 * valueNoise(across * LOBBY_STAGE.mistWisps, up * LOBBY_STAGE.mistWispRise) + 0.4 * valueNoise(across * LOBBY_STAGE.mistWisps * 2.3 + 9, up * LOBBY_STAGE.mistWispRise * 2.1 + 4);
+      const value: number = Math.round(mistShare(across, up, wisp) * 255);
+      const at: number = (y * wide + x) * 4;
+      data.fill(value, at, at + 3);
       data[at + 3] = 255;
     }
   }
-  const texture: DataTexture = new DataTexture(data, size, size, RGBAFormat);
+  const texture: DataTexture = new DataTexture(data, wide, tall, RGBAFormat);
   texture.magFilter = LinearFilter;
   texture.minFilter = LinearFilter;
   texture.needsUpdate = true;
@@ -185,18 +195,8 @@ function quietGround(shared: MeshStandardMaterial): MeshStandardMaterial {
 }
 
 function groundMesh(def: SurfaceDef | undefined): Mesh {
-  const geometry: CircleGeometry = new CircleGeometry(LOBBY_STAGE.groundRadius, LOBBY_STAGE.groundSegments);
-  geometry.rotateX(-Math.PI / 2);
-  const positions: BufferAttribute | ReturnType<BufferGeometry['getAttribute']> = geometry.getAttribute('position');
-  const colours: Float32Array = new Float32Array(positions.count * 3);
-  for (let index: number = 0; index < positions.count; index += 1) {
-    const reach: number = Math.hypot(positions.getX(index), positions.getZ(index)) / LOBBY_STAGE.groundRadius;
-    const shade: number = LOBBY_STAGE.groundEdge + (1 - LOBBY_STAGE.groundEdge) * Math.max(0, 1 - reach * reach);
-    colours.set([shade, shade, shade], index * 3);
-  }
-  geometry.setAttribute('color', new BufferAttribute(colours, 3));
   const material: MeshBasicMaterial | MeshStandardMaterial = def === undefined ? new MeshBasicMaterial({ color: LOBBY_STAGE.background, vertexColors: true }) : quietGround(surfaceMaterial(def, 'ground', LOBBY_STAGE.groundWet));
-  const mesh: Mesh = new Mesh(geometry, material);
+  const mesh: Mesh = new Mesh(groundGeometry(LOBBY_SCENERY.rocks), material);
   mesh.receiveShadow = true;
   return mesh;
 }
@@ -282,14 +282,15 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   const rain: RainLayer = rainLayer(random);
   scene.add(rain.lines);
 
-  const mistMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: LOBBY_STAGE.mistColor, alphaMap: mistTexture(), transparent: true, opacity: LOBBY_STAGE.mistOpacity, depthWrite: false, blending: AdditiveBlending });
-  const mists: Mesh[] = [];
-  for (let layer: number = 0; layer < LOBBY_STAGE.mistLayers; layer += 1) {
-    const mist: Mesh = new Mesh(new PlaneGeometry(LOBBY_STAGE.mistWidth, LOBBY_STAGE.mistHeight), mistMaterial);
-    mist.position.set((random() - 0.5) * LOBBY_STAGE.mistWidth * 0.5, LOBBY_STAGE.mistHeight * 0.3, LOBBY_STAGE.mistFirstDepth + LOBBY_STAGE.mistDepthStep * layer);
+  const mistAlpha: DataTexture = mistTexture();
+  const mists: Mesh<PlaneGeometry, MeshBasicMaterial>[] = LOBBY_STAGE.mistDepths.map((depth: number, layer: number): Mesh<PlaneGeometry, MeshBasicMaterial> => {
+    const material: MeshBasicMaterial = new MeshBasicMaterial({ color: LOBBY_STAGE.mistColor, alphaMap: mistAlpha, transparent: true, opacity: depth > 0 ? LOBBY_STAGE.mistNearOpacity : LOBBY_STAGE.mistOpacity, depthWrite: false, blending: AdditiveBlending, fog: false });
+    const mist: Mesh<PlaneGeometry, MeshBasicMaterial> = new Mesh(new PlaneGeometry(LOBBY_STAGE.mistWidth, LOBBY_STAGE.mistHeight), material);
+    mist.position.set((random() - 0.5) * LOBBY_STAGE.mistWidth * 0.5, LOBBY_STAGE.mistHeight * 0.5 - LOBBY_STAGE.mistLift, depth);
+    mist.scale.x = layer % 2 === 0 ? 1 : -1;
     scene.add(mist);
-    mists.push(mist);
-  }
+    return mist;
+  });
 
   let hero: RigInstance | null = null;
   let heroKey: string = '';
@@ -430,9 +431,10 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     render(renderer: WebGLRenderer, dt: number, tier: QualityName, devicePixelRatio: number): void {
       lights.step(dt);
       stepRain(rain, dt);
-      mists.forEach((mist: Mesh, index: number): void => {
-        mist.position.x += LOBBY_STAGE.mistDrift * dt * (index % 2 === 0 ? 1 : -1);
+      mists.forEach((mist: Mesh<PlaneGeometry, MeshBasicMaterial>, index: number): void => {
+        mist.position.x += LOBBY_STAGE.mistDrift * dt * (index % 2 === 0 ? 1 : -1) * (1 + index * 0.12);
         if (Math.abs(mist.position.x) > LOBBY_STAGE.mistWidth * 0.5) mist.position.x = -mist.position.x * 0.9;
+        mist.rotation.y = Math.atan2(camera.position.x - mist.position.x, camera.position.z - mist.position.z);
       });
       if (hero !== null) {
         hero.mixer.update(dt);
