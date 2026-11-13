@@ -160,7 +160,7 @@ function shoreProp(value: unknown, where: string): ShoreProp {
 function shorePath(value: unknown, where: string): ShorePath | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
-  return { surface: text(source, 'surface', where), width: positive(source, 'width', where), length: positive(source, 'length', where), sway: nonNegative(source, 'sway', where) };
+  return { surface: text(source, 'surface', where), width: positive(source, 'width', where), length: positive(source, 'length', where), sway: nonNegative(source, 'sway', where), rubble: source['rubble'] === undefined ? [] : textList(source, 'rubble', where) };
 }
 
 function shoreRoom(value: unknown, where: string): ShoreRoom | null {

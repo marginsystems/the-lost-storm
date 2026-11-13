@@ -105,6 +105,7 @@
   {"id": "rock_3", "model": "models/props/rock_set_3.glb", "scale": 0.42, "blockRadius": 0, "light": null, "surfaces": {}, "tint": "#8e98a6"},
   {"id": "rubble_chip", "model": "models/world/loose_blocks.glb", "scale": 0.26, "blockRadius": 0, "light": null, "surfaces": {"stone": "hall_stone", "wood": "wet_planks", "iron": "iron", "earth": "crag_ground"}},
   {"id": "rubble_shard", "model": "models/props/rock_set_1.glb", "scale": 0.08, "blockRadius": 0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#e2e6ec"},
+  {"id": "path_stone", "model": "models/props/rock_set_3.glb", "scale": 0.12, "blockRadius": 0, "light": null, "surfaces": {}, "tint": "#a7aeb9"},
   {"id": "rock_4", "model": "models/props/rock_set_4.glb", "scale": 0.42, "blockRadius": 0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
   {"id": "rock_5", "model": "models/props/rock_set_5.glb", "scale": 0.42, "blockRadius": 0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
   {"id": "shrine", "model": "models/world/shrine.glb", "scale": 1, "blockRadius": 0.7, "light": {"color": "#ffb060", "intensity": 14, "distance": 10, "height": 1.0}, "surfaces": {"stone": "drystone", "wax": "wax"}},

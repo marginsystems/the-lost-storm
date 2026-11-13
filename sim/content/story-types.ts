@@ -57,6 +57,7 @@ export interface ShorePath {
   readonly width: number;
   readonly length: number;
   readonly sway: number;
+  readonly rubble: readonly string[];
 }
 
 export interface ShoreRoom {

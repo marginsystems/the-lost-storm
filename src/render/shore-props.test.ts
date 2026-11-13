@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { BufferAttribute, InterleavedBufferAttribute } from 'three';
-import { pathAlpha, pathGeometry, SHORE_PATH } from './shore-props.ts';
+import { pathAlpha, pathGeometry, pathStones, pathWidth, SHORE_PATH } from './shore-props.ts';
 
 void test('the worn path is solid down its middle, fades to nothing at its sides and both ends', (): void => {
   assert.equal(pathAlpha(0, 20, 58), 0);
@@ -13,7 +13,7 @@ void test('the worn path is solid down its middle, fades to nothing at its sides
 });
 
 void test('the worn path lies flat on the ground, starts just past the line and runs its length ashore', (): void => {
-  const geometry = pathGeometry({ surface: 'crag_ground', width: 2.6, length: 58, sway: 1.4 });
+  const geometry = pathGeometry({ surface: 'crag_ground', width: 2.6, length: 58, sway: 1.4, rubble: [] });
   const positions: BufferAttribute | InterleavedBufferAttribute = geometry.getAttribute('position');
   let least: number = Infinity;
   let most: number = -Infinity;
@@ -27,4 +27,17 @@ void test('the worn path lies flat on the ground, starts just past the line and 
   const up = geometry.getAttribute('normal');
   assert.ok(up.getY(0) > 0.99);
   geometry.dispose();
+});
+
+void test('loose stones lie along both edges of the worn path, never down its middle', (): void => {
+  const path = { surface: 'crag_ground', width: 2.6, length: 58, sway: 1.4, rubble: ['a', 'b'] };
+  const stones = pathStones(path);
+  assert.ok(stones.length > 40);
+  assert.ok(stones.some((stone): boolean => stone.prop === 'a') && stones.some((stone): boolean => stone.prop === 'b'));
+  for (const stone of stones) {
+    const along: number = stone.z - SHORE_PATH.start;
+    const centre: number = path.sway * Math.sin(along * SHORE_PATH.wave);
+    assert.ok(Math.abs(stone.x - centre) > (pathWidth(path, along) * SHORE_PATH.edge) / 2 - 0.2);
+  }
+  assert.deepEqual(pathStones({ ...path, rubble: [] }), []);
 });
