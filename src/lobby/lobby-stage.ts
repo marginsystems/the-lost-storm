@@ -17,6 +17,8 @@ import { poseBones, settlePose, turnPose } from './lobby-pose.ts';
 import type { PosedBone, PoseTurn } from './lobby-pose.ts';
 import { placeRocks } from './lobby-scenery.ts';
 import { createLobbyMist } from './lobby-mist.ts';
+import { createLobbyLife } from './lobby-life.ts';
+import type { LobbyLife } from './lobby-life.ts';
 import type { LobbyMist } from './lobby-mist.ts';
 import { createLobbyOrbit, grab, LOBBY_ORBIT, orbitBy, release, stepOrbit, zoomBy } from './lobby-orbit.ts';
 import type { LobbyOrbit, OrbitView } from './lobby-orbit.ts';
@@ -313,10 +315,11 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   let pipeline: LobbyPipeline | null = null;
   let scenery: Promise<void> | null = null;
   let posed: readonly PosedBone[] = [];
+  let life: LobbyLife | null = null;
   const orbit: LobbyOrbit = createLobbyOrbit();
   let drawnAt: number = Number.NEGATIVE_INFINITY;
   let listening: boolean = false;
-  const pointers: Map<number, { x: number; y: number }> = new Map<number, { x: number; y: number }>();
+  const pointers: Map<number, { x: number; y: number; t: number }> = new Map<number, { x: number; y: number; t: number }>();
   const active = (): boolean => performance.now() - drawnAt < LOBBY_ORBIT.activeWithinMs;
   const spread = (): number => {
     const [first, second] = [...pointers.values()];
@@ -332,16 +335,16 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     listening = true;
     target.addEventListener('pointerdown', (event: PointerEvent): void => {
       if (!active() || !fromStage(event)) return;
-      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, t: event.timeStamp });
       if (pointers.size === 1) grab(orbit);
       take(event);
     }, { capture: true });
     target.addEventListener('pointermove', (event: PointerEvent): void => {
-      const last: { x: number; y: number } | undefined = pointers.get(event.pointerId);
+      const last: { x: number; y: number; t: number } | undefined = pointers.get(event.pointerId);
       if (last === undefined || !active()) return;
       const before: number = spread();
-      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      if (pointers.size === 1) orbitBy(orbit, event.clientX - last.x, event.clientY - last.y);
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, t: event.timeStamp });
+      if (pointers.size === 1) orbitBy(orbit, event.clientX - last.x, event.clientY - last.y, Math.max(0, (event.timeStamp - last.t) / 1000));
       else if (before > 0) zoomBy(orbit, (spread() - before) * LOBBY_ORBIT.zoomPerWheelPixel * 2);
       take(event);
     }, { capture: true });
@@ -379,6 +382,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     made.root.rotation.y = LOBBY_STAGE.facing;
     castShadows(made.root);
     posed = poseBones(made.root, LOBBY_POSE);
+    life = createLobbyLife(made.root, random());
     scene.add(contactShadow());
     scene.add(made.root);
     hero = made;
@@ -412,6 +416,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
         hero.mixer.update(dt);
         hero.relaxHands();
         turnPose(posed);
+        life?.step(dt);
         hero.stepWear(dt);
         hero.root.rotation.y = LOBBY_STAGE.facing;
       }

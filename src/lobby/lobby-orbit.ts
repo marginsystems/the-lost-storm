@@ -1,11 +1,17 @@
 export const LOBBY_ORBIT = {
-  swayRadians: 0.2,
-  swayPeriodSeconds: 45,
   pitchUpRadians: 0.6,
   floorClearance: 0.6,
   radiansPerPixel: 0.006,
-  returnSpring: { freq: 1.25, damping: 0.78 },
-  holdSeconds: 1.6,
+  pitchReturnSpring: { freq: 1.25, damping: 0.78 },
+  autoRadiansPerSecond: (2 * Math.PI) / 38,
+  resumeAfterSeconds: 4,
+  autoSpring: { freq: 0.9, damping: 1 },
+  flingFriction: 3.2,
+  flingMaxSpeed: 9,
+  flingRestBelow: 0.01,
+  flingStillSeconds: 0.1,
+  flingSmoothSeconds: 0.05,
+  flingShortestSeconds: 1 / 240,
   restBelowRadians: 0.002,
   zoomSpring: { freq: 1.6, damping: 1 },
   zoomPerWheelPixel: 0.0016,
@@ -23,9 +29,11 @@ export interface Spring {
 
 export interface LobbyOrbit {
   held: boolean;
-  holdLeft: number;
+  idleSeconds: number;
   seconds: number;
+  movedAt: number;
   readonly yaw: Spring;
+  readonly auto: Spring;
   readonly pitch: Spring;
   readonly zoom: Spring;
   zoomTarget: number;
@@ -40,7 +48,7 @@ export interface OrbitView {
 }
 
 export function createLobbyOrbit(): LobbyOrbit {
-  return { held: false, holdLeft: 0, seconds: 0, yaw: { x: 0, v: 0 }, pitch: { x: 0, v: 0 }, zoom: { x: 0, v: 0 }, zoomTarget: 0 };
+  return { held: false, idleSeconds: LOBBY_ORBIT.resumeAfterSeconds, seconds: 0, movedAt: 0, yaw: { x: 0, v: 0 }, auto: { x: 0, v: 0 }, pitch: { x: 0, v: 0 }, zoom: { x: 0, v: 0 }, zoomTarget: 0 };
 }
 
 export function stepSpring(spring: Spring, target: number, freq: number, damping: number, dt: number): number {
@@ -63,43 +71,57 @@ export function grab(orbit: LobbyOrbit): void {
   orbit.held = true;
   orbit.yaw.v = 0;
   orbit.pitch.v = 0;
+  orbit.movedAt = orbit.seconds;
 }
 
 export function release(orbit: LobbyOrbit): void {
   orbit.held = false;
-  orbit.holdLeft = LOBBY_ORBIT.holdSeconds;
+  if (orbit.seconds - orbit.movedAt > LOBBY_ORBIT.flingStillSeconds) orbit.yaw.v = 0;
 }
 
-export function orbitBy(orbit: LobbyOrbit, dxPixels: number, dyPixels: number): void {
+export function orbitBy(orbit: LobbyOrbit, dxPixels: number, dyPixels: number, seconds: number): void {
   if (!orbit.held) return;
-  orbit.yaw.x = wrapAngle(orbit.yaw.x - dxPixels * LOBBY_ORBIT.radiansPerPixel);
+  const step: number = -dxPixels * LOBBY_ORBIT.radiansPerPixel;
+  orbit.yaw.x = wrapAngle(orbit.yaw.x + step);
+  const interval: number = Math.max(seconds, LOBBY_ORBIT.flingShortestSeconds);
+  const blend: number = 1 - Math.exp(-interval / LOBBY_ORBIT.flingSmoothSeconds);
+  const speed: number = orbit.yaw.v + (step / interval - orbit.yaw.v) * blend;
+  orbit.yaw.v = Math.max(-LOBBY_ORBIT.flingMaxSpeed, Math.min(LOBBY_ORBIT.flingMaxSpeed, speed));
   orbit.pitch.x = Math.min(LOBBY_ORBIT.pitchUpRadians, orbit.pitch.x + dyPixels * LOBBY_ORBIT.radiansPerPixel);
-  orbit.yaw.v = 0;
   orbit.pitch.v = 0;
+  orbit.movedAt = orbit.seconds;
 }
 
 export function zoomBy(orbit: LobbyOrbit, amount: number): void {
   orbit.zoomTarget = Math.min(1, Math.max(0, orbit.zoomTarget + amount));
+  orbit.idleSeconds = 0;
+}
+
+function stepTurn(orbit: LobbyOrbit, dt: number): void {
+  if (orbit.held) {
+    orbit.idleSeconds = 0;
+    orbit.auto.x = 0;
+    orbit.auto.v = 0;
+    return;
+  }
+  orbit.idleSeconds += dt;
+  const resting: boolean = orbit.idleSeconds >= LOBBY_ORBIT.resumeAfterSeconds;
+  stepSpring(orbit.auto, resting ? LOBBY_ORBIT.autoRadiansPerSecond : 0, LOBBY_ORBIT.autoSpring.freq, LOBBY_ORBIT.autoSpring.damping, dt);
+  orbit.yaw.x = wrapAngle(orbit.yaw.x + (orbit.yaw.v + orbit.auto.x) * dt);
+  orbit.yaw.v *= Math.exp(-LOBBY_ORBIT.flingFriction * dt);
+  if (Math.abs(orbit.yaw.v) < LOBBY_ORBIT.flingRestBelow) orbit.yaw.v = 0;
+  if (!resting) return;
+  stepSpring(orbit.pitch, 0, LOBBY_ORBIT.pitchReturnSpring.freq, LOBBY_ORBIT.pitchReturnSpring.damping, dt);
+  if (Math.abs(orbit.pitch.x) < LOBBY_ORBIT.restBelowRadians && Math.abs(orbit.pitch.v) < LOBBY_ORBIT.restBelowRadians) {
+    orbit.pitch.x = 0;
+    orbit.pitch.v = 0;
+  }
 }
 
 export function stepOrbit(orbit: LobbyOrbit, dt: number): OrbitView {
   orbit.seconds += dt;
-  if (!orbit.held) {
-    orbit.holdLeft = Math.max(0, orbit.holdLeft - dt);
-    if (orbit.holdLeft === 0) {
-      orbit.yaw.x = wrapAngle(orbit.yaw.x);
-      for (const spring of [orbit.yaw, orbit.pitch]) {
-        stepSpring(spring, 0, LOBBY_ORBIT.returnSpring.freq, LOBBY_ORBIT.returnSpring.damping, dt);
-        if (Math.abs(spring.x) < LOBBY_ORBIT.restBelowRadians && Math.abs(spring.v) < LOBBY_ORBIT.restBelowRadians) {
-          spring.x = 0;
-          spring.v = 0;
-        }
-      }
-    }
-  }
+  stepTurn(orbit, dt);
   const zoom: number = stepSpring(orbit.zoom, orbit.zoomTarget, LOBBY_ORBIT.zoomSpring.freq, LOBBY_ORBIT.zoomSpring.damping, dt);
-  const sway: number = LOBBY_ORBIT.swayRadians * Math.sin((2 * Math.PI * orbit.seconds) / LOBBY_ORBIT.swayPeriodSeconds);
-  const yaw: number = sway + orbit.yaw.x;
   const lookHeight: number = LOBBY_ORBIT.far.lookHeight + (LOBBY_ORBIT.near.lookHeight - LOBBY_ORBIT.far.lookHeight) * zoom;
   const distance: number = LOBBY_ORBIT.far.distance + (LOBBY_ORBIT.near.distance - LOBBY_ORBIT.far.distance) * zoom;
   const settled: number = Math.atan2(LOBBY_ORBIT.height - LOBBY_ORBIT.far.lookHeight, LOBBY_ORBIT.far.distance);
@@ -110,9 +132,9 @@ export function stepOrbit(orbit: LobbyOrbit, dt: number): OrbitView {
   }
   const rise: number = settled + orbit.pitch.x;
   return {
-    x: Math.sin(yaw) * Math.cos(rise) * distance,
+    x: Math.sin(orbit.yaw.x) * Math.cos(rise) * distance,
     y: lookHeight + Math.sin(rise) * distance,
-    z: Math.cos(yaw) * Math.cos(rise) * distance,
+    z: Math.cos(orbit.yaw.x) * Math.cos(rise) * distance,
     lookHeight,
     zoom,
   };
