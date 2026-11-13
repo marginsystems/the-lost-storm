@@ -8,7 +8,7 @@ import { pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
 import { grantXp, killXp } from './character.ts';
 import { dropOnGround } from './ground.ts';
-import { lowerProps, raiseProps, standClear } from './moment-ground.ts';
+import { clearOfTallProps, lowerProps, raiseProps, standClear } from './moment-ground.ts';
 import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
 import type { EchoState, ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, NpcState, ProjectileState, World } from './types.ts';
@@ -102,6 +102,7 @@ function roomFor(world: World, field: MomentField, def: MomentDef, pos: Vec2): b
   if (safeSpots(world).some((spot: Vec2): boolean => distance(spot, pos) < def.radius + field.clearance.safe)) return false;
   if (world.monsters.some((monster: MonsterState): boolean => monster.alive && monster.def.faction !== world.content.moments.faction && distance(monster.pos, pos) < monster.def.aggroRadius + field.clearance.packs)) return false;
   if (world.zone.exits.some((exit): boolean => distance(exit, pos) < def.radius + field.clearance.exits)) return false;
+  if (!clearOfTallProps(world, def, pos)) return false;
   return world.moments.every((other: MomentState): boolean => distance(other.pos, pos) >= def.radius + other.def.radius + field.clearance.between);
 }
 

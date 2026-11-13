@@ -1,13 +1,45 @@
+import type { MomentDef } from '../content/moment-types.ts';
 import type { PropDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { Blocker, NavGrid } from '../nav/grid.ts';
-import { isWalkable, liftStamp, nearestWalkable, propBlocker, stampBlockers } from '../nav/grid.ts';
+import { blockerGap, isWalkable, liftStamp, nearestWalkable, propBlocker, propBlockers, stampBlockers } from '../nav/grid.ts';
+import { allHold } from './conditions.ts';
 import { gridFor } from './movement.ts';
 import type { Actor, MomentState, World } from './types.ts';
 
 export const MOMENT_GROUND = {
   shoveReach: 6,
+  tallProp: 1.5,
 } as const;
+
+function propExtent(def: PropDef): number {
+  const points: number = Math.max(0, ...def.footprints.flat().map((point): number => Math.hypot(point.x, point.z)));
+  return Math.max(points, def.blockLength / 2 + def.blockRadius);
+}
+
+export function momentFootprint(world: World, def: MomentDef): number {
+  let reach: number = def.radius;
+  for (const placed of def.props) {
+    const prop: PropDef | undefined = world.content.props.get(placed.prop);
+    if (prop !== undefined) reach = Math.max(reach, Math.hypot(placed.x, placed.z) + propExtent(prop));
+  }
+  return reach;
+}
+
+export function tallBlockers(world: World): Blocker[] {
+  const list: Blocker[] = [];
+  for (const placed of world.zone.props) {
+    const def: PropDef | undefined = world.content.props.get(placed.prop);
+    if (def === undefined || def.height < MOMENT_GROUND.tallProp || !allHold(world, placed.when)) continue;
+    list.push(...propBlockers(def, placed.x + world.shift.x, placed.z + world.shift.z, placed.rotationDegrees));
+  }
+  return list;
+}
+
+export function clearOfTallProps(world: World, def: MomentDef, pos: Vec2): boolean {
+  const reach: number = momentFootprint(world, def);
+  return tallBlockers(world).every((blocker: Blocker): boolean => blockerGap(blocker, pos.x, pos.z) >= reach);
+}
 
 export function momentBlockers(world: World, moment: MomentState): Blocker[] {
   const list: Blocker[] = [];
