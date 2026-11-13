@@ -20,6 +20,8 @@ import type { IsoCamera } from './render/iso-camera.ts';
 import type { ActionId } from './settings/bindings.ts';
 import { flaskAction, slotAction } from './settings/bindings.ts';
 import type { SettingsStore } from './settings/store.ts';
+import type { SurfaceRect } from './surface-rect.ts';
+import { surfaceRect } from './surface-rect.ts';
 
 export const INPUT = {
   holdInterval: 0.09,
@@ -81,6 +83,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   let tapping: boolean = false;
   let pressedItem: boolean = false;
   const extra: Command[] = [];
+  const canvasRect: SurfaceRect = surfaceRect(canvas);
 
   const slotFor = (binding: string): number => world.content.player.skillBar.findIndex((_entry, slot: number): boolean => settings.keys().bindingsOf(slotAction(slot)).includes(binding));
 
@@ -91,7 +94,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   };
 
   const trackPoint = (clientX: number, clientY: number): void => {
-    const rect: DOMRect = canvas.getBoundingClientRect();
+    const rect: DOMRect = canvasRect.read();
     pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
   };
   const track = (event: PointerEvent | WheelEvent): void => {
@@ -110,6 +113,12 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     mouse = event.pointerType === 'mouse';
     shift = event.shiftKey;
     pointerInside = true;
+  });
+  canvas.addEventListener('pointerenter', (): void => {
+    canvasRect.stale();
+  });
+  windowEvents.addEventListener('resize', (): void => {
+    canvasRect.stale();
   });
   canvas.addEventListener('pointerleave', (): void => {
     pointerInside = false;
@@ -196,7 +205,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       const labelled: NpcState | undefined = world.npcs.find((npc: NpcState): boolean => npc.id === labelId);
       return labelled === undefined ? null : candidateFor('npc', labelled.id, labelled.pos.x, labelled.pos.z);
     }
-    const rect: DOMRect = canvas.getBoundingClientRect();
+    const rect: DOMRect = canvasRect.read();
     const point = { x: ((pointer.x + 1) / 2) * rect.width, y: ((1 - pointer.y) / 2) * rect.height };
     const candidates: PickCandidate[] = [];
     for (const monster of world.monsters) {

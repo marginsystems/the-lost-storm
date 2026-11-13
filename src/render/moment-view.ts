@@ -567,11 +567,9 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
           for (const material of materials) if (material instanceof MeshStandardMaterial) for (const texture of [material.map, material.normalMap, material.roughnessMap, material.emissiveMap]) if (texture !== null) textures.add(texture);
         });
         entry.group.visible = false;
-        scene.add(entry.group);
       }
       bolt.visible = false;
       arcs.visible = false;
-      scene.add(bolt, arcs);
       await workPaced([...textures], (texture: Texture): void => renderer.initTexture(texture), pacer, PACED_WORK.frameBudgetMs);
       for (const entry of kept) dispose(entry);
       for (const old of keptStrike) old.removeFromParent();
@@ -594,12 +592,14 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
         object.position.x = x;
         object.position.z = z;
         object.visible = true;
+        scene.add(object);
       }
       return (): void => {
         for (const entry of before) {
           entry.object.position.x = entry.x;
           entry.object.position.z = entry.z;
           entry.object.visible = false;
+          entry.object.removeFromParent();
         }
       };
     },
