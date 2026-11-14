@@ -8,7 +8,19 @@ export interface HideoutApi {
   friends(token: string, signal: AbortSignal): Promise<FriendsResult>;
   accept(token: string, name: string, signal: AbortSignal): Promise<FriendResult>;
   remove(token: string, name: string, signal: AbortSignal): Promise<FriendResult>;
+  blocks(token: string, signal: AbortSignal): Promise<BlocksResult>;
+  block(token: string, name: string, signal: AbortSignal): Promise<BlockResult>;
+  unblock(token: string, name: string, signal: AbortSignal): Promise<BlockResult>;
+  reportPlayer(token: string, name: string, reason: ReportReason, signal: AbortSignal): Promise<ReportResult>;
 }
+
+export type BlocksResult = { readonly kind: 'ok'; readonly names: readonly string[] } | { readonly kind: 'unsupported' } | { readonly kind: 'failed' };
+
+export type BlockRefusal = 'own_name' | 'no_such_character' | 'block_limit';
+
+export type BlockResult = { readonly kind: 'ok'; readonly blocked: boolean } | { readonly kind: 'refused'; readonly reason: BlockRefusal } | { readonly kind: 'unsupported' } | { readonly kind: 'failed' };
+
+const BLOCK_REFUSALS: readonly BlockRefusal[] = ['own_name', 'no_such_character', 'block_limit'];
 
 export const FRIEND_LIMITS: { readonly nameChars: number; readonly rows: number } = { nameChars: 32, rows: 200 };
 
@@ -79,6 +91,38 @@ export function friendsResultOf(answer: Answer | null): FriendsResult {
   return list === null ? { kind: 'failed' } : { kind: 'ok', list };
 }
 
+export function blocksResultOf(answer: Answer | null): BlocksResult {
+  if (answer === null) return { kind: 'failed' };
+  if (missingRoute(answer)) return { kind: 'unsupported' };
+  if (answer.status < 200 || answer.status >= 300 || !isFields(answer.body)) return { kind: 'failed' };
+  const names: readonly string[] | null = readRows(answer.body['blocked'], friendName);
+  return names === null ? { kind: 'failed' } : { kind: 'ok', names };
+}
+
+export function blockResultOf(answer: Answer | null): BlockResult {
+  if (answer === null) return { kind: 'failed' };
+  if (missingRoute(answer)) return { kind: 'unsupported' };
+  const code: string = errorCodeOf(answer.body);
+  const refusal: BlockRefusal | undefined = BLOCK_REFUSALS.find((known: BlockRefusal): boolean => known === code);
+  if (refusal !== undefined) return { kind: 'refused', reason: refusal };
+  if (answer.status < 200 || answer.status >= 300 || !isFields(answer.body)) return { kind: 'failed' };
+  const state: unknown = answer.body['state'];
+  if (state === 'blocked') return { kind: 'ok', blocked: true };
+  if (state === 'none') return { kind: 'ok', blocked: false };
+  return { kind: 'failed' };
+}
+
+export function playerReportResultOf(answer: Answer | null): ReportResult {
+  if (answer === null) return 'failed';
+  if (answer.status === 201 || answer.status === 200) return 'reported';
+  if (missingRoute(answer)) return 'unsupported';
+  if (answer.status === 400 && errorCodeOf(answer.body) === 'bad_request') return 'unsupported';
+  if (answer.status === 404) return 'gone';
+  if (answer.status === 400 && errorCodeOf(answer.body) === 'own_name') return 'own';
+  if (answer.status === 429) return 'slow';
+  return 'failed';
+}
+
 export function createHideoutApi(baseUrl: string, fetchFn: FetchFn): HideoutApi {
   return {
     async report(token: string, line: number, reason: ReportReason, signal: AbortSignal): Promise<ReportResult> {
@@ -95,6 +139,18 @@ export function createHideoutApi(baseUrl: string, fetchFn: FetchFn): HideoutApi 
     },
     async remove(token: string, name: string, signal: AbortSignal): Promise<FriendResult> {
       return friendResultOf(await exchange(fetchFn, `${baseUrl}/v1/friends/remove`, { method: 'POST', headers: headers(token), body: JSON.stringify({ name }), signal }));
+    },
+    async blocks(token: string, signal: AbortSignal): Promise<BlocksResult> {
+      return blocksResultOf(await exchange(fetchFn, `${baseUrl}/v1/blocks`, { method: 'GET', headers: headers(token), signal }));
+    },
+    async block(token: string, name: string, signal: AbortSignal): Promise<BlockResult> {
+      return blockResultOf(await exchange(fetchFn, `${baseUrl}/v1/blocks`, { method: 'POST', headers: headers(token), body: JSON.stringify({ name }), signal }));
+    },
+    async unblock(token: string, name: string, signal: AbortSignal): Promise<BlockResult> {
+      return blockResultOf(await exchange(fetchFn, `${baseUrl}/v1/blocks/remove`, { method: 'POST', headers: headers(token), body: JSON.stringify({ name }), signal }));
+    },
+    async reportPlayer(token: string, name: string, reason: ReportReason, signal: AbortSignal): Promise<ReportResult> {
+      return playerReportResultOf(await exchange(fetchFn, `${baseUrl}/v1/reports`, { method: 'POST', headers: headers(token), body: JSON.stringify({ name, reason }), signal }));
     },
   };
 }

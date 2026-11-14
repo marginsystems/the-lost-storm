@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { FetchFn } from './api.ts';
-import { createHideoutApi, FRIEND_LIMITS, friendResultOf, friendsResultOf, reportResultOf } from './hideout-api.ts';
+import { blockResultOf, blocksResultOf, createHideoutApi, FRIEND_LIMITS, friendResultOf, friendsResultOf, playerReportResultOf, reportResultOf } from './hideout-api.ts';
 
 function answer(status: number, body: unknown): { readonly status: number; readonly retryAfter: null; readonly body: unknown } {
   return { status, retryAfter: null, body };
@@ -83,5 +83,56 @@ void test('the friends routes send the name with the token', async (): Promise<v
   assert.deepEqual(
     seen.map((call: { url: string; init: RequestInit }): string => `${call.init.method ?? ''} ${call.url} ${typeof call.init.body === 'string' ? call.init.body : ''}`),
     ['GET http://localhost:8787/v1/friends ', 'POST http://localhost:8787/v1/friends/accept {"name":"Ash"}', 'POST http://localhost:8787/v1/friends/remove {"name":"Ash"}'],
+  );
+});
+
+void test('a block list is read name by name, and a missing route means an old server', (): void => {
+  assert.deepEqual(blocksResultOf(answer(200, { blocked: [{ name: 'Ash' }, { name: '' }, 'Oak'] })), { kind: 'ok', names: ['Ash'] });
+  assert.deepEqual(blocksResultOf(answer(200, {})), { kind: 'failed' });
+  assert.deepEqual(blocksResultOf(answer(404, error('not_found'))), { kind: 'unsupported' });
+  assert.deepEqual(blocksResultOf(null), { kind: 'failed' });
+});
+
+void test('every block answer is told apart', (): void => {
+  assert.deepEqual(blockResultOf(answer(200, { state: 'blocked' })), { kind: 'ok', blocked: true });
+  assert.deepEqual(blockResultOf(answer(200, { state: 'none' })), { kind: 'ok', blocked: false });
+  assert.deepEqual(blockResultOf(answer(400, error('own_name'))), { kind: 'refused', reason: 'own_name' });
+  assert.deepEqual(blockResultOf(answer(404, error('no_such_character'))), { kind: 'refused', reason: 'no_such_character' });
+  assert.deepEqual(blockResultOf(answer(409, error('block_limit'))), { kind: 'refused', reason: 'block_limit' });
+  assert.deepEqual(blockResultOf(answer(404, error('not_found'))), { kind: 'unsupported' });
+  assert.deepEqual(blockResultOf(answer(200, { state: 'maybe' })), { kind: 'failed' });
+  assert.deepEqual(blockResultOf(null), { kind: 'failed' });
+});
+
+void test('a player report answer is told apart, and an old server refusing the name body means unsupported', (): void => {
+  assert.equal(playerReportResultOf(answer(201, { reported: true })), 'reported');
+  assert.equal(playerReportResultOf(answer(404, error('no_such_character'))), 'gone');
+  assert.equal(playerReportResultOf(answer(400, error('own_name'))), 'own');
+  assert.equal(playerReportResultOf(answer(400, error('bad_request'))), 'unsupported');
+  assert.equal(playerReportResultOf(answer(404, error('not_found'))), 'unsupported');
+  assert.equal(playerReportResultOf(answer(429, error('rate_limited'))), 'slow');
+  assert.equal(playerReportResultOf(null), 'failed');
+});
+
+void test('blocking, unblocking and reporting a player send the name with the token to their routes', async (): Promise<void> => {
+  const seen: { url: string; init: RequestInit }[] = [];
+  const fetchFn: FetchFn = (url: string, init: RequestInit): Promise<Response> => {
+    seen.push({ url, init });
+    const body: unknown = url.endsWith('/v1/reports') ? { reported: true } : url.endsWith('/v1/blocks') && init.method === 'GET' ? { blocked: [] } : { state: url.endsWith('/remove') ? 'none' : 'blocked' };
+    return Promise.resolve(new Response(JSON.stringify(body), { status: url.endsWith('/v1/reports') ? 201 : 200 }));
+  };
+  const api = createHideoutApi('http://localhost:8787', fetchFn);
+  assert.deepEqual(await api.blocks('tok', AbortSignal.timeout(1000)), { kind: 'ok', names: [] });
+  assert.deepEqual(await api.block('tok', 'Ash', AbortSignal.timeout(1000)), { kind: 'ok', blocked: true });
+  assert.deepEqual(await api.unblock('tok', 'Ash', AbortSignal.timeout(1000)), { kind: 'ok', blocked: false });
+  assert.equal(await api.reportPlayer('tok', 'Ash', 'abuse', AbortSignal.timeout(1000)), 'reported');
+  assert.deepEqual(
+    seen.map(({ url, init }): string => `${init.method ?? ''} ${url} ${typeof init.body === 'string' ? init.body : ''}`),
+    [
+      'GET http://localhost:8787/v1/blocks ',
+      'POST http://localhost:8787/v1/blocks {"name":"Ash"}',
+      'POST http://localhost:8787/v1/blocks/remove {"name":"Ash"}',
+      'POST http://localhost:8787/v1/reports {"name":"Ash","reason":"abuse"}',
+    ],
   );
 });
