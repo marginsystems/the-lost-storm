@@ -23,7 +23,6 @@
     "bulwark_echo": {"paths": [], "skills": ["thunderclap", "squall", "held_breath"], "route": ["stone_thunderclap", "tempered_body", "stone_1", "bedrock", "stone_held_breath", "stone_echo_near", "echo_1", "long_squall", "echo_squall", "echo_4", "stone_2", "stone_4", "gathered_clap", "stone_echo_mid", "twice_told_bolt", "echo_5", "stone_7", "mountain_falls"], "focus": "thunderclap", "style": "stand", "weapons": "plain", "weights": {"dps": 0.6, "toughness": 1, "mobility": 0}}
   },
   "milestones": [{"name": "found_blade", "flag": "first_blade", "is": "found"}],
-  "reference": {"elite": ["charge", "duel"], "pack": ["market_street", "shipwreck_deck"]},
   "endCard": "end_card",
   "rare": "rare",
   "windows": [10, 30, 60],

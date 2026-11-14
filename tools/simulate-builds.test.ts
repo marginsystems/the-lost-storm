@@ -7,7 +7,7 @@ import { buildRows, buildTable } from './simulate-builds.ts';
 import type { RunSummary } from './simulate-summary.ts';
 import { summarize } from './simulate-summary.ts';
 
-const REFERENCE = { elite: ['charge'], pack: ['market_street'] } as const;
+const RANKS: readonly string[] = ['normal', 'magic', 'rare'];
 
 function stream(build: string, seed: number, lateLevel: number): Measurement[] {
   return [
@@ -15,7 +15,7 @@ function stream(build: string, seed: number, lateLevel: number): Measurement[] {
     { kind: 'level', t: 60, level: 2 },
     { kind: 'level', t: 600, level: 5 },
     { kind: 'level', t: lateLevel, level: 10 },
-    { kind: 'fight', t: 100, id: 1, moment: 'charge', level: 4, foes: 3 },
+    { kind: 'fight', t: 100, id: 1, moment: 'charge', level: 4, foes: 3, rank: 'magic' },
     { kind: 'hit', t: 101, taken: false, amount: 300, foe: 'unfinished_borrower', skill: 'cleave', zone: 'hall_of_time', fight: null },
     { kind: 'hit', t: 102, taken: true, amount: 25, foe: 'unfinished_borrower', skill: 'borrower_cleave', zone: 'hall_of_time', fight: null },
     { kind: 'kill', t: 105, foe: 'unfinished_borrower' },
@@ -37,9 +37,9 @@ void test('a stream carries kills, time below a third of life and the experience
   assert.deepEqual(again, stream('glass', 1, 900));
 });
 
-void test('a build row is the spread over its seeds, with the level times, the rates and the reference fights', (): void => {
+void test('a build row is the spread over its seeds, with the level times, the rates and the fights by pack rank', (): void => {
   const runs: RunSummary[] = [stream('glass', 1, 900), stream('glass', 2, 1000), stream('tank', 1, 1100)].map(summarize);
-  const rows: BuildRow[] = buildRows(runs, REFERENCE);
+  const rows: BuildRow[] = buildRows(runs, RANKS);
   assert.deepEqual(rows.map((row: BuildRow): string => row.build), ['average/glass', 'average/tank']);
   const glass: BuildRow | undefined = rows[0];
   assert.ok(glass !== undefined);
@@ -53,17 +53,31 @@ void test('a build row is the spread over its seeds, with the level times, the r
   assert.equal(glass.deathsPerHour.median, 3);
   assert.equal(glass.xpLostPerHour.median, 120);
   assert.equal(glass.fightDps.median, 30);
-  assert.equal(glass.elite.fights, 2);
-  assert.equal(glass.elite.clearRate, 1);
-  assert.equal(glass.elite.deathRate, 0);
-  assert.equal(glass.pack.fights, 0);
+  assert.deepEqual(glass.ranks.map((entry): string => entry.rank), RANKS);
+  const magic = glass.ranks.find((entry): boolean => entry.rank === 'magic');
+  assert.equal(magic?.fights, 2);
+  assert.equal(magic.clearRate, 1);
+  assert.equal(magic.deathRate, 0);
+  assert.equal(glass.ranks.find((entry): boolean => entry.rank === 'rare')?.fights, 0);
   assert.ok(Math.abs(glass.lowShare.median - 0.01) < 1e-9);
 });
 
 void test('the table has a line for each build in each of its two parts', (): void => {
-  const rows: BuildRow[] = buildRows([stream('glass', 1, 900), stream('tank', 1, 1100)].map(summarize), REFERENCE);
+  const rows: BuildRow[] = buildRows([stream('glass', 1, 900), stream('tank', 1, 1100)].map(summarize), RANKS);
   const lines: string[] = buildTable(rows).split('\n');
   assert.equal(lines.filter((line: string): boolean => line.includes('average/glass')).length, 2);
   assert.equal(lines.filter((line: string): boolean => line.includes('average/tank')).length, 2);
   assert.ok(lines.some((line: string): boolean => line.includes('L20 time')));
+});
+
+void test('a rank whose fights were never cleared shows no clear time instead of zero seconds', (): void => {
+  const lost: Measurement[] = [
+    sessionHeader('sim', 'level 20', 'average/glass', 1),
+    { kind: 'fight', t: 10, id: 1, moment: 'charge', level: 4, foes: 3, rank: 'rare' },
+    { kind: 'moment', t: 40, id: 1, moment: 'charge', outcome: 'expired' },
+    { kind: 'end', t: 100, reason: 'done' },
+  ];
+  const lines: string[] = buildTable(buildRows([summarize(lost)], RANKS)).split('\n');
+  const row: string | undefined = lines.filter((line: string): boolean => line.includes('average/glass')).at(1);
+  assert.ok(row !== undefined && row.includes('0% clear, 0% die, -, took 0'), row);
 });

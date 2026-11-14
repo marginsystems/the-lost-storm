@@ -2,6 +2,7 @@ import type { Power } from './bot-plan.ts';
 import { powerOf } from './bot-plan.ts';
 import type { Fields } from './content/read.ts';
 import { isFields } from './content/read.ts';
+import type { PackRankDef } from './content/rank-types.ts';
 import type { Content, SkillTreeNodeDef } from './content/types.ts';
 import { slotOf } from './items.ts';
 import { momentOfEcho } from './world/moments.ts';
@@ -36,7 +37,7 @@ export type Measurement =
   | { readonly kind: 'death'; readonly t: number; readonly zone: string; readonly foe: string; readonly skill: string; readonly xpLost: number }
   | { readonly kind: 'low'; readonly t: number; readonly seconds: number }
   | { readonly kind: 'flask'; readonly t: number; readonly flask: string }
-  | { readonly kind: 'fight'; readonly t: number; readonly id: number; readonly moment: string; readonly level: number; readonly foes: number }
+  | { readonly kind: 'fight'; readonly t: number; readonly id: number; readonly moment: string; readonly level: number; readonly foes: number; readonly rank: string }
   | { readonly kind: 'moment'; readonly t: number; readonly id: number; readonly moment: string; readonly outcome: MomentOutcome }
   | { readonly kind: 'skill'; readonly t: number; readonly skill: string }
   | { readonly kind: 'chart'; readonly t: number; readonly place: string; readonly path: string; readonly points: number }
@@ -118,6 +119,17 @@ function dropMeasures(world: World, meter: Meter, event: Extract<WorldEvent, { r
   return [{ kind: 'drop', t, base: content.item.base, slot: slotOf(world.content, content.item) ?? 'none', rarity: content.item.rarity, level: content.item.level }];
 }
 
+export function topRank(world: World, ids: readonly number[]): string {
+  const ranks: readonly PackRankDef[] = world.content.packRanks.ranks;
+  let best: number = 0;
+  for (const monster of world.monsters) {
+    const rank: string | undefined = ids.includes(monster.id) ? monster.def.rank?.id : undefined;
+    const index: number = rank === undefined ? 0 : ranks.findIndex((entry: PackRankDef): boolean => entry.id === rank);
+    if (index > best) best = index;
+  }
+  return ranks[best]?.id ?? 'normal';
+}
+
 function eventMeasures(world: World, meter: Meter, event: WorldEvent, t: number): Measurement[] {
   if (event.type === 'monster_spawn') nameOf(world, meter, event.monsterId);
   if (event.type === 'damage') return hitMeasures(world, meter, event, t);
@@ -127,7 +139,7 @@ function eventMeasures(world: World, meter: Meter, event: WorldEvent, t: number)
   if (event.type === 'pickup' && event.ground.content.kind === 'gold') return [{ kind: 'gold', t, amount: event.ground.content.amount }];
   if (event.type === 'drop') return dropMeasures(world, meter, event, t);
   if (event.type === 'flask_used') return [{ kind: 'flask', t, flask: event.flask }];
-  if (event.type === 'moment_woke' && event.turned.length > 0) return [{ kind: 'fight', t, id: event.moment.id, moment: event.moment.def.id, level: event.moment.level, foes: event.turned.length }];
+  if (event.type === 'moment_woke' && event.turned.length > 0) return [{ kind: 'fight', t, id: event.moment.id, moment: event.moment.def.id, level: event.moment.level, foes: event.turned.length, rank: topRank(world, event.turned) }];
   if (event.type === 'moment_ended') return [{ kind: 'moment', t, id: event.moment.id, moment: event.moment.def.id, outcome: event.outcome }];
   return [];
 }
@@ -289,7 +301,7 @@ export function readMeasurement(value: unknown): Measurement {
     case 'flask':
       return { kind, t, flask: str(value, 'flask') };
     case 'fight':
-      return { kind, t, id: num(value, 'id'), moment: str(value, 'moment'), level: num(value, 'level'), foes: num(value, 'foes') };
+      return { kind, t, id: num(value, 'id'), moment: str(value, 'moment'), level: num(value, 'level'), foes: num(value, 'foes'), rank: typeof value['rank'] === 'string' ? value['rank'] : 'normal' };
     case 'moment':
       return { kind, t, id: num(value, 'id'), moment: str(value, 'moment'), outcome: outcome(value) };
     case 'skill':

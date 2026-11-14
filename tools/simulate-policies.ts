@@ -5,7 +5,6 @@ import { STAND_WEIGHTS } from '../sim/bot-plan.ts';
 import type { Fields } from '../sim/content/read.ts';
 import { ContentError, choice, each, fields, flag, nullableText, numeric, text, textList } from '../sim/content/read.ts';
 import type { MilestoneRule } from '../sim/measure.ts';
-import type { ReferenceMoments } from './simulate-builds.ts';
 import { ALPHA_RULES } from '../src/launch/data.ts';
 import type { Milestone } from '../src/launch/alpha.ts';
 
@@ -34,7 +33,6 @@ export interface BuildPolicy {
 }
 
 export interface Policies {
-  readonly reference: ReferenceMoments;
   readonly skills: ReadonlyMap<string, SkillPolicy>;
   readonly builds: ReadonlyMap<string, BuildPolicy>;
   readonly milestones: readonly MilestoneRule[];
@@ -130,9 +128,7 @@ export function readPolicies(value: unknown): Policies {
   const endCard: string = text(source, 'endCard', 'policies');
   const rare: string = text(source, 'rare', 'policies');
   const extra: MilestoneRule[] = each(source['milestones'], 'policies.milestones', readExtra);
-  const reference: Fields = fields(source['reference'], 'policies.reference');
   return {
-    reference: { elite: textList(reference, 'elite', 'policies.reference'), pack: textList(reference, 'pack', 'policies.reference') },
     skills: new Map<string, SkillPolicy>(Object.entries(skills).map(([name, entry]: [string, unknown]): [string, SkillPolicy] => [name, readSkill(name, entry)])),
     builds: new Map<string, BuildPolicy>(Object.entries(builds).map(([name, entry]: [string, unknown]): [string, BuildPolicy] => [name, readBuild(name, entry)])),
     milestones: [...ALPHA_RULES.milestones.map(alphaMilestone), ...extra, ...endCardRule(endCard)],

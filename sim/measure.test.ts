@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { loadContent } from './content/content.ts';
 import type { Content } from './content/types.ts';
 import type { Measurement, Meter } from './measure.ts';
-import { createMeter, MEASURE_VERSION, readMeasurement, readMeter, readStream, sessionHeader, toLine } from './measure.ts';
+import { createMeter, MEASURE_VERSION, readMeasurement, readMeter, readStream, sessionHeader, toLine, topRank } from './measure.ts';
 import { grantXp } from './world/character.ts';
 import { dropFromInventory } from './world/character.ts';
 import { createWorld } from './world/create.ts';
@@ -61,4 +61,19 @@ void test('an item counts as one drop, however often the hero puts it down again
   if (owned !== null) dropOnGround(world, world.player.pos, { kind: 'item', item: owned });
   const drops: Measurement[] = readMeter(world, meter, [...world.events]).filter((entry: Measurement): boolean => entry.kind === 'drop');
   assert.equal(drops.length, 1);
+});
+
+void test('a fight is recorded at the highest pack rank among the foes that turned', (): void => {
+  const world: World = createWorld(content, { seed: 5, save: null });
+  const ranks = content.packRanks.ranks;
+  const magic = ranks[1];
+  assert.ok(magic !== undefined);
+  const foes = world.monsters.slice(0, 3);
+  assert.equal(foes.length, 3);
+  assert.equal(topRank(world, foes.map((foe): number => foe.id)), ranks[0]?.id);
+  const lead = foes[1];
+  assert.ok(lead !== undefined);
+  world.monsters[1] = { ...lead, def: { ...lead.def, rank: { id: magic.id, name: magic.name, color: magic.color, aura: magic.aura, leader: false, title: null, xp: 1, items: 0, floor: null } } };
+  assert.equal(topRank(world, foes.map((foe): number => foe.id)), magic.id);
+  assert.equal(topRank(world, []), ranks[0]?.id);
 });
