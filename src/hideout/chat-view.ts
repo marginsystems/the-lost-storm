@@ -2,6 +2,7 @@ import type { ChatLine } from '../backend/live-protocol.ts';
 import { LIVE_LIMITS } from '../backend/live-protocol.ts';
 import type { ChatEntry, ChatState } from './chat.ts';
 import { CHAT_WORDS, destination, readers } from './chat.ts';
+import { CHAT_KEYS, takesEnter } from './chat-keys.ts';
 import type { Mutes } from './mute.ts';
 
 export const CHAT_VIEW = {
@@ -9,7 +10,6 @@ export const CHAT_VIEW = {
   typingPlaceholder: 'Type a message, or /dm name',
   namePlaceholder: 'Your name',
   nameChars: 32,
-  enterKeys: ['Enter', 'NumpadEnter'],
   closeKey: 'Escape',
   swapMs: 320,
 } as const;
@@ -46,6 +46,10 @@ function make<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, 
 
 function typingIn(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable);
+}
+
+function onControl(target: EventTarget | null): boolean {
+  return target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement;
 }
 
 export function swapText(holder: HTMLElement, text: string): void {
@@ -178,7 +182,7 @@ export function createChatView(options: ChatViewOptions): ChatView {
       giveBack();
       return;
     }
-    if (!CHAT_VIEW.enterKeys.some((key: string): boolean => key === event.code)) return;
+    if (!CHAT_KEYS.enter.some((key: string): boolean => key === event.code)) return;
     event.preventDefault();
     send();
   };
@@ -196,11 +200,11 @@ export function createChatView(options: ChatViewOptions): ChatView {
   options.events.addEventListener(
     'keydown',
     (event: KeyboardEvent): void => {
-      if (!open) return;
-      if (event.repeat || !CHAT_VIEW.enterKeys.some((key: string): boolean => key === event.code) || typingIn(event.target) || !options.canFocus()) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      field.focus();
+      if (!takesEnter({ code: event.code, repeat: event.repeat, taken: event.defaultPrevented, typing: typingIn(event.target), onControl: onControl(event.target) }, { shown: open, canFocus: options.canFocus() })) return;
+      event.stopPropagation();
+      window.setTimeout((): void => {
+        if (open && !event.defaultPrevented) field.focus();
+      }, CHAT_KEYS.settleMs);
     },
     { capture: true },
   );

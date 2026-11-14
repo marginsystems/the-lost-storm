@@ -48,7 +48,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
   if (server === null) return null;
   let current: World | null = null;
   const mutes: Mutes = createMutes(createBrowserStore());
-  const chat: HideoutChat = startHideoutChat(server, parts.hud, (): boolean => current?.dialogue === null, mutes, (name: string, line: ChatLine | null, anchor: HTMLElement): void => {
+  const chat: HideoutChat = startHideoutChat(server, parts.hud, (): boolean => current !== null && current.dialogue === null && current.player.alive, mutes, (name: string, line: ChatLine | null, anchor: HTMLElement): void => {
     menu.openName(name, line, anchor);
   });
   const others: Others = createOthers({
