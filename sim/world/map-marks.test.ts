@@ -5,7 +5,9 @@ import { finishQuests, must, worldIn, zoneOf } from '../../test/support.ts';
 import { TOWN_CONTENT } from '../../test/town-support.ts';
 import type { Content, QuestDef, ZoneDef, ZoneExit } from '../content/types.ts';
 import { createWorld } from './create.ts';
-import { firstExitToward, questMarks } from './map-marks.ts';
+import { loadContent } from '../content/content.ts';
+import { encounterMarks, firstExitToward, questMarks } from './map-marks.ts';
+import { stepWorld } from './step.ts';
 import type { NpcState, World } from './types.ts';
 
 const march: QuestDef = {
@@ -73,4 +75,40 @@ void test('a route never runs through a hidden locked gate further along the way
   assert.equal(firstExitToward(open, ['ridge']), null);
   finishQuests(open);
   assert.equal(must(firstExitToward(open, ['ridge']), 'route').to, 'hub');
+});
+
+const shipped: Content = loadContent();
+const voidId: string = must([...shipped.zones.values()].find((zone: ZoneDef): boolean => zone.kind === 'void'), 'void zone').id;
+const STEP: number = 1 / 60;
+
+function walkedVoid(seconds: number, flags: Record<string, string>): World {
+  const world: World = worldIn(shipped, voidId, 3);
+  world.wake = null;
+  Object.assign(world.flags, flags);
+  for (let step: number = 0; step < Math.round(seconds / STEP); step += 1) {
+    stepWorld(world, [{ type: 'move', held: true, dest: { x: world.player.pos.x + world.heading.x * 20, z: world.player.pos.z + world.heading.z * 20 } }], STEP);
+  }
+  return world;
+}
+
+void test('a void marks the light the hero is walking toward where the zone really holds it', (): void => {
+  const world: World = walkedVoid(20, { opening: 'read', first_blade: 'found', first_choice: 'took_journal' });
+  const marks = encounterMarks(world);
+  const light = must(marks.find((mark): boolean => mark.kind === 'exit'), 'light');
+  const exit: ZoneExit = must(world.zone.exits.find((candidate: ZoneExit): boolean => candidate.id === light.exit), 'exit');
+  assert.deepEqual(light.pos, { x: exit.x, z: exit.z });
+  assert.equal(light.open, true);
+});
+
+void test('a void marks a story item lying ahead and stops marking it once it is taken', (): void => {
+  const world: World = walkedVoid(40, { opening: 'begun' });
+  const item = must(encounterMarks(world).find((mark): boolean => mark.kind === 'item'), 'item');
+  const lying = must(world.ground.find((ground): boolean => ground.id === item.ground), 'ground');
+  assert.deepEqual(item.pos, { x: lying.pos.x, z: lying.pos.z });
+  world.ground = [];
+  assert.equal(encounterMarks(world).some((mark): boolean => mark.kind === 'item'), false);
+});
+
+void test('a zone without a void marks no encounters', (): void => {
+  assert.deepEqual(encounterMarks(worldIn(shipped, 'hall_of_time', 3)), []);
 });

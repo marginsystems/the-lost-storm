@@ -4,6 +4,7 @@ import { distance } from '../math.ts';
 import { allHold } from './conditions.ts';
 import { stepEncounters } from './encounters.ts';
 import { moveExit } from './exits.ts';
+import { EXPLORE, shiftExplored } from './exploration.ts';
 import { shiftMoments } from './moments.ts';
 import { lowerShore, raiseShore } from './shore-props.ts';
 import type { Command, Intent, PlayerState, World } from './types.ts';
@@ -36,6 +37,7 @@ export function shiftWorld(world: World, by: Vec2): void {
   if (world.shore !== null) world.shore = { at: moved(world.shore.at, by), facing: world.shore.facing };
   for (const exit of world.zone.exits) moveExit(world, exit.id, moved(exit, by));
   shiftMoments(world, by);
+  shiftExplored(world, by);
   world.trail = moved(world.trail, by);
   world.shift = moved(world.shift, by);
   raiseShore(world);
@@ -75,5 +77,5 @@ export function stepVoid(world: World, dt: number): void {
   const offX: number = world.player.pos.x - home.x;
   const offZ: number = world.player.pos.z - home.z;
   const reach: number = rules.span / 2;
-  if (Math.abs(offX) > reach || Math.abs(offZ) > reach) shiftWorld(world, { x: -offX, z: -offZ });
+  if (Math.abs(offX) > reach || Math.abs(offZ) > reach) shiftWorld(world, { x: -Math.round(offX / EXPLORE.cellSize) * EXPLORE.cellSize, z: -Math.round(offZ / EXPLORE.cellSize) * EXPLORE.cellSize });
 }

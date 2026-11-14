@@ -2,8 +2,8 @@ import type { RarityDef } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import { exitShown } from '../../sim/world/exits.ts';
 import { isExplored } from '../../sim/world/exploration.ts';
-import type { QuestMark } from '../../sim/world/map-marks.ts';
-import { questMarks } from '../../sim/world/map-marks.ts';
+import type { EncounterMark, QuestMark } from '../../sim/world/map-marks.ts';
+import { encounterMarks, questMarks } from '../../sim/world/map-marks.ts';
 import type { GroundItem, MomentState, World } from '../../sim/world/types.ts';
 import type { MapMatrix, MapPoint } from './projection.ts';
 import { edgeMark, headingOnMap, toMap } from './projection.ts';
@@ -34,6 +34,10 @@ export const MARKS = {
   momentFill: 0.28,
   momentEdge: 0.85,
   momentMarkScale: 0.45,
+  labelSize: 9,
+  labelInset: 15,
+  labelFont: '"Alegreya Sans", system-ui, sans-serif',
+  labelOutline: 3,
 } as const;
 
 export interface MarkOptions {
@@ -133,7 +137,11 @@ export function drawMarks(context: CanvasRenderingContext2D, matrix: MapMatrix, 
   context.strokeStyle = MARKS.shadowColour;
   context.lineJoin = 'round';
   const zone = world.zone;
+  const found: EncounterMark[] = encounterMarks(world);
+  const foundExits: ReadonlySet<string | null> = new Set<string | null>(found.map((mark: EncounterMark): string | null => mark.exit));
+  const foundGround: ReadonlySet<number | null> = new Set<number | null>(found.map((mark: EncounterMark): number | null => mark.ground));
   for (const exit of zone.exits) {
+    if (foundExits.has(exit.id)) continue;
     if (!isExplored(world, exit.x, exit.z)) continue;
     if (!exitShown(world, exit)) continue;
     const open: boolean = allHold(world, exit.requires);
@@ -146,6 +154,7 @@ export function drawMarks(context: CanvasRenderingContext2D, matrix: MapMatrix, 
   }
   for (const moment of world.moments) drawMoment(context, matrix, world, moment);
   for (const ground of world.ground) {
+    if (foundGround.has(ground.id)) continue;
     if (!isExplored(world, ground.pos.x, ground.pos.z)) continue;
     const at: MapPoint = toMap(matrix, ground.pos.x, ground.pos.z);
     if (visible(at, options, unit * MARKS.loot)) dot(context, at, (ground.content.kind === 'gold' ? MARKS.gold : MARKS.loot) * unit, lootColour(world, ground));
@@ -161,6 +170,7 @@ export function drawMarks(context: CanvasRenderingContext2D, matrix: MapMatrix, 
     const boss: boolean = monster.def.boss !== null;
     dot(context, at, (boss ? MARKS.boss : MARKS.monster) * unit, boss ? MARKS.bossColour : MARKS.monsterColour);
   }
+  for (const mark of found) drawFound(context, matrix, mark, world, options);
   for (const mark of questMarks(world)) drawQuest(context, matrix, mark, options);
   const hero = world.player;
   arrow(context, toMap(matrix, hero.pos.x, hero.pos.z), headingOnMap(matrix, hero.facing), MARKS.hero * unit, MARKS.heroColour);
@@ -180,4 +190,31 @@ function drawQuest(context: CanvasRenderingContext2D, matrix: MapMatrix, mark: Q
     return;
   }
   arrow(context, pinned, pinned.angle, MARKS.questArrow * unit, MARKS.questColour);
+}
+
+function drawFound(context: CanvasRenderingContext2D, matrix: MapMatrix, mark: EncounterMark, world: World, options: MarkOptions): void {
+  const unit: number = options.unit;
+  const at: MapPoint = toMap(matrix, mark.pos.x, mark.pos.z);
+  const pinned = edgeMark(at, options.width, options.height, MARKS.edgeMargin * unit);
+  const colour: string = mark.kind === 'item' ? MARKS.questColour : mark.open ? MARKS.exitColour : MARKS.lockedExitColour;
+  if (pinned.inside || !options.edgeArrows) {
+    if (mark.kind === 'item') diamond(context, at, MARKS.quest * unit, colour);
+    else gate(context, at, MARKS.exit * unit, colour);
+    return;
+  }
+  arrow(context, pinned, pinned.angle, MARKS.questArrow * unit, colour);
+  const metres: number = Math.round(Math.hypot(mark.pos.x - world.player.pos.x, mark.pos.z - world.player.pos.z));
+  const inward: number = MARKS.labelInset * unit;
+  const x: number = pinned.x - Math.cos(pinned.angle) * inward;
+  const y: number = pinned.y - Math.sin(pinned.angle) * inward;
+  context.save();
+  context.font = `${MARKS.labelSize * unit}px ${MARKS.labelFont}`;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.lineWidth = MARKS.labelOutline * unit;
+  context.strokeStyle = MARKS.shadowColour;
+  context.strokeText(String(metres), x, y);
+  context.fillStyle = colour;
+  context.fillText(String(metres), x, y);
+  context.restore();
 }

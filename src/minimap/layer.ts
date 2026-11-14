@@ -1,9 +1,9 @@
-import type { NavGrid } from '../../sim/nav/grid.ts';
+import type { GridStamp, NavGrid } from '../../sim/nav/grid.ts';
 import type { ExploreGrid } from '../../sim/world/exploration.ts';
 import { exploreGrid } from '../../sim/world/exploration.ts';
 import type { World } from '../../sim/world/types.ts';
 
-const LAYER = {
+export const LAYER = {
   floor: [112, 118, 126, 84],
   wall: [214, 204, 184, 235],
   rubble: [84, 80, 76, 96],
@@ -95,6 +95,7 @@ function navRect(cells: LayerRect, nav: NavGrid, explore: ExploreGrid): LayerRec
 export function createLayerPixels(): LayerPixels {
   let grid: NavGrid | null = null;
   let revision: number = -1;
+  let stamp: GridStamp | null = null;
   let drawnSeen: Uint8Array = new Uint8Array(0);
   let data: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(0);
   let columns: number = 0;
@@ -131,16 +132,21 @@ export function createLayerPixels(): LayerPixels {
       return data;
     },
     update(world: World): LayerRect | null {
-      if (grid === world.grid && revision === world.exploredRevision) return null;
+      const stampChanged: boolean = stamp !== world.shoreBlocks;
+      if (grid === world.grid && revision === world.exploredRevision && !stampChanged) return null;
       const nav: NavGrid = world.grid;
       const explore: ExploreGrid = exploreGrid(world.zone);
       const seen: Uint8Array = world.explored[world.zone.id] ?? new Uint8Array(explore.columns * explore.rows);
       revision = world.exploredRevision;
-      if (grid !== nav || drawnSeen.length !== seen.length) {
+      stamp = world.shoreBlocks;
+      const resized: boolean = grid !== nav || drawnSeen.length !== seen.length;
+      if (resized) {
         grid = nav;
         columns = nav.columns;
         rows = nav.rows;
         data = new Uint8ClampedArray(columns * rows * LAYER.channels);
+      }
+      if (resized || stampChanged) {
         drawnSeen = seen.slice();
         const whole: LayerRect = { column: 0, row: 0, columns, rows };
         fill(nav, explore, seen, whole);

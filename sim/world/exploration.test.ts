@@ -5,7 +5,7 @@ import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
 import { parseSaveText, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
-import { decodeExplored, encodeExplored, EXPLORE, exploredSize, isExplored, revealAround } from './exploration.ts';
+import { decodeExplored, encodeExplored, EXPLORE, exploredSize, isExplored, revealAround, shiftExplored } from './exploration.ts';
 import { stepWorld } from './step.ts';
 import type { World } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -67,4 +67,29 @@ void test('run-length encoding round-trips and rejects the wrong size', (): void
   assert.equal(decodeExplored(text, size + 1), null);
   assert.equal(decodeExplored('x.2', size), null);
   assert.equal(decodeExplored('', size), null);
+});
+
+void test('a shifted world carries its explored ground with it and loses what leaves the zone', (): void => {
+  const world: World = worldIn(content, 'between', 6);
+  stepWorld(world, [], DT);
+  const spot = { ...world.player.pos };
+  const by = { x: -12, z: 7 };
+  const before: number = world.exploredRevision;
+  assert.ok(isExplored(world, spot.x, spot.z));
+  shiftExplored(world, by);
+  assert.ok(world.exploredRevision > before);
+  assert.ok(isExplored(world, spot.x + by.x, spot.z + by.z));
+  assert.ok(isExplored(world, spot.x + by.x + EXPLORE.revealRadius - 2, spot.z + by.z));
+  assert.ok(!isExplored(world, spot.x + EXPLORE.revealRadius - 2, spot.z - EXPLORE.revealRadius + 2));
+  const settled: number = world.exploredRevision;
+  shiftExplored(world, { x: 0.2, z: -0.2 });
+  assert.equal(world.exploredRevision, settled);
+});
+
+void test('ground shifted off the edge of the zone is forgotten', (): void => {
+  const world: World = worldIn(content, 'between', 6);
+  stepWorld(world, [], DT);
+  const grid = world.zone.tiles.length * world.zone.cellSize;
+  shiftExplored(world, { x: grid * 2, z: 0 });
+  assert.ok(must(world.explored[world.zone.id], 'explored').every((cell: number): boolean => cell === 0));
 });

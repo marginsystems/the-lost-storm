@@ -61,6 +61,23 @@ export function revealAround(world: World, centre: ReadonlyVec2): boolean {
   return changed;
 }
 
+export function shiftExplored(world: World, by: ReadonlyVec2): void {
+  const grid: ExploreGrid = exploreGrid(world.zone);
+  const known: Uint8Array | undefined = world.explored[world.zone.id];
+  if (known === undefined) return;
+  const columns: number = Math.round(by.x / grid.cellSize);
+  const rows: number = Math.round(by.z / grid.cellSize);
+  if (columns === 0 && rows === 0) return;
+  const moved: Uint8Array = new Uint8Array(known.length);
+  for (let row: number = Math.max(0, rows); row < Math.min(grid.rows, grid.rows + rows); row += 1) {
+    for (let column: number = Math.max(0, columns); column < Math.min(grid.columns, grid.columns + columns); column += 1) {
+      moved[row * grid.columns + column] = known[(row - rows) * grid.columns + (column - columns)] ?? 0;
+    }
+  }
+  world.explored[world.zone.id] = moved;
+  world.exploredRevision += 1;
+}
+
 export function stepExploration(world: World): void {
   if (world.player.alive && revealAround(world, world.player.pos)) world.events.push({ type: 'explored', zone: world.zone.id });
 }

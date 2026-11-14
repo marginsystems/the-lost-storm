@@ -1,11 +1,12 @@
 import type { Content, ObjectiveDef, PathObjective, ZoneDef, ZoneExit } from '../content/types.ts';
 import { objectivePaths } from '../content/road.ts';
+import type { ZoneEncounter } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
 import { allHold } from './conditions.ts';
 import { exitShown } from './exits.ts';
 import { fightZones, nearestFight, strikeGround } from './moments.ts';
 import { activeQuests, currentObjective } from './quests.ts';
-import type { MonsterState, NpcState, World } from './types.ts';
+import type { EncounterState, GroundItem, MonsterState, NpcState, World } from './types.ts';
 
 export interface QuestMark {
   readonly quest: string;
@@ -117,6 +118,46 @@ export function questMarks(world: World): QuestMark[] {
     }
     const exit: ZoneExit | null = firstExitToward(world, targetZones(world, objective).filter((zone: string): boolean => zone !== world.zone.id));
     if (exit !== null) marks.push({ quest: quest.id, pos: { x: exit.x, z: exit.z }, here: false });
+  }
+  return marks;
+}
+
+export type EncounterMarkKind = 'exit' | 'item';
+
+export interface EncounterMark {
+  readonly encounter: string;
+  readonly kind: EncounterMarkKind;
+  readonly pos: Vec2;
+  readonly open: boolean;
+  readonly exit: string | null;
+  readonly ground: number | null;
+}
+
+function markOf(world: World, met: ZoneEncounter, state: EncounterState): EncounterMark | null {
+  let mark: EncounterMark | null = null;
+  switch (met.find.type) {
+    case 'exit': {
+      const exitId: string = met.find.exit;
+      const exit: ZoneExit | undefined = world.zone.exits.find((entry: ZoneExit): boolean => entry.id === exitId);
+      if (exit !== undefined && exitShown(world, exit)) mark = { encounter: met.id, kind: 'exit', pos: { x: exit.x, z: exit.z }, open: allHold(world, exit.requires), exit: exit.id, ground: null };
+      break;
+    }
+    case 'item': {
+      const lying: GroundItem | undefined = world.ground.find((ground: GroundItem): boolean => ground.id === state.groundId);
+      if (lying !== undefined) mark = { encounter: met.id, kind: 'item', pos: { x: lying.pos.x, z: lying.pos.z }, open: true, exit: null, ground: lying.id };
+      break;
+    }
+  }
+  return mark;
+}
+
+export function encounterMarks(world: World): EncounterMark[] {
+  const marks: EncounterMark[] = [];
+  for (const met of world.zone.void?.encounters ?? []) {
+    const state: EncounterState | undefined = world.encounters.find((entry: EncounterState): boolean => entry.id === met.id);
+    if (state === undefined || state.pos === null) continue;
+    const mark: EncounterMark | null = markOf(world, met, state);
+    if (mark !== null) marks.push(mark);
   }
   return marks;
 }
