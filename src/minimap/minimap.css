@@ -64,6 +64,35 @@
   text-overflow: ellipsis;
 }
 
+.minimap-level {
+  width: fit-content;
+  box-sizing: border-box;
+  margin: 0 0 0 auto;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--legible-plate);
+  height: 0;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 15px;
+  color: var(--place);
+  text-shadow: var(--legible-shadow);
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    height var(--spring-smooth-ms) var(--spring-smooth),
+    margin-bottom var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.minimap-level.visible {
+  height: 15px;
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
+
 .minimap-frame {
   position: relative;
   width: var(--minimap-size);

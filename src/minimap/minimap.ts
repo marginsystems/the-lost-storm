@@ -4,6 +4,7 @@ import type { Vec2 } from '../../sim/math.ts';
 import { nearestWalkable } from '../../sim/nav/grid.ts';
 import type { Command, World } from '../../sim/world/types.ts';
 import { el, setText } from '../hud/dom.ts';
+import { zoneLevelText } from './caption.ts';
 import { CAMERA } from '../render/iso-camera.ts';
 import type { MapLayer } from './layer.ts';
 import { createMapLayer } from './layer.ts';
@@ -81,6 +82,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   const corner: HTMLDivElement = el('div', 'minimap-corner', holder);
   tagPart(corner, 'minimap');
   const zoneName: HTMLDivElement = el('div', 'minimap-zone', corner);
+  const zoneLevel: HTMLDivElement = el('div', 'minimap-level', corner);
   const frame: HTMLDivElement = el('div', 'minimap-frame', corner);
   const cornerSurface: Surface = surface(el('canvas', 'minimap-canvas', frame));
   const overlay: HTMLDivElement = el('div', 'minimap-overlay', holder);
@@ -208,6 +210,9 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
       }
       layer.refresh(world);
       setText(zoneName, world.zone.name, true);
+      const levelText: string | null = zoneLevelText(world);
+      if (levelText !== null) setText(zoneLevel, levelText, zoneLevel.classList.contains('visible'));
+      zoneLevel.classList.toggle('visible', levelText !== null);
       zoom += (wantedZoom - zoom) * (1 - Math.exp(-MINIMAP.zoomRate * dt));
       settling = Math.max(0, settling - dt);
       if (dragging !== null) {

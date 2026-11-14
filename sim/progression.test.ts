@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillTreeNodeDef, XpCurve } from './content/types.ts';
-import { adoptLearned, applyXp, gapScale, canAllocate, canRefund, findNode, holdingParts, holdingTrunk, joinBlock, placeLinks, reachablePlaces, refundBlock, refundCost, refundState, respecState, rivalVariant, startingPlaces, xpToNextLevel } from './progression.ts';
+import { adoptLearned, applyXp, gapBand, gapScale, canAllocate, canRefund, findNode, holdingParts, holdingTrunk, joinBlock, placeLinks, reachablePlaces, refundBlock, refundCost, refundState, respecState, rivalVariant, startingPlaces, xpToNextLevel } from './progression.ts';
 import type { XpResult } from './progression.ts';
 
 const content: Content = loadContent();
-const curve: XpCurve = { base: 60, growth: 1.42, maxLevel: 30, gap: { grace: 2, perLevel: 0.1, floor: 0.2 } };
+const curve: XpCurve = { base: 60, growth: 1.42, maxLevel: 30, gap: { band: 5, widenEvery: 10, soft: 2, power: 3, floor: 0.05, above: true } };
 
 function node(id: string): SkillTreeNodeDef {
   const found: SkillTreeNodeDef | null = findNode(content, id);
@@ -172,17 +172,39 @@ void test('two nodes are rivals when any of the skills they change is the same',
   assert.equal(rivalVariant(content, ['storm_lance'], onlyShot), null);
 });
 
-void test('a foe far below the hero gives less xp, falling smoothly to a floor with no cliff', (): void => {
+const GAP_CHECK = { cliff: 0.5, drastic: 0.25 } as const;
+
+void test('a foe within the band either side of the hero gives full xp, and the band widens with the hero level', (): void => {
   const gap = curve.gap;
-  assert.equal(gapScale(gap, 10, 10), 1);
-  assert.equal(gapScale(gap, 10, 8), 1);
-  assert.equal(gapScale(gap, 5, 9), 1);
-  const scales: number[] = Array.from({ length: 20 }, (_: unknown, below: number): number => gapScale(gap, 30, 30 - below));
-  scales.forEach((scale: number, index: number): void => {
-    const before: number | undefined = scales[index - 1];
-    if (before !== undefined) assert.ok(scale <= before && before - scale <= gap.perLevel + 1e-9);
-  });
-  assert.equal(scales.at(-1), gap.floor);
+  assert.equal(gapBand(gap, 9), gap.band);
+  assert.equal(gapBand(gap, 10), gap.band + 1);
+  assert.ok(gapBand(gap, 25) > gapBand(gap, 15));
+  for (let foe: number = 4; foe <= 14; foe += 1) assert.equal(gapScale(gap, 9, foe), 1, `foe ${foe}`);
+  for (let foe: number = 14; foe <= 26; foe += 1) assert.equal(gapScale(gap, 20, foe), 1, `foe ${foe}`);
+});
+
+void test('past the band the share falls smoothly and steeply on both sides, to a floor that is never zero', (): void => {
+  const gap = curve.gap;
+  for (const side of [-1, 1]) {
+    const shares: number[] = Array.from({ length: 30 }, (_: unknown, step: number): number => gapScale(gap, 40, 40 + side * step));
+    shares.forEach((share: number, step: number): void => {
+      const before: number | undefined = shares[step - 1];
+      if (before === undefined) return;
+      assert.ok(share <= before, `side ${side} step ${step}`);
+      assert.ok(before - share <= GAP_CHECK.cliff, `side ${side} step ${step} falls ${before - share}`);
+    });
+    assert.ok(shares.some((share: number): boolean => share < 1 && share > gap.floor));
+    assert.equal(shares.at(-1), gap.floor);
+    assert.ok(gap.floor > 0);
+  }
+  assert.ok(gapScale(gap, 9, 1) < GAP_CHECK.drastic);
+  assert.ok(gapScale(gap, 1, 12) < GAP_CHECK.drastic);
+});
+
+void test('with above off a foe far above the hero still gives full xp', (): void => {
+  const gap = { ...curve.gap, above: false };
+  assert.equal(gapScale(gap, 1, 25), 1);
+  assert.ok(gapScale(gap, 25, 1) < 1);
 });
 
 void test('the shipped curve makes every level take longer than the one before, from start to the cap', (): void => {

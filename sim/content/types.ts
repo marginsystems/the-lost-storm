@@ -15,6 +15,8 @@ import type { ActEnd, RetiredZones, ZoneDrift, ZoneTrigger, ZoneWeather } from '
 import type { MomentField, MomentLibrary } from './moment-types.ts';
 import type { ChartDef, SkillTarget, SkillVariant } from './chart-types.ts';
 import type { SkillVfx } from './vfx-types.ts';
+import type { XpCurve } from './xp-types.ts';
+export type { XpCurve, XpGap, XpReduction } from './xp-types.ts';
 export { VFX_CUES, VFX_MAX_FORKS, VFX_STYLES } from './vfx-types.ts';
 export type { SkillVfx, VfxCue, VfxImpact, VfxLightning, VfxStyle } from './vfx-types.ts';
 
@@ -590,19 +592,6 @@ export interface SkillBinding {
   readonly skill: string | null;
   readonly bindings: readonly string[];
   readonly label: string;
-}
-
-export interface XpGap {
-  readonly grace: number;
-  readonly perLevel: number;
-  readonly floor: number;
-}
-
-export interface XpCurve {
-  readonly base: number;
-  readonly growth: number;
-  readonly maxLevel: number;
-  readonly gap: XpGap;
 }
 
 export interface FirstDropDef {

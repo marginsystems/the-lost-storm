@@ -1,6 +1,6 @@
-import type { ItemSlot } from '../content/types.ts';
+import type { ItemSlot, XpReduction } from '../content/types.ts';
 import { isStoryItem, slotOf } from '../items.ts';
-import { applyXp, canAllocate, findNode, gapScale, refundCost, refundState, respecState } from '../progression.ts';
+import { applyXp, canAllocate, findNode, gapScale, refundCost, refundState, respecState, xpReduction } from '../progression.ts';
 import type { ChartChange } from '../progression.ts';
 import type { XpResult } from '../progression.ts';
 import { assignSlot, chartSkills } from '../skill-book.ts';
@@ -24,11 +24,15 @@ export function killXp(world: World, xp: number, level: number): number {
   return Math.round(xp * (1 + world.content.world.scaling.xpPerLevel * (level - 1)) * gapScale(world.content.player.xp.gap, world.player.level, level));
 }
 
-export function grantXp(world: World, amount: number): void {
+export function killReduction(world: World, level: number): XpReduction | null {
+  return xpReduction(world.content.player.xp.gap, world.player.level, level);
+}
+
+export function grantXp(world: World, amount: number, reduced: XpReduction | null = null): void {
   const player: PlayerState = world.player;
   const result: XpResult = applyXp(world.content.player.xp, player.level, player.xp, amount);
   player.xp = result.xp;
-  world.events.push({ type: 'xp', amount });
+  world.events.push({ type: 'xp', amount, reduced });
   if (result.levelsGained === 0) return;
   player.level = result.level;
   const points: number = result.levelsGained * world.content.chart.pointsPerLevel;

@@ -7,7 +7,7 @@ import { isWalkable, lineWalkable, routedGrid } from '../nav/grid.ts';
 import { reachFrom } from '../nav/path.ts';
 import { pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
-import { grantXp, killXp } from './character.ts';
+import { grantXp, killReduction, killXp } from './character.ts';
 import { dropOnGround } from './ground.ts';
 import { goldScale } from './moment-chest.ts';
 import { clearOfTallProps, inSight, lowerProps, raiseProps, standClear, standJoined } from './moment-ground.ts';
@@ -61,6 +61,7 @@ function begin(world: World, def: MomentDef, pos: Vec2, combat: boolean, mark: b
     away: 0,
     entered: false,
     bounty: 0,
+    reduced: null,
     blocks: null,
     outcome: null,
     chest: 'none',
@@ -203,6 +204,7 @@ function turn(world: World, moment: MomentState): number[] {
     monster.foeId = world.player.id;
     monster.restTime = world.content.moments.rouse + turned.length * world.content.moments.stagger;
     moment.bounty += killXp(world, (world.content.monsters.get(entry.monster)?.xp ?? 0) * (def.rank?.xp ?? 1), monster.level);
+    moment.reduced = killReduction(world, monster.level);
     world.events.push({ type: 'aggro', monsterId: monster.id });
     figure.turned = true;
     figure.monsterId = monster.id;
@@ -258,7 +260,7 @@ function end(world: World, moment: MomentState, outcome: MomentOutcome): void {
   if (outcome === 'played' && moment.combat && moment.chest === 'none') reward(world, moment, world.content.moments.playedShare, false);
   if (outcome === 'resolved') {
     reward(world, moment, 1, true);
-    if (moment.bounty > 0) grantXp(world, moment.bounty);
+    if (moment.bounty > 0) grantXp(world, moment.bounty, moment.reduced);
     setFlags(world, world.content.moments.cleared);
   }
   if (outcome === 'left' && sureHolds(world, fieldOf(world))) world.strikeTimer = world.content.moments.comeback;

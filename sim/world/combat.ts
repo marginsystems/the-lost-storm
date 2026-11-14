@@ -8,7 +8,7 @@ import type { MonsterRank } from '../content/rank-types.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
 import { damageTakenScale, resolveSkill } from '../stats.ts';
-import { grantXp, killXp, refreshPlayer } from './character.ts';
+import { grantXp, killReduction, killXp, refreshPlayer } from './character.ts';
 import { firePowers } from '../powers.ts';
 import { isDashing, isInvulnerable } from './dash.ts';
 import { knockTime, readablePush } from './movement.ts';
@@ -111,7 +111,7 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
   world.player.kills += 1;
   gainFlaskCharges(world.player);
   rollLoot(world, target);
-  grantXp(world, killXp(world, target.def.xp, target.level));
+  grantXp(world, killXp(world, target.def.xp, target.level), killReduction(world, target.level));
 }
 
 export function guardOutcome(target: Actor, skill: SkillDef, direction: ReadonlyVec2): GuardOutcome {

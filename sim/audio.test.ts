@@ -123,7 +123,7 @@ void test('level ups, surges, notices and footsteps have sounds, and bookkeeping
   const thrall: MonsterState = monster(world, 'mended');
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'aggro', monsterId: thrall.id })), ['bones_rattle']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'monster_spawn', monsterId: thrall.id })), ['monsters_rising']);
-  for (const event of [{ type: 'xp', amount: 4 }, { type: 'character_changed' }, { type: 'skill_interrupt', actorId: 1 }, { type: 'monster_remove', monsterId: 1 }] as const) {
+  for (const event of [{ type: 'xp', amount: 4, reduced: null }, { type: 'character_changed' }, { type: 'skill_interrupt', actorId: 1 }, { type: 'monster_remove', monsterId: 1 }] as const) {
     assert.deepEqual(cuesForEvent(audio, world, event), [], event.type);
   }
 });

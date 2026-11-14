@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { armed, worldIn } from '../../test/support.ts';
+import { armed, must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
-import type { Content } from '../content/types.ts';
+import type { Content, XpReduction } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import { xpToNextLevel } from '../progression.ts';
 import { createRng } from '../rng.ts';
 import { refundCost } from '../progression.ts';
-import { grantXp, killXp } from './character.ts';
+import { grantXp, killReduction, killXp } from './character.ts';
 import { stepWorld } from './step.ts';
 import type { Command, ItemInstance, World, WorldEvent } from './types.ts';
 
@@ -102,13 +102,30 @@ void test('a story item never leaves the bag by a drop', (): void => {
   assert.ok(!world.ground.some((entry): boolean => entry.content.kind === 'item' && entry.content.item.uid === journal.uid));
 });
 
-void test('a kill pays its xp scaled up by the foe level, and less when the hero is far above the foe', (): void => {
+void test('a kill pays its xp scaled up by the foe level, in full near the hero and much less far from him either way', (): void => {
   const world: World = worldIn(content, 'hall_of_time', 1);
   world.player.level = 10;
   const even: number = killXp(world, 20, 10);
   assert.equal(even, Math.round(20 * (1 + content.world.scaling.xpPerLevel * 9)));
-  assert.ok(killXp(world, 20, 8) < even);
+  assert.equal(killXp(world, 20, 6), Math.round(20 * (1 + content.world.scaling.xpPerLevel * 5)));
+  assert.equal(killReduction(world, 6), null);
+  assert.equal(killReduction(world, 14), null);
+  const below: XpReduction = must(killReduction(world, 1), 'a reduction far below');
+  assert.equal(below.side, 'below');
+  assert.ok(below.share < 1 && below.share > 0);
+  assert.equal(killReduction(world, 25)?.side, 'above');
   world.player.level = 20;
   const far: number = killXp(world, 20, 5);
   assert.ok(far > 0 && far < killXp(world, 20, 18));
+});
+
+void test('an xp gain says whether it was reduced and on which side', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 1);
+  world.player.level = 9;
+  world.events = [];
+  grantXp(world, 5, killReduction(world, 1));
+  grantXp(world, 5, killReduction(world, 8));
+  const gains: (XpReduction | null)[] = world.events.flatMap((event: WorldEvent): (XpReduction | null)[] => (event.type === 'xp' ? [event.reduced] : []));
+  assert.equal(gains[0]?.side, 'below');
+  assert.equal(gains[1], null);
 });

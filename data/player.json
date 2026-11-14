@@ -59,7 +59,7 @@
     "base": 105,
     "growth": 1.31,
     "maxLevel": 30,
-    "gap": { "grace": 2, "perLevel": 0.08, "floor": 0.25 }
+    "gap": { "band": 5, "widenEvery": 10, "soft": 2, "power": 3, "floor": 0.05, "above": true }
   },
   "startingItems": [
     "rusted_blade",

@@ -185,9 +185,29 @@
 }
 
 .hud-xp {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.xp-note {
+  position: absolute;
+  left: 22px;
+  bottom: calc(100% + 4px);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ember);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.xp-note.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .xp-level {

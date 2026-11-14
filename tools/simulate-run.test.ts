@@ -24,6 +24,7 @@ const GUARD = {
   rareShare: 2 / 3,
   strikeGap: 6,
   dormantWait: 0.5,
+  over: { hero: 9, low: 1, near: 7, minutes: 8, seed: 1, drastic: 1 / 3 },
 } as const;
 
 function runs(scenario: Scenario, skill: string): RunSummary[] {
@@ -33,7 +34,19 @@ function runs(scenario: Scenario, skill: string): RunSummary[] {
 const slices: readonly RunSummary[] = runs({ kind: 'slice' }, 'average');
 
 void test('scenarios have readable names', (): void => {
-  assert.deepEqual([scenarioName({ kind: 'slice' }), scenarioName({ kind: 'farm', minutes: 5 }), scenarioName({ kind: 'fight', moment: 'campfire', repeats: 2 }), scenarioName({ kind: 'level', level: 4, minutes: 9 })], ['slice', 'farm 5m', 'fight campfire', 'level 4']);
+  assert.deepEqual([scenarioName({ kind: 'slice' }), scenarioName({ kind: 'farm', minutes: 5 }), scenarioName({ kind: 'fight', moment: 'campfire', repeats: 2 }), scenarioName({ kind: 'level', level: 4, minutes: 9 }), scenarioName({ kind: 'over', hero: 9, zone: 1, minutes: 5 })], ['slice', 'farm 5m', 'fight campfire', 'level 4', 'hero 9 in level 1']);
+});
+
+void test('a level 9 hero earns drastically less experience a minute in level 1 content than in level 7 content', (): void => {
+  const rate = (zone: number): number => {
+    const run: RunSummary = summarize(runJob({ scenario: { kind: 'over', hero: GUARD.over.hero, zone, minutes: GUARD.over.minutes }, skill: 'careful', build: 'mixed', seed: GUARD.over.seed }, POLICIES));
+    assert.equal(run.reason, 'done');
+    return run.xp / Math.max(1, run.seconds);
+  };
+  const low: number = rate(GUARD.over.low);
+  const near: number = rate(GUARD.over.near);
+  assert.ok(low > 0, 'still levelling, never zero');
+  assert.ok(low < near * GUARD.over.drastic, `${(low * 3600).toFixed(0)} an hour in level ${GUARD.over.low}, ${(near * 3600).toFixed(0)} in level ${GUARD.over.near}`);
 });
 
 void test('a farm that cannot reach the Hall says so instead of idling', (): void => {

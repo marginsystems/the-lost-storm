@@ -2,13 +2,15 @@ import type { Bot } from '../sim/bot.ts';
 import { BOT, botFight, botPause, botPlay, botStep, botTravelTo, botWalkTo, createBot } from '../sim/bot.ts';
 import { loadContent } from '../sim/content/content.ts';
 import type { BookDef, PageDef } from '../sim/content/story-types.ts';
-import type { Content, ZoneExit } from '../sim/content/types.ts';
+import type { Content, ZoneDef, ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { distance } from '../sim/math.ts';
 import type { Measurement, Meter } from '../sim/measure.ts';
 import { closeMeter, createMeter, readMeter, sessionHeader } from '../sim/measure.ts';
 import { isWalkable, lineWalkable, nearestWalkable } from '../sim/nav/grid.ts';
+import { xpToNextLevel } from '../sim/progression.ts';
 import { allHold } from '../sim/world/conditions.ts';
+import { grantXp } from '../sim/world/character.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { fightZones, forceStrike, nearestFight } from '../sim/world/moments.ts';
 import { readablePages } from '../sim/world/story.ts';
@@ -29,7 +31,7 @@ export const RUN = {
   levelMinutes: 120,
 } as const;
 
-export type Scenario = { readonly kind: 'slice' } | { readonly kind: 'farm'; readonly minutes: number } | { readonly kind: 'fight'; readonly moment: string; readonly repeats: number } | { readonly kind: 'level'; readonly level: number; readonly minutes: number };
+export type Scenario = { readonly kind: 'slice' } | { readonly kind: 'farm'; readonly minutes: number } | { readonly kind: 'fight'; readonly moment: string; readonly repeats: number } | { readonly kind: 'level'; readonly level: number; readonly minutes: number } | { readonly kind: 'over'; readonly hero: number; readonly zone: number; readonly minutes: number };
 
 export interface Job {
   readonly scenario: Scenario;
@@ -55,6 +57,8 @@ export function scenarioName(scenario: Scenario): string {
       return `fight ${scenario.moment}`;
     case 'level':
       return `level ${scenario.level}`;
+    case 'over':
+      return `hero ${scenario.hero} in level ${scenario.zone}`;
   }
   return 'unknown';
 }
@@ -62,6 +66,15 @@ export function scenarioName(scenario: Scenario): string {
 function record(bot: Bot, recorder: Recorder, events: readonly WorldEvent[]): void {
   if (recorder.meter === null) return;
   recorder.out.push(...readMeter(bot.world, recorder.meter, events));
+}
+
+export function fixedLevel(content: Content, level: number): Content {
+  const zones: Map<string, ZoneDef> = new Map<string, ZoneDef>([...content.zones].map(([id, zone]: [string, ZoneDef]): [string, ZoneDef] => [id, zone.kind === 'wild' ? { ...zone, level, levelUpTo: level } : zone]));
+  return { ...content, zones };
+}
+
+function raiseTo(world: World, level: number): void {
+  while (world.player.level < level) grantXp(world, xpToNextLevel(world.content.player.xp, world.player.level) - world.player.xp);
 }
 
 function startRecording(world: World, recorder: Recorder, policies: Policies): void {
@@ -195,15 +208,17 @@ export function runJob(job: Job, policies: Policies): Measurement[] {
   const skill: SkillPolicy | undefined = policies.skills.get(job.skill);
   const build: BuildPolicy | undefined = policies.builds.get(job.build);
   if (skill === undefined || build === undefined) throw new Error(`no policy ${job.skill}/${job.build}`);
-  const world: World = createWorld(CONTENT, build.hero === null ? { seed: job.seed, save: null, opening: true } : { seed: job.seed, save: null, opening: true, hero: build.hero });
+  const scenario: Scenario = job.scenario;
+  const content: Content = scenario.kind === 'over' ? fixedLevel(CONTENT, scenario.zone) : CONTENT;
+  const world: World = createWorld(content, build.hero === null ? { seed: job.seed, save: null, opening: true } : { seed: job.seed, save: null, opening: true, hero: build.hero });
   const recorder: Recorder = { meter: null, out: [sessionHeader('sim', scenarioName(job.scenario), `${job.skill}/${job.build}`, job.seed)] };
   const bot: Bot = createBot(world, skill.habits, (events: readonly WorldEvent[]): void => record(bot, recorder, events), planFor(skill, build));
-  const scenario: Scenario = job.scenario;
   const fromStart: boolean = scenario.kind === 'slice' || scenario.kind === 'level';
   if (fromStart) startRecording(world, recorder, policies);
   const opened: boolean = playOpening(bot, skill);
   const played = opened ? botPlay(bot) : null;
   let reason: string = !opened ? 'stuck in the opening' : played !== null && played.stuck !== null ? `stuck at ${played.stuck}` : 'done';
+  if (opened && scenario.kind === 'over') raiseTo(world, scenario.hero);
   if (!fromStart) startRecording(world, recorder, policies);
   const meter: Meter | null = recorder.meter;
   switch (scenario.kind) {
@@ -214,6 +229,9 @@ export function runJob(job: Job, policies: Policies): Measurement[] {
       break;
     case 'fight':
       if (opened) reason = fightRepeatedly(bot, scenario.moment, scenario.repeats, skill.loot) < scenario.repeats ? 'the moment did not wake into a fight' : reason;
+      break;
+    case 'over':
+      if (opened && !farm(bot, world.time + scenario.minutes * 60, skill.loot, (): boolean => false)) reason = 'could not reach the Hall';
       break;
     case 'level':
       if (opened && !farm(bot, (meter?.origin ?? 0) + scenario.minutes * 60, skill.loot, (): boolean => world.player.level >= scenario.level)) reason = 'could not reach the Hall';
