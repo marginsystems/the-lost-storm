@@ -675,7 +675,7 @@
       "arcDegrees": 150
     },
     "damage": {
-      "weaponPercent": 1.2,
+      "weaponPercent": 0.7,
       "flatMin": 0,
       "flatMax": 0
     },

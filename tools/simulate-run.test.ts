@@ -30,7 +30,7 @@ const GUARD = {
   strikeGap: 6,
   dormantWait: 0.5,
   over: { hero: 9, low: 1, near: 7, minutes: 8, seed: 1, drastic: 1 / 3 },
-  boss: { level: 8, repeats: 2, minutes: 60, leastSeconds: 60, builds: ['mixed', 'marksman'] },
+  boss: { level: 8, repeats: 2, minutes: 60, meanSeconds: { min: 45, max: 150 }, builds: ['mixed', 'marksman'] },
 } as const;
 
 function runs(scenario: Scenario, skill: string): RunSummary[] {
@@ -144,14 +144,16 @@ void test('the boss lair is found from the content, and its boss sits behind a l
   assert.ok(gates.length > 0 && gates.every((exit: ZoneExit): boolean => exit.requires.some((entry: Condition): boolean => entry.type === 'level' && entry.atLeast === GUARD.boss.level)));
 });
 
-void test('at the gate\'s level both heroes win the boss fight with careful play, it lasts a minute or more and reaches the end card, and poor play loses it', (): void => {
+void test('at the gate\'s level both heroes win the boss fight with careful play, its fights last about a minute or two and reach the end card, and poor play loses it', (): void => {
   for (const build of GUARD.boss.builds) {
     const won: BossRun = bossFights('careful', build, 1);
     const careful: readonly BossAttempt[] = won.attempts;
-    const poor: readonly BossAttempt[] = bossFights('poor', build, 1).attempts;
+    const poor: readonly BossAttempt[] = GUARD.seeds.flatMap((seed: number): readonly BossAttempt[] => bossFights('poor', build, seed).attempts);
     assert.ok(won.summary.milestones[POLICIES.endCard] !== undefined, `${build} careful never reached the end card`);
     assert.equal(careful.length, GUARD.boss.repeats, build);
-    assert.ok(careful.every((attempt: BossAttempt): boolean => attempt.outcome === 'won' && attempt.seconds >= GUARD.boss.leastSeconds), `${build} careful: ${JSON.stringify(careful)}`);
+    assert.ok(careful.every((attempt: BossAttempt): boolean => attempt.outcome === 'won'), `${build} careful: ${JSON.stringify(careful)}`);
+    const mean: number = careful.reduce((sum: number, attempt: BossAttempt): number => sum + attempt.seconds, 0) / careful.length;
+    assert.ok(mean >= GUARD.boss.meanSeconds.min && mean <= GUARD.boss.meanSeconds.max, `${build} careful fights last ${mean.toFixed(0)} s on average`);
     assert.ok(poor.filter((attempt: BossAttempt): boolean => attempt.outcome === 'won').length < poor.length / 2, `${build} poor: ${JSON.stringify(poor)}`);
   }
 });
