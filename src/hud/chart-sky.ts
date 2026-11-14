@@ -248,9 +248,19 @@ export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | n
   const drift: number = driftSeconds(host);
   const still: MediaQueryList = window.matchMedia('(prefers-reduced-motion: reduce)');
   let drawn: string = '';
+  let box: { readonly width: number; readonly height: number } = { width: 0, height: 0 };
+  let boxStale: boolean = true;
+  const watcher: ResizeObserver = new ResizeObserver((): void => {
+    boxStale = true;
+  });
+  watcher.observe(host);
   return {
     draw(view: SkyView, seconds: number): void {
-      const box: DOMRect = host.getBoundingClientRect();
+      if (boxStale) {
+        const measured: DOMRect = host.getBoundingClientRect();
+        box = { width: measured.width, height: measured.height };
+        boxStale = false;
+      }
       const density: number = pixelRatioFor(renderBudget(), window.devicePixelRatio, box.width, box.height) * CHART_SKY.resolution;
       const width: number = Math.max(1, Math.round(box.width * density));
       const height: number = Math.max(1, Math.round(box.height * density));

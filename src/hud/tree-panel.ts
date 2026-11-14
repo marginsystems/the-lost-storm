@@ -10,15 +10,20 @@ import type { ChartSky, SkyArm } from './chart-sky.ts';
 import { armShape, boltPoints, hexColour, polyline } from './chart-storm.ts';
 import type { AbilityCard } from './chart-ability.ts';
 import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
-import { captionFoot, CHART_VIEW, clampChart, easeFoot, frameChart, panChart, pinLabel, reopenChart, sameFrame, spreadLabels, zoomChart } from './chart-view.ts';
-import type { LabelBox, PinnedLabel } from './chart-view.ts';
+import { FRESH_RASTER, stepRaster } from './chart-raster.ts';
+import type { RasterState, RasterStep } from './chart-raster.ts';
+import { writeView } from './chart-frame.ts';
+import type { FrameTargets } from './chart-frame.ts';
+import { createFrameTargets, createNameView } from './chart-label.ts';
+import type { NameView } from './chart-label.ts';
+import { captionFoot, CHART_VIEW, clampChart, easeFoot, frameChart, panChart, reopenChart, sameFrame, zoomChart } from './chart-view.ts';
 import type { ChartBounds, ChartPoint, PathLabel } from './chart-model.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
 import { slotAction } from '../settings/bindings.ts';
 import { placeGlyph } from './tree-glyphs.ts';
 import { cardSpot, nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
-import type { CardSpot, NodeSpot } from './tree-nodes.ts';
+import type { CardSize, CardSpot, NodeSpot } from './tree-nodes.ts';
 import { lockedLine, pointsPrompt, statusLine, takenLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
 import { cardNode, CLOSED_CARD, stepCard } from './tree-card.ts';
@@ -57,11 +62,6 @@ interface LinkView {
   readonly track: SVGPolylineElement;
   readonly from: string;
   readonly to: string;
-}
-
-interface NameView {
-  readonly element: HTMLDivElement;
-  readonly at: ChartPoint;
 }
 
 interface Drag {
@@ -179,11 +179,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     }
   }
 
-  const names: NameView[] = pathLabels(content).map((entry: PathLabel): NameView => {
-    const name: HTMLDivElement = label('chart-path-name', entry.path.name, viewport);
-    name.style.setProperty('--tint', entry.path.tint);
-    return { element: name, at: place(entry.at) };
-  });
+  const names: NameView[] = pathLabels(content).map((entry: PathLabel): NameView => createNameView(viewport, entry.path.name, entry.path.tint, place(entry.at)));
   const here: HTMLDivElement = el('div', 'chart-here', board);
   el('span', 'chart-here-ring', here);
   label('chart-here-word', 'You are here', here);
@@ -246,6 +242,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (refundable) setText(action, `Give back · ${goldFor(1)} gold`, false);
     action.classList.toggle('short', refundable && refund === 'no_gold');
     if (key === shownCard) {
+      measureCard();
       placeCard();
       return;
     }
@@ -259,6 +256,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (ability !== null) label('chart-card-cost', `${ability.cost}${slotWords(ability.slot)}`, body);
     label(`tree-tip-status ${status.kind}`, costLine(node, status), body);
     cardBody.replaceChildren(body);
+    measureCard();
     placeCard();
   };
 
@@ -296,6 +294,10 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     }
     fillCard();
   };
+  action.addEventListener('transitionend', (): void => {
+    measureCard();
+    placeCard();
+  });
   card.addEventListener('pointerenter', (): void => sendCard({ type: 'enter_card' }));
   card.addEventListener('pointerleave', (): void => sendCard({ type: 'leave_card' }));
 
@@ -343,7 +345,14 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   let suppressClick: boolean = false;
   let moved: boolean = false;
   let lastView: AtlasView | null = null;
+  let raster: RasterState = FRESH_RASTER;
+  let holding: boolean = false;
 
+  let frameDirty: boolean = true;
+  let remeasure: boolean = true;
+  new ResizeObserver((): void => {
+    frameDirty = true;
+  }).observe(viewport);
   const measured = (): AtlasFrame => {
     const box: DOMRect = viewport.getBoundingClientRect();
     return { width: Math.max(1, box.width), height: Math.max(1, box.height), mapWidth, mapHeight };
@@ -352,6 +361,17 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const at: ScreenPoint = toScreen(motion.view, frame, spot);
     return { id: spot.id, x: at.x, y: at.y, radius: spot.radius * motion.view.scale };
   };
+  let cardSize: CardSize = { width: 0, height: 0 };
+  const measureCard = (): void => {
+    cardSize = { width: card.offsetWidth, height: card.offsetHeight };
+  };
+  const measureNames = (): void => {
+    for (const name of names) name.measure();
+  };
+  const drawSky = (): void => {
+    const corner: ScreenPoint = toScreen(motion.view, frame, { x: 0, y: 0 });
+    sky?.draw({ cornerX: corner.x, cornerY: corner.y, scale: motion.view.scale }, performance.now() / 1000);
+  };
   const placeCard = (): void => {
     const view: NodeView | null = cardView();
     if (view === null) return;
@@ -359,27 +379,19 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (own === undefined) return;
     const reach: number = TREE_NODES.neighbourReach * CHART.unit;
     const near: readonly NodeSpot[] = spots.filter((spot: NodeSpot): boolean => spot !== own && Math.hypot(spot.x - own.x, spot.y - own.y) <= reach).map(onScreen);
-    const at: CardSpot = cardSpot(onScreen(own), { width: card.offsetWidth, height: card.offsetHeight }, near, { width: frame.width, height: frame.height, edge: CHART.cardEdge, gap: CHART.cardGap });
+    const at: CardSpot = cardSpot(onScreen(own), cardSize, near, { width: frame.width, height: frame.height, edge: CHART.cardEdge, gap: CHART.cardGap });
     card.style.left = `${Math.round(at.x)}px`;
     card.style.top = `${Math.round(at.y)}px`;
   };
+  let wantedFoot: number = CHART_VIEW.labelFoot;
+  const measureFoot = (): void => {
+    wantedFoot = captionFoot(prompt.offsetTop, prompt.offsetHeight, frame.height);
+  };
+  const frameTargets: FrameTargets = createFrameTargets(board, here, names);
   const apply = (): void => {
     placeCard();
-    const corner: ScreenPoint = toScreen(motion.view, frame, { x: 0, y: 0 });
-    board.style.transform = `translate(${corner.x}px, ${corner.y}px) scale(${motion.view.scale})`;
-    sky?.draw({ cornerX: corner.x, cornerY: corner.y, scale: motion.view.scale }, performance.now() / 1000);
-    viewport.style.setProperty('--zoom', String(motion.view.scale));
-    const pins: readonly PinnedLabel[] = names.map((name: NameView): PinnedLabel => pinLabel(toScreen(motion.view, frame, name.at), name.element.offsetWidth / 2, name.element.offsetHeight / 2, frame, foot));
-    const boxes: readonly LabelBox[] = spreadLabels(
-      pins.map((pin: PinnedLabel, index: number): LabelBox => ({ x: pin.x, y: pin.y, halfWidth: (names[index]?.element.offsetWidth ?? 0) / 2, halfHeight: (names[index]?.element.offsetHeight ?? 0) / 2 })),
-      frame,
-    );
-    names.forEach((name: NameView, index: number): void => {
-      const box: LabelBox | undefined = boxes[index];
-      if (box === undefined) return;
-      name.element.style.transform = `translate(${Math.round(box.x)}px, ${Math.round(box.y)}px) translate(-50%, -50%)`;
-      name.element.classList.toggle('pinned', pins[index]?.pinned ?? false);
-    });
+    writeView(frameTargets, motion.view, frame, foot);
+    drawSky();
   };
   const local = (event: MouseEvent): ScreenPoint => {
     const box: DOMRect = viewport.getBoundingClientRect();
@@ -604,6 +616,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       link.path.classList.toggle('lit', fromTaken && toTaken);
       link.path.classList.toggle('open', fromTaken !== toTaken);
     }
+    measureFoot();
     fillCard();
   };
 
@@ -615,8 +628,14 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
         if (!cardState.open) sendCard({ type: 'open' });
         moved = false;
         frame = measured();
+        frameDirty = false;
+        remeasure = true;
+        raster = FRESH_RASTER;
+        holding = false;
+        board.classList.add('releasing');
         target = reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
         motion = still(target);
+        measureNames();
         apply();
       }
       wasOpen = open;
@@ -624,22 +643,38 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     },
     update(dt: number): void {
       if (performance.now() >= confirmUntil && restart.classList.contains('confirm')) sync();
-      const now: AtlasFrame = measured();
-      if (!sameFrame(now, frame)) {
-        frame = now;
-        target = moved ? clampChart(target, frame) : reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
-        motion = still(moved ? clampChart(motion.view, frame) : target);
+      if (remeasure) {
+        remeasure = false;
+        measureNames();
+        measureCard();
+        measureFoot();
         apply();
       }
-      const wanted: number = captionFoot(prompt.offsetTop, prompt.offsetHeight, frame.height);
-      const shifting: boolean = foot !== wanted;
-      if (shifting) foot = easeFoot(foot, wanted, dt);
-      if (atRest(motion, target)) {
-        if (shifting) apply();
-        else {
-          const corner: ChartPoint = toScreen(motion.view, frame, { x: 0, y: 0 });
-          sky?.draw({ cornerX: corner.x, cornerY: corner.y, scale: motion.view.scale }, performance.now() / 1000);
+      if (frameDirty) {
+        frameDirty = false;
+        const now: AtlasFrame = measured();
+        if (!sameFrame(now, frame)) {
+          frame = now;
+          target = moved ? clampChart(target, frame) : reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
+          motion = still(moved ? clampChart(motion.view, frame) : target);
+          measureNames();
+          measureCard();
+          measureFoot();
+          apply();
         }
+      }
+      const shifting: boolean = foot !== wantedFoot;
+      if (shifting) foot = easeFoot(foot, wantedFoot, dt);
+      const resting: boolean = atRest(motion, target);
+      const step: RasterStep = stepRaster(raster, motion.view.scale, resting);
+      raster = step.state;
+      if (step.hold !== holding) {
+        holding = step.hold;
+        board.classList.toggle('releasing', !holding);
+      }
+      if (resting) {
+        if (shifting) apply();
+        else drawSky();
         return;
       }
       motion = stepMotion(motion, target, dt);
