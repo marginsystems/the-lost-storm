@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { OpenTrade, TradeState } from './trade-model.ts';
-import { asked, askingText, blockText, closeText, confirmBlock, doneText, expire, gone, NO_TRADE, parseGold, refusalText, secondsLeft, TRADE_MODEL, tradeCard, tradeStep } from './trade-model.ts';
+import { asked, askingText, tradeBusy, blockText, closeText, confirmBlock, doneText, expire, gone, NO_TRADE, parseGold, refusalText, secondsLeft, TRADE_MODEL, tradeCard, tradeStep } from './trade-model.ts';
 import type { TradeItem, TradeSide } from './trade-protocol.ts';
 import { TRADE_CLOSES, TRADE_LIMITS, TRADE_REFUSALS } from './trade-protocol.ts';
 
@@ -107,4 +107,11 @@ void test('the card shows an ask to you first, waits on your own ask, and shows 
   assert.deepEqual(tradeCard(done, TRADE_MODEL.noteMs), { kind: 'none' });
   const declined: TradeState = tradeStep(asked(NO_TRADE, 'Bo'), { type: 'trade_closed', reason: 'declined' }, NOW);
   assert.deepEqual(tradeCard(declined, 0), { kind: 'note', note: { text: closeText('declined'), tone: 'refusal' } });
+});
+
+void test('you are busy trading while a window is open or your own ask waits', (): void => {
+  assert.equal(tradeBusy(NO_TRADE), false);
+  assert.equal(tradeBusy(asked(NO_TRADE, 'Bo')), true);
+  assert.equal(tradeBusy(opened()), true);
+  assert.equal(tradeBusy(tradeStep(NO_TRADE, { type: 'trade_asked', from: 'h1', name: 'Ash', expiresAt: NOW + 10 }, NOW)), false);
 });

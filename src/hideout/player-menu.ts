@@ -12,6 +12,16 @@ export type EntryId = 'message' | 'trade' | 'friend' | 'mute' | 'block' | 'repor
 
 export type MenuStep = 'entries' | 'confirm_block' | 'report';
 
+export type TradeStanding = 'ready' | 'unsupported' | 'trading' | 'elsewhere' | 'away' | 'far';
+
+export interface TradeWatch {
+  readonly supported: boolean;
+  readonly trading: boolean;
+  readonly inHideout: boolean;
+  readonly here: boolean;
+  readonly distance: number | null;
+}
+
 export interface MenuFacts {
   readonly friend: FriendStanding;
   readonly friendsAvailable: boolean;
@@ -20,7 +30,7 @@ export interface MenuFacts {
   readonly blocksAvailable: boolean;
   readonly reportAvailable: boolean;
   readonly canMessage: boolean;
-  readonly canTrade: boolean;
+  readonly trade: TradeStanding;
   readonly reported: boolean;
   readonly busy: ReadonlySet<EntryId>;
 }
@@ -87,11 +97,43 @@ function friendEntry(facts: MenuFacts): MenuEntry {
   return { id: 'friend', label: 'Add friend', detail: 'Send a friend request', enabled: false, soon: false };
 }
 
+export function tradeStanding(watch: TradeWatch): TradeStanding {
+  if (!watch.supported) return 'unsupported';
+  if (watch.trading) return 'trading';
+  if (!watch.inHideout) return 'elsewhere';
+  if (!watch.here) return 'away';
+  if (watch.distance === null || watch.distance > PLAYER_MENU.reach) return 'far';
+  return 'ready';
+}
+
+function tradeDetail(facts: MenuFacts): string {
+  if (facts.trade !== 'unsupported' && facts.blocked) return 'Unblock them first';
+  switch (facts.trade) {
+    case 'ready':
+      return 'Offer items and gold';
+    case 'unsupported':
+      return PLAYER_MENU.soon;
+    case 'trading':
+      return 'Finish your current trade first';
+    case 'elsewhere':
+      return 'Only in the Hideout';
+    case 'away':
+      return 'They are not in the Hideout';
+    case 'far':
+      return 'Walk closer to them';
+  }
+  return PLAYER_MENU.soon;
+}
+
+function tradeEntry(facts: MenuFacts): MenuEntry {
+  return { id: 'trade', label: 'Trade', detail: tradeDetail(facts), enabled: facts.trade === 'ready' && !facts.blocked && !facts.busy.has('trade'), soon: facts.trade === 'unsupported' };
+}
+
 export function menuEntries(facts: MenuFacts): readonly MenuEntry[] {
   const busy = (id: EntryId): boolean => facts.busy.has(id);
   return [
     { id: 'message', label: 'Message', detail: facts.canMessage ? 'Write to them alone' : PLAYER_MENU.soon, enabled: facts.canMessage && !facts.blocked, soon: !facts.canMessage },
-    { id: 'trade', label: 'Trade', detail: facts.canTrade ? 'Offer items and gold' : PLAYER_MENU.soon, enabled: facts.canTrade && !facts.blocked && !busy('trade'), soon: !facts.canTrade },
+    tradeEntry(facts),
     friendEntry(facts),
     { id: 'mute', label: facts.muted ? 'Unmute' : 'Mute', detail: facts.muted ? 'Show their chat again' : 'Hide their chat', enabled: true, soon: false },
     { id: 'block', label: facts.blocked ? 'Unblock' : 'Block', detail: facts.blocked ? 'Take their requests again' : 'Hide them and refuse their requests', enabled: facts.blocksAvailable && !busy('block'), soon: false },

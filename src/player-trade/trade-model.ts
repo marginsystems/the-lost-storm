@@ -49,6 +49,10 @@ export function tradeCard(state: TradeState, noteAge: number): TradeCard {
   return { kind: 'none' };
 }
 
+export function tradeBusy(state: TradeState): boolean {
+  return state.open !== null || state.asking !== null;
+}
+
 export function askingText(name: string): string {
   return `Waiting for ${name} to answer.`;
 }

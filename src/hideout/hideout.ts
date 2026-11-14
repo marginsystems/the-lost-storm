@@ -24,6 +24,7 @@ import { startHideoutMenu } from './hideout-menu.ts';
 import type { Hud } from '../hud/hud-api.ts';
 import type { PlayerTrade } from '../player-trade/trade-flow.ts';
 import { createTradeFlow } from '../player-trade/trade-flow.ts';
+import { tradeBusy } from '../player-trade/trade-model.ts';
 import type { OtherTarget } from '../render/others.ts';
 import type { Mutes } from './mute.ts';
 import { createMutes } from './mute.ts';
@@ -80,7 +81,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
   });
   const trade: PlayerTrade = createTradeFlow({ live: server.live, world: (): World | null => current, sync: parts.sync, clock: (): number => Date.now(), timers: WINDOW_TIMERS });
   parts.screen.attachPlayerTrade(trade);
-  const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: (name: string): void => chat.openDirect(name), trade: { ready: (): boolean => trade.ready(), start: (target: OtherTarget): void => trade.ask(target.id, target.name) } });
+  const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: (name: string): void => chat.openDirect(name), trade: { ready: (): boolean => trade.ready(), busy: (): boolean => tradeBusy(trade.state()), start: (target: OtherTarget): void => trade.ask(target.id, target.name) } });
   server.live.subscribe((event: LiveEvent): void => {
     others.handle(event);
     chat.handle(event);

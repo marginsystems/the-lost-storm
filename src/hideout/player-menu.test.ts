@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { FriendsList } from '../backend/api.ts';
-import type { EntryId, MenuAction, MenuEntry, MenuFacts, Watch } from './player-menu.ts';
-import { actionOf, closeReason, cycle, friendStanding, menuEntries, PLAYER_MENU, placeMenu } from './player-menu.ts';
+import type { EntryId, MenuAction, MenuEntry, MenuFacts, TradeStanding, TradeWatch, Watch } from './player-menu.ts';
+import { actionOf, closeReason, cycle, friendStanding, menuEntries, PLAYER_MENU, placeMenu, tradeStanding } from './player-menu.ts';
 
 const FACTS: MenuFacts = {
   friend: 'none',
@@ -12,7 +12,7 @@ const FACTS: MenuFacts = {
   blocksAvailable: true,
   reportAvailable: true,
   canMessage: false,
-  canTrade: false,
+  trade: 'unsupported',
   reported: false,
   busy: new Set<EntryId>(),
 };
@@ -30,12 +30,12 @@ function act(facts: MenuFacts, id: EntryId): MenuAction | null {
 }
 
 void test('the menu always has the same six entries in the same order, so it never changes shape', (): void => {
-  const variants: readonly MenuFacts[] = [FACTS, { ...FACTS, blocked: true, muted: true, friend: 'friends', canMessage: true, canTrade: true }, { ...FACTS, blocksAvailable: false, reportAvailable: false }];
+  const variants: readonly MenuFacts[] = [FACTS, { ...FACTS, blocked: true, muted: true, friend: 'friends', canMessage: true, trade: 'ready' }, { ...FACTS, blocksAvailable: false, reportAvailable: false }];
   const shapes: readonly (readonly EntryId[])[] = variants.map((facts: MenuFacts): readonly EntryId[] => menuEntries(facts).map((made: MenuEntry): EntryId => made.id));
   for (const shape of shapes) assert.deepEqual(shape, ['message', 'trade', 'friend', 'mute', 'block', 'report']);
 });
 
-void test('Message and Trade that are not built yet are shown disabled with Soon', (): void => {
+void test('Message and Trade that the server does not offer are shown disabled with Soon', (): void => {
   for (const id of ['message', 'trade'] as const) {
     const made: MenuEntry = entry(FACTS, id);
     assert.equal(made.enabled, false);
@@ -43,7 +43,7 @@ void test('Message and Trade that are not built yet are shown disabled with Soon
     assert.equal(made.detail, PLAYER_MENU.soon);
     assert.equal(act(FACTS, id), null);
   }
-  const ready: MenuFacts = { ...FACTS, canMessage: true, canTrade: true };
+  const ready: MenuFacts = { ...FACTS, canMessage: true, trade: 'ready' };
   assert.deepEqual(act(ready, 'message'), { type: 'message' });
   assert.deepEqual(act(ready, 'trade'), { type: 'trade' });
 });
@@ -79,11 +79,12 @@ void test('Mute and Block say in a few words what each does, and toggle', (): vo
 });
 
 void test('a blocked player cannot be befriended, messaged or traded with from the menu', (): void => {
-  const blocked: MenuFacts = { ...FACTS, blocked: true, canMessage: true, canTrade: true };
+  const blocked: MenuFacts = { ...FACTS, blocked: true, canMessage: true, trade: 'ready' };
   assert.equal(act(blocked, 'friend'), null);
   assert.equal(entry(blocked, 'friend').detail, 'Unblock them first');
   assert.equal(act(blocked, 'message'), null);
   assert.equal(act(blocked, 'trade'), null);
+  assert.equal(entry(blocked, 'trade').detail, 'Unblock them first');
 });
 
 void test('Report asks for a reason, and once sent says Reported and cannot be sent again', (): void => {
@@ -127,4 +128,35 @@ void test('the menu sits above the player, centred, keeps a gutter from every ed
   const phone = placeMenu({ x: 190, top: 200, bottom: 260 }, size, { width: 375, height: 640 }, 10);
   assert.ok(phone.left >= PLAYER_MENU.edgeGutter && phone.left + size.width <= 375 - PLAYER_MENU.edgeGutter);
   assert.ok(phone.top >= PLAYER_MENU.edgeGutter && phone.top + size.height <= 640 - PLAYER_MENU.edgeGutter);
+});
+
+const NEAR: TradeWatch = { supported: true, trading: false, inHideout: true, here: true, distance: 3 };
+
+void test('a trade can be asked only of someone near you in the Hideout while neither of you is trading', (): void => {
+  const cases: readonly (readonly [TradeWatch, TradeStanding])[] = [
+    [NEAR, 'ready'],
+    [{ ...NEAR, distance: PLAYER_MENU.reach }, 'ready'],
+    [{ ...NEAR, supported: false, trading: true }, 'unsupported'],
+    [{ ...NEAR, trading: true, inHideout: false }, 'trading'],
+    [{ ...NEAR, inHideout: false, here: false }, 'elsewhere'],
+    [{ ...NEAR, here: false, distance: null }, 'away'],
+    [{ ...NEAR, distance: PLAYER_MENU.reach + 0.1 }, 'far'],
+    [{ ...NEAR, distance: null }, 'far'],
+  ];
+  for (const [watch, standing] of cases) assert.equal(tradeStanding(watch), standing, JSON.stringify(watch));
+});
+
+void test('when Trade cannot be asked the entry says why and does nothing', (): void => {
+  const reasons: readonly (readonly [TradeStanding, string])[] = [
+    ['trading', 'Finish your current trade first'],
+    ['elsewhere', 'Only in the Hideout'],
+    ['away', 'They are not in the Hideout'],
+    ['far', 'Walk closer to them'],
+  ];
+  for (const [standing, detail] of reasons) {
+    const facts: MenuFacts = { ...FACTS, trade: standing };
+    assert.deepEqual([entry(facts, 'trade').detail, entry(facts, 'trade').soon, act(facts, 'trade')], [detail, false, null]);
+  }
+  assert.equal(entry({ ...FACTS, trade: 'ready' }, 'trade').detail, 'Offer items and gold');
+  assert.equal(act({ ...FACTS, trade: 'ready', busy: new Set<EntryId>(['trade']) }, 'trade'), null);
 });

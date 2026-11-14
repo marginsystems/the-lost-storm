@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { ReportResult } from '../backend/api.ts';
 import type { ChatLine } from '../backend/live-protocol.ts';
-import { boxAnchor, reportKey, reportNote, reportRoute, tradeFrom } from './hideout-menu.ts';
+import type { OtherTarget } from '../render/others.ts';
+import type { Spot, TradeStarter } from './hideout-menu.ts';
+import { boxAnchor, reportKey, reportNote, reportRoute, tradeOf, tradeTarget } from './hideout-menu.ts';
 
 void test('every report answer has its own line in the menu', (): void => {
   const results: readonly ReportResult[] = ['reported', 'gone', 'own', 'slow', 'unsupported', 'failed'];
@@ -24,10 +26,43 @@ void test('a reported line marks only that line, and a reported player marks the
   assert.equal(reportKey({ kind: 'chat', name: 'Bo Reed', line: null }), reportKey({ kind: 'world', target: { id: 'p1', name: 'bo reed', username: null } }));
 });
 
-void test('trade is offered only for a player standing in the Hideout', (): void => {
-  assert.equal(tradeFrom({ kind: 'world', target: { id: 'p1', name: 'Bo Reed', username: null } }, true), true);
-  assert.equal(tradeFrom({ kind: 'chat', name: 'Bo Reed', line: LINE }, true), false);
-  assert.equal(tradeFrom({ kind: 'world', target: { id: 'p1', name: 'Bo Reed', username: null } }, false), false);
+const BO: OtherTarget = { id: 'p1', name: 'Bo Reed', username: null };
+
+interface FakeOthers {
+  target(id: string): OtherTarget | null;
+  named(name: string): OtherTarget | null;
+  groundOf(id: string): Spot | null;
+}
+
+function standingIn(ground: Spot | null): FakeOthers {
+  return {
+    target: (id: string): OtherTarget | null => (ground !== null && id === BO.id ? BO : null),
+    named: (name: string): OtherTarget | null => (ground !== null && name.toLowerCase() === BO.name.toLowerCase() ? BO : null),
+    groundOf: (id: string): Spot | null => (id === BO.id ? ground : null),
+  };
+}
+
+function starter(busy: boolean): TradeStarter {
+  return { ready: (): boolean => true, busy: (): boolean => busy, start: (): void => undefined };
+}
+
+void test('a chat name trades with the player of that name standing in the Hideout, as a click on them does', (): void => {
+  const here: FakeOthers = standingIn({ x: 2, z: 0 });
+  assert.equal(tradeTarget({ kind: 'chat', name: 'bo reed', line: LINE }, here), BO);
+  assert.equal(tradeTarget({ kind: 'world', target: BO }, here), BO);
+  assert.equal(tradeTarget({ kind: 'chat', name: 'Bo Reed', line: LINE }, standingIn(null)), null);
+});
+
+void test('the trade entry follows the same rules from chat and from the world', (): void => {
+  const hero: Spot = { x: 0, z: 0 };
+  for (const origin of [{ kind: 'world', target: BO }, { kind: 'chat', name: 'Bo Reed', line: LINE }] as const) {
+    assert.equal(tradeOf(origin, starter(false), standingIn({ x: 2, z: 0 }), { inHideout: true, hero }), 'ready');
+    assert.equal(tradeOf(origin, starter(true), standingIn({ x: 2, z: 0 }), { inHideout: true, hero }), 'trading');
+    assert.equal(tradeOf(origin, starter(false), standingIn({ x: 40, z: 0 }), { inHideout: true, hero }), 'far');
+    assert.equal(tradeOf(origin, starter(false), standingIn(null), { inHideout: true, hero }), 'away');
+    assert.equal(tradeOf(origin, starter(false), standingIn({ x: 2, z: 0 }), { inHideout: false, hero }), 'elsewhere');
+    assert.equal(tradeOf(origin, null, standingIn({ x: 2, z: 0 }), { inHideout: true, hero }), 'unsupported');
+  }
 });
 
 void test('a chat name anchors the menu at its middle, measured from the frame', (): void => {

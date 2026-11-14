@@ -9,8 +9,8 @@ import { blockSettled, blocksFetched, blockText, isBlocked, NO_BLOCKS } from './
 import { friendText, reportText } from './chat.ts';
 import type { HideoutChat } from './hideout-chat.ts';
 import type { Mutes } from './mute.ts';
-import type { CloseReason, EntryId, MenuFacts } from './player-menu.ts';
-import { closeReason, friendStanding } from './player-menu.ts';
+import type { CloseReason, EntryId, MenuFacts, TradeStanding } from './player-menu.ts';
+import { closeReason, friendStanding, tradeStanding } from './player-menu.ts';
 import type { MenuChoice, PlayerMenuView } from './player-menu-view.ts';
 import { createPlayerMenuView } from './player-menu-view.ts';
 
@@ -35,7 +35,13 @@ export interface HideoutMenuOptions {
 
 export interface TradeStarter {
   ready(): boolean;
+  busy(): boolean;
   start(target: OtherTarget): void;
+}
+
+export interface Whereabouts {
+  readonly inHideout: boolean;
+  readonly hero: Spot | null;
 }
 
 export interface HideoutMenu {
@@ -72,8 +78,20 @@ export function reportKey(origin: MenuOrigin): string {
   return route.kind === 'line' ? `line:${String(route.line.id)}` : `name:${route.name.toLowerCase()}`;
 }
 
-export function tradeFrom(origin: MenuOrigin, canTrade: boolean): boolean {
-  return canTrade && origin.kind === 'world';
+export function tradeTarget(origin: MenuOrigin, others: Pick<Others, 'target' | 'named'>): OtherTarget | null {
+  return origin.kind === 'world' ? others.target(origin.target.id) : others.named(origin.name);
+}
+
+export function tradeOf(origin: MenuOrigin, starter: TradeStarter | null, others: Pick<Others, 'target' | 'named' | 'groundOf'>, where: Whereabouts): TradeStanding {
+  const target: OtherTarget | null = tradeTarget(origin, others);
+  const ground: Spot | null = target === null ? null : others.groundOf(target.id);
+  return tradeStanding({
+    supported: starter?.ready() === true,
+    trading: starter?.busy() === true,
+    inHideout: where.inHideout,
+    here: target !== null,
+    distance: ground === null || where.hero === null ? null : Math.hypot(ground.x - where.hero.x, ground.z - where.hero.z),
+  });
 }
 
 export function boxAnchor(box: Box, frame: Box): ScreenAnchor {
@@ -111,6 +129,8 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
   let blocks: BlocksState = NO_BLOCKS;
   let settled: number = 0;
   let reportAvailable: boolean = true;
+  let where: Whereabouts = { inHideout: false, hero: null };
+  let shownTrade: TradeStanding | null = null;
   const reported: Set<string> = new Set<string>();
   const busy: Set<EntryId> = new Set<EntryId>();
 
@@ -124,14 +144,17 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
     blocksAvailable: blocks.available,
     reportAvailable,
     canMessage: options.openDirect !== null,
-    canTrade: tradeFrom(from, options.trade?.ready() === true),
+    trade: tradeOf(from, options.trade, others, where),
     reported: reported.has(reportKey(from)),
     busy,
     };
   };
 
   const rerender = (): void => {
-    if (origin !== null && view.isOpen()) view.render(facts(origin));
+    if (origin === null || !view.isOpen()) return;
+    const shown: MenuFacts = facts(origin);
+    shownTrade = shown.trade;
+    view.render(shown);
   };
 
   const fetchBlocks = async (): Promise<void> => {
@@ -199,10 +222,12 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
         options.openDirect?.(name);
         view.close('outside');
         return;
-      case 'trade':
-        if (from.kind === 'world') options.trade?.start(from.target);
+      case 'trade': {
+        const target: OtherTarget | null = tradeTarget(from, others);
+        if (target !== null) options.trade?.start(target);
         view.close('outside');
         return;
+      }
       case 'befriend':
         befriend(name, false);
         return;
@@ -262,7 +287,9 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
       openId = id;
       nameAnchor = null;
       origin = { kind: 'world', target: found };
-      view.open(found, facts(origin), anchor, true);
+      const shown: MenuFacts = facts(origin);
+      shownTrade = shown.trade;
+      view.open(found, shown, anchor, true);
       if (chat.friends().list === null) chat.refreshFriends();
       return true;
     },
@@ -274,8 +301,10 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
       if (event.type === 'gone' && view.isOpen()) view.close('zone');
     },
     frame(inHideout: boolean, hero: Spot): void {
+      where = { inHideout, hero };
       others.light(hovered ?? openId);
       if (!view.isOpen()) return;
+      if (origin !== null && tradeOf(origin, options.trade, others, where) !== shownTrade) rerender();
       if (openId === null) {
         if (nameAnchor?.isConnected === true) view.place(anchorOf(nameAnchor));
         return;
@@ -300,7 +329,9 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
       openId = null;
       nameAnchor = element;
       origin = { kind: 'chat', name, line };
-      view.open({ name, username: null }, facts(origin), anchorOf(element), true);
+      const shown: MenuFacts = facts(origin);
+      shownTrade = shown.trade;
+      view.open({ name, username: null }, shown, anchorOf(element), true);
       if (chat.friends().list === null) chat.refreshFriends();
     },
   };

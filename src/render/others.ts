@@ -78,6 +78,7 @@ export interface Others {
   playerAt(point: ScreenPoint): string | null;
   light(id: string | null): void;
   target(id: string): OtherTarget | null;
+  named(name: string): OtherTarget | null;
   anchorOf(id: string): ScreenAnchor | null;
   groundOf(id: string): { readonly x: number; readonly z: number } | null;
 }
@@ -374,6 +375,13 @@ export function createOthers(options: OthersOptions): Others {
     target(id: string): OtherTarget | null {
       const other: Other | null = shownTarget(id);
       return other === null ? null : { id: other.id, name: other.called, username: other.username };
+    },
+    named(name: string): OtherTarget | null {
+      const key: string = name.toLowerCase();
+      for (const other of others.values()) {
+        if (other.here && other.called.toLowerCase() === key) return { id: other.id, name: other.called, username: other.username };
+      }
+      return null;
     },
     anchorOf(id: string): ScreenAnchor | null {
       const other: Other | null = shownTarget(id);
