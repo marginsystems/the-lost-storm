@@ -17,6 +17,7 @@ import { createRigGlow, FLASH, flashEdge, flashLift, makeGhost } from './ghost-m
 import { createBrowserTimers } from '../browser-timers.ts';
 import { STALL, withStallLimit } from './stall-limit.ts';
 import { addBoxUvs } from './box-uv.ts';
+import { assetUrl } from './asset-url.ts';
 import { fitClip } from './clip-fit.ts';
 
 export interface ActionClip {
@@ -167,10 +168,6 @@ const FLASH_KEY: string = 'storm-flash-rim';
 const WHITE: string = '#ffffff';
 const UNSEEN: Material = new MeshBasicMaterial({ visible: false });
 const pending: Map<string, Promise<GLTF>> = new Map<string, Promise<GLTF>>();
-
-export function assetUrl(path: string): string {
-  return `${import.meta.env.BASE_URL}${path}`;
-}
 
 export function loadModel(loader: GLTFLoader, path: string): Promise<GLTF> {
   const cached: Promise<GLTF> | undefined = pending.get(path);

@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
-import type { Plugin, ResolvedConfig } from 'vite';
+import type { ConfigEnv, Plugin, ResolvedConfig, UserConfig } from 'vite';
+import { assetVersionDefine } from './tools/asset-versions.ts';
 import links from './data/links.json' with { type: 'json' };
 import { readServerUrl } from './src/backend/server-url.ts';
 import { readLinks } from './src/launch/links.ts';
@@ -26,9 +27,18 @@ function pageLinks(): Plugin {
   };
 }
 
+function assetVersions(): Plugin {
+  return {
+    name: 'lost-storm-asset-versions',
+    config(_config: UserConfig, env: ConfigEnv): UserConfig {
+      return { define: assetVersionDefine(resolve(ROOT, 'public'), env.command === 'build') };
+    },
+  };
+}
+
 export default defineConfig({
   server: { port: 5193, open: false },
-  plugins: [pageLinks()],
+  plugins: [pageLinks(), assetVersions()],
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 1500,

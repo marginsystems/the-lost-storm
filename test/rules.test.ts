@@ -132,7 +132,52 @@ void test('every shipped model and texture is listed in ASSETS.md', (): void => 
   for (const path of [...models('public/models'), ...models('public/textures')]) assert.ok(assets.includes(path), `${path} is missing from ASSETS.md`);
 });
 
-const BANNED_BODY: RegExp = new RegExp(joined('make', '[\\s_.-]*human'), 'i');
+const ASSET_URL_HOME: string = 'src/render/asset-url.ts';
+const PUBLIC_BASE: RegExp = /import\.meta\.env\.BASE_URL/;
+const RAW_ASSET_PATH: RegExp = /(?<!\bassetUrl)\(\s*['"`](?:\.?\/)?(?:models|textures)\//;
+const RAW_ASSET_SOURCE: RegExp = /(?:\.src\s*=|\burl\()\s*['"`]?(?:\.?\/)?(?:models|textures)\//;
+const LOADER_CALL: RegExp = /\.(?:loadAsync|loadFromURL|setPath)\(\s*(?!assetUrl\()/;
+
+function bypassesAssetUrl(text: string): boolean {
+  return PUBLIC_BASE.test(text) || RAW_ASSET_PATH.test(text) || RAW_ASSET_SOURCE.test(text) || LOADER_CALL.test(text);
+}
+
+void test('the asset guard catches every way a public model or texture could skip its version', (): void => {
+  const caught: readonly string[] = [
+    "loader.loadAsync('models/world/coins.glb');",
+    'loader.loadAsync(`${base}models/x.glb`, progress);',
+    'loader.loadAsync(path);',
+    "textureLoader.load('textures/cobble_color.webp', done);",
+    "fetch('/models/world/coins.glb');",
+    "image.src = 'textures/a.webp';",
+    'image.src = `/models/${name}.glb`;',
+    "background: url('textures/a.webp');",
+    'const url = `${import.meta.env.BASE_URL}${path}`;',
+    "loader.setPath('models/');",
+  ];
+  const allowed: readonly string[] = [
+    'loader.loadAsync(assetUrl(path), progress);',
+    "bitmaps.load(assetUrl('textures/a.webp'), done, done);",
+    "const LOOT = { coinModel: 'models/world/coins.glb' };",
+    'await loadModel(loader, def.model);',
+    'fetch(url, init);',
+  ];
+  for (const text of caught) assert.ok(bypassesAssetUrl(text), text);
+  for (const text of allowed) assert.ok(!bypassesAssetUrl(text), text);
+});
+
+void test('shipped code asks for public models and textures only through assetUrl', (): void => {
+  const found: string[] = [];
+  for (const source of sources) {
+    if (!source.path.startsWith('src') || source.path.endsWith('.test.ts') || source.path === ASSET_URL_HOME) continue;
+    source.lines.forEach((line: string, index: number): void => {
+      if (bypassesAssetUrl(line)) found.push(`${source.path}:${index + 1}`);
+    });
+  }
+  assert.deepEqual(found, [], `build every URL into public/models or public/textures with assetUrl in ${ASSET_URL_HOME}`);
+});
+
+const BANNED_BODY: RegExp =new RegExp(joined('make', '[\\s_.-]*human'), 'i');
 const BANNED_BODY_ROOTS: readonly string[] = ['src', 'sim', 'tools', 'data', 'blender', 'play'];
 const BANNED_BODY_REMAINS: readonly string[] = ['public/models/world/still_figure.glb', 'public/models/world/still_figure_bowed.glb'];
 const BANNED_BODY_BINARY: RegExp = /\.(glb|gltf|bin|png|jpe?g|webp|avif|ktx2|hdr|exr|ico|woff2?|ttf|otf|mp3|ogg|wav|pyc|blend)$/i;

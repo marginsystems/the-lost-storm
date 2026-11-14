@@ -5,7 +5,7 @@ import { renderBudget, texturePath } from '../mobile/quality.ts';
 import { shrinkTexture } from '../mobile/textures.ts';
 import type { BitmapTextures } from './bitmap-texture.ts';
 import { browserBitmaps, browserImageLoad, createBitmapTextures } from './bitmap-texture.ts';
-import { assetUrl } from './character-loader.ts';
+import { assetUrl } from './asset-url.ts';
 import { PROP_SURFACE, withPropLook } from './prop-surface.ts';
 import { wetGround } from './wet-ground.ts';
 
