@@ -2,7 +2,7 @@ import type { Color, Group, Mesh } from 'three';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { EffectKit } from './effect-kit.ts';
 import { glow, scorchMesh } from './effect-shapes.ts';
-import type { GroundLight } from './ground-light.ts';
+import type { GroundLight, GroundLightLook } from './ground-light.ts';
 import { createGroundLight, flare, GROUND_LIGHT, spread } from './ground-light.ts';
 import type { BurstOptions } from './particles.ts';
 
@@ -20,6 +20,11 @@ export const SHOCKWAVE = {
   slamOut: 0.45,
   waveFloor: 0.2,
   dustFloor: 0.4,
+  patchWidth: 0.22,
+  patchWobble: 0.16,
+  patchHollow: 0.4,
+  patchGrain: 0.75,
+  patchStrength: 0.45,
   shadeGrow: 1.1,
   sprayRays: 20,
   strikeReach: 0.8,
@@ -53,14 +58,16 @@ export function createShockwave(deps: ShockwaveKit): Shockwave {
     const dustCount: number = light < 1 ? 1 : 2;
     const strength: number = SHOCKWAVE.waveStrength * (SHOCKWAVE.waveFloor + (1 - SHOCKWAVE.waveFloor) * Math.min(1, light));
     deps.shade(x, z, radius * SHOCKWAVE.shadeGrow);
-    const wave: GroundLight = createGroundLight(glow(color, SHOCKWAVE.waveGlow), { kind: 'round', radius, inner: 0, arc: Math.PI * 2 }, { fill: SHOCKWAVE.waveFill, band: 1, width: radius * SHOCKWAVE.waveWidth, wobble: radius * SHOCKWAVE.waveWobble });
+    const ring: boolean = skill.vfx.lightning !== null;
+    const look: GroundLightLook = ring ? { fill: SHOCKWAVE.waveFill, band: 1, width: radius * SHOCKWAVE.waveWidth, wobble: radius * SHOCKWAVE.waveWobble } : { fill: 1, band: 0, width: radius * SHOCKWAVE.patchWidth, wobble: radius * SHOCKWAVE.patchWobble, hollow: SHOCKWAVE.patchHollow, grain: SHOCKWAVE.patchGrain };
+    const wave: GroundLight = createGroundLight(glow(color, SHOCKWAVE.waveGlow), { kind: 'round', radius, inner: 0, arc: Math.PI * 2 }, look);
     wave.mesh.position.set(x, GROUND_LIGHT.height + 0.05, z);
     deps.add(
       wave.mesh,
       SHOCKWAVE.waveTime,
       (t: number): void => {
-        wave.front(spread(t));
-        wave.pose(strength * flare(t), t * SHOCKWAVE.waveTime);
+        wave.front(ring ? spread(t) : 1);
+        wave.pose((ring ? strength : strength * SHOCKWAVE.patchStrength) * flare(t), t * SHOCKWAVE.waveTime);
       },
       null,
     );

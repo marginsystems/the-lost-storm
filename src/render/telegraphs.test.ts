@@ -9,7 +9,7 @@ import { placeHazard } from '../../sim/world/hazards.ts';
 import { arena, place } from '../../test/arena-support.ts';
 import { must } from '../../test/support.ts';
 import type { Telegraphs } from './telegraphs.ts';
-import { createTelegraphs, settleLevel, telegraphEase, telegraphEdge, TELEGRAPHS } from './telegraphs.ts';
+import { createTelegraphs, fieldGlow, settleLevel, telegraphEase, telegraphFlare, telegraphGlow, telegraphGrain, TELEGRAPHS } from './telegraphs.ts';
 
 const RED: Color = new Color(0xc65a4a);
 const STEP: number = 1 / 60;
@@ -46,9 +46,18 @@ void test('a telegraph eases in from nothing instead of popping', (): void => {
   assert.ok(telegraphEase(0.05, 0.2) > telegraphEase(0.05, 2));
 });
 
-void test('the edge grows stronger as the hit nears', (): void => {
-  assert.ok(telegraphEdge(1, 0) > telegraphEdge(0, 0));
-  assert.ok(telegraphEdge(0, 0) > 0);
+void test('the light gathers as the hit nears and flares only in its last moment', (): void => {
+  assert.ok(telegraphGlow(1, 1, 0) > telegraphGlow(0, 1, 0));
+  assert.ok(telegraphGlow(0, 1, 0) > 0);
+  assert.equal(telegraphFlare(TELEGRAPHS.flareTime), 0);
+  assert.equal(telegraphFlare(0), 1);
+  assert.ok(telegraphGlow(1, 0, 0) <= TELEGRAPHS.peak + TELEGRAPHS.flare);
+  assert.ok(telegraphGrain(1) > telegraphGrain(0));
+});
+
+void test('a field breathes slowly and never goes dark while it lasts', (): void => {
+  for (let age: number = 0; age < 6; age += 0.25) assert.ok(fieldGlow(age) > TELEGRAPHS.fieldGlow * (1 - TELEGRAPHS.fieldBreathe) - 1e-9);
+  assert.notEqual(fieldGlow(0), fieldGlow(1));
 });
 
 void test('a settling telegraph fades out over its settle time', (): void => {
@@ -58,7 +67,7 @@ void test('a settling telegraph fades out over its settle time', (): void => {
   assert.equal(settleLevel(TELEGRAPHS.settle), 0);
 });
 
-void test('the edge marks the whole area from the start and the sweep follows the windup', (): void => {
+void test('a telegraph is one light over the whole area from the start, with no line or growing front', (): void => {
   const world: World = arena(3);
   const monster: MonsterState = place(world, 'test_brute', { x: 14, z: 17 });
   const skill: SkillDef = windingUp(world, monster, 1);
@@ -66,13 +75,19 @@ void test('the edge marks the whole area from the start and the sweep follows th
   const telegraphs: Telegraphs = createTelegraphs(parent);
   telegraphs.start(monster.id, 'actor', monster.pos, { x: 0, z: 1 }, skill, 1, RED);
   const action = must(monster.action, 'action');
-  action.timeLeft = 0.5;
-  telegraphs.update(STEP, world);
-  const [edge, sweep] = lightsOf(parent);
-  assert.ok(edge !== undefined && sweep !== undefined);
-  assert.equal(edge.front, 1);
-  assert.ok(Math.abs(sweep.front - 0.5) < 1e-6);
-  assert.ok(edge.strength > 0);
+  const seen: number[] = [];
+  for (const left of [0.9, 0.5, 0.05]) {
+    action.timeLeft = left;
+    for (let frame: number = 0; frame < 12; frame += 1) telegraphs.update(STEP, world);
+    const lights: Lit[] = lightsOf(parent);
+    assert.equal(lights.length, 1);
+    const [light] = lights;
+    assert.ok(light !== undefined);
+    assert.equal(light.front, 1);
+    seen.push(light.strength);
+  }
+  assert.ok(must(seen[1], 'mid') > must(seen[0], 'early'));
+  assert.ok(must(seen[2], 'late') > must(seen[1], 'mid'));
 });
 
 void test('a telegraph settles away once the windup ends and is gone after its settle time', (): void => {
@@ -103,6 +118,6 @@ void test('a field glows while its hazard lasts and fades once it is gone', (): 
   world.hazards = [];
   telegraphs.update(STEP, world);
   assert.equal(telegraphs.active, 1);
-  for (let frame: number = 0; frame < Math.ceil((TELEGRAPHS.settle * 2) / STEP) + 1; frame += 1) telegraphs.update(STEP, world);
+  for (let frame: number = 0; frame < Math.ceil(TELEGRAPHS.fieldSettle / STEP) + 1; frame += 1) telegraphs.update(STEP, world);
   assert.equal(telegraphs.active, 0);
 });

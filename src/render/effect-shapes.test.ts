@@ -26,6 +26,15 @@ void test('every telegraph is light drawn by the ground-light shader on one plan
   }
 });
 
+void test('a telegraph fills its area with feathered light and draws no band, so no ring shows at any frame', (): void => {
+  for (const delivery of deliveries()) {
+    for (const light of telegraphFor(delivery, new Color(1, 0, 0)).lights) {
+      assert.equal(light.mesh.material.uniforms['uBand']?.value, 0, `${delivery.type} draws no band`);
+      assert.equal(light.mesh.material.uniforms['uFront']?.value, 1, `${delivery.type} covers its whole area`);
+    }
+  }
+});
+
 function variantOf(mesh: Mesh): string {
   const material: Material | Material[] = mesh.material;
   assert.ok(!Array.isArray(material));

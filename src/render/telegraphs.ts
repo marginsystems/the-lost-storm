@@ -12,17 +12,24 @@ export const TELEGRAPHS = {
   height: 0.09,
   easeIn: 0.14,
   easeShare: 0.3,
-  edge: 0.5,
-  faint: 0.55,
-  strong: 0.45,
-  sweep: 0.42,
-  breathe: 0.12,
+  faint: 0.09,
+  peak: 0.2,
+  flare: 0.08,
+  flareTime: 0.1,
+  grainFrom: 0.45,
+  grainTo: 0.85,
+  breathe: 0.1,
   breatheRate: 6,
   settle: 0.14,
-  fieldGlow: 0.32,
-  fieldFill: 0.14,
-  fieldWidth: 0.1,
-  fieldWobble: 0.07,
+  rateBlend: 0.3,
+  fieldGlow: 0.16,
+  fieldWidth: 0.2,
+  fieldWobble: 0.16,
+  fieldHollow: 0.35,
+  fieldGrain: 0.75,
+  fieldBreathe: 0.22,
+  fieldBreatheRate: 1.4,
+  fieldSettle: 0.5,
 } as const;
 
 export type TelegraphSource = 'actor' | 'hazard';
@@ -40,11 +47,11 @@ interface Shown {
   readonly owner: number;
   readonly source: TelegraphSource;
   readonly skillId: string;
-  readonly edge: Telegraph;
-  readonly sweep: Telegraph;
+  readonly shape: Telegraph;
   readonly windup: number;
   age: number;
   progress: number;
+  rate: number;
   settling: number;
 }
 
@@ -64,13 +71,25 @@ export function telegraphEase(age: number, windup: number): number {
   return smooth(age / Math.max(1e-3, Math.min(TELEGRAPHS.easeIn, windup * TELEGRAPHS.easeShare)));
 }
 
-export function telegraphEdge(progress: number, age: number): number {
-  const breath: number = 1 - TELEGRAPHS.breathe * (0.5 + 0.5 * Math.cos(age * TELEGRAPHS.breatheRate));
-  return TELEGRAPHS.edge * (TELEGRAPHS.faint + TELEGRAPHS.strong * progress * progress) * breath;
+export function telegraphFlare(remaining: number): number {
+  return smooth(1 - remaining / TELEGRAPHS.flareTime);
 }
 
-export function settleLevel(settling: number): number {
-  return settling < 0 ? 1 : 1 - smooth(settling / TELEGRAPHS.settle);
+export function telegraphGlow(progress: number, remaining: number, age: number): number {
+  const breath: number = 1 - TELEGRAPHS.breathe * (0.5 + 0.5 * Math.cos(age * TELEGRAPHS.breatheRate));
+  return (TELEGRAPHS.faint + (TELEGRAPHS.peak - TELEGRAPHS.faint) * progress * progress) * breath + TELEGRAPHS.flare * telegraphFlare(remaining);
+}
+
+export function telegraphGrain(progress: number): number {
+  return TELEGRAPHS.grainFrom + (TELEGRAPHS.grainTo - TELEGRAPHS.grainFrom) * progress;
+}
+
+export function settleLevel(settling: number, span: number = TELEGRAPHS.settle): number {
+  return settling < 0 ? 1 : 1 - smooth(settling / span);
+}
+
+export function fieldGlow(age: number): number {
+  return TELEGRAPHS.fieldGlow * (1 - TELEGRAPHS.fieldBreathe * (0.5 + 0.5 * Math.sin(age * TELEGRAPHS.fieldBreatheRate)));
 }
 
 function windupOf(world: World, shown: Shown): number | null {
@@ -98,6 +117,11 @@ function place(object: Object3D, at: Vec2, direction: Vec2, parent: Object3D): v
   parent.add(object);
 }
 
+function setGrain(light: GroundLight, grain: number): void {
+  const uniform = light.mesh.material.uniforms['uGrain'];
+  if (uniform !== undefined) uniform.value = grain;
+}
+
 export function createTelegraphs(parent: Object3D): Telegraphs {
   const shown: Shown[] = [];
   const fields: Field[] = [];
@@ -106,21 +130,30 @@ export function createTelegraphs(parent: Object3D): Telegraphs {
     if (entry.settling < 0) entry.settling = 0;
   };
 
+  const advance = (entry: Shown, dt: number, world: World): void => {
+    if (entry.settling >= 0) return;
+    const progress: number | null = windupOf(world, entry);
+    if (progress === null) {
+      settle(entry);
+      return;
+    }
+    const next: number = Math.max(entry.progress, Math.min(1, progress));
+    if (dt > 0 && next > entry.progress) entry.rate += (((next - entry.progress) / dt) - entry.rate) * TELEGRAPHS.rateBlend;
+    entry.progress = next;
+  };
+
   return {
     get active(): number {
       return shown.length + fields.length;
     },
     start(owner: number, source: TelegraphSource, at: Vec2, direction: Vec2, skill: SkillDef, windup: number, color: Color): void {
       for (const entry of shown) if (entry.owner === owner) settle(entry);
-      const edge: Telegraph = telegraphFor(skill.delivery, color, 'edge');
-      const sweep: Telegraph = telegraphFor(skill.delivery, color, 'sweep');
-      place(edge.object, at, direction, parent);
-      place(sweep.object, at, direction, parent);
-      for (const light of sweep.lights) light.front(0);
-      shown.push({ owner, source, skillId: skill.id, edge, sweep, windup, age: 0, progress: 0, settling: -1 });
+      const shape: Telegraph = telegraphFor(skill.delivery, color);
+      place(shape.object, at, direction, parent);
+      shown.push({ owner, source, skillId: skill.id, shape, windup, age: 0, progress: 0, rate: windup > 0 ? 1 / windup : 1, settling: -1 });
     },
     field(owner: number, at: Vec2, radius: number, color: Color): void {
-      const light: GroundLight = createGroundLight(color, { kind: 'round', radius, inner: 0, arc: Math.PI * 2 }, { fill: TELEGRAPHS.fieldFill, band: 1, width: radius * TELEGRAPHS.fieldWidth, wobble: radius * TELEGRAPHS.fieldWobble });
+      const light: GroundLight = createGroundLight(color, { kind: 'round', radius, inner: 0, arc: Math.PI * 2 }, { fill: 1, band: 0, width: radius * TELEGRAPHS.fieldWidth, wobble: radius * TELEGRAPHS.fieldWobble, hollow: TELEGRAPHS.fieldHollow, grain: TELEGRAPHS.fieldGrain });
       light.mesh.position.set(at.x, GROUND_LIGHT.height + 0.02, at.z);
       parent.add(light.mesh);
       fields.push({ owner, light, settling: -1, age: 0 });
@@ -133,21 +166,16 @@ export function createTelegraphs(parent: Object3D): Telegraphs {
         const entry: Shown | undefined = shown[index];
         if (entry === undefined) continue;
         entry.age += dt;
-        if (entry.settling < 0) {
-          const progress: number | null = windupOf(world, entry);
-          if (progress === null) settle(entry);
-          else entry.progress = Math.max(entry.progress, Math.min(1, progress));
-        }
+        advance(entry, dt, world);
         if (entry.settling >= 0) entry.settling += dt;
+        const remaining: number = (1 - entry.progress) / Math.max(1e-3, entry.rate);
         const level: number = telegraphEase(entry.age, entry.windup) * settleLevel(entry.settling);
-        for (const light of entry.edge.lights) light.pose(telegraphEdge(entry.progress, entry.age) * level, entry.age);
-        for (const light of entry.sweep.lights) {
-          light.front(entry.progress);
-          light.pose(TELEGRAPHS.sweep * level, entry.age);
+        for (const light of entry.shape.lights) {
+          light.pose(telegraphGlow(entry.progress, remaining, entry.age) * level, entry.age);
+          setGrain(light, telegraphGrain(entry.progress));
         }
         if (entry.settling >= TELEGRAPHS.settle) {
-          disposeObject(entry.edge.object);
-          disposeObject(entry.sweep.object);
+          disposeObject(entry.shape.object);
           shown.splice(index, 1);
         }
       }
@@ -160,18 +188,15 @@ export function createTelegraphs(parent: Object3D): Telegraphs {
           for (const hazard of world.hazards) if (hazard.id === field.owner) alive = true;
           if (!alive) field.settling = 0;
         } else field.settling += dt;
-        field.light.pose(TELEGRAPHS.fieldGlow * telegraphEase(field.age, 1) * (field.settling < 0 ? 1 : 1 - smooth(field.settling / (TELEGRAPHS.settle * 2))), world.time);
-        if (field.settling >= TELEGRAPHS.settle * 2) {
+        field.light.pose(fieldGlow(field.age) * telegraphEase(field.age, 1) * settleLevel(field.settling, TELEGRAPHS.fieldSettle), world.time);
+        if (field.settling >= TELEGRAPHS.fieldSettle) {
           field.light.dispose();
           fields.splice(index, 1);
         }
       }
     },
     clear(): void {
-      for (const entry of shown) {
-        disposeObject(entry.edge.object);
-        disposeObject(entry.sweep.object);
-      }
+      for (const entry of shown) disposeObject(entry.shape.object);
       shown.length = 0;
       for (const field of fields) field.light.dispose();
       fields.length = 0;

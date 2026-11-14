@@ -30,6 +30,7 @@ export const GROUND_LIGHT = {
   flareRise: 0.14,
   holdRise: 0.18,
   holdFall: 0.3,
+  hollowFloor: 0.3,
 } as const;
 
 function smooth(t: number): number {
@@ -60,6 +61,8 @@ export interface GroundLightLook {
   readonly band: number;
   readonly width: number;
   readonly wobble: number;
+  readonly hollow?: number;
+  readonly grain?: number;
 }
 
 export interface GroundLight {
@@ -92,6 +95,8 @@ interface GroundUniforms {
   readonly uWobble: IUniform<number>;
   readonly uFront: IUniform<number>;
   readonly uShade: IUniform<number>;
+  readonly uHollow: IUniform<number>;
+  readonly uGrain: IUniform<number>;
 }
 
 const glsl = (value: number): string => value.toFixed(4);
@@ -115,6 +120,8 @@ export const GROUND_LIGHT_FRAGMENT: string = [
   'uniform float uWobble;',
   'uniform float uFront;',
   'uniform float uShade;',
+  'uniform float uHollow;',
+  'uniform float uGrain;',
   'varying vec2 vSpot;',
   'float groundHash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }',
   'float groundNoise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);',
@@ -144,11 +151,12 @@ export const GROUND_LIGHT_FRAGMENT: string = [
   '  float laneEnds = (1.0 - soft(uLaneStart, w, along)) * soft(uLaneStart + uLaneSpan * uFront, w * 1.5, along);',
   '  float laneFill = laneSide * laneEnds;',
   '  float laneBand = exp(-((across - uRadius) * (across - uRadius)) / (w * w)) * laneEnds;',
-  '  float fill = mix(roundFill * sector, laneFill, uLane);',
+  `  float centre = mix(1.0, ${glsl(GROUND_LIGHT.hollowFloor)} + ${glsl(1 - GROUND_LIGHT.hollowFloor)} * smoothstep(0.0, max(reach, 0.001), at), uHollow * (1.0 - uLane));`,
+  '  float fill = mix(roundFill * sector, laneFill, uLane) * centre;',
   `  vec2 breakAt = mix(scaled * ${glsl(GROUND_LIGHT.bandBreakScale)}, vec2(vSpot.y * ${glsl(GROUND_LIGHT.laneBreakScale)}, uSeed), uLane);`,
   `  float broken = smoothstep(0.2, 0.8, groundFbm(breakAt + vec2(uSeed * 0.3, uTime * ${glsl(GROUND_LIGHT.bandBreakSpeed)})));`,
   `  float band = mix(roundBand * sector, laneBand, uLane) * mix(1.0, broken * 1.5, ${glsl(GROUND_LIGHT.bandBreakDepth)});`,
-  `  float life = 1.0 - ${glsl(GROUND_LIGHT.insideDepth)} * inside;`,
+  '  float life = 1.0 - uGrain * inside;',
   '  float glow = max((fill * uFill + band * uBand) * life * uStrength, 0.0);',
   '  vec3 lit = uColor * glow;',
   `  lit /= max(1.0, max(lit.r, max(lit.g, lit.b)) / ${glsl(GROUND_LIGHT.peak)});`,
@@ -182,6 +190,8 @@ export function groundLightMaterial(color: Color, form: GroundLightForm, look: G
     uWobble: { value: look.wobble },
     uFront: { value: 1 },
     uShade: { value: tone === 'shade' ? 1 : 0 },
+    uHollow: { value: look.hollow ?? 0 },
+    uGrain: { value: look.grain ?? GROUND_LIGHT.insideDepth },
   };
   return new ShaderMaterial({ uniforms, vertexShader: GROUND_LIGHT_VERTEX, fragmentShader: GROUND_LIGHT_FRAGMENT, transparent: true, depthWrite: false, blending: tone === 'shade' ? NormalBlending : CustomBlending, blendSrc: OneFactor, blendDst: OneMinusSrcAlphaFactor, side: DoubleSide });
 }

@@ -23,13 +23,11 @@ export const SHAPES = {
   arcSegments: 6,
   arcJitter: 0.9,
   arcWidth: 0.09,
-  telegraphInner: 0.35,
-  telegraphFill: 0.4,
-  telegraphWidth: 0.09,
-  telegraphWidthMin: 0.22,
-  telegraphWobble: 0.05,
-  sweepFill: 0.55,
-  sweepBand: 0.3,
+  telegraphWidth: 0.16,
+  telegraphWidthMin: 0.3,
+  telegraphWobble: 0.12,
+  telegraphHollow: 0.6,
+  telegraphGrain: 0.6,
   laneStart: 0.7,
 } as const;
 
@@ -181,12 +179,8 @@ export interface Telegraph {
   readonly lights: readonly GroundLight[];
 }
 
-export type TelegraphLayer = 'edge' | 'sweep';
-
-function telegraphLook(reach: number, layer: TelegraphLayer): GroundLightLook {
-  const width: number = Math.max(SHAPES.telegraphWidthMin, reach * SHAPES.telegraphWidth);
-  const wobble: number = reach * SHAPES.telegraphWobble;
-  return layer === 'edge' ? { fill: SHAPES.telegraphFill, band: 1, width, wobble } : { fill: SHAPES.sweepFill, band: SHAPES.sweepBand, width, wobble };
+export function telegraphLook(reach: number): GroundLightLook {
+  return { fill: 1, band: 0, width: Math.max(SHAPES.telegraphWidthMin, reach * SHAPES.telegraphWidth), wobble: reach * SHAPES.telegraphWobble, hollow: SHAPES.telegraphHollow, grain: SHAPES.telegraphGrain };
 }
 
 function ahead(light: GroundLight): GroundLight {
@@ -194,45 +188,45 @@ function ahead(light: GroundLight): GroundLight {
   return light;
 }
 
-function roundTelegraph(arc: number, inner: number, radius: number, color: Color, layer: TelegraphLayer): GroundLight {
-  return ahead(createGroundLight(color, { kind: 'round', radius, inner, arc }, telegraphLook(radius, layer)));
+function roundTelegraph(arc: number, inner: number, radius: number, color: Color): GroundLight {
+  return ahead(createGroundLight(color, { kind: 'round', radius, inner, arc }, telegraphLook(radius)));
 }
 
-function laneTelegraph(halfWidth: number, length: number, color: Color, layer: TelegraphLayer): GroundLight {
-  return ahead(createGroundLight(color, { kind: 'lane', halfWidth, start: SHAPES.laneStart, length: length - SHAPES.laneStart }, telegraphLook(halfWidth * 2, layer)));
+function laneTelegraph(halfWidth: number, length: number, color: Color): GroundLight {
+  return ahead(createGroundLight(color, { kind: 'lane', halfWidth, start: SHAPES.laneStart, length: length - SHAPES.laneStart }, telegraphLook(halfWidth * 2)));
 }
 
-export function telegraphFor(delivery: Delivery, color: Color, layer: TelegraphLayer = 'edge'): Telegraph {
+export function telegraphFor(delivery: Delivery, color: Color): Telegraph {
   const object: Group = new Group();
   const lights: GroundLight[] = [];
   switch (delivery.type) {
     case 'arc':
-      lights.push(roundTelegraph((delivery.arcDegrees * Math.PI) / 180, SHAPES.telegraphInner, delivery.reach, color, layer));
+      lights.push(roundTelegraph((delivery.arcDegrees * Math.PI) / 180, 0, delivery.reach, color));
       break;
     case 'nova':
     case 'mark':
     case 'field':
     case 'area':
     case 'blink':
-      lights.push(roundTelegraph(Math.PI * 2, 0, delivery.radius, color, layer));
+      lights.push(roundTelegraph(Math.PI * 2, 0, delivery.radius, color));
       break;
     case 'projectile': {
       const count: number = Math.max(1, Math.round(delivery.count));
       for (let index: number = 0; index < count; index += 1) {
-        const lane: GroundLight = laneTelegraph(delivery.radius, delivery.range + SKILLS.projectileOrigin + delivery.radius, color, layer);
+        const lane: GroundLight = laneTelegraph(delivery.radius, delivery.range + SKILLS.projectileOrigin + delivery.radius, color);
         lane.mesh.rotation.z = Math.PI + (count === 1 ? 0 : ((index - (count - 1) / 2) * delivery.spreadDegrees * Math.PI) / 180);
         lights.push(lane);
       }
       break;
     }
     case 'dash':
-      lights.push(laneTelegraph(SHAPES.dashLane, delivery.distance, color, layer));
+      lights.push(laneTelegraph(SHAPES.dashLane, delivery.distance, color));
       break;
     case 'beam':
-      lights.push(laneTelegraph(delivery.width / 2, delivery.range, color, layer));
+      lights.push(laneTelegraph(delivery.width / 2, delivery.range, color));
       break;
     case 'chain':
-      lights.push(roundTelegraph(Math.PI * 2, 0, delivery.range, color, layer));
+      lights.push(roundTelegraph(Math.PI * 2, 0, delivery.range, color));
       break;
     case 'revive':
       break;
