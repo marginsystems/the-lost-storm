@@ -11,6 +11,8 @@ export const LADDER = {
 
 export const DAMAGE_EXPLAINED: string = 'Damage per second of your main attack against an unarmoured target';
 
+export const DAMAGE_NAME: string = 'Damage per second';
+
 export type LadderSubject = Pick<SaveData, 'level' | 'equipped' | 'allocated' | 'bar'>;
 
 export interface LadderFigures {

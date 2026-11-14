@@ -5,6 +5,7 @@ import { createLobbyApi } from '../backend/lobby-api.ts';
 import { createLobbyService } from '../backend/lobby.ts';
 import type { LobbyService } from '../backend/lobby.ts';
 import { createBrowserStore } from '../storage.ts';
+import type { Ranking } from '../backend/api.ts';
 import { createLobbyFeed } from './lobby-feed.ts';
 import type { LobbyFeed } from './lobby-feed.ts';
 import { createLobbyPanel } from './lobby-panel.ts';
@@ -20,6 +21,11 @@ export interface CompactLeaderboardOptions {
 export interface Lobby {
   readonly service: LobbyService;
   readonly feed: LobbyFeed;
+  readonly boards: Readonly<Record<Ranking, LobbyFeed>>;
+}
+
+export function rankedService(service: LobbyService, by: Ranking): LobbyService {
+  return { ...service, read: (): ReturnType<LobbyService['read']> => service.read(by) };
 }
 
 export const COMPACT: { readonly rows: number; readonly title: string; readonly refreshMs: number } = { rows: 10, title: 'Ladder', refreshMs: 30_000 };
@@ -32,7 +38,9 @@ export function createBrowserLobby(rawUrl: string | undefined, withAccount: bool
     api: createLobbyApi(server.url, (url: string, init: RequestInit): Promise<Response> => fetch(url, init)),
     store: withAccount ? createBrowserStore() : null,
   });
-  return { service, feed: createLobbyFeed(service, createBrowserTimers(), (): number => Date.now()) };
+  const feedFor = (by: Ranking): LobbyFeed => createLobbyFeed(rankedService(service, by), createBrowserTimers(), (): number => Date.now());
+  const feed: LobbyFeed = feedFor('level');
+  return { service, feed, boards: { level: feed, damage: feedFor('damage'), life: feedFor('life') } };
 }
 
 export function watchFocus(feed: LobbyFeed): () => void {

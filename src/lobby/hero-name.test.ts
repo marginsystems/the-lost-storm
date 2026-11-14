@@ -19,7 +19,7 @@ function memory(): KeyValueStore {
 }
 
 function board(name: string | null, chosen: boolean): Leaderboard {
-  return { top: [], you: name === null ? null : { rank: 1, name, level: 1, furthest: 'The In-Between', online: true, account: null, chosen }, online: 1, characters: 1, levelUps: [] };
+  return { by: 'level', top: [], you: name === null ? null : { rank: 1, name, level: 1, damage: 0, life: 0, furthest: 'The In-Between', online: true, account: null, chosen }, online: 1, characters: 1, levelUps: [] };
 }
 
 void test('every new character is asked for a name, with or without a server', (): void => {

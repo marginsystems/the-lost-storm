@@ -9,6 +9,7 @@ export type PanelState = 'loading' | 'ready' | 'unreachable';
 
 export interface LobbyPanel {
   readonly root: HTMLElement;
+  readonly head: HTMLElement;
   show(board: Leaderboard | null): void;
   stop(): void;
 }
@@ -101,6 +102,7 @@ export function createLobbyPanel(parent: HTMLElement, options: LobbyPanelOptions
 
   return {
     root,
+    head,
     show(next: Leaderboard | null): void {
       if (next === null) {
         if (root.dataset['state'] !== 'ready') {
@@ -114,7 +116,7 @@ export function createLobbyPanel(parent: HTMLElement, options: LobbyPanelOptions
       setText(note, LOBBY_PANEL.empty, false);
       online.classList.toggle('shown', next.online > 0);
       setText(onlineCount, onlineText(next.online), true);
-      board.render(next.top, next.you === null ? null : next.you.name);
+      board.render(next.top, next.you === null ? null : next.you.name, next.by);
       ticker?.show(next.levelUps);
     },
     stop(): void {

@@ -16,7 +16,7 @@ interface Fixture {
 }
 
 function board(online: number): Leaderboard {
-  return { top: [], you: null, online, characters: 0, levelUps: [] };
+  return { by: 'level', top: [], you: null, online, characters: 0, levelUps: [] };
 }
 
 function setup(): Fixture {

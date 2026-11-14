@@ -1,5 +1,5 @@
 import type { KeyValueStore } from './backend.ts';
-import type { Leaderboard, LeaderboardResult, NameRefusal, NameResult } from './api.ts';
+import type { Leaderboard, LeaderboardResult, NameRefusal, NameResult, Ranking } from './api.ts';
 import type { LobbyApi } from './lobby-api.ts';
 import { parseSyncRecord, SYNC_KEY } from './sync-record.ts';
 import type { SyncRecord } from './sync-record.ts';
@@ -7,7 +7,7 @@ import type { SyncRecord } from './sync-record.ts';
 export type RenameOutcome = { readonly kind: 'named'; readonly name: string } | { readonly kind: 'invalid'; readonly reason: NameRefusal } | { readonly kind: 'limited' } | { readonly kind: 'unavailable' };
 
 export interface LobbyService {
-  read(): Promise<Leaderboard | null>;
+  read(by?: Ranking): Promise<Leaderboard | null>;
   rename(name: string): Promise<RenameOutcome>;
   hasAccount(): boolean;
 }
@@ -29,8 +29,8 @@ export function createLobbyService(options: LobbyOptions): LobbyService {
   };
   return {
     hasAccount: (): boolean => token() !== null,
-    async read(): Promise<Leaderboard | null> {
-      const result: LeaderboardResult = await api.leaderboard(token(), AbortSignal.timeout(LOBBY_TIMING.requestMs));
+    async read(by: Ranking = 'level'): Promise<Leaderboard | null> {
+      const result: LeaderboardResult = await api.leaderboard(token(), AbortSignal.timeout(LOBBY_TIMING.requestMs), by);
       return result.kind === 'ok' ? result.board : null;
     },
     async rename(name: string): Promise<RenameOutcome> {

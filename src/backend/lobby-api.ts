@@ -1,10 +1,11 @@
 import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
 import { exchange, failureOf, headers, succeeded } from './api.ts';
-import type { Answer, BoardRow, FetchFn, Leaderboard, LeaderboardResult, LevelUpNote, NameRefusal, NameResult, YourRow } from './api.ts';
+import { RANKINGS } from './api.ts';
+import type { Answer, BoardRow, FetchFn, Leaderboard, LeaderboardResult, LevelUpNote, NameRefusal, NameResult, Ranking, YourRow } from './api.ts';
 
 export interface LobbyApi {
-  leaderboard(token: string | null, signal: AbortSignal): Promise<LeaderboardResult>;
+  leaderboard(token: string | null, signal: AbortSignal, by?: Ranking): Promise<LeaderboardResult>;
   rename(token: string, name: string, signal: AbortSignal): Promise<NameResult>;
 }
 
@@ -30,7 +31,7 @@ function readRow(value: unknown): BoardRow | null {
   const furthest: string | null = shortText(value, 'furthest');
   const online: unknown = value['online'];
   if (rank === null || level === null || name === null || furthest === null || typeof online !== 'boolean') return null;
-  return { rank, name, level, furthest, online, account: shortText(value, 'account') };
+  return { rank, name, level, damage: wholeNumber(value, 'damage', 0) ?? 0, life: wholeNumber(value, 'life', 0) ?? 0, furthest, online, account: shortText(value, 'account') };
 }
 
 function readYou(value: unknown): YourRow | null | undefined {
@@ -65,6 +66,14 @@ function distinctNames(rows: readonly BoardRow[]): readonly BoardRow[] {
   });
 }
 
+function readRanking(value: unknown): Ranking {
+  return RANKINGS.find((ranking: Ranking): boolean => ranking === value) ?? 'level';
+}
+
+export function rankingPath(by: Ranking): string {
+  return by === 'level' ? '/v1/leaderboard' : `/v1/leaderboard?by=${by}`;
+}
+
 export function readLeaderboard(value: unknown): Leaderboard | null {
   if (!isFields(value)) return null;
   const top: readonly BoardRow[] | null = readList(value['top'], LOBBY_LIMITS.rows, readRow);
@@ -73,7 +82,7 @@ export function readLeaderboard(value: unknown): Leaderboard | null {
   const online: number | null = wholeNumber(value, 'online', 0);
   const characters: number | null = wholeNumber(value, 'characters', 0);
   if (top === null || levelUps === null || you === undefined || online === null || characters === null) return null;
-  return { top: distinctNames(top), you, online, characters, levelUps };
+  return { by: readRanking(value['by']), top: distinctNames(top), you, online, characters, levelUps };
 }
 
 function refusalOf(answer: Answer): NameRefusal | null {
@@ -84,9 +93,9 @@ function refusalOf(answer: Answer): NameRefusal | null {
 
 export function createLobbyApi(baseUrl: string, fetchFn: FetchFn): LobbyApi {
   return {
-    async leaderboard(token: string | null, signal: AbortSignal): Promise<LeaderboardResult> {
+    async leaderboard(token: string | null, signal: AbortSignal, by: Ranking = 'level'): Promise<LeaderboardResult> {
       const init: RequestInit = token === null ? { method: 'GET', signal } : { method: 'GET', headers: { Authorization: `Bearer ${token}` }, signal };
-      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/leaderboard`, init);
+      const answer: Answer | null = await exchange(fetchFn, `${baseUrl}${rankingPath(by)}`, init);
       if (!succeeded(answer)) return failureOf(answer);
       const board: Leaderboard | null = readLeaderboard(answer.body);
       return board === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', board };

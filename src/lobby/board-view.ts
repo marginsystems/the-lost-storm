@@ -1,9 +1,9 @@
-import type { BoardRow } from '../backend/api.ts';
+import type { BoardRow, Ranking } from '../backend/api.ts';
 import { el, setText } from '../hud/dom.ts';
-import { rankText } from './lobby-model.ts';
+import { rankText, rankValueText } from './lobby-model.ts';
 
 export interface BoardView {
-  render(rows: readonly BoardRow[], you: string | null): void;
+  render(rows: readonly BoardRow[], you: string | null, by: Ranking): void;
 }
 
 interface RowParts {
@@ -29,11 +29,11 @@ function makeRow(list: HTMLOListElement): RowParts {
   return { item, rank, dot, name, place, account, level };
 }
 
-function fill(parts: RowParts, row: BoardRow, you: string | null, animate: boolean): void {
+function fill(parts: RowParts, row: BoardRow, you: string | null, by: Ranking, animate: boolean): void {
   setText(parts.rank, rankText(row.rank), animate);
   setText(parts.name, row.name, false);
   setText(parts.place, row.furthest, animate);
-  setText(parts.level, String(row.level), animate);
+  setText(parts.level, rankValueText(row, by), animate);
   setText(parts.account, row.account ?? '', false);
   parts.item.toggleAttribute('data-account', row.account !== null);
   parts.item.tabIndex = row.account === null ? -1 : 0;
@@ -56,7 +56,7 @@ export function createBoardView(list: HTMLOListElement, slots: number): BoardVie
   };
 
   return {
-    render(next: readonly BoardRow[], you: string | null): void {
+    render(next: readonly BoardRow[], you: string | null, by: Ranking): void {
       const shown: readonly BoardRow[] = next.slice(0, slots);
       const before: Map<HTMLLIElement, number> = new Map<HTMLLIElement, number>();
       for (const parts of rows.values()) before.set(parts.item, parts.item.offsetTop);
@@ -70,7 +70,7 @@ export function createBoardView(list: HTMLOListElement, slots: number): BoardVie
         const existing: RowParts | undefined = rows.get(row.name);
         const parts: RowParts = existing ?? makeRow(list);
         rows.set(row.name, parts);
-        fill(parts, row, you, existing !== undefined);
+        fill(parts, row, you, by, existing !== undefined);
         list.appendChild(parts.item);
       }
       blanks.forEach((blank: HTMLLIElement, index: number): void => {

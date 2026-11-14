@@ -78,10 +78,16 @@ export type GuestResult = { readonly kind: 'ok'; readonly account: GuestAccount 
 export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | { readonly kind: 'unreadable' } | Failure;
 export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy; readonly fold: SaveFold } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stale'; readonly epoch: number } | { readonly kind: 'behind' } | Failure;
 
+export const RANKINGS = ['level', 'damage', 'life'] as const;
+
+export type Ranking = (typeof RANKINGS)[number];
+
 export interface BoardRow {
   readonly rank: number;
   readonly name: string;
   readonly level: number;
+  readonly damage: number;
+  readonly life: number;
   readonly furthest: string;
   readonly online: boolean;
   readonly account: string | null;
@@ -98,6 +104,7 @@ export interface LevelUpNote {
 }
 
 export interface Leaderboard {
+  readonly by: Ranking;
   readonly top: readonly BoardRow[];
   readonly you: YourRow | null;
   readonly online: number;

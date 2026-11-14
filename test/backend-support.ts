@@ -1,6 +1,8 @@
 import { loadContent } from '../sim/content/content.ts';
 import type { Content } from '../sim/content/types.ts';
 import { isFields } from '../sim/content/read.ts';
+import { ladderFigures } from '../sim/ladder.ts';
+import type { LadderFigures } from '../sim/ladder.ts';
 import type { SaveData } from '../sim/save.ts';
 import { readSave, SAVE_VERSION, toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
@@ -193,18 +195,34 @@ function characterKey(name: string): string {
   return name.toLowerCase().replaceAll(' ', '');
 }
 
-function ladder(accounts: readonly ServerAccount[], viewer: ServerAccount | undefined): unknown {
+function figuresOf(account: ServerAccount): LadderFigures {
+  return account.save === null ? { damage: 0, life: 0 } : ladderFigures(content, account.save);
+}
+
+function standing(account: ServerAccount, by: string | null): readonly number[] {
+  const figures: LadderFigures = figuresOf(account);
+  if (by === 'damage') return [figures.damage];
+  if (by === 'life') return [figures.life];
+  return [account.save?.level ?? 1, account.save?.xp ?? 0];
+}
+
+function ahead(left: readonly number[], right: readonly number[]): number {
+  for (let index: number = 0; index < left.length; index += 1) {
+    const step: number = (left[index] ?? 0) - (right[index] ?? 0);
+    if (step !== 0) return step;
+  }
+  return 0;
+}
+
+function ladder(accounts: readonly ServerAccount[], viewer: ServerAccount | undefined, by: string | null): unknown {
   const usernameOf = (account: ServerAccount): string | null => accounts.find((other: ServerAccount): boolean => other.accountId === (account.owner ?? account.accountId))?.username ?? null;
   const ranked: ServerAccount[] = accounts
     .filter((account: ServerAccount): boolean => !account.retired && (account.save !== null || account.character !== null))
-    .toSorted((left: ServerAccount, right: ServerAccount): number => {
-      const byLevel: number = (right.save?.level ?? 1) - (left.save?.level ?? 1);
-      return byLevel === 0 ? (right.save?.xp ?? 0) - (left.save?.xp ?? 0) : byLevel;
-    });
-  const rankOf = (account: ServerAccount): number => 1 + ranked.filter((other: ServerAccount): boolean => (other.save?.level ?? 1) > (account.save?.level ?? 1) || ((other.save?.level ?? 1) === (account.save?.level ?? 1) && (other.save?.xp ?? 0) > (account.save?.xp ?? 0))).length;
-  const row = (account: ServerAccount): Record<string, unknown> => ({ rank: rankOf(account), name: account.character ?? guestName(account), account: usernameOf(account), level: account.save?.level ?? 1, furthest: 'The Waystation', online: account === viewer });
+    .toSorted((left: ServerAccount, right: ServerAccount): number => ahead(standing(right, by), standing(left, by)));
+  const rankOf = (account: ServerAccount): number => 1 + ranked.filter((other: ServerAccount): boolean => ahead(standing(other, by), standing(account, by)) > 0).length;
+  const row = (account: ServerAccount): Record<string, unknown> => ({ rank: rankOf(account), name: account.character ?? guestName(account), account: usernameOf(account), level: account.save?.level ?? 1, ...figuresOf(account), furthest: 'The Waystation', online: account === viewer });
   const you: unknown = viewer === undefined || !ranked.includes(viewer) ? null : { ...row(viewer), chosen: viewer.character !== null };
-  return { top: ranked.slice(0, 25).map(row), you, online: viewer === undefined ? 0 : 1, characters: ranked.length, levelUps: [] };
+  return { by: by === 'damage' || by === 'life' ? by : 'level', top: ranked.slice(0, 25).map(row), you, online: viewer === undefined ? 0 : 1, characters: ranked.length, levelUps: [] };
 }
 
 function nameRefusal(accounts: readonly ServerAccount[], owner: ServerAccount | null, raw: unknown): string | null {
@@ -390,7 +408,7 @@ export function createFakeServer(clock: FakeClock): FakeServer {
     const character: ServerAccount | null | undefined = login === undefined || loginScoped ? login : suffix === null ? defaultOf(login) : accounts.find((account: ServerAccount): boolean => account.accountId === suffix && !account.retired && (account === login || account.owner === login.accountId)) ?? null;
     if (character === null) return failed(404, 'no_such_character');
     const owner: ServerAccount | undefined = character;
-    if (method === 'GET' && path === '/v1/leaderboard') return json(200, ladder(accounts, owner));
+    if (method === 'GET' && path === '/v1/leaderboard') return json(200, ladder(accounts, owner, new URL(url).searchParams.get('by')));
     if (method === 'GET' && path === '/v1/tallies/journal') return tally(owner);
     if (owner === undefined) return json(401, { error: { code: 'unauthorized', message: 'no' } });
     const ledgerAnswer: FakeLedgerAnswer | null = ledger.answer(owner.accountId, method, path, body, clock.now);

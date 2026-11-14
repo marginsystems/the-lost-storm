@@ -1,4 +1,43 @@
-import type { BoardRow, Leaderboard, LevelUpNote, NameRefusal } from '../backend/api.ts';
+import type { BoardRow, Leaderboard, LevelUpNote, NameRefusal, Ranking } from '../backend/api.ts';
+import { DAMAGE_EXPLAINED } from '../../sim/ladder.ts';
+
+export interface RankingTab {
+  readonly by: Ranking;
+  readonly label: string;
+  readonly caption: string;
+}
+
+export const RANKING_TABS: readonly RankingTab[] = [
+  { by: 'level', label: 'Level', caption: 'Highest level reached, then experience' },
+  { by: 'damage', label: 'Damage', caption: DAMAGE_EXPLAINED },
+  { by: 'life', label: 'Life', caption: 'Maximum life' },
+];
+
+const GROUPED: Intl.NumberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
+export function wholeText(value: number): string {
+  return GROUPED.format(Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0);
+}
+
+export function rankValue(row: BoardRow, by: Ranking): number {
+  switch (by) {
+    case 'level':
+      return row.level;
+    case 'damage':
+      return row.damage;
+    case 'life':
+      return row.life;
+  }
+  return row.level;
+}
+
+export function rankValueText(row: BoardRow, by: Ranking): string {
+  return wholeText(rankValue(row, by));
+}
+
+export function tabOf(by: Ranking): RankingTab {
+  return RANKING_TABS.find((tab: RankingTab): boolean => tab.by === by) ?? { by, label: by, caption: '' };
+}
 
 export type NameProblem = NameRefusal | 'limited' | 'unavailable';
 

@@ -3,10 +3,11 @@ import { test } from 'node:test';
 import { createFakeClock, createFakeServer } from '../../test/backend-support.ts';
 import type { FakeServer } from '../../test/backend-support.ts';
 import type { Leaderboard, LeaderboardResult, NameResult } from './api.ts';
-import { createLobbyApi, LOBBY_LIMITS, readLeaderboard } from './lobby-api.ts';
+import { RANKINGS } from './api.ts';
+import { createLobbyApi, LOBBY_LIMITS, rankingPath, readLeaderboard } from './lobby-api.ts';
 
 const URL_A: string = 'http://localhost:8787';
-const ROW: Readonly<Record<string, unknown>> = { rank: 1, name: 'Grey Heron', level: 7, furthest: 'The Shallows', online: true, account: 'heron' };
+const ROW: Readonly<Record<string, unknown>> = { rank: 1, name: 'Grey Heron', level: 7, damage: 1234, life: 410, furthest: 'The Shallows', online: true, account: 'heron' };
 const BOARD: Readonly<Record<string, unknown>> = {
   top: [ROW, { rank: 2, name: 'Ashen Wolf', level: 5, furthest: 'The Shallows', online: false }],
   you: { ...ROW, chosen: true },
@@ -36,6 +37,24 @@ void test('a row carries the username of the account that plays it, and an older
   const older: Record<string, unknown> = { rank: ROW.rank, name: ROW.name, level: ROW.level, furthest: ROW.furthest, online: ROW.online };
   assert.equal(readLeaderboard({ ...BOARD, top: [older] })?.top[0]?.account, null);
   assert.equal(readLeaderboard({ ...BOARD, top: [{ ...ROW, account: 7 }] })?.top[0]?.account, null);
+});
+
+void test('an older server without rankings reads as the level board with no figures', (): void => {
+  const older: Record<string, unknown> = { rank: ROW.rank, name: ROW.name, level: ROW.level, furthest: ROW.furthest, online: ROW.online };
+  const board: Leaderboard | null = readLeaderboard({ ...BOARD, top: [older] });
+  assert.ok(board !== null);
+  assert.equal(board.by, 'level');
+  assert.deepEqual([board.top[0]?.damage, board.top[0]?.life], [0, 0]);
+  assert.deepEqual([readLeaderboard({ ...BOARD, by: 'damage' })?.by, readLeaderboard({ ...BOARD, by: 'life' })?.by, readLeaderboard({ ...BOARD, by: 'gold' })?.by], ['damage', 'life', 'level']);
+  assert.equal(readLeaderboard({ ...BOARD, top: [{ ...ROW, damage: -3, life: 1.5 }] })?.top[0]?.damage, 0);
+});
+
+void test('each ranking asks its own path, and the level board keeps the path older servers know', async (): Promise<void> => {
+  const fake: FakeServer = server();
+  const api = createLobbyApi(URL_A, fake.fetch);
+  const results: readonly LeaderboardResult[] = await Promise.all(RANKINGS.map((by): Promise<LeaderboardResult> => api.leaderboard(null, AbortSignal.timeout(1000), by)));
+  assert.deepEqual(results.map((result: LeaderboardResult): string | null => (result.kind === 'ok' ? result.board.by : null)), [...RANKINGS]);
+  assert.deepEqual(RANKINGS.map(rankingPath), ['/v1/leaderboard', '/v1/leaderboard?by=damage', '/v1/leaderboard?by=life']);
 });
 
 void test('a name that appears twice on the board is kept once, so rows stay one per character', (): void => {
@@ -72,7 +91,7 @@ void test('the board is read without a token, and with one the caller sees their
   const fake: FakeServer = server();
   const api = createLobbyApi(URL_A, fake.fetch);
   const anonymous: LeaderboardResult = await api.leaderboard(null, AbortSignal.timeout(1000));
-  assert.deepEqual(anonymous, { kind: 'ok', board: { top: [], you: null, online: 0, characters: 0, levelUps: [] } });
+  assert.deepEqual(anonymous, { kind: 'ok', board: { by: 'level', top: [], you: null, online: 0, characters: 0, levelUps: [] } });
   assert.equal(fake.requests[0]?.token, null);
   await fake.fetch(`${URL_A}/v1/guest`, { method: 'POST' });
   const named: NameResult = await api.rename('token-1', 'Grey Heron', AbortSignal.timeout(1000));

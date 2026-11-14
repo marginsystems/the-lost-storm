@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { BoardRow, Leaderboard } from '../backend/api.ts';
-import { agoText, asksForName, charactersText, CHOSEN_NAMES, chooseName, levelUpText, nameProblem, passedNames, spokenName, tidyName } from './lobby-model.ts';
+import { RANKINGS } from '../backend/api.ts';
+import { DAMAGE_EXPLAINED } from '../../sim/ladder.ts';
+import { agoText, asksForName, charactersText, CHOSEN_NAMES, chooseName, levelUpText, nameProblem, passedNames, RANKING_TABS, rankValueText, spokenName, tabOf, tidyName, wholeText } from './lobby-model.ts';
 
 function row(rank: number, name: string, level: number): BoardRow {
-  return { rank, name, level, furthest: 'The Waystation', online: false, account: null };
+  return { rank, name, level, damage: 0, life: 0, furthest: 'The Waystation', online: false, account: null };
 }
 
 function board(top: readonly BoardRow[], you: string | null, chosen: boolean = true): Leaderboard {
   const mine: BoardRow | undefined = top.find((entry: BoardRow): boolean => entry.name === you);
-  return { top, you: mine === undefined ? null : { ...mine, chosen }, online: 1, characters: top.length, levelUps: [] };
+  return { by: 'level', top, you: mine === undefined ? null : { ...mine, chosen }, online: 1, characters: top.length, levelUps: [] };
 }
 
 void test('passing someone names everyone who was ahead and now is behind', (): void => {
@@ -83,4 +85,19 @@ void test('only a name the player chose is ever spoken', (): void => {
   assert.equal(spokenName(board([row(1, 'Tavin', 1)], 'Tavin', true)), 'Tavin');
   assert.equal(spokenName(board([row(1, 'Ash', 3)], null)), null);
   assert.equal(spokenName(null), null);
+});
+
+void test('there is one tab per ranking, in order, and the damage tab says what it measures in one line', (): void => {
+  assert.deepEqual(RANKING_TABS.map((tab) => tab.by), [...RANKINGS]);
+  assert.deepEqual(RANKING_TABS.map((tab) => tab.label), ['Level', 'Damage', 'Life']);
+  assert.equal(tabOf('damage').caption, DAMAGE_EXPLAINED);
+  for (const tab of RANKING_TABS) assert.ok(tab.caption.length > 0 && !tab.caption.includes('\n'));
+});
+
+void test('every ranked value is a whole number with thousands grouped', (): void => {
+  const entry: BoardRow = { ...row(1, 'Ash', 12), damage: 12345.8, life: 987 };
+  assert.deepEqual(RANKINGS.map((by) => rankValueText(entry, by)), ['12', '12,345', '987']);
+  assert.equal(wholeText(1_000_000_000), '1,000,000,000');
+  assert.equal(wholeText(-4), '0');
+  assert.equal(wholeText(Number.NaN), '0');
 });
