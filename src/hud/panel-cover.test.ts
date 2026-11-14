@@ -67,3 +67,13 @@ void test('the Skill Tree is a full screen, like the map', (): void => {
   assert.equal(PANEL_COVER.tree, 'full');
   assert.equal(PANEL_COVER.map, 'full');
 });
+
+void test('a closed panel takes no clicks, and nothing inside one can make itself visible while it is closed', (): void => {
+  const panels: string = css('./panels.css');
+  const closed: RegExpMatchArray | undefined = [...panels.matchAll(/([^{}]+)\{([^}]*)\}/g)].find((rule: RegExpMatchArray): boolean => (rule[1] ?? '').trim() === '.hud-panel:not(.open)');
+  assert.ok(closed !== undefined, 'panels.css has no rule for a closed panel');
+  assert.match(closed[2] ?? '', /pointer-events:\s*none;/);
+  for (const sheet of ['./auction.css', './trade.css', './character.css']) {
+    assert.ok(!/visibility:\s*visible/.test(css(sheet)), `${sheet} forces something visible inside a panel, so it stays clickable after the panel closes`);
+  }
+});
