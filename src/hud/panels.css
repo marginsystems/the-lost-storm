@@ -36,6 +36,10 @@
     visibility 0s var(--spring-snappy) var(--spring-smooth-ms);
 }
 
+.hud-panel:not(.open) {
+  pointer-events: none;
+}
+
 .hud-panel.right {
   right: 16px;
   transform: translateX(40px);
