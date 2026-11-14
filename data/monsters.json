@@ -503,11 +503,11 @@
     "faction": "timekeepers",
     "scale": 1.38,
     "radius": 0.5,
-    "life": 1000,
-    "damageMin": 7,
-    "damageMax": 10,
+    "life": 2600,
+    "damageMin": 9,
+    "damageMax": 13,
     "moveSpeed": 4.0,
-    "xp": 0,
+    "xp": 150,
     "aggroRadius": 10,
     "behaviour": {
       "type": "chaser"
@@ -547,7 +547,7 @@
           "barks": []
         },
         {
-          "below": 0.5,
+          "below": 0.66,
           "skills": [
             {
               "skill": "gate_replay",
@@ -566,7 +566,33 @@
               "weight": 3
             }
           ],
-          "barks": []
+          "barks": [
+            "timekeeper_gatekeeper_slower"
+          ]
+        },
+        {
+          "below": 0.33,
+          "skills": [
+            {
+              "skill": "gate_replay",
+              "weight": 2
+            },
+            {
+              "skill": "keeper_volley",
+              "weight": 3
+            },
+            {
+              "skill": "keeper_field",
+              "weight": 1
+            },
+            {
+              "skill": "gate_ring",
+              "weight": 3
+            }
+          ],
+          "barks": [
+            "timekeeper_gatekeeper_count"
+          ]
         }
       ],
       "poise": {
@@ -579,8 +605,12 @@
         "goldMax": 90
       },
       "barks": {
-        "aggro": [],
-        "death": []
+        "aggro": [
+          "timekeeper_gatekeeper_early"
+        ],
+        "death": [
+          "timekeeper_gatekeeper_yours"
+        ]
       }
     }
   },

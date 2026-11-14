@@ -15,6 +15,7 @@ import type { Command, MomentState, MonsterState, NpcState, World, WorldEvent } 
 import { enterZone } from './zones.ts';
 import { choicesOpen } from './death.ts';
 import { questMarks } from './map-marks.ts';
+import { questTarget } from './objective.ts';
 import type { QuestMark } from './map-marks.ts';
 import { forceStrike, nearestFight } from './moments.ts';
 import { echoesOf, slay, standAt } from '../../test/moment-support.ts';
@@ -500,4 +501,35 @@ void test('a save that started shelter before the first clear loads with shelter
   const reached: World = createWorld(content, { seed: 8, save: toSave(older) });
   assert.equal(questState(reached, 'to_the_waystation'), 'done');
   assert.equal(questState(reached, 'the_first_taker'), 'active');
+});
+
+void test('the Gate quest opens after the Warden\'s Lesson, names its level while the gate is shut, then leads to the gate and ends on the boss', (): void => {
+  const content: Content = loadContent();
+  const gateQuest: QuestDef = must([...content.quests.values()].find((quest: QuestDef): boolean => quest.objectives.some((objective): boolean => objective.type === 'defeat' && content.monsters.get(objective.monster)?.boss !== null)), 'a boss quest');
+  const world: World = worldIn(content, 'hall_of_time', 9);
+  startQuests(world);
+  assert.equal(questState(world, gateQuest.id), 'locked');
+  for (const quest of content.quests.values()) if (gateQuest.requires.includes(quest.id)) world.quests[quest.id] = quest.objectives.length;
+  startQuests(world);
+  assert.equal(questState(world, gateQuest.id), 'active');
+  const objective = must(currentObjective(world, gateQuest), 'objective');
+  world.player.level = 3;
+  assert.equal(questTarget(world, gateQuest), null);
+  assert.match(objective.text, /level 8/);
+  world.player.level = 8;
+  const target = must(questTarget(world, gateQuest), 'target');
+  assert.equal(target.kind, 'exit');
+  const gate: ZoneExit = must(world.zone.exits.find((exit: ZoneExit): boolean => exit.to === 'keepers_gate'), 'gate');
+  assert.deepEqual(target.pos, { x: gate.x, z: gate.z });
+  enterZone(world, zoneOf(content, 'keepers_gate'), { type: 'exit', exit: 'hall' });
+  const boss: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.boss !== null), 'boss');
+  boss.spawnTime = 0;
+  boss.life = 1;
+  world.player.pos = { x: boss.pos.x, z: boss.pos.z + 1.6 };
+  world.player.bar = ['cleave', null, null, null, null, null];
+  const events: WorldEvent[] = [];
+  for (let step: number = 0; step < 120 && boss.alive; step += 1) events.push(...stepWorld(world, step % 10 === 0 ? [{ type: 'skill', slot: 0, aim: boss.pos, targetId: boss.id }] : [], DT));
+  assert.equal(boss.alive, false);
+  assert.equal(questState(world, gateQuest.id), 'done');
+  assert.ok(ofType(events, 'quest_completed').some((event): boolean => event.quest === gateQuest.id));
 });

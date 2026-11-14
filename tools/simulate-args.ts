@@ -6,6 +6,7 @@ export const DEFAULTS = {
   runs: 12,
   farmMinutes: 30,
   repeats: 10,
+  bossRepeats: 5,
   seed: 1,
   skills: ['careful', 'average', 'poor'],
   builds: ['mixed'],
@@ -22,6 +23,7 @@ export const USAGE: string = [
   '  fight <moment>        the slice, then one moment struck and fought N times (--repeats, default 10)',
   '  level <n>             from waking until level n, farming after the slice (--minutes caps it, default 120)',
   '  over <n>              the slice, then the hero raised to level n farms N minutes in wild zones fixed at --zone (default 1)',
+  '  boss <a,b,…>          farm to each level in turn and fight the boss in its lair N times there (--repeats, default 5; --minutes caps each climb)',
   '  replay <file.jsonl>…  read recorded measurement streams (from --record or storm.saveMeasurements() in a dev build) into the same report',
   '',
   'options',
@@ -79,7 +81,7 @@ function positional(args: readonly string[]): string[] {
 function scenarioOf(words: readonly string[], args: readonly string[]): Scenario | string {
   const [kind, value] = words;
   if (kind === undefined) return 'no scenario';
-  const minutes: number | null = whole(option(args, 'minutes'), kind === 'level' ? RUN.levelMinutes : DEFAULTS.farmMinutes);
+  const minutes: number | null = whole(option(args, 'minutes'), kind === 'level' || kind === 'boss' ? RUN.levelMinutes : DEFAULTS.farmMinutes);
   if (minutes === null) return '--minutes must be a whole number';
   switch (kind) {
     case 'slice':
@@ -100,6 +102,13 @@ function scenarioOf(words: readonly string[], args: readonly string[]): Scenario
       const zone: number | null = whole(option(args, 'zone'), 1);
       if (hero === null || hero < 1) return 'over needs a hero level of 1 or more';
       return zone === null || zone < 1 ? '--zone must be a level of 1 or more' : { kind, hero, zone, minutes };
+    }
+    case 'boss': {
+      const levels: number[] = (value ?? '').split(',').filter((part: string): boolean => part !== '').map(Number);
+      const repeats: number | null = whole(option(args, 'repeats'), DEFAULTS.bossRepeats);
+      if (levels.length === 0 || levels.some((level: number): boolean => !Number.isInteger(level) || level < 1)) return 'boss needs hero levels, such as 8,10,12';
+      if (levels.some((level: number, index: number): boolean => index > 0 && level <= (levels[index - 1] ?? 0))) return 'boss levels must rise, such as 8,10,12';
+      return repeats === null ? '--repeats must be a whole number' : { kind, levels, repeats, minutes };
     }
     default:
       return `unknown scenario ${kind}`;

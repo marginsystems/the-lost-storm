@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
 import { finishQuests, must, worldIn, zoneOf } from '../../test/support.ts';
-import type { Content, MonsterDef, ZoneDef, ZonePack, ZoneWaypoint } from '../content/types.ts';
+import type { Content, MonsterDef, ZoneDef, ZoneExit, ZonePack, ZoneReturn, ZoneWaypoint } from '../content/types.ts';
+import { loadContent } from '../content/content.ts';
 import { createWorld } from './create.ts';
 import { choicesOpen, penaltyFor } from './death.ts';
 import { stepWorld } from './step.ts';
@@ -223,4 +224,39 @@ void test('entering a zone through an exit makes that entrance the checkpoint', 
   stepWorld(world, [{ type: 'respawn', choice: 'checkpoint' }], DT);
   const arrival = must(wild.exits.find((candidate) => candidate.id === exit.toExit), 'arrival').arrival;
   assert.deepEqual(world.player.pos, { x: arrival.x, z: arrival.z });
+});
+
+void test('a hero who falls in a lair with a way out rises outside at its door, and the lair is built fresh with its boss whole', (): void => {
+  const shipped: Content = loadContent();
+  const lair: ZoneDef = must([...shipped.zones.values()].find((zone: ZoneDef): boolean => zone.deathReturn !== null), 'a lair');
+  const back: ZoneReturn = must(lair.deathReturn, 'its way out');
+  const door: ZoneExit = must(zoneOf(shipped, back.zone).exits.find((exit: ZoneExit): boolean => exit.id === back.exit), 'the door');
+  const world: World = worldIn(shipped, lair.id, 5);
+  const boss: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.boss !== null), 'boss');
+  boss.life = Math.round(boss.maxLife * 0.2);
+  boss.phase = 2;
+  killedBy(world, boss);
+  assert.equal(world.player.alive, false);
+  const xp: number = world.player.xp;
+  advance(world, shipped.player.respawnDelay + 0.1);
+  const events: WorldEvent[] = advance(world, 0.05, [{ type: 'respawn', choice: 'checkpoint' }]);
+  assert.equal(world.player.alive, true);
+  assert.equal(world.zone.id, back.zone);
+  assert.deepEqual(events.filter((event: WorldEvent): boolean => event.type === 'zone_changed'), [{ type: 'zone_changed', from: lair.id, to: back.zone }]);
+  assert.ok(Math.hypot(world.player.pos.x - door.arrival.x, world.player.pos.z - door.arrival.z) < 0.5, 'the hero did not rise at the door');
+  assert.equal(world.player.xp, xp);
+  enterZone(world, lair, { type: 'exit', exit: door.toExit });
+  const again: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.boss !== null), 'boss again');
+  assert.equal(again.life, again.maxLife);
+  assert.equal(again.phase, 0);
+});
+
+void test('falling in a lair and choosing the town still goes to the town', (): void => {
+  const shipped: Content = loadContent();
+  const lair: ZoneDef = must([...shipped.zones.values()].find((zone: ZoneDef): boolean => zone.deathReturn !== null), 'a lair');
+  const world: World = worldIn(shipped, lair.id, 6);
+  killedBy(world, must(world.monsters.find((monster: MonsterState): boolean => monster.def.boss !== null), 'boss'));
+  advance(world, shipped.player.respawnDelay + 0.1);
+  advance(world, 0.05, [{ type: 'respawn', choice: 'town' }]);
+  assert.equal(world.zone.id, shipped.world.town);
 });

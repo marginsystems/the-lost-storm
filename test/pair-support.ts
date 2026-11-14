@@ -26,6 +26,7 @@ export const SHALLOWS = {
   packs: [{ x: 26, z: 30, members: [{ monster: 'mended', count: 2 }] }],
   exits: [{ id: 'east', x: 78.4, z: 30, radius: 1.6, to: 'waystation', toExit: 'west_gate', arrival: { x: 73, z: 30 } }],
   checkpoints: [],
+  deathReturn: null,
   waypoint: null,
   npcs: [],
 };

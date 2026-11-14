@@ -583,6 +583,50 @@
     "hold": 0.85
   },
   {
+    "id": "keeper_volley",
+    "category": "root",
+    "name": "Held Hours",
+    "description": "Three brass lines at once, fanned wide. Each one stops what it touches.",
+    "icon": "storm_bolt",
+    "animation": "cast",
+    "manaCost": 0,
+    "cooldown": 5.5,
+    "windup": 1.05,
+    "recovery": 0.6,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 12,
+    "delivery": {
+      "type": "projectile",
+      "speed": 13,
+      "radius": 0.4,
+      "range": 17,
+      "pierce": 0,
+      "count": 3,
+      "spreadDegrees": 26
+    },
+    "damage": {
+      "type": "frost",
+      "weaponPercent": 0.8,
+      "flatMin": 0,
+      "flatMax": 0
+    },
+    "knockback": 4,
+    "stagger": 0.2,
+    "shake": 0.4,
+    "hitStop": 0.06,
+    "vfx": {
+      "style": "bolt",
+      "color": "#d8b46a",
+      "light": 0.5,
+      "trail": 0.8,
+      "impact": {
+        "sparks": 8,
+        "flash": 0.5
+      }
+    },
+    "hold": 0.6
+  },
+  {
     "id": "keeper_replay",
     "category": "melee",
     "name": "Replayed Cut",
@@ -621,7 +665,7 @@
     "animation": "sweep",
     "manaCost": 0,
     "cooldown": 2.4,
-    "windup": 0.95,
+    "windup": 1.2,
     "recovery": 0.6,
     "scalesWithAttackSpeed": false,
     "engageRange": 2.8,
@@ -661,7 +705,7 @@
     },
     "damage": {
       "type": "storm",
-      "weaponPercent": 1.4,
+      "weaponPercent": 2.0,
       "flatMin": 0,
       "flatMax": 0
     },

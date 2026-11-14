@@ -26,6 +26,11 @@ function readScenario(value: unknown): Scenario {
       return { kind, level: numeric(source, 'level', 'scenario'), minutes: numeric(source, 'minutes', 'scenario') };
     case 'over':
       return { kind, hero: numeric(source, 'hero', 'scenario'), zone: numeric(source, 'zone', 'scenario'), minutes: numeric(source, 'minutes', 'scenario') };
+    case 'boss': {
+      const levels: unknown = source['levels'];
+      if (!Array.isArray(levels) || !levels.every((level: unknown): level is number => typeof level === 'number')) throw new Error('scenario.levels must be a list of levels');
+      return { kind, levels, repeats: numeric(source, 'repeats', 'scenario'), minutes: numeric(source, 'minutes', 'scenario') };
+    }
     default:
       throw new Error(`unknown scenario ${kind}`);
   }

@@ -1,4 +1,4 @@
-import type { DeathPenalty, XpCurve } from '../content/types.ts';
+import type { DeathPenalty, XpCurve, ZoneDef, ZoneReturn } from '../content/types.ts';
 import { xpToNextLevel } from '../progression.ts';
 import { clearAreas } from './areas.ts';
 import { clearHazards } from './hazards.ts';
@@ -68,14 +68,23 @@ function revive(world: World): void {
   world.death = null;
 }
 
+function returnZone(world: World): ZoneDef | null {
+  const back: ZoneReturn | null = world.zone.deathReturn;
+  return back === null ? null : (world.content.zones.get(back.zone) ?? null);
+}
+
 export function respawnPlayer(world: World, choice: RespawnChoice): void {
   if (!choicesOpen(world)) return;
   const town = world.zone.kind === 'town' ? world.zone : townZone(world.content);
+  const outside: ZoneDef | null = choice === 'checkpoint' ? returnZone(world) : null;
   const away: boolean = choice === 'town' && town.id !== world.zone.id;
   if (choice === 'town' && !away) world.respawn = { type: 'start' };
   revive(world);
-  if (away) {
-    const from: string = world.zone.id;
+  const from: string = world.zone.id;
+  if (outside !== null && world.zone.deathReturn !== null) {
+    enterZone(world, outside, { type: 'exit', exit: world.zone.deathReturn.exit });
+    world.events.push({ type: 'zone_changed', from, to: outside.id });
+  } else if (away) {
     enterZone(world, town, { type: 'start' });
     world.events.push({ type: 'zone_changed', from, to: town.id });
   } else {

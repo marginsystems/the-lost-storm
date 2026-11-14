@@ -6,7 +6,7 @@ import { finishQuests, must } from '../test/support.ts';
 import { botFight, botInDanger, botPlay, botRoute, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
 import type { Bot, BotReport } from './bot.ts';
 import { loadContent } from './content/content.ts';
-import type { Condition, Content, QuestDef, SkillDef } from './content/types.ts';
+import type { Condition, Content, QuestDef, SkillDef, ZoneDef, ZoneExit } from './content/types.ts';
 import { offenceOf } from './world/combat.ts';
 import { createWorld } from './world/create.ts';
 import { placeHazard } from './world/hazards.ts';
@@ -28,9 +28,18 @@ function waitsOnFlag(conditions: readonly Condition[]): boolean {
   return conditions.some((condition: Condition): boolean => condition.type === 'flag' && !condition.not);
 }
 
+function waitsOnLevel(conditions: readonly Condition[]): boolean {
+  return conditions.some((condition: Condition): boolean => condition.type === 'level' && !condition.not && condition.atLeast > ACT.maxLevel);
+}
+
+function levelGated(zone: ZoneDef): boolean {
+  const ways: ZoneExit[] = [...content.zones.values()].flatMap((from: ZoneDef): ZoneExit[] => from.exits.filter((exit: ZoneExit): boolean => exit.to === zone.id && from.id !== zone.id));
+  return ways.length > 0 && ways.every((exit: ZoneExit): boolean => waitsOnLevel(exit.requires));
+}
+
 void test('the bot plays the whole act from a fresh save: every quest, in the time and at the level it is tuned for', (): void => {
-  const townQuests: string[] = [...content.quests.values()].filter((quest: QuestDef): boolean => !waitsOnFlag(quest.when) && !quest.objectives.some((objective): boolean => waitsOnFlag(objective.when))).map((quest: QuestDef): string => quest.id).toSorted();
-  const needed: string[] = [...content.zones.values()].filter((zone): boolean => zone.kind !== 'void').map((zone): string => zone.id).toSorted();
+  const townQuests: string[] = [...content.quests.values()].filter((quest: QuestDef): boolean => !waitsOnFlag(quest.when) && !quest.objectives.some((objective): boolean => waitsOnFlag(objective.when) || waitsOnLevel(objective.when))).map((quest: QuestDef): string => quest.id).toSorted();
+  const needed: string[] = [...content.zones.values()].filter((zone): boolean => zone.kind !== 'void' && !levelGated(zone)).map((zone): string => zone.id).toSorted();
   for (const seed of ACT.seeds) {
     const world: World = createWorld(content, { seed, save: null });
     const report: BotReport = botPlay(createBot(world));

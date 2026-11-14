@@ -58,3 +58,11 @@ void test('a toughness factor reaches every job beside the danger factor, and a 
   for (const bad of ['0', '-2', 'x']) assert.equal(parse(['level', '5', '--toughness', bad]).kind, 'help', bad);
   assert.equal(parse(['level', '5', '--toughness']).kind, 'help');
 });
+
+void test('boss takes rising hero levels and a repeat count, and says why when the levels are wrong', (): void => {
+  const boss: Command = parse(['boss', '8,10,12', '--repeats', '4']);
+  assert.ok(boss.kind === 'simulate');
+  assert.deepEqual(boss.scenario, { kind: 'boss', levels: [8, 10, 12], repeats: 4, minutes: boss.scenario.kind === 'boss' ? boss.scenario.minutes : 0 });
+  assert.deepEqual(parse(['boss', '10,8']), { kind: 'help', problem: 'boss levels must rise, such as 8,10,12' });
+  assert.deepEqual(parse(['boss']), { kind: 'help', problem: 'boss needs hero levels, such as 8,10,12' });
+});

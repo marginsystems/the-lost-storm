@@ -89,20 +89,25 @@ void test('a zone no act places falls back to the first act', (): void => {
   assert.ok(!found.atlas.places.some((place: MapPlace): boolean => place.zone === 'hall_of_time'));
 });
 
-void test('the act shows the In-Between, the Hall of Time and the Hideout west to east, joined in the order the hero walks them', (): void => {
+void test('the act shows the In-Between, the Hall of Time and the Hideout west to east, joined in the order the hero walks them, with the boss lair north of the Hall', (): void => {
+  const road: MapPlace[] = act.atlas.places.filter((place: MapPlace): boolean => place.zone !== 'keepers_gate');
   assert.deepEqual(
-    act.atlas.places.map((place: MapPlace): string => place.zone),
+    road.map((place: MapPlace): string => place.zone),
     ['between', 'hall_of_time', 'hideout'],
   );
   for (const place of act.atlas.places) assert.ok(content.zones.has(place.zone), place.zone);
-  const xs: number[] = act.atlas.places.map((place: MapPlace): number => place.x);
+  const xs: number[] = road.map((place: MapPlace): number => place.x);
   assert.deepEqual(xs, xs.toSorted((a: number, b: number): number => a - b));
   assert.deepEqual(
-    act.atlas.roads.map((road: AtlasRoad): string => `${road.from} ${road.to}`),
-    ['between hall_of_time', 'hall_of_time hideout'],
+    act.atlas.roads.map((joined: AtlasRoad): string => `${joined.from} ${joined.to}`),
+    ['between hall_of_time', 'hall_of_time hideout', 'hall_of_time keepers_gate'],
   );
+  const hall: MapPlace = must(act.atlas.places.find((place: MapPlace): boolean => place.zone === 'hall_of_time'), 'hall');
+  const lair: MapPlace = must(act.atlas.places.find((place: MapPlace): boolean => place.zone === 'keepers_gate'), 'lair');
+  assert.ok(lair.y < hall.y, 'the lair is not north of the Hall');
+  assert.equal(zoneMark(content, zoneOf(content, 'keepers_gate')), 'boss');
   const placed: Set<string> = new Set<string>(act.atlas.places.map((place: MapPlace): string => place.zone));
-  for (const road of act.atlas.roads) assert.ok(placed.has(road.from) && placed.has(road.to), `${road.from} ${road.to}`);
+  for (const joined of act.atlas.roads) assert.ok(placed.has(joined.from) && placed.has(joined.to), `${joined.from} ${joined.to}`);
 });
 
 void test('you are here in each of the three zones, the In-Between included', (): void => {
@@ -133,13 +138,13 @@ void test('a road is walked only once both its ends are visited', (): void => {
   assert.equal(roadWalked(walked, mapRoad('vale', 'peak')), false);
 });
 
-void test('a hero who woke in the In-Between has walked no road of act 1, and one who has been everywhere has walked both', (): void => {
+void test('a hero who woke in the In-Between has walked no road of act 1, and one who has been everywhere has walked every one', (): void => {
   const woke: World = worldIn(content, 'between', 1);
   woke.visited.splice(0, woke.visited.length, 'between');
   for (const road of act.atlas.roads) assert.equal(roadWalked(woke, road), false, `${road.from} ${road.to}`);
   const intoHall: AtlasRoad = must(act.atlas.roads.find((road: AtlasRoad): boolean => road.from === 'between' && road.to === 'hall_of_time'), 'road into the hall');
   assert.equal(roadState(woke, intoHall), 'hidden');
   const travelled: World = worldIn(content, 'hideout', 1);
-  travelled.visited.splice(0, travelled.visited.length, 'between', 'hall_of_time', 'hideout');
+  travelled.visited.splice(0, travelled.visited.length, 'between', 'hall_of_time', 'hideout', 'keepers_gate');
   for (const road of act.atlas.roads) assert.equal(roadWalked(travelled, road), true, `${road.from} ${road.to}`);
 });

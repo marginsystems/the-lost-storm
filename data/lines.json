@@ -8,5 +8,9 @@
   {"id": "warden_trader_goods", "speaker": "warden_trader", "text": "Not much today."},
   {"id": "warden_auctioneer_trade", "speaker": "warden_auctioneer", "text": "Others left these. Name your price, or pay theirs."},
   {"id": "warden_lookout_ahead", "speaker": "warden_lookout", "text": "Keep your eyes open."},
-  {"id": "warden_guide_lesson", "speaker": "warden_guide", "text": "You carry the storm and swing it like a stick. Hold it so, and throw. There. It goes where you look."}
+  {"id": "warden_guide_lesson", "speaker": "warden_guide", "text": "You carry the storm and swing it like a stick. Hold it so, and throw. There. It goes where you look."},
+  {"id": "timekeeper_gatekeeper_early", "speaker": "timekeeper_gatekeeper", "text": "You are early. Everyone is early."},
+  {"id": "timekeeper_gatekeeper_slower", "speaker": "timekeeper_gatekeeper", "text": "Again. Slower this time."},
+  {"id": "timekeeper_gatekeeper_count", "speaker": "timekeeper_gatekeeper", "text": "Hold still. Let me count you."},
+  {"id": "timekeeper_gatekeeper_yours", "speaker": "timekeeper_gatekeeper", "text": "Then the hour is yours."}
 ]

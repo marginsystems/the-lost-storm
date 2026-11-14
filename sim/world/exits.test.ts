@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { worldIn, zoneOf } from '../../test/support.ts';
+import { must, worldIn, zoneOf } from '../../test/support.ts';
+import { loadContent } from '../content/content.ts';
 import { TOWN_CONTENT } from '../../test/town-support.ts';
 import type { Content, QuestDef, ZoneDef, ZoneExit } from '../content/types.ts';
 import { exitShown, exitUnder } from './exits.ts';
-import type { World } from './types.ts';
+import { stepWorld } from './step.ts';
+import type { World, WorldEvent } from './types.ts';
+
+const DT: number = 1 / 30;
 
 const march: QuestDef = {
   id: 'march',
@@ -48,4 +52,31 @@ void test('the exit under a point is the shown one whose circle holds it', (): v
   assert.equal(exitUnder(world, { x: 43, z: 4 }), null);
   world.quests = { march: 1 };
   assert.equal(exitUnder(world, { x: 26.5, z: 4.5 })?.id, 'secret');
+});
+
+void test('the Hall\'s gate to the boss lair stays shut below level 8 with its hint, and takes the hero in once the level is reached', (): void => {
+  const shipped: Content = loadContent();
+  const world: World = worldIn(shipped, 'hall_of_time', 2);
+  const gate: ZoneExit = must(world.zone.exits.find((candidate: ZoneExit): boolean => candidate.to === 'keepers_gate'), 'gate');
+  world.player.level = 7;
+  assert.equal(exitShown(world, gate), true);
+  const refused: WorldEvent[] = stepWorld(world, [{ type: 'travel', exit: gate.id }], DT);
+  assert.deepEqual(refused.filter((event: WorldEvent): boolean => event.type === 'exit_locked'), [{ type: 'exit_locked', exit: gate.id, hint: gate.lockedHint }]);
+  assert.match(gate.lockedHint, /level 8/);
+  world.player.level = 8;
+  world.player.pos = { x: gate.arrival.x, z: gate.arrival.z };
+  stepWorld(world, [{ type: 'travel', exit: gate.id }], DT);
+  for (let step: number = 0; step < 600 && world.zone.id === 'hall_of_time'; step += 1) stepWorld(world, [], DT);
+  assert.equal(world.zone.id, 'keepers_gate');
+});
+
+void test('walking over the open gate does not take the hero through: only the travel command does', (): void => {
+  const shipped: Content = loadContent();
+  const world: World = worldIn(shipped, 'hall_of_time', 3);
+  const gate: ZoneExit = must(world.zone.exits.find((candidate: ZoneExit): boolean => candidate.to === 'keepers_gate'), 'gate');
+  world.player.level = 10;
+  world.player.pos = { x: gate.arrival.x, z: gate.arrival.z };
+  stepWorld(world, [{ type: 'move', held: false, dest: { x: gate.x, z: gate.z } }], DT);
+  for (let step: number = 0; step < 300; step += 1) stepWorld(world, [], DT);
+  assert.equal(world.zone.id, 'hall_of_time');
 });

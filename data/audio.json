@@ -24,6 +24,7 @@
     "still_grasp": [{ "sound": "sword_swing_heavy", "volume": 0.5, "maxVoices": 3 }],
     "gate_ring": [{ "sound": "electric_crackle", "volume": 0.9, "maxVoices": 1 }],
     "keeper_bind": [{ "sound": "bolt_zap", "volume": 0.9, "maxVoices": 2 }],
+    "keeper_volley": [{ "sound": "bolt_zap", "volume": 0.9, "maxVoices": 2 }],
     "mender_stitch": [{ "sound": "hex_charge", "volume": 0.9, "maxVoices": 1 }],
     "keeper_replay": [{ "sound": "sword_swing_light", "volume": 0.7, "maxVoices": 2 }],
     "gate_replay": [{ "sound": "hex_charge", "volume": 0.9, "maxVoices": 1 }],

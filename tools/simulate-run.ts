@@ -2,10 +2,10 @@ import type { Bot } from '../sim/bot.ts';
 import { BOT, botFight, botPause, botPlay, botStep, botTravelTo, botWalkTo, createBot } from '../sim/bot.ts';
 import { loadContent } from '../sim/content/content.ts';
 import type { BookDef, PageDef } from '../sim/content/story-types.ts';
-import type { Content, ZoneDef, ZoneExit } from '../sim/content/types.ts';
+import type { Content, MonsterDef, ZoneDef, ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { distance } from '../sim/math.ts';
-import type { Measurement, Meter } from '../sim/measure.ts';
+import type { BossOutcome, Measurement, Meter } from '../sim/measure.ts';
 import { closeMeter, createMeter, readMeter, sessionHeader } from '../sim/measure.ts';
 import { isWalkable, lineWalkable, nearestWalkable } from '../sim/nav/grid.ts';
 import { xpToNextLevel } from '../sim/progression.ts';
@@ -14,7 +14,7 @@ import { grantXp } from '../sim/world/character.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { fightZones, forceStrike, nearestFight } from '../sim/world/moments.ts';
 import { readablePages } from '../sim/world/story.ts';
-import type { GroundItem, ItemInstance, MomentState, World, WorldEvent } from '../sim/world/types.ts';
+import type { GroundItem, ItemInstance, MomentState, MonsterState, World, WorldEvent } from '../sim/world/types.ts';
 import type { BuildPolicy, Policies, SkillPolicy } from './simulate-policies.ts';
 import { planFor } from './simulate-policies.ts';
 
@@ -29,9 +29,12 @@ export const RUN = {
   markWait: 6,
   fightWait: 120,
   levelMinutes: 120,
+  bossLimit: 300,
+  bossApproach: 60,
+  bossRest: 30,
 } as const;
 
-export type Scenario = { readonly kind: 'slice' } | { readonly kind: 'farm'; readonly minutes: number } | { readonly kind: 'fight'; readonly moment: string; readonly repeats: number } | { readonly kind: 'level'; readonly level: number; readonly minutes: number } | { readonly kind: 'over'; readonly hero: number; readonly zone: number; readonly minutes: number };
+export type Scenario = { readonly kind: 'slice' } | { readonly kind: 'farm'; readonly minutes: number } | { readonly kind: 'fight'; readonly moment: string; readonly repeats: number } | { readonly kind: 'level'; readonly level: number; readonly minutes: number } | { readonly kind: 'over'; readonly hero: number; readonly zone: number; readonly minutes: number } | { readonly kind: 'boss'; readonly levels: readonly number[]; readonly repeats: number; readonly minutes: number };
 
 export interface Job {
   readonly scenario: Scenario;
@@ -61,6 +64,8 @@ export function scenarioName(scenario: Scenario): string {
       return `level ${scenario.level}`;
     case 'over':
       return `hero ${scenario.hero} in level ${scenario.zone}`;
+    case 'boss':
+      return `boss at ${scenario.levels.join(', ')}`;
   }
   return 'unknown';
 }
@@ -212,6 +217,78 @@ export function fightRepeatedly(bot: Bot, momentId: string, repeats: number, loo
   return fought;
 }
 
+export interface BossLair {
+  readonly zone: ZoneDef;
+  readonly boss: MonsterDef;
+}
+
+export function bossLair(content: Content): BossLair | null {
+  for (const zone of content.zones.values()) {
+    for (const pack of zone.packs) {
+      for (const member of pack.members) {
+        const def: MonsterDef | undefined = content.monsters.get(member.monster);
+        if (def !== undefined && def.boss !== null) return { zone, boss: def };
+      }
+    }
+  }
+  return null;
+}
+
+function rest(bot: Bot): void {
+  const world: World = bot.world;
+  for (let waited: number = 0; waited < RUN.bossRest && world.player.alive && world.player.life < world.player.maxLife; waited += BOT.step) botStep(bot, []);
+}
+
+function bossOutcome(boss: MonsterState, lost: boolean): BossOutcome {
+  if (!boss.alive) return 'won';
+  return lost ? 'lost' : 'timeout';
+}
+
+export function fightBoss(bot: Bot, lair: BossLair, origin: number): Measurement | null {
+  const world: World = bot.world;
+  const outside: string | undefined = lair.zone.exits[0]?.to;
+  if (world.zone.id === lair.zone.id && (outside === undefined || !botTravelTo(bot, outside))) return null;
+  if (!botTravelTo(bot, lair.zone.id)) return null;
+  const boss: MonsterState | undefined = world.monsters.find((monster: MonsterState): boolean => monster.alive && monster.def.id === lair.boss.id);
+  if (boss === undefined) return null;
+  const deaths: number = bot.deaths;
+  const approach: number = world.time + RUN.bossApproach;
+  let sinceOrder: number = BOT.idleRepeat;
+  while (!boss.aggro && world.time < approach && world.player.alive) {
+    sinceOrder += BOT.step;
+    const order: boolean = sinceOrder >= BOT.idleRepeat;
+    if (order) sinceOrder = 0;
+    botStep(bot, order ? [{ type: 'move', held: false, dest: { x: boss.pos.x, z: boss.pos.z } }] : []);
+  }
+  const start: number = world.time;
+  const level: number = world.player.level;
+  const limit: number = start + RUN.bossLimit;
+  const over = (): boolean => !boss.alive || bot.deaths > deaths || world.zone.id !== lair.zone.id || world.time >= limit;
+  while (!over()) botFight(bot, over, lair.boss.id);
+  const lost: boolean = bot.deaths > deaths;
+  const measured: Measurement = { kind: 'boss', t: Math.round((world.time - origin) * 100) / 100, boss: lair.boss.id, level, outcome: bossOutcome(boss, lost), seconds: Math.round((world.time - start) * 10) / 10, lifeLeft: lost ? 0 : Math.round((world.player.life / world.player.maxLife) * 100) / 100 };
+  for (let waited: number = 0; !world.player.alive && waited < RUN.bossRest; waited += BOT.step) botStep(bot, []);
+  if (!boss.alive && world.zone.id === lair.zone.id) lootAround(bot, boss.pos);
+  rest(bot);
+  return measured;
+}
+
+function fightBosses(bot: Bot, recorder: Recorder, scenario: Extract<Scenario, { readonly kind: 'boss' }>, loot: boolean): string | null {
+  const world: World = bot.world;
+  const lair: BossLair | null = bossLair(world.content);
+  if (lair === null) return 'no zone holds a boss';
+  for (const level of scenario.levels) {
+    if (!farm(bot, world.time + scenario.minutes * 60, loot, (): boolean => world.player.level >= level)) return 'could not reach the Hall';
+    if (world.player.level < level) return `did not reach level ${level}`;
+    for (let attempt: number = 0; attempt < scenario.repeats; attempt += 1) {
+      const measured: Measurement | null = fightBoss(bot, lair, recorder.meter?.origin ?? 0);
+      if (measured === null) return `could not reach ${lair.zone.id}`;
+      recorder.out.push(measured);
+    }
+  }
+  return null;
+}
+
 export function runJob(job: Job, policies: Policies): Measurement[] {
   const skill: SkillPolicy | undefined = policies.skills.get(job.skill);
   const build: BuildPolicy | undefined = policies.builds.get(job.build);
@@ -222,7 +299,7 @@ export function runJob(job: Job, policies: Policies): Measurement[] {
   const world: World = createWorld(content, build.hero === null ? { seed: job.seed, save: null, opening: true } : { seed: job.seed, save: null, opening: true, hero: build.hero });
   const recorder: Recorder = { meter: null, out: [sessionHeader('sim', `${scenarioName(job.scenario)}${job.danger === 1 ? '' : ` danger ${job.danger}`}${job.toughness === 1 ? '' : ` toughness ${job.toughness}`}`, `${job.skill}/${job.build}`, job.seed)] };
   const bot: Bot = createBot(world, skill.habits, (events: readonly WorldEvent[]): void => record(bot, recorder, events), planFor(skill, build));
-  const fromStart: boolean = scenario.kind === 'slice' || scenario.kind === 'level';
+  const fromStart: boolean = scenario.kind === 'slice' || scenario.kind === 'level' || scenario.kind === 'boss';
   if (fromStart) startRecording(world, recorder, policies);
   const opened: boolean = playOpening(bot, skill);
   const played = opened ? botPlay(bot) : null;
@@ -244,6 +321,9 @@ export function runJob(job: Job, policies: Policies): Measurement[] {
       break;
     case 'level':
       if (opened && !farm(bot, (meter?.origin ?? 0) + scenario.minutes * 60, skill.loot, (): boolean => world.player.level >= scenario.level)) reason = 'could not reach the Hall';
+      break;
+    case 'boss':
+      if (opened) reason = fightBosses(bot, recorder, scenario, skill.loot) ?? reason;
       break;
   }
   if (meter !== null) recorder.out.push(...closeMeter(world, meter));

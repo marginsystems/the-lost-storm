@@ -5,7 +5,8 @@ import { armed, must, worldIn, zoneOf } from '../../test/support.ts';
 import { botFight, botInDanger, createBot } from '../bot.ts';
 import type { Bot } from '../bot.ts';
 import { loadContent } from '../content/content.ts';
-import type { BossDef, Condition, Content, LineDef, MonsterDef, QuestDef, ZoneDef, ZonePack } from '../content/types.ts';
+import type { BossDef, BossPhase, Condition, Content, LineDef, MonsterDef, QuestDef, ZoneDef, ZonePack } from '../content/types.ts';
+import { distance } from '../math.ts';
 import { phaseAt, pickBossSkill } from './boss.ts';
 import { applyHit, offenceOf } from './combat.ts';
 import { stepWorld } from './step.ts';
@@ -299,8 +300,13 @@ void test('a pack whose condition fails does not spawn, so a beaten boss is not 
   assert.equal(world.monsters.length, 1);
 });
 
-void test('the bot beats each boss at the level the act expects, and reading the telegraph is what keeps it alive', (): void => {
-  for (const def of bosses()) {
+function gated(def: MonsterDef): boolean {
+  const lairs: ZoneDef[] = [...shipped.zones.values()].filter((zone: ZoneDef): boolean => zone.packs.some((pack: ZonePack): boolean => pack.members.some((member): boolean => member.monster === def.id)));
+  return lairs.some((lair: ZoneDef): boolean => [...shipped.zones.values()].some((zone: ZoneDef): boolean => zone.exits.some((exit): boolean => exit.to === lair.id && exit.requires.some((entry: Condition): boolean => entry.type === 'level'))));
+}
+
+void test('the bot beats each boss the act does not keep behind a level, at the level it is met, and reading the telegraph is what keeps it alive', (): void => {
+  for (const def of bosses().filter((candidate: MonsterDef): boolean => !gated(candidate))) {
     const fight = (dodges: boolean): { readonly won: boolean; readonly deaths: number; readonly lifeLeft: number } => {
       const world: World = armed(worldIn(room(def.id), ROOM, 21));
       world.player.level = 3;
@@ -314,4 +320,36 @@ void test('the bot beats each boss at the level the act expects, and reading the
     assert.ok(careful.won, `${def.id}: the bot did not win while dodging`);
     assert.ok(careful.deaths < reckless.deaths || (careful.deaths === reckless.deaths && careful.lifeLeft > reckless.lifeLeft), `${def.id}: dodging did not help (careful ${JSON.stringify(careful)}, reckless ${JSON.stringify(reckless)})`);
   }
+});
+
+void test('the Gatekeeper in its lair fights in three phases, each threshold announced once with its own bark and its own skills', (): void => {
+  const world: World = armed(worldIn(shipped, 'keepers_gate', 3));
+  const boss: MonsterState = bossOf(world);
+  const block: BossDef = must(boss.def.boss, 'boss');
+  boss.spawnTime = 0;
+  assert.equal(block.phases.length, 3);
+  for (let phase: number = 1; phase < block.phases.length; phase += 1) {
+    const entered: BossPhase = must(block.phases[phase], `phase ${phase}`);
+    const events: WorldEvent[] = hurt(world, boss, entered.below - 0.02);
+    assert.deepEqual(ofType(events, 'boss_phase'), [{ type: 'boss_phase', monsterId: boss.id, phase }]);
+    assert.deepEqual(ofType(events, 'bark').map((event): string => event.line.id).filter((id: string): boolean => !block.barks.aggro.includes(id)), [...entered.barks]);
+    assert.ok(entered.barks.length > 0, `phase ${phase} says nothing`);
+    const allowed: Set<string> = new Set<string>(entered.skills.map((entry): string => entry.skill));
+    for (let pick: number = 0; pick < 20; pick += 1) assert.ok(allowed.has(pickBossSkill(world, boss, block)?.id ?? ''), `phase ${phase} picked outside its skills`);
+  }
+  const last: Set<string> = new Set<string>(must(block.phases.at(-1), 'last').skills.map((entry): string => entry.skill));
+  const before: Set<string> = new Set<string>(block.phases.slice(0, -1).flatMap((phase: BossPhase): string[] => phase.skills.map((entry): string => entry.skill)));
+  assert.ok([...last].some((skill: string): boolean => !before.has(skill)), 'the last phase brings nothing new');
+});
+
+void test('the Gatekeeper stands at the hero\'s level in its lair and keeps clear of the door, so the hero chooses when the fight starts', (): void => {
+  const world: World = armed(worldIn(shipped, 'hall_of_time', 4));
+  world.player.level = 12;
+  const lair: ZoneDef = zoneOf(shipped, 'keepers_gate');
+  enterZone(world, lair, { type: 'exit', exit: 'hall' });
+  const boss: MonsterState = bossOf(world);
+  assert.equal(boss.level, 12);
+  assert.ok(distance(boss.pos, world.player.pos) > boss.def.aggroRadius + 4, 'the boss stands too near the door');
+  run(world, 3);
+  assert.equal(boss.aggro, false);
 });

@@ -184,6 +184,8 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
       case 'chart':
         chart.push({ t: entry.t, place: entry.place, path: entry.path });
         break;
+      case 'boss':
+        break;
       case 'power':
         power.push({ t: entry.t, dps: entry.dps, toughness: entry.toughness, itemLevels: entry.itemLevels });
         break;

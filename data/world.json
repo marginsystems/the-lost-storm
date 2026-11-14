@@ -37,6 +37,11 @@
             "zone": "hideout",
             "x": 1200,
             "y": 470
+          },
+          {
+            "zone": "keepers_gate",
+            "x": 800,
+            "y": 390
           }
         ],
         "roads": [
@@ -57,6 +62,16 @@
               {
                 "x": 1000,
                 "y": 545
+              }
+            ]
+          },
+          {
+            "from": "hall_of_time",
+            "to": "keepers_gate",
+            "via": [
+              {
+                "x": 792,
+                "y": 470
               }
             ]
           }

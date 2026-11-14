@@ -127,7 +127,9 @@
     {"prop": "crag_b", "x": 28.62, "z": -4.34, "y": -0.05, "rotationDegrees": 0},
     {"prop": "crag_spire", "x": 78.28, "z": 63.6, "y": -0.05, "rotationDegrees": 270},
     {"prop": "crag_spire", "x": 61.3, "z": -2.62, "y": -0.05, "rotationDegrees": 345},
-    {"prop": "boulder_2", "x": -7.94, "z": 28.29, "y": -0.05, "rotationDegrees": 300}
+    {"prop": "boulder_2", "x": -7.94, "z": 28.29, "y": -0.05, "rotationDegrees": 300},
+    {"prop": "castle_column", "x": 39.2, "z": 4.3, "y": 0, "rotationDegrees": 15},
+    {"prop": "castle_column", "x": 44.8, "z": 4.3, "y": 0, "rotationDegrees": 195}
   ],
   "packs": [
     {"x": 38, "z": 22, "members": [{"monster": "unfinished_taker", "count": 1}]},
@@ -140,7 +142,8 @@
   "surge": null,
   "exits": [
     {"id": "mist", "x": 1.6, "z": 30, "radius": 2.2, "to": "between", "toExit": "into_the_hall", "arrival": {"x": 8, "z": 30}, "requires": [], "look": "mist"},
-    {"id": "east", "x": 78.4, "z": 30, "radius": 2.2, "to": "hideout", "toExit": "west", "arrival": {"x": 72, "z": 30}, "requires": []}
+    {"id": "east", "x": 78.4, "z": 30, "radius": 2.2, "to": "hideout", "toExit": "west", "arrival": {"x": 72, "z": 30}, "requires": []},
+    {"id": "gate", "x": 42, "z": 5.6, "radius": 2.2, "to": "keepers_gate", "toExit": "hall", "arrival": {"x": 44, "z": 11}, "requires": [{"type": "level", "atLeast": 8}], "lockedHint": "The gate will not open for you yet. Come back at level 8."}
   ],
   "checkpoints": [],
   "waypoint": null,

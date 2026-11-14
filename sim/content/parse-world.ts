@@ -31,6 +31,7 @@ import type {
   ZonePack,
   ZonePoint,
   ZoneProp,
+  ZoneReturn,
   ZoneVoice,
   ZoneWalls,
   ZoneWaypoint,
@@ -127,6 +128,12 @@ function zoneWaypoint(value: unknown, where: string): ZoneWaypoint | null {
   if (value === null) return null;
   const source: Fields = fields(value, where);
   return { x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
+}
+
+function zoneReturn(value: unknown, where: string): ZoneReturn | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { zone: text(source, 'zone', where), exit: text(source, 'exit', where) };
 }
 
 function zoneVoice(value: unknown, where: string): ZoneVoice {
@@ -257,6 +264,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     exits: [...byId(each(source['exits'], `${where}.exits`, zoneExit), `${where}.exits`).values()],
     checkpoints: [...byId(each(source['checkpoints'], `${where}.checkpoints`, zoneCheckpoint), `${where}.checkpoints`).values()],
     waypoint: zoneWaypoint(source['waypoint'], `${where}.waypoint`),
+    deathReturn: zoneReturn(source['deathReturn'], `${where}.deathReturn`),
     npcs: each(source['npcs'], `${where}.npcs`, zoneNpc),
     voices: source['voices'] === undefined ? [] : [...byId(each(source['voices'], `${where}.voices`, zoneVoice), `${where}.voices`).values()],
     ambience: zoneAmbience(source['ambience'], `${where}.ambience`),

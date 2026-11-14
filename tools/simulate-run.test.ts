@@ -9,7 +9,12 @@ import { stepWorld } from '../sim/world/step.ts';
 import type { MomentState, World } from '../sim/world/types.ts';
 import { POLICIES } from './simulate-policies.ts';
 import type { Job, Scenario } from './simulate-run.ts';
-import { CONTENT, farm, harder, runJob, scenarioName } from './simulate-run.ts';
+import type { BossLair } from './simulate-run.ts';
+import { bossLair, CONTENT, farm, harder, runJob, scenarioName } from './simulate-run.ts';
+import type { BossAttempt } from './simulate-boss.ts';
+import { bossAttempts } from './simulate-boss.ts';
+import type { Condition, ZoneDef, ZoneExit } from '../sim/content/types.ts';
+import { must } from '../test/support.ts';
 import type { Fight, RunSummary } from './simulate-summary.ts';
 import { summarize } from './simulate-summary.ts';
 
@@ -25,6 +30,7 @@ const GUARD = {
   strikeGap: 6,
   dormantWait: 0.5,
   over: { hero: 9, low: 1, near: 7, minutes: 8, seed: 1, drastic: 1 / 3 },
+  boss: { level: 8, repeats: 2, minutes: 60, leastSeconds: 60, builds: ['mixed', 'marksman'] },
 } as const;
 
 function runs(scenario: Scenario, skill: string): RunSummary[] {
@@ -34,7 +40,7 @@ function runs(scenario: Scenario, skill: string): RunSummary[] {
 const slices: readonly RunSummary[] = runs({ kind: 'slice' }, 'average');
 
 void test('scenarios have readable names', (): void => {
-  assert.deepEqual([scenarioName({ kind: 'slice' }), scenarioName({ kind: 'farm', minutes: 5 }), scenarioName({ kind: 'fight', moment: 'campfire', repeats: 2 }), scenarioName({ kind: 'level', level: 4, minutes: 9 }), scenarioName({ kind: 'over', hero: 9, zone: 1, minutes: 5 })], ['slice', 'farm 5m', 'fight campfire', 'level 4', 'hero 9 in level 1']);
+  assert.deepEqual([scenarioName({ kind: 'slice' }), scenarioName({ kind: 'farm', minutes: 5 }), scenarioName({ kind: 'fight', moment: 'campfire', repeats: 2 }), scenarioName({ kind: 'level', level: 4, minutes: 9 }), scenarioName({ kind: 'over', hero: 9, zone: 1, minutes: 5 }), scenarioName({ kind: 'boss', levels: [8, 10], repeats: 2, minutes: 60 })], ['slice', 'farm 5m', 'fight campfire', 'level 4', 'hero 9 in level 1', 'boss at 8, 10']);
 });
 
 void test('a level 9 hero earns drastically less experience a minute in level 1 content than in level 7 content', (): void => {
@@ -117,4 +123,25 @@ void test('danger scales how fast monster damage grows per level, toughness how 
   assert.equal(tougher.monsters, CONTENT.monsters);
   const lifeOnly = harder(CONTENT, 1, 4);
   assert.equal(lifeOnly.world.scaling.damagePerLevel, CONTENT.world.scaling.damagePerLevel);
+});
+
+function bossFights(skill: string, build: string, seed: number): BossAttempt[] {
+  return bossAttempts(runJob({ scenario: { kind: 'boss', levels: [GUARD.boss.level], repeats: GUARD.boss.repeats, minutes: GUARD.boss.minutes }, skill, build, seed, danger: 1, toughness: 1 }, POLICIES));
+}
+
+void test('the boss lair is found from the content, and its boss sits behind a level the hero has to reach', (): void => {
+  const lair: BossLair = must(bossLair(CONTENT), 'a lair');
+  assert.notEqual(lair.boss.boss, null);
+  const gates: ZoneExit[] = [...CONTENT.zones.values()].flatMap((zone: ZoneDef): ZoneExit[] => zone.exits.filter((exit: ZoneExit): boolean => exit.to === lair.zone.id));
+  assert.ok(gates.length > 0 && gates.every((exit: ZoneExit): boolean => exit.requires.some((entry: Condition): boolean => entry.type === 'level' && entry.atLeast === GUARD.boss.level)));
+});
+
+void test('at the gate\'s level both heroes win the boss fight with careful play, it lasts a minute or more, and poor play loses it', (): void => {
+  for (const build of GUARD.boss.builds) {
+    const careful: BossAttempt[] = bossFights('careful', build, 1);
+    const poor: BossAttempt[] = bossFights('poor', build, 1);
+    assert.equal(careful.length, GUARD.boss.repeats, build);
+    assert.ok(careful.every((attempt: BossAttempt): boolean => attempt.outcome === 'won' && attempt.seconds >= GUARD.boss.leastSeconds), `${build} careful: ${JSON.stringify(careful)}`);
+    assert.ok(poor.filter((attempt: BossAttempt): boolean => attempt.outcome === 'won').length < poor.length / 2, `${build} poor: ${JSON.stringify(poor)}`);
+  }
 });

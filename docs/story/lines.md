@@ -47,7 +47,19 @@ Placeholder sentences borrowed from other people's lives; the owner decides the 
 | `unfinished_borrower_said_4` | That is my coat. I know that coat. | Bark, one of these at random when it first notices a foe. |
 | `unfinished_borrower_said_5` | Who let the dog out? | Bark, one of these at random when it first notices a foe. |
 
+## Timekeeper Gatekeeper (`timekeeper_gatekeeper`)
+
+The boss of the Keeper's Gate, north of the Hall of Time. Working lines; the owner decides the final words. Not voiced yet.
+
+| Id | Line | When |
+|---|---|---|
+| `timekeeper_gatekeeper_early` | You are early. Everyone is early. | Bark when it first notices the hero. |
+| `timekeeper_gatekeeper_slower` | Again. Slower this time. | Bark entering its second phase, below two thirds of its life. |
+| `timekeeper_gatekeeper_count` | Hold still. Let me count you. | Bark entering its third phase, below one third of its life. |
+| `timekeeper_gatekeeper_yours` | Then the hour is yours. | Bark as it dies. |
+
 ## Voice direction
 
 - **Wardens**: plain and steady; people who walk the same road every day and expect to walk it tomorrow.
 - **The Unfinished Borrower**: says each borrowed sentence as if it were its own, warmly, and does not notice it is wrong.
+- **The Timekeeper Gatekeeper**: unhurried and exact, an official reading out a time that has already passed; American accent.

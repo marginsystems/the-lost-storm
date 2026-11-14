@@ -10,6 +10,8 @@ import type { DoneMessage, JobMessage } from './simulate-job.ts';
 import { readDoneMessage } from './simulate-job.ts';
 import { POLICIES } from './simulate-policies.ts';
 import { buildRows, buildTable } from './simulate-builds.ts';
+import type { BossAttempt } from './simulate-boss.ts';
+import { bossAttempts, bossRows, bossTable } from './simulate-boss.ts';
 import { reportText } from './simulate-report.ts';
 import type { Job } from './simulate-run.ts';
 import { CONTENT, scenarioName } from './simulate-run.ts';
@@ -68,11 +70,12 @@ function write(path: string, text: string): void {
   writeFileSync(path, text);
 }
 
-function finish(report: Report, runs: readonly RunSummary[], out: string | null, label: string): void {
+function finish(report: Report, runs: readonly RunSummary[], bosses: readonly BossAttempt[], out: string | null, label: string): void {
   const path: string = out ?? join(OUT_DIR, `${slug(label)}-${stamp()}.json`);
-  write(path, `${JSON.stringify({ report, runs }, null, 1)}\n`);
+  write(path, `${JSON.stringify({ report, runs, bosses }, null, 1)}\n`);
   process.stdout.write(reportText(report));
   process.stdout.write(`\n${buildTable(buildRows(runs, CONTENT.packRanks.ranks.map((rank): string => rank.id)))}\n`);
+  if (bosses.length > 0) process.stdout.write(`\n${bossTable(bossRows(bosses))}\n`);
   process.stdout.write(`\nJSON report: ${path}\n`);
 }
 
@@ -89,12 +92,13 @@ async function simulate(command: Extract<Command, { readonly kind: 'simulate' }>
   });
   process.stderr.write(`\n${((performance.now() - started) / 1000).toFixed(1)} s\n`);
   const runs: RunSummary[] = streams.map(summarize);
-  finish(buildReport(CONTENT, runs, POLICIES), runs, command.out, label);
+  finish(buildReport(CONTENT, runs, POLICIES), runs, streams.flatMap(bossAttempts), command.out, label);
 }
 
 function replay(files: readonly string[], out: string | null): void {
-  const runs: RunSummary[] = files.map((file: string): RunSummary => summarize(readStream(readFileSync(file, 'utf8'))));
-  finish(buildReport(CONTENT, runs, POLICIES), runs, out, `replay-${runs[0]?.scenario ?? 'none'}`);
+  const streams: (readonly Measurement[])[] = files.map((file: string): readonly Measurement[] => readStream(readFileSync(file, 'utf8')));
+  const runs: RunSummary[] = streams.map(summarize);
+  finish(buildReport(CONTENT, runs, POLICIES), runs, streams.flatMap(bossAttempts), out, `replay-${runs[0]?.scenario ?? 'none'}`);
 }
 
 async function main(): Promise<void> {

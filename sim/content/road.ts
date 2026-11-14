@@ -27,7 +27,7 @@ export function conditionProblems(content: Content, flags: ReadonlySet<string>, 
       if (!flags.has(entry.flag)) problems.push(`${holder} names flag ${entry.flag}, which nothing sets`);
       continue;
     }
-    if (entry.type === 'shore') continue;
+    if (entry.type === 'shore' || entry.type === 'level') continue;
     if (entry.type === 'hero') {
       if (!content.player.heroes.some((hero: HeroDef): boolean => hero.id === entry.is)) problems.push(`${holder} names unknown hero ${entry.is}`);
       continue;

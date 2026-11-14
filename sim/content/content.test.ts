@@ -19,7 +19,7 @@ import { startQuests } from '../world/quests.ts';
 import { stepWorld } from '../world/step.ts';
 import type { Command, GroundItem, World, WorldEvent } from '../world/types.ts';
 import { enterZone } from '../world/zones.ts';
-import type { Content, ItemBaseDef, NpcDef, ObjectiveDef, PathObjective, QuestDef, RigDef, SkillTreeNodeDef, TalkDef, WearableDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
+import type { Condition, Content, ItemBaseDef, NpcDef, ObjectiveDef, PathObjective, QuestDef, RigDef, SkillTreeNodeDef, TalkDef, WearableDef, ZoneDef, ZoneExit, ZoneNpc, ZonePack } from './types.ts';
 import { fields, items, text } from './read.ts';
 import type { Fields } from './read.ts';
 import type { MomentDef, MomentEcho, MomentField, WeightedMoment } from './moment-types.ts';
@@ -557,6 +557,7 @@ void test('every objective, taken in quest order, lies in a zone the exits alrea
     quest.objectives.forEach((objective: ObjectiveDef, index: number): void => {
       const world: World = createWorld(content, { seed: 1, save: null });
       world.quests = progressAt(quest, index);
+      world.player.level = Math.max(world.player.level, ...objectivePaths(objective).flatMap((path: PathObjective): number[] => [...objective.when, ...path.when].flatMap((entry: Condition): number[] => (entry.type === 'level' && !entry.not ? [entry.atLeast] : []))));
       if (!allHold(world, quest.when)) return;
       const open: Set<string> = openZones(world);
       const places: string[] = placesOf(world, objective);

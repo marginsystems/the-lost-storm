@@ -53,6 +53,7 @@ import type {
   WearableDef,
   WearRegion,
   ZoneExit,
+  ZoneReturn,
   XpGap,
 } from './types.ts';
 import { DAMAGE_TYPES, MANA_SHOWS, SKILL_CATEGORIES, STAT_IDS, WEAR_REGIONS } from './types.ts';
@@ -594,6 +595,8 @@ export function contentProblems(content: Content): string[] {
       need(far !== undefined, `${at} exit ${exit.id} leads to unknown exit ${exit.to}.${exit.toExit}`);
       if (far !== undefined && zoneDef.kind !== 'void') need(far.to === zoneDef.id && far.toExit === exit.id, `${at} exit ${exit.id} is not matched by ${exit.to}.${exit.toExit}`);
     }
+    const back: ZoneReturn | null = zoneDef.deathReturn;
+    if (back !== null) need(content.zones.get(back.zone)?.exits.some((candidate: ZoneExit): boolean => candidate.id === back.exit) === true && back.zone !== zoneDef.id, `${at} returns the fallen to ${back.zone}.${back.exit}, which is not an exit of another zone`);
   }
   for (const def of content.npcs.values()) {
     need(content.rigs.has(def.rig), `npc ${def.id} uses unknown rig ${def.rig}`);

@@ -108,5 +108,26 @@
         }
       }
     ]
+  },
+  {
+    "id": "the_gate",
+    "name": "The Keeper's Gate",
+    "requires": [
+      "wardens_lesson"
+    ],
+    "objectives": [
+      {
+        "id": "defeat",
+        "type": "defeat",
+        "monster": "timekeeper_gatekeeper",
+        "text": "The Keeper's Gate opens at level 8",
+        "when": [
+          {
+            "type": "level",
+            "atLeast": 8
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -35,6 +35,9 @@ export function holds(world: World, condition: Condition): boolean {
     case 'hero':
       held = world.player.hero === condition.is;
       break;
+    case 'level':
+      held = world.player.level >= condition.atLeast;
+      break;
   }
   return held !== condition.not;
 }

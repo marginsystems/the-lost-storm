@@ -38,4 +38,10 @@ export interface HeroCondition {
   readonly not: boolean;
 }
 
-export type Condition = QuestCondition | ObjectiveCondition | FlagCondition | ShoreCondition | HeroCondition;
+export interface LevelCondition {
+  readonly type: 'level';
+  readonly atLeast: number;
+  readonly not: boolean;
+}
+
+export type Condition = QuestCondition | ObjectiveCondition | FlagCondition | ShoreCondition | HeroCondition | LevelCondition;

@@ -12,6 +12,8 @@ export const MEASURE_VERSION = 1;
 
 export type MeasureSource = 'sim' | 'game';
 
+export type BossOutcome = 'won' | 'lost' | 'timeout';
+
 export type MilestoneRule = { readonly kind: 'flag'; readonly name: string; readonly flag: string; readonly is: string | null } | { readonly kind: 'zone'; readonly name: string; readonly zone: string };
 
 export interface SessionHeader {
@@ -42,6 +44,7 @@ export type Measurement =
   | { readonly kind: 'skill'; readonly t: number; readonly skill: string }
   | { readonly kind: 'chart'; readonly t: number; readonly place: string; readonly path: string; readonly points: number }
   | { readonly kind: 'power'; readonly t: number; readonly dps: number; readonly toughness: number; readonly itemLevels: number }
+  | { readonly kind: 'boss'; readonly t: number; readonly boss: string; readonly level: number; readonly outcome: BossOutcome; readonly seconds: number; readonly lifeLeft: number }
   | { readonly kind: 'end'; readonly t: number; readonly reason: string };
 
 export type MeasureKind = Measurement['kind'];
@@ -261,6 +264,18 @@ function outcome(fields: Fields): MomentOutcome {
   }
 }
 
+function bossOutcome(fields: Fields): BossOutcome {
+  const value: string = str(fields, 'outcome');
+  switch (value) {
+    case 'won':
+    case 'lost':
+    case 'timeout':
+      return value;
+    default:
+      throw new Error(`measurement.outcome ${value} is not a boss outcome`);
+  }
+}
+
 function sourceOf(fields: Fields): MeasureSource {
   const value: string = str(fields, 'source');
   if (value !== 'sim' && value !== 'game') throw new Error(`measurement.source ${value} is not sim or game`);
@@ -310,6 +325,8 @@ export function readMeasurement(value: unknown): Measurement {
       return { kind, t, place: str(value, 'place'), path: str(value, 'path'), points: num(value, 'points') };
     case 'power':
       return { kind, t, dps: num(value, 'dps'), toughness: num(value, 'toughness'), itemLevels: num(value, 'itemLevels') };
+    case 'boss':
+      return { kind, t, boss: str(value, 'boss'), level: num(value, 'level'), outcome: bossOutcome(value), seconds: num(value, 'seconds'), lifeLeft: num(value, 'lifeLeft') };
     case 'end':
       return { kind, t, reason: str(value, 'reason') };
     default:

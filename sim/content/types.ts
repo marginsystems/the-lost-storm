@@ -393,6 +393,11 @@ export interface ZoneExit {
   readonly look: ExitLook;
 }
 
+export interface ZoneReturn {
+  readonly zone: string;
+  readonly exit: string;
+}
+
 export interface ZoneWaypoint {
   readonly x: number;
   readonly z: number;
@@ -437,6 +442,7 @@ export interface ZoneDef {
   readonly exits: readonly ZoneExit[];
   readonly checkpoints: readonly ZoneCheckpoint[];
   readonly waypoint: ZoneWaypoint | null;
+  readonly deathReturn: ZoneReturn | null;
   readonly npcs: readonly ZoneNpc[];
   readonly voices: readonly ZoneVoice[];
   readonly ambience: ZoneAmbience;
