@@ -9,7 +9,7 @@ import { stepWorld } from '../sim/world/step.ts';
 import type { MomentState, World } from '../sim/world/types.ts';
 import { POLICIES } from './simulate-policies.ts';
 import type { Job, Scenario } from './simulate-run.ts';
-import { CONTENT, farm, runJob, scenarioName } from './simulate-run.ts';
+import { CONTENT, farm, harder, runJob, scenarioName } from './simulate-run.ts';
 import type { Fight, RunSummary } from './simulate-summary.ts';
 import { summarize } from './simulate-summary.ts';
 
@@ -28,7 +28,7 @@ const GUARD = {
 } as const;
 
 function runs(scenario: Scenario, skill: string): RunSummary[] {
-  return GUARD.seeds.map((seed: number): RunSummary => summarize(runJob({ scenario, skill, build: 'mixed', seed } satisfies Job, POLICIES)));
+  return GUARD.seeds.map((seed: number): RunSummary => summarize(runJob({ scenario, skill, build: 'mixed', seed, danger: 1 } satisfies Job, POLICIES)));
 }
 
 const slices: readonly RunSummary[] = runs({ kind: 'slice' }, 'average');
@@ -39,7 +39,7 @@ void test('scenarios have readable names', (): void => {
 
 void test('a level 9 hero earns drastically less experience a minute in level 1 content than in level 7 content', (): void => {
   const rate = (zone: number): number => {
-    const run: RunSummary = summarize(runJob({ scenario: { kind: 'over', hero: GUARD.over.hero, zone, minutes: GUARD.over.minutes }, skill: 'careful', build: 'mixed', seed: GUARD.over.seed }, POLICIES));
+    const run: RunSummary = summarize(runJob({ scenario: { kind: 'over', hero: GUARD.over.hero, zone, minutes: GUARD.over.minutes }, skill: 'careful', build: 'mixed', seed: GUARD.over.seed, danger: 1 }, POLICIES));
     assert.equal(run.reason, 'done');
     return run.xp / Math.max(1, run.seconds);
   };
@@ -106,4 +106,13 @@ void test('a farm that finds the hero already standing in a dormant moment lets 
   const start: number = world.time;
   assert.equal(farm(createBot(world), start + GUARD.dormantWait, false, (): boolean => false), true);
   assert.ok(world.time >= start + GUARD.dormantWait);
+});
+
+void test('a danger factor scales how fast monster damage grows per level and nothing else, and one leaves the content as it is', (): void => {
+  assert.equal(harder(CONTENT, 1), CONTENT);
+  const tougher = harder(CONTENT, 3);
+  assert.equal(tougher.world.scaling.damagePerLevel, CONTENT.world.scaling.damagePerLevel * 3);
+  assert.equal(tougher.world.scaling.lifePerLevel, CONTENT.world.scaling.lifePerLevel);
+  assert.equal(tougher.monsters, CONTENT.monsters);
+  assert.equal(CONTENT.world.scaling.damagePerLevel, harder(CONTENT, 1).world.scaling.damagePerLevel);
 });

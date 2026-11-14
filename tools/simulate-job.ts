@@ -36,7 +36,7 @@ export function readJobMessage(value: unknown): JobMessage {
   const job: Fields = fields(source['job'], 'message.job');
   return {
     index: numeric(source, 'index', 'message'),
-    job: { scenario: readScenario(job['scenario']), skill: text(job, 'skill', 'job'), build: text(job, 'build', 'job'), seed: numeric(job, 'seed', 'job') },
+    job: { scenario: readScenario(job['scenario']), skill: text(job, 'skill', 'job'), build: text(job, 'build', 'job'), seed: numeric(job, 'seed', 'job'), danger: numeric(job, 'danger', 'job') },
   };
 }
 

@@ -1,8 +1,9 @@
 import policyFile from './simulate-policies.json' with { type: 'json' };
 import type { BotHabits } from '../sim/bot.ts';
-import type { BotPlan } from '../sim/bot-plan.ts';
+import type { BotPlan, GearWeights, PlayStyle, WeaponKind } from '../sim/bot-plan.ts';
+import { STAND_WEIGHTS } from '../sim/bot-plan.ts';
 import type { Fields } from '../sim/content/read.ts';
-import { ContentError, each, fields, flag, nullableText, numeric, text, textList } from '../sim/content/read.ts';
+import { ContentError, choice, each, fields, flag, nullableText, numeric, text, textList } from '../sim/content/read.ts';
 import type { MilestoneRule } from '../sim/measure.ts';
 import { ALPHA_RULES } from '../src/launch/data.ts';
 import type { Milestone } from '../src/launch/alpha.ts';
@@ -22,6 +23,13 @@ export interface BuildPolicy {
   readonly name: string;
   readonly paths: readonly string[];
   readonly skills: readonly string[];
+  readonly route: readonly string[];
+  readonly weights: GearWeights;
+  readonly focus: string | null;
+  readonly style: PlayStyle;
+  readonly keepGap: number;
+  readonly weapons: WeaponKind;
+  readonly hero: string | null;
 }
 
 export interface Policies {
@@ -58,10 +66,33 @@ function readSkill(name: string, value: unknown): SkillPolicy {
   };
 }
 
+const STYLES: readonly PlayStyle[] = ['stand', 'range', 'kite'];
+const WEAPONS: readonly WeaponKind[] = ['any', 'plain', 'varied'];
+
+function readWeights(value: unknown, where: string): GearWeights {
+  if (value === undefined) return STAND_WEIGHTS;
+  const source: Fields = fields(value, where);
+  return { dps: numeric(source, 'dps', where), toughness: numeric(source, 'toughness', where), mobility: numeric(source, 'mobility', where) };
+}
+
 function readBuild(name: string, value: unknown): BuildPolicy {
   const where: string = `builds.${name}`;
   const source: Fields = fields(value, where);
-  return { name, paths: textList(source, 'paths', where), skills: textList(source, 'skills', where) };
+  const style: PlayStyle = source['style'] === undefined ? 'stand' : choice(source, 'style', STYLES, where);
+  const keepGap: number = source['keepGap'] === undefined ? 0 : numeric(source, 'keepGap', where);
+  if (style !== 'stand' && keepGap <= 0) throw new ContentError(where, 'a build that keeps range needs a keepGap above zero');
+  return {
+    name,
+    paths: textList(source, 'paths', where),
+    skills: textList(source, 'skills', where),
+    route: source['route'] === undefined ? [] : textList(source, 'route', where),
+    weights: readWeights(source['weights'], `${where}.weights`),
+    focus: source['focus'] === undefined ? null : text(source, 'focus', where),
+    style,
+    keepGap,
+    weapons: source['weapons'] === undefined ? 'any' : choice(source, 'weapons', WEAPONS, where),
+    hero: source['hero'] === undefined ? null : text(source, 'hero', where),
+  };
 }
 
 function alphaMilestone(milestone: Milestone): MilestoneRule {
@@ -121,5 +152,11 @@ export function planFor(skill: SkillPolicy, build: BuildPolicy): BotPlan {
     readSeconds: skill.readSeconds,
     paths: build.paths,
     skills: build.skills,
+    route: build.route,
+    weights: build.weights,
+    focus: build.focus,
+    style: build.style,
+    keepGap: build.keepGap,
+    weapons: build.weapons,
   };
 }

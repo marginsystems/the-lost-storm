@@ -2,6 +2,7 @@ import type { Power } from './bot-plan.ts';
 import { powerOf } from './bot-plan.ts';
 import type { Fields } from './content/read.ts';
 import { isFields } from './content/read.ts';
+import type { PackRankDef } from './content/rank-types.ts';
 import type { Content, SkillTreeNodeDef } from './content/types.ts';
 import { slotOf } from './items.ts';
 import { momentOfEcho } from './world/moments.ts';
@@ -33,9 +34,10 @@ export type Measurement =
   | { readonly kind: 'drop'; readonly t: number; readonly base: string; readonly slot: string; readonly rarity: string; readonly level: number }
   | { readonly kind: 'hit'; readonly t: number; readonly taken: boolean; readonly amount: number; readonly foe: string; readonly skill: string; readonly zone: string; readonly fight: number | null }
   | { readonly kind: 'kill'; readonly t: number; readonly foe: string }
-  | { readonly kind: 'death'; readonly t: number; readonly zone: string; readonly foe: string; readonly skill: string }
+  | { readonly kind: 'death'; readonly t: number; readonly zone: string; readonly foe: string; readonly skill: string; readonly xpLost: number }
+  | { readonly kind: 'low'; readonly t: number; readonly seconds: number }
   | { readonly kind: 'flask'; readonly t: number; readonly flask: string }
-  | { readonly kind: 'fight'; readonly t: number; readonly id: number; readonly moment: string; readonly level: number; readonly foes: number }
+  | { readonly kind: 'fight'; readonly t: number; readonly id: number; readonly moment: string; readonly level: number; readonly foes: number; readonly rank: string }
   | { readonly kind: 'moment'; readonly t: number; readonly id: number; readonly moment: string; readonly outcome: MomentOutcome }
   | { readonly kind: 'skill'; readonly t: number; readonly skill: string }
   | { readonly kind: 'chart'; readonly t: number; readonly place: string; readonly path: string; readonly points: number }
@@ -56,7 +58,10 @@ export interface Meter {
   zone: string;
   level: number;
   power: Power | null;
+  lowSince: number | null;
 }
+
+export const LOW_LIFE: number = 1 / 3;
 
 export function createMeter(world: World, rules: readonly MilestoneRule[]): Meter {
   return {
@@ -71,6 +76,7 @@ export function createMeter(world: World, rules: readonly MilestoneRule[]): Mete
     zone: world.zone.id,
     level: world.player.level,
     power: null,
+    lowSince: null,
   };
 }
 
@@ -113,16 +119,27 @@ function dropMeasures(world: World, meter: Meter, event: Extract<WorldEvent, { r
   return [{ kind: 'drop', t, base: content.item.base, slot: slotOf(world.content, content.item) ?? 'none', rarity: content.item.rarity, level: content.item.level }];
 }
 
+export function topRank(world: World, ids: readonly number[]): string {
+  const ranks: readonly PackRankDef[] = world.content.packRanks.ranks;
+  let best: number = 0;
+  for (const monster of world.monsters) {
+    const rank: string | undefined = ids.includes(monster.id) ? monster.def.rank?.id : undefined;
+    const index: number = rank === undefined ? 0 : ranks.findIndex((entry: PackRankDef): boolean => entry.id === rank);
+    if (index > best) best = index;
+  }
+  return ranks[best]?.id ?? 'normal';
+}
+
 function eventMeasures(world: World, meter: Meter, event: WorldEvent, t: number): Measurement[] {
   if (event.type === 'monster_spawn') nameOf(world, meter, event.monsterId);
   if (event.type === 'damage') return hitMeasures(world, meter, event, t);
-  if (event.type === 'death' && event.team === 'player') return [{ kind: 'death', t, zone: world.zone.id, foe: world.death?.killer ?? 'unknown', skill: world.death?.skill ?? 'unknown' }];
+  if (event.type === 'death' && event.team === 'player') return [{ kind: 'death', t, zone: world.zone.id, foe: world.death?.killer ?? 'unknown', skill: world.death?.skill ?? 'unknown', xpLost: world.death?.xpLost ?? 0 }];
   if (event.type === 'xp') return [{ kind: 'xp', t, amount: event.amount }];
   if (event.type === 'pickup' && event.ground.content.kind === 'item') meter.owned.add(event.ground.content.item.uid);
   if (event.type === 'pickup' && event.ground.content.kind === 'gold') return [{ kind: 'gold', t, amount: event.ground.content.amount }];
   if (event.type === 'drop') return dropMeasures(world, meter, event, t);
   if (event.type === 'flask_used') return [{ kind: 'flask', t, flask: event.flask }];
-  if (event.type === 'moment_woke' && event.turned.length > 0) return [{ kind: 'fight', t, id: event.moment.id, moment: event.moment.def.id, level: event.moment.level, foes: event.turned.length }];
+  if (event.type === 'moment_woke' && event.turned.length > 0) return [{ kind: 'fight', t, id: event.moment.id, moment: event.moment.def.id, level: event.moment.level, foes: event.turned.length, rank: topRank(world, event.turned) }];
   if (event.type === 'moment_ended') return [{ kind: 'moment', t, id: event.moment.id, moment: event.moment.def.id, outcome: event.outcome }];
   return [];
 }
@@ -172,9 +189,23 @@ function changesState(events: readonly WorldEvent[]): boolean {
   return events.some((event: WorldEvent): boolean => event.type === 'character_changed' || event.type === 'level_up' || event.type === 'zone_changed' || event.type === 'skill_unlocked');
 }
 
+function lowMeasures(world: World, meter: Meter, t: number, close: boolean): Measurement[] {
+  const player = world.player;
+  const low: boolean = !close && player.alive && player.life < player.maxLife * LOW_LIFE;
+  if (low && meter.lowSince === null) meter.lowSince = world.time;
+  if (low || meter.lowSince === null) return [];
+  const seconds: number = round(world.time - meter.lowSince);
+  meter.lowSince = null;
+  return seconds > 0 ? [{ kind: 'low', t, seconds }] : [];
+}
+
+export function closeMeter(world: World, meter: Meter): Measurement[] {
+  return lowMeasures(world, meter, round(world.time - meter.origin), true);
+}
+
 export function readMeter(world: World, meter: Meter, events: readonly WorldEvent[], full: boolean = false): Measurement[] {
   const t: number = round(world.time - meter.origin);
-  const fromEvents: Measurement[] = events.flatMap((event: WorldEvent): Measurement[] => eventMeasures(world, meter, event, t));
+  const fromEvents: Measurement[] = [...events.flatMap((event: WorldEvent): Measurement[] => eventMeasures(world, meter, event, t)), ...lowMeasures(world, meter, t, false)];
   const fromState: Measurement[] = full || changesState(events) || meter.power === null || world.time === meter.origin ? stateMeasures(world, meter, t) : flagMeasures(world, meter, t);
   return [...fromState, ...fromEvents];
 }
@@ -264,11 +295,13 @@ export function readMeasurement(value: unknown): Measurement {
     case 'kill':
       return { kind, t, foe: str(value, 'foe') };
     case 'death':
-      return { kind, t, zone: str(value, 'zone'), foe: str(value, 'foe'), skill: str(value, 'skill') };
+      return { kind, t, zone: str(value, 'zone'), foe: str(value, 'foe'), skill: str(value, 'skill'), xpLost: typeof value['xpLost'] === 'number' ? value['xpLost'] : 0 };
+    case 'low':
+      return { kind, t, seconds: num(value, 'seconds') };
     case 'flask':
       return { kind, t, flask: str(value, 'flask') };
     case 'fight':
-      return { kind, t, id: num(value, 'id'), moment: str(value, 'moment'), level: num(value, 'level'), foes: num(value, 'foes') };
+      return { kind, t, id: num(value, 'id'), moment: str(value, 'moment'), level: num(value, 'level'), foes: num(value, 'foes'), rank: typeof value['rank'] === 'string' ? value['rank'] : 'normal' };
     case 'moment':
       return { kind, t, id: num(value, 'id'), moment: str(value, 'moment'), outcome: outcome(value) };
     case 'skill':

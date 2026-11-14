@@ -9,6 +9,7 @@ import { parseArgs, USAGE } from './simulate-args.ts';
 import type { DoneMessage, JobMessage } from './simulate-job.ts';
 import { readDoneMessage } from './simulate-job.ts';
 import { POLICIES } from './simulate-policies.ts';
+import { buildRows, buildTable } from './simulate-builds.ts';
 import { reportText } from './simulate-report.ts';
 import type { Job } from './simulate-run.ts';
 import { CONTENT, scenarioName } from './simulate-run.ts';
@@ -71,6 +72,7 @@ function finish(report: Report, runs: readonly RunSummary[], out: string | null,
   const path: string = out ?? join(OUT_DIR, `${slug(label)}-${stamp()}.json`);
   write(path, `${JSON.stringify({ report, runs }, null, 1)}\n`);
   process.stdout.write(reportText(report));
+  process.stdout.write(`\n${buildTable(buildRows(runs, CONTENT.packRanks.ranks.map((rank): string => rank.id)))}\n`);
   process.stdout.write(`\nJSON report: ${path}\n`);
 }
 

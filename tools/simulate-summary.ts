@@ -4,6 +4,7 @@ import type { MomentOutcome } from '../sim/world/types.ts';
 
 export interface Fight {
   readonly moment: string;
+  readonly rank: string;
   readonly level: number;
   readonly seconds: number;
   readonly taken: number;
@@ -18,6 +19,8 @@ export interface Death {
   readonly zone: string;
   readonly foe: string;
   readonly skill: string;
+  readonly level: number;
+  readonly xpLost: number;
 }
 
 export interface Sample {
@@ -57,6 +60,8 @@ export interface RunSummary {
   readonly flasks: number;
   readonly xp: number;
   readonly gold: number;
+  readonly kills: number;
+  readonly lowSeconds: number;
   readonly outcomes: Readonly<Record<string, number>>;
   readonly drops: readonly Dropped[];
   readonly power: readonly Sample[];
@@ -65,6 +70,7 @@ export interface RunSummary {
 
 interface OpenFight {
   readonly moment: string;
+  readonly rank: string;
   readonly level: number;
   readonly start: number;
   taken: number;
@@ -92,6 +98,9 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
   let flasks: number = 0;
   let xp: number = 0;
   let gold: number = 0;
+  let kills: number = 0;
+  let lowSeconds: number = 0;
+  let level: number = 1;
   const milestones: Record<string, number> = {};
   const levels: Record<string, number> = {};
   const deaths: Death[] = [];
@@ -121,6 +130,7 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
       case 'level':
         startLevel ??= entry.level;
         endLevel = entry.level;
+        level = entry.level;
         levels[String(entry.level)] ??= entry.t;
         break;
       case 'xp':
@@ -145,9 +155,13 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
         break;
       }
       case 'kill':
+        kills += 1;
+        break;
+      case 'low':
+        lowSeconds += entry.seconds;
         break;
       case 'death':
-        deaths.push({ t: entry.t, zone: entry.zone, foe: entry.foe, skill: entry.skill });
+        deaths.push({ t: entry.t, zone: entry.zone, foe: entry.foe, skill: entry.skill, level, xpLost: entry.xpLost });
         if (fight !== null) fight.died = true;
         break;
       case 'flask':
@@ -155,14 +169,14 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
         if (fight !== null) fight.flasks += 1;
         break;
       case 'fight':
-        open.set(entry.id, { moment: entry.moment, level: entry.level, start: entry.t, taken: 0, dealt: 0, flasks: 0, died: false });
+        open.set(entry.id, { moment: entry.moment, rank: entry.rank, level: entry.level, start: entry.t, taken: 0, dealt: 0, flasks: 0, died: false });
         break;
       case 'moment': {
         add(outcomes, entry.outcome, 1);
         const ended: OpenFight | undefined = open.get(entry.id);
         if (ended === undefined) break;
         open.delete(entry.id);
-        fights.push({ moment: ended.moment, level: ended.level, seconds: entry.t - ended.start, taken: ended.taken, dealt: ended.dealt, flasks: ended.flasks, died: ended.died, outcome: entry.outcome });
+        fights.push({ moment: ended.moment, rank: ended.rank, level: ended.level, seconds: entry.t - ended.start, taken: ended.taken, dealt: ended.dealt, flasks: ended.flasks, died: ended.died, outcome: entry.outcome });
         break;
       }
       case 'skill':
@@ -178,7 +192,7 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
         break;
     }
   }
-  return { scenario, policy, seed, seconds, reason, milestones, levels, startLevel: startLevel ?? endLevel, endLevel, deaths, takenByFoe, takenBySkill, dealtBySkill, fights, flasks, xp, gold, outcomes, drops, power, chart };
+  return { scenario, policy, seed, seconds, reason, milestones, levels, startLevel: startLevel ?? endLevel, endLevel, deaths, takenByFoe, takenBySkill, dealtBySkill, fights, flasks, xp, gold, kills, lowSeconds, outcomes, drops, power, chart };
 }
 
 export interface Spread {

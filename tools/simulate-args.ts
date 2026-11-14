@@ -31,6 +31,7 @@ export const USAGE: string = [
   '  --seed N              first seed; run i uses seed N+i (default 1)',
   '  --workers N           worker threads (default half the cores)',
   '  --out FILE            where to write the JSON report (default simulate-out/<scenario>-<time>.json)',
+  '  --danger N            multiply how fast monster damage grows per level by N (default 1), to see how a build copes if monsters hit harder',
   '  --record DIR          also write each run as a JSON lines measurement stream into DIR',
 ].join('\n');
 
@@ -48,6 +49,13 @@ function whole(value: string | null, fallback: number): number | null {
   if (value === MISSING) return null;
   const parsed: number = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function factor(value: string | null, fallback: number): number | null {
+  if (value === null) return fallback;
+  if (value === MISSING) return null;
+  const parsed: number = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function names(value: string | null, fallback: readonly string[], known: ReadonlyMap<string, unknown>): string[] | null {
@@ -97,7 +105,7 @@ function scenarioOf(words: readonly string[], args: readonly string[]): Scenario
   }
 }
 
-const OPTIONS: ReadonlySet<string> = new Set<string>(['runs', 'skill', 'build', 'seed', 'workers', 'out', 'record', 'minutes', 'repeats', 'zone']);
+const OPTIONS: ReadonlySet<string> = new Set<string>(['runs', 'skill', 'build', 'seed', 'workers', 'out', 'record', 'minutes', 'repeats', 'zone', 'danger']);
 
 export function parseArgs(args: readonly string[], policies: Policies, moments: ReadonlySet<string>, cores: number): Command {
   const words: string[] = positional(args);
@@ -116,9 +124,11 @@ export function parseArgs(args: readonly string[], policies: Policies, moments: 
   const workers: number | null = whole(option(args, 'workers'), Math.max(1, Math.floor(cores / 2)));
   const skills: string[] | null = names(option(args, 'skill'), DEFAULTS.skills, policies.skills);
   const builds: string[] | null = names(option(args, 'build'), DEFAULTS.builds, policies.builds);
+  const danger: number | null = factor(option(args, 'danger'), 1);
+  if (danger === null) return { kind: 'help', problem: '--danger must be a number above zero' };
   if (runs === null || seed === null || workers === null) return { kind: 'help', problem: '--runs, --seed and --workers must be whole numbers' };
   if (skills === null) return { kind: 'help', problem: `--skill must name ${[...policies.skills.keys()].join(', ')} or all` };
   if (builds === null) return { kind: 'help', problem: `--build must name ${[...policies.builds.keys()].join(', ')} or all` };
-  const jobs: Job[] = skills.flatMap((skill: string): Job[] => builds.flatMap((build: string): Job[] => Array.from({ length: runs }, (_unused: unknown, index: number): Job => ({ scenario, skill, build, seed: seed + index }))));
+  const jobs: Job[] = skills.flatMap((skill: string): Job[] => builds.flatMap((build: string): Job[] => Array.from({ length: runs }, (_unused: unknown, index: number): Job => ({ scenario, skill, build, seed: seed + index, danger }))));
   return { kind: 'simulate', scenario, jobs, workers, out, record: option(args, 'record') };
 }
