@@ -30,6 +30,18 @@
     visibility 0s linear 0s;
 }
 
+.hud:has(.hud-panel.open:not(.inventory-panel)) .hideout-chat.open,
+.hud.hud-covered-full .hideout-chat.open,
+.hud.fit-sheets:has(.hud-panel.open) .hideout-chat.open {
+  opacity: 0;
+  translate: -24px 0;
+  visibility: hidden;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    translate var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
 .hideout-chat {
   --whisper: #cfa8f2;
   --whisper-dim: rgba(207, 168, 242, 0.62);
