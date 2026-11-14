@@ -20,8 +20,14 @@ export function refreshPlayer(world: World): void {
   world.events.push({ type: 'character_changed' });
 }
 
-export function killXp(world: World, xp: number, level: number): number {
-  return Math.round(xp * (1 + world.content.world.scaling.xpPerLevel * (level - 1)) * gapScale(world.content.player.xp.gap, world.player.level, level));
+export function killXp(world: World, xp: number, level: number, share: number = gapScale(world.content.player.xp.gap, world.player.level, level)): number {
+  const gained: number = Math.round(xp * (1 + world.content.world.scaling.xpPerLevel * (level - 1)) * share);
+  return xp > 0 ? Math.max(1, gained) : gained;
+}
+
+export function bountyReduction(bounty: number, full: number, last: XpReduction | null): XpReduction | null {
+  if (last === null || full <= 0 || bounty >= full) return null;
+  return { side: last.side, share: bounty / full };
 }
 
 export function killReduction(world: World, level: number): XpReduction | null {

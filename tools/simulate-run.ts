@@ -74,7 +74,7 @@ export function fixedLevel(content: Content, level: number): Content {
 }
 
 function raiseTo(world: World, level: number): void {
-  while (world.player.level < level) grantXp(world, xpToNextLevel(world.content.player.xp, world.player.level) - world.player.xp);
+  while (world.player.level < Math.min(level, world.content.player.xp.maxLevel)) grantXp(world, xpToNextLevel(world.content.player.xp, world.player.level) - world.player.xp);
 }
 
 function startRecording(world: World, recorder: Recorder, policies: Policies): void {
