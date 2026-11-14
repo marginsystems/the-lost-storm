@@ -18,7 +18,6 @@ export function createMenuButton(parent: HTMLElement, panel: HudPanel, name: str
   const button: HTMLButtonElement = el('button', 'hud-menu-btn', parent);
   tagPart(button, panelPart(panel));
   button.type = 'button';
-  button.title = name;
   button.setAttribute('aria-label', name);
   track(button);
   label('menu-name', name, button);

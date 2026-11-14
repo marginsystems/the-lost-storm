@@ -34,7 +34,6 @@ function fill(parts: RowParts, row: BoardRow, you: string | null, animate: boole
   setText(parts.name, row.name, false);
   setText(parts.place, row.furthest, animate);
   setText(parts.level, String(row.level), animate);
-  parts.item.title = row.account === null ? `${row.name} · level ${row.level} · ${row.furthest}` : `${row.name} · level ${row.level} · ${row.furthest} · played by ${row.account}`;
   setText(parts.account, row.account ?? '', false);
   parts.item.toggleAttribute('data-account', row.account !== null);
   parts.item.tabIndex = row.account === null ? -1 : 0;

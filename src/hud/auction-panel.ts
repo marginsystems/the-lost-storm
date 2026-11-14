@@ -1,4 +1,4 @@
-import type { ItemSlot, NpcDef } from '../../sim/content/types.ts';
+import type { ItemSlot, NpcDef, RarityDef } from '../../sim/content/types.ts';
 import { ITEM_SLOTS } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
 import { findLedger, itemAt } from '../../sim/world/purse.ts';
@@ -6,10 +6,12 @@ import type { ItemSpot } from '../../sim/world/purse.ts';
 import type { ItemInstance, World } from '../../sim/world/types.ts';
 import type { AuctionFlow, AuctionState } from '../auction/auction-flow.ts';
 import type { AuctionTab, ShownItems } from '../auction/auction-model.ts';
-import { AUCTION_TABS, createShownItems, parseLevel, parsePrice, proceeds, saleLine, TAB_NAMES, termsLine, timeLeft } from '../auction/auction-model.ts';
+import { AUCTION_TABS, choiceFilter, createShownItems, parseLevel, parsePrice, proceeds, saleLine, SORTS, TAB_NAMES, termsLine, timeLeft } from '../auction/auction-model.ts';
 import type { AuctionRules, AuctionSort, Listing, Sale } from '../backend/auction-api.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, setText } from './dom.ts';
+import type { Dropdown, DropdownChoice } from './dropdown.ts';
+import { createDropdown } from './dropdown.ts';
 import { iconSvg } from './icons.ts';
 import type { ItemCell } from './item-cell.ts';
 import { createItemCell, showItem } from './item-cell.ts';
@@ -39,8 +41,6 @@ const AUCTION_PANEL = {
 
 const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = { weapon: 'Weapon', head: 'Head', chest: 'Chest', hands: 'Hands', legs: 'Legs', feet: 'Feet', charm: 'Charm' };
 
-const SORTS: readonly AuctionSort[] = ['price', 'newest'];
-
 interface Row {
   readonly element: HTMLElement;
   readonly cell: ItemCell;
@@ -69,16 +69,10 @@ function leave(row: Leaving): void {
   row.element.addEventListener('animationend', (): void => row.element.remove(), { once: true });
 }
 
-function option(select: HTMLSelectElement, value: string, text: string): void {
-  const node: HTMLOptionElement = el('option', '', select);
-  node.value = value;
-  node.textContent = text;
-}
-
-function picker(parent: HTMLElement, name: string): HTMLSelectElement {
-  const holder: HTMLLabelElement = el('label', 'auction-field', parent);
+function picker(parent: HTMLElement, layer: HTMLElement, host: HTMLElement, name: string, choices: readonly DropdownChoice[], onChange: (value: string) => void): Dropdown {
+  const holder: HTMLDivElement = el('div', 'auction-field', parent);
   label('auction-field-name', name, holder);
-  return el('select', 'auction-input', holder);
+  return createDropdown(holder, { layer, host, name, choices, value: choices[0]?.value ?? '', onChange });
 }
 
 function numberField(parent: HTMLElement, name: string, hint: string): HTMLInputElement {
@@ -142,17 +136,19 @@ export function createAuctionPanel(parent: HTMLElement, context: HudContext): Pa
 
   const browseView: HTMLDivElement = el('div', 'auction-view', views);
   const filters: HTMLDivElement = el('div', 'auction-filters', browseView);
-  const slot: HTMLSelectElement = picker(filters, 'Slot');
-  option(slot, '', AUCTION_PANEL.anyLabel);
-  for (const each of ITEM_SLOTS) option(slot, each, SLOT_NAMES[each]);
-  const rarity: HTMLSelectElement = picker(filters, 'Rarity');
-  option(rarity, '', AUCTION_PANEL.anyLabel);
-  for (const each of context.api.world.content.rarities) option(rarity, each.id, each.name);
+  const any: DropdownChoice = { value: '', label: AUCTION_PANEL.anyLabel };
+  picker(filters, parent, element, 'Slot', [any, ...ITEM_SLOTS.map((each: ItemSlot): DropdownChoice => ({ value: each, label: SLOT_NAMES[each] }))], (value: string): void => {
+    flow?.filter(choiceFilter('slot', value));
+  });
+  picker(filters, parent, element, 'Rarity', [any, ...context.api.world.content.rarities.map((each: RarityDef): DropdownChoice => ({ value: each.id, label: each.name }))], (value: string): void => {
+    flow?.filter(choiceFilter('rarity', value));
+  });
   const minLevel: HTMLInputElement = numberField(filters, 'Level', 'from');
   const maxLevel: HTMLInputElement = numberField(filters, '', 'to');
   const maxPrice: HTMLInputElement = numberField(filters, 'Price', 'up to');
-  const sort: HTMLSelectElement = picker(filters, 'Sort');
-  for (const each of SORTS) option(sort, each, AUCTION_PANEL.sortLabels[each]);
+  picker(filters, parent, element, 'Sort', SORTS.map((each: AuctionSort): DropdownChoice => ({ value: each, label: AUCTION_PANEL.sortLabels[each] })), (value: string): void => {
+    flow?.filter(choiceFilter('sort', value));
+  });
   const browseRows: HTMLDivElement = el('div', 'auction-rows', browseView);
   const browseEmpty: HTMLDivElement = label('auction-empty', '', browseView);
   const pager: HTMLDivElement = el('div', 'auction-pager', browseView);
@@ -196,12 +192,9 @@ export function createAuctionPanel(parent: HTMLElement, context: HudContext): Pa
 
   const bodies: Readonly<Record<AuctionTab, HTMLElement>> = { browse: browseView, sell: sellView, mine: mineView };
 
-  slot.addEventListener('change', (): void => flow?.filter({ slot: ITEM_SLOTS.find((each: ItemSlot): boolean => each === slot.value) ?? null }));
-  rarity.addEventListener('change', (): void => flow?.filter({ rarity: rarity.value === '' ? null : rarity.value }));
   minLevel.addEventListener('change', (): void => flow?.filter({ minLevel: parseLevel(minLevel.value) }));
   maxLevel.addEventListener('change', (): void => flow?.filter({ maxLevel: parseLevel(maxLevel.value) }));
   maxPrice.addEventListener('change', (): void => flow?.filter({ maxPrice: parsePrice(maxPrice.value, null) }));
-  sort.addEventListener('change', (): void => flow?.filter({ sort: SORTS.find((each: AuctionSort): boolean => each === sort.value) ?? 'price' }));
   prev.addEventListener('click', (): void => flow?.turn(-1));
   next.addEventListener('click', (): void => flow?.turn(1));
   price.addEventListener('input', (): void => flow?.setPrice(price.value));

@@ -200,3 +200,81 @@ void test('no player-facing text calls the top rarity anything but Legendary', (
   const names: readonly unknown[] = items.rarities.map((rarity: unknown): unknown => (typeof rarity === 'object' && rarity !== null && 'name' in rarity ? rarity.name : null));
   assert.equal(names.at(-1), 'Legendary');
 });
+
+const NATIVE_TAGS: string = 'select|option|optgroup|datalist|dialog';
+const NATIVE_INPUTS: string = 'date|datetime-local|month|week|time|color|file|number';
+const NATIVE_UI: readonly { readonly what: string; readonly pattern: RegExp }[] = [
+  { what: 'a native menu or dialog element', pattern: new RegExp(`<(${NATIVE_TAGS})\\b`) },
+  { what: 'a native menu or dialog element', pattern: new RegExp(`(createElement|\\bel)\\(\\s*['"\`](${NATIVE_TAGS})['"\`]`) },
+  { what: 'a native dialog or picker call', pattern: /\.(showModal|showPicker|requestPicker)\s*\(|\bshow(Open|Save|Directory)(File)?Picker\s*\(/ },
+  { what: 'a browser alert, confirm or prompt', pattern: /(^|[^.\w$])(window\.)?(alert|confirm|prompt)\s*\(/ },
+  { what: 'a native date, colour, file or number field', pattern: new RegExp(`<input\\b[^>]*\\btype\\s*=\\s*["']?(${NATIVE_INPUTS})\\b`) },
+  { what: 'a native date, colour, file or number field', pattern: new RegExp(`\\.type\\s*=\\s*['"\`](${NATIVE_INPUTS})['"\`]|setAttribute\\(\\s*['"]type['"]\\s*,\\s*['"](${NATIVE_INPUTS})['"]`) },
+  { what: 'a title tooltip', pattern: /\stitle=["'{`]|(?<!document)\.title\s*=(?!=)|setAttribute\(\s*['"]title['"]/ },
+  { what: 'an SVG title tooltip', pattern: /<title>|\bsvg\(\s*['"]title['"]/ },
+];
+const NATIVE_UI_ALLOWED: Readonly<Record<string, string>> = {};
+
+function nativeUiShipped(dir: string): string[] {
+  return readdirSync(dir).flatMap((name: string): string[] => {
+    const path: string = join(dir, name);
+    if (statSync(path).isDirectory()) return name === 'local' || name === 'models' || name === 'textures' ? [] : nativeUiShipped(path);
+    return (name.endsWith('.ts') && !name.endsWith('.test.ts')) || name.endsWith('.html') ? [path] : [];
+  });
+}
+
+function nativeUiIn(path: string, text: string): string[] {
+  const html: boolean = path.endsWith('.html');
+  const lines: readonly string[] = html ? text.replace(/<title>[^<]*<\/title>/g, '').split('\n') : text.split('\n');
+  return lines.flatMap((line: string, index: number): string[] =>
+    NATIVE_UI.filter((rule: { readonly what: string; readonly pattern: RegExp }): boolean => rule.pattern.test(line)).map((rule: { readonly what: string }): string => `${path}:${index + 1} has ${rule.what}`),
+  );
+}
+
+void test('the native-control guard catches every way to show the browser own UI', (): void => {
+  const caught: readonly string[] = [
+    '<select class="x"></select>',
+    "const box = el('select', 'x', parent);",
+    "document.createElement('datalist');",
+    '<dialog open>',
+    'dialog.showModal();',
+    'input.showPicker();',
+    'window.alert(message);',
+    'if (confirm(text)) go();',
+    'const name = prompt("name");',
+    '<input type="number" min="0">',
+    '<input class="a" type=date>',
+    "field.type = 'color';",
+    "field.setAttribute('type', 'file');",
+    '<a class="icon" title="Discord">',
+    'button.title = name;',
+    "node.setAttribute('title', name);",
+    '<svg><title>Shape</title></svg>',
+    "svg('title', '', shape, {});",
+  ];
+  const allowed: readonly string[] = [
+    'const flow = { confirm: id };',
+    'flow.confirm(id);',
+    'void flow.prompt();',
+    'promptText(touch, hint);',
+    "input.type = 'range';",
+    '<input type="email" name="email">',
+    'document.title = name;',
+    'const title: HTMLElement = el("div", "panel-title", parent);',
+    'if (a.title === b.title) return;',
+    'readonly title: string;',
+    'aria-label="Discord"',
+  ];
+  for (const text of caught) assert.ok(nativeUiIn('x.ts', text).length > 0, text);
+  for (const text of allowed) assert.deepEqual(nativeUiIn('x.ts', text), [], text);
+  assert.deepEqual(nativeUiIn('x.html', '<title>Page</title>'), []);
+});
+
+void test('the game shows no native control or pop-up from the browser or the system', (): void => {
+  const found: string[] = [];
+  for (const path of [...nativeUiShipped('src'), ...nativeUiShipped('play'), ...nativeUiShipped('public'), 'index.html']) {
+    if (NATIVE_UI_ALLOWED[path] !== undefined) continue;
+    found.push(...nativeUiIn(path, readFileSync(path, 'utf8')));
+  }
+  assert.deepEqual(found, [], 'draw it with the HUD components (src/hud/dropdown.ts for a choice list, the HUD tooltip for a hint)');
+});

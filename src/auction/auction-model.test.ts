@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Sale } from '../backend/auction-api.ts';
-import { collectedLine, createShownItems, parseLevel, parsePrice, pickLine, proceeds, refusalLine, saleLine, termsLine, timeLeft } from './auction-model.ts';
+import { choiceFilter, collectedLine, createShownItems, parseLevel, parsePrice, pickLine, proceeds, refusalLine, saleLine, termsLine, timeLeft } from './auction-model.ts';
 
 const RULES = { minPrice: 5, maxPrice: 1000, maxListings: 10, cut: 0.1, lifeHours: 48, sellLevel: 3 };
 
@@ -57,4 +57,15 @@ void test('a closed sale says how it ended and whether its gold or item still wa
   assert.equal(saleLine({ ...sold, collected: false }), 'Sold for 340 · 306 waiting');
   assert.equal(saleLine({ ...sold, outcome: 'expired', collected: false }), 'Expired · waiting');
   assert.equal(saleLine({ ...sold, outcome: 'cancelled' }), 'Cancelled');
+});
+
+void test('each choice from a filter dropdown becomes the filter it names', (): void => {
+  assert.deepEqual(choiceFilter('slot', 'chest'), { slot: 'chest' });
+  assert.deepEqual(choiceFilter('slot', ''), { slot: null });
+  assert.deepEqual(choiceFilter('slot', 'elbow'), { slot: null });
+  assert.deepEqual(choiceFilter('rarity', 'rare'), { rarity: 'rare' });
+  assert.deepEqual(choiceFilter('rarity', ''), { rarity: null });
+  assert.deepEqual(choiceFilter('sort', 'newest'), { sort: 'newest' });
+  assert.deepEqual(choiceFilter('sort', 'price'), { sort: 'price' });
+  assert.deepEqual(choiceFilter('sort', 'bogus'), { sort: 'price' });
 });

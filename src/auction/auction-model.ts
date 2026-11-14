@@ -1,7 +1,8 @@
+import { ITEM_SLOTS } from '../../sim/content/types.ts';
 import type { LedgerItem } from '../../sim/world/ledger.ts';
 import type { ListRefusal } from '../../sim/world/purse.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
-import type { AuctionFilters, AuctionRefusal, AuctionRules, Sale } from '../backend/auction-api.ts';
+import type { AuctionFilters, AuctionRefusal, AuctionRules, AuctionSort, Sale } from '../backend/auction-api.ts';
 
 export type AuctionTab = 'browse' | 'sell' | 'mine';
 
@@ -14,6 +15,16 @@ export type LineTone = 'note' | 'done' | 'refusal';
 export interface AuctionLine {
   readonly text: string;
   readonly tone: LineTone;
+}
+
+export type ChoiceField = 'slot' | 'rarity' | 'sort';
+
+export const SORTS: readonly AuctionSort[] = ['price', 'newest'];
+
+export function choiceFilter(field: ChoiceField, value: string): Partial<AuctionFilters> {
+  if (field === 'slot') return { slot: ITEM_SLOTS.find((each: string): boolean => each === value) ?? null };
+  if (field === 'rarity') return { rarity: value === '' ? null : value };
+  return { sort: SORTS.find((each: AuctionSort): boolean => each === value) ?? 'price' };
 }
 
 export const FIRST_PAGE: AuctionFilters = { slot: null, rarity: null, minLevel: null, maxLevel: null, maxPrice: null, sort: 'price', page: 1 };

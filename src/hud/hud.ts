@@ -80,6 +80,7 @@ import type { OverlayManager } from './overlays.ts';
 import { openWith, promptText, use } from './prompts.ts';
 import tradeCss from './trade.css?inline';
 import auctionCss from './auction.css?inline';
+import dropdownCss from './dropdown.css?inline';
 import { createTradeHud } from './trade-hud.ts';
 import type { TradeHud } from './trade-hud.ts';
 import volumeCss from './volume.css?inline';
@@ -107,7 +108,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${auctionCss}\n${contextCss}\n${pickerCss}\n${menuCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${auctionCss}\n${dropdownCss}\n${contextCss}\n${pickerCss}\n${menuCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {

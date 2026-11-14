@@ -108,6 +108,12 @@ Every user-visible change in the HUD animates with spring motion: panels opening
 
 No thick or bright borders, outlines or focus rings, no pill-shaped radii, and small corner radii. Panels are clean, dark and translucent.
 
+## No browser-native controls or pop-ups
+
+The game never shows the browser's or the operating system's own UI. No `<select>`, `<option>`, `<datalist>`, native `<dialog>` or `showModal`, `alert`, `confirm`, `prompt`, native date, colour or file pickers, number fields with spin buttons (`type="number"`; use a text input with `inputmode`), or `title` tooltips. Every dropdown, menu, dialog, tooltip and picker is drawn by the HUD's own components, styled and animated like the rest of the HUD: a choice list is `src/hud/dropdown.ts`, a hint on an item is the HUD tooltip. Where there is no HUD tooltip (the title and landing screens), an icon carries `aria-label` and nothing else.
+
+A new dropdown, menu, dialog, tooltip or picker is looked at in a real browser at device scale 1 and 2, and at the phone layout, before it ships: padding and alignment measured from the DOM with `getBoundingClientRect`, text and carets checked for blur, clipping and an off-centre glyph, and the open and close frames captured to show nothing swaps in one frame. `test/rules.test.ts` fails on any of the native controls above in shipped code.
+
 ## No sound during development
 
 The game has no audio yet. When it gets audio, never play it from an agent session: run browsers muted.
