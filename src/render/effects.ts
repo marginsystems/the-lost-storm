@@ -69,6 +69,9 @@ export const EFFECTS = {
   flameSize: 0.17,
   phaseRing: 9,
   phaseShake: 0.5,
+  defeatRing: 12,
+  defeatShake: 0.9,
+  defeatSparks: 90,
   castLift: 1.7,
   castReach: 0.6,
   markRise: 0.4,
@@ -496,6 +499,14 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             ring(event.pos.x, event.pos.z, 4, EMBER, 0.7);
             spray(event.pos.x, 0.3, event.pos.z, EMBER, 26, { speed: { min: 0.5, max: 2.6 }, lift: { min: 2, max: 7 }, life: { min: 0.5, max: 1.1 }, gravity: 2, jitter: 0.6 });
             break;
+          case 'boss_defeated': {
+            const boss: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.monsterId);
+            if (boss === undefined) break;
+            ring(boss.pos.x, boss.pos.z, EFFECTS.defeatRing, colorOf(boss.def.color), EFFECTS.waveTime);
+            spray(boss.pos.x, 1.4, boss.pos.z, colorOf(boss.def.color), EFFECTS.defeatSparks, { speed: { min: 2, max: 11 }, lift: { min: 2, max: 10 }, life: { min: 0.6, max: 1.6 }, gravity: 2.5, jitter: 0.9 });
+            camera.addTrauma(EFFECTS.defeatShake);
+            break;
+          }
           case 'boss_phase': {
             const boss: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.monsterId);
             if (boss === undefined) break;

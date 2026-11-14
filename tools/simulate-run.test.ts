@@ -60,11 +60,13 @@ void test('a farm that cannot reach the Hall says so instead of idling', (): voi
   assert.equal(farm(createBot(world), world.time + 60, true, (): boolean => false), false);
 });
 
-void test('an average player walks from waking to the end card through every milestone in one to six minutes', (): void => {
+void test('an average player walks from waking to the Warden through every opening milestone in one to six minutes, and the end card waits for the boss', (): void => {
+  const opening: readonly string[] = POLICIES.milestones.map((rule): string => rule.name).filter((name: string): boolean => name !== POLICIES.endCard);
   for (const run of slices) {
     assert.equal(run.reason, 'done', `seed ${run.seed ?? '?'}`);
-    for (const rule of POLICIES.milestones) assert.ok(run.milestones[rule.name] !== undefined, `seed ${run.seed ?? '?'} never reached ${rule.name}`);
-    const minutes: number = (run.milestones[POLICIES.endCard] ?? Infinity) / 60;
+    for (const name of opening) assert.ok(run.milestones[name] !== undefined, `seed ${run.seed ?? '?'} never reached ${name}`);
+    assert.equal(run.milestones[POLICIES.endCard], undefined, `seed ${run.seed ?? '?'} reached the end card before the boss`);
+    const minutes: number = Math.max(...opening.map((name: string): number => run.milestones[name] ?? Infinity)) / 60;
     assert.ok(minutes >= GUARD.sliceMinutes.min && minutes <= GUARD.sliceMinutes.max, `seed ${run.seed ?? '?'} took ${minutes.toFixed(1)} minutes`);
   }
 });
@@ -125,8 +127,14 @@ void test('danger scales how fast monster damage grows per level, toughness how 
   assert.equal(lifeOnly.world.scaling.damagePerLevel, CONTENT.world.scaling.damagePerLevel);
 });
 
-function bossFights(skill: string, build: string, seed: number): BossAttempt[] {
-  return bossAttempts(runJob({ scenario: { kind: 'boss', levels: [GUARD.boss.level], repeats: GUARD.boss.repeats, minutes: GUARD.boss.minutes }, skill, build, seed, danger: 1, toughness: 1 }, POLICIES));
+interface BossRun {
+  readonly attempts: readonly BossAttempt[];
+  readonly summary: RunSummary;
+}
+
+function bossFights(skill: string, build: string, seed: number): BossRun {
+  const stream = runJob({ scenario: { kind: 'boss', levels: [GUARD.boss.level], repeats: GUARD.boss.repeats, minutes: GUARD.boss.minutes }, skill, build, seed, danger: 1, toughness: 1 }, POLICIES);
+  return { attempts: bossAttempts(stream), summary: summarize(stream) };
 }
 
 void test('the boss lair is found from the content, and its boss sits behind a level the hero has to reach', (): void => {
@@ -136,10 +144,12 @@ void test('the boss lair is found from the content, and its boss sits behind a l
   assert.ok(gates.length > 0 && gates.every((exit: ZoneExit): boolean => exit.requires.some((entry: Condition): boolean => entry.type === 'level' && entry.atLeast === GUARD.boss.level)));
 });
 
-void test('at the gate\'s level both heroes win the boss fight with careful play, it lasts a minute or more, and poor play loses it', (): void => {
+void test('at the gate\'s level both heroes win the boss fight with careful play, it lasts a minute or more and reaches the end card, and poor play loses it', (): void => {
   for (const build of GUARD.boss.builds) {
-    const careful: BossAttempt[] = bossFights('careful', build, 1);
-    const poor: BossAttempt[] = bossFights('poor', build, 1);
+    const won: BossRun = bossFights('careful', build, 1);
+    const careful: readonly BossAttempt[] = won.attempts;
+    const poor: readonly BossAttempt[] = bossFights('poor', build, 1).attempts;
+    assert.ok(won.summary.milestones[POLICIES.endCard] !== undefined, `${build} careful never reached the end card`);
     assert.equal(careful.length, GUARD.boss.repeats, build);
     assert.ok(careful.every((attempt: BossAttempt): boolean => attempt.outcome === 'won' && attempt.seconds >= GUARD.boss.leastSeconds), `${build} careful: ${JSON.stringify(careful)}`);
     assert.ok(poor.filter((attempt: BossAttempt): boolean => attempt.outcome === 'won').length < poor.length / 2, `${build} poor: ${JSON.stringify(poor)}`);

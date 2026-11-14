@@ -485,6 +485,8 @@ void test('a boss block parses with its phases, poise, drop and barks, and a pac
   assert.deepEqual(must(boss.phases[1], 'phase').barks, []);
   assert.deepEqual(boss.poise, { knockback: 0.2 });
   assert.deepEqual(boss.drop, { items: 1, rarity: 'rare', goldMin: 30, goldMax: 50 });
+  assert.equal(boss.firstKill, null);
+  assert.deepEqual(must(must(content.monsters.get('timekeeper_gatekeeper'), 'gatekeeper').boss, 'gatekeeper block').firstKill, { flag: 'keeper_defeated', xpShare: 0.5, goldMin: 200, goldMax: 260 });
   assert.deepEqual(boss.barks, { aggro: [], death: [] });
   assert.equal(must(content.monsters.get('mended'), 'thrall').boss, null);
   const during = [{ type: 'quest', quest: 'out_of_the_mist', is: 'done' }];
@@ -509,6 +511,9 @@ void test('a malformed boss block is rejected', (): void => {
   rejects((block) => ({ ...block, drop: { items: 1, rarity: 'rare', goldMin: -4, goldMax: 2 } }), 'drop.goldMin');
   rejects((block) => ({ ...block, drop: { items: 1, rarity: 'rare', goldMin: 50, goldMax: 30 } }), 'drop.goldMax');
   rejects((block) => ({ ...block, barks: { aggro: [] } }), 'barks.death');
+  rejects((block) => ({ ...block, firstKill: { flag: 'won', xpShare: 1.5, goldMin: 0, goldMax: 0 } }), 'firstKill.xpShare');
+  rejects((block) => ({ ...block, firstKill: { flag: 'won', xpShare: 0.5, goldMin: 9, goldMax: 3 } }), 'firstKill.goldMax');
+  rejects((block) => ({ ...block, firstKill: { xpShare: 0.5, goldMin: 0, goldMax: 0 } }), 'firstKill.flag');
   assert.equal(must(parseContent(bossy((block) => ({ ...block, drop: { items: 0, rarity: 'rare', goldMin: 0, goldMax: 0 } }))).monsters.get('unfinished_colossus'), 'unfinished_colossus').boss?.drop.items, 0);
 });
 

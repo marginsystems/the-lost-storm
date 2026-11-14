@@ -341,7 +341,7 @@ void test('an act that ends on a quest being done reports its end when the last 
   assert.equal(ofType(events, 'act_ended').length, 1);
 });
 
-void test('reaching the fire marks the camp, and the slice ends only once a moment is cleared and the Warden has given the lesson', (): void => {
+void test('reaching the fire marks the camp, and the Warden gives the lesson without ending the slice, which now ends at the gate', (): void => {
   const content: Content = loadContent();
   const outOfMist: QuestDef = must(content.quests.get('out_of_the_mist'), 'quest');
   const firstTaker: QuestDef = must(content.quests.get('the_first_taker'), 'quest');
@@ -357,7 +357,8 @@ void test('reaching the fire marks the camp, and the slice ends only once a mome
   world.player.pos = { x: 20, z: 21 };
   converse(world, 'warden_guide');
   assert.equal(questState(world, 'wardens_lesson'), 'done');
-  assert.equal(world.flags['alpha_slice_complete'], 'reached');
+  assert.equal(world.flags['fire_lesson'], 'given');
+  assert.equal(world.flags['alpha_slice_complete'], undefined);
 });
 
 const HALL_ARRIVAL = { x: 14, z: 30 } as const;
@@ -503,7 +504,7 @@ void test('a save that started shelter before the first clear loads with shelter
   assert.equal(questState(reached, 'the_first_taker'), 'active');
 });
 
-void test('the Gate quest opens after the Warden\'s Lesson, names its level while the gate is shut, then leads to the gate and ends on the boss', (): void => {
+void test('the Gate quest opens after the Warden\'s Lesson, names its level while the gate is shut, then leads to the gate, and the boss kill ends it and the slice', (): void => {
   const content: Content = loadContent();
   const gateQuest: QuestDef = must([...content.quests.values()].find((quest: QuestDef): boolean => quest.objectives.some((objective): boolean => objective.type === 'defeat' && content.monsters.get(objective.monster)?.boss !== null)), 'a boss quest');
   const world: World = worldIn(content, 'hall_of_time', 9);
@@ -522,6 +523,7 @@ void test('the Gate quest opens after the Warden\'s Lesson, names its level whil
   const gate: ZoneExit = must(world.zone.exits.find((exit: ZoneExit): boolean => exit.to === 'keepers_gate'), 'gate');
   assert.deepEqual(target.pos, { x: gate.x, z: gate.z });
   enterZone(world, zoneOf(content, 'keepers_gate'), { type: 'exit', exit: 'hall' });
+  assert.equal(world.flags['alpha_slice_complete'], undefined);
   const boss: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.def.boss !== null), 'boss');
   boss.spawnTime = 0;
   boss.life = 1;
@@ -532,4 +534,5 @@ void test('the Gate quest opens after the Warden\'s Lesson, names its level whil
   assert.equal(boss.alive, false);
   assert.equal(questState(world, gateQuest.id), 'done');
   assert.ok(ofType(events, 'quest_completed').some((event): boolean => event.quest === gateQuest.id));
+  assert.equal(world.flags['alpha_slice_complete'], 'reached');
 });

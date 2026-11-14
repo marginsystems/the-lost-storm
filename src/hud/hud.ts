@@ -1,5 +1,5 @@
 import type { FlaskResource } from '../../sim/content/flasks.ts';
-import type { ActDef, ItemSlot } from '../../sim/content/types.ts';
+import type { ActDef, ItemSlot, MonsterDef } from '../../sim/content/types.ts';
 import { slotOf } from '../../sim/items.ts';
 import type { Command, ItemInstance, WorldEvent } from '../../sim/world/types.ts';
 import { rowPress } from './row-press.ts';
@@ -375,6 +375,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'exit_locked':
             notices.say(event.hint);
             break;
+          case 'boss_defeated': {
+            const def: MonsterDef | undefined = api.world.content.monsters.get(event.monster);
+            if (def !== undefined) banners.show(`${def.name} defeated`, event.first ? 'First victory' : (def.boss?.title ?? null), 'act');
+            break;
+          }
           case 'bark':
             barks.say(event.speaker, event.line);
             break;
