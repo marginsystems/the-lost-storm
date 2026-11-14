@@ -1,6 +1,6 @@
 import type { Clock, Timers } from './backend.ts';
-import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_ZONE, liveUrl, moveFrame, readServerFrame, sayable, sayFrame } from './live-protocol.ts';
-import type { ChatLine, ChatRefusal, LiveMove, LivePlayer, Place, ServerFrame, Worn } from './live-protocol.ts';
+import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_ZONE, liveUrl, moveFrame, mutesFrame, readServerFrame, sayable, sayFrame, whisperFrame } from './live-protocol.ts';
+import type { ChatLine, ChatRefusal, LiveMove, LivePlayer, Place, ServerFrame, WhisperDirection, WhisperRefusal, Worn } from './live-protocol.ts';
 
 export const LIVE = {
   moveEveryMs: 100,
@@ -25,14 +25,18 @@ export interface LiveSocket {
 export type OpenSocket = (url: string, handlers: SocketHandlers) => LiveSocket;
 
 export type LiveEvent =
+  | { readonly type: 'welcome'; readonly you: string; readonly chat: readonly ChatLine[] }
   | { readonly type: 'present'; readonly you: string; readonly players: readonly LivePlayer[]; readonly chat: readonly ChatLine[] | null }
   | { readonly type: 'said'; readonly line: ChatLine }
   | { readonly type: 'refused'; readonly reason: ChatRefusal }
+  | { readonly type: 'whisper'; readonly dir: WhisperDirection; readonly with: string; readonly line: ChatLine }
+  | { readonly type: 'unsent'; readonly reason: WhisperRefusal; readonly to: string }
   | { readonly type: 'joined'; readonly player: LivePlayer }
   | { readonly type: 'left'; readonly id: string }
   | { readonly type: 'look'; readonly id: string; readonly name: string | null; readonly hero: string | null; readonly worn: Worn }
   | { readonly type: 'moves'; readonly moves: readonly LiveMove[]; readonly at: number }
   | { readonly type: 'friends' }
+  | { readonly type: 'away' }
   | { readonly type: 'gone' };
 
 export type LiveListener = (event: LiveEvent) => void;
@@ -47,6 +51,8 @@ export interface Stand {
 export interface Live {
   update(stand: Stand): void;
   say(text: string): boolean;
+  whisper(to: string, text: string): boolean;
+  mute(names: readonly string[]): void;
   subscribe(listener: LiveListener): () => void;
 }
 
@@ -92,6 +98,8 @@ export function createLive(options: LiveOptions): Live {
   let sent: Place | null = null;
   let sentAt: number = Number.NEGATIVE_INFINITY;
   let here: Place = { x: 0, z: 0, facing: 0 };
+  let roaming: boolean | null = null;
+  let muted: readonly string[] = [];
 
   const emit = (event: LiveEvent): void => {
     if (event.type === 'gone') {
@@ -140,6 +148,10 @@ export function createLive(options: LiveOptions): Live {
       case 'welcome':
         welcomed = true;
         failures = 0;
+        roaming = frame.roaming !== null;
+        if (frame.roaming === null) return;
+        send(mutesFrame(muted));
+        emit({ type: 'welcome', you: frame.roaming.you, chat: frame.roaming.chat });
         return;
       case 'present':
         refusals = 0;
@@ -148,6 +160,12 @@ export function createLive(options: LiveOptions): Live {
         return;
       case 'said':
         emit({ type: 'said', line: frame.line });
+        return;
+      case 'whisper':
+        emit({ type: 'whisper', dir: frame.dir, with: frame.with, line: frame.line });
+        return;
+      case 'unsent':
+        emit({ type: 'unsent', reason: frame.reason, to: frame.to });
         return;
       case 'friends':
         emit({ type: 'friends' });
@@ -167,7 +185,8 @@ export function createLive(options: LiveOptions): Live {
       case 'full':
       case 'replaced':
         standDown = true;
-        drop();
+        if (roaming === true) stepOut();
+        else drop();
         return;
       case 'refused': {
         const chat: ChatRefusal | null = chatRefusal(frame.reason);
@@ -216,6 +235,14 @@ export function createLive(options: LiveOptions): Live {
     }
   };
 
+  const stepOut = (): void => {
+    if (!entered && !present) return;
+    entered = false;
+    present = false;
+    sent = null;
+    emit({ type: 'away' });
+  };
+
   const leave = (): void => {
     if (entered) send(leaveFrame());
     drop();
@@ -227,13 +254,18 @@ export function createLive(options: LiveOptions): Live {
     standDown = false;
   };
 
-  const stay = (): void => {
-    if (standDown) return;
+  const stay = (inside: boolean): void => {
+    if (standDown && !(roaming === true && !inside)) return;
     if (socket === null) {
       if (retry === null) connect();
       return;
     }
     if (!welcomed) return;
+    if (!inside) {
+      if (entered) send(leaveFrame());
+      stepOut();
+      return;
+    }
     const now: number = clock();
     if (!entered) {
       if (now < enterAfter) return;
@@ -252,14 +284,26 @@ export function createLive(options: LiveOptions): Live {
   return {
     update(stand: Stand): void {
       here = { x: stand.x, z: stand.z, facing: stand.facing };
-      if (stand.zone === LIVE_ZONE) stay();
+      const inside: boolean = stand.zone === LIVE_ZONE;
+      if (!inside && standDown && roaming === true) standDown = false;
+      if (inside || (stand.zone !== null && roaming !== false)) stay(inside);
       else if (socket !== null || retry !== null || standDown) leave();
     },
     say(text: string): boolean {
       const line: string | null = sayable(text);
-      if (line === null || !present) return false;
+      if (line === null || !(present || (welcomed && roaming === true))) return false;
       send(sayFrame(line));
       return true;
+    },
+    whisper(to: string, text: string): boolean {
+      const line: string | null = sayable(text);
+      if (line === null || to === '' || !welcomed || roaming !== true) return false;
+      send(whisperFrame(to, line));
+      return true;
+    },
+    mute(names: readonly string[]): void {
+      muted = names;
+      if (welcomed && roaming === true) send(mutesFrame(muted));
     },
     subscribe(listener: LiveListener): () => void {
       listeners.add(listener);

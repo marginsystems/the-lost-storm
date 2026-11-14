@@ -7,6 +7,7 @@ const MUTE_LIMITS: { readonly names: number; readonly nameChars: number } = { na
 export interface Mutes {
   has(name: string): boolean;
   toggle(name: string): boolean;
+  list(): readonly string[];
 }
 
 function keyOf(name: string): string {
@@ -37,5 +38,6 @@ export function createMutes(store: KeyValueStore): Mutes {
       store.write(MUTE_KEY, JSON.stringify([...muted].slice(-MUTE_LIMITS.names)));
       return now;
     },
+    list: (): readonly string[] => [...muted],
   };
 }

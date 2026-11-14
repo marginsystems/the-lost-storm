@@ -236,9 +236,13 @@ export function createOthers(options: OthersOptions): Others {
           for (const step of event.moves) move(step, event.at);
           return;
         case 'gone':
+        case 'away':
           for (const other of others.values()) depart(other);
           return;
+        case 'welcome':
         case 'said':
+        case 'whisper':
+        case 'unsent':
         case 'refused':
         case 'friends':
           return;

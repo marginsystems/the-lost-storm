@@ -29,3 +29,12 @@ void test('a store that refuses writes still mutes for this visit', (): void => 
   mutes.toggle('Ash');
   assert.equal(mutes.has('ash'), true);
 });
+
+void test('the list of muted names is what the server is told, oldest first', (): void => {
+  const mutes = createMutes(createMemoryStore());
+  mutes.toggle('Wren');
+  mutes.toggle('Bo Reed');
+  assert.deepEqual(mutes.list(), ['wren', 'bo reed']);
+  mutes.toggle('wren');
+  assert.deepEqual(mutes.list(), ['bo reed']);
+});

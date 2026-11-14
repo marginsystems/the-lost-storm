@@ -1,23 +1,23 @@
+.chat-slot {
+  flex: none;
+}
+
 .friends {
-  display: grid;
-  grid-template-rows: 0fr;
   opacity: 0;
+  translate: 6px 0;
   pointer-events: none;
   transition:
-    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
-    opacity var(--spring-smooth-ms) var(--spring-smooth);
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .friends.shown {
-  grid-template-rows: 1fr;
   opacity: 1;
+  translate: 0 0;
 }
 
 .friends-inner {
-  min-height: 0;
-  overflow: hidden;
   border-radius: 4px;
-  background: rgba(10, 14, 20, 0.42);
 }
 
 .friends.shown .friends-inner {
@@ -28,13 +28,15 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  width: 100%;
+  border-radius: 4px;
+  background: rgba(10, 14, 20, 0.42);
   font: inherit;
   color: var(--text);
   text-align: left;
   background: none;
   border: 0;
-  padding: 6px 9px;
+  padding: 3px 9px;
+  font-size: 12.5px;
   cursor: pointer;
   transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
 }
@@ -77,13 +79,26 @@
 }
 
 .friends-body {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: min(300px, calc(100vw - 32px));
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows var(--spring-smooth-ms) var(--spring-smooth);
+  opacity: 0;
+  border-radius: 4px;
+  background: rgba(12, 16, 24, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  transition:
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .friends.expanded .friends-body {
   grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .friends-body-inner {
@@ -209,4 +224,16 @@
   min-height: 0;
   overflow: hidden;
   padding: 0 9px 6px;
+}
+
+.friends-row.friend .friends-name {
+  flex: 1;
+}
+
+.friends-body .friends-list {
+  padding-top: 4px;
+}
+
+.friends-body .friends-empty-text {
+  padding-top: 6px;
 }

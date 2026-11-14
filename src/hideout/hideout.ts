@@ -58,7 +58,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     frame(dt: number, playing: boolean, world: World, presenting: boolean): void {
       current = world;
       server.live.update({ zone: playing ? world.zone.id : null, x: world.player.pos.x, z: world.player.pos.z, facing: world.player.facing });
-      chat.frame(playing && world.zone.id === LIVE_ZONE);
+      chat.frame(playing, world.zone.id === LIVE_ZONE);
       if (!presenting) return;
       if (drawn !== world.zone) others.clear();
       drawn = world.zone;

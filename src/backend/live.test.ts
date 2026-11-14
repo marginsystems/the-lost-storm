@@ -84,11 +84,23 @@ function welcomed(h: Harness, stand: Stand = HIDEOUT): FakeSocket {
   return socket;
 }
 
-void test('outside the Hideout or out of play no socket is opened', (): void => {
+void test('out of play no socket is opened', (): void => {
   const h: Harness = harness();
-  h.live.update(ROAD);
   h.live.update({ ...HIDEOUT, zone: null });
   assert.equal(h.sockets.length, 0);
+});
+
+void test('outside the Hideout a socket opens to learn the server, and an older server without chat everywhere is closed and not tried again there', (): void => {
+  const h: Harness = harness();
+  const socket: FakeSocket = welcomed(h, ROAD);
+  assert.equal(socket.closed, true);
+  assert.deepEqual(h.events, []);
+  h.live.update(ROAD);
+  h.live.update(ROAD);
+  assert.equal(h.sockets.length, 1);
+  assert.equal(h.live.say('hello'), false);
+  h.live.update(HIDEOUT);
+  assert.equal(h.sockets.length, 2);
 });
 
 void test('the token goes only in the first frame and enter follows the welcome', (): void => {
@@ -100,7 +112,7 @@ void test('the token goes only in the first frame and enter follows the welcome'
   h.live.update(HIDEOUT);
   assert.deepEqual(socket.sent, []);
   socket.handlers.open();
-  assert.deepEqual(socket.sent, [{ type: 'hello', token: 'secret-token' }]);
+  assert.deepEqual(socket.sent, [{ type: 'hello', token: 'secret-token', chat: 1 }]);
   h.live.update(HIDEOUT);
   assert.equal(socket.sent.length, 1);
   say(socket, { type: 'welcome' });
@@ -197,7 +209,7 @@ void test('with no token yet it waits instead of connecting', async (): Promise<
   await h.timers.advance(LIVE.tokenWaitMs);
   h.live.update(HIDEOUT);
   last(h).handlers.open();
-  assert.deepEqual(last(h).sent, [{ type: 'hello', token: 'later' }]);
+  assert.deepEqual(last(h).sent, [{ type: 'hello', token: 'later', chat: 1 }]);
 });
 
 void test('a full Hideout or a second tab stands down until the player comes back', (): void => {
@@ -291,4 +303,83 @@ void test('a new look passes on the name it carries', (): void => {
   const socket: FakeSocket = welcomed(h);
   say(socket, { type: 'look', id: 'h1', name: 'Rook', hero: 'man', worn: {} });
   assert.deepEqual(h.events[h.events.length - 1], { type: 'look', id: 'h1', name: 'Rook', hero: 'man', worn: {} });
+});
+
+const WELCOME: Readonly<Record<string, unknown>> = { type: 'welcome', you: 'c1', chat: [{ id: 4, from: null, name: 'Ash', text: 'hi', at: '2026-11-14T10:00:00.000Z', own: false }] };
+
+function roaming(h: Harness, stand: Stand = HIDEOUT): FakeSocket {
+  h.live.update(stand);
+  const socket: FakeSocket = last(h);
+  socket.handlers.open();
+  say(socket, WELCOME);
+  h.live.update(stand);
+  return socket;
+}
+
+void test('a server with chat everywhere welcomes with the General lines and gets the mute list at once', (): void => {
+  const h: Harness = harness();
+  h.live.mute(['ash walker']);
+  const socket: FakeSocket = roaming(h, ROAD);
+  assert.deepEqual(h.events, [{ type: 'welcome', you: 'c1', chat: [{ id: 4, from: null, name: 'Ash', text: 'hi', at: '2026-11-14T10:00:00.000Z', own: false }] }]);
+  assert.deepEqual(socket.sent[1], { type: 'mutes', names: ['ash walker'] });
+  assert.equal(socket.closed, false);
+  assert.equal(h.live.say('  from the road  '), true);
+  assert.deepEqual(socket.sent.at(-1), { type: 'say', text: 'from the road' });
+  assert.ok(!socket.sent.some((frame: unknown): boolean => typeof frame === 'object' && frame !== null && 'type' in frame && frame.type === 'enter'));
+});
+
+void test('with chat everywhere, leaving the Hideout says leave and lets the others go but keeps the connection', (): void => {
+  const h: Harness = harness();
+  const socket: FakeSocket = roaming(h);
+  assert.deepEqual(socket.sent.at(-1), { type: 'enter', zone: 'hideout', x: 20, z: 18, facing: 0 });
+  say(socket, { type: 'present', zone: 'hideout', you: 'h9', players: [PLAYER], chat: [] });
+  h.live.update(ROAD);
+  assert.deepEqual(socket.sent.at(-1), { type: 'leave' });
+  assert.equal(socket.closed, false);
+  assert.equal(h.events.at(-1)?.type, 'away');
+  h.live.update(ROAD);
+  assert.equal(h.sockets.length, 1);
+  assert.equal(h.live.say('still talking'), true);
+  h.live.update(HIDEOUT);
+  assert.deepEqual(socket.sent.at(-1), { type: 'enter', zone: 'hideout', x: 20, z: 18, facing: 0 });
+  h.live.update({ ...ROAD, zone: null });
+  assert.equal(socket.closed, true);
+});
+
+void test('with chat everywhere a full Hideout or a second tab steps out of the Hideout but keeps the chat', (): void => {
+  for (const type of ['full', 'replaced']) {
+    const h: Harness = harness();
+    const socket: FakeSocket = roaming(h);
+    say(socket, { type: 'present', zone: 'hideout', you: 'h9', players: [PLAYER], chat: [] });
+    say(socket, { type });
+    assert.equal(socket.closed, false);
+    assert.equal(h.events.at(-1)?.type, 'away');
+    const sent: number = socket.sent.length;
+    h.live.update(HIDEOUT);
+    assert.equal(socket.sent.length, sent);
+    assert.equal(h.live.say('still here'), true);
+    h.live.update(ROAD);
+    h.live.update(HIDEOUT);
+    assert.deepEqual(socket.sent.at(-1), { type: 'enter', zone: 'hideout', x: 20, z: 18, facing: 0 });
+  }
+});
+
+void test('whispers and mutes go out only to a server with chat everywhere, and its answers reach the chat', (): void => {
+  const old: Harness = harness();
+  welcomed(old);
+  assert.equal(old.live.whisper('Bo', 'hi'), false);
+  const h: Harness = harness();
+  assert.equal(h.live.whisper('Bo', 'hi'), false);
+  const socket: FakeSocket = roaming(h, ROAD);
+  assert.equal(h.live.whisper('Bo Reed', '   '), false);
+  assert.equal(h.live.whisper('', 'hi'), false);
+  assert.equal(h.live.whisper('Bo Reed', '  hi there '), true);
+  assert.deepEqual(socket.sent.at(-1), { type: 'whisper', to: 'Bo Reed', text: 'hi there' });
+  h.live.mute(['cold fen']);
+  assert.deepEqual(socket.sent.at(-1), { type: 'mutes', names: ['cold fen'] });
+  const line: Readonly<Record<string, unknown>> = { id: 9, from: 'c2', name: 'Bo Reed', text: 'yo', at: '2026-11-14T10:00:00.000Z', own: false };
+  say(socket, { type: 'whisper', dir: 'from', with: 'Bo Reed', line });
+  assert.deepEqual(h.events.at(-1), { type: 'whisper', dir: 'from', with: 'Bo Reed', line });
+  say(socket, { type: 'unsent', reason: 'offline', to: 'Cy' });
+  assert.deepEqual(h.events.at(-1), { type: 'unsent', reason: 'offline', to: 'Cy' });
 });

@@ -30,6 +30,114 @@
     visibility 0s linear 0s;
 }
 
+.hideout-chat {
+  --whisper: #cfa8f2;
+  --whisper-dim: rgba(207, 168, 242, 0.62);
+}
+
+.chat-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.chat-channels {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-channel {
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  padding: 2px 6px;
+  text-shadow: var(--legible-shadow);
+  white-space: nowrap;
+  transition:
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chat-general {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.chat-general:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.chat-general.active {
+  color: var(--text);
+  cursor: default;
+}
+
+.chat-channel-slot {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-columns var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.chat-channel-slot.shown {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+
+.chat-whisper-tab {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--whisper);
+}
+
+.chat-readers {
+  position: relative;
+  min-height: 1.4em;
+  padding: 0 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-shadow: var(--legible-shadow);
+  white-space: nowrap;
+}
+
+.swap {
+  display: inline-block;
+  animation: chat-swap-in var(--spring-snappy-ms) var(--spring-snappy) backwards;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    translate var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.swap.leaving {
+  position: absolute;
+  left: inherit;
+  opacity: 0;
+  translate: 0 -5px;
+}
+
+.chat-readers .swap.leaving {
+  left: 6px;
+}
+
+@keyframes chat-swap-in {
+  from {
+    opacity: 0;
+    translate: 0 5px;
+  }
+}
+
 .chat-lines {
   list-style: none;
   margin: 0;
@@ -99,11 +207,68 @@
   font-style: italic;
 }
 
+.chat-note.hint .chat-text {
+  color: #b9c9d8;
+  font-style: normal;
+}
+
+.chat-whisper .chat-dir {
+  color: var(--whisper-dim);
+  padding-right: 4px;
+}
+
+.chat-whisper .chat-name {
+  color: var(--whisper);
+}
+
+.chat-whisper .chat-name:hover {
+  color: #ead6fb;
+}
+
+.chat-whisper .chat-text {
+  color: #e6d9f2;
+}
+
+.chat-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+  border-radius: 4px;
+  background: rgba(10, 14, 20, 0.42);
+  transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.hideout-chat.typing .chat-input {
+  background: rgba(10, 14, 20, 0.72);
+}
+
+.chat-to {
+  position: relative;
+  flex: none;
+  padding: 0 0 0 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-dim);
+  white-space: nowrap;
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chat-to .swap.leaving {
+  left: 9px;
+}
+
+.hideout-chat.whispering .chat-to {
+  color: var(--whisper);
+}
+
 .chat-field {
   pointer-events: auto;
+  flex: 1;
+  min-width: 0;
   font: inherit;
   color: var(--text);
-  background: rgba(10, 14, 20, 0.42);
+  background: none;
   border: 0;
   border-radius: 4px;
   padding: 6px 9px;
@@ -111,11 +276,14 @@
   transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
 }
 
+.chat-name-field {
+  background: rgba(10, 14, 20, 0.42);
+}
+
 .chat-field::placeholder {
   color: var(--text-dim);
 }
 
-.hideout-chat.typing .chat-field,
 .chat-name-field:focus {
   background: rgba(10, 14, 20, 0.72);
 }
