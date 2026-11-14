@@ -1,7 +1,7 @@
 import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
 import type { GlitchKind } from '../content/glitches.ts';
 import type { GlitchState, PathAct, PathLog, Silhouette } from './glitch-types.ts';
-import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, StatMod, TalkDef, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
+import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, StatMod, TalkDef, XpReduction, ZoneDef, ZoneNpc, ZonePack } from '../content/types.ts';
 import type { ServiceKind } from '../content/trade-types.ts';
 import type { MomentDef } from '../content/moment-types.ts';
 import type { ZoneWake } from '../content/story-types.ts';
@@ -473,6 +473,7 @@ export interface MomentState {
   away: number;
   entered: boolean;
   bounty: number;
+  reduced: XpReduction | null;
   blocks: GridStamp | null;
   outcome: MomentOutcome | null;
   chest: ChestState;
@@ -570,7 +571,7 @@ export type WorldEvent =
   | { readonly type: 'aggro'; readonly monsterId: number }
   | { readonly type: 'drop'; readonly ground: GroundItem }
   | { readonly type: 'pickup'; readonly ground: GroundItem }
-  | { readonly type: 'xp'; readonly amount: number }
+  | { readonly type: 'xp'; readonly amount: number; readonly reduced: XpReduction | null }
   | { readonly type: 'level_up'; readonly level: number }
   | { readonly type: 'skill_unlocked'; readonly skill: string; readonly slot: number | null }
   | { readonly type: 'chart_point'; readonly source: string; readonly points: number }

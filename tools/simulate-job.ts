@@ -24,6 +24,8 @@ function readScenario(value: unknown): Scenario {
       return { kind, moment: text(source, 'moment', 'scenario'), repeats: numeric(source, 'repeats', 'scenario') };
     case 'level':
       return { kind, level: numeric(source, 'level', 'scenario'), minutes: numeric(source, 'minutes', 'scenario') };
+    case 'over':
+      return { kind, hero: numeric(source, 'hero', 'scenario'), zone: numeric(source, 'zone', 'scenario'), minutes: numeric(source, 'minutes', 'scenario') };
     default:
       throw new Error(`unknown scenario ${kind}`);
   }

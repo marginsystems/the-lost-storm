@@ -414,7 +414,9 @@ function player(value: unknown, where: string): PlayerDef {
 
 function xpGap(value: unknown, where: string): XpGap {
   const source: Fields = fields(value, where);
-  return { grace: nonNegative(source, 'grace', where), perLevel: share(source, 'perLevel', where), floor: share(source, 'floor', where) };
+  const floor: number = share(source, 'floor', where);
+  if (floor <= 0) throw new ContentError(`${where}.floor`, 'expected a share above zero');
+  return { band: nonNegative(source, 'band', where), widenEvery: positive(source, 'widenEvery', where), soft: positive(source, 'soft', where), power: positive(source, 'power', where), floor, above: flag(source, 'above', where) };
 }
 
 export function parseContent(raw: RawContent): Content {

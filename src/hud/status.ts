@@ -1,11 +1,14 @@
 import { tagPart } from './hud-gate.ts';
 import type { Content } from '../../sim/content/types.ts';
 import { xpToNextLevel } from '../../sim/progression.ts';
+import type { XpReduction } from '../../sim/content/types.ts';
 import type { NoticeReason, PlayerState, World } from '../../sim/world/types.ts';
 import { clamp01, el, setText } from './dom.ts';
+import { reducedLine } from './xp-note.ts';
 
 const STATUS = {
   noticeMs: 1800,
+  reducedMs: 4000,
   xpStep: 0.002,
 } as const;
 
@@ -30,6 +33,7 @@ export interface Notices {
 export interface XpBar {
   readonly element: HTMLElement;
   update(player: PlayerState, content: Content): void;
+  gained(reduced: XpReduction | null): void;
 }
 
 export interface WorldStatus {
@@ -63,9 +67,22 @@ export function createXpBar(parent: HTMLElement): XpBar {
   const level: HTMLDivElement = el('div', 'xp-level', element);
   const track: HTMLDivElement = el('div', 'xp-track', element);
   const fill: HTMLDivElement = el('div', 'xp-fill', track);
+  const note: HTMLDivElement = el('div', 'xp-note', element);
   let shown: number = -1;
+  let noteTimer: number | null = null;
   return {
     element,
+    gained(reduced: XpReduction | null): void {
+      const line: string | null = reducedLine(reduced);
+      if (line === null) return;
+      setText(note, line, note.classList.contains('visible'));
+      note.classList.add('visible');
+      if (noteTimer !== null) window.clearTimeout(noteTimer);
+      noteTimer = window.setTimeout((): void => {
+        note.classList.remove('visible');
+        noteTimer = null;
+      }, STATUS.reducedMs);
+    },
     update(player: PlayerState, content: Content): void {
       setText(level, String(player.level), true);
       const need: number = xpToNextLevel(content.player.xp, player.level);

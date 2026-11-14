@@ -384,6 +384,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'notice':
             notices.show(event.reason);
             break;
+          case 'xp':
+            xp.gained(event.reduced);
+            break;
           case 'flask_used':
             flasks.used(event.slot);
             break;
@@ -431,7 +434,6 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'beam':
           case 'blink':
           case 'brand':
-          case 'xp':
           case 'surge_cleared':
           case 'player_respawn':
           case 'hero_step':

@@ -29,11 +29,14 @@ void test('fight, level and replay take their argument, and all expands to every
   assert.equal(fight.jobs.length, POLICIES.builds.size * DEFAULTS.runs);
   const level: Command = parse(['level', '5']);
   assert.ok(level.kind === 'simulate' && level.scenario.kind === 'level' && level.scenario.level === 5);
+  const over: Command = parse(['over', '9', '--zone', '1', '--minutes', '20']);
+  assert.ok(over.kind === 'simulate');
+  assert.deepEqual(over.scenario, { kind: 'over', hero: 9, zone: 1, minutes: 20 });
   assert.deepEqual(parse(['replay', 'a.jsonl', 'b.jsonl']), { kind: 'replay', files: ['a.jsonl', 'b.jsonl'], out: null });
 });
 
 void test('bad input explains itself instead of running', (): void => {
-  for (const args of [[], ['fight'], ['fight', 'nowhere'], ['level', '1'], ['farm', '--runs', 'x'], ['farm', '--skill', 'expert'], ['dance'], ['replay'], ['farm', '--runs'], ['fight', 'campfire', '--repeats'], ['farm', '--skill', '--runs', '2'], ['farm', '--run', '20']]) {
+  for (const args of [[], ['fight'], ['fight', 'nowhere'], ['level', '1'], ['farm', '--runs', 'x'], ['farm', '--skill', 'expert'], ['dance'], ['replay'], ['farm', '--runs'], ['fight', 'campfire', '--repeats'], ['farm', '--skill', '--runs', '2'], ['farm', '--run', '20'], ['over'], ['over', '9', '--zone', '0']]) {
     assert.equal(parse(args).kind, 'help', args.join(' '));
   }
 });

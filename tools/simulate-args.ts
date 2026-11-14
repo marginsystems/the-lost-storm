@@ -21,6 +21,7 @@ export const USAGE: string = [
   '  farm                  the slice, then N minutes clearing moments in the Hall (--minutes, default 30)',
   '  fight <moment>        the slice, then one moment struck and fought N times (--repeats, default 10)',
   '  level <n>             from waking until level n, farming after the slice (--minutes caps it, default 120)',
+  '  over <n>              the slice, then the hero raised to level n farms N minutes in wild zones fixed at --zone (default 1)',
   '  replay <file.jsonl>…  read recorded measurement streams (from --record or storm.saveMeasurements() in a dev build) into the same report',
   '',
   'options',
@@ -85,12 +86,18 @@ function scenarioOf(words: readonly string[], args: readonly string[]): Scenario
       const level: number | null = whole(value ?? null, 0);
       return level === null || level < 2 ? 'level needs a target level of 2 or more' : { kind, level, minutes };
     }
+    case 'over': {
+      const hero: number | null = whole(value ?? null, 0);
+      const zone: number | null = whole(option(args, 'zone'), 1);
+      if (hero === null || hero < 1) return 'over needs a hero level of 1 or more';
+      return zone === null || zone < 1 ? '--zone must be a level of 1 or more' : { kind, hero, zone, minutes };
+    }
     default:
       return `unknown scenario ${kind}`;
   }
 }
 
-const OPTIONS: ReadonlySet<string> = new Set<string>(['runs', 'skill', 'build', 'seed', 'workers', 'out', 'record', 'minutes', 'repeats']);
+const OPTIONS: ReadonlySet<string> = new Set<string>(['runs', 'skill', 'build', 'seed', 'workers', 'out', 'record', 'minutes', 'repeats', 'zone']);
 
 export function parseArgs(args: readonly string[], policies: Policies, moments: ReadonlySet<string>, cores: number): Command {
   const words: string[] = positional(args);
