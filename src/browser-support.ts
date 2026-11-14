@@ -5,6 +5,17 @@ export const BROWSER_NOTICES = {
   reload: 'Reload',
 } as const;
 
+export const RETRY = {
+  key: 'the-lost-storm.reload-at',
+  gapMs: 60_000,
+  started: 'started',
+} as const;
+
+export interface RetryStore {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
 export interface BrowserProbe {
   readonly webgl2: boolean;
   readonly modernArrays: boolean;
@@ -35,5 +46,25 @@ export function createdOrUnsupported<T>(create: () => T): T {
     return create();
   } catch {
     throw new UnsupportedBrowser(BROWSER_NOTICES.webgl);
+  }
+}
+
+export function sessionStore(scope: { readonly sessionStorage: RetryStore }): RetryStore | null {
+  try {
+    return scope.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function claimRetry(store: RetryStore | null, now: number): boolean {
+  if (store === null) return false;
+  try {
+    const last: number = Number(store.getItem(RETRY.key));
+    if (last > 0 && now - last < RETRY.gapMs) return false;
+    store.setItem(RETRY.key, String(now));
+    return true;
+  } catch {
+    return false;
   }
 }

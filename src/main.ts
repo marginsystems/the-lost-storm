@@ -132,7 +132,8 @@ import type { OverlayManager } from './hud/overlays.ts';
 import { readServerUrl } from './backend/server-url.ts';
 import { createTitleSync, followSync } from './title-sync.ts';
 import { createStatusLine, TITLE_NOTICES } from './title-status.ts';
-import { BROWSER_NOTICES, createdOrUnsupported, failureText, probeBrowser, reloadHelps, UnsupportedBrowser, unsupportedReason } from './browser-support.ts';
+import { createdOrUnsupported, probeBrowser, RETRY, UnsupportedBrowser, unsupportedReason } from './browser-support.ts';
+import { showStartFailure } from './start-failure.ts';
 import { defaultBar } from '../sim/skill-book.ts';
 import type { Bar } from '../sim/skill-book.ts';
 import { shippedKeys, showTitleKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleNames } from './title-keys.ts';
@@ -680,20 +681,10 @@ async function start(): Promise<void> {
   wireEnter({ enter, begin: openLobby, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), body: 'man', random: Math.random, begin: openLobby }) });
 }
 
+document.documentElement.dataset['boot'] = RETRY.started;
 start().catch((error: unknown): void => {
-  titleLines.current?.freeze();
-  const status: HTMLElement | null = document.getElementById('title-status');
-  if (status !== null) {
-    status.textContent = failureText(error);
-    status.classList.add('failed');
-  }
-  document.getElementById('title-loader')?.classList.add('done');
-  const enter: HTMLElement | null = document.getElementById('title-enter');
-  if (reloadHelps(error) && enter instanceof HTMLButtonElement) {
-    enter.textContent = BROWSER_NOTICES.reload;
-    enter.disabled = false;
-    enter.addEventListener('click', (): void => window.location.reload());
-    document.getElementById('title')?.classList.add('stuck');
-  }
+  showStartFailure(error, (): void => {
+    titleLines.current?.freeze();
+  });
   throw error;
 });

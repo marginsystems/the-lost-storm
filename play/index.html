@@ -41,11 +41,35 @@
     <title>The Lost Storm</title>
     <script>
       (function () {
+        var RETRY_KEY = 'the-lost-storm.reload-at';
+        var RETRY_GAP_MS = 60000;
+        function own(url) {
+          if (!url) return false;
+          try {
+            return new URL(url, window.location.href).origin === window.location.origin;
+          } catch (error) {
+            return false;
+          }
+        }
+        function retried() {
+          try {
+            var at = Number(window.sessionStorage.getItem(RETRY_KEY));
+            if (at > 0 && Date.now() - at < RETRY_GAP_MS) return true;
+            window.sessionStorage.setItem(RETRY_KEY, String(Date.now()));
+            return false;
+          } catch (error) {
+            return true;
+          }
+        }
         function fail() {
           var status = document.getElementById('title-status');
           var enter = document.getElementById('title-enter');
           var loader = document.getElementById('title-loader');
           if (!status || !enter || !enter.disabled || status.classList.contains('failed')) return;
+          if (!retried()) {
+            window.location.reload();
+            return;
+          }
           status.textContent = 'The storm could not finish loading. Reloading usually helps.';
           status.classList.add('failed');
           if (loader) loader.classList.add('done');
@@ -57,9 +81,12 @@
         }
         window.addEventListener('error', function (event) {
           var target = event.target;
-          if (target instanceof HTMLScriptElement || target === window) fail();
+          if (target instanceof HTMLScriptElement) {
+            if (own(target.src)) fail();
+            return;
+          }
+          if (target === window && document.documentElement.dataset.boot !== 'started' && own(event.filename)) fail();
         }, true);
-        window.addEventListener('unhandledrejection', fail);
       })();
     </script>
     <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource/cinzel/files/cinzel-latin-500-normal.woff2" />
