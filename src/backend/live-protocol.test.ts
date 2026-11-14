@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_LIMITS, liveUrl, moveFrame, readPlayer, readServerFrame, sayable, sayFrame } from './live-protocol.ts';
 import type { ServerFrame } from './live-protocol.ts';
 
-const WREN: Readonly<Record<string, unknown>> = { id: 'h1', name: 'Wren', hero: 'woman', worn: { weapon: 'hand_crossbow' }, x: 20, z: 18.5, facing: 1.2 };
+const WREN: Readonly<Record<string, unknown>> = { id: 'h1', name: 'Wren', username: 'wren_walks', hero: 'woman', worn: { weapon: 'hand_crossbow' }, x: 20, z: 18.5, facing: 1.2 };
 
 const LINE: Readonly<Record<string, unknown>> = { id: 4, from: 'h1', name: 'Wren', text: 'hello', at: '2026-11-14T10:00:00.000Z' };
 
@@ -84,4 +84,12 @@ void test('a line to say is trimmed, never empty and at most 200 characters, cou
 void test('chat refusals are told apart from enter refusals', (): void => {
   assert.equal(chatRefusal('name_needed'), 'name_needed');
   assert.equal(chatRefusal('off_floor'), null);
+});
+
+void test('a player from an older server has no username, and an unreadable username is dropped, not the player', (): void => {
+  const { username: _dropped, ...older } = WREN;
+  assert.deepEqual(readPlayer(older), { ...older, username: null });
+  assert.deepEqual(readPlayer({ ...WREN, username: 7 }), { ...WREN, username: null });
+  assert.deepEqual(readPlayer({ ...WREN, username: 'x'.repeat(LIVE_LIMITS.nameChars + 1) }), { ...WREN, username: null });
+  assert.equal(readPlayer(WREN)?.username, 'wren_walks');
 });

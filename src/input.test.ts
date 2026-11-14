@@ -41,7 +41,18 @@ function rect(): DOMRect {
   return { x: 0, y: 0, width: VIEW.size, height: VIEW.size, top: 0, left: 0, right: VIEW.size, bottom: VIEW.size, toJSON: (): null => null };
 }
 
-function rig(world: World, overUi: () => boolean = (): boolean => false): Rig {
+interface PlayerHooks {
+  readonly at: string | null;
+  readonly takes: (id: string | null) => boolean;
+  readonly pressed: (string | null)[];
+  readonly hovered: (string | null)[];
+}
+
+function noPlayers(): PlayerHooks {
+  return { at: null, takes: (): boolean => false, pressed: [], hovered: [] };
+}
+
+function rig(world: World, overUi: () => boolean = (): boolean => false, players: PlayerHooks = noPlayers()): Rig {
   const canvas: InputSurface = { addEventListener: (): void => undefined, getBoundingClientRect: rect, setPointerCapture: (): void => undefined, style: { cursor: 'default' } };
   const keys: KeySource = { addEventListener: (): void => undefined };
   const camera: InputCamera = {
@@ -53,7 +64,17 @@ function rig(world: World, overUi: () => boolean = (): boolean => false): Rig {
   const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined };
   const store: KeyValueStore = { read: (): null => null, write: (): boolean => true, remove: (): void => undefined };
   const settings: SettingsStore = createSettingsStore(store, SLOTS, { flasks: 0, ladder: false });
-  const hooks: InputHooks = { heightOf: (): number => 1.8, boundsOf: (): boolean => false, labelHover: (): null => null, clickMarker: (): void => undefined, aimExit: (): void => undefined, aimItem: (): void => undefined, pause: (): void => undefined };
+  const hooks: InputHooks = { heightOf: (): number => 1.8, boundsOf: (): boolean => false, labelHover: (): null => null, clickMarker: (): void => undefined, aimExit: (): void => undefined, aimItem: (): void => undefined,
+    playerAt: (): string | null => players.at,
+    hoverPlayer: (id: string | null): void => {
+      players.hovered.push(id);
+    },
+    pressPlayer: (id: string | null): boolean => {
+      players.pressed.push(id);
+      return players.takes(id);
+    },
+    pause: (): void => undefined,
+  };
   return { world, input: createInput(canvas, keys, world, camera, hud, settings, hooks) };
 }
 
@@ -223,4 +244,56 @@ void test('one phone tap closes the guide\'s one-line lesson and completes the o
   run(setup, 0.1, (): boolean => false);
   assert.equal(world.dialogue, null);
   assert.equal(world.quests['wardens_lesson'], 1);
+});
+
+function hideoutWorld(): World {
+  return worldIn(content, 'hideout', 3);
+}
+
+void test('a tap on another player opens their menu and never walks or uses a skill', (): void => {
+  const world: World = hideoutWorld();
+  const players: PlayerHooks = { at: 'p1', takes: (id: string | null): boolean => id !== null, pressed: [], hovered: [] };
+  const setup: Rig = rig(world, (): boolean => false, players);
+  const point: Vec2 = screenOf(world, { x: world.player.pos.x + 4, z: world.player.pos.z });
+  setup.input.tap(point.x, point.z);
+  const commands: readonly Command[] = setup.input.collect(DT);
+  assert.deepEqual(players.pressed, ['p1']);
+  assert.ok(players.hovered.includes('p1'));
+  assert.deepEqual(commands.filter((command: Command): boolean => command.type === 'move' || command.type === 'skill' || command.type === 'hold'), []);
+});
+
+void test('a held press that began on another player never turns into a walk', (): void => {
+  const world: World = hideoutWorld();
+  const players: PlayerHooks = { at: 'p1', takes: (id: string | null): boolean => id !== null, pressed: [], hovered: [] };
+  const setup: Rig = rig(world, (): boolean => false, players);
+  const point: Vec2 = screenOf(world, { x: world.player.pos.x + 4, z: world.player.pos.z });
+  setup.input.holdAt(point.x, point.z);
+  const moves: Command[] = [];
+  for (let frame: number = 0; frame < 30; frame += 1) moves.push(...setup.input.collect(DT).filter((command: Command): boolean => command.type === 'move' || command.type === 'skill'));
+  setup.input.releaseHold();
+  moves.push(...setup.input.collect(DT).filter((command: Command): boolean => command.type === 'move' || command.type === 'skill'));
+  assert.deepEqual(moves, []);
+  assert.deepEqual(players.pressed, ['p1']);
+});
+
+void test('a press that closes an open player menu is taken by it, and the next press walks', (): void => {
+  const world: World = hideoutWorld();
+  let open: boolean = true;
+  const players: PlayerHooks = {
+    at: null,
+    takes: (): boolean => {
+      const took: boolean = open;
+      open = false;
+      return took;
+    },
+    pressed: [],
+    hovered: [],
+  };
+  const setup: Rig = rig(world, (): boolean => false, players);
+  const point: Vec2 = screenOf(world, { x: world.player.pos.x + 4, z: world.player.pos.z });
+  setup.input.tap(point.x, point.z);
+  assert.deepEqual(setup.input.collect(DT).filter((command: Command): boolean => command.type === 'move'), []);
+  setup.input.tap(point.x, point.z);
+  assert.equal(setup.input.collect(DT).filter((command: Command): boolean => command.type === 'move').length, 1);
+  assert.deepEqual(players.pressed, [null, null]);
 });

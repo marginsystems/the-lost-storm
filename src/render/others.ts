@@ -23,8 +23,38 @@ export const OTHERS = {
   hiddenBelow: 0.01,
   labelClass: 'player-label',
   leavingClass: 'leaving',
+  litClass: 'lit',
   leaveMs: 400,
+  pickWidth: 0.42,
+  pickMinWidth: 18,
+  pickPadding: 4,
+  pickableFrom: 0.5,
 } as const;
+
+export interface ScreenPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+export interface ScreenAnchor {
+  readonly x: number;
+  readonly top: number;
+  readonly bottom: number;
+}
+
+export interface OtherTarget {
+  readonly id: string;
+  readonly name: string;
+  readonly username: string | null;
+}
+
+interface PickBox {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  depth: number;
+}
 
 export type LoadNeeds = (needs: CharacterNeeds) => Promise<void>;
 
@@ -45,6 +75,11 @@ export interface Others {
   update(dt: number, floor: number): void;
   clear(): void;
   count(): number;
+  playerAt(point: ScreenPoint): string | null;
+  light(id: string | null): void;
+  target(id: string): OtherTarget | null;
+  anchorOf(id: string): ScreenAnchor | null;
+  groundOf(id: string): { readonly x: number; readonly z: number } | null;
 }
 
 interface Fade {
@@ -64,7 +99,13 @@ interface Other {
   readonly track: Track;
   readonly label: HTMLDivElement;
   name: HTMLElement;
+  username: string | null;
   readonly shown: Fade;
+  readonly box: PickBox;
+  pickable: boolean;
+  readonly anchor: Vector2;
+  feet: number;
+  ground: { readonly x: number; readonly z: number } | null;
   readonly old: Figure[];
   hero: string | null;
   worn: Worn;
@@ -102,6 +143,8 @@ export function createOthers(options: OthersOptions): Others {
   const loading: Set<string> = new Set<string>();
   const failed: Set<string> = new Set<string>();
   const point: Vector2 = new Vector2();
+  const foot: Vector2 = new Vector2();
+  let lit: string | null = null;
 
   const makeFigure = (other: Other, dressed: Dressed, facing: number): Figure | null => {
     const loaded: LoadedRig | undefined = library.rigs.get(dressed.rig);
@@ -165,6 +208,7 @@ export function createOthers(options: OthersOptions): Others {
       known.here = true;
       known.hero = player.hero;
       known.worn = player.worn;
+      known.username = player.username;
       rename(known, player.name);
       known.shown.target = 1;
       if (known.figure !== null) known.figure.presence.target = 1;
@@ -179,11 +223,12 @@ export function createOthers(options: OthersOptions): Others {
     label.append(inner);
     label.style.opacity = '0';
     options.labels.append(label);
-    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, shown: { value: 0, target: 1 }, old: [], hero: player.hero, worn: player.worn, here: true, figure: null });
+    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, username: player.username, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null });
   };
 
   const depart = (other: Other): void => {
     other.here = false;
+    other.pickable = false;
     other.shown.target = 0;
     if (other.figure !== null) other.figure.presence.target = 0;
   };
@@ -193,7 +238,13 @@ export function createOthers(options: OthersOptions): Others {
     if (other !== undefined && other.here) pushSample(other.track, { at, x: step.x, z: step.z, facing: step.facing });
   };
 
+  const shownTarget = (id: string): Other | null => {
+    const other: Other | undefined = others.get(id);
+    return other === undefined || !other.here ? null : other;
+  };
+
   const forget = (other: Other): void => {
+    if (lit === other.id) lit = null;
     other.figure?.view.dispose();
     for (const figure of other.old.splice(0, other.old.length)) figure.view.dispose();
     other.label.remove();
@@ -269,11 +320,26 @@ export function createOthers(options: OthersOptions): Others {
         }
         const figure: Figure | null = other.figure;
         const presence: number = figure === null ? 0 : show(figure, pose);
+        other.ground = { x: pose.x, z: pose.z };
+        const shown: number = Math.min(other.shown.value, presence);
+        other.pickable = false;
         if (figure !== null) {
           camera.project(pose.x, floor + figure.view.height + OTHERS.labelLift, pose.z, point);
           other.label.style.transform = `translate3d(${point.x.toFixed(2)}px, ${point.y.toFixed(2)}px, 0)`;
+          other.anchor.copy(point);
+          const head: boolean = camera.project(pose.x, floor + figure.view.height, pose.z, point);
+          const feet: boolean = camera.project(pose.x, floor, pose.z, foot);
+          if (head && feet && other.here && shown >= OTHERS.pickableFrom) {
+            const half: number = Math.max(OTHERS.pickMinWidth, Math.abs(foot.y - point.y) * OTHERS.pickWidth) / 2;
+            other.box.minX = foot.x - half - OTHERS.pickPadding;
+            other.box.maxX = foot.x + half + OTHERS.pickPadding;
+            other.box.minY = Math.min(point.y, foot.y) - OTHERS.pickPadding;
+            other.box.maxY = Math.max(point.y, foot.y) + OTHERS.pickPadding;
+            other.box.depth = -foot.y;
+            other.feet = foot.y;
+            other.pickable = true;
+          }
         }
-        const shown: number = Math.min(other.shown.value, presence);
         other.label.style.opacity = shown.toFixed(3);
         if (!other.here && other.shown.value <= OTHERS.hiddenBelow && presence <= OTHERS.hiddenBelow) forget(other);
       }
@@ -283,6 +349,31 @@ export function createOthers(options: OthersOptions): Others {
     },
     count(): number {
       return [...others.values()].filter((other: Other): boolean => other.here).length;
+    },
+    playerAt(at: ScreenPoint): string | null {
+      let best: Other | null = null;
+      for (const other of others.values()) {
+        if (!other.pickable || at.x < other.box.minX || at.x > other.box.maxX || at.y < other.box.minY || at.y > other.box.maxY) continue;
+        if (best === null || other.box.depth < best.box.depth) best = other;
+      }
+      return best?.id ?? null;
+    },
+    light(id: string | null): void {
+      if (id === lit) return;
+      if (lit !== null) others.get(lit)?.label.classList.remove(OTHERS.litClass);
+      lit = id;
+      if (id !== null) others.get(id)?.label.classList.add(OTHERS.litClass);
+    },
+    target(id: string): OtherTarget | null {
+      const other: Other | null = shownTarget(id);
+      return other === null ? null : { id: other.id, name: other.name.textContent, username: other.username };
+    },
+    anchorOf(id: string): ScreenAnchor | null {
+      const other: Other | null = shownTarget(id);
+      return other === null || other.figure === null ? null : { x: other.anchor.x, top: other.anchor.y, bottom: Math.max(other.anchor.y, other.feet) };
+    },
+    groundOf(id: string): { readonly x: number; readonly z: number } | null {
+      return shownTarget(id)?.ground ?? null;
     },
   };
 }

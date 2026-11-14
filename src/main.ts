@@ -39,7 +39,7 @@ import type { ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
 import type { Backend, BackendState } from './backend/backend.ts';
 import { createBrowserAccount, createBrowserBackend, createBrowserMinter } from './backend/browser.ts';
-import { startHideout } from './hideout/hideout.ts';
+import { playerHooks, startHideout } from './hideout/hideout.ts';
 import { startAuction } from './auction/auction-start.ts';
 import type { Minter } from './backend/minter.ts';
 import { createHud } from './hud/hud.ts';
@@ -345,15 +345,14 @@ async function start(): Promise<void> {
   const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby, { isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'ladder', overlays: overlayManager });
   const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
   const input: Input = createInput(canvas, window, world, camera, hud, gameSettings, {
+    ...playerHooks(hideout),
     heightOf: (id: number): number => actors.heightOf(id),
     boundsOf: (id: number, out: Box3): boolean => actors.boundsOf(id, out),
     labelHover: (): number | null => overlays.labelHover(),
     clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile),
     aimExit: (exit: string | null): void => overlays.aimExit(exit),
     aimItem: (groundId: number | null): void => overlays.aimItem(groundId),
-    pause: (): void => {
-      if (playing && !transition.blocking) pauseMenu.open(null);
-    },
+    pause: (): void => (playing && !transition.blocking ? pauseMenu.open(null) : undefined),
   });
   const applyGraphics = (): void => {
     const preset: GraphicsPreset = gameSettings.preset();

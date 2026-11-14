@@ -9,12 +9,18 @@ import type { LiveEvent } from '../backend/live.ts';
 import { LIVE_ZONE } from '../backend/live-protocol.ts';
 import type { CharacterLibrary, Dresser } from '../render/character-loader.ts';
 import { loadNeeds } from '../render/character-loader.ts';
+import type { InputHooks } from '../input.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import type { Others } from '../render/others.ts';
 import { createOthers } from '../render/others.ts';
 import type { Sight } from '../render/sight.ts';
+import { createBrowserStore } from '../storage.ts';
 import type { HideoutChat } from './hideout-chat.ts';
 import { startHideoutChat } from './hideout-chat.ts';
+import type { HideoutMenu } from './hideout-menu.ts';
+import { startHideoutMenu } from './hideout-menu.ts';
+import type { Mutes } from './mute.ts';
+import { createMutes } from './mute.ts';
 
 export interface HideoutParts {
   readonly scene: Scene;
@@ -31,13 +37,17 @@ export interface HideoutParts {
 
 export interface Hideout {
   frame(dt: number, playing: boolean, world: World, presenting: boolean): void;
+  playerAt(x: number, y: number): string | null;
+  hoverPlayer(id: string | null): void;
+  pressPlayer(id: string | null): boolean;
 }
 
 export function startHideout(rawUrl: string | undefined, parts: HideoutParts): Hideout | null {
   const server: HideoutServer | null = createBrowserHideoutServer(rawUrl);
   if (server === null) return null;
   let current: World | null = null;
-  const chat: HideoutChat = startHideoutChat(server, parts.hud, (): boolean => current?.dialogue === null);
+  const mutes: Mutes = createMutes(createBrowserStore());
+  const chat: HideoutChat = startHideoutChat(server, parts.hud, (): boolean => current?.dialogue === null, mutes);
   const others: Others = createOthers({
     scene: parts.scene,
     library: parts.library,
@@ -49,20 +59,42 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     clock: (): number => performance.now(),
     sight: parts.sight,
   });
+  const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: null, startTrade: null });
   server.live.subscribe((event: LiveEvent): void => {
     others.handle(event);
     chat.handle(event);
+    menu.handle(event);
   });
   let drawn: World['zone'] | null = null;
   return {
     frame(dt: number, playing: boolean, world: World, presenting: boolean): void {
       current = world;
       server.live.update({ zone: playing ? world.zone.id : null, x: world.player.pos.x, z: world.player.pos.z, facing: world.player.facing });
-      chat.frame(playing && world.zone.id === LIVE_ZONE);
-      if (!presenting) return;
+      const inHideout: boolean = playing && world.zone.id === LIVE_ZONE;
+      chat.frame(inHideout);
+      if (!presenting) {
+        menu.frame(false, world.player.pos);
+        return;
+      }
       if (drawn !== world.zone) others.clear();
       drawn = world.zone;
       others.update(dt, world.zone.floorHeight);
+      menu.frame(inHideout, world.player.pos);
     },
+    playerAt: (x: number, y: number): string | null => (current?.zone.id === LIVE_ZONE ? others.playerAt({ x, y }) : null),
+    hoverPlayer(id: string | null): void {
+      menu.hover(id);
+    },
+    pressPlayer: (id: string | null): boolean => menu.press(id),
+  };
+}
+
+export type PlayerHooks = Pick<InputHooks, 'playerAt' | 'hoverPlayer' | 'pressPlayer'>;
+
+export function playerHooks(hideout: Hideout | null): PlayerHooks {
+  return {
+    playerAt: (x: number, y: number): string | null => hideout?.playerAt(x, y) ?? null,
+    hoverPlayer: (id: string | null): void => hideout?.hoverPlayer(id),
+    pressPlayer: (id: string | null): boolean => hideout?.pressPlayer(id) ?? false,
   };
 }
