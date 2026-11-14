@@ -198,9 +198,13 @@ export function skillCycle(stats: StatBlock, skill: SkillDef): number {
   return Math.max((skill.windup + skill.recovery) / speed, skill.cooldown, MIN_CYCLE);
 }
 
-export function damagePerSecond(stats: StatBlock, skill: SkillDef): number {
+export function expectedHit(stats: StatBlock, skill: SkillDef): number {
   const weapon: number = ((stats.damageMin + stats.damageMax) / 2) * (1 + stats.damagePercent) * skill.damage.weaponPercent;
   const flat: number = (skill.damage.flatMin + skill.damage.flatMax) / 2;
   const crit: number = 1 + Math.min(1, stats.critChance) * (stats.critMultiplier - 1);
-  return ((weapon + flat) * crit) / skillCycle(stats, skill);
+  return (weapon + flat) * crit;
+}
+
+export function damagePerSecond(stats: StatBlock, skill: SkillDef): number {
+  return expectedHit(stats, skill) / skillCycle(stats, skill);
 }

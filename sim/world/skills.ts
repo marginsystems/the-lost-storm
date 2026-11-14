@@ -49,7 +49,10 @@ export function comboHits(actor: Actor, skill: SkillDef): number {
 
 export function chainedSkill(actor: Actor, skill: SkillDef): SkillDef {
   const step: ComboStep | undefined = skill.combo?.steps[comboHits(actor, skill) - 1];
-  if (step === undefined) return skill;
+  return step === undefined ? skill : stepSkill(skill, step);
+}
+
+export function stepSkill(skill: SkillDef, step: ComboStep): SkillDef {
   return {
     ...skill,
     animation: step.animation,
