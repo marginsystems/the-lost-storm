@@ -1,5 +1,5 @@
 import type { AnimationClip, MeshStandardMaterial, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, Box3, BufferAttribute, BufferGeometry, Color, DataTexture, Fog, LinearFilter, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2, Vector3 } from 'three';
+import { AdditiveBlending, Box3, Color, DataTexture, Fog, LinearFilter, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2, Vector3 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
@@ -15,10 +15,12 @@ import { createLobbyPipeline } from './lobby-render.ts';
 import type { LobbyPipeline } from './lobby-render.ts';
 import { groundGeometry, valueNoise } from './lobby-ground.ts';
 import { LOBBY_SCENERY, placeRocks } from './lobby-scenery.ts';
+import { createLobbyShaft } from './lobby-shaft.ts';
+import type { LobbyShaft } from './lobby-shaft.ts';
 import { createLobbyLights } from './lobby-lights.ts';
 import type { LobbyLights } from './lobby-lights.ts';
 import { createLobbyMist } from './lobby-mist.ts';
-import { bodyRoles, boneNamed, createLobbyLife } from './lobby-life.ts';
+import { bodyRoles, createLobbyLife } from './lobby-life.ts';
 import type { BodyRoles, LobbyLife } from './lobby-life.ts';
 import type { LobbyMist } from './lobby-mist.ts';
 import { createLobbyOrbit, grab, LOBBY_ORBIT, orbitBy, release, stepOrbit, stepSpring, zoomBy } from './lobby-orbit.ts';
@@ -37,22 +39,12 @@ export const LOBBY_STAGE = {
   facing: -0.34,
   rimGlow: 0x000000,
   groundSurface: 'black_rock',
-  groundWet: 0.18,
+  groundWet: 0.12,
   groundShade: 0.6,
-  groundRelief: 0.55,
+  groundRelief: 0.85,
   groundRadius: 14,
   groundSegments: 72,
   groundEdge: 0.06,
-  rainDrops: 520,
-  rainWide: 9,
-  rainDeep: 12,
-  rainBack: 9,
-  rainTop: 4.2,
-  rainSpeed: 8.5,
-  rainLength: 0.34,
-  rainSlant: 0.08,
-  rainColor: 0x9aa8c2,
-  rainOpacity: 0.22,
   mistDepths: [2.4, 0.9, -1.2, -2.6, -4.2, -6.2, -8.6, -11],
   mistWidth: 16,
   mistHeight: 2.2,
@@ -115,11 +107,6 @@ export interface LobbyStage {
   dress(look: LobbyLook): void;
   render(renderer: WebGLRenderer, dt: number, tier: QualityName, devicePixelRatio: number): void;
   warm(renderer: WebGLRenderer, tier: QualityName): Promise<void>;
-}
-
-interface RainLayer {
-  readonly lines: LineSegments;
-  readonly heights: Float32Array;
 }
 
 function coverTexture(): DataTexture {
@@ -201,39 +188,6 @@ function groundMesh(def: SurfaceDef | undefined): Mesh {
   return mesh;
 }
 
-function rainLayer(random: () => number): RainLayer {
-  const count: number = LOBBY_STAGE.rainDrops;
-  const positions: Float32Array = new Float32Array(count * 6);
-  const heights: Float32Array = new Float32Array(count);
-  for (let drop: number = 0; drop < count; drop += 1) {
-    const x: number = (random() - 0.5) * LOBBY_STAGE.rainWide;
-    const z: number = random() * LOBBY_STAGE.rainDeep - LOBBY_STAGE.rainBack;
-    heights[drop] = random() * LOBBY_STAGE.rainTop;
-    positions.set([x, 0, z, x + LOBBY_STAGE.rainSlant, 0, z], drop * 6);
-  }
-  const geometry: BufferGeometry = new BufferGeometry();
-  geometry.setAttribute('position', new BufferAttribute(positions, 3));
-  const material: LineBasicMaterial = new LineBasicMaterial({ color: LOBBY_STAGE.rainColor, transparent: true, opacity: LOBBY_STAGE.rainOpacity, depthWrite: false });
-  const lines: LineSegments = new LineSegments(geometry, material);
-  lines.frustumCulled = false;
-  return { lines, heights };
-}
-
-function stepRain(layer: RainLayer, dt: number): void {
-  const attribute = layer.lines.geometry.getAttribute('position');
-  if (!(attribute instanceof BufferAttribute)) return;
-  const positions: Float32Array | ArrayLike<number> = attribute.array;
-  if (!(positions instanceof Float32Array)) return;
-  for (let drop: number = 0; drop < layer.heights.length; drop += 1) {
-    let height: number = (layer.heights[drop] ?? 0) - LOBBY_STAGE.rainSpeed * dt;
-    if (height < 0) height += LOBBY_STAGE.rainTop;
-    layer.heights[drop] = height;
-    positions[drop * 6 + 1] = height + LOBBY_STAGE.rainLength;
-    positions[drop * 6 + 4] = height;
-  }
-  attribute.needsUpdate = true;
-}
-
 export function floorLift(lows: readonly number[], clearance: number): number {
   if (lows.length === 0) return 0;
   return clearance - Math.min(...lows);
@@ -277,10 +231,10 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   camera.lookAt(0, LOBBY_STAGE.lookHeight, 0);
 
   const lights: LobbyLights = createLobbyLights(scene);
+  const shaft: LobbyShaft = createLobbyShaft();
+  scene.add(shaft.mesh);
 
   scene.add(groundMesh(content.surfaces.get(LOBBY_STAGE.groundSurface)));
-  const rain: RainLayer = rainLayer(random);
-  scene.add(rain.lines);
 
   const mistAlpha: DataTexture = mistTexture();
   const mists: Mesh<PlaneGeometry, MeshBasicMaterial>[] = LOBBY_STAGE.mistDepths.map((depth: number, layer: number): Mesh<PlaneGeometry, MeshBasicMaterial> => {
@@ -300,7 +254,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   let pipeline: LobbyPipeline | null = null;
   let scenery: Promise<void> | null = null;
   let life: LobbyLife | null = null;
-  let head: Object3D | null = null;
   const orbit: LobbyOrbit = createLobbyOrbit();
   let drawnAt: number = Number.NEGATIVE_INFINITY;
   let listening: boolean = false;
@@ -375,7 +328,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     castShadows(made.root);
     const roles: BodyRoles = bodyRoles(loaded.def.bodyParts);
     life = createLobbyLife(made.root, random(), roles);
-    head = boneNamed(made.root, roles.head);
     if (!shadowLaid) scene.add(contactShadow());
     shadowLaid = true;
     scene.add(made.root);
@@ -430,7 +382,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     dress,
     render(renderer: WebGLRenderer, dt: number, tier: QualityName, devicePixelRatio: number): void {
       lights.step(dt);
-      stepRain(rain, dt);
       mists.forEach((mist: Mesh<PlaneGeometry, MeshBasicMaterial>, index: number): void => {
         mist.position.x += LOBBY_STAGE.mistDrift * dt * (index % 2 === 0 ? 1 : -1) * (1 + index * 0.12);
         if (Math.abs(mist.position.x) > LOBBY_STAGE.mistWidth * 0.5) mist.position.x = -mist.position.x * 0.9;
@@ -456,7 +407,8 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       camera.zoom = framing.zoom;
       camera.setViewOffset(size.x, size.y, (0.5 - framing.across) * size.x, framing.down * size.y, size.x, size.y);
       camera.updateProjectionMatrix();
-      sky.draw(renderer, dt, size.x, size.y, devicePixelRatio, camera, head);
+      shaft.step(dt, camera);
+      sky.draw(renderer, dt, size.x, size.y, devicePixelRatio);
       RIM_LIGHT.value.copy(rimGlow);
       pipeline ??= createLobbyPipeline(renderer, scene, camera);
       pipeline.render(tier, devicePixelRatio);

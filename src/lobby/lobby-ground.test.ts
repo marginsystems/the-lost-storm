@@ -42,3 +42,14 @@ void test('the ground mesh is one sheet whose vertices lie on the height field, 
   assert.equal(valueNoise(3.2, -1.7), valueNoise(3.2, -1.7));
   assert.ok(valueNoise(3.2, -1.7) >= 0 && valueNoise(3.2, -1.7) <= 1);
 });
+
+void test('the ground\'s texture is laid out in metres, like the rocks standing on it, so both show the same grain', (): void => {
+  const geometry: BufferGeometry = groundGeometry([ROCK]);
+  const positions = must(geometry.getAttribute('position'), 'positions');
+  const uvs = must(geometry.getAttribute('uv'), 'uvs');
+  assert.equal(uvs.count, positions.count);
+  for (let index: number = 0; index < positions.count; index += 37) {
+    assert.ok(Math.abs(uvs.getX(index) - positions.getX(index)) < 1e-6, `u at ${index}`);
+    assert.ok(Math.abs(uvs.getY(index) - positions.getZ(index)) < 1e-6, `v at ${index}`);
+  }
+});

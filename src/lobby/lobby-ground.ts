@@ -95,7 +95,7 @@ export function groundGeometry(mounds: readonly Mound[]): BufferGeometry {
   const colours: Float32Array = new Float32Array(count * 3);
   const place = (index: number, x: number, z: number): void => {
     positions.set([x, groundHeight(x, z, mounds), z], index * 3);
-    uvs.set([x / (2 * spec.radius) + 0.5, 0.5 - z / (2 * spec.radius)], index * 2);
+    uvs.set([x, z], index * 2);
     const reach: number = Math.hypot(x, z) / spec.radius;
     const shade: number = spec.edgeShade + (1 - spec.edgeShade) * Math.max(0, 1 - reach * reach);
     colours.set([shade, shade, shade], index * 3);

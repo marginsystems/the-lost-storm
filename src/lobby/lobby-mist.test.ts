@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { unsafeGlsl } from '../../test/glsl-support.ts';
-import { LOBBY_MIST, MIST_FRAGMENT, mistAnchor, mistSize } from './lobby-mist.ts';
+import { LOBBY_MIST, MIST_FRAGMENT, mistSize } from './lobby-mist.ts';
 import type { MistSize } from './lobby-mist.ts';
 
 void test('the storm backdrop draws at half size and never past its pixel budget, so a big screen stays smooth', (): void => {
@@ -11,11 +11,8 @@ void test('the storm backdrop draws at half size and never past its pixel budget
   assert.deepEqual(mistSize(0, 0, 0), { width: 1, height: 1 });
 });
 
-void test('the shaft of light falls from above the screen, leaning in, onto the hero', (): void => {
-  const anchor = mistAnchor([0.5, 0.6]);
-  assert.deepEqual(anchor.target, [0.5, 0.6]);
-  assert.equal(anchor.light[0], 0.5 + LOBBY_MIST.lightLean);
-  assert.equal(anchor.light[1], 1 + LOBBY_MIST.lightAboveTop);
+void test('the backdrop holds no shaft of light: the shaft stands in the world, so the sky behind it never has to follow the hero', (): void => {
+  for (const gone of ['uLight', 'uTarget', 'shaft', 'cone']) assert.ok(!MIST_FRAGMENT.includes(gone), gone);
 });
 
 void test('the backdrop shader has no unclamped pow and no reversed smoothstep', (): void => {

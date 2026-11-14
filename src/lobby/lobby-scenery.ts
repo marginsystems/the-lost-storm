@@ -18,7 +18,7 @@ export interface LobbyRock {
 }
 
 export const LOBBY_SCENERY: { readonly wet: number; readonly stone: string; readonly shade: number; readonly rocks: readonly LobbyRock[] } = {
-  wet: 0.18,
+  wet: 0.12,
   stone: 'black_rock',
   shade: 0.6,
   rocks: [
