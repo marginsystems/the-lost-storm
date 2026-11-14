@@ -11,6 +11,8 @@ export interface VfxLightning {
   readonly glow: number;
   readonly afterglow: number;
   readonly jitter: number;
+  readonly width: number;
+  readonly core: number;
 }
 
 export interface VfxImpact {

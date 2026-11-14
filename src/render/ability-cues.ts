@@ -23,19 +23,21 @@ export const CUES = {
   shadeTime: 0.32,
   shadeGrow: 1.15,
   whirlTime: 0.22,
-  whirlSparks: 36,
+  whirlSparks: 24,
   whirlHeight: 1.05,
   whirlFrom: 0.35,
-  whirlGlow: 0.9,
+  whirlGlow: 0.4,
   gustMotes: 26,
-  releaseLight: 26,
+  releaseLight: 12,
   shadeSoft: 0.35,
   shadeWobble: 0.1,
   groundBand: 0.3,
   groundUnder: 1.1,
   whirlWidth: 0.12,
   whirlWobble: 0.08,
-  whirlFill: 0.15,
+  whirlFill: 0.03,
+  whirlSparkMin: 0.14,
+  whirlSparkMax: 0.28,
 } as const;
 
 function round(radius: number): GroundLightForm {
@@ -184,7 +186,7 @@ export function createAbilityCues(kit: CueKit): AbilityCues {
       for (let index: number = 0; index < CUES.whirlSparks; index += 1) {
         const angle: number = (index / CUES.whirlSparks) * Math.PI * 2;
         const reach: number = radius * (0.55 + Math.random() * 0.4);
-        kit.spray(x + Math.sin(angle) * reach, CUES.whirlHeight, z + Math.cos(angle) * reach, color, 1, { dirX: Math.cos(angle), dirZ: -Math.sin(angle), spread: 0.2, speed: { min: radius * 2.5, max: radius * 4 }, lift: { min: -0.3, max: 0.6 }, life: { min: 0.14, max: CUES.whirlTime + 0.06 }, size: { min: 0.35, max: 0.6 }, gravity: 0, drag: 3, jitter: 0 });
+        kit.spray(x + Math.sin(angle) * reach, CUES.whirlHeight, z + Math.cos(angle) * reach, color, 1, { dirX: Math.cos(angle), dirZ: -Math.sin(angle), spread: 0.2, speed: { min: radius * 2.5, max: radius * 4 }, lift: { min: -0.3, max: 0.6 }, life: { min: 0.14, max: CUES.whirlTime + 0.06 }, size: { min: CUES.whirlSparkMin, max: CUES.whirlSparkMax }, gravity: 0, drag: 3, jitter: 0 });
       }
     },
     gust(x: number, z: number, radius: number, color: Color, light: number): void {

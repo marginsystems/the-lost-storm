@@ -8,7 +8,14 @@ function vfxLightning(value: unknown, where: string): VfxLightning | null {
   const source: Fields = fields(value, where);
   const forks: number = nonNegative(source, 'forks', where);
   if (!Number.isInteger(forks) || forks > VFX_MAX_FORKS) throw new ContentError(`${where}.forks`, `expected a whole number from 0 to ${VFX_MAX_FORKS}`);
-  return { forks, glow: share(source, 'glow', where), afterglow: positive(source, 'afterglow', where), jitter: nonNegative(source, 'jitter', where) };
+  return {
+    forks,
+    glow: share(source, 'glow', where),
+    afterglow: positive(source, 'afterglow', where),
+    jitter: nonNegative(source, 'jitter', where),
+    width: source['width'] === undefined ? 1 : positive(source, 'width', where),
+    core: source['core'] === undefined ? 1 : nonNegative(source, 'core', where),
+  };
 }
 
 function vfxImpact(value: unknown, where: string): VfxImpact | null {

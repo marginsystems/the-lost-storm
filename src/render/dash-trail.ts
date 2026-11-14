@@ -17,6 +17,7 @@ export const DASH_TRAIL = {
   kickCount: 3,
   dustShade: 0.55,
   footFade: 0.4,
+  feather: 0.45,
   wakeSpread: Math.PI * 0.9,
   kickSpread: Math.PI * 0.6,
   dust: {
@@ -58,8 +59,10 @@ export interface DashTrails {
 const VERTEX: string = `
 attribute float alpha;
 varying float vAlpha;
+varying float vHeight;
 void main() {
   vAlpha = alpha;
+  vHeight = position.y;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
@@ -68,8 +71,11 @@ const FRAGMENT: string = `
 uniform vec3 uColor;
 uniform float uOpacity;
 varying float vAlpha;
+varying float vHeight;
 void main() {
-  gl_FragColor = vec4(uColor, vAlpha * uOpacity);
+  float top = 1.0 - smoothstep(${(DASH_TRAIL.high - DASH_TRAIL.feather).toFixed(3)}, ${DASH_TRAIL.high.toFixed(3)}, vHeight);
+  float foot = smoothstep(${DASH_TRAIL.low.toFixed(3)}, ${(DASH_TRAIL.low + DASH_TRAIL.feather * 0.5).toFixed(3)}, vHeight);
+  gl_FragColor = vec4(uColor, vAlpha * uOpacity * top * foot);
 }
 `;
 

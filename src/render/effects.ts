@@ -4,7 +4,9 @@ import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { Delivery, SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
-import { disposeObject, glow, groundArcs, programKeepers, projectileMesh, scorchMesh, skyBolt, slashMesh, telegraphFor } from './effect-shapes.ts';
+import { disposeObject, glow, programKeepers, projectileMesh, slashMesh, telegraphFor } from './effect-shapes.ts';
+import type { Shockwave } from './shockwave.ts';
+import { createShockwave } from './shockwave.ts';
 import type { Telegraph } from './effect-shapes.ts';
 import type { DashTrails } from './dash-trail.ts';
 import { createDashTrails } from './dash-trail.ts';
@@ -21,7 +23,7 @@ import type { NovaLook } from './ability-cues.ts';
 import type { GroundLight } from './ground-light.ts';
 import { createGroundLight, flare, GROUND_LIGHT, held, spread } from './ground-light.ts';
 import type { EffectKit, KitBudget, MotionWatch } from './effect-kit.ts';
-import { createEffectKit, KIT, kitBudget, watchMotion } from './effect-kit.ts';
+import { createEffectKit, heft, KIT, kitBudget, watchMotion } from './effect-kit.ts';
 import type { FlashLights } from './flash-lights.ts';
 import { createFlashLights } from './flash-lights.ts';
 
@@ -40,10 +42,6 @@ export const EFFECTS = {
   ringWidth: 0.16,
   ringMinWidth: 0.25,
   ringWobble: 0.08,
-  waveStrength: 1.1,
-  waveFill: 0.3,
-  waveWidth: 0.2,
-  waveWobble: 0.1,
   markGlow: 0.55,
   markFill: 0.6,
   markWidth: 0.35,
@@ -52,14 +50,7 @@ export const EFFECTS = {
   markerWidth: 0.22,
   markerClose: 0.55,
   markerGlow: 0.8,
-  scorchTime: 0.9,
-  waveGlow: 0.95,
-  waveLight: 46,
   boltLight: 40,
-  skyBoltDim: 0.55,
-  scorchSize: 0.8,
-  boltTime: 0.22,
-  arcTime: 0.26,
   markerTime: 0.4,
   flashLights: 3,
   warmFrames: 3,
@@ -97,7 +88,14 @@ export const EFFECTS = {
   rootSpray: 18,
   guardHeight: 1.3,
   guardBack: 0.5,
+  heftReach: 0.35,
+  heftGround: 0.4,
+  heftDust: 8,
+  slimFrom: 0.35,
+  shortFrom: 0.45,
+  dimFrom: 0.4,
 } as const;
+
 
 interface Transient {
   readonly object: Mesh | Group;
@@ -243,68 +241,13 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     );
   };
 
-  const shockwave = (x: number, z: number, radius: number, color: Color, light: number): void => {
-    cues.shade(x, z, radius * 1.1);
-    const wave: GroundLight = createGroundLight(glow(color, EFFECTS.waveGlow), { kind: 'round', radius, inner: 0, arc: Math.PI * 2 }, { fill: EFFECTS.waveFill, band: 1, width: radius * EFFECTS.waveWidth, wobble: radius * EFFECTS.waveWobble });
-    wave.mesh.position.set(x, GROUND_LIGHT.height + 0.05, z);
-    add(
-      wave.mesh,
-      EFFECTS.waveTime,
-      (t: number): void => {
-        wave.front(spread(t));
-        wave.pose(EFFECTS.waveStrength * flare(t), t * EFFECTS.waveTime);
-      },
-      null,
-    );
-    const scorch = scorchMesh(color);
-    scorch.mesh.position.set(x, 0.1, z);
-    scorch.mesh.scale.setScalar(radius * EFFECTS.scorchSize);
-    add(
-      scorch.mesh,
-      EFFECTS.scorchTime,
-      (t: number): void => {
-        scorch.material.uniforms['uFade'] = { value: 1 - t * t };
-      },
-      null,
-    );
-    const bolt = skyBolt(color.clone().multiplyScalar(EFFECTS.skyBoltDim * Math.min(1, light + 0.3)));
-    bolt.position.set(x, 0, z);
-    add(
-      bolt,
-      EFFECTS.boltTime,
-      (t: number): void => {
-        bolt.visible = t < 0.4 || (t > 0.55 && t < 0.8);
-      },
-      null,
-    );
-    const arcs = groundArcs(color, radius);
-    arcs.position.set(x, 0.16, z);
-    add(
-      arcs,
-      EFFECTS.arcTime,
-      (t: number): void => {
-        arcs.visible = t < 0.3 || (t > 0.45 && t < 0.7) || t > 0.85;
-        arcs.material.opacity = 1 - t * t;
-      },
-      null,
-    );
-    for (let step: number = 0; step < 20; step += 1) {
-      const angle: number = (step / 20) * Math.PI * 2 + Math.random() * 0.3;
-      const dirX: number = Math.sin(angle);
-      const dirZ: number = Math.cos(angle);
-      spray(x + dirX * 0.7, 0.25, z + dirZ * 0.7, color, 2, { dirX, dirZ, spread: 0.35, speed: { min: radius * 2.4, max: radius * 4.2 }, lift: { min: 0.3, max: 2.6 }, life: { min: 0.22, max: 0.5 }, size: { min: 0.22, max: 0.5 }, drag: 4.5 });
-      spray(x + dirX * 1.1, 0.2, z + dirZ * 1.1, DUST, 2, { dirX, dirZ, spread: 0.6, speed: { min: radius * 0.9, max: radius * 1.7 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.35, max: 0.7 }, size: { min: 1.6, max: 3.2 }, gravity: 0.4, drag: 2.6, jitter: 0.6 });
-    }
-    spray(x, 0.4, z, color, 20, { speed: { min: 1, max: 5 }, lift: { min: 4, max: 12 }, life: { min: 0.25, max: 0.6 }, size: { min: 0.16, max: 0.36 } });
-    flashLight(x, 3, z, color, EFFECTS.waveLight * light);
-  };
-
   const cues: AbilityCues = createAbilityCues({ add, spray, flashLight, gather: riseLight, ring });
+  const shockwave: Shockwave = createShockwave({ add, spray, flashLight, shade: (x: number, z: number, radius: number): void => cues.shade(x, z, radius), kit, dust: DUST });
 
   const burst = (x: number, z: number, radius: number, skill: SkillDef): void => {
     const color: Color = colorOf(skill.vfx.color);
     const look: NovaLook = novaLook(skill.vfx.style);
-    if (look === 'shockwave') shockwave(x, z, radius, color, skill.vfx.light);
+    if (look === 'shockwave') shockwave(x, z, radius, color, skill);
     else if (look === 'whirl') cues.whirl(x, z, radius, color);
     else if (look === 'gust') cues.gust(x, z, radius, color, skill.vfx.light);
     else ring(x, z, radius, color, EFFECTS.ringTime);
@@ -358,9 +301,16 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const delivery = event.skill.delivery;
     cancelOwned(event.actorId);
     switch (delivery.type) {
-      case 'arc':
-        slash(event.origin.x, event.origin.z, event.direction, delivery.reach, delivery.arcDegrees, color, event.team === 'monster');
+      case 'arc': {
+        const weight: number = heft(event.skill.shake);
+        slash(event.origin.x, event.origin.z, event.direction, delivery.reach * (1 + EFFECTS.heftReach * weight), delivery.arcDegrees, color, event.team === 'monster');
+        if (weight <= 0) break;
+        const aheadX: number = event.origin.x + event.direction.x * delivery.reach * 0.5;
+        const aheadZ: number = event.origin.z + event.direction.z * delivery.reach * 0.5;
+        kit.ground(aheadX, aheadZ, delivery.reach * EFFECTS.heftGround * weight, color);
+        spray(aheadX, 0.2, aheadZ, DUST, Math.round(EFFECTS.heftDust * weight), { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.6, speed: { min: 1, max: 3.5 }, lift: { min: 0.3, max: 1.4 }, life: { min: 0.35, max: 0.7 }, size: { min: 0.6, max: 1.3 }, gravity: 0.4, drag: 2.6, jitter: 0.5 });
         break;
+      }
       case 'nova':
         burst(event.origin.x, event.origin.z, delivery.radius, event.skill);
         break;
@@ -400,6 +350,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       spray(event.pos.x, 1.3, event.pos.z, BLOOD, 14, { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.4, speed: { min: 2, max: 7 } });
       return;
     }
+    const impact = event.skill.vfx.impact;
+    if (impact !== null && event.skill.delivery.type === 'arc') kit.impact(event.pos.x, event.pos.z, skillColor, impact, event.skill.vfx.light, 0);
     const count: number = event.crit ? 22 : 11;
     spray(event.pos.x, 1.25, event.pos.z, BONE, count, { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.1, speed: { min: 4, max: event.crit ? 15 : 10 }, lift: { min: 0.5, max: 6 } });
     spray(event.pos.x, 1.25, event.pos.z, skillColor, Math.ceil(count / 2), { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.8, speed: { min: 2, max: 8 }, size: { min: 0.3, max: 0.8 }, life: { min: 0.15, max: 0.4 } });
@@ -470,7 +422,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const existing: ProjectileView | undefined = projectiles.get(projectile.id);
     if (existing !== undefined) return existing;
     const color: Color = colorOf(projectile.skill.vfx.color);
-    const mesh: Mesh = projectileMesh(projectile.skill.vfx.style === 'orb' ? 'orb' : 'bolt', color);
+    const light: number = Math.min(1, projectile.skill.vfx.light);
+    const mesh: Mesh = projectileMesh(projectile.skill.vfx.style === 'orb' ? 'orb' : 'bolt', glow(color, EFFECTS.dimFrom + (1 - EFFECTS.dimFrom) * light));
+    const slim: number = EFFECTS.slimFrom + (1 - EFFECTS.slimFrom) * light;
+    mesh.scale.set(mesh.scale.x * slim, mesh.scale.y * slim, mesh.scale.z * (EFFECTS.shortFrom + (1 - EFFECTS.shortFrom) * light));
     mesh.rotation.y = facingOf(projectile.direction);
     scene.add(mesh);
     const view: ProjectileView = { mesh, color };
@@ -663,7 +618,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         if (view === null) continue;
         view.mesh.position.set(projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z);
         view.mesh.rotation.z += dt * 14;
-        spray(projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z, view.color, 2, { speed: { min: 0, max: 1.2 }, lift: { min: -0.6, max: 0.8 }, life: { min: 0.12, max: 0.32 }, size: { min: 0.3, max: 0.7 }, gravity: 0, jitter: 0.25 });
+        if (projectile.skill.vfx.trail > 0) kit.carry(projectile.id, projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z, projectile.direction.x, projectile.direction.z, view.color, null, projectile.skill.vfx.trail, dt);
+        else spray(projectile.pos.x, EFFECTS.projectileHeight, projectile.pos.z, view.color, 2, { speed: { min: 0, max: 1.2 }, lift: { min: -0.6, max: 0.8 }, life: { min: 0.12, max: 0.32 }, size: { min: 0.3, max: 0.7 }, gravity: 0, jitter: 0.25 });
       }
       if (warmFrames > 0) {
         warmFrames -= 1;

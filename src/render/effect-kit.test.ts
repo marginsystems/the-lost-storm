@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { Color, Group } from 'three';
 import type { VfxImpact, VfxLightning } from '../../sim/content/types.ts';
 import type { EffectKit, KitBudget } from './effect-kit.ts';
-import { createEffectKit, flashLevel, KIT, KIT_BUDGETS, kitBudget, sparkCount } from './effect-kit.ts';
+import { createEffectKit, flashLevel, heft, KIT, KIT_BUDGETS, kitBudget, sparkCount } from './effect-kit.ts';
 import type { BurstOptions, ParticleSystem } from './particles.ts';
 
 interface Recorder {
@@ -26,7 +26,7 @@ function recorder(): Recorder {
   };
 }
 
-const LOOK: VfxLightning = { forks: 1, glow: 0.5, afterglow: 0.2, jitter: 0.5 };
+const LOOK: VfxLightning = { forks: 1, glow: 0.5, afterglow: 0.2, jitter: 0.5, width: 1, core: 1 };
 const HIT: VfxImpact = { sparks: 12, flash: 1.2 };
 const BLUE: Color = new Color(0x9be1ff);
 
@@ -101,4 +101,46 @@ void test('reduced motion leaves no trail behind a carried bolt', (): void => {
   const kit: EffectKit = kitWith(kitBudget('desktop', true), record, []);
   for (let step: number = 0; step < 30; step += 1) kit.carry(3, step * 0.5, 1.25, 0, 1, 0, BLUE, LOOK, 1.2, 1 / 60);
   assert.equal(record.bursts.length, 0);
+});
+
+void test('a sky strike draws one bolt from above and as many ground arcs as its forks allow within the tier cap', (): void => {
+  const look: VfxLightning = { ...LOOK, forks: 2 };
+  const desktop: EffectKit = kitWith(KIT_BUDGETS.desktop, recorder(), []);
+  desktop.skyStrike(0, 0, BLUE, look, 3, HIT, 1, 0);
+  assert.equal(desktop.strands.active, 1 + Math.min(KIT_BUDGETS.desktop.arcs, look.forks + 1));
+  assert.equal(desktop.pending, 1);
+  const mobile: EffectKit = kitWith(KIT_BUDGETS.mobile, recorder(), []);
+  mobile.skyStrike(0, 0, BLUE, look, 3, null, 1, 0);
+  assert.equal(mobile.strands.active, 1 + KIT_BUDGETS.mobile.arcs);
+  assert.equal(mobile.pending, 0);
+});
+
+void test('a channel holds one strand while its beam keeps ticking and lets it fade once the ticks stop', (): void => {
+  const kit: EffectKit = kitWith(KIT_BUDGETS.desktop, recorder(), []);
+  const from = { x: 0, y: 1.3, z: 0 } as const;
+  const to = { x: 6, y: 1.1, z: 0 } as const;
+  for (let tick: number = 0; tick < 5; tick += 1) {
+    kit.channel(4, from, to, BLUE, LOOK, 0.24);
+    kit.update(0.18);
+  }
+  assert.equal(kit.strands.active, 1);
+  kit.update(0.1);
+  kit.update(LOOK.afterglow + 0.01);
+  assert.equal(kit.strands.active, 0);
+});
+
+void test('a carried projectile with no lightning leaves a trail and holds no strand', (): void => {
+  const record: Recorder = recorder();
+  const kit: EffectKit = kitWith(KIT_BUDGETS.desktop, record, []);
+  kit.carry(9, 0, 1.25, 0, 1, 0, BLUE, null, 1, 1 / 60);
+  kit.carry(9, 3, 1.25, 0, 1, 0, BLUE, null, 1, 1 / 60);
+  assert.equal(kit.strands.active, 0);
+  assert.ok(record.bursts.length > 0);
+});
+
+void test('heft is nothing for a light swing and grows with the shake of a heavy one', (): void => {
+  assert.equal(heft(0.16), 0);
+  assert.equal(heft(KIT.heftFrom), 0);
+  assert.ok(heft(0.42) > 0.5);
+  assert.equal(heft(5), 1);
 });

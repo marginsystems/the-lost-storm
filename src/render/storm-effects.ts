@@ -2,7 +2,7 @@ import type { Group } from 'three';
 import { Color, PointLight, Vector3 } from 'three';
 import type { BufferGeometry, Mesh, MeshBasicMaterial, Object3D } from 'three';
 import type { AreaDelivery } from '../../sim/content/shape-types.ts';
-import type { SkillDef } from '../../sim/content/types.ts';
+import type { SkillDef, VfxImpact } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { areaOf } from '../../sim/world/areas.ts';
 import { chargeOf } from '../../sim/world/skills.ts';
@@ -26,19 +26,24 @@ export const STORM_EFFECTS = {
   blinkTime: 0.3,
   areaGlow: 0.34,
   areaFill: 0.2,
-  gapFill: 0.14,
+  gapFill: 0.035,
+  gapLight: 24,
+  gapGlow: 0.12,
+  pullSpray: 16,
   areaBandWidth: 0.1,
   areaWobble: 0.07,
   areaFadeOut: 0.3,
   areaGoneBelow: 0.004,
   windSpin: 2.6,
-  windMotes: 3,
+  windMotes: 7,
+  windDust: 3,
+  windReach: 1.15,
   stormMotes: 1,
   gapMotes: 2,
   brandSize: 0.55,
   brandHeight: 0.08,
-  brandGlow: 0.5,
-  brandFill: 0.5,
+  brandGlow: 0.3,
+  brandFill: 0.35,
   brandWidth: 0.25,
   brandPulse: 0.3,
   brandRate: 9,
@@ -50,6 +55,9 @@ export const STORM_EFFECTS = {
   arcTime: 0.22,
   releaseWave: 0.8,
   hop: 0.035,
+  blinkHeight: 1,
+  strikeReach: 0.5,
+  missShare: 0.4,
 } as const;
 
 export interface StormKit {
@@ -72,6 +80,7 @@ export interface StormEffects {
 
 interface AreaView {
   readonly light: GroundLight;
+  readonly glow: number;
   readonly color: Color;
   readonly delivery: AreaDelivery;
   readonly duration: number;
@@ -84,6 +93,27 @@ interface BrandView {
 }
 
 const MIST: Color = new Color(0xc9d6e2);
+const WIND_DUST: Color = new Color(0x5d6b78);
+
+interface Spot {
+  x: number;
+  y: number;
+  z: number;
+}
+
+const START: Spot = { x: 0, y: 0, z: 0 };
+const END: Spot = { x: 0, y: 0, z: 0 };
+
+function placed(target: Spot, at: Vec2, y: number): Spot {
+  target.x = at.x;
+  target.y = y;
+  target.z = at.z;
+  return target;
+}
+
+function missed(impact: VfxImpact, hits: number): VfxImpact {
+  return hits > 0 ? impact : { sparks: Math.round(impact.sparks * STORM_EFFECTS.missShare), flash: impact.flash * STORM_EFFECTS.missShare };
+}
 
 export function createStormEffects(kit: StormKit): StormEffects {
   const areas: Map<number, AreaView> = new Map<number, AreaView>();
@@ -132,6 +162,16 @@ export function createStormEffects(kit: StormKit): StormEffects {
 
   const onBeam = (event: Extract<WorldEvent, { type: 'beam' }>): void => {
     const color: Color = kit.colorOf(event.skill.vfx.color);
+    const lightning = event.skill.vfx.lightning;
+    if (lightning !== null) {
+      placed(START, event.from, STORM_EFFECTS.handHeight);
+      placed(END, event.to, STORM_EFFECTS.bodyHeight);
+      if (event.skill.press?.type === 'channel') kit.kit.channel(event.actorId, START, END, color, lightning, STORM_EFFECTS.beamHold);
+      else kit.kit.strike(START, END, color, lightning, 0);
+      const impact = event.skill.vfx.impact;
+      if (impact !== null) kit.kit.impact(event.to.x, event.to.z, color, missed(impact, event.hits), event.skill.vfx.light, 0);
+      return;
+    }
     const from: Vector3 = new Vector3(event.from.x, STORM_EFFECTS.handHeight, event.from.z);
     const to: Vector3 = new Vector3(event.to.x, STORM_EFFECTS.bodyHeight, event.to.z);
     flicker(lightningLine(from, to, color, STORM_EFFECTS.beamJitter, STORM_EFFECTS.beamWidth), STORM_EFFECTS.beamHold);
@@ -145,15 +185,19 @@ export function createStormEffects(kit: StormKit): StormEffects {
     for (const spot of [event.from, event.to]) {
       kit.spray(spot.x, 0.9, spot.z, MIST, 26, { speed: { min: 0.4, max: 2.4 }, lift: { min: 0.2, max: 1.6 }, life: { min: 0.4, max: 0.9 }, size: { min: 0.8, max: 1.7 }, gravity: -0.6, drag: 2.4, jitter: 0.6 });
     }
-    const streak = lightningLine(new Vector3(event.from.x, 1, event.from.z), new Vector3(event.to.x, 1, event.to.z), glow(color, 0.5), 0.15, 0.5);
-    kit.add(
-      streak,
-      STORM_EFFECTS.blinkTime,
-      (t: number): void => {
-        streak.material.opacity = (1 - t) * 0.5;
-      },
-      null,
-    );
+    const lightning = event.skill.vfx.lightning;
+    if (lightning !== null) kit.kit.strike(placed(START, event.from, STORM_EFFECTS.blinkHeight), placed(END, event.to, STORM_EFFECTS.blinkHeight), color, lightning, 0);
+    else {
+      const streak = lightningLine(new Vector3(event.from.x, 1, event.from.z), new Vector3(event.to.x, 1, event.to.z), glow(color, 0.5), 0.15, 0.5);
+      kit.add(
+        streak,
+        STORM_EFFECTS.blinkTime,
+        (t: number): void => {
+          streak.material.opacity = (1 - t) * 0.5;
+        },
+        null,
+      );
+    }
     const delivery = event.skill.delivery;
     if (delivery.type === 'blink' && delivery.radius > 0) kit.ring(event.to.x, event.to.z, delivery.radius, color, 0.35);
   };
@@ -167,13 +211,11 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const gap: boolean = delivery.pulse === 0 && delivery.pull === 0;
     const light: GroundLight = createGroundLight(color, { kind: 'round', radius: delivery.radius, inner: 0, arc: Math.PI * 2 }, { fill: gap ? STORM_EFFECTS.gapFill : STORM_EFFECTS.areaFill, band: 1, width: delivery.radius * STORM_EFFECTS.areaBandWidth, wobble: delivery.radius * STORM_EFFECTS.areaWobble });
     light.mesh.position.set(area.pos.x, GROUND_LIGHT.height, area.pos.z);
-    light.show(STORM_EFFECTS.areaGlow);
+    const shine: number = gap ? STORM_EFFECTS.gapGlow : STORM_EFFECTS.areaGlow;
+    light.show(shine);
     kit.addObject(light.mesh);
-    areas.set(area.id, { light, color, delivery, duration: delivery.duration, age: 0, moteTimer: 0 });
-    if (delivery.slow < 1 && delivery.pulse === 0) {
-      kit.ring(area.pos.x, area.pos.z, delivery.radius, color, 0.6);
-      kit.flashLight(area.pos.x, 3, area.pos.z, color, 60);
-    }
+    areas.set(area.id, { light, glow: shine, color, delivery, duration: delivery.duration, age: 0, moteTimer: 0 });
+    if (gap && delivery.slow < 1) kit.flashLight(area.pos.x, 3, area.pos.z, color, STORM_EFFECTS.gapLight);
   };
 
   const pulseArea = (area: AreaState, hits: number): void => {
@@ -182,7 +224,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const { delivery, color } = view;
     if (delivery.pull > 0) {
       kit.burst(area.pos.x, area.pos.z, delivery.radius * 0.55, area.skill);
-      kit.spray(area.pos.x, 0.3, area.pos.z, color, 30, { speed: { min: 3, max: 9 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.3, max: 0.7 }, size: { min: 0.8, max: 1.8 }, drag: 3 });
+      kit.spray(area.pos.x, 0.3, area.pos.z, color, STORM_EFFECTS.pullSpray, { speed: { min: 3, max: 9 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.3, max: 0.7 }, size: { min: 0.5, max: 1.1 }, drag: 3 });
       if (hits > 0) kit.trauma(area.skill.shake);
       return;
     }
@@ -190,6 +232,13 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const reach: number = Math.random() * delivery.radius * 0.7;
     const x: number = area.pos.x + Math.sin(angle) * reach;
     const z: number = area.pos.z + Math.cos(angle) * reach;
+    const lightning = area.skill.vfx.lightning;
+    if (lightning !== null) {
+      const impact = area.skill.vfx.impact;
+      kit.kit.skyStrike(x, z, color, lightning, delivery.radius * STORM_EFFECTS.strikeReach, impact === null ? null : missed(impact, hits), area.skill.vfx.light, 0);
+      if (hits > 0) kit.trauma(area.skill.shake);
+      return;
+    }
     const bolt = skyBolt(color);
     bolt.position.set(x, 0, z);
     flicker(bolt, STORM_EFFECTS.arcTime);
@@ -228,7 +277,12 @@ export function createStormEffects(kit: StormKit): StormEffects {
 
   const onRelease = (event: Extract<WorldEvent, { type: 'skill_impact' }>): void => {
     const delivery = event.skill.delivery;
-    if (event.skill.press?.type === 'charge' && delivery.type === 'arc') kit.burst(event.origin.x + event.direction.x * 1.2, event.origin.z + event.direction.z * 1.2, delivery.reach * STORM_EFFECTS.releaseWave, event.skill);
+    if (event.skill.press?.type !== 'charge' || delivery.type !== 'arc') return;
+    const x: number = event.origin.x + event.direction.x * 1.2;
+    const z: number = event.origin.z + event.direction.z * 1.2;
+    kit.burst(x, z, delivery.reach * STORM_EFFECTS.releaseWave, event.skill);
+    const lightning = event.skill.vfx.lightning;
+    if (lightning !== null) kit.kit.skyStrike(x, z, kit.colorOf(event.skill.vfx.color), lightning, delivery.reach * STORM_EFFECTS.releaseWave, event.skill.vfx.impact, event.skill.vfx.light, 0);
   };
 
   const motes = (view: AreaView, area: AreaState, dt: number): void => {
@@ -242,7 +296,13 @@ export function createStormEffects(kit: StormKit): StormEffects {
         const x: number = area.pos.x + Math.sin(angle) * delivery.radius;
         const z: number = area.pos.z + Math.cos(angle) * delivery.radius;
         const swirl: number = angle + Math.PI + STORM_EFFECTS.windSpin * 0.3;
-        kit.spray(x, 0.5, z, color, 1, { dirX: Math.sin(swirl), dirZ: Math.cos(swirl), spread: 0.3, speed: { min: delivery.pull * 0.8, max: delivery.pull * 1.2 }, lift: { min: 0, max: 0.6 }, life: { min: 0.35, max: 0.55 }, size: { min: 0.5, max: 1.1 }, gravity: 0, drag: 0.5 });
+        kit.spray(x, 0.3 + Math.random() * 1.4, z, color, 1, { dirX: Math.sin(swirl), dirZ: Math.cos(swirl), spread: 0.3, speed: { min: delivery.pull * 0.8, max: delivery.pull * 1.3 }, lift: { min: -0.2, max: 0.6 }, life: { min: 0.35, max: 0.6 }, size: { min: 0.35, max: 0.9 }, gravity: 0, drag: 0.5 });
+      }
+      for (let index: number = 0; index < STORM_EFFECTS.windDust; index += 1) {
+        const angle: number = Math.random() * Math.PI * 2;
+        const reach: number = delivery.radius * STORM_EFFECTS.windReach;
+        const swirl: number = angle + Math.PI + STORM_EFFECTS.windSpin * 0.2;
+        kit.spray(area.pos.x + Math.sin(angle) * reach, 0.15, area.pos.z + Math.cos(angle) * reach, WIND_DUST, 1, { dirX: Math.sin(swirl), dirZ: Math.cos(swirl), spread: 0.4, speed: { min: delivery.pull * 0.5, max: delivery.pull * 0.8 }, lift: { min: 0.2, max: 1 }, life: { min: 0.5, max: 0.8 }, size: { min: 1.2, max: 2.4 }, gravity: 0.3, drag: 1.2, jitter: 0.4 });
       }
       return;
     }
@@ -266,7 +326,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
       const view: AreaView | undefined = areas.get(area.id);
       if (view === undefined) continue;
       view.age += dt;
-      view.light.show(area.timeLeft > STORM_EFFECTS.areaFadeOut ? STORM_EFFECTS.areaGlow : 0);
+      view.light.show(area.timeLeft > STORM_EFFECTS.areaFadeOut ? view.glow : 0);
       view.light.mesh.position.set(area.pos.x, GROUND_LIGHT.height, area.pos.z);
       view.light.step(dt, world.time);
       motes(view, area, dt);

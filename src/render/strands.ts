@@ -40,11 +40,12 @@ export const STRAND_FRAGMENT: string = [
   'uniform vec3 uColor;',
   'uniform float uStrength;',
   'uniform float uGlow;',
+  'uniform float uCore;',
   'varying float vSide;',
   'varying float vWeight;',
   'void main() {',
   '  float x2 = vSide * vSide;',
-  `  float core = exp(-x2 * ${glsl(STRANDS.coreSharp)});`,
+  `  float core = exp(-x2 * ${glsl(STRANDS.coreSharp)}) * uCore;`,
   `  float halo = exp(-x2 * ${glsl(STRANDS.haloSharp)}) * uGlow;`,
   `  float energy = (core * ${glsl(STRANDS.coreBoost)} + halo * ${glsl(STRANDS.haloBoost)}) * uStrength * vWeight;`,
   `  vec3 tint = mix(uColor, vec3(1.0), core * ${glsl(STRANDS.whiten)});`,
@@ -57,6 +58,8 @@ export type StrandMode = 'free' | 'strike' | 'held' | 'fading';
 export interface StrandLook extends StrandForm {
   readonly glow: number;
   readonly afterglow: number;
+  readonly width: number;
+  readonly core: number;
 }
 
 export interface StrandHandle {
@@ -86,6 +89,8 @@ interface Slot {
   readonly color: Color;
   readonly strength: { value: number };
   readonly glow: { value: number };
+  readonly width: { value: number };
+  readonly core: { value: number };
   mode: StrandMode;
   age: number;
   delay: number;
@@ -156,10 +161,12 @@ function createSlot(indices: readonly number[]): Slot {
   const color: Color = new Color();
   const strength: { value: number } = { value: 0 };
   const glow: { value: number } = { value: 0 };
+  const width: { value: number } = { value: STRANDS.width };
+  const core: { value: number } = { value: 1 };
   const material: ShaderMaterial = new ShaderMaterial({
     vertexShader: STRAND_VERTEX,
     fragmentShader: STRAND_FRAGMENT,
-    uniforms: { uColor: { value: color }, uStrength: strength, uGlow: glow, uWidth: { value: STRANDS.width } },
+    uniforms: { uColor: { value: color }, uStrength: strength, uGlow: glow, uWidth: width, uCore: core },
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
@@ -169,7 +176,7 @@ function createSlot(indices: readonly number[]): Slot {
   mesh.frustumCulled = false;
   mesh.renderOrder = STRANDS.order;
   mesh.visible = false;
-  return { mesh, buffers: createStrandBuffers(), positions, tangents, weights, positionData, tangentData, weightData, color, strength, glow, mode: 'free', age: 0, delay: 0, afterglow: 0, restrike: false, held: 0, form: { forks: 0, jitter: 0 } };
+  return { mesh, buffers: createStrandBuffers(), positions, tangents, weights, positionData, tangentData, weightData, color, strength, glow, width, core, mode: 'free', age: 0, delay: 0, afterglow: 0, restrike: false, held: 0, form: { forks: 0, jitter: 0 } };
 }
 
 export function createStrands(parent: Object3D, capacity: number, random: () => number = Math.random): Strands {
@@ -199,6 +206,8 @@ export function createStrands(parent: Object3D, capacity: number, random: () => 
   const dress = (slot: Slot, color: Color, look: StrandLook): void => {
     slot.color.copy(color);
     slot.glow.value = look.glow;
+    slot.width.value = STRANDS.width * look.width;
+    slot.core.value = look.core;
     slot.afterglow = look.afterglow;
     slot.form = look;
     slot.age = 0;

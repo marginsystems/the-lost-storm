@@ -25,11 +25,7 @@
     "stagger": 0.22,
     "shake": 0.16,
     "hitStop": 0.035,
-    "vfx": {
-      "style": "slash",
-      "color": "#d6ecff",
-      "cue": "blade"
-    },
+    "vfx": { "style": "slash", "color": "#d6ecff", "cue": "blade", "light": 0.3, "impact": { "sparks": 6, "flash": 0 } },
     "combo": {
       "window": 0.55,
       "steps": [
@@ -84,12 +80,7 @@
     "shake": 0.55,
     "hitStop": 0.07,
     "category": "area",
-    "vfx": {
-      "style": "shockwave",
-      "color": "#7fd4ff",
-      "cue": "ground",
-      "light": 0.55
-    }
+    "vfx": { "style": "shockwave", "color": "#7fd4ff", "cue": "ground", "light": 0.55, "lightning": { "forks": 2, "glow": 0.5, "afterglow": 0.26, "jitter": 1.1, "width": 1.6, "core": 0.9 }, "impact": { "sparks": 14, "flash": 1.6 } }
   },
   {
     "id": "storm_bolt",
@@ -122,14 +113,7 @@
     "shake": 0.14,
     "hitStop": 0.03,
     "category": "single",
-    "vfx": {
-      "style": "bolt",
-      "color": "#9be1ff",
-      "cue": "hand",
-      "lightning": { "forks": 1, "glow": 0.5, "afterglow": 0.2, "jitter": 0.55 },
-      "impact": { "sparks": 12, "flash": 1.1 },
-      "trail": 1.2
-    }
+    "vfx": { "style": "bolt", "color": "#9be1ff", "cue": "hand", "lightning": { "forks": 1, "glow": 0.65, "afterglow": 0.2, "jitter": 0.55, "width": 1.4, "core": 1.1 }, "impact": { "sparks": 12, "flash": 1.1 }, "trail": 1.2 }
   },
   {
     "id": "dodge_roll",
@@ -158,11 +142,7 @@
     "stagger": 0,
     "shake": 0,
     "hitStop": 0,
-    "vfx": {
-      "style": "roll",
-      "color": "#8a7a62",
-      "cue": "ground"
-    }
+    "vfx": { "style": "roll", "color": "#8a7a62", "cue": "none" }
   },
   {
     "id": "volatile_burst",
@@ -912,7 +892,7 @@
     "shake": 0.22,
     "hitStop": 0.04,
     "category": "movement",
-    "vfx": { "style": "mist", "color": "#c9d6e2", "cue": "ground" }
+    "vfx": { "style": "mist", "color": "#c9d6e2", "cue": "ground", "lightning": { "forks": 0, "glow": 0.6, "afterglow": 0.32, "jitter": 0.25, "width": 2.4, "core": 0.12 } }
   },
   {
     "id": "downdraught",
@@ -954,7 +934,7 @@
     "shake": 0.1,
     "hitStop": 0.015,
     "category": "lasting",
-    "vfx": { "style": "storm", "color": "#8fd0ff", "cue": "hand" }
+    "vfx": { "style": "storm", "color": "#8fd0ff", "cue": "hand", "lightning": { "forks": 1, "glow": 0.5, "afterglow": 0.22, "jitter": 0.9, "width": 1.3, "core": 0.9 }, "impact": { "sparks": 8, "flash": 1.3 } }
   },
   {
     "id": "thunderhead",
@@ -975,7 +955,7 @@
     "shake": 0.45,
     "hitStop": 0.07,
     "category": "charged",
-    "vfx": { "style": "heave", "color": "#e6f3ff", "cue": "ground", "light": 0.8 },
+    "vfx": { "style": "heave", "color": "#e6f3ff", "cue": "ground", "light": 0.8, "lightning": { "forks": 2, "glow": 0.45, "afterglow": 0.24, "jitter": 1, "width": 1.4, "core": 0.9 }, "impact": { "sparks": 8, "flash": 1.2 } },
     "press": { "type": "charge", "max": 1.1, "damageScale": 3.1, "areaScale": 1.7 }
   },
   {
@@ -997,7 +977,7 @@
     "shake": 0.08,
     "hitStop": 0.02,
     "category": "mark",
-    "vfx": { "style": "brand", "color": "#f2e08a", "cue": "hand" },
+    "vfx": { "style": "brand", "color": "#f2e08a", "cue": "hand", "light": 0.35, "impact": { "sparks": 6, "flash": 0.6 }, "trail": 1 },
     "brand": { "duration": 7, "burst": "static_brand_burst" }
   },
   {
@@ -1018,7 +998,7 @@
     "stagger": 0.6,
     "shake": 0.45,
     "hitStop": 0.07,
-    "vfx": { "style": "shockwave", "color": "#f2e08a", "cue": "none", "light": 0.6 }
+    "vfx": { "style": "shockwave", "color": "#f2e08a", "cue": "none", "light": 0.6, "lightning": { "forks": 1, "glow": 0.4, "afterglow": 0.2, "jitter": 0.8, "width": 1.1, "core": 0.8 }, "impact": { "sparks": 10, "flash": 1.2 } }
   },
   {
     "id": "living_wire",
@@ -1039,7 +1019,7 @@
     "shake": 0.05,
     "hitStop": 0.01,
     "category": "channel",
-    "vfx": { "style": "beam", "color": "#bfe9ff", "cue": "hand" },
+    "vfx": { "style": "beam", "color": "#bfe9ff", "cue": "hand", "lightning": { "forks": 1, "glow": 0.45, "afterglow": 0.14, "jitter": 0.5, "width": 0.9, "core": 0.75 }, "impact": { "sparks": 4, "flash": 0.45 } },
     "press": { "type": "channel", "interval": 0.18, "max": 4 }
   },
   {
@@ -1081,7 +1061,7 @@
     "stagger": 0.2,
     "shake": 0.2,
     "hitStop": 0.035,
-    "vfx": { "style": "beam", "color": "#9be1ff", "cue": "hand" }
+    "vfx": { "style": "beam", "color": "#9be1ff", "cue": "hand", "lightning": { "forks": 2, "glow": 0.55, "afterglow": 0.24, "jitter": 0.6, "width": 1.35, "core": 1 }, "impact": { "sparks": 12, "flash": 1 } }
   },
   {
     "id": "thunderclap_standing",
@@ -1101,7 +1081,7 @@
     "stagger": 0.2,
     "shake": 0.18,
     "hitStop": 0.02,
-    "vfx": { "style": "storm", "color": "#7fd4ff", "cue": "ground", "light": 0.6 }
+    "vfx": { "style": "storm", "color": "#7fd4ff", "cue": "ground", "light": 0.6, "lightning": { "forks": 1, "glow": 0.5, "afterglow": 0.22, "jitter": 0.9, "width": 1.3, "core": 0.9 }, "impact": { "sparks": 8, "flash": 1.2 } }
   },
   {
     "id": "cleave_whirl",
@@ -1121,7 +1101,7 @@
     "stagger": 0.2,
     "shake": 0.16,
     "hitStop": 0.035,
-    "vfx": { "style": "slash", "color": "#d6ecff", "cue": "blade" }
+    "vfx": { "style": "slash", "color": "#d6ecff", "cue": "blade", "light": 0.3, "impact": { "sparks": 6, "flash": 0 } }
   },
   {
     "id": "cleave_millwheel",
@@ -1142,7 +1122,7 @@
     "shake": 0.12,
     "hitStop": 0.025,
     "category": "channel",
-    "vfx": { "style": "slash", "color": "#d6ecff", "cue": "blade" },
+    "vfx": { "style": "slash", "color": "#d6ecff", "cue": "blade", "light": 0.3, "impact": { "sparks": 6, "flash": 0 } },
     "press": { "type": "channel", "interval": 0.3, "max": 6 }
   },
   {
@@ -1183,7 +1163,7 @@
     "stagger": 0.25,
     "shake": 0.1,
     "hitStop": 0.02,
-    "vfx": { "style": "mist", "color": "#c9d6e2", "cue": "ground" }
+    "vfx": { "style": "mist", "color": "#c9d6e2", "cue": "ground", "lightning": { "forks": 0, "glow": 0.6, "afterglow": 0.32, "jitter": 0.25, "width": 2.4, "core": 0.12 } }
   },
   {
     "id": "downdraught_updraught",
@@ -1223,7 +1203,7 @@
     "stagger": 0.65,
     "shake": 0.65,
     "hitStop": 0.09,
-    "vfx": { "style": "shockwave", "color": "#7fd4ff", "cue": "ground", "light": 0.7 },
+    "vfx": { "style": "shockwave", "color": "#7fd4ff", "cue": "ground", "light": 0.7, "lightning": { "forks": 2, "glow": 0.5, "afterglow": 0.26, "jitter": 1.1, "width": 1.6, "core": 0.9 }, "impact": { "sparks": 14, "flash": 1.6 } },
     "press": { "type": "charge", "max": 1.0, "damageScale": 2.4, "areaScale": 1.5 }
   },
   {
@@ -1244,7 +1224,7 @@
     "stagger": 0.45,
     "shake": 0.4,
     "hitStop": 0.07,
-    "vfx": { "style": "slash", "color": "#d6ecff", "cue": "blade" },
+    "vfx": { "style": "slash", "color": "#d6ecff", "cue": "blade", "light": 0.3, "impact": { "sparks": 6, "flash": 0 } },
     "press": { "type": "charge", "max": 0.9, "damageScale": 2.6, "areaScale": 1.4 }
   },
   {
@@ -1265,7 +1245,7 @@
     "stagger": 0.2,
     "shake": 0.14,
     "hitStop": 0.03,
-    "vfx": { "style": "bolt", "color": "#9be1ff", "cue": "hand", "lightning": { "forks": 1, "glow": 0.5, "afterglow": 0.2, "jitter": 0.55 }, "impact": { "sparks": 12, "flash": 1.1 }, "trail": 1.2 },
+    "vfx": { "style": "bolt", "color": "#9be1ff", "cue": "hand", "lightning": { "forks": 1, "glow": 0.65, "afterglow": 0.2, "jitter": 0.55, "width": 1.4, "core": 1.1 }, "impact": { "sparks": 12, "flash": 1.1 }, "trail": 1.2 },
     "echo": 0.5
   },
   {
@@ -1291,7 +1271,7 @@
   },
   {"id": "first_haymaker", "category": "melee", "name": "Haymaker", "description": "A long, slow, telegraphed swing: there is time to step away.", "icon": "cleave", "animation": "slam_charged", "manaCost": 0, "cooldown": 4.2, "windup": 1.9, "recovery": 0.9, "scalesWithAttackSpeed": false, "engageRange": 2.4, "delivery": {"type": "arc", "reach": 3.3, "arcDegrees": 95}, "damage": {"weaponPercent": 1.6, "flatMin": 0, "flatMax": 0}, "knockback": 11, "stagger": 0.4, "shake": 0.62, "hitStop": 0.09, "vfx": {"style": "slash", "color": "#d08a5a"}},
   {"id": "first_stone", "category": "single", "name": "Thrown Stone", "description": "A lazy lob that is easy to sidestep.", "icon": "storm_bolt", "animation": "throw", "manaCost": 0, "cooldown": 3.6, "windup": 1.0, "recovery": 0.4, "scalesWithAttackSpeed": false, "engageRange": 9, "delivery": {"type": "projectile", "speed": 7, "radius": 0.45, "range": 15, "pierce": 0, "count": 1, "spreadDegrees": 0}, "damage": {"weaponPercent": 1.0, "flatMin": 0, "flatMax": 0}, "knockback": 4, "stagger": 0.15, "shake": 0.3, "hitStop": 0.04, "vfx": {"style": "orb", "color": "#b8a48a"}},
-  {"id": "quarrel", "name": "Quarrel", "description": "Loose a bolt that drives through the first enemy it hits.", "icon": "quarrel", "animation": "shoot", "manaCost": 0, "cooldown": 0, "windup": 0.08, "recovery": 0.34, "scalesWithAttackSpeed": true, "engageRange": 13, "delivery": {"type": "projectile", "speed": 36, "radius": 0.4, "range": 17, "pierce": 1, "count": 1, "spreadDegrees": 0}, "damage": {"weaponPercent": 0.95, "flatMin": 0, "flatMax": 0}, "knockback": 3.5, "stagger": 0.16, "shake": 0.1, "hitStop": 0.025, "category": "single", "vfx": {"style": "bolt", "color": "#f1e3bd", "cue": "none", "light": 0.2}},
-  {"id": "quarrel_fan", "name": "Fanned Quarrel", "description": "Quarrel looses a fan of bolts across the way ahead, each lighter than a single shot.", "icon": "quarrel", "animation": "shoot", "manaCost": 0, "cooldown": 0, "windup": 0.1, "recovery": 0.38, "scalesWithAttackSpeed": true, "engageRange": 11, "delivery": {"type": "projectile", "speed": 32, "radius": 0.4, "range": 14, "pierce": 0, "count": 5, "spreadDegrees": 70}, "damage": {"weaponPercent": 0.55, "flatMin": 0, "flatMax": 0}, "knockback": 3, "stagger": 0.14, "shake": 0.12, "hitStop": 0.025, "category": "single", "vfx": {"style": "bolt", "color": "#d6ecff", "cue": "none", "light": 0.2}},
-  {"id": "quarrel_heave", "name": "Heavy Quarrel", "description": "Quarrel can be held: release one heavy bolt that drives through the line and throws enemies far back.", "icon": "quarrel", "animation": "shoot", "manaCost": 0, "cooldown": 0.8, "windup": 0.12, "recovery": 0.36, "scalesWithAttackSpeed": false, "engageRange": 13, "delivery": {"type": "projectile", "speed": 40, "radius": 0.5, "range": 18, "pierce": 3, "count": 1, "spreadDegrees": 0}, "damage": {"weaponPercent": 1.1, "flatMin": 0, "flatMax": 0}, "knockback": 11, "stagger": 0.4, "shake": 0.35, "hitStop": 0.06, "category": "single", "vfx": {"style": "bolt", "color": "#f1e3bd", "cue": "none", "light": 0.35}, "press": {"type": "charge", "max": 0.9, "damageScale": 2.4, "areaScale": 1.3}}
+  {"id": "quarrel", "name": "Quarrel", "description": "Loose a bolt that drives through the first enemy it hits.", "icon": "quarrel", "animation": "shoot", "manaCost": 0, "cooldown": 0, "windup": 0.08, "recovery": 0.34, "scalesWithAttackSpeed": true, "engageRange": 13, "delivery": {"type": "projectile", "speed": 36, "radius": 0.4, "range": 17, "pierce": 1, "count": 1, "spreadDegrees": 0}, "damage": {"weaponPercent": 0.95, "flatMin": 0, "flatMax": 0}, "knockback": 3.5, "stagger": 0.16, "shake": 0.1, "hitStop": 0.025, "category": "single", "vfx": { "style": "bolt", "color": "#f1e3bd", "cue": "none", "light": 0.2, "impact": { "sparks": 5, "flash": 0 }, "trail": 0.8 }},
+  {"id": "quarrel_fan", "name": "Fanned Quarrel", "description": "Quarrel looses a fan of bolts across the way ahead, each lighter than a single shot.", "icon": "quarrel", "animation": "shoot", "manaCost": 0, "cooldown": 0, "windup": 0.1, "recovery": 0.38, "scalesWithAttackSpeed": true, "engageRange": 11, "delivery": {"type": "projectile", "speed": 32, "radius": 0.4, "range": 14, "pierce": 0, "count": 5, "spreadDegrees": 70}, "damage": {"weaponPercent": 0.55, "flatMin": 0, "flatMax": 0}, "knockback": 3, "stagger": 0.14, "shake": 0.12, "hitStop": 0.025, "category": "single", "vfx": { "style": "bolt", "color": "#d6ecff", "cue": "none", "light": 0.2, "impact": { "sparks": 3, "flash": 0 }, "trail": 0.5 }},
+  {"id": "quarrel_heave", "name": "Heavy Quarrel", "description": "Quarrel can be held: release one heavy bolt that drives through the line and throws enemies far back.", "icon": "quarrel", "animation": "shoot", "manaCost": 0, "cooldown": 0.8, "windup": 0.12, "recovery": 0.36, "scalesWithAttackSpeed": false, "engageRange": 13, "delivery": {"type": "projectile", "speed": 40, "radius": 0.5, "range": 18, "pierce": 3, "count": 1, "spreadDegrees": 0}, "damage": {"weaponPercent": 1.1, "flatMin": 0, "flatMax": 0}, "knockback": 11, "stagger": 0.4, "shake": 0.35, "hitStop": 0.06, "category": "single", "vfx": { "style": "bolt", "color": "#f1e3bd", "cue": "none", "light": 0.35, "impact": { "sparks": 8, "flash": 0.5 }, "trail": 1 }, "press": {"type": "charge", "max": 0.9, "damageScale": 2.4, "areaScale": 1.3}}
 ]

@@ -6,7 +6,7 @@ import type { GroundLight } from './ground-light.ts';
 import { createGroundLight, flare, GROUND_LIGHT, spread } from './ground-light.ts';
 import type { BurstOptions, ParticleSystem } from './particles.ts';
 import type { Dice, StrandEnds } from './strand-shape.ts';
-import { createDice } from './strand-shape.ts';
+import { createDice, STRAND } from './strand-shape.ts';
 import type { StrandHandle, Strands } from './strands.ts';
 import { createStrands } from './strands.ts';
 
@@ -50,6 +50,18 @@ export const KIT = {
   trailJitter: 0.18,
   trailPerFrame: 6,
   reducedSparks: 0.5,
+  channelLead: 0.06,
+  channelStrength: 0.8,
+  channelReshape: 1 / 20,
+  skyHeight: 9,
+  skyLean: 1.6,
+  skyFoot: 0.1,
+  arcHeight: 0.18,
+  arcReachMin: 0.45,
+  arcReachSpan: 0.4,
+  arcGap: 0.03,
+  heftFrom: 0.2,
+  heftSpan: 0.3,
 } as const;
 
 export interface KitBudget {
@@ -59,11 +71,12 @@ export interface KitBudget {
   readonly sparkScale: number;
   readonly trailScale: number;
   readonly restrike: boolean;
+  readonly arcs: number;
 }
 
 export const KIT_BUDGETS: Readonly<Record<QualityName, KitBudget>> = {
-  desktop: { strands: 10, groundFlashes: 6, pending: 16, sparkScale: 1, trailScale: 1, restrike: true },
-  mobile: { strands: 4, groundFlashes: 3, pending: 8, sparkScale: 0.5, trailScale: 0.4, restrike: true },
+  desktop: { strands: 14, groundFlashes: 6, pending: 16, sparkScale: 1, trailScale: 1, restrike: true, arcs: 3 },
+  mobile: { strands: 6, groundFlashes: 3, pending: 8, sparkScale: 0.5, trailScale: 0.4, restrike: true, arcs: 1 },
 };
 
 export function kitBudget(tier: QualityName, reducedMotion: boolean): KitBudget {
@@ -82,6 +95,10 @@ export function flashLevel(age: number, rise: number, decay: number): number {
   return smooth(age / Math.max(1e-4, rise)) * Math.exp(-decay * Math.max(0, age - rise));
 }
 
+export function heft(shake: number): number {
+  return Math.min(1, Math.max(0, (shake - KIT.heftFrom) / KIT.heftSpan));
+}
+
 export function sparkCount(sparks: number, scale: number): number {
   return Math.max(0, Math.round(sparks * scale));
 }
@@ -91,7 +108,10 @@ export type FlashLight = (x: number, y: number, z: number, color: Color, intensi
 export interface EffectKit {
   impact(x: number, z: number, color: Color, impact: VfxImpact, light: number, delay: number): void;
   strike(from: StrandEnds, to: StrandEnds, color: Color, look: VfxLightning, delay: number): void;
-  carry(id: number, x: number, y: number, z: number, dirX: number, dirZ: number, color: Color, look: VfxLightning, trail: number, dt: number): void;
+  skyStrike(x: number, z: number, color: Color, look: VfxLightning, radius: number, impact: VfxImpact | null, light: number, delay: number): void;
+  channel(id: number, from: StrandEnds, to: StrandEnds, color: Color, look: VfxLightning, hold: number): void;
+  ground(x: number, z: number, radius: number, color: Color): void;
+  carry(id: number, x: number, y: number, z: number, dirX: number, dirZ: number, color: Color, look: VfxLightning | null, trail: number, dt: number): void;
   drop(id: number): void;
   update(dt: number): void;
   clear(): void;
@@ -138,6 +158,24 @@ interface Body {
   lastX: number;
   lastZ: number;
   owed: number;
+  age: number;
+  reshape: number;
+  seed: number;
+}
+
+interface Point {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface Channel {
+  readonly handle: StrandHandle;
+  readonly dice: Dice;
+  readonly from: Point;
+  readonly to: Point;
+  idle: number;
+  hold: number;
   age: number;
   reshape: number;
   seed: number;
@@ -203,8 +241,9 @@ export function createEffectKit(parent: Object3D, particles: ParticleSystem, fla
   const pending: Pending[] = [];
   for (let index: number = 0; index < start.pending; index += 1) pending.push({ color: new Color(), x: 0, z: 0, due: 0, sparks: 0, flash: 0, light: 0, live: false });
   const bodies: Map<number, Body> = new Map<number, Body>();
-  const tail: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
-  const head: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
+  const channels: Map<number, Channel> = new Map<number, Channel>();
+  const tail: Point = { x: 0, y: 0, z: 0 };
+  const head: Point = { x: 0, y: 0, z: 0 };
   let clock: number = 0;
 
   const groundFlash = (x: number, z: number, radius: number, color: Color): void => {
@@ -237,6 +276,37 @@ export function createEffectKit(parent: Object3D, particles: ParticleSystem, fla
     groundFlash(x, z, radius, color);
   };
 
+  const place = (target: Point, from: StrandEnds): void => {
+    target.x = from.x;
+    target.y = from.y;
+    target.z = from.z;
+  };
+
+  const shapeChannel = (channel: Channel): void => {
+    channel.dice.reset(channel.seed);
+    channel.handle.shape(channel.from, channel.to, channel.dice.next);
+  };
+
+  const later = (x: number, z: number, color: Color, sparksWanted: number, radius: number, light: number, delay: number): void => {
+    if (delay <= 0) {
+      fire(x, z, color, sparksWanted, radius, light);
+      return;
+    }
+    const slot: Pending | undefined = pending.find((entry: Pending): boolean => !entry.live);
+    if (slot === undefined) {
+      fire(x, z, color, sparksWanted, radius, light);
+      return;
+    }
+    slot.live = true;
+    slot.color.copy(color);
+    slot.x = x;
+    slot.z = z;
+    slot.due = clock + delay;
+    slot.sparks = sparksWanted;
+    slot.flash = radius;
+    slot.light = light;
+  };
+
   const drop = (id: number): void => {
     const body: Body | undefined = bodies.get(id);
     if (body === undefined) return;
@@ -252,31 +322,58 @@ export function createEffectKit(parent: Object3D, particles: ParticleSystem, fla
       return count;
     },
     impact(x: number, z: number, color: Color, impact: VfxImpact, light: number, delay: number): void {
-      if (delay <= 0) {
-        fire(x, z, color, impact.sparks, impact.flash, light);
-        return;
-      }
-      const slot: Pending | undefined = pending.find((entry: Pending): boolean => !entry.live);
-      if (slot === undefined) {
-        fire(x, z, color, impact.sparks, impact.flash, light);
-        return;
-      }
-      slot.live = true;
-      slot.color.copy(color);
-      slot.x = x;
-      slot.z = z;
-      slot.due = clock + delay;
-      slot.sparks = impact.sparks;
-      slot.flash = impact.flash;
-      slot.light = light;
+      later(x, z, color, impact.sparks, impact.flash, light, delay);
     },
     strike(from: StrandEnds, to: StrandEnds, color: Color, look: VfxLightning, delay: number): void {
       strands.strike(from, to, color, look, delay, budget().restrike);
     },
-    carry(id: number, x: number, y: number, z: number, dirX: number, dirZ: number, color: Color, look: VfxLightning, trail: number, dt: number): void {
+    skyStrike(x: number, z: number, color: Color, look: VfxLightning, radius: number, impact: VfxImpact | null, light: number, delay: number): void {
+      const allowed: KitBudget = budget();
+      head.x = x + (random() - 0.5) * KIT.skyLean;
+      head.y = KIT.skyHeight;
+      head.z = z + (random() - 0.5) * KIT.skyLean;
+      tail.x = x;
+      tail.y = KIT.skyFoot;
+      tail.z = z;
+      strands.strike(head, tail, color, look, delay, allowed.restrike);
+      const arcs: number = Math.min(allowed.arcs, look.forks + 1);
+      const turn: number = random() * Math.PI * 2;
+      for (let arc: number = 0; arc < arcs; arc += 1) {
+        const angle: number = turn + ((arc + random() * 0.5) / arcs) * Math.PI * 2;
+        const reach: number = radius * (KIT.arcReachMin + KIT.arcReachSpan * random());
+        head.x = x;
+        head.y = KIT.arcHeight;
+        head.z = z;
+        tail.x = x + Math.sin(angle) * reach;
+        tail.y = KIT.arcHeight;
+        tail.z = z + Math.cos(angle) * reach;
+        strands.strike(head, tail, color, look, delay + STRAND.lead + arc * KIT.arcGap, false);
+      }
+      if (impact !== null) later(x, z, color, impact.sparks, impact.flash, light, delay + STRAND.lead);
+    },
+    channel(id: number, from: StrandEnds, to: StrandEnds, color: Color, look: VfxLightning, hold: number): void {
+      let channel: Channel | undefined = channels.get(id);
+      if (channel === undefined) {
+        const handle: StrandHandle | null = strands.hold(color, look);
+        if (handle === null) return;
+        channel = { handle, dice: createDice(), from: { x: 0, y: 0, z: 0 }, to: { x: 0, y: 0, z: 0 }, idle: 0, hold, age: 0, reshape: KIT.channelReshape, seed: random() };
+        channels.set(id, channel);
+      }
+      place(channel.from, from);
+      place(channel.to, to);
+      channel.idle = 0;
+      channel.hold = hold;
+      channel.seed = random();
+      shapeChannel(channel);
+      channel.handle.light(KIT.channelStrength * smooth(channel.age / KIT.channelLead));
+    },
+    ground(x: number, z: number, radius: number, color: Color): void {
+      groundFlash(x, z, radius, color);
+    },
+    carry(id: number, x: number, y: number, z: number, dirX: number, dirZ: number, color: Color, look: VfxLightning | null, trail: number, dt: number): void {
       let body: Body | undefined = bodies.get(id);
       if (body === undefined) {
-        body = { handle: strands.hold(color, look), dice: createDice(), startX: x, startZ: z, lastX: x, lastZ: z, owed: 0, age: 0, reshape: 0, seed: random() };
+        body = { handle: look === null ? null : strands.hold(color, look), dice: createDice(), startX: x, startZ: z, lastX: x, lastZ: z, owed: 0, age: 0, reshape: 0, seed: random() };
         bodies.set(id, body);
       }
       body.age += dt;
@@ -314,6 +411,22 @@ export function createEffectKit(parent: Object3D, particles: ParticleSystem, fla
     drop,
     update(dt: number): void {
       clock += dt;
+      for (const [id, channel] of channels) {
+        channel.age += dt;
+        channel.idle += dt;
+        if (channel.idle >= channel.hold) {
+          channel.handle.fade();
+          channels.delete(id);
+          continue;
+        }
+        channel.reshape -= dt;
+        if (channel.reshape <= 0) {
+          channel.reshape = KIT.channelReshape;
+          channel.seed = random();
+          shapeChannel(channel);
+        }
+        channel.handle.light(KIT.channelStrength * smooth(channel.age / KIT.channelLead));
+      }
       strands.update(dt);
       for (const entry of pending) {
         if (!entry.live || entry.due > clock) continue;
@@ -336,6 +449,7 @@ export function createEffectKit(parent: Object3D, particles: ParticleSystem, fla
     },
     clear(): void {
       for (const id of bodies.keys()) drop(id);
+      channels.clear();
       strands.clear();
       for (const entry of pending) entry.live = false;
       for (const slot of ground) {

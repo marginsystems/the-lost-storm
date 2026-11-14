@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Color, Group } from 'three';
+import { Color, Group, Mesh, ShaderMaterial } from 'three';
 import { unsafeGlsl } from '../../test/glsl-support.ts';
 import { strandSpan } from './strand-shape.ts';
 import type { StrandHandle, StrandLook } from './strands.ts';
-import { createStrands, STRAND_FRAGMENT, STRAND_VERTEX } from './strands.ts';
+import { createStrands, STRAND_FRAGMENT, STRAND_VERTEX, STRANDS } from './strands.ts';
 
-const LOOK: StrandLook = { forks: 2, glow: 0.5, afterglow: 0.2, jitter: 0.5 };
+const LOOK: StrandLook = { forks: 2, glow: 0.5, afterglow: 0.2, jitter: 0.5, width: 1, core: 1 };
 const BLUE: Color = new Color(0x9be1ff);
 const A = { x: 0, y: 1.3, z: 0 } as const;
 const B = { x: 5, y: 1.1, z: 1 } as const;
@@ -55,4 +55,16 @@ void test('a held strand is never taken by a strike, and the pool says no when e
   assert.ok(strands.strike(A, B, BLUE, LOOK, 0, true));
   strands.clear();
   assert.equal(strands.active, 0);
+});
+
+void test('a look widens its strand and softens its core through the material', (): void => {
+  const parent: Group = new Group();
+  const strands = createStrands(parent, 1);
+  strands.strike(A, B, BLUE, { ...LOOK, width: 2, core: 0.25 }, 0, false);
+  const child: unknown = parent.children[0];
+  assert.ok(child instanceof Mesh);
+  const material: unknown = child.material;
+  assert.ok(material instanceof ShaderMaterial);
+  assert.equal(material.uniforms['uWidth']?.value, STRANDS.width * 2);
+  assert.equal(material.uniforms['uCore']?.value, 0.25);
 });
