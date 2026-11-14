@@ -1,4 +1,4 @@
-import type { FriendResult, FriendsResult, NameRefusal, NameResult, ReportReason, ReportResult } from '../backend/api.ts';
+import type { FriendResult, FriendsResult, NameRefusal, NameResult } from '../backend/api.ts';
 import type { HideoutServer } from '../backend/browser.ts';
 import type { LiveEvent } from '../backend/live.ts';
 import type { ChatLine } from '../backend/live-protocol.ts';
@@ -6,7 +6,7 @@ import { sayable } from '../backend/live-protocol.ts';
 import { nameProblem, NAME_MESSAGES, tidyName } from '../lobby/lobby-model.ts';
 import { createBrowserStore } from '../storage.ts';
 import type { ChatState, ChatStep } from './chat.ts';
-import { addNote, CHAT_WORDS, command, EMPTY_CHAT, friendText, GENERAL, receive, renameText, reportText, target } from './chat.ts';
+import { addNote, CHAT_WORDS, command, EMPTY_CHAT, friendText, GENERAL, receive, renameText, target } from './chat.ts';
 import { parseChat } from './chat-command.ts';
 import type { ChatView, Submitted } from './chat-view.ts';
 import { createChatView } from './chat-view.ts';
@@ -34,7 +34,9 @@ function signal(): AbortSignal {
   return AbortSignal.timeout(HIDEOUT_CHAT.requestMs);
 }
 
-export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFocus: () => boolean, mutes: Mutes): HideoutChat {
+export type PickName = (name: string, line: ChatLine | null, anchor: HTMLElement) => void;
+
+export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFocus: () => boolean, mutes: Mutes, pick: PickName): HideoutChat {
   let state: ChatState = EMPTY_CHAT;
   let present: boolean = false;
   let shown: boolean = false;
@@ -70,15 +72,8 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
     note(HIDEOUT_CHAT.unsentText);
     return { clear: false, keepOpen: true };
   };
-  const report = async (line: ChatLine, reason: ReportReason): Promise<void> => {
-    const token: string | null = server.token();
-    const result: ReportResult = token === null ? 'failed' : await server.api.report(token, line.id, reason, signal());
-    if (result === 'unsupported') view.hideReport();
-    note(reportText(result));
-  };
   const showFriends = (next: FriendsState): void => {
     friends = next;
-    if (!friends.available) view.hideFriend();
     friendsView.render(friends);
     for (const listener of friendListeners) listener(friends);
   };
@@ -131,19 +126,12 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
     events: window,
     mutes,
     submit,
-    message,
+    pick,
     general: (): void => {
       show(target(state, GENERAL));
       view.focus();
     },
-    muted: (): void => {
-      server.live.mute(mutes.list());
-    },
     canFocus,
-    report: (line: ChatLine, reason: ReportReason): void => void report(line, reason),
-    befriend: (name: string): void => {
-      void befriend(name);
-    },
     rename: (name: string): void => void rename(name),
   });
   const friendsView: FriendsView = createFriendsView({

@@ -1,4 +1,3 @@
-import type { ReportReason } from '../backend/api.ts';
 import type { ChatLine } from '../backend/live-protocol.ts';
 import { LIVE_LIMITS } from '../backend/live-protocol.ts';
 import type { ChatEntry, ChatState } from './chat.ts';
@@ -15,12 +14,6 @@ export const CHAT_VIEW = {
   swapMs: 320,
 } as const;
 
-const REASONS: readonly { readonly reason: ReportReason; readonly label: string }[] = [
-  { reason: 'abuse', label: 'Abuse' },
-  { reason: 'spam', label: 'Spam' },
-  { reason: 'other', label: 'Other' },
-];
-
 export interface Submitted {
   readonly clear: boolean;
   readonly keepOpen: boolean;
@@ -32,27 +25,16 @@ export interface ChatViewOptions {
   readonly mutes: Mutes;
   submit(text: string): Submitted;
   canFocus(): boolean;
-  report(line: ChatLine, reason: ReportReason): void;
-  befriend(name: string): void;
   rename(name: string): void;
-  message(name: string): void;
+  pick(name: string, line: ChatLine | null, anchor: HTMLElement): void;
   general(): void;
-  muted(): void;
 }
 
 export interface ChatView {
   readonly friendsSlot: HTMLElement;
   show(open: boolean): void;
   render(state: ChatState): void;
-  hideReport(): void;
-  hideFriend(): void;
   focus(): void;
-}
-
-interface Subject {
-  readonly key: string;
-  readonly name: string;
-  readonly line: ChatLine | null;
 }
 
 function make<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, parent: HTMLElement | null = null): HTMLElementTagNameMap[K] {
@@ -102,20 +84,8 @@ export function createChatView(options: ChatViewOptions): ChatView {
   field.placeholder = CHAT_VIEW.placeholder;
   field.autocomplete = 'off';
   field.spellcheck = false;
-  const menu: HTMLDivElement = make('div', 'chat-menu', panel);
-  const message: HTMLButtonElement = make('button', 'chat-menu-item', menu);
-  message.textContent = 'Message';
-  const friend: HTMLButtonElement = make('button', 'chat-menu-item', menu);
-  friend.textContent = 'Add friend';
-  const mute: HTMLButtonElement = make('button', 'chat-menu-item', menu);
-  const reportItem: HTMLButtonElement = make('button', 'chat-menu-item', menu);
-  reportItem.textContent = 'Report line';
-  const reasons: HTMLDivElement = make('div', 'chat-reasons', menu);
-  const reasonRow: HTMLDivElement = make('div', 'chat-reasons-row', reasons);
   const rows: Map<string, Row> = new Map<string, Row>();
   let open: boolean = false;
-  let reportable: boolean = true;
-  let subject: Subject | null = null;
   swapText(to, destination({ kind: 'general' }));
   swapText(readerLine, 'Everyone online reads this.');
 
@@ -123,57 +93,10 @@ export function createChatView(options: ChatViewOptions): ChatView {
     field.blur();
   };
 
-  const closeMenu = (): void => {
-    menu.classList.remove('open', 'reasons-open');
-    subject = null;
-  };
-
-  for (const choice of REASONS) {
-    const button: HTMLButtonElement = make('button', 'chat-reason', reasonRow);
-    button.textContent = choice.label;
-    button.addEventListener('click', (): void => {
-      if (subject?.line !== undefined && subject.line !== null) options.report(subject.line, choice.reason);
-      closeMenu();
-    });
-  }
-
-  const openMenu = (next: Subject, anchor: HTMLElement): void => {
-    if (subject?.key === next.key && menu.classList.contains('open')) {
-      closeMenu();
-      return;
-    }
-    subject = next;
-    mute.textContent = options.mutes.has(next.name) ? 'Unmute' : 'Mute';
-    reportItem.hidden = !reportable || next.line === null;
-    menu.classList.remove('reasons-open');
-    const panelBox: DOMRect = panel.getBoundingClientRect();
-    const anchorBox: DOMRect = anchor.getBoundingClientRect();
-    menu.style.left = `${(anchorBox.left - panelBox.left).toFixed(0)}px`;
-    menu.style.bottom = `${(panelBox.bottom - anchorBox.top).toFixed(0)}px`;
-    menu.classList.add('open');
-  };
-
   const applyMutes = (): void => {
     for (const row of rows.values()) row.element.classList.toggle('muted', row.entry.kind === 'line' && !row.entry.own && options.mutes.has(row.entry.line.name));
   };
 
-  message.addEventListener('click', (): void => {
-    if (subject !== null) options.message(subject.name);
-    closeMenu();
-  });
-  mute.addEventListener('click', (): void => {
-    if (subject !== null) options.mutes.toggle(subject.name);
-    applyMutes();
-    options.muted();
-    closeMenu();
-  });
-  reportItem.addEventListener('click', (): void => {
-    menu.classList.add('reasons-open');
-  });
-  friend.addEventListener('click', (): void => {
-    if (subject !== null) options.befriend(subject.name);
-    closeMenu();
-  });
   general.addEventListener('click', (): void => {
     options.general();
   });
@@ -203,12 +126,12 @@ export function createChatView(options: ChatViewOptions): ChatView {
     });
   };
 
-  const nameButton = (parent: HTMLElement, name: string, key: string, line: ChatLine | null): void => {
+  const nameButton = (parent: HTMLElement, name: string, line: ChatLine | null): void => {
     const button: HTMLButtonElement = make('button', 'chat-name', parent);
     button.type = 'button';
     button.textContent = name;
     button.addEventListener('click', (): void => {
-      openMenu({ key, name, line }, button);
+      options.pick(name, line, button);
     });
   };
 
@@ -225,7 +148,7 @@ export function createChatView(options: ChatViewOptions): ChatView {
         const element: HTMLLIElement = make('li', `chat-row chat-whisper ${entry.dir}`);
         const inner: HTMLDivElement = make('div', 'chat-row-inner', element);
         make('span', 'chat-dir', inner).textContent = entry.dir === 'from' ? 'From' : 'To';
-        nameButton(inner, entry.with, entry.key, entry.dir === 'from' ? entry.line : null);
+        nameButton(inner, entry.with, entry.dir === 'from' ? entry.line : null);
         make('span', 'chat-text', inner).textContent = entry.line.text;
         return element;
       }
@@ -233,7 +156,7 @@ export function createChatView(options: ChatViewOptions): ChatView {
         const element: HTMLLIElement = make('li', 'chat-row');
         const inner: HTMLDivElement = make('div', 'chat-row-inner', element);
         if (entry.own) make('span', 'chat-name own', inner).textContent = entry.line.name;
-        else nameButton(inner, entry.line.name, entry.key, entry.line);
+        else nameButton(inner, entry.line.name, entry.line);
         make('span', 'chat-text', inner).textContent = entry.line.text;
         return element;
       }
@@ -274,12 +197,6 @@ export function createChatView(options: ChatViewOptions): ChatView {
     'keydown',
     (event: KeyboardEvent): void => {
       if (!open) return;
-      if (event.code === CHAT_VIEW.closeKey && menu.classList.contains('open')) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        closeMenu();
-        return;
-      }
       if (event.repeat || !CHAT_VIEW.enterKeys.some((key: string): boolean => key === event.code) || typingIn(event.target) || !options.canFocus()) return;
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -287,27 +204,13 @@ export function createChatView(options: ChatViewOptions): ChatView {
     },
     { capture: true },
   );
-  options.events.addEventListener(
-    'pointerdown',
-    (event: PointerEvent): void => {
-      if (!menu.classList.contains('open')) return;
-      const inside: boolean = event.target instanceof Node && menu.contains(event.target);
-      const onName: boolean = event.target instanceof HTMLElement && event.target.closest('.chat-name, .player-label, .friends-name') !== null;
-      if (!inside && !onName) closeMenu();
-    },
-    { capture: true },
-  );
-
   return {
     friendsSlot,
     show(next: boolean): void {
       if (next === open) return;
       open = next;
       panel.classList.toggle('open', next);
-      if (!next) {
-        giveBack();
-        closeMenu();
-      }
+      if (!next) giveBack();
     },
     render(state: ChatState): void {
       const keys: ReadonlySet<string> = new Set<string>(state.entries.map((entry: ChatEntry): string => entry.key));
@@ -330,13 +233,6 @@ export function createChatView(options: ChatViewOptions): ChatView {
       panel.classList.toggle('whispering', whispering);
       swapText(readerLine, readers(state));
       swapText(to, destination(state.target));
-    },
-    hideReport(): void {
-      reportable = false;
-      reportItem.hidden = true;
-    },
-    hideFriend(): void {
-      friend.hidden = true;
     },
     focus(): void {
       if (open) field.focus();

@@ -6,6 +6,7 @@ import type { World } from '../../sim/world/types.ts';
 import { createBrowserHideoutServer } from '../backend/browser.ts';
 import type { HideoutServer } from '../backend/browser.ts';
 import type { LiveEvent } from '../backend/live.ts';
+import type { ChatLine } from '../backend/live-protocol.ts';
 import { LIVE_ZONE } from '../backend/live-protocol.ts';
 import type { CharacterLibrary, Dresser } from '../render/character-loader.ts';
 import { loadNeeds } from '../render/character-loader.ts';
@@ -47,7 +48,9 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
   if (server === null) return null;
   let current: World | null = null;
   const mutes: Mutes = createMutes(createBrowserStore());
-  const chat: HideoutChat = startHideoutChat(server, parts.hud, (): boolean => current?.dialogue === null, mutes);
+  const chat: HideoutChat = startHideoutChat(server, parts.hud, (): boolean => current?.dialogue === null, mutes, (name: string, line: ChatLine | null, anchor: HTMLElement): void => {
+    menu.openName(name, line, anchor);
+  });
   const others: Others = createOthers({
     scene: parts.scene,
     library: parts.library,

@@ -2,10 +2,11 @@ import type { FriendResult, ReportReason, ReportResult } from '../backend/api.ts
 import type { HideoutServer } from '../backend/browser.ts';
 import type { BlockResult, BlocksResult } from '../backend/hideout-api.ts';
 import type { LiveEvent } from '../backend/live.ts';
+import type { ChatLine } from '../backend/live-protocol.ts';
 import type { Others, OtherTarget, ScreenAnchor } from '../render/others.ts';
 import type { BlocksState } from './blocks.ts';
 import { blockSettled, blocksFetched, blockText, isBlocked, NO_BLOCKS } from './blocks.ts';
-import { friendText } from './chat.ts';
+import { friendText, reportText } from './chat.ts';
 import type { HideoutChat } from './hideout-chat.ts';
 import type { Mutes } from './mute.ts';
 import type { CloseReason, EntryId, MenuFacts } from './player-menu.ts';
@@ -38,6 +39,40 @@ export interface HideoutMenu {
   handle(event: LiveEvent): void;
   frame(inHideout: boolean, hero: Spot): void;
   isBlocked(name: string): boolean;
+  openName(name: string, line: ChatLine | null, anchor: HTMLElement): void;
+}
+
+export type MenuOrigin = { readonly kind: 'world'; readonly target: OtherTarget } | { readonly kind: 'chat'; readonly name: string; readonly line: ChatLine | null };
+
+export type ReportRoute = { readonly kind: 'line'; readonly line: ChatLine } | { readonly kind: 'player'; readonly name: string };
+
+export interface Box {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export function originName(origin: MenuOrigin): string {
+  return origin.kind === 'world' ? origin.target.name : origin.name;
+}
+
+export function reportRoute(origin: MenuOrigin): ReportRoute {
+  if (origin.kind === 'chat' && origin.line !== null) return { kind: 'line', line: origin.line };
+  return { kind: 'player', name: originName(origin) };
+}
+
+export function reportKey(origin: MenuOrigin): string {
+  const route: ReportRoute = reportRoute(origin);
+  return route.kind === 'line' ? `line:${String(route.line.id)}` : `name:${route.name.toLowerCase()}`;
+}
+
+export function tradeFrom(origin: MenuOrigin, canTrade: boolean): boolean {
+  return canTrade && origin.kind === 'world';
+}
+
+export function boxAnchor(box: Box, frame: Box): ScreenAnchor {
+  return { x: box.left + box.width / 2 - frame.left, top: box.top - frame.top, bottom: box.top + box.height - frame.top };
 }
 
 function signal(): AbortSignal {
@@ -65,7 +100,8 @@ export function reportNote(result: ReportResult): string {
 export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
   const { server, chat, mutes, others } = options;
   let openId: string | null = null;
-  let target: OtherTarget | null = null;
+  let origin: MenuOrigin | null = null;
+  let nameAnchor: HTMLElement | null = null;
   let hovered: string | null = null;
   let blocks: BlocksState = NO_BLOCKS;
   let settled: number = 0;
@@ -73,7 +109,9 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
   const reported: Set<string> = new Set<string>();
   const busy: Set<EntryId> = new Set<EntryId>();
 
-  const facts = (name: string): MenuFacts => ({
+  const facts = (from: MenuOrigin): MenuFacts => {
+    const name: string = originName(from);
+    return {
     friend: friendStanding(chat.friends().list, name),
     friendsAvailable: chat.friends().available,
     muted: mutes.has(name),
@@ -81,13 +119,14 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
     blocksAvailable: blocks.available,
     reportAvailable,
     canMessage: options.openDirect !== null,
-    canTrade: options.startTrade !== null,
-    reported: reported.has(name.toLowerCase()),
+    canTrade: tradeFrom(from, options.startTrade !== null),
+    reported: reported.has(reportKey(from)),
     busy,
-  });
+    };
+  };
 
   const rerender = (): void => {
-    if (target !== null && view.isOpen()) view.render(facts(target.name));
+    if (origin !== null && view.isOpen()) view.render(facts(origin));
   };
 
   const fetchBlocks = async (): Promise<void> => {
@@ -135,26 +174,28 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
     });
   };
 
-  const report = (name: string, reason: ReportReason): void => {
+  const report = (from: MenuOrigin, reason: ReportReason): void => {
     void work('report', async (): Promise<string | null> => {
       const token: string | null = server.token();
-      const result: ReportResult = token === null ? 'failed' : await server.api.reportPlayer(token, name, reason, signal());
-      if (result === 'reported') reported.add(name.toLowerCase());
+      const route: ReportRoute = reportRoute(from);
+      const result: ReportResult = token === null ? 'failed' : route.kind === 'line' ? await server.api.report(token, route.line.id, reason, signal()) : await server.api.reportPlayer(token, route.name, reason, signal());
+      if (result === 'reported') reported.add(reportKey(from));
       if (result === 'unsupported') reportAvailable = false;
-      return reportNote(result);
+      return route.kind === 'line' ? reportText(result) : reportNote(result);
     });
   };
 
   const choose = (choice: MenuChoice): void => {
-    if (target === null) return;
-    const name: string = target.name;
+    if (origin === null) return;
+    const from: MenuOrigin = origin;
+    const name: string = originName(from);
     switch (choice.type) {
       case 'message':
         options.openDirect?.(name);
         view.close('outside');
         return;
       case 'trade':
-        options.startTrade?.(target);
+        if (from.kind === 'world') options.startTrade?.(from.target);
         view.close('outside');
         return;
       case 'befriend':
@@ -183,10 +224,12 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
         view.step('report');
         return;
       case 'report':
-        report(name, choice.reason);
+        report(from, choice.reason);
         return;
     }
   };
+
+  const anchorOf = (element: HTMLElement): ScreenAnchor => boxAnchor(element.getBoundingClientRect(), options.frame.getBoundingClientRect());
 
   const view: PlayerMenuView = createPlayerMenuView({
     root: options.root,
@@ -195,7 +238,8 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
     choose,
     closed: (_reason: CloseReason): void => {
       openId = null;
-      target = null;
+      origin = null;
+      nameAnchor = null;
     },
   });
 
@@ -211,8 +255,9 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
       const anchor: ScreenAnchor | null = others.anchorOf(id);
       if (found === null || anchor === null) return tookOutside;
       openId = id;
-      target = found;
-      view.open(found, facts(found.name), anchor, true);
+      nameAnchor = null;
+      origin = { kind: 'world', target: found };
+      view.open(found, facts(origin), anchor, true);
       if (chat.friends().list === null) chat.refreshFriends();
       return true;
     },
@@ -225,7 +270,11 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
     },
     frame(inHideout: boolean, hero: Spot): void {
       others.light(hovered ?? openId);
-      if (openId === null || !view.isOpen()) return;
+      if (!view.isOpen()) return;
+      if (openId === null) {
+        if (nameAnchor?.isConnected === true) view.place(anchorOf(nameAnchor));
+        return;
+      }
       const ground: Spot | null = others.groundOf(openId);
       const anchor: ScreenAnchor | null = others.anchorOf(openId);
       const reason: CloseReason | null = closeReason({
@@ -242,5 +291,12 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
       if (anchor !== null) view.place(anchor);
     },
     isBlocked: (name: string): boolean => isBlocked(blocks, name),
+    openName(name: string, line: ChatLine | null, element: HTMLElement): void {
+      openId = null;
+      nameAnchor = element;
+      origin = { kind: 'chat', name, line };
+      view.open({ name, username: null }, facts(origin), anchorOf(element), true);
+      if (chat.friends().list === null) chat.refreshFriends();
+    },
   };
 }
