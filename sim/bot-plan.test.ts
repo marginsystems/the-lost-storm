@@ -147,3 +147,23 @@ void test('with no path named, a build that has spent its route keeps spending o
   }
   assert.ok(taken.every((id: string): boolean => pathOf(id) === 'storm'));
 });
+
+void test('a build fills its spare points by path without taking a keystone its route does not name', (): void => {
+  const filler: BotPlan = { ...PLAN, paths: ['blade'], route: [] };
+  const taken: string[] = [];
+  for (let pick: number = 0; pick < content.skillTree.length; pick += 1) {
+    const next: string | null = nextPlace(content, filler, taken, 1);
+    if (next === null) break;
+    taken.push(next);
+  }
+  assert.ok(taken.length > 15);
+  assert.ok(!taken.includes('edge_without_rest'));
+  const named: BotPlan = { ...filler, route: ['edge_without_rest'] };
+  const walked: string[] = [];
+  for (let pick: number = 0; pick < content.skillTree.length; pick += 1) {
+    const next: string | null = nextPlace(content, named, walked, 1);
+    if (next === null) break;
+    walked.push(next);
+  }
+  assert.ok(walked.includes('edge_without_rest'));
+});

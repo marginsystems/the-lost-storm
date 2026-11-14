@@ -157,7 +157,7 @@ export function nextPlace(content: Content, plan: BotPlan, allocated: readonly s
     const node: SkillTreeNodeDef | undefined = content.skillTree.find((candidate: SkillTreeNodeDef): boolean => candidate.id === id);
     if (node !== undefined && counts.has(node.path)) counts.set(node.path, (counts.get(node.path) ?? 0) + 1);
   }
-  const open: SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => counts.has(node.path) && canAllocate(content, allocated, points, node.id));
+  const open: SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => counts.has(node.path) && (node.kind !== 'keystone' || plan.route.includes(node.id)) && canAllocate(content, allocated, points, node.id));
   const key = (node: SkillTreeNodeDef): number[] => [abilityRank(plan, node), counts.get(node.path) ?? 0, paths.indexOf(node.path), depthOf(content, node), weightOf(node)];
   const ranked: SkillTreeNodeDef[] = open.toSorted((a: SkillTreeNodeDef, b: SkillTreeNodeDef): number => byKeys([...key(a), a.id.localeCompare(b.id)], [...key(b), 0]));
   return ranked[0]?.id ?? null;
