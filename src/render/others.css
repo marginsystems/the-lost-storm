@@ -52,3 +52,20 @@
     translate: 0 5px;
   }
 }
+
+.player-label span {
+  transition: background-color var(--spring-snappy-ms) var(--spring-snappy), box-shadow var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.player-label.lit span {
+  background: rgba(30, 40, 58, 0.78);
+  box-shadow: 0 0 14px rgba(150, 190, 230, 0.28);
+}
+
+.player-label b {
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.player-label.lit b {
+  color: #f4f8fc;
+}

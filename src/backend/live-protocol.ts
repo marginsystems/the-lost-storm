@@ -36,6 +36,7 @@ export type Worn = Readonly<Record<string, string>>;
 export interface LivePlayer {
   readonly id: string;
   readonly name: string;
+  readonly username: string | null;
   readonly hero: string | null;
   readonly worn: Worn;
   readonly x: number;
@@ -140,8 +141,9 @@ export function readPlayer(value: unknown): LivePlayer | null {
   const x: number | null = finite(value['x']);
   const z: number | null = finite(value['z']);
   const facing: number | null = finite(value['facing']);
+  const username: string | null = shortText(value['username'], LIVE_LIMITS.nameChars);
   if (id === null || name === null || hero === undefined || worn === null || x === null || z === null || facing === null) return null;
-  return { id, name, hero, worn, x, z, facing };
+  return { id, name, username, hero, worn, x, z, facing };
 }
 
 export function readLine(value: unknown): ChatLine | null {

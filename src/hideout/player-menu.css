@@ -1,0 +1,230 @@
+.player-menu {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: transform;
+  transition: visibility 0s linear var(--spring-snappy-ms);
+}
+
+.player-menu.open {
+  visibility: visible;
+  pointer-events: auto;
+  transition: visibility 0s linear 0s;
+}
+
+.player-menu-inner {
+  display: flex;
+  flex-direction: column;
+  width: 236px;
+  padding: 6px;
+  border-radius: 5px;
+  background: rgba(12, 16, 24, 0.9);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  scale: 0.92;
+  translate: 0 6px;
+  transform-origin: 50% 100%;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-snappy-ms) var(--spring-snappy),
+    translate var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.player-menu.below .player-menu-inner {
+  transform-origin: 50% 0%;
+  translate: 0 -6px;
+}
+
+.player-menu.open .player-menu-inner {
+  opacity: 1;
+  scale: 1;
+  translate: 0 0;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-bouncy-ms) var(--spring-bouncy),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.player-menu-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 8px 7px;
+}
+
+.player-menu-name,
+.player-menu-user,
+.pm-label,
+.pm-detail,
+.player-menu-note-text {
+  display: grid;
+}
+
+.pm-text {
+  grid-area: 1 / 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: pm-text-in var(--spring-snappy-ms) var(--spring-snappy) backwards;
+}
+
+.pm-text.leaving {
+  opacity: 0;
+  translate: 0 -4px;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    translate var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+@keyframes pm-text-in {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+
+.player-menu-name {
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.player-menu-user {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.player-menu-list {
+  display: flex;
+  flex-direction: column;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.player-menu-list.dim {
+  opacity: 0.45;
+}
+
+.player-menu-item,
+.player-menu-choice {
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.player-menu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 8px;
+}
+
+.pm-label {
+  font-size: 13px;
+}
+
+.pm-detail {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.player-menu-item:hover:not(:disabled),
+.player-menu-item:focus-visible,
+.player-menu-choice:hover,
+.player-menu-choice:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.player-menu-item:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.player-menu-item.soon .pm-detail {
+  color: var(--ember);
+}
+
+.player-menu-step,
+.player-menu-note {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.player-menu-step.shown,
+.player-menu-note.shown {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.player-menu-step-body,
+.player-menu-note-text {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.player-menu-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.player-menu-step.shown .player-menu-step-body {
+  padding: 6px 8px 4px;
+}
+
+.player-menu-ask {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.player-menu-choices {
+  display: flex;
+  gap: 4px;
+}
+
+.player-menu-choice {
+  flex: 1;
+  text-align: center;
+  padding: 6px 4px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.player-menu-note-text {
+  font-size: 12px;
+  color: var(--storm);
+  padding: 0 8px;
+}
+
+.player-menu-note.shown .player-menu-note-text {
+  padding: 6px 8px 2px;
+}
+
+@media (pointer: coarse) {
+  .player-menu-item,
+  .player-menu-choice {
+    min-height: 44px;
+  }
+}
+
+.player-menu:focus {
+  outline: none;
+}

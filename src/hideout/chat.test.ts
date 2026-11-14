@@ -187,7 +187,7 @@ void test('choosing Message on a name aims the chat at that player and General p
 });
 
 void test('players who enter or are renamed in the Hideout become names the parser knows', (): void => {
-  let state: ChatState = receive(EVERYONE, { type: 'joined', player: { id: 'h2', name: 'Grim Hollow', hero: null, worn: {}, x: 0, z: 0, facing: 0 } });
+  let state: ChatState = receive(EVERYONE, { type: 'joined', player: { id: 'h2', name: 'Grim Hollow', username: null, hero: null, worn: {}, x: 0, z: 0, facing: 0 } });
   state = receive(state, { type: 'look', id: 'h2', name: 'Grim Vale', hero: null, worn: {} });
   assert.deepEqual(state.names, ['Grim Hollow', 'Grim Vale']);
   assert.deepEqual(typed(state, '/dm grim vale hello').action, { kind: 'whisper', to: 'Grim Vale', text: 'hello' });

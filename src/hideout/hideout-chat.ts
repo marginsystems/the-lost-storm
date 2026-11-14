@@ -14,7 +14,6 @@ import type { FriendsState, FriendsStep } from './friends.ts';
 import { friendsFetched, NO_FRIENDS, wantFriends } from './friends.ts';
 import type { FriendsView } from './friends-view.ts';
 import { createFriendsView } from './friends-view.ts';
-import { createMutes } from './mute.ts';
 import type { Mutes } from './mute.ts';
 
 export const HIDEOUT_CHAT = { requestMs: 6000, hintKey: 'the-lost-storm.chat-hint.v1', unsentText: 'Not connected. Try again in a moment.', longText: 'That is too long to send.' } as const;
@@ -23,19 +22,25 @@ export interface HideoutChat {
   handle(event: LiveEvent): void;
   frame(playing: boolean, inHideout: boolean): void;
   openDirect(name: string): void;
+  friends(): FriendsState;
+  onFriends(listener: (state: FriendsState) => void): void;
+  befriend(name: string): Promise<FriendResult>;
+  accept(name: string): Promise<FriendResult>;
+  refreshFriends(): void;
+  mutesChanged(): void;
 }
 
 function signal(): AbortSignal {
   return AbortSignal.timeout(HIDEOUT_CHAT.requestMs);
 }
 
-export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFocus: () => boolean): HideoutChat {
+export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFocus: () => boolean, mutes: Mutes): HideoutChat {
   let state: ChatState = EMPTY_CHAT;
   let present: boolean = false;
   let shown: boolean = false;
   let friends: FriendsState = NO_FRIENDS;
+  const friendListeners: ((state: FriendsState) => void)[] = [];
   const store = createBrowserStore();
-  const mutes: Mutes = createMutes(store);
   server.live.mute(mutes.list());
   const show = (next: ChatState): void => {
     state = next;
@@ -75,6 +80,7 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
     friends = next;
     if (!friends.available) view.hideFriend();
     friendsView.render(friends);
+    for (const listener of friendListeners) listener(friends);
   };
   const fetchFriends = async (): Promise<void> => {
     const token: string | null = server.token();
@@ -93,13 +99,17 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
     else refreshFriends();
     if (result.kind !== 'ok' || result.state !== 'none') note(friendText(result, name));
   };
-  const befriend = async (name: string): Promise<void> => {
+  const befriend = async (name: string): Promise<FriendResult> => {
     const token: string | null = server.token();
-    settleFriend(token === null ? { kind: 'failed' } : await server.api.befriend(token, name, signal()), name);
+    const result: FriendResult = token === null ? { kind: 'failed' } : await server.api.befriend(token, name, signal());
+    settleFriend(result, name);
+    return result;
   };
-  const accept = async (name: string): Promise<void> => {
+  const accept = async (name: string): Promise<FriendResult> => {
     const token: string | null = server.token();
-    settleFriend(token === null ? { kind: 'failed' } : await server.api.accept(token, name, signal()), name);
+    const result: FriendResult = token === null ? { kind: 'failed' } : await server.api.accept(token, name, signal());
+    settleFriend(result, name);
+    return result;
   };
   const remove = async (name: string): Promise<void> => {
     const token: string | null = server.token();
@@ -131,13 +141,17 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
     },
     canFocus,
     report: (line: ChatLine, reason: ReportReason): void => void report(line, reason),
-    befriend: (name: string): void => void befriend(name),
+    befriend: (name: string): void => {
+      void befriend(name);
+    },
     rename: (name: string): void => void rename(name),
   });
   const friendsView: FriendsView = createFriendsView({
     slot: view.friendsSlot,
     message,
-    accept: (name: string): void => void accept(name),
+    accept: (name: string): void => {
+      void accept(name);
+    },
     remove: (name: string): void => void remove(name),
   });
   return {
@@ -158,5 +172,16 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
       show(addNote(state, CHAT_WORDS.hint, 'hint'));
     },
     openDirect: message,
+    friends: (): FriendsState => friends,
+    onFriends(listener: (state: FriendsState) => void): void {
+      friendListeners.push(listener);
+    },
+    befriend,
+    accept,
+    refreshFriends,
+    mutesChanged(): void {
+      server.live.mute(mutes.list());
+      view.render(state);
+    },
   };
 }
