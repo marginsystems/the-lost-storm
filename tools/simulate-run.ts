@@ -6,7 +6,7 @@ import type { Content, ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { distance } from '../sim/math.ts';
 import type { Measurement, Meter } from '../sim/measure.ts';
-import { createMeter, readMeter, sessionHeader } from '../sim/measure.ts';
+import { closeMeter, createMeter, readMeter, sessionHeader } from '../sim/measure.ts';
 import { isWalkable, lineWalkable, nearestWalkable } from '../sim/nav/grid.ts';
 import { allHold } from '../sim/world/conditions.ts';
 import { createWorld } from '../sim/world/create.ts';
@@ -195,7 +195,7 @@ export function runJob(job: Job, policies: Policies): Measurement[] {
   const skill: SkillPolicy | undefined = policies.skills.get(job.skill);
   const build: BuildPolicy | undefined = policies.builds.get(job.build);
   if (skill === undefined || build === undefined) throw new Error(`no policy ${job.skill}/${job.build}`);
-  const world: World = createWorld(CONTENT, { seed: job.seed, save: null, opening: true });
+  const world: World = createWorld(CONTENT, build.hero === null ? { seed: job.seed, save: null, opening: true } : { seed: job.seed, save: null, opening: true, hero: build.hero });
   const recorder: Recorder = { meter: null, out: [sessionHeader('sim', scenarioName(job.scenario), `${job.skill}/${job.build}`, job.seed)] };
   const bot: Bot = createBot(world, skill.habits, (events: readonly WorldEvent[]): void => record(bot, recorder, events), planFor(skill, build));
   const scenario: Scenario = job.scenario;
@@ -219,6 +219,7 @@ export function runJob(job: Job, policies: Policies): Measurement[] {
       if (opened && !farm(bot, (meter?.origin ?? 0) + scenario.minutes * 60, skill.loot, (): boolean => world.player.level >= scenario.level)) reason = 'could not reach the Hall';
       break;
   }
+  if (meter !== null) recorder.out.push(...closeMeter(world, meter));
   recorder.out.push({ kind: 'end', t: Math.round((world.time - (meter?.origin ?? 0)) * 100) / 100, reason });
   return recorder.out;
 }

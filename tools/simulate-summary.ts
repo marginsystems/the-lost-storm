@@ -18,6 +18,8 @@ export interface Death {
   readonly zone: string;
   readonly foe: string;
   readonly skill: string;
+  readonly level: number;
+  readonly xpLost: number;
 }
 
 export interface Sample {
@@ -57,6 +59,8 @@ export interface RunSummary {
   readonly flasks: number;
   readonly xp: number;
   readonly gold: number;
+  readonly kills: number;
+  readonly lowSeconds: number;
   readonly outcomes: Readonly<Record<string, number>>;
   readonly drops: readonly Dropped[];
   readonly power: readonly Sample[];
@@ -92,6 +96,9 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
   let flasks: number = 0;
   let xp: number = 0;
   let gold: number = 0;
+  let kills: number = 0;
+  let lowSeconds: number = 0;
+  let level: number = 1;
   const milestones: Record<string, number> = {};
   const levels: Record<string, number> = {};
   const deaths: Death[] = [];
@@ -121,6 +128,7 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
       case 'level':
         startLevel ??= entry.level;
         endLevel = entry.level;
+        level = entry.level;
         levels[String(entry.level)] ??= entry.t;
         break;
       case 'xp':
@@ -145,9 +153,13 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
         break;
       }
       case 'kill':
+        kills += 1;
+        break;
+      case 'low':
+        lowSeconds += entry.seconds;
         break;
       case 'death':
-        deaths.push({ t: entry.t, zone: entry.zone, foe: entry.foe, skill: entry.skill });
+        deaths.push({ t: entry.t, zone: entry.zone, foe: entry.foe, skill: entry.skill, level, xpLost: entry.xpLost });
         if (fight !== null) fight.died = true;
         break;
       case 'flask':
@@ -178,7 +190,7 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
         break;
     }
   }
-  return { scenario, policy, seed, seconds, reason, milestones, levels, startLevel: startLevel ?? endLevel, endLevel, deaths, takenByFoe, takenBySkill, dealtBySkill, fights, flasks, xp, gold, outcomes, drops, power, chart };
+  return { scenario, policy, seed, seconds, reason, milestones, levels, startLevel: startLevel ?? endLevel, endLevel, deaths, takenByFoe, takenBySkill, dealtBySkill, fights, flasks, xp, gold, kills, lowSeconds, outcomes, drops, power, chart };
 }
 
 export interface Spread {

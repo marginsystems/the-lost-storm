@@ -1,20 +1,29 @@
 {
   "skills": {
-    "careful": { "dodges": true, "reaction": 0.1, "flaskAt": 0.5, "manaFlaskAt": 0.2, "rolls": true, "loot": true, "lineSeconds": 2.5, "readSeconds": 4 },
-    "average": { "dodges": true, "reaction": 0.4, "flaskAt": 0.3, "manaFlaskAt": null, "rolls": false, "loot": true, "lineSeconds": 3, "readSeconds": 5 },
-    "poor": { "dodges": false, "reaction": 0, "flaskAt": 0.15, "manaFlaskAt": null, "rolls": false, "loot": true, "lineSeconds": 3.5, "readSeconds": 6 }
+    "careful": {"dodges": true, "reaction": 0.1, "flaskAt": 0.5, "manaFlaskAt": 0.2, "rolls": true, "loot": true, "lineSeconds": 2.5, "readSeconds": 4},
+    "average": {"dodges": true, "reaction": 0.4, "flaskAt": 0.3, "manaFlaskAt": null, "rolls": false, "loot": true, "lineSeconds": 3, "readSeconds": 5},
+    "poor": {"dodges": false, "reaction": 0, "flaskAt": 0.15, "manaFlaskAt": null, "rolls": false, "loot": true, "lineSeconds": 3.5, "readSeconds": 6}
   },
   "builds": {
-    "mixed": { "paths": ["storm", "blade", "wind", "stone", "echo"], "skills": ["thunderclap", "storm_bolt", "forkline", "thunderhead", "downdraught", "static_brand", "squall", "living_wire", "held_breath", "mist_step"] },
-    "storm": { "paths": ["storm"], "skills": ["storm_bolt", "forkline", "living_wire", "static_brand", "squall", "thunderclap", "thunderhead", "downdraught", "held_breath", "mist_step"] },
-    "blade": { "paths": ["blade"], "skills": ["thunderhead", "thunderclap", "downdraught", "forkline", "storm_bolt", "static_brand", "squall", "living_wire", "held_breath", "mist_step"] },
-    "wind": { "paths": ["wind"], "skills": ["mist_step", "downdraught", "thunderclap", "thunderhead", "forkline", "squall", "storm_bolt", "static_brand", "living_wire", "held_breath"] },
-    "stone": { "paths": ["stone"], "skills": ["thunderclap", "thunderhead", "downdraught", "squall", "storm_bolt", "forkline", "static_brand", "living_wire", "held_breath", "mist_step"] },
-    "echo": { "paths": ["echo"], "skills": ["held_breath", "squall", "static_brand", "thunderclap", "forkline", "storm_bolt", "living_wire", "downdraught", "thunderhead", "mist_step"] }
+    "mixed": {"paths": ["storm", "blade", "wind", "stone", "echo"], "skills": ["thunderclap", "storm_bolt", "forkline", "thunderhead", "downdraught", "static_brand", "squall", "living_wire", "held_breath", "mist_step"]},
+    "storm": {"paths": ["storm"], "skills": ["storm_bolt", "forkline", "living_wire", "static_brand", "squall", "thunderclap", "thunderhead", "downdraught", "held_breath", "mist_step"]},
+    "blade": {"paths": ["blade"], "skills": ["thunderhead", "thunderclap", "downdraught", "forkline", "storm_bolt", "static_brand", "squall", "living_wire", "held_breath", "mist_step"]},
+    "wind": {"paths": ["wind"], "skills": ["mist_step", "downdraught", "thunderclap", "thunderhead", "forkline", "squall", "storm_bolt", "static_brand", "living_wire", "held_breath"]},
+    "stone": {"paths": ["stone"], "skills": ["thunderclap", "thunderhead", "downdraught", "squall", "storm_bolt", "forkline", "static_brand", "living_wire", "held_breath", "mist_step"]},
+    "echo": {"paths": ["echo"], "skills": ["held_breath", "squall", "static_brand", "thunderclap", "forkline", "storm_bolt", "living_wire", "downdraught", "thunderhead", "mist_step"]},
+    "glass": {"paths": [], "skills": ["thunderhead", "static_brand"], "route": ["blade_thunderhead", "heavy_hands", "blade_1", "whetstone", "blade_4", "whirling_cleave", "blade_5", "blade_7", "unbroken_rhythm", "blade_8", "blade_9", "headsman", "blade_12", "blade_13", "edge_without_rest"], "focus": "cleave", "style": "stand", "weapons": "plain", "weights": {"dps": 1, "toughness": 0.1, "mobility": 0}},
+    "tank": {"paths": [], "skills": ["thunderclap", "held_breath"], "route": ["stone_thunderclap", "tempered_body", "stone_1", "bedrock", "stone_held_breath", "stone_2", "stone_3", "stone_4", "gathered_clap", "stone_7", "mountain_falls", "stone_8", "stone_9", "old_oak", "stone_10", "stone_12", "stone_13", "the_unmoved"], "focus": "cleave", "style": "stand", "weapons": "plain", "weights": {"dps": 0.35, "toughness": 1, "mobility": 0}},
+    "caster": {"paths": [], "skills": ["storm_bolt", "living_wire"], "route": ["storm_storm_bolt", "stormcallers_focus", "storm_1", "forked_bolt", "storm_living_wire", "storm_2", "storm_3", "storm_4", "storm_lance", "storm_5", "storm_7", "thunder_in_the_bones", "storm_8", "storm_9", "storm_10", "storm_11", "rolling_thunder", "storm_12", "storm_13", "eye_of_the_storm"], "focus": "storm_bolt", "style": "range", "weapons": "plain", "weights": {"dps": 1, "toughness": 0.3, "mobility": 0}, "keepGap": 6},
+    "fast": {"paths": [], "skills": ["thunderhead", "static_brand"], "route": ["blade_thunderhead", "heavy_hands", "blade_1", "whetstone", "blade_2", "blade_4", "whirling_cleave", "blade_7", "unbroken_rhythm", "blade_8", "blade_wind_far", "wind_8", "wind_12", "wind_9", "racing_cloud", "blade_9", "blade_12", "blade_13", "edge_without_rest"], "focus": "cleave", "style": "stand", "weapons": "plain", "weights": {"dps": 1, "toughness": 0.3, "mobility": 0.2}},
+    "marksman": {"paths": [], "skills": ["static_brand", "thunderhead"], "route": ["blade_thunderhead", "heavy_hands", "blade_1", "whetstone", "blade_4", "whirling_cleave", "blade_5", "blade_7", "blade_8", "blade_9", "headsman", "storm_blade_far", "storm_8", "storm_12", "storm_6"], "focus": "cleave", "style": "range", "weapons": "varied", "weights": {"dps": 1, "toughness": 0.3, "mobility": 0}, "keepGap": 7, "hero": "woman"},
+    "windrunner": {"paths": [], "skills": ["mist_step", "downdraught"], "route": ["wind_mist_step", "windborne", "wind_1", "drag_of_the_deep", "wind_downdraught", "wind_2", "wind_3", "wind_4", "slip_through", "wind_5", "wind_6", "updraught", "wind_7", "through_the_mist", "wind_8", "wind_9", "racing_cloud", "wind_10", "wind_12", "wind_13", "never_still"], "focus": "cleave", "style": "kite", "weapons": "plain", "weights": {"dps": 1, "toughness": 0.5, "mobility": 0.5}, "keepGap": 5},
+    "echoer": {"paths": [], "skills": ["forkline", "squall", "held_breath"], "route": ["echo_forkline", "first_echo", "echo_1", "long_squall", "echo_squall", "echo_2", "echo_3", "echo_4", "twice_told_bolt", "echo_5", "echo_6", "echoing_fork", "echo_7", "between_heartbeats", "echo_8", "echo_9", "worn_groove", "echo_10", "echo_12", "echo_11", "echo_13", "twice_remembered"], "focus": "forkline", "style": "range", "weapons": "plain", "weights": {"dps": 1, "toughness": 0.4, "mobility": 0}, "keepGap": 6},
+    "spellblade": {"paths": [], "skills": ["storm_bolt", "thunderhead"], "route": ["storm_storm_bolt", "stormcallers_focus", "storm_1", "forked_bolt", "storm_2", "storm_4", "storm_lance", "storm_blade_mid", "whirling_cleave", "blade_5", "blade_7", "unbroken_rhythm", "storm_5", "storm_7", "thunder_in_the_bones", "blade_8", "blade_9", "headsman"], "focus": "storm_bolt", "style": "stand", "weapons": "plain", "weights": {"dps": 1, "toughness": 0.5, "mobility": 0}},
+    "duelist": {"paths": [], "skills": ["thunderhead", "mist_step"], "route": ["blade_thunderhead", "heavy_hands", "blade_1", "whetstone", "blade_2", "blade_wind_near", "wind_1", "windborne", "wind_mist_step", "blade_4", "whirling_cleave", "blade_wind_mid", "slip_through", "wind_7", "through_the_mist", "blade_7", "unbroken_rhythm", "blade_8"], "focus": "cleave", "style": "kite", "weapons": "plain", "weights": {"dps": 1, "toughness": 0.5, "mobility": 0.3}, "keepGap": 4},
+    "bulwark_echo": {"paths": [], "skills": ["thunderclap", "squall", "held_breath"], "route": ["stone_thunderclap", "tempered_body", "stone_1", "bedrock", "stone_held_breath", "stone_echo_near", "echo_1", "long_squall", "echo_squall", "echo_4", "stone_2", "stone_4", "gathered_clap", "stone_echo_mid", "twice_told_bolt", "echo_5", "stone_7", "mountain_falls"], "focus": "thunderclap", "style": "stand", "weapons": "plain", "weights": {"dps": 0.6, "toughness": 1, "mobility": 0}}
   },
-  "milestones": [
-    { "name": "found_blade", "flag": "first_blade", "is": "found" }
-  ],
+  "milestones": [{"name": "found_blade", "flag": "first_blade", "is": "found"}],
+  "reference": {"elite": ["charge", "duel"], "pack": ["market_street", "shipwreck_deck"]},
   "endCard": "end_card",
   "rare": "rare",
   "windows": [10, 30, 60],

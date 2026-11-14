@@ -33,6 +33,12 @@ export const BOT = {
   dodgeMargin: 0.6,
   dodgeAngles: 16,
   dodgeReach: [2.5, 4, 6, 8, 11],
+  retreatReach: 5,
+  retreatAngles: [0, 35, -35, 70, -70, 110, -110],
+  stall: 12,
+  ignoreFor: 240,
+  stallMove: 1.5,
+  retreat: { range: { burst: 0.7, every: 3 }, kite: { burst: 0.7, every: 1.4 } },
 } as const;
 
 export interface BotReport {
@@ -59,11 +65,18 @@ export interface Bot {
   readonly plan: BotPlan | null;
   deaths: number;
   bagChanged: boolean;
+  retreatUntil: number;
+  retreatReady: number;
+  progressAt: number;
+  fightAt: number;
+  focus: number;
+  progressPos: Vec2;
+  readonly ignored: Map<number, number>;
   readonly discarded: Set<number>;
 }
 
 export function createBot(world: World, habits: BotHabits = CAREFUL, watch: BotWatch | null = null, plan: BotPlan | null = null): Bot {
-  return { world, events: [], habits, watch, plan, deaths: 0, bagChanged: false, discarded: new Set<number>() };
+  return { world, events: [], habits, watch, plan, deaths: 0, bagChanged: false, retreatUntil: 0, retreatReady: 0, progressAt: world.time, fightAt: -Infinity, focus: -1, progressPos: { x: world.player.pos.x, z: world.player.pos.z }, ignored: new Map<number, number>(), discarded: new Set<number>() };
 }
 
 function planned(bot: Bot, commands: readonly Command[]): Command[] {
@@ -77,8 +90,8 @@ function planned(bot: Bot, commands: readonly Command[]): Command[] {
   const place: string | null = nextPlace(world.content, plan, world.player.allocated, world.player.skillPoints);
   if (place !== null) extra.push({ type: 'allocate', node: place });
   if (plan.loot && bot.bagChanged && world.player.action === null) {
-    const upgrade: number | null = upgradeIndex(world);
-    const junk: number | null = upgrade === null ? junkIndex(world) : null;
+    const upgrade: number | null = upgradeIndex(world, plan);
+    const junk: number | null = upgrade === null ? junkIndex(world, plan) : null;
     if (upgrade !== null) extra.push({ type: 'equip', inventoryIndex: upgrade });
     else if (junk !== null) {
       const item: ItemInstance | null = world.player.inventory[junk] ?? null;
@@ -114,7 +127,13 @@ function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
   if (reading > 0 && commands.some((command: Command): boolean => command.type === 'advance')) pause(bot, reading);
   const chosen: readonly Command[] = planned(bot, commands);
   const events: WorldEvent[] = stepWorld(bot.world, choicesOpen(bot.world) ? [...chosen, { type: 'respawn', choice: 'checkpoint' }] : chosen, BOT.step);
+  const player = bot.world.player;
+  if (distance(player.pos, bot.progressPos) > BOT.stallMove) {
+    bot.progressPos = { x: player.pos.x, z: player.pos.z };
+    bot.progressAt = bot.world.time;
+  }
   for (const event of events) {
+    if (event.type === 'damage' && (event.sourceId === bot.focus || event.targetId === bot.focus)) bot.progressAt = bot.world.time;
     if (event.type === 'death' && event.team === 'player') bot.deaths += 1;
     if (event.type === 'pickup' || event.type === 'level_up') bot.bagChanged = true;
   }
@@ -132,8 +151,8 @@ function within(world: World, spot: ReadonlyVec2, share: number): boolean {
   return bubble === null || distance(spot, bubble.pos) <= bubble.def.radius * share;
 }
 
-function threats(world: World): MonsterState[] {
-  return world.monsters.filter((monster: MonsterState): boolean => playerMayStrike(world, monster) && within(world, monster.pos, 1) && (monster.aggro ? monster.foeId === null || monster.foeId === world.player.id || distance(monster.pos, world.player.pos) <= BOT.threat : monster.def.dormant === null && distance(monster.pos, world.player.pos) <= BOT.threat));
+function threats(world: World, ignored: ReadonlyMap<number, number> = new Map<number, number>()): MonsterState[] {
+  return world.monsters.filter((monster: MonsterState): boolean => (ignored.get(monster.id) ?? 0) <= world.time && playerMayStrike(world, monster) && within(world, monster.pos, 1) && (monster.aggro ? monster.foeId === null || monster.foeId === world.player.id || distance(monster.pos, world.player.pos) <= BOT.threat : monster.def.dormant === null && distance(monster.pos, world.player.pos) <= BOT.threat));
 }
 
 function nearest(world: World, monsters: readonly MonsterState[]): MonsterState | null {
@@ -237,18 +256,58 @@ function refuge(world: World): Vec2 | null {
   return null;
 }
 
+function retreatSpot(world: World, from: ReadonlyVec2, bounded: boolean = true): Vec2 | null {
+  const here: Vec2 = world.player.pos;
+  const away: Vec2 = normalize({ x: here.x - from.x, z: here.z - from.z }, { x: 1, z: 0 });
+  for (const degrees of BOT.retreatAngles) {
+    const way: Vec2 = rotate(away, degrees * DEGREES_TO_RADIANS);
+    const spot: Vec2 = { x: here.x + way.x * BOT.retreatReach, z: here.z + way.z * BOT.retreatReach };
+    if (isWalkable(world.grid, spot.x, spot.z) && lineWalkable(world.grid, here, spot) && (!bounded || within(world, spot, BOT.bubbleKeep))) return spot;
+  }
+  return bounded ? retreatSpot(world, from, false) : null;
+}
+
+function retreating(bot: Bot, hostile: readonly MonsterState[]): boolean {
+  const world: World = bot.world;
+  const plan: BotPlan | null = bot.plan;
+  if (plan === null || plan.style === 'stand' || !free(world)) return false;
+  const close: MonsterState | null = nearest(world, hostile.filter((monster: MonsterState): boolean => distance(monster.pos, world.player.pos) - monster.radius < plan.keepGap));
+  if (close === null) return false;
+  const habit = BOT.retreat[plan.style];
+  if (world.time >= bot.retreatReady) {
+    bot.retreatUntil = world.time + habit.burst;
+    bot.retreatReady = world.time + habit.every;
+  }
+  if (world.time >= bot.retreatUntil) return false;
+  const spot: Vec2 | null = retreatSpot(world, close.pos);
+  if (spot === null) return false;
+  tick(bot, [{ type: 'move', held: false, dest: spot }]);
+  return true;
+}
+
 function fightStep(bot: Bot, prefer: string | null): boolean {
   const world: World = bot.world;
-  const hostile: MonsterState[] = threats(world);
-  const wanted: MonsterState[] = prefer === null ? [] : world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.def.id === prefer);
+  const hostile: MonsterState[] = threats(world, bot.ignored);
+  const wanted: MonsterState[] = prefer === null ? [] : world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.def.id === prefer && (bot.ignored.get(monster.id) ?? 0) <= world.time);
   const target: MonsterState | null = nearest(world, hostile.length > 0 ? hostile : wanted);
   if (target === null) return false;
+  if (world.time - bot.fightAt > BOT.step * 2 || bot.focus !== target.id) bot.progressAt = world.time;
+  bot.fightAt = world.time;
+  bot.focus = target.id;
+  if (world.player.alive && world.time - bot.progressAt > BOT.stall) {
+    bot.ignored.set(target.id, world.time + BOT.ignoreFor);
+    bot.progressAt = world.time;
+    const spot: Vec2 | null = retreatSpot(world, target.pos);
+    if (spot !== null) tick(bot, [{ type: 'move', held: false, dest: spot }]);
+    return spot !== null;
+  }
   if (bot.habits.dodges && world.player.alive && botInDanger(world, world.player.pos, bot.habits.reaction)) {
     const spot: Vec2 | null = world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest) ? null : refuge(world);
     const roll: Command | null = spot === null || bot.plan?.rolls !== true ? null : rollCommand(world, spot);
     tick(bot, free(world) && spot !== null ? [roll ?? { type: 'move', held: false, dest: spot }] : []);
     return true;
   }
+  if (retreating(bot, hostile)) return true;
   tick(bot, free(world) ? (bot.plan === null ? [attack(world, target, hostile)] : planAttack(world, bot.plan, target, hostile)) : []);
   return true;
 }
@@ -258,7 +317,7 @@ export function botFight(bot: Bot, done: () => boolean, prefer: string | null): 
   for (let step: number = 0; step < steps; step += 1) {
     if (done()) return true;
     if (!fightStep(bot, prefer)) tick(bot, []);
-    if (prefer === null && threats(bot.world).length === 0 && bot.world.player.alive) return done();
+    if (prefer === null && threats(bot.world, bot.ignored).length === 0 && bot.world.player.alive) return done();
   }
   return done();
 }
@@ -284,7 +343,7 @@ export function botWalkTo(bot: Bot, zone: string, point: Vec2, radius: number): 
   for (let step: number = 0; step < steps; step += 1) {
     if (world.zone.id !== zone) return false;
     if (world.player.alive && distance(world.player.pos, point) <= radius) return true;
-    if (threats(world).length > 0) {
+    if (threats(world, bot.ignored).length > 0) {
       fightStep(bot, null);
       sinceOrder = BOT.idleRepeat;
       continue;
