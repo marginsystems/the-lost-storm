@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
 import { OUTPOST_CONTENT } from '../test/road-support.ts';
 import { finishQuests, must } from '../test/support.ts';
-import { botInDanger, botPlay, botRoute, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
+import { botFight, botInDanger, botPlay, botRoute, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
 import type { Bot, BotReport } from './bot.ts';
 import { loadContent } from './content/content.ts';
 import type { Condition, Content, QuestDef, SkillDef } from './content/types.ts';
@@ -94,4 +94,17 @@ void test('the bot reads a live mark on the ground and the landing spot of a lea
   startSkill(world, ghoul, must(world.content.skills.get('test_pounce'), 'pounce'), { x: 8, z: 0 });
   assert.equal(botInDanger(world, { x: ARENA_CENTRE.x - 0.8, z: ARENA_CENTRE.z }), true);
   assert.equal(botInDanger(world, { x: ARENA_CENTRE.x - 7, z: ARENA_CENTRE.z + 4 }), false);
+});
+
+void test('a fight that makes no progress for twelve seconds is dropped, and the foe is left alone for a while', (): void => {
+  const world: World = createWorld(content, { seed: 21, save: null });
+  const bot: Bot = createBot(world);
+  const foe: MonsterState | undefined = world.monsters.find((monster: MonsterState): boolean => monster.alive);
+  assert.ok(foe !== undefined);
+  foe.aggro = true;
+  foe.pos = { x: world.player.pos.x + 3, z: world.player.pos.z };
+  bot.fightAt = world.time;
+  bot.progressAt = world.time - 20;
+  botFight(bot, (): boolean => false, null);
+  assert.ok((bot.ignored.get(foe.id) ?? 0) > world.time + 100);
 });

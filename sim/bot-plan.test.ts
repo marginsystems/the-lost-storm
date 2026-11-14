@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { BotPlan } from './bot-plan.ts';
-import { flaskCommands, junkIndex, nextPlace, powerOf, releaseCommands, rollCommand } from './bot-plan.ts';
+import { STAND_WEIGHTS, flaskCommands, junkIndex, nextPlace, planAttack, powerOf, releaseCommands, rollCommand, upgradeIndex } from './bot-plan.ts';
 import { generateItem } from './items.ts';
 import { holdingParts } from './progression.ts';
 import { loadContent } from './content/content.ts';
-import type { Content, SkillTreeNodeDef } from './content/types.ts';
+import type { Content, SkillDef, SkillTreeNodeDef } from './content/types.ts';
 import { createWorld } from './world/create.ts';
 import type { Command, ItemInstance, World } from './world/types.ts';
 
 const content: Content = loadContent();
 
-const PLAN: BotPlan = { name: 'test', flaskAt: 0.5, manaFlaskAt: null, rolls: true, loot: true, lineSeconds: 0, readSeconds: 0, paths: ['echo'], skills: ['forkline', 'storm_bolt'] };
+const PLAN: BotPlan = { name: 'test', flaskAt: 0.5, manaFlaskAt: null, rolls: true, loot: true, lineSeconds: 0, readSeconds: 0, paths: ['echo'], skills: ['forkline', 'storm_bolt'], route: [], weights: STAND_WEIGHTS, focus: null, style: 'stand', keepGap: 0, weapons: 'any' };
 
 function pathOf(id: string): string {
   return content.skillTree.find((node: SkillTreeNodeDef): boolean => node.id === id)?.path ?? 'none';
@@ -73,12 +73,77 @@ void test('a full bag drops its weakest item, and a staggered hero does not try 
   const strong: ItemInstance | null = generateItem(content, world.rng, 901, 9, 'tempest_greatsword', 'stormtouched');
   assert.ok(weak !== null && strong !== null);
   world.player.inventory = world.player.inventory.map((_item: ItemInstance | null, index: number): ItemInstance => (index === 3 ? weak : { ...strong, uid: 1000 + index }));
-  assert.equal(junkIndex(world), 3);
+  assert.equal(junkIndex(world, PLAN), 3);
   world.player.inventory[0] = null;
-  assert.equal(junkIndex(world), null);
+  assert.equal(junkIndex(world, PLAN), null);
   world.player.bar = ['cleave', 'dodge_roll', null, null, null, null];
   world.player.skills = world.player.bar.map((id: string | null) => (id === null ? null : (content.skills.get(id) ?? null)));
   assert.notEqual(rollCommand(world, { x: 0, z: 0 }), null);
   world.player.stagger = 0.5;
   assert.equal(rollCommand(world, { x: 0, z: 0 }), null);
+});
+
+void test('a route is walked place by place from the root, through the places between, and then the build fills by path', (): void => {
+  const routed: BotPlan = { ...PLAN, paths: ['storm'], route: ['eye_of_the_storm'] };
+  const taken: string[] = [];
+  for (let pick: number = 0; pick < 40; pick += 1) {
+    const next: string | null = nextPlace(content, routed, taken, 1);
+    if (next === null) break;
+    assert.ok(!taken.includes(next));
+    taken.push(next);
+    if (next === 'eye_of_the_storm') break;
+  }
+  assert.ok(taken.includes('eye_of_the_storm'));
+  assert.equal(taken[0], 'storm_storm_bolt');
+  assert.equal(holdingParts(content, taken).length, 1);
+  assert.ok(taken.length < 25);
+});
+
+void test('a route that crosses a ring reaches the other path through the shared place', (): void => {
+  const crossing: BotPlan = { ...PLAN, paths: [], route: ['storm_storm_bolt', 'stormcallers_focus', 'storm_1', 'storm_blade_near', 'blade_1', 'whetstone'] };
+  const taken: string[] = [];
+  for (let pick: number = 0; pick < 6; pick += 1) {
+    const next: string | null = nextPlace(content, crossing, taken, 1);
+    assert.notEqual(next, null);
+    if (next !== null) taken.push(next);
+  }
+  assert.deepEqual(taken, crossing.route);
+  assert.notEqual(nextPlace(content, crossing, taken, 1), null);
+});
+
+void test('gear is judged by the weights a build gives damage, toughness and speed', (): void => {
+  const world: World = createWorld(content, { seed: 7, save: null });
+  const plated: ItemInstance | null = generateItem(content, world.rng, 910, 9, 'traveller_coat', 'rare');
+  assert.ok(plated !== null);
+  world.player.inventory[0] = plated;
+  const tough: BotPlan = { ...PLAN, weights: { dps: 0, toughness: 1, mobility: 0 } };
+  const idle: BotPlan = { ...PLAN, weights: { dps: 0, toughness: 0, mobility: 0 } };
+  assert.equal(upgradeIndex(world, idle), null);
+  assert.ok([0, null].includes(upgradeIndex(world, tough)));
+});
+
+void test('a build that keeps its distance does not blink onto its target, and one that stands does', (): void => {
+  const world: World = createWorld(content, { seed: 9, save: null });
+  const mist: SkillDef | undefined = content.skills.get('mist_step');
+  assert.ok(mist !== undefined);
+  world.player.skills = [content.skills.get('cleave') ?? null, mist, null, null, null, null];
+  world.player.mana = 200;
+  const target = world.monsters[0];
+  assert.ok(target !== undefined);
+  target.pos = { x: world.player.pos.x + 7, z: world.player.pos.z };
+  const stands: Command[] = planAttack(world, { ...PLAN, skills: ['mist_step'] }, target, [target]);
+  const kites: Command[] = planAttack(world, { ...PLAN, skills: ['mist_step'], style: 'kite', keepGap: 4 }, target, [target]);
+  assert.equal(stands.some((command: Command): boolean => command.type === 'skill' && command.slot === 1), true);
+  assert.equal(kites.some((command: Command): boolean => command.type === 'skill' && command.slot === 1), false);
+});
+
+void test('with no path named, a build that has spent its route keeps spending on the paths it holds', (): void => {
+  const routed: BotPlan = { ...PLAN, paths: [], route: ['storm_storm_bolt'] };
+  const taken: string[] = ['storm_storm_bolt'];
+  for (let pick: number = 0; pick < 6; pick += 1) {
+    const next: string | null = nextPlace(content, routed, taken, 1);
+    assert.notEqual(next, null);
+    if (next !== null) taken.push(next);
+  }
+  assert.ok(taken.every((id: string): boolean => pathOf(id) === 'storm'));
 });
