@@ -567,7 +567,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       await loadProps(content.moments.defs.values());
       const warm: MomentEntry[] = [];
       for (const def of content.moments.defs.values()) {
-        const moment: MomentState = { id: -1, def, combat: false, level: 1, pos: { x: 0, z: 0 }, phase: 'dormant', timeLeft: 1, phaseTime: 0, armed: false, away: 0, entered: false, bounty: 0, reduced: null, blocks: null, outcome: null, chest: 'none', figures: def.echoes.map((echo: MomentEcho, index: number): MomentFigure => ({ echo: index, pos: { x: echo.x, z: echo.z }, facing: 0, turned: false, monsterId: null })) };
+        const moment: MomentState = { id: -1, def, combat: false, level: 1, pos: { x: 0, z: 0 }, phase: 'dormant', timeLeft: 1, phaseTime: 0, armed: false, away: 0, entered: false, bounty: 0, full: 0, reduced: null, blocks: null, outcome: null, chest: 'none', figures: def.echoes.map((echo: MomentEcho, index: number): MomentFigure => ({ echo: index, pos: { x: echo.x, z: echo.z }, facing: 0, turned: false, monsterId: null })) };
         const entry: MomentEntry = build(moment);
         for (const placed of def.props) placeProp(entry, placed);
         if (def.chest !== null) entry.chest = chestOf(entry, def.chest);

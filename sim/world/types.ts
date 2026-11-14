@@ -10,7 +10,10 @@ import type { DeathState } from './death.ts';
 import type { LedgerState, PurseCommand } from './ledger.ts';
 import type { PackTimer } from './pack-return.ts';
 import type { GridStamp, NavGrid } from '../nav/grid.ts';
+import type { MomentFigure } from './moment-figure.ts';
 import type { Rng } from '../rng.ts';
+
+export type { MomentFigure } from './moment-figure.ts';
 
 export interface RolledAffix {
   readonly affix: string;
@@ -452,14 +455,6 @@ export type MomentOutcome = 'faded' | 'played' | 'resolved' | 'expired' | 'left'
 
 export type ChestState = 'none' | 'closed' | 'opening' | 'opened';
 
-export interface MomentFigure {
-  readonly echo: number;
-  pos: Vec2;
-  readonly facing: number;
-  turned: boolean;
-  monsterId: number | null;
-}
-
 export interface MomentState {
   readonly id: number;
   readonly def: MomentDef;
@@ -473,6 +468,7 @@ export interface MomentState {
   away: number;
   entered: boolean;
   bounty: number;
+  full: number;
   reduced: XpReduction | null;
   blocks: GridStamp | null;
   outcome: MomentOutcome | null;

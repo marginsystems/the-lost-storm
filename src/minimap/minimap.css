@@ -65,13 +65,13 @@
 }
 
 .minimap-level {
-  width: fit-content;
-  box-sizing: border-box;
-  margin: 0 0 0 auto;
+  position: absolute;
+  top: 6px;
+  right: 6px;
   padding: 0 6px;
   border-radius: 3px;
   background: var(--legible-plate);
-  height: 0;
+  pointer-events: none;
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -79,18 +79,16 @@
   color: var(--place);
   text-shadow: var(--legible-shadow);
   white-space: nowrap;
-  overflow: hidden;
   opacity: 0;
+  transform: translateY(-4px);
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
-    height var(--spring-smooth-ms) var(--spring-smooth),
-    margin-bottom var(--spring-smooth-ms) var(--spring-smooth);
+    transform var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .minimap-level.visible {
-  height: 15px;
-  margin-bottom: 4px;
   opacity: 0.85;
+  transform: translateY(0);
 }
 
 .minimap-frame {

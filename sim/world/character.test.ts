@@ -7,7 +7,7 @@ import { generateItem } from '../items.ts';
 import { xpToNextLevel } from '../progression.ts';
 import { createRng } from '../rng.ts';
 import { refundCost } from '../progression.ts';
-import { grantXp, killReduction, killXp } from './character.ts';
+import { bountyReduction, grantXp, killReduction, killXp } from './character.ts';
 import { stepWorld } from './step.ts';
 import type { Command, ItemInstance, World, WorldEvent } from './types.ts';
 
@@ -117,6 +117,20 @@ void test('a kill pays its xp scaled up by the foe level, in full near the hero 
   world.player.level = 20;
   const far: number = killXp(world, 20, 5);
   assert.ok(far > 0 && far < killXp(world, 20, 18));
+});
+
+void test('a kill far below the hero at the floor still pays at least one point of experience', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 1);
+  world.player.level = 30;
+  assert.equal(killXp(world, 8, 1), 1);
+  assert.equal(killXp(world, 0, 1), 0);
+});
+
+void test('a bounty earned from echoes on both sides of the band is labelled by its whole share', (): void => {
+  const low: XpReduction = { side: 'below', share: 0.1 };
+  assert.equal(bountyReduction(100, 100, low), null);
+  assert.equal(bountyReduction(100, 100, null), null);
+  assert.deepEqual(bountyReduction(55, 100, low), { side: 'below', share: 0.55 });
 });
 
 void test('an xp gain says whether it was reduced and on which side', (): void => {
