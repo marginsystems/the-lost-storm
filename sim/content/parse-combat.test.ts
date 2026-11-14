@@ -7,17 +7,21 @@ import { combatProblems, monsterMod, monsterTraits, packMods, skillMotion } from
 import type { Content, MonsterDef, SkillDef, ZoneDef } from './types.ts';
 
 void test('a monster without combat traits is steady, unguarded and plain', (): void => {
-  assert.deepEqual(monsterTraits({ faction: 'f' }, 'm'), { poise: { knockback: 1, stagger: 1 }, guard: null, deathSkill: null, summon: null, mods: [], faction: 'f', dormant: null, support: null, barks: [] });
-  assert.deepEqual(skillMotion({}, 's'), { leap: null, root: 0, hold: 0, echo: 0 });
+  assert.deepEqual(monsterTraits({ faction: 'f' }, 'm'), { poise: { knockback: 1, stagger: 1, resolve: 0 }, guard: null, deathSkill: null, summon: null, mods: [], faction: 'f', dormant: null, support: null, barks: [] });
+  assert.deepEqual(skillMotion({}, 's'), { leap: null, root: 0, hold: 0, echo: 0, commit: null });
   assert.deepEqual(packMods({}, 'p'), []);
 });
 
 void test('combat traits are read and checked', (): void => {
   const read = monsterTraits({ poise: { knockback: 0.3, stagger: 0.5 }, guard: { arcDegrees: 140, damageTaken: 0.2, breakStagger: 0.45, breakTime: 1.4 }, deathSkill: 'x', summon: { monster: null, count: 2, cooldown: 4, limit: 3 }, faction: 'f' }, 'm');
-  assert.deepEqual(read.poise, { knockback: 0.3, stagger: 0.5 });
+  assert.deepEqual(read.poise, { knockback: 0.3, stagger: 0.5, resolve: 0 });
   assert.equal(read.guard?.breakTime, 1.4);
   assert.equal(read.summon?.monster, null);
   assert.throws(() => monsterTraits({ poise: { knockback: 2, stagger: 0 }, faction: 'f' }, 'm'), /from 0 to 1/);
+  assert.equal(monsterTraits({ poise: { knockback: 0.3, stagger: 0.5, resolve: 3 }, faction: 'f' }, 'm').poise.resolve, 3);
+  assert.throws(() => monsterTraits({ poise: { knockback: 0.3, stagger: 0.5, resolve: -1 }, faction: 'f' }, 'm'), /zero or more/);
+  assert.deepEqual(skillMotion({ commit: { at: 0.35, breakStagger: 0.55 } }, 's').commit, { at: 0.35, breakStagger: 0.55 });
+  assert.throws(() => skillMotion({ commit: { at: 1.5, breakStagger: 0.45 } }, 's'), /from 0 to 1/);
   assert.throws(() => monsterTraits({ summon: { monster: null, count: 1.5, cooldown: 4, limit: 3 }, faction: 'f' }, 'm'), /whole numbers/);
   assert.throws(() => monsterTraits({ guard: { arcDegrees: 720, damageTaken: 0.2, breakStagger: 0.45, breakTime: 1.4 }, faction: 'f' }, 'm'), /at most 360/);
   assert.throws(() => skillMotion({ root: -1 }, 's'), /zero or more/);

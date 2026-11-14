@@ -1,5 +1,5 @@
 import type { Condition } from './condition-types.ts';
-import type { SkillLeap } from './combat-types.ts';
+import type { SkillCommit, SkillLeap } from './combat-types.ts';
 
 export interface ChainDelivery {
   readonly type: 'chain';
@@ -58,6 +58,7 @@ export interface BrandDef {
 export interface SkillShape {
   readonly leap: SkillLeap | null;
   readonly root: number;
+  readonly commit: SkillCommit | null;
   readonly press: PressDef | null;
   readonly brand: BrandDef | null;
 }

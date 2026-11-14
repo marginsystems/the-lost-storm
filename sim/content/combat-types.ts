@@ -19,6 +19,12 @@ export interface StalkerBehaviour {
 export interface MonsterPoise {
   readonly knockback: number;
   readonly stagger: number;
+  readonly resolve: number;
+}
+
+export interface SkillCommit {
+  readonly at: number;
+  readonly breakStagger: number;
 }
 
 export interface GuardDef {

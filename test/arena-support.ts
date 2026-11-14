@@ -29,7 +29,7 @@ const SKILLS: readonly SkillDef[] = [
 ];
 
 const MONSTERS: readonly MonsterDef[] = [
-  { ...thrall, id: 'test_shambler', skill: 'test_grab', moveSpeed: 2.6, poise: { knockback: 0.4, stagger: 0.5 } },
+  { ...thrall, id: 'test_shambler', skill: 'test_grab', moveSpeed: 2.6, poise: { knockback: 0.4, stagger: 0.5, resolve: 0 } },
   { ...thrall, id: 'test_ghoul', skill: 'test_pounce', moveSpeed: 7, behaviour: { type: 'stalker', orbitRange: 5 } },
   { ...thrall, id: 'test_caller', skill: 'test_mark', behaviour: { type: 'ranged', preferredRange: 9, retreatRange: 4.5 } },
   { ...thrall, id: 'test_breeder', summon: { monster: null, count: 1, cooldown: 1, limit: 2 } },

@@ -294,6 +294,7 @@
     },
     "knockback": 11,
     "stagger": 0.4,
+    "commit": { "at": 0.35, "breakStagger": 0.55 },
     "shake": 0.62,
     "hitStop": 0.09,
     "vfx": { "style": "slash", "color": "#d08a5a", "light": 0.5, "impact": { "sparks": 6, "flash": 0.3 } }

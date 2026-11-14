@@ -41,6 +41,7 @@ function resetMonster(monster: MonsterState): void {
   monster.lastPos = { x: monster.pos.x, z: monster.pos.z };
   monster.lastTravel = 0;
   monster.stagger = 0;
+  monster.interrupts = 0;
   monster.phase = 0;
   monster.nextSkill = null;
   monster.cooldowns = {};
@@ -57,6 +58,7 @@ function revive(world: World): void {
   player.cooldowns = {};
   player.combo = null;
   player.stagger = 0;
+  player.interrupts = 0;
   player.root = 0;
   player.tempo = 1;
   player.tempoTime = 0;

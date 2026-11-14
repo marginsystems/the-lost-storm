@@ -93,6 +93,7 @@ export interface ActorState {
   action: ActionState | null;
   cooldowns: Record<string, number>;
   stagger: number;
+  interrupts: number;
   combo: ComboState | null;
   root: number;
   rootGrace: number;

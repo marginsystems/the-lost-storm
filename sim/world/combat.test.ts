@@ -3,12 +3,14 @@ import { test } from 'node:test';
 import { ARENA_CENTRE, ARENA_CONTENT, arena, place } from '../../test/arena-support.ts';
 import { cast, damageTo, dummy, offset, run, shapeArena } from '../../test/shape-support.ts';
 import { must } from '../../test/support.ts';
+import type { SkillCommit } from '../content/combat-types.ts';
 import type { SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { applyHit, guardOutcome, offenceOf } from './combat.ts';
+import { startSkill } from './skills.ts';
 import { stepWorld } from './step.ts';
-import type { MonsterState, World, WorldEvent } from './types.ts';
+import type { ActionState, Command, MonsterState, World, WorldEvent } from './types.ts';
 
 const DT: number = 1 / 60;
 const light: SkillDef = must(ARENA_CONTENT.skills.get('mended_rhythm'), 'light');
@@ -173,4 +175,94 @@ void test('a hit with negative knockback pulls the target toward the striker', (
   const away: Vec2 = toward(world.player.pos, target.pos);
   applyHit(world, { ...offenceOf(world.player), damageMin: 1, damageMax: 1, critChance: 0 }, target, pull, away);
   assert.ok(target.knock.x * away.x + target.knock.z * away.z < 0);
+});
+
+const haymaker: SkillDef = must(ARENA_CONTENT.skills.get('brute_haymaker'), 'brute_haymaker');
+
+function hammerer(world: World): MonsterState {
+  const monster: MonsterState = place(world, 'unfinished_brute', { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 2.2 });
+  monster.facing = Math.atan2(world.player.pos.x - monster.pos.x, world.player.pos.z - monster.pos.z);
+  return monster;
+}
+
+function windUp(world: World, monster: MonsterState, seconds: number): void {
+  startSkill(world, monster, haymaker, toward(monster.pos, world.player.pos));
+  const action: ActionState = must(monster.action, 'haymaker windup');
+  action.elapsed = seconds;
+  action.timeLeft = action.windup - seconds;
+}
+
+function hit(world: World, monster: MonsterState, skill: SkillDef): void {
+  applyHit(world, { ...offenceOf(world.player), critChance: 0 }, monster, skill, toward(world.player.pos, monster.pos));
+}
+
+void test('a light hit early in a Haymaker interrupts it, but past its commit point only a heavy hit breaks it', (): void => {
+  const commit: SkillCommit = must(haymaker.commit, 'haymaker commit');
+  assert.ok(light.stagger < commit.breakStagger && heavy.stagger >= commit.breakStagger);
+  const early: World = arena(1);
+  const opened: MonsterState = hammerer(early);
+  windUp(early, opened, 0);
+  hit(early, opened, light);
+  assert.equal(opened.action, null);
+  assert.ok(early.events.some((event: WorldEvent): boolean => event.type === 'skill_interrupt' && event.actorId === opened.id));
+  const late: World = arena(1);
+  const committed: MonsterState = hammerer(late);
+  windUp(late, committed, haymaker.windup * commit.at + 0.05);
+  const life: number = committed.life;
+  hit(late, committed, light);
+  assert.equal(committed.action?.phase, 'windup');
+  assert.equal(committed.stagger, 0);
+  assert.ok(committed.life < life);
+  hit(late, committed, heavy);
+  assert.equal(committed.action, null);
+  assert.notEqual(committed.stagger, 0);
+});
+
+void test('a brute interrupted as often in a row as its resolve holds its next Haymaker against light hits, and a finished swing starts the count again', (): void => {
+  const world: World = arena(1);
+  const monster: MonsterState = hammerer(world);
+  const resolve: number = monster.def.poise.resolve;
+  assert.ok(resolve > 0);
+  for (let count: number = 1; count <= resolve; count += 1) {
+    windUp(world, monster, 0);
+    hit(world, monster, light);
+    assert.equal(monster.action, null);
+    assert.equal(monster.interrupts, count);
+  }
+  monster.stagger = 0;
+  windUp(world, monster, 0);
+  hit(world, monster, light);
+  assert.equal(monster.action?.phase, 'windup');
+  assert.equal(monster.stagger, 0);
+  hit(world, monster, heavy);
+  assert.equal(monster.action, null);
+  monster.interrupts = resolve;
+  monster.stagger = 0;
+  windUp(world, monster, haymaker.windup - DT / 2);
+  stepWorld(world, [], DT);
+  assert.equal(monster.interrupts, 0);
+  monster.action = null;
+  windUp(world, monster, 0);
+  hit(world, monster, light);
+  assert.equal(monster.action, null);
+});
+
+void test('a hero who stands and spams Cleave at a brute is answered with a Haymaker', (): void => {
+  const world: World = arena(3);
+  const monster: MonsterState = hammerer(world);
+  monster.life = 100000;
+  monster.maxLife = 100000;
+  world.player.life = 100000;
+  world.player.maxLife = 100000;
+  const events: WorldEvent[] = [];
+  for (let step: number = 0; step < 15 / DT; step += 1) {
+    const swing: readonly Command[] = world.player.action === null ? [{ type: 'skill', slot: 0, aim: { x: monster.pos.x, z: monster.pos.z }, targetId: monster.id }] : [];
+    events.push(...stepWorld(world, swing, DT));
+  }
+  const starts: number = events.filter((event: WorldEvent): boolean => event.type === 'skill_start' && event.actorId === monster.id).length;
+  const interrupts: number = events.filter((event: WorldEvent): boolean => event.type === 'skill_interrupt' && event.actorId === monster.id).length;
+  const landed: number = events.filter((event: WorldEvent): boolean => event.type === 'damage' && event.sourceId === monster.id && event.targetId === world.player.id).length;
+  assert.ok(interrupts > 0, 'spam still interrupts some swings');
+  assert.ok(interrupts < starts, 'not every swing is interrupted');
+  assert.ok(landed > 0, 'the brute lands a Haymaker');
 });

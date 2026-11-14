@@ -56,7 +56,7 @@ void test('a boss names every phase skill once, takes no stagger and is marked a
 void test('an elite says so, and a guard reads as a resistance and a weakness', (): void => {
   const { world, monster } = spawn('mended', ['hulking']);
   assert.ok(texts(monsterLines(world, monster), 'state').includes('Elite'));
-  const guarded: MonsterDef = { ...monster.def, guard: { arcDegrees: 120, damageTaken: 0.2, breakStagger: 0.4, breakTime: 1 }, poise: { knockback: 0, stagger: 1.5 } };
+  const guarded: MonsterDef = { ...monster.def, guard: { arcDegrees: 120, damageTaken: 0.2, breakStagger: 0.4, breakTime: 1 }, poise: { knockback: 0, stagger: 1.5, resolve: 0 } };
   const lines: MonsterLine[] = monsterLines(world, { ...monster, def: guarded });
   assert.deepEqual(texts(lines, 'resist'), ['Immune to knockback', 'Guards its front']);
   assert.deepEqual(texts(lines, 'weak'), ['Easily staggered', 'Open from behind, and a heavy blow breaks its guard']);

@@ -14,7 +14,7 @@ import { mayStrike, provoke, regardOf } from './factions.ts';
 import { gainFlaskCharges } from './flask-charges.ts';
 import { dropOnGround } from './ground.ts';
 import { steadiness } from './poise.ts';
-import type { Actor, BrandState, GuardOutcome, ItemInstance, MonsterState, Offence, Team, World } from './types.ts';
+import type { ActionState, Actor, BrandState, GuardOutcome, ItemInstance, MonsterState, Offence, Team, World } from './types.ts';
 
 export const COMBAT = {
   guardedKnockback: 0.2,
@@ -124,6 +124,14 @@ function staggerOf(target: MonsterState, skill: SkillDef, guard: GuardOutcome): 
   return 0;
 }
 
+export function holdsFirm(target: MonsterState, skill: SkillDef, guard: GuardOutcome): boolean {
+  const action: ActionState | null = target.action;
+  if (guard === 'broken' || action === null || action.phase !== 'windup' || action.skill.commit === null) return false;
+  if (skill.stagger >= action.skill.commit.breakStagger) return false;
+  const resolved: boolean = target.def.poise.resolve > 0 && target.interrupts >= target.def.poise.resolve;
+  return resolved || action.elapsed >= action.windup * action.skill.commit.at;
+}
+
 function knockBack(target: Actor, push: ReadonlyVec2): void {
   if (target.action !== null && !isDashing(target)) return;
   const knock: ReadonlyVec2 = { x: target.knock.x + push.x, z: target.knock.z + push.z };
@@ -151,9 +159,10 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   if (target.kind === 'monster') {
     provoke(world, target, offence.sourceId, offence.faction ?? PLAYER_SIDE);
     const stagger: number = staggerOf(target, skill, guard);
-    if (stagger > 0) {
+    if (stagger > 0 && !holdsFirm(target, skill, guard)) {
       target.stagger = Math.max(target.stagger, stagger);
       if (target.action?.phase === 'windup') {
+        target.interrupts += 1;
         target.action = null;
         world.events.push({ type: 'skill_interrupt', actorId: target.id });
       }

@@ -35,7 +35,8 @@
     ],
     "poise": {
       "knockback": 0.3,
-      "stagger": 0.35
+      "stagger": 0.35,
+      "resolve": 3
     }
   },
   {

@@ -308,6 +308,7 @@ function stepChannel(world: World, actor: Actor, action: ActionState): void {
 }
 
 function finishWindup(world: World, actor: Actor, action: ActionState): void {
+  actor.interrupts = 0;
   if (action.travelSpeed > 0) land(world, actor, action);
   const hold: PressDef | null = action.skill.press;
   const skill: SkillDef = chargedSkill(action.skill, chargeOf(action));

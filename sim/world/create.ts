@@ -56,6 +56,7 @@ function freshPlayer(content: Content, save: SaveData | null, chosen: string | n
     action: null,
     cooldowns: {},
     stagger: 0,
+    interrupts: 0,
     combo: null,
     root: 0,
     rootGrace: 0,
