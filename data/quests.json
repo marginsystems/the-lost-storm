@@ -103,8 +103,7 @@
         "npc": "warden_guide",
         "text": "Talk to the Warden Guide",
         "sets": {
-          "fire_lesson": "given",
-          "alpha_slice_complete": "reached"
+          "fire_lesson": "given"
         }
       }
     ]
@@ -126,7 +125,10 @@
             "type": "level",
             "atLeast": 8
           }
-        ]
+        ],
+        "sets": {
+          "alpha_slice_complete": "reached"
+        }
       }
     ]
   }

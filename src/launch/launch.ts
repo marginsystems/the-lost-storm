@@ -6,7 +6,7 @@ import { readServerUrl } from '../backend/server-url.ts';
 import type { ServerUrl } from '../backend/server-url.ts';
 import { parseSyncRecord, SYNC_KEY } from '../backend/sync-record.ts';
 import { createBrowserStore } from '../storage.ts';
-import { feedbackBody, LAUNCH_KEY, readLaunchState, serializeLaunchState, takeEnd } from './alpha.ts';
+import { feedbackBody, isSliceComplete, LAUNCH_KEY, readLaunchState, serializeLaunchState, takeEnd } from './alpha.ts';
 import type { CountedEvent, Device, FeedbackContext, LaunchState, Progress, Rating } from './alpha.ts';
 import { ALPHA_RULES, LINKS } from './data.ts';
 import { createFeedbackCard } from './feedback-card.ts';
@@ -33,7 +33,7 @@ export interface Launch {
   forgetPlayed(): void;
 }
 
-const LAUNCH = { observeEvery: 1, saveEvery: 30, requestMs: 8000, secondsPerMinute: 60 } as const;
+const LAUNCH = { observeEvery: 1, saveEvery: 30, requestMs: 8000, secondsPerMinute: 60, endDelay: 6 } as const;
 
 function connect(server: ServerUrl, store: KeyValueStore, device: Device): LaunchLoop | null {
   if (server.kind !== 'ok') return null;
@@ -86,6 +86,7 @@ export function startLaunch(options: LaunchOptions): Launch {
   const titleCard: FeedbackCard | null = loop === null ? null : createFeedbackCard(options.title, 'title', hooks);
   const takeEndCard: (progress: Progress) => boolean = loop === null ? endOnDevice(store) : (progress: Progress): boolean => loop.takeEndCard(progress);
   let endTaken: boolean = false;
+  let endWait: number = 0;
 
   if (titleCard !== null) document.getElementById('title-feedback')?.addEventListener('click', (): void => titleCard.open('ask'));
   if (loop !== null) {
@@ -107,7 +108,9 @@ export function startLaunch(options: LaunchOptions): Launch {
       played = addPlayed(played, dt);
       unsaved += dt;
       if (unsaved > LAUNCH.saveEvery) savePlayed();
-      if (!endTaken && takeEndCard({ flags: world.flags, ended: endedActs(world) })) {
+      const progress: Progress = { flags: world.flags, ended: endedActs(world) };
+      if (!endTaken && isSliceComplete(ALPHA_RULES, progress)) endWait += dt;
+      if (!endTaken && endWait >= LAUNCH.endDelay && takeEndCard(progress)) {
         endTaken = true;
         options.onEnd();
         card.open('end');

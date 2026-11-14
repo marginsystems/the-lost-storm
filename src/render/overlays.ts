@@ -484,6 +484,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'waypoint_unlocked':
           case 'exit_locked':
           case 'boss_phase':
+          case 'boss_defeated':
           case 'bark':
           case 'flask_used':
           case 'revive':

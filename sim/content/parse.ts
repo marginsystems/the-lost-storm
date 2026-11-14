@@ -23,6 +23,7 @@ import type {
   ActDef,
   AttachmentDef,
   BossDef,
+  BossFirstKill,
   BossPhase,
   BossSkill,
   ComboStep,
@@ -193,6 +194,16 @@ function bossDrop(source: Fields, where: string): BossDef['drop'] {
   return { items, rarity: text(source, 'rarity', where), goldMin, goldMax };
 }
 
+function firstKill(value: unknown, where: string): BossFirstKill | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  const goldMin: number = numeric(source, 'goldMin', where);
+  const goldMax: number = numeric(source, 'goldMax', where);
+  if (goldMin < 0) throw new ContentError(`${where}.goldMin`, 'expected zero or more');
+  if (goldMax < goldMin) throw new ContentError(`${where}.goldMax`, 'expected at least goldMin');
+  return { flag: text(source, 'flag', where), xpShare: fraction(source, 'xpShare', where), goldMin, goldMax };
+}
+
 function boss(value: unknown, where: string): BossDef | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
@@ -209,6 +220,7 @@ function boss(value: unknown, where: string): BossDef | null {
     phases,
     poise: { knockback },
     drop: bossDrop(drop, `${where}.drop`),
+    firstKill: firstKill(source['firstKill'], `${where}.firstKill`),
     barks: { aggro: textList(barks, 'aggro', `${where}.barks`), death: textList(barks, 'death', `${where}.barks`) },
   };
 }

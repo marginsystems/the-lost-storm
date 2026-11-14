@@ -631,7 +631,7 @@ void test('no arrival point lies inside an exit, so walking in never sends the h
   }
 });
 
-void test('the hero walks out of the In-Between, has the first moment marked cleared in the Hall (the real fight is covered in sim/world/quests.test.ts), clicks each exit on the way to the fire in the hideout, and the Warden ends the slice', (): void => {
+void test('the hero walks out of the In-Between, has the first moment marked cleared in the Hall (the real fight is covered in sim/world/quests.test.ts), clicks each exit on the way to the fire in the hideout, and the Warden gives the lesson that leads on to the gate', (): void => {
   const world: World = createWorld(content, { seed: 5, save: null });
   enterZone(world, zoneOf(content, 'between'), { type: 'start' });
   world.flags['opening'] = 'read';
@@ -664,5 +664,6 @@ void test('the hero walks out of the In-Between, has the first moment marked cle
   const guide = must(world.npcs.find((npc): boolean => npc.def.id === 'warden_guide'), 'guide npc');
   for (let step: number = 0; step < 900 && world.dialogue === null; step += 1) stepWorld(world, step === 0 ? [{ type: 'talk', npcId: guide.id }] : [], 1 / 30);
   for (let guard: number = 0; guard < 40 && world.dialogue !== null; guard += 1) stepWorld(world, [{ type: 'advance' }], 1 / 30);
-  assert.equal(world.flags['alpha_slice_complete'], 'reached');
+  assert.equal(world.flags['fire_lesson'], 'given');
+  assert.equal(world.flags['alpha_slice_complete'], undefined);
 });

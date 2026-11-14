@@ -360,6 +360,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'waypoint_unlocked':
           case 'exit_locked':
           case 'boss_phase':
+          case 'boss_defeated':
           case 'bark':
           case 'flask_used':
           case 'flasks_refilled':

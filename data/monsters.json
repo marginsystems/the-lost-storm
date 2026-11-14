@@ -604,6 +604,12 @@
         "goldMin": 60,
         "goldMax": 90
       },
+      "firstKill": {
+        "flag": "keeper_defeated",
+        "xpShare": 0.5,
+        "goldMin": 200,
+        "goldMax": 260
+      },
       "barks": {
         "aggro": [
           "timekeeper_gatekeeper_early"
