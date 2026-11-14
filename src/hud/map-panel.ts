@@ -1,6 +1,6 @@
 import { actOf } from '../../sim/content/atlas.ts';
 import type { ActDef, AtlasRoad, MapPlace, ZoneDef } from '../../sim/content/types.ts';
-import { placeState, roadState, zoneMark } from '../../sim/world/atlas.ts';
+import { placeState, roadState, roadWalked, zoneMark } from '../../sim/world/atlas.ts';
 import type { PlaceState, RoadState, ZoneMark } from '../../sim/world/atlas.ts';
 import type { World } from '../../sim/world/types.ts';
 import { canTeleport, onWaypoint } from '../../sim/world/waypoints.ts';
@@ -22,7 +22,6 @@ const MAP = {
   velocityBlend: 0.35,
   tipGap: 10,
   legendSize: 44,
-  unknownName: 'Unknown',
   hintAway: 'Stand on a waypoint to travel',
   hintReady: 'Choose a lit waypoint to travel',
   hintNone: 'No other waypoint found yet',
@@ -168,7 +167,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
   const describe = (node: NodeView): void => {
     const state: PlaceState = placeState(world, node.zone.id);
     const known: boolean = state === 'here' || state === 'visited';
-    setText(tipName, known ? node.zone.name : MAP.unknownName, false);
+    setText(tipName, node.zone.name, false);
     setText(tipMeta, known ? `${MAP.markNames[node.mark]} · Level ${node.zone.level}` : '', false);
     tipMeta.classList.toggle('empty', !known);
     let line: string = MAP.stateNames.unknown;
@@ -228,13 +227,13 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
       node.state = state;
       setState(node.parts.group, PLACE_STATES, state);
       setState(node.clear, PLACE_STATES, state);
-      const name: string = state === 'here' || state === 'visited' ? node.zone.name : state === 'unknown' ? '' : MAP.unknownName;
-      if (node.parts.name.textContent !== name) {
-        node.parts.name.textContent = name;
+      if (node.parts.name.textContent !== node.zone.name) {
+        node.parts.name.textContent = node.zone.name;
         retriggerSvg(node.parts.name, 'tick');
       }
     }
     for (const road of view.roads) {
+      road.group.classList.toggle('walked', roadWalked(world, road.road));
       const state: RoadState = roadState(world, road.road);
       if (state === road.state) continue;
       road.state = state;

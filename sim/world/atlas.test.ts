@@ -5,7 +5,7 @@ import { finishQuests, must, worldIn, zoneOf } from '../../test/support.ts';
 import { actOf } from '../content/atlas.ts';
 import { loadContent } from '../content/content.ts';
 import type { ActDef, AtlasDef, AtlasRoad, Content, MapPlace, QuestDef, ZoneDef, ZoneExit, ZoneWaypoint } from '../content/types.ts';
-import { placeState, roadState, zoneMark } from './atlas.ts';
+import { placeState, roadState, roadWalked, zoneMark } from './atlas.ts';
 import { createWorld } from './create.ts';
 import { canTeleport, onWaypoint } from './waypoints.ts';
 import type { World } from './types.ts';
@@ -123,4 +123,23 @@ void test('the In-Between is marked a void and is never offered for travel, even
   assert.ok(onWaypoint(town));
   assert.equal(canTeleport(town, 'between'), false);
   assert.equal(zoneOf(content, 'between').waypoint, null);
+});
+
+void test('a road is walked only once both its ends are visited', (): void => {
+  const fresh: World = createWorld(staged, { seed: 1, save: null });
+  assert.equal(roadWalked(fresh, mapRoad('hub', 'vale')), false);
+  const walked: World = worldIn(staged, 'vale', 1);
+  assert.equal(roadWalked(walked, mapRoad('hub', 'vale')), true);
+  assert.equal(roadWalked(walked, mapRoad('vale', 'peak')), false);
+});
+
+void test('a hero who woke in the In-Between has walked no road of act 1, and one who has been everywhere has walked both', (): void => {
+  const woke: World = worldIn(content, 'between', 1);
+  woke.visited.splice(0, woke.visited.length, 'between');
+  for (const road of act.atlas.roads) assert.equal(roadWalked(woke, road), false, `${road.from} ${road.to}`);
+  const intoHall: AtlasRoad = must(act.atlas.roads.find((road: AtlasRoad): boolean => road.from === 'between' && road.to === 'hall_of_time'), 'road into the hall');
+  assert.equal(roadState(woke, intoHall), 'hidden');
+  const travelled: World = worldIn(content, 'hideout', 1);
+  travelled.visited.splice(0, travelled.visited.length, 'between', 'hall_of_time', 'hideout');
+  for (const road of act.atlas.roads) assert.equal(roadWalked(travelled, road), true, `${road.from} ${road.to}`);
 });

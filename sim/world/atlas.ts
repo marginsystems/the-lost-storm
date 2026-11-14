@@ -41,6 +41,10 @@ function summed(ways: readonly Way[]): RoadState {
   return ways.some((way: Way): boolean => way.open) ? 'open' : 'locked';
 }
 
+export function roadWalked(world: World, road: AtlasRoad): boolean {
+  return world.visited.includes(road.from) && world.visited.includes(road.to);
+}
+
 export function roadState(world: World, road: AtlasRoad): RoadState {
   return summed([...knownWays(world, road.from, road.to), ...knownWays(world, road.to, road.from)]);
 }

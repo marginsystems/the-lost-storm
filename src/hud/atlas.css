@@ -188,7 +188,7 @@
 
 .atlas-road path {
   stroke-linecap: round;
-  opacity: 0;
+  opacity: 0.55;
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     stroke var(--spring-smooth-ms) var(--spring-smooth);
@@ -200,13 +200,21 @@
 }
 
 .atlas-road-line {
-  stroke: var(--ember);
+  stroke: var(--atlas-ink);
   stroke-width: 2.2;
   stroke-dasharray: 1 7;
 }
 
 .atlas-road.open path {
+  opacity: 0.75;
+}
+
+.atlas-road.walked path {
   opacity: 1;
+}
+
+.atlas-road.walked .atlas-road-line {
+  stroke: var(--ember);
 }
 
 .atlas-road.locked .atlas-road-bed {
@@ -241,6 +249,10 @@
   opacity: 0.28;
 }
 
+.atlas-clear.unknown {
+  opacity: 0.2;
+}
+
 .atlas-node-body {
   transition: transform var(--spring-bouncy-ms) var(--spring-bouncy);
 }
@@ -262,10 +274,10 @@
 
 .atlas-node .atlas-ring {
   fill: #0d0c0a;
-  stroke: var(--atlas-grey);
+  stroke: var(--atlas-ink);
   stroke-width: 1.4;
-  stroke-opacity: 0.45;
-  stroke-dasharray: 2 4;
+  stroke-opacity: 0.55;
+  stroke-dasharray: 3 3;
 }
 
 .atlas-node .atlas-disc {
@@ -274,12 +286,12 @@
 
 .atlas-node .atlas-mark {
   fill: var(--atlas-ink);
-  opacity: 0;
+  opacity: 0.38;
 }
 
 .atlas-node .atlas-spikes {
   fill: var(--atlas-ink);
-  opacity: 0;
+  opacity: 0.38;
 }
 
 .atlas-node .atlas-way {
@@ -310,7 +322,7 @@
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  fill: var(--atlas-grey);
+  fill: var(--atlas-ink-dim);
   stroke: #080706;
   stroke-width: 4px;
   stroke-linejoin: round;
@@ -319,6 +331,7 @@
 }
 
 .atlas-node.locked .atlas-ring {
+  stroke: var(--atlas-grey);
   stroke-opacity: 0.8;
 }
 
