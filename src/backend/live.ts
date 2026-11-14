@@ -1,6 +1,7 @@
 import type { Clock, Timers } from './backend.ts';
 import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_ZONE, liveUrl, moveFrame, mutesFrame, readServerFrame, sayable, sayFrame, whisperFrame } from './live-protocol.ts';
 import type { ChatLine, ChatRefusal, LiveMove, LivePlayer, Place, ServerFrame, WhisperDirection, WhisperRefusal, Worn } from './live-protocol.ts';
+import type { TradeFrame } from '../player-trade/trade-protocol.ts';
 
 export const LIVE = {
   moveEveryMs: 100,
@@ -36,6 +37,7 @@ export type LiveEvent =
   | { readonly type: 'look'; readonly id: string; readonly name: string | null; readonly hero: string | null; readonly worn: Worn }
   | { readonly type: 'moves'; readonly moves: readonly LiveMove[]; readonly at: number }
   | { readonly type: 'friends' }
+  | { readonly type: 'trade'; readonly frame: TradeFrame }
   | { readonly type: 'away' }
   | { readonly type: 'gone' };
 
@@ -53,6 +55,8 @@ export interface Live {
   say(text: string): boolean;
   whisper(to: string, text: string): boolean;
   mute(names: readonly string[]): void;
+  canTrade(): boolean;
+  trade(frame: string): boolean;
   subscribe(listener: LiveListener): () => void;
 }
 
@@ -100,6 +104,7 @@ export function createLive(options: LiveOptions): Live {
   let here: Place = { x: 0, z: 0, facing: 0 };
   let roaming: boolean | null = null;
   let muted: readonly string[] = [];
+  let trading: boolean = false;
 
   const emit = (event: LiveEvent): void => {
     if (event.type === 'gone') {
@@ -124,6 +129,7 @@ export function createLive(options: LiveOptions): Live {
     const closing: LiveSocket | null = socket;
     socket = null;
     welcomed = false;
+    trading = false;
     entered = false;
     present = false;
     sent = null;
@@ -147,6 +153,7 @@ export function createLive(options: LiveOptions): Live {
     switch (frame.type) {
       case 'welcome':
         welcomed = true;
+        trading = frame.trade;
         failures = 0;
         roaming = frame.roaming !== null;
         if (frame.roaming === null) return;
@@ -169,6 +176,9 @@ export function createLive(options: LiveOptions): Live {
         return;
       case 'friends':
         emit({ type: 'friends' });
+        return;
+      case 'trade':
+        emit({ type: 'trade', frame: frame.frame });
         return;
       case 'joined':
         emit({ type: 'joined', player: frame.player });
@@ -304,6 +314,12 @@ export function createLive(options: LiveOptions): Live {
     mute(names: readonly string[]): void {
       muted = names;
       if (welcomed && roaming === true) send(mutesFrame(muted));
+    },
+    canTrade: (): boolean => trading && present,
+    trade(frame: string): boolean {
+      if (!trading || !present) return false;
+      send(frame);
+      return true;
     },
     subscribe(listener: LiveListener): () => void {
       listeners.add(listener);

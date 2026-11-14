@@ -298,6 +298,7 @@ export function createOthers(options: OthersOptions): Others {
         case 'unsent':
         case 'refused':
         case 'friends':
+        case 'trade':
           return;
       }
     },

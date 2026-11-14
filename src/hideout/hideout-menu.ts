@@ -30,7 +30,12 @@ export interface HideoutMenuOptions {
   readonly frame: HTMLElement;
   readonly events: Window;
   readonly openDirect: ((name: string) => void) | null;
-  readonly startTrade: ((target: OtherTarget) => void) | null;
+  readonly trade: TradeStarter | null;
+}
+
+export interface TradeStarter {
+  ready(): boolean;
+  start(target: OtherTarget): void;
 }
 
 export interface HideoutMenu {
@@ -119,7 +124,7 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
     blocksAvailable: blocks.available,
     reportAvailable,
     canMessage: options.openDirect !== null,
-    canTrade: tradeFrom(from, options.startTrade !== null),
+    canTrade: tradeFrom(from, options.trade?.ready() === true),
     reported: reported.has(reportKey(from)),
     busy,
     };
@@ -195,7 +200,7 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
         view.close('outside');
         return;
       case 'trade':
-        if (from.kind === 'world') options.startTrade?.(from.target);
+        if (from.kind === 'world') options.trade?.start(from.target);
         view.close('outside');
         return;
       case 'befriend':

@@ -81,6 +81,10 @@ import type { OverlayManager } from './overlays.ts';
 import { openWith, promptText, use } from './prompts.ts';
 import tradeCss from './trade.css?inline';
 import auctionCss from './auction.css?inline';
+import playerTradeCss from './player-trade.css?inline';
+import type { PlayerTradeMount } from './player-trade-panel.ts';
+import { mountPlayerTrade } from './player-trade-panel.ts';
+import type { PlayerTrade } from '../player-trade/trade-flow.ts';
 import dropdownCss from './dropdown.css?inline';
 import { createTradeHud } from './trade-hud.ts';
 import type { TradeHud } from './trade-hud.ts';
@@ -113,7 +117,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${auctionCss}\n${dropdownCss}\n${contextCss}\n${pickerCss}\n${menuCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${pickerCss}\n${menuCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -232,6 +236,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
 
   for (const panel of HUD_PANELS) track(panels[panel].element);
   const trade: TradeHud = createTradeHud(root, context, track, overlays, panels.inventory.element);
+  let playerTrade: PlayerTradeMount | null = null;
   for (const view of trade.panels) {
     createCloseButton(view.element, 'Trade', (): void => {
       overlays.send({ type: 'close', id: 'trade' });
@@ -289,6 +294,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
         warmWait = HUD_WARM.retryFrames;
         if (chartPanel.warm()) warmWanted = false;
       }
+      playerTrade?.update(Date.now());
       fps.frame(performance.now(), view);
       globes.update(world.player, dt);
       flasks.update(world.player);
@@ -456,6 +462,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     },
     hideGroundItem(): void {
       tooltip.hide();
+    },
+    attachPlayerTrade(flow: PlayerTrade): void {
+      playerTrade ??= mountPlayerTrade(root, context, flow, track);
     },
     isPointerOverUi(): boolean {
       return hovered.size > 0;

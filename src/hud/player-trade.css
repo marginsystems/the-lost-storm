@@ -1,0 +1,268 @@
+.swap-panel {
+  z-index: 4;
+  top: 16px;
+  width: 404px;
+  max-height: calc(100% - 32px - var(--hud-cluster-h, 168px));
+}
+
+.swap-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.swap-side {
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: background var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.swap-side.confirmed {
+  background: rgba(127, 212, 255, 0.08);
+}
+
+.swap-side.swap-changed {
+  animation: swap-changed var(--spring-bouncy-ms) var(--spring-smooth) 3;
+}
+
+@keyframes swap-changed {
+  0% {
+    background: rgba(232, 184, 102, 0.26);
+  }
+
+  100% {
+    background: rgba(255, 255, 255, 0.03);
+  }
+}
+
+.swap-side-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.swap-side-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.swap-mark {
+  font-size: 11px;
+  color: var(--storm);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.swap-side.confirmed .swap-mark {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.swap-grid {
+  grid-template-columns: repeat(4, 40px);
+  gap: 3px;
+}
+
+.swap-grid .cell {
+  width: 40px;
+  height: 40px;
+}
+
+.swap-gold {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ember);
+}
+
+.swap-gold .gold-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.swap-gold-input {
+  width: 96px;
+}
+
+.swap-gold-input:disabled {
+  opacity: 0.6;
+}
+
+.swap-countdown {
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(127, 212, 255, 0.12);
+  opacity: 0;
+  transition:
+    height var(--spring-smooth-ms) var(--spring-smooth),
+    margin var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.swap-countdown.running {
+  height: 4px;
+  margin: 0 0 8px;
+  opacity: 1;
+}
+
+.swap-countdown-fill,
+.swap-ask-fill {
+  height: 100%;
+  background: var(--storm);
+  transform-origin: left center;
+}
+
+.swap-bag-title {
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.swap-bag .cell {
+  cursor: pointer;
+}
+
+.swap-bag .cell .cell-item {
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.swap-bag .cell.swap-offered .cell-item {
+  opacity: 0.32;
+  transform: scale(0.9);
+}
+
+.swap-bag .cell.swap-blocked {
+  cursor: default;
+}
+
+.swap-bag .cell.swap-blocked .cell-item {
+  opacity: 0.3;
+}
+
+.swap-panel.swapping .swap-bag .cell {
+  cursor: default;
+}
+
+.swap-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.swap-reason {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.swap-reason.shown {
+  opacity: 1;
+}
+
+.swap-status {
+  color: var(--storm);
+}
+
+.swap-ask {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  width: 260px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-edge);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(-50%, -10px);
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-bouncy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) var(--spring-smooth-ms);
+}
+
+.swap-ask.shown {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-bouncy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) 0s;
+}
+
+.swap-ask-text {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.swap-ask-time {
+  height: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(127, 212, 255, 0.12);
+}
+
+.swap-ask .swap-actions {
+  margin-top: 8px;
+}
+
+.swap-ask[data-tone='done'] .swap-ask-text {
+  color: var(--storm);
+}
+
+.swap-ask[data-tone='refusal'] .swap-ask-text {
+  color: #d98b7e;
+}
+
+.swap-ask-row {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.swap-ask-row.shown {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.swap-ask-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hud.fit-sheets .swap-ask {
+  top: 8px;
+  width: calc(100% - 16px);
+}
+
+.hud.fit-sheets .swap-columns {
+  grid-template-columns: 1fr;
+}

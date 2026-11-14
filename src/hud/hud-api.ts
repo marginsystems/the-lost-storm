@@ -1,3 +1,4 @@
+import type { PlayerTrade } from '../player-trade/trade-flow.ts';
 import type { UiAction } from '../../sim/content/audio.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../../sim/world/types.ts';
 import type { AuctionFlow } from '../auction/auction-flow.ts';
@@ -40,4 +41,5 @@ export interface Hud {
   showGroundItem(item: ItemInstance, x: number, y: number): void;
   moveGroundItem(x: number, y: number): void;
   hideGroundItem(): void;
+  attachPlayerTrade(flow: PlayerTrade): void;
 }

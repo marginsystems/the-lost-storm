@@ -5,6 +5,7 @@ import type { CharacterNeeds } from '../../sim/wear.ts';
 import type { World } from '../../sim/world/types.ts';
 import { createBrowserHideoutServer } from '../backend/browser.ts';
 import type { HideoutServer } from '../backend/browser.ts';
+import type { Timers } from '../backend/backend.ts';
 import type { LiveEvent } from '../backend/live.ts';
 import type { ChatLine } from '../backend/live-protocol.ts';
 import { LIVE_ZONE } from '../backend/live-protocol.ts';
@@ -20,6 +21,10 @@ import type { HideoutChat } from './hideout-chat.ts';
 import { startHideoutChat } from './hideout-chat.ts';
 import type { HideoutMenu } from './hideout-menu.ts';
 import { startHideoutMenu } from './hideout-menu.ts';
+import type { Hud } from '../hud/hud-api.ts';
+import type { PlayerTrade } from '../player-trade/trade-flow.ts';
+import { createTradeFlow } from '../player-trade/trade-flow.ts';
+import type { OtherTarget } from '../render/others.ts';
 import type { Mutes } from './mute.ts';
 import { createMutes } from './mute.ts';
 
@@ -34,6 +39,8 @@ export interface HideoutParts {
   readonly loader: GLTFLoader;
   readonly dresser: Dresser;
   readonly sight: Sight;
+  readonly screen: Pick<Hud, 'attachPlayerTrade'>;
+  readonly sync: () => Promise<void>;
 }
 
 export interface Hideout {
@@ -42,6 +49,15 @@ export interface Hideout {
   hoverPlayer(id: string | null): void;
   pressPlayer(id: string | null): boolean;
 }
+
+const WINDOW_TIMERS: Timers = {
+  after: (ms: number, task: () => void): (() => void) => {
+    const id: number = window.setTimeout(task, ms);
+    return (): void => {
+      window.clearTimeout(id);
+    };
+  },
+};
 
 export function startHideout(rawUrl: string | undefined, parts: HideoutParts): Hideout | null {
   const server: HideoutServer | null = createBrowserHideoutServer(rawUrl);
@@ -62,7 +78,9 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     clock: (): number => performance.now(),
     sight: parts.sight,
   });
-  const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: (name: string): void => chat.openDirect(name), startTrade: null });
+  const trade: PlayerTrade = createTradeFlow({ live: server.live, world: (): World | null => current, sync: parts.sync, clock: (): number => Date.now(), timers: WINDOW_TIMERS });
+  parts.screen.attachPlayerTrade(trade);
+  const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: (name: string): void => chat.openDirect(name), trade: { ready: (): boolean => trade.ready(), start: (target: OtherTarget): void => trade.ask(target.id, target.name) } });
   server.live.subscribe((event: LiveEvent): void => {
     others.handle(event);
     chat.handle(event);

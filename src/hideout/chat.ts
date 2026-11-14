@@ -209,6 +209,7 @@ export function receive(state: ChatState, event: LiveEvent): ChatState {
     case 'left':
     case 'moves':
     case 'friends':
+    case 'trade':
     case 'away':
     case 'gone':
       return state;
