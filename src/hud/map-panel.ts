@@ -8,8 +8,8 @@ import { drawAtlasArt } from './atlas-art.ts';
 import { smoothPath } from './atlas-geometry.ts';
 import { drawNode, NODE } from './atlas-nodes.ts';
 import type { NodeParts } from './atlas-nodes.ts';
-import { atRest, clampView, openView, panBy, pinchTo, settleView, stepMotion, still, toScreen, zoomAt } from './atlas-view.ts';
-import type { AtlasFrame, AtlasMotion, AtlasView, Pinch, ScreenPoint } from './atlas-view.ts';
+import { atRest, clampView, markerScale, openView, panBy, pinchTo, placeBox, settleView, stepMotion, still, toScreen, zoomAt } from './atlas-view.ts';
+import type { AtlasMotion, AtlasView, MapFrame, Pinch, ScreenPoint } from './atlas-view.ts';
 import { ATLAS_VIEW } from './atlas-view.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, setText } from './dom.ts';
@@ -27,8 +27,8 @@ const MAP = {
   hintReady: 'Choose a lit waypoint to travel',
   hintNone: 'No other waypoint found yet',
   ids: { fog: 'atlas-fog-mask', clear: 'atlas-fog-clear', grain: 'atlas-grain' },
-  markNames: { town: 'Town', wild: 'Wilds', boss: 'Boss lair' },
-  stateNames: { here: 'You are here', travel: 'Travel here', found: 'Waypoint found', unfound: 'Waypoint not yet found', none: 'No waypoint', reachable: 'Unexplored', locked: 'The way is barred', unknown: 'Undiscovered' },
+  markNames: { town: 'Town', wild: 'Wilds', boss: 'Boss lair', void: 'Void' },
+  stateNames: { here: 'You are here', travel: 'Travel here', found: 'Waypoint found', unfound: 'Waypoint not yet found', none: 'No waypoint: reached on foot', reachable: 'Unexplored', locked: 'The way is barred', unknown: 'Undiscovered' },
 } as const;
 
 const PLACE_STATES: readonly PlaceState[] = ['here', 'visited', 'reachable', 'locked', 'unknown'];
@@ -37,6 +37,7 @@ const LEGEND: readonly { readonly mark: ZoneMark; readonly waypoint: boolean; re
   { mark: 'town', waypoint: false, state: 'visited', text: 'Town' },
   { mark: 'wild', waypoint: false, state: 'visited', text: 'Wilds' },
   { mark: 'boss', waypoint: false, state: 'visited', text: 'Boss lair' },
+  { mark: 'void', waypoint: false, state: 'visited', text: 'Void' },
   { mark: 'wild', waypoint: true, state: 'visited found', text: 'Waypoint' },
   { mark: 'wild', waypoint: false, state: 'here', text: 'You are here' },
   { mark: 'wild', waypoint: false, state: 'reachable', text: 'Unexplored' },
@@ -111,10 +112,11 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
   const tipState: HTMLDivElement = el('div', 'atlas-tip-state', tip);
 
   let view: ActView | null = null;
-  let frame: AtlasFrame = { width: 1, height: 1, mapWidth: 1, mapHeight: 1 };
+  let frame: MapFrame = { width: 1, height: 1, mapWidth: 1, mapHeight: 1, places: { left: 0, top: 0, right: 1, bottom: 1 } };
   let target: AtlasView = { x: 0, y: 0, scale: 1 };
   let motion: AtlasMotion = still(target);
   let drawn: string = '';
+  let markers: string = '';
   let drag: Drag | null = null;
   let hovered: NodeView | null = null;
   const fingers: Map<number, ScreenPoint> = new Map<number, ScreenPoint>();
@@ -159,7 +161,8 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
 
   const measure = (): void => {
     if (view === null) return;
-    frame = { width: Math.max(1, element.clientWidth), height: Math.max(1, element.clientHeight), mapWidth: view.act.atlas.width, mapHeight: view.act.atlas.height };
+    const { width, height, places } = view.act.atlas;
+    frame = { width: Math.max(1, element.clientWidth), height: Math.max(1, element.clientHeight), mapWidth: width, mapHeight: height, places: placeBox(places, width, height) };
   };
 
   const describe = (node: NodeView): void => {
@@ -183,7 +186,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
   const placeTip = (): void => {
     if (hovered === null) return;
     const at: ScreenPoint = toScreen(motion.view, frame, hovered.place);
-    const reach: number = (hovered.parts.radius + NODE.wayGap) * motion.view.scale + MAP.tipGap;
+    const reach: number = (hovered.parts.radius + NODE.wayGap) * motion.view.scale * markerScale(motion.view.scale) + MAP.tipGap;
     const left: boolean = at.x + reach + tip.offsetWidth > frame.width;
     tip.style.transform = `translate(${Math.round(left ? at.x - reach - tip.offsetWidth : at.x + reach)}px, ${Math.round(at.y - tip.offsetHeight / 2)}px)`;
   };
@@ -203,6 +206,11 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     if (next === drawn) return;
     drawn = next;
     sheet.setAttribute('transform', next);
+    const size: string = markerScale(scale).toFixed(3);
+    if (size !== markers && view !== null) {
+      markers = size;
+      for (const node of view.nodes) node.parts.group.setAttribute('transform', `translate(${node.place.x} ${node.place.y}) scale(${size})`);
+    }
     placeTip();
   };
 
@@ -351,10 +359,12 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     pinch = null;
     const act: ActDef | undefined = actOf(world.content, world.zone.id);
     if (act === undefined) return;
-    if (view?.act !== act) view = build(act);
+    if (view?.act !== act) {
+      view = build(act);
+      markers = '';
+    }
     measure();
-    const here: MapPlace | undefined = act.atlas.places.find((place: MapPlace): boolean => place.zone === world.zone.id);
-    target = openView(frame, here?.x ?? act.atlas.width / 2, here?.y ?? act.atlas.height / 2);
+    target = openView(frame);
     motion = still(settleView(target, frame));
     hover(null);
     sync();

@@ -1,7 +1,10 @@
 export const ATLAS_VIEW = {
   zoomRange: 3.4,
-  openZoom: 1,
+  openCeiling: 0.85,
+  openMargin: 0.12,
   openSettle: 1.14,
+  markerFloor: 0.6,
+  placeReach: { side: 110, above: 45, below: 70 },
   wheelRate: 0.0016,
   stiffness: 210,
   damping: 29,
@@ -26,6 +29,17 @@ export interface AtlasFrame {
   readonly mapHeight: number;
 }
 
+export interface AtlasBox {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+export interface MapFrame extends AtlasFrame {
+  readonly places: AtlasBox;
+}
+
 export interface AtlasMotion {
   readonly view: AtlasView;
   readonly vx: number;
@@ -39,29 +53,53 @@ export interface ScreenPoint {
 }
 
 function between(value: number, low: number, high: number): number {
-  return low > high ? (low + high) / 2 : Math.min(high, Math.max(low, value));
+  return Math.min(Math.max(value, Math.min(low, high)), Math.max(low, high));
 }
 
-export function minScale(frame: AtlasFrame): number {
+export function placeBox(points: readonly ScreenPoint[], mapWidth: number, mapHeight: number): AtlasBox {
+  if (points.length === 0) return { left: 0, top: 0, right: mapWidth, bottom: mapHeight };
+  const xs: number[] = points.map((point: ScreenPoint): number => point.x);
+  const ys: number[] = points.map((point: ScreenPoint): number => point.y);
+  const reach = ATLAS_VIEW.placeReach;
+  return { left: Math.min(...xs) - reach.side, top: Math.min(...ys) - reach.above, right: Math.max(...xs) + reach.side, bottom: Math.max(...ys) + reach.below };
+}
+
+export function coverScale(frame: AtlasFrame): number {
   return Math.max(frame.width / frame.mapWidth, frame.height / frame.mapHeight);
 }
 
-export function maxScale(frame: AtlasFrame): number {
-  return minScale(frame) * ATLAS_VIEW.zoomRange;
+export function openScale(frame: MapFrame): number {
+  const room: number = 1 - 2 * ATLAS_VIEW.openMargin;
+  const width: number = Math.max(1, frame.places.right - frame.places.left);
+  const height: number = Math.max(1, frame.places.bottom - frame.places.top);
+  return Math.min((frame.width * room) / width, (frame.height * room) / height, ATLAS_VIEW.openCeiling);
 }
 
-export function clampView(view: AtlasView, frame: AtlasFrame): AtlasView {
+export function minScale(frame: MapFrame): number {
+  return Math.min(coverScale(frame), openScale(frame));
+}
+
+export function maxScale(frame: MapFrame): number {
+  return coverScale(frame) * ATLAS_VIEW.zoomRange;
+}
+
+export function markerScale(scale: number): number {
+  return Math.max(1, ATLAS_VIEW.markerFloor / scale);
+}
+
+export function clampView(view: AtlasView, frame: MapFrame): AtlasView {
   const scale: number = between(view.scale, minScale(frame), maxScale(frame));
   const halfWidth: number = frame.width / (2 * scale);
   const halfHeight: number = frame.height / (2 * scale);
   return { scale, x: between(view.x, halfWidth, frame.mapWidth - halfWidth), y: between(view.y, halfHeight, frame.mapHeight - halfHeight) };
 }
 
-export function openView(frame: AtlasFrame, x: number, y: number): AtlasView {
-  return clampView({ x, y, scale: minScale(frame) * ATLAS_VIEW.openZoom }, frame);
+export function openView(frame: MapFrame): AtlasView {
+  const { left, top, right, bottom } = frame.places;
+  return clampView({ x: (left + right) / 2, y: (top + bottom) / 2, scale: openScale(frame) }, frame);
 }
 
-export function settleView(target: AtlasView, frame: AtlasFrame): AtlasView {
+export function settleView(target: AtlasView, frame: MapFrame): AtlasView {
   return clampView({ x: target.x, y: target.y, scale: target.scale * ATLAS_VIEW.openSettle }, frame);
 }
 
@@ -73,7 +111,7 @@ export function toScreen(view: AtlasView, frame: AtlasFrame, map: ScreenPoint): 
   return { x: (map.x - view.x) * view.scale + frame.width / 2, y: (map.y - view.y) * view.scale + frame.height / 2 };
 }
 
-export function zoomAt(view: AtlasView, frame: AtlasFrame, cursor: ScreenPoint, wheelDelta: number): AtlasView {
+export function zoomAt(view: AtlasView, frame: MapFrame, cursor: ScreenPoint, wheelDelta: number): AtlasView {
   const scale: number = between(view.scale * Math.exp(-wheelDelta * ATLAS_VIEW.wheelRate), minScale(frame), maxScale(frame));
   const held: ScreenPoint = toMap(view, frame, cursor);
   return clampView({ scale, x: held.x - (cursor.x - frame.width / 2) / scale, y: held.y - (cursor.y - frame.height / 2) / scale }, frame);
@@ -84,7 +122,7 @@ export interface Pinch {
   readonly b: ScreenPoint;
 }
 
-export function pinchTo(view: AtlasView, frame: AtlasFrame, from: Pinch, to: Pinch): AtlasView {
+export function pinchTo(view: AtlasView, frame: MapFrame, from: Pinch, to: Pinch): AtlasView {
   const before: number = Math.hypot(from.a.x - from.b.x, from.a.y - from.b.y);
   const after: number = Math.hypot(to.a.x - to.b.x, to.a.y - to.b.y);
   const ratio: number = before > 0 && after > 0 ? after / before : 1;
@@ -94,7 +132,7 @@ export function pinchTo(view: AtlasView, frame: AtlasFrame, from: Pinch, to: Pin
   return clampView({ scale, x: held.x - (centre.x - frame.width / 2) / scale, y: held.y - (centre.y - frame.height / 2) / scale }, frame);
 }
 
-export function panBy(view: AtlasView, frame: AtlasFrame, dx: number, dy: number): AtlasView {
+export function panBy(view: AtlasView, frame: MapFrame, dx: number, dy: number): AtlasView {
   return clampView({ scale: view.scale, x: view.x - dx / view.scale, y: view.y - dy / view.scale }, frame);
 }
 

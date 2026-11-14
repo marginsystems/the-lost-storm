@@ -570,7 +570,7 @@ export function contentProblems(content: Content): string[] {
       for (const member of packDef.members) need(content.monsters.has(member.monster), `${at} pack uses unknown monster ${member.monster}`);
     }
     const places: number = content.world.acts.filter((act: ActDef): boolean => act.atlas.places.some((place: MapPlace): boolean => place.zone === zoneDef.id)).length;
-    if (zoneDef.kind === 'void') need(places === 0, `${at} is a void: it has no place on the world map`);
+    if (zoneDef.kind === 'void') need(places <= 1, `${at} is a void: it has at most one place on the world map`);
     else need(places === 1, `${at} needs one place on the world map`);
     for (const met of zoneDef.void?.encounters ?? []) known(`${at} encounter ${met.id}`, met.when);
     for (const placed of zoneDef.npcs) {

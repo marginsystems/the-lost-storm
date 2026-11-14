@@ -477,9 +477,9 @@ void test('every talk objective has someone to talk to and a conversation of its
   }
 });
 
-void test('every zone but a void has one place in one act of the world map and no two share one', (): void => {
+void test('every zone, the void included, has one place in one act of the world map and no two share one', (): void => {
   const placed: string[] = content.world.acts.flatMap((act): string[] => act.atlas.places.map((place): string => place.zone));
-  const mapped: string[] = [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.kind !== 'void').map((zone: ZoneDef): string => zone.id);
+  const mapped: string[] = [...content.zones.values()].map((zone: ZoneDef): string => zone.id);
   assert.deepEqual(placed.toSorted(), mapped.toSorted());
   for (const act of content.world.acts) {
     const spots: string[] = act.atlas.places.map((place): string => `${place.x},${place.y}`);

@@ -4,9 +4,10 @@ import { roadAct, roadZone } from '../../test/road-support.ts';
 import { finishQuests, must, worldIn, zoneOf } from '../../test/support.ts';
 import { actOf } from '../content/atlas.ts';
 import { loadContent } from '../content/content.ts';
-import type { ActDef, AtlasDef, AtlasRoad, Content, MapPlace, QuestDef, ZoneDef, ZoneExit } from '../content/types.ts';
+import type { ActDef, AtlasDef, AtlasRoad, Content, MapPlace, QuestDef, ZoneDef, ZoneExit, ZoneWaypoint } from '../content/types.ts';
 import { placeState, roadState, zoneMark } from './atlas.ts';
 import { createWorld } from './create.ts';
+import { canTeleport, onWaypoint } from './waypoints.ts';
 import type { World } from './types.ts';
 
 const content: Content = loadContent();
@@ -44,7 +45,6 @@ void test('a new hero sees the town lit, open neighbours dim, barred ones locked
   assert.equal(roadState(world, mapRoad('vale', 'peak')), 'hidden');
   const shipped: World = createWorld(content, { seed: 1, save: null });
   assert.equal(placeState(shipped, 'hall_of_time'), 'here');
-  assert.deepEqual(act.atlas.roads, [{ from: 'hall_of_time', to: 'hideout', via: [] }]);
   assert.equal(placeState(shipped, 'hideout'), 'reachable');
 });
 
@@ -87,4 +87,40 @@ void test('a zone no act places falls back to the first act', (): void => {
   const found: ActDef = must(actOf(lost, 'hall_of_time'), 'act');
   assert.equal(found, lost.world.acts[0]);
   assert.ok(!found.atlas.places.some((place: MapPlace): boolean => place.zone === 'hall_of_time'));
+});
+
+void test('the act shows the In-Between, the Hall of Time and the Hideout west to east, joined in the order the hero walks them', (): void => {
+  assert.deepEqual(
+    act.atlas.places.map((place: MapPlace): string => place.zone),
+    ['between', 'hall_of_time', 'hideout'],
+  );
+  for (const place of act.atlas.places) assert.ok(content.zones.has(place.zone), place.zone);
+  const xs: number[] = act.atlas.places.map((place: MapPlace): number => place.x);
+  assert.deepEqual(xs, xs.toSorted((a: number, b: number): number => a - b));
+  assert.deepEqual(
+    act.atlas.roads.map((road: AtlasRoad): string => `${road.from} ${road.to}`),
+    ['between hall_of_time', 'hall_of_time hideout'],
+  );
+  const placed: Set<string> = new Set<string>(act.atlas.places.map((place: MapPlace): string => place.zone));
+  for (const road of act.atlas.roads) assert.ok(placed.has(road.from) && placed.has(road.to), `${road.from} ${road.to}`);
+});
+
+void test('you are here in each of the three zones, the In-Between included', (): void => {
+  for (const zone of ['between', 'hall_of_time', 'hideout']) {
+    const world: World = worldIn(content, zone, 1);
+    assert.equal(must(actOf(content, zone), 'act'), act);
+    assert.equal(placeState(world, zone), 'here', zone);
+    for (const other of act.atlas.places.filter((place: MapPlace): boolean => place.zone !== zone)) assert.notEqual(placeState(world, other.zone), 'here');
+  }
+});
+
+void test('the In-Between is marked a void and is never offered for travel, even from a lit waypoint', (): void => {
+  assert.equal(zoneMark(content, zoneOf(content, 'between')), 'void');
+  const town: World = worldIn(content, 'hideout', 1);
+  const stone: ZoneWaypoint = must(town.zone.waypoint, 'hideout waypoint');
+  town.player.pos = { x: stone.x, z: stone.z };
+  town.waypoints.push('between', 'hall_of_time', 'hideout');
+  assert.ok(onWaypoint(town));
+  assert.equal(canTeleport(town, 'between'), false);
+  assert.equal(zoneOf(content, 'between').waypoint, null);
 });

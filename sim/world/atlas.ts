@@ -2,7 +2,7 @@ import type { AtlasRoad, Content, MonsterDef, PackMember, ZoneDef, ZoneExit, Zon
 import { allHold } from './conditions.ts';
 import type { World } from './types.ts';
 
-export type ZoneMark = 'town' | 'wild' | 'boss';
+export type ZoneMark = 'town' | 'wild' | 'boss' | 'void';
 export type PlaceState = 'here' | 'visited' | 'reachable' | 'locked' | 'unknown';
 export type RoadState = 'open' | 'locked' | 'hidden';
 
@@ -12,7 +12,14 @@ interface Way {
 }
 
 export function zoneMark(content: Content, zone: ZoneDef): ZoneMark {
-  if (zone.kind === 'town') return 'town';
+  switch (zone.kind) {
+    case 'town':
+      return 'town';
+    case 'void':
+      return 'void';
+    case 'wild':
+      break;
+  }
   const rules = (member: PackMember): boolean => {
     const monster: MonsterDef | undefined = content.monsters.get(member.monster);
     return monster !== undefined && monster.boss !== null;

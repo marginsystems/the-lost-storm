@@ -3,7 +3,7 @@ import { fixed } from './atlas-geometry.ts';
 import { svg } from './svg.ts';
 
 export const NODE = {
-  radius: { town: 19, wild: 13, boss: 17 },
+  radius: { town: 19, wild: 13, boss: 17, void: 15 },
   discInset: 4,
   wayGap: 6,
   wayTick: 5,
@@ -17,6 +17,7 @@ export const NODE = {
     town: 'M-7 7V-3H-4.6V-7H-1.6V-3H1.6V-7H4.6V-3H7V7H2.2V2.4H-2.2V7Z',
     wild: 'M0 -5.4L5.4 0L0 5.4L-5.4 0Z',
     boss: 'M-7.5 5.5L-7.5 -5L-3.4 -0.6L0 -7.4L3.4 -0.6L7.5 -5L7.5 5.5Z',
+    void: 'M0 -6.5A6.5 6.5 0 1 1 0 6.5A6.5 6.5 0 1 1 0 -6.5ZM0 -3.4A3.4 3.4 0 1 0 0 3.4A3.4 3.4 0 1 0 0 -3.4Z',
   },
 } as const;
 
