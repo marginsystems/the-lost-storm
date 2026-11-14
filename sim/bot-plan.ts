@@ -1,9 +1,10 @@
 import type { Content, ItemSlot, SkillDef, SkillTreeNodeDef, StatBlock } from './content/types.ts';
-import { slotOf } from './items.ts';
+import { emptyEquipment, slotOf } from './items.ts';
 import type { ReadonlyVec2 } from './math.ts';
 import { distance } from './math.ts';
 import { canAllocate, placeLinks, startingPlaces } from './progression.ts';
-import { armourReduction, computeStats, damagePerSecond } from './stats.ts';
+import { wornPowers, wornVariants } from './powers.ts';
+import { armourReduction, computeStats, damagePerSecond, resolveSkill } from './stats.ts';
 import { canDash } from './world/dash.ts';
 import { blockedFlask } from './world/flasks.ts';
 import { chargeOf } from './world/skills.ts';
@@ -18,6 +19,18 @@ export const BOT_PLAN = {
   upgradeMargin: 1.02,
 } as const;
 
+export type PlayStyle = 'stand' | 'range' | 'kite';
+
+export type WeaponKind = 'any' | 'plain' | 'varied';
+
+export interface GearWeights {
+  readonly dps: number;
+  readonly toughness: number;
+  readonly mobility: number;
+}
+
+export const STAND_WEIGHTS: GearWeights = { dps: 1, toughness: 1, mobility: 0 };
+
 export interface BotPlan {
   readonly name: string;
   readonly flaskAt: number | null;
@@ -28,12 +41,19 @@ export interface BotPlan {
   readonly readSeconds: number;
   readonly paths: readonly string[];
   readonly skills: readonly string[];
+  readonly route: readonly string[];
+  readonly weights: GearWeights;
+  readonly focus: string | null;
+  readonly style: PlayStyle;
+  readonly keepGap: number;
+  readonly weapons: WeaponKind;
 }
 
 export interface Power {
   readonly dps: number;
   readonly toughness: number;
   readonly itemLevels: number;
+  readonly mobility: number;
 }
 
 function preference(plan: BotPlan, skill: string): number {
@@ -91,15 +111,54 @@ function byKeys(a: readonly number[], b: readonly number[]): number {
   return 0;
 }
 
+function stepToward(content: Content, allocated: readonly string[], points: number, target: string): string | null {
+  const links: ReadonlyMap<string, readonly string[]> = placeLinks(content);
+  const sources: readonly string[] = allocated.length > 0 ? allocated : startingPlaces(content);
+  const before: Map<string, string | null> = new Map<string, string | null>(sources.map((id: string): [string, string | null] => [id, null]));
+  const queue: string[] = [...sources];
+  for (let index: number = 0; index < queue.length && !before.has(target); index += 1) {
+    const at: string | undefined = queue[index];
+    if (at === undefined) continue;
+    for (const next of links.get(at) ?? []) {
+      if (before.has(next)) continue;
+      before.set(next, at);
+      queue.push(next);
+    }
+  }
+  if (!before.has(target)) return null;
+  let step: string = target;
+  for (let parent: string | null | undefined = before.get(step); parent !== null && parent !== undefined && (allocated.length === 0 || !allocated.includes(parent)); parent = before.get(step)) step = parent;
+  return canAllocate(content, allocated, points, step) ? step : null;
+}
+
+function routeStep(content: Content, allocated: readonly string[], points: number, route: readonly string[]): string | null {
+  for (const target of route) {
+    if (allocated.includes(target)) continue;
+    const step: string | null = stepToward(content, allocated, points, target);
+    if (step !== null) return step;
+  }
+  return null;
+}
+
+function pathsHeld(content: Content, allocated: readonly string[]): string[] {
+  const counts: Map<string, number> = new Map<string, number>();
+  for (const node of content.skillTree) if (allocated.includes(node.id)) counts.set(node.path, (counts.get(node.path) ?? 0) + 1);
+  return [...counts].toSorted((a: [string, number], b: [string, number]): number => b[1] === a[1] ? a[0].localeCompare(b[0]) : b[1] - a[1]).map(([path]: [string, number]): string => path);
+}
+
 export function nextPlace(content: Content, plan: BotPlan, allocated: readonly string[], points: number): string | null {
-  if (points <= 0 || plan.paths.length === 0) return null;
-  const counts: Map<string, number> = new Map<string, number>(plan.paths.map((path: string): [string, number] => [path, 0]));
+  if (points <= 0) return null;
+  const routed: string | null = routeStep(content, allocated, points, plan.route);
+  if (routed !== null) return routed;
+  const paths: readonly string[] = plan.paths.length > 0 ? plan.paths : pathsHeld(content, allocated);
+  if (paths.length === 0) return null;
+  const counts: Map<string, number> = new Map<string, number>(paths.map((path: string): [string, number] => [path, 0]));
   for (const id of allocated) {
     const node: SkillTreeNodeDef | undefined = content.skillTree.find((candidate: SkillTreeNodeDef): boolean => candidate.id === id);
     if (node !== undefined && counts.has(node.path)) counts.set(node.path, (counts.get(node.path) ?? 0) + 1);
   }
   const open: SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => counts.has(node.path) && canAllocate(content, allocated, points, node.id));
-  const key = (node: SkillTreeNodeDef): number[] => [abilityRank(plan, node), counts.get(node.path) ?? 0, plan.paths.indexOf(node.path), depthOf(content, node), weightOf(node)];
+  const key = (node: SkillTreeNodeDef): number[] => [abilityRank(plan, node), counts.get(node.path) ?? 0, paths.indexOf(node.path), depthOf(content, node), weightOf(node)];
   const ranked: SkillTreeNodeDef[] = open.toSorted((a: SkillTreeNodeDef, b: SkillTreeNodeDef): number => byKeys([...key(a), a.id.localeCompare(b.id)], [...key(b), 0]));
   return ranked[0]?.id ?? null;
 }
@@ -108,27 +167,34 @@ function toughnessOf(content: Content, stats: StatBlock): number {
   return stats.maxLife / Math.max(0.05, 1 - armourReduction(stats.armour, content.player.resistance.armourCap));
 }
 
-export function powerOf(content: Content, level: number, equipped: Equipment, allocated: readonly string[]): Power {
+export function powerOf(content: Content, level: number, equipped: Equipment, allocated: readonly string[], focus: string | null = null): Power {
   const stats: StatBlock = computeStats(content, level, equipped, allocated);
-  const basic: SkillDef | undefined = content.skills.get(content.player.skillBar[0]?.skill ?? '');
+  const base: SkillDef | undefined = content.skills.get(focus ?? content.player.skillBar[0]?.skill ?? '');
+  const skill: SkillDef | undefined = base === undefined ? undefined : resolveSkill(content, base, allocated, wornPowers(content, equipped), wornVariants(content, equipped));
   const items: number = Object.values(equipped).reduce((sum: number, item: ItemInstance | null): number => sum + (item?.level ?? 0), 0);
-  return { dps: basic === undefined ? 0 : damagePerSecond(stats, basic), toughness: toughnessOf(content, stats), itemLevels: items };
+  return { dps: skill === undefined ? 0 : damagePerSecond(stats, skill), toughness: toughnessOf(content, stats), itemLevels: items, mobility: stats.moveSpeed };
 }
 
-function scoreOf(power: Power): number {
-  return power.dps * power.toughness;
+function scoreOf(power: Power, weights: GearWeights): number {
+  return Math.pow(Math.max(power.dps, 1e-6), weights.dps) * Math.pow(Math.max(power.toughness, 1e-6), weights.toughness) * Math.pow(Math.max(power.mobility, 1e-6), weights.mobility);
 }
 
-export function upgradeIndex(world: World): number | null {
+function wanted(content: Content, plan: BotPlan, item: ItemInstance, slot: ItemSlot): boolean {
+  if (slot !== 'weapon' || plan.weapons === 'any') return true;
+  const varied: boolean = wornVariants(content, { ...emptyEquipment(), weapon: item }).length > 0;
+  return plan.weapons === 'varied' ? varied : !varied;
+}
+
+export function upgradeIndex(world: World, plan: BotPlan): number | null {
   const player: PlayerState = world.player;
-  const now: number = scoreOf(powerOf(world.content, player.level, player.equipped, player.allocated));
+  const now: number = scoreOf(powerOf(world.content, player.level, player.equipped, player.allocated, plan.focus), plan.weights);
   let best: number | null = null;
   let bestScore: number = now * BOT_PLAN.upgradeMargin;
   for (const [index, item] of player.inventory.entries()) {
     if (item === null) continue;
     const slot: ItemSlot | null = slotOf(world.content, item);
-    if (slot === null) continue;
-    const score: number = scoreOf(powerOf(world.content, player.level, { ...player.equipped, [slot]: item }, player.allocated));
+    if (slot === null || !wanted(world.content, plan, item, slot)) continue;
+    const score: number = scoreOf(powerOf(world.content, player.level, { ...player.equipped, [slot]: item }, player.allocated, plan.focus), plan.weights);
     if (score > bestScore) {
       best = index;
       bestScore = score;
@@ -137,7 +203,7 @@ export function upgradeIndex(world: World): number | null {
   return best;
 }
 
-export function junkIndex(world: World): number | null {
+export function junkIndex(world: World, plan: BotPlan): number | null {
   const player: PlayerState = world.player;
   if (player.inventory.includes(null)) return null;
   let worst: number | null = null;
@@ -145,7 +211,7 @@ export function junkIndex(world: World): number | null {
   for (const [index, item] of player.inventory.entries()) {
     const slot: ItemSlot | null = item === null ? null : slotOf(world.content, item);
     if (item === null || slot === null) continue;
-    const score: number = scoreOf(powerOf(world.content, player.level, { ...player.equipped, [slot]: item }, player.allocated));
+    const score: number = wanted(world.content, plan, item, slot) ? scoreOf(powerOf(world.content, player.level, { ...player.equipped, [slot]: item }, player.allocated, plan.focus), plan.weights) : 0;
     if (score < worstScore) {
       worst = index;
       worstScore = score;
@@ -191,7 +257,7 @@ function crowdNear(foes: readonly MonsterState[], at: ReadonlyVec2, reach: numbe
   return foes.filter((foe: MonsterState): boolean => distance(foe.pos, at) <= reach + foe.radius).length;
 }
 
-function worthCasting(player: PlayerState, skill: SkillDef, target: MonsterState, foes: readonly MonsterState[]): boolean {
+function worthCasting(plan: BotPlan, player: PlayerState, skill: SkillDef, target: MonsterState, foes: readonly MonsterState[]): boolean {
   const gap: number = distance(target.pos, player.pos) - target.radius;
   const delivery = skill.delivery;
   switch (delivery.type) {
@@ -207,7 +273,7 @@ function worthCasting(player: PlayerState, skill: SkillDef, target: MonsterState
     case 'field':
       return gap <= skill.engageRange;
     case 'blink':
-      return gap > BOT_PLAN.crowdReach && gap <= delivery.range;
+      return plan.style === 'stand' && gap > BOT_PLAN.crowdReach && gap <= delivery.range;
     case 'dash':
     case 'revive':
       return false;
@@ -225,7 +291,7 @@ export function planAttack(world: World, plan: BotPlan, target: MonsterState, fo
   for (const slot of order) {
     const skill: SkillDef | null = player.skills[slot] ?? null;
     if (skill === null || !deals(skill) || !ready(player, skill) || (!spare && skill.manaCost > 0 && foes.length < BOT_PLAN.crowd)) continue;
-    if (!worthCasting(player, skill, target, foes)) continue;
+    if (!worthCasting(plan, player, skill, target, foes)) continue;
     const press: Command[] = skill.press === null ? [] : [{ type: 'hold', slot, down: true }];
     return [...press, { type: 'skill', slot, aim: target.pos, targetId: target.id }];
   }
