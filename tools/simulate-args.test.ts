@@ -40,3 +40,12 @@ void test('bad input explains itself instead of running', (): void => {
     assert.equal(parse(args).kind, 'help', args.join(' '));
   }
 });
+
+void test('a danger factor reaches every job, and a bad one is refused', (): void => {
+  const normal: Command = parse(['level', '5']);
+  assert.ok(normal.kind === 'simulate' && normal.jobs.every((job): boolean => job.danger === 1));
+  const hard: Command = parse(['level', '5', '--danger', '2.5']);
+  assert.ok(hard.kind === 'simulate' && hard.jobs.every((job): boolean => job.danger === 2.5));
+  for (const bad of ['0', '-1', 'x']) assert.equal(parse(['level', '5', '--danger', bad]).kind, 'help', bad);
+  assert.equal(parse(['level', '5', '--danger']).kind, 'help');
+});

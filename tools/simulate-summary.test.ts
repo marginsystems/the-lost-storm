@@ -13,7 +13,7 @@ function stream(policy: string, seed: number, rare: boolean): Measurement[] {
     sessionHeader('sim', 'farm 2m', policy, seed),
     { kind: 'milestone', t: 5, name: 'reached_hall' },
     { kind: 'level', t: 10, level: 2 },
-    { kind: 'fight', t: 20, id: 1, moment: 'campfire', level: 1, foes: 2 },
+    { kind: 'fight', t: 20, id: 1, moment: 'campfire', level: 1, foes: 2, rank: 'normal' },
     { kind: 'hit', t: 21, taken: true, amount: 12, foe: 'mended', skill: 'mended_rhythm', zone: 'hall_of_time', fight: null },
     { kind: 'flask', t: 22, flask: 'life_flask' },
     { kind: 'hit', t: 23, taken: false, amount: 40, foe: 'mended', skill: 'cleave', zone: 'hall_of_time', fight: null },
@@ -38,7 +38,7 @@ void test('a run summary attributes hits and flasks to the fight that was open',
   const run: RunSummary = summarize(stream('average/mixed', 1, true));
   assert.equal(run.seconds, 120);
   assert.equal(run.reason, 'done');
-  assert.deepEqual(run.fights, [{ moment: 'campfire', level: 1, seconds: 6, taken: 12, dealt: 40, flasks: 1, died: false, outcome: 'resolved' }]);
+  assert.deepEqual(run.fights, [{ moment: 'campfire', rank: 'normal', level: 1, seconds: 6, taken: 12, dealt: 40, flasks: 1, died: false, outcome: 'resolved' }]);
   assert.deepEqual(run.outcomes, { resolved: 1, expired: 1 });
   assert.equal(run.levels['2'], 10);
   assert.equal(run.gold, 30);
@@ -62,8 +62,8 @@ void test('a report gives per-minute rates, drop chances and flags a rarity that
 void test('a hit inside one of two overlapping fights counts toward its own fight', (): void => {
   const run: RunSummary = summarize([
     sessionHeader('sim', 'farm 1m', 'poor/mixed', 1),
-    { kind: 'fight', t: 1, id: 1, moment: 'campfire', level: 1, foes: 1 },
-    { kind: 'fight', t: 2, id: 2, moment: 'charge', level: 1, foes: 1 },
+    { kind: 'fight', t: 1, id: 1, moment: 'campfire', level: 1, foes: 1, rank: 'normal' },
+    { kind: 'fight', t: 2, id: 2, moment: 'charge', level: 1, foes: 1, rank: 'normal' },
     { kind: 'hit', t: 3, taken: true, amount: 9, foe: 'mended', skill: 'mended_rhythm', zone: 'hall_of_time', fight: 1 },
     { kind: 'moment', t: 4, id: 1, moment: 'campfire', outcome: 'resolved' },
     { kind: 'moment', t: 5, id: 2, moment: 'charge', outcome: 'resolved' },

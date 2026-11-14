@@ -6,12 +6,8 @@ export const BUILD_TABLE = {
   levels: [5, 10, 15, 20],
 } as const;
 
-export interface ReferenceMoments {
-  readonly elite: readonly string[];
-  readonly pack: readonly string[];
-}
-
-export interface Reference {
+export interface RankFights {
+  readonly rank: string;
   readonly fights: number;
   readonly clearRate: number;
   readonly deathRate: number;
@@ -36,8 +32,7 @@ export interface BuildRow {
   readonly deathsPerHour: Spread;
   readonly xpLostPerHour: Spread;
   readonly lowShare: Spread;
-  readonly elite: Reference;
-  readonly pack: Reference;
+  readonly ranks: readonly RankFights[];
 }
 
 function perMinute(runs: readonly RunSummary[], value: (run: RunSummary) => number): Spread {
@@ -53,10 +48,11 @@ function fightDps(run: RunSummary): number | null {
   return seconds <= 0 ? null : sum(run.fights.map((fight: Fight): number => fight.dealt)) / seconds;
 }
 
-function referenceOf(runs: readonly RunSummary[], moments: readonly string[]): Reference {
-  const fights: Fight[] = runs.flatMap((run: RunSummary): Fight[] => run.fights.filter((fight: Fight): boolean => moments.includes(fight.moment)));
+function rankFights(runs: readonly RunSummary[], rank: string): RankFights {
+  const fights: Fight[] = runs.flatMap((run: RunSummary): Fight[] => run.fights.filter((fight: Fight): boolean => fight.rank === rank));
   const cleared: Fight[] = fights.filter((fight: Fight): boolean => fight.outcome === 'resolved');
   return {
+    rank,
     fights: fights.length,
     clearRate: fights.length === 0 ? 0 : cleared.length / fights.length,
     deathRate: fights.length === 0 ? 0 : fights.filter((fight: Fight): boolean => fight.died).length / fights.length,
@@ -65,7 +61,7 @@ function referenceOf(runs: readonly RunSummary[], moments: readonly string[]): R
   };
 }
 
-export function buildRow(build: string, runs: readonly RunSummary[], reference: ReferenceMoments): BuildRow {
+export function buildRow(build: string, runs: readonly RunSummary[], ranks: readonly string[]): BuildRow {
   return {
     build,
     runs: runs.length,
@@ -86,14 +82,13 @@ export function buildRow(build: string, runs: readonly RunSummary[], reference: 
     deathsPerHour: perMinute(runs, (run: RunSummary): number => run.deaths.length * 60),
     xpLostPerHour: perMinute(runs, (run: RunSummary): number => sum(run.deaths.map((death): number => death.xpLost)) * 60),
     lowShare: spread(runs.filter((run: RunSummary): boolean => run.seconds > 0).map((run: RunSummary): number => run.lowSeconds / run.seconds)),
-    elite: referenceOf(runs, reference.elite),
-    pack: referenceOf(runs, reference.pack),
+    ranks: ranks.map((rank: string): RankFights => rankFights(runs, rank)),
   };
 }
 
-export function buildRows(runs: readonly RunSummary[], reference: ReferenceMoments): BuildRow[] {
+export function buildRows(runs: readonly RunSummary[], ranks: readonly string[]): BuildRow[] {
   const names: string[] = [...new Set<string>(runs.map((run: RunSummary): string => run.policy))];
-  return names.map((name: string): BuildRow => buildRow(name, runs.filter((run: RunSummary): boolean => run.policy === name), reference));
+  return names.map((name: string): BuildRow => buildRow(name, runs.filter((run: RunSummary): boolean => run.policy === name), ranks));
 }
 
 function fixed(value: number, digits: number): string {
@@ -109,8 +104,8 @@ function levelCell(entry: LevelTime | undefined): string {
   return `${range(entry.seconds, clock)}${entry.share < 1 ? ` ${Math.round(entry.share * 100)}%` : ''}`;
 }
 
-function referenceCell(reference: Reference): string {
-  return reference.fights === 0 ? '-' : `${fixed(reference.clearRate * 100, 0)}% clear, ${fixed(reference.deathRate * 100, 0)}% die, ${fixed(reference.seconds.median, 0)}s, took ${fixed(reference.taken.median, 0)}`;
+function rankCell(entry: RankFights): string {
+  return entry.fights === 0 ? '-' : `${entry.fights}: ${fixed(entry.clearRate * 100, 0)}% clear, ${fixed(entry.deathRate * 100, 0)}% die, ${entry.seconds.n === 0 ? '-' : `${fixed(entry.seconds.median, 0)}s`}, took ${fixed(entry.taken.median, 0)}`;
 }
 
 function line(cells: readonly string[]): string {
@@ -124,9 +119,9 @@ export function buildTable(rows: readonly BuildRow[]): string {
     ...rows.map((row: BuildRow): string => line([row.build, String(row.runs), ...BUILD_TABLE.levels.map((level: number): string => levelCell(row.levels.find((entry: LevelTime): boolean => entry.level === level))), range(row.endLevel, (value: number): string => fixed(value, 1)), range(row.killsPerMinute, (value: number): string => fixed(value, 1)), range(row.fightDps, (value: number): string => fixed(value, 0))])),
   ];
   const danger: string[] = [
-    line(['build', 'taken/min', 'deaths/h', 'xp lost/h', 'below 1/3 life', 'elite fights', 'pack fights']),
-    line(['---', '---', '---', '---', '---', '---', '---']),
-    ...rows.map((row: BuildRow): string => line([row.build, range(row.takenPerMinute, (value: number): string => fixed(value, 0)), range(row.deathsPerHour, (value: number): string => fixed(value, 1)), range(row.xpLostPerHour, (value: number): string => fixed(value, 0)), range(row.lowShare, (value: number): string => `${fixed(value * 100, 1)}%`), referenceCell(row.elite), referenceCell(row.pack)])),
+    line(['build', 'taken/min', 'deaths/h', 'xp lost/h', 'below 1/3 life', ...(rows[0]?.ranks ?? []).map((entry: RankFights): string => `${entry.rank} fights`)]),
+    line(['---', '---', '---', '---', '---', ...(rows[0]?.ranks ?? []).map((): string => '---')]),
+    ...rows.map((row: BuildRow): string => line([row.build, range(row.takenPerMinute, (value: number): string => fixed(value, 0)), range(row.deathsPerHour, (value: number): string => fixed(value, 1)), range(row.xpLostPerHour, (value: number): string => fixed(value, 0)), range(row.lowShare, (value: number): string => `${fixed(value * 100, 1)}%`), ...row.ranks.map(rankCell)])),
   ];
   return [...progress, '', ...danger, ''].join('\n');
 }

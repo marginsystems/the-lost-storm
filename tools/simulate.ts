@@ -72,7 +72,7 @@ function finish(report: Report, runs: readonly RunSummary[], out: string | null,
   const path: string = out ?? join(OUT_DIR, `${slug(label)}-${stamp()}.json`);
   write(path, `${JSON.stringify({ report, runs }, null, 1)}\n`);
   process.stdout.write(reportText(report));
-  process.stdout.write(`\n${buildTable(buildRows(runs, POLICIES.reference))}\n`);
+  process.stdout.write(`\n${buildTable(buildRows(runs, CONTENT.packRanks.ranks.map((rank): string => rank.id)))}\n`);
   process.stdout.write(`\nJSON report: ${path}\n`);
 }
 

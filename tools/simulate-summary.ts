@@ -4,6 +4,7 @@ import type { MomentOutcome } from '../sim/world/types.ts';
 
 export interface Fight {
   readonly moment: string;
+  readonly rank: string;
   readonly level: number;
   readonly seconds: number;
   readonly taken: number;
@@ -69,6 +70,7 @@ export interface RunSummary {
 
 interface OpenFight {
   readonly moment: string;
+  readonly rank: string;
   readonly level: number;
   readonly start: number;
   taken: number;
@@ -167,14 +169,14 @@ export function summarize(stream: readonly Measurement[]): RunSummary {
         if (fight !== null) fight.flasks += 1;
         break;
       case 'fight':
-        open.set(entry.id, { moment: entry.moment, level: entry.level, start: entry.t, taken: 0, dealt: 0, flasks: 0, died: false });
+        open.set(entry.id, { moment: entry.moment, rank: entry.rank, level: entry.level, start: entry.t, taken: 0, dealt: 0, flasks: 0, died: false });
         break;
       case 'moment': {
         add(outcomes, entry.outcome, 1);
         const ended: OpenFight | undefined = open.get(entry.id);
         if (ended === undefined) break;
         open.delete(entry.id);
-        fights.push({ moment: ended.moment, level: ended.level, seconds: entry.t - ended.start, taken: ended.taken, dealt: ended.dealt, flasks: ended.flasks, died: ended.died, outcome: entry.outcome });
+        fights.push({ moment: ended.moment, rank: ended.rank, level: ended.level, seconds: entry.t - ended.start, taken: ended.taken, dealt: ended.dealt, flasks: ended.flasks, died: ended.died, outcome: entry.outcome });
         break;
       }
       case 'skill':

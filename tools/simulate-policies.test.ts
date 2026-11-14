@@ -34,7 +34,7 @@ void test('a policy file with a missing field is refused', (): void => {
 });
 
 void test('sample minutes and drop windows must be above zero', (): void => {
-  const base = { skills: {}, builds: {}, milestones: [], reference: { elite: [], pack: [] }, endCard: 'e', rare: 'rare', windows: [10], sampleMinutes: 5 };
+  const base = { skills: {}, builds: {}, milestones: [], endCard: 'e', rare: 'rare', windows: [10], sampleMinutes: 5 };
   assert.doesNotThrow((): unknown => readPolicies(base));
   assert.throws((): unknown => readPolicies({ ...base, sampleMinutes: 0 }));
   assert.throws((): unknown => readPolicies({ ...base, windows: [10, -1] }));
@@ -44,8 +44,6 @@ void test('every route names real places and can be walked to its end from nothi
   const skill: SkillPolicy | undefined = POLICIES.skills.get('average');
   assert.ok(skill !== undefined);
   const places: string[] = CONTENT.skillTree.map((node): string => node.id);
-  const moments: ReadonlySet<string> = new Set<string>(CONTENT.moments.defs.keys());
-  for (const name of [...POLICIES.reference.elite, ...POLICIES.reference.pack]) assert.ok(moments.has(name), name);
   for (const build of POLICIES.builds.values()) {
     for (const place of build.route) assert.ok(places.includes(place), `${build.name} routes through ${place}`);
     if (build.focus !== null) assert.ok(CONTENT.skills.has(build.focus), `${build.name} focuses ${build.focus}`);
@@ -63,7 +61,7 @@ void test('every route names real places and can be walked to its end from nothi
 });
 
 void test('a build that keeps range names how far, and a style or weapon kind outside the list is refused', (): void => {
-  const base = { skills: {}, milestones: [], reference: { elite: [], pack: [] }, endCard: 'e', rare: 'rare', windows: [10], sampleMinutes: 5 };
+  const base = { skills: {}, milestones: [], endCard: 'e', rare: 'rare', windows: [10], sampleMinutes: 5 };
   const build = { paths: ['storm'], skills: [] };
   assert.doesNotThrow((): unknown => readPolicies({ ...base, builds: { a: { ...build, style: 'range', keepGap: 5 } } }));
   assert.throws((): unknown => readPolicies({ ...base, builds: { a: { ...build, style: 'range' } } }));
