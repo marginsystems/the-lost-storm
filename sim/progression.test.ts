@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillTreeNodeDef, XpCurve } from './content/types.ts';
-import { adoptLearned, applyXp, canAllocate, canRefund, findNode, holdingParts, holdingTrunk, joinBlock, placeLinks, reachablePlaces, refundBlock, refundCost, refundState, respecState, rivalVariant, startingPlaces, xpToNextLevel } from './progression.ts';
+import { adoptLearned, applyXp, gapScale, canAllocate, canRefund, findNode, holdingParts, holdingTrunk, joinBlock, placeLinks, reachablePlaces, refundBlock, refundCost, refundState, respecState, rivalVariant, startingPlaces, xpToNextLevel } from './progression.ts';
 import type { XpResult } from './progression.ts';
 
 const content: Content = loadContent();
-const curve: XpCurve = content.player.xp;
+const curve: XpCurve = { base: 60, growth: 1.42, maxLevel: 30, gap: { grace: 2, perLevel: 0.1, floor: 0.2 } };
 
 function node(id: string): SkillTreeNodeDef {
   const found: SkillTreeNodeDef | null = findNode(content, id);
@@ -170,4 +170,26 @@ void test('two nodes are rivals when any of the skills they change is the same',
   const onlyShot: SkillTreeNodeDef = { ...heaving, id: 'only_shot', variants: [{ skill: 'quarrel', becomes: 'quarrel_heave' }] };
   assert.equal(rivalVariant(content, ['whirling_cleave'], onlyShot)?.id, 'whirling_cleave');
   assert.equal(rivalVariant(content, ['storm_lance'], onlyShot), null);
+});
+
+void test('a foe far below the hero gives less xp, falling smoothly to a floor with no cliff', (): void => {
+  const gap = curve.gap;
+  assert.equal(gapScale(gap, 10, 10), 1);
+  assert.equal(gapScale(gap, 10, 8), 1);
+  assert.equal(gapScale(gap, 5, 9), 1);
+  const scales: number[] = Array.from({ length: 20 }, (_: unknown, below: number): number => gapScale(gap, 30, 30 - below));
+  scales.forEach((scale: number, index: number): void => {
+    const before: number | undefined = scales[index - 1];
+    if (before !== undefined) assert.ok(scale <= before && before - scale <= gap.perLevel + 1e-9);
+  });
+  assert.equal(scales.at(-1), gap.floor);
+});
+
+void test('the shipped curve makes every level take longer than the one before, from start to the cap', (): void => {
+  const shipped: XpCurve = content.player.xp;
+  for (let level: number = 2; level < shipped.maxLevel; level += 1) {
+    const perFoe: number = 1 + content.world.scaling.xpPerLevel * (level - 1);
+    const earlier: number = 1 + content.world.scaling.xpPerLevel * (level - 2);
+    assert.ok(xpToNextLevel(shipped, level) / perFoe > xpToNextLevel(shipped, level - 1) / earlier, `level ${level}`);
+  }
 });

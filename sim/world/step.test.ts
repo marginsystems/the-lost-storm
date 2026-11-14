@@ -7,6 +7,7 @@ import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import { isWalkable, nearestWalkable } from '../nav/grid.ts';
+import { xpToNextLevel } from '../progression.ts';
 import { createRng } from '../rng.ts';
 import { toSave } from '../save.ts';
 import { createWorld } from './create.ts';
@@ -414,6 +415,8 @@ void test('killing monsters emits death, grants xp, levels up and a skill point 
     thrall.life = 1;
   });
   put(must(world.monsters.at(-1), 'caller'), { x: 50, z: 6 });
+  const gained: number = thralls.reduce((sum: number, thrall: MonsterState): number => sum + thrall.def.xp, 0);
+  world.player.xp = xpToNextLevel(world.content.player.xp, 1) - gained;
   const events: WorldEvent[] = advance(world, 0.5, [{ type: 'skill', slot: 1, aim: { x: START.x, z: START.z - 1 }, targetId: null }]);
   const deaths = ofType(events, 'death').filter((death): boolean => death.team === 'monster');
   assert.equal(deaths.length, 6);
@@ -421,7 +424,7 @@ void test('killing monsters emits death, grants xp, levels up and a skill point 
   assert.equal(world.player.level, 2);
   assert.equal(world.player.xp, 0);
   assert.equal(world.player.skillPoints, world.content.chart.pointsPerLevel);
-  assert.equal(ofType(events, 'xp').reduce((sum: number, entry): number => sum + entry.amount, 0), 60);
+  assert.equal(ofType(events, 'xp').reduce((sum: number, entry): number => sum + entry.amount, 0), gained);
   assert.deepEqual(ofType(events, 'level_up').map((entry): number => entry.level), [2]);
   assert.equal(world.player.life, world.player.maxLife);
 

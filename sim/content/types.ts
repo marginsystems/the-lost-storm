@@ -592,10 +592,17 @@ export interface SkillBinding {
   readonly label: string;
 }
 
+export interface XpGap {
+  readonly grace: number;
+  readonly perLevel: number;
+  readonly floor: number;
+}
+
 export interface XpCurve {
   readonly base: number;
   readonly growth: number;
   readonly maxLevel: number;
+  readonly gap: XpGap;
 }
 
 export interface FirstDropDef {

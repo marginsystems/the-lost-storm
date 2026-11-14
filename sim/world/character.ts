@@ -1,6 +1,6 @@
 import type { ItemSlot } from '../content/types.ts';
 import { isStoryItem, slotOf } from '../items.ts';
-import { applyXp, canAllocate, findNode, refundCost, refundState, respecState } from '../progression.ts';
+import { applyXp, canAllocate, findNode, gapScale, refundCost, refundState, respecState } from '../progression.ts';
 import type { ChartChange } from '../progression.ts';
 import type { XpResult } from '../progression.ts';
 import { assignSlot, chartSkills } from '../skill-book.ts';
@@ -21,7 +21,7 @@ export function refreshPlayer(world: World): void {
 }
 
 export function killXp(world: World, xp: number, level: number): number {
-  return Math.round(xp * (1 + world.content.world.scaling.xpPerLevel * (level - 1)));
+  return Math.round(xp * (1 + world.content.world.scaling.xpPerLevel * (level - 1)) * gapScale(world.content.player.xp.gap, world.player.level, level));
 }
 
 export function grantXp(world: World, amount: number): void {

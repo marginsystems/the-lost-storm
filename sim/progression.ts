@@ -1,4 +1,4 @@
-import type { Content, SkillTreeNodeDef, SkillVariant, XpCurve } from './content/types.ts';
+import type { Content, SkillTreeNodeDef, SkillVariant, XpCurve, XpGap } from './content/types.ts';
 
 export interface XpResult {
   readonly level: number;
@@ -8,6 +8,11 @@ export interface XpResult {
 
 export function xpToNextLevel(curve: XpCurve, level: number): number {
   return Math.round(curve.base * Math.pow(curve.growth, level - 1));
+}
+
+export function gapScale(gap: XpGap, heroLevel: number, foeLevel: number): number {
+  const below: number = Math.max(0, heroLevel - foeLevel - gap.grace);
+  return Math.max(gap.floor, 1 - gap.perLevel * below);
 }
 
 export function applyXp(curve: XpCurve, level: number, xp: number, gained: number): XpResult {

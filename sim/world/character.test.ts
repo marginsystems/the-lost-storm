@@ -7,7 +7,7 @@ import { generateItem } from '../items.ts';
 import { xpToNextLevel } from '../progression.ts';
 import { createRng } from '../rng.ts';
 import { refundCost } from '../progression.ts';
-import { grantXp } from './character.ts';
+import { grantXp, killXp } from './character.ts';
 import { stepWorld } from './step.ts';
 import type { Command, ItemInstance, World, WorldEvent } from './types.ts';
 
@@ -100,4 +100,15 @@ void test('a story item never leaves the bag by a drop', (): void => {
   send(world, { type: 'drop', inventoryIndex: 2 });
   assert.equal(world.player.inventory[2], journal);
   assert.ok(!world.ground.some((entry): boolean => entry.content.kind === 'item' && entry.content.item.uid === journal.uid));
+});
+
+void test('a kill pays its xp scaled up by the foe level, and less when the hero is far above the foe', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 1);
+  world.player.level = 10;
+  const even: number = killXp(world, 20, 10);
+  assert.equal(even, Math.round(20 * (1 + content.world.scaling.xpPerLevel * 9)));
+  assert.ok(killXp(world, 20, 8) < even);
+  world.player.level = 20;
+  const far: number = killXp(world, 20, 5);
+  assert.ok(far > 0 && far < killXp(world, 20, 18));
 });
