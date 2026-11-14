@@ -569,7 +569,7 @@ async function start(): Promise<void> {
     launch.update(world, dt, gate.queue);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     if (transition.presenting) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
-    if (lobbyFlow?.render(dt) !== true) stage.render();
+    if (lobbyFlow?.render(dt) !== true && !hud.coversScene()) stage.render();
 
     sinceSave += dt;
     if (sinceSave > GAME.saveEvery) persist();
@@ -596,6 +596,7 @@ async function start(): Promise<void> {
     actors.refreshWear(world);
     await warmUp(stage, stage.scene, stage.camera, loot.standIns(world));
     restLoaded = true;
+    hud.warm();
     await paintThumbnails();
   };
   let restLoaded: boolean = false;

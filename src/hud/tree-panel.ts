@@ -7,7 +7,7 @@ import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-vi
 import { abilityCard } from './chart-ability.ts';
 import { createChartSky } from './chart-sky.ts';
 import type { ChartSky, SkyArm } from './chart-sky.ts';
-import { armShape, boltPoints, hexColour, polyline } from './chart-storm.ts';
+import { armShape, boltPoints, hexColour } from './chart-storm.ts';
 import type { AbilityCard } from './chart-ability.ts';
 import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
 import { FRESH_RASTER, stepRaster } from './chart-raster.ts';
@@ -15,6 +15,8 @@ import type { RasterState, RasterStep } from './chart-raster.ts';
 import { writeView } from './chart-frame.ts';
 import type { FrameTargets } from './chart-frame.ts';
 import { createFrameTargets, createNameView } from './chart-label.ts';
+import { kindWord, line, reachable } from './chart-parts.ts';
+import type { Drag } from './chart-parts.ts';
 import type { NameView } from './chart-label.ts';
 import { captionFoot, CHART_VIEW, clampChart, easeFoot, frameChart, panChart, reopenChart, sameFrame, zoomChart } from './chart-view.ts';
 import type { ChartBounds, ChartPoint, PathLabel } from './chart-model.ts';
@@ -42,6 +44,7 @@ const CHART = {
   hoverDwellMs: 120,
   cardGap: 12,
   cardEdge: 10,
+  warmFrames: 3,
   svgNamespace: 'http://www.w3.org/2000/svg',
   emptyLine: 'No points yet. Moments in the storm and each new level bring them.',
 } as const;
@@ -50,6 +53,7 @@ const STATUS_CLASSES: readonly TreeNodeStatus['kind'][] = ['allocated', 'availab
 
 export interface ChartPanel extends PanelView {
   update(dt: number): void;
+  warm(): boolean;
 }
 
 interface NodeView {
@@ -62,37 +66,6 @@ interface LinkView {
   readonly track: SVGPolylineElement;
   readonly from: string;
   readonly to: string;
-}
-
-interface Drag {
-  readonly pointer: number;
-  x: number;
-  y: number;
-  time: number;
-  travelled: number;
-  vx: number;
-  vy: number;
-}
-
-function reachable(status: TreeNodeStatus): boolean {
-  return status.kind === 'available' || status.kind === 'no_points';
-}
-
-function kindWord(node: SkillTreeNodeDef): string {
-  if (node.unlock !== null) return 'ability';
-  if (node.kind === 'keystone') return 'keystone';
-  if (node.variants.length > 0) return 'changes a skill';
-  return node.kind === 'notable' ? 'named place' : 'place';
-}
-
-function line(svg: SVGElement, points: readonly ChartPoint[], className: string, tint: string): SVGPolylineElement {
-  const shape: SVGPolylineElement = document.createElementNS(CHART.svgNamespace, 'polyline');
-  shape.setAttribute('class', className);
-  shape.setAttribute('points', polyline(points));
-  shape.setAttribute('pathLength', '1');
-  shape.style.setProperty('--tint', tint);
-  svg.appendChild(shape);
-  return shape;
 }
 
 export function createTreePanel(parent: HTMLElement, context: HudContext, close: () => void): ChartPanel {
@@ -346,6 +319,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   let moved: boolean = false;
   let lastView: AtlasView | null = null;
   let raster: RasterState = FRESH_RASTER;
+  let warmed: boolean = false;
   let holding: boolean = false;
 
   let frameDirty: boolean = true;
@@ -630,9 +604,11 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
         frame = measured();
         frameDirty = false;
         remeasure = true;
-        raster = FRESH_RASTER;
-        holding = false;
-        board.classList.add('releasing');
+        if (raster.phase !== 'held') {
+          raster = FRESH_RASTER;
+          holding = false;
+          board.classList.add('releasing');
+        }
         target = reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
         motion = still(target);
         measureNames();
@@ -640,6 +616,34 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       }
       wasOpen = open;
       sync();
+    },
+    warm(): boolean {
+      if (warmed || element.classList.contains('open')) return true;
+      if (viewport.offsetWidth === 0) return false;
+      warmed = true;
+      frame = measured();
+      frameDirty = false;
+      target = reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
+      motion = still(target);
+      sync();
+      measureNames();
+      measureCard();
+      measureFoot();
+      element.classList.add('warming');
+      apply();
+      raster = { phase: 'held', scale: motion.view.scale };
+      holding = true;
+      let left: number = CHART.warmFrames;
+      const settle = (): void => {
+        left -= 1;
+        if (left > 0) {
+          requestAnimationFrame(settle);
+          return;
+        }
+        element.classList.remove('warming');
+      };
+      requestAnimationFrame(settle);
+      return true;
     },
     update(dt: number): void {
       if (performance.now() >= confirmUntil && restart.classList.contains('confirm')) sync();

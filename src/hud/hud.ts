@@ -69,6 +69,7 @@ import treeCss from './tree.css?inline';
 import chartPlacesCss from './chart-places.css?inline';
 import chartStormCss from './chart-storm.css?inline';
 import pickerCss from './skill-picker.css?inline';
+import { sceneCovered } from './scene-cover.ts';
 import { createTreePanel } from './tree-panel.ts';
 import type { ChartPanel } from './tree-panel.ts';
 import { applyCover, coverOf, HUD_PANELS } from './panel-cover.ts';
@@ -88,6 +89,10 @@ import { createVolumeButton } from './volume-panel.ts';
 import { markOverlay } from './overlay-mark.ts';
 
 const GROUND_HINT: string = 'pick up';
+
+const HUD_WARM = {
+  retryFrames: 45,
+} as const;
 
 const PANEL_OVERLAY: Readonly<Record<HudPanel, OverlayId>> = {
   inventory: 'inventory',
@@ -262,6 +267,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     if (isOpen(panel)) panels[panel].refresh();
   };
   let alive: boolean = api.world.player.alive;
+  let warmWanted: boolean = false;
+  let warmWait: number = 0;
   let chartCalling: boolean = false;
   let chartPoints: number = 0;
 
@@ -270,8 +277,18 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       refreshOpen('inventory');
       refreshOpen('character');
     },
+    warm(): void {
+      warmWanted = true;
+    },
+    coversScene(): boolean {
+      return sceneCovered(overlays.state());
+    },
     update(dt: number, view: FrameView): void {
       const world = api.world;
+      if (warmWanted && warmWait-- <= 0) {
+        warmWait = HUD_WARM.retryFrames;
+        if (chartPanel.warm()) warmWanted = false;
+      }
       fps.frame(performance.now(), view);
       globes.update(world.player, dt);
       flasks.update(world.player);

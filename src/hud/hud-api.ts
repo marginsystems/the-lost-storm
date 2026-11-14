@@ -30,6 +30,8 @@ export interface HudApi {
 export interface Hud {
   update(dt: number, view: FrameView): void;
   refreshItems(): void;
+  warm(): void;
+  coversScene(): boolean;
   handleEvents(events: readonly WorldEvent[]): void;
   isPointerOverUi(): boolean;
   togglePanel(panel: HudPanel): void;

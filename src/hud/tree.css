@@ -35,6 +35,13 @@
     visibility 0s var(--spring-snappy) var(--spring-smooth-ms);
 }
 
+.hud .hud-panel.hud-panel.tree-panel.tree-panel.warming {
+  visibility: visible;
+  opacity: 0.01;
+  pointer-events: none;
+  transition: none;
+}
+
 .hud .hud-panel.hud-panel.tree-panel.tree-panel.open {
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
