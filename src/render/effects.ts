@@ -4,10 +4,11 @@ import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { Delivery, SkillDef } from '../../sim/content/types.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import type { MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
-import { disposeObject, glow, programKeepers, projectileMesh, slashMesh, telegraphFor } from './effect-shapes.ts';
+import { disposeObject, glow, programKeepers, projectileMesh, slashMesh } from './effect-shapes.ts';
 import type { Shockwave } from './shockwave.ts';
 import { createShockwave } from './shockwave.ts';
-import type { Telegraph } from './effect-shapes.ts';
+import type { Telegraphs } from './telegraphs.ts';
+import { createTelegraphs } from './telegraphs.ts';
 import type { DashTrails } from './dash-trail.ts';
 import { createDashTrails } from './dash-trail.ts';
 import type { IsoCamera } from './iso-camera.ts';
@@ -66,14 +67,6 @@ export const EFFECTS = {
   punch: 0.16,
   emberEvery: 0.07,
   flameSize: 0.17,
-  telegraphHeight: 0.09,
-  telegraphStart: 0.45,
-  telegraphFaint: 0.45,
-  telegraphStrong: 0.55,
-  telegraphEdge: 0.5,
-  telegraphEdgeIn: 6,
-  telegraphBreathe: 0.2,
-  telegraphBreatheRate: 6,
   phaseRing: 9,
   phaseShake: 0.5,
   castLift: 1.7,
@@ -89,8 +82,11 @@ export const EFFECTS = {
   guardHeight: 1.3,
   guardBack: 0.5,
   heftReach: 0.35,
-  heftGround: 0.4,
+  heftGround: 0.3,
+  heftAhead: 0.25,
   heftDust: 8,
+  critLight: 16,
+  critHeight: 2.6,
   slimFrom: 0.35,
   shortFrom: 0.45,
   dimFrom: 0.4,
@@ -184,8 +180,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     transients.push({ object, duration, tick, age: 0, owner });
   };
 
+  const telegraphs: Telegraphs = createTelegraphs(scene);
+
   const cancelOwned = (owner: number): void => {
     for (const transient of transients) if (transient.owner === owner) transient.age = transient.duration;
+    telegraphs.cancel(owner);
   };
 
   const riseLight = (x: number, y: number, z: number, color: Color, intensity: number, rise: number): void => flashes.flash(x, y, z, color, intensity, rise);
@@ -253,25 +252,6 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     else ring(x, z, radius, color, EFFECTS.ringTime);
   };
 
-  const telegraph = (owner: number, x: number, z: number, direction: { readonly x: number; readonly z: number }, skill: SkillDef, duration: number): void => {
-    const shape: Telegraph = telegraphFor(skill.delivery, TELEGRAPH);
-    shape.object.position.set(x, EFFECTS.telegraphHeight, z);
-    shape.object.rotation.y = facingOf(direction);
-    add(
-      shape.object,
-      duration,
-      (t: number): void => {
-        const grown: number = EFFECTS.telegraphStart + (1 - EFFECTS.telegraphStart) * easeOut(t);
-        const breath: number = 1 - EFFECTS.telegraphBreathe * (0.5 + 0.5 * Math.cos(t * duration * EFFECTS.telegraphBreatheRate));
-        for (const light of shape.lights) {
-          light.front(grown);
-          light.pose(EFFECTS.telegraphEdge * (EFFECTS.telegraphFaint + EFFECTS.telegraphStrong * t * t) * Math.min(1, t * EFFECTS.telegraphEdgeIn) * breath, t * duration);
-        }
-      },
-      owner,
-    );
-  };
-
   const levelUp = (x: number, z: number): void => {
     ring(x, z, EFFECTS.levelRing, GOLD, 0.7);
     spray(x, 0.3, z, GOLD, 60, { speed: { min: 0.5, max: 3.5 }, lift: { min: 3, max: 8 }, life: { min: 0.6, max: 1.3 }, size: { min: 0.25, max: 0.6 }, gravity: 3, drag: 1.2, jitter: 1.4 });
@@ -291,8 +271,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     if (monster === undefined) return;
     const type: Delivery['type'] = event.skill.delivery.type;
     const casts: boolean = type === 'projectile' || type === 'mark' || type === 'field' || type === 'revive';
-    const lands: { readonly x: number; readonly z: number } = landsAhead(event.skill) ? (monster.action?.target ?? monster.pos) : monster.pos;
-    if (!casts || type === 'projectile') telegraph(monster.id, lands.x, lands.z, event.direction, event.skill, event.windup);
+    const lands: { readonly x: number; readonly z: number } = landsAhead(event.skill) || type === 'field' ? (monster.action?.target ?? monster.pos) : monster.pos;
+    if (!casts || type === 'projectile' || type === 'field') telegraphs.start(monster.id, 'actor', lands, event.direction, event.skill, event.windup, TELEGRAPH);
     if (casts) spray(monster.pos.x + event.direction.x * 0.6, 1.7, monster.pos.z + event.direction.z * 0.6, colorOf(event.skill.vfx.color), 16, { speed: { min: 0.3, max: 1.6 }, lift: { min: 0.3, max: 2.2 }, life: { min: 0.3, max: event.windup + 0.1 }, gravity: -1, size: { min: 0.25, max: 0.55 } });
   };
 
@@ -305,8 +285,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         const weight: number = heft(event.skill.shake);
         slash(event.origin.x, event.origin.z, event.direction, delivery.reach * (1 + EFFECTS.heftReach * weight), delivery.arcDegrees, color, event.team === 'monster');
         if (weight <= 0) break;
-        const aheadX: number = event.origin.x + event.direction.x * delivery.reach * 0.5;
-        const aheadZ: number = event.origin.z + event.direction.z * delivery.reach * 0.5;
+        const aheadX: number = event.origin.x + event.direction.x * delivery.reach * EFFECTS.heftAhead;
+        const aheadZ: number = event.origin.z + event.direction.z * delivery.reach * EFFECTS.heftAhead;
         kit.ground(aheadX, aheadZ, delivery.reach * EFFECTS.heftGround * weight, color);
         spray(aheadX, 0.2, aheadZ, DUST, Math.round(EFFECTS.heftDust * weight), { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.6, speed: { min: 1, max: 3.5 }, lift: { min: 0.3, max: 1.4 }, life: { min: 0.35, max: 0.7 }, size: { min: 0.6, max: 1.3 }, gravity: 0.4, drag: 2.6, jitter: 0.5 });
         break;
@@ -357,7 +337,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     spray(event.pos.x, 1.25, event.pos.z, skillColor, Math.ceil(count / 2), { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.8, speed: { min: 2, max: 8 }, size: { min: 0.3, max: 0.8 }, life: { min: 0.15, max: 0.4 } });
     hitStop = Math.min(EFFECTS.maxStop, Math.max(hitStop, event.skill.hitStop * (event.crit ? EFFECTS.critStop : 1) + (event.killed ? EFFECTS.killStop : 0)));
     camera.punch(event.direction.x, event.direction.z, EFFECTS.punch * (event.crit ? 2 : 1));
-    if (event.crit) flashLight(event.pos.x, 2, event.pos.z, WHITE, 60);
+    if (event.crit) flashLight(event.pos.x, EFFECTS.critHeight, event.pos.z, skillColor, EFFECTS.critLight);
   };
 
   const onDeath = (event: Extract<WorldEvent, { type: 'death' }>, world: World): void => {
@@ -398,11 +378,13 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const hazard = event.hazard;
     const color: Color = colorOf(hazard.skill.vfx.color);
     if (!event.burst) {
-      telegraph(hazard.id, hazard.pos.x, hazard.pos.z, { x: 0, z: 1 }, hazard.skill, hazard.delay);
+      if (hazard.skill.delivery.type === 'field') telegraphs.field(hazard.id, hazard.pos, hazard.radius, color);
+      else telegraphs.start(hazard.id, 'hazard', hazard.pos, { x: 0, z: 1 }, hazard.skill, hazard.delay, TELEGRAPH);
       spray(hazard.pos.x, 0.2, hazard.pos.z, color, 10, { speed: { min: 0.2, max: 1 }, lift: { min: 0.5, max: 2 }, life: { min: EFFECTS.markRise, max: hazard.delay }, gravity: -0.5, jitter: hazard.radius * 0.5 });
       return;
     }
     cancelOwned(hazard.id);
+    if (hazard.skill.delivery.type === 'field') return;
     burst(hazard.pos.x, hazard.pos.z, hazard.radius, hazard.skill);
     if (event.hits > 0) camera.addTrauma(hazard.skill.shake);
   };
@@ -425,7 +407,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const light: number = Math.min(1, projectile.skill.vfx.light);
     const mesh: Mesh = projectileMesh(projectile.skill.vfx.style === 'orb' ? 'orb' : 'bolt', glow(color, EFFECTS.dimFrom + (1 - EFFECTS.dimFrom) * light));
     const slim: number = EFFECTS.slimFrom + (1 - EFFECTS.slimFrom) * light;
-    mesh.scale.set(mesh.scale.x * slim, mesh.scale.y * slim, mesh.scale.z * (EFFECTS.shortFrom + (1 - EFFECTS.shortFrom) * light));
+    if (projectile.skill.vfx.style === 'orb') mesh.scale.multiplyScalar(slim);
+    else mesh.scale.set(mesh.scale.x * slim, mesh.scale.y * slim, mesh.scale.z * (EFFECTS.shortFrom + (1 - EFFECTS.shortFrom) * light));
     mesh.rotation.y = facingOf(projectile.direction);
     scene.add(mesh);
     const view: ProjectileView = { mesh, color };
@@ -594,10 +577,12 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       kit.clear();
       dashTrails.clear();
       storm.clear();
+      telegraphs.clear();
     },
     update(dt: number, world: World): void {
       dashTrails.update(dt, world);
       storm.update(dt, world);
+      telegraphs.update(dt, world);
       for (const transient of transients) {
         transient.age += dt;
         if (transient.age < transient.duration) transient.tick(transient.age / transient.duration);
