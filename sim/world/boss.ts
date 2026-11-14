@@ -1,4 +1,7 @@
-import type { BossDef, BossPhase, BossSkill, LineDef, SkillDef } from '../content/types.ts';
+import type { BossDef, BossFirstKill, BossPhase, BossSkill, LineDef, SkillDef } from '../content/types.ts';
+import { xpToNextLevel } from '../progression.ts';
+import { grantXp } from './character.ts';
+import { writeFlags } from './flags.ts';
 import { rollDrop } from './loot.ts';
 import { dropOnGround } from './ground.ts';
 import type { ItemInstance, MonsterState, World, WorldEvent } from './types.ts';
@@ -50,6 +53,18 @@ function reward(world: World, monster: MonsterState, boss: BossDef): void {
   if (boss.drop.goldMax > 0) dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, Math.round(world.rng.int(boss.drop.goldMin, boss.drop.goldMax) * (1 + world.player.stats.goldFind))) });
 }
 
+function firstVictory(world: World, boss: BossDef): BossFirstKill | null {
+  const first: BossFirstKill | null = boss.firstKill;
+  return first === null || world.flags[first.flag] !== undefined ? null : first;
+}
+
+function rewardFirst(world: World, monster: MonsterState, first: BossFirstKill): void {
+  writeFlags(world, { [first.flag]: 'defeated' });
+  const xp: number = Math.round(xpToNextLevel(world.content.player.xp, world.player.level) * first.xpShare);
+  if (xp > 0) grantXp(world, xp);
+  if (first.goldMax > 0) dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, world.rng.int(first.goldMin, first.goldMax)) });
+}
+
 function bossOf(world: World, monsterId: number): MonsterState | null {
   const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === monsterId);
   return monster === undefined || monster.def.boss === null ? null : monster;
@@ -85,6 +100,9 @@ function onDeath(world: World, monsterId: number): void {
   const boss: BossDef | null = monster?.def.boss ?? null;
   if (monster === null || boss === null) return;
   reward(world, monster, boss);
+  const first: BossFirstKill | null = firstVictory(world, boss);
+  world.events.push({ type: 'boss_defeated', monsterId: monster.id, monster: monster.def.id, first: first !== null });
+  if (first !== null) rewardFirst(world, monster, first);
   bark(world, boss.barks.death);
 }
 

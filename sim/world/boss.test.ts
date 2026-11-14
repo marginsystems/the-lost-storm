@@ -7,6 +7,7 @@ import type { Bot } from '../bot.ts';
 import { loadContent } from '../content/content.ts';
 import type { BossDef, BossPhase, Condition, Content, LineDef, MonsterDef, QuestDef, ZoneDef, ZonePack } from '../content/types.ts';
 import { distance } from '../math.ts';
+import { xpToNextLevel } from '../progression.ts';
 import { phaseAt, pickBossSkill } from './boss.ts';
 import { applyHit, offenceOf } from './combat.ts';
 import { stepWorld } from './step.ts';
@@ -352,4 +353,41 @@ void test('the Gatekeeper stands at the hero\'s level in its lair and keeps clea
   assert.ok(distance(boss.pos, world.player.pos) > boss.def.aggroRadius + 4, 'the boss stands too near the door');
   run(world, 3);
   assert.equal(boss.aggro, false);
+});
+
+function bossDrops(events: readonly WorldEvent[]): { readonly items: number; readonly rarities: readonly string[]; readonly gold: readonly number[] } {
+  const drops = ofType(events, 'drop').map((event) => event.ground.content);
+  const rarities: string[] = drops.flatMap((content) => (content.kind === 'item' ? [content.item.rarity] : []));
+  return { items: rarities.length, rarities, gold: drops.flatMap((content) => (content.kind === 'gold' ? [content.amount] : [])) };
+}
+
+void test('the first Gatekeeper kill pays once: a share of a level, a purse of gold and its flag, and every kill after drops only the guaranteed reward', (): void => {
+  const world: World = armed(worldIn(shipped, 'hall_of_time', 9));
+  world.player.level = 9;
+  world.player.xp = 0;
+  enterZone(world, zoneOf(shipped, 'keepers_gate'), { type: 'exit', exit: 'hall' });
+  const block: BossDef = must(bossOf(world).def.boss, 'boss');
+  const first = must(block.firstKill, 'first kill reward');
+  const bonus: number = Math.round(xpToNextLevel(shipped.player.xp, world.player.level) * first.xpShare);
+  const opening: MonsterState = bossOf(world);
+  opening.spawnTime = 0;
+  const won: WorldEvent[] = hurt(world, opening, 0);
+  assert.deepEqual(ofType(won, 'boss_defeated'), [{ type: 'boss_defeated', monsterId: opening.id, monster: opening.def.id, first: true }]);
+  assert.equal(world.flags[first.flag], 'defeated');
+  assert.ok(ofType(won, 'xp').some((event): boolean => event.amount === bonus), `no first-kill experience of ${bonus}`);
+  const firstDrops = bossDrops(won);
+  assert.equal(firstDrops.items, block.drop.items);
+  assert.ok(firstDrops.rarities.every((rarity: string): boolean => rarity === block.drop.rarity));
+  assert.equal(firstDrops.gold.length, 2);
+  assert.ok(firstDrops.gold.some((amount: number): boolean => amount >= first.goldMin && amount <= first.goldMax));
+  enterZone(world, zoneOf(shipped, 'keepers_gate'), { type: 'exit', exit: 'hall' });
+  const again: MonsterState = bossOf(world);
+  assert.equal(again.alive, true);
+  again.spawnTime = 0;
+  const rewon: WorldEvent[] = hurt(world, again, 0);
+  assert.deepEqual(ofType(rewon, 'boss_defeated').map((event): boolean => event.first), [false]);
+  assert.equal(ofType(rewon, 'xp').some((event): boolean => event.amount === Math.round(xpToNextLevel(shipped.player.xp, world.player.level) * first.xpShare)), false);
+  const laterDrops = bossDrops(rewon);
+  assert.equal(laterDrops.items, block.drop.items);
+  assert.equal(laterDrops.gold.length, 1);
 });

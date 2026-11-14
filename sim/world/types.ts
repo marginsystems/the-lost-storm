@@ -589,6 +589,7 @@ export type WorldEvent =
   | { readonly type: 'waypoint_unlocked'; readonly zone: string }
   | { readonly type: 'exit_locked'; readonly exit: string; readonly hint: string }
   | { readonly type: 'boss_phase'; readonly monsterId: number; readonly phase: number }
+  | { readonly type: 'boss_defeated'; readonly monsterId: number; readonly monster: string; readonly first: boolean }
   | { readonly type: 'bark'; readonly speaker: string; readonly line: LineDef }
   | { readonly type: 'notice'; readonly reason: NoticeReason }
   | { readonly type: 'flasks_refilled' }
