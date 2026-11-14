@@ -49,3 +49,12 @@ void test('a danger factor reaches every job, and a bad one is refused', (): voi
   for (const bad of ['0', '-1', 'x']) assert.equal(parse(['level', '5', '--danger', bad]).kind, 'help', bad);
   assert.equal(parse(['level', '5', '--danger']).kind, 'help');
 });
+
+void test('a toughness factor reaches every job beside the danger factor, and a bad one is refused', (): void => {
+  const both: Command = parse(['level', '5', '--danger', '2', '--toughness', '0.5']);
+  assert.ok(both.kind === 'simulate' && both.jobs.every((job): boolean => job.danger === 2 && job.toughness === 0.5));
+  const plain: Command = parse(['level', '5']);
+  assert.ok(plain.kind === 'simulate' && plain.jobs.every((job): boolean => job.toughness === 1));
+  for (const bad of ['0', '-2', 'x']) assert.equal(parse(['level', '5', '--toughness', bad]).kind, 'help', bad);
+  assert.equal(parse(['level', '5', '--toughness']).kind, 'help');
+});

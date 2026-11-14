@@ -28,7 +28,7 @@ const GUARD = {
 } as const;
 
 function runs(scenario: Scenario, skill: string): RunSummary[] {
-  return GUARD.seeds.map((seed: number): RunSummary => summarize(runJob({ scenario, skill, build: 'mixed', seed, danger: 1 } satisfies Job, POLICIES)));
+  return GUARD.seeds.map((seed: number): RunSummary => summarize(runJob({ scenario, skill, build: 'mixed', seed, danger: 1, toughness: 1 } satisfies Job, POLICIES)));
 }
 
 const slices: readonly RunSummary[] = runs({ kind: 'slice' }, 'average');
@@ -39,7 +39,7 @@ void test('scenarios have readable names', (): void => {
 
 void test('a level 9 hero earns drastically less experience a minute in level 1 content than in level 7 content', (): void => {
   const rate = (zone: number): number => {
-    const run: RunSummary = summarize(runJob({ scenario: { kind: 'over', hero: GUARD.over.hero, zone, minutes: GUARD.over.minutes }, skill: 'careful', build: 'mixed', seed: GUARD.over.seed, danger: 1 }, POLICIES));
+    const run: RunSummary = summarize(runJob({ scenario: { kind: 'over', hero: GUARD.over.hero, zone, minutes: GUARD.over.minutes }, skill: 'careful', build: 'mixed', seed: GUARD.over.seed, danger: 1, toughness: 1 }, POLICIES));
     assert.equal(run.reason, 'done');
     return run.xp / Math.max(1, run.seconds);
   };
@@ -108,11 +108,13 @@ void test('a farm that finds the hero already standing in a dormant moment lets 
   assert.ok(world.time >= start + GUARD.dormantWait);
 });
 
-void test('a danger factor scales how fast monster damage grows per level and nothing else, and one leaves the content as it is', (): void => {
-  assert.equal(harder(CONTENT, 1), CONTENT);
-  const tougher = harder(CONTENT, 3);
+void test('danger scales how fast monster damage grows per level, toughness how fast monster life grows, and one of each leaves the content as it is', (): void => {
+  assert.equal(harder(CONTENT, 1, 1), CONTENT);
+  const tougher = harder(CONTENT, 3, 2);
   assert.equal(tougher.world.scaling.damagePerLevel, CONTENT.world.scaling.damagePerLevel * 3);
-  assert.equal(tougher.world.scaling.lifePerLevel, CONTENT.world.scaling.lifePerLevel);
+  assert.equal(tougher.world.scaling.lifePerLevel, CONTENT.world.scaling.lifePerLevel * 2);
+  assert.equal(tougher.world.scaling.xpPerLevel, CONTENT.world.scaling.xpPerLevel);
   assert.equal(tougher.monsters, CONTENT.monsters);
-  assert.equal(CONTENT.world.scaling.damagePerLevel, harder(CONTENT, 1).world.scaling.damagePerLevel);
+  const lifeOnly = harder(CONTENT, 1, 4);
+  assert.equal(lifeOnly.world.scaling.damagePerLevel, CONTENT.world.scaling.damagePerLevel);
 });
