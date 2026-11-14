@@ -32,6 +32,8 @@ const FIT = {
   underEdge: 0.7,
   tie: 1e-7,
   influences: 4,
+  relaxSteps: 48,
+  cell: 0.02,
 } as const;
 
 interface BodyTriangle {
@@ -45,6 +47,7 @@ export interface PreparedBody {
   readonly surface: BodySurface;
   readonly normals: readonly Vector3[];
   readonly triangles: readonly BodyTriangle[];
+  readonly cells: ReadonlyMap<string, readonly number[]>;
 }
 
 function vertexAt(values: readonly number[], index: number, into: Vector3): Vector3 {
@@ -57,6 +60,46 @@ function weldKey(values: readonly number[], index: number): string {
 
 function edgeKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+function cellIndex(value: number): number {
+  return Math.floor(value / FIT.cell);
+}
+
+function cellKey(x: number, y: number, z: number): string {
+  return `${String(x)},${String(y)},${String(z)}`;
+}
+
+function cellsAround(min: Vector3, max: Vector3): string[] {
+  const keys: string[] = [];
+  for (let x: number = cellIndex(min.x); x <= cellIndex(max.x); x += 1) {
+    for (let y: number = cellIndex(min.y); y <= cellIndex(max.y); y += 1) {
+      for (let z: number = cellIndex(min.z); z <= cellIndex(max.z); z += 1) keys.push(cellKey(x, y, z));
+    }
+  }
+  return keys;
+}
+
+function gridOf(triangles: readonly BodyTriangle[]): Map<string, number[]> {
+  const cells: Map<string, number[]> = new Map<string, number[]>();
+  triangles.forEach((triangle: BodyTriangle, index: number): void => {
+    for (const key of cellsAround(triangle.min, triangle.max)) {
+      const listed: number[] | undefined = cells.get(key);
+      if (listed === undefined) cells.set(key, [index]);
+      else listed.push(index);
+    }
+  });
+  return cells;
+}
+
+function trianglesNear(body: PreparedBody, point: Vector3, reach: number): BodyTriangle[] {
+  const seen: Set<number> = new Set<number>();
+  const offset: Vector3 = new Vector3(reach, reach, reach);
+  for (const key of cellsAround(point.clone().sub(offset), point.clone().add(offset))) for (const index of body.cells.get(key) ?? []) seen.add(index);
+  return [...seen].toSorted((a: number, b: number): number => a - b).flatMap((index: number): BodyTriangle[] => {
+    const triangle: BodyTriangle | undefined = body.triangles[index];
+    return triangle === undefined ? [] : [triangle];
+  });
 }
 
 export function prepareBody(surface: BodySurface): PreparedBody {
@@ -91,7 +134,7 @@ export function prepareBody(surface: BodySurface): PreparedBody {
     triangles.push({ corners, open: [uses.get(edges[0]) === 1, uses.get(edges[1]) === 1, uses.get(edges[2]) === 1], min, max });
   }
   const normals: Vector3[] = keys.map((key: string): Vector3 => (welded.get(key) ?? new Vector3()).clone().normalize());
-  return { surface, normals, triangles };
+  return { surface, normals, triangles, cells: gridOf(triangles) };
 }
 
 function distanceToBox(point: Vector3, min: Vector3, max: Vector3): number {
@@ -121,7 +164,7 @@ function nearestOn(body: PreparedBody, point: Vector3, reach: number): Nearest |
   const closest: Vector3 = new Vector3();
   const corners: [Vector3, Vector3, Vector3] = [new Vector3(), new Vector3(), new Vector3()];
   let nearest: Nearest | null = null;
-  for (const candidate of body.triangles) {
+  for (const candidate of trianglesNear(body, point, reach)) {
     const best: number = (nearest?.distance ?? reach) + FIT.tie;
     if (distanceToBox(point, candidate.min, candidate.max) >= best) continue;
     candidate.corners.forEach((corner: number, slot: number): void => {
@@ -204,16 +247,6 @@ function press(pushes: Pushes, index: number, contact: Contact, options: FitOpti
   pushes.normals[index] = contact.normal;
 }
 
-function vertexPushes(points: readonly number[], body: PreparedBody, options: FitOptions): Pushes {
-  const pushes: Pushes = emptyPushes(points.length / 3);
-  const point: Vector3 = new Vector3();
-  for (let index: number = 0; index * 3 < points.length; index += 1) {
-    const contact: Contact | null = contactWith(body, vertexAt(points, index, point), options.reach);
-    if (contact !== null) press(pushes, index, contact, options);
-  }
-  return pushes;
-}
-
 function samplePushes(points: readonly number[], indices: readonly number[], body: PreparedBody, options: FitOptions): Pushes {
   const pushes: Pushes = emptyPushes(points.length / 3);
   const point: Vector3 = new Vector3();
@@ -260,9 +293,89 @@ function spread(points: readonly number[], pushes: Pushes, blend: number): numbe
   return moved;
 }
 
+interface Welded {
+  readonly groupOf: readonly number[];
+  readonly firsts: readonly number[];
+  readonly around: readonly (readonly number[])[];
+}
+
+function weld(points: readonly number[], indices: readonly number[]): Welded {
+  const groupOf: number[] = [];
+  const firsts: number[] = [];
+  const known: Map<string, number> = new Map<string, number>();
+  for (let index: number = 0; index * 3 < points.length; index += 1) {
+    const key: string = weldKey(points, index);
+    const group: number = known.get(key) ?? firsts.length;
+    if (group === firsts.length) {
+      known.set(key, group);
+      firsts.push(index);
+    }
+    groupOf.push(group);
+  }
+  const linked: Set<number>[] = firsts.map((): Set<number> => new Set<number>());
+  for (let start: number = 0; start + 2 < indices.length; start += FIT.corners) {
+    const corners: number[] = [indices[start] ?? 0, indices[start + 1] ?? 0, indices[start + 2] ?? 0].map((index: number): number => groupOf[index] ?? 0);
+    for (const from of corners) for (const to of corners) if (from !== to) linked[from]?.add(to);
+  }
+  return { groupOf, firsts, around: linked.map((set: Set<number>): number[] => Array.from(set)) };
+}
+
+function pushOut(base: readonly Vector3[], shifts: readonly Vector3[], near: ReadonlySet<number>, body: PreparedBody, options: FitOptions): void {
+  const point: Vector3 = new Vector3();
+  shifts.forEach((shift: Vector3, group: number): void => {
+    const from: Vector3 | undefined = base[group];
+    if (from === undefined || (!near.has(group) && shift.lengthSq() === 0)) return;
+    const contact: Contact | null = contactWith(body, point.copy(from).add(shift), options.reach);
+    if (contact === null || contact.depth < -options.depth || contact.depth >= options.gap) return;
+    shift.addScaledVector(contact.normal, options.gap - contact.depth);
+  });
+}
+
+function smoothed(shifts: readonly Vector3[], around: readonly (readonly number[])[]): Vector3[] {
+  return shifts.map((shift: Vector3, group: number): Vector3 => {
+    const neighbours: readonly number[] = around[group] ?? [];
+    if (neighbours.length === 0) return shift.clone();
+    const sum: Vector3 = shift.clone();
+    for (const other of neighbours) sum.add(shifts[other] ?? new Vector3());
+    return sum.multiplyScalar(1 / (neighbours.length + 1));
+  });
+}
+
+export function relaxOver(points: readonly number[], indices: readonly number[], body: PreparedBody, options: FitOptions): number[] {
+  const welded: Welded = weld(points, indices);
+  const base: Vector3[] = welded.firsts.map((index: number): Vector3 => vertexAt(points, index, new Vector3()));
+  const near: Set<number> = new Set<number>(base.flatMap((point: Vector3, group: number): number[] => (contactWith(body, point, options.reach) === null ? [] : [group])));
+  let shifts: Vector3[] = base.map((): Vector3 => new Vector3());
+  if (near.size === 0) return [...points];
+  for (let step: number = 0; step < FIT.relaxSteps; step += 1) {
+    pushOut(base, shifts, near, body, options);
+    shifts = smoothed(shifts, welded.around);
+  }
+  pushOut(base, shifts, near, body, options);
+  const moved: number[] = [...points];
+  const point: Vector3 = new Vector3();
+  welded.groupOf.forEach((group: number, index: number): void => {
+    const shift: Vector3 | undefined = shifts[group];
+    if (shift === undefined || shift.lengthSq() === 0) return;
+    vertexAt(points, index, point).add(shift).toArray(moved, index * 3);
+  });
+  return moved;
+}
+
+function cleared(points: readonly number[], body: PreparedBody, options: FitOptions): number[] {
+  const moved: number[] = [...points];
+  const point: Vector3 = new Vector3();
+  for (let index: number = 0; index * 3 < points.length; index += 1) {
+    const contact: Contact | null = contactWith(body, vertexAt(points, index, point), options.reach);
+    if (contact === null || contact.depth < -options.depth || contact.depth >= options.gap) continue;
+    point.addScaledVector(contact.normal, options.gap - contact.depth).toArray(moved, index * 3);
+  }
+  return moved;
+}
+
 export function fitOver(points: readonly number[], indices: readonly number[], body: PreparedBody, options: FitOptions): number[] {
-  const settled: number[] = spread(points, vertexPushes(points, body, options), options.blend);
-  return spread(settled, samplePushes(settled, indices, body, options), options.blend);
+  const settled: number[] = relaxOver(points, indices, body, options);
+  return cleared(spread(settled, samplePushes(settled, indices, body, options), options.blend), body, options);
 }
 
 export function elementsOf(accessor: Accessor | null, width: number): number[] {
@@ -338,6 +451,12 @@ interface Shape {
   readonly world: Matrix4;
   readonly indices: number[];
   readonly skinned: Placed[];
+  readonly members: Primitive[];
+}
+
+export interface Moved {
+  readonly primitive: Primitive;
+  readonly shifts: readonly number[];
 }
 
 function writeInfluences(placed: Placed, influences: readonly (readonly Influence[])[]): void {
@@ -359,18 +478,23 @@ function writeInfluences(placed: Placed, influences: readonly (readonly Influenc
   weightAccessor.setNormalized(false).setArray(weights);
 }
 
-export function fitDocument(document: Document, body: PreparedBody, options: FitOptions): void {
+export function fitDocument(document: Document, body: PreparedBody, options: FitOptions): Moved[] {
+  const report: Moved[] = [];
   const shapes: Map<Accessor, Shape> = new Map<Accessor, Shape>();
   for (const placed of placedPrimitives(document)) {
     const position: Accessor | null = placed.primitive.getAttribute('POSITION');
     if (position === null) continue;
-    const shape: Shape = shapes.get(position) ?? { world: placed.world, indices: [], skinned: [] };
+    const shape: Shape = shapes.get(position) ?? { world: placed.world, indices: [], skinned: [], members: [] };
+    shape.members.push(placed.primitive);
     shape.indices.push(...indicesOf(placed.primitive, position.getCount()));
     if (placed.joints.length > 0 && !shape.skinned.some((other: Placed): boolean => other.primitive.getAttribute('WEIGHTS_0') === placed.primitive.getAttribute('WEIGHTS_0'))) shape.skinned.push(placed);
     shapes.set(position, shape);
   }
-  for (const [position, { world, indices, skinned }] of shapes) {
-    const moved: number[] = fitOver(worldValues(position, world), indices, body, options);
+  for (const [position, { world, indices, skinned, members }] of shapes) {
+    const before: number[] = worldValues(position, world);
+    const moved: number[] = fitOver(before, indices, body, options);
+    const shifts: number[] = Array.from({ length: moved.length / 3 }, (_value: unknown, index: number): number => Math.hypot((moved[index * 3] ?? 0) - (before[index * 3] ?? 0), (moved[index * 3 + 1] ?? 0) - (before[index * 3 + 1] ?? 0), (moved[index * 3 + 2] ?? 0) - (before[index * 3 + 2] ?? 0)));
+    for (const primitive of members) report.push({ primitive, shifts });
     for (const placed of skinned) writeInfluences(placed, followSkin(moved, influencesOf(placed.primitive, placed.joints), body, options));
     const back: Matrix4 = world.clone().invert();
     const point: Vector3 = new Vector3();
@@ -378,4 +502,5 @@ export function fitDocument(document: Document, body: PreparedBody, options: Fit
     for (let index: number = 0; index * 3 < moved.length; index += 1) point.fromArray(moved, index * 3).applyMatrix4(back).toArray(local, index * 3);
     position.setArray(local);
   }
+  return report;
 }

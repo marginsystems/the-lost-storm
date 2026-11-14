@@ -5,9 +5,9 @@ import type { Document, Node, Skin } from '@gltf-transform/core';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
-import { Matrix4, Quaternion, Vector3 } from 'three';
+import { Matrix4, Quaternion, Ray, Vector3 } from 'three';
 import type { Fields } from '../sim/content/read.ts';
-import { each, fields, numeric, text } from '../sim/content/read.ts';
+import { each, fields, numeric, text, textList } from '../sim/content/read.ts';
 import type { BodySurface, Contact, FitOptions, Influence, PreparedBody } from './fit-over.ts';
 import { contactWith, elementsOf, fitOver, followSkin, meshNodes, prepareBody } from './fit-over.ts';
 
@@ -105,6 +105,62 @@ void test('a wide cloth triangle the skin pokes through is lifted although its c
   for (let corner: number = 0; corner < 3; corner += 1) middle.add(new Vector3(fitted[corner * 3] ?? 0, fitted[corner * 3 + 1] ?? 0, fitted[corner * 3 + 2] ?? 0).multiplyScalar(1 / 3));
   const contact: Contact | null = contactWith(neck, middle, OPTIONS.reach);
   assert.ok(contact !== null && contact.depth >= OPTIONS.gap - 1e-4, `the middle of the face sits at ${String(contact?.depth)}`);
+});
+
+const GROOVE = {
+  sides: 72,
+  rings: 4,
+  depth: 0.006,
+  halfWidth: 5,
+  sunk: 0.004,
+  low: 0.03,
+  high: 0.07,
+  printed: 0.002,
+} as const;
+
+function ringPositions(rings: number, low: number, high: number, radiusAt: (side: number) => number): number[] {
+  const positions: number[] = [];
+  for (let ring: number = 0; ring <= rings; ring += 1) {
+    for (let side: number = 0; side < GROOVE.sides; side += 1) {
+      const angle: number = (side / GROOVE.sides) * Math.PI * 2;
+      positions.push(Math.cos(angle) * radiusAt(side), low + (ring / rings) * (high - low), Math.sin(angle) * radiusAt(side));
+    }
+  }
+  return positions;
+}
+
+function ringIndices(rings: number): number[] {
+  const indices: number[] = [];
+  for (let ring: number = 0; ring < rings; ring += 1) {
+    for (let side: number = 0; side < GROOVE.sides; side += 1) {
+      const next: number = (side + 1) % GROOVE.sides;
+      const low: number = ring * GROOVE.sides;
+      const high: number = (ring + 1) * GROOVE.sides;
+      indices.push(low + side, high + side, low + next, low + next, high + side, high + next);
+    }
+  }
+  return indices;
+}
+
+function grooved(side: number): number {
+  const away: number = Math.min(side, GROOVE.sides - side);
+  const share: number = away >= GROOVE.halfWidth ? 0 : 0.5 + 0.5 * Math.cos((away / GROOVE.halfWidth) * Math.PI);
+  return NECK.radius - GROOVE.depth * share;
+}
+
+function radiusOf(points: readonly number[], index: number): number {
+  return Math.hypot(points[index * 3] ?? 0, points[index * 3 + 2] ?? 0);
+}
+
+void test('a groove in the skin does not print through the cloth fitted over it', (): void => {
+  const neck: PreparedBody = prepareBody({ positions: ringPositions(NECK.rings, 0, NECK.height, grooved), indices: ringIndices(NECK.rings), influences: [] });
+  const sleeve: number[] = ringPositions(GROOVE.rings, GROOVE.low, GROOVE.high, (): number => NECK.radius - GROOVE.sunk);
+  const fitted: number[] = fitOver(sleeve, ringIndices(GROOVE.rings), neck, OPTIONS);
+  const middle: number = (GROOVE.rings / 2) * GROOVE.sides;
+  const overGroove: number = radiusOf(fitted, middle);
+  const beside: number = radiusOf(fitted, middle + GROOVE.sides / 4);
+  assert.ok(beside >= NECK.radius + OPTIONS.gap - 1e-6, `the sleeve beside the groove sits at ${beside.toFixed(4)}`);
+  assert.ok(beside - overGroove < GROOVE.printed, `the sleeve dips ${((beside - overGroove) * 1000).toFixed(1)} mm into the groove`);
 });
 
 function skinnedNeck(): BodySurface {
@@ -220,5 +276,128 @@ void test('every outfit fitted over a body clears its skin at rest and while the
   assert.ok(fits.length > 0, 'no outfit is fitted over a body');
   const poses: (Bend | null)[] = [null, ...BENDS];
   const found: string[] = await Promise.all(fits.flatMap((fit: ShippedFit): Promise<string>[] => poses.map((bend: Bend | null): Promise<string> => sunkIn(io, fit, bend))));
+  assert.deepEqual(found.filter((line: string): boolean => line !== ''), []);
+});
+
+const COVER = {
+  wearables: 'data/wearables.json',
+  weld: 1e5,
+  lift: 1e-3,
+  far: 1,
+  frame: /\/wear\/(\w+)\/(\w+)\.glb$/,
+} as const;
+
+const LOOKS: readonly (readonly [number, number, number])[] = [
+  [0, 1, 0],
+  [0, 0.86, -0.51],
+];
+
+interface ChestPieces {
+  readonly model: string;
+  readonly pieces: readonly string[];
+}
+
+function chestPieces(): ChestPieces[] {
+  const parsed: unknown = JSON.parse(readFileSync(COVER.wearables, 'utf8'));
+  const found: Map<string, ChestPieces> = new Map<string, ChestPieces>();
+  each(parsed, 'wearables', (entry: unknown, where: string): void => {
+    const wearable: Fields = fields(entry, where);
+    if (text(wearable, 'region', where) !== 'chest') return;
+    const model: string = text(wearable, 'model', where);
+    const pieces: string[] = textList(wearable, 'pieces', where);
+    found.set(`${model}#${pieces.join('|')}`, { model, pieces });
+  });
+  return [...found.values()];
+}
+
+function surfaceOf(document: Document, names: readonly string[]): BodySurface {
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const point: Vector3 = new Vector3();
+  for (const node of meshNodes(document)) {
+    if (!names.includes(node.getName()) && !names.includes(node.getMesh()?.getName() ?? '')) continue;
+    const skin: Skin | null = node.getSkin();
+    const inverse: number[] = elementsOf(skin?.getInverseBindMatrices() ?? null, 16);
+    const matrices: Matrix4[] = (skin?.listJoints() ?? []).map((joint: Node, index: number): Matrix4 => new Matrix4().fromArray(joint.getWorldMatrix()).multiply(new Matrix4().fromArray(inverse, index * 16)));
+    const still: Matrix4 = new Matrix4().fromArray(node.getWorldMatrix());
+    for (const primitive of node.getMesh()?.listPrimitives() ?? []) {
+      const local: number[] = elementsOf(primitive.getAttribute('POSITION'), 3);
+      const joints: number[] = elementsOf(primitive.getAttribute('JOINTS_0'), 4);
+      const weights: number[] = elementsOf(primitive.getAttribute('WEIGHTS_0'), 4);
+      const offset: number = positions.length / 3;
+      for (let vertex: number = 0; vertex * 3 < local.length; vertex += 1) {
+        point.fromArray(local, vertex * 3).applyMatrix4(matrices.length === 0 ? still : blended(matrices, joints, weights, vertex));
+        positions.push(point.x, point.y, point.z);
+      }
+      indices.push(...elementsOf(primitive.getIndices(), 1).map((index: number): number => index + offset));
+    }
+  }
+  return { positions, indices, influences: [] };
+}
+
+function cutEdge(skin: BodySurface, below: number): Vector3[] {
+  const key = (index: number): string => [0, 1, 2].map((axis: number): number => Math.round((skin.positions[index * 3 + axis] ?? 0) * COVER.weld)).join(',');
+  const uses: Map<string, [number, number, number]> = new Map<string, [number, number, number]>();
+  for (let start: number = 0; start + 2 < skin.indices.length; start += 3) {
+    for (let slot: number = 0; slot < 3; slot += 1) {
+      const from: number = skin.indices[start + slot] ?? 0;
+      const to: number = skin.indices[start + ((slot + 1) % 3)] ?? 0;
+      const edge: string = key(from) < key(to) ? `${key(from)}|${key(to)}` : `${key(to)}|${key(from)}`;
+      const seen: [number, number, number] | undefined = uses.get(edge);
+      uses.set(edge, [from, to, (seen?.[2] ?? 0) + 1]);
+    }
+  }
+  const points: Vector3[] = [];
+  for (const [from, to, count] of uses.values()) {
+    if (count !== 1) continue;
+    const a: Vector3 = new Vector3().fromArray(skin.positions, from * 3);
+    const b: Vector3 = new Vector3().fromArray(skin.positions, to * 3);
+    if (a.y < below && b.y < below) points.push(a, a.clone().lerp(b, 0.5));
+  }
+  return points;
+}
+
+function covered(cloth: BodySurface, from: Vector3, look: Vector3): boolean {
+  const ray: Ray = new Ray(from.clone().addScaledVector(look, COVER.lift), look);
+  const hit: Vector3 = new Vector3();
+  const corners: Vector3[] = [new Vector3(), new Vector3(), new Vector3()];
+  for (let start: number = 0; start + 2 < cloth.indices.length; start += 3) {
+    corners.forEach((corner: Vector3, slot: number): void => {
+      corner.fromArray(cloth.positions, (cloth.indices[start + slot] ?? 0) * 3);
+    });
+    const [a, b, c] = corners;
+    if (a === undefined || b === undefined || c === undefined) continue;
+    if (ray.intersectTriangle(a, b, c, false, hit) !== null && hit.distanceTo(ray.origin) < COVER.far) return true;
+  }
+  return false;
+}
+
+function neckHeight(document: Document): number {
+  const neck: Node | undefined = document.getRoot().listNodes().find((node: Node): boolean => node.getName() === 'neck_01');
+  return neck === undefined ? Infinity : neck.getWorldTranslation()[1];
+}
+
+async function bareCut(io: NodeIO, fit: ShippedFit, chest: ChestPieces): Promise<string> {
+  const [bodyFile, clothFile]: [Document, Document] = await Promise.all([io.read(fit.body), io.read(fit.out)]);
+  const skin: BodySurface = restSurface(bodyFile, fit.material);
+  const cut: Vector3[] = cutEdge(skin, neckHeight(bodyFile));
+  const cloth: BodySurface = surfaceOf(clothFile, chest.pieces);
+  const cover: BodySurface = { positions: [...cloth.positions, ...skin.positions], indices: [...cloth.indices, ...skin.indices.map((index: number): number => index + cloth.positions.length / 3)], influences: [] };
+  const bare: string[] = LOOKS.flatMap((direction: readonly [number, number, number]): string[] => {
+    const look: Vector3 = new Vector3(...direction).normalize();
+    return cut.filter((point: Vector3): boolean => !covered(cover, point, look)).map((point: Vector3): string => `(${point.toArray().map((value: number): string => value.toFixed(3)).join(', ')}) looking (${direction.join(', ')})`);
+  });
+  return bare.length === 0 ? '' : `${chest.pieces.join(', ')} of ${fit.out}: ${String(bare.length)} points of the cut edge of ${fit.body} show, first ${bare.slice(0, 3).join('; ')}`;
+}
+
+void test('every chest piece covers the cut edge of the neck, seen from above and from high behind', async (): Promise<void> => {
+  const io: NodeIO = await reader();
+  const jobs: Promise<string>[] = [];
+  for (const fit of shippedFits()) {
+    const match: RegExpExecArray | null = COVER.frame.exec(fit.out);
+    for (const chest of chestPieces()) if (match !== null && chest.model.endsWith(`/${match[2] ?? ''}.glb`)) jobs.push(bareCut(io, fit, chest));
+  }
+  assert.ok(jobs.length > 0, 'no chest piece is fitted over a body');
+  const found: string[] = await Promise.all(jobs);
   assert.deepEqual(found.filter((line: string): boolean => line !== ''), []);
 });

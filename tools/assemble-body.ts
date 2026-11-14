@@ -10,6 +10,7 @@ import type { Fields } from '../sim/content/read.ts';
 import { each, fields, numeric, text, textList } from '../sim/content/read.ts';
 import type { FitOptions } from './fit-over.ts';
 import { bodySurface, elementsOf, fitDocument, meshNodes, prepareBody } from './fit-over.ts';
+import { flattenRelief } from './flatten-relief.ts';
 
 const ASSEMBLE = {
   influences: 4,
@@ -391,7 +392,7 @@ async function build(io: NodeIO, plan: BodyPlan, root: string, bodies: ReadonlyM
   if (plan.over !== null) {
     const body: Document | undefined = bodies.get(plan.over.body);
     if (body === undefined) throw new Error(`${plan.out}: no plan builds the body ${plan.over.body}`);
-    fitDocument(target.document, prepareBody(bodySurface(body, plan.over.material, plan.out)), plan.over);
+    flattenRelief(fitDocument(target.document, prepareBody(bodySurface(body, plan.over.material, plan.out)), plan.over));
   }
   console.log(`${plan.out}: ${added.join(', ')}`);
   return target.document;

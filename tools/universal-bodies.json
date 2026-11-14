@@ -159,7 +159,7 @@
           "Head",
           "neck_01"
         ],
-        "share": 0.5
+        "share": 0.02
       },
       {
         "from": "quaternius-base-characters-20261113/Universal Base Characters[Standard]/Base Characters/Godot - UE/Superhero_Female_FullBody.gltf",
@@ -194,7 +194,7 @@
     "over": {
       "body": "public/models/characters/woman.glb",
       "material": "skin",
-      "gap": 0.003,
+      "gap": 0.004,
       "depth": 0.012,
       "reach": 0.03,
       "blend": 0.015,
