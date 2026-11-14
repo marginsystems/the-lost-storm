@@ -42,7 +42,7 @@ export function createLaunchLoop(deps: LaunchDeps): LaunchLoop {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token !== null) headers['Authorization'] = `Bearer ${token}`;
     const signal: AbortSignal | undefined = deps.signal();
-    const init: RequestInit = signal === undefined ? { method: 'POST', headers, body: JSON.stringify(body) } : { method: 'POST', headers, body: JSON.stringify(body), signal };
+    const init: RequestInit = signal === undefined ? { method: 'POST', headers, body: JSON.stringify(body), keepalive: true } : { method: 'POST', headers, body: JSON.stringify(body), keepalive: true, signal };
     try {
       const response: Response = await deps.fetch(`${deps.serverUrl}${path}`, init);
       return outcomeOf(response.status);

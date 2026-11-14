@@ -174,3 +174,14 @@
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
+
+.hud-feedback-btn {
+  width: 44px;
+  margin-bottom: 8px;
+  margin-left: 6px;
+}
+
+.hud-feedback-btn svg {
+  width: 21px;
+  height: 21px;
+}

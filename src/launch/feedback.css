@@ -70,9 +70,21 @@
 }
 
 .fb-line {
+  max-height: 4em;
   margin: 0 0 12px;
+  overflow: hidden;
   color: rgba(239, 230, 214, 0.78);
   line-height: 1.35;
+  transition:
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
+    margin-bottom var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.fb-sent .fb-line {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
 }
 
 .fb-stack {
@@ -82,20 +94,24 @@
 .fb-view {
   grid-area: 1 / 1;
   min-width: 0;
+  max-height: 24em;
+  overflow: hidden;
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     transform var(--spring-smooth-ms) var(--spring-smooth),
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s linear 0s;
 }
 
-.fb[data-step='ask'] .fb-thanks,
-.fb[data-step='thanks'] .fb-ask {
+.fb[data-step='ask'] .fb-thanks {
+  max-height: 0;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition:
     opacity var(--spring-snappy-ms) var(--spring-snappy),
     transform var(--spring-smooth-ms) var(--spring-smooth),
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
     visibility 0s linear var(--spring-snappy-ms);
 }
 
@@ -103,25 +119,28 @@
   transform: translateY(8px);
 }
 
-.fb[data-step='thanks'] .fb-ask {
-  transform: translateY(-8px);
-}
-
-.fb-ask {
+.fb-rate {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto auto;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-.fb-rate {
-  display: flex;
-  gap: 4px;
+.fb-stack {
+  margin-top: 0;
+  transition: margin-top var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.fb[data-step='thanks'] .fb-stack {
+  margin-top: 8px;
+}
+
+.fb-links-only .fb-stack {
+  margin-top: 0;
 }
 
 .fb-thumb {
-  width: 34px;
-  height: 32px;
+  width: 100%;
+  height: 38px;
   padding: 0;
   border: 0;
   border-radius: 2px;
@@ -137,8 +156,8 @@
 
 .fb-thumb svg {
   display: block;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   margin: 0 auto;
   fill: none;
   stroke: currentColor;
@@ -159,6 +178,16 @@
 
 .fb-thumb:active {
   transform: scale(0.94);
+}
+
+.fb-thumb:disabled {
+  cursor: default;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.fb-thumb:disabled[aria-pressed='true'] {
+  opacity: 1;
 }
 
 .fb-thumb[aria-pressed='true'] {
@@ -194,7 +223,6 @@
 
 .fb-send,
 .fb-done {
-  grid-column: 1 / -1;
   height: 32px;
   padding: 0 14px;
   border: 0;
@@ -225,11 +253,6 @@
   transform: scale(0.98);
 }
 
-.fb-send:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
 .fb-thanks {
   display: flex;
   flex-direction: column;
@@ -239,6 +262,40 @@
 .fb-thanks-line {
   margin: 0;
   line-height: 1.35;
+}
+
+.fb-note {
+  max-height: 0;
+  margin: 0;
+  overflow: hidden;
+  color: rgba(239, 230, 214, 0.62);
+  line-height: 1.35;
+  opacity: 0;
+  transition:
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.fb-noted .fb-note {
+  max-height: 3em;
+  opacity: 1;
+}
+
+.fb-follow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  max-height: 40px;
+  overflow: hidden;
+  transition:
+    max-height var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.fb-added .fb-follow {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .fb-links {
@@ -301,11 +358,7 @@
   .fb-text,
   .fb-send,
   .fb-done {
-    height: 40px;
-  }
-
-  .fb-thumb {
-    width: 44px;
+    height: 44px;
   }
 
   .fb-text {
@@ -338,11 +391,7 @@ body.touch .fb-thumb,
 body.touch .fb-text,
 body.touch .fb-send,
 body.touch .fb-done {
-  height: 40px;
-}
-
-body.touch .fb-thumb {
-  width: 44px;
+  height: 44px;
 }
 
 body.touch .fb-text {
@@ -389,7 +438,9 @@ body.touch .fb-text {
   transform: none;
 }
 
-.fb-links-only .fb-ask,
-.fb-links-only .fb-thanks-line {
+.fb-links-only .fb-rate,
+.fb-links-only .fb-thanks-line,
+.fb-links-only .fb-note,
+.fb-links-only .fb-follow {
   display: none;
 }

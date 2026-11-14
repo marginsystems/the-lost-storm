@@ -32,6 +32,7 @@ export interface TouchSetup {
   readonly yaw: number;
   readonly zoomStep: number;
   zoomBy(wheelDelta: number): void;
+  readonly feedback: (() => void) | null;
   openMenu(): void;
 }
 
@@ -65,6 +66,7 @@ const MENU: readonly { readonly panel: HudPanel; readonly label: string; readonl
 
 const ROTATE_HTML: string = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="10" y="4" width="12" height="24" rx="2"/><path d="M14.5 24.5h3"/></svg><div><b>Turn your phone sideways</b><span>The storm needs room.</span></div>';
 const MENU_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg>';
+const FEEDBACK_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8.2L7 20v-3.5H4.5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z"/></svg>';
 const CLOSE_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 
 const px = (value: string): number => {
@@ -183,6 +185,17 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     button.setAttribute('aria-label', item.label);
     button.innerHTML = iconSvg(item.icon);
     button.addEventListener('click', (): void => hud.togglePanel(item.panel));
+  }
+  const feedback: (() => void) | null = setup.feedback;
+  if (feedback !== null) {
+    const send: HTMLButtonElement = el('button', 'tc-menu-btn tc-feedback', menu);
+    send.type = 'button';
+    send.setAttribute('aria-label', 'Send feedback');
+    send.innerHTML = FEEDBACK_HTML;
+    send.addEventListener('click', (): void => {
+      reset();
+      feedback();
+    });
   }
   const pause: HTMLButtonElement = el('button', 'tc-menu-btn tc-pause', menu);
   pause.type = 'button';

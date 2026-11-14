@@ -51,13 +51,14 @@ export interface Snapshot {
   readonly alive: boolean;
 }
 
-export const ALPHA: { readonly textChars: number; readonly outboxSize: number; readonly firstRetryMs: number; readonly maxRetryMs: number; readonly maxLevel: number; readonly maxMinutes: number } = {
+export const ALPHA: { readonly textChars: number; readonly outboxSize: number; readonly firstRetryMs: number; readonly maxRetryMs: number; readonly maxLevel: number; readonly maxMinutes: number; readonly quietMs: number } = {
   textChars: 600,
   outboxSize: 5,
   firstRetryMs: 5_000,
   maxRetryMs: 300_000,
   maxLevel: 999,
   maxMinutes: 1_000_000,
+  quietMs: 8_000,
 };
 
 export const LAUNCH_KEY: string = 'the-lost-storm.alpha.v1';

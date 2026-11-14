@@ -26,6 +26,7 @@ export interface MobileSetup {
   readonly hud: Hud;
   readonly camera: IsoCamera;
   readonly stage: Stage;
+  readonly feedback: (() => void) | null;
   openMenu(): void;
 }
 
@@ -60,6 +61,7 @@ export function startMobile(boot: MobileBoot, setup: MobileSetup): Mobile {
         yaw: (CAMERA.yawDegrees * Math.PI) / 180,
         zoomStep: CAMERA.zoomStep,
         zoomBy: (wheelDelta: number): void => setup.camera.zoomBy(wheelDelta),
+        feedback: setup.feedback,
         openMenu: (): void => setup.openMenu(),
       })
     : null;

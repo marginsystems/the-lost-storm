@@ -89,6 +89,7 @@ import dropdownCss from './dropdown.css?inline';
 import { createTradeHud } from './trade-hud.ts';
 import type { TradeHud } from './trade-hud.ts';
 import volumeCss from './volume.css?inline';
+import { createFeedbackButton } from './feedback-button.ts';
 import { createVolumeButton } from './volume-panel.ts';
 import { markOverlay } from './overlay-mark.ts';
 
@@ -249,7 +250,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const skillBar: SkillBar = createSkillBar(row, context, track);
   buttons.tree = createMenuButton(row, 'tree', 'Skill Tree', keyOf('tree'), (): void => fromRow((): void => toggle('tree')), track);
   buttons.map = createMenuButton(row, 'map', 'Map', keyOf('map'), (): void => fromRow((): void => toggle('map')), track);
-  createVolumeButton(row, api.audio, track, (): void => fromRow((): void => api.openSettings('sound')));
+  const corner: HTMLDivElement = createVolumeButton(row, api.audio, track, (): void => fromRow((): void => api.openSettings('sound')));
+  const feedback: (() => void) | null = api.feedback;
+  if (feedback !== null) createFeedbackButton(corner, track, (): void => fromRow(feedback));
   const showKeys = (): void => {
     buttons.inventory?.setKey(keyOf('inventory'));
     buttons.character?.setKey(keyOf('character'));

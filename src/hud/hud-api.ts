@@ -17,6 +17,7 @@ export interface HudApi {
   readonly audio: AudioControls;
   readonly settings: SettingsStore;
   openSettings(section: SettingsSection): void;
+  readonly feedback: (() => void) | null;
   playUi(action: UiAction): void;
   itemImage(item: ItemInstance): string | null;
   unverified(item: ItemInstance): boolean;

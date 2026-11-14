@@ -21,6 +21,7 @@ export const LOBBY_SCREEN = {
   enterKnown: 'Continue',
   startOver: STRIP_TEXT.deleteLabel,
   settings: 'Settings',
+  feedback: 'Feedback',
   back: 'Back to title',
   confirmNo: STRIP_TEXT.keep,
   playedLabel: 'Played',
@@ -52,6 +53,7 @@ export interface LobbyActions {
   create(name: string): Promise<string | null>;
   suggest(): string | null;
   settings(): void;
+  readonly feedback: (() => void) | null;
   back(): void;
   chooseHero(id: string): void;
 }
@@ -172,6 +174,8 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
     no.focus();
   });
   const settings: HTMLButtonElement = button(quiet, 'lobby-link', LOBBY_SCREEN.settings, (): void => actions.settings());
+  const feedback: (() => void) | null = actions.feedback;
+  const feedbackLink: HTMLButtonElement | null = feedback === null ? null : button(quiet, 'lobby-link', LOBBY_SCREEN.feedback, feedback);
   const back: HTMLButtonElement = button(quiet, 'lobby-link', LOBBY_SCREEN.back, (): void => actions.back());
   const confirm: HTMLDivElement = el('div', 'lobby-confirm', dock);
   confirm.inert = true;
@@ -247,7 +251,7 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
       root.classList.remove(LOBBY_SCREEN.shownClass);
     },
     setBusy(busy: boolean): void {
-      for (const control of [primary, reset, settings, back, yes, no, ...heroButtons.values()]) control.disabled = busy;
+      for (const control of [primary, reset, settings, ...(feedbackLink === null ? [] : [feedbackLink]), back, yes, no, ...heroButtons.values()]) control.disabled = busy;
       strip.setBusy(busy);
     },
     setHeroes,

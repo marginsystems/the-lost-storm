@@ -180,9 +180,7 @@ async function start(): Promise<void> {
   markInput(document.body, mobile.touch);
   wireFolds([{ button: element('title-controls-open', HTMLButtonElement), panel: element('title-controls', HTMLDivElement) }, { button: element('title-credits-open', HTMLButtonElement), panel: element('title-credits', HTMLDivElement) }], element('title-foot', HTMLElement));
   const overlayManager: OverlayManager = createOverlayManager({ body: document.body, timers: createBrowserTimers(), motionMs: (): number => cssMotionMs(document.documentElement), inPlay: (): boolean => playing });
-  const launch: Launch = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement), onEnd: (): void => {
-    overlayManager.send({ type: 'interrupt', cause: 'endcard' });
-  } });
+  const launch: Launch = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement), onEnd: (): void => void overlayManager.send({ type: 'interrupt', cause: 'endcard' }), quiet: (): boolean => !overlayManager.hasTop() });
   statusLine.show('Loading…');
   const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
   if (unsupported !== null) throw new UnsupportedBrowser(unsupported);
@@ -299,7 +297,7 @@ async function start(): Promise<void> {
     glitches: glitchSettings,
     audio: controls,
     soundHealth: audio.health,
-    feedback: launch.canSend ? (): void => launch.open('ask') : null,
+    feedback: launch.feedback,
     onOpen: (): void => playUi('panel_open'),
     onClose: (): void => playUi('panel_close'),
     life: (): number => world.player.life,
@@ -314,6 +312,7 @@ async function start(): Promise<void> {
     audio: controls,
     settings: gameSettings,
     openSettings: (section: SettingsSection): void => pauseMenu.open(section),
+    feedback: launch.feedback,
     playUi,
     voice,
     readBook: (item: ItemInstance): void => void opening.readBook(item),
@@ -363,7 +362,7 @@ async function start(): Promise<void> {
   };
   gameSettings.subscribe(applyGraphics);
   applyGraphics();
-  const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, openMenu: (): void => {
+  const touch: Mobile = startMobile(mobile, { canvas, hudRoot: element('hud', HTMLDivElement), world, input, hud, camera, stage, feedback: launch.feedback, openMenu: (): void => {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
   const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, overlays: overlayManager, send, nameOf: (): string | null => heroName ?? readHeroName(createBrowserStore()), fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), setRain: (amount: number): void => rain.setWeather({ ...world.zone.weather, rain: amount }), refreshName: (): Promise<void> => (lobby === null ? Promise.resolve() : lobby.feed.refresh(true)) });
@@ -674,7 +673,7 @@ async function start(): Promise<void> {
   const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => ({ equipped: world.player.equipped, rig: heroRig(content, chosenHero) }), view: (): SheetView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: entered ? null : heroChoice(content, world.player, chosenHero) }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
     entered = true;
     begin();
-  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), characters: { serverUrl: import.meta.env.VITE_SERVER_URL, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string => chosenHero }, chooseHero: (id: string): void => void chooseHero(id), openSettings: (): void => pauseMenu.open('graphics') });
+  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), characters: { serverUrl: import.meta.env.VITE_SERVER_URL, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string => chosenHero }, chooseHero: (id: string): void => void chooseHero(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback });
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();

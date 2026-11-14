@@ -200,6 +200,7 @@ body.touch .tc-close svg {
 }
 
 .tc-close svg,
+.tc-feedback svg,
 .tc-pause svg {
   fill: none;
   stroke: currentColor;

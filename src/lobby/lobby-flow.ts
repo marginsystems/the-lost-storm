@@ -18,6 +18,7 @@ import type { LobbyLook, LobbyStage } from './lobby-stage.ts';
 export const LOBBY_FLOW = {
   settleFrames: 2,
   pauseSelector: '#hud > .pause',
+  cardSelector: '#hud > .fb',
   pauseOpenClass: 'open',
   bodyMark: 'lobby',
 } as const;
@@ -41,6 +42,7 @@ export interface LobbyFlowParts {
   readonly chooseHero: (id: string) => void;
   readonly characters: CharacterHooks;
   readonly openSettings: () => void;
+  readonly openFeedback: (() => void) | null;
   readonly tier: () => QualityName;
   readonly restore: () => void;
 }
@@ -71,14 +73,18 @@ function frames(count: number): Promise<void> {
   });
 }
 
-function lendPause(screen: LobbyScreen, hud: HTMLElement, open: () => void): void {
-  const pause: Element | null = document.querySelector(LOBBY_FLOW.pauseSelector);
+function lend(screen: LobbyScreen, hud: HTMLElement, selector: string, open: () => void): void {
+  const pause: Element | null = document.querySelector(selector);
   if (!(pause instanceof HTMLElement)) return;
   screen.root.after(pause);
   const watcher: MutationObserver = new MutationObserver((): void => {
     if (pause.classList.contains(LOBBY_FLOW.pauseOpenClass)) return;
     watcher.disconnect();
-    hud.append(pause);
+    void settled(pause).then((): boolean => {
+      const closed: boolean = !pause.classList.contains(LOBBY_FLOW.pauseOpenClass);
+      if (closed) hud.append(pause);
+      return closed;
+    });
   });
   open();
   if (!pause.classList.contains(LOBBY_FLOW.pauseOpenClass)) {
@@ -162,8 +168,12 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       else void remove();
     },
     settings: (): void => {
-      lendPause(screen, parts.hud, parts.openSettings);
+      lend(screen, parts.hud, LOBBY_FLOW.pauseSelector, parts.openSettings);
     },
+    feedback: ((): (() => void) | null => {
+      const open: (() => void) | null = parts.openFeedback;
+      return open === null ? null : (): void => lend(screen, parts.hud, LOBBY_FLOW.cardSelector, open);
+    })(),
     back: (): void => {
       void toTitle();
     },

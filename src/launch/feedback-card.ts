@@ -3,6 +3,9 @@ import { markOverlay } from '../hud/overlay-mark.ts';
 import type { Rating } from './alpha.ts';
 import { ALPHA } from './alpha.ts';
 import type { OutboundLink } from './links.ts';
+import type { Timers } from '../backend/backend.ts';
+import { armed, EMPTY_PENDING, stepPending } from './feedback-pending.ts';
+import type { Pending, PendingEvent, PendingPost, PendingStep } from './feedback-pending.ts';
 import type { SendResult } from './launch-loop.ts';
 import cardCss from './feedback.css?inline';
 
@@ -12,27 +15,40 @@ export interface CardHooks {
   readonly links: readonly OutboundLink[];
   readonly site: string;
   readonly send: ((rating: Rating, text: string) => Promise<SendResult>) | null;
+  readonly timers: Timers;
 }
 
 export interface FeedbackCard {
   readonly isOpen: boolean;
-  open(mode: CardMode): void;
+  open(mode: CardMode, preset?: Rating): void;
   close(): void;
 }
 
 const COPY: Readonly<Record<CardMode, { readonly title: string; readonly line: string; readonly done: string }>> = {
-  end: { title: 'End of the alpha', line: 'More is coming.', done: 'Keep playing' },
+  end: { title: 'End of the alpha', line: 'More is coming. How was it?', done: 'Keep playing' },
   ask: { title: 'Feedback', line: 'What do you think of the alpha so far?', done: 'Close' },
 };
 
-const THANKS: Readonly<Record<SendResult, string>> = {
-  sent: 'Thank you. It reached us.',
-  queued: 'Thank you. It will be sent when the connection is back.',
-  rejected: 'Thank you. It could not be sent, sorry.',
+const NOTES: Readonly<Record<SendResult, string>> = {
+  sent: '',
+  queued: 'It sends when you are online.',
+  rejected: 'It could not be sent, sorry.',
 };
+
+const THANKS_LINE: string = 'Thank you.';
 
 const THUMB_PATH: string = 'M7 10v10M7 10l4-7c1.2 0 2 .9 2 2v3h5.2c1.1 0 1.9 1 1.7 2.1l-1.4 7.2c-.2.9-.9 1.7-1.9 1.7H7';
 const SVG_NS = 'http://www.w3.org/2000/svg' as const;
+
+export function thumbIcon(): SVGSVGElement {
+  const svg: SVGSVGElement = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const path: SVGPathElement = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', THUMB_PATH);
+  svg.appendChild(path);
+  return svg;
+}
 
 function thumb(parent: HTMLElement, rating: Rating): HTMLButtonElement {
   const button: HTMLButtonElement = el('button', `fb-thumb fb-${rating}`, parent);
@@ -40,13 +56,7 @@ function thumb(parent: HTMLElement, rating: Rating): HTMLButtonElement {
   button.dataset['rating'] = rating;
   button.setAttribute('aria-pressed', 'false');
   button.setAttribute('aria-label', rating === 'up' ? 'Thumbs up' : 'Thumbs down');
-  const svg: SVGSVGElement = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('aria-hidden', 'true');
-  const path: SVGPathElement = document.createElementNS(SVG_NS, 'path');
-  path.setAttribute('d', THUMB_PATH);
-  svg.appendChild(path);
-  button.appendChild(svg);
+  button.appendChild(thumbIcon());
   return button;
 }
 
@@ -84,29 +94,30 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
   const title: HTMLHeadingElement = el('h2', 'fb-title', card);
   title.id = `fb-title-${name}`;
   const line: HTMLParagraphElement = el('p', 'fb-line', card);
-  const stack: HTMLDivElement = el('div', 'fb-stack', card);
 
-  const ask: HTMLFormElement = el('form', 'fb-view fb-ask', stack);
-  ask.noValidate = true;
-  const rate: HTMLDivElement = el('div', 'fb-rate', ask);
+  const rate: HTMLDivElement = el('div', 'fb-rate', card);
   rate.setAttribute('role', 'group');
   rate.setAttribute('aria-label', 'Did you like it?');
   const up: HTMLButtonElement = thumb(rate, 'up');
   const down: HTMLButtonElement = thumb(rate, 'down');
-  const input: HTMLInputElement = el('input', 'fb-text', ask);
-  input.type = 'text';
-  input.maxLength = ALPHA.textChars;
-  input.placeholder = 'Anything to tell us? (optional)';
-  input.setAttribute('aria-label', 'Anything to tell us? (optional)');
-  input.autocomplete = 'off';
-  const sendButton: HTMLButtonElement = el('button', 'fb-send', ask);
-  sendButton.type = 'submit';
-  sendButton.textContent = 'Send';
-  sendButton.disabled = true;
+  const stack: HTMLDivElement = el('div', 'fb-stack', card);
 
   const thanks: HTMLDivElement = el('div', 'fb-view fb-thanks', stack);
   const thanksLine: HTMLParagraphElement = el('p', 'fb-thanks-line', thanks);
-  thanksLine.setAttribute('aria-live', 'polite');
+  thanksLine.textContent = THANKS_LINE;
+  const note: HTMLParagraphElement = el('p', 'fb-note', thanks);
+  note.setAttribute('aria-live', 'polite');
+  const follow: HTMLFormElement = el('form', 'fb-follow', thanks);
+  follow.noValidate = true;
+  const input: HTMLInputElement = el('input', 'fb-text', follow);
+  input.type = 'text';
+  input.maxLength = ALPHA.textChars;
+  input.placeholder = 'Anything to add? (optional)';
+  input.setAttribute('aria-label', 'Anything to add? (optional)');
+  input.autocomplete = 'off';
+  const sendButton: HTMLButtonElement = el('button', 'fb-send', follow);
+  sendButton.type = 'submit';
+  sendButton.textContent = 'Send';
   const row: HTMLParagraphElement = el('p', 'fb-links', thanks);
   for (const link of hooks.links) {
     const anchor: HTMLAnchorElement = el('a', `fb-link fb-link-${link.id}`, row);
@@ -133,25 +144,70 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
   keepKeysInside(card);
 
   let isOpen: boolean = false;
-  let rating: Rating | null = null;
-  let sending: boolean = false;
+  let pending: Pending = EMPTY_PENDING;
+  let generation: number = 0;
+  let cancelIdle: (() => void) | null = null;
 
-  const pick = (next: Rating): void => {
-    rating = next;
-    up.setAttribute('aria-pressed', String(next === 'up'));
-    down.setAttribute('aria-pressed', String(next === 'down'));
-    sendButton.disabled = sending;
+  const showNote = (result: SendResult): void => {
+    note.textContent = NOTES[result];
+    card.classList.toggle('fb-noted', NOTES[result] !== '');
   };
-  up.addEventListener('click', (): void => pick('up'));
-  down.addEventListener('click', (): void => pick('down'));
+
+  const post = (body: PendingPost): void => {
+    const send: ((rating: Rating, text: string) => Promise<SendResult>) | null = hooks.send;
+    if (send === null) return;
+    const mine: number = generation;
+    card.classList.add('fb-added');
+    up.disabled = true;
+    down.disabled = true;
+    void send(body.rating, body.text).then((result: SendResult): SendResult => {
+      if (mine === generation) showNote(result);
+      return result;
+    });
+  };
+
+  const dispatch = (event: PendingEvent): void => {
+    const step: PendingStep = stepPending(pending, event);
+    pending = step.pending;
+    cancelIdle?.();
+    cancelIdle = armed(pending) ? hooks.timers.after(ALPHA.quietMs, (): void => dispatch({ kind: 'idle' })) : null;
+    if (step.post !== null) post(step.post);
+  };
+
+  const rated = (chosen: Rating): void => {
+    if (hooks.send === null || pending.posted) return;
+    dispatch({ kind: 'rate', rating: chosen });
+    up.setAttribute('aria-pressed', String(chosen === 'up'));
+    down.setAttribute('aria-pressed', String(chosen === 'down'));
+    card.classList.add('fb-sent');
+    card.dataset['step'] = 'thanks';
+  };
+  up.addEventListener('click', (): void => rated('up'));
+  down.addEventListener('click', (): void => rated('down'));
+  input.addEventListener('input', (): void => dispatch({ kind: 'type', text: input.value }));
+  follow.addEventListener('submit', (event: SubmitEvent): void => {
+    event.preventDefault();
+    dispatch({ kind: 'submit' });
+  });
+  const hidePage = (): void => {
+    if (document.hidden) dispatch({ kind: 'hide' });
+  };
+  document.addEventListener('visibilitychange', hidePage);
+  window.addEventListener('pagehide', (): void => dispatch({ kind: 'hide' }));
 
   const reset = (): void => {
-    rating = null;
+    generation += 1;
+    pending = EMPTY_PENDING;
+    cancelIdle?.();
+    cancelIdle = null;
     up.setAttribute('aria-pressed', 'false');
     down.setAttribute('aria-pressed', 'false');
+    up.disabled = false;
+    down.disabled = false;
     input.value = '';
-    sendButton.disabled = true;
+    note.textContent = '';
     card.dataset['step'] = hooks.send === null ? 'thanks' : 'ask';
+    card.classList.remove('fb-sent', 'fb-noted', 'fb-added');
     copy.classList.remove('copied');
   };
 
@@ -159,8 +215,8 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
     get isOpen(): boolean {
       return isOpen;
     },
-    open(mode: CardMode): void {
-      if (!sending) reset();
+    open(mode: CardMode, preset?: Rating): void {
+      reset();
       title.textContent = COPY[mode].title;
       line.textContent = COPY[mode].line;
       done.textContent = COPY[mode].done;
@@ -168,29 +224,20 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
       isOpen = true;
       card.classList.add('open');
       markOverlay(card, true);
+      if (preset !== undefined) rated(preset);
     },
     close(): void {
       if (!isOpen) return;
       isOpen = false;
+      dispatch({ kind: 'close' });
       card.classList.remove('open');
       markOverlay(card, false);
       if (document.activeElement instanceof HTMLElement && card.contains(document.activeElement)) document.activeElement.blur();
     },
   };
 
-  const deliver = async (send: (rating: Rating, text: string) => Promise<SendResult>, chosen: Rating): Promise<void> => {
-    const result: SendResult = await send(chosen, input.value);
-    sending = false;
-    thanksLine.textContent = THANKS[result];
-    card.dataset['step'] = 'thanks';
-  };
-
-  ask.addEventListener('submit', (event: SubmitEvent): void => {
-    event.preventDefault();
-    if (rating === null || sending || hooks.send === null) return;
-    sending = true;
-    sendButton.disabled = true;
-    void deliver(hooks.send, rating);
+  card.addEventListener('transitionend', (event: TransitionEvent): void => {
+    if (event.target === card && event.propertyName === 'opacity' && !isOpen) reset();
   });
   close.addEventListener('click', (): void => api.close());
   done.addEventListener('click', (): void => api.close());

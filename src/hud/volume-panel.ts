@@ -78,7 +78,7 @@ export function mountVolumeSliders(parent: HTMLElement, controls: AudioControls,
   mute.addEventListener('click', (): void => controls.setMuted(!controls.get().muted));
 }
 
-export function createVolumeButton(parent: HTMLElement, controls: AudioControls, track: (element: HTMLElement) => void, onClick: () => void): void {
+export function createVolumeButton(parent: HTMLElement, controls: AudioControls, track: (element: HTMLElement) => void, onClick: () => void): HTMLDivElement {
   const element: HTMLDivElement = el('div', 'hud-volume-wrap', parent);
   const button: HTMLButtonElement = el('button', 'hud-menu-btn hud-volume-btn', element);
   button.type = 'button';
@@ -90,4 +90,5 @@ export function createVolumeButton(parent: HTMLElement, controls: AudioControls,
   });
   button.classList.toggle('muted', controls.get().muted);
   button.addEventListener('click', onClick);
+  return element;
 }
