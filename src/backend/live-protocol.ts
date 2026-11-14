@@ -1,7 +1,19 @@
 import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
 
-export const LIVE_LIMITS: { readonly idChars: number; readonly nameChars: number; readonly baseChars: number; readonly wornSlots: number; readonly players: number; readonly frameChars: number; readonly centimetres: number; readonly sayChars: number; readonly lineChars: number; readonly history: number } = {
+export const LIVE_LIMITS: {
+  readonly idChars: number;
+  readonly nameChars: number;
+  readonly baseChars: number;
+  readonly wornSlots: number;
+  readonly players: number;
+  readonly frameChars: number;
+  readonly centimetres: number;
+  readonly sayChars: number;
+  readonly lineChars: number;
+  readonly history: number;
+  readonly muteFrameChars: number;
+} = {
   idChars: 64,
   nameChars: 32,
   baseChars: 64,
@@ -12,7 +24,10 @@ export const LIVE_LIMITS: { readonly idChars: number; readonly nameChars: number
   sayChars: 200,
   lineChars: 800,
   history: 200,
+  muteFrameChars: 3800,
 };
+
+export const LIVE_CHAT_VERSION: number = 1;
 
 export const LIVE_ZONE: string = 'hideout';
 
@@ -52,16 +67,30 @@ export function chatRefusal(reason: Refusal): ChatRefusal | null {
 
 export interface ChatLine {
   readonly id: number;
-  readonly from: string;
+  readonly from: string | null;
   readonly name: string;
   readonly text: string;
   readonly at: string;
+  readonly own: boolean | null;
+}
+
+export type WhisperDirection = 'from' | 'to';
+
+export type WhisperRefusal = 'slow_down' | 'bad_text' | 'name_needed' | 'blocked' | 'no_such_player' | 'offline' | 'ignored' | 'self';
+
+const WHISPER_REFUSALS: readonly WhisperRefusal[] = ['slow_down', 'bad_text', 'name_needed', 'blocked', 'no_such_player', 'offline', 'ignored', 'self'];
+
+export interface Welcome {
+  readonly you: string;
+  readonly chat: readonly ChatLine[];
 }
 
 export type ServerFrame =
-  | { readonly type: 'welcome' }
+  | { readonly type: 'welcome'; readonly roaming: Welcome | null }
   | { readonly type: 'present'; readonly zone: string; readonly you: string; readonly players: readonly LivePlayer[]; readonly chat: readonly ChatLine[] | null }
   | { readonly type: 'said'; readonly line: ChatLine }
+  | { readonly type: 'whisper'; readonly dir: WhisperDirection; readonly with: string; readonly line: ChatLine }
+  | { readonly type: 'unsent'; readonly reason: WhisperRefusal; readonly to: string }
   | { readonly type: 'joined'; readonly player: LivePlayer }
   | { readonly type: 'left'; readonly id: string }
   | { readonly type: 'look'; readonly id: string; readonly name: string | null; readonly hero: string | null; readonly worn: Worn }
@@ -120,12 +149,20 @@ export function readPlayer(value: unknown): LivePlayer | null {
 export function readLine(value: unknown): ChatLine | null {
   if (!isFields(value)) return null;
   const id: unknown = value['id'];
-  const from: string | null = shortText(value['from'], LIVE_LIMITS.idChars);
+  const rawFrom: unknown = value['from'];
+  const from: string | null = shortText(rawFrom, LIVE_LIMITS.idChars);
   const name: string | null = shortText(value['name'], LIVE_LIMITS.nameChars);
   const text: string | null = shortText(value['text'], LIVE_LIMITS.lineChars);
   const at: string | null = shortText(value['at'], LIVE_LIMITS.idChars);
-  if (typeof id !== 'number' || !Number.isSafeInteger(id) || from === null || name === null || text === null || at === null) return null;
-  return { id, from, name, text, at };
+  const own: unknown = value['own'];
+  if (typeof id !== 'number' || !Number.isSafeInteger(id) || (from === null && rawFrom !== null) || name === null || text === null || at === null) return null;
+  return { id, from, name, text, at, own: typeof own === 'boolean' ? own : null };
+}
+
+function readWelcome(source: Fields): Welcome | null {
+  const you: string | null = shortText(source['you'], LIVE_LIMITS.idChars);
+  const chat: readonly ChatLine[] | null = readEach(source['chat'], readLine, LIVE_LIMITS.history);
+  return you === null || chat === null ? null : { you, chat };
 }
 
 function readMove(value: unknown): LiveMove | null {
@@ -150,7 +187,7 @@ function readEach<T>(value: unknown, read: (entry: unknown) => T | null, limit: 
 function readFields(source: Fields): ServerFrame | null {
   switch (source['type']) {
     case 'welcome':
-      return { type: 'welcome' };
+      return { type: 'welcome', roaming: readWelcome(source) };
     case 'full':
       return { type: 'full' };
     case 'replaced':
@@ -167,6 +204,17 @@ function readFields(source: Fields): ServerFrame | null {
     case 'said': {
       const line: ChatLine | null = readLine(source['line']);
       return line === null ? null : { type: 'said', line };
+    }
+    case 'whisper': {
+      const dir: unknown = source['dir'];
+      const other: string | null = shortText(source['with'], LIVE_LIMITS.nameChars);
+      const line: ChatLine | null = readLine(source['line']);
+      return (dir !== 'from' && dir !== 'to') || other === null || line === null ? null : { type: 'whisper', dir, with: other, line };
+    }
+    case 'unsent': {
+      const reason: WhisperRefusal | undefined = WHISPER_REFUSALS.find((known: WhisperRefusal): boolean => known === source['reason']);
+      const to: string | null = shortText(source['to'], LIVE_LIMITS.nameChars);
+      return reason === undefined || to === null ? null : { type: 'unsent', reason, to };
     }
     case 'joined': {
       const player: LivePlayer | null = readPlayer(source['player']);
@@ -209,7 +257,7 @@ export function readServerFrame(data: unknown): ServerFrame | null {
 }
 
 export function helloFrame(token: string): string {
-  return JSON.stringify({ type: 'hello', token });
+  return JSON.stringify({ type: 'hello', token, chat: LIVE_CHAT_VERSION });
 }
 
 function rounded(value: number): number {
@@ -231,6 +279,20 @@ export function sayable(text: string): string | null {
 
 export function sayFrame(text: string): string {
   return JSON.stringify({ type: 'say', text });
+}
+
+export function whisperFrame(to: string, text: string): string {
+  return JSON.stringify({ type: 'whisper', to, text });
+}
+
+export function mutesFrame(names: readonly string[]): string {
+  const kept: string[] = [];
+  for (const name of names.toReversed()) {
+    if (name === '' || name.length > LIVE_LIMITS.nameChars) continue;
+    if (JSON.stringify({ type: 'mutes', names: [name, ...kept] }).length > LIVE_LIMITS.muteFrameChars) break;
+    kept.unshift(name);
+  }
+  return JSON.stringify({ type: 'mutes', names: kept });
 }
 
 export function leaveFrame(): string {

@@ -3,7 +3,7 @@ import { el, label, setText } from '../hud/dom.ts';
 import { createBoardView } from './board-view.ts';
 import type { BoardView } from './board-view.ts';
 import { ensureLobbyStyles } from './styles.ts';
-import { agoText, charactersText, levelUpText, onlineText } from './lobby-model.ts';
+import { agoText, levelUpText, onlineText } from './lobby-model.ts';
 
 export type PanelState = 'loading' | 'ready' | 'unreachable';
 
@@ -114,7 +114,6 @@ export function createLobbyPanel(parent: HTMLElement, options: LobbyPanelOptions
       setText(note, LOBBY_PANEL.empty, false);
       online.classList.toggle('shown', next.online > 0);
       setText(onlineCount, onlineText(next.online), true);
-      online.title = charactersText(next.characters);
       board.render(next.top, next.you === null ? null : next.you.name);
       ticker?.show(next.levelUps);
     },

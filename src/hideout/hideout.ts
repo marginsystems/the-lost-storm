@@ -59,7 +59,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     clock: (): number => performance.now(),
     sight: parts.sight,
   });
-  const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: null, startTrade: null });
+  const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: (name: string): void => chat.openDirect(name), startTrade: null });
   server.live.subscribe((event: LiveEvent): void => {
     others.handle(event);
     chat.handle(event);
@@ -70,8 +70,8 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     frame(dt: number, playing: boolean, world: World, presenting: boolean): void {
       current = world;
       server.live.update({ zone: playing ? world.zone.id : null, x: world.player.pos.x, z: world.player.pos.z, facing: world.player.facing });
+      chat.frame(playing, world.zone.id === LIVE_ZONE);
       const inHideout: boolean = playing && world.zone.id === LIVE_ZONE;
-      chat.frame(inHideout);
       if (!presenting) {
         menu.frame(false, world.player.pos);
         return;

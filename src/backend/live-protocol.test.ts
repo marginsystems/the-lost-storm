@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_LIMITS, liveUrl, moveFrame, readPlayer, readServerFrame, sayable, sayFrame } from './live-protocol.ts';
+import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_LIMITS, liveUrl, moveFrame, mutesFrame, readLine, readPlayer, readServerFrame, sayable, sayFrame, whisperFrame } from './live-protocol.ts';
 import type { ServerFrame } from './live-protocol.ts';
 
 const WREN: Readonly<Record<string, unknown>> = { id: 'h1', name: 'Wren', username: 'wren_walks', hero: 'woman', worn: { weapon: 'hand_crossbow' }, x: 20, z: 18.5, facing: 1.2 };
 
-const LINE: Readonly<Record<string, unknown>> = { id: 4, from: 'h1', name: 'Wren', text: 'hello', at: '2026-11-14T10:00:00.000Z' };
+const LINE: Readonly<Record<string, unknown>> = { id: 4, from: 'h1', name: 'Wren', text: 'hello', at: '2026-11-14T10:00:00.000Z', own: false };
+const OLD_LINE: Readonly<Record<string, unknown>> = { id: 5, from: 'h1', name: 'Wren', text: 'hello', at: '2026-11-14T10:00:00.000Z' };
 
 function read(value: unknown): ServerFrame | null {
   return readServerFrame(JSON.stringify(value));
@@ -17,14 +18,19 @@ void test('the live URL swaps http for ws and https for wss and adds the live pa
 });
 
 void test('client frames carry the token only in the hello and round places to centimetres', (): void => {
-  assert.deepEqual(JSON.parse(helloFrame('secret')), { type: 'hello', token: 'secret' });
+  assert.deepEqual(JSON.parse(helloFrame('secret')), { type: 'hello', token: 'secret', chat: 1 });
+  assert.deepEqual(JSON.parse(whisperFrame('Bo Reed', 'hi')), { type: 'whisper', to: 'Bo Reed', text: 'hi' });
   assert.deepEqual(JSON.parse(enterFrame({ x: 20.123_4, z: 18.005_1, facing: 0.333_33 })), { type: 'enter', zone: 'hideout', x: 20.12, z: 18.01, facing: 0.33 });
   assert.deepEqual(JSON.parse(moveFrame({ x: 1, z: 2, facing: -2.505_9 })), { type: 'move', x: 1, z: 2, facing: -2.51 });
   assert.deepEqual(JSON.parse(leaveFrame()), { type: 'leave' });
 });
 
 void test('every server message the protocol names is read', (): void => {
-  assert.deepEqual(read({ type: 'welcome' }), { type: 'welcome' });
+  assert.deepEqual(read({ type: 'welcome' }), { type: 'welcome', roaming: null });
+  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [LINE] }), { type: 'welcome', roaming: { you: 'c1', chat: [LINE] } });
+  assert.deepEqual(read({ type: 'whisper', dir: 'from', with: 'Bo Reed', line: LINE }), { type: 'whisper', dir: 'from', with: 'Bo Reed', line: LINE });
+  assert.deepEqual(read({ type: 'whisper', dir: 'to', with: 'Bo Reed', line: LINE }), { type: 'whisper', dir: 'to', with: 'Bo Reed', line: LINE });
+  assert.deepEqual(read({ type: 'unsent', reason: 'ignored', to: 'Bo Reed' }), { type: 'unsent', reason: 'ignored', to: 'Bo Reed' });
   assert.deepEqual(read({ type: 'full' }), { type: 'full' });
   assert.deepEqual(read({ type: 'replaced' }), { type: 'replaced' });
   assert.deepEqual(read({ type: 'friends' }), { type: 'friends' });
@@ -50,6 +56,10 @@ void test('a frame that is not JSON, not text, unknown or malformed is dropped',
   assert.equal(read({ type: 'left' }), null);
   assert.equal(read({ type: 'joined', player: { ...WREN, x: 'far' } }), null);
   assert.equal(read({ type: 'refused', reason: 'because' }), null);
+  assert.equal(read({ type: 'whisper', dir: 'sideways', with: 'Bo', line: LINE }), null);
+  assert.equal(read({ type: 'whisper', dir: 'from', line: LINE }), null);
+  assert.equal(read({ type: 'unsent', reason: 'because', to: 'Bo' }), null);
+  assert.equal(read({ type: 'unsent', reason: 'offline' }), null);
   assert.equal(read({ type: 'look', id: 'h1', hero: 'man', worn: { chest: 7 } }), null);
 });
 
@@ -92,4 +102,22 @@ void test('a player from an older server has no username, and an unreadable user
   assert.deepEqual(readPlayer({ ...WREN, username: 7 }), { ...WREN, username: null });
   assert.deepEqual(readPlayer({ ...WREN, username: 'x'.repeat(LIVE_LIMITS.nameChars + 1) }), { ...WREN, username: null });
   assert.equal(readPlayer(WREN)?.username, 'wren_walks');
+});
+
+void test('a line from an older server has no own flag, and a replayed line has no handle', (): void => {
+  assert.deepEqual(readLine(OLD_LINE), { ...OLD_LINE, own: null });
+  assert.deepEqual(readLine({ ...LINE, from: null, own: true }), { ...LINE, from: null, own: true });
+  assert.equal(readLine({ ...LINE, from: undefined }), null);
+  assert.equal(readLine({ ...LINE, from: 7 }), null);
+});
+
+void test('the mute list keeps the newest names that fit in one frame', (): void => {
+  assert.deepEqual(JSON.parse(mutesFrame(['ash', '', 'bo reed'])), { type: 'mutes', names: ['ash', 'bo reed'] });
+  const many: readonly string[] = Array.from({ length: 500 }, (_: unknown, index: number): string => `name number ${String(index)}`);
+  const frame: string = mutesFrame(many);
+  assert.ok(frame.length <= LIVE_LIMITS.muteFrameChars);
+  const names: unknown = Reflect.get(JSON.parse(frame), 'names');
+  assert.ok(Array.isArray(names));
+  assert.equal(names.at(-1), 'name number 499');
+  assert.ok(names.length > 100);
 });

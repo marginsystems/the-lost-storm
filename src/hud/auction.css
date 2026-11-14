@@ -125,18 +125,21 @@
 .auction-field-name {
   min-height: 13px;
   font-size: 10.5px;
+  line-height: 13px;
   color: var(--text-dim);
 }
 
 .auction-input {
   box-sizing: border-box;
   height: 26px;
-  padding: 3px 7px;
+  margin: 0;
+  padding: 0 8px;
   border: 0;
   border-radius: 3px;
   outline: none;
   font: inherit;
   font-size: 12px;
+  line-height: 16px;
   color: var(--text);
   background: rgba(255, 255, 255, 0.06);
   transition: background var(--spring-smooth-ms) var(--spring-smooth);
@@ -145,11 +148,6 @@
 .auction-input:focus,
 .auction-input:hover {
   background: rgba(255, 255, 255, 0.1);
-}
-
-.auction-input option {
-  color: var(--text);
-  background: #121722;
 }
 
 .auction-input.narrow {

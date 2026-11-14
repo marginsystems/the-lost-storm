@@ -1,0 +1,144 @@
+.dropdown-button {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 26px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 3px;
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.dropdown-button:hover,
+.dropdown-button:focus-visible,
+.dropdown-button.open {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-face {
+  display: grid;
+  min-width: 0;
+}
+
+.dropdown-face > * {
+  grid-area: 1 / 1;
+}
+
+.dropdown-ghost {
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.dropdown-caret {
+  display: block;
+  flex: none;
+  width: 10px;
+  height: 6px;
+  color: var(--text-dim);
+  transition: transform var(--spring-smooth-ms) var(--spring-smooth), color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.dropdown-button.open .dropdown-caret,
+.dropdown-button:hover .dropdown-caret {
+  color: var(--text);
+}
+
+.dropdown-button.open .dropdown-caret {
+  transform: rotate(180deg);
+}
+
+.dropdown-list {
+  position: absolute;
+  z-index: 70;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  background: rgba(12, 16, 24, 0.94);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top left;
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) var(--spring-snappy-ms);
+}
+
+.dropdown-list.above {
+  transform: translateY(6px) scale(0.97);
+  transform-origin: bottom left;
+}
+
+.dropdown-list.open {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s var(--spring-snappy) 0s;
+}
+
+.dropdown-option {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--spring-smooth-ms) var(--spring-smooth), color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.dropdown-option.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dropdown-option[aria-selected='true'] {
+  color: var(--ember);
+}
+
+.dropdown-check {
+  display: block;
+  flex: none;
+  width: 10px;
+  height: 8px;
+  opacity: 0;
+  transition: opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.dropdown-option[aria-selected='true'] .dropdown-check {
+  opacity: 1;
+}

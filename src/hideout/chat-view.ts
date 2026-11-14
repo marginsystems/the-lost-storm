@@ -2,14 +2,17 @@ import type { ReportReason } from '../backend/api.ts';
 import type { ChatLine } from '../backend/live-protocol.ts';
 import { LIVE_LIMITS } from '../backend/live-protocol.ts';
 import type { ChatEntry, ChatState } from './chat.ts';
+import { CHAT_WORDS, destination, readers } from './chat.ts';
 import type { Mutes } from './mute.ts';
 
 export const CHAT_VIEW = {
   placeholder: 'Press Enter to talk',
+  typingPlaceholder: 'Type a message, or /dm name',
   namePlaceholder: 'Your name',
   nameChars: 32,
   enterKeys: ['Enter', 'NumpadEnter'],
   closeKey: 'Escape',
+  swapMs: 320,
 } as const;
 
 const REASONS: readonly { readonly reason: ReportReason; readonly label: string }[] = [
@@ -18,15 +21,23 @@ const REASONS: readonly { readonly reason: ReportReason; readonly label: string 
   { reason: 'other', label: 'Other' },
 ];
 
+export interface Submitted {
+  readonly clear: boolean;
+  readonly keepOpen: boolean;
+}
+
 export interface ChatViewOptions {
   readonly root: HTMLElement;
   readonly events: Window;
   readonly mutes: Mutes;
-  say(text: string): boolean;
+  submit(text: string): Submitted;
   canFocus(): boolean;
   report(line: ChatLine, reason: ReportReason): void;
   befriend(name: string): void;
   rename(name: string): void;
+  message(name: string): void;
+  general(): void;
+  muted(): void;
 }
 
 export interface ChatView {
@@ -35,6 +46,13 @@ export interface ChatView {
   render(state: ChatState): void;
   hideReport(): void;
   hideFriend(): void;
+  focus(): void;
+}
+
+interface Subject {
+  readonly key: string;
+  readonly name: string;
+  readonly line: ChatLine | null;
 }
 
 function make<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, parent: HTMLElement | null = null): HTMLElementTagNameMap[K] {
@@ -48,6 +66,16 @@ function typingIn(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable);
 }
 
+export function swapText(holder: HTMLElement, text: string): void {
+  const current: Element | null = holder.querySelector('.swap:not(.leaving)');
+  if (current?.textContent === text) return;
+  if (current instanceof HTMLElement) {
+    current.classList.add('leaving');
+    window.setTimeout((): void => current.remove(), CHAT_VIEW.swapMs);
+  }
+  make('span', 'swap', holder).textContent = text;
+}
+
 interface Row {
   readonly entry: ChatEntry;
   readonly element: HTMLLIElement;
@@ -55,25 +83,41 @@ interface Row {
 
 export function createChatView(options: ChatViewOptions): ChatView {
   const panel: HTMLDivElement = make('div', 'hideout-chat', options.root);
-  const friendsSlot: HTMLDivElement = make('div', 'chat-slot', panel);
+  const head: HTMLDivElement = make('div', 'chat-head', panel);
+  const channels: HTMLDivElement = make('div', 'chat-channels', head);
+  const general: HTMLButtonElement = make('button', 'chat-channel chat-general active', channels);
+  general.type = 'button';
+  general.textContent = CHAT_WORDS.general;
+  general.setAttribute('aria-label', 'Back to General');
+  const whisperTab: HTMLDivElement = make('div', 'chat-channel-slot', channels);
+  const whisperName: HTMLSpanElement = make('span', 'chat-channel chat-whisper-tab', whisperTab);
+  const friendsSlot: HTMLDivElement = make('div', 'chat-slot', head);
+  const readerLine: HTMLDivElement = make('div', 'chat-readers', panel);
   const list: HTMLOListElement = make('ol', 'chat-lines', panel);
-  const field: HTMLInputElement = make('input', 'chat-field', panel);
+  const inputRow: HTMLDivElement = make('div', 'chat-input', panel);
+  const to: HTMLSpanElement = make('span', 'chat-to', inputRow);
+  const field: HTMLInputElement = make('input', 'chat-field', inputRow);
   field.type = 'text';
-  field.maxLength = LIVE_LIMITS.sayChars;
+  field.maxLength = LIVE_LIMITS.sayChars + LIVE_LIMITS.nameChars + 8;
   field.placeholder = CHAT_VIEW.placeholder;
   field.autocomplete = 'off';
   field.spellcheck = false;
   const menu: HTMLDivElement = make('div', 'chat-menu', panel);
+  const message: HTMLButtonElement = make('button', 'chat-menu-item', menu);
+  message.textContent = 'Message';
+  const friend: HTMLButtonElement = make('button', 'chat-menu-item', menu);
+  friend.textContent = 'Add friend';
   const mute: HTMLButtonElement = make('button', 'chat-menu-item', menu);
   const reportItem: HTMLButtonElement = make('button', 'chat-menu-item', menu);
   reportItem.textContent = 'Report line';
   const reasons: HTMLDivElement = make('div', 'chat-reasons', menu);
   const reasonRow: HTMLDivElement = make('div', 'chat-reasons-row', reasons);
-  const friend: HTMLButtonElement = make('button', 'chat-menu-item', menu);
-  friend.textContent = 'Add friend';
   const rows: Map<string, Row> = new Map<string, Row>();
   let open: boolean = false;
-  let target: Extract<ChatEntry, { readonly kind: 'line' }> | null = null;
+  let reportable: boolean = true;
+  let subject: Subject | null = null;
+  swapText(to, destination({ kind: 'general' }));
+  swapText(readerLine, 'Everyone online reads this.');
 
   const giveBack = (): void => {
     field.blur();
@@ -81,21 +125,26 @@ export function createChatView(options: ChatViewOptions): ChatView {
 
   const closeMenu = (): void => {
     menu.classList.remove('open', 'reasons-open');
-    target = null;
+    subject = null;
   };
 
   for (const choice of REASONS) {
     const button: HTMLButtonElement = make('button', 'chat-reason', reasonRow);
     button.textContent = choice.label;
     button.addEventListener('click', (): void => {
-      if (target !== null) options.report(target.line, choice.reason);
+      if (subject?.line !== undefined && subject.line !== null) options.report(subject.line, choice.reason);
       closeMenu();
     });
   }
 
-  const openMenu = (entry: Extract<ChatEntry, { readonly kind: 'line' }>, anchor: HTMLElement): void => {
-    target = entry;
-    mute.textContent = options.mutes.has(entry.line.name) ? 'Unmute' : 'Mute';
+  const openMenu = (next: Subject, anchor: HTMLElement): void => {
+    if (subject?.key === next.key && menu.classList.contains('open')) {
+      closeMenu();
+      return;
+    }
+    subject = next;
+    mute.textContent = options.mutes.has(next.name) ? 'Unmute' : 'Mute';
+    reportItem.hidden = !reportable || next.line === null;
     menu.classList.remove('reasons-open');
     const panelBox: DOMRect = panel.getBoundingClientRect();
     const anchorBox: DOMRect = anchor.getBoundingClientRect();
@@ -108,17 +157,25 @@ export function createChatView(options: ChatViewOptions): ChatView {
     for (const row of rows.values()) row.element.classList.toggle('muted', row.entry.kind === 'line' && !row.entry.own && options.mutes.has(row.entry.line.name));
   };
 
+  message.addEventListener('click', (): void => {
+    if (subject !== null) options.message(subject.name);
+    closeMenu();
+  });
   mute.addEventListener('click', (): void => {
-    if (target !== null) options.mutes.toggle(target.line.name);
+    if (subject !== null) options.mutes.toggle(subject.name);
     applyMutes();
+    options.muted();
     closeMenu();
   });
   reportItem.addEventListener('click', (): void => {
     menu.classList.add('reasons-open');
   });
   friend.addEventListener('click', (): void => {
-    if (target !== null) options.befriend(target.line.name);
+    if (subject !== null) options.befriend(subject.name);
     closeMenu();
+  });
+  general.addEventListener('click', (): void => {
+    options.general();
   });
 
   const nameField = (parent: HTMLElement): void => {
@@ -146,26 +203,48 @@ export function createChatView(options: ChatViewOptions): ChatView {
     });
   };
 
+  const nameButton = (parent: HTMLElement, name: string, key: string, line: ChatLine | null): void => {
+    const button: HTMLButtonElement = make('button', 'chat-name', parent);
+    button.type = 'button';
+    button.textContent = name;
+    button.addEventListener('click', (): void => {
+      openMenu({ key, name, line }, button);
+    });
+  };
+
   const rowFor = (entry: ChatEntry): HTMLLIElement => {
-    const element: HTMLLIElement = make('li', entry.kind === 'line' ? 'chat-row' : 'chat-row chat-note');
-    const inner: HTMLDivElement = make('div', 'chat-row-inner', element);
-    if (entry.kind === 'note') {
-      make('span', 'chat-text', inner).textContent = entry.text;
-      if (entry.note === 'name') nameField(inner);
-      return element;
+    switch (entry.kind) {
+      case 'note': {
+        const element: HTMLLIElement = make('li', `chat-row chat-note ${entry.note}`);
+        const inner: HTMLDivElement = make('div', 'chat-row-inner', element);
+        make('span', 'chat-text', inner).textContent = entry.text;
+        if (entry.note === 'name') nameField(inner);
+        return element;
+      }
+      case 'whisper': {
+        const element: HTMLLIElement = make('li', `chat-row chat-whisper ${entry.dir}`);
+        const inner: HTMLDivElement = make('div', 'chat-row-inner', element);
+        make('span', 'chat-dir', inner).textContent = entry.dir === 'from' ? 'From' : 'To';
+        nameButton(inner, entry.with, entry.key, entry.dir === 'from' ? entry.line : null);
+        make('span', 'chat-text', inner).textContent = entry.line.text;
+        return element;
+      }
+      case 'line': {
+        const element: HTMLLIElement = make('li', 'chat-row');
+        const inner: HTMLDivElement = make('div', 'chat-row-inner', element);
+        if (entry.own) make('span', 'chat-name own', inner).textContent = entry.line.name;
+        else nameButton(inner, entry.line.name, entry.key, entry.line);
+        make('span', 'chat-text', inner).textContent = entry.line.text;
+        return element;
+      }
     }
-    if (entry.own) make('span', 'chat-name own', inner).textContent = entry.line.name;
-    else {
-      const name: HTMLButtonElement = make('button', 'chat-name', inner);
-      name.type = 'button';
-      name.textContent = entry.line.name;
-      name.addEventListener('click', (): void => {
-        if (target?.key === entry.key && menu.classList.contains('open')) closeMenu();
-        else openMenu(entry, name);
-      });
-    }
-    make('span', 'chat-text', inner).textContent = entry.line.text;
-    return element;
+    return make('li', 'chat-row');
+  };
+
+  const send = (): void => {
+    const result: Submitted = options.submit(field.value);
+    if (result.clear) field.value = '';
+    if (!result.keepOpen) giveBack();
   };
 
   const stopKeys = (event: KeyboardEvent): void => {
@@ -178,13 +257,18 @@ export function createChatView(options: ChatViewOptions): ChatView {
     }
     if (!CHAT_VIEW.enterKeys.some((key: string): boolean => key === event.code)) return;
     event.preventDefault();
-    if (field.value.trim() !== '' && options.say(field.value)) field.value = '';
-    giveBack();
+    send();
   };
   field.addEventListener('keydown', stopKeys);
   field.addEventListener('keyup', stopKeys);
-  field.addEventListener('focus', (): void => panel.classList.add('typing'));
-  field.addEventListener('blur', (): void => panel.classList.remove('typing'));
+  field.addEventListener('focus', (): void => {
+    panel.classList.add('typing');
+    field.placeholder = CHAT_VIEW.typingPlaceholder;
+  });
+  field.addEventListener('blur', (): void => {
+    panel.classList.remove('typing');
+    field.placeholder = CHAT_VIEW.placeholder;
+  });
 
   options.events.addEventListener(
     'keydown',
@@ -206,7 +290,10 @@ export function createChatView(options: ChatViewOptions): ChatView {
   options.events.addEventListener(
     'pointerdown',
     (event: PointerEvent): void => {
-      if (menu.classList.contains('open') && !(event.target instanceof Node && menu.contains(event.target)) && !(event.target instanceof HTMLElement && event.target.classList.contains('chat-name'))) closeMenu();
+      if (!menu.classList.contains('open')) return;
+      const inside: boolean = event.target instanceof Node && menu.contains(event.target);
+      const onName: boolean = event.target instanceof HTMLElement && event.target.closest('.chat-name, .player-label, .friends-name') !== null;
+      if (!inside && !onName) closeMenu();
     },
     { capture: true },
   );
@@ -236,12 +323,23 @@ export function createChatView(options: ChatViewOptions): ChatView {
         list.append(element);
       }
       applyMutes();
+      const whispering: boolean = state.target.kind === 'whisper';
+      general.classList.toggle('active', !whispering);
+      whisperTab.classList.toggle('shown', whispering);
+      if (state.target.kind === 'whisper') swapText(whisperName, state.target.name);
+      panel.classList.toggle('whispering', whispering);
+      swapText(readerLine, readers(state));
+      swapText(to, destination(state.target));
     },
     hideReport(): void {
+      reportable = false;
       reportItem.hidden = true;
     },
     hideFriend(): void {
       friend.hidden = true;
+    },
+    focus(): void {
+      if (open) field.focus();
     },
   };
 }

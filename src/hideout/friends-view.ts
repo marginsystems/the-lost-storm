@@ -5,6 +5,7 @@ export const FRIENDS_VIEW = { title: 'Friends', empty: 'No friends yet. Click a 
 
 export interface FriendsViewOptions {
   readonly slot: HTMLElement;
+  message(name: string): void;
   accept(name: string): void;
   remove(name: string): void;
 }
@@ -59,6 +60,16 @@ export function createFriendsView(options: FriendsViewOptions): FriendsView {
     });
   };
 
+  const message = (parent: HTMLElement, name: string): void => {
+    const button: HTMLButtonElement = make('button', 'friends-action', parent);
+    button.type = 'button';
+    button.textContent = 'Message';
+    button.addEventListener('click', (): void => {
+      box.classList.remove('expanded');
+      options.message(name);
+    });
+  };
+
   const rowFor = (row: FriendRow): HTMLLIElement => {
     const element: HTMLLIElement = document.createElement('li');
     element.className = `friends-row ${row.kind}`;
@@ -76,6 +87,7 @@ export function createFriendsView(options: FriendsViewOptions): FriendsView {
         action(line, 'Cancel', (): void => options.remove(row.name));
         break;
       case 'friend':
+        message(line, row.name);
         break;
     }
     return element;
