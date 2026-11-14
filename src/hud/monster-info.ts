@@ -1,3 +1,4 @@
+import type { MonsterModDef } from '../../sim/content/combat-types.ts';
 import type { Content, MonsterDef, SkillDef } from '../../sim/content/types.ts';
 import { momentOfEcho } from '../../sim/world/moments.ts';
 import type { MonsterState, World } from '../../sim/world/types.ts';
@@ -54,7 +55,8 @@ function states(world: World, monster: MonsterState): MonsterLine[] {
   const def: MonsterDef = monster.def;
   const texts: string[] = [];
   if (def.boss !== null) texts.push('Boss');
-  if (def.mods.length > 0) texts.push('Elite');
+  if (def.rank !== null) texts.push(def.rank.leader ? `${def.rank.name} leader` : def.rank.name);
+  else if (def.mods.length > 0) texts.push('Elite');
   if (def.faction === world.content.moments.faction) texts.push('Hostile echo');
   if (momentOfEcho(world, monster.id) !== null) texts.push('Bound to a moment');
   if (monster.revived) texts.push('Raised again');
@@ -71,6 +73,21 @@ function states(world: World, monster: MonsterState): MonsterLine[] {
       break;
   }
   return texts.map((text: string): MonsterLine => ({ kind: 'state', text }));
+}
+
+export interface RankPlate {
+  readonly color: string | null;
+  readonly mods: string;
+}
+
+export function rankPlate(content: Content, def: MonsterDef): RankPlate {
+  if (def.rank === null) return { color: null, mods: '' };
+  if (!def.rank.leader) return { color: def.rank.color, mods: '' };
+  const prefixes: string[] = def.mods.flatMap((id: string): string[] => {
+    const mod: MonsterModDef | undefined = content.monsterMods.get(id);
+    return mod === undefined ? [] : [mod.prefix];
+  });
+  return { color: def.rank.color, mods: prefixes.join(' · ') };
 }
 
 export function monsterLines(world: World, monster: MonsterState): MonsterLine[] {

@@ -29,6 +29,26 @@
   font-weight: 500;
   font-size: 14px;
   letter-spacing: 0.08em;
+  transition: color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.target-mods {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(239, 230, 214, 0.7);
+  text-shadow: var(--legible-shadow);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    max-height var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.target-mods.visible {
+  max-height: 16px;
+  opacity: 1;
 }
 
 .target-level {

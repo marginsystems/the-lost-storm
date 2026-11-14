@@ -2,6 +2,9 @@ import { PLAYER_SIDE } from '../content/combat-types.ts';
 import { attacksHeld } from './glitch-hold.ts';
 import type { SkillDef } from '../content/types.ts';
 import { rollDrop } from './loot.ts';
+import { makeItem } from './ledger.ts';
+import type { ItemSource } from './ledger.ts';
+import type { MonsterRank } from '../content/rank-types.ts';
 import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
 import { damageTakenScale, resolveSkill } from '../stats.ts';
@@ -76,10 +79,17 @@ function rollLoot(world: World, monster: MonsterState): void {
     const scale: number = (1 + world.content.world.scaling.xpPerLevel * (monster.level - 1)) * (1 + world.player.stats.goldFind);
     dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, Math.round(world.rng.int(loot.goldMin, loot.goldMax) * scale)) });
   }
+  const level: number = Math.max(monster.level, world.player.level);
   if (world.rng.chance(loot.itemChance)) {
-    const item: ItemInstance | null = rollDrop(world, Math.max(monster.level, world.player.level), null, { kind: 'monster', monster: monster.def.id, zone: world.zone.id });
-    if (item === null) return;
-    dropOnGround(world, monster.pos, { kind: 'item', item });
+    const item: ItemInstance | null = rollDrop(world, level, null, { kind: 'monster', monster: monster.def.id, zone: world.zone.id });
+    if (item !== null) dropOnGround(world, monster.pos, { kind: 'item', item });
+  }
+  const rank: MonsterRank | null = monster.def.rank;
+  if (rank === null || rank.items === 0) return;
+  const source: ItemSource = rank.floor === null ? { kind: 'monster', monster: monster.def.id, zone: world.zone.id } : { kind: 'leader', monster: monster.def.id, zone: world.zone.id, rank: rank.id };
+  for (let dropped: number = 0; dropped < rank.items; dropped += 1) {
+    const item: ItemInstance | null = makeItem(world, level, null, null, source, world.rng, rank.floor);
+    if (item !== null) dropOnGround(world, monster.pos, { kind: 'item', item });
   }
 }
 
@@ -157,6 +167,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   }
   if (skill.hold > 0) setTempo(target, 0, skill.hold);
   if (target.kind === 'monster') {
+    target.calm = 0;
     provoke(world, target, offence.sourceId, offence.faction ?? PLAYER_SIDE);
     const stagger: number = staggerOf(target, skill, guard);
     if (stagger > 0 && !holdsFirm(target, skill, guard)) {

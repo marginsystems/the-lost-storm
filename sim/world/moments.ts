@@ -3,15 +3,17 @@ import type { Content, MonsterDef, PropDef, ZoneDef } from '../content/types.ts'
 import { rollDrop } from './loot.ts';
 import type { Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, distance } from '../math.ts';
-import { isWalkable, lineWalkable } from '../nav/grid.ts';
+import { isWalkable, lineWalkable, routedGrid } from '../nav/grid.ts';
+import { reachFrom } from '../nav/path.ts';
 import { pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
 import { grantXp, killXp } from './character.ts';
 import { dropOnGround } from './ground.ts';
 import { goldScale } from './moment-chest.ts';
-import { clearOfTallProps, inSight, lowerProps, raiseProps, standClear } from './moment-ground.ts';
+import { clearOfTallProps, inSight, lowerProps, raiseProps, standClear, standJoined } from './moment-ground.ts';
 import { setFlags } from './story.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
+import { rankPack, ranksHere, rollRank } from './ranks.ts';
 import type { EchoState, ItemInstance, MomentFigure, MomentOutcome, MomentState, MonsterState, NpcState, ProjectileState, World } from './types.ts';
 
 export const MOMENTS = {
@@ -181,23 +183,31 @@ function turn(world: World, moment: MomentState): number[] {
   const packId: number = world.nextPackId;
   world.nextPackId += 1;
   const turned: number[] = [];
+  const rising: { readonly figure: MomentFigure; readonly entry: MomentEcho; readonly def: MonsterDef }[] = [];
   for (const figure of turning(world, moment)) {
     const entry: MomentEcho | undefined = moment.def.echoes[figure.echo];
-    if (entry === undefined) continue;
-    const def: MonsterDef | null = echoDef(world, entry);
-    if (def === null) continue;
+    const def: MonsterDef | null = entry === undefined ? null : echoDef(world, entry);
+    if (entry !== undefined && def !== null) rising.push({ figure, entry, def });
+  }
+  const bases: MonsterDef[] = rising.map((one): MonsterDef => one.def);
+  const field: MomentField | null = fieldOf(world);
+  const ranked: MonsterDef[] = world.zone.ranks && !sureHolds(world, field) && ranksHere(bases) ? rankPack(world.content, world.rng, rollRank(world.content.packRanks, world.rng, monsterLevel(world)), bases) : bases;
+  const reach: Uint8Array = reachFrom(routedGrid(world.grid), world.player.pos);
+  rising.forEach(({ figure, entry, def: base }, index: number): void => {
+    const def: MonsterDef = ranked[index] ?? base;
     const monster: MonsterState = spawnMonster(world, def, packId, figure.pos, { summonerId: null, scatter: 0, revived: false });
     standClear(world, monster);
+    standJoined(world, monster, reach);
     monster.facing = figure.facing;
     monster.aggro = true;
     monster.foeId = world.player.id;
     monster.restTime = world.content.moments.rouse + turned.length * world.content.moments.stagger;
-    moment.bounty += killXp(world, world.content.monsters.get(entry.monster)?.xp ?? 0, monster.level);
+    moment.bounty += killXp(world, (world.content.monsters.get(entry.monster)?.xp ?? 0) * (def.rank?.xp ?? 1), monster.level);
     world.events.push({ type: 'aggro', monsterId: monster.id });
     figure.turned = true;
     figure.monsterId = monster.id;
     turned.push(monster.id);
-  }
+  });
   return turned;
 }
 

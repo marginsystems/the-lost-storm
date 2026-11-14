@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
 import type { MomentDef, MomentField } from '../../sim/content/moment-types.ts';
+import type { PackRankDef } from '../../sim/content/rank-types.ts';
 import type { Content, MonsterDef, SkillDef } from '../../sim/content/types.ts';
+import { createRng } from '../../sim/rng.ts';
+import { rankPack } from '../../sim/world/ranks.ts';
 import { spawnPacks } from '../../sim/world/monsters.ts';
 import { forceStrike } from '../../sim/world/moments.ts';
 import { stepWorld } from '../../sim/world/step.ts';
@@ -10,8 +13,8 @@ import type { MomentState, MonsterState, World } from '../../sim/world/types.ts'
 import { echoesOf, FIELD, fieldWorld, momentLibrary, QUIET, RAID, standAt } from '../../test/moment-support.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { CATEGORY_NAMES } from './chart-ability.ts';
-import { monsterLines, monsterSummary, monsterSummaryParts, reusedPhrases } from './monster-info.ts';
-import type { MonsterLine } from './monster-info.ts';
+import { monsterLines, monsterSummary, monsterSummaryParts, rankPlate, reusedPhrases } from './monster-info.ts';
+import type { MonsterLine, RankPlate } from './monster-info.ts';
 
 const content: Content = loadContent();
 const DT: number = 1 / 30;
@@ -105,4 +108,17 @@ void test('a new summary keeps every phrase still shown in order and makes only 
   assert.deepEqual(reusedPhrases(['Hostile echo', 'Melee'], ['Hostile echo', 'Bound to a moment', 'Melee']), [0, null, 1]);
   assert.deepEqual(reusedPhrases(['Asleep until it hears you', 'Melee'], ['Melee']), [1]);
   assert.deepEqual(reusedPhrases(['Melee', 'Area'], ['Area', 'Melee']), [1, null]);
+});
+
+void test('the plate shows a ranked monster in its rank colour and lists a rare leader’s modifiers under its name', (): void => {
+  const taker: MonsterDef = must(content.monsters.get('unfinished_taker'), 'taker');
+  const brute: MonsterDef = must(content.monsters.get('unfinished_brute'), 'brute');
+  const rare: PackRankDef = must(content.packRanks.ranks.find((rank: PackRankDef): boolean => rank.id === 'rare'), 'rare');
+  assert.deepEqual(rankPlate(content, taker), { color: null, mods: '' });
+  const [follower, leader] = rankPack(content, createRng(4), rare, [taker, brute]);
+  const led: MonsterDef = must(leader, 'leader');
+  const plate: RankPlate = rankPlate(content, led);
+  assert.equal(plate.color, rare.color);
+  assert.deepEqual(plate.mods.split(' · '), led.mods.map((id: string): string => must(content.monsterMods.get(id), id).prefix));
+  assert.deepEqual(rankPlate(content, must(follower, 'follower')), { color: rare.color, mods: '' });
 });

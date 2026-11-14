@@ -13,7 +13,8 @@ import { modsNamed, withMods } from './elites.ts';
 import type { Steering, SteerStep } from './movement.ts';
 import { beingKnocked, faceToward, steerAlong, steerToward, stepKnock, stepTimers } from './movement.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
-import { SPAWN, spawnMonster } from './spawn.ts';
+import { monsterLevel, SPAWN, spawnMonster } from './spawn.ts';
+import { rankPack, ranksHere, rollRank } from './ranks.ts';
 import { mayStrike } from './factions.ts';
 import { homeReached, LEASH, shellPoint, shutOut } from './leash.ts';
 import { revivable } from './revive.ts';
@@ -22,6 +23,7 @@ import { insideShell } from './shell.ts';
 import type { Actor, MomentState, MonsterStance, MonsterState, World, WorldEvent } from './types.ts';
 
 const MONSTERS = {
+  mendAfter: 4,
   repathInterval: 0.45,
   repathDrift: 1,
   corpseTime: 6,
@@ -320,6 +322,8 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   }
   unstrand(world, monster, dt);
   stepTimers(monster, dt);
+  monster.calm += dt;
+  if (monster.def.regen > 0 && monster.calm >= MONSTERS.mendAfter) monster.life = Math.min(monster.maxLife, monster.life + monster.maxLife * monster.def.regen * dt);
   if (monster.spawnTime > 0) {
     monster.motion = 'rising';
     monster.spawnTime = Math.max(0, monster.spawnTime - dt);
@@ -391,17 +395,18 @@ export function spawnPacks(world: World): void {
     const packId: number = world.nextPackId;
     world.nextPackId += 1;
     if (world.zone.packReturn !== null) world.packReturns.push({ pack, packId, left: null });
-    let place: number = 0;
+    const defs: MonsterDef[] = [];
     pack.members.forEach((member, index: number): void => {
       const base: MonsterDef | undefined = world.content.monsters.get(member.monster);
       if (base === undefined) return;
       const def: MonsterDef = withMods(base, modsNamed(world.content.monsterMods, member.mods));
       const count: number = member.count + (index === 0 ? extra : 0);
-      for (let spawned: number = 0; spawned < count; spawned += 1) {
-        const row: Vec2 = pack.row ?? { x: 0, z: 0 };
-        spawnMonster(world, def, packId, { x: pack.x + row.x * place, z: pack.z + row.z * place }, { summonerId: null, scatter: pack.row === undefined ? SPAWN.spawnScatter : 0, revived: false });
-        place += 1;
-      }
+      for (let spawned: number = 0; spawned < count; spawned += 1) defs.push(def);
+    });
+    const ranked: MonsterDef[] = world.zone.ranks && ranksHere(defs) ? rankPack(world.content, world.rng, rollRank(world.content.packRanks, world.rng, monsterLevel(world)), defs) : defs;
+    const row: Vec2 = pack.row ?? { x: 0, z: 0 };
+    ranked.forEach((def: MonsterDef, place: number): void => {
+      spawnMonster(world, def, packId, { x: pack.x + row.x * place, z: pack.z + row.z * place }, { summonerId: null, scatter: pack.row === undefined ? SPAWN.spawnScatter : 0, revived: false });
     });
   }
 }

@@ -1,3 +1,4 @@
+import type { MonsterRank, PackRanks } from './rank-types.ts';
 import type { ZoneBarrier } from './barrier-types.ts';
 import type { AffixDef, FamilyDef, ItemBaseDef, ItemScaling, RarityDef } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
@@ -226,6 +227,8 @@ export interface MonsterDef {
   readonly dormant: DormantDef | null;
   readonly support: string | null;
   readonly barks: readonly string[];
+  readonly regen: number;
+  readonly rank: MonsterRank | null;
 }
 
 export const ITEM_SLOTS = ['weapon', 'head', 'chest', 'hands', 'legs', 'feet', 'charm'] as const;
@@ -427,6 +430,7 @@ export interface ZoneDef {
   readonly playerStart: ZonePoint;
   readonly packs: readonly ZonePack[];
   readonly packReturn: PackReturn | null;
+  readonly ranks: boolean;
   readonly surge: SurgeRules | null;
   readonly exits: readonly ZoneExit[];
   readonly checkpoints: readonly ZoneCheckpoint[];
@@ -683,4 +687,5 @@ export interface Content {
   readonly flasks: readonly FlaskDef[];
   readonly trade: TradeDef;
   readonly moments: MomentLibrary;
+  readonly packRanks: PackRanks;
 }

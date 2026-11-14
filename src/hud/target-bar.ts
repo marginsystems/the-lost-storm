@@ -3,8 +3,8 @@ import { pickTarget, TARGETING } from '../../sim/world/target.ts';
 import type { RecentHit, Target } from '../../sim/world/target.ts';
 import targetCss from './target.css?inline';
 import { clamp01, el, label, setText } from './dom.ts';
-import { monsterLines, monsterSummaryParts, reusedPhrases } from './monster-info.ts';
-import type { MonsterLine } from './monster-info.ts';
+import { monsterLines, monsterSummaryParts, rankPlate, reusedPhrases } from './monster-info.ts';
+import type { MonsterLine, RankPlate } from './monster-info.ts';
 import { NO_INFO, stepInfo } from './target-info.ts';
 import type { InfoState, InfoStep } from './target-info.ts';
 
@@ -74,6 +74,7 @@ export function createTargetBar(root: HTMLElement): TargetBar {
   const name: HTMLSpanElement = el('span', 'target-name', head);
   const summary: HTMLSpanElement = el('span', 'target-summary', head);
   const level: HTMLSpanElement = el('small', 'target-level', head);
+  const mods: HTMLDivElement = el('div', 'target-mods', element);
   const track: HTMLDivElement = el('div', 'target-track', element);
   const chip: HTMLDivElement = el('div', 'target-chip', track);
   const fill: HTMLDivElement = el('div', 'target-fill', track);
@@ -108,6 +109,11 @@ export function createTargetBar(root: HTMLElement): TargetBar {
         shownId = target.id;
         shownRatio = -1;
         setText(name, target.def.name, false);
+        const plate: RankPlate = rankPlate(world.content, target.def);
+        name.style.color = plate.color ?? '';
+        mods.style.color = plate.color ?? '';
+        setText(mods, plate.mods, false);
+        mods.classList.toggle('visible', plate.mods.length > 0);
         track.classList.add('snap');
       }
       const parts: string[] = monsterSummaryParts(lines);

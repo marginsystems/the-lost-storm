@@ -187,7 +187,7 @@ interface SweepRun {
 function sweep(pattern: Sweep): SweepRun {
   const world: World = worldIn(content, content.world.start, 5);
   const row: string = '.'.repeat(SWEEP.tiles);
-  enterZone(world, sceneZone(base, 'test_sweep', { tiles: Array.from({ length: SWEEP.tiles }, (): string => row), props: [], start: SWEEP.start }), { type: 'start' });
+  enterZone(world, { ...sceneZone(base, 'test_sweep', { tiles: Array.from({ length: SWEEP.tiles }, (): string => row), props: [], start: SWEEP.start }), moments: null }, { type: 'start' });
   world.monsters = [];
   const steps: SweepStep[] = [];
   for (let step: number = 0; step < Math.round(SWEEP.seconds / MOTION_DT); step += 1) {

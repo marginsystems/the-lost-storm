@@ -20,6 +20,8 @@ function withMod(def: MonsterDef, mod: MonsterModDef): MonsterDef {
     color: mod.color,
     deathSkill: mod.deathSkill ?? def.deathSkill,
     summon: mod.summon ?? def.summon,
+    poise: { ...def.poise, stagger: def.poise.stagger * mod.staggerScale },
+    regen: def.regen + mod.regen,
     mods: [...def.mods, mod.id],
   };
 }

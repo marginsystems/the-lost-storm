@@ -32,7 +32,7 @@ export interface TestScene {
 }
 
 export function sceneZone(base: ZoneDef, id: string, scene: TestScene): ZoneDef {
-  return { ...base, id, tiles: scene.tiles, props: scene.props, packs: [], npcs: [], exits: [], checkpoints: [], waypoint: null, voices: [], surge: null, playerStart: { x: scene.start.x, z: scene.start.z } };
+  return { ...base, id, tiles: scene.tiles, props: scene.props, packs: [], npcs: [], exits: [], checkpoints: [], waypoint: null, voices: [], surge: null, ranks: false, playerStart: { x: scene.start.x, z: scene.start.z } };
 }
 
 export function placedProp(prop: string, x: number, z: number): ZoneProp {

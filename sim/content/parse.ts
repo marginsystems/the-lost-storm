@@ -1,3 +1,4 @@
+import { packRanks, rankProblems } from './parse-ranks.ts';
 import { atlasProblems } from './atlas.ts';
 import { affix, family, itemBase, rarity } from './parse-items.ts';
 import { itemProblems } from './item-rules.ts';
@@ -79,6 +80,7 @@ export interface RawContent {
   readonly trade: unknown;
   readonly books: unknown;
   readonly moments: unknown;
+  readonly packRanks: unknown;
 }
 
 function delivery(value: unknown, where: string): Delivery {
@@ -440,6 +442,7 @@ export function parseContent(raw: RawContent): Content {
     trade: trade(raw.trade, 'trade'),
     books: books(raw.books, 'books'),
     moments: momentLibrary(raw.moments, 'moments'),
+    packRanks: packRanks(raw.packRanks, 'packRanks'),
   };
 }
 
@@ -534,7 +537,7 @@ export function contentProblems(content: Content): string[] {
   need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
-  for (const problem of [...combatProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
+  for (const problem of [...combatProblems(content), ...rankProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
   for (const problem of storyProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;

@@ -230,3 +230,53 @@ export function nearFace(grid: NavGrid, from: ReadonlyVec2, to: ReadonlyVec2): V
   }
   return null;
 }
+
+export function reachFrom(grid: NavGrid, from: ReadonlyVec2): Uint8Array {
+  const reach: Uint8Array = new Uint8Array(grid.columns * grid.rows);
+  const start: Vec2 | null = nearestWalkable(grid, from, PATH.snapRadius);
+  const first: number = start === null ? -1 : cellIndex(grid, start.x, start.z);
+  if (first < 0 || grid.walkable[first] !== 1) return reach;
+  reach[first] = 1;
+  const queue: number[] = [first];
+  for (let head: number = 0; head < queue.length; head += 1) {
+    const current: number = queue[head] ?? 0;
+    const column: number = current % grid.columns;
+    const row: number = Math.floor(current / grid.columns);
+    for (const step of STEPS) {
+      const nextColumn: number = column + step.dc;
+      const nextRow: number = row + step.dr;
+      if (nextColumn < 0 || nextRow < 0 || nextColumn >= grid.columns || nextRow >= grid.rows) continue;
+      const next: number = nextRow * grid.columns + nextColumn;
+      if (grid.walkable[next] !== 1 || reach[next] === 1) continue;
+      if (step.dc !== 0 && step.dr !== 0 && (grid.walkable[row * grid.columns + nextColumn] !== 1 || grid.walkable[nextRow * grid.columns + column] !== 1)) continue;
+      reach[next] = 1;
+      queue.push(next);
+    }
+  }
+  return reach;
+}
+
+export function nearestReached(grid: NavGrid, reach: Uint8Array, point: ReadonlyVec2, maxRadius: number): Vec2 | null {
+  const own: number = cellIndex(grid, point.x, point.z);
+  if (own >= 0 && reach[own] === 1 && isWalkable(grid, point.x, point.z)) return { x: point.x, z: point.z };
+  const rings: number = Math.ceil(maxRadius / grid.cellSize);
+  let best: Vec2 | null = null;
+  let bestGap: number = Infinity;
+  const column: number = Math.floor(point.x / grid.cellSize);
+  const row: number = Math.floor(point.z / grid.cellSize);
+  for (let dr: number = -rings; dr <= rings; dr += 1) {
+    for (let dc: number = -rings; dc <= rings; dc += 1) {
+      const nextColumn: number = column + dc;
+      const nextRow: number = row + dr;
+      if (nextColumn < 0 || nextRow < 0 || nextColumn >= grid.columns || nextRow >= grid.rows) continue;
+      const cell: number = nextRow * grid.columns + nextColumn;
+      if (reach[cell] !== 1) continue;
+      const centre: Vec2 = cellCenter(grid, cell);
+      const gap: number = Math.hypot(centre.x - point.x, centre.z - point.z);
+      if (gap > maxRadius || gap >= bestGap || !isWalkable(grid, centre.x, centre.z)) continue;
+      best = centre;
+      bestGap = gap;
+    }
+  }
+  return best;
+}

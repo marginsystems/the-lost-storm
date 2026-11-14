@@ -5,7 +5,7 @@ import type { MomentDef } from '../content/moment-types.ts';
 import type { Content, PropDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import type { Vec2 } from '../math.ts';
-import { blockerGap, isWalkable, propBlocker, routedGrid } from '../nav/grid.ts';
+import { blockerGap, isWalkable, lineWalkable, propBlocker, routedGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import type { Blocker, NavGrid } from '../nav/grid.ts';
 import { must, worldIn } from '../../test/support.ts';
@@ -14,7 +14,7 @@ import { inSight, MOMENT_GROUND, momentBlockers, momentFootprint, tallBlockers }
 import { clearMoments, forceStrike, stepMoments } from './moments.ts';
 import { setFlags } from './story.ts';
 import { stepWorld } from './step.ts';
-import type { MomentState, World } from './types.ts';
+import type { MomentState, MonsterState, World } from './types.ts';
 import { enterZone } from './zones.ts';
 
 const GROUND = { step: 1 / 30, offset: 20, settle: 2 } as const;
@@ -211,5 +211,35 @@ void test('inside every raised moment, each walkable spot off its centrepiece is
       if (!clickReaches(world, hub, cell)) shut.push(`${spot}: a click stops at (${(world.player.pos.x - REACH.at.x).toFixed(1)}, ${(world.player.pos.z - REACH.at.z).toFixed(1)})`);
     }
   }
+  assert.deepEqual(shut, []);
+});
+
+const FIRE_POCKET = { at: { x: 36.6, z: 49.5 }, hero: { x: 36.3, z: 45.5 }, seeds: 12, wake: 6 } as const;
+
+void test('an echo that rises between a raised campfire and the Hall statue stands where the hero can reach it', (): void => {
+  const shut: string[] = [];
+  let woke: number = 0;
+  for (let seed: number = 1; seed <= FIRE_POCKET.seeds; seed += 1) {
+    const content: Content = loadContent();
+    const world: World = worldIn(content, REACH.zone, seed);
+    world.monsters = [];
+    world.moments = [];
+    world.wake = null;
+    world.strikeTimer = 1e9;
+    world.player.invulnerable = 1e9;
+    world.player.pos = { ...FIRE_POCKET.hero };
+    const moment: MomentState | null = forceStrike(world, FIRE_POCKET.at, 'campfire');
+    if (moment === null) continue;
+    for (let elapsed: number = 0; elapsed < FIRE_POCKET.wake && moment.phase !== 'awake'; elapsed += REACH.step) {
+      world.player.pos = { ...FIRE_POCKET.hero };
+      stepWorld(world, [], REACH.step);
+    }
+    const grid: NavGrid = routedGrid(world.grid);
+    for (const echo of world.monsters.filter((monster: MonsterState): boolean => monster.alive)) {
+      woke += 1;
+      if (!ends(findPath(grid, world.player.pos, echo.pos), echo.pos) && !lineWalkable(grid, world.player.pos, echo.pos)) shut.push(`seed ${seed}: ${echo.def.id} at (${echo.pos.x.toFixed(2)}, ${echo.pos.z.toFixed(2)})`);
+    }
+  }
+  assert.ok(woke > 0);
   assert.deepEqual(shut, []);
 });

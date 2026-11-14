@@ -2,7 +2,8 @@ import type { MomentChest, MomentDef } from '../content/moment-types.ts';
 import type { PropDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { Blocker, NavGrid } from '../nav/grid.ts';
-import { blockerGap, isWalkable, liftStamp, nearestWalkable, propBlocker, propBlockers, stampBlockers } from '../nav/grid.ts';
+import { blockerGap, cellIndex, isWalkable, liftStamp, nearestWalkable, propBlocker, propBlockers, stampBlockers } from '../nav/grid.ts';
+import { nearestReached } from '../nav/path.ts';
 import { allHold } from './conditions.ts';
 import { gridFor } from './movement.ts';
 import type { Actor, MomentState, World } from './types.ts';
@@ -77,6 +78,16 @@ export function standClear(world: World, actor: Actor): void {
   if (free === null) return;
   actor.pos.x = free.x;
   actor.pos.z = free.z;
+}
+
+export function standJoined(world: World, actor: Actor, reach: Uint8Array): void {
+  const grid: NavGrid = gridFor(world, actor);
+  const own: number = cellIndex(grid, actor.pos.x, actor.pos.z);
+  if (own >= 0 && reach[own] === 1) return;
+  const spot: Vec2 | null = nearestReached(grid, reach, actor.pos, MOMENT_GROUND.shoveReach);
+  if (spot === null) return;
+  actor.pos.x = spot.x;
+  actor.pos.z = spot.z;
 }
 
 export function raiseProps(world: World, moment: MomentState): void {

@@ -32,6 +32,7 @@ export function roadZone(patch: Partial<ZoneDef>): ZoneDef {
     surge: null,
     levelUpTo: base.level,
     packReturn: null,
+    ranks: false,
     drifts: [],
     triggers: [],
     playerStart: { x: 2, z: 2 },

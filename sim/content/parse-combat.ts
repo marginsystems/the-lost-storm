@@ -1,6 +1,7 @@
 import type { Fields } from './read.ts';
 import { ContentError, fields, nullableText, numeric, positive, text, textList } from './read.ts';
 import type { DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, SkillCommit, SkillLeap, SummonDef } from './combat-types.ts';
+import type { MonsterRank } from './rank-types.ts';
 import type { Content, MonsterDef, SkillDef } from './types.ts';
 
 const STEADY: MonsterPoise = { knockback: 1, stagger: 1, resolve: 0 };
@@ -102,6 +103,8 @@ export interface MonsterTraits {
   readonly dormant: DormantDef | null;
   readonly support: string | null;
   readonly barks: readonly string[];
+  readonly regen: number;
+  readonly rank: MonsterRank | null;
 }
 
 export function monsterTraits(source: Fields, where: string): MonsterTraits {
@@ -115,6 +118,8 @@ export function monsterTraits(source: Fields, where: string): MonsterTraits {
     dormant: optional(source['dormant'], `${where}.dormant`, dormant),
     support: nullableText(source, 'support', where),
     barks: source['barks'] === undefined ? [] : textList(source, 'barks', where),
+    regen: zeroOrMore(source, 'regen', where),
+    rank: null,
   };
 }
 
@@ -136,6 +141,8 @@ export function monsterMod(value: unknown, where: string): MonsterModDef {
     color: text(source, 'color', where),
     deathSkill: nullableText(source, 'deathSkill', where),
     summon: optional(source['summon'], `${where}.summon`, summon),
+    staggerScale: source['staggerScale'] === undefined ? 1 : positive(source, 'staggerScale', where),
+    regen: zeroOrMore(source, 'regen', where),
   };
 }
 

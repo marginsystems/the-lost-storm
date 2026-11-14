@@ -27,6 +27,7 @@ export const ACTORS = {
   npcSettledWithin: 0.01,
   blockTime: 0.35,
   echoMix: 0.85,
+  rankAura: 0.6,
   echoOpacity: 0.78,
   turnRim: 4,
   leaveTime: 1.2,
@@ -99,7 +100,10 @@ function echoLook(current: World, monster: MonsterState): EchoLook | null {
   const moment: MomentState | null = momentOfEcho(current, monster.id);
   if (moment === null) return null;
   const from: Color = new Color(moment.def.tint);
-  return { ghost: createGhostUniforms(from, ACTORS.echoMix), from, to: new Color(current.content.moments.hostileTint) };
+  const to: Color = new Color(current.content.moments.hostileTint);
+  const aura: string | null = monster.def.rank?.aura ?? null;
+  if (aura !== null) to.lerp(new Color(aura), ACTORS.rankAura);
+  return { ghost: createGhostUniforms(from, ACTORS.echoMix), from, to };
 }
 
 export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean, sight: Sight = SEES_ALL): Actors {

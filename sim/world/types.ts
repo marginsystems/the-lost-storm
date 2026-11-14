@@ -195,6 +195,7 @@ export interface MonsterState extends ActorState {
   stuckTime: number;
   restTime: number;
   stalledFor: number | null;
+  calm: number;
   lastPos: Vec2;
   lastTravel: number;
   spawnTime: number;

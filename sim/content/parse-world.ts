@@ -252,6 +252,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     playerStart: point(source['playerStart'], `${where}.playerStart`),
     packs,
     packReturn: packReturn(source['packReturn'], `${where}.packReturn`),
+    ranks: source['ranks'] === undefined ? false : flag(source, 'ranks', where),
     surge,
     exits: [...byId(each(source['exits'], `${where}.exits`, zoneExit), `${where}.exits`).values()],
     checkpoints: [...byId(each(source['checkpoints'], `${where}.checkpoints`, zoneCheckpoint), `${where}.checkpoints`).values()],

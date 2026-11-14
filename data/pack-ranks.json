@@ -1,0 +1,42 @@
+{
+  "ranks": [
+    {
+      "id": "normal",
+      "name": "Normal",
+      "color": "#dcd8d0",
+      "aura": null,
+      "chance": null,
+      "members": { "life": 1, "damage": 1, "xp": 1, "itemChance": 1, "gold": 1, "items": 0, "floor": null, "mods": 0 },
+      "leader": null
+    },
+    {
+      "id": "magic",
+      "name": "Magic",
+      "color": "#7fb0ff",
+      "aura": "#4f8cff",
+      "chance": { "base": 0.1, "perLevel": 0.006, "max": 0.2 },
+      "members": { "life": 1.6, "damage": 1.15, "xp": 1.8, "itemChance": 1.8, "gold": 1.6, "items": 0, "floor": null, "mods": 1 },
+      "leader": null
+    },
+    {
+      "id": "rare",
+      "name": "Rare",
+      "color": "#f1d06b",
+      "aura": "#f0b83c",
+      "chance": { "base": 0.025, "perLevel": 0.003, "max": 0.08 },
+      "members": { "life": 1.3, "damage": 1.1, "xp": 1.4, "itemChance": 1.4, "gold": 1.3, "items": 0, "floor": null, "mods": 1 },
+      "leader": { "life": 3.2, "damage": 1.3, "xp": 5, "itemChance": 1, "gold": 3, "items": 2, "floor": "magic", "mods": 3 }
+    }
+  ],
+  "pool": [
+    { "mod": "swift", "weight": 3 },
+    { "mod": "hulking", "weight": 3 },
+    { "mod": "volatile", "weight": 2 },
+    { "mod": "unyielding", "weight": 2 },
+    { "mod": "mending", "weight": 2 }
+  ],
+  "names": {
+    "first": ["Ashen", "Hollow", "Unmade", "Last", "Grey", "Undone", "Forgotten", "Restless", "Broken", "Quiet", "Pale", "Drowned"],
+    "second": ["Hammer", "Witness", "Debt", "Mourner", "Keeper", "Stranger", "Promise", "Echo", "Wake", "Hour", "Vigil", "Answer"]
+  }
+}

@@ -18,6 +18,7 @@ export const SHALLOWS = {
   name: 'The Shallows',
   kind: 'wild',
   level: 1,
+  ranks: false,
   tiles: FLOOR_ROWS,
   floors: { '.': 'silt' },
   outside: { surface: 'silt', reach: 3, edge: null, barrier: null },

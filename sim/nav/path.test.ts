@@ -5,10 +5,10 @@ import { must } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { buildNavGrid, isWalkable, lineWalkable, paceAt } from './grid.ts';
+import { buildNavGrid, cellCenter, cellIndex, isWalkable, lineWalkable, paceAt } from './grid.ts';
 import { ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts';
 import type { NavGrid } from './grid.ts';
-import { findPath, nearFace } from './path.ts';
+import { findPath, nearestReached, nearFace, reachFrom } from './path.ts';
 
 const content: Content = loadContent();
 const grid: NavGrid = buildNavGrid(OUTPOST_ZONE, content.props, content.surfaces, content.player.radius);
@@ -82,4 +82,39 @@ void test('the near face of a blocked point is the last walkable point on the st
   assert.ok(Math.abs(face.z - 22) < 1e-9);
   assert.ok(face.x < 2 && face.x > blocked.x);
   assert.equal(isWalkable(grid, face.x - 0.1, face.z), false);
+});
+
+function sealedRound(open: NavGrid, centre: Vec2, ring: number): NavGrid {
+  const walkable: Uint8Array = Uint8Array.from(open.walkable);
+  const column: number = Math.floor(centre.x / open.cellSize);
+  const row: number = Math.floor(centre.z / open.cellSize);
+  for (let dr: number = -ring; dr <= ring; dr += 1) {
+    for (let dc: number = -ring; dc <= ring; dc += 1) {
+      if (Math.max(Math.abs(dr), Math.abs(dc)) === ring) walkable[(row + dr) * open.columns + column + dc] = 0;
+    }
+  }
+  return { ...open, walkable, routed: true };
+}
+
+void test('the cells reached from a point are the ones a path can get to, and a sealed pocket is not among them', (): void => {
+  const pocket: Vec2 = { x: 28, z: 30 };
+  const sealed: NavGrid = sealedRound(grid, pocket, 2);
+  const from: Vec2 = { x: 28, z: 20 };
+  const reach: Uint8Array = reachFrom(sealed, from);
+  assert.equal(reach[cellIndex(sealed, from.x, from.z)], 1);
+  assert.equal(reach[cellIndex(sealed, 28, 37)], 1);
+  assert.equal(reach[cellIndex(sealed, pocket.x, pocket.z)], 0);
+});
+
+void test('the nearest reached spot to a sealed point lies just outside the seal, and a reached point stays where it is', (): void => {
+  const pocket: Vec2 = { x: 28, z: 30 };
+  const sealed: NavGrid = sealedRound(grid, pocket, 2);
+  const reach: Uint8Array = reachFrom(sealed, { x: 28, z: 20 });
+  const out: Vec2 = must(nearestReached(sealed, reach, pocket, 6), 'a way out');
+  assert.equal(reach[cellIndex(sealed, out.x, out.z)], 1);
+  assert.ok(isWalkable(sealed, out.x, out.z));
+  assert.ok(Math.hypot(out.x - pocket.x, out.z - pocket.z) <= 3.5 * sealed.cellSize * Math.SQRT2);
+  assert.deepEqual(nearestReached(sealed, reach, { x: 28, z: 20 }, 6), { x: 28, z: 20 });
+  assert.equal(nearestReached(sealed, new Uint8Array(reach.length), pocket, 6), null);
+  assert.deepEqual(cellCenter(sealed, cellIndex(sealed, out.x, out.z)), out);
 });

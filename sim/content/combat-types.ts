@@ -53,6 +53,8 @@ export interface MonsterModDef {
   readonly color: string;
   readonly deathSkill: string | null;
   readonly summon: SummonDef | null;
+  readonly staggerScale: number;
+  readonly regen: number;
 }
 
 export interface ReviveDelivery {

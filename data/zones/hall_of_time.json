@@ -4,6 +4,7 @@
   "kind": "wild",
   "level": 1,
   "levelUpTo": 20,
+  "ranks": true,
   "cellSize": 4,
   "floorHeight": 0,
   "tiles": [

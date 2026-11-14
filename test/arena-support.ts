@@ -37,9 +37,9 @@ const MONSTERS: readonly MonsterDef[] = [
 ];
 
 const MODS: readonly MonsterModDef[] = [
-  { id: 'test_swift', prefix: 'Swift', lifeScale: 1.2, damageScale: 1, speedScale: 1.5, sizeScale: 1.05, xpScale: 2, lootScale: 2, color: '#ffffff', deathSkill: null, summon: null },
-  { id: 'test_volatile', prefix: 'Volatile', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 2, lootScale: 2, color: '#ff8040', deathSkill: 'test_burst', summon: null },
-  { id: 'test_brood', prefix: 'Brood', lifeScale: 2, damageScale: 1, speedScale: 1, sizeScale: 1.2, xpScale: 3, lootScale: 3, color: '#80ff80', deathSkill: null, summon: { monster: null, count: 2, cooldown: 3, limit: 3 } },
+  { id: 'test_swift', prefix: 'Swift', lifeScale: 1.2, damageScale: 1, speedScale: 1.5, sizeScale: 1.05, xpScale: 2, lootScale: 2, color: '#ffffff', deathSkill: null, summon: null, staggerScale: 1, regen: 0 },
+  { id: 'test_volatile', prefix: 'Volatile', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 2, lootScale: 2, color: '#ff8040', deathSkill: 'test_burst', summon: null, staggerScale: 1, regen: 0 },
+  { id: 'test_brood', prefix: 'Brood', lifeScale: 2, damageScale: 1, speedScale: 1, sizeScale: 1.2, xpScale: 3, lootScale: 3, color: '#80ff80', deathSkill: null, summon: { monster: null, count: 2, cooldown: 3, limit: 3 }, staggerScale: 1, regen: 0 },
 ];
 
 function byId<T extends { readonly id: string }>(base: ReadonlyMap<string, T>, extra: readonly T[]): Map<string, T> {

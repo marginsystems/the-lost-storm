@@ -1,4 +1,4 @@
-import { generateItem } from '../items.ts';
+import { generateAtLeast, generateItem } from '../items.ts';
 import { createRng } from '../rng.ts';
 import type { Rng } from '../rng.ts';
 import { ITEM_SLOTS } from '../content/types.ts';
@@ -6,6 +6,7 @@ import type { ItemInstance, RolledAffix, World } from './types.ts';
 
 export type ItemSource =
   | { readonly kind: 'monster'; readonly monster: string; readonly zone: string }
+  | { readonly kind: 'leader'; readonly monster: string; readonly zone: string; readonly rank: string }
   | { readonly kind: 'boss'; readonly monster: string; readonly zone: string }
   | { readonly kind: 'moment'; readonly moment: string; readonly zone: string }
   | { readonly kind: 'find'; readonly find: string; readonly zone: string }
@@ -76,10 +77,10 @@ function seedless(world: World, base: string | null, rarity: string | null): boo
   return def !== undefined && def.power === null && tier !== undefined && tier.affixMax === 0;
 }
 
-export function makeItem(world: World, level: number, base: string | null, rarity: string | null, source: ItemSource, fallback: Rng = world.rng): ItemInstance | null {
+export function makeItem(world: World, level: number, base: string | null, rarity: string | null, source: ItemSource, fallback: Rng = world.rng, floor: string | null = null): ItemInstance | null {
   const ticket: LootTicket | undefined = world.ledger.tickets.shift();
   const rng: Rng = ticket === undefined ? fallback : createRng(ticket.seed);
-  const item: ItemInstance | null = generateItem(world.content, rng, world.nextItemUid, level, base, rarity);
+  const item: ItemInstance | null = floor === null || rarity !== null ? generateItem(world.content, rng, world.nextItemUid, level, base, rarity) : generateAtLeast(world.content, rng, world.nextItemUid, level, base, floor);
   if (item === null) {
     if (ticket !== undefined) world.ledger.tickets.unshift(ticket);
     return null;

@@ -2,16 +2,17 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { MotionSample, TestScene } from '../../test/motion-support.ts';
 import { MOTION_DT, motionProblems, placedProp, sampleOf, sceneZone } from '../../test/motion-support.ts';
-import { ARENA_CENTRE, arena, place } from '../../test/arena-support.ts';
+import { ARENA_CENTRE, ARENA_CONTENT, arena, place } from '../../test/arena-support.ts';
 import { SCENE_BASE } from '../../test/road-support.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
-import type { Content, ZoneDef } from '../content/types.ts';
+import type { Content, MonsterDef, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { blockerGap, isWalkable, lineOfSight, lineWalkable, nearestWalkable, propOutlines, routedGrid } from '../nav/grid.ts';
 import type { Blocker, NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
+import { applyHit, offenceOf } from './combat.ts';
 import { forceStrike } from './moments.ts';
 import { spawnPacks } from './monsters.ts';
 import { stepWorld } from './step.ts';
@@ -22,7 +23,8 @@ import type { ObjectiveTarget } from './objective.ts';
 import type { Command, MomentState, MonsterState, World } from './types.ts';
 import { enterZone } from './zones.ts';
 
-const content: Content = loadContent();
+const shipped: Content = loadContent();
+const content: Content = { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones].map(([id, zone]: [string, ZoneDef]): [string, ZoneDef] => [id, { ...zone, ranks: false }])) };
 const base: ZoneDef = SCENE_BASE;
 
 const LIMITS = {
@@ -519,4 +521,27 @@ void test('a fresh hero walking the arrow from arrival to the first moment, dyin
     assert.ok(struck && died, `seed ${seed}: the first moment struck and he died in it`);
     assert.equal(world.flags['first_moment'], 'cleared', `seed ${seed}`);
   }
+});
+
+void test('a mending monster heals only once it has gone a few seconds without being hit', (): void => {
+  const mended: MonsterDef = must(ARENA_CONTENT.monsters.get('mended'), 'mended');
+  const world: World = arena(2, { ...ARENA_CONTENT, monsters: new Map<string, MonsterDef>([...ARENA_CONTENT.monsters, ['mended', { ...mended, regen: 0.05 }]]) });
+  const monster: MonsterState = place(world, 'mended', { x: ARENA_CENTRE.x + 7, z: ARENA_CENTRE.z });
+  monster.aggro = false;
+  world.player.invulnerable = 100;
+  const hurt: number = monster.maxLife / 2;
+  monster.life = hurt;
+  const wait = (seconds: number): void => {
+    for (let step: number = 0; step < Math.round(seconds / MOTION_DT); step += 1) stepWorld(world, [], MOTION_DT);
+  };
+  wait(3);
+  assert.equal(monster.life, hurt);
+  wait(3);
+  assert.ok(monster.life > hurt);
+  const healed: number = monster.life;
+  applyHit(world, { ...offenceOf(world.player), damageMin: 1, damageMax: 1, damagePercent: 0, critChance: 0 }, monster, must(ARENA_CONTENT.skills.get('cleave'), 'cleave'), { x: 1, z: 0 });
+  const struck: number = monster.life;
+  assert.ok(struck < healed);
+  wait(3);
+  assert.equal(monster.life, struck);
 });

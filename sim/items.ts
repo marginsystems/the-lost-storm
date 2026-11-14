@@ -136,6 +136,16 @@ function settle(content: Content, rng: Rng, level: number, base: ItemBaseDef, ra
   return plain === null ? null : { base, rarity: plain };
 }
 
+export function raritiesFrom(content: Content, floor: string): readonly RarityDef[] {
+  const start: number = content.rarities.findIndex((candidate: RarityDef): boolean => candidate.id === floor);
+  return start < 0 ? content.rarities : content.rarities.slice(start);
+}
+
+export function generateAtLeast(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, floor: string): ItemInstance | null {
+  const rarity: RarityDef | null = pickWeighted(rng, raritiesFrom(content, floor));
+  return rarity === null ? null : generateItem(content, rng, uid, level, forcedBase, rarity.id);
+}
+
 export function generateItem(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, forcedRarity: string | null): ItemInstance | null {
   const pickedBase: ItemBaseDef | null = pickBase(rng, [...content.itemBases.values()].filter(droppable(level, false)));
   const base: ItemBaseDef | null = forcedBase === null ? pickedBase : (content.itemBases.get(forcedBase) ?? null);
