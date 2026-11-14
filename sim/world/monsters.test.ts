@@ -334,6 +334,7 @@ const POCKET = {
   strandSeconds: 4,
   strandSpeed: 2.5,
   scan: 0.25,
+  unseen: 2,
 } as const;
 
 function joined(grid: NavGrid, from: Vec2, to: Vec2): boolean {
@@ -411,10 +412,11 @@ void test('a monster that ends up in a sealed pocket glides out to the nearest r
   world.monsters = [];
   world.wake = null;
   const grid: NavGrid = routedGrid(world.grid);
+  const unseen: number = must(content.monsters.get('mended'), 'mended').aggroRadius + POCKET.unseen;
   let pocket: Vec2 | null = null;
   for (let x: number = 0; x < world.grid.columns * world.grid.cellSize && pocket === null; x += POCKET.scan) {
     for (let z: number = 0; z < world.grid.rows * world.grid.cellSize && pocket === null; z += POCKET.scan) {
-      if (isWalkable(world.grid, x, z) && !isWalkable(grid, x, z)) pocket = { x, z };
+      if (isWalkable(world.grid, x, z) && !isWalkable(grid, x, z) && distance(world.player.pos, { x, z }) > unseen) pocket = { x, z };
     }
   }
   const start: Vec2 = must(pocket, 'a spot open to the hero but not routed');

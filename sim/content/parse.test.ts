@@ -289,10 +289,10 @@ void test('a zone parses with its kind, level, exits, checkpoints, surge rules a
   assert.equal(arena.ambience.background, shallows.ambience.background);
   assert.equal(arena.floors['.'], 'silt');
   assert.deepEqual(arena.outside, { ...shallows.outside, edge: null });
-  assert.deepEqual(town.outside, waystation.outside);
+  assert.deepEqual(town.outside, { ...waystation.outside, edge: null });
   assert.equal(arena.walls, null);
   assert.equal(content.world.start, 'shallows');
-  assert.deepEqual(content.world.scaling, { lifePerLevel: 0.22, damagePerLevel: 0.12, xpPerLevel: 0.15 });
+  assert.deepEqual(content.world.scaling, world.scaling);
   assert.deepEqual(contentProblems(content), []);
 });
 
