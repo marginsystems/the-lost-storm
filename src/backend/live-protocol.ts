@@ -1,5 +1,7 @@
 import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
+import type { TradeFrame } from '../player-trade/trade-protocol.ts';
+import { LIVE_TRADE_VERSION, readTradeFrame } from '../player-trade/trade-protocol.ts';
 
 export const LIVE_LIMITS: {
   readonly idChars: number;
@@ -86,7 +88,7 @@ export interface Welcome {
 }
 
 export type ServerFrame =
-  | { readonly type: 'welcome'; readonly roaming: Welcome | null }
+  | { readonly type: 'welcome'; readonly roaming: Welcome | null; readonly trade: boolean }
   | { readonly type: 'present'; readonly zone: string; readonly you: string; readonly players: readonly LivePlayer[]; readonly chat: readonly ChatLine[] | null }
   | { readonly type: 'said'; readonly line: ChatLine }
   | { readonly type: 'whisper'; readonly dir: WhisperDirection; readonly with: string; readonly line: ChatLine }
@@ -98,7 +100,8 @@ export type ServerFrame =
   | { readonly type: 'full' }
   | { readonly type: 'replaced' }
   | { readonly type: 'friends' }
-  | { readonly type: 'refused'; readonly reason: Refusal };
+  | { readonly type: 'refused'; readonly reason: Refusal }
+  | { readonly type: 'trade'; readonly frame: TradeFrame };
 
 export interface Place {
   readonly x: number;
@@ -187,7 +190,7 @@ function readEach<T>(value: unknown, read: (entry: unknown) => T | null, limit: 
 function readFields(source: Fields): ServerFrame | null {
   switch (source['type']) {
     case 'welcome':
-      return { type: 'welcome', roaming: readWelcome(source) };
+      return { type: 'welcome', roaming: readWelcome(source), trade: source['trade'] === LIVE_TRADE_VERSION };
     case 'full':
       return { type: 'full' };
     case 'replaced':
@@ -240,8 +243,10 @@ function readFields(source: Fields): ServerFrame | null {
       const reason: Refusal | undefined = REFUSALS.find((known: Refusal): boolean => known === source['reason']);
       return reason === undefined ? null : { type: 'refused', reason };
     }
-    default:
-      return null;
+    default: {
+      const frame: TradeFrame | null = readTradeFrame(source);
+      return frame === null ? null : { type: 'trade', frame };
+    }
   }
 }
 
@@ -257,7 +262,7 @@ export function readServerFrame(data: unknown): ServerFrame | null {
 }
 
 export function helloFrame(token: string): string {
-  return JSON.stringify({ type: 'hello', token, chat: LIVE_CHAT_VERSION });
+  return JSON.stringify({ type: 'hello', token, chat: LIVE_CHAT_VERSION, trade: LIVE_TRADE_VERSION });
 }
 
 function rounded(value: number): number {

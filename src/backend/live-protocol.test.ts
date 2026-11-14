@@ -18,7 +18,7 @@ void test('the live URL swaps http for ws and https for wss and adds the live pa
 });
 
 void test('client frames carry the token only in the hello and round places to centimetres', (): void => {
-  assert.deepEqual(JSON.parse(helloFrame('secret')), { type: 'hello', token: 'secret', chat: 1 });
+  assert.deepEqual(JSON.parse(helloFrame('secret')), { type: 'hello', token: 'secret', chat: 1, trade: 1 });
   assert.deepEqual(JSON.parse(whisperFrame('Bo Reed', 'hi')), { type: 'whisper', to: 'Bo Reed', text: 'hi' });
   assert.deepEqual(JSON.parse(enterFrame({ x: 20.123_4, z: 18.005_1, facing: 0.333_33 })), { type: 'enter', zone: 'hideout', x: 20.12, z: 18.01, facing: 0.33 });
   assert.deepEqual(JSON.parse(moveFrame({ x: 1, z: 2, facing: -2.505_9 })), { type: 'move', x: 1, z: 2, facing: -2.51 });
@@ -26,8 +26,11 @@ void test('client frames carry the token only in the hello and round places to c
 });
 
 void test('every server message the protocol names is read', (): void => {
-  assert.deepEqual(read({ type: 'welcome' }), { type: 'welcome', roaming: null });
-  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [LINE] }), { type: 'welcome', roaming: { you: 'c1', chat: [LINE] } });
+  assert.deepEqual(read({ type: 'welcome' }), { type: 'welcome', roaming: null, trade: false });
+  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [LINE] }), { type: 'welcome', roaming: { you: 'c1', chat: [LINE] }, trade: false });
+  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], trade: 1 }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: true });
+  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], trade: 2 }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: false });
+  assert.deepEqual(read({ type: 'trade_closed', reason: 'expired' }), { type: 'trade', frame: { type: 'trade_closed', reason: 'expired' } });
   assert.deepEqual(read({ type: 'whisper', dir: 'from', with: 'Bo Reed', line: LINE }), { type: 'whisper', dir: 'from', with: 'Bo Reed', line: LINE });
   assert.deepEqual(read({ type: 'whisper', dir: 'to', with: 'Bo Reed', line: LINE }), { type: 'whisper', dir: 'to', with: 'Bo Reed', line: LINE });
   assert.deepEqual(read({ type: 'unsent', reason: 'ignored', to: 'Bo Reed' }), { type: 'unsent', reason: 'ignored', to: 'Bo Reed' });

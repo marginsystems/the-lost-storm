@@ -112,7 +112,7 @@ void test('the token goes only in the first frame and enter follows the welcome'
   h.live.update(HIDEOUT);
   assert.deepEqual(socket.sent, []);
   socket.handlers.open();
-  assert.deepEqual(socket.sent, [{ type: 'hello', token: 'secret-token', chat: 1 }]);
+  assert.deepEqual(socket.sent, [{ type: 'hello', token: 'secret-token', chat: 1, trade: 1 }]);
   h.live.update(HIDEOUT);
   assert.equal(socket.sent.length, 1);
   say(socket, { type: 'welcome' });
@@ -209,7 +209,7 @@ void test('with no token yet it waits instead of connecting', async (): Promise<
   await h.timers.advance(LIVE.tokenWaitMs);
   h.live.update(HIDEOUT);
   last(h).handlers.open();
-  assert.deepEqual(last(h).sent, [{ type: 'hello', token: 'later', chat: 1 }]);
+  assert.deepEqual(last(h).sent, [{ type: 'hello', token: 'later', chat: 1, trade: 1 }]);
 });
 
 void test('a full Hideout or a second tab stands down until the player comes back', (): void => {
@@ -382,4 +382,35 @@ void test('whispers and mutes go out only to a server with chat everywhere, and 
   assert.deepEqual(h.events.at(-1), { type: 'whisper', dir: 'from', with: 'Bo Reed', line });
   say(socket, { type: 'unsent', reason: 'offline', to: 'Cy' });
   assert.deepEqual(h.events.at(-1), { type: 'unsent', reason: 'offline', to: 'Cy' });
+});
+
+void test('trading opens only against a server that welcomes it and only while standing in the Hideout', (): void => {
+  const h: Harness = harness();
+  h.live.update(HIDEOUT);
+  const socket: FakeSocket = last(h);
+  socket.handlers.open();
+  const hello: unknown = socket.sent[0];
+  assert.ok(typeof hello === 'object' && hello !== null && 'trade' in hello && hello.trade === 1);
+  say(socket, { ...WELCOME, trade: 1 });
+  h.live.update(HIDEOUT);
+  assert.equal(h.live.canTrade(), false);
+  assert.equal(h.live.trade('{"type":"trade_cancel"}'), false);
+  say(socket, { type: 'present', zone: 'hideout', you: 'me', players: [], chat: [] });
+  assert.equal(h.live.canTrade(), true);
+  assert.equal(h.live.trade('{"type":"trade_cancel"}'), true);
+  assert.deepEqual(socket.sent.at(-1), { type: 'trade_cancel' });
+  say(socket, { type: 'trade_closed', reason: 'left' });
+  assert.deepEqual(h.events.at(-1), { type: 'trade', frame: { type: 'trade_closed', reason: 'left' } });
+  h.live.update(ROAD);
+  assert.equal(h.live.canTrade(), false);
+});
+
+void test('an older server that does not welcome trading is never sent a trade frame', (): void => {
+  const h: Harness = harness();
+  const socket: FakeSocket = roaming(h);
+  say(socket, { type: 'present', zone: 'hideout', you: 'me', players: [], chat: [] });
+  const before: number = socket.sent.length;
+  assert.equal(h.live.canTrade(), false);
+  assert.equal(h.live.trade('{"type":"trade_cancel"}'), false);
+  assert.equal(socket.sent.length, before);
 });
