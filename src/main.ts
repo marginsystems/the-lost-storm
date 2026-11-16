@@ -545,7 +545,7 @@ async function start(): Promise<void> {
     if (last > 0) transition.frame(now - last);
     last = now;
     let events: WorldEvent[] = [];
-    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen });
+    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, presenting: transition.presenting });
     const collected: Command[] = gate.collect ? [...input.collect(dt), ...touch.collect(dt)] : [];
     if (gate.queue) queue.push(...collected);
     if (gate.step) {
@@ -605,7 +605,7 @@ async function start(): Promise<void> {
     launch.update(world, dt, gate.queue);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     if (transition.presenting) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
-    if (lobbyFlow?.render(dt) !== true && !hud.coversScene()) stage.render();
+    if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) stage.render();
     sinceSave += dt;
     if (urgent || sinceSave > GAME.saveEvery) persist();
   };
@@ -624,7 +624,7 @@ async function start(): Promise<void> {
     hidden: saveNow,
     resumed: (): void => void (last = performance.now()),
   });
-  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], zoneView.ready);
+  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], zoneView.ready).then((): void => stage.render());
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole });
     actors.refreshWear(world);
