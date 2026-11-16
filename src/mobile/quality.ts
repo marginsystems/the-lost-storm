@@ -18,7 +18,6 @@ export interface QualityTier {
   readonly shadows: boolean;
   readonly shadowSize: number;
   readonly msaaSamples: number;
-  readonly antialias: boolean;
   readonly zoneLights: number;
   readonly barrierRows: number;
   readonly flashLights: number;
@@ -42,7 +41,6 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     shadows: true,
     shadowSize: 2048,
     msaaSamples: 4,
-    antialias: true,
     zoneLights: 6,
     barrierRows: 3,
     flashLights: 3,
@@ -64,7 +62,6 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     shadows: false,
     shadowSize: 512,
     msaaSamples: 0,
-    antialias: false,
     zoneLights: 3,
     barrierRows: 2,
     flashLights: 1,

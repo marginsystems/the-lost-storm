@@ -122,7 +122,7 @@ export interface Stage {
 
 export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): Stage {
   let tier: QualityTier = initial;
-  const renderer: WebGLRenderer = new WebGLRenderer({ canvas, antialias: tier.antialias, powerPreference: 'high-performance' });
+  const renderer: WebGLRenderer = new WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   GPU.hold((): void => renderer.forceContextLoss());
   renderer.setPixelRatio(pixelRatioFor(tier, window.devicePixelRatio, canvas.clientWidth, canvas.clientHeight));
   renderer.outputColorSpace = SRGBColorSpace;
