@@ -545,7 +545,7 @@ async function start(): Promise<void> {
     if (last > 0) transition.frame(now - last);
     last = now;
     let events: WorldEvent[] = [];
-    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, presenting: transition.presenting });
+    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, presenting: transition.presenting, gpuQueued: stage.gpuQueued() });
     const collected: Command[] = gate.collect ? [...input.collect(dt), ...touch.collect(dt)] : [];
     if (gate.queue) queue.push(...collected);
     if (gate.step) {

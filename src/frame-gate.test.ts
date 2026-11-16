@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { frameGate } from './frame-gate.ts';
+import { FRAME_GATE, frameGate } from './frame-gate.ts';
 import type { FrameState } from './frame-gate.ts';
 
-const PLAYING: FrameState = { playing: true, blocking: false, lost: false, menuOpen: false, presenting: true };
+const PLAYING: FrameState = { playing: true, blocking: false, lost: false, menuOpen: false, presenting: true, gpuQueued: 0 };
 
 void test('the world steps while the menu is open, and the game takes no commands', (): void => {
   assert.deepEqual(frameGate({ ...PLAYING, menuOpen: true }), { collect: true, queue: false, step: true, draw: true });
@@ -27,4 +27,10 @@ void test('the scene is not drawn behind the title or the lobby, nor while the v
   assert.equal(frameGate({ ...PLAYING, blocking: true, presenting: false }).draw, false);
   assert.equal(frameGate({ ...PLAYING, blocking: true, presenting: true }).draw, true);
   assert.equal(frameGate({ ...PLAYING, menuOpen: true }).draw, true);
+});
+
+void test('under the veil a new frame is drawn only while the GPU has fewer than a few frames still to finish, and in view always', (): void => {
+  assert.equal(frameGate({ ...PLAYING, blocking: true, gpuQueued: FRAME_GATE.queuedUnderVeil - 1 }).draw, true);
+  assert.equal(frameGate({ ...PLAYING, blocking: true, gpuQueued: FRAME_GATE.queuedUnderVeil }).draw, false);
+  assert.equal(frameGate({ ...PLAYING, gpuQueued: FRAME_GATE.queuedUnderVeil * 4 }).draw, true);
 });

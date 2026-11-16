@@ -18,6 +18,8 @@ import { aimCutaway } from './prop-cutaway.ts';
 import { ditheredOutputPass } from './output-dither.ts';
 import { GPU } from '../gpu-release.ts';
 import { installDarkLightSkip } from './dark-lights.ts';
+import type { GpuQueue } from './gpu-fence.ts';
+import { createGpuQueue } from './gpu-fence.ts';
 
 export const STAGE = {
   exposure: 1.22,
@@ -109,6 +111,7 @@ export interface Stage {
   applyGraphics(preset: GraphicsPreset): void;
   resize(): void;
   render(): void;
+  gpuQueued(): number;
   applyQuality(tier: QualityTier): void;
   compileAsync(target: Object3D, viewer: Camera): Promise<Object3D>;
   drawOnce(target: Object3D, viewer: Camera): void;
@@ -128,6 +131,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   renderer.shadowMap.enabled = tier.shadows;
   renderer.shadowMap.type = PCFShadowMap;
 
+  const context: WebGLRenderingContext | WebGL2RenderingContext = renderer.getContext();
+  const gpu: GpuQueue = createGpuQueue(context instanceof WebGL2RenderingContext ? context : null);
   const scene: Scene = new Scene();
   const background: Color = new Color(0x000000);
   const flashBackground: Color = new Color(STAGE.flashBackground);
@@ -335,6 +340,10 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       drawnAt = now;
       if (composer === null) renderer.render(scene, camera);
       else composer.render();
+      gpu.mark();
+    },
+    gpuQueued(): number {
+      return gpu.waiting();
     },
     compileAsync(target: Object3D, viewer: Camera): Promise<Object3D> {
       const previous: WebGLRenderTarget | null = renderer.getRenderTarget();
