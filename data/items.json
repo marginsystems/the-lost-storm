@@ -3640,6 +3640,135 @@
       }
     },
     {
+      "id": "nightjar_gloves",
+      "name": "Nightjar Gloves",
+      "slot": "hands",
+      "material": "leather",
+      "icon": "gloves",
+      "dropWeight": 1,
+      "minLevel": 6,
+      "visual": null,
+      "wear": [
+        "tanned_gloves"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 6
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.04
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.02
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "keep": "left",
+        "scale": 1.8,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "quietshot",
+        "text": "For 2 s after a Dodge Roll, every Quarrel looses two more bolts in a fan beside it.",
+        "triggers": [
+          {
+            "on": "use",
+            "skill": {
+              "group": "roll"
+            },
+            "effect": {
+              "type": "empower",
+              "skillMods": [
+                {
+                  "skill": "quarrel",
+                  "field": "projectiles",
+                  "value": 2
+                },
+                {
+                  "skill": "quarrel",
+                  "field": "spread",
+                  "value": 14
+                }
+              ],
+              "duration": 2,
+              "look": {
+                "color": "#7a5cff",
+                "shade": 0.24
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "longsight_coat",
+      "name": "Longsight Coat",
+      "slot": "chest",
+      "material": "leather",
+      "icon": "armour",
+      "dropWeight": 1,
+      "minLevel": 6,
+      "visual": null,
+      "wear": [
+        "traveller_coat"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 16
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 16
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.15
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "flatten": 0.35,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      },
+      "power": {
+        "family": "quietshot",
+        "text": "Quarrels fly 40% further and hit 25% harder, and every shot throws what it strikes three times as far back.",
+        "skillMods": [
+          {
+            "skill": "quarrel",
+            "field": "rangePercent",
+            "value": 0.4
+          },
+          {
+            "skill": "quarrel",
+            "field": "damagePercent",
+            "value": 0.25
+          },
+          {
+            "group": "shot",
+            "field": "knockbackPercent",
+            "value": 2
+          }
+        ]
+      }
+    },
+    {
       "id": "groundbreaker",
       "name": "Groundbreaker",
       "slot": "weapon",

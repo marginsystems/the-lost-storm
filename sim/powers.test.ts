@@ -478,3 +478,33 @@ void test('the Anvilback Hauberk slams a Thunderclap when a Heaving Cleave is le
   firePowers(world, { on: 'hit', skill: skill('cleave'), target, at: target.pos });
   assert.ok(Math.abs(must(buffMods(world.player.powers)[0], 'armour').value - 60) < 1e-9);
 });
+
+void test('the Nightjar Gloves fan every Quarrel into three bolts for two seconds after a roll, and nothing else sets them off', (): void => {
+  const world: World = hero();
+  wear(world, 'nightjar_gloves');
+  const quarrel: SkillDef = skill('quarrel');
+  const fanned = (): SkillDef => resolveSkill(content, quarrel, [], heldPowers(content, world.player.equipped, world.player.powers));
+  assert.ok(!firePowers(world, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos }));
+  assert.equal(fanned(), quarrel);
+  assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
+  const fan: SkillDef = fanned();
+  assert.ok(fan.delivery.type === 'projectile' && quarrel.delivery.type === 'projectile');
+  assert.equal(fan.delivery.count, quarrel.delivery.count + 2);
+  assert.equal(fan.delivery.spreadDegrees, quarrel.delivery.spreadDegrees + 14);
+  assert.equal(resolveSkill(content, skill('storm_bolt'), [], heldPowers(content, world.player.equipped, world.player.powers)), skill('storm_bolt'));
+  stepPowerState(world.player.powers, 2.1);
+  assert.equal(fanned(), quarrel);
+});
+
+void test('the Longsight Coat sends Quarrels further and harder, and every shot throws back three times as far', (): void => {
+  const coat = wornPowers(content, { ...hero().player.equipped, chest: item('longsight_coat', 60) });
+  const quarrel: SkillDef = skill('quarrel');
+  const far: SkillDef = resolveSkill(content, quarrel, [], coat);
+  assert.ok(far.delivery.type === 'projectile' && quarrel.delivery.type === 'projectile');
+  assert.ok(Math.abs(far.delivery.range - quarrel.delivery.range * 1.4) < 1e-9);
+  assert.ok(Math.abs(far.damage.weaponPercent - quarrel.damage.weaponPercent * 1.25) < 1e-9);
+  assert.ok(Math.abs(far.knockback - quarrel.knockback * 3) < 1e-9);
+  const wave: SkillDef = skill('ghost_wave');
+  assert.ok(Math.abs(resolveSkill(content, wave, [], coat).knockback - wave.knockback * 3) < 1e-9);
+  assert.equal(resolveSkill(content, skill('cleave'), [], coat), skill('cleave'));
+});

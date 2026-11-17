@@ -63,6 +63,7 @@ interface DeliveryScale {
   readonly pierce: number;
   readonly chains: number;
   readonly falloff: number;
+  readonly spread: number;
 }
 
 function scaledDelivery(delivery: Delivery, scale: DeliveryScale): Delivery {
@@ -79,7 +80,7 @@ function scaledDelivery(delivery: Delivery, scale: DeliveryScale): Delivery {
       scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range };
       break;
     case 'projectile':
-      scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range, count: delivery.count + scale.projectiles, pierce: delivery.pierce + scale.pierce };
+      scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range, count: delivery.count + scale.projectiles, pierce: delivery.pierce + scale.pierce, spreadDegrees: Math.max(0, delivery.spreadDegrees + scale.spread) };
       break;
     case 'dash':
       scaled = { ...delivery, distance: delivery.distance * range };
@@ -206,6 +207,7 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
     pierce: sumSkillMod(mods, 'pierce'),
     chains: sumSkillMod(mods, 'chains'),
     falloff: sumSkillMod(mods, 'chainFalloff'),
+    spread: sumSkillMod(mods, 'spread'),
   });
   const damageScale: number = scaleOf(mods, 'damagePercent') * heldEchoScale(skill, sumSkillMod(mods, 'echo'));
   return {
