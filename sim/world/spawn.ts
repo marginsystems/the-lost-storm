@@ -55,6 +55,7 @@ export function spawnMonster(world: World, def: MonsterDef, packId: number, cent
     kind: 'monster',
     unison: { seen: false, lookUntil: 0, flinchUntil: 0 },
     recovery: { guard: 0, strain: 0, unbroken: 0, stunned: 0 },
+    leech: { at: 0, taken: 0 },
     id: world.nextId,
     def,
     level,

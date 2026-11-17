@@ -22,7 +22,7 @@ import { afterHold, afterInterrupt, holdScale, recovering, steadiness, unbroken 
 import { settleTurn, steadied } from './momentum.ts';
 import { flinchTogether } from './unison.ts';
 import { dealtScale } from './weaken.ts';
-import { mendActor } from './mend.ts';
+import { leechActor, mendActor } from './mend.ts';
 import { leechScale, stunMonster, stunned } from './stun.ts';
 import { holdLine, openScale, strike } from './count.ts';
 import type { ActionState, Actor, BrandState, BurnState, GuardOutcome, ItemInstance, MonsterState, Offence, Team, World } from './types.ts';
@@ -214,7 +214,8 @@ function mendSource(world: World, offence: Offence, target: Actor, skill: SkillD
   const source: Actor | null = findActor(world, offence.sourceId);
   if (source === null || source === target || !source.alive) return;
   const leech: number = target.kind === 'monster' ? leechScale(world.content.world.recovery, target) : 1;
-  mendActor(world, source, skill.lifeOnHit + dealt * skill.leech * leech);
+  mendActor(world, source, skill.lifeOnHit);
+  leechActor(world, source, dealt * skill.leech * leech);
 }
 
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): boolean {

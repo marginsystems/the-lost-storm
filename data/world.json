@@ -17,7 +17,8 @@
     "stunElite": 0.6,
     "stunBoss": 0.35,
     "leechElite": 0.5,
-    "leechBoss": 0.25
+    "leechBoss": 0.25,
+    "leechCap": 0.12
   },
   "scaling": {
     "lifePerLevel": 0.3,

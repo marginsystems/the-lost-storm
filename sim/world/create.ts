@@ -105,6 +105,7 @@ function freshPlayer(content: Content, save: SaveData | null, chosen: string | n
     flasks: createFlasks(content, save?.flasks ?? null),
     powers: emptyPowerState(),
     momentum: { skill: null, value: 0, quiet: 0 },
+    leech: { at: 0, taken: 0 },
   };
 }
 

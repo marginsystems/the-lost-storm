@@ -96,6 +96,7 @@ export interface ComboState {
 export type Motion = 'still' | 'stride' | 'knocked' | 'pulled' | 'dash' | 'lunge' | 'rising';
 
 export interface ActorState {
+  leech: LeechState;
   readonly id: number;
   pos: Vec2;
   facing: number;
@@ -235,6 +236,11 @@ export interface MonsterState extends ActorState {
   returning: boolean;
   unison: UnisonState;
   recovery: RecoveryState;
+}
+
+export interface LeechState {
+  at: number;
+  taken: number;
 }
 
 export interface RecoveryState {
