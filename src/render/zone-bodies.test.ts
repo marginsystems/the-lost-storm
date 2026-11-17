@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { must } from '../../test/support.ts';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content, MonsterDef, ZoneDef, ZonePack } from '../../sim/content/types.ts';
+import type { MonsterModDef } from '../../sim/content/combat-types.ts';
 import { modsNamed, withMods } from '../../sim/world/elites.ts';
 import type { ZoneBody } from './zone-bodies.ts';
 import { monsterKey, ZONE_BODIES, zoneBodies } from './zone-bodies.ts';
@@ -55,8 +56,8 @@ void test('a monster that is only ever summoned has bodies ready for as many as 
   assert.equal(spares(bodies, minion), Math.min(ZONE_BODIES.sparesCap, summon.limit));
 });
 
-void test('an elite pack member gets a body in its own colours as well as the plain one', (): void => {
-  const mods: readonly string[] = [must([...content.monsterMods.keys()][0], 'a monster mod')];
+void test('an elite pack member of another size gets a body of its own as well as the plain one', (): void => {
+  const mods: readonly string[] = [must([...content.monsterMods.values()].find((mod: MonsterModDef): boolean => mod.sizeScale !== 1), 'a modifier that changes size').id];
   const elite: MonsterDef = withMods(monster('slagback'), modsNamed(content.monsterMods, mods));
   const bodies: ReadonlyMap<string, ZoneBody> = zoneBodies(content, zoneOf([pack([{ monster: 'slagback', count: 2, mods }], true)]));
   assert.notEqual(monsterKey(elite), monsterKey(monster('slagback')));

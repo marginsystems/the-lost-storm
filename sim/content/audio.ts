@@ -9,13 +9,13 @@ import { BODY_MATERIALS, WEAPON_KINDS } from './types.ts';
 export const UI_ACTIONS = ['click', 'panel_open', 'panel_close', 'error', 'skill_point', 'equip', 'title_gone'] as const;
 export type UiAction = (typeof UI_ACTIONS)[number];
 
-export const WORLD_SOUND_EVENTS = ['hero_step', 'hero_burn', 'level_up', 'surge', 'surge_cleared', 'monster_spawn', 'player_respawn', 'flask_used', 'quest_started', 'quest_advanced', 'quest_completed', 'waypoint_unlocked', 'moment_calm', 'moment_hostile', 'moment_strike', 'moment_strike_soft', 'monster_stunned', 'wake_stir', 'wake_front', 'wake_standing', 'portal_opened', 'portal_entered', 'portal_arrived', 'portal_closed', 'portal_hum'] as const;
+export const WORLD_SOUND_EVENTS = ['hero_step', 'hero_burn', 'level_up', 'surge', 'surge_cleared', 'monster_spawn', 'player_respawn', 'flask_used', 'quest_started', 'quest_advanced', 'quest_completed', 'waypoint_unlocked', 'moment_calm', 'moment_hostile', 'moment_strike', 'moment_strike_soft', 'monster_stunned', 'wake_stir', 'wake_front', 'wake_standing', 'portal_opened', 'portal_entered', 'portal_arrived', 'portal_closed', 'portal_hum', 'item_identified'] as const;
 export type WorldSoundEvent = (typeof WORLD_SOUND_EVENTS)[number];
 
 export const LIFE_SOUND_EVENTS = ['bats_disturbed', 'bat_flyby', 'lid_opened', 'lid_closed'] as const;
 export type LifeSoundEvent = (typeof LIFE_SOUND_EVENTS)[number];
 
-const NOTICE_KEYS: Readonly<Record<NoticeReason, true>> = { wrong_weapon: true, no_mana: true, on_cooldown: true, inventory_full: true, flask_empty: true, life_full: true, mana_full: true, no_gold: true, stash_full: true, legendary_limit: true, portal_town: true, portal_boss: true };
+const NOTICE_KEYS: Readonly<Record<NoticeReason, true>> = { wrong_weapon: true, no_mana: true, on_cooldown: true, inventory_full: true, flask_empty: true, life_full: true, mana_full: true, no_gold: true, stash_full: true, legendary_limit: true, portal_town: true, portal_boss: true, run_refused: true, unidentified: true };
 const NOTICE_REASONS: readonly string[] = Object.keys(NOTICE_KEYS);
 
 export const PLAYER_KEY: string = 'player';

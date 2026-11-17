@@ -1,5 +1,19 @@
-import type { Bone, Matrix4, Object3D, Skeleton } from 'three';
-import { SkinnedMesh } from 'three';
+import type { Euler, Matrix4, Object3D, Skeleton } from 'three';
+import { Bone, SkinnedMesh } from 'three';
+
+function keepAngles(angles: Euler): void {
+  angles.setFromQuaternion = (): Euler => angles;
+}
+
+export function quietBones(root: Object3D): number {
+  let quieted: number = 0;
+  root.traverse((object: Object3D): void => {
+    if (!(object instanceof Bone)) return;
+    keepAngles(object.rotation);
+    quieted += 1;
+  });
+  return quieted;
+}
 
 export function disposeSkeletons(root: Object3D): number {
   const skeletons: Set<Skeleton> = new Set<Skeleton>();
@@ -50,4 +64,29 @@ export function shareSkeletons(root: Object3D): number {
     shared += 1;
   });
   return shared;
+}
+
+let poseTick: number = 0;
+const posedOnce: WeakSet<Skeleton> = new WeakSet<Skeleton>();
+
+export function nextPoseTick(): void {
+  poseTick += 1;
+}
+
+export function poseOncePerTick(root: Object3D): number {
+  let held: number = 0;
+  root.traverse((object: Object3D): void => {
+    if (!(object instanceof SkinnedMesh) || posedOnce.has(object.skeleton)) return;
+    const skeleton: Skeleton = object.skeleton;
+    const pose: () => void = skeleton.update.bind(skeleton);
+    let posedAt: number = poseTick - 1;
+    skeleton.update = (): void => {
+      if (posedAt === poseTick) return;
+      posedAt = poseTick;
+      pose();
+    };
+    posedOnce.add(skeleton);
+    held += 1;
+  });
+  return held;
 }

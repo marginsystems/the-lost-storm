@@ -44,6 +44,7 @@ function hudRects(root: ParentNode, selectors: readonly string[]): Rect[] {
 }
 
 export interface ObjectiveMarker {
+  readHud(dt: number): void;
   update(dt: number, time: number, world: World): void;
 }
 
@@ -65,14 +66,25 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
   let blockers: Rect[] = [];
   let hints: Rect[] = [];
   let sinceRead: number = Infinity;
+  let read: boolean = false;
   let previous: ObjectiveTarget | null = null;
   let level: number = 0;
   let corner: Vec2 | null = null;
   let sinceRoute: number = Infinity;
   let bearing: number | null = null;
   const glide: LabelGlide = createGlide();
+  const readBoxes = (): void => {
+    blockers = hudRects(document, OBJECTIVE.hudBlockers);
+    hints = hudRects(hud, OBJECTIVE.hintBoxes);
+    sinceRead = 0;
+    read = true;
+  };
 
   return {
+    readHud(dt: number): void {
+      sinceRead += dt;
+      if (previous !== null && sinceRead >= OBJECTIVE.hudReadSeconds) readBoxes();
+    },
     update(dt: number, time: number, world: World): void {
       const target: ObjectiveTarget | null = world.player.alive ? targets.objective(world) : null;
       if (!sameSpot(previous, target)) {
@@ -87,7 +99,6 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
       glow.group.visible = level > 0.01;
       glow.set(level * OBJECTIVE.glowStrength * (1 + Math.sin(time * OBJECTIVE.pulseSpeed) * OBJECTIVE.pulseDepth), time);
       let placement: ArrowPlacement | null = null;
-      sinceRead += dt;
       sinceRoute += dt;
       if (target !== null) {
         if (corner === null || sinceRoute >= OBJECTIVE.routeSeconds) {
@@ -95,11 +106,7 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
           sinceRoute = 0;
         }
         bearing = easeBearing(bearing, bearingOf(world.player.pos, corner), dt);
-        if (sinceRead >= OBJECTIVE.hudReadSeconds) {
-          blockers = hudRects(document, OBJECTIVE.hudBlockers);
-          hints = hudRects(hud, OBJECTIVE.hintBoxes);
-          sinceRead = 0;
-        }
+        if (!read) readBoxes();
         placement = arrowToward(project, world.player.pos, target.pos, bearing, heightAt(world.zone, world.player.pos.x, world.player.pos.z), { width: window.innerWidth, height: window.innerHeight, margin: OBJECTIVE.screenMargin, gap: OBJECTIVE.hudGap, blockers, hints });
       }
       arrow.classList.toggle('visible', placement !== null);

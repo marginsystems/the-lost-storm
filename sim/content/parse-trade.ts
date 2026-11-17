@@ -1,13 +1,26 @@
 import type { Fields } from './read.ts';
-import { choice, ContentError, each, fields, fraction, isFields, numeric, positive, text } from './read.ts';
-import type { ServiceKind, StockRarity, TradeDef, TradeGood, TradePricing } from './trade-types.ts';
-import { SERVICE_KINDS } from './trade-types.ts';
+import { choice, ContentError, each, fields, fraction, isFields, nonNegative, numeric, positive, text } from './read.ts';
+import type { IdentifyDef, IdentifyPrice, RemarkKind, ServiceKind, StockRarity, TradeDef, TradeGood, TradePricing } from './trade-types.ts';
+import { REMARK_KINDS, SERVICE_KINDS } from './trade-types.ts';
 import type { Content, ItemBaseDef } from './types.ts';
 
 export function service(source: Fields, where: string): ServiceKind | null {
   const value: unknown = source['service'];
   if (value === undefined || value === null) return null;
   return choice(source, 'service', SERVICE_KINDS, where);
+}
+
+export function remarks(source: Fields, where: string): Readonly<Partial<Record<RemarkKind, string>>> {
+  const value: unknown = source['remarks'];
+  if (value === undefined) return {};
+  const said: Fields = fields(value, `${where}.remarks`);
+  const kept: Partial<Record<RemarkKind, string>> = {};
+  for (const key of Object.keys(said)) {
+    const kind: RemarkKind | undefined = REMARK_KINDS.find((candidate: RemarkKind): boolean => candidate === key);
+    if (kind === undefined) throw new ContentError(`${where}.remarks.${key}`, `expected one of ${REMARK_KINDS.join(', ')}`);
+    kept[kind] = text(said, key, `${where}.remarks`);
+  }
+  return kept;
 }
 
 function count(source: Fields, key: string, where: string): number {
@@ -34,6 +47,20 @@ function pricing(value: unknown, where: string): TradePricing {
   };
 }
 
+function identifyPrice(value: unknown, where: string): IdentifyPrice {
+  const source: Fields = fields(value, where);
+  return { base: positive(source, 'base', where), perLevel: nonNegative(source, 'perLevel', where) };
+}
+
+function identify(value: unknown, where: string): IdentifyDef {
+  if (value === undefined) return { prices: {} };
+  const source: Fields = fields(value, where);
+  const listed: Fields = fields(source['prices'], `${where}.prices`);
+  const prices: Record<string, IdentifyPrice> = {};
+  for (const key of Object.keys(listed)) prices[key] = identifyPrice(listed[key], `${where}.prices.${key}`);
+  return { prices };
+}
+
 function stockRarity(value: unknown, where: string): StockRarity {
   const source: Fields = fields(value, where);
   return { rarity: text(source, 'rarity', where), weight: positive(source, 'weight', where) };
@@ -54,6 +81,7 @@ export function trade(value: unknown, where: string): TradeDef {
     price: pricing(source['price'], `${where}.price`),
     stockRarities: each(source['stockRarities'], `${where}.stockRarities`, stockRarity),
     goods: source['goods'] === undefined ? [] : each(source['goods'], `${where}.goods`, good),
+    identify: identify(source['identify'], `${where}.identify`),
   };
 }
 
@@ -70,6 +98,7 @@ export function tradeProblems(content: Content): string[] {
     else if (base.dropWeight > 0) problems.push(`trade good ${entry.base} must not drop`);
     else if (!base.unsellable) problems.push(`trade good ${entry.base} must be unsellable`);
   }
+  for (const key of Object.keys(content.trade.identify.prices)) if (!rarities.has(key)) problems.push(`trade identifies unknown rarity ${key}`);
   if (new Set<string>(content.trade.goods.map((entry: TradeGood): string => entry.base)).size !== content.trade.goods.length) problems.push('trade lists a good twice');
   return problems;
 }

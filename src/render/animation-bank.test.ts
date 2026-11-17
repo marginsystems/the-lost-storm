@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { AnimationClip, AnimationMixer, LoopOnce, Object3D, VectorKeyframeTrack } from 'three';
 import type { AnimationAction } from 'three';
 import type { AnimationBank } from './animation-bank.ts';
-import { animationBank } from './animation-bank.ts';
+import { BANK, animationBank, closeRate } from './animation-bank.ts';
 
 const FRAME = 1 / 60;
 const WALK: AnimationClip = new AnimationClip('walk', 1, [new VectorKeyframeTrack('.position', [0, 1], [0, 0, 0, 4, 0, 0])]);
@@ -82,4 +82,23 @@ void test('a dropped bank is forgotten, so a revived rig blends from where it is
   bank.drop();
   assert.equal(bank.owe(), 0);
   assert.equal(bank.take(FRAME, true), FRAME);
+});
+
+void test('a bank says it is owing only while unseen time is banked', (): void => {
+  const bank = animationBank();
+  assert.equal(bank.owing(), false);
+  bank.take(0.1, false);
+  assert.equal(bank.owing(), true);
+  bank.take(0.1, true);
+  assert.equal(bank.owing(), false);
+  bank.take(0.1, false);
+  bank.owe();
+  assert.equal(bank.owing(), false);
+});
+
+void test('a rate within the repace tolerance counts as the same rate, one beyond it does not', (): void => {
+  assert.equal(closeRate(1, 1 + 1e-9), true);
+  assert.equal(closeRate(1, 1 + BANK.repaceTolerance / 2), true);
+  assert.equal(closeRate(1, 1.5), false);
+  assert.equal(closeRate(0, 0.1), false);
 });

@@ -44,6 +44,8 @@ import type { FlaskBelt } from './flask-belt.ts';
 import flasksCss from './flasks.css?inline';
 import { createGlobes } from './globes.ts';
 import type { Globes } from './globes.ts';
+import type { TailwindMeter } from './tailwind-meter.ts';
+import { createTailwindView } from './tailwind-meter.ts';
 import hudCss from './hud.css?inline';
 import type { Hud, HudApi, HudPanel } from './hud-api.ts';
 import { itemTooltip } from './item-tooltip.ts';
@@ -86,6 +88,7 @@ import type { OverlayId } from './overlay-table.ts';
 import type { OverlayManager } from './overlays.ts';
 import { openWith, promptText, use } from './prompts.ts';
 import tradeCss from './trade.css?inline';
+import runTableCss from './run-table.css?inline';
 import auctionCss from './auction.css?inline';
 import playerTradeCss from './player-trade.css?inline';
 import type { PlayerTradeMount } from './player-trade-panel.ts';
@@ -125,7 +128,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${menuCss}\n${weaponHudCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${menuCss}\n${weaponHudCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -139,6 +142,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const tooltip: Tooltip = createTooltip(root);
   const context: HudContext = { api, tooltip, sale: createSaleOffer() };
   const globes: Globes = createGlobes(root);
+  const tailwind: TailwindMeter = createTailwindView(globes.group('life'));
   const flaskKey = (slot: number): string => {
     const action: ActionId | null = flaskAction(slot);
     return action === null ? '' : api.settings.keys().labelOf(action);
@@ -310,6 +314,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       playerTrade?.update(Date.now());
       fps.frame(performance.now(), view);
       globes.update(world.player, dt);
+      tailwind.update(world.tailwind, world.content.tailwind, dt);
       api.auction?.watch(Date.now(), world.service?.kind === 'auction');
       globes.setWaiting(waitingCue(api.auction?.waitingGold() ?? 0));
       flasks.update(world.player);
@@ -349,6 +354,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'mend':
             if (event.actorId === api.world.player.id) globes.mendLife();
+            break;
+          case 'tailwind_end':
+            tailwind.spent(event.best, event.points, event.xp, event.gold);
             break;
           case 'skill_start':
             if (event.actorId === api.world.player.id) skillBar.press(event.skill.id);
@@ -450,10 +458,13 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'moment_woke':
           case 'moment_ended':
           case 'item_found':
+          case 'item_identified':
           case 'moment_gone':
           case 'moment_chest':
           case 'chest_opened':
           case 'cache_opened':
+          case 'run_set':
+          case 'run_ended':
           case 'path_marked':
           case 'skill_impact':
           case 'hazard':
@@ -474,6 +485,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'soak':
           case 'stun':
           case 'brand':
+          case 'tailwind_rise':
           case 'surge_cleared':
           case 'portal':
           case 'player_respawn':

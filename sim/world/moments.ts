@@ -200,7 +200,7 @@ function turn(world: World, moment: MomentState, sure: boolean): number[] {
     if (entry !== undefined && def !== null) rising.push({ figure, entry, def });
   }
   const bases: MonsterDef[] = rising.map((one): MonsterDef => one.def);
-  const ranked: MonsterDef[] = world.zone.ranks && !sure && ranksHere(bases) ? rankPack(world.content, world.rng, rollRank(world.content.packRanks, world.rng, monsterLevel(world)), bases) : bases;
+  const ranked: MonsterDef[] = world.zone.ranks && !sure && ranksHere(bases) ? rankPack(world.content, world.rng, rollRank(world.content.packRanks, world.rng, monsterLevel(world)), bases, monsterLevel(world)) : bases;
   const reach: Uint8Array = reachFrom(routedGrid(world.grid), world.player.pos);
   rising.forEach(({ figure, entry, def: base }, index: number): void => {
     const def: MonsterDef = ranked[index] ?? base;

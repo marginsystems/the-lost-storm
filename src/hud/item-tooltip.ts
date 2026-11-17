@@ -1,9 +1,10 @@
 import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, ItemUse, RarityDef, WeaponGroup, ZoneDef } from '../../sim/content/types.ts';
+import { isUnidentified } from '../../sim/identify.ts';
 import { readItem, readingLines } from '../../sim/item-reading.ts';
 import type { Headline, ItemReading, ReadingRow } from '../../sim/item-reading.ts';
 import { itemVerdict, verdictNote, verdictParts } from '../../sim/item-verdict.ts';
 import type { Verdict, VerdictKind } from '../../sim/item-verdict.ts';
-import { baseOf, itemName, rarityOf, slotOf } from '../../sim/items.ts';
+import { baseOf, itemName, rarityOf, SLOT_NAMES, slotOf } from '../../sim/items.ts';
 import { familyReading } from '../../sim/powers.ts';
 import type { FamilyPiece, FamilyReading } from '../../sim/powers.ts';
 import { countOf } from '../../sim/stacks.ts';
@@ -35,16 +36,10 @@ export function threatFor(content: Content, visited: readonly string[], zone: Zo
   return threat;
 }
 
-export const TOOLTIP_WORDS: { readonly unverified: string } = { unverified: 'Unverified' };
-
-const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = {
-  weapon: 'Weapon',
-  head: 'Headgear',
-  chest: 'Body Armour',
-  hands: 'Gloves',
-  legs: 'Leggings',
-  feet: 'Boots',
-  charm: 'Charm',
+export const TOOLTIP_WORDS: { readonly unverified: string; readonly unidentified: string; readonly unread: string } = {
+  unverified: 'Unverified',
+  unidentified: 'Unidentified',
+  unread: 'Its lines are hidden until the Appraiser in the Hideout reads it.',
 };
 
 const MATERIAL_NAMES: Readonly<Record<ArmourMaterial, string>> = {
@@ -134,6 +129,13 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   label('tip-sub', `Item level ${item.level}`, heading);
   if (base !== null && base.stack > 1) label('tip-sub', heldText(countOf(item), base.stack), heading);
   if (api.unverified(item)) label('tip-sub tip-unverified', TOOLTIP_WORDS.unverified, heading);
+  if (isUnidentified(item)) {
+    label('tip-sub tip-unidentified', TOOLTIP_WORDS.unidentified, heading);
+    el('div', 'tip-sep', root);
+    label('tip-line unread', TOOLTIP_WORDS.unread, root);
+    if (hint !== null) label('tip-hint', hint, root);
+    return root;
+  }
   el('div', 'tip-sep', root);
   const weaponFamily: WeaponGroup | null = baseFamily(content, base);
   if (weaponFamily !== null) familyRow(weaponFamily, 'tip-weapon-family', familyLine(content, weaponFamily), root);
@@ -154,7 +156,7 @@ export function itemTooltip(api: HudApi, item: ItemInstance, equipped: ItemInsta
   const pair: HTMLDivElement = el('div', 'tip-pair', null);
   const worn: boolean = Object.values(api.world.player.equipped).some((held: ItemInstance | null): boolean => held !== null && held.uid === item.uid);
   pair.append(itemCard(api, item, equipped, !worn, hint, 'tip'));
-  if (equipped !== null) {
+  if (equipped !== null && !isUnidentified(item)) {
     const side: HTMLElement = itemCard(api, equipped, null, false, null, 'tip tip-equipped');
     label('tip-sub', 'Equipped', side);
     pair.append(side);

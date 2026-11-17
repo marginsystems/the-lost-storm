@@ -47,6 +47,8 @@
     {"prop": "cask", "x": 15.0, "z": 18.0, "y": 0, "rotationDegrees": 80},
     {"prop": "bucket", "x": 17.9, "z": 18.0, "y": 0, "rotationDegrees": 0},
     {"prop": "table_long", "x": 33.4, "z": 26.6, "y": 0, "rotationDegrees": 90},
+    {"prop": "descent_table", "x": 33.5, "z": 26.2, "y": 0.88, "rotationDegrees": 30, "when": [{"type": "visited", "zone": "under_hall"}]},
+    {"prop": "lantern", "x": 33.3, "z": 27.7, "y": 0.88, "rotationDegrees": 0, "when": [{"type": "visited", "zone": "under_hall"}]},
     {"prop": "pail", "x": 29.4, "z": 27.6, "y": 0, "rotationDegrees": 0},
     {"prop": "basket", "x": 32.6, "z": 30.2, "y": 0, "rotationDegrees": 200},
     {"prop": "campfire_wide", "x": 24.0, "z": 20.0, "y": 0, "rotationDegrees": 0},
@@ -66,12 +68,14 @@
   ],
   "checkpoints": [],
   "waypoint": {"x": 24, "z": 14.5, "radius": 1.8},
+  "markerSurfaces": {"stone": "hall_stone"},
   "portalSpot": {"x": 21, "z": 17.5},
   "npcs": [
     {"npc": "warden_trader", "x": 29.5, "z": 15, "facingDegrees": 220},
     {"npc": "warden_guide", "x": 18.5, "z": 21, "facingDegrees": 260},
     {"npc": "warden_lookout", "x": 31, "z": 23, "facingDegrees": 250},
-    {"npc": "warden_auctioneer", "x": 19.5, "z": 14.5, "facingDegrees": 120}
+    {"npc": "warden_auctioneer", "x": 19.5, "z": 14.5, "facingDegrees": 120},
+    {"npc": "warden_appraiser", "x": 24, "z": 9.8, "facingDegrees": 0}
   ],
   "ambience": {"background": "#0a0e16", "abyss": "#05070b", "fogNear": 26, "fogFar": 92, "skyColor": "#5a6f94", "groundColor": "#344057", "skyIntensity": 6.8, "keyColor": "#b9cbe8", "keyIntensity": 4.8},
   "weather": {"lightning": {"first": 3, "min": 7, "max": 14}, "rain": 0, "wet": 0.35, "mistWall": null}

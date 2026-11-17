@@ -1,3 +1,4 @@
+import { endTailwind } from './tailwind.ts';
 import { ContentError } from '../content/read.ts';
 import type { Content, ZoneCheckpoint, ZoneDef, ZoneExit, ZonePoint } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -16,6 +17,7 @@ import { clearMoments, startMoments } from './moments.ts';
 import { arriveWith } from './npc-walk.ts';
 import { leavingWith } from './scene.ts';
 import { parkZone, restoreKept } from './portal-keep.ts';
+import { settleRunZone } from './run-state.ts';
 
 export function startZone(content: Content): ZoneDef {
   const zone: ZoneDef | undefined = content.zones.get(content.world.start);
@@ -75,7 +77,8 @@ export function placePlayer(world: World): void {
   player.moving = false;
 }
 
-export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): void {
+export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, keepRun: boolean = false): void {
+  endTailwind(world, 'left');
   parkZone(world);
   closeDialogue(world, false);
   world.scene = null;
@@ -96,6 +99,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   world.zone = zone;
   world.grid = buildNavGrid(zone, world.content.props, world.content.surfaces, world.content.player.radius);
   world.respawn = respawn;
+  settleRunZone(world, keepRun);
   world.shift = { x: 0, z: 0 };
   const arrival: VoidArrival = world.visited.includes(zone.id) ? 'return' : 'first';
   if (arrival === 'first') world.visited.push(zone.id);

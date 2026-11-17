@@ -4,7 +4,8 @@ import { Box3, Vector2 } from 'three';
 import type { Vector3 } from 'three';
 import type { ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
-import { exitUnder } from '../sim/world/exits.ts';
+import { exitShown, exitUnder } from '../sim/world/exits.ts';
+import type { PlaceRef } from '../sim/content/markers.ts';
 import { aimedItem } from '../sim/world/finds.ts';
 import { readyToRepeat } from '../sim/world/skills.ts';
 import { stationNear } from '../sim/world/trade.ts';
@@ -57,7 +58,9 @@ export interface InputHooks {
   boundsOf(actorId: number, out: Box3Type): boolean;
   labelHover(): number | null;
   clickMarker(x: number, z: number, hostile: boolean): void;
-  aimExit(exit: string | null): void;
+  aimPlace(place: PlaceRef | null): void;
+  placeAt(pointer: Vector2): PlaceRef | null;
+  usePlace(place: PlaceRef): void;
   aimItem(groundId: number | null): void;
   playerAt(x: number, y: number): string | null;
   hoverPlayer(id: string | null): void;
@@ -301,6 +304,13 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     return exitUnder(world, ground);
   };
 
+  const placeHere = (): PlaceRef | null => (pointerInside && !hud.isPointerOverUi() ? hooks.placeAt(pointer) : null);
+
+  const placedExit = (place: PlaceRef | null): ZoneExit | null => {
+    if (place === null || place.type !== 'exit') return null;
+    return world.zone.exits.find((exit: ZoneExit): boolean => exit.id === place.exit && exitShown(world, exit)) ?? null;
+  };
+
   const itemAt = (ground: Vec2 | null): GroundItem | null => {
     if (ground === null || !pointerInside || hud.isPointerOverUi()) return null;
     return aimedItem(world, ground);
@@ -392,12 +402,13 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       look = mouse && pointerInside ? ground : null;
       const item: GroundItem | null = target === null && person === null && other === null ? itemAt(ground) : null;
       hooks.aimItem(item?.id ?? null);
-      const exit: ZoneExit | null = target === null && person === null && other === null && item === null ? exitAt(ground) : null;
-      hooks.aimExit(exit?.id ?? null);
+      const place: PlaceRef | null = target === null && person === null && other === null && item === null ? placeHere() : null;
+      const exit: ZoneExit | null = target === null && person === null && other === null && item === null ? (placedExit(place) ?? exitAt(ground)) : null;
       const chest: MomentState | null = target === null && person === null && item === null && exit === null ? chestAt(ground) : null;
       const station: Station | Cache | null = target === null && person === null && item === null && exit === null && chest === null ? stationAt(ground) : null;
       const portal: PortalEnd | null = target === null && person === null && item === null && exit === null && chest === null && station === null ? portalAt(ground) : null;
-      const marked: boolean = target === null && person === null && item === null && exit === null && chest === null && station === null && portal === null && onWaypointMark(ground);
+      const marked: boolean = target === null && person === null && item === null && exit === null && chest === null && station === null && portal === null && (place?.type === 'waypoint' || onWaypointMark(ground));
+      hooks.aimPlace(exit !== null ? { type: 'exit', exit: exit.id } : marked ? { type: 'waypoint' } : null);
       const personPick: PersonPick = person === null ? 'none' : pointerInside ? 'body' : 'label';
       if (tapping) {
         tapping = false;
@@ -472,6 +483,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
 
       const leftFresh: boolean = fresh.has(INPUT.leftBinding);
       if (leftFresh) hud.requestMap(marked && !shift);
+      if (leftFresh && marked && !shift) hooks.usePlace({ type: 'waypoint' });
       const leftRepeats: boolean = leftFresh || (world.player.skills[leftSlot]?.press ?? null) === null;
       const leftHeld: boolean = held.has(INPUT.leftBinding) && !pressedPlayer;
       const itemHit: ItemPress = itemPress(pressedItem, { fresh: leftFresh, held: leftHeld, free: target === null && person === null && !shift, item: item?.id ?? null });
@@ -518,7 +530,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
             }
             break;
           case 'swallowed':
-            hooks.aimExit(pressedExit);
+            hooks.aimPlace(pressedExit === null ? null : { type: 'exit', exit: pressedExit });
             break;
           case 'exit': {
             if (exit === null) break;

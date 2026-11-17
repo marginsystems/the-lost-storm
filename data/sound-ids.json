@@ -101,6 +101,7 @@
   "item_drop_magic",
   "item_drop_rare",
   "item_drop_stormtouched",
+  "item_identified",
   "item_metal",
   "lava_boil",
   "lava_bubble",

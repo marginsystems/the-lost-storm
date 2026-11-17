@@ -67,6 +67,7 @@ export interface PropDef {
   readonly surfaces: Readonly<Record<string, string>>;
   readonly tint: string | null;
   readonly service: ServiceKind | null;
+  readonly label: string | null;
   readonly cache: PropCache | null;
   readonly lid: PropLid | null;
 }

@@ -60,7 +60,7 @@ void test('the owner case: looking ahead through the Act I route the rare token 
     assert.equal(verdictNote(verdict), 'Storm and frost hit hardest in the Inner Hall');
   }
   const threat: Threat = threatNear(content, ['under_hall_2'], hideout, 14);
-  assert.deepEqual(verdictParts(verdictOf(blade(14, quickToken), threat, groundedToken)), ['−4% damage', '−5% toughness']);
+  assert.deepEqual(verdictParts(verdictOf(blade(14, quickToken), threat, groundedToken)), ['−4% damage', '−4% toughness']);
   const court: Threat = mixThreat(must(threat.zones.find((entry: ThreatZone): boolean => entry.id === 'ledger_court'), 'court').mix);
   const atBoss: Verdict = verdictOf(blade(14, quickToken), court, groundedToken);
   assert.ok(atBoss.toughness > VERDICT.clear);
@@ -179,3 +179,9 @@ void test('every stat an item can roll moves damage or toughness for some build,
 function affixSize(affix: AffixDef): number {
   return affix.op === 'add' ? affix.max : 0;
 }
+
+void test('an unidentified item cannot be judged; once identified it can', (): void => {
+  const hidden: ItemInstance = { ...groundedToken, unidentified: true };
+  assert.equal(itemVerdict(content, blade(9, null), physical, hidden), null);
+  assert.notEqual(itemVerdict(content, blade(9, null), physical, groundedToken), null);
+});

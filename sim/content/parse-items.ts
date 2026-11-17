@@ -4,7 +4,7 @@ import { skillMod, statMod } from './parse-mods.ts';
 import { powerTrigger } from './parse-powers.ts';
 import type { SkillVariant } from './chart-types.ts';
 import type { ItemUse } from './item-types.ts';
-import type { AffixDef, FamilyDef, GroundLook, ItemBaseDef, ItemSlot, PowerDef, RarityDef, WeaponKind } from './types.ts';
+import type { AffixDef, DropLean, FamilyDef, GroundLook, ItemBaseDef, ItemSlot, PowerDef, RarityDef, WeaponKind } from './types.ts';
 import { ARMOUR_MATERIALS, GROUND_KEEPS, GROUND_MODELS, ITEM_SLOTS, ITEM_STATS, MOD_OPS, RARITY_MARKERS, WEAPON_KINDS } from './types.ts';
 
 function genericLook(slot: ItemSlot | null): GroundLook {
@@ -23,6 +23,24 @@ export function rarity(value: unknown, where: string): RarityDef {
     affixMax: numeric(source, 'affixMax', where),
     powers: source['powers'] === undefined ? false : flag(source, 'powers', where),
     wornLimit: source['wornLimit'] === undefined ? null : positive(source, 'wornLimit', where),
+  };
+}
+
+export function dropLean(value: unknown, where: string): DropLean {
+  const source: Fields = fields(value, where);
+  const lean: number = positive(source, 'share', where);
+  const legendary: number = positive(source, 'legendary', where);
+  if (lean < 1) throw new ContentError(`${where}.share`, 'expected 1 or more: a lean raises a share and never lowers one');
+  if (legendary < 1) throw new ContentError(`${where}.legendary`, 'expected 1 or more: a lean raises a share and never lowers one');
+  return {
+    id: text(source, 'id', where),
+    name: text(source, 'name', where),
+    zones: textList(source, 'zones', where),
+    share: lean,
+    weapons: textList(source, 'weapons', where),
+    slots: choiceList(source, 'slots', ITEM_SLOTS, where),
+    families: textList(source, 'families', where),
+    legendary,
   };
 }
 

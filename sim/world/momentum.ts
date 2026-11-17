@@ -122,14 +122,14 @@ export function aimGlide(player: PlayerState, dest: ReadonlyVec2): boolean {
   return true;
 }
 
-export function glide(grid: NavGrid, player: PlayerState, dt: number): boolean {
+export function glide(grid: NavGrid, player: PlayerState, dt: number, pace: number = 1): boolean {
   const action: ActionState | null = player.action;
   if (action === null || action.goal === null || player.root > 0 || player.tempo <= 0) return false;
   const share: number = glideSpeed(action);
   const goal: Vec2 = action.goal;
   const gap: number = distance(player.pos, goal);
   if (share <= 0 || gap <= MOMENTUM.arrive) return false;
-  const step: number = Math.min(gap, player.stats.moveSpeed * share * player.tempo * dt);
+  const step: number = Math.min(gap, player.stats.moveSpeed * pace * share * player.tempo * dt);
   const from: Vec2 = { x: player.pos.x, z: player.pos.z };
   const toward: Vec2 = { x: (goal.x - from.x) / gap, z: (goal.z - from.z) / gap };
   moveWithCollision(grid, player.pos, toward.x * step, toward.z * step);

@@ -202,5 +202,40 @@
       }
     ],
     "service": "auction"
+  },
+  {
+    "id": "warden_appraiser",
+    "name": "Warden Appraiser",
+    "title": "Appraiser",
+    "faction": "wardens",
+    "rig": "appraiser",
+    "scale": 1.0,
+    "tint": "#f2e2d0",
+    "color": "#f0c070",
+    "gear": [
+      "warden_lantern"
+    ],
+    "wear": [
+      "appraiser_robe",
+      "appraiser_skirt",
+      "plain_shoes",
+      "appraiser_hood",
+      "appraiser_charm"
+    ],
+    "talks": [
+      {
+        "id": "warden_appraiser_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "warden_appraiser_read"
+        ]
+      }
+    ],
+    "service": "identify",
+    "remarks": {
+      "no_gold": "warden_appraiser_short",
+      "good_find": "warden_appraiser_good"
+    }
   }
 ]

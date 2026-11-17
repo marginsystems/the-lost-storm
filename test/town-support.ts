@@ -6,7 +6,7 @@ function talk(id: string, once: boolean, count: number): TalkDef {
 }
 
 function person(id: string, name: string, talks: readonly TalkDef[]): NpcDef {
-  return { id, name, faction: null, title: 'Test', rig: 'human_man', scale: 1, tint: '#ffffff', color: '#c9b48a', gear: [], wear: [], talks, service: null };
+  return { id, name, faction: null, title: 'Test', rig: 'human_man', scale: 1, tint: '#ffffff', color: '#c9b48a', gear: [], wear: [], talks, service: null, remarks: {} };
 }
 
 export const KEEPER: NpcDef = person('keeper', 'Keeper', [talk('keeper_first', true, 3), talk('keeper_idle', false, 1)]);

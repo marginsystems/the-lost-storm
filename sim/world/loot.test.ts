@@ -50,6 +50,18 @@ void test('a first drop asked for at a higher rarity keeps it', (): void => {
   assert.equal(must(rollDrop(world, 1, 'rare', MONSTER), 'rare drop').rarity, 'rare');
 });
 
+void test('a floored drop is never taken for the first drop: it rolls at its floor or better and can be legendary', (): void => {
+  const rarities: Set<string> = new Set<string>();
+  for (let seed: number = 1; seed <= 100; seed += 1) {
+    const world: World = fresh(seed);
+    const item: ItemInstance = must(rollDrop(world, 20, null, MONSTER, 'rare'), 'floored drop');
+    assert.ok(rank(world.content, item.rarity) >= rank(world.content, 'rare'), item.rarity);
+    assert.equal(world.flags[world.content.player.firstDrop.flag], 'yes');
+    rarities.add(item.rarity);
+  }
+  assert.ok(rarities.has('stormtouched'), [...rarities].join(', '));
+});
+
 void test('after the first drop every roll is the ordinary one, common rarity and filled slots included', (): void => {
   const world: World = fresh(7);
   must(rollDrop(world, 4, null, MONSTER), 'first');

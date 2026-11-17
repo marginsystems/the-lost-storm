@@ -1,4 +1,5 @@
 import type { EmpowerLook, ItemSlot, SkillDef, SkillMod, XpReduction } from '../content/types.ts';
+import { isUnidentified } from '../identify.ts';
 import { isStoryItem, slotOf } from '../items.ts';
 import { applyXp, canAllocate, findNode, gapScale, heldChanges, offersChange, refundCost, refundState, respecCost, respecState, xpReduction } from '../progression.ts';
 import type { ChartChange } from '../progression.ts';
@@ -74,6 +75,10 @@ export function equipFromInventory(world: World, inventoryIndex: number): void {
   if (item === null) return;
   const slot: ItemSlot | null = slotOf(world.content, item);
   if (slot === null) return;
+  if (isUnidentified(item)) {
+    world.events.push({ type: 'notice', reason: 'unidentified' });
+    return;
+  }
   if (wouldPassLimit(world.content, player.equipped, item)) {
     world.events.push({ type: 'notice', reason: 'legendary_limit' });
     return;

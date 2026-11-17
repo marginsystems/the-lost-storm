@@ -447,6 +447,7 @@
     ]
   ],
   "zone": {
+    "markerSurfaces": {"stone": "hall_marble"},
     "kind": "wild",
     "ranks": true,
     "floors": {

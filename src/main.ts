@@ -1,4 +1,5 @@
-import type { Box3, Material } from 'three';
+import type { Box3, Material, Vector2 } from 'three';
+import { Raycaster } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForEvent, cuesForLife, uiActionForCommand } from '../sim/audio.ts';
@@ -105,6 +106,7 @@ import { startItemPictures } from './render/item-pictures-start.ts';
 import type { LootView } from './render/loot-view.ts';
 import { createLootView } from './render/loot-view.ts';
 import type { Overlays } from './render/overlays.ts';
+import { OVERLAYS } from './render/overlays.ts';
 import type { ParticleSystem } from './render/particles.ts';
 import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
@@ -116,8 +118,9 @@ import type { Sky } from './render/sky-weather.ts';
 import { createSky } from './render/sky-weather.ts';
 import type { Rainfall } from './render/rainfall.ts';
 import { createRainfall } from './render/rainfall.ts';
-import type { ZoneMarkers } from './render/zone-markers.ts';
-import { createZoneMarkers } from './render/zone-markers.ts';
+import type { PlaceMarkers } from './render/place-markers.ts';
+import { createPlaceMarkers } from './render/place-markers.ts';
+import type { PlaceRef } from '../sim/content/markers.ts';
 import { dressed, dressedProp, propDressing } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-view.ts';
@@ -193,7 +196,8 @@ async function start(): Promise<void> {
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
   const loot: LootView = await createLootView(loader, stage.scene, library);
   let zoneView: ZoneView = firstView;
-  let markers: ZoneMarkers = createZoneMarkers(stage.scene, world.zone);
+  let markers: PlaceMarkers = createPlaceMarkers(stage.scene, loader, content, world.zone, world);
+  const placeRay: Raycaster = new Raycaster();
   stage.setAmbience(world.zone.ambience);
   stage.setHeroLight(world.zone.heroLight);
   placeLine.show(world.zone.name);
@@ -264,7 +268,15 @@ async function start(): Promise<void> {
     boundsOf: (id: number, out: Box3): boolean => actors.boundsOf(id, out),
     labelHover: (): number | null => overlays.labelHover(),
     clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile),
-    aimExit: (exit: string | null): void => overlays.aimExit(exit),
+    aimPlace: (place: PlaceRef | null): void => {
+      overlays.aimExit(place === null ? null : place.type === 'exit' ? place.exit : place.type === 'waypoint' ? OVERLAYS.waypointId : null);
+      markers.aim(place);
+    },
+    placeAt: (pointer: Vector2): PlaceRef | null => {
+      placeRay.setFromCamera(pointer, stage.camera);
+      return markers.pick(placeRay.ray);
+    },
+    usePlace: (place: PlaceRef): void => markers.use(place),
     aimItem: (groundId: number | null): void => overlays.aimItem(groundId),
     pause: (): void => (playing && !transition.blocking ? pauseMenu.open(null) : undefined),
   });
@@ -284,7 +296,7 @@ async function start(): Promise<void> {
   const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(import.meta.env.VITE_SERVER_URL);
   const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore(), onScreen: (): boolean => playing && !pauseMenu.isOpen });
   const perf: PerfReports = startPerfReports({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, renderer: stage.renderer, world, touch: mobile.touch, tier: (): QualityName => mobile.quality.tier.name, graphics: (): GraphicsSettings => gameSettings.get().graphics, inPlay: (): boolean => playing && !elsewhere.replaced && !transition.blocking && !touch.lost && lobbyFlow?.active !== true });
-  const debug: DebugHooks = attachDebug({ world, scene: stage.scene, renderer: stage.renderer, audio, sounds, send });
+  const debug: DebugHooks = attachDebug({ world, scene: stage.scene, renderer: stage.renderer, audio, sounds, camera, send });
 
   let playing: boolean = false;
   let lobbyFlow: LobbyFlow | null = null;
@@ -358,7 +370,8 @@ async function start(): Promise<void> {
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name);
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
     preloadNearZones();
-    markers = createZoneMarkers(stage.scene, world.zone);
+    markers = createPlaceMarkers(stage.scene, loader, content, world.zone, world);
+    await markers.ready;
     stage.setAmbience(world.zone.ambience);
     stage.setHeroLight(world.zone.heroLight);
     applyWeather(world.zone);
@@ -406,6 +419,10 @@ async function start(): Promise<void> {
     last = now;
     let events: WorldEvent[] = [];
     const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: stage.gpuQueued() });
+    if (gate.present) {
+      overlays.readHud(dt);
+      objectiveMarker.readHud(dt);
+    }
     const collected: Command[] = gate.collect ? [...input.collect(dt), ...touch.collect(dt)] : [];
     if (gate.queue) queue.push(...collected);
     if (gate.step) {
@@ -429,6 +446,7 @@ async function start(): Promise<void> {
       transition.begin((): Promise<void> => showZone(held), veilColour(content.zones, held), (): void => hud.handleEvents(held));
     } else {
       present(events);
+      if (events.some((event: WorldEvent): boolean => event.type === 'waypoint_unlocked')) markers.use({ type: 'waypoint' });
     }
 
     if (gate.present) {
@@ -492,7 +510,7 @@ async function start(): Promise<void> {
       if (effect !== 'clear') perf.note(effect);
     },
   });
-  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], zoneView.ready).then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
+  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], Promise.all([zoneView.ready, markers.ready]).then((): void => undefined)).then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole }, loadGate);
     actors.refreshWear(world);

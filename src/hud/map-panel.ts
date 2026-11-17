@@ -4,6 +4,7 @@ import { placeState, roadState, roadWalked, shownPlaces, zoneMark } from '../../
 import type { PlaceState, RoadState, ZoneMark } from '../../sim/world/atlas.ts';
 import type { World } from '../../sim/world/types.ts';
 import { canTeleport, onWaypoint } from '../../sim/world/waypoints.ts';
+import { shapedLine } from './run-table-model.ts';
 import { drawAtlasArt } from './atlas-art.ts';
 import { smoothPath } from './atlas-geometry.ts';
 import { labelOffset, placeLabels } from './atlas-labels.ts';
@@ -211,7 +212,8 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     const state: PlaceState = placeState(world, node.zone.id);
     const known: boolean = state === 'here' || state === 'visited';
     setText(tipName, node.zone.name, false);
-    setText(tipMeta, known ? `${MAP.markNames[node.mark]} · Level ${node.zone.level}` : '', false);
+    const shaped: string | null = shapedLine(world, node.zone.id);
+    setText(tipMeta, known ? `${MAP.markNames[node.mark]} · Level ${node.zone.level}${shaped === null ? '' : ` · ${shaped}`}` : '', false);
     tipMeta.classList.toggle('empty', !known);
     let line: string = MAP.stateNames.unknown;
     if (state === 'here') line = MAP.stateNames.here;

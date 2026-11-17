@@ -204,6 +204,9 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'waypoint_unlocked':
       found = worldCues(audio, 'waypoint_unlocked', null);
       break;
+    case 'item_identified':
+      found = worldCues(audio, 'item_identified', null);
+      break;
     case 'moment_strike':
       found = worldCues(audio, event.moment.combat ? 'moment_strike' : 'moment_strike_soft', { x: event.moment.pos.x, z: event.moment.pos.z });
       break;
@@ -239,6 +242,8 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'beam':
     case 'blink':
     case 'soak':
+    case 'tailwind_rise':
+    case 'tailwind_end':
     case 'mend':
     case 'skill_unlocked':
     case 'chart_point':
@@ -256,6 +261,8 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'moment_chest':
     case 'chest_opened':
     case 'cache_opened':
+    case 'run_set':
+    case 'run_ended':
     case 'path_marked':
     case 'character_changed':
     case 'explored':
@@ -336,6 +343,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'use':
     case 'use_item':
     case 'enter_portal':
+    case 'set_out':
     case 'open':
     case 'read':
     case 'glitch':

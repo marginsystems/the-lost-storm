@@ -31,6 +31,16 @@ export function distance(a: ReadonlyVec2, b: ReadonlyVec2): number {
   return Math.hypot(a.x - b.x, a.z - b.z);
 }
 
+export function within(a: ReadonlyVec2, b: ReadonlyVec2, radius: number): boolean {
+  const dx: number = a.x - b.x;
+  const dz: number = a.z - b.z;
+  return Math.abs(dx) <= radius && Math.abs(dz) <= radius && Math.hypot(dx, dz) <= radius;
+}
+
+export function fartherThan(a: ReadonlyVec2, b: ReadonlyVec2, gap: number): boolean {
+  return Math.abs(a.x - b.x) > gap || Math.abs(a.z - b.z) > gap;
+}
+
 export function normalize(a: ReadonlyVec2, fallback: ReadonlyVec2): Vec2 {
   const size: number = length(a);
   if (size < 1e-6) return { x: fallback.x, z: fallback.z };

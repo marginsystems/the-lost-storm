@@ -13,7 +13,8 @@ export function countOf(item: ItemInstance): number {
 }
 
 export function withCount(item: ItemInstance, count: number): ItemInstance {
-  const plain: ItemInstance = { uid: item.uid, base: item.base, rarity: item.rarity, level: item.level, affixes: item.affixes, ledger: item.ledger };
+  const known: ItemInstance = { uid: item.uid, base: item.base, rarity: item.rarity, level: item.level, affixes: item.affixes, ledger: item.ledger };
+  const plain: ItemInstance = item.unidentified === true ? { ...known, unidentified: true } : known;
   return count === 1 ? plain : { ...plain, count };
 }
 

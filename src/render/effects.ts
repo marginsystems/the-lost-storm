@@ -8,7 +8,8 @@ import type { Vec2 } from '../../sim/math.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import { SKILLS } from '../../sim/world/skills.ts';
 import type { MonsterState, World, WorldEvent } from '../../sim/world/types.ts';
-import { disposeObject, glow, programKeepers, slashMesh } from './effect-shapes.ts';
+import { disposeObject, glow, neverCulled, programKeepers, rekey, showKeepers, slashMesh } from './effect-shapes.ts';
+import { lightCensus } from './light-census.ts';
 import type { Shockwave } from './shockwave.ts';
 import { createShockwave } from './shockwave.ts';
 import type { Telegraphs } from './telegraphs.ts';
@@ -72,6 +73,7 @@ export const EFFECTS = {
   flashLights: 3,
   warmFrames: 3,
   warmDepth: -30,
+  lightCheckSeconds: 0.5,
   warmScale: 0.001,
   releaseSparks: 5,
   killStop: 0.03,
@@ -121,6 +123,7 @@ export interface Effects {
   takeHitStop(): number;
   setTorches(points: readonly Vector3[]): void;
   clear(): void;
+  showKeepers(): () => void;
   readonly hurt: number;
 }
 
@@ -167,9 +170,25 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   for (const keeper of keepers) {
     keeper.position.set(0, EFFECTS.warmDepth, 0);
     keeper.scale.setScalar(EFFECTS.warmScale);
-    keeper.frustumCulled = false;
+    neverCulled(keeper);
     scene.add(keeper);
   }
+  let lit: string = lightCensus(scene);
+  let sinceLightCheck: number = 0;
+  const followLights = (dt: number): void => {
+    sinceLightCheck += dt;
+    if (sinceLightCheck < EFFECTS.lightCheckSeconds) return;
+    sinceLightCheck = 0;
+    const now: string = lightCensus(scene);
+    if (now === lit) return;
+    lit = now;
+    warmFrames = EFFECTS.warmFrames;
+    warming = keepers;
+    for (const keeper of keepers) {
+      rekey(keeper);
+      keeper.visible = true;
+    }
+  };
 
   const colorOf = (hex: string): Color => {
     const cached: Color | undefined = colors.get(hex);
@@ -528,6 +547,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'beam':
           case 'blink':
           case 'brand':
+          case 'tailwind_rise':
+          case 'tailwind_end':
           case 'skill_unlocked':
           case 'chart_point':
           case 'xp':
@@ -545,8 +566,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'moment_woke':
           case 'moment_ended':
           case 'item_found':
+          case 'item_identified':
           case 'moment_gone':
           case 'moment_chest':
+          case 'run_set':
+          case 'run_ended':
           case 'path_marked':
           case 'character_changed':
           case 'zone_changed':
@@ -583,6 +607,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       fires.clear();
       telegraphs.clear();
     },
+    showKeepers(): () => void {
+      lit = lightCensus(scene);
+      return showKeepers(keepers);
+    },
     update(dt: number, world: World): void {
       dashTrails.update(dt, world);
       waves.update(dt);
@@ -600,6 +628,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       }
       kit.update(dt);
       shots.update(dt, world);
+      followLights(dt);
       if (warmFrames > 0) warmFrames -= 1;
       if (warmFrames === 0 && warming.length > 0) {
         for (const keeper of warming) if (!awaitsDecalDraw(keeper)) keeper.visible = false;

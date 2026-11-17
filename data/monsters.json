@@ -243,7 +243,7 @@
       },
       "drop": {
         "items": 1,
-        "rarity": "rare",
+        "floor": "rare",
         "goldMin": 30,
         "goldMax": 50
       },
@@ -622,7 +622,7 @@
       },
       "drop": {
         "items": 2,
-        "rarity": "rare",
+        "floor": "rare",
         "goldMin": 60,
         "goldMax": 90
       },
@@ -755,7 +755,7 @@
       },
       "drop": {
         "items": 1,
-        "rarity": "rare",
+        "floor": "rare",
         "goldMin": 30,
         "goldMax": 50
       },
@@ -769,9 +769,15 @@
   {"id": "first_thrower", "name": "Echo", "rig": "unfinished_thrower", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 1.0, "radius": 0.5, "life": 110, "damageMin": 5, "damageMax": 6, "moveSpeed": 4.0, "xp": 11, "aggroRadius": 10, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4}, "skill": "first_stone", "loot": {"goldChance": 0.65, "goldMin": 3, "goldMax": 9, "itemChance": 0.2}, "color": "#d08a5a", "tint": "#f2e4d6", "gear": ["scrap_javelin"], "wear": ["stolen_jerkin", "faded_trousers", "torn_hood", "cast_off_boots"], "poise": {"knockback": 0.6, "stagger": 0}},
   {"id": "wolf", "name": "Wolf", "rig": "wolf", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.6, "life": 48, "damageMin": 6, "damageMax": 10, "moveSpeed": 6.2, "xp": 14, "aggroRadius": 11, "behaviour": {"type": "stalker", "orbitRange": 5}, "skill": "wolf_pounce", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 7, "itemChance": 0.15}, "color": "#c9b48a", "tint": "#a39a8c", "gear": [], "wear": []},
   {"id": "rat", "name": "Rat", "rig": "rat", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.4, "life": 1, "scalesLife": false, "damageMin": 2, "damageMax": 3, "moveSpeed": 4.0, "xp": 2, "aggroRadius": 12, "behaviour": {"type": "swarm", "ring": 2.2}, "skill": "rat_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
-  {"id": "bat", "name": "Bat", "rig": "bat", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.35, "life": 1, "scalesLife": false, "damageMin": 2, "damageMax": 3, "moveSpeed": 6.0, "xp": 3, "aggroRadius": 13, "behaviour": {"type": "swarm", "ring": 2.6}, "skill": "bat_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
+  {"id": "bat", "name": "Bat", "rig": "bat", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.35, "life": 1, "scalesLife": false, "damageMin": 2, "damageMax": 3, "moveSpeed": 7.2, "xp": 3, "aggroRadius": 11, "behaviour": {"type": "swarm", "ring": 3.8}, "skill": "bat_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
   {"id": "spider", "name": "Spider", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.0, "radius": 0.8, "life": 60, "damageMin": 9, "damageMax": 14, "moveSpeed": 1.9, "xp": 18, "aggroRadius": 11, "behaviour": {"type": "ambush", "spring": 4.5}, "skill": "spider_leap", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.16}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
-  {"id": "crawler", "name": "Crawler", "rig": "crawler", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.0, "radius": 0.7, "life": 80, "damageMin": 10, "damageMax": 15, "moveSpeed": 0.7, "xp": 20, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "crawler_lunge", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
+  {"id": "weaver", "name": "Weaver", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 0.68, "radius": 0.6, "life": 40, "damageMin": 6, "damageMax": 9, "moveSpeed": 1.35, "xp": 17, "aggroRadius": 13, "behaviour": {"type": "ranged", "preferredRange": 9, "retreatRange": 4, "lead": 0.6}, "skill": "weaver_web", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.16}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": []},
+  {"id": "spiderling", "name": "Spiderling", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 0.5, "radius": 0.4, "life": 9, "damageMin": 3, "damageMax": 5, "moveSpeed": 1.0, "xp": 4, "aggroRadius": 12, "behaviour": {"type": "swarm", "ring": 1.8}, "skill": "spiderling_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#a39a8c", "gear": [], "wear": []},
+  {"id": "broodmother", "name": "Broodmother", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.85, "radius": 1.3, "life": 200, "damageMin": 10, "damageMax": 15, "moveSpeed": 1.5, "xp": 60, "aggroRadius": 12, "behaviour": {"type": "chaser"}, "skill": "brood_crash", "loot": {"goldChance": 0.85, "goldMin": 8, "goldMax": 24, "itemChance": 0.5}, "color": "#c9b48a", "tint": "#8a7d6c", "gear": [], "wear": [], "summon": {"monster": "spiderling", "count": 2, "cooldown": 9, "limit": 4}, "poise": {"knockback": 0.3, "stagger": 0.4, "resolve": 3}},
+  {"id": "crawler", "name": "Crawler", "rig": "crawler", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.0, "radius": 0.7, "life": 80, "damageMin": 10, "damageMax": 15, "moveSpeed": 0.7, "xp": 20, "aggroRadius": 11, "behaviour": {"type": "chaser"}, "skill": "crawler_lunge", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": [], "dormant": {"noiseRadius": 6}},
+  {"id": "silt_ooze", "name": "Silt Ooze", "rig": "silt_ooze", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.6, "life": 70, "damageMin": 8, "damageMax": 12, "moveSpeed": 1.1, "xp": 18, "aggroRadius": 11, "behaviour": {"type": "chaser"}, "skill": "silt_smother", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": [], "poise": {"knockback": 0.6, "stagger": 0.8, "resolve": 1}},
+  {"id": "spined_ooze", "name": "Spined Ooze", "rig": "spined_ooze", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.65, "life": 50, "damageMin": 6, "damageMax": 9, "moveSpeed": 0.9, "xp": 20, "aggroRadius": 13, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4, "lead": 0.4}, "skill": "spine_volley", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
+  {"id": "sporecap", "name": "Sporecap", "rig": "sporecap", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.55, "life": 45, "damageMin": 7, "damageMax": 11, "moveSpeed": 1.0, "xp": 16, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "sporecap_bite", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.16}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": [], "dormant": {"noiseRadius": 5}, "deathSkill": "spore_burst"},
   {"id": "unfinished_crier", "name": "Echo", "rig": "unfinished_taker", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 0.95, "radius": 0.5, "life": 38, "damageMin": 5, "damageMax": 8, "moveSpeed": 5.6, "xp": 15, "aggroRadius": 12, "behaviour": {"type": "chaser"}, "skill": "taker_snatch", "poise": {"knockback": 0.3, "stagger": 0.3}, "alarm": {"reach": 36, "cry": 3}, "loot": {"goldChance": 0.55, "goldMin": 3, "goldMax": 8, "itemChance": 0.2}, "color": "#d08a5a", "tint": "#e6d8c8", "gear": [], "wear": ["torn_hood", "odd_breeches", "cast_off_boots"]},
   {"id": "cinder_hound", "name": "Cinder Hound", "rig": "wolf", "bodyMaterial": "hide", "faction": "cinders", "scale": 0.95, "radius": 0.6, "life": 44, "damageMin": 6, "damageMax": 9, "moveSpeed": 6.6, "xp": 15, "aggroRadius": 12, "behaviour": {"type": "stalker", "orbitRange": 5.5}, "skill": "cinder_pounce", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.15}, "color": "#ff6a1c", "tint": "#7a645a", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.0, "rim": 0.25}},
   {"id": "cinder_alpha", "name": "Cinder Alpha", "rig": "wolf", "bodyMaterial": "hide", "faction": "cinders", "scale": 1.4, "radius": 0.85, "life": 170, "damageMin": 9, "damageMax": 14, "moveSpeed": 6.0, "xp": 60, "aggroRadius": 14, "behaviour": {"type": "stalker", "orbitRange": 6.5}, "skill": "alpha_pounce", "loot": {"goldChance": 0.9, "goldMin": 10, "goldMax": 30, "itemChance": 0.6}, "color": "#ff6a1c", "tint": "#5e4a40", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.4, "rim": 0.3}, "summon": {"monster": "cinder_hound", "count": 2, "cooldown": 9, "limit": 3}, "poise": {"knockback": 0.4, "stagger": 0.4, "resolve": 3}},
@@ -880,7 +886,7 @@
       },
       "drop": {
         "items": 2,
-        "rarity": "rare",
+        "floor": "rare",
         "goldMin": 120,
         "goldMax": 180
       },

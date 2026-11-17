@@ -154,6 +154,7 @@
   {"id": "sunken_cart", "model": "models/world/sunken_cart.glb", "scale": 1, "blockRadius": 1, "light": null, "surfaces": {"wood": "planks", "iron": "iron"}},
   {"id": "table_broken", "model": "models/world/table_broken.glb", "scale": 1, "blockRadius": 1.3, "light": null, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
   {"id": "table_long", "model": "models/props/table.glb", "scale": 1.6, "blockRadius": 1.3, "light": null, "surfaces": {}},
+  {"id": "descent_table", "model": "models/world/candles.glb", "scale": 1.2, "blockRadius": 0, "light": {"color": "#ffb060", "intensity": 10, "distance": 9, "height": 0.5}, "surfaces": {"iron": "iron", "wax": "wax"}, "service": "descent", "label": "Descent Table"},
   {"id": "torch", "model": "models/world/torch.glb", "scale": 1, "blockRadius": 0, "light": {"color": "#ffb060", "intensity": 30, "distance": 17, "height": 0.6}, "surfaces": {"wood": "planks", "iron": "iron", "stone": "castle_wall"}},
   {"id": "tree_dead_large", "model": "models/world/dead_tree_large.glb", "scale": 1, "blockRadius": 0.7, "light": null, "surfaces": {"bark": "bark"}},
   {"id": "tree_dead_medium", "model": "models/world/dead_tree_medium.glb", "scale": 1, "blockRadius": 0.5, "light": null, "surfaces": {"bark": "bark"}},

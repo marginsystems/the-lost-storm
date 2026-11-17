@@ -1,20 +1,20 @@
 import { ITEM_SLOTS } from '../content/types.ts';
+import { isUnidentified } from '../identify.ts';
 import { isStoryItem } from '../items.ts';
 import { heroCanWear } from '../save-retire.ts';
 import { refreshPlayer } from './character.ts';
 import { dropOnGround, removeGround } from './ground.ts';
 import type { LedgerItem, PurseCommand, PurseEntry } from './ledger.ts';
 import { sellPrice } from './trade.ts';
+import type { ItemPlace } from './service-types.ts';
 import type { GroundItem, ItemInstance, VendorStock, World } from './types.ts';
-
-export type ItemPlace = 'bag' | 'stash';
 
 export interface ItemSpot {
   readonly place: ItemPlace;
   readonly index: number;
 }
 
-export type ListRefusal = 'empty' | 'unverified' | 'story';
+export type ListRefusal = 'empty' | 'unverified' | 'story' | 'unidentified';
 
 export type Listable = { readonly kind: 'ok'; readonly ledger: string; readonly item: ItemInstance } | { readonly kind: 'refused'; readonly reason: ListRefusal };
 
@@ -30,6 +30,7 @@ export function listable(world: World, spot: ItemSpot): Listable {
   const item: ItemInstance | null = itemAt(world, spot);
   if (item === null) return { kind: 'refused', reason: 'empty' };
   if (isStoryItem(world.content, item)) return { kind: 'refused', reason: 'story' };
+  if (isUnidentified(item)) return { kind: 'refused', reason: 'unidentified' };
   if (item.ledger === null) return { kind: 'refused', reason: 'unverified' };
   return { kind: 'ok', ledger: item.ledger, item };
 }
@@ -97,7 +98,8 @@ function removeLedger(world: World, ledger: string): boolean {
 }
 
 function unverifiedCopy(item: ItemInstance): ItemInstance {
-  return { uid: item.uid, base: item.base, rarity: item.rarity, level: item.level, affixes: item.affixes, ledger: null };
+  const copy: ItemInstance = { uid: item.uid, base: item.base, rarity: item.rarity, level: item.level, affixes: item.affixes, ledger: null };
+  return item.unidentified === true ? { ...copy, unidentified: true } : copy;
 }
 
 function clearedIn(item: ItemInstance, ledgers: ReadonlySet<string>): ItemInstance {

@@ -92,6 +92,10 @@ function opacityOf(body: Mesh): number {
 const RUNNING = { pos: { x: 0, z: 0 }, facing: 0, motion: 'stride', gait: 1, knockTime: 0, busy: false, held: false, beat: null, deadTime: 0 } as const;
 const OPTIONS = { rise: 1, floor: 0, turnRate: 10, seen: true } as const;
 
+function pace(gait: number): ActorPose {
+  return { ...RUNNING, gait };
+}
+
 void test('a creature with no hit clip keeps its stride when struck: the flash and the squash show the hit, not a jump to idle', (): void => {
   const { view, walk } = creatureView(0, false);
   for (let frame: number = 0; frame < 10; frame += 1) view.sync(1 / 30, RUNNING, OPTIONS);
@@ -320,4 +324,61 @@ void test('a fresh body has its death and hit clips bound before its first death
   view.die();
   assert.equal(view.rig.mixer.existingAction(death), dying);
   assert.equal(dying.isRunning(), true);
+});
+
+function walkingRig(): { readonly view: ActorView; readonly bone: Object3D; readonly steps: { count: number } } {
+  const def: RigDef = must(content.rigs.get(content.player.hero.rig), 'hero rig');
+  const head: string = must(def.bodyParts['head']?.[0], 'head bone');
+  const template: Group = new Group();
+  const skull: Object3D = new Object3D();
+  skull.name = head;
+  template.add(skull);
+  const walk: AnimationClip = new AnimationClip('Walk', 1, [new QuaternionKeyframeTrack(`${head}.quaternion`, [0, 0.5, 1], [...tilt(0), ...tilt(1.2), ...tilt(0)])]);
+  const clips: RigClipSet = { idle: walk, run: walk, gaits: [{ clip: walk, groundSpeed: 1 }], hit: [], death: [], rise: null, actions: new Map(), unarmed: null, stances: new Map() };
+  const loaded: LoadedRig = { def: { ...def, gaits: [{ clip: 'Walk', groundSpeed: 1, stride: null }] }, template, clips, bodyParts: [], bodyMasks: new Map(), fitted: new Map() };
+  const library: CharacterLibrary = { rigs: new Map([[def.id, loaded]]), attachments: new Map(), wearables: new Map() };
+  const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: '#ffffff', glow: '#ffffff', ghost: null, feather: false }), 1, 0, ACTOR.hostileHover, (): number => 0);
+  const steps: { count: number } = { count: 0 };
+  const update = view.rig.mixer.update.bind(view.rig.mixer);
+  view.rig.mixer.update = (delta: number): typeof view.rig.mixer => {
+    steps.count += 1;
+    return update(delta);
+  };
+  return { view, bone: must(view.rig.root.getObjectByName(head), 'head in the view'), steps };
+}
+
+void test('a rig walking out of view runs no mixer step at all while its clip and speed stay the same, and lands on the pose of a rig that was always seen', (): void => {
+  const always = walkingRig();
+  const unseen = walkingRig();
+  for (let frame: number = 0; frame < 10; frame += 1) {
+    always.view.sync(1 / 60, RUNNING, OPTIONS);
+    unseen.view.sync(1 / 60, RUNNING, OPTIONS);
+  }
+  const before: number = unseen.steps.count;
+  for (let frame: number = 0; frame < 40; frame += 1) {
+    const jitter: ActorPose = { ...RUNNING, gait: RUNNING.gait * (1 + (frame % 3) * 1e-9) };
+    always.view.sync(1 / 60, jitter, OPTIONS);
+    unseen.view.sync(1 / 60, jitter, { ...OPTIONS, seen: false });
+  }
+  assert.equal(unseen.steps.count, before, 'the unseen rig still stepped its mixer');
+  always.view.sync(1 / 60, RUNNING, OPTIONS);
+  unseen.view.sync(1 / 60, RUNNING, OPTIONS);
+  assert.ok(unseen.bone.quaternion.angleTo(always.bone.quaternion) < 1e-5, `the rig came into view ${String(unseen.bone.quaternion.angleTo(always.bone.quaternion))} rad off`);
+});
+
+void test('an unseen rig that changes pace by more than a twentieth pays its banked time at the old pace first', (): void => {
+  const always = walkingRig();
+  const unseen = walkingRig();
+  for (let frame: number = 0; frame < 10; frame += 1) {
+    always.view.sync(1 / 60, pace(1), OPTIONS);
+    unseen.view.sync(1 / 60, pace(1), OPTIONS);
+  }
+  for (let frame: number = 0; frame < 40; frame += 1) {
+    const gait: number = frame < 20 ? 1 : 1.5;
+    always.view.sync(1 / 60, pace(gait), OPTIONS);
+    unseen.view.sync(1 / 60, pace(gait), { ...OPTIONS, seen: false });
+  }
+  always.view.sync(1 / 60, pace(1.5), OPTIONS);
+  unseen.view.sync(1 / 60, pace(1.5), OPTIONS);
+  assert.ok(unseen.bone.quaternion.angleTo(always.bone.quaternion) < 1e-5, `the rig came into view ${String(unseen.bone.quaternion.angleTo(always.bone.quaternion))} rad off`);
 });

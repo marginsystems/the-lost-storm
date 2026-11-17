@@ -137,7 +137,12 @@
       "warden_breeches",
       "warden_boots",
       "warden_hood",
-      "warden_gloves"
+      "warden_gloves",
+      "appraiser_robe",
+      "appraiser_skirt",
+      "plain_shoes",
+      "appraiser_hood",
+      "appraiser_charm"
     ],
     "weapons": [
       "warden_staff",
@@ -194,7 +199,9 @@
     "palette": {
       "tints": [
         "#a39a8c",
-        "#b0a59a"
+        "#b0a59a",
+        "#d4ccb8",
+        "#8a7d6c"
       ],
       "glow": "#c9b48a"
     },

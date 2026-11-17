@@ -1,5 +1,8 @@
 import type { ServiceKind, StockRarity } from '../content/trade-types.ts';
-import type { Content, LineDef, PropDef, TalkDef, ZoneProp } from '../content/types.ts';
+import type { Content, LineDef, NpcDef, PropDef, TalkDef, ZoneProp } from '../content/types.ts';
+import type { RemarkKind } from '../content/trade-types.ts';
+import type { HeldUnidentified } from '../identify.ts';
+import { goodFind, heldUnidentified, identifyCost, isUnidentified, revealed, totalCost } from '../identify.ts';
 import { baseOf, generateItem, isStoryItem } from '../items.ts';
 import type { TradeGood } from '../content/trade-types.ts';
 import type { Vec2 } from '../math.ts';
@@ -8,6 +11,7 @@ import { createRng, pickWeighted } from '../rng.ts';
 import { countOf, fits, moveStack, placeIn } from '../stacks.ts';
 import { allHold } from './conditions.ts';
 import { hasNews, nextTalk, openDialogue } from './dialogue.ts';
+import type { ItemPlace } from './service-types.ts';
 import type { ItemInstance, NoticeReason, NpcState, PlayerState, TradeAction, VendorStock, World } from './types.ts';
 
 export const TRADE = {
@@ -25,7 +29,7 @@ export function itemValue(content: Content, item: ItemInstance): number {
   const price = content.trade.price;
   const rarity: number = price.rarity[item.rarity] ?? 1;
   const level: number = 1 + price.perLevel * (item.level - 1);
-  const affixes: number = 1 + price.perAffix * item.affixes.length;
+  const affixes: number = 1 + price.perAffix * (isUnidentified(item) ? 0 : item.affixes.length);
   return Math.max(1, Math.round(price.base * rarity * level * affixes));
 }
 
@@ -141,6 +145,13 @@ function pay(world: World, price: number): boolean {
   return true;
 }
 
+export function chargeGold(world: World, price: number): boolean {
+  if (!pay(world, price)) return false;
+  world.player.gold -= price;
+  changed(world);
+  return true;
+}
+
 function buy(world: World, vendor: VendorStock, index: number): void {
   const item: ItemInstance | null = vendor.stock[index] ?? null;
   if (item === null) return;
@@ -215,6 +226,59 @@ function unstash(world: World, index: number): void {
   changed(world);
 }
 
+function remark(world: World, kind: RemarkKind): void {
+  const owner: string | undefined = world.service?.owner;
+  const def: NpcDef | undefined = owner === undefined ? undefined : world.content.npcs.get(owner);
+  const lineId: string | undefined = def?.remarks[kind];
+  const line: LineDef | undefined = lineId === undefined ? undefined : world.content.lines.get(lineId);
+  if (def !== undefined && line !== undefined) world.events.push({ type: 'bark', speaker: def.id, line });
+}
+
+function short(world: World): void {
+  notice(world, 'no_gold');
+  remark(world, 'no_gold');
+}
+
+function holderOf(world: World, place: ItemPlace): (ItemInstance | null)[] {
+  return place === 'bag' ? world.player.inventory : world.stash;
+}
+
+function reveal(world: World, entry: HeldUnidentified): boolean {
+  const holder: (ItemInstance | null)[] = holderOf(world, entry.place);
+  holder[entry.index] = revealed(entry.item);
+  const good: boolean = goodFind(world.content, entry.item);
+  world.events.push({ type: 'item_identified', place: entry.place, index: entry.index, uid: entry.item.uid, good });
+  return good;
+}
+
+function identifyOne(world: World, place: ItemPlace, index: number): void {
+  const item: ItemInstance | null = holderOf(world, place)[index] ?? null;
+  if (item === null || !isUnidentified(item)) return;
+  const cost: number = identifyCost(world.content, item);
+  if (world.player.gold < cost) {
+    short(world);
+    return;
+  }
+  world.player.gold -= cost;
+  if (reveal(world, { place, index, item, cost })) remark(world, 'good_find');
+  changed(world);
+}
+
+function identifyAll(world: World): void {
+  const held: readonly HeldUnidentified[] = heldUnidentified(world);
+  if (held.length === 0) return;
+  const cost: number = totalCost(held);
+  if (world.player.gold < cost) {
+    short(world);
+    return;
+  }
+  world.player.gold -= cost;
+  let good: boolean = false;
+  for (const entry of held) if (reveal(world, entry)) good = true;
+  if (good) remark(world, 'good_find');
+  changed(world);
+}
+
 export function handleTrade(world: World, action: TradeAction): void {
   const service = world.service;
   if (action.type === 'close' || service === null || !world.player.alive) {
@@ -240,6 +304,12 @@ export function handleTrade(world: World, action: TradeAction): void {
       return;
     case 'unstash':
       if (service.kind === 'stash') unstash(world, action.index);
+      return;
+    case 'identify':
+      if (service.kind === 'identify') identifyOne(world, action.place, action.index);
+      return;
+    case 'identify_all':
+      if (service.kind === 'identify') identifyAll(world);
       return;
   }
 }

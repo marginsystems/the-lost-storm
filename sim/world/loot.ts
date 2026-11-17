@@ -32,14 +32,14 @@ function firstDrop(world: World, level: number, rarity: string | null): ItemInst
   return generateItem(content, world.rng, world.nextItemUid, level, base.id, chosen);
 }
 
-export function rollDrop(world: World, level: number, rarity: string | null, source: ItemSource): ItemInstance | null {
+export function rollDrop(world: World, level: number, rarity: string | null, source: ItemSource, floor: string | null = null): ItemInstance | null {
   const flag: string = world.content.player.firstDrop.flag;
-  const first: ItemInstance | null = world.flags[flag] === undefined ? firstDrop(world, level, rarity) : null;
+  const first: ItemInstance | null = world.flags[flag] === undefined && floor === null ? firstDrop(world, level, rarity) : null;
   if (first !== null) {
     world.nextItemUid += 1;
     world.events.push({ type: 'item_found', rarity: first.rarity });
   }
-  const item: ItemInstance | null = first ?? makeItem(world, level, null, rarity, source);
+  const item: ItemInstance | null = first ?? makeItem(world, level, null, rarity, source, world.rng, floor);
   if (item === null) return null;
   world.flags[flag] = 'yes';
   return item;

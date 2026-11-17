@@ -8,7 +8,7 @@ import type { Content, MonsterDef, RarityDef } from '../content/types.ts';
 import { createRng } from '../rng.ts';
 import type { Rng } from '../rng.ts';
 import { kill } from './combat.ts';
-import { rankChance, rankPack, rankSize, ranksHere, rollRank } from './ranks.ts';
+import { keptApart, modAvailable, rankChance, rankPack, rankSize, ranksHere, rollMods, rollRank } from './ranks.ts';
 import { bodySized } from './skills.ts';
 import type { GroundItem, MonsterState, World } from './types.ts';
 
@@ -52,26 +52,28 @@ void test('the rank roll is the same for the same seed, and over many packs land
   assert.equal(counts.get('none'), undefined);
 });
 
-void test('a magic pack shares one modifier and is tougher, deadlier and worth more', (): void => {
-  const [one, two] = rankPack(ARENA_CONTENT, createRng(3), magic, [taker, taker]);
+void test('a magic pack shares two modifiers and is tougher, deadlier and worth more, and keeps its own name', (): void => {
+  const [one, two] = rankPack(ARENA_CONTENT, createRng(3), magic, [taker, taker], 20);
   const left: MonsterDef = must(one, 'first member');
   const right: MonsterDef = must(two, 'second member');
   assert.equal(left.mods.length, magic.members.mods);
+  assert.equal(magic.members.mods, 2);
   assert.deepEqual(left.mods, right.mods);
-  const mod: MonsterModDef = must(ARENA_CONTENT.monsterMods.get(must(left.mods[0], 'shared mod')), 'shared mod def');
-  assert.ok(Math.abs(left.life - taker.life * mod.lifeScale * magic.members.life) < 1e-9);
-  assert.ok(Math.abs(left.damageMax - taker.damageMax * mod.damageScale * magic.members.damage) < 1e-9);
-  assert.equal(left.xp, taker.xp * mod.xpScale * magic.members.xp);
-  assert.equal(left.loot.itemChance, Math.min(1, taker.loot.itemChance * mod.lootScale * magic.members.itemChance));
+  const mods: MonsterModDef[] = left.mods.map((id: string): MonsterModDef => must(ARENA_CONTENT.monsterMods.get(id), id));
+  const times = (pick: (mod: MonsterModDef) => number): number => mods.reduce((product: number, mod: MonsterModDef): number => product * pick(mod), 1);
+  assert.ok(Math.abs(left.life - taker.life * times((mod: MonsterModDef): number => mod.lifeScale) * magic.members.life) < 1e-9);
+  assert.ok(Math.abs(left.damageMax - taker.damageMax * times((mod: MonsterModDef): number => mod.damageScale) * magic.members.damage) < 1e-9);
+  assert.ok(Math.abs(left.xp - taker.xp * times((mod: MonsterModDef): number => mod.xpScale) * magic.members.xp) < 1e-9);
+  assert.ok(Math.abs(left.loot.itemChance - Math.min(1, taker.loot.itemChance * times((mod: MonsterModDef): number => mod.lootScale) * magic.members.itemChance)) < 1e-9);
   const rank: MonsterRank = must(left.rank, 'magic rank');
   assert.equal(rank.id, 'magic');
   assert.equal(rank.leader, false);
-  assert.equal(left.color, magic.aura);
-  assert.ok(left.name.endsWith(taker.name) && left.name !== taker.name);
+  assert.equal(left.color, taker.color, 'a rank never repaints the monster');
+  assert.equal(left.name, taker.name);
 });
 
-void test('a rare pack has one named leader with the most modifiers, and its followers share one of them', (): void => {
-  const pack: MonsterDef[] = rankPack(ARENA_CONTENT, createRng(11), rare, [taker, brute, taker]);
+void test('a rare pack has one named leader with the most modifiers, and its followers share all but the leader\'s own', (): void => {
+  const pack: MonsterDef[] = rankPack(ARENA_CONTENT, createRng(11), rare, [taker, brute, taker], 20);
   const leader: MonsterDef = must(pack[1], 'the brute leads');
   const lead: RankScale = must(rare.leader, 'rare leader scale');
   const rank: MonsterRank = must(leader.rank, 'leader rank');
@@ -87,17 +89,17 @@ void test('a rare pack has one named leader with the most modifiers, and its fol
     assert.deepEqual(def.mods, leader.mods.slice(0, rare.members.mods));
   }
   assert.deepEqual(
-    rankPack(ARENA_CONTENT, createRng(11), rare, [taker, brute, taker]).map((def: MonsterDef): string => def.name),
+    rankPack(ARENA_CONTENT, createRng(11), rare, [taker, brute, taker], 20).map((def: MonsterDef): string => def.name),
     pack.map((def: MonsterDef): string => def.name),
   );
 });
 
 void test('a plain pack, a boss, an authored elite and a pack that is already ranked are left as they are', (): void => {
   const plain: PackRankDef = must(ranks.ranks[0], 'plain rank');
-  assert.deepEqual(rankPack(ARENA_CONTENT, createRng(1), plain, [taker, brute]), [taker, brute]);
+  assert.deepEqual(rankPack(ARENA_CONTENT, createRng(1), plain, [taker, brute], 20), [taker, brute]);
   assert.equal(ranksHere([taker, boss]), false);
   assert.equal(ranksHere([taker, { ...brute, mods: ['swift'] }]), false);
-  assert.equal(ranksHere(rankPack(ARENA_CONTENT, createRng(1), magic, [taker])), false);
+  assert.equal(ranksHere(rankPack(ARENA_CONTENT, createRng(1), magic, [taker], 20)), false);
   assert.equal(ranksHere([taker, brute]), true);
 });
 
@@ -130,8 +132,8 @@ void test('a rare leader drops its guaranteed items, none of them below its floo
 });
 
 void test('a ranked monster is bigger by its rank, a rare leader biggest, and its melee arc reaches as far as its body grew', (): void => {
-  const [magicOne] = rankPack(ARENA_CONTENT, createRng(3), magic, [taker]);
-  const pack: MonsterDef[] = rankPack(ARENA_CONTENT, createRng(11), rare, [taker, brute]);
+  const [magicOne] = rankPack(ARENA_CONTENT, createRng(3), magic, [taker], 20);
+  const pack: MonsterDef[] = rankPack(ARENA_CONTENT, createRng(11), rare, [taker, brute], 20);
   assert.ok(Math.abs(sized(magicOne, taker) - magic.members.size) < 1e-9);
   assert.ok(Math.abs(sized(pack[0], taker) - rare.members.size) < 1e-9);
   assert.ok(Math.abs(sized(pack[1], brute) - must(rare.leader, 'rare leader').size) < 1e-9);
@@ -154,3 +156,51 @@ function withModsSize(def: MonsterDef): number {
 function sized(def: MonsterDef | undefined, base: MonsterDef): number {
   return must(def, 'ranked').scale / (base.scale * withModsSize(must(def, 'ranked')));
 }
+
+void test('over many packs no pack ever carries two modifiers kept apart, and only a rare leader calls its kind', (): void => {
+  const rng: Rng = createRng(19);
+  const apart = ARENA_CONTENT.packRanks.apart;
+  assert.ok(apart.length > 0);
+  for (let roll: number = 0; roll < 400; roll += 1) {
+    const pack: MonsterDef[] = rankPack(ARENA_CONTENT, rng, roll % 2 === 0 ? magic : rare, [taker, brute, taker], 20);
+    for (const def of pack) {
+      for (const one of def.mods) for (const other of def.mods) assert.ok(one === other || !keptApart(apart, one, other), `${one} and ${other} together`);
+      const calls: boolean = def.mods.includes('kincalling');
+      assert.equal(calls, def.rank?.leader === true && def.rank.id === 'rare');
+    }
+  }
+});
+
+void test('a modifier roll skips what is held and what is kept apart from it, and stops when nothing fits', (): void => {
+  const swift: MonsterModDef = must(ARENA_CONTENT.monsterMods.get('swift'), 'swift');
+  for (let seed: number = 1; seed <= 40; seed += 1) {
+    const rolled: MonsterModDef[] = rollMods(ARENA_CONTENT, createRng(seed), 3, false, [swift], 20);
+    assert.equal(rolled.length, 3);
+    for (const mod of rolled) assert.ok(mod.id !== 'swift' && !keptApart(ARENA_CONTENT.packRanks.apart, 'swift', mod.id));
+  }
+  assert.equal(rollMods(ARENA_CONTENT, createRng(2), 5, true, [], 20).length, 1);
+});
+
+void test('a pack with more modifiers is worth more: experience and item chance grow with every modifier', (): void => {
+  for (const id of ARENA_CONTENT.packRanks.pool.map((entry) => entry.mod)) {
+    const mod: MonsterModDef = must(ARENA_CONTENT.monsterMods.get(id), id);
+    assert.ok(mod.xpScale > 1 && mod.lootScale > 1, `${id} pays more`);
+  }
+  const [magicOne] = rankPack(ARENA_CONTENT, createRng(5), magic, [taker], 20);
+  const [rareOne] = rankPack(ARENA_CONTENT, createRng(5), rare, [taker, taker], 20);
+  assert.ok(must(magicOne, 'magic').xp > taker.xp * magic.members.xp);
+  assert.ok(must(rareOne, 'rare').loot.itemChance > taker.loot.itemChance * rare.members.itemChance);
+});
+
+void test('before a modifier is due, no pack carries it: the early levels draw only from the milder modifiers', (): void => {
+  const late: Set<string> = new Set<string>(ARENA_CONTENT.packRanks.pool.filter((entry) => entry.from > 9).map((entry) => entry.mod));
+  assert.ok(late.has('brutal') && late.has('kincalling'));
+  for (let seed: number = 1; seed <= 60; seed += 1) {
+    for (const def of rankPack(ARENA_CONTENT, createRng(seed), seed % 2 === 0 ? magic : rare, [taker, brute, taker], 9)) {
+      for (const mod of def.mods) assert.ok(!late.has(mod), `seed ${seed}: ${mod} at level 9`);
+    }
+  }
+  assert.equal(modAvailable({ mod: 'brutal', weight: 1, leader: false, from: 14 }, false, 13), false);
+  assert.equal(modAvailable({ mod: 'brutal', weight: 1, leader: false, from: 14 }, false, 14), true);
+  assert.equal(modAvailable({ mod: 'kincalling', weight: 1, leader: true, from: 1 }, false, 20), false);
+});

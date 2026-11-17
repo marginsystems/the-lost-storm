@@ -163,7 +163,7 @@ void test('flasks fill to the top in town and on a waypoint, but not out in the 
   stepWorld(town, [], DT);
   assert.deepEqual(town.player.flasks.map((state: FlaskState): number => state.charges), content.flasks.map((def): number => def.maxCharges));
 
-  const outpost: World = settled(roadWorld(roadZone({ waypoint: { x: 21, z: 8, radius: 1.8 } })));
+  const outpost: World = settled(roadWorld(roadZone({ waypoint: { x: 21, z: 8, radius: 1.8, marker: null } })));
   const point: ZoneWaypoint = must(outpost.zone.waypoint, 'waypoint');
   flask(outpost, MANA).charges = 0;
   stepWorld(outpost, [], DT);

@@ -3,8 +3,10 @@ import type { ItemSlot } from '../content/types.ts';
 import type { ReplayCommand } from './dialogue-types.ts';
 import type { Vec2 } from '../math.ts';
 import type { PurseCommand } from './ledger.ts';
+import type { ItemPlace } from './service-types.ts';
 import type { BenchCommand, SpawnCommand } from './dev-commands.ts';
 import type { EnterPortalCommand, UseItemCommand } from './portal-types.ts';
+import type { SetOutCommand } from './run-types.ts';
 
 export interface MoveCommand {
   readonly type: 'move';
@@ -139,6 +141,8 @@ export type TradeAction =
   | { readonly type: 'buy_good'; readonly index: number }
   | { readonly type: 'stash'; readonly inventoryIndex: number }
   | { readonly type: 'unstash'; readonly index: number }
+  | { readonly type: 'identify'; readonly place: ItemPlace; readonly index: number }
+  | { readonly type: 'identify_all' }
   | { readonly type: 'close' };
 
 export interface TradeCommand {
@@ -162,4 +166,4 @@ export interface GlitchSettingCommand {
   readonly enabled: boolean;
 }
 
-export type Command = HeroCommand | StrikeCommand | SpawnCommand | BenchCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand;
+export type Command = HeroCommand | StrikeCommand | SpawnCommand | BenchCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand | SetOutCommand;

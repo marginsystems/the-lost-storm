@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must, worldIn } from '../test/support.ts';
 import type { Content, ZoneDef, ZoneVoice } from './content/types.ts';
+import { isUnidentified, veiled } from './identify.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { canAllocate } from './progression.ts';
 import { createRng } from './rng.ts';
@@ -554,4 +555,29 @@ void test('a misfiled thread tops up a bag stack with room even when every bag s
   const save: SaveData = must(readSave(content, raw), 'save');
   assert.deepEqual(threadCounts(save), [20]);
   assert.equal(save.spilled.some((item: ItemInstance): boolean => item.base === 'folded_hour'), false);
+});
+
+void test('an item from a save written before identifying counts as identified, and a hidden one stays hidden', (): void => {
+  const base: SaveData = toSave(played());
+  const old: ItemInstance = made('gale_charm', 'rare', 21);
+  const veil: ItemInstance = veiled(content, made('gale_charm', 'rare', 22));
+  const raw: unknown = JSON.parse(
+    JSON.stringify({
+      ...base,
+      inventory: [old, veil, { ...made('gale_charm', 'rare', 23), unidentified: 'yes' }, { ...made('gale_charm', 'rare', 24), unidentified: false }],
+      stash: [veil],
+      equipped: { ...base.equipped, charm: { ...made('gale_charm', 'rare', 25), unidentified: true } },
+    }),
+  );
+  const save: SaveData = must(readSave(content, raw), 'save');
+  assert.deepEqual(save.inventory[0], old);
+  assert.equal(isUnidentified(must(save.inventory[0], 'old')), false);
+  assert.equal(isUnidentified(must(save.inventory[1], 'veiled')), true);
+  assert.deepEqual(must(save.inventory[1], 'veiled').affixes, veil.affixes);
+  assert.equal(isUnidentified(must(save.inventory[2], 'malformed')), false);
+  assert.equal(isUnidentified(must(save.inventory[3], 'false')), false);
+  assert.equal(isUnidentified(must(save.stash[0], 'stashed')), true);
+  assert.equal(isUnidentified(must(save.equipped.charm, 'worn')), false);
+  const again: SaveData = must(readSave(content, JSON.parse(JSON.stringify(save))), 'again');
+  assert.deepEqual(again.inventory, save.inventory);
 });

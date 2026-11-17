@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { SpinStyle } from './spin-style.ts';
+import type { SpinClips, SpinStyle } from './spin-style.ts';
 import { lapDelta, shownTurn, SPIN_STYLE, SPIN_STYLES, spinCycle, spinLean, spinStyleFrom, turnStep } from './spin-style.ts';
 
 const LAP: number = Math.PI * 2;
 
 void test('the page option picks a spin style by number or name, and anything else gives the shipped one', (): void => {
   assert.equal(spinStyleFrom('').id, SPIN_STYLE.shipped);
+  assert.equal(SPIN_STYLE.shipped, 'twohand');
   assert.equal(spinStyleFrom('?spin=0').id, 'now');
   assert.equal(spinStyleFrom('?spin=1').id, 'upright');
   assert.equal(spinStyleFrom('?spin=2').id, 'heavy');
@@ -69,5 +70,19 @@ void test('the turn read across the sim wrapping a lap is the small step forward
       shown += moved;
       sim = next;
     }
+  }
+});
+
+void test('the page option reaches the four clip-driven looks by number, and only they play their own clips', (): void => {
+  assert.equal(spinStyleFrom('?spin=4').id, 'mocap');
+  assert.equal(spinStyleFrom('?spin=5').id, 'skate');
+  assert.equal(spinStyleFrom('?spin=6').id, 'twohand');
+  assert.equal(spinStyleFrom('?spin=7').id, 'low');
+  for (const id of ['now', 'upright', 'heavy', 'stepping'] as const) assert.equal(SPIN_STYLES[id].clips, null);
+  for (const id of ['mocap', 'skate', 'twohand', 'low'] as const) {
+    const clips: SpinClips | null = SPIN_STYLES[id].clips;
+    assert.ok(clips !== null);
+    assert.deepEqual([clips.start, clips.loop, clips.end], [`spin_${id}_in`, `spin_${id}_loop`, `spin_${id}_out`]);
+    assert.equal(spinCycle(SPIN_STYLES[id], LAP * 1.5), null);
   }
 });

@@ -111,7 +111,7 @@ function arrive(world: World, pos: Vec2): void {
 function goHome(world: World, portal: PortalState): void {
   const town: ZoneDef = townZone(world.content);
   const from: string = world.zone.id;
-  enterZone(world, town, homeRespawn(town));
+  enterZone(world, town, homeRespawn(town), true);
   const spot: Vec2 = homeSpot(town);
   arrive(world, { x: spot.x, z: spot.z + PORTAL.arriveOffset });
   world.events.push({ type: 'zone_changed', from, to: town.id });

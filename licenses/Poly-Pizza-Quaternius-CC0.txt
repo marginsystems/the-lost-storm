@@ -44,6 +44,12 @@ public/models/shore/rock_spire_tall.glb  <-  https://poly.pizza/m/XY4ej3Zg3I  ("
 public/models/shore/rock_pillar_faceted.glb  <-  https://poly.pizza/m/d2VWOdthtR  ("Rock Large")
 public/models/creatures/stegosaurus.glb  <-  https://poly.pizza/m/eFcNbOlpvl  ("Stegosaurus")
 public/models/animations/stegosaurus/*.glb  <-  https://poly.pizza/m/eFcNbOlpvl  ("Stegosaurus")
+public/models/creatures/silt_ooze.glb  <-  https://poly.pizza/m/y4kJh8EeYS  ("Green Blob", Ultimate Monsters Bundle)
+public/models/animations/silt_ooze/*.glb  <-  https://poly.pizza/m/y4kJh8EeYS  ("Green Blob", Ultimate Monsters Bundle)
+public/models/creatures/spined_ooze.glb  <-  https://poly.pizza/m/IoWG5F9WUc  ("Green Spiky Blob", Ultimate Monsters Bundle)
+public/models/animations/spined_ooze/*.glb  <-  https://poly.pizza/m/IoWG5F9WUc  ("Green Spiky Blob", Ultimate Monsters Bundle)
+public/models/creatures/sporecap.glb  <-  https://poly.pizza/m/0SZyA6MV51  ("Mushnub Evolved", Ultimate Monsters Bundle)
+public/models/animations/sporecap/*.glb  <-  https://poly.pizza/m/0SZyA6MV51  ("Mushnub Evolved", Ultimate Monsters Bundle)
 
 ----
 

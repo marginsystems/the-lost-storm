@@ -1,4 +1,5 @@
-import { generateAtLeast, generateItem } from '../items.ts';
+import { veiled } from '../identify.ts';
+import { rollItem } from '../items.ts';
 import { createRng } from '../rng.ts';
 import type { Rng } from '../rng.ts';
 import { ITEM_SLOTS } from '../content/types.ts';
@@ -78,16 +79,34 @@ function seedless(world: World, base: string | null, rarity: string | null): boo
   return def !== undefined && def.power === null && tier !== undefined && tier.affixMax === 0;
 }
 
+export function sourceZone(source: ItemSource): string | null {
+  switch (source.kind) {
+    case 'start':
+    case 'trader':
+      return null;
+    case 'monster':
+    case 'leader':
+    case 'boss':
+    case 'moment':
+    case 'find':
+    case 'cache':
+      return source.zone;
+  }
+  return null;
+}
+
 export function makeItem(world: World, level: number, base: string | null, rarity: string | null, source: ItemSource, fallback: Rng = world.rng, floor: string | null = null): ItemInstance | null {
   const ticket: LootTicket | undefined = world.ledger.tickets.shift();
   const rng: Rng = ticket === undefined ? fallback : createRng(ticket.seed);
-  const item: ItemInstance | null = floor === null || rarity !== null ? generateItem(world.content, rng, world.nextItemUid, level, base, rarity) : generateAtLeast(world.content, rng, world.nextItemUid, level, base, floor);
-  if (item === null) {
+  const rolled: ItemInstance | null = rollItem(world.content, rng, world.nextItemUid, level, { base, rarity, floor, zone: sourceZone(source) });
+  if (rolled === null) {
     if (ticket !== undefined) world.ledger.tickets.unshift(ticket);
     return null;
   }
+  const found: boolean = source.kind !== 'start' && source.kind !== 'trader';
+  const item: ItemInstance = found ? veiled(world.content, rolled) : rolled;
   world.nextItemUid += 1;
-  if (source.kind !== 'start' && source.kind !== 'trader') world.events.push({ type: 'item_found', rarity: item.rarity });
+  if (found) world.events.push({ type: 'item_found', rarity: item.rarity });
   if (ticket === undefined && seedless(world, base, rarity)) world.ledger.waiting.push({ uid: item.uid, source, level });
   if (ticket !== undefined) {
     world.ledger.spent.add(ticket.id);

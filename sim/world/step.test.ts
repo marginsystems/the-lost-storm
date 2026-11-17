@@ -1,3 +1,4 @@
+import type { TailwindTier } from '../content/tailwind-types.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
@@ -408,7 +409,8 @@ void test('a ranged monster fires a projectile from a distance', (): void => {
 });
 
 void test('killing monsters emits death, grants xp, levels up and a skill point can be spent', (): void => {
-  const world: World = fresh();
+  const still: Content = { ...content, tailwind: { ...content.tailwind, tiers: content.tailwind.tiers.map((tier: TailwindTier): TailwindTier => ({ ...tier, xp: 0 })) } };
+  const world: World = armed(worldIn(still, outpost.id, 1));
   const thralls: MonsterState[] = monstersOf(world, 'mended').slice(0, 6);
   isolate(world, ...thralls, must(monstersOf(world, 'mender')[0], 'caller'));
   thralls.forEach((thrall: MonsterState, index: number): void => {

@@ -6,6 +6,7 @@ import type { Content, PropDef, SurfaceDef } from '../../sim/content/types.ts';
 import type { ShoreState, World } from '../../sim/world/types.ts';
 import { loadModel } from './character-loader.ts';
 import { isTall, resetCutaway, setOccluders, withCutaway } from './prop-cutaway.ts';
+import { prepareTrees } from './triangle-tree.ts';
 import { lookOf, withPropLook } from './prop-surface.ts';
 import type { PropLook } from './prop-surface.ts';
 import { dressedProp, surfaceMaterial } from './surfaces.ts';
@@ -317,6 +318,7 @@ export function createShoreProps(loader: GLTFLoader, content: Content, rules: Vo
         group.add(mesh);
         if (isTall(def.height)) occluders.push(mesh);
       }
+      prepareTrees(occluders);
       if (shown) setOccluders(occluders);
     }),
   ).then((): void => undefined);

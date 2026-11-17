@@ -15,6 +15,8 @@ export function watchScrollFade(scroller: HTMLElement): ScrollFade {
     setClass(scroller, 'scrolls', fade.top || fade.bottom);
   };
   scroller.addEventListener('scroll', update, { passive: true });
-  new ResizeObserver(update).observe(scroller);
+  const watcher: ResizeObserver = new ResizeObserver(update);
+  watcher.observe(scroller);
+  for (const child of scroller.children) watcher.observe(child);
   return { update };
 }

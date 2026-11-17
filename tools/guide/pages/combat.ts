@@ -190,7 +190,7 @@ export function combatPage(data: GuideData): PageBody {
           ),
           bullets(bossDef.phases.map((phase: BossPhase, index: number): string => phaseText(data, phase, index, bossDef.phases))),
           para(
-            `Every time it falls it drops ${bossDef.drop.items} ${bossDef.drop.rarity} items and some gold. The first time, it also gives you ${percent(bossDef.firstKill?.xpShare ?? 0)} of a level.`,
+            `Every time it falls it drops ${bossDef.drop.items} items of ${bossDef.drop.floor} rarity or better and some gold. The first time, it also gives you ${percent(bossDef.firstKill?.xpShare ?? 0)} of a level.`,
             `What helps: keep moving out of the sweep, never stand still inside the slowed ground, and roll through the lines that hold you. Each ${link('/guide/builds/', 'build page')} shows how often that build won against it.`,
           ),
         ].join('\n'),

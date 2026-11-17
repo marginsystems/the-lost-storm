@@ -6,7 +6,7 @@ import { createGroundLight, GROUND_LIGHT, held } from './ground-light.ts';
 import type { ParticleSystem } from './particles.ts';
 import type { SpinMotion, WakeDrop } from './spin-motion.ts';
 import { createSpinMotion, readSpin, SPIN_MOTION, spinShown, stepSpinMotion } from './spin-motion.ts';
-import type { SpinStyle } from './spin-style.ts';
+import type { SpinClips, SpinStyle } from './spin-style.ts';
 import { lapDelta, shownTurn, spinCycle, spinLean, turnStep } from './spin-style.ts';
 import { floorUp } from './terrain-lift.ts';
 
@@ -52,6 +52,7 @@ export interface SpinPose {
   readonly lean: number;
   readonly leanAt: number;
   readonly cycle: number | null;
+  readonly clips: SpinClips | null;
 }
 
 export interface SpinView {
@@ -145,7 +146,7 @@ export function createSpinView(scene: Scene, particles: ParticleSystem | null, s
         }
         wake.light.pose(SPIN_VIEW.wakeGlow * held(t) * (SPIN_VIEW.wakeShare + (1 - SPIN_VIEW.wakeShare) * share), time);
       }
-      return { animation: motion.animation, turn, lean: spinning ? spinLean(style, share, gliding) : 0, leanAt, cycle: spinCycle(style, turn) };
+      return { animation: motion.animation, turn, lean: spinning ? spinLean(style, share, gliding) : 0, leanAt, cycle: spinCycle(style, turn), clips: style.clips };
     },
     clear(): void {
       for (const wake of wakes) wake.light.mesh.visible = false;

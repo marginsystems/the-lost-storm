@@ -132,6 +132,17 @@ export interface FamilyDef {
   readonly name: string;
 }
 
+export interface DropLean {
+  readonly id: string;
+  readonly name: string;
+  readonly zones: readonly string[];
+  readonly share: number;
+  readonly weapons: readonly string[];
+  readonly slots: readonly ItemSlot[];
+  readonly families: readonly string[];
+  readonly legendary: number;
+}
+
 export const ITEM_STATS = ['damagePercent', 'damageMax', 'attackSpeed', 'critChance', 'critMultiplier', 'maxLife', 'lifeRegen', 'armour', 'stormResist', 'frostResist', 'moveSpeed', 'maxMana', 'manaRegen'] as const;
 export type ItemStat = (typeof ITEM_STATS)[number];
 

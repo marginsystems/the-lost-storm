@@ -1646,6 +1646,7 @@
     {"id":"lava_depths_2_c4","x":143,"z":141,"radius":2.5}
   ],
   "waypoint": {"x":283,"z":35,"radius":1.8},
+  "markerSurfaces": {"stone":"scorched_stone"},
   "deathReturn": null,
   "npcs": []
 }

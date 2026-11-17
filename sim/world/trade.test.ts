@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ItemSlot, TalkDef } from '../content/types.ts';
+import { identifyCost, isUnidentified, veiled } from '../identify.ts';
 import { generateItem, slotOf } from '../items.ts';
 import { createRng } from '../rng.ts';
 import { countOf, withCount } from '../stacks.ts';
@@ -10,6 +11,7 @@ import { stepWorld } from './step.ts';
 import type { Station } from './trade.ts';
 import { buyPrice, goodItem, itemValue, meetNpc, openStation, sellPrice, stationAt, stationNear, stationReach } from './trade.ts';
 import type { ItemInstance, NpcState, TradeAction, VendorStock, World, WorldEvent } from './types.ts';
+import type { OpenService } from './service-types.ts';
 import { enterZone } from './zones.ts';
 
 const shipped: Content = loadContent();
@@ -306,4 +308,98 @@ void test('a story item cannot be sold', (): void => {
   assert.equal(world.player.inventory[0], journal);
   assert.equal(world.player.gold, 0);
   assert.equal(stockOf(world).buyback.length, 0);
+});
+
+function appraiserIn(world: World): NpcState {
+  return must(
+    world.npcs.find((npc: NpcState): boolean => npc.def.service === 'identify'),
+    'appraiser',
+  );
+}
+
+function atAppraiser(seed: number): World {
+  const world: World = worldIn(content, town, seed);
+  const npc: NpcState = appraiserIn(world);
+  hearNews(world, npc);
+  standBy(world, npc.pos.x, npc.pos.z);
+  meetNpc(world, npc);
+  world.player.inventory.fill(null);
+  world.stash.fill(null);
+  world.events = [];
+  return world;
+}
+
+function hidden(base: string, rarity: string, level: number, uid: number): ItemInstance {
+  return veiled(content, made(base, rarity, level, uid));
+}
+
+void test('the Hideout has a character who identifies, opened by meeting them', (): void => {
+  const world: World = atAppraiser(40);
+  const open: OpenService = must(world.service, 'service');
+  assert.equal(open.kind, 'identify');
+  assert.equal(open.owner, appraiserIn(world).def.id);
+});
+
+void test('identifying takes its price, reveals the very lines that were rolled and says so', (): void => {
+  const world: World = atAppraiser(41);
+  const rolled: ItemInstance = made('stormsteel_sword', 'rare', 8, 41);
+  world.player.inventory[3] = veiled(content, rolled);
+  const cost: number = identifyCost(content, must(world.player.inventory[3], 'held'));
+  world.player.gold = cost + 5;
+  const events: WorldEvent[] = trade(world, { type: 'identify', place: 'bag', index: 3 });
+  assert.equal(world.player.gold, 5);
+  assert.deepEqual(world.player.inventory[3], rolled);
+  assert.ok(events.some((event: WorldEvent): boolean => event.type === 'item_identified' && event.uid === rolled.uid && event.place === 'bag' && event.index === 3));
+  assert.ok(events.some((event: WorldEvent): boolean => event.type === 'character_changed'));
+});
+
+void test('too little gold leaves the item hidden, the gold untouched, and the appraiser says so', (): void => {
+  const world: World = atAppraiser(42);
+  world.stash[1] = hidden('gale_charm', 'rare', 10, 42);
+  world.player.gold = identifyCost(content, must(world.stash[1], 'held')) - 1;
+  const before: number = world.player.gold;
+  const events: WorldEvent[] = trade(world, { type: 'identify', place: 'stash', index: 1 });
+  assert.equal(world.player.gold, before);
+  assert.equal(isUnidentified(must(world.stash[1], 'held')), true);
+  assert.deepEqual(notices(events), ['no_gold']);
+  const short: string | undefined = appraiserIn(world).def.remarks.no_gold;
+  assert.ok(events.some((event: WorldEvent): boolean => event.type === 'bark' && event.line.id === short));
+});
+
+void test('identify all takes the sum for the bag and the stash, or nothing at all when it is short', (): void => {
+  const world: World = atAppraiser(43);
+  world.player.inventory[0] = hidden('stormsteel_sword', 'rare', 6, 43);
+  world.stash[5] = hidden('gale_charm', 'rare', 12, 44);
+  const total: number = identifyCost(content, must(world.player.inventory[0], 'bag')) + identifyCost(content, must(world.stash[5], 'stash'));
+  world.player.gold = total - 1;
+  trade(world, { type: 'identify_all' });
+  assert.equal(world.player.gold, total - 1);
+  assert.equal(isUnidentified(must(world.player.inventory[0], 'bag')), true);
+  world.player.gold = total;
+  const events: WorldEvent[] = trade(world, { type: 'identify_all' });
+  assert.equal(world.player.gold, 0);
+  assert.equal(isUnidentified(must(world.player.inventory[0], 'bag')), false);
+  assert.equal(isUnidentified(must(world.stash[5], 'stash')), false);
+  assert.equal(events.filter((event: WorldEvent): boolean => event.type === 'item_identified').length, 2);
+});
+
+void test('identifying needs the appraiser open; the stall does not do it', (): void => {
+  const world: World = atVendor(44);
+  world.player.inventory[0] = hidden('gale_charm', 'rare', 6, 45);
+  world.player.gold = 10_000;
+  trade(world, { type: 'identify', place: 'bag', index: 0 });
+  assert.equal(isUnidentified(must(world.player.inventory[0], 'bag')), true);
+  assert.equal(world.player.gold, 10_000);
+});
+
+void test('an unidentified item sells for its base at its rarity and level, as if it had no lines', (): void => {
+  const rolled: ItemInstance = made('stormsteel_sword', 'rare', 9, 46);
+  const veil: ItemInstance = veiled(content, rolled);
+  assert.equal(itemValue(content, veil), itemValue(content, { ...rolled, affixes: [] }));
+  assert.ok(itemValue(content, veil) < itemValue(content, rolled));
+  const world: World = atVendor(47);
+  world.player.inventory[0] = veil;
+  const gold: number = world.player.gold;
+  trade(world, { type: 'sell', inventoryIndex: 0 });
+  assert.equal(world.player.gold, gold + sellPrice(content, veil));
 });

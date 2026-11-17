@@ -5,7 +5,7 @@ import { RAW_CONTENT } from '../../sim/content/content.ts';
 import type { RawContent } from '../../sim/content/parse.ts';
 import { isFields } from '../../sim/content/read.ts';
 
-export const BALANCE_PARTS: readonly (keyof RawContent)[] = ['skills', 'monsters', 'monsterMods', 'factions', 'items', 'skillTree', 'chart', 'player', 'flasks', 'packRanks', 'moments', 'world', 'quests', 'trade'];
+export const BALANCE_PARTS: readonly (keyof RawContent)[] = ['skills', 'monsters', 'monsterMods', 'factions', 'items', 'skillTree', 'chart', 'player', 'flasks', 'packRanks', 'tailwind', 'moments', 'world', 'quests', 'trade'];
 
 export const ZONE_BALANCE: readonly string[] = ['id', 'kind', 'level', 'levelUpTo', 'packs', 'packReturn', 'moments', 'ranks', 'surge', 'exits'];
 

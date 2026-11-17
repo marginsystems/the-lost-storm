@@ -20,6 +20,12 @@
     {"rarity": "magic", "weight": 35},
     {"rarity": "rare", "weight": 10}
   ],
+  "identify": {
+    "prices": {
+      "rare": {"base": 9, "perLevel": 0.75},
+      "stormtouched": {"base": 24, "perLevel": 0.75}
+    }
+  },
   "goods": [
     {"base": "folded_hour", "price": 120}
   ]

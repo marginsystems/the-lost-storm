@@ -6,3 +6,5 @@ export interface OpenService {
   readonly owner: string;
   readonly anchor: Vec2;
 }
+
+export type ItemPlace = 'bag' | 'stash';

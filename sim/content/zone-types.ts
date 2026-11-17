@@ -98,6 +98,7 @@ export interface ZoneExit {
   readonly lockedHint: string;
   readonly hiddenWhenLocked: boolean;
   readonly look: ExitLook;
+  readonly marker: string | null;
 }
 
 export interface ZoneReturn {
@@ -109,6 +110,7 @@ export interface ZoneWaypoint {
   readonly x: number;
   readonly z: number;
   readonly radius: number;
+  readonly marker: string | null;
 }
 
 export interface ZoneCheckpoint {
@@ -116,6 +118,7 @@ export interface ZoneCheckpoint {
   readonly x: number;
   readonly z: number;
   readonly radius: number;
+  readonly marker: string | null;
 }
 
 export interface ZoneNpc {
@@ -156,6 +159,7 @@ export interface ZoneDef {
   readonly exits: readonly ZoneExit[];
   readonly checkpoints: readonly ZoneCheckpoint[];
   readonly waypoint: ZoneWaypoint | null;
+  readonly markerSurfaces: Readonly<Record<string, string>>;
   readonly portalSpot: ZonePoint | null;
   readonly deathReturn: ZoneReturn | null;
   readonly npcs: readonly ZoneNpc[];

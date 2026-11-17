@@ -224,3 +224,110 @@
     0 1px 2px rgba(0, 0, 0, 0.9),
     0 0 6px rgba(0, 0, 0, 0.6);
 }
+
+.hud-tailwind {
+  position: relative;
+  width: 132px;
+  padding: 4px 6px 5px;
+  border-radius: 4px;
+  background: radial-gradient(120% 100% at 30% 60%, rgba(8, 11, 18, 0.5), rgba(8, 11, 18, 0));
+  pointer-events: none;
+  visibility: hidden;
+  opacity: var(--tw-show, 0);
+  translate: 0 calc((1 - var(--tw-show, 0)) * 8px);
+  --tw-tone: color-mix(in oklab, #d4e3f2, #ffcf86 calc(var(--tw-heat, 0) * 100%));
+}
+
+.hud-tailwind.shown {
+  visibility: visible;
+}
+
+.tw-head {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.tw-count {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--tw-tone);
+}
+
+.tw-name {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tw-tone);
+  opacity: 0.88;
+  transform-origin: left center;
+}
+
+.hud-tailwind[data-phase='ended'] .tw-name,
+.hud-tailwind[data-phase='ended'] .tw-count {
+  opacity: 0.6;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tw-name.tw-rise {
+  animation: tw-rise var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+@keyframes tw-rise {
+  from {
+    scale: 1.35;
+    opacity: 0.2;
+    letter-spacing: 0.3em;
+  }
+  to {
+    scale: 1;
+    opacity: 0.88;
+    letter-spacing: 0.14em;
+  }
+}
+
+.tw-fuse {
+  position: relative;
+  height: 3px;
+  margin-top: 5px;
+  border-radius: 2px;
+  background: rgba(10, 13, 20, 0.6);
+  overflow: hidden;
+}
+
+.tw-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  scale: var(--tw-fuse, 0) 1;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--tw-tone), transparent 45%), var(--tw-tone));
+  filter: brightness(calc(1 + var(--tw-over, 0) * 0.35));
+}
+
+.tw-windfall {
+  height: 0;
+  margin-top: 0;
+  font-size: 11px;
+  line-height: 14px;
+  white-space: nowrap;
+  color: #f2dc9c;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  translate: 0 -3px;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-smooth-ms) var(--spring-smooth),
+    height var(--spring-smooth-ms) var(--spring-smooth),
+    margin-top var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tw-windfall.shown {
+  height: 14px;
+  margin-top: 4px;
+  opacity: 1;
+  translate: 0 0;
+}

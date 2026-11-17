@@ -17,9 +17,8 @@ export interface RankScale {
 }
 
 export interface RankLook {
-  readonly body: number;
-  readonly ground: number;
-  readonly reach: number;
+  readonly rim: number;
+  readonly leader: number;
 }
 
 export interface PackRankDef {
@@ -36,7 +35,11 @@ export interface PackRankDef {
 export interface RankModChoice {
   readonly mod: string;
   readonly weight: number;
+  readonly leader: boolean;
+  readonly from: number;
 }
+
+export type ModPair = readonly [string, string];
 
 export interface RankNames {
   readonly first: readonly string[];
@@ -46,6 +49,7 @@ export interface RankNames {
 export interface PackRanks {
   readonly ranks: readonly PackRankDef[];
   readonly pool: readonly RankModChoice[];
+  readonly apart: readonly ModPair[];
   readonly names: RankNames;
 }
 

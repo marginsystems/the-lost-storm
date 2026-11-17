@@ -16,8 +16,8 @@
     {"members": [{"monster": "unfinished_borrower", "count": 1}, {"monster": "unfinished_taker", "count": 1}], "waits": 8},
     {"members": [{"monster": "spider", "count": 1}]},
     {"members": [{"monster": "unfinished_thrower", "count": 1}, {"monster": "unfinished_taker", "count": 1}]},
-    {"members": [{"monster": "wolf", "count": 1}, {"monster": "spider", "count": 1}, {"monster": "rat", "count": 6}]},
-    {"members": [{"monster": "wolf", "count": 2}, {"monster": "spider", "count": 1}]},
+    {"members": [{"monster": "sporecap", "count": 1}, {"monster": "spider", "count": 1}, {"monster": "rat", "count": 6}]},
+    {"members": [{"monster": "silt_ooze", "count": 2}, {"monster": "spider", "count": 1}]},
     {"members": [{"monster": "unfinished_taker", "count": 2}, {"monster": "unfinished_thrower", "count": 1}]},
     {"members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 1}]},
     {"members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 1}]},
@@ -26,11 +26,11 @@
     {"members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 1}]},
     {"members": [{"monster": "unfinished_brute", "count": 1}, {"monster": "unfinished_taker", "count": 1}]},
     {"members": [{"monster": "unfinished_thrower", "count": 1}, {"monster": "unfinished_taker", "count": 1}]},
-    {"members": [{"monster": "wolf", "count": 4}, {"monster": "spider", "count": 2}]},
+    {"members": [{"monster": "spider", "count": 2}, {"monster": "weaver", "count": 2}, {"monster": "crawler", "count": 2}]},
     {"members": [{"monster": "unfinished_thrower", "count": 1}, {"monster": "unfinished_taker", "count": 1}]},
-    {"members": [{"monster": "wolf", "count": 4}, {"monster": "spider", "count": 2}, {"monster": "rat", "count": 6}]},
+    {"members": [{"monster": "bat", "count": 6}, {"monster": "spider", "count": 2}, {"monster": "rat", "count": 4}]},
     {"members": [{"monster": "unfinished_thrower", "count": 1}, {"monster": "unfinished_taker", "count": 1}]},
-    {"members": [{"monster": "wolf", "count": 4}, {"monster": "spider", "count": 2}]}
+    {"members": [{"monster": "crawler", "count": 1}, {"monster": "spined_ooze", "count": 2}, {"monster": "spider", "count": 2}, {"monster": "weaver", "count": 1}]}
   ],
   "clusters": [
     [
@@ -264,6 +264,7 @@
     [{"prop": "cave_stalagmites", "dx": 0.0, "dz": 0.0, "turn": 9}]
   ],
   "zone": {
+    "markerSurfaces": {"stone": "cave_stone"},
     "kind": "wild",
     "ranks": true,
     "floors": {"c": "cave_floor", "s": "cave_stone", "g": "cave_gravel", "w": "cave_water", "m": "mud", "k": "black_rock", "l": "lichen_stone"},

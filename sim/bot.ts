@@ -1,6 +1,7 @@
 import type { BotPlan } from './bot-plan.ts';
 import { flaskCommands, junkIndex, letGoCommands, nextPlace, planAttack, releaseCommands, rollCommand, upgradeIndex } from './bot-plan.ts';
 import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, SkillTreeNodeDef, ZoneDef, ZoneExit } from './content/types.ts';
+import { revealCarried } from './identify.ts';
 import { canAllocate } from './progression.ts';
 import type { ReadonlyVec2, Vec2 } from './math.ts';
 import { DEGREES_TO_RADIANS, distance, dot, normalize, rotate } from './math.ts';
@@ -17,10 +18,9 @@ import { glidesWith } from './world/momentum.ts';
 import { harmful, hazardDue, SPIN_DODGE, spinStep, wheelReach } from './bot-spin.ts';
 import { heldAtLine, holdersOf, strikeWaiting } from './world/count.ts';
 import { markRow } from './world/hazards.ts';
-import { heatAt } from './world/heat.ts';
-import { areaOf } from './world/areas.ts';
+import { hotGround, worthTheBurn } from './bot-ground.ts';
 import { playerMayStrike } from './world/factions.ts';
-import type { ActionState, AreaState, Command, EchoState, ItemInstance, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
+import type { ActionState, Command, EchoState, ItemInstance, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
 
 export const BOT = {
   step: 1 / 30,
@@ -148,6 +148,7 @@ function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
     if (event.type === 'death' && event.team === 'player') bot.deaths += 1;
     if (event.type === 'pickup' || event.type === 'level_up') bot.bagChanged = true;
   }
+  if (bot.bagChanged) revealCarried(bot.world);
   bot.events.push(...events);
   bot.watch?.(events);
   return events;
@@ -254,20 +255,6 @@ function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reac
   return struck(world, action.skill, origin, action.direction, action.target, pos);
 }
 
-function hurtsToStand(skill: SkillDef): boolean {
-  return skill.damage.weaponPercent > 0 || skill.damage.flatMax > 0 || skill.burn !== null;
-}
-
-function underArea(area: AreaState, pos: ReadonlyVec2, radius: number): boolean {
-  const delivery = areaOf(area.skill);
-  return delivery !== null && distance(pos, area.pos) <= delivery.radius + radius;
-}
-
-export function hotGround(world: World, pos: ReadonlyVec2): boolean {
-  if (heatAt(world, pos.x, pos.z) !== null) return true;
-  return world.areas.some((area: AreaState): boolean => area.offence.team === 'monster' && hurtsToStand(area.skill) && underArea(area, pos, world.player.radius));
-}
-
 function blowComing(world: World, pos: ReadonlyVec2, reaction: number): boolean {
   const reach: number = world.player.radius + BOT.dodgeMargin;
   if (world.hazards.some((hazard: HazardState): boolean => hazard.team === 'monster' && Math.hypot(pos.x - hazard.pos.x, pos.z - hazard.pos.z) <= hazard.radius + reach)) return true;
@@ -302,6 +289,12 @@ function spinRefuge(world: World, pack: readonly MonsterState[], heatOnly: boole
   const action: ActionState | null = world.player.action;
   if (action === null) return null;
   return spinStep(world, pack, wheelReach(action.skill), (spot: ReadonlyVec2): boolean => spinSafe(world, spot), heatOnly);
+}
+
+function finishesHere(world: World, target: MonsterState): boolean {
+  const swing: SkillDef | null = world.player.action?.skill ?? world.player.skills[0] ?? null;
+  if (swing === null) return false;
+  return worthTheBurn(world, target, swing, gliding(world) ? wheelReach(swing) : swing.engageRange);
 }
 
 function attackReach(world: World): number {
@@ -403,7 +396,7 @@ function fightStep(bot: Bot, prefer: string | null): boolean {
   }
   if (bot.habits.dodges && gliding(world) && spinInDanger(world, world.player.pos, bot.habits.reaction)) {
     const heatOnly: boolean = !spinBlowComing(world, world.player.pos, bot.habits.reaction);
-    const spot: Vec2 | null = spinRefuge(world, hostile, heatOnly);
+    const spot: Vec2 | null = heatOnly && finishesHere(world, target) ? null : spinRefuge(world, hostile, heatOnly);
     if (spot !== null || !heatOnly) {
       tick(bot, spot === null ? [] : [{ type: 'steer', aim: spot }]);
       return true;
@@ -411,8 +404,9 @@ function fightStep(bot: Bot, prefer: string | null): boolean {
   }
   if (bot.habits.dodges && world.player.alive && !gliding(world) && botInDanger(world, world.player.pos, bot.habits.reaction)) {
     const heatOnly: boolean = !blowComing(world, world.player.pos, bot.habits.reaction);
-    const moving: boolean = world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest);
-    const spot: Vec2 | null = moving ? null : refuge(world, target, heatOnly);
+    const finishing: boolean = heatOnly && finishesHere(world, target);
+    const moving: boolean = !finishing && world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest);
+    const spot: Vec2 | null = moving || finishing ? null : refuge(world, target, heatOnly);
     if (moving || spot !== null || !heatOnly) {
       const roll: Command | null = spot === null || heatOnly || bot.plan?.rolls !== true ? null : rollCommand(world, spot);
       tick(bot, dodgeCommands(world, spot, roll));

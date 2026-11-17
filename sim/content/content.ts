@@ -8,6 +8,8 @@ import monsterMods from '../../data/monster-mods.json' with { type: 'json' };
 import moments from '../../data/moments.json' with { type: 'json' };
 import monsters from '../../data/monsters.json' with { type: 'json' };
 import packRanks from '../../data/pack-ranks.json' with { type: 'json' };
+import runTable from '../../data/run-table.json' with { type: 'json' };
+import tailwind from '../../data/tailwind.json' with { type: 'json' };
 import npcs from '../../data/npcs.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
 import quests from '../../data/quests.json' with { type: 'json' };
@@ -22,6 +24,7 @@ import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
 import baseLayers from '../../data/base-layers.json' with { type: 'json' };
 import world from '../../data/world.json' with { type: 'json' };
+import markers from '../../data/markers.json' with { type: 'json' };
 import between from '../../data/zones/between.json' with { type: 'json' };
 import hallOfTime from '../../data/zones/hall_of_time.json' with { type: 'json' };
 import hideout from '../../data/zones/hideout.json' with { type: 'json' };
@@ -42,7 +45,7 @@ import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 import { modelFootprints, withFootprints } from './footprints.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, hallOfTime, hideout, keepersGate, underHall, ledgerHall, underHall2, underHall3, ledgerHall2, ledgerHall3, lavaDepths, lavaDepths2, lavaDepths3, ledgerCourt], world, npcs, lines, quests, player, flasks, trade, books, moments, packRanks };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, hallOfTime, hideout, keepersGate, underHall, ledgerHall, underHall2, underHall3, ledgerHall2, ledgerHall3, lavaDepths, lavaDepths2, lavaDepths3, ledgerCourt], world, npcs, lines, quests, player, flasks, trade, books, moments, packRanks, runTable, tailwind, markers };
 
 export function loadContent(): Content {
   const parsed: Content = parseContent(RAW_CONTENT);

@@ -1,4 +1,13 @@
-export type SpinStyleId = 'now' | 'upright' | 'heavy' | 'stepping';
+export type SpinStyleId = 'now' | 'upright' | 'heavy' | 'stepping' | 'mocap' | 'skate' | 'twohand' | 'low';
+
+export type SpinPivot = 'hips' | 'foot_l' | 'foot_r';
+
+export interface SpinClips {
+  readonly start: string;
+  readonly loop: string;
+  readonly end: string;
+  readonly pivot: SpinPivot;
+}
 
 export interface SpinTrail {
   readonly fill: number;
@@ -19,19 +28,26 @@ export interface SpinStyle {
   readonly leanStill: number;
   readonly beat: number;
   readonly trail: SpinTrail;
+  readonly clips: SpinClips | null;
 }
 
 export const SPIN_STYLE = {
   param: 'spin',
-  shipped: 'upright',
-  order: ['now', 'upright', 'heavy', 'stepping'],
+  shipped: 'twohand',
+  order: ['now', 'upright', 'heavy', 'stepping', 'mocap', 'skate', 'twohand', 'low'],
 } as const satisfies { readonly param: string; readonly shipped: SpinStyleId; readonly order: readonly SpinStyleId[] };
 
+const THIN_TRAIL: SpinTrail = { fill: 0.02, arcBand: 0.22, width: 0.025, band: 0.12, length: 0.98, lag: 0.35, strength: 0.45 };
+
 export const SPIN_STYLES: Readonly<Record<SpinStyleId, SpinStyle>> = {
-  now: { id: 'now', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: { fill: 0.08, arcBand: 0.5, width: 0.06, band: 0.25, length: 0.9, lag: 0.6, strength: 0.55 } },
-  upright: { id: 'upright', cycles: 0, pace: 1.5, paceFull: 1.5, lean: 0, leanStill: 0, beat: 0, trail: { fill: 0.02, arcBand: 0.22, width: 0.025, band: 0.12, length: 0.98, lag: 0.35, strength: 0.45 } },
-  heavy: { id: 'heavy', cycles: 0, pace: 0.45, paceFull: 1, lean: 0.32, leanStill: 0.14, beat: 0, trail: { fill: 0.14, arcBand: 0.8, width: 0.12, band: 0.6, length: 0.82, lag: 0.85, strength: 0.75 } },
-  stepping: { id: 'stepping', cycles: 1, pace: 0.7, paceFull: 0.85, lean: 0.08, leanStill: 0, beat: 0.8, trail: { fill: 0.05, arcBand: 0.4, width: 0.05, band: 0.3, length: 0.92, lag: 0.5, strength: 0.5 } },
+  now: { id: 'now', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: { fill: 0.08, arcBand: 0.5, width: 0.06, band: 0.25, length: 0.9, lag: 0.6, strength: 0.55 }, clips: null },
+  upright: { id: 'upright', cycles: 0, pace: 1.5, paceFull: 1.5, lean: 0, leanStill: 0, beat: 0, trail: { fill: 0.02, arcBand: 0.22, width: 0.025, band: 0.12, length: 0.98, lag: 0.35, strength: 0.45 }, clips: null },
+  heavy: { id: 'heavy', cycles: 0, pace: 0.45, paceFull: 1, lean: 0.32, leanStill: 0.14, beat: 0, trail: { fill: 0.14, arcBand: 0.8, width: 0.12, band: 0.6, length: 0.82, lag: 0.85, strength: 0.75 }, clips: null },
+  stepping: { id: 'stepping', cycles: 1, pace: 0.7, paceFull: 0.85, lean: 0.08, leanStill: 0, beat: 0.8, trail: { fill: 0.05, arcBand: 0.4, width: 0.05, band: 0.3, length: 0.92, lag: 0.5, strength: 0.5 }, clips: null },
+  mocap: { id: 'mocap', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: THIN_TRAIL, clips: { start: 'spin_mocap_in', loop: 'spin_mocap_loop', end: 'spin_mocap_out', pivot: 'hips' } },
+  skate: { id: 'skate', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: THIN_TRAIL, clips: { start: 'spin_skate_in', loop: 'spin_skate_loop', end: 'spin_skate_out', pivot: 'foot_l' } },
+  twohand: { id: 'twohand', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: THIN_TRAIL, clips: { start: 'spin_twohand_in', loop: 'spin_twohand_loop', end: 'spin_twohand_out', pivot: 'foot_l' } },
+  low: { id: 'low', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: THIN_TRAIL, clips: { start: 'spin_low_in', loop: 'spin_low_loop', end: 'spin_low_out', pivot: 'foot_l' } },
 };
 
 const FULL_TURN: number = Math.PI * 2;

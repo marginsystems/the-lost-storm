@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
 import { choice, colour, ContentError, each, fields, nonNegative, positive, share, text } from './read.ts';
-import type { SkillVfx, VfxBurn, VfxFlare, VfxGather, VfxImpact, VfxLightning, VfxPunch, VfxRipple, VfxShadow, VfxWater, VfxWave } from './vfx-types.ts';
+import type { SkillVfx, VfxBurn, VfxCover, VfxFlare, VfxGather, VfxImpact, VfxLightning, VfxPunch, VfxRipple, VfxShadow, VfxWater, VfxWave } from './vfx-types.ts';
 import { VFX_CUES, VFX_MAX_FORKS, VFX_STYLES } from './vfx-types.ts';
 
 function vfxLightning(value: unknown, where: string): VfxLightning | null {
@@ -116,6 +116,14 @@ function vfxWater(value: unknown, where: string): VfxWater | null {
   return { deep: colour(source, 'deep', where), foam: colour(source, 'foam', where), depth };
 }
 
+function vfxCover(value: unknown, where: string): VfxCover | null {
+  if (value === undefined) return null;
+  const source: Fields = fields(value, where);
+  const glow: number = share(source, 'glow', where);
+  if (glow <= 0) throw new ContentError(`${where}.glow`, 'expected a share above 0 and up to 1');
+  return { glow, wobble: share(source, 'wobble', where) };
+}
+
 export function skillVfx(value: unknown, where: string): SkillVfx {
   const source: Fields = fields(value, where);
   return {
@@ -133,5 +141,6 @@ export function skillVfx(value: unknown, where: string): SkillVfx {
     burn: vfxBurn(source['burn'], `${where}.burn`),
     shadow: vfxShadow(source['shadow'], `${where}.shadow`),
     water: vfxWater(source['water'], `${where}.water`),
+    cover: vfxCover(source['cover'], `${where}.cover`),
   };
 }

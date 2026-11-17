@@ -66,6 +66,82 @@
       "name": "Mist-Treader"
     }
   ],
+  "leaning": true,
+  "leans": [
+    {
+      "id": "hourfall",
+      "name": "Hourfall Caves",
+      "zones": [
+        "under_hall",
+        "under_hall_2",
+        "under_hall_3"
+      ],
+      "share": 2.5,
+      "weapons": [
+        "blade",
+        "crossbow"
+      ],
+      "slots": [],
+      "families": [
+        "millwheel",
+        "quietshot"
+      ],
+      "legendary": 1
+    },
+    {
+      "id": "lava",
+      "name": "the Lava Depths",
+      "zones": [
+        "lava_depths",
+        "lava_depths_2",
+        "lava_depths_3"
+      ],
+      "share": 2.5,
+      "weapons": [
+        "heavy",
+        "blade"
+      ],
+      "slots": [],
+      "families": [
+        "groundbreaker",
+        "millwheel"
+      ],
+      "legendary": 1
+    },
+    {
+      "id": "columned_hall",
+      "name": "the Columned Hall",
+      "zones": [
+        "ledger_hall",
+        "ledger_hall_2",
+        "ledger_hall_3"
+      ],
+      "share": 2.5,
+      "weapons": [
+        "staff",
+        "crossbow"
+      ],
+      "slots": [],
+      "families": [
+        "forkweather",
+        "rainmaker",
+        "quietshot"
+      ],
+      "legendary": 1
+    },
+    {
+      "id": "ledger_court",
+      "name": "the Inner Hall",
+      "zones": [
+        "ledger_court"
+      ],
+      "share": 1,
+      "weapons": [],
+      "slots": [],
+      "families": [],
+      "legendary": 3
+    }
+  ],
   "bases": [
     {
       "id": "rusted_blade",
@@ -3555,7 +3631,7 @@
           {
             "group": "spin",
             "field": "pull",
-            "value": 5
+            "value": 12
           }
         ],
         "triggers": [

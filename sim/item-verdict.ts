@@ -1,5 +1,6 @@
 import type { Content, DamageType, ItemSlot, ResistedType, SkillDef, StatBlock, StatId } from './content/types.ts';
 import { DAMAGE_TYPES } from './content/types.ts';
+import { isUnidentified } from './identify.ts';
 import { baseOf, slotOf } from './items.ts';
 import { wornPowers, wornVariants } from './powers.ts';
 import { computeStats, damagePerSecond, damageTakenScale, effectiveAttackSpeed, resistanceOf, resolveSkillBar, skillCycle } from './stats.ts';
@@ -217,7 +218,7 @@ export function compareBuilds(content: Content, before: Build, after: Build, thr
 
 export function itemVerdict(content: Content, subject: VerdictSubject, threat: Threat, item: ItemInstance): Verdict | null {
   const slot: ItemSlot | null = slotOf(content, item);
-  if (slot === null || baseOf(content, item) === null) return null;
+  if (slot === null || baseOf(content, item) === null || isUnidentified(item)) return null;
   const swapped: Equipment = { ...subject.equipped, [slot]: item };
   return compareBuilds(content, buildOf(content, subject, subject.equipped), buildOf(content, subject, swapped), threat);
 }

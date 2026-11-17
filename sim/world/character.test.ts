@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { armed, must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, SkillDef, XpReduction } from '../content/types.ts';
+import { revealed, veiled } from '../identify.ts';
 import { generateItem } from '../items.ts';
 import { xpToNextLevel } from '../progression.ts';
 import { createRng } from '../rng.ts';
@@ -200,4 +201,17 @@ void test('a held change with a look reaches the bar skill it changes, even wher
   world.player.equipped.weapon = null;
   refreshPlayer(world);
   assert.equal(heldLook(world, 'cleave'), null);
+});
+
+void test('an unidentified item cannot be worn until it is identified', (): void => {
+  const world: World = armed(worldIn(content, 'hall_of_time', 1));
+  const rolled: ItemInstance = must(generateItem(content, createRng(77), 900, 4, 'gale_charm', 'rare'), 'charm');
+  world.player.inventory[0] = veiled(content, rolled);
+  const worn: ItemInstance | null = world.player.equipped.charm;
+  const events: WorldEvent[] = send(world, { type: 'equip', inventoryIndex: 0 });
+  assert.equal(world.player.equipped.charm, worn);
+  assert.ok(events.some((event: WorldEvent): boolean => event.type === 'notice' && event.reason === 'unidentified'));
+  world.player.inventory[0] = revealed(must(world.player.inventory[0], 'held'));
+  send(world, { type: 'equip', inventoryIndex: 0 });
+  assert.deepEqual(world.player.equipped.charm, rolled);
 });

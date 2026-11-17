@@ -216,8 +216,10 @@ void test('a pull turns every spin form into a pull of its own strength, even th
   const breeches: readonly PowerDef[] = wornPowerDefs('gyre_stitched_breeches');
   const wheel: SkillDef = resolveSkill(content, cleave, [], [...breeches, ...wornPowerDefs('the_millwheel')]);
   assert.equal(skillOf('cleave_millwheel').knockback, 0);
-  assert.equal(wheel.knockback, -5);
-  assert.equal(resolveSkill(content, cleave, ['whirling_cleave'], breeches).knockback, -5);
+  const strength: number = breeches.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods).find((mod: SkillMod): boolean => mod.field === 'pull')?.value ?? 0;
+  assert.ok(strength > 0);
+  assert.equal(wheel.knockback, -strength);
+  assert.equal(resolveSkill(content, cleave, ['whirling_cleave'], breeches).knockback, -strength);
   assert.equal(resolveSkill(content, cleave, [], breeches).knockback, cleave.knockback);
   const turned: SkillMod = { target: { type: 'skill', skill: 'cleave' }, field: 'knockbackPercent', value: -1.5 };
   assert.ok(Math.abs(resolveSkill(content, cleave, [], [{ family: 'millwheel', text: '', skillMods: [turned], variants: [], triggers: [] }]).knockback - cleave.knockback * -0.5) < 1e-9);

@@ -39,5 +39,6 @@ export function createPlayOverlays(deps: PlayOverlaysDeps): Overlays {
       send({ type: 'move', held: false, dest: { x: waypoint.x, z: waypoint.z } });
       hud.requestMap(true);
     },
+    onUse: (prop: number): void => send({ type: 'use', prop }),
   }, hud.targets);
 }

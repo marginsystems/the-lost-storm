@@ -52,6 +52,7 @@ export interface Globes {
   setRestoring(resource: FlaskResource, on: boolean): void;
   flask(resource: FlaskResource): HTMLElement;
   setWaiting(text: string): void;
+  group(resource: FlaskResource): HTMLElement;
 }
 
 function buildStorm(liquid: HTMLElement): Storm {
@@ -161,6 +162,9 @@ export function createGlobes(root: HTMLElement): Globes {
     setWaiting(text: string): void {
       if (text !== '') setText(waitingText, text, true);
       waiting.classList.toggle('shown', text !== '');
+    },
+    group(resource: FlaskResource): HTMLElement {
+      return resource === 'life' ? lifeGroup : manaGroup;
     },
   };
 }

@@ -65,6 +65,7 @@ const PICK_LINES: Readonly<Record<ListRefusal, string>> = {
   empty: 'Pick an item from your bags or stash.',
   unverified: 'This item was never recorded, so it cannot be sold. Trader purchases and some early or offline finds are not recorded.',
   story: 'This cannot be sold.',
+  unidentified: 'Unidentified items cannot be listed. Have it identified first.',
 };
 
 export const RECORDING_LINE: AuctionLine = { text: 'This item is still being recorded. Try again in a moment.', tone: 'note' };

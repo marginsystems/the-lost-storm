@@ -255,7 +255,7 @@ void test('a boss block parses with its phases, poise, drop and barks, and a pac
   ]);
   assert.deepEqual(must(boss.phases[1], 'phase').barks, []);
   assert.deepEqual(boss.poise, { knockback: 0.2 });
-  assert.deepEqual(boss.drop, { items: 1, rarity: 'rare', goldMin: 30, goldMax: 50 });
+  assert.deepEqual(boss.drop, { items: 1, floor: 'rare', goldMin: 30, goldMax: 50 });
   assert.equal(boss.firstKill, null);
   assert.deepEqual(must(must(content.monsters.get('timekeeper_gatekeeper'), 'gatekeeper').boss, 'gatekeeper block').firstKill, { flag: 'keeper_defeated', xpShare: 0.5, goldMin: 200, goldMax: 260 });
   assert.deepEqual(boss.barks, { aggro: [], death: [] });
@@ -277,20 +277,20 @@ void test('a malformed boss block is rejected', (): void => {
   rejects((block) => ({ ...block, phases: [{ ...phase, skills: [{ skill: 'colossus_hammer', weight: 0 }] }] }), 'skills[0].weight');
   rejects((block) => ({ ...block, phases: [phase, { ...phase, below: 0 }] }), 'phases[1].below');
   rejects((block) => ({ ...block, poise: { knockback: 1.5 } }), 'poise.knockback');
-  rejects((block) => ({ ...block, drop: { items: -1, rarity: 'rare', goldMin: 1, goldMax: 2 } }), 'drop.items');
-  rejects((block) => ({ ...block, drop: { items: 1.5, rarity: 'rare', goldMin: 1, goldMax: 2 } }), 'drop.items');
-  rejects((block) => ({ ...block, drop: { items: 1, rarity: 'rare', goldMin: -4, goldMax: 2 } }), 'drop.goldMin');
-  rejects((block) => ({ ...block, drop: { items: 1, rarity: 'rare', goldMin: 50, goldMax: 30 } }), 'drop.goldMax');
+  rejects((block) => ({ ...block, drop: { items: -1, floor: 'rare', goldMin: 1, goldMax: 2 } }), 'drop.items');
+  rejects((block) => ({ ...block, drop: { items: 1.5, floor: 'rare', goldMin: 1, goldMax: 2 } }), 'drop.items');
+  rejects((block) => ({ ...block, drop: { items: 1, floor: 'rare', goldMin: -4, goldMax: 2 } }), 'drop.goldMin');
+  rejects((block) => ({ ...block, drop: { items: 1, floor: 'rare', goldMin: 50, goldMax: 30 } }), 'drop.goldMax');
   rejects((block) => ({ ...block, barks: { aggro: [] } }), 'barks.death');
   rejects((block) => ({ ...block, firstKill: { flag: 'won', xpShare: 1.5, goldMin: 0, goldMax: 0 } }), 'firstKill.xpShare');
   rejects((block) => ({ ...block, firstKill: { flag: 'won', xpShare: 0.5, goldMin: 9, goldMax: 3 } }), 'firstKill.goldMax');
   rejects((block) => ({ ...block, firstKill: { xpShare: 0.5, goldMin: 0, goldMax: 0 } }), 'firstKill.flag');
-  assert.equal(must(parseContent(bossy((block) => ({ ...block, drop: { items: 0, rarity: 'rare', goldMin: 0, goldMax: 0 } }))).monsters.get('unfinished_colossus'), 'unfinished_colossus').boss?.drop.items, 0);
+  assert.equal(must(parseContent(bossy((block) => ({ ...block, drop: { items: 0, floor: 'rare', goldMin: 0, goldMax: 0 } }))).monsters.get('unfinished_colossus'), 'unfinished_colossus').boss?.drop.items, 0);
 });
 
 void test('contentProblems reports a boss that names an unknown skill, rarity or line, or a line that is not its own', (): void => {
   assert.ok(has(bossy((block) => ({ ...block, phases: [{ below: 1, skills: [{ skill: 'no_such_skill', weight: 1 }], barks: [] }] })), 'boss unfinished_colossus uses unknown skill no_such_skill'));
-  assert.ok(has(bossy((block) => ({ ...block, drop: { items: 1, rarity: 'mythic', goldMin: 0, goldMax: 0 } })), 'boss unfinished_colossus drops unknown rarity mythic'));
+  assert.ok(has(bossy((block) => ({ ...block, drop: { items: 1, floor: 'mythic', goldMin: 0, goldMax: 0 } })), 'boss unfinished_colossus drops unknown rarity mythic'));
   assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['no_such_line'], death: [] } })), 'boss unfinished_colossus barks unknown line no_such_line'));
   assert.ok(has(bossy((block) => ({ ...block, barks: { aggro: ['unfinished_borrower_said_1'], death: [] } })), 'boss unfinished_colossus barks line unfinished_borrower_said_1, which is spoken by unfinished_borrower'));
   assert.ok(has({ ...shipped, lines: [...lines, { id: 'ghost_1', speaker: 'ghost', text: 'Boo.' }] }, 'line ghost_1 has unknown speaker ghost'));
@@ -401,7 +401,7 @@ void test('a rig may leave out its hit and death clips, names its action clips, 
 
 void test('a skill effect with no cue or light gets no cue and full light, and a negative light is rejected', (): void => {
   const plain: Content = parseContent({ ...shipped, skills: [...skills, extraSkill] });
-  assert.deepEqual(must(plain.skills.get('ember_lash'), 'skill').vfx, { style: 'slash', color: '#ff8844', cue: 'none', light: 1, lightning: null, impact: null, trail: 0, linger: 0, gather: null, wave: null, punch: null, burn: null, shadow: null, water: null });
+  assert.deepEqual(must(plain.skills.get('ember_lash'), 'skill').vfx, { style: 'slash', color: '#ff8844', cue: 'none', light: 1, lightning: null, impact: null, trail: 0, linger: 0, gather: null, wave: null, punch: null, burn: null, shadow: null, water: null, cover: null });
   const blinding: RawContent = { ...shipped, skills: [{ ...extraSkill, vfx: { style: 'slash', color: '#ff8844', light: -1 } }] };
   assert.throws((): Content => parseContent(blinding), (error: unknown): boolean => problem(error, 'skills[0].vfx'));
 });

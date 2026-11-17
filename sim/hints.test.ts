@@ -160,6 +160,8 @@ void test('the equip hint waits until the bag holds something to wear', (): void
   const state: HintState = createHintState(allBut('equip'));
   placeInBag(world, 'worn_journal');
   assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+  world.player.inventory[1] = { uid: 4040, base: 'gale_charm', rarity: 'rare', level: 3, affixes: [], ledger: null, unidentified: true };
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
   placeInBag(world, 'rusted_blade');
   assert.equal(shown(stepHints(defs, world, state, IDLE)), 'equip');
 });

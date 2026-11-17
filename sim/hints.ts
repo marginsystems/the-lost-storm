@@ -1,4 +1,5 @@
 import type { HintDef, HintDone, HintPanel, HintsDef, HintTrigger } from './content/hints.ts';
+import { isUnidentified } from './identify.ts';
 import { slotOf } from './items.ts';
 import type { FlaskResource } from './content/flasks.ts';
 import { distance } from './math.ts';
@@ -63,7 +64,7 @@ function canDrink(world: World, resource: FlaskResource | null): boolean {
 }
 
 function gearInBag(world: World): boolean {
-  return world.player.inventory.some((item: ItemInstance | null): boolean => item !== null && slotOf(world.content, item) !== null);
+  return world.player.inventory.some((item: ItemInstance | null): boolean => item !== null && slotOf(world.content, item) !== null && !isUnidentified(item));
 }
 
 function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarget | null): boolean {

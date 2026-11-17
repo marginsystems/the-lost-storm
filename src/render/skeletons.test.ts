@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Bone, BufferGeometry, Float32BufferAttribute, Group, MeshStandardMaterial, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from 'three';
+import { AnimationClip, AnimationMixer, Bone, BufferGeometry, Float32BufferAttribute, Group, MeshStandardMaterial, Quaternion, QuaternionKeyframeTrack, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from 'three';
 import type { Object3D, Sphere } from 'three';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import { boundSkins, disposeSkeletons, shareSkeletons } from './skeletons.ts';
+import { boundSkins, disposeSkeletons, nextPoseTick, poseOncePerTick, quietBones, shareSkeletons } from './skeletons.ts';
 import { skinnedMeshes } from './wearables.ts';
 
 const SKIN_TOLERANCE = 1e-6;
@@ -130,4 +130,65 @@ void test('a cloned rig shares its skeletons again, since each clone gives every
   assert.equal(skeletons.size, 2);
   assert.equal(shareSkeletons(copy), 1);
   assert.equal(new Set<Skeleton>(skinnedMeshes(copy).map((mesh: SkinnedMesh): Skeleton => mesh.skeleton)).size, 1);
+});
+
+void test('a rig held to one pose a tick computes its bone matrices once however often a frame asks, and again on the next tick', (): void => {
+  const root: Group = skinnedTemplate();
+  const mesh: SkinnedMesh | undefined = skinnedMeshes(root)[0];
+  assert.ok(mesh !== undefined);
+  const bone: Bone | undefined = mesh.skeleton.bones[0];
+  assert.ok(bone !== undefined);
+  assert.equal(poseOncePerTick(root), 1);
+  assert.equal(poseOncePerTick(root), 0);
+  const shiftOf = (): number => mesh.skeleton.boneMatrices?.[12] ?? Number.NaN;
+  nextPoseTick();
+  bone.position.x = 3;
+  root.updateMatrixWorld(true);
+  mesh.skeleton.update();
+  assert.equal(shiftOf(), 3);
+  bone.position.x = 5;
+  root.updateMatrixWorld(true);
+  mesh.skeleton.update();
+  assert.equal(shiftOf(), 3);
+  nextPoseTick();
+  mesh.skeleton.update();
+  assert.equal(shiftOf(), 5);
+});
+
+function swungArm(quiet: boolean): { readonly shoulder: Bone; readonly hand: Bone; readonly mixer: AnimationMixer } {
+  const shoulder: Bone = new Bone();
+  shoulder.name = 'shoulder';
+  const hand: Bone = new Bone();
+  hand.name = 'hand';
+  hand.position.set(0, 1, 0);
+  shoulder.add(hand);
+  const body: Group = new Group();
+  body.add(shoulder);
+  if (quiet) assert.equal(quietBones(body), 2);
+  const turned: Quaternion = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2);
+  const swing: AnimationClip = new AnimationClip('swing', 1, [new QuaternionKeyframeTrack('shoulder.quaternion', [0, 1], [0, 0, 0, 1, turned.x, turned.y, turned.z, turned.w])]);
+  const mixer: AnimationMixer = new AnimationMixer(body);
+  mixer.clipAction(swing).play();
+  return { shoulder, hand, mixer };
+}
+
+void test('quiet bones pose exactly as before but no longer rebuild their Euler angles on every animated frame', (): void => {
+  const plain = swungArm(false);
+  const quiet = swungArm(true);
+  for (let frame: number = 0; frame < 30; frame += 1) {
+    plain.mixer.update(1 / 60);
+    quiet.mixer.update(1 / 60);
+  }
+  plain.shoulder.updateMatrixWorld(true);
+  quiet.shoulder.updateMatrixWorld(true);
+  assert.ok(quiet.hand.getWorldPosition(new Vector3()).distanceTo(plain.hand.getWorldPosition(new Vector3())) < SKIN_TOLERANCE);
+  assert.ok(Math.abs(plain.shoulder.rotation.z) > 0.5);
+  assert.equal(quiet.shoulder.rotation.z, 0);
+});
+
+void test('setting a quiet bone by its Euler angles still turns it', (): void => {
+  const bone: Bone = new Bone();
+  quietBones(bone);
+  bone.rotation.set(0, Math.PI / 2, 0);
+  assert.ok(Math.abs(bone.quaternion.y - Math.SQRT1_2) < SKIN_TOLERANCE);
 });

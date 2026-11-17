@@ -84,6 +84,13 @@ function stateTexts(world: World, monster: MonsterState): string[] {
   return texts;
 }
 
+function modLines(content: Content, def: MonsterDef): MonsterLine[] {
+  return def.mods.flatMap((id: string): MonsterLine[] => {
+    const mod: MonsterModDef | undefined = content.monsterMods.get(id);
+    return mod === undefined || mod.line.length === 0 ? [] : [{ kind: 'state', text: mod.line }];
+  });
+}
+
 function stateLines(texts: readonly string[]): MonsterLine[] {
   return texts.map((text: string): MonsterLine => ({ kind: 'state', text }));
 }
@@ -103,7 +110,7 @@ export function rankPlate(content: Content, def: MonsterDef): RankPlate {
 }
 
 export function monsterLines(world: World, monster: MonsterState): MonsterLine[] {
-  return [...stateLines(stateTexts(world, monster)), ...abilities(world.content, monster.def), ...defences(monster.def)];
+  return [...stateLines(stateTexts(world, monster)), ...modLines(world.content, monster.def), ...abilities(world.content, monster.def), ...defences(monster.def)];
 }
 
 export interface MonsterInfo {
@@ -123,7 +130,7 @@ function sameTexts(a: readonly string[], b: readonly string[]): boolean {
 export function monsterInfo(before: MonsterInfo | null, world: World, monster: MonsterState): MonsterInfo {
   const states: string[] = stateTexts(world, monster);
   if (before !== null && before.content === world.content && before.def === monster.def && sameTexts(before.states, states)) return before;
-  const lines: MonsterLine[] = [...stateLines(states), ...abilities(world.content, monster.def), ...defences(monster.def)];
+  const lines: MonsterLine[] = [...stateLines(states), ...modLines(world.content, monster.def), ...abilities(world.content, monster.def), ...defences(monster.def)];
   const parts: string[] = monsterSummaryParts(lines);
   return { content: world.content, def: monster.def, states, lines, key: JSON.stringify(lines), parts, said: parts.join(' · ') };
 }

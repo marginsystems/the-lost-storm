@@ -7,7 +7,7 @@ import { boss, bossPresence, pieceStrikes } from './parse-boss.ts';
 const BASE = {
   title: 'Timekeeper',
   poise: { knockback: 0.1 },
-  drop: { items: 1, rarity: 'rare', goldMin: 1, goldMax: 2 },
+  drop: { items: 1, floor: 'rare', goldMin: 1, goldMax: 2 },
   barks: { aggro: [], death: [] },
 };
 

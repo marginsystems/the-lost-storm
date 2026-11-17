@@ -19,7 +19,7 @@ import { readSave, toSave } from '../save.ts';
 const outpostZone: ZoneDef = roadZone({
   id: 'outpost',
   tiles: ['wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww', 'wwwwwwww'],
-  waypoint: { x: 21, z: 8, radius: 1.8 },
+  waypoint: { x: 21, z: 8, radius: 1.8, marker: null },
   packs: [{ x: 12, z: 8, members: [{ monster: 'mended', count: 2, mods: [] }], when: [] }],
 });
 const roads: Content = roadContent(outpostZone);

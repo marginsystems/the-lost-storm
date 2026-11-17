@@ -276,6 +276,7 @@
   },
   "checkpoints": [],
   "waypoint": null,
+  "markerSurfaces": {"stone": "hall_stone"},
   "npcs": [],
   "ambience": {
     "background": "#0a0e16",

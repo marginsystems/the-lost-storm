@@ -1,5 +1,5 @@
 import type { BufferGeometry, InterleavedBufferAttribute, Matrix4 } from 'three';
-import { BufferAttribute, BufferGeometry as Geometry, DoubleSide, Matrix4 as Transform, ShaderMaterial, SkinnedMesh, Vector3 } from 'three';
+import { BufferAttribute, BufferGeometry as Geometry, DoubleSide, Matrix4 as Transform, MeshDepthMaterial, ShaderMaterial, SkinnedMesh, Vector3 } from 'three';
 
 export const SHADOW_CASTER = {
   mark: 'shadowCaster',
@@ -98,6 +98,13 @@ function unseenMaterial(): ShaderMaterial {
   return unseen;
 }
 
+let depth: MeshDepthMaterial | null = null;
+
+export function casterDepth(): MeshDepthMaterial {
+  depth ??= new MeshDepthMaterial();
+  return depth;
+}
+
 export function isShadowCaster(object: { readonly userData: Record<string, unknown> }): boolean {
   return object.userData[SHADOW_CASTER.mark] === true;
 }
@@ -115,6 +122,7 @@ export function createShadowCaster(anchor: SkinnedMesh): SkinnedMesh {
   caster.name = SHADOW_CASTER.mark;
   caster.userData[SHADOW_CASTER.mark] = true;
   caster.castShadow = true;
+  caster.customDepthMaterial = casterDepth();
   caster.receiveShadow = false;
   caster.frustumCulled = false;
   caster.raycast = (): void => undefined;

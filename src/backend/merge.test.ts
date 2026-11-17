@@ -4,6 +4,9 @@ import { makeSave } from '../../test/backend-support.ts';
 import { must } from '../../test/support.ts';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content } from '../../sim/content/types.ts';
+import { isUnidentified, veiled } from '../../sim/identify.ts';
+import { generateItem } from '../../sim/items.ts';
+import { createRng } from '../../sim/rng.ts';
 import { readSave } from '../../sim/save.ts';
 import type { SaveData } from '../../sim/save.ts';
 import { countOf, withCount } from '../../sim/stacks.ts';
@@ -95,4 +98,35 @@ void test('a thread stack goes with the copy that is kept, whole, and is never a
   const onConflict = chooseOnConflict({ local, current: { ...ahead, save: withThreads(5, 12) }, overwriteCloud: false });
   assert.equal(onConflict.side, 'local');
   assert.equal(heldThreads(must(readSave(backendContent, JSON.parse(JSON.stringify(local))), 'read')), 7);
+});
+
+function withHidden(level: number): SaveData {
+  const save: SaveData = makeSave(level, 0);
+  const rolled: ItemInstance = must(generateItem(backendContent, createRng(31), 31, level, 'gale_charm', 'rare'), 'charm');
+  return { ...save, inventory: save.inventory.map((item: ItemInstance | null, index: number): ItemInstance | null => (index === 1 ? veiled(backendContent, rolled) : item)) };
+}
+
+function hiddenHeld(save: SaveData | null): number {
+  return must(save, 'save').inventory.filter((item: ItemInstance | null): boolean => item !== null && isUnidentified(item)).length;
+}
+
+void test('an unidentified item stays unidentified in whichever copy is kept', (): void => {
+  const local: SaveData = withHidden(5);
+  const ahead: CloudState = { save: withHidden(6), revision: 4, updatedAt: '2026-11-11T10:00:00.000Z', epoch: 2 };
+  const onLoad = chooseOnLoad({ local, record: record({ pending: true }), cloud: ahead });
+  assert.equal(onLoad.side, 'cloud');
+  assert.equal(hiddenHeld(must(readSave(backendContent, JSON.parse(JSON.stringify(ahead.save))), 'cloud')), 1);
+  const onConflict = chooseOnConflict({ local, current: { ...ahead, save: withHidden(5) }, overwriteCloud: false });
+  assert.equal(onConflict.side, 'local');
+  assert.equal(hiddenHeld(must(readSave(backendContent, JSON.parse(JSON.stringify(local))), 'local')), 1);
+});
+
+void test('a shaped descent travels with whichever copy wins, through the cloud reader', (): void => {
+  const setup = { zone: 'under_hall', pins: [{ condition: 'marked', pick: null }, { condition: 'swift', pick: null }] };
+  const ahead: SaveData = { ...makeSave(9, 40), run: { active: setup, last: setup } };
+  const behind: SaveData = makeSave(8, 0);
+  const fromCloud: SaveData = must(readSave(backendContent, JSON.parse(JSON.stringify(ahead))), 'cloud copy');
+  assert.deepEqual(fromCloud.run, { active: setup, last: setup });
+  assert.equal(chooseOnLoad({ local: behind, record: record({ pending: true }), cloud: { save: fromCloud, revision: 4, updatedAt: '2026-11-11T10:00:00.000Z', epoch: 2 } }).side, 'cloud');
+  assert.equal(chooseOnConflict({ local: ahead, current: { save: behind, revision: 4, updatedAt: '2026-11-11T10:00:00.000Z', epoch: 2 }, overwriteCloud: false }).side, 'local');
 });

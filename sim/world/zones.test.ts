@@ -47,7 +47,7 @@ function travel(world: World, exitId: string): WorldEvent[] {
 }
 
 function withCheckpoint(): Content {
-  const marked: ZoneDef = { ...outpost, checkpoints: [{ id: 'grate', x: 28, z: 22, radius: 2 }] };
+  const marked: ZoneDef = { ...outpost, checkpoints: [{ id: 'grate', x: 28, z: 22, radius: 2, marker: null }] };
   return { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones, [marked.id, marked]]) };
 }
 

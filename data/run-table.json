@@ -1,0 +1,90 @@
+{
+  "levels": ["under_hall", "under_hall_2", "under_hall_3", "lava_depths", "lava_depths_2", "lava_depths_3", "ledger_hall", "ledger_hall_2", "ledger_hall_3"],
+  "pins": 3,
+  "pricing": { "share": 0.1, "steps": [1, 1.5, 2], "round": 5, "least": 10 },
+  "conditions": [
+    {
+      "id": "marked",
+      "name": "Marked packs",
+      "text": "Far more packs come magic or rare.",
+      "price": 1,
+      "danger": 0.3,
+      "shape": { "rankChance": 1.5 },
+      "reward": { "xp": 0.05, "gold": 0.05, "items": 0.05, "rarity": 0.03 }
+    },
+    {
+      "id": "crowded",
+      "name": "Crowded",
+      "text": "Every pack holds 40% more monsters.",
+      "price": 1,
+      "danger": 0.3,
+      "shape": { "grow": 0.4 },
+      "reward": { "xp": 0.05, "gold": 0.05, "items": 0.05, "rarity": 0.02 },
+      "excludes": ["hardened"]
+    },
+    {
+      "id": "one_kind",
+      "name": "One kind",
+      "text": "Every pack is made of the kind you pick.",
+      "price": 0.8,
+      "danger": 0.1,
+      "pick": "monster",
+      "shape": { "fill": true },
+      "reward": { "xp": 0.1, "gold": 0.1, "items": 0.1, "rarity": 0.03 }
+    },
+    {
+      "id": "swift",
+      "name": "Swift packs",
+      "text": "Every monster is Swift: it moves 30% faster.",
+      "price": 1,
+      "danger": 0.25,
+      "shape": { "mods": ["swift"] },
+      "reward": { "xp": 0.15, "gold": 0.15, "items": 0.15, "rarity": 0.05 }
+    },
+    {
+      "id": "hulking",
+      "name": "Hulking packs",
+      "text": "Every monster is Hulking: 50% more life, 10% more damage, a little slower.",
+      "price": 1,
+      "danger": 0.25,
+      "shape": { "mods": ["hulking"] },
+      "reward": { "xp": 0.15, "gold": 0.15, "items": 0.15, "rarity": 0.05 }
+    },
+    {
+      "id": "volatile",
+      "name": "Volatile packs",
+      "text": "Every monster is Volatile: it bursts where it dies.",
+      "price": 1,
+      "danger": 0.3,
+      "shape": { "mods": ["volatile"] },
+      "reward": { "xp": 0.15, "gold": 0.15, "items": 0.15, "rarity": 0.05 }
+    },
+    {
+      "id": "unyielding",
+      "name": "Unyielding packs",
+      "text": "Every monster is Unyielding: your blows stagger it half as long.",
+      "price": 1,
+      "danger": 0.15,
+      "shape": { "mods": ["unyielding"] },
+      "reward": { "xp": 0.1, "gold": 0.1, "items": 0.1, "rarity": 0.03 }
+    },
+    {
+      "id": "mending",
+      "name": "Mending packs",
+      "text": "Every monster is Mending: once left alone for four seconds it heals 2.5% of its life each second.",
+      "price": 1,
+      "danger": 0.1,
+      "shape": { "mods": ["mending"] },
+      "reward": { "xp": 0.08, "gold": 0.08, "items": 0.08, "rarity": 0.03 }
+    },
+    {
+      "id": "hardened",
+      "name": "Hardened",
+      "text": "Monsters have 30% more life and deal 15% more damage.",
+      "price": 1.2,
+      "danger": 0.35,
+      "shape": { "life": 0.3, "damage": 0.15 },
+      "reward": { "xp": 0.2, "gold": 0.2, "items": 0.2, "rarity": 0.06 }
+    }
+  ]
+}

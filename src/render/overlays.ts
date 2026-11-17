@@ -4,6 +4,7 @@ import type { ZoneDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
+import { stationAt } from '../../sim/world/trade.ts';
 import { questPins } from '../../sim/world/quest-pins.ts';
 import type { TargetSource } from '../../sim/world/objective.ts';
 import { LIVE_TARGETS } from '../../sim/world/objective.ts';
@@ -30,6 +31,7 @@ import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
 import { blockersIn, glideAt, glidePlace, place } from './overlay-place.ts';
 import type { TagBound } from './overlay-place.ts';
 import { createFloatingNumbers } from './floating-numbers.ts';
+import { placeKey, zonePlaces } from '../../sim/content/markers.ts';
 import type { FloatingNumbers } from './floating-numbers.ts';
 
 export const OVERLAYS = {
@@ -54,6 +56,7 @@ export const OVERLAYS = {
   hudBlockers: ['.hud-bottom', '.hud-volume-wrap', '.hud-globe-group', '.hud-xp', '.tc-btn', '.tc-stick', '.tc-menu', '.minimap-corner', '.hud-quests', '.hud-target.visible', '.hud-hint.visible', '.tc-stick.intro:not(.on) .tc-stick-hint', '.hud > .hud-banners'],
   hudReadSeconds: 0.25,
   waypointId: 'waypoint',
+  stationId: 'station:',
   waypointName: 'Waypoint',
 } as const;
 
@@ -78,6 +81,7 @@ interface ExitLabel {
   readonly z: number;
   readonly open: (world: World) => boolean;
   readonly secret: boolean;
+  readonly lift: number;
   readonly glide: LabelGlide;
   readonly stack: LabelGlide;
   pinned: boolean;
@@ -127,11 +131,13 @@ export interface OverlayHooks {
   onTravel(exit: string): void;
   onTalk(npcId: number): void;
   onWaypoint(): void;
+  onUse(prop: number): void;
 }
 
 export interface Overlays {
   readonly itemNames: ItemNames;
   handle(events: readonly WorldEvent[], world: World): void;
+  readHud(dt: number): void;
   update(dt: number, world: World, hoveredId: number | null): void;
   aimExit(exit: string | null): void;
   aimItem(groundId: number | null): void;
@@ -283,6 +289,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     for (const label of exits) label.element.remove();
     exitsOf = world.zone;
     aimed = null;
+    const lifts: Map<string, number> = new Map<string, number>();
+    for (const marked of zonePlaces(world.content, world.zone)) if (marked.kind.label > 0) lifts.set(placeKey(marked.ref), marked.kind.label);
     exits = world.zone.exits.map((exit): ExitLabel => {
       const element: HTMLDivElement = document.createElement('div');
       element.className = world.zone.kind === 'void' ? 'exit-label distant' : 'exit-label';
@@ -298,7 +306,23 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         if (event.button === 0) hooks.onTravel(exit.id);
       });
       labelLayer.append(element);
-      return { element, id: exit.id, x: exit.x, z: exit.z, open: (current: World): boolean => allHold(current, exit.requires), secret: exit.hiddenWhenLocked, glide: createGlide(), stack: createGlide(), pinned: false };
+      return { element, id: exit.id, x: exit.x, z: exit.z, open: (current: World): boolean => allHold(current, exit.requires), secret: exit.hiddenWhenLocked, lift: lifts.get(placeKey({ type: 'exit', exit: exit.id })) ?? OVERLAYS.exitLift, glide: createGlide(), stack: createGlide(), pinned: false };
+    });
+    world.zone.props.forEach((placed, index: number): void => {
+      const name: string | null = world.content.props.get(placed.prop)?.label ?? null;
+      if (name === null) return;
+      const element: HTMLDivElement = document.createElement('div');
+      element.className = 'exit-label station';
+      const inner: HTMLSpanElement = document.createElement('span');
+      inner.textContent = name;
+      element.append(inner);
+      element.addEventListener('pointerdown', (event: PointerEvent): void => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.button === 0) hooks.onUse(index);
+      });
+      labelLayer.append(element);
+      exits.push({ element, id: `${OVERLAYS.stationId}${index}`, x: placed.x, z: placed.z, open: (current: World): boolean => stationAt(current, index) !== null, secret: true, lift: OVERLAYS.exitLift, glide: createGlide(), stack: createGlide(), pinned: false });
     });
     const waypoint = world.zone.waypoint;
     if (waypoint === null) return;
@@ -313,7 +337,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       if (event.button === 0) hooks.onWaypoint();
     });
     labelLayer.append(element);
-    exits.push({ element, id: OVERLAYS.waypointId, x: waypoint.x, z: waypoint.z, open: (current: World): boolean => current.waypoints.includes(current.zone.id), secret: false, glide: createGlide(), stack: createGlide(), pinned: false });
+    exits.push({ element, id: OVERLAYS.waypointId, x: waypoint.x, z: waypoint.z, open: (current: World): boolean => current.waypoints.includes(current.zone.id), secret: false, lift: lifts.get(placeKey({ type: 'waypoint' })) ?? OVERLAYS.exitLift, glide: createGlide(), stack: createGlide(), pinned: false });
   };
 
   const showPeople = (world: World): void => {
@@ -413,6 +437,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'stun':
           case 'mend':
           case 'brand':
+          case 'tailwind_rise':
+          case 'tailwind_end':
           case 'skill_unlocked':
           case 'chart_point':
           case 'xp':
@@ -444,8 +470,11 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'moment_woke':
           case 'moment_ended':
           case 'item_found':
+          case 'item_identified':
           case 'moment_gone':
           case 'moment_chest':
+          case 'run_set':
+          case 'run_ended':
           case 'path_marked':
           case 'character_changed':
           case 'zone_changed':
@@ -485,12 +514,13 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       labelHovered = null;
       return null;
     },
-    update(dt: number, world: World, hoveredId: number | null): void {
+    readHud(dt: number): void {
       sinceHudRead += dt;
-      if (sinceHudRead >= OVERLAYS.hudReadSeconds) {
-        hudRects = blockersIn(root, OVERLAYS.hudBlockers);
-        sinceHudRead = 0;
-      }
+      if (sinceHudRead < OVERLAYS.hudReadSeconds) return;
+      hudRects = blockersIn(root, OVERLAYS.hudBlockers);
+      sinceHudRead = 0;
+    },
+    update(dt: number, world: World, hoveredId: number | null): void {
       if (exitsOf !== world.zone) showExits(world);
       tagRects.length = 0;
       plateRects.length = 0;
@@ -516,7 +546,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         const open: boolean = label.open(world);
         label.element.classList.toggle('locked', !open);
         label.element.classList.toggle('secret', !open && label.secret);
-        camera.project(label.x, floorUp(label.x, OVERLAYS.exitLift, label.z), label.z, point);
+        camera.project(label.x, floorUp(label.x, label.lift, label.z), label.z, point);
         anchor.copy(point);
         const edge: boolean = !anchorInView(point.x, point.y, view);
         label.element.classList.toggle('edge', edge);

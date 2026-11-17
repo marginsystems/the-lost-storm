@@ -21,6 +21,7 @@ import { unsorted } from './warm-up.ts';
 import { installDarkLightSkip } from './dark-lights.ts';
 import type { GpuQueue } from './gpu-fence.ts';
 import { createGpuQueue } from './gpu-fence.ts';
+import { nextPoseTick } from './skeletons.ts';
 
 export const STAGE = {
   exposure: 1.22,
@@ -335,6 +336,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       apply();
     },
     render(): void {
+      nextPoseTick();
       renderer.getDrawingBufferSize(drawing);
       const now: number = performance.now();
       aimCutaway(camera, { x: heroAt.x, z: heroAt.y, floor: heroFloor }, drawing.x, drawing.y, drawnAt === null ? 0 : (now - drawnAt) / 1000);

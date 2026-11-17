@@ -11,9 +11,9 @@ import { must } from './support.ts';
 
 const OUTPOST: ZoneDef = roadZone({
   id: 'outpost',
-  waypoint: { x: 21, z: 8, radius: 1.8 },
+  waypoint: { x: 21, z: 8, radius: 1.8, marker: null },
   playerStart: { x: 28, z: 12 },
-  exits: [{ id: 'stair', x: 28, z: 14.4, radius: 1.5, to: 'hall_of_time', toExit: 'west_gate', arrival: { x: 28, z: 12 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' }],
+  exits: [{ id: 'stair', x: 28, z: 14.4, radius: 1.5, to: 'hall_of_time', toExit: 'west_gate', arrival: { x: 28, z: 12 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring', marker: null }],
   packs: [{ x: 12, z: 6, members: [{ monster: 'mended', count: 2, mods: [] }], when: [] }],
 });
 export const saveContent: Content = roadContent(OUTPOST);

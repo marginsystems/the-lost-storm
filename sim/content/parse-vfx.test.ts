@@ -6,7 +6,7 @@ import { ContentError } from './read.ts';
 import type { SkillVfx } from './vfx-types.ts';
 
 void test('an effect with no lightning, impact or trail keeps the plain look', (): void => {
-  assert.deepEqual(skillVfx({ style: 'bolt', color: '#9be1ff' }, 'vfx'), { style: 'bolt', color: '#9be1ff', cue: 'none', light: 1, lightning: null, impact: null, trail: 0, linger: 0, gather: null, wave: null, punch: null, burn: null, shadow: null, water: null });
+  assert.deepEqual(skillVfx({ style: 'bolt', color: '#9be1ff' }, 'vfx'), { style: 'bolt', color: '#9be1ff', cue: 'none', light: 1, lightning: null, impact: null, trail: 0, linger: 0, gather: null, wave: null, punch: null, burn: null, shadow: null, water: null, cover: null });
 });
 
 void test('an effect reads its water and refuses water with no depth', (): void => {
@@ -92,4 +92,10 @@ void test('a punch kicks a whole number of dust motes off the ground at a speed'
 
 void test('a burn look reads its flares in order, with embers and a warm light', (): void => {
   assert.deepEqual(skillVfx({ style: 'fire', color: '#ff7a1a', burn: { flares: [{ at: 0.1, strength: 1 }, { at: 0.3, strength: 0.5 }], embers: 20, light: 5 } }, 'vfx').burn, { flares: [{ at: 0.1, strength: 1 }, { at: 0.3, strength: 0.5 }], embers: 20, light: 5 });
+});
+
+void test('an effect reads a ground cover and refuses one with no glow', (): void => {
+  assert.deepEqual(skillVfx({ style: 'mist', color: '#8c877d', cover: { glow: 0.14, wobble: 0.3 } }, 'vfx').cover, { glow: 0.14, wobble: 0.3 });
+  assert.throws((): SkillVfx => skillVfx({ style: 'mist', color: '#8c877d', cover: { glow: 0, wobble: 0.3 } }, 'vfx'));
+  assert.throws((): SkillVfx => skillVfx({ style: 'mist', color: '#8c877d', cover: { glow: 0.2, wobble: 1.5 } }, 'vfx'));
 });

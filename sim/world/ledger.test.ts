@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
+import { isUnidentified, revealed } from '../identify.ts';
 import { generateItem, slotOf } from '../items.ts';
 import { createRng } from '../rng.ts';
 import { readSave, toSave } from '../save.ts';
@@ -137,4 +138,31 @@ void test('a starting item rolls the same from any seed, so made before a ticket
   assert.deepEqual(generateItem(content, createRng(1), 5, 1, base, 'common'), generateItem(content, createRng(2), 5, 1, base, 'common'));
   const drop = must(makeItem(fresh, 3, null, 'magic', MONSTER), 'drop');
   assert.ok(!fresh.ledger.waiting.some((late) => late.uid === drop.uid));
+});
+
+void test('a rare or legendary find drops unidentified with the same rolls; start and trader items never do', (): void => {
+  for (const rarity of ['rare', 'stormtouched']) {
+    const one: World = world();
+    const two: World = world();
+    const item: ItemInstance = must(makeItem(one, 6, null, rarity, MONSTER), rarity);
+    const plain: ItemInstance = must(generateItem(content, two.rng, two.nextItemUid, 6, null, rarity), rarity);
+    assert.equal(isUnidentified(item), true, rarity);
+    assert.deepEqual(revealed(item), plain);
+    assert.equal(one.rng.state(), two.rng.state());
+  }
+  for (const rarity of ['common', 'magic']) assert.equal(isUnidentified(must(makeItem(world(), 6, null, rarity, MONSTER), rarity)), false, rarity);
+  const start: ItemInstance = must(makeItem(world(), 6, null, 'rare', { kind: 'start', base: 'gale_charm' }), 'start');
+  const trader: ItemInstance = must(makeItem(world(), 6, null, 'rare', { kind: 'trader', base: 'gale_charm', rarity: 'rare' }), 'trader');
+  assert.equal(isUnidentified(start), false);
+  assert.equal(isUnidentified(trader), false);
+});
+
+void test('a minted record settles on an unidentified item and keeps it hidden', (): void => {
+  const held: World = world();
+  const item: ItemInstance = must(makeItem(held, 6, null, 'rare', MONSTER), 'item');
+  held.player.inventory[0] = item;
+  assert.equal(confirmItem(held, item.uid, minted(item)), true);
+  const settled: ItemInstance = must(held.player.inventory[0], 'settled');
+  assert.equal(settled.ledger, ID);
+  assert.equal(isUnidentified(settled), true);
 });

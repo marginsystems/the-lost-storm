@@ -110,6 +110,7 @@ export function spawnMonster(world: World, def: MonsterDef, packId: number, cent
     yielded: false,
     summonerId: origin.summonerId,
     summonTimer: (def.summon?.cooldown ?? 0) * SPAWN.firstSummon,
+    trailFrom: { x: pos.x, z: pos.z },
     foeId: null,
     revived: origin.revived,
     leashTime: 0,

@@ -1,7 +1,7 @@
 import type { BufferGeometry, IUniform, Material, Object3D } from 'three';
 import { AnimationMixer, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import { boundSkins, disposeSkeletons, shareSkeletons } from './skeletons.ts';
+import { boundSkins, disposeSkeletons, poseOncePerTick, quietBones, shareSkeletons } from './skeletons.ts';
 import type { RigDef, RigSocket } from '../../sim/content/types.ts';
 import { wearKey } from '../../sim/wear.ts';
 import { CHARACTER_INSIDE } from './character-inside.ts';
@@ -41,7 +41,7 @@ export interface RigInstance {
   setOpacity(opacity: number): void;
   setFade(amount: number): void;
   setShade(color: Color, amount: number, see: boolean, wet: number): void;
-  setAura(color: Color, amount: number): void;
+  setRankRim(color: Color, amount: number): void;
   dispose(): void;
 }
 
@@ -55,15 +55,15 @@ export const CHARACTER = {
   skinMaterial: 'skin',
   featherFrom: 0.2,
   featherTo: 0.8,
-  auraFloor: 0.22,
-  auraLit: 1.6,
+  rankEdgeFrom: 0.64,
+  rankEdgeTo: 0.78,
 } as const;
 
 export const CHARACTER_SHADE: string = [
   '#include <emissivemap_fragment>',
   'float edgeFacing = clamp( 1.0 - dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );',
   ...SHADOW_BODY,
-  `totalEmissiveRadiance += ${flashEdge('edgeFacing', 'diffuseColor.rgb')} + uRim * pow( edgeFacing, ${CHARACTER.rimPower.toFixed(2)} ) + uHover * pow( edgeFacing, ${CHARACTER.hoverPower.toFixed(2)} ) + ${shadowRim('edgeFacing')} + uAura * ( ${CHARACTER.auraFloor.toFixed(2)} + diffuseColor.rgb * ${CHARACTER.auraLit.toFixed(2)} );`,
+  `totalEmissiveRadiance += ${flashEdge('edgeFacing', 'diffuseColor.rgb')} + uRim * pow( edgeFacing, ${CHARACTER.rimPower.toFixed(2)} ) + uHover * pow( edgeFacing, ${CHARACTER.hoverPower.toFixed(2)} ) + ${shadowRim('edgeFacing')} + uRankRim * smoothstep( ${CHARACTER.rankEdgeFrom.toFixed(2)}, ${CHARACTER.rankEdgeTo.toFixed(2)}, edgeFacing );`,
 ].join('\n');
 
 export const CHARACTER_FEATHER: string = `diffuseColor.a = smoothstep( ${CHARACTER.featherFrom.toFixed(2)}, ${CHARACTER.featherTo.toFixed(2)}, diffuseColor.a );\nif ( diffuseColor.a <= 0.0 ) discard;`;
@@ -122,11 +122,11 @@ function flashing(source: unknown, look: RigLook, glow: RigGlow, wakeLamps: numb
         shader.uniforms['uHover'] = glow.hover;
         bindShade(shader.uniforms, glow);
         shader.uniforms['uRim'] = RIM_LIGHT;
-        shader.uniforms['uAura'] = glow.aura;
+        shader.uniforms['uRankRim'] = glow.rankRim;
         shader.uniforms['uWakeLamps'] = WAKE_LAMPS;
         shader.uniforms['uLampShare'] = { value: wakeLamps };
         shader.fragmentShader = shader.fragmentShader
-          .replace('void main() {', `uniform vec3 uFlash;\nuniform float uFlashLift;\nuniform vec3 uHover;\n${SHADOW_UNIFORMS}\nuniform vec3 uRim;\nuniform vec3 uAura;\nuniform float uWakeLamps;\nuniform float uLampShare;\nvoid main() {`)
+          .replace('void main() {', `uniform vec3 uFlash;\nuniform float uFlashLift;\nuniform vec3 uHover;\n${SHADOW_UNIFORMS}\nuniform vec3 uRim;\nuniform vec3 uRankRim;\nuniform float uWakeLamps;\nuniform float uLampShare;\nvoid main() {`)
           .replace(LAMP_HOLD, `outgoingLight *= mix( 1.0, uLampShare, uWakeLamps );\n${LAMP_HOLD}`)
           .replace('#include <lights_fragment_end>', `${CHARACTER_INSIDE}\n${SHADOW_LIGHT}`)
           .replace('#include <emissivemap_fragment>', CHARACTER_SHADE)
@@ -190,6 +190,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   boundSkins(rig.template);
   const model: Object3D = cloneSkinned(rig.template);
   shareSkeletons(model);
+  quietBones(model);
+  if (shadows === 'together') poseOncePerTick(model);
   model.scale.setScalar(def.scale);
   model.rotation.y = def.yawOffsetDegrees * DEGREES;
   const root: Group = new RestingGroup();
@@ -432,8 +434,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       glow.shadeMix.value = amount;
       seeThrough(dressed(), faded < 1 || (see && amount > 0));
     },
-    setAura(color: Color, amount: number): void {
-      glow.aura.value.copy(color).multiplyScalar(amount);
+    setRankRim(color: Color, amount: number): void {
+      glow.rankRim.value.copy(color).multiplyScalar(amount);
     },
     dispose(): void {
       if (castKey !== null) castersOf(rig).leave(castKey);

@@ -5,6 +5,7 @@ import { nearestWalkable } from '../../sim/nav/grid.ts';
 import type { Command, World } from '../../sim/world/types.ts';
 import { el, setText } from '../hud/dom.ts';
 import { zoneLevelText } from './caption.ts';
+import { shapedLine } from '../hud/run-table-model.ts';
 import { CAMERA } from '../render/iso-camera.ts';
 import type { MapLayer } from './layer.ts';
 import { createMapLayer } from './layer.ts';
@@ -85,6 +86,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   const frame: HTMLDivElement = el('div', 'minimap-frame', corner);
   const cornerSurface: Surface = surface(el('canvas', 'minimap-canvas', frame));
   const zoneLevel: HTMLDivElement = el('div', 'minimap-level', frame);
+  const shaped: HTMLDivElement = el('div', 'minimap-shaped', corner);
   const overlay: HTMLDivElement = el('div', 'minimap-overlay', holder);
   tagPart(overlay, 'minimap');
   const overlaySurface: Surface = surface(el('canvas', 'minimap-canvas', overlay));
@@ -93,6 +95,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   let mode: MinimapMode = 'corner';
   let zoom: number = MINIMAP.zoomStart;
   let wantedZoom: number = MINIMAP.zoomStart;
+  let shapedShown: string = '';
   let settling: number = 0;
   let cornerMatrix: MapMatrix | null = null;
   let dragging: number | null = null;
@@ -213,6 +216,13 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
       const levelText: string | null = zoneLevelText(world);
       if (levelText !== null) setText(zoneLevel, levelText, zoneLevel.classList.contains('visible'));
       zoneLevel.classList.toggle('visible', levelText !== null);
+      const shapedText: string | null = shapedLine(world, world.zone.id);
+      if (shapedText !== null) setText(shaped, shapedText, shaped.classList.contains('visible'));
+      shaped.classList.toggle('visible', shapedText !== null);
+      if ((shapedText ?? '') !== shapedShown) {
+        shapedShown = shapedText ?? '';
+        root.style.setProperty('--minimap-shaped-h', shapedText === null ? '0px' : `${shaped.scrollHeight}px`);
+      }
       zoom += (wantedZoom - zoom) * (1 - Math.exp(-MINIMAP.zoomRate * dt));
       settling = Math.max(0, settling - dt);
       if (dragging !== null) {

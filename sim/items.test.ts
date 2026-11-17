@@ -3,15 +3,17 @@ import { test } from 'node:test';
 import { must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
 import { heroWears } from './content/item-rules.ts';
-import type { AffixDef, ArmourMaterial, Content, ItemBaseDef, ItemSlot, RarityDef, StatId, StatMod } from './content/types.ts';
+import { leanOf } from './content/lean-rules.ts';
+import type { AffixDef, ArmourMaterial, Content, DropLean, ItemBaseDef, ItemSlot, RarityDef, StatId, StatMod } from './content/types.ts';
 import { ARMOUR_MATERIALS, ITEM_SLOTS } from './content/types.ts';
-import { baseOf, emptyEquipment, generateItem, itemLines, itemMods, itemName, rarityOf, slotOf } from './items.ts';
+import { baseOf, emptyEquipment, generateItem, itemLines, itemMods, itemName, leanedWeight, rarityOf, rollItem, slotOf } from './items.ts';
 import type { ItemLine } from './items.ts';
 import { createRng } from './rng.ts';
 import type { Rng } from './rng.ts';
 import type { ItemInstance } from './world/types.ts';
 
 const content: Content = loadContent();
+const leaning: Content = { ...content, leaning: true };
 const ROLLS: number = 4000;
 
 function rolls(seed: number, level: number): ItemInstance[] {
@@ -284,4 +286,96 @@ void test('a Legendary roll with no powered base in reach comes out as the top p
 void test('a Legendary keeps its own name whatever lines it rolled', (): void => {
   const mill: ItemInstance = { uid: 1, base: 'the_millwheel', rarity: 'stormtouched', level: 9, affixes: [{ affix: 'honed', value: 0.2 }], ledger: null };
   assert.equal(itemName(content, mill), 'The Millwheel');
+});
+
+function zoneRolls(seed: number, level: number, zone: string | null, count: number = ROLLS): ItemInstance[] {
+  const rng: Rng = createRng(seed);
+  return Array.from({ length: count }, (_: unknown, index: number): ItemInstance => must(rollItem(leaning, rng, index, level, { base: null, rarity: null, floor: null, zone }), 'item'));
+}
+
+function odds(value: number): number {
+  return value / (1 - value);
+}
+
+function weaponGroupOf(item: ItemInstance): string | null {
+  const kind: string | null = baseOf(content, item)?.weaponKind ?? null;
+  return content.chart.weaponGroups.find((group): boolean => kind !== null && group.kinds.some((held: string): boolean => held === kind))?.id ?? null;
+}
+
+void test('the roll the server calls, six arguments and no zone, still rolls the item it rolled before leans and matches a plan with no zone', (): void => {
+  for (let seed: number = 1; seed <= 40; seed += 1) {
+    const server: ItemInstance | null = generateItem(content, createRng(seed), 0, 20, null, 'rare');
+    const unleaned: ItemInstance | null = rollItem(content, createRng(seed), 0, 20, { base: null, rarity: 'rare', floor: null, zone: null });
+    const leaned: ItemInstance | null = generateItem(content, createRng(seed), 0, 20, null, 'rare', null);
+    assert.ok(server !== null);
+    assert.deepEqual(server, unleaned);
+    assert.deepEqual(server, leaned);
+  }
+});
+
+void test('with the leaning switch off every leaned zone rolls exactly what an unleaned roll gives, and the shipped data has it on', (): void => {
+  assert.equal(content.leaning, true);
+  const still: Content = { ...content, leaning: false };
+  for (const lean of still.leans) {
+    for (const zone of lean.zones) {
+      for (let seed: number = 1; seed <= 12; seed += 1) {
+        const server: ItemInstance | null = generateItem(still, createRng(seed), 0, 20, null, null);
+        assert.deepEqual(rollItem(still, createRng(seed), 0, 20, { base: null, rarity: null, floor: null, zone }), server, zone);
+        assert.deepEqual(rollItem(still, createRng(seed), 0, 20, { base: null, rarity: 'rare', floor: null, zone }), generateItem(still, createRng(seed), 0, 20, null, 'rare'), zone);
+      }
+    }
+  }
+});
+
+void test('a drop lean changes which bases drop and never how many items drop or how rare they are', (): void => {
+  const plain: ItemInstance[] = zoneRolls(31, 20, null);
+  const leaned: ItemInstance[] = zoneRolls(31, 20, 'under_hall');
+  assert.equal(leaned.length, plain.length);
+  assert.deepEqual(leaned.map((item: ItemInstance): string => item.rarity), plain.map((item: ItemInstance): string => item.rarity));
+  assert.notDeepEqual(leaned.map((item: ItemInstance): string => item.base), plain.map((item: ItemInstance): string => item.base));
+});
+
+void test('the caves give blades and crossbows two to three times their share of the weapons, and every other weapon still drops there', (): void => {
+  const lean: DropLean = must(leanOf(leaning, 'under_hall'), 'lean');
+  const share = (items: readonly ItemInstance[]): number => {
+    const weapons: ItemInstance[] = items.filter((item: ItemInstance): boolean => weaponGroupOf(item) !== null);
+    return weapons.filter((item: ItemInstance): boolean => lean.weapons.includes(weaponGroupOf(item) ?? '')).length / weapons.length;
+  };
+  const plain: number = share(zoneRolls(32, 20, null, 12000));
+  const leaned: number = share(zoneRolls(32, 20, 'under_hall', 12000));
+  assert.ok(Math.abs(odds(leaned) / odds(plain) - lean.share) < 0.35, `odds moved ${(odds(leaned) / odds(plain)).toFixed(2)} times`);
+  const groups: Set<string> = new Set<string>(zoneRolls(33, 20, 'under_hall', 12000).flatMap((item: ItemInstance): string[] => [weaponGroupOf(item) ?? '']));
+  for (const group of content.chart.weaponGroups) assert.ok(groups.has(group.id), `${group.id} never dropped in the caves`);
+});
+
+void test('no lean ever takes a base out of the pool: every weight it touches only grows', (): void => {
+  for (const lean of content.leans) {
+    for (const base of content.itemBases.values()) {
+      const weight: number = leanedWeight(content, base, lean);
+      assert.ok(weight >= base.dropWeight, `${lean.id} shrinks ${base.id}`);
+      assert.equal(weight > 0, base.dropWeight > 0, `${lean.id} changes whether ${base.id} drops at all`);
+    }
+  }
+});
+
+void test('a legendary dropped in a lean picks its favoured families more often, and the boss court raises the legendary share of a rare-or-better drop', (): void => {
+  const halls: DropLean = must(leanOf(leaning, 'ledger_hall'), 'halls');
+  const legendaries = (zone: string | null): ItemInstance[] => {
+    const rng: Rng = createRng(34);
+    return Array.from({ length: 3000 }, (_: unknown, index: number): ItemInstance => must(rollItem(leaning, rng, index, 20, { base: null, rarity: 'stormtouched', floor: null, zone }), 'legendary'));
+  };
+  const favoured = (items: readonly ItemInstance[]): number => items.filter((item: ItemInstance): boolean => halls.families.includes(baseOf(content, item)?.power?.family ?? '')).length / items.length;
+  const moved: number = odds(favoured(legendaries('ledger_hall'))) / odds(favoured(legendaries(null)));
+  assert.ok(Math.abs(moved - halls.share) < 0.4, `favoured families' odds moved ${moved.toFixed(2)} times`);
+  const court: DropLean = must(leanOf(leaning, 'ledger_court'), 'court');
+  const bossDrops = (zone: string | null): number => {
+    const rng: Rng = createRng(35);
+    const drops: ItemInstance[] = Array.from({ length: 4000 }, (_: unknown, index: number): ItemInstance => must(rollItem(leaning, rng, index, 30, { base: null, rarity: null, floor: 'rare', zone }), 'drop'));
+    assert.ok(drops.every((item: ItemInstance): boolean => item.rarity === 'rare' || item.rarity === 'stormtouched'));
+    return drops.filter((item: ItemInstance): boolean => item.rarity === 'stormtouched').length / drops.length;
+  };
+  const rare: number = must(content.rarities.find((rarity: RarityDef): boolean => rarity.id === 'rare'), 'rare').weight;
+  const legendary: number = must(content.rarities.find((rarity: RarityDef): boolean => rarity.powers), 'legendary').weight;
+  assert.ok(Math.abs(bossDrops(null) - legendary / (rare + legendary)) < 0.015);
+  assert.ok(Math.abs(bossDrops('ledger_court') - (legendary * court.legendary) / (rare + legendary * court.legendary)) < 0.02);
 });

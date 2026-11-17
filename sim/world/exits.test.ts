@@ -19,7 +19,7 @@ const march: QuestDef = {
 };
 
 function exit(id: string, x: number, hiddenWhenLocked: boolean): ZoneExit {
-  return { id, x, z: 4, radius: 1.6, to: 'outpost', toExit: 'gate', arrival: { x: 8, z: 8 }, requires: [{ type: 'quest', quest: 'march', is: 'done', not: false }], lockedHint: 'Shut.', hiddenWhenLocked, look: 'ring' };
+  return { id, x, z: 4, radius: 1.6, to: 'outpost', toExit: 'gate', arrival: { x: 8, z: 8 }, requires: [{ type: 'quest', quest: 'march', is: 'done', not: false }], lockedHint: 'Shut.', hiddenWhenLocked, look: 'ring', marker: null };
 }
 
 const secret: ZoneExit = exit('secret', 26, true);

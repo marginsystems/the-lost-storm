@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { BufferAttribute, InterleavedBufferAttribute, Material } from 'three';
-import { BoxGeometry, Color, IcosahedronGeometry, Mesh, NormalBlending, ShaderMaterial, Vector3 } from 'three';
+import { BoxGeometry, Color, IcosahedronGeometry, Mesh, MeshBasicMaterial, NormalBlending, ShaderMaterial, Vector3 } from 'three';
 import type { Delivery } from '../../sim/content/types.ts';
 import { loadContent } from '../../sim/content/content.ts';
-import { disposeObject, groundArcs, lightningLine, pillarMesh, programKeepers, projectileMesh, scorchMesh, skyBolt, slashMesh, SHAPES, spotLook, telegraphFor, telegraphLook } from './effect-shapes.ts';
+import { disposeObject, groundArcs, lightningLine, neverCulled, pillarMesh, programKeepers, projectileMesh, rekey, scorchMesh, showKeepers, skyBolt, slashMesh, SHAPES, spotLook, telegraphFor, telegraphLook } from './effect-shapes.ts';
 import type { Telegraph } from './effect-shapes.ts';
 import type { GroundLight } from './ground-light.ts';
 import { createGroundLight, GROUND_LIGHT_FRAGMENT } from './ground-light.ts';
@@ -133,4 +133,53 @@ void test('a blade swing hands back the very uniforms its shader reads, so it is
   const slash = slashMesh(1, 2, new Color(1, 0, 0));
   assert.equal(slash.material.uniforms['uProgress'], slash.progress);
   assert.equal(slash.material.uniforms['uOpacity'], slash.opacity);
+});
+
+void test('the keepers are shown for the one render that warms a zone and hidden again, and one already showing is left as it was', (): void => {
+  const keepers: Mesh[] = programKeepers(new Color(1, 1, 1));
+  const [first, ...rest] = keepers;
+  assert.ok(first !== undefined);
+  for (const keeper of rest) keeper.visible = false;
+  const hide: () => void = showKeepers(keepers);
+  assert.equal(keepers.every((keeper: Mesh): boolean => keeper.visible), true);
+  hide();
+  assert.equal(first.visible, true);
+  assert.equal(rest.some((keeper: Mesh): boolean => keeper.visible), false);
+});
+
+void test('a keeper and every part under it is drawn wherever the camera looks, so its halo compiles with its core', (): void => {
+  const orb: Mesh = projectileMesh('orb', new Color(1, 1, 1));
+  neverCulled(orb);
+  let parts: number = 0;
+  let culled: number = 0;
+  orb.traverse((part): void => {
+    parts += 1;
+    if (part.frustumCulled) culled += 1;
+  });
+  assert.ok(parts > 1);
+  assert.equal(culled, 0);
+});
+
+function versionsUnder(roots: readonly Mesh[]): number[] {
+  const found: number[] = [];
+  for (const root of roots) {
+    root.traverse((part): void => {
+      if (!(part instanceof Mesh)) return;
+      const held: unknown = part.material;
+      for (const material of Array.isArray(held) ? held : [held]) if (material instanceof ShaderMaterial || material instanceof MeshBasicMaterial) found.push(material.version);
+    });
+  }
+  return found;
+}
+
+void test('showing the keepers asks every material under them for a fresh program, since an unlit material never asks by itself when the lights change', (): void => {
+  const keepers: Mesh[] = programKeepers(new Color(1, 1, 1));
+  const before: number[] = versionsUnder(keepers);
+  assert.ok(before.length > keepers.length);
+  showKeepers(keepers)();
+  assert.deepEqual(versionsUnder(keepers), before.map((version: number): number => version + 1));
+  const orb: Mesh = projectileMesh('orb', new Color(1, 1, 1));
+  const fresh: number[] = versionsUnder([orb]);
+  rekey(orb);
+  assert.deepEqual(versionsUnder([orb]), fresh.map((version: number): number => version + 1));
 });

@@ -2,7 +2,7 @@ import { attacksHeld } from './glitch-hold.ts';
 import type { AmbushBehaviour, StalkerBehaviour, SummonDef, SwarmBehaviour } from '../content/combat-types.ts';
 import type { MonsterDef, RangedBehaviour, SkillDef, SurgeRules, ZonePack } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { clamp, directionOf, distance, facingOf, normalize, rotate } from '../math.ts';
+import { clamp, directionOf, distance, facingOf, fartherThan, normalize, rotate, within } from '../math.ts';
 import { isWalkable, lineOfSight, lineWalkable, nearestWalkable, routedGrid } from '../nav/grid.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
@@ -15,8 +15,10 @@ import { beingKnocked, faceToward, steerAlong, steerToward, stepKnock, stepTimer
 import { stepRecovery } from './poise.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
 import { monsterLevel, SPAWN, spawnMonster } from './spawn.ts';
+import { stepTrail } from './trail.ts';
 import { alarmTarget, spawnPack, surgeExtra, wakePack } from './packs.ts';
 import { mayStrike } from './factions.ts';
+import type { Side } from './factions.ts';
 import { homeReached, LEASH, shellPoint, shutOut } from './leash.ts';
 import { wardedFrom } from './wards.ts';
 import { revivable } from './revive.ts';
@@ -310,8 +312,12 @@ function heard(world: World, monster: MonsterState, radius: number): boolean {
   });
 }
 
-function strikes(world: World, monster: MonsterState, actor: Actor): boolean {
-  return mayStrike(world, { sourceId: monster.id, faction: monster.def.faction }, actor);
+function sideOfMonster(monster: MonsterState): Side {
+  return { sourceId: monster.id, faction: monster.def.faction };
+}
+
+function strikes(world: World, monster: MonsterState, actor: Actor, side: Side = sideOfMonster(monster)): boolean {
+  return mayStrike(world, side, actor, monster);
 }
 
 function heldFoe(world: World, foeId: number | null): Actor | undefined {
@@ -325,12 +331,14 @@ function foeOf(world: World, monster: MonsterState): Actor | null {
   const held: Actor | undefined = heldFoe(world, monster.foeId);
   if (held !== undefined && strikes(world, monster, held)) return held;
   monster.foeId = null;
-  let best: Actor | null = strikes(world, monster, world.player) ? world.player : null;
+  const side: Side = sideOfMonster(monster);
+  let best: Actor | null = strikes(world, monster, world.player, side) ? world.player : null;
   let bestGap: number = best === null ? Infinity : distance(monster.pos, best.pos);
   const reach: number = monster.def.aggroRadius * MONSTERS.feudReach;
   for (const other of world.monsters) {
+    if (fartherThan(monster.pos, other.pos, Math.min(reach, bestGap))) continue;
     const gap: number = distance(monster.pos, other.pos);
-    if (gap >= bestGap || gap > reach || !strikes(world, monster, other)) continue;
+    if (gap >= bestGap || gap > reach || !strikes(world, monster, other, side)) continue;
     best = other;
     bestGap = gap;
   }
@@ -347,14 +355,15 @@ function fighting(actor: Actor): boolean {
   return actor.kind === 'player' || actor.aggro;
 }
 
-function rousedBy(world: World, monster: MonsterState, actor: Actor, radius: number): boolean {
-  return fighting(actor) && distance(monster.pos, actor.pos) <= radius && strikes(world, monster, actor) && lineOfSight(world.grid, monster.pos, actor.pos);
+function rousedBy(world: World, monster: MonsterState, actor: Actor, radius: number, side: Side): boolean {
+  return fighting(actor) && within(monster.pos, actor.pos, radius) && strikes(world, monster, actor, side) && lineOfSight(world.grid, monster.pos, actor.pos);
 }
 
 function seesFight(world: World, monster: MonsterState): boolean {
   const radius: number = wakeRadius(monster.def);
-  if (rousedBy(world, monster, world.player, radius)) return true;
-  for (const other of world.monsters) if (rousedBy(world, monster, other, radius)) return true;
+  const side: Side = sideOfMonster(monster);
+  if (rousedBy(world, monster, world.player, radius, side)) return true;
+  for (const other of world.monsters) if (rousedBy(world, monster, other, radius, side)) return true;
   return false;
 }
 
@@ -450,6 +459,7 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   const local: number = dt * monster.tempo;
   stepAction(world, monster, local);
   trackProgress(monster, dt);
+  stepTrail(world, monster);
   if (local <= 0) return;
   const foe: Actor | null = monster.aggro ? foeOf(world, monster) : null;
   if (foe !== null && monster.summonerId === null && monster.def.summon !== null) summonOf(world, monster, monster.def.summon, local);

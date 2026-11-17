@@ -54,8 +54,16 @@ export function momentEffects(effects: Effects, deps: MomentViewDeps, renderer: 
       wards.clear();
       portals.clear();
     },
+    showKeepers(): () => void {
+      return effects.showKeepers();
+    },
     showWarm(x: number, z: number): () => void {
-      return moments.showWarm(x, z);
+      const hideMoments: () => void = moments.showWarm(x, z);
+      const hideKeepers: () => void = effects.showKeepers();
+      return (): void => {
+        hideMoments();
+        hideKeepers();
+      };
     },
     ready,
     get hurt(): number {

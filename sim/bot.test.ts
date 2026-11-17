@@ -4,7 +4,8 @@ import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
 import { OUTPOST_CONTENT } from '../test/road-support.ts';
 import { finishQuests, must } from '../test/support.ts';
 import { wheelReach } from './bot-spin.ts';
-import { botFight, botInDanger, botPlay, botRoute, botStep, botTalk, botTravelTo, botWalkTo, createBot, hotGround } from './bot.ts';
+import { botFight, botInDanger, botPlay, botRoute, botStep, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
+import { hotGround } from './bot-ground.ts';
 import type { Bot, BotReport } from './bot.ts';
 import { loadContent } from './content/content.ts';
 import { exitWithheld } from './content/withheld.ts';
@@ -17,7 +18,10 @@ import { createWorld } from './world/create.ts';
 import { placeHazard } from './world/hazards.ts';
 import { placeArea } from './world/areas.ts';
 import { startSkill } from './world/skills.ts';
-import type { MonsterState, World } from './world/types.ts';
+import type { ItemInstance, MonsterState, World } from './world/types.ts';
+import { isUnidentified, veiled } from './identify.ts';
+import { generateItem } from './items.ts';
+import { createRng } from './rng.ts';
 
 const content: Content = loadContent();
 
@@ -200,6 +204,25 @@ void test('a bot fighting from a foe\'s burning patch steps out by a short step 
   assert.ok(Math.hypot(world.player.pos.x - foe.pos.x, world.player.pos.z - foe.pos.z) - foe.radius <= reach + world.player.radius, 'the foe stays in reach');
 });
 
+void test('a bot on a foe\'s burning patch stays to land the blow that kills a foe in reach, and steps out once it is down', (): void => {
+  const world: World = arena(28);
+  world.player.pos = { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z };
+  const foe: MonsterState = place(world, 'test_rower', { x: ARENA_CENTRE.x + HOT_TEST.foe, z: ARENA_CENTRE.z });
+  foe.life = 1;
+  const patch: SkillDef = must(world.content.skills.get('cinder_patch'), 'cinder_patch');
+  const from: Vec2 = { ...world.player.pos };
+  placeArea(world, offenceOf(foe), patch, { x: from.x - HOT_TEST.patch / 2, z: from.z });
+  const bot: Bot = createBot(world, { dodges: true, reaction: 0 });
+  const start: number = world.time;
+  const watch: { wandered: number } = { wandered: 0 };
+  botFight(bot, (): boolean => {
+    if (foe.alive) watch.wandered = Math.max(watch.wandered, Math.hypot(world.player.pos.x - from.x, world.player.pos.z - from.z));
+    return !foe.alive || world.time - start >= HOT_TEST.watch;
+  }, null);
+  assert.equal(foe.alive, false);
+  assert.ok(watch.wandered < HOT_TEST.coolStep / 4, 'it swung where it stood');
+});
+
 function spinningAt(world: World, foe: MonsterState): SkillDef {
   const spin: SkillDef = resolveSkill(world.content, must(world.content.skills.get('cleave'), 'cleave'), ['whirling_cleave', 'endless_turn']);
   world.player.skills = [spin, null, null, null, null, null];
@@ -292,4 +315,18 @@ void test('a careful bot caught in a telegraphed swing while the Millwheel turns
   const goal: Vec2 | null = goalOf(world);
   assert.ok(goal !== null);
   assert.equal(botInDanger(world, goal), false);
+});
+
+void test('the bot reads what it carries for free as soon as its bag changes', (): void => {
+  const bot: Bot = createBot(createWorld(content, { seed: 21, save: null }));
+  const hidden: ItemInstance = veiled(content, must(generateItem(content, createRng(21), 9001, 8, 'gale_charm', 'rare'), 'rare'));
+  bot.world.player.inventory.fill(null);
+  bot.world.player.inventory[0] = hidden;
+  const gold: number = bot.world.player.gold;
+  bot.bagChanged = true;
+  botStep(bot, []);
+  const held: ItemInstance = must(bot.world.player.inventory[0], 'held');
+  assert.equal(isUnidentified(held), false);
+  assert.deepEqual(held.affixes, hidden.affixes);
+  assert.equal(bot.world.player.gold, gold);
 });

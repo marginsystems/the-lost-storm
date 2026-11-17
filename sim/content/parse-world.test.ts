@@ -81,10 +81,10 @@ void test('a zone parses with its kind, level, exits, checkpoints, surge rules a
   assert.equal(arena.kind, 'wild');
   assert.equal(arena.level, 1);
   assert.deepEqual(arena.surge, { delay: 5, surgesPerExtraMonster: 2, maxExtraMonsters: 3 });
-  assert.deepEqual(arena.checkpoints, [{ id: 'grate', x: 28, z: 22, radius: 2 }]);
-  assert.deepEqual(arena.exits[0], { id: 'east', x: 78.4, z: 30, radius: 1.6, to: 'waystation', toExit: 'west_gate', arrival: { x: 73, z: 30 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' });
+  assert.deepEqual(arena.checkpoints, [{ id: 'grate', x: 28, z: 22, radius: 2, marker: null }]);
+  assert.deepEqual(arena.exits[0], { id: 'east', x: 78.4, z: 30, radius: 1.6, to: 'waystation', toExit: 'west_gate', arrival: { x: 73, z: 30 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring', marker: null });
   assert.deepEqual(arena.waypoint, null);
-  assert.deepEqual(town.waypoint, waystation.waypoint);
+  assert.deepEqual(town.waypoint, { ...waystation.waypoint, marker: null });
   const mist = must(must(content.zones.get('hall_of_time'), 'hall').exits.find((exit): boolean => exit.id === 'mist'), 'mist exit');
   assert.deepEqual(mist.requires, []);
   assert.equal(mist.look, 'mist');
@@ -216,7 +216,7 @@ void test('a quest, its three kinds of objective, conditions, a waypoint and map
   const stair = must(town.exits.find((exit): boolean => exit.id === 'west_gate'), 'town stair');
   assert.deepEqual(stair.requires, [{ ...gate, not: false }, { type: 'quest', quest: 'out_of_the_mist', is: 'done', not: true }]);
   assert.equal(stair.lockedHint, 'Later');
-  assert.deepEqual(town.waypoint, waystation.waypoint);
+  assert.deepEqual(town.waypoint, { ...waystation.waypoint, marker: null });
   assert.deepEqual(content.world.acts, world.acts.map((entry: (typeof world.acts)[number]): object => ({ ...entry, end: null, atlas: { ...entry.atlas, chains: entry.atlas.chains, places: entry.atlas.places.map((place: (typeof entry.atlas.places)[number]): object => ({ label: null, chain: null, ...place })) } })));
   const warden = must(npcs.find((entry): boolean => entry.id === 'warden_guide'), 'warden');
   const asked = { type: 'objective', quest: 'errand', objective: 'ask', is: 'current' };

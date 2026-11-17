@@ -1,7 +1,7 @@
 import type { Content, MonsterDef } from '../sim/content/types.ts';
 import type { MomentDef } from '../sim/content/moment-types.ts';
 import { isFields } from '../sim/content/read.ts';
-import { generateItem } from '../sim/items.ts';
+import { rollItem } from '../sim/items.ts';
 import { createRng } from '../sim/rng.ts';
 import type { ItemInstance } from '../sim/world/types.ts';
 
@@ -38,6 +38,8 @@ interface Plan {
   readonly level: number;
   readonly base: string | null;
   readonly rarity: string | null;
+  readonly floor: string | null;
+  readonly zone: string | null;
 }
 
 export const FAKE_TICKETS: { readonly outstanding: number; readonly lifeMs: number } = { outstanding: 16, lifeMs: 900_000 };
@@ -58,25 +60,26 @@ function planFor(content: Content, source: unknown, level: number): Plan | null 
   const common: string | null = content.rarities[0]?.id ?? null;
   const monster: MonsterDef | undefined = content.monsters.get(text(source, 'monster') ?? '');
   const moment: MomentDef | undefined = content.moments.defs.get(text(source, 'moment') ?? '');
+  const zone: string | null = text(source, 'zone');
   switch (kind ?? '') {
     case 'monster':
-      return monster === undefined || monster.boss !== null || monster.loot.itemChance <= 0 ? null : { level, base: null, rarity: null };
+      return monster === undefined || monster.boss !== null || monster.loot.itemChance <= 0 ? null : { level, base: null, rarity: null, floor: null, zone };
     case 'boss':
-      return monster?.boss === undefined || monster.boss === null || monster.boss.drop.items <= 0 ? null : { level, base: null, rarity: monster.boss.drop.rarity };
+      return monster?.boss === undefined || monster.boss === null || monster.boss.drop.items <= 0 ? null : content.leaning ? { level, base: null, rarity: null, floor: monster.boss.drop.floor, zone } : { level, base: null, rarity: monster.boss.drop.floor, floor: null, zone };
     case 'moment':
-      return moment === undefined ? null : { level, base: null, rarity: moment.reward.rarity };
+      return moment === undefined ? null : { level, base: null, rarity: moment.reward.rarity, floor: null, zone };
     case 'find': {
       const find: string | null = text(source, 'find');
-      const zone = content.zones.get(text(source, 'zone') ?? '');
-      const met = zone?.void?.encounters.find((encounter): boolean => encounter.id === find);
-      return met === undefined || met.find.type !== 'item' ? null : { level: 1, base: met.find.item, rarity: common };
+      const place = content.zones.get(zone ?? '');
+      const met = place?.void?.encounters.find((encounter): boolean => encounter.id === find);
+      return met === undefined || met.find.type !== 'item' ? null : { level: 1, base: met.find.item, rarity: common, floor: null, zone };
     }
     case 'start': {
       const base: string | null = text(source, 'base');
-      return base === null || !content.player.startingItems.includes(base) ? null : { level: 1, base, rarity: common };
+      return base === null || !content.player.startingItems.includes(base) ? null : { level: 1, base, rarity: common, floor: null, zone: null };
     }
     case 'trader':
-      return { level, base: text(source, 'base'), rarity: text(source, 'rarity') };
+      return { level, base: text(source, 'base'), rarity: text(source, 'rarity'), floor: null, zone: null };
     default:
       return null;
   }
@@ -106,7 +109,7 @@ export function createFakeLedger(content: Content): FakeLedger {
     if (ticket !== undefined && ticket.state === 'minted' && earlier !== undefined) return { status: 200, body: { item: view(earlier), ticket: ticket.id } };
     if (ticket === undefined || ticket.state !== 'open' || ticket.issuedAt <= now - FAKE_TICKETS.lifeMs) return refused(410, 'ticket_gone');
     const plan: Plan | null = planFor(content, isFields(body) ? body['source'] : null, level);
-    const rolled: ItemInstance | null = plan === null ? null : generateItem(content, createRng(ticket.seed), 0, plan.level, plan.base, plan.rarity);
+    const rolled: ItemInstance | null = plan === null ? null : rollItem(content, createRng(ticket.seed), 0, plan.level, plan);
     if (rolled === null) {
       ticket.state = 'refused';
       return refused(422, 'implausible_source');

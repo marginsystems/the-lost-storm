@@ -161,6 +161,15 @@ void test('unverified ledger ids stay where they are with the ledger cleared', (
   assert.equal(unverifyLedger(world, [LEDGER_A, LEDGER_B]), false);
 });
 
+void test('clearing an unverified ledger keeps an unidentified item unidentified', (): void => {
+  const world: World = worldAt(14);
+  world.player.inventory[0] = { ...held(LEDGER_A, 940), unidentified: true };
+  world.stash[0] = { ...held(LEDGER_B, 941), unidentified: true };
+  assert.equal(unverifyLedger(world, [LEDGER_A, LEDGER_B]), true);
+  assert.deepEqual(world.player.inventory[0], { ...held(LEDGER_A, 940), ledger: null, unidentified: true });
+  assert.equal(world.stash[0].unidentified, true);
+});
+
 void test('only a verified item in the bags or the stash may be listed', (): void => {
   const world: World = worldAt(10);
   world.player.inventory[0] = held(LEDGER_A, 906);
@@ -168,6 +177,8 @@ void test('only a verified item in the bags or the stash may be listed', (): voi
   assert.deepEqual(listable(world, { place: 'bag', index: 0 }), { kind: 'ok', ledger: LEDGER_A, item: world.player.inventory[0] });
   assert.deepEqual(listable(world, { place: 'bag', index: 1 }), { kind: 'refused', reason: 'unverified' });
   assert.deepEqual(listable(world, { place: 'stash', index: 0 }), { kind: 'refused', reason: 'empty' });
+  world.stash[1] = { ...held(LEDGER_B, 909), unidentified: true };
+  assert.deepEqual(listable(world, { place: 'stash', index: 1 }), { kind: 'refused', reason: 'unidentified' });
 });
 
 void test('the purse command applies entries, strips and clears ledgers, and says the character changed', (): void => {

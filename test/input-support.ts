@@ -83,7 +83,7 @@ export function rig(world: World, overUi: () => boolean = (): boolean => false, 
   const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined, readInput: (): void => undefined };
   const store: KeyValueStore = { read: (): null => null, write: (): boolean => true, remove: (): void => undefined };
   const settings: SettingsStore = createSettingsStore(store, slots, { flasks: 0, ladder: false });
-  const hooks: InputHooks = { heightOf: (): number => 1.8, boundsOf: (): boolean => false, labelHover: label, clickMarker: (): void => undefined, aimExit: (): void => undefined, aimItem: (): void => undefined,
+  const hooks: InputHooks = { heightOf: (): number => 1.8, boundsOf: (): boolean => false, labelHover: label, clickMarker: (): void => undefined, aimPlace: (): void => undefined, placeAt: (): null => null, usePlace: (): void => undefined, aimItem: (): void => undefined,
     playerAt: (): string | null => players.at,
     hoverPlayer: (id: string | null): void => {
       players.hovered.push(id);

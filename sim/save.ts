@@ -7,6 +7,7 @@ import type { ChartRetired } from './content/chart-types.ts';
 import { renamedList } from './save-renamed.ts';
 import type { Content, ItemSlot, PointGrant } from './content/types.ts';
 import { heroOf } from './hero.ts';
+import { revealed } from './identify.ts';
 import { emptyEquipment, generateItem, slotOf } from './items.ts';
 import { createRng } from './rng.ts';
 import { placeIn, readCount, restack } from './stacks.ts';
@@ -29,6 +30,9 @@ import { decodeExplored, encodeExplored, exploredSize, grownExplored, savedExplo
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, VendorStock, World } from './world/types.ts';
 import type { PortalSave } from './world/portal-types.ts';
 import { portalToSave, readPortal } from './world/portal-save.ts';
+import type { RunState } from './world/run-types.ts';
+import { copyRun } from './world/run-state.ts';
+import { readRun } from './world/run-save.ts';
 
 export const SAVE_VERSION: number = 6;
 const FLAGGED_VERSION: number = 5;
@@ -70,6 +74,7 @@ export interface SaveData {
   readonly purse: number;
   readonly tally: TallySave;
   readonly portal: PortalSave | null;
+  readonly run: RunState;
 }
 
 interface Worn {
@@ -124,6 +129,7 @@ export function toSave(world: World): SaveData {
     purse: world.purse,
     tally: tallyToSave(player.tally),
     portal: portalToSave(world),
+    run: copyRun(world.run),
   };
 }
 
@@ -159,9 +165,10 @@ function readOne(content: Content, value: Fields): ItemInstance | null {
   const list: readonly unknown[] = affixes;
   const rolled: RolledAffix[] = list.map((entry: unknown): RolledAffix | null => readAffix(content, entry)).filter((entry: RolledAffix | null): entry is RolledAffix => entry !== null);
   const minted: string | null = typeof ledger === 'string' && LEDGER_ID.test(ledger) ? ledger : null;
-  if (rolled.length === list.length) return { uid, base, rarity, level, affixes: rolled, ledger: minted };
+  const hidden: { readonly unidentified?: true } = value['unidentified'] === true ? { unidentified: true } : {};
+  if (rolled.length === list.length) return { uid, base, rarity, level, affixes: rolled, ledger: minted, ...hidden };
   const fresh: ItemInstance | null = generateItem(content, createRng(uid), uid, level, base, rarity);
-  return { uid, base, rarity, level, affixes: fresh === null ? rolled : fresh.affixes, ledger: null };
+  return { uid, base, rarity, level, affixes: fresh === null ? rolled : fresh.affixes, ledger: null, ...hidden };
 }
 
 function readEquipped(content: Content, value: unknown, inventory: (ItemInstance | null)[]): Worn {
@@ -170,8 +177,9 @@ function readEquipped(content: Content, value: unknown, inventory: (ItemInstance
   if (!isFields(value)) return { equipped, spilled };
   const strays: ItemInstance[] = [];
   for (const key of Object.keys(value)) {
-    const item: ItemInstance | null = readItem(content, value[key]);
-    if (item === null) continue;
+    const read: ItemInstance | null = readItem(content, value[key]);
+    if (read === null) continue;
+    const item: ItemInstance = revealed(read);
     const slot: ItemSlot | null = slotOf(content, item);
     if (slot !== null && slot === key && equipped[slot] === null) equipped[slot] = item;
     else strays.push(item);
@@ -417,6 +425,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     purse: readPurse(value['purse']),
     tally: readTally(content, value['tally']),
     portal: readPortal(content, value['portal'], { item: (entry: unknown): ItemInstance | null => readItem(content, entry), respawn: readRespawn }),
+    run: readRun(content, value['run']),
   });
 }
 

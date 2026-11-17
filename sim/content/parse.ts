@@ -1,10 +1,15 @@
+import { markerLibrary } from './parse-markers.ts';
+import { markerProblems } from './markers.ts';
 import { packRanks, rankProblems } from './parse-ranks.ts';
+import { runTable, runTableProblems } from './parse-run-table.ts';
+import { tailwind, tailwindProblems } from './parse-tailwind.ts';
 import { propCache, propLid } from './parse-cache.ts';
 import { atlasProblems } from './atlas.ts';
-import { affix, family, itemBase, rarity } from './parse-items.ts';
+import { affix, dropLean, family, itemBase, rarity } from './parse-items.ts';
 import { itemProblems } from './item-rules.ts';
 import { fitProblems } from './fit-rules.ts';
 import { powerRuleProblems } from './power-rules.ts';
+import { leanProblems } from './lean-rules.ts';
 import { books } from './parse-story.ts';
 import { storyFlagNames, storyProblems } from './story.ts';
 import { bossPackProblems, conditionProblems, roadProblems } from './road.ts';
@@ -88,6 +93,9 @@ export interface RawContent {
   readonly books: unknown;
   readonly moments: unknown;
   readonly packRanks: unknown;
+  readonly runTable: unknown;
+  readonly tailwind: unknown;
+  readonly markers: unknown;
 }
 
 function delivery(value: unknown, where: string): Delivery {
@@ -286,6 +294,7 @@ function prop(value: unknown, where: string): PropDef {
     surfaces: dressing(source['surfaces'], `${where}.surfaces`),
     tint: source['tint'] === undefined ? null : colour(source, 'tint', where),
     service: service(source, where),
+    label: nullableText(source, 'label', where),
     cache: propCache(source['cache'], `${where}.cache`),
     lid: propLid(source['lid'], `${where}.lid`),
   };
@@ -393,6 +402,8 @@ export function parseContent(raw: RawContent): Content {
     rarities: each(itemFields['rarities'], 'items.rarities', rarity),
     itemBases: byId(each(itemFields['bases'], 'items.bases', itemBase), 'items.bases'),
     families: byId(each(itemFields['families'] ?? [], 'items.families', family), 'items.families'),
+    leaning: itemFields['leaning'] === undefined ? false : flag(itemFields, 'leaning', 'items'),
+    leans: [...byId(each(itemFields['leans'] ?? [], 'items.leans', dropLean), 'items.leans').values()],
     affixes: byId(each(itemFields['affixes'], 'items.affixes', affix), 'items.affixes'),
     itemScaling: { implicitPerLevel: numeric(scaling, 'implicitPerLevel', 'items.scaling') },
     skillTree: each(raw.skillTree, 'skillTree', treeNode),
@@ -414,6 +425,9 @@ export function parseContent(raw: RawContent): Content {
     books: books(raw.books, 'books'),
     moments: momentLibrary(raw.moments, 'moments'),
     packRanks: packRanks(raw.packRanks, 'packRanks'),
+    runTable: runTable(raw.runTable, 'runTable'),
+    tailwind: tailwind(raw.tailwind, 'tailwind'),
+    markers: markerLibrary(raw.markers, 'markers'),
   };
 }
 
@@ -488,6 +502,7 @@ export function contentProblems(content: Content): string[] {
   need(content.rarities.length > 0, 'items need at least one rarity');
   problems.push(...itemProblems(content));
   problems.push(...powerRuleProblems(content));
+  problems.push(...leanProblems(content));
   problems.push(...chartProblems(content));
   const setFlags: ReadonlySet<string> = storyFlagNames(content);
   for (const name of content.world.withheld) need(!setFlags.has(name), `flag ${name} is withheld, so nothing may set it`);
@@ -515,7 +530,7 @@ export function contentProblems(content: Content): string[] {
   need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
-  for (const problem of [...combatProblems(content), ...rankProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
+  for (const problem of [...combatProblems(content), ...rankProblems(content), ...tailwindProblems(content), ...markerProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
   for (const problem of storyProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;
@@ -580,6 +595,11 @@ export function contentProblems(content: Content): string[] {
     const lastWord: number = def.talks.findIndex((entry: TalkDef): boolean => !entry.once && entry.when.length === 0);
     need(lastWord >= 0, `npc ${def.id} has no repeatable conversation without conditions`);
     for (const unreachable of lastWord < 0 ? [] : def.talks.slice(lastWord + 1)) need(false, `conversation ${unreachable.id} of ${def.id} can never play: it comes after the repeatable conversation ${def.talks[lastWord]?.id ?? ''}, which has no conditions`);
+    for (const [kind, lineId] of Object.entries(def.remarks)) {
+      const said: LineDef | undefined = content.lines.get(lineId);
+      need(said !== undefined, `npc ${def.id} remark ${kind} uses unknown line ${lineId}`);
+      if (said !== undefined) need(said.speaker === def.id, `npc ${def.id} remark ${kind} uses line ${lineId}, which is spoken by ${said.speaker}`);
+    }
     for (const entry of def.talks) {
       known(`conversation ${entry.id}`, entry.when);
       for (const lineId of entry.lines) {
@@ -604,7 +624,7 @@ export function contentProblems(content: Content): string[] {
   for (const def of content.monsters.values()) {
     if (def.boss === null) continue;
     const at: string = `boss ${def.id}`;
-    need(content.rarities.some((entry: RarityDef): boolean => entry.id === def.boss?.drop.rarity), `${at} drops unknown rarity ${def.boss.drop.rarity}`);
+    need(content.rarities.some((entry: RarityDef): boolean => entry.id === def.boss?.drop.floor), `${at} drops unknown rarity ${def.boss.drop.floor}`);
     for (const phase of def.boss.phases) {
       for (const id of [...phase.skills.map((entry: BossSkill): string => entry.skill), ...phase.measure]) need(content.skills.has(id), `${at} uses unknown skill ${id}`);
       for (const id of [...phase.holds, ...phase.unseal, ...(phase.anchor === null ? [] : [phase.anchor.monster])]) need(content.monsters.has(id) && id !== def.id, `${at} names unknown piece ${id}`);
@@ -621,6 +641,7 @@ export function contentProblems(content: Content): string[] {
     for (const required of questDef.requires) need(content.quests.has(required) && required !== questDef.id, `quest ${questDef.id} requires unknown quest ${required}`);
   }
   problems.push(...tradeProblems(content));
+  problems.push(...runTableProblems(content));
   problems.push(...momentProblems(content));
   problems.push(...sceneProblems(content, flagNames));
   return problems;

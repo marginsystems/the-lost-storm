@@ -1,0 +1,20 @@
+{
+  "name": "Tailwind",
+  "fuse": 5,
+  "weights": {
+    "plain": 1,
+    "ranks": {"normal": 1, "magic": 2, "rare": 2},
+    "leader": 6,
+    "boss": 6
+  },
+  "burst": {"window": 0.4, "seconds": 0.75, "most": 1.75},
+  "idle": {"drain": 2, "reach": 14},
+  "fight": {"drain": 0.35, "reach": 12},
+  "tiers": [
+    {"id": "breeze", "name": "Breeze", "at": 3, "fuse": 5, "xp": 0.02, "loot": 0.05, "speed": 0, "windfallXp": 0, "windfallGold": 0},
+    {"id": "flurry", "name": "Flurry", "at": 8, "fuse": 5.25, "xp": 0.03, "loot": 0.1, "speed": 0, "windfallXp": 0.01, "windfallGold": 0.05},
+    {"id": "torrent", "name": "Torrent", "at": 15, "fuse": 5.5, "xp": 0.04, "loot": 0.15, "speed": 0.02, "windfallXp": 0.02, "windfallGold": 0.1},
+    {"id": "cloudburst", "name": "Cloudburst", "at": 24, "fuse": 5.75, "xp": 0.05, "loot": 0.2, "speed": 0.03, "windfallXp": 0.03, "windfallGold": 0.15},
+    {"id": "stormfront", "name": "Stormfront", "at": 36, "fuse": 6, "xp": 0.07, "loot": 0.3, "speed": 0.05, "windfallXp": 0.04, "windfallGold": 0.2}
+  ]
+}

@@ -11,6 +11,7 @@ import { iconSvg } from './icons.ts';
 import type { ItemCell } from './item-cell.ts';
 import { createItemCell, showItem } from './item-cell.ts';
 import { promptText, use } from './prompts.ts';
+import { watchScrollFade } from './scroll-fade.ts';
 
 export const PLAYER_TRADE_PANEL = {
   firstUid: -1_000_000,
@@ -73,8 +74,9 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
   const head: HTMLDivElement = el('div', 'trade-head', element);
   const title: HTMLDivElement = label('panel-title', 'Trade', head);
   const status: HTMLDivElement = label('trade-role swap-status', '', head);
-  const line: HTMLDivElement = label('auction-line', '', element);
-  const columns: HTMLDivElement = el('div', 'swap-columns', element);
+  const body: HTMLDivElement = el('div', 'swap-body', element);
+  const line: HTMLDivElement = label('auction-line', '', body);
+  const columns: HTMLDivElement = el('div', 'swap-columns', body);
   let goldInput: HTMLInputElement | null = null;
   const give: SideView = sideView(context, columns, 'You give', 'Take it back from your bag below', (holder: HTMLElement): HTMLElement => {
     const input: HTMLInputElement = el('input', 'auction-input swap-gold-input', holder);
@@ -89,10 +91,11 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
     return input;
   });
   const get: SideView = sideView(context, columns, 'You get', 'What they give you', (holder: HTMLElement): HTMLElement => label('swap-gold-amount', '0', holder));
-  const countdown: HTMLDivElement = el('div', 'swap-countdown', element);
+  const countdown: HTMLDivElement = el('div', 'swap-countdown', body);
   const fill: HTMLDivElement = el('div', 'swap-countdown-fill', countdown);
-  const bagHead: HTMLDivElement = label('swap-bag-title', `Your bag: ${promptText(context.api.touch, use('offer an item'))}`, element);
-  const bagGrid: HTMLDivElement = el('div', 'inv-grid swap-bag', element);
+  const bagHead: HTMLDivElement = label('swap-bag-title', `Your bag: ${promptText(context.api.touch, use('offer an item'))}`, body);
+  const bagGrid: HTMLDivElement = el('div', 'inv-grid swap-bag', body);
+  watchScrollFade(body);
   const actions: HTMLDivElement = el('div', 'swap-actions', element);
   const reason: HTMLDivElement = label('swap-reason', '', actions);
   const confirm: HTMLButtonElement = actButton(actions, 'Confirm', 'Confirmed');
@@ -106,6 +109,7 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
       if (entry === undefined) return '';
       if (entry.block === 'story') return 'Story items cannot be traded';
       if (entry.block === 'unverified') return 'Only items in the ledger can be traded';
+      if (entry.block === 'unidentified') return 'Unidentified items cannot be traded. Have it identified first.';
       return promptText(context.api.touch, use(entry.offered ? 'take it back' : 'offer it'));
     });
     view.cell.addEventListener('click', (): void => {

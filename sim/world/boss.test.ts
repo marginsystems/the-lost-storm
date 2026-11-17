@@ -23,6 +23,10 @@ import type { SaveData } from '../save.ts';
 
 const shipped: Content = loadContent();
 const DT: number = 1 / 30;
+
+function rankOf(rarity: string): number {
+  return shipped.rarities.findIndex((entry): boolean => entry.id === rarity);
+}
 const ROOM: string = 'proving_ground';
 
 type EventOf<T extends WorldEvent['type']> = Extract<WorldEvent, { readonly type: T }>;
@@ -211,7 +215,7 @@ void test('a boss barks when it notices the hero and when it dies, and drops its
   const drops = ofType(dying, 'drop').map((event) => event.ground.content);
   const items = drops.flatMap((content) => (content.kind === 'item' ? [content.item] : []));
   assert.equal(items.length, block.drop.items);
-  assert.ok(items.every((item): boolean => item.rarity === block.drop.rarity));
+  assert.ok(items.every((item): boolean => (shipped.leaning ? rankOf(item.rarity) >= rankOf(block.drop.floor) : item.rarity === block.drop.floor)), 'with leaning off a boss drops exactly its floor, as the server rolls it');
   const gold = drops.flatMap((content) => (content.kind === 'gold' ? [content.amount] : []));
   assert.equal(gold.length, 1);
   assert.ok(must(gold[0], 'gold') >= block.drop.goldMin);
@@ -399,7 +403,7 @@ void test('the first Gatekeeper kill pays once: a share of a level, a purse of g
   assert.ok(ofType(won, 'xp').some((event): boolean => event.amount === bonus), `no first-kill experience of ${bonus}`);
   const firstDrops = bossDrops(won);
   assert.equal(firstDrops.items, block.drop.items);
-  assert.ok(firstDrops.rarities.every((rarity: string): boolean => rarity === block.drop.rarity));
+  assert.ok(firstDrops.rarities.every((rarity: string): boolean => (shipped.leaning ? rankOf(rarity) >= rankOf(block.drop.floor) : rarity === block.drop.floor)));
   assert.equal(firstDrops.gold.length, 2);
   assert.ok(firstDrops.gold.some((amount: number): boolean => amount >= first.goldMin && amount <= first.goldMax));
   const rematch: World = armed(worldIn(room('timekeeper_gatekeeper'), ROOM, 9));

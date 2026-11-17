@@ -147,3 +147,11 @@ void test('a move that leaves two part stacks behind merges them at once', (): v
   assert.deepEqual(counts(stash), [SIZE, 1]);
   assert.deepEqual(counts(bag), [9, null]);
 });
+
+void test('reading or recounting an unidentified item keeps it unidentified', (): void => {
+  const hidden: ItemInstance = { ...must(generateItem(content, createRng(77), 77, 9, 'gale_charm', 'rare'), 'rare'), unidentified: true };
+  assert.equal(withCount(hidden, 1).unidentified, true);
+  assert.equal(readCount(content, hidden, undefined).unidentified, true);
+  const known: ItemInstance = must(generateItem(content, createRng(78), 78, 9, 'gale_charm', 'rare'), 'rare');
+  assert.equal('unidentified' in withCount(known, 1), false);
+});

@@ -1,4 +1,5 @@
 import type { Content, PropDef, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
+import { zoneMarkerModels, zoneMarkerSurfaces } from '../../sim/content/markers.ts';
 
 export function zoneProps(zone: ZoneDef): string[] {
   const walls: string[] = zone.walls === null ? [] : [...zone.walls.tall, zone.walls.low, zone.walls.corner];
@@ -19,6 +20,7 @@ export function zoneModels(content: Content, zone: ZoneDef): Set<string> {
     const def: PropDef | undefined = content.props.get(propId);
     if (def !== undefined) models.add(def.model);
   }
+  for (const model of zoneMarkerModels(content, zone)) models.add(model);
   return models;
 }
 
@@ -33,6 +35,7 @@ export function zoneSurfaces(content: Content, zone: ZoneDef): Set<string> {
     const def: PropDef | undefined = content.props.get(propId);
     if (def !== undefined) for (const id of Object.values(def.surfaces)) ids.add(id);
   }
+  for (const id of zoneMarkerSurfaces(content, zone)) ids.add(id);
   for (const attachment of content.attachments.values()) for (const id of Object.values(attachment.surfaces)) ids.add(id);
   for (const wearable of content.wearables.values()) for (const id of Object.values(wearable.surfaces)) ids.add(id);
   return ids;

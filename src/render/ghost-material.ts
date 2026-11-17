@@ -68,11 +68,11 @@ export interface RigGlow {
   readonly shade: IUniform<Color>;
   readonly shadeMix: IUniform<number>;
   readonly shadeWet: IUniform<number>;
-  readonly aura: IUniform<Color>;
+  readonly rankRim: IUniform<Color>;
 }
 
 export function createRigGlow(): RigGlow {
-  return { flash: { value: new Color(0, 0, 0) }, lift: { value: 0 }, hover: { value: new Color(0, 0, 0) }, shade: { value: new Color(0, 0, 0) }, shadeMix: { value: 0 }, shadeWet: { value: 0 }, aura: { value: new Color(0, 0, 0) } };
+  return { flash: { value: new Color(0, 0, 0) }, lift: { value: 0 }, hover: { value: new Color(0, 0, 0) }, shade: { value: new Color(0, 0, 0) }, shadeMix: { value: 0 }, shadeWet: { value: 0 }, rankRim: { value: new Color(0, 0, 0) } };
 }
 
 export function createGhostUniforms(tint: Color, mix: number): GhostUniforms {

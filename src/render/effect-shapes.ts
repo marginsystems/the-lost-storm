@@ -416,6 +416,30 @@ export function programKeepers(color: Color): Mesh[] {
   return [createGroundLight(color, { kind: 'round', radius: 1, inner: 0, arc: Math.PI * 2 }, { fill: 1, band: 1, width: 0.2, wobble: 0.1 }).mesh, scorchMesh(color).mesh, slashMesh(1, 1, color).mesh, new Mesh(bare, additive(color, 0)), new Mesh(bare, flat(color, 0)), projectileMesh('orb', color), pillarMesh(color, 1, 1)];
 }
 
+export function neverCulled(keeper: Mesh): void {
+  keeper.traverse((part): void => {
+    part.frustumCulled = false;
+  });
+}
+
+export function rekey(keeper: Mesh): void {
+  keeper.traverse((part): void => {
+    if (!(part instanceof Mesh)) return;
+    const held: unknown = part.material;
+    const materials: readonly unknown[] = Array.isArray(held) ? held : [held];
+    for (const material of materials) if (isMaterial(material)) material.needsUpdate = true;
+  });
+}
+
+export function showKeepers(keepers: readonly Mesh[]): () => void {
+  const hidden: Mesh[] = keepers.filter((keeper: Mesh): boolean => !keeper.visible);
+  for (const keeper of keepers) rekey(keeper);
+  for (const keeper of hidden) keeper.visible = true;
+  return (): void => {
+    for (const keeper of hidden) keeper.visible = false;
+  };
+}
+
 export function disposeObject(object: Mesh | Group): void {
   object.traverse((child): void => {
     liftOffGround(child);

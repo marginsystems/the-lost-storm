@@ -24,17 +24,18 @@ export function regardOf(content: Content, from: string, toward: string): Regard
   return other === 'hostile' || other === 'wary' ? 'hostile' : 'neutral';
 }
 
-function grudge(world: World, sourceId: number, target: Actor): boolean {
-  const source: MonsterState | undefined = world.monsters.find((monster: MonsterState): boolean => monster.id === sourceId);
-  return source !== undefined && source.foeId === target.id;
+function grudge(world: World, sourceId: number, target: Actor, source: MonsterState | null): boolean {
+  if (source !== null) return source.foeId === target.id;
+  for (const monster of world.monsters) if (monster.id === sourceId) return monster.foeId === target.id;
+  return false;
 }
 
-export function mayStrike(world: World, side: Side, target: Actor): boolean {
+export function mayStrike(world: World, side: Side, target: Actor, source: MonsterState | null = null): boolean {
   if (!target.alive || target.id === side.sourceId || (target.kind === 'monster' && target.sealed) || wardStops(world, side, target)) return false;
   const from: string = side.faction ?? PLAYER_SIDE;
   const toward: string = sideOf(target);
   if (from === toward) return false;
-  return regardOf(world.content, from, toward) === 'hostile' || grudge(world, side.sourceId, target);
+  return regardOf(world.content, from, toward) === 'hostile' || grudge(world, side.sourceId, target, source);
 }
 
 export function playerMayStrike(world: World, monster: MonsterState): boolean {

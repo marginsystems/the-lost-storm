@@ -13,6 +13,7 @@ import type { TradeFrame, TradeItem, TradeSide } from './trade-protocol.ts';
 
 const content: Content = loadContent();
 const LEDGER: string = 'itm_AAAAAAAAAAAAAAAAAAAAAA';
+const HIDDEN: string = 'itm_HHHHHHHHHHHHHHHHHHHHHH';
 const OTHER: string = 'itm_BBBBBBBBBBBBBBBBBBBBBB';
 const BLADE: TradeItem = { id: LEDGER, base: 'rusted_blade', rarity: 'magic', level: 3, affixes: [] };
 const EMPTY: TradeSide = { items: [], gold: 0, confirmed: false };
@@ -40,6 +41,7 @@ function rig(): Rig {
   world.player.inventory[0] = { uid: 50, base: 'rusted_blade', rarity: 'magic', level: 3, affixes: [], ledger: LEDGER };
   world.player.inventory[1] = { uid: 51, base: 'rusted_blade', rarity: 'magic', level: 3, affixes: [], ledger: null };
   world.player.inventory[2] = { uid: 52, base: 'worn_journal', rarity: 'common', level: 1, affixes: [], ledger: OTHER };
+  world.player.inventory[3] = { uid: 53, base: 'rusted_blade', rarity: 'rare', level: 3, affixes: [], ledger: HIDDEN, unidentified: true };
   const flow: PlayerTrade = createTradeFlow({
     live: {
       canTrade: (): boolean => live.ready,
@@ -99,7 +101,7 @@ void test('an ask to you can be accepted or declined, and goes away on its own w
   assert.equal(r.flow.state().incoming, null);
 });
 
-void test('the bag lists what can be offered and why a story or unverified item cannot', (): void => {
+void test('the bag lists what can be offered and why a story, unverified or unidentified item cannot', (): void => {
   const r: Rig = opened();
   const bag: readonly BagEntry[] = r.flow.bag();
   assert.deepEqual(
@@ -108,6 +110,7 @@ void test('the bag lists what can be offered and why a story or unverified item 
       [0, null, false],
       [1, 'unverified', false],
       [2, 'story', false],
+      [3, 'unidentified', false],
     ],
   );
 });

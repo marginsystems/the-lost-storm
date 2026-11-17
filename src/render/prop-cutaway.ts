@@ -3,6 +3,7 @@ import type { Object3D } from 'three';
 import type { Vec2 } from '../../sim/math.ts';
 import type { PassThrough } from './terrain-lift.ts';
 import type { Point3, TerrainSight } from './terrain-sight.ts';
+import { meshBlocks, prepareTrees } from './triangle-tree.ts';
 import type { Intersection } from 'three';
 import { InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Raycaster, Sphere, Vector2, Vector3 } from 'three';
 
@@ -151,8 +152,7 @@ function instanceBlocks(mesh: InstancedMesh): boolean {
     if (segmentMisses(spheres, index)) continue;
     mesh.getMatrixAt(index, instanceLocal);
     single.matrixWorld.multiplyMatrices(mesh.matrixWorld, instanceLocal);
-    single.raycast(probe, hits);
-    if (hits.length > 0) return true;
+    if (meshBlocks(single, probe, hits)) return true;
   }
   return false;
 }
@@ -161,9 +161,14 @@ function isInstanced(object: Object3D): object is InstancedMesh {
   return object instanceof InstancedMesh;
 }
 
+function isMesh(object: Object3D): object is Mesh {
+  return object instanceof Mesh;
+}
+
 function blocksProbe(object: Object3D): boolean {
   hits.length = 0;
   if (isInstanced(object)) return instanceBlocks(object);
+  if (isMesh(object)) return object.layers.test(probe.layers) && meshBlocks(object, probe, hits);
   probe.intersectObject(object, false, hits);
   return hits.length > 0;
 }
@@ -368,6 +373,7 @@ function neededRadius(camera: PerspectiveCamera, centre: Vector3, aspect: number
 }
 
 export function setOccluders(list: readonly Object3D[]): void {
+  prepareTrees(list);
   occluders = list;
 }
 
@@ -376,6 +382,7 @@ export function setTerrainSight(sight: TerrainSight | null): void {
 }
 
 export function claimCutaway(list: readonly Object3D[], sight: TerrainSight | null): symbol {
+  prepareTrees(list);
   occluders = list;
   terrain = sight;
   owner = Symbol('cutaway');

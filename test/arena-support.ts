@@ -11,6 +11,7 @@ import { SCENE_BASE } from './road-support.ts';
 import { armed, must, worldIn } from './support.ts';
 
 export const ARENA_CENTRE: Vec2 = { x: 14, z: 14 };
+const ARENA_FIRST_ID: number = 18;
 
 const OPEN: readonly string[] = ['.......', '.......', '.......', '.......', '.......', '.......', '.......'];
 
@@ -42,9 +43,9 @@ const MONSTERS: readonly MonsterDef[] = [
 ];
 
 const MODS: readonly MonsterModDef[] = [
-  { id: 'test_swift', prefix: 'Swift', lifeScale: 1.2, damageScale: 1, speedScale: 1.5, sizeScale: 1.05, xpScale: 2, lootScale: 2, color: '#ffffff', deathSkill: null, summon: null, staggerScale: 1, regen: 0 },
-  { id: 'test_volatile', prefix: 'Volatile', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 2, lootScale: 2, color: '#ff8040', deathSkill: 'test_burst', summon: null, staggerScale: 1, regen: 0 },
-  { id: 'test_brood', prefix: 'Brood', lifeScale: 2, damageScale: 1, speedScale: 1, sizeScale: 1.2, xpScale: 3, lootScale: 3, color: '#80ff80', deathSkill: null, summon: { monster: null, count: 2, cooldown: 3, limit: 3 }, staggerScale: 1, regen: 0 },
+  { id: 'test_swift', prefix: 'Swift', lifeScale: 1.2, damageScale: 1, speedScale: 1.5, sizeScale: 1.05, xpScale: 2, lootScale: 2, color: '#ffffff', deathSkill: null, summon: null, staggerScale: 1, knockbackScale: 1, regen: 0, guard: null, element: null, trail: null, line: '' },
+  { id: 'test_volatile', prefix: 'Volatile', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 2, lootScale: 2, color: '#ff8040', deathSkill: 'test_burst', summon: null, staggerScale: 1, knockbackScale: 1, regen: 0, guard: null, element: null, trail: null, line: '' },
+  { id: 'test_brood', prefix: 'Brood', lifeScale: 2, damageScale: 1, speedScale: 1, sizeScale: 1.2, xpScale: 3, lootScale: 3, color: '#80ff80', deathSkill: null, summon: { monster: null, count: 2, cooldown: 3, limit: 3 }, staggerScale: 1, knockbackScale: 1, regen: 0, guard: null, element: null, trail: null, line: '' },
 ];
 
 function byId<T extends { readonly id: string }>(base: ReadonlyMap<string, T>, extra: readonly T[]): Map<string, T> {
@@ -62,6 +63,7 @@ export function arena(seed: number, content: Content = ARENA_CONTENT): World {
   const world: World = worldIn(content, content.world.town, seed);
   enterZone(world, sceneZone(SCENE_BASE, 'test_arena', { tiles: OPEN, props: [], start: ARENA_CENTRE }), { type: 'start' });
   world.monsters = [];
+  world.nextId = ARENA_FIRST_ID;
   return armed(world);
 }
 

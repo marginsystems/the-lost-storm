@@ -538,6 +538,17 @@ body.touch .hud-gold-waiting.shown {
   color: #8fd0ff;
 }
 
+.tip-line.unread {
+  max-width: 240px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.tip-sub.tip-unidentified {
+  color: #e8c98a;
+  letter-spacing: 0.04em;
+}
+
 .tip-sep {
   height: 1px;
   margin: 5px 0;

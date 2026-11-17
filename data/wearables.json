@@ -1084,5 +1084,52 @@
     "region": "neck",
     "tint": "#ffffff",
     "hides": []
+  },
+  {
+    "id": "appraiser_robe",
+    "model": "models/wear/{frame}/peasant.glb",
+    "pieces": [
+      "Peasant_Body",
+      "Peasant_Arms"
+    ],
+    "region": "chest",
+    "tint": "#4a3352",
+    "hides": []
+  },
+  {
+    "id": "appraiser_skirt",
+    "model": "models/wear/{frame}/peasant.glb",
+    "pieces": [
+      "Peasant_Legs"
+    ],
+    "region": "legs",
+    "tint": "#35263c",
+    "hides": []
+  },
+  {
+    "id": "appraiser_hood",
+    "model": "models/wear/{frame}/ranger.glb",
+    "pieces": [
+      "Ranger_Hood"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "tint": "#3b2a44",
+    "hides": []
+  },
+  {
+    "id": "appraiser_charm",
+    "model": "models/wear/{frame}/charms.glb",
+    "pieces": [
+      "Gale_Charm"
+    ],
+    "region": "neck",
+    "fits": {
+      "coat": "gale_charm_coat"
+    },
+    "tint": "#ffffff",
+    "hides": []
   }
 ]

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { Bone, BufferAttribute, BufferGeometry, Group, Matrix4, Mesh, MeshStandardMaterial, Raycaster, Skeleton, SkinnedMesh, Vector3 } from 'three';
 import { must } from '../../test/support.ts';
 import type { CasterCache, CasterPiece } from './shadow-caster.ts';
-import { casterGeometry, castsTogether, createCasterCache, createShadowCaster, drawNothing, drawWhole, isShadowCaster, SHADOW_CASTER } from './shadow-caster.ts';
+import { casterDepth, casterGeometry, castsTogether, createCasterCache, createShadowCaster, drawNothing, drawWhole, isShadowCaster, SHADOW_CASTER } from './shadow-caster.ts';
 
 function triangle(x: number, joint: number): BufferGeometry {
   const geometry: BufferGeometry = new BufferGeometry();
@@ -150,3 +150,13 @@ void test('a caster geometry is built once for everyone who takes it, kept for a
   assert.equal(cache.take('d', build), held);
 });
 
+
+void test('every caster draws its shadow with one depth material of its own kind, so the shadow pass never re-fits a shared one between skinned and rigid meshes', (): void => {
+  const anchor: SkinnedMesh = new SkinnedMesh(triangle(0, 0), new MeshStandardMaterial());
+  anchor.bind(new Skeleton([new Bone()]));
+  const first: SkinnedMesh = createShadowCaster(anchor);
+  const second: SkinnedMesh = createShadowCaster(anchor);
+  assert.equal(first.customDepthMaterial, casterDepth());
+  assert.equal(second.customDepthMaterial, casterDepth());
+  assert.equal(anchor.customDepthMaterial, undefined);
+});

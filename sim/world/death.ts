@@ -95,10 +95,10 @@ export function respawnPlayer(world: World, choice: RespawnChoice): void {
   revive(world);
   const from: string = world.zone.id;
   if (outside !== null && world.zone.deathReturn !== null) {
-    enterZone(world, outside, { type: 'exit', exit: world.zone.deathReturn.exit });
+    enterZone(world, outside, { type: 'exit', exit: world.zone.deathReturn.exit }, true);
     world.events.push({ type: 'zone_changed', from, to: outside.id });
   } else if (away) {
-    enterZone(world, town, { type: 'start' });
+    enterZone(world, town, { type: 'start' }, true);
     world.events.push({ type: 'zone_changed', from, to: town.id });
   } else {
     if (choice === 'checkpoint') world.respawn = restPoint(world);

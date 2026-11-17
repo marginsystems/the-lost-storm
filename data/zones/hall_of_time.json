@@ -154,6 +154,7 @@
     }
   ],
   "waypoint": {"x": 14, "z": 30, "radius": 1.8},
+  "markerSurfaces": {"stone": "hall_stone"},
   "npcs": [],
   "scenes": [
     {

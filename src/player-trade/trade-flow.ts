@@ -12,7 +12,7 @@ export const TRADE_FLOW = {
   goldSettleMs: 350,
 } as const;
 
-export type BagBlock = 'story' | 'unverified' | null;
+export type BagBlock = 'story' | 'unverified' | 'unidentified' | null;
 
 export interface BagEntry {
   readonly index: number;
@@ -52,7 +52,8 @@ function idsOf(items: readonly TradeItem[]): string[] {
 
 function blockOf(found: Listable): BagBlock {
   if (found.kind === 'ok') return null;
-  return found.reason === 'story' ? 'story' : 'unverified';
+  if (found.reason === 'story' || found.reason === 'unidentified') return found.reason;
+  return 'unverified';
 }
 
 export function createTradeFlow(options: TradeFlowOptions): PlayerTrade {

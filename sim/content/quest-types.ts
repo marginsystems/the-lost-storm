@@ -1,4 +1,4 @@
-import type { ServiceKind } from './trade-types.ts';
+import type { RemarkKind, ServiceKind } from './trade-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { StoryFlags } from './story-types.ts';
 
@@ -75,5 +75,6 @@ export interface NpcDef {
   readonly wear: readonly string[];
   readonly talks: readonly TalkDef[];
   readonly service: ServiceKind | null;
+  readonly remarks: Readonly<Partial<Record<RemarkKind, string>>>;
   readonly faction: string | null;
 }

@@ -20,10 +20,12 @@ import { createRestShadows } from './rest-shadows.ts';
 import type { Spring } from '../hud/character-spring.ts';
 import { springTo, stepSpring } from '../hud/character-spring.ts';
 import type { AnimationBank } from './animation-bank.ts';
-import { animationBank } from './animation-bank.ts';
+import { animationBank, closeRate } from './animation-bank.ts';
 import type { SpinCentre } from './spin-centre.ts';
 import { centreShift, createSpinCentre, holdSpinCentre, measurePivot } from './spin-centre.ts';
 import type { SpinPose } from './spin-view.ts';
+import type { ClipSpin } from './spin-clips.ts';
+import { loopDue, SPIN_CLIPS, startClipSpin } from './spin-clips.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -224,6 +226,8 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   const hipsAt: Vector3 = new Vector3();
   let centring: boolean = false;
   let spinPose: AnimationAction | null = null;
+  let clipSpin: ClipSpin | null = null;
+  let pivot: Object3D | null = null;
   const contacts: { readonly bone: Object3D; readonly radius: number }[] = rig.def.contacts.flatMap((contact: RigContact): { readonly bone: Object3D; readonly radius: number }[] => {
     const bone: Object3D | undefined = findNode(rig.root, contact.bone);
     return bone === undefined ? [] : [{ bone, radius: contact.radius }];
@@ -309,9 +313,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   };
 
   const play = (clip: AnimationClip, fade: number, speed: number, once: boolean, restart: boolean): void => {
-    payOwed();
     const next: AnimationAction = rig.mixer.clipAction(clip);
     const previous: AnimationAction = current;
+    if (next === previous && !restart && (next.timeScale === speed || (bank.owing() && closeRate(next.timeScale, speed)))) return;
+    payOwed();
     if (next === previous && !restart) {
       next.timeScale = speed;
       return;
@@ -502,7 +507,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       if (step !== null) rig.mixer.update(step);
       if (centring && hips !== null) {
         rig.root.updateMatrixWorld(true);
-        hips.getWorldPosition(hipsAt);
+        (pivot ?? hips).getWorldPosition(hipsAt);
         measurePivot(centre, { x: hipsAt.x, z: hipsAt.z }, { x: rig.root.position.x, z: rig.root.position.z }, rig.root.rotation.y);
       }
       rig.stepWear(dt);
@@ -525,17 +530,43 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         yaw += turned;
         turned = 0;
         spinning = false;
-        oneShot = Math.min(oneShot, ACTOR.actionTail);
+        const ending: ActionClip | undefined = clipSpin === null || dead ? undefined : actionClip(rig, clipSpin.clips.end);
+        clipSpin = null;
+        if (ending !== undefined) {
+          play(ending.clip, ACTOR.spinFade, 1, true, true);
+          acting = current;
+          spinPose = current;
+        }
+        oneShot = ending === undefined ? Math.min(oneShot, ACTOR.actionTail) : ending.clip.duration;
         recovering = true;
         return;
       }
       turned = turn;
       oneShot = Math.max(oneShot, ACTOR.actionTail);
       if (spinning) {
-        if (pose.cycle !== null && spinPose !== null) spinPose.time = pose.cycle * spinPose.getClip().duration;
+        if (loopDue(clipSpin, current)) {
+          const looping: ActionClip | undefined = actionClip(rig, clipSpin.clips.loop);
+          if (looping !== undefined) {
+            play(looping.clip, SPIN_CLIPS.loopFade, 1, false, true);
+            acting = current;
+            spinPose = current;
+            clipSpin.loop = current;
+          }
+        }
+        const cycled: AnimationAction | null = clipSpin === null ? spinPose : clipSpin.loop;
+        if (pose.cycle !== null && cycled !== null) cycled.time = pose.cycle * cycled.getClip().duration;
         return;
       }
       spinning = true;
+      clipSpin = pose.clips === null ? null : startClipSpin(rig.root, pose.clips);
+      pivot = clipSpin === null ? null : clipSpin.pivot;
+      const opening: ActionClip | undefined = clipSpin === null ? undefined : actionClip(rig, clipSpin.clips.start);
+      if (opening !== undefined) {
+        play(opening.clip, ACTOR.spinFade, 1, true, true);
+        acting = current;
+        spinPose = current;
+        return;
+      }
       const entry: ActionClip | undefined = actionClip(rig, animation);
       if (entry === undefined) return;
       play(entry.clip, ACTOR.spinFade, 1, true, true);
