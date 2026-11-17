@@ -436,3 +436,45 @@ void test('the Gyre-Stitched Breeches pull a ring of foes in toward a hero turni
   assert.ok(alone > 1.8, `the wheel alone moved them to ${alone.toFixed(2)}`);
   assert.ok(pulled < alone - 0.3, `pulled to ${pulled.toFixed(2)} against ${alone.toFixed(2)}`);
 });
+
+void test('the Bellwether Helm answers every fourth blow a monster lands with a Thunderclap around the hero, counts none while it rests, and ignores blows from no monster', (): void => {
+  const world: World = hero();
+  wear(world, 'bellwether_helm');
+  refreshPlayer(world);
+  const foe: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 1, z: ARENA_CENTRE.z });
+  const blow: SkillDef = skill('test_grab');
+  const land = (sourceId: number): void => {
+    world.player.life = 100000;
+    world.player.invulnerable = 0;
+    applyHit(world, { ...offenceOf(foe), sourceId }, world.player, blow, { x: -1, z: 0 });
+  };
+  for (let count: number = 0; count < 3; count += 1) land(foe.id);
+  assert.deepEqual(casts(world), []);
+  land(foe.id);
+  assert.deepEqual(casts(world), ['thunderclap']);
+  assert.deepEqual(must(world.echoes[0], 'clap').origin, { x: world.player.pos.x, z: world.player.pos.z });
+  for (let count: number = 0; count < 4; count += 1) land(foe.id);
+  assert.equal(world.echoes.length, 1);
+  stepPowerState(world.player.powers, 1.1);
+  for (let count: number = 0; count < 8; count += 1) land(-1);
+  assert.equal(world.echoes.length, 1);
+  for (let count: number = 0; count < 4; count += 1) land(foe.id);
+  assert.deepEqual(casts(world), ['thunderclap', 'thunderclap']);
+});
+
+void test('the Anvilback Hauberk slams a Thunderclap when a Heaving Cleave is let go, not after a plain swing, and every enemy a Thunderclap strikes stacks armour up to fifteen', (): void => {
+  const world: World = hero();
+  wear(world, 'anvilback_hauberk');
+  const heave: SkillDef = resolveSkill(content, skill('cleave'), ['heaving_cleave']);
+  assert.equal(heave.form, 'cleave_heave');
+  firePowers(world, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos });
+  assert.deepEqual(casts(world), []);
+  firePowers(world, { on: 'use', skill: heave, target: null, at: world.player.pos });
+  firePowers(world, { on: 'use', skill: heave, target: null, at: world.player.pos });
+  assert.deepEqual(casts(world), ['thunderclap']);
+  assert.deepEqual(must(world.echoes[0], 'clap').origin, { x: world.player.pos.x, z: world.player.pos.z });
+  const target: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
+  for (let hit: number = 0; hit < 20; hit += 1) firePowers(world, { on: 'hit', skill: skill('thunderclap'), target, at: target.pos });
+  firePowers(world, { on: 'hit', skill: skill('cleave'), target, at: target.pos });
+  assert.ok(Math.abs(must(buffMods(world.player.powers)[0], 'armour').value - 60) < 1e-9);
+});

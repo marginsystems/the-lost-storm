@@ -275,6 +275,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     drench(world, target, skill);
   }
   if (offence.sourceId === world.player.id && target.kind === 'monster') powersOnHit(world, target, skill, killed);
+  if (target.kind === 'player' && !killed && striker?.kind === 'monster' && firePowers(world, { on: 'struck', skill, target: striker, at: { x: target.pos.x, z: target.pos.z } })) refreshPlayer(world);
   brandStrike(world, offence, target, skill);
   return true;
 }

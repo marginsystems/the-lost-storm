@@ -69,7 +69,7 @@ export interface ItemBaseDef {
   readonly stack: number;
 }
 
-export const POWER_TRIGGERS = ['hit', 'kill', 'pulse', 'use'] as const;
+export const POWER_TRIGGERS = ['hit', 'kill', 'pulse', 'use', 'struck'] as const;
 export type PowerTrigger = (typeof POWER_TRIGGERS)[number];
 export const POWER_TARGETS = ['any', 'echo'] as const;
 export type PowerTarget = (typeof POWER_TARGETS)[number];

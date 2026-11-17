@@ -3724,6 +3724,136 @@
       }
     },
     {
+      "id": "bellwether_helm",
+      "name": "Bellwether Helm",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 1,
+      "minLevel": 6,
+      "visual": null,
+      "wear": [
+        "iron_helm"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 16
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 18
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.02
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "groundbreaker",
+        "text": "Every fourth blow that lands on you answers with a Thunderclap around you, and Thunderclap reaches 20% wider.",
+        "skillMods": [
+          {
+            "skill": "thunderclap",
+            "field": "areaPercent",
+            "value": 0.2
+          }
+        ],
+        "triggers": [
+          {
+            "on": "struck",
+            "every": 4,
+            "cooldown": 1,
+            "effect": {
+              "type": "cast",
+              "skill": "thunderclap",
+              "at": "caster"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "anvilback_hauberk",
+      "name": "Anvilback Hauberk",
+      "slot": "chest",
+      "material": "plate",
+      "icon": "armour",
+      "dropWeight": 1,
+      "minLevel": 6,
+      "visual": null,
+      "wear": [
+        "blackened_plate"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 36
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 30
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.05
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "flatten": 0.35,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      },
+      "power": {
+        "family": "groundbreaker",
+        "text": "Letting go of a Heaving Cleave also slams a Thunderclap around you, and each enemy a Thunderclap strikes gives +4 Armour for 5 s (stacks 15).",
+        "triggers": [
+          {
+            "on": "use",
+            "skill": {
+              "skill": "cleave_heave"
+            },
+            "cooldown": 1.5,
+            "effect": {
+              "type": "cast",
+              "skill": "thunderclap",
+              "at": "caster"
+            }
+          },
+          {
+            "on": "hit",
+            "skill": {
+              "skill": "thunderclap"
+            },
+            "effect": {
+              "type": "buff",
+              "stat": "armour",
+              "op": "add",
+              "value": 4,
+              "duration": 5,
+              "stacks": 15
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "rainmaker",
       "name": "Rainmaker",
       "slot": "weapon",
