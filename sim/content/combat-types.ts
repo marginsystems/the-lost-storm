@@ -76,6 +76,24 @@ export interface SummonDef {
   readonly limit: number;
 }
 
+export interface MonsterElement {
+  readonly type: 'storm' | 'frost';
+  readonly share: number;
+  readonly resist: number;
+}
+
+export interface MonsterTrail {
+  readonly skill: string;
+  readonly every: number;
+  readonly limit: number;
+}
+
+export interface ModMotes {
+  readonly color: string;
+  readonly rate: number;
+  readonly lift: number;
+}
+
 export interface MonsterModDef {
   readonly id: string;
   readonly prefix: string;
@@ -89,7 +107,13 @@ export interface MonsterModDef {
   readonly deathSkill: string | null;
   readonly summon: SummonDef | null;
   readonly staggerScale: number;
+  readonly knockbackScale: number;
   readonly regen: number;
+  readonly guard: GuardDef | null;
+  readonly element: MonsterElement | null;
+  readonly trail: MonsterTrail | null;
+  readonly motes: ModMotes | null;
+  readonly line: string;
 }
 
 export interface ReviveDelivery {

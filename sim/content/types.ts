@@ -5,7 +5,7 @@ import type { AffixDef, DropLean, FamilyDef, ItemBaseDef, ItemScaling, PowerTrig
 export type { WeaponKind } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
 import type { AttachmentDef, RigDef } from './rig-types.ts';
-import type { AlarmDef, AmbushBehaviour, BodyCrust, DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, RecoveryDef, ReviveDelivery, SkillEchoing, StalkerBehaviour, SummonDef, SwarmBehaviour } from './combat-types.ts';
+import type { AlarmDef, AmbushBehaviour, BodyCrust, DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, RecoveryDef, ReviveDelivery, SkillEchoing, StalkerBehaviour, SummonDef, SwarmBehaviour } from './combat-types.ts';
 import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
 import type { TradeDef } from './trade-types.ts';
 import type { RunTableDef } from './run-table-types.ts';
@@ -228,6 +228,8 @@ export interface MonsterDef {
   readonly support: string | null;
   readonly barks: readonly string[];
   readonly regen: number;
+  readonly element: MonsterElement | null;
+  readonly trail: MonsterTrail | null;
   readonly rank: MonsterRank | null;
   readonly heatproof: boolean;
   readonly crust: BodyCrust | null;

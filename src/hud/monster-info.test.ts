@@ -125,7 +125,7 @@ void test('the plate shows a ranked monster in its rank colour and lists a rare 
   const brute: MonsterDef = must(content.monsters.get('unfinished_brute'), 'brute');
   const rare: PackRankDef = must(content.packRanks.ranks.find((rank: PackRankDef): boolean => rank.id === 'rare'), 'rare');
   assert.deepEqual(rankPlate(content, taker), { color: null, mods: '' });
-  const [follower, leader] = rankPack(content, createRng(4), rare, [taker, brute]);
+  const [follower, leader] = rankPack(content, createRng(4), rare, [taker, brute], 20);
   const led: MonsterDef = must(leader, 'leader');
   const plate: RankPlate = rankPlate(content, led);
   assert.equal(plate.color, rare.color);
@@ -173,4 +173,10 @@ void test('a sleeper that wakes drops its sleeping line from the kept info', ():
   const awake: MonsterInfo = monsterInfo(asleep, world, monster);
   assert.ok(!awake.states.includes('Asleep until it hears you'));
   assertFresh(awake, world, monster);
+});
+
+void test('every modifier a monster carries has its own line in the card', (): void => {
+  const { world, monster } = spawn('mended', ['smouldering', 'stormlit']);
+  const states: string[] = texts(monsterLines(world, monster), 'state');
+  for (const id of ['smouldering', 'stormlit']) assert.ok(states.includes(must(content.monsterMods.get(id), id).line), id);
 });

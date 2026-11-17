@@ -1,5 +1,5 @@
 import type { MonsterModDef } from '../content/combat-types.ts';
-import type { MonsterRank, PackRankDef, PackRanks, RankChance, RankModChoice, RankScale } from '../content/rank-types.ts';
+import type { ModPair, MonsterRank, PackRankDef, PackRanks, RankChance, RankModChoice, RankScale } from '../content/rank-types.ts';
 import type { Content, MonsterDef } from '../content/types.ts';
 import type { Rng } from '../rng.ts';
 import { pickWeighted } from '../rng.ts';
@@ -19,17 +19,28 @@ export function rollRank(ranks: PackRanks, rng: Rng, level: number, boost: numbe
   return plain;
 }
 
-function rollMods(content: Content, rng: Rng, count: number): MonsterModDef[] {
-  const left: RankModChoice[] = [...content.packRanks.pool];
-  const chosen: MonsterModDef[] = [];
-  while (chosen.length < count && left.length > 0) {
+export function keptApart(apart: readonly ModPair[], one: string, other: string): boolean {
+  return apart.some(([first, second]: ModPair): boolean => (first === one && second === other) || (first === other && second === one));
+}
+
+export function modAvailable(entry: RankModChoice, leader: boolean, level: number): boolean {
+  return entry.leader === leader && entry.from <= level;
+}
+
+export function rollMods(content: Content, rng: Rng, count: number, leader: boolean, held: readonly MonsterModDef[], level: number): MonsterModDef[] {
+  const apart: readonly ModPair[] = content.packRanks.apart;
+  const fits = (entry: RankModChoice, chosen: readonly MonsterModDef[]): boolean => modAvailable(entry, leader, level) && chosen.every((mod: MonsterModDef): boolean => mod.id !== entry.mod && !keptApart(apart, mod.id, entry.mod));
+  const chosen: MonsterModDef[] = [...held];
+  const wanted: number = held.length + count;
+  while (chosen.length < wanted) {
+    const left: RankModChoice[] = content.packRanks.pool.filter((entry: RankModChoice): boolean => fits(entry, chosen));
     const picked: RankModChoice | null = pickWeighted(rng, left);
     if (picked === null) break;
-    left.splice(left.indexOf(picked), 1);
     const mod: MonsterModDef | undefined = content.monsterMods.get(picked.mod);
-    if (mod !== undefined) chosen.push(mod);
+    if (mod === undefined) break;
+    chosen.push(mod);
   }
-  return chosen;
+  return chosen.slice(held.length);
 }
 
 function pickName(rng: Rng, names: readonly string[]): string {
@@ -44,11 +55,11 @@ function leaderIndex(bases: readonly MonsterDef[]): number {
   return best;
 }
 
-function scaled(def: MonsterDef, rank: PackRankDef, scale: RankScale, leader: boolean, title: string | null): MonsterDef {
-  const ranked: MonsterRank = { id: rank.id, name: rank.name, color: rank.color, aura: rank.aura, leader, title, xp: scale.xp, items: scale.items, floor: scale.floor, size: scale.size, look: rank.look };
+function scaled(def: MonsterDef, rank: PackRankDef, scale: RankScale, leader: boolean, shown: string): MonsterDef {
+  const ranked: MonsterRank = { id: rank.id, name: rank.name, color: rank.color, aura: rank.aura, leader, title: leader ? shown : null, xp: scale.xp, items: scale.items, floor: scale.floor, size: scale.size, look: rank.look };
   return {
     ...def,
-    name: title ?? def.name,
+    name: shown,
     scale: def.scale * scale.size,
     life: def.life * scale.life,
     damageMin: def.damageMin * scale.damage,
@@ -64,16 +75,16 @@ function scaled(def: MonsterDef, rank: PackRankDef, scale: RankScale, leader: bo
   };
 }
 
-export function rankPack(content: Content, rng: Rng, rank: PackRankDef | null, bases: readonly MonsterDef[]): MonsterDef[] {
+export function rankPack(content: Content, rng: Rng, rank: PackRankDef | null, bases: readonly MonsterDef[], level: number): MonsterDef[] {
   if (rank === null || rank.chance === null || bases.length === 0) return [...bases];
   const lead: RankScale | null = rank.leader;
-  const mods: MonsterModDef[] = rollMods(content, rng, Math.max(rank.members.mods, lead?.mods ?? 0));
-  const shared: MonsterModDef[] = mods.slice(0, rank.members.mods);
+  const shared: MonsterModDef[] = rollMods(content, rng, rank.members.mods, false, [], level);
+  const mods: MonsterModDef[] = lead === null ? shared : [...shared, ...rollMods(content, rng, Math.max(0, lead.mods - rank.members.mods), true, shared, level)];
   const leader: number = lead === null ? -1 : leaderIndex(bases);
   const title: string | null = lead === null ? null : `${pickName(rng, content.packRanks.names.first)} ${pickName(rng, content.packRanks.names.second)}`;
   return bases.map((base: MonsterDef, index: number): MonsterDef => {
-    if (index === leader && lead !== null) return scaled(withMods(base, mods.slice(0, lead.mods)), rank, lead, true, title);
-    return scaled(withMods(base, shared), rank, rank.members, false, null);
+    if (index === leader && lead !== null) return scaled(withMods(base, mods), rank, lead, true, title ?? base.name);
+    return scaled(withMods(base, shared), rank, rank.members, false, base.name);
   });
 }
 

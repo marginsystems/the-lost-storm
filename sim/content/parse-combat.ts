@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
-import { ContentError, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, SkillCommit, SkillEchoing, SkillLeap, SummonDef } from './combat-types.ts';
+import { choice, colour, ContentError, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
+import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, ModMotes, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillLeap, SummonDef } from './combat-types.ts';
 import type { MonsterRank } from './rank-types.ts';
 import { bodyCrust } from './parse-crust.ts';
 import type { Content, MonsterDef, SkillDef } from './types.ts';
@@ -112,6 +112,22 @@ function summon(source: Fields, where: string): SummonDef {
   return { monster: nullableText(source, 'monster', where), count, cooldown: positive(source, 'cooldown', where), limit };
 }
 
+const ELEMENTS = ['storm', 'frost'] as const;
+
+function element(source: Fields, where: string): MonsterElement {
+  return { type: choice(source, 'type', ELEMENTS, where), share: share(source, 'share', where), resist: share(source, 'resist', where) };
+}
+
+function trail(source: Fields, where: string): MonsterTrail {
+  const limit: number = positive(source, 'limit', where);
+  if (!Number.isInteger(limit)) throw new ContentError(`${where}.limit`, 'expected a whole number');
+  return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit };
+}
+
+function motes(source: Fields, where: string): ModMotes {
+  return { color: colour(source, 'color', where), rate: positive(source, 'rate', where), lift: positive(source, 'lift', where) };
+}
+
 export interface MonsterTraits {
   readonly poise: MonsterPoise;
   readonly guard: GuardDef | null;
@@ -124,6 +140,8 @@ export interface MonsterTraits {
   readonly support: string | null;
   readonly barks: readonly string[];
   readonly regen: number;
+  readonly element: MonsterElement | null;
+  readonly trail: MonsterTrail | null;
   readonly rank: MonsterRank | null;
   readonly heatproof: boolean;
   readonly crust: BodyCrust | null;
@@ -142,6 +160,8 @@ export function monsterTraits(source: Fields, where: string): MonsterTraits {
     support: nullableText(source, 'support', where),
     barks: source['barks'] === undefined ? [] : textList(source, 'barks', where),
     regen: zeroOrMore(source, 'regen', where),
+    element: optional(source['element'], `${where}.element`, element),
+    trail: optional(source['trail'], `${where}.trail`, trail),
     rank: null,
     heatproof: source['heatproof'] === undefined ? false : flag(source, 'heatproof', where),
     crust: source['crust'] === undefined || source['crust'] === null ? null : bodyCrust(source['crust'], `${where}.crust`),
@@ -167,7 +187,13 @@ export function monsterMod(value: unknown, where: string): MonsterModDef {
     deathSkill: nullableText(source, 'deathSkill', where),
     summon: optional(source['summon'], `${where}.summon`, summon),
     staggerScale: source['staggerScale'] === undefined ? 1 : positive(source, 'staggerScale', where),
+    knockbackScale: source['knockbackScale'] === undefined ? 1 : positive(source, 'knockbackScale', where),
     regen: zeroOrMore(source, 'regen', where),
+    guard: optional(source['guard'], `${where}.guard`, guard),
+    element: optional(source['element'], `${where}.element`, element),
+    trail: optional(source['trail'], `${where}.trail`, trail),
+    motes: optional(source['motes'], `${where}.motes`, motes),
+    line: text(source, 'line', where),
   };
 }
 
@@ -176,6 +202,13 @@ function blasts(content: Content, holder: string, skillId: string | null, need: 
   const used: SkillDef | undefined = content.skills.get(skillId);
   need(used !== undefined, `${holder} bursts with unknown skill ${skillId}`);
   if (used !== undefined) need(used.delivery.type === 'mark', `${holder} bursts with skill ${skillId}, which is not a mark on the ground`);
+}
+
+function trails(content: Content, holder: string, left: MonsterTrail | null, need: (ok: boolean, problem: string) => void): void {
+  if (left === null) return;
+  const used: SkillDef | undefined = content.skills.get(left.skill);
+  need(used !== undefined, `${holder} leaves a trail of unknown skill ${left.skill}`);
+  if (used !== undefined) need(used.delivery.type === 'area' && used.delivery.anchor === 'ground', `${holder} leaves a trail of ${left.skill}, which is not a lasting area on the ground`);
 }
 
 function summons(content: Content, holder: string, called: SummonDef | null, need: (ok: boolean, problem: string) => void): void {
@@ -194,6 +227,7 @@ export function combatProblems(content: Content): string[] {
     need(def.boss === null || def.guard === null, `boss ${def.id} cannot have a guard; bosses are never staggered`);
     blasts(content, `monster ${def.id}`, def.deathSkill, need);
     summons(content, `monster ${def.id}`, def.summon, need);
+    trails(content, `monster ${def.id}`, def.trail, need);
     if (def.support !== null) {
       const helper: SkillDef | undefined = content.skills.get(def.support);
       need(helper !== undefined, `monster ${def.id} supports with unknown skill ${def.support}`);
@@ -215,6 +249,8 @@ export function combatProblems(content: Content): string[] {
   for (const mod of content.monsterMods.values()) {
     blasts(content, `monster mod ${mod.id}`, mod.deathSkill, need);
     summons(content, `monster mod ${mod.id}`, mod.summon, need);
+    trails(content, `monster mod ${mod.id}`, mod.trail, need);
+    need(mod.guard === null || mod.guard.breakStagger > 0, `monster mod ${mod.id} grants a guard nothing can break`);
   }
   for (const zoneDef of content.zones.values()) {
     for (const packDef of zoneDef.packs) {
