@@ -23,10 +23,10 @@ void test('a zone mixes the damage its monsters deal by kind, from their own ski
   assert.deepEqual(zoneDamageMix(content, { ...caves, packs: [] }), { physical: 1, storm: 0, frost: 0 });
 });
 
-void test('a volatile pack mod brings a little storm into a physical cave through its death burst', (): void => {
+void test('ranked packs bring storm and frost into a physical cave, and a volatile mod brings storm through its death burst', (): void => {
   const mix = zoneDamageMix(content, caves);
-  assert.ok(mix.storm > 0 && mix.storm < 0.05);
-  assert.equal(mix.frost, 0);
+  assert.ok(mix.storm > 0 && mix.storm < 0.5);
+  assert.ok(mix.frost > 0 && mix.frost < 0.5);
   const plain: ZoneDef = { ...caves, ranks: false };
   assert.equal(zoneDamageMix(content, plain).storm, 0);
   const volatile: ZoneDef = { ...plain, packs: [{ x: 0, z: 0, when: [], members: [{ monster: 'wolf', count: 1, mods: ['volatile'] }] }] };
@@ -79,4 +79,13 @@ void test('a threat splits into here and ahead, each weighed to one, and with no
   assert.ok(Math.abs((partOf(threat, true)?.zones.reduce((sum: number, zone: ThreatZone): number => sum + zone.weight, 0) ?? 0) - 1) < 1e-9);
   assert.ok(shareOf(threat, 'physical') > 0.9);
   assert.equal(shareOf(threatAt(content, null, 1), 'physical'), 1);
+});
+
+void test('a stormlit or rimebound monster deals its element share of what it hits as that element', (): void => {
+  const plain: ZoneDef = { ...caves, ranks: false };
+  for (const [mod, type] of [['stormlit', 'storm'], ['rimebound', 'frost']] as const) {
+    const share: number = must(must(content.monsterMods.get(mod), mod).element, `${mod} element`).share;
+    const charged: ZoneDef = { ...plain, packs: [{ x: 0, z: 0, when: [], members: [{ monster: 'wolf', count: 1, mods: [mod] }] }] };
+    assert.ok(Math.abs(zoneDamageMix(content, charged)[type] - share) < 1e-9);
+  }
 });

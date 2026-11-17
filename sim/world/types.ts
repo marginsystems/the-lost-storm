@@ -230,6 +230,7 @@ export interface MonsterState extends ActorState {
   yielded: boolean;
   readonly summonerId: number | null;
   summonTimer: number;
+  trailFrom: Vec2;
   foeId: number | null;
   readonly revived: boolean;
   leashTime: number;

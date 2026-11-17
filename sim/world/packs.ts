@@ -35,7 +35,7 @@ export function spawnPack(world: World, pack: ZonePack, extra: number, awake: bo
     const count: number = member.count + (index === 0 ? extra : 0);
     for (let spawned: number = 0; spawned < count; spawned += 1) defs.push(def);
   });
-  const ranked: MonsterDef[] = world.zone.ranks && ranksHere(defs) ? rankPack(world.content, world.rng, packRank(world, pack, level), defs) : defs;
+  const ranked: MonsterDef[] = world.zone.ranks && ranksHere(defs) ? rankPack(world.content, world.rng, packRank(world, pack, level), defs, level) : defs;
   const row: Vec2 = pack.row ?? { x: 0, z: 0 };
   const spawned: MonsterState[] = ranked.map((def: MonsterDef, place: number): MonsterState => spawnMonster(world, def, packId, { x: pack.x + row.x * place, z: pack.z + row.z * place }, { summonerId: null, scatter: pack.row === undefined ? SPAWN.spawnScatter : 0, revived: false, level }));
   const first: MonsterState | undefined = spawned[0];

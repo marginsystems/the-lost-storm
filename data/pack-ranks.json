@@ -17,7 +17,7 @@
       "aura": "#4f8cff",
       "look": { "body": 0.5, "ground": 0.5, "reach": 1.7 },
       "chance": { "base": 0.1, "perLevel": 0.006, "max": 0.2 },
-      "members": { "life": 1.6, "damage": 1.15, "xp": 1.8, "itemChance": 1.8, "gold": 1.6, "items": 0, "floor": null, "mods": 1, "size": 1.12 },
+      "members": { "life": 1.6, "damage": 1.15, "xp": 1.8, "itemChance": 1.8, "gold": 1.6, "items": 0, "floor": null, "mods": 2, "size": 1.12 },
       "leader": null
     },
     {
@@ -27,16 +27,31 @@
       "aura": "#f0b83c",
       "look": { "body": 0.6, "ground": 0.6, "reach": 1.9 },
       "chance": { "base": 0.025, "perLevel": 0.003, "max": 0.08 },
-      "members": { "life": 1.3, "damage": 1.1, "xp": 1.4, "itemChance": 1.4, "gold": 1.3, "items": 0, "floor": null, "mods": 1, "size": 1.25 },
-      "leader": { "life": 3.2, "damage": 1.3, "xp": 5, "itemChance": 1, "gold": 3, "items": 2, "floor": "magic", "mods": 3, "size": 1.4 }
+      "members": { "life": 1.3, "damage": 1.1, "xp": 1.4, "itemChance": 1.4, "gold": 1.3, "items": 0, "floor": null, "mods": 3, "size": 1.25 },
+      "leader": { "life": 3.2, "damage": 1.3, "xp": 5, "itemChance": 1, "gold": 3, "items": 2, "floor": "magic", "mods": 4, "size": 1.4 }
     }
   ],
   "pool": [
     { "mod": "swift", "weight": 3 },
     { "mod": "hulking", "weight": 3 },
+    { "mod": "brutal", "weight": 3, "from": 14 },
+    { "mod": "smouldering", "weight": 2, "from": 14 },
+    { "mod": "stormlit", "weight": 2, "from": 14 },
+    { "mod": "rimebound", "weight": 2, "from": 14 },
+    { "mod": "warded", "weight": 2, "from": 14 },
     { "mod": "volatile", "weight": 2 },
     { "mod": "unyielding", "weight": 2 },
-    { "mod": "mending", "weight": 2 }
+    { "mod": "mending", "weight": 2 },
+    { "mod": "kincalling", "weight": 1, "from": 14, "leader": true }
+  ],
+  "apart": [
+    ["swift", "unyielding"],
+    ["swift", "brutal"],
+    ["swift", "smouldering"],
+    ["swift", "warded"],
+    ["warded", "unyielding"],
+    ["warded", "mending"],
+    ["stormlit", "rimebound"]
   ],
   "names": {
     "first": ["Ashen", "Hollow", "Unmade", "Last", "Grey", "Undone", "Forgotten", "Restless", "Broken", "Quiet", "Pale", "Drowned"],

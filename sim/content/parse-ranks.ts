@@ -1,7 +1,7 @@
 import type { Fields } from './read.ts';
-import { colour, ContentError, each, fields, nonNegative, nullableText, positive, share, text, textList } from './read.ts';
+import { colour, ContentError, each, fields, flag, nonNegative, nullableText, positive, share, text, textList } from './read.ts';
 import type { MonsterModDef } from './combat-types.ts';
-import type { PackRankDef, PackRanks, RankChance, RankLook, RankModChoice, RankScale } from './rank-types.ts';
+import type { ModPair, PackRankDef, PackRanks, RankChance, RankLook, RankModChoice, RankScale } from './rank-types.ts';
 import type { Content, MonsterDef, PackMember, RarityDef, ZoneDef, ZonePack } from './types.ts';
 
 function chance(value: unknown, where: string): RankChance | null {
@@ -55,7 +55,16 @@ function rank(value: unknown, where: string): PackRankDef {
 
 function choice(value: unknown, where: string): RankModChoice {
   const source: Fields = fields(value, where);
-  return { mod: text(source, 'mod', where), weight: positive(source, 'weight', where) };
+  return { mod: text(source, 'mod', where), weight: positive(source, 'weight', where), leader: source['leader'] === undefined ? false : flag(source, 'leader', where), from: source['from'] === undefined ? 1 : Math.max(1, whole(source, 'from', where)) };
+}
+
+function pair(value: unknown, where: string): ModPair {
+  if (!Array.isArray(value) || value.length !== 2) throw new ContentError(where, 'expected a pair of modifier ids');
+  const items: readonly unknown[] = value.map((item: unknown): unknown => item);
+  const first: unknown = items[0];
+  const second: unknown = items[1];
+  if (typeof first !== 'string' || typeof second !== 'string' || first === second) throw new ContentError(where, 'expected two different modifier ids');
+  return [first, second];
 }
 
 export function packRanks(value: unknown, where: string): PackRanks {
@@ -68,6 +77,7 @@ export function packRanks(value: unknown, where: string): PackRanks {
   return {
     ranks,
     pool: each(source['pool'], `${where}.pool`, choice),
+    apart: source['apart'] === undefined ? [] : each(source['apart'], `${where}.apart`, pair),
     names: { first: textList(names, 'first', `${where}.names`), second: textList(names, 'second', `${where}.names`) },
   };
 }
@@ -114,14 +124,19 @@ export function rankProblems(content: Content): string[] {
     floorKnown(content, `pack rank ${def.id} members`, def.members, need);
     need(def.look === null || def.aura !== null, `pack rank ${def.id} has a look but no aura colour to light it with`);
     if (def.leader !== null) floorKnown(content, `pack rank ${def.id} leader`, def.leader, need);
-    const most: number = Math.max(def.members.mods, def.leader?.mods ?? 0);
-    need(most <= ranks.pool.length, `pack rank ${def.id} rolls ${most} modifiers, but the pool holds ${ranks.pool.length}`);
+    const shared: number = ranks.pool.filter((entry: RankModChoice): boolean => !entry.leader).length;
+    const led: number = ranks.pool.length - shared;
+    need(def.members.mods <= shared, `pack rank ${def.id} rolls ${def.members.mods} shared modifiers, but the pool holds ${shared}`);
+    if (def.leader !== null) need(def.leader.mods - def.members.mods <= led, `pack rank ${def.id} gives its leader ${def.leader.mods - def.members.mods} modifiers of its own, but the pool holds ${led} for leaders`);
     if (def.leader !== null) need(def.leader.mods >= def.members.mods, `pack rank ${def.id} gives its followers more modifiers than its leader`);
   }
   for (const entry of ranks.pool) {
     const mod: MonsterModDef | undefined = content.monsterMods.get(entry.mod);
     need(mod !== undefined, `pack rank pool names unknown modifier ${entry.mod}`);
-    if (mod !== undefined) need(mod.summon === null, `pack rank pool modifier ${entry.mod} summons, and a ranked pack must not call monsters from outside its zone`);
+    if (mod !== undefined) need(mod.summon === null || (entry.leader && mod.summon.monster === null), `pack rank pool modifier ${entry.mod} summons, and only a leader may call, and only its own kind`);
+  }
+  for (const [first, second] of ranks.apart) {
+    for (const id of [first, second]) need(ranks.pool.some((entry: RankModChoice): boolean => entry.mod === id), `pack rank modifiers kept apart name ${id}, which is not in the pool`);
   }
   need(ranks.names.first.length > 0 && ranks.names.second.length > 0, 'pack ranks need names for rare leaders');
   for (const zone of content.zones.values()) problems.push(...zoneRankProblems(content, zone));

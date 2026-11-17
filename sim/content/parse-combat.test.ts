@@ -7,7 +7,7 @@ import { combatProblems, markDelivery, monsterMod, monsterTraits, packMods, skil
 import type { Content, MonsterDef, SkillDef, ZoneDef } from './types.ts';
 
 void test('a monster without combat traits is steady, unguarded and plain', (): void => {
-  assert.deepEqual(monsterTraits({ faction: 'f' }, 'm'), { poise: { knockback: 1, stagger: 1, resolve: 0 }, guard: null, deathSkill: null, summon: null, mods: [], faction: 'f', dormant: null, alarm: null, support: null, barks: [], regen: 0, rank: null, heatproof: false, crust: null });
+  assert.deepEqual(monsterTraits({ faction: 'f' }, 'm'), { poise: { knockback: 1, stagger: 1, resolve: 0 }, guard: null, deathSkill: null, summon: null, mods: [], faction: 'f', dormant: null, alarm: null, support: null, barks: [], regen: 0, rank: null, heatproof: false, crust: null, element: null, trail: null });
   assert.deepEqual(skillMotion({}, 's'), { leap: null, root: 0, hold: 0, stun: 0, echo: 0, echoTurn: 0, echoShare: 1, lifeOnHit: 0, leech: 0, commit: null, leaves: null });
   assert.equal(skillMotion({ stun: 0.6, leech: 0.03 }, 's').stun, 0.6);
   assert.equal(skillMotion({ stun: 0.6, leech: 0.03 }, 's').leech, 0.03);
@@ -35,8 +35,14 @@ void test('combat traits are read and checked', (): void => {
 });
 
 void test('a monster modifier reads every field', (): void => {
-  const mod: MonsterModDef = monsterMod({ id: 'm', prefix: 'P', lifeScale: 2, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null }, 'mod');
+  const mod: MonsterModDef = monsterMod({ id: 'm', prefix: 'P', lifeScale: 2, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null, line: 'Hits hard' }, 'mod');
   assert.equal(mod.summon, null);
+  assert.equal(mod.line, 'Hits hard');
+  assert.deepEqual([mod.knockbackScale, mod.guard, mod.element, mod.trail, mod.motes], [1, null, null, null, null]);
+  const full: MonsterModDef = monsterMod({ id: 'f', prefix: 'F', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null, line: 'All of it', knockbackScale: 0.3, element: { type: 'frost', share: 0.6, resist: 0.5 }, trail: { skill: 'wake', every: 1.4, limit: 4 }, motes: { color: '#ff0000', rate: 3, lift: 1 } }, 'mod');
+  assert.deepEqual([full.knockbackScale, full.element, full.trail, full.motes?.rate], [0.3, { type: 'frost', share: 0.6, resist: 0.5 }, { skill: 'wake', every: 1.4, limit: 4 }, 3]);
+  assert.throws(() => monsterMod({ id: 'm', prefix: 'P', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null }, 'mod'), /line/);
+  assert.throws(() => monsterMod({ id: 'm', prefix: 'P', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null, line: 'x', element: { type: 'fire', share: 0.5, resist: 0.5 } }, 'mod'), /fire|storm|frost/);
   assert.throws(() => monsterMod({ id: 'm' }, 'mod'), /prefix/);
 });
 

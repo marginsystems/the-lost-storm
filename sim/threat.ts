@@ -1,9 +1,9 @@
 import type { BossPhase } from './content/boss-types.ts';
-import type { MonsterModDef } from './content/combat-types.ts';
-import type { PackRankDef, RankScale } from './content/rank-types.ts';
+import type { MonsterElement, MonsterModDef } from './content/combat-types.ts';
+import type { PackRankDef, RankModChoice, RankScale } from './content/rank-types.ts';
 import type { ActDef, Content, DamageType, MonsterDef, SkillDef, ZoneDef, ZonePack } from './content/types.ts';
 import { DAMAGE_TYPES } from './content/types.ts';
-import { rankChance } from './world/ranks.ts';
+import { modAvailable, rankChance } from './world/ranks.ts';
 import { withMods } from './world/elites.ts';
 
 export const THREAT = {
@@ -96,6 +96,16 @@ function bossDealt(content: Content, def: MonsterDef, phases: readonly BossPhase
   return dealt;
 }
 
+export function charged(dealt: Dealt, element: MonsterElement | null): void {
+  if (element === null) return;
+  for (const type of DAMAGE_TYPES) {
+    if (type === element.type) continue;
+    const moved: number = dealt[type] * element.share;
+    dealt[type] -= moved;
+    dealt[element.type] += moved;
+  }
+}
+
 function dealtBy(content: Content, def: MonsterDef, depth: number): Dealt {
   const dealt: Dealt = none();
   if (def.boss !== null && def.boss.phases.length > 0) addInto(dealt, bossDealt(content, def, def.boss.phases), 1);
@@ -105,6 +115,7 @@ function dealtBy(content: Content, def: MonsterDef, depth: number): Dealt {
   }
   const last: SkillDef | undefined = def.deathSkill === null ? undefined : content.skills.get(def.deathSkill);
   if (last !== undefined) dealt[last.damage.type] += hitOf(def, last);
+  charged(dealt, def.element);
   const called: MonsterDef | undefined = def.summon === null || def.summon.monster === null ? undefined : content.monsters.get(def.summon.monster);
   if (called !== undefined && def.summon !== null && depth < THREAT.summonDepth) addInto(dealt, dealtBy(content, called, depth + 1), def.summon.limit);
   return dealt;
@@ -114,21 +125,23 @@ function scaledDef(def: MonsterDef, scale: RankScale): MonsterDef {
   return { ...def, damageMin: def.damageMin * scale.damage, damageMax: def.damageMax * scale.damage };
 }
 
-function modOdds(content: Content, picks: number): readonly ModOdds[] {
-  const total: number = content.packRanks.pool.reduce((sum: number, choice): number => sum + Math.max(0, choice.weight), 0);
+function modOdds(content: Content, picks: number, leader: boolean, level: number): readonly ModOdds[] {
+  const pool: readonly RankModChoice[] = content.packRanks.pool.filter((choice: RankModChoice): boolean => modAvailable(choice, leader, level));
+  const total: number = pool.reduce((sum: number, choice: RankModChoice): number => sum + Math.max(0, choice.weight), 0);
   if (total <= 0 || picks <= 0) return [];
-  return content.packRanks.pool.flatMap((choice): ModOdds[] => {
+  return pool.flatMap((choice: RankModChoice): ModOdds[] => {
     const mod: MonsterModDef | undefined = content.monsterMods.get(choice.mod);
     const one: number = Math.max(0, choice.weight) / total;
     return mod === undefined ? [] : [{ mod, odds: 1 - Math.pow(1 - one, picks) }];
   });
 }
 
-function rankedDealt(content: Content, def: MonsterDef, scale: RankScale): Dealt {
+function rankedDealt(content: Content, def: MonsterDef, scale: RankScale, shared: number, level: number): Dealt {
   const base: MonsterDef = scaledDef(def, scale);
   const plain: Dealt = dealtBy(content, base, 0);
   const dealt: Dealt = { ...plain };
-  for (const { mod, odds } of modOdds(content, scale.mods)) {
+  const own: number = Math.max(0, scale.mods - shared);
+  for (const { mod, odds } of [...modOdds(content, Math.min(shared, scale.mods), false, level), ...modOdds(content, own, true, level)]) {
     const modded: Dealt = dealtBy(content, withMods(base, [mod]), 0);
     for (const type of DAMAGE_TYPES) dealt[type] += odds * (modded[type] - plain[type]);
   }
@@ -171,7 +184,7 @@ function packDealt(content: Content, zone: ZoneDef, pack: ZonePack): Dealt {
     const lead: number = leader === null ? -1 : defs.reduce((best: number, def: MonsterDef, index: number): number => (def.life > (defs[best]?.life ?? 0) ? index : best), 0);
     defs.forEach((def: MonsterDef, index: number): void => {
       const scale: RankScale | null = rank === null || rank.chance === null || !rankable ? null : index === lead && leader !== null ? leader : rank.members;
-      addInto(dealt, scale === null ? dealtBy(content, def, 0) : rankedDealt(content, def, scale), odds);
+      addInto(dealt, scale === null || rank === null ? dealtBy(content, def, 0) : rankedDealt(content, def, scale, rank.members.mods, pack.level ?? zone.level), odds);
     });
   }
   return dealt;

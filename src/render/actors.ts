@@ -41,6 +41,8 @@ import { createPresenceLook } from './presence-look.ts';
 import type { PresenceLook } from './presence-look.ts';
 import type { RankGlow, RankLookView } from './rank-look.ts';
 import { createRankLook } from './rank-look.ts';
+import type { ModMotesView } from './mod-motes.ts';
+import { createModMotes } from './mod-motes.ts';
 import type { VfxShadow } from '../../sim/content/vfx-types.ts';
 import type { EmpowerLook } from '../../sim/content/types.ts';
 import type { BodySwap, SwapMix } from './body-swap.ts';
@@ -180,6 +182,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   const countLook: CountLook = createCountLook(scene);
   const presenceLook: PresenceLook = createPresenceLook(scene);
   const rankLook: RankLookView = createRankLook(scene);
+  const modMotes: ModMotesView | null = particles === null ? null : createModMotes(particles, content);
   const countShades: Map<number, { readonly motion: ShadeMotion; color: Color }> = new Map<number, { readonly motion: ShadeMotion; color: Color }>();
   const standChosen = (current: World): void => {
     const wanted: string = heroRig(content, current.player.hero);
@@ -393,6 +396,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       countLook.update(dt, current);
       presenceLook.update(dt, current);
       rankLook.update(dt, current);
+      modMotes?.update(dt, current);
       if (librarySize() !== dressedWith) {
         dressedWith = librarySize();
         dressHero(current);
