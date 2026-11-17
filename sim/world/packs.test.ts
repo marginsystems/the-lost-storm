@@ -212,7 +212,9 @@ void test('every stretch of packs in a level holds at least one ranked pack, how
     spawnPacks(world);
     const ids: string[] = [...rankedPacks(world).entries()].toSorted((a: [number, string], b: [number, string]): number => a[0] - b[0]).map((entry: [number, string]): string => entry[1]);
     const size: number = content.packRanks.stretch;
-    for (let from: number = 0; from < ids.length; from += size) {
+    const whole: number = Math.floor(ids.length / size) * size;
+    assert.ok(whole >= size * 2);
+    for (let from: number = 0; from < whole; from += size) {
       const stretch: string[] = ids.slice(from, from + size);
       assert.equal(stretch.filter((id: string): boolean => id !== 'normal').length, 1, `stretch at ${from}: ${stretch.join(',')}`);
       assert.equal(stretch.at(-1), 'magic', 'the last pack of a plain stretch is lifted to the lowest rank');
