@@ -161,6 +161,7 @@ function mean(fights: readonly { readonly seconds: number }[]): number {
 
 function measured(content: Content, seed: number): { readonly won: boolean; readonly seconds: number } {
   const world: World = trio(content, seed);
+  world.rng.reseed(seed);
   world.player.level = MEASURE.level;
   refreshPlayer(world);
   world.player.life = world.player.stats.maxLife;
