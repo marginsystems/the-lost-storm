@@ -24,7 +24,7 @@ function rarityRank(content: Content, id: string): number {
 }
 
 function only(rank: PackRankDef): Content {
-  return { ...ARENA_CONTENT, packRanks: { ...ranks, ranks: ranks.ranks.map((each: PackRankDef): PackRankDef => (each.chance === null ? each : { ...each, chance: { base: each.id === rank.id ? 1 : 0, perLevel: 0, max: each.id === rank.id ? 1 : 0 } })) } };
+  return { ...ARENA_CONTENT, packRanks: { ...ranks, ranks: ranks.ranks.map((each: PackRankDef): PackRankDef => (each.chance === null ? each : { ...each, chance: { base: each.id === rank.id ? 1 : 0, perLevel: 0, max: each.id === rank.id ? 1 : 0, from: 1 } })) } };
 }
 
 void test('a ranked chance grows with the level and stops at its cap', (): void => {

@@ -16,7 +16,7 @@
       "color": "#7fb0ff",
       "aura": "#4f8cff",
       "look": { "rim": 0.85, "leader": 1 },
-      "chance": { "base": 0.1, "perLevel": 0.006, "max": 0.2 },
+      "chance": { "base": 0.02, "perLevel": 0.024, "max": 0.38 },
       "members": { "life": 1.6, "damage": 1.15, "xp": 1.8, "itemChance": 1.8, "gold": 1.6, "items": 0, "floor": null, "mods": 2, "size": 1.12 },
       "leader": null
     },
@@ -26,7 +26,7 @@
       "color": "#f1d06b",
       "aura": "#f0b83c",
       "look": { "rim": 0.75, "leader": 1.25 },
-      "chance": { "base": 0.025, "perLevel": 0.003, "max": 0.08 },
+      "chance": { "base": 0.06, "perLevel": 0.005, "max": 0.16, "from": 14 },
       "members": { "life": 1.3, "damage": 1.1, "xp": 1.4, "itemChance": 1.4, "gold": 1.3, "items": 0, "floor": null, "mods": 3, "size": 1.25 },
       "leader": { "life": 3.2, "damage": 1.3, "xp": 5, "itemChance": 1, "gold": 3, "items": 2, "floor": "magic", "mods": 4, "size": 1.4 }
     }
@@ -44,6 +44,7 @@
     { "mod": "mending", "weight": 2 },
     { "mod": "kincalling", "weight": 1, "from": 14, "leader": true }
   ],
+  "stretch": 4,
   "apart": [
     ["swift", "unyielding"],
     ["swift", "brutal"],

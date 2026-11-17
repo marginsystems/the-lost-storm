@@ -2,6 +2,12 @@ export interface RankChance {
   readonly base: number;
   readonly perLevel: number;
   readonly max: number;
+  readonly from: number;
+}
+
+export interface RankRun {
+  rolled: number;
+  ranked: boolean;
 }
 
 export interface RankScale {
@@ -50,6 +56,7 @@ export interface PackRanks {
   readonly ranks: readonly PackRankDef[];
   readonly pool: readonly RankModChoice[];
   readonly apart: readonly ModPair[];
+  readonly stretch: number;
   readonly names: RankNames;
 }
 

@@ -7,7 +7,7 @@ import type { Content, MonsterDef, PackMember, RarityDef, ZoneDef, ZonePack } fr
 function chance(value: unknown, where: string): RankChance | null {
   if (value === null || value === undefined) return null;
   const source: Fields = fields(value, where);
-  const read: RankChance = { base: share(source, 'base', where), perLevel: nonNegative(source, 'perLevel', where), max: share(source, 'max', where) };
+  const read: RankChance = { base: share(source, 'base', where), perLevel: nonNegative(source, 'perLevel', where), max: share(source, 'max', where), from: source['from'] === undefined ? 1 : whole(source, 'from', where) };
   if (read.max < read.base) throw new ContentError(`${where}.max`, 'the chance cannot cap below where it starts');
   return read;
 }
@@ -78,6 +78,7 @@ export function packRanks(value: unknown, where: string): PackRanks {
     ranks,
     pool: each(source['pool'], `${where}.pool`, choice),
     apart: source['apart'] === undefined ? [] : each(source['apart'], `${where}.apart`, pair),
+    stretch: Math.max(1, whole(source, 'stretch', where)),
     names: { first: textList(names, 'first', `${where}.names`), second: textList(names, 'second', `${where}.names`) },
   };
 }

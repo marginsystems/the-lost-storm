@@ -164,6 +164,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     player: freshPlayer(content, save, options.hero ?? null),
     monsters: [],
     spawnedPacks: [],
+    rankRun: { rolled: 0, ranked: false },
     roused: [],
     packReturns: [],
     cachesOpened: [],
