@@ -110,7 +110,6 @@ import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
 import { WARM_UP, warmUp, warmUpWithin } from './render/warm-up.ts';
-import { browserPacer, turnGate } from './render/paced-work.ts';
 import type { Sky } from './render/sky-weather.ts';
 import { createSky } from './render/sky-weather.ts';
 import type { Rainfall } from './render/rainfall.ts';
@@ -489,7 +488,7 @@ async function start(): Promise<void> {
   });
   void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], zoneView.ready).then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
   const loadTheRest = async (): Promise<void> => {
-    await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole }, turnGate(browserPacer()));
+    await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole });
     actors.refreshWear(world);
     await warmUp(stage, stage.scene, stage.camera, loot.standIns(world));
     hud.warm();

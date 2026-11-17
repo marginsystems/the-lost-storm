@@ -68,13 +68,6 @@ export function keepLoading(what: string, load: () => Promise<void>, deps: KeepL
   return { first, done: untilLoaded(what, load, deps, firstTry, 0) };
 }
 
-export async function loadAllKeepTrying(loads: readonly NamedLoad[], deps: KeepLoadingDeps, inFlight: number = loads.length): Promise<void> {
-  const queue: NamedLoad[] = [...loads];
-  const worker = async (): Promise<void> => {
-    const named: NamedLoad | undefined = queue.shift();
-    if (named === undefined) return;
-    await keepLoading(named.what, named.load, deps).first;
-    await worker();
-  };
-  await Promise.all(Array.from({ length: Math.max(1, Math.min(inFlight, loads.length)) }, worker));
+export async function loadAllKeepTrying(loads: readonly NamedLoad[], deps: KeepLoadingDeps): Promise<void> {
+  await Promise.all(loads.map((named: NamedLoad): Promise<boolean> => keepLoading(named.what, named.load, deps).first));
 }

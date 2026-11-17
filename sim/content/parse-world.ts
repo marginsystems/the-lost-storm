@@ -471,7 +471,7 @@ function recoveryDef(value: unknown, where: string): RecoveryDef {
     if (scale > 1) throw new ContentError(`${where}.${key}`, 'expected a share from 0 to 1 of the hold a normal monster takes');
     return scale;
   };
-  return { window: positive(source, 'window', where), perHeld: nonNegative(source, 'perHeld', where), fade: positive(source, 'fade', where), interruptRest: nonNegative(source, 'interruptRest', where), elite: share('elite'), boss: share('boss'), stunRest: nonNegative(source, 'stunRest', where), stunElite: share('stunElite'), stunBoss: share('stunBoss'), leechElite: share('leechElite'), leechBoss: share('leechBoss') };
+  return { window: positive(source, 'window', where), perHeld: nonNegative(source, 'perHeld', where), fade: positive(source, 'fade', where), interruptRest: nonNegative(source, 'interruptRest', where), elite: share('elite'), boss: share('boss'), stunRest: nonNegative(source, 'stunRest', where), stunElite: share('stunElite'), stunBoss: share('stunBoss'), leechElite: share('leechElite'), leechBoss: share('leechBoss'), leechCap: share('leechCap') };
 }
 
 function zoneSize(value: unknown, where: string, tiles: readonly string[]): ZoneSize {

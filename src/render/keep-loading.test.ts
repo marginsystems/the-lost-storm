@@ -170,27 +170,3 @@ void test('the late stage settles once every model has had its first try, and a 
   await settle();
   assert.deepEqual([...library.keys()].toSorted(), ['brute', 'taker', 'thrower']);
 });
-
-void test('with a limit on loads in flight, the next load starts only as one before it has had its first try', async (): Promise<void> => {
-  const { deps } = harness();
-  const loader: FakeModelLoader = fakeModelLoader();
-  const late = watch(
-    loadAllKeepTrying(
-      ['a', 'b', 'c', 'd'].map((id: string) => ({ what: `Rig ${id}`, load: async (): Promise<void> => void (await loader.load(`${id}.glb`)) })),
-      deps,
-      2,
-    ),
-  );
-  await settle();
-  assert.equal(loader.asked(), 2);
-  loader.answer(1);
-  await settle();
-  assert.equal(loader.asked(), 3);
-  loader.refuse(0);
-  await settle();
-  assert.equal(loader.asked(), 4);
-  loader.answer(2);
-  loader.answer(3);
-  await settle();
-  assert.equal(late.done(), true);
-});

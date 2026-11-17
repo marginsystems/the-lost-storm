@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { CostLimit, TurnGate, FramePacer } from './paced-work.ts';
-import { eachInTurn, turnGate, framesOf, workPaced } from './paced-work.ts';
+import type { CostLimit, FramePacer } from './paced-work.ts';
+import { framesOf, workPaced } from './paced-work.ts';
 
 interface FakePacer extends FramePacer {
   readonly frames: number[];
@@ -70,28 +70,4 @@ void test('frames are cut by cost, keeping order and never leaving an empty fram
   const limit: CostLimit<number> = { perFrame: 6, cost: (size: number): number => size };
   assert.deepEqual(framesOf([2, 2, 2, 7, 1, 5, 1], limit), [[2, 2, 2], [7], [1, 5], [1]]);
   assert.deepEqual(framesOf([], limit), []);
-});
-
-void test('a frame gate lets work through until the frame budget is spent, then waits for the next frame', async (): Promise<void> => {
-  const pacer: FakePacer = fakePacer();
-  const gate: TurnGate = turnGate(pacer, 6);
-  const done: number[] = await eachInTurn([1, 2, 3, 4, 5], gate, (item: number): number => {
-    pacer.spend(4);
-    return item * 10;
-  });
-  assert.deepEqual(done, [10, 20, 30, 40, 50]);
-  assert.deepEqual(pacer.frames, [0, 0, 1, 1, 2]);
-});
-
-void test('loads that share a frame gate share one budget, so a frame holds no more of their work than one load alone', async (): Promise<void> => {
-  const pacer: FakePacer = fakePacer();
-  const gate: TurnGate = turnGate(pacer, 6);
-  const work = (): void => {
-    pacer.spend(4);
-  };
-  await Promise.all([eachInTurn([1, 2, 3], gate, work), eachInTurn([1, 2, 3], gate, work), eachInTurn([1, 2, 3], gate, work)]);
-  const perFrame: Map<number, number> = new Map<number, number>();
-  for (const frame of pacer.frames) perFrame.set(frame, (perFrame.get(frame) ?? 0) + 1);
-  assert.equal(pacer.frames.length, 9);
-  assert.ok([...perFrame.values()].every((count: number): boolean => count <= 2));
 });
