@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
-import { choice, colour, ContentError, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, ModMotes, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillLeap, SummonDef } from './combat-types.ts';
+import { choice, ContentError, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
+import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillLeap, SummonDef } from './combat-types.ts';
 import type { MonsterRank } from './rank-types.ts';
 import { bodyCrust } from './parse-crust.ts';
 import type { Content, MonsterDef, SkillDef } from './types.ts';
@@ -124,10 +124,6 @@ function trail(source: Fields, where: string): MonsterTrail {
   return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit };
 }
 
-function motes(source: Fields, where: string): ModMotes {
-  return { color: colour(source, 'color', where), rate: positive(source, 'rate', where), lift: positive(source, 'lift', where) };
-}
-
 export interface MonsterTraits {
   readonly poise: MonsterPoise;
   readonly guard: GuardDef | null;
@@ -192,7 +188,6 @@ export function monsterMod(value: unknown, where: string): MonsterModDef {
     guard: optional(source['guard'], `${where}.guard`, guard),
     element: optional(source['element'], `${where}.element`, element),
     trail: optional(source['trail'], `${where}.trail`, trail),
-    motes: optional(source['motes'], `${where}.motes`, motes),
     line: text(source, 'line', where),
   };
 }

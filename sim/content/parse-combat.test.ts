@@ -38,9 +38,9 @@ void test('a monster modifier reads every field', (): void => {
   const mod: MonsterModDef = monsterMod({ id: 'm', prefix: 'P', lifeScale: 2, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null, line: 'Hits hard' }, 'mod');
   assert.equal(mod.summon, null);
   assert.equal(mod.line, 'Hits hard');
-  assert.deepEqual([mod.knockbackScale, mod.guard, mod.element, mod.trail, mod.motes], [1, null, null, null, null]);
-  const full: MonsterModDef = monsterMod({ id: 'f', prefix: 'F', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null, line: 'All of it', knockbackScale: 0.3, element: { type: 'frost', share: 0.6, resist: 0.5 }, trail: { skill: 'wake', every: 1.4, limit: 4 }, motes: { color: '#ff0000', rate: 3, lift: 1 } }, 'mod');
-  assert.deepEqual([full.knockbackScale, full.element, full.trail, full.motes?.rate], [0.3, { type: 'frost', share: 0.6, resist: 0.5 }, { skill: 'wake', every: 1.4, limit: 4 }, 3]);
+  assert.deepEqual([mod.knockbackScale, mod.guard, mod.element, mod.trail], [1, null, null, null]);
+  const full: MonsterModDef = monsterMod({ id: 'f', prefix: 'F', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null, line: 'All of it', knockbackScale: 0.3, element: { type: 'frost', share: 0.6, resist: 0.5 }, trail: { skill: 'wake', every: 1.4, limit: 4 } }, 'mod');
+  assert.deepEqual([full.knockbackScale, full.element, full.trail], [0.3, { type: 'frost', share: 0.6, resist: 0.5 }, { skill: 'wake', every: 1.4, limit: 4 }]);
   assert.throws(() => monsterMod({ id: 'm', prefix: 'P', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null }, 'mod'), /line/);
   assert.throws(() => monsterMod({ id: 'm', prefix: 'P', lifeScale: 1, damageScale: 1, speedScale: 1, sizeScale: 1, xpScale: 1, lootScale: 1, color: '#fff', deathSkill: null, line: 'x', element: { type: 'fire', share: 0.5, resist: 0.5 } }, 'mod'), /fire|storm|frost/);
   assert.throws(() => monsterMod({ id: 'm' }, 'mod'), /prefix/);

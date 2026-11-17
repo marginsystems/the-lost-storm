@@ -88,12 +88,6 @@ export interface MonsterTrail {
   readonly limit: number;
 }
 
-export interface ModMotes {
-  readonly color: string;
-  readonly rate: number;
-  readonly lift: number;
-}
-
 export interface MonsterModDef {
   readonly id: string;
   readonly prefix: string;
@@ -112,7 +106,6 @@ export interface MonsterModDef {
   readonly guard: GuardDef | null;
   readonly element: MonsterElement | null;
   readonly trail: MonsterTrail | null;
-  readonly motes: ModMotes | null;
   readonly line: string;
 }
 
