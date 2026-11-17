@@ -26,6 +26,16 @@ void test('glitches are on and flashes full by default, and broken text falls ba
   assert.deepEqual(readGlitchSettings('{"glitches":false,"reduceFlashes":true,"gentleSeam":true}'), { glitches: false, reduceFlashes: true });
 });
 
+void test('a stored gentle seam from before the setting went carries over as softened flashes', (): void => {
+  assert.deepEqual(readGlitchSettings('{"glitches":true,"reduceFlashes":false,"gentleSeam":true}'), { glitches: true, reduceFlashes: true });
+  assert.deepEqual(readGlitchSettings('{"glitches":true,"reduceFlashes":false,"gentleSeam":false}'), { glitches: true, reduceFlashes: false });
+  const store = memory();
+  store.write(GLITCH_SETTINGS_KEY, '{"glitches":true,"reduceFlashes":false,"gentleSeam":true}');
+  const settings = createGlitchSettings(store);
+  settings.set({ glitches: false });
+  assert.equal(store.read(GLITCH_SETTINGS_KEY), '{"glitches":false,"reduceFlashes":true}');
+});
+
 void test('a change is kept, stored and told to every listener', (): void => {
   const store = memory();
   const settings = createGlitchSettings(store);

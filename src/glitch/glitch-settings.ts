@@ -29,6 +29,7 @@ export function settingStep(current: boolean, wanted: boolean, asked: SettingReq
 
 export const GLITCH_SETTINGS_KEY: string = 'the-lost-storm.glitches.v1';
 export const DEFAULT_GLITCH_SETTINGS: GlitchSettings = { glitches: true, reduceFlashes: false };
+const RETIRED_GENTLE_SEAM: string = 'gentleSeam';
 
 function flagOf(source: unknown, key: string, fallback: boolean): boolean {
   if (typeof source !== 'object' || source === null || Array.isArray(source)) return fallback;
@@ -44,7 +45,7 @@ export function readGlitchSettings(text: string | null): GlitchSettings {
   } catch {
     return DEFAULT_GLITCH_SETTINGS;
   }
-  return { glitches: flagOf(parsed, 'glitches', DEFAULT_GLITCH_SETTINGS.glitches), reduceFlashes: flagOf(parsed, 'reduceFlashes', DEFAULT_GLITCH_SETTINGS.reduceFlashes) };
+  return { glitches: flagOf(parsed, 'glitches', DEFAULT_GLITCH_SETTINGS.glitches), reduceFlashes: flagOf(parsed, 'reduceFlashes', DEFAULT_GLITCH_SETTINGS.reduceFlashes) || flagOf(parsed, RETIRED_GENTLE_SEAM, false) };
 }
 
 export function createGlitchSettings(store: KeyValueStore): GlitchSettingsStore {

@@ -271,13 +271,13 @@ export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camer
   const compileInto = (root: Object3D): Promise<void> => {
     const active: Built | null = built;
     if (active === null) return Promise.resolve();
-    const casting: ShadowLights = renderer.shadowMap.enabled ? shadowLights(scene) : { depth: false, distance: false };
+    const casting: ShadowLights = renderer.shadowMap.enabled ? shadowLights(root instanceof Scene ? root : scene) : { depth: false, distance: false };
     const variance: boolean = renderer.shadowMap.type === VSMShadowMap;
     return compileWith(renderer, active.target, (): Promise<unknown> =>
       Promise.all([
-        renderer.compileAsync(root, camera, scene),
-        ...(casting.depth ? [withShadowStandIns(root, false, variance, (): Promise<Object3D> => renderer.compileAsync(root, camera, scene))] : []),
-        ...(casting.distance ? [withShadowStandIns(root, true, variance, (): Promise<Object3D> => renderer.compileAsync(root, camera, scene))] : []),
+        renderer.compileAsync(root, camera, root instanceof Scene ? root : scene),
+        ...(casting.depth ? [withShadowStandIns(root, false, variance, (): Promise<Object3D> => renderer.compileAsync(root, camera, root instanceof Scene ? root : scene))] : []),
+        ...(casting.distance ? [withShadowStandIns(root, true, variance, (): Promise<Object3D> => renderer.compileAsync(root, camera, root instanceof Scene ? root : scene))] : []),
       ]),
     );
   };

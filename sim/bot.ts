@@ -1,5 +1,5 @@
 import type { BotPlan } from './bot-plan.ts';
-import { flaskCommands, junkIndex, nextPlace, planAttack, releaseCommands, rollCommand, upgradeIndex } from './bot-plan.ts';
+import { flaskCommands, junkIndex, letGoCommands, nextPlace, planAttack, releaseCommands, rollCommand, upgradeIndex } from './bot-plan.ts';
 import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, SkillTreeNodeDef, ZoneDef, ZoneExit } from './content/types.ts';
 import { canAllocate } from './progression.ts';
 import type { ReadonlyVec2, Vec2 } from './math.ts';
@@ -328,6 +328,14 @@ export function aimAt(world: World, hostile: readonly MonsterState[], wanted: re
   return nearest(world, foes.length > 0 ? foes : wanted.length > 0 ? wanted : hostile);
 }
 
+function dodgeCommands(world: World, spot: Vec2 | null, roll: Command | null): Command[] {
+  const step: Command[] = spot === null ? [] : [roll ?? { type: 'move', held: false, dest: spot }];
+  if (free(world)) return step;
+  if (spot !== null && gliding(world)) return [{ type: 'steer', aim: spot }];
+  const letGo: Command[] = letGoCommands(world);
+  return letGo.length === 0 ? [] : [...letGo, ...step];
+}
+
 function fightStep(bot: Bot, prefer: string | null): boolean {
   const world: World = bot.world;
   const hostile: MonsterState[] = threats(world, bot.ignored);
@@ -352,7 +360,7 @@ function fightStep(bot: Bot, prefer: string | null): boolean {
   if (bot.habits.dodges && world.player.alive && !gliding(world) && botInDanger(world, world.player.pos, bot.habits.reaction)) {
     const spot: Vec2 | null = world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest) ? null : refuge(world);
     const roll: Command | null = spot === null || bot.plan?.rolls !== true ? null : rollCommand(world, spot);
-    tick(bot, spot === null || !free(world) ? [] : [roll ?? { type: 'move', held: false, dest: spot }]);
+    tick(bot, dodgeCommands(world, spot, roll));
     return true;
   }
   if (retreating(bot, hostile)) return true;

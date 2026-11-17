@@ -350,7 +350,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       const previous: WebGLRenderTarget | null = renderer.getRenderTarget();
       renderer.setRenderTarget(composer === null ? null : composer.readBuffer);
       try {
-        return renderer.compileAsync(target, viewer, scene);
+        return renderer.compileAsync(target, viewer, target instanceof Scene ? target : scene);
       } finally {
         renderer.setRenderTarget(previous);
       }
