@@ -8,13 +8,15 @@ import type { BurstOptions } from './particles.ts';
 import { floorUp } from './terrain-lift.ts';
 
 export const STUN_MARKS = {
-  size: 0.75,
+  size: 0.55,
   height: 0.08,
-  glow: 0.42,
-  fill: 0.55,
-  width: 0.35,
-  wobble: 0.07,
-  pulse: 0.22,
+  glow: 0.3,
+  fill: 0.4,
+  width: 0.4,
+  wobble: 0.14,
+  hollow: 1,
+  grain: 0.6,
+  pulse: 0.2,
   rate: 4.2,
   gone: 0.01,
   motes: 9,
@@ -25,7 +27,7 @@ export const STUN_MARKS = {
   moteLiftMax: 0.9,
   moteLife: 0.35,
   moteFall: -0.4,
-  color: 0xeadfb4,
+  color: 0xb8d4f2,
 } as const;
 
 export interface StunKit {
@@ -51,7 +53,7 @@ export function createStunMarks(kit: StunKit): StunMarks {
     const held: GroundLight | undefined = marks.get(monster.id);
     if (held !== undefined) return held;
     const reach: number = monster.radius + STUN_MARKS.size;
-    const mark: GroundLight = createGroundLight(color, { kind: 'round', radius: reach, inner: 0, arc: Math.PI * 2 }, { fill: STUN_MARKS.fill, band: 1, width: reach * STUN_MARKS.width, wobble: reach * STUN_MARKS.wobble });
+    const mark: GroundLight = createGroundLight(color, { kind: 'round', radius: reach, inner: 0, arc: Math.PI * 2 }, { fill: STUN_MARKS.fill, band: 1, width: reach * STUN_MARKS.width, wobble: reach * STUN_MARKS.wobble, hollow: STUN_MARKS.hollow, grain: STUN_MARKS.grain });
     kit.addObject(mark.mesh);
     marks.set(monster.id, mark);
     return mark;

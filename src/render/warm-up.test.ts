@@ -5,7 +5,7 @@ import { BufferAttribute, BufferGeometry, Color, Fog, Group, Mesh, MeshStandardM
 import type { Timers } from '../backend/backend.ts';
 import type { FramePacer } from './paced-work.ts';
 import type { ShaderCompiler, Sortable } from './warm-up.ts';
-import { drawCost, revealHidden, texturesOf, unsorted, uploadPaced, WARM_UP, warmUp, warmUpWithin } from './warm-up.ts';
+import { drawCost, texturesOf, unsorted, uploadPaced, WARM_UP, warmUp, warmUpWithin } from './warm-up.ts';
 
 interface Recorder extends ShaderCompiler {
   readonly seen: boolean[];
@@ -76,11 +76,12 @@ function tracked(promise: Promise<void>): { settled(): boolean } {
   return { settled: (): boolean => done };
 }
 
-void test('stand-ins are in the scene while their shaders are queued and gone from it afterwards', async (): Promise<void> => {
+void test('stand-ins are compiled while loose and are loose again afterwards', async (): Promise<void> => {
   const scene: Scene = new Scene();
   const standIn: Mesh = new Mesh();
   const compiler: Recorder = recorder(standIn);
   const done: Promise<void> = warmUp(compiler, scene, new PerspectiveCamera(), [standIn], null, PACER);
+  await settle();
   assert.deepEqual(compiler.seen, [true]);
   assert.equal(scene.children.length, 0);
   assert.equal(standIn.parent, null);
@@ -104,9 +105,10 @@ void test('a compiler that throws at once still ends the warm-up and leaves the 
 });
 
 void test('a warm-up that outlasts its wait holds the game only until the wait ends', async (): Promise<void> => {
-  const compiler: Recorder = recorder(new Mesh());
+  const standIn: Mesh = new Mesh();
+  const compiler: Recorder = recorder(standIn);
   const clock: ManualTimers = manualTimers();
-  const done: Promise<void> = warmUpWithin(compiler, new Scene(), new PerspectiveCamera(), [], clock.timers, 1, null, PACER);
+  const done: Promise<void> = warmUpWithin(compiler, new Scene(), new PerspectiveCamera(), [standIn], clock.timers, 1, null, PACER);
   const watched: { settled(): boolean } = tracked(done);
   await settle();
   assert.equal(watched.settled(), false);
@@ -118,10 +120,12 @@ void test('a warm-up that outlasts its wait holds the game only until the wait e
 });
 
 void test('a warm-up that finishes in time cancels its wait', async (): Promise<void> => {
-  const compiler: Recorder = recorder(new Mesh());
+  const standIn: Mesh = new Mesh();
+  const compiler: Recorder = recorder(standIn);
   const clock: ManualTimers = manualTimers();
-  const done: Promise<void> = warmUpWithin(compiler, new Scene(), new PerspectiveCamera(), [], clock.timers, 1, null, PACER);
+  const done: Promise<void> = warmUpWithin(compiler, new Scene(), new PerspectiveCamera(), [standIn], clock.timers, 1, null, PACER);
   assert.equal(clock.pending(), 1);
+  await settle();
   compiler.finish();
   await done;
   assert.equal(clock.pending(), 0);
@@ -166,28 +170,151 @@ void test('hidden meshes are compiled, then drawn once without culling, and are 
   assert.equal(piece.frustumCulled, true);
 });
 
-void test('revealing hidden things for a warm-up never adds a light the frame would not have', (): void => {
+void test('each mesh is compiled alone, without the meshes it holds, in a small scene with only the lights the frame has, and the real scene is never compiled whole', async (): Promise<void> => {
   const scene: Scene = new Scene();
+  scene.fog = new Fog(0x223344, 1, 50);
+  scene.environment = new Texture();
   const lit: PointLight = new PointLight();
   const off: PointLight = new PointLight();
   off.visible = false;
   const hiddenGroup: Group = new Group();
   hiddenGroup.visible = false;
   const tucked: PointLight = new PointLight();
-  hiddenGroup.add(tucked);
-  scene.add(lit, off, hiddenGroup);
-  const restore: () => void = revealHidden(scene);
-  const lights: Object3D[] = [];
-  scene.traverseVisible((object: Object3D): void => {
-    if (object instanceof PointLight) lights.push(object);
-  });
-  assert.deepEqual(lights, [lit]);
-  assert.equal(hiddenGroup.visible, true);
-  restore();
-  assert.equal(lit.visible, true);
-  assert.equal(off.visible, false);
+  const inside: Mesh = new Mesh();
+  hiddenGroup.add(tucked, inside);
+  const outside: Mesh = new Mesh();
+  const held: Mesh = new Mesh();
+  outside.add(held);
+  scene.add(lit, off, hiddenGroup, outside);
+  const compiled: Object3D[][] = [];
+  const compiler: ShaderCompiler = {
+    compileAsync(target: Object3D): Promise<Object3D> {
+      assert.ok(target instanceof Scene);
+      assert.notEqual(target, scene);
+      assert.equal(target.fog, scene.fog);
+      assert.equal(target.environment, scene.environment);
+      const reached: Object3D[] = [];
+      target.traverse((object: Object3D): void => {
+        if (object !== target) reached.push(object);
+      });
+      compiled.push(reached);
+      return Promise.resolve(target);
+    },
+    drawOnce(): void {},
+    initTexture(): void {},
+  };
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, PACER);
+  assert.deepEqual(compiled, [
+    [lit, inside],
+    [lit, outside],
+    [lit, held],
+  ]);
   assert.equal(hiddenGroup.visible, false);
-  assert.equal(tucked.visible, true);
+  assert.equal(off.visible, false);
+  assert.equal(held.parent, outside);
+  assert.deepEqual(outside.children, [held]);
+});
+
+void test('a mesh compiled by one warm-up is not compiled by the next, and one added since is', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  const first: Mesh = new Mesh();
+  scene.add(first);
+  const compiled: Object3D[][] = [];
+  const compiler: ShaderCompiler = {
+    compileAsync(target: Object3D): Promise<Object3D> {
+      compiled.push([...target.children]);
+      return Promise.resolve(target);
+    },
+    drawOnce(): void {},
+    initTexture(): void {},
+  };
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, PACER);
+  const second: Mesh = new Mesh();
+  scene.add(second);
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, PACER);
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, PACER);
+  assert.deepEqual(compiled, [[first], [second]]);
+});
+
+void test('a warm-up that finds a mesh another warm-up is still compiling waits for that compile before it draws', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  const mesh: Mesh = new Mesh();
+  scene.add(mesh);
+  const compiler: Recorder = recorder(mesh);
+  let draws: number = 0;
+  const counting: ShaderCompiler = { ...compiler, drawOnce: (): void => void (draws += 1) };
+  const first: Promise<void> = warmUp(counting, scene, new PerspectiveCamera(), [], null, PACER);
+  await settle();
+  const second: Promise<void> = warmUp(counting, scene, new PerspectiveCamera(), [], null, PACER);
+  await settle();
+  assert.deepEqual([compiler.seen.length, draws], [1, 0]);
+  compiler.finish();
+  await Promise.all([first, second]);
+  assert.equal(draws, 1);
+});
+
+interface ClockPacer extends FramePacer {
+  frame(): number;
+  spend(ms: number): void;
+}
+
+function clockPacer(perRead: number): ClockPacer {
+  let clock: number = 0;
+  let frame: number = 0;
+  return {
+    frame: (): number => frame,
+    spend: (ms: number): void => {
+      clock += ms;
+    },
+    now: (): number => {
+      clock += perRead;
+      return clock;
+    },
+    next: (): Promise<void> => {
+      frame += 1;
+      return Promise.resolve();
+    },
+  };
+}
+
+void test('compiles are spread over frames, each frame stopping once its time budget is spent', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  for (let index: number = 0; index < 6; index += 1) scene.add(new Mesh());
+  const pacer: ClockPacer = clockPacer(0);
+  const frames: number[] = [];
+  const compiler: ShaderCompiler = {
+    compileAsync(target: Object3D): Promise<Object3D> {
+      frames.push(pacer.frame());
+      pacer.spend(4);
+      return Promise.resolve(target);
+    },
+    drawOnce(): void {},
+    initTexture(): void {},
+  };
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, pacer);
+  assert.deepEqual(frames, [0, 0, 1, 1, 2, 2]);
+});
+
+void test('the survey of a large scene is spread over frames, and every mesh in it is still compiled', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  const meshes: Mesh[] = [];
+  for (let index: number = 0; index < 30; index += 1) meshes.push(new Mesh());
+  scene.add(...meshes);
+  const pacer: ClockPacer = clockPacer(1);
+  const compiled: Object3D[] = [];
+  let firstFrame: number = -1;
+  const compiler: ShaderCompiler = {
+    compileAsync(target: Object3D): Promise<Object3D> {
+      if (firstFrame < 0) firstFrame = pacer.frame();
+      compiled.push(...target.children);
+      return Promise.resolve(target);
+    },
+    drawOnce(): void {},
+    initTexture(): void {},
+  };
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, pacer);
+  assert.ok(firstFrame >= 4);
+  assert.deepEqual(compiled, meshes);
 });
 
 void test('a warm-up told of things still loading warms again once they are in', async (): Promise<void> => {
@@ -206,14 +333,14 @@ void test('a warm-up told of things still loading warms again once they are in',
     arrivals.push(resolve);
   });
   await warmUp(compiler, scene, new PerspectiveCamera(), [], loading, PACER);
-  assert.equal(compiled.length, 1);
+  assert.equal(compiled.length, 0);
   scene.add(new Mesh());
   for (const arrive of arrivals) arrive();
   await settle();
-  assert.equal(compiled.length, 2);
+  assert.deepEqual(compiled, [1]);
 });
 
-void test('a stand-in that goes live while its shaders compile stays in the scene through the late draw and the later warm-up', async (): Promise<void> => {
+void test('a stand-in that goes live while its shaders compile stays in the scene through the late draw, and the later warm-up does not compile it again', async (): Promise<void> => {
   const scene: Scene = new Scene();
   const standIn: Mesh = new Mesh();
   const compiler: Recorder = recorder(standIn);
@@ -222,6 +349,7 @@ void test('a stand-in that goes live while its shaders compile stays in the scen
     arrivals.push(resolve);
   });
   const done: Promise<void> = warmUp(compiler, scene, new PerspectiveCamera(), [standIn], loading, PACER);
+  await settle();
   assert.equal(standIn.parent, null);
   scene.add(standIn);
   compiler.finish();
@@ -231,7 +359,7 @@ void test('a stand-in that goes live while its shaders compile stays in the scen
   await settle();
   compiler.finish();
   await settle();
-  assert.deepEqual(compiler.seen, [true, true]);
+  assert.deepEqual(compiler.seen, [true]);
   assert.equal(standIn.parent, scene);
 });
 

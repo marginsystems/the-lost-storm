@@ -1,5 +1,5 @@
 import type { Camera, Object3D } from 'three';
-import { BufferGeometry, Group, Light, Line, Material, Mesh, Points, Scene, Sprite, Texture } from 'three';
+import { BufferGeometry, Light, Line, Material, Mesh, Points, Scene, Sprite, Texture } from 'three';
 import { warnInConsole } from '../backend/console-log.ts';
 import type { Timers } from '../backend/backend.ts';
 import type { CostLimit, FramePacer } from './paced-work.ts';
@@ -38,58 +38,13 @@ export function unsorted(target: Sortable, draw: () => void): void {
 export interface WarmSurvey {
   readonly textures: readonly Texture[];
   readonly drawables: readonly Object3D[];
+  readonly lights: readonly Light[];
 }
 
 const warmedTextures: WeakMap<Texture, number> = new WeakMap<Texture, number>();
 const warmedGeometries: WeakSet<BufferGeometry> = new WeakSet<BufferGeometry>();
 const warmedDrawables: WeakSet<Object3D> = new WeakSet<Object3D>();
-
-export function revealHidden(root: Object3D): () => void {
-  const lit: Set<Object3D> = new Set<Object3D>();
-  root.traverseVisible((object: Object3D): void => {
-    if (object instanceof Light) lit.add(object);
-  });
-  const shown: Object3D[] = [];
-  root.traverse((object: Object3D): void => {
-    if (object.visible) return;
-    shown.push(object);
-    object.visible = true;
-  });
-  const dark: Light[] = [];
-  root.traverse((object: Object3D): void => {
-    if (!(object instanceof Light) || lit.has(object) || !object.visible) return;
-    dark.push(object);
-    object.visible = false;
-  });
-  return (): void => {
-    for (const light of dark) light.visible = true;
-    for (const object of shown) object.visible = false;
-  };
-}
-
-function staged<T>(scene: Scene, standIns: readonly Object3D[], culled: boolean, work: () => T): T {
-  const holder: Group = new Group();
-  const loose: Object3D[] = standIns.filter((standIn: Object3D): boolean => standIn.parent === null);
-  for (const standIn of loose) holder.add(standIn);
-  scene.add(holder);
-  const restore: () => void = revealHidden(scene);
-  const unculled: Object3D[] = [];
-  if (!culled) {
-    scene.traverse((object: Object3D): void => {
-      if (!object.frustumCulled) return;
-      unculled.push(object);
-      object.frustumCulled = false;
-    });
-  }
-  try {
-    return work();
-  } finally {
-    for (const object of unculled) object.frustumCulled = true;
-    restore();
-    holder.removeFromParent();
-    for (const standIn of loose) if (standIn.parent === holder) holder.remove(standIn);
-  }
-}
+const compiledDrawables: WeakMap<Object3D, Promise<Object3D>> = new WeakMap<Object3D, Promise<Object3D>>();
 
 function isMaterial(value: unknown): value is Material {
   return value instanceof Material;
@@ -146,16 +101,50 @@ export function texturesOf(root: Object3D): Texture[] {
   return [...textures].filter(hasImage);
 }
 
-export function survey(scene: Scene, camera: Camera): WarmSurvey {
+interface Walked {
+  readonly object: Object3D;
+  readonly shown: boolean;
+  readonly lit: boolean;
+}
+
+export async function survey(scene: Scene, standIns: readonly Object3D[], camera: Camera, pacer: FramePacer, budgetMs: number = PACED_WORK.frameBudgetMs): Promise<WarmSurvey> {
   const textures: Set<Texture> = new Set<Texture>();
+  const read: Set<Material> = new Set<Material>();
   const drawables: Object3D[] = [];
-  scene.traverseVisible((object: Object3D): void => {
+  const lights: Light[] = [];
+  const loose: Walked[] = standIns.filter((standIn: Object3D): boolean => standIn.parent === null).map((standIn: Object3D): Walked => ({ object: standIn, shown: true, lit: false }));
+  const pending: Walked[] = [...loose.toReversed(), { object: scene, shown: true, lit: true }];
+  const visit = ({ object, shown: above, lit }: Walked): void => {
+    const shown: boolean = above && object.visible;
+    for (let index: number = object.children.length - 1; index >= 0; index -= 1) {
+      const child: Object3D | undefined = object.children[index];
+      if (child !== undefined) pending.push({ object: child, shown, lit });
+    }
+    if (object instanceof Light) {
+      if (lit && shown) lights.push(object);
+      return;
+    }
     const materials: readonly Material[] = materialsOf(object);
     if (materials.length === 0 || !object.layers.test(camera.layers)) return;
     drawables.push(object);
-    for (const material of materials) materialTextures(material, textures);
-  });
-  return { textures: [...textures].filter(uploadable), drawables };
+    for (const material of materials) {
+      if (read.has(material)) continue;
+      read.add(material);
+      materialTextures(material, textures);
+    }
+  };
+  const walk = async (): Promise<void> => {
+    const started: number = pacer.now();
+    for (let next: Walked | undefined = pending.pop(); next !== undefined; next = pending.pop()) {
+      visit(next);
+      if (pacer.now() - started >= budgetMs) break;
+    }
+    if (pending.length === 0) return;
+    await pacer.next();
+    await walk();
+  };
+  await walk();
+  return { textures: [...textures].filter(hasImage), drawables, lights };
 }
 
 function dimension(image: unknown, key: string): number {
@@ -215,11 +204,7 @@ interface Borrowed {
   readonly frustumCulled: boolean;
 }
 
-function sliceStage(scene: Scene, standIns: readonly Object3D[]): SliceStage {
-  const lights: Light[] = [];
-  scene.traverseVisible((object: Object3D): void => {
-    if (object instanceof Light) lights.push(object);
-  });
+function sliceStage(scene: Scene, standIns: readonly Object3D[], lights: readonly Light[]): SliceStage {
   for (const light of lights) light.updateWorldMatrix(true, false);
   const proxy: Scene = new Scene();
   proxy.matrixWorldAutoUpdate = false;
@@ -256,9 +241,7 @@ function borrow(object: Object3D, visible: boolean, frustumCulled: boolean, into
   object.frustumCulled = frustumCulled;
 }
 
-function drawSlice(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, slice: readonly Object3D[]): void {
-  const drawn: Object3D[] = slice.filter((object: Object3D): boolean => attached(stage, object));
-  if (drawn.length === 0) return;
+function inSlice<T>(stage: SliceStage, drawn: readonly Object3D[], work: (proxy: Scene) => T): T {
   const own: Set<Object3D> = new Set<Object3D>(drawn);
   const borrowed: Borrowed[] = [];
   for (const object of drawn) {
@@ -271,7 +254,7 @@ function drawSlice(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, 
   }
   stage.proxy.children = [...stage.lights.filter((light: Light): boolean => attached(stage, light)), ...drawn.filter((object: Object3D): boolean => !heldByAnother(object, own))];
   try {
-    compiler.drawOnce(stage.proxy, camera);
+    return work(stage.proxy);
   } finally {
     stage.proxy.children = [];
     for (const { object, visible, frustumCulled } of borrowed.toReversed()) {
@@ -279,6 +262,12 @@ function drawSlice(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, 
       object.frustumCulled = frustumCulled;
     }
   }
+}
+
+function drawSlice(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, slice: readonly Object3D[]): void {
+  const drawn: Object3D[] = slice.filter((object: Object3D): boolean => attached(stage, object));
+  if (drawn.length === 0) return;
+  inSlice(stage, drawn, (proxy: Scene): void => compiler.drawOnce(proxy, camera));
   for (const object of drawn) {
     warmedDrawables.add(object);
     const geometry: BufferGeometry | null = geometryOf(object);
@@ -286,10 +275,49 @@ function drawSlice(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, 
   }
 }
 
-async function drawPaced(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], pacer: FramePacer): Promise<void> {
-  const found: WarmSurvey = staged(scene, standIns, false, (): WarmSurvey => survey(scene, camera));
+function alone<T>(object: Object3D, work: () => T): T {
+  const children: Object3D[] = object.children;
+  object.children = [];
+  try {
+    return work();
+  } finally {
+    object.children = children;
+  }
+}
+
+function compileOne(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, object: Object3D): Promise<Object3D> | null {
+  if (!attached(stage, object)) return null;
+  try {
+    return inSlice(stage, [object], (proxy: Scene): Promise<Object3D> => alone(object, (): Promise<Object3D> => compiler.compileAsync(proxy, camera)));
+  } catch {
+    return null;
+  }
+}
+
+async function compilePaced(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, drawables: readonly Object3D[], pacer: FramePacer): Promise<void> {
+  const compiling: Promise<Object3D>[] = [];
+  const fresh: Object3D[] = [];
+  for (const object of drawables) {
+    const started: Promise<Object3D> | undefined = compiledDrawables.get(object);
+    if (started === undefined) fresh.push(object);
+    else compiling.push(started);
+  }
   await workPaced(
-    found.textures,
+    fresh,
+    (object: Object3D): void => {
+      const started: Promise<Object3D> | null = compileOne(compiler, stage, camera, object);
+      if (started === null) return;
+      compiling.push(started);
+      compiledDrawables.set(object, started);
+    },
+    pacer,
+  );
+  await Promise.allSettled(compiling);
+}
+
+async function drawPaced(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, found: WarmSurvey, pacer: FramePacer): Promise<void> {
+  await workPaced(
+    found.textures.filter(uploadable),
     (texture: Texture): void => {
       compiler.initTexture(texture);
       warmedTextures.set(texture, texture.version);
@@ -299,26 +327,22 @@ async function drawPaced(compiler: ShaderCompiler, scene: Scene, camera: Camera,
     TEXTURE_LIMIT,
   );
   await pacer.next();
-  const stage: SliceStage = sliceStage(scene, standIns);
   const fresh: readonly Object3D[] = found.drawables.filter((object: Object3D): boolean => !warmedDrawables.has(object));
   await workPaced(framesOf(fresh, DRAW_LIMIT), (slice: readonly Object3D[]): void => drawSlice(compiler, stage, camera, slice), pacer, 0);
 }
 
+async function warmPaced(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], pacer: FramePacer): Promise<void> {
+  const found: WarmSurvey = await survey(scene, standIns, camera, pacer);
+  const stage: SliceStage = sliceStage(scene, standIns, found.lights);
+  await compilePaced(compiler, stage, camera, found.drawables, pacer);
+  await drawPaced(compiler, stage, camera, found, pacer);
+}
+
 export function warmUp(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], later: Promise<void> | null = null, pacer: FramePacer = browserPacer()): Promise<void> {
   if (later !== null) void later.then((): Promise<void> => warmUp(compiler, scene, camera, standIns, null, pacer));
-  let compiling: Promise<Object3D>;
-  try {
-    compiling = staged(scene, standIns, true, (): Promise<Object3D> => compiler.compileAsync(scene, camera));
-  } catch {
-    compiling = Promise.resolve(scene);
-  }
-  return compiling.then(
-    (): Promise<void> =>
-      drawPaced(compiler, scene, camera, standIns, pacer).catch((error: unknown): void => {
-        warnInConsole(`Warming the scene by drawing it in slices failed: ${String(error)}`);
-      }),
-    (): void => undefined,
-  );
+  return warmPaced(compiler, scene, camera, standIns, pacer).catch((error: unknown): void => {
+    warnInConsole(`Warming the scene in slices failed: ${String(error)}`);
+  });
 }
 
 export function warmUpWithin(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], timers: Timers, ms: number, later: Promise<void> | null = null, pacer: FramePacer = browserPacer()): Promise<void> {

@@ -267,6 +267,13 @@ export function spinAim(world: World, skill: SkillDef): ReadonlyVec2 | null {
   return best === null ? null : { x: best.pos.x, z: best.pos.z };
 }
 
+export function letGoCommands(world: World): Command[] {
+  const player: PlayerState = world.player;
+  const action = player.action;
+  if (action === null || action.slot === null || action.skill.press?.type !== 'charge' || !player.held.includes(action.slot)) return [];
+  return [{ type: 'hold', slot: action.slot, down: false }];
+}
+
 export function releaseCommands(world: World): Command[] {
   const player: PlayerState = world.player;
   const action = player.action;

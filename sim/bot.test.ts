@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
 import { OUTPOST_CONTENT } from '../test/road-support.ts';
 import { finishQuests, must } from '../test/support.ts';
-import { botFight, botInDanger, botPlay, botRoute, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
+import { botFight, botInDanger, botPlay, botRoute, botStep, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
 import type { Bot, BotReport } from './bot.ts';
 import { loadContent } from './content/content.ts';
 import { exitWithheld } from './content/withheld.ts';
@@ -117,6 +117,43 @@ void test('the bot reads a live mark on the ground and the landing spot of a lea
   startSkill(world, ghoul, must(world.content.skills.get('test_pounce'), 'pounce'), { x: 8, z: 0 });
   assert.equal(botInDanger(world, { x: ARENA_CENTRE.x - 0.8, z: ARENA_CENTRE.z }), true);
   assert.equal(botInDanger(world, { x: ARENA_CENTRE.x - 7, z: ARENA_CENTRE.z + 4 }), false);
+});
+
+const CHARGE_TEST = {
+  brute: 2.2,
+  slamAt: 0.1,
+  watch: 2,
+  letGoBy: 0.5,
+  slamReach: 3,
+  slamWindup: 1.2,
+} as const;
+
+interface ChargeWatch {
+  hurt: number;
+  letGoAt: number;
+  farthest: number;
+}
+
+void test('a bot holding a charge lets it go when a blow is coming at it, and steps out of the blow', (): void => {
+  const world: World = arena(24);
+  const brute: MonsterState = place(world, 'test_brute', { x: ARENA_CENTRE.x + CHARGE_TEST.brute, z: ARENA_CENTRE.z });
+  world.player.pos = { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z };
+  world.player.skills[0] = must(world.content.skills.get('cleave_heave'), 'cleave_heave');
+  const seen: ChargeWatch = { hurt: 0, letGoAt: Infinity, farthest: 0 };
+  let start: number = world.time;
+  const bot: Bot = createBot(world, { dodges: true, reaction: 0 }, (events): void => {
+    for (const event of events) if (event.type === 'damage' && event.targetTeam === 'player') seen.hurt += event.amount;
+    if (world.time - start <= CHARGE_TEST.slamWindup) seen.farthest = Math.max(seen.farthest, Math.hypot(world.player.pos.x - brute.pos.x, world.player.pos.z - brute.pos.z));
+    if (world.player.action !== null && !world.player.held.includes(0)) seen.letGoAt = Math.min(seen.letGoAt, world.time);
+  });
+  botStep(bot, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: brute.pos, targetId: brute.id }]);
+  start = world.time;
+  while (world.time - start < CHARGE_TEST.slamAt) botStep(bot, []);
+  startSkill(world, brute, must(world.content.skills.get('test_slam'), 'test_slam'), { x: world.player.pos.x - brute.pos.x, z: world.player.pos.z - brute.pos.z });
+  botFight(bot, (): boolean => world.time - start >= CHARGE_TEST.watch, null);
+  assert.ok(seen.letGoAt - start < CHARGE_TEST.letGoBy, `let go at ${seen.letGoAt - start}`);
+  assert.equal(seen.hurt, 0);
+  assert.ok(seen.farthest > CHARGE_TEST.slamReach, `got only ${seen.farthest} from the slam`);
 });
 
 void test('a fight that makes no progress for twelve seconds is dropped, and the foe is left alone for a while', (): void => {
