@@ -1,3 +1,4 @@
+import type { RankRun } from '../content/rank-types.ts';
 import type { ZonePack } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import type { PackTimer } from './pack-return.ts';
@@ -9,6 +10,7 @@ export interface KeptLive {
   readonly spawnedPacks: ZonePack[];
   readonly roused: ZonePack[];
   readonly packReturns: PackTimer[];
+  readonly rankRun: RankRun;
   readonly cachesOpened: number[];
   readonly ground: GroundItem[];
 }

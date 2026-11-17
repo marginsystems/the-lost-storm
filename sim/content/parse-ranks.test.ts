@@ -73,3 +73,11 @@ void test('a ranked look reads its body and ground light as shares and needs an 
   assert.ok(rankProblems({ ...ARENA_CONTENT, packRanks: unlit }).some((problem: string): boolean => problem.includes('no aura colour')));
   for (const rank of RANKS.ranks.slice(1)) assert.notEqual(rank.look, null, `${rank.id} is lit`);
 });
+
+void test('a rank chance may start at a level, and the stretch is a whole number of packs', (): void => {
+  const [plain, magic] = packRanksData.ranks;
+  if (plain === undefined || magic === undefined) throw new Error('the shipped ranks start with plain and magic');
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, ranks: [plain, { ...magic, chance: { base: 0.1, perLevel: 0, max: 0.1, from: 2.5 } }] }, 'r'), /whole number/);
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, stretch: 1.5 }, 'r'), /whole number/);
+  assert.ok(RANKS.stretch >= 1);
+});

@@ -73,6 +73,7 @@ export interface CaveDeath {
   readonly foes: number;
   readonly packs: number;
   readonly killer: string;
+  readonly mods: readonly string[];
   readonly at: Vec2;
   readonly minute: number;
   readonly flasks: number;
@@ -183,6 +184,10 @@ function rankOf(monsters: readonly MonsterState[]): string {
   return ranks.find((rank: string): boolean => monsters.some((monster: MonsterState): boolean => monster.def.rank?.id === rank)) ?? 'normal';
 }
 
+export function modsNear(near: readonly MonsterState[]): string[] {
+  return [...new Set<string>(near.flatMap((monster: MonsterState): readonly string[] => monster.def.mods))].toSorted();
+}
+
 function watch(world: World, tally: Tally, events: readonly WorldEvent[], ignored: Map<number, number>): void {
   const player: PlayerState = world.player;
   if (player.alive && player.life < player.maxLife * CAVE.lowLife) tally.low += Math.max(0, world.time - tally.seen);
@@ -193,7 +198,7 @@ function watch(world: World, tally: Tally, events: readonly WorldEvent[], ignore
       tally.deaths += 1;
       const recent: Set<number> = new Set<number>(tally.hurt.filter((hit: Hurt): boolean => hit.at >= world.time - CAVE.hurtWindow).map((hit: Hurt): number => hit.sourceId));
       const near: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => recent.has(monster.id) || (monster.alive && distance(monster.pos, world.player.pos) <= CAVE.deathReach));
-      tally.deathsAt.push({ heroLevel: world.player.level, foeLevel: Math.max(0, ...near.map((monster: MonsterState): number => monster.level)), foes: near.length, packs: new Set<number>(near.map((monster: MonsterState): number => monster.packId)).size, killer: `${world.death?.killer ?? 'unknown'} / ${world.death?.skill ?? 'unknown'}`, at: { x: Math.round(world.player.pos.x), z: Math.round(world.player.pos.z) }, minute: (world.time - tally.start) / 60, flasks: world.player.flasks.filter((flask: FlaskState): boolean => flask.def.resource === 'life').reduce((sum: number, flask: FlaskState): number => sum + Math.floor(flask.charges / Math.max(1, flask.def.chargesPerUse)), 0) });
+      tally.deathsAt.push({ heroLevel: world.player.level, foeLevel: Math.max(0, ...near.map((monster: MonsterState): number => monster.level)), foes: near.length, packs: new Set<number>(near.map((monster: MonsterState): number => monster.packId)).size, killer: `${world.death?.killer ?? 'unknown'} / ${world.death?.skill ?? 'unknown'}`, mods: modsNear(near), at: { x: Math.round(world.player.pos.x), z: Math.round(world.player.pos.z) }, minute: (world.time - tally.start) / 60, flasks: world.player.flasks.filter((flask: FlaskState): boolean => flask.def.resource === 'life').reduce((sum: number, flask: FlaskState): number => sum + Math.floor(flask.charges / Math.max(1, flask.def.chargesPerUse)), 0) });
       tally.hurt.length = 0;
       for (const fight of tally.open.values()) tally.fights.push({ rank: fight.rank, level: fight.level, lost: true, seconds: world.time - fight.at });
       tally.open.clear();

@@ -10,7 +10,12 @@ import type { ObjectiveTarget } from './objective.ts';
 import type { Command, MomentState } from './types.ts';
 import type { Content, MonsterDef, ZoneDef, ZonePack } from '../content/types.ts';
 import { createWorld } from './create.ts';
-import { waiting } from './packs.ts';
+import { freshRun, plannedRank, spawnPack, waiting } from './packs.ts';
+import { keepLive, parkZone, restoreKept } from './portal-keep.ts';
+import { ARENA_CENTRE, ARENA_CONTENT, arena } from '../../test/arena-support.ts';
+import type { PackRankDef, PackRanks } from '../content/rank-types.ts';
+import { rankChance } from './ranks.ts';
+import { spawnPacks } from './monsters.ts';
 import type { PackTimer } from './pack-return.ts';
 import { levelSpan } from './spawn.ts';
 import { stepWorld } from './step.ts';
@@ -178,5 +183,115 @@ void test('a fresh hero walking the arrow from arrival to the first moment, dyin
     }
     assert.ok(struck && died, `seed ${seed}: the first moment struck and he died in it`);
     assert.equal(world.flags['first_moment'], 'cleared', `seed ${seed}`);
+  }
+});
+
+function rankedPacks(world: World): Map<number, string> {
+  const ranks: Map<number, string> = new Map<number, string>();
+  for (const monster of world.monsters) ranks.set(monster.packId, monster.def.rank?.id ?? 'normal');
+  return ranks;
+}
+
+function rowOfPacks(count: number): ZonePack[] {
+  return Array.from({ length: count }, (_unused: unknown, index: number): ZonePack => ({ x: ARENA_CENTRE.x - 12 + index * 3, z: ARENA_CENTRE.z + 8, members: [{ monster: 'unfinished_taker', count: 1, mods: [] }], when: [], level: 20 }));
+}
+
+function nearlyNever(content: Content): Content {
+  const ranks: PackRanks = content.packRanks;
+  const faint: PackRankDef[] = ranks.ranks.map((rank: PackRankDef): PackRankDef => (rank.chance === null ? rank : { ...rank, chance: { ...rank.chance, base: 1e-9, perLevel: 0, max: 1e-9 } }));
+  return { ...content, packRanks: { ...ranks, ranks: faint } };
+}
+
+void test('every stretch of packs in a level holds at least one ranked pack, however the rolls fall', (): void => {
+  const content: Content = nearlyNever(ARENA_CONTENT);
+  for (const seed of [1, 2, 3]) {
+    const world: World = arena(seed, content);
+    world.zone = { ...world.zone, ranks: true, packs: rowOfPacks(10) };
+    world.spawnedPacks = [];
+    world.rankRun = freshRun();
+    spawnPacks(world);
+    const ids: string[] = [...rankedPacks(world).entries()].toSorted((a: [number, string], b: [number, string]): number => a[0] - b[0]).map((entry: [number, string]): string => entry[1]);
+    const size: number = content.packRanks.stretch;
+    for (let from: number = 0; from < ids.length; from += size) {
+      const stretch: string[] = ids.slice(from, from + size);
+      assert.equal(stretch.filter((id: string): boolean => id !== 'normal').length, 1, `stretch at ${from}: ${stretch.join(',')}`);
+      assert.equal(stretch.at(-1), 'magic', 'the last pack of a plain stretch is lifted to the lowest rank');
+    }
+  }
+});
+
+void test('a pack held back until the hero comes near does not hold a stretch open: the guarantee counts packs in the order they roll', (): void => {
+  const content: Content = nearlyNever(ARENA_CONTENT);
+  const world: World = arena(5, content);
+  const [first, held, ...rest] = rowOfPacks(9);
+  const row: ZonePack[] = [must(first, 'first pack'), { ...must(held, 'held pack'), x: ARENA_CENTRE.x + 200, waits: { near: 0.1 } }, ...rest];
+  world.zone = { ...world.zone, ranks: true, packs: row };
+  world.spawnedPacks = [];
+  world.rankRun = freshRun();
+  spawnPacks(world);
+  const ids: string[] = [...rankedPacks(world).entries()].toSorted((a: [number, string], b: [number, string]): number => a[0] - b[0]).map((entry: [number, string]): string => entry[1]);
+  assert.equal(ids.length, 8);
+  assert.deepEqual(ids, ['normal', 'normal', 'normal', 'magic', 'normal', 'normal', 'normal', 'magic']);
+  assert.equal(world.rankRun.rolled, 0);
+});
+
+void test('a named rank, a pack with an authored modifier and a zone without ranks never count toward or take the guarantee', (): void => {
+  const content: Content = nearlyNever(ARENA_CONTENT);
+  const world: World = arena(4, content);
+  world.zone = { ...world.zone, ranks: true, packs: [] };
+  world.rankRun = freshRun();
+  for (const pack of rowOfPacks(6)) spawnPack(world, { ...pack, rank: 'normal' }, 0, false);
+  for (const pack of rowOfPacks(6)) spawnPack(world, { ...pack, members: [{ monster: 'unfinished_taker', count: 1, mods: ['swift'] }] }, 0, false);
+  assert.equal(world.rankRun.rolled, 0);
+  assert.ok(world.monsters.every((monster: MonsterState): boolean => monster.def.rank === null));
+  const plain: World = arena(4, content);
+  plain.zone = { ...plain.zone, ranks: false, packs: rowOfPacks(8) };
+  plain.spawnedPacks = [];
+  plain.rankRun = freshRun();
+  spawnPacks(plain);
+  assert.equal(plain.rankRun.rolled, 0);
+  assert.ok(plain.monsters.every((monster: MonsterState): boolean => monster.def.rank === null));
+});
+
+void test('the open stretch closes after the set number of rolls and lifts only a plain last roll', (): void => {
+  const world: World = arena(6, nearlyNever(ARENA_CONTENT));
+  world.rankRun = freshRun();
+  const size: number = world.content.packRanks.stretch;
+  const rolls: (string | null)[] = Array.from({ length: size * 2 }, (): string | null => plannedRank(world, 20)?.id ?? null);
+  const ranked: number[] = rolls.flatMap((id: string | null, index: number): number[] => (id === 'magic' ? [index] : []));
+  assert.deepEqual(ranked, [size - 1, size * 2 - 1]);
+  world.rankRun = { rolled: 1, ranked: true };
+  const after: (string | null)[] = Array.from({ length: size - 1 }, (): string | null => plannedRank(world, 20)?.id ?? null);
+  assert.ok(after.every((id: string | null): boolean => id !== 'magic'), 'a stretch that already met a ranked pack is not lifted again');
+});
+
+void test('a portal kept live carries the open stretch back with the rest of the level', (): void => {
+  const world: World = arena(7, ARENA_CONTENT);
+  world.portal = { zone: world.zone.id, pos: { x: 0, z: 0 }, respawn: { type: 'start' }, reach: 1, kept: null };
+  world.rankRun = { rolled: 2, ranked: true };
+  assert.deepEqual(keepLive(world).rankRun, { rolled: 2, ranked: true });
+  parkZone(world);
+  world.rankRun = freshRun();
+  assert.equal(restoreKept(world), true);
+  assert.deepEqual(world.rankRun, { rolled: 2, ranked: true });
+});
+
+void test('the first cave level meets magic packs only; from the second on about one pack in three is magic and one in eight rare', (): void => {
+  const content: Content = ARENA_CONTENT;
+  const rare: PackRankDef = must(content.packRanks.ranks.find((rank: PackRankDef): boolean => rank.id === 'rare'), 'rare');
+  const magic: PackRankDef = must(content.packRanks.ranks.find((rank: PackRankDef): boolean => rank.id === 'magic'), 'magic');
+  const first: ZoneDef = must(content.zones.get('under_hall'), 'first cave level');
+  for (const pack of first.packs) assert.equal(rankChance(must(rare.chance, 'rare chance'), pack.level ?? first.level), 0);
+  for (const id of ['under_hall_2', 'under_hall_3', 'lava_depths', 'ledger_hall', 'ledger_hall_3']) {
+    const zone: ZoneDef = must(content.zones.get(id), id);
+    const rolled: ZonePack[] = zone.packs.filter((pack: ZonePack): boolean => pack.rank === undefined && pack.members.every((member): boolean => member.mods.length === 0));
+    assert.ok(rolled.length > zone.packs.length / 2, `${id} rolls most of its packs`);
+    for (const pack of rolled) {
+      const level: number = pack.level ?? zone.level;
+      const rareShare: number = rankChance(must(rare.chance, 'rare chance'), level);
+      const magicShare: number = (1 - rareShare) * rankChance(must(magic.chance, 'magic chance'), level);
+      assert.ok(rareShare >= 0.11 && rareShare <= 0.17, `${id} level ${level} rare ${rareShare}`);
+      assert.ok(magicShare >= 0.27 && magicShare <= 0.36, `${id} level ${level} magic ${magicShare}`);
+    }
   }
 });
