@@ -12,6 +12,12 @@ function chance(value: unknown, where: string): RankChance | null {
   return read;
 }
 
+function atLeastOne(source: Fields, key: string, where: string): number {
+  const value: number = whole(source, key, where);
+  if (value < 1) throw new ContentError(`${where}.${key}`, 'expected at least 1');
+  return value;
+}
+
 function whole(source: Fields, key: string, where: string): number {
   const value: number = nonNegative(source, key, where);
   if (!Number.isInteger(value)) throw new ContentError(`${where}.${key}`, 'expected a whole number');
@@ -78,7 +84,7 @@ export function packRanks(value: unknown, where: string): PackRanks {
     ranks,
     pool: each(source['pool'], `${where}.pool`, choice),
     apart: source['apart'] === undefined ? [] : each(source['apart'], `${where}.apart`, pair),
-    stretch: Math.max(1, whole(source, 'stretch', where)),
+    stretch: atLeastOne(source, 'stretch', where),
     names: { first: textList(names, 'first', `${where}.names`), second: textList(names, 'second', `${where}.names`) },
   };
 }

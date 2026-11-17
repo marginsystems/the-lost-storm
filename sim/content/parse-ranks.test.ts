@@ -80,5 +80,6 @@ void test('a rank chance may start at a level, and the stretch is a whole number
   if (plain === undefined || magic === undefined) throw new Error('the shipped ranks start with plain and magic');
   assert.throws((): PackRanks => packRanks({ ...packRanksData, ranks: [plain, { ...magic, chance: { base: 0.1, perLevel: 0, max: 0.1, from: 2.5 } }] }, 'r'), /whole number/);
   assert.throws((): PackRanks => packRanks({ ...packRanksData, stretch: 1.5 }, 'r'), /whole number/);
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, stretch: 0 }, 'r'), /at least 1/);
   assert.ok(RANKS.stretch >= 1);
 });
