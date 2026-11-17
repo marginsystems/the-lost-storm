@@ -6,7 +6,12 @@ import { pickWeighted } from '../rng.ts';
 import { withMods } from './elites.ts';
 
 export function rankChance(chance: RankChance, level: number, boost: number = 0): number {
+  if (level < chance.from) return 0;
   return Math.min(1, Math.min(chance.max, chance.base + chance.perLevel * Math.max(0, level - 1)) * (1 + boost));
+}
+
+export function lowestRank(ranks: PackRanks, level: number): PackRankDef | null {
+  return ranks.ranks.find((rank: PackRankDef): boolean => rank.chance !== null && rankChance(rank.chance, level) > 0) ?? null;
 }
 
 export function rollRank(ranks: PackRanks, rng: Rng, level: number, boost: number = 0): PackRankDef | null {

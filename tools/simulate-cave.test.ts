@@ -6,9 +6,9 @@ import type { Vec2 } from '../sim/math.ts';
 import { distance } from '../sim/math.ts';
 import { cellIndex, isWalkable } from '../sim/nav/grid.ts';
 import { createWorld } from '../sim/world/create.ts';
-import type { World } from '../sim/world/types.ts';
+import type { MonsterState, World } from '../sim/world/types.ts';
 import { enterZone } from '../sim/world/zones.ts';
-import { dressHero, farthestPoint, routeBack, walkDistances, walkFrom } from './simulate-cave.ts';
+import { dressHero, farthestPoint, modsNear, routeBack, walkDistances, walkFrom } from './simulate-cave.ts';
 import { POLICIES } from './simulate-policies.ts';
 import { CONTENT } from './simulate-run.ts';
 
@@ -63,4 +63,13 @@ void test('a dressed hero given an arm holds a weapon of that arm, and an unknow
     assert.ok(arm.includes(CONTENT.itemBases.get(weapon)?.weaponKind ?? ''), `${arm.join('/')} got ${weapon}`);
   }
   assert.throws((): void => dressHero(createWorld(CONTENT, { seed: 1, save: null }), must(POLICIES.builds.get('tank'), 'tank'), 3, ['spear']), /no weapon kind spear/);
+});
+
+void test('a death names every modifier carried by the monsters near it once, in order', (): void => {
+  const world: World = createWorld(CONTENT, { seed: 1, save: null });
+  enterZone(world, must(CONTENT.zones.get('under_hall_2'), 'the second cave'), { type: 'start' });
+  const first: MonsterState = must(world.monsters[0], 'a monster in the second cave');
+  const carrying = (mods: readonly string[]): MonsterState => ({ ...first, def: { ...first.def, mods } });
+  assert.deepEqual(modsNear([carrying(['swift', 'brutal']), carrying(['brutal', 'mending']), carrying([])]), ['brutal', 'mending', 'swift']);
+  assert.deepEqual(modsNear([carrying([])]), []);
 });

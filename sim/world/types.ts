@@ -1,4 +1,5 @@
 import type { TailwindEnd, TailwindState } from './tailwind-types.ts';
+import type { RankRun } from '../content/rank-types.ts';
 import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
 import type { GlitchEvent, GlitchState, PathAct, PathLog } from './glitch-types.ts';
 import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, XpReduction, ZoneDef, ZonePack } from '../content/types.ts';
@@ -489,6 +490,7 @@ export interface World {
   readonly player: PlayerState;
   monsters: MonsterState[];
   spawnedPacks: ZonePack[];
+  rankRun: RankRun;
   roused: ZonePack[];
   packReturns: PackTimer[];
   cachesOpened: number[];

@@ -1,5 +1,5 @@
 import type { AlarmDef } from '../content/combat-types.ts';
-import type { PackRankDef, PackRanks } from '../content/rank-types.ts';
+import type { PackRankDef, PackRanks, RankRun } from '../content/rank-types.ts';
 import type { MonsterDef, SurgeRules, ZonePack } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
@@ -7,7 +7,7 @@ import { lineOfSight } from '../nav/grid.ts';
 import { aggroPack } from './combat.ts';
 import { allHold } from './conditions.ts';
 import { modsNamed, withMods } from './elites.ts';
-import { rankPack, ranksHere, rollRank } from './ranks.ts';
+import { lowestRank, rankPack, ranksHere, rollRank } from './ranks.ts';
 import { packLevel, SPAWN, spawnMonster } from './spawn.ts';
 import type { RunShaping } from './run-state.ts';
 import { runShaping } from './run-state.ts';
@@ -19,10 +19,27 @@ export function surgeExtra(world: World): number {
   return rules === null ? 0 : Math.min(rules.maxExtraMonsters, Math.floor((world.surge - 1) / Math.max(1, rules.surgesPerExtraMonster)));
 }
 
+export function freshRun(): RankRun {
+  return { rolled: 0, ranked: false };
+}
+
+export function plannedRank(world: World, level: number, boost: number = 0): PackRankDef | null {
+  const ranks: PackRanks = world.content.packRanks;
+  const rolled: PackRankDef | null = rollRank(ranks, world.rng, level, boost);
+  const run: RankRun = world.rankRun;
+  run.rolled += 1;
+  const closing: boolean = run.rolled >= ranks.stretch;
+  const plain: boolean = rolled === null || rolled.chance === null;
+  const chosen: PackRankDef | null = plain && closing && !run.ranked ? (lowestRank(ranks, level) ?? rolled) : rolled;
+  run.ranked = run.ranked || (chosen !== null && chosen.chance !== null);
+  if (closing) world.rankRun = freshRun();
+  return chosen;
+}
+
 function packRank(world: World, pack: ZonePack, level: number, shaping: RunShaping | null): PackRankDef | null {
   const ranks: PackRanks = world.content.packRanks;
   const boost: number = shaping?.rankChance ?? 0;
-  if (pack.rank === undefined) return rollRank(ranks, world.rng, level, boost);
+  if (pack.rank === undefined) return plannedRank(world, level, boost);
   const named: PackRankDef | null = ranks.ranks.find((entry: PackRankDef): boolean => entry.id === pack.rank) ?? null;
   if (boost <= 0 || named === null || named !== ranks.ranks[0]) return named;
   return rollRank(ranks, world.rng, level, boost - 1);

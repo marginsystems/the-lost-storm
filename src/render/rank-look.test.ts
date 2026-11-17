@@ -12,7 +12,7 @@ const STEP: number = 1 / 60;
 function certain(rank: PackRankDef, id: string): PackRankDef {
   if (rank.chance === null) return rank;
   const sure: number = rank.id === id ? 1 : 0;
-  return { ...rank, chance: { base: sure, perLevel: 0, max: sure } };
+  return { ...rank, chance: { base: sure, perLevel: 0, max: sure, from: 1 } };
 }
 
 function only(id: string): Content {

@@ -22,6 +22,7 @@ export function keepLive(world: World): KeptLive {
     spawnedPacks: [...world.spawnedPacks],
     roused: [...world.roused],
     packReturns: [...world.packReturns],
+    rankRun: { ...world.rankRun },
     cachesOpened: [...world.cachesOpened],
     ground: world.ground.filter((ground: GroundItem): boolean => !ground.kept),
   };
@@ -94,6 +95,7 @@ function restoreLive(world: World, kept: KeptLive): void {
   world.spawnedPacks = [...kept.spawnedPacks];
   world.roused = [...kept.roused];
   world.packReturns = [...kept.packReturns];
+  world.rankRun = { ...kept.rankRun };
   world.cachesOpened = [...kept.cachesOpened];
   for (const monster of kept.monsters) {
     world.monsters.push(calm(monster));
