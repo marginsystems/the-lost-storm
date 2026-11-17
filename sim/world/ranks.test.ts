@@ -29,8 +29,9 @@ function only(rank: PackRankDef): Content {
 
 void test('a ranked chance grows with the level and stops at its cap', (): void => {
   const chance: RankChance = must(rare.chance, 'rare chance');
-  assert.equal(rankChance(chance, 1), chance.base);
-  assert.ok(rankChance(chance, 10) > rankChance(chance, 5));
+  assert.equal(rankChance(chance, chance.from - 1), 0);
+  assert.equal(rankChance(chance, chance.from), Math.min(chance.max, chance.base + chance.perLevel * (chance.from - 1)));
+  assert.ok(rankChance(chance, chance.from + 5) > rankChance(chance, chance.from));
   assert.equal(rankChance(chance, 1000), chance.max);
 });
 

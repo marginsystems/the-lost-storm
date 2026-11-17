@@ -26,6 +26,7 @@ export function freshRun(): RankRun {
 export function plannedRank(world: World, level: number, boost: number = 0): PackRankDef | null {
   const ranks: PackRanks = world.content.packRanks;
   const rolled: PackRankDef | null = rollRank(ranks, world.rng, level, boost);
+  if (level < ranks.stretchFrom) return rolled;
   const run: RankRun = world.rankRun;
   run.rolled += 1;
   const closing: boolean = run.rolled >= ranks.stretch;

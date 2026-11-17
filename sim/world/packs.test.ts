@@ -267,6 +267,16 @@ void test('the open stretch closes after the set number of rolls and lifts only 
   assert.ok(after.every((id: string | null): boolean => id !== 'magic'), 'a stretch that already met a ranked pack is not lifted again');
 });
 
+void test('below the level the guarantee starts from, packs roll as they fall and nothing counts toward a stretch', (): void => {
+  const world: World = arena(6, nearlyNever(ARENA_CONTENT));
+  world.rankRun = freshRun();
+  const ranks: PackRanks = world.content.packRanks;
+  const early: (string | null)[] = Array.from({ length: ranks.stretch * 2 }, (): string | null => plannedRank(world, ranks.stretchFrom - 1)?.id ?? null);
+  assert.ok(ranks.stretchFrom > 1);
+  assert.ok(early.every((id: string | null): boolean => id !== 'magic'));
+  assert.equal(world.rankRun.rolled, 0);
+});
+
 void test('a portal kept live carries the open stretch back with the rest of the level', (): void => {
   const world: World = arena(7, ARENA_CONTENT);
   world.portal = { zone: world.zone.id, pos: { x: 0, z: 0 }, respawn: { type: 'start' }, reach: 1, kept: null };

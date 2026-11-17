@@ -45,6 +45,7 @@
     { "mod": "kincalling", "weight": 1, "from": 14, "leader": true }
   ],
   "stretch": 4,
+  "stretchFrom": 9,
   "apart": [
     ["swift", "unyielding"],
     ["swift", "brutal"],

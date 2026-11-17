@@ -57,6 +57,7 @@ export interface PackRanks {
   readonly pool: readonly RankModChoice[];
   readonly apart: readonly ModPair[];
   readonly stretch: number;
+  readonly stretchFrom: number;
   readonly names: RankNames;
 }
 

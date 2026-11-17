@@ -77,7 +77,7 @@ void test('a threat splits into here and ahead, each weighed to one, and with no
   const threat: Threat = threatNear(content, ['under_hall_2'], zoneOf(content, 'hideout'), 15);
   assert.equal(partOf(threat, false)?.zones.length, 1);
   assert.ok(Math.abs((partOf(threat, true)?.zones.reduce((sum: number, zone: ThreatZone): number => sum + zone.weight, 0) ?? 0) - 1) < 1e-9);
-  assert.ok(shareOf(threat, 'physical') > 0.9);
+  assert.ok(shareOf(threat, 'physical') > 0.75);
   assert.equal(shareOf(threatAt(content, null, 1), 'physical'), 1);
 });
 

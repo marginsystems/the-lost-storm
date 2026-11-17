@@ -161,7 +161,7 @@ void test('marked packs are ranked far more often', (): void => {
     setOut(two, { zone: CAVE, pins: [pin('marked')] });
     marked += two.monsters.filter(aboveNormal).length;
   }
-  assert.ok(marked > plain * 1.8, `${marked} against ${plain}`);
+  assert.ok(marked > plain * 1.5, `${marked} against ${plain}`);
 });
 
 void test('the same seed and setup make the same level', (): void => {

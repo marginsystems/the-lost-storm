@@ -85,6 +85,7 @@ export function packRanks(value: unknown, where: string): PackRanks {
     pool: each(source['pool'], `${where}.pool`, choice),
     apart: source['apart'] === undefined ? [] : each(source['apart'], `${where}.apart`, pair),
     stretch: atLeastOne(source, 'stretch', where),
+    stretchFrom: source['stretchFrom'] === undefined ? 1 : atLeastOne(source, 'stretchFrom', where),
     names: { first: textList(names, 'first', `${where}.names`), second: textList(names, 'second', `${where}.names`) },
   };
 }
