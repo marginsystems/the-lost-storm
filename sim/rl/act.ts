@@ -73,14 +73,17 @@ function nearestTarget(view: View, at: Vec2): number {
   return best;
 }
 
-interface Carried {
+export interface Carried {
   readonly move: number;
   readonly skill: number;
   readonly target: number;
 }
 
-function carriedOrder(world: World, intent: Intent, view: View, from: Vec2): Carried {
+export const NO_CARRY: Carried = { move: 0, skill: 0, target: 0 };
+
+export function carriedOrder(world: World, view: View, from: Vec2): Carried {
   const player: PlayerState = world.player;
+  const intent: Intent = player.intent;
   if (intent.type === 'move') return { move: moveBucket({ x: intent.dest.x - from.x, z: intent.dest.z - from.z }), skill: 0, target: 0 };
   if (intent.type === 'attack' && (player.skills[intent.slot] ?? null) !== null) {
     const found: number = view.targets.findIndex((monster: MonsterState): boolean => monster.id === intent.targetId);
@@ -88,10 +91,10 @@ function carriedOrder(world: World, intent: Intent, view: View, from: Vec2): Car
     const aimed: MonsterState | undefined = world.monsters.find((monster: MonsterState): boolean => monster.id === intent.targetId && monster.alive);
     if (aimed !== undefined && view.targets.length > 0) return { move: 0, skill: intent.slot + 1, target: nearestTarget(view, aimed.pos) };
   }
-  return { move: 0, skill: 0, target: 0 };
+  return NO_CARRY;
 }
 
-export function actionOf(world: World, commands: readonly Command[], view: View, from: Vec2, before: Intent): Action {
+export function actionOf(world: World, commands: readonly Command[], view: View, from: Vec2, carried: Carried): Action {
   const player: PlayerState = world.player;
   let move: number = 0;
   let skill: number = 0;
@@ -110,7 +113,6 @@ export function actionOf(world: World, commands: readonly Command[], view: View,
     else if (command.type === 'flask' && flask === 0) flask = command.slot + 1;
   }
   if (move === 0 && skill === 0) {
-    const carried: Carried = carriedOrder(world, before, view, from);
     move = carried.move;
     skill = carried.skill;
     target = carried.target;
