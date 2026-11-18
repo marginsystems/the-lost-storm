@@ -22,6 +22,9 @@ void test('a replay is asked for by path, with an optional clamped speed', (): v
   assert.deepEqual(watchRequest('?replay=/a.json&speed=100'), { path: '/a.json', speed: WATCH.maxSpeed });
   assert.deepEqual(watchRequest('?replay=/a.json&speed=fast'), { path: '/a.json', speed: 1 });
   assert.deepEqual(watchRequest('?replay=/a.json&speed='), { path: '/a.json', speed: 1 });
+  assert.equal(watchRequest('?replay=//elsewhere.example/a.json'), null);
+  assert.equal(watchRequest('?replay=https://elsewhere.example/a.json'), null);
+  assert.equal(watchRequest('?replay=/\\elsewhere.example/a.json'), null);
   assert.deepEqual(watchRequest('?replay=/a.json&speed=%20'), { path: '/a.json', speed: 1 });
 });
 
