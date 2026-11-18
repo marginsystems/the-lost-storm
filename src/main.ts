@@ -516,7 +516,7 @@ async function start(): Promise<void> {
     hud.update(dt, transition.blocking ? 'veiled' : 'shown');
     touch.update();
     ladder?.noteLevel(world.player.level);
-    launch.update(world, dt, gate.queue);
+    if (watching === null) launch.update(world, dt, gate.queue);
     hurtVignette.show(effects.hurt);
     if (presentNow) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
     perf.frame(now);
