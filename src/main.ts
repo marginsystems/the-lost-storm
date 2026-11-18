@@ -170,7 +170,7 @@ function whenIdle(work: () => void): void {
 }
 
 async function start(): Promise<void> {
-  const watchAsked: WatchRequest | null = import.meta.env.DEV ? watchRequest(window.location.search) : null;
+  const watchAsked: WatchRequest | null = import.meta.env.DEV ? watchRequest(window.location.search, window.location.origin) : null;
   const serverUrl: string | undefined = watchAsked === null ? import.meta.env.VITE_SERVER_URL : undefined;
   const { canvas, title, status, enter, reset, vignette, statusLine, placeLine, mobile, overlayManager, launch }: TitleBoot = bootTitle({ lines: titleLines, serverUrl, build: import.meta.env.VITE_BUILD_ID, inPlay: (): boolean => playing });
   const hurtVignette: HurtVignette = createHurtVignette(vignette);

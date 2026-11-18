@@ -8,7 +8,6 @@ import type { WorldEvent } from '../../sim/world/types.ts';
 
 export const WATCH = {
   param: 'replay',
-  originProbe: 'http://replay.invalid',
   speedParam: 'speed',
   minSpeed: 0.25,
   maxSpeed: 8,
@@ -26,24 +25,26 @@ export interface WatchRequest {
   readonly speed: number;
 }
 
-function sameOrigin(path: string): boolean {
-  const base: string = WATCH.originProbe;
+function localPath(asked: string, origin: string): string | null {
   try {
-    return new URL(path, base).origin === new URL(base).origin;
+    const url: URL = new URL(asked, `${origin}/`);
+    return url.origin === origin ? `${url.pathname}${url.search}` : null;
   }
   catch {
-    return false;
+    return null;
   }
 }
 
-export function watchRequest(search: string): WatchRequest | null {
+export function watchRequest(search: string, origin: string): WatchRequest | null {
   const params: URLSearchParams = new URLSearchParams(search);
-  const path: string | null = params.get(WATCH.param);
-  if (path === null || path === '' || !sameOrigin(path)) return null;
+  const asked: string | null = params.get(WATCH.param);
+  if (asked === null || asked === '') return null;
+  const path: string | null = localPath(asked, origin);
+  if (path === null) return null;
   const raw: string = (params.get(WATCH.speedParam) ?? '').trim();
-  const asked: number = raw === '' ? 1 : Number(raw);
-  const speed: number = Number.isFinite(asked) ? Math.min(WATCH.maxSpeed, Math.max(WATCH.minSpeed, asked)) : 1;
-  return { path: path.startsWith('/') ? path : `/${path}`, speed };
+  const wanted: number = raw === '' ? 1 : Number(raw);
+  const speed: number = Number.isFinite(wanted) ? Math.min(WATCH.maxSpeed, Math.max(WATCH.minSpeed, wanted)) : 1;
+  return { path, speed };
 }
 
 export function startWatching(content: Content, raw: unknown, speed: number): Watching {

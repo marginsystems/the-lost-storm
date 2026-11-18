@@ -16,16 +16,21 @@ function watching(speed: number): Watching {
   return startWatching(CONTENT, JSON.parse(JSON.stringify(replay)), speed);
 }
 
+const ORIGIN: string = 'http://localhost:5193';
+
 void test('a replay is asked for by path, with an optional clamped speed', (): void => {
-  assert.equal(watchRequest(''), null);
-  assert.deepEqual(watchRequest('?replay=rl/runs/a.json'), { path: '/rl/runs/a.json', speed: 1 });
-  assert.deepEqual(watchRequest('?replay=/a.json&speed=100'), { path: '/a.json', speed: WATCH.maxSpeed });
-  assert.deepEqual(watchRequest('?replay=/a.json&speed=fast'), { path: '/a.json', speed: 1 });
-  assert.deepEqual(watchRequest('?replay=/a.json&speed='), { path: '/a.json', speed: 1 });
-  assert.equal(watchRequest('?replay=//elsewhere.example/a.json'), null);
-  assert.equal(watchRequest('?replay=https://elsewhere.example/a.json'), null);
-  assert.equal(watchRequest('?replay=/\\elsewhere.example/a.json'), null);
-  assert.deepEqual(watchRequest('?replay=/a.json&speed=%20'), { path: '/a.json', speed: 1 });
+  assert.equal(watchRequest('', ORIGIN), null);
+  assert.deepEqual(watchRequest('?replay=rl/runs/a.json', ORIGIN), { path: '/rl/runs/a.json', speed: 1 });
+  assert.deepEqual(watchRequest('?replay=/a.json&speed=100', ORIGIN), { path: '/a.json', speed: WATCH.maxSpeed });
+  assert.deepEqual(watchRequest('?replay=/a.json&speed=fast', ORIGIN), { path: '/a.json', speed: 1 });
+  assert.deepEqual(watchRequest('?replay=/a.json&speed=', ORIGIN), { path: '/a.json', speed: 1 });
+  assert.equal(watchRequest('?replay=//elsewhere.example/a.json', ORIGIN), null);
+  assert.equal(watchRequest('?replay=https://elsewhere.example/a.json', ORIGIN), null);
+  assert.equal(watchRequest('?replay=/\\elsewhere.example/a.json', ORIGIN), null);
+  assert.equal(watchRequest('?replay=//replay.invalid/a.json', ORIGIN), null);
+  assert.deepEqual(watchRequest('?replay=//localhost:5193/a.json', ORIGIN), { path: '/a.json', speed: 1 });
+  assert.deepEqual(watchRequest('?replay=/rl/../rl/a.json', ORIGIN), { path: '/rl/a.json', speed: 1 });
+  assert.deepEqual(watchRequest('?replay=/a.json&speed=%20', ORIGIN), { path: '/a.json', speed: 1 });
 });
 
 void test('frame time turns into whole sim ticks at the chosen speed', (): void => {
