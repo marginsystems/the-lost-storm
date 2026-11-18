@@ -1,6 +1,6 @@
 import type { SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import type { Command, MonsterState, PlayerState, World } from '../world/types.ts';
+import type { Command, Intent, MonsterState, PlayerState, World } from '../world/types.ts';
 import type { Action } from './contract.ts';
 import { MOVE_CHOICES, RL } from './contract.ts';
 import type { View } from './observe.ts';
@@ -55,6 +55,7 @@ export function commandsFor(world: World, action: Action, view: View): Command[]
   const out: Command[] = player.held.filter((held: number): boolean => held !== slot).map((held: number): Command => ({ type: 'hold', slot: held, down: false }));
   if (skill !== null) out.push(...skillCommands(player, slot, skill, direction, target));
   else if (direction !== null) out.push({ type: 'move', held: false, dest: ahead(player.pos, direction, RL.moveReach) });
+  else if (player.intent.type !== 'idle') out.push({ type: 'stop' });
   if (action.flask > 0) out.push({ type: 'flask', slot: action.flask - 1 });
   return out;
 }
@@ -72,7 +73,22 @@ function nearestTarget(view: View, at: Vec2): number {
   return best;
 }
 
-export function actionOf(world: World, commands: readonly Command[], view: View, from: Vec2): Action {
+interface Carried {
+  readonly move: number;
+  readonly skill: number;
+  readonly target: number;
+}
+
+function carriedOrder(player: PlayerState, intent: Intent, view: View, from: Vec2): Carried {
+  if (intent.type === 'move') return { move: moveBucket({ x: intent.dest.x - from.x, z: intent.dest.z - from.z }), skill: 0, target: 0 };
+  if (intent.type === 'attack' && (player.skills[intent.slot] ?? null) !== null) {
+    const found: number = view.targets.findIndex((monster: MonsterState): boolean => monster.id === intent.targetId);
+    if (found >= 0) return { move: 0, skill: intent.slot + 1, target: found };
+  }
+  return { move: 0, skill: 0, target: 0 };
+}
+
+export function actionOf(world: World, commands: readonly Command[], view: View, from: Vec2, before: Intent): Action {
   const player: PlayerState = world.player;
   let move: number = 0;
   let skill: number = 0;
@@ -89,6 +105,12 @@ export function actionOf(world: World, commands: readonly Command[], view: View,
     }
     else if ((command.type === 'move' || command.type === 'walk') && skill === 0) move = moveBucket({ x: command.dest.x - from.x, z: command.dest.z - from.z });
     else if (command.type === 'flask' && flask === 0) flask = command.slot + 1;
+  }
+  if (move === 0 && skill === 0) {
+    const carried: Carried = carriedOrder(player, before, view, from);
+    move = carried.move;
+    skill = carried.skill;
+    target = carried.target;
   }
   return { move, skill, target: Math.min(target, RL.targets - 1), flask: Math.min(flask, RL.flasks) };
 }

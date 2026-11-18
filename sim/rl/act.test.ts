@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import type { Command } from '../world/types.ts';
+import type { Command, Intent } from '../world/types.ts';
 import { must } from '../../test/support.ts';
 import { actionOf, commandsFor, moveBucket, moveDirection } from './act.ts';
 import type { Arena } from './arena.ts';
@@ -12,6 +12,7 @@ import { MOVE_CHOICES, NO_ACTION, RL } from './contract.ts';
 import type { Observation } from './observe.ts';
 
 const CONTENT: Content = loadContent();
+const IDLE: Intent = { type: 'idle' };
 
 void test('every move direction falls back into its own bucket', (): void => {
   for (let move: number = 1; move < MOVE_CHOICES; move += 1) {
@@ -47,9 +48,9 @@ void test('the bot’s commands read back as the action that would send them', (
   const from: Vec2 = { x: arena.world.player.pos.x, z: arena.world.player.pos.z };
   const action = { move: 3, skill: 1, target: Math.min(1, seen.view.targets.length - 1), flask: 2 };
   const sent: Command[] = commandsFor(arena.world, action, seen.view);
-  assert.deepEqual(actionOf(arena.world, sent, seen.view, from), { ...action, move: 0 });
+  assert.deepEqual(actionOf(arena.world, sent, seen.view, from, IDLE), { ...action, move: 0 });
   const both: Command[] = [{ type: 'flask', slot: 0 }, { type: 'flask', slot: 1 }];
-  assert.equal(actionOf(arena.world, both, seen.view, from).flask, 1);
+  assert.equal(actionOf(arena.world, both, seen.view, from, IDLE).flask, 1);
   const walked: Command[] = commandsFor(arena.world, { move: 6, skill: 0, target: 0, flask: 0 }, seen.view);
-  assert.deepEqual(actionOf(arena.world, walked, seen.view, from), { move: 6, skill: 0, target: 0, flask: 0 });
+  assert.deepEqual(actionOf(arena.world, walked, seen.view, from, IDLE), { move: 6, skill: 0, target: 0, flask: 0 });
 });

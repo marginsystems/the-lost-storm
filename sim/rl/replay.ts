@@ -38,8 +38,14 @@ export function playStep(arena: Arena, action: Action): Observation {
   return seen;
 }
 
+export function playableReplay(replay: Replay): Replay {
+  const shape = contractShape();
+  if (replay.fingerprint !== shape.fingerprint) throw new Error(`replay was recorded under contract ${replay.fingerprint}, the game now plays ${shape.fingerprint}`);
+  return replay;
+}
+
 export function replayArena(content: Content, replay: Replay): Arena {
-  const arena: Arena = createArena(content, replay.options);
+  const arena: Arena = createArena(content, playableReplay(replay).options);
   for (const list of replay.actions) {
     if (arena.outcome !== 'running') break;
     playStep(arena, actionFrom(list));

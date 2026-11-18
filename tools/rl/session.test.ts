@@ -12,8 +12,9 @@ function session(): Session {
 }
 
 function only(reply: Reply): Frame {
-  const out: Buffer | undefined = reply.frames[0];
-  assert.ok(out !== undefined && reply.frames.length === 1);
+  const all: Buffer[] = [...reply.frames];
+  const out: Buffer | undefined = all[0];
+  assert.ok(out !== undefined && all.length === 1);
   return { kind: out.readUInt8(FRAME.word), payload: out.subarray(FRAME.header) };
 }
 

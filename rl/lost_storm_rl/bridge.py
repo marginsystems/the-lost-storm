@@ -45,6 +45,7 @@ class Demonstrations:
     mask: np.ndarray
     actions: np.ndarray
     episodes: list[dict[str, Any]]
+    done: bool = False
 
 
 def _json_tail(payload: bytes, at: int) -> Any:
@@ -78,7 +79,7 @@ def read_demonstrations(payload: bytes) -> Demonstrations:
     mask = np.frombuffer(payload, dtype=np.uint8, count=count * mask_size, offset=at).reshape(count, mask_size)
     at += count * mask_size
     info = _json_tail(payload, at) or {}
-    return Demonstrations(obs.copy(), mask.copy(), actions.copy(), list(info.get("episodes", [])))
+    return Demonstrations(obs.copy(), mask.copy(), actions.copy(), list(info.get("episodes", [])), bool(info.get("done", False)))
 
 
 class Worker:
@@ -187,13 +188,22 @@ class ArenaEnvs:
             worker.close()
 
 
+def _stream(worker: Worker) -> list[Demonstrations]:
+    parts: list[Demonstrations] = []
+    while True:
+        part = read_demonstrations(worker.receive(DEMONSTRATIONS))
+        parts.append(part)
+        if part.done:
+            return parts
+
+
 def demonstrations(workers: int, episodes: int, seed: int, jitter: float, waves: int) -> Demonstrations:
     pool = [Worker(index, None) for index in range(workers)]
     try:
         share = max(1, episodes // workers)
         for index, worker in enumerate(pool):
             worker.send_json(DEMO, {"seed": seed + index * share, "episodes": share, "jitter": jitter, "waves": waves})
-        parts = [read_demonstrations(worker.receive(DEMONSTRATIONS)) for worker in pool]
+        parts = [part for worker in pool for part in _stream(worker)]
     finally:
         for worker in pool:
             worker.close()

@@ -281,6 +281,13 @@ def evaluate(path: str, run: str, episodes: int, seed: int, jitter: float, waves
     print(json.dumps({"episodes": len(finished), "outcomes": outcomes, "mean_return": float(np.mean([e["total"] for e in finished])), "mean_waves": float(np.mean([e["waves"] for e in finished])), "replays": str(folder)}, indent=2))
 
 
+def check_minibatches(parser: argparse.ArgumentParser, minibatches: int, steps: int, envs: int) -> None:
+    if minibatches < 1:
+        parser.error("--minibatches must be 1 or more")
+    if minibatches > steps * envs:
+        parser.error(f"--minibatches must be at most --steps x envs ({steps * envs})")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="lost-storm-rl")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -322,6 +329,8 @@ def main() -> None:
     eval_cmd.add_argument("--episodes", type=int, default=16)
     eval_cmd.add_argument("--sample", action="store_true")
     parsed = parser.parse_args()
+    if parsed.command == "ppo":
+        check_minibatches(parser, parsed.minibatches, parsed.steps, parsed.envs * parsed.workers)
     torch.set_num_threads(4)
     if parsed.command == "widen":
         probe = ArenaEnvs(1, 1, 1, 0.0, 1)

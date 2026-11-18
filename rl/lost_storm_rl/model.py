@@ -139,7 +139,7 @@ def save(policy: Policy, path: str, extra: dict[str, Any] | None = None) -> None
 
 
 def load(path: str, contract: dict[str, Any], device: torch.device) -> Policy:
-    saved = torch.load(path, map_location=device, weights_only=False)
+    saved = torch.load(path, map_location=device, weights_only=True)
     if saved["contract"]["fingerprint"] != contract["fingerprint"]:
         raise ValueError(
             f"checkpoint {path} was trained on contract v{saved['contract']['version']} ({saved['contract']['fingerprint']}), "
@@ -177,7 +177,7 @@ def carry(old: torch.Tensor, fresh: torch.Tensor, old_names: list[str] | None, n
 
 
 def widen(path: str, contract: dict[str, Any], out: str) -> list[str]:
-    saved = torch.load(path, map_location="cpu", weights_only=False)
+    saved = torch.load(path, map_location="cpu", weights_only=True)
     policy = Policy(contract, width=saved["width"])
     fresh = policy.state_dict()
     old_inputs = input_names(saved["contract"])
