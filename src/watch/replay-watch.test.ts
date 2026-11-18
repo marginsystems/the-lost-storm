@@ -21,6 +21,8 @@ void test('a replay is asked for by path, with an optional clamped speed', (): v
   assert.deepEqual(watchRequest('?replay=rl/runs/a.json'), { path: '/rl/runs/a.json', speed: 1 });
   assert.deepEqual(watchRequest('?replay=/a.json&speed=100'), { path: '/a.json', speed: WATCH.maxSpeed });
   assert.deepEqual(watchRequest('?replay=/a.json&speed=fast'), { path: '/a.json', speed: 1 });
+  assert.deepEqual(watchRequest('?replay=/a.json&speed='), { path: '/a.json', speed: 1 });
+  assert.deepEqual(watchRequest('?replay=/a.json&speed=%20'), { path: '/a.json', speed: 1 });
 });
 
 void test('frame time turns into whole sim ticks at the chosen speed', (): void => {

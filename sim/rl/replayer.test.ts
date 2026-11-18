@@ -37,5 +37,8 @@ void test('replaying tick by tick lands on the same fight as replaying decision 
   assert.deepEqual(replayer.arena.world.player.pos, whole.world.player.pos);
   assert.equal(replayer.arena.world.player.life, whole.world.player.life);
   assert.equal(replayer.arena.outcome, whole.outcome);
+  assert.equal(replayer.arena.total, whole.total);
+  assert.equal(replayer.arena.decisions, whole.decisions);
+  assert.deepEqual(replayer.arena.tally, whole.tally);
   assert.deepEqual(replayTick(replayer), []);
 });

@@ -170,12 +170,14 @@ function whenIdle(work: () => void): void {
 }
 
 async function start(): Promise<void> {
-  const { canvas, title, status, enter, reset, vignette, statusLine, placeLine, mobile, overlayManager, launch }: TitleBoot = bootTitle({ lines: titleLines, serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, inPlay: (): boolean => playing });
+  const watchAsked: WatchRequest | null = import.meta.env.DEV ? watchRequest(window.location.search) : null;
+  const serverUrl: string | undefined = watchAsked === null ? import.meta.env.VITE_SERVER_URL : undefined;
+  const { canvas, title, status, enter, reset, vignette, statusLine, placeLine, mobile, overlayManager, launch }: TitleBoot = bootTitle({ lines: titleLines, serverUrl, build: import.meta.env.VITE_BUILD_ID, inPlay: (): boolean => playing });
   const hurtVignette: HurtVignette = createHurtVignette(vignette);
   statusLine.show('Loading…');
   const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
   if (unsupported !== null) throw new UnsupportedBrowser(unsupported);
-  const { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, titleBar, drawTitleKeys }: GameServices = startGameServices({ title, serverUrl: import.meta.env.VITE_SERVER_URL });
+  const { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, titleBar, drawTitleKeys }: GameServices = startGameServices({ title, serverUrl });
   const stage: Stage = createdOrUnsupported((): Stage => createStage(canvas, mobile.quality.tier));
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -189,12 +191,11 @@ async function start(): Promise<void> {
   }
   if (lobby !== null) void lobby.feed.refresh(true);
   let heroName: string | null = null;
-  const nameVoice: NameVoiceClient | null = createBrowserNameVoice(import.meta.env.VITE_SERVER_URL);
+  const nameVoice: NameVoiceClient | null = createBrowserNameVoice(serverUrl);
   lobby?.feed.subscribe((board: Leaderboard | null): void => {
     if (board !== null) heroName = spokenName(board);
   });
   const keptHero: string | null = save === null ? readHero(createBrowserStore(), content) : null;
-  const watchAsked: WatchRequest | null = import.meta.env.DEV ? watchRequest(window.location.search) : null;
   const watching: Watching | null = watchAsked === null ? null : await fetchWatching(content, watchAsked);
   const world: World = watching !== null ? watching.replayer.arena.world : createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero });
   let entered: boolean = save !== null;
@@ -220,6 +221,7 @@ async function start(): Promise<void> {
   const { audioDef, controls, audio, sounds, voice, playCues, playEvent, releaseHeld, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio }: GameAudio = createGameAudio({ content, world, camera, canvas, assetBase: import.meta.env['VITE_ASSET_BASE'], logSounds: import.meta.env.DEV });
   const queue: Command[] = [];
   const send = (command: Command): void => {
+    if (watching !== null) return;
     queue.push(command);
     const action: UiAction | null = uiActionForCommand(command);
     if (action !== null) playUi(action);
@@ -251,7 +253,9 @@ async function start(): Promise<void> {
     onOpen: (): void => playUi('panel_open'),
     onClose: (): void => playUi('panel_close'),
     life: (): number => world.player.life,
-    onTitle: (): void => void leavePlay()?.open(),
+    onTitle: (): void => {
+      if (watching === null) void leavePlay()?.open();
+    },
   });
 
   const qualityTier = (): string => (mobile.quality.tier.name === 'desktop' ? gameSettings.get().graphics.quality : `${gameSettings.get().graphics.quality} ${mobile.quality.tier.name}`);
@@ -270,12 +274,12 @@ async function start(): Promise<void> {
     touch: mobile.touch,
     qualityTier,
     overlays: overlayManager,
-    auction: startAuction({ content, serverUrl: import.meta.env.VITE_SERVER_URL, backend, world, send, save: (): void => saveNow(), unverified: (item: ItemInstance): boolean => minter?.unverified(world, item) ?? true }),
+    auction: startAuction({ content, serverUrl, backend, world, send, save: (): void => saveNow(), unverified: (item: ItemInstance): boolean => minter?.unverified(world, item) ?? true }),
   };
   const hud: Hud = createHud(element('hud', HTMLDivElement), hudApi);
   const profilePanel = startProfile(lobby, { api: hudApi, content, pictures, hosts: { play: element('hud', HTMLDivElement), lobby: element('lobby', HTMLDivElement) } });
   const overlays: Overlays = createPlayOverlays({ world, camera, touch: mobile.touch, gameSettings, actors, hud, send });
-  const hideout = startHideout(import.meta.env.VITE_SERVER_URL, { scene: stage.scene, library, content, feather: mobile.quality.tier.msaaSamples > 0, camera, labels: element('overlays', HTMLDivElement), hud: element('hud', HTMLDivElement), loader, dresser, gate: loadGate, sight: cameraSight(stage.camera), screen: hud, sync: (): Promise<void> => { dirty = true; saveNow(); return backend.sync(); }, openProfile: lobby === null ? null : (name: string): void => lobby.profiles.open(name) });
+  const hideout = startHideout(serverUrl, { scene: stage.scene, library, content, feather: mobile.quality.tier.msaaSamples > 0, camera, labels: element('overlays', HTMLDivElement), hud: element('hud', HTMLDivElement), loader, dresser, gate: loadGate, sight: cameraSight(stage.camera), screen: hud, sync: (): Promise<void> => { dirty = true; saveNow(); return backend.sync(); }, openProfile: lobby === null ? null : (name: string): void => lobby.profiles.open(name) });
   const objectiveMarker: ObjectiveMarker = createObjectiveMarker(stage.scene, camera, element('hud', HTMLDivElement), hud.targets);
   const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby, { isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'ladder', overlays: overlayManager });
   const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
@@ -310,9 +314,9 @@ async function start(): Promise<void> {
     } });
   const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, overlays: overlayManager, pageVoice: { busy: (): boolean => audio.speaking().length > 0, soundOn: (): boolean => voiceAudible(controls.get()), say: (line: LineDef): void => void voice.play(line) }, send, nameOf: (): string | null => heroName ?? readHeroName(createBrowserStore()), fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), setRain: (amount: number): void => rain.setWeather({ ...world.zone.weather, rain: amount }), refreshName: (): Promise<void> => (lobby === null ? Promise.resolve() : lobby.feed.refresh(true)) });
   const glitches: GlitchView = startGameGlitches({ world, stage, glitchSettings, actors, send });
-  const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(import.meta.env.VITE_SERVER_URL);
+  const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(serverUrl);
   const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore(), onScreen: (): boolean => playing && !pauseMenu.isOpen });
-  const perf: PerfReports = startPerfReports({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, renderer: stage.renderer, world, touch: mobile.touch, tier: (): QualityName => mobile.quality.tier.name, graphics: (): GraphicsSettings => gameSettings.get().graphics, inPlay: (): boolean => playing && !elsewhere.replaced && !transition.blocking && !touch.lost && lobbyFlow?.active !== true });
+  const perf: PerfReports = startPerfReports({ serverUrl, build: import.meta.env.VITE_BUILD_ID, renderer: stage.renderer, world, touch: mobile.touch, tier: (): QualityName => mobile.quality.tier.name, graphics: (): GraphicsSettings => gameSettings.get().graphics, inPlay: (): boolean => playing && !elsewhere.replaced && !transition.blocking && !touch.lost && lobbyFlow?.active !== true });
   const debug: DebugHooks = attachDebug({ world, scene: stage.scene, renderer: stage.renderer, audio, sounds, camera, send });
 
   let playing: boolean = false;
@@ -470,7 +474,7 @@ async function start(): Promise<void> {
     }
     debug.record(events);
     hideout?.frame(dt, playing, world, gate.present);
-    if (minter?.pump(world) === true) urgent = true;
+    if (watching === null && minter?.pump(world) === true) urgent = true;
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
@@ -561,7 +565,7 @@ async function start(): Promise<void> {
   prepareNearZones();
   await untilCycleEnds(titleLoader);
   titleLoader.classList.add('done');
-  followSync(backend, showSync, readServerUrl(import.meta.env.VITE_SERVER_URL).kind === 'ok');
+  followSync(backend, showSync, readServerUrl(serverUrl).kind === 'ok');
   const setBusy = (busy: boolean): void => {
     enter.disabled = busy;
     reset.disabled = busy;
@@ -593,6 +597,7 @@ async function start(): Promise<void> {
   wireTitleKeys(title, enter);
   wireHudAway(document.body, element('hud', HTMLDivElement));
   const startOver = async (): Promise<void> => {
+    if (watching !== null) return;
     dirty = false;
     reset.disabled = true;
     enter.disabled = true;
@@ -608,7 +613,7 @@ async function start(): Promise<void> {
   const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), showFps: (): boolean => gameSettings.get().graphics.showFps, qualityTier, root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => pick.look(), view: (): SheetView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: pick.choice() }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
     entered = true;
     begin();
-  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), characters: { serverUrl: import.meta.env.VITE_SERVER_URL, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });
+  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), characters: { serverUrl, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();
@@ -617,7 +622,7 @@ async function start(): Promise<void> {
     entered = true;
     begin();
   }
-  wireEnter({ enter, begin: openLobby, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), body: (): ReturnType<HeroPick['body']> => pick.body(), suggester: createBrowserSuggester(import.meta.env.VITE_SERVER_URL), begin: openLobby }) });
+  wireEnter({ enter, begin: openLobby, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), body: (): ReturnType<HeroPick['body']> => pick.body(), suggester: createBrowserSuggester(serverUrl), begin: openLobby }) });
 }
 
 document.documentElement.dataset['boot'] = RETRY.started;
