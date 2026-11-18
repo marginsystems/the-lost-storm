@@ -29,7 +29,8 @@ export function watchRequest(search: string): WatchRequest | null {
   const params: URLSearchParams = new URLSearchParams(search);
   const path: string | null = params.get(WATCH.param);
   if (path === null || path === '') return null;
-  const asked: number = Number(params.get(WATCH.speedParam) ?? '1');
+  const raw: string = (params.get(WATCH.speedParam) ?? '').trim();
+  const asked: number = raw === '' ? 1 : Number(raw);
   const speed: number = Number.isFinite(asked) ? Math.min(WATCH.maxSpeed, Math.max(WATCH.minSpeed, asked)) : 1;
   return { path: path.startsWith('/') ? path : `/${path}`, speed };
 }

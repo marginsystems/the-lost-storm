@@ -6,6 +6,7 @@ import type { Arena } from './arena.ts';
 import { afterTick, arenaObservation, arenaRunning, createArena } from './arena.ts';
 import { RL } from './contract.ts';
 import type { Replay } from './replay.ts';
+import { REWARD } from './reward.ts';
 import { actionFrom, playableReplay } from './replay.ts';
 
 export interface Replayer {
@@ -29,6 +30,8 @@ function nextCommands(replayer: Replayer): readonly Command[] {
   const list: readonly number[] | undefined = replayer.replay.actions[replayer.decision];
   replayer.decision += 1;
   if (list === undefined) return [];
+  replayer.arena.total -= REWARD.step;
+  replayer.arena.decisions += 1;
   return commandsFor(replayer.arena.world, actionFrom(list), arenaObservation(replayer.arena).view);
 }
 
