@@ -35,6 +35,10 @@ import { insideAwakeMoment } from '../sim/world/moments.ts';
 import { prepareZone } from '../sim/world/zones.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { DebugHooks } from './debug-handle.ts';
+import type { WatchRequest, Watching } from './watch/replay-watch.ts';
+import { fetchWatching, watchCaption, watchRequest, watchTicks } from './watch/replay-watch.ts';
+import type { WatchCaption } from './watch/watch-caption.ts';
+import { createWatchCaption } from './watch/watch-caption.ts';
 import { attachDebug } from './debug-handle.ts';
 import type { Command, ItemInstance, PlayerState, World, WorldEvent } from '../sim/world/types.ts';
 import { voiceAudible } from './audio/settings.ts';
@@ -190,7 +194,9 @@ async function start(): Promise<void> {
     if (board !== null) heroName = spokenName(board);
   });
   const keptHero: string | null = save === null ? readHero(createBrowserStore(), content) : null;
-  const world: World = createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero });
+  const watchAsked: WatchRequest | null = import.meta.env.DEV ? watchRequest(window.location.search) : null;
+  const watching: Watching | null = watchAsked === null ? null : await fetchWatching(content, watchAsked);
+  const world: World = watching !== null ? watching.replayer.arena.world : createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero });
   let entered: boolean = save !== null;
   const keepChosen = (id: string): void => {
     keepHero(createBrowserStore(), id);
@@ -314,6 +320,7 @@ async function start(): Promise<void> {
   let torchVersion: number = 0;
   let failed: boolean = false;
   let saveHeld: boolean = false;
+  let watchCaptionView: WatchCaption | null = null;
   let hitStop: number = 0;
   let dirty: boolean = false;
   let urgent: boolean = false;
@@ -321,7 +328,7 @@ async function start(): Promise<void> {
   let last: number = performance.now();
 
   const persist = (): void => {
-    if ((!dirty && !urgent) || saveHeld) return;
+    if (watching !== null || (!dirty && !urgent) || saveHeld) return;
     dirty = !backend.save(toSave(world), { urgent });
     urgent = false;
     sinceSave = 0;
@@ -444,11 +451,15 @@ async function start(): Promise<void> {
       objectiveMarker.readHud(dt);
     }
     const collected: Command[] = gate.collect ? [...input.collect(dt), ...touch.collect(dt)] : [];
-    if (gate.queue) queue.push(...collected);
+    if (gate.queue && watching === null) queue.push(...collected);
     if (gate.step) {
       keeper.stepped();
       hitStop = Math.max(0, hitStop - dt);
-      if (hitStop <= 0) {
+      if (hitStop <= 0 && watching !== null) {
+        events = watchTicks(watching, dt);
+        watchCaptionView?.show(watchCaption(watching));
+      }
+      else if (hitStop <= 0) {
         let remaining: number = dt;
         while (remaining > 1e-5 && !events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
           const step: number = Math.min(MAX_STEP, remaining);
@@ -601,6 +612,11 @@ async function start(): Promise<void> {
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();
+  if (watching !== null) {
+    watchCaptionView = createWatchCaption(element('hud', HTMLDivElement));
+    entered = true;
+    begin();
+  }
   wireEnter({ enter, begin: openLobby, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), body: (): ReturnType<HeroPick['body']> => pick.body(), suggester: createBrowserSuggester(import.meta.env.VITE_SERVER_URL), begin: openLobby }) });
 }
 
