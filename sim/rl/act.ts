@@ -55,7 +55,7 @@ export function commandsFor(world: World, action: Action, view: View): Command[]
   const out: Command[] = player.held.filter((held: number): boolean => held !== slot).map((held: number): Command => ({ type: 'hold', slot: held, down: false }));
   if (skill !== null) out.push(...skillCommands(player, slot, skill, direction, target));
   else if (direction !== null) out.push({ type: 'move', held: false, dest: ahead(player.pos, direction, RL.moveReach) });
-  else if (player.intent.type !== 'idle') out.push({ type: 'stop' });
+  else if (action.flask === 0 && player.intent.type !== 'idle') out.push({ type: 'stop' });
   if (action.flask > 0) out.push({ type: 'flask', slot: action.flask - 1 });
   return out;
 }
@@ -79,11 +79,14 @@ interface Carried {
   readonly target: number;
 }
 
-function carriedOrder(player: PlayerState, intent: Intent, view: View, from: Vec2): Carried {
+function carriedOrder(world: World, intent: Intent, view: View, from: Vec2): Carried {
+  const player: PlayerState = world.player;
   if (intent.type === 'move') return { move: moveBucket({ x: intent.dest.x - from.x, z: intent.dest.z - from.z }), skill: 0, target: 0 };
   if (intent.type === 'attack' && (player.skills[intent.slot] ?? null) !== null) {
     const found: number = view.targets.findIndex((monster: MonsterState): boolean => monster.id === intent.targetId);
     if (found >= 0) return { move: 0, skill: intent.slot + 1, target: found };
+    const aimed: MonsterState | undefined = world.monsters.find((monster: MonsterState): boolean => monster.id === intent.targetId && monster.alive);
+    if (aimed !== undefined && view.targets.length > 0) return { move: 0, skill: intent.slot + 1, target: nearestTarget(view, aimed.pos) };
   }
   return { move: 0, skill: 0, target: 0 };
 }
@@ -107,7 +110,7 @@ export function actionOf(world: World, commands: readonly Command[], view: View,
     else if (command.type === 'flask' && flask === 0) flask = command.slot + 1;
   }
   if (move === 0 && skill === 0) {
-    const carried: Carried = carriedOrder(player, before, view, from);
+    const carried: Carried = carriedOrder(world, before, view, from);
     move = carried.move;
     skill = carried.skill;
     target = carried.target;

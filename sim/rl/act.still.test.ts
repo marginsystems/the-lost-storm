@@ -39,3 +39,24 @@ void test('the bot carrying on an earlier walk or attack is labelled as that wal
   assert.deepEqual(actionOf(arena.world, [], seen.view, from, attacking), { move: 0, skill: 1, target: 0, flask: 0 });
   assert.deepEqual(actionOf(arena.world, [], seen.view, from, { type: 'idle' }), NO_ACTION);
 });
+
+void test('a drink alone does not stop a walk', (): void => {
+  const arena: Arena = createArena(CONTENT, { seed: 43, jitter: 0, waves: 1 });
+  const world = arena.world;
+  stepWorld(world, commandsFor(world, { move: 3, skill: 0, target: 0, flask: 0 }, arenaObservation(arena).view), RL.tick);
+  assert.equal(world.player.intent.type, 'move');
+  const drink: Command[] = commandsFor(world, { move: 0, skill: 0, target: 0, flask: 1 }, arenaObservation(arena).view);
+  assert.deepEqual(drink, [{ type: 'flask', slot: 0 }]);
+});
+
+void test('an attack on a monster outside the view is labelled at the nearest monster in view', (): void => {
+  const arena: Arena = createArena(CONTENT, { seed: 44, jitter: 0, waves: 3 });
+  const seen: Observation = arenaObservation(arena);
+  assert.ok(seen.view.targets.length >= 2);
+  const far = must(seen.view.targets[0], 'far');
+  const narrowed = { ...seen.view, targets: seen.view.targets.slice(1) };
+  const gaps: number[] = narrowed.targets.map((monster): number => Math.hypot(monster.pos.x - far.pos.x, monster.pos.z - far.pos.z));
+  const nearest: number = gaps.indexOf(Math.min(...gaps));
+  const from: Vec2 = { x: arena.world.player.pos.x, z: arena.world.player.pos.z };
+  assert.deepEqual(actionOf(arena.world, [], narrowed, from, { type: 'attack', slot: 0, targetId: far.id }), { move: 0, skill: 1, target: nearest, flask: 0 });
+});

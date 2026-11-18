@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import struct
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,7 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parents[2]
 SERVE = REPO / "tools" / "rl" / "serve.ts"
+MAX_SEED = 2**39
 
 HELLO = ord("h")
 RESET = ord("r")
@@ -203,7 +205,8 @@ def demonstrations(workers: int, episodes: int, seed: int, jitter: float, waves:
         share = max(1, episodes // workers)
         for index, worker in enumerate(pool):
             worker.send_json(DEMO, {"seed": seed + index * share, "episodes": share, "jitter": jitter, "waves": waves})
-        parts = [part for worker in pool for part in _stream(worker)]
+        with ThreadPoolExecutor(max_workers=len(pool)) as readers:
+            parts = [part for streamed in readers.map(_stream, pool) for part in streamed]
     finally:
         for worker in pool:
             worker.close()

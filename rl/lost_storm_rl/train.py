@@ -13,7 +13,7 @@ import numpy as np
 import torch
 from torch.distributions import Categorical
 
-from .bridge import ArenaEnvs, demonstrations
+from .bridge import MAX_SEED, ArenaEnvs, demonstrations
 from .model import Policy, head_masks, load, save, widen
 
 RUNS = Path(__file__).resolve().parents[1] / "runs"
@@ -281,6 +281,11 @@ def evaluate(path: str, run: str, episodes: int, seed: int, jitter: float, waves
     print(json.dumps({"episodes": len(finished), "outcomes": outcomes, "mean_return": float(np.mean([e["total"] for e in finished])), "mean_waves": float(np.mean([e["waves"] for e in finished])), "replays": str(folder)}, indent=2))
 
 
+def check_seed(parser: argparse.ArgumentParser, seed: int) -> None:
+    if seed < 0 or seed > MAX_SEED:
+        parser.error(f"--seed must be between 0 and {MAX_SEED}, which leaves room for each worker's offset under the game's limit")
+
+
 def check_minibatches(parser: argparse.ArgumentParser, minibatches: int, steps: int, envs: int) -> None:
     if minibatches < 1:
         parser.error("--minibatches must be 1 or more")
@@ -329,6 +334,8 @@ def main() -> None:
     eval_cmd.add_argument("--episodes", type=int, default=16)
     eval_cmd.add_argument("--sample", action="store_true")
     parsed = parser.parse_args()
+    if parsed.command != "widen":
+        check_seed(parser, parsed.seed)
     if parsed.command == "ppo":
         check_minibatches(parser, parsed.minibatches, parsed.steps, parsed.envs * parsed.workers)
     torch.set_num_threads(4)
