@@ -5,7 +5,8 @@ import type { BotPlan } from '../bot-plan.ts';
 import { STAND_WEIGHTS } from '../bot-plan.ts';
 import type { Vec2 } from '../math.ts';
 import type { Command, World, WorldEvent } from '../world/types.ts';
-import { actionOf } from './act.ts';
+import type { Carried } from './act.ts';
+import { actionOf, carriedOrder } from './act.ts';
 import type { Arena, ArenaOptions, ArenaOutcome } from './arena.ts';
 import { afterTick, arenaObservation, arenaRunning, createArena } from './arena.ts';
 import type { Action } from './contract.ts';
@@ -74,6 +75,7 @@ export function demonstrate(content: Content, options: ArenaOptions): DemoEpisod
   while (arenaRunning(arena)) {
     const seen: Observation = arenaObservation(arena);
     const from: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+    const carried: Carried = carriedOrder(world, seen.view, from);
     heard.length = 0;
     arena.total -= REWARD.step;
     for (let tick: number = 0; tick < RL.ticksPerDecision && arenaRunning(arena); tick += 1) {
@@ -81,7 +83,7 @@ export function demonstrate(content: Content, options: ArenaOptions): DemoEpisod
       oneTick(bot);
     }
     listening = false;
-    samples.push({ obs: seen.obs, mask: seen.mask, action: actionOf(world, heard, seen.view, from) });
+    samples.push({ obs: seen.obs, mask: seen.mask, action: actionOf(world, heard, seen.view, from, carried) });
     arena.decisions += 1;
   }
   return { samples, outcome: arena.outcome, total: arena.total, waves: arena.tally.waves };

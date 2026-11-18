@@ -1,9 +1,11 @@
+import { PLAYER_SIDE } from '../content/combat-types.ts';
 import type { Content, ItemBaseDef, MonsterDef, SkillDef, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { isWalkable, lineWalkable, nearestWalkable } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
 import { createRng } from '../rng.ts';
 import { createWorld } from '../world/create.ts';
+import { regardOf } from '../world/factions.ts';
 import { fightZones } from '../world/moments.ts';
 import { spawnPackNear } from '../world/monsters.ts';
 import { stepWorld } from '../world/step.ts';
@@ -90,7 +92,7 @@ export function jitterContent(content: Content, rng: Rng, spread: number): Conte
 }
 
 export function arenaPool(content: Content): MonsterDef[] {
-  return [...content.monsters.values()].filter((monster: MonsterDef): boolean => monster.boss === null && monster.summon === null && monster.life <= ARENA.maxBaseLife && monster.behaviour.type !== 'fixed' && monster.dormant === null);
+  return [...content.monsters.values()].filter((monster: MonsterDef): boolean => monster.boss === null && monster.summon === null && monster.life <= ARENA.maxBaseLife && monster.behaviour.type !== 'fixed' && monster.dormant === null && regardOf(content, PLAYER_SIDE, monster.faction) === 'hostile');
 }
 
 export function heroSkills(content: Content): string[] {

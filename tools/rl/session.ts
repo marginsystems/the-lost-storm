@@ -12,6 +12,7 @@ import { demonstrationFrame, frame, FRAME, jsonPart, observationFrame, readActio
 
 export const SESSION = {
   maxJitter: 0.9,
+  maxSeed: 2 ** 40,
 } as const;
 
 export interface Session {
@@ -20,7 +21,7 @@ export interface Session {
 }
 
 export interface Reply {
-  readonly frames: readonly Buffer[];
+  readonly frames: Iterable<Buffer>;
   readonly keep: readonly Replay[];
   readonly quit: boolean;
 }
@@ -28,6 +29,12 @@ export interface Reply {
 function spread(source: Fields): number {
   const value: number = count(source, 'jitter', 0);
   if (value > SESSION.maxJitter) throw new Error(`jitter must be at most ${SESSION.maxJitter}`);
+  return value;
+}
+
+function seedOf(source: Fields): number {
+  const value: number = count(source, 'seed', 1);
+  if (!Number.isSafeInteger(value) || value > SESSION.maxSeed) throw new Error(`seed must be a whole number of at most ${SESSION.maxSeed}`);
   return value;
 }
 
@@ -40,21 +47,27 @@ function count(source: Fields, key: string, fallback: number): number {
 
 export function readPoolOptions(raw: unknown): PoolOptions {
   const source: Fields = fields(raw, 'hello');
-  return { seed: Math.floor(count(source, 'seed', 1)), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)) };
+  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)) };
 }
 
 function observations(step: PoolStep, envs: number): Buffer {
   return observationFrame({ envs, size: LAYOUT.size, maskSize: LAYOUT.mask, obs: step.obs, rewards: step.rewards, mask: step.mask, dones: step.dones, info: { finished: step.finished } });
 }
 
-function demonstrations(session: Session, raw: unknown): Buffer {
+interface DemoRequest {
+  readonly seed: number;
+  readonly episodes: number;
+  readonly jitter: number;
+  readonly waves: number;
+}
+
+function readDemoRequest(raw: unknown): DemoRequest {
   const source: Fields = fields(raw, 'demo');
-  const seed: number = Math.floor(count(source, 'seed', 1));
-  const episodes: number = Math.max(1, Math.floor(count(source, 'episodes', 1)));
-  const jitter: number = spread(source);
-  const waves: number = Math.max(1, Math.floor(count(source, 'waves', 1)));
-  const played: DemoEpisode[] = Array.from({ length: episodes }, (_unused: unknown, index: number): DemoEpisode => demonstrate(session.content, { seed: seed + index, jitter, waves }));
-  const samples: Demonstration[] = played.flatMap((episode: DemoEpisode): Demonstration[] => [...episode.samples]);
+  return { seed: seedOf(source), episodes: Math.max(1, Math.floor(count(source, 'episodes', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))) };
+}
+
+function episodeFrame(episode: DemoEpisode | null): Buffer {
+  const samples: readonly Demonstration[] = episode?.samples ?? [];
   const obs: Float32Array = new Float32Array(samples.length * LAYOUT.size);
   const mask: Uint8Array = new Uint8Array(samples.length * LAYOUT.mask);
   const actions: Int32Array = new Int32Array(samples.length * RL.actionParts);
@@ -63,8 +76,22 @@ function demonstrations(session: Session, raw: unknown): Buffer {
     mask.set(sample.mask, index * LAYOUT.mask);
     actions.set([sample.action.move, sample.action.skill, sample.action.target, sample.action.flask], index * RL.actionParts);
   });
-  const info = { episodes: played.map((episode: DemoEpisode): { readonly outcome: string; readonly total: number; readonly waves: number } => ({ outcome: episode.outcome, total: episode.total, waves: episode.waves })) };
-  return demonstrationFrame({ count: samples.length, size: LAYOUT.size, maskSize: LAYOUT.mask, obs, actions, mask, info });
+  const episodes = episode === null ? [] : [{ outcome: episode.outcome, total: episode.total, waves: episode.waves }];
+  return demonstrationFrame({ count: samples.length, size: LAYOUT.size, maskSize: LAYOUT.mask, obs, actions, mask, info: { episodes, done: episode === null } });
+}
+
+function* demonstrations(session: Session, request: DemoRequest): Generator<Buffer> {
+  try {
+    for (let index: number = 0; index < request.episodes; index += 1) yield episodeFrame(demonstrate(session.content, { seed: request.seed + index, jitter: request.jitter, waves: request.waves }));
+    yield episodeFrame(null);
+  }
+  catch (error: unknown) {
+    yield errorFrame(error);
+  }
+}
+
+function errorFrame(error: unknown): Buffer {
+  return frame(FRAME.error, jsonPart({ error: error instanceof Error ? error.message : String(error) }));
 }
 
 function needPool(session: Session): Pool {
@@ -94,7 +121,7 @@ function answer(session: Session, received: Frame): Reply {
       return { frames: [frame(FRAME.tag, [])], keep: [], quit: false };
     }
     case FRAME.demo:
-      return { frames: [demonstrations(session, readJson(received.payload))], keep: [], quit: false };
+      return { frames: demonstrations(session, readDemoRequest(readJson(received.payload))), keep: [], quit: false };
     case FRAME.quit:
       return { frames: [], keep: [], quit: true };
     default:
@@ -107,7 +134,6 @@ export function handle(session: Session, received: Frame): Reply {
     return answer(session, received);
   }
   catch (error: unknown) {
-    const message: string = error instanceof Error ? error.message : String(error);
-    return { frames: [frame(FRAME.error, jsonPart({ error: message }))], keep: [], quit: false };
+    return { frames: [errorFrame(error)], keep: [], quit: false };
   }
 }

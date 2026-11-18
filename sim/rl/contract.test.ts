@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ACTION_HEADS, contractShape, ENTITY_FEATURES, LAYOUT, RL, SELF_FEATURES, SLOT_FEATURES } from './contract.ts';
 
-const SHIPPED = { version: 1, fingerprint: '4d87f36b' } as const;
+const SHIPPED = { version: 1, fingerprint: '518d06e3' } as const;
 
 void test('the observation contract keeps the fingerprint its version shipped with', (): void => {
   const shape = contractShape();

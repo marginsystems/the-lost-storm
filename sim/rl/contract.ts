@@ -200,7 +200,7 @@ function hashText(text: string): string {
 }
 
 export function contractShape(): ContractShape {
-  const names: string = [SELF_FEATURES, SLOT_FEATURES, ENTITY_FEATURES, ACTION_HEADS.map(String), [JSON.stringify(RL)]].map((list: readonly string[]): string => list.join(',')).join('|');
+  const names: string = [SELF_FEATURES, SLOT_FEATURES, ENTITY_FEATURES, ACTION_HEADS.map(String), [JSON.stringify(RL), JSON.stringify(DELIVERY_ORDER), JSON.stringify(BEHAVIOUR_ORDER)]].map((list: readonly string[]): string => list.join(',')).join('|');
   return {
     version: RL.version,
     fingerprint: hashText(names),

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import argparse
 import json
 import struct
 
 import numpy as np
+import pytest
 import torch
 
 from lost_storm_rl.bridge import read_batch, read_demonstrations
 from lost_storm_rl.model import Policy
+from lost_storm_rl.train import check_minibatches, check_seed
 
 
 def contract() -> dict[str, object]:
@@ -74,3 +77,28 @@ def test_widen_carries_weights_by_feature_name(tmp_path) -> None:
     assert torch.equal(new_in[:, 2], torch.zeros_like(new_in[:, 2]))
     assert torch.equal(new_in[:, 3:8], old_in[:, 2:7])
     assert torch.equal(torch.load(out, weights_only=False)["state"]["move.weight"], old.state_dict()["move.weight"])
+
+
+def test_streamed_demonstrations_say_when_they_end() -> None:
+    info = json.dumps({"episodes": [], "done": True}).encode("utf-8")
+    payload = struct.pack("<III", 0, 3, 2) + struct.pack("<I", len(info)) + info
+    data = read_demonstrations(payload)
+    assert data.done
+    assert data.obs.shape == (0, 3)
+    assert data.actions.shape == (0, 4)
+
+
+def test_minibatch_counts_outside_the_batch_are_refused() -> None:
+    parser = argparse.ArgumentParser()
+    check_minibatches(parser, 8, 128, 16)
+    for bad in (0, 128 * 16 + 1):
+        with pytest.raises(SystemExit):
+            check_minibatches(parser, bad, 128, 16)
+
+
+def test_seeds_leave_room_for_worker_offsets() -> None:
+    parser = argparse.ArgumentParser()
+    check_seed(parser, 2**39)
+    for bad in (-1, 2**39 + 1):
+        with pytest.raises(SystemExit):
+            check_seed(parser, bad)
