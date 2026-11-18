@@ -177,7 +177,7 @@ async function start(): Promise<void> {
   statusLine.show('Loading…');
   const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
   if (unsupported !== null) throw new UnsupportedBrowser(unsupported);
-  const { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, titleBar, drawTitleKeys }: GameServices = startGameServices({ title, serverUrl });
+  const { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, titleBar, drawTitleKeys }: GameServices = startGameServices({ title, serverUrl, watching: watchAsked !== null });
   const stage: Stage = createdOrUnsupported((): Stage => createStage(canvas, mobile.quality.tier));
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);

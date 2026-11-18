@@ -8,6 +8,7 @@ import type { WorldEvent } from '../../sim/world/types.ts';
 
 export const WATCH = {
   param: 'replay',
+  originProbe: 'http://replay.invalid',
   speedParam: 'speed',
   minSpeed: 0.25,
   maxSpeed: 8,
@@ -25,10 +26,20 @@ export interface WatchRequest {
   readonly speed: number;
 }
 
+function sameOrigin(path: string): boolean {
+  const base: string = WATCH.originProbe;
+  try {
+    return new URL(path, base).origin === new URL(base).origin;
+  }
+  catch {
+    return false;
+  }
+}
+
 export function watchRequest(search: string): WatchRequest | null {
   const params: URLSearchParams = new URLSearchParams(search);
   const path: string | null = params.get(WATCH.param);
-  if (path === null || path === '') return null;
+  if (path === null || path === '' || !sameOrigin(path)) return null;
   const raw: string = (params.get(WATCH.speedParam) ?? '').trim();
   const asked: number = raw === '' ? 1 : Number(raw);
   const speed: number = Number.isFinite(asked) ? Math.min(WATCH.maxSpeed, Math.max(WATCH.minSpeed, asked)) : 1;
