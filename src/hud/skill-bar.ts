@@ -197,7 +197,7 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
       view.empty = empty;
       view.root.classList.toggle('empty', empty);
     }
-    setText(view.cost, skill !== null && skill.manaCost > 0 ? String(skill.manaCost) : '', true);
+    setText(view.cost, skill !== null && skill.manaCost > 0 ? String(Math.round(skill.manaCost)) : '', true);
   };
 
   return {

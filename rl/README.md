@@ -45,5 +45,6 @@ uv run python -m lost_storm_rl.train eval --run arena-v1 --policy runs/arena-v1/
 - `ppo` improves it by playing. Each update prints the win rate, deaths, mean return and waves cleared, and appends a row to `runs/<run>/log.csv`. Checkpoints go to `runs/<run>/policy-uNNNNN.pt` and `runs/<run>/latest.pt`.
 - `eval` plays greedy episodes with a checkpoint and keeps every one as a replay.
 - Replays are JSON files in `runs/<run>/replays/` and `runs/<run>/eval/`: the arena seed plus the action list. The sim is deterministic, so a replay plays the same fight again (`replayArena` in `sim/rl/replay.ts`).
+- Watch a replay in the real game: run `npm run dev` and open `http://localhost:5193/play/?replay=/rl/runs/<run>/eval/<file>.json`. Add `&speed=2` (0.25 to 8) to play it faster. The watch mode exists only in the dev server; it saves nothing and takes no input, and a caption in the top-left corner names the replay, the wave and the outcome.
 
 Everything under `runs/` is ignored by git.
