@@ -70,21 +70,28 @@ export function bakeFloorArrays(renderer: WebGLRenderer, sources: readonly Floor
     renderer.setRenderTarget(target, layer);
     renderer.render(scene, camera);
   };
-  sources.forEach((source: FloorSource, layer: number): void => {
-    quad.material = copyColour;
-    setUniform(copyColour, 'source', source.colour);
-    draw(colour, layer);
-    quad.material = copyDetail;
-    setUniform(copyDetail, 'normalSource', source.normal);
-    setUniform(copyDetail, 'ormSource', source.orm);
-    setUniform(copyDetail, 'hasNormal', source.normal === null ? 0 : 1);
-    setUniform(copyDetail, 'hasOrm', source.orm === null ? 0 : 1);
-    draw(detail, layer);
-  });
-  renderer.setRenderTarget(previous);
-  plane.dispose();
-  copyColour.dispose();
-  copyDetail.dispose();
+  try {
+    sources.forEach((source: FloorSource, layer: number): void => {
+      quad.material = copyColour;
+      setUniform(copyColour, 'source', source.colour);
+      draw(colour, layer);
+      quad.material = copyDetail;
+      setUniform(copyDetail, 'normalSource', source.normal);
+      setUniform(copyDetail, 'ormSource', source.orm);
+      setUniform(copyDetail, 'hasNormal', source.normal === null ? 0 : 1);
+      setUniform(copyDetail, 'hasOrm', source.orm === null ? 0 : 1);
+      draw(detail, layer);
+    });
+  } catch (error: unknown) {
+    colour.dispose();
+    detail.dispose();
+    throw error;
+  } finally {
+    renderer.setRenderTarget(previous);
+    plane.dispose();
+    copyColour.dispose();
+    copyDetail.dispose();
+  }
   return {
     colour: colour.texture,
     detail: detail.texture,

@@ -1,3 +1,4 @@
+import { warnInConsole } from '../backend/console-log.ts';
 import type { WebGLRenderer } from 'three';
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshStandardMaterial, Uint16BufferAttribute, Uint32BufferAttribute } from 'three';
 import type { ZoneDrift } from '../../sim/content/road-types.ts';
@@ -508,10 +509,14 @@ function layeredFloor(content: Content, zone: ZoneDef, floor: ShapedFloor): Laye
       });
       const sources: FloorSource[] = await floorSources(defs);
       if (settled()) return;
-      const baked: FloorArrays = bakeFloorArrays(renderer, sources, floorArraySizeNow());
-      state.arrays = baked;
-      look.useArrays(baked.colour, baked.detail);
-      mesh.visible = true;
+      try {
+        const baked: FloorArrays = bakeFloorArrays(renderer, sources, floorArraySizeNow());
+        state.arrays = baked;
+        look.useArrays(baked.colour, baked.detail);
+        mesh.visible = true;
+      } catch (error: unknown) {
+        warnInConsole(`The floor of ${zone.id} could not be drawn into its texture arrays: ${error instanceof Error ? error.message : String(error)}`);
+      }
     },
     dispose(): void {
       state.gone = true;
