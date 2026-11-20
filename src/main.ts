@@ -36,7 +36,7 @@ import type { SaveData } from '../sim/save.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { insideAwakeMoment } from '../sim/world/moments.ts';
-import { prepareZone } from '../sim/world/zones.ts';
+import { prepareZonesWork } from '../sim/world/zones.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { DebugHooks } from './debug-handle.ts';
 import type { WatchRequest, Watching } from './watch/replay-watch.ts';
@@ -134,7 +134,7 @@ import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
 import { WARM_UP, waitWithin, warmThrough, warmUp, warmUpWithin } from './render/warm-up.ts';
 import type { FramePacer, TurnGate } from './render/paced-work.ts';
-import { browserPacer, heldWhile, turnGate } from './render/paced-work.ts';
+import { browserPacer, heldWhile, stepPaced, turnGate } from './render/paced-work.ts';
 import type { Sky } from './render/sky-weather.ts';
 import { createSky } from './render/sky-weather.ts';
 import type { RenderScale } from './render/render-scale.ts';
@@ -168,6 +168,7 @@ import { reloadPage } from './gpu-release.ts';
 
 const GAME = {
   maxFrame: 0.1,
+  nearPrepMs: 3,
   saveEvery: 2,
   idleWaitMs: 1500,
   titleArrivalMs: 1000,
@@ -409,8 +410,11 @@ async function start(): Promise<void> {
     });
   };
 
+  let nearGeneration: number = 0;
   const prepareNearZones = (): void => {
-    for (const near of neighbourZones(content, world.zone)) prepareZone(content, near);
+    nearGeneration += 1;
+    const mine: number = nearGeneration;
+    void stepPaced(prepareZonesWork(content, neighbourZones(content, world.zone)), browserPacer(), GAME.nearPrepMs, (): boolean => mine === nearGeneration);
   };
 
   const showZone = async (events: readonly WorldEvent[]): Promise<BuiltZone> => {

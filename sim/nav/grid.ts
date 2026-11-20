@@ -1,3 +1,4 @@
+import { drained } from '../work.ts';
 import type { ZoneDef, PropDef, SurfaceDef } from '../content/types.ts';
 import type { ZoneDrift } from '../content/road-types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
@@ -86,6 +87,7 @@ const NAV = {
   slideLeast: 0.2,
   slideShares: [1, 0.5],
   groundRings: 4,
+  sliceRows: 6,
 } as const;
 
 function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[] {
@@ -148,12 +150,14 @@ function blockerBounds(blocker: Blocker, pad: number, columns: number, rows: num
   return { fromColumn: clampColumn(Math.min(...xs) - reach), toColumn: clampColumn(Math.max(...xs) + reach), fromRow: clampRow(Math.min(...zs) - reach), toRow: clampRow(Math.max(...zs) + reach) };
 }
 
-function fill(zone: ZoneDef, obstacles: readonly Blocker[], columns: number, rows: number, agentRadius: number): Uint8Array {
-  const cells: Uint8Array = new Uint8Array(columns * rows);
-  const margin: number = (zone.walls?.halfThickness ?? 0) + agentRadius;
+function* floorWork(zone: ZoneDef, columns: number, rows: number, margin: number, cells: Uint8Array): Generator<void, void> {
   for (let row: number = 0; row < rows; row += 1) {
     for (let column: number = 0; column < columns; column += 1) cells[row * columns + column] = insideFloor(zone, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize, margin) ? 1 : 0;
+    if ((row + 1) % NAV.sliceRows === 0) yield;
   }
+}
+
+function carve(cells: Uint8Array, obstacles: readonly Blocker[], columns: number, rows: number, agentRadius: number): Uint8Array {
   for (const blocker of obstacles) {
     const bounds: Bounds = blockerBounds(blocker, agentRadius, columns, rows);
     for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
@@ -246,16 +250,33 @@ export function navGridPrepared(zone: ZoneDef, props: ReadonlyMap<string, PropDe
   return template !== undefined && template.props === props && template.surfaces === surfaces && template.radius === agentRadius;
 }
 
-function freshNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
+function* freshNavGridWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): Generator<void, NavGrid> {
   const columns: number = Math.ceil(((zone.tiles[0]?.length ?? 0) * zone.cellSize) / NAV.cellSize);
   const rows: number = Math.ceil((zone.tiles.length * zone.cellSize) / NAV.cellSize);
   const obstacles: Blocker[] = blockers(zone, props);
-  const open: Uint8Array = fill(zone, obstacles, columns, rows, 0);
+  const wall: number = zone.walls?.halfThickness ?? 0;
+  const open: Uint8Array = new Uint8Array(columns * rows);
+  yield* floorWork(zone, columns, rows, wall, open);
+  carve(open, obstacles, columns, rows, 0);
   const solid: Uint8Array = open.map((value: number): number => 1 - value);
-  const walkable: Uint8Array = sealBlocked(zone, surfaces, fill(zone, obstacles, columns, rows, agentRadius), columns, rows, agentRadius);
-  const ground: Uint8Array = sealBlocked(zone, surfaces, fill(zone, [], columns, rows, agentRadius), columns, rows, agentRadius);
+  const floor: Uint8Array = new Uint8Array(columns * rows);
+  yield* floorWork(zone, columns, rows, wall + agentRadius, floor);
+  const walkable: Uint8Array = sealBlocked(zone, surfaces, carve(floor.slice(), obstacles, columns, rows, agentRadius), columns, rows, agentRadius);
+  yield;
+  const ground: Uint8Array = sealBlocked(zone, surfaces, floor, columns, rows, agentRadius);
   const drifts: DriftCells[] = zone.drifts.map((drift: ZoneDrift): DriftCells => driftCells(zone, drift, walkable, ground, columns, rows));
+  yield;
   return { cellSize: NAV.cellSize, columns, rows, walkable, solid, pace: paceOf(zone, surfaces, columns, rows), drifts, ground, bodies: obstacles, near: nearBodies(obstacles, agentRadius, columns, rows), radius: agentRadius, routed: false };
+}
+
+function freshNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
+  return drained(freshNavGridWork(zone, props, surfaces, agentRadius));
+}
+
+export function* navGridWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): Generator<void, void> {
+  if (navGridPrepared(zone, props, surfaces, agentRadius)) return;
+  const grid: NavGrid = yield* freshNavGridWork(zone, props, surfaces, agentRadius);
+  if (!navGridPrepared(zone, props, surfaces, agentRadius)) TEMPLATES.set(zone, { props, surfaces, radius: agentRadius, grid });
 }
 
 function nearBodies(bodies: readonly Blocker[], agentRadius: number, columns: number, rows: number): Map<number, number[]> {
