@@ -3,9 +3,9 @@ import { test } from 'node:test';
 import type { FrameSample, RenderScale } from './render-scale.ts';
 import { createRenderScale, RENDER_SCALE, scaleSteps } from './render-scale.ts';
 
-const SMOOTH: FrameSample = { intervalMs: 16.7, workMs: 5 };
-const GPU_BOUND: FrameSample = { intervalMs: 33.3, workMs: 5 };
-const CPU_BOUND: FrameSample = { intervalMs: 33.3, workMs: 28 };
+const SMOOTH: FrameSample = { intervalMs: 16.7, workMs: 5, gpuQueued: 1 };
+const GPU_BOUND: FrameSample = { intervalMs: 33.3, workMs: 5, gpuQueued: 1 };
+const CPU_BOUND: FrameSample = { intervalMs: 33.3, workMs: 28, gpuQueued: 1 };
 
 function feed(scale: RenderScale, sample: FrameSample, count: number): number {
   let changes: number = 0;
@@ -55,7 +55,7 @@ void test('a single long frame, a hidden tab or a stall over the limit is not ta
   for (let round: number = 0; round < 50; round += 1) {
     feed(scale, SMOOTH, RENDER_SCALE.window - 1);
     feed(scale, GPU_BOUND, 1);
-    feed(scale, { intervalMs: 4000, workMs: 1 }, 1);
+    feed(scale, { intervalMs: 4000, workMs: 1, gpuQueued: 1 }, 1);
   }
   assert.equal(scale.scale, 1);
 });
