@@ -9,6 +9,8 @@ import { assetUrl } from './asset-url.ts';
 import { TEXTURE_SET } from './texture-set.ts';
 import { PROP_SURFACE, withPropLook } from './prop-surface.ts';
 import { glowingGround } from './surface-glow.ts';
+import type { FloorSource } from './floor-arrays.ts';
+import { floorArraySize } from './floor-arrays.ts';
 
 export const SURFACES = {
   anisotropy: 4,
@@ -78,6 +80,25 @@ function loadTexture(path: string, metres: number, colour: boolean): Texture {
   texture.colorSpace = colour ? SRGBColorSpace : NoColorSpace;
   textures.set(key, { texture, done });
   return texture;
+}
+
+export async function floorSources(defs: readonly SurfaceDef[]): Promise<FloorSource[]> {
+  const made: FloorSource[] = defs.map((def: SurfaceDef): FloorSource => ({ colour: loadTexture(def.color, def.metres, true), normal: def.normal === null ? null : loadTexture(def.normal, def.metres, false), orm: def.orm === null ? null : loadTexture(def.orm, def.metres, false) }));
+  const keys: string[] = defs.flatMap((def: SurfaceDef): string[] => [def.color, def.normal, def.orm].filter((path: string | null): path is string => path !== null).map((path: string): string => textureKey(path, def.metres)));
+  await Promise.all(keys.map((key: string): Promise<void> => textures.get(key)?.done ?? Promise.resolve()));
+  return made;
+}
+
+export function floorArraySizeNow(): number {
+  return floorArraySize(renderBudget().halfTextures, renderBudget().maxTextureSize);
+}
+
+export function floorRoughness(def: SurfaceDef, wet: number): number {
+  return wetRoughness(Math.max(def.roughness, SURFACES.matteRoughness), wet);
+}
+
+export function metalSurface(def: SurfaceDef): boolean {
+  return def.metalness >= SURFACES.metalFrom;
 }
 
 export function surfaceColourMap(def: SurfaceDef): Texture {

@@ -11,12 +11,18 @@ void test('tile fringes draw over the solid ground and under every blend, so a b
   assert.equal(new Set(order).size, order.length);
 });
 
+function partial(weights: Float32Array): boolean {
+  return weights.some((weight: number): boolean => weight > 0 && weight < 1);
+}
+
 void test('a lava level shapes its tile fringes apart from its blends', (): void => {
   const content = loadContent();
   const zone: ZoneDef | undefined = content.zones.get('lava_depths_2');
   if (zone === undefined) throw new Error('missing lava_depths_2');
   const batches: GroundBatches = groundBatches(content, zone);
-  assert.ok(batches.fringe.size > 0);
-  assert.ok(batches.overlay.has('lava'));
-  for (const batch of batches.fringe.values()) assert.ok(batch.colors.some((_: number, index: number): boolean => index % 4 === 3 && (batch.colors[index] ?? 1) < 1));
+  const floor = batches.floor;
+  if (floor === null) throw new Error('lava_depths_2 has no layered floor');
+  assert.ok(floor.fringes.length > 0);
+  assert.ok(floor.blends.includes('lava'));
+  assert.ok(partial(floor.fringeLow) || partial(floor.fringeHigh));
 });

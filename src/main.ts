@@ -234,7 +234,7 @@ async function start(): Promise<void> {
     return pictures.items.settled();
   }, load: (id: string): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, id), loadGate) });
   const propDresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressedProp(content, dress, material, propDressing(world.zone));
-  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
+  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name, stage.renderer)]);
   void privateClips.then((clips: PrivateClips): void => usePrivateClips(library, content.player.heroes.map((hero: HeroDef): string => hero.rig), clips));
   await Promise.all(world.heroes.filter((other: PlayerState): boolean => other.id !== world.player.id).map((other: PlayerState): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, other.equipped, other.hero), loadGate).catch((error: unknown): void => {
     warnInConsole(`Loading the body of hero ${other.id} failed: ${String(error)}`);
@@ -438,7 +438,7 @@ async function start(): Promise<void> {
       warnInConsole(`Loading the characters of ${world.zone.id} failed: ${String(error)}`);
     });
     const bodiesIn: Promise<void> = waitWithin(bodies, createBrowserTimers(), WARM_UP.bodiesWaitMs);
-    zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name);
+    zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name, stage.renderer);
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
     keepZones(world.zone, cachedZones(content, world.zone, mobile.quality.tier.releaseOtherZones));
     preloadNearZones();

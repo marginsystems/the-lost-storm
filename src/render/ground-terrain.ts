@@ -5,6 +5,8 @@ import type { NoiseLattice, TerrainCell } from '../../sim/nav/terrain.ts';
 import { latticeNoise, noiseLattice, rampAt, terrainCell, terrainNoise, tileHeight } from '../../sim/nav/terrain.ts';
 import type { Batch } from './ground.ts';
 import { fringeShare, spreadsOnto } from './ground-spill.ts';
+import type { CornerAlphas, FloorStack } from './floor-stack.ts';
+import { floorQuad } from './floor-stack.ts';
 
 export const GROUND_TERRAIN = {
   step: 0.5,
@@ -32,6 +34,7 @@ export const GROUND_TERRAIN = {
   fringeNoise: 0.38,
   fringeNoiseScale: 0.45,
   fringeLeast: 0.01,
+  blendLeast: 0.01,
   nearNoise: 0.45,
   nearNoiseScale: 0.35,
 } as const;
@@ -225,6 +228,11 @@ export type GroundLayer = 'solid' | 'fringe' | 'overlay';
 
 export interface TerrainBatches {
   batchFor(surface: string, layer: GroundLayer): Batch;
+  floor?(solids: readonly string[], fringes: readonly string[], blends: readonly string[]): FloorStack | null;
+}
+
+function cornerAlphas(values: readonly number[]): CornerAlphas {
+  return [values[0] ?? 0, values[1] ?? 0, values[2] ?? 0, values[3] ?? 0];
 }
 
 export type SpillOf = (surface: string) => number;
@@ -294,6 +302,8 @@ export function buildTerrainGround(zone: ZoneDef, batches: TerrainBatches, spill
   const bed: string = zone.outside?.surface ?? terrain.cliff;
   const fringes: SurfaceFringe[] = surfaceFringes(field, spill);
   const lattices: (NoiseLattice | null)[] = terrain.blends.map((blend: TerrainBlend, salt: number): NoiseLattice | null => blendLattice(zone, blend, salt));
+  const solids: string[] = [...new Set([...field.surfaces.filter((id: string): boolean => id !== ''), bed])];
+  const stack: FloorStack | null = batches.floor?.(solids, fringes.map((fringe: SurfaceFringe): string => fringe.surface), terrain.blends.map((blend: TerrainBlend): string => blend.surface)) ?? null;
   const vertices: Map<number, Vertex> = new Map<number, Vertex>();
   const vertex = (column: number, row: number): Vertex => {
     const key: number = row * field.columns + column;
@@ -328,8 +338,22 @@ export function buildTerrainGround(zone: ZoneDef, batches: TerrainBatches, spill
         continue;
       }
       const surface: string = [index, index + 1, index + field.columns, index + field.columns + 1].map((at: number): string => field.surfaces[at] ?? '').find((id: string): boolean => id !== '') ?? bed;
-      quad(batches.batchFor(surface, 'solid'), corners, uvs, shades, [1, 1, 1, 1], 0);
       const at: readonly number[] = [index, index + 1, index + field.columns, index + field.columns + 1];
+      if (stack !== null) {
+        const fringeAlphas: (CornerAlphas | null)[] = fringes.map((fringe: SurfaceFringe): CornerAlphas | null => {
+          if (!spreadsOnto({ id: fringe.surface, spill: spill(fringe.surface) }, { id: surface, spill: spill(surface) })) return null;
+          const distances: number[] = at.map((sample: number): number => fringe.reach[sample] ?? GROUND_TERRAIN.fringeReach);
+          if (Math.min(...distances) >= GROUND_TERRAIN.fringeReach) return null;
+          const alphas: number[] = corners.map((entry: Vertex, corner: number): number => fringeAt(distances[corner] ?? GROUND_TERRAIN.fringeReach, entry.x, entry.z));
+          return alphas.every((alpha: number): boolean => alpha <= GROUND_TERRAIN.fringeLeast) ? null : cornerAlphas(alphas);
+        });
+        const blendAlphas: (CornerAlphas | null)[] = terrain.blends.map((blend: TerrainBlend, salt: number): CornerAlphas | null => {
+          const alphas: number[] = corners.map((entry: Vertex): number => blendShare(zone, blend, salt, entry.x, entry.z, lattices[salt] ?? null));
+          return alphas.every((alpha: number): boolean => alpha <= GROUND_TERRAIN.blendLeast) ? null : cornerAlphas(alphas);
+        });
+        if (floorQuad(stack, corners, uvs, shades, surface, fringeAlphas, blendAlphas)) continue;
+      }
+      quad(batches.batchFor(surface, 'solid'), corners, uvs, shades, [1, 1, 1, 1], 0);
       for (const fringe of fringes) {
         if (!spreadsOnto({ id: fringe.surface, spill: spill(fringe.surface) }, { id: surface, spill: spill(surface) })) continue;
         const distances: number[] = at.map((sample: number): number => fringe.reach[sample] ?? GROUND_TERRAIN.fringeReach);
@@ -340,7 +364,7 @@ export function buildTerrainGround(zone: ZoneDef, batches: TerrainBatches, spill
       }
       terrain.blends.forEach((blend: TerrainBlend, salt: number): void => {
         const alphas: number[] = corners.map((entry: Vertex): number => blendShare(zone, blend, salt, entry.x, entry.z, lattices[salt] ?? null));
-        if (alphas.every((alpha: number): boolean => alpha <= 0.01)) return;
+        if (alphas.every((alpha: number): boolean => alpha <= GROUND_TERRAIN.blendLeast)) return;
         quad(batches.batchFor(blend.surface, 'overlay'), corners, uvs, shades, alphas, GROUND_TERRAIN.blendLift * (salt + 2));
       });
     }

@@ -2,7 +2,7 @@ import { liftAt, useTerrain } from './terrain-lift.ts';
 import type { FigureSize } from './figure-gauge.ts';
 import { propCell } from './prop-cells.ts';
 import { claimCutaway, isTall, resetCutaway, withCutaway } from './prop-cutaway.ts';
-import type { Material, Object3D, Scene } from 'three';
+import type { Material, Object3D, Scene, WebGLRenderer } from 'three';
 import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, PropCache, PropDef, PropLight, ZoneDef, ZoneProp, ZoneScatter, ZoneWalls } from '../../sim/content/types.ts';
@@ -191,7 +191,7 @@ export function shoreLocal(at: ReadonlyVec2, facing: ReadonlyVec2, point: Readon
   return { x: dx * facing.z - dz * facing.x, z: dx * facing.x + dz * facing.z };
 }
 
-export async function buildZoneView(loader: GLTFLoader, content: Content, zone: ZoneDef, scene: Scene, quality: QualityName): Promise<ZoneView> {
+export async function buildZoneView(loader: GLTFLoader, content: Content, zone: ZoneDef, scene: Scene, quality: QualityName, renderer: WebGLRenderer | null = null): Promise<ZoneView> {
   if (zone.kind === 'void') {
     const rockId: string | null = zone.void?.shore?.surface ?? null;
     const glimpses: VoidGlimpses = createVoidGlimpses(loader, content, zone.void?.glimpses ?? [], zone.floorHeight);
@@ -270,6 +270,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   useTerrain(zone, content.props);
   const ground: Ground = buildGround(content, zone);
   for (const mesh of ground.meshes) group.add(mesh);
+  if (renderer !== null) await ground.prepare(renderer);
   const falls: LavaFalls = buildLavaFalls(content, zone);
   group.add(falls.group);
   const terrainSight: TerrainSight | null = createTerrainSight(zone);

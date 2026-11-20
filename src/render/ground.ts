@@ -1,10 +1,17 @@
+import type { WebGLRenderer } from 'three';
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshStandardMaterial, Uint16BufferAttribute, Uint32BufferAttribute } from 'three';
 import type { ZoneDrift } from '../../sim/content/road-types.ts';
 import { driftShown } from '../../sim/nav/drift.ts';
 import type { Content, SurfaceDef, ZoneDef, ZoneProp } from '../../sim/content/types.ts';
 import { distanceToCell, floorCells, isFloorCell, outsideCells, tileAtCell, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
 import type { FloorCell, OutsideCell } from '../../sim/nav/layout.ts';
-import { surfaceMaterial } from './surfaces.ts';
+import { floorArraySizeNow, floorRoughness, floorSources, metalSurface, surfaceMaterial } from './surfaces.ts';
+import type { FloorStack, ShapedFloor } from './floor-stack.ts';
+import { createFloorStack, shapedFloor, surfaceLayer } from './floor-stack.ts';
+import type { FloorLayerLook, FloorLayout, FloorMaterial } from './floor-material.ts';
+import { createFloorMaterial } from './floor-material.ts';
+import type { FloorArrays, FloorSource } from './floor-arrays.ts';
+import { bakeFloorArrays } from './floor-arrays.ts';
 import { buildCliffs } from './ground-cliffs.ts';
 import { buildTerrainGround } from './ground-terrain.ts';
 import { tileLift } from './terrain-lift.ts';
@@ -130,6 +137,7 @@ export interface DriftGround {
 export interface Ground {
   readonly meshes: readonly Mesh[];
   readonly drifts: readonly DriftGround[];
+  prepare(renderer: WebGLRenderer): Promise<void>;
   update(time: number): void;
   dispose(): void;
 }
@@ -335,6 +343,7 @@ export interface GroundBatches {
   readonly fringe: ReadonlyMap<string, ShapedBatch>;
   readonly overlay: ReadonlyMap<string, ShapedBatch>;
   readonly drifting: ReadonlyMap<ZoneDrift, ReadonlyMap<string, ShapedBatch>>;
+  readonly floor: ShapedFloor | null;
 }
 
 interface BuiltGround {
@@ -353,8 +362,9 @@ export function groundBatches(content: Content, zone: ZoneDef): GroundBatches {
 }
 
 function shapeGround(content: Content, zone: ZoneDef): GroundBatches {
-  const { solid, fringe, overlay, drifting } = rawGround(content, zone);
+  const { solid, fringe, overlay, drifting, floor } = rawGround(content, zone);
   return {
+    floor: floor === null || floor.indices.length === 0 ? null : shapedFloor(floor),
     solid: shapedBatches(solid),
     fringe: shapedBatches(fringe),
     overlay: shapedBatches(overlay),
@@ -363,6 +373,7 @@ function shapeGround(content: Content, zone: ZoneDef): GroundBatches {
 }
 
 interface RawGround {
+  readonly floor: FloorStack | null;
   readonly solid: ReadonlyMap<string, Batch>;
   readonly fringe: ReadonlyMap<string, Batch>;
   readonly overlay: ReadonlyMap<string, Batch>;
@@ -385,8 +396,24 @@ function rawGround(content: Content, zone: ZoneDef): RawGround {
 
   const drifting: Map<ZoneDrift, Map<string, Batch>> = new Map<ZoneDrift, Map<string, Batch>>();
   if (zone.terrain !== null && zone.terrain.rough !== null) {
-    buildTerrainGround(zone, { batchFor: (surface: string, layer: GroundLayer): Batch => batchFor(layers[layer], surface) }, (surface: string): number => content.surfaces.get(surface)?.spill ?? 0);
-    return { solid, fringe, overlay, drifting };
+    let floor: FloorStack | null = null;
+    const plainFloor = (ids: readonly string[]): boolean =>
+      ids.every((id: string): boolean => {
+        const def: SurfaceDef | undefined = content.surfaces.get(id);
+        return def !== undefined && !metalSurface(def);
+      });
+    buildTerrainGround(
+      zone,
+      {
+        batchFor: (surface: string, layer: GroundLayer): Batch => batchFor(layers[layer], surface),
+        floor: (solids: readonly string[], fringeIds: readonly string[], blendIds: readonly string[]): FloorStack | null => {
+          floor = plainFloor([...solids, ...fringeIds, ...blendIds]) ? createFloorStack(solids, fringeIds, blendIds) : null;
+          return floor;
+        },
+      },
+      (surface: string): number => content.surfaces.get(surface)?.spill ?? 0,
+    );
+    return { solid, fringe, overlay, drifting, floor };
   }
   for (const cell of floorCells(zone)) {
     const own: SurfaceDef | null = spills.at(cell.column, cell.row);
@@ -424,11 +451,80 @@ function rawGround(content: Content, zone: ZoneDef): RawGround {
     for (const cell of cells) cover(shading, batchFor(overlay, outside.surface), cell.column, cell.row, floorY + GROUND.outsideLift, GROUND.outsideShade, alphaAt);
   }
   if (zone.terrain !== null) buildCliffs(zone, batchFor(solid, zone.terrain.cliff));
-  return { solid, fringe, overlay, drifting };
+  return { solid, fringe, overlay, drifting, floor: null };
+}
+
+function floorLayout(content: Content, zone: ZoneDef, floor: ShapedFloor): FloorLayout | null {
+  const layers: FloorLayerLook[] = [];
+  for (const id of floor.surfaces) {
+    const def: SurfaceDef | undefined = content.surfaces.get(id);
+    if (def === undefined) return null;
+    layers.push({ tint: def.tint, roughness: floorRoughness(def, zone.weather.wet), normalScale: def.normalScale, scale: 1 / def.metres, glow: def.glow });
+  }
+  const layerOf = (id: string): number => surfaceLayer(floor, id) ?? 0;
+  return { layers, fringes: floor.fringes.map(layerOf), blends: floor.blends.map(layerOf), fringeOrder: floor.fringeOrder, blendOrder: floor.blendOrder, wet: zone.weather.wet };
+}
+
+function floorGeometry(floor: ShapedFloor): BufferGeometry {
+  const geometry: BufferGeometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(floor.positions, 3));
+  geometry.setAttribute('normal', new Float32BufferAttribute(floor.normals, 3));
+  geometry.setAttribute('uv', new Float32BufferAttribute(floor.uvs, 2));
+  geometry.setAttribute('floorShade', new Float32BufferAttribute(floor.shades, 1));
+  geometry.setAttribute('floorSolid', new Float32BufferAttribute(floor.solid, 1));
+  geometry.setAttribute('floorFringeLow', new Float32BufferAttribute(floor.fringeLow, 4));
+  geometry.setAttribute('floorFringeHigh', new Float32BufferAttribute(floor.fringeHigh, 4));
+  geometry.setAttribute('floorBlendLow', new Float32BufferAttribute(floor.blendLow, 4));
+  geometry.setAttribute('floorBlendHigh', new Float32BufferAttribute(floor.blendHigh, 4));
+  let widest: number = 0;
+  for (const index of floor.indices) widest = Math.max(widest, index);
+  geometry.setIndex(widest >= GROUND_INDEX.narrowLimit ? new Uint32BufferAttribute(floor.indices, 1) : new Uint16BufferAttribute(floor.indices, 1));
+  return geometry;
+}
+
+interface LayeredFloor {
+  readonly mesh: Mesh;
+  prepare(renderer: WebGLRenderer): Promise<void>;
+  dispose(): void;
+}
+
+function layeredFloor(content: Content, zone: ZoneDef, floor: ShapedFloor): LayeredFloor | null {
+  const layout: FloorLayout | null = floorLayout(content, zone, floor);
+  if (layout === null) return null;
+  const look: FloorMaterial = createFloorMaterial(layout);
+  const mesh: Mesh = new Mesh(floorGeometry(floor), look.material);
+  mesh.receiveShadow = true;
+  mesh.renderOrder = GROUND_ORDER.solid;
+  mesh.visible = false;
+  const state: { arrays: FloorArrays | null; gone: boolean } = { arrays: null, gone: false };
+  const settled = (): boolean => state.arrays !== null || state.gone;
+  return {
+    mesh,
+    async prepare(renderer: WebGLRenderer): Promise<void> {
+      if (settled()) return;
+      const defs: SurfaceDef[] = floor.surfaces.flatMap((id: string): SurfaceDef[] => {
+        const def: SurfaceDef | undefined = content.surfaces.get(id);
+        return def === undefined ? [] : [def];
+      });
+      const sources: FloorSource[] = await floorSources(defs);
+      if (settled()) return;
+      const baked: FloorArrays = bakeFloorArrays(renderer, sources, floorArraySizeNow());
+      state.arrays = baked;
+      look.useArrays(baked.colour, baked.detail);
+      mesh.visible = true;
+    },
+    dispose(): void {
+      state.gone = true;
+      mesh.geometry.dispose();
+      look.material.dispose();
+      state.arrays?.dispose();
+    },
+  };
 }
 
 export function buildGround(content: Content, zone: ZoneDef): Ground {
-  const { solid, fringe, overlay, drifting } = groundBatches(content, zone);
+  const { solid, fringe, overlay, drifting, floor } = groundBatches(content, zone);
+  const layered: LayeredFloor | null = floor === null ? null : layeredFloor(content, zone, floor);
   const zoneWet: number = zone.weather.wet;
 
   const meshes: Mesh[] = [];
@@ -445,9 +541,13 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
     if (mesh !== null) meshes.push(mesh);
   }
   const drifts: DriftGround[] = [...drifting].map(([drift, batches]: [ZoneDrift, ReadonlyMap<string, ShapedBatch>]): DriftGround => driftGround(content, drift, batches, zoneWet));
+  if (layered !== null) meshes.push(layered.mesh);
   return {
     meshes: [...meshes, ...drifts.flatMap((entry: DriftGround): readonly Mesh[] => entry.meshes)],
     drifts,
+    async prepare(renderer: WebGLRenderer): Promise<void> {
+      await layered?.prepare(renderer);
+    },
     update(time: number): void {
       for (const entry of drifts) {
         const shown: number = driftShown(entry.drift, time);
@@ -459,6 +559,7 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
       }
     },
     dispose(): void {
+      layered?.dispose();
       for (const mesh of meshes) mesh.geometry.dispose();
       for (const entry of drifts) {
         for (const mesh of entry.meshes) mesh.geometry.dispose();
