@@ -1,3 +1,4 @@
+import type { Work } from '../work.ts';
 import { drained } from '../work.ts';
 import type { ZoneDef, PropDef, SurfaceDef } from '../content/types.ts';
 import type { ZoneDrift } from '../content/road-types.ts';
@@ -88,6 +89,7 @@ const NAV = {
   slideShares: [1, 0.5],
   groundRings: 4,
   sliceRows: 6,
+  sliceBodies: 12,
 } as const;
 
 function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[] {
@@ -157,8 +159,9 @@ function* floorWork(zone: ZoneDef, columns: number, rows: number, margin: number
   }
 }
 
-function carve(cells: Uint8Array, obstacles: readonly Blocker[], columns: number, rows: number, agentRadius: number): Uint8Array {
-  for (const blocker of obstacles) {
+function* carveWork(cells: Uint8Array, obstacles: readonly Blocker[], columns: number, rows: number, agentRadius: number): Work<Uint8Array> {
+  for (const [at, blocker] of obstacles.entries()) {
+    if ((at + 1) % NAV.sliceBodies === 0) yield;
     const bounds: Bounds = blockerBounds(blocker, agentRadius, columns, rows);
     for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
       for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
@@ -174,9 +177,10 @@ function blockedTile(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, x
   return surfaceId !== undefined && surfaces.get(surfaceId)?.blocks === true;
 }
 
-function sealBlocked(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, cells: Uint8Array, columns: number, rows: number, agentRadius: number): Uint8Array {
+function* sealBlockedWork(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, cells: Uint8Array, columns: number, rows: number, agentRadius: number): Work<Uint8Array> {
   if (![...surfaces.values()].some((surface: SurfaceDef): boolean => surface.blocks)) return cells;
   for (let row: number = 0; row < rows; row += 1) {
+    if ((row + 1) % NAV.sliceRows === 0) yield;
     for (let column: number = 0; column < columns; column += 1) {
       const x: number = (column + 0.5) * NAV.cellSize;
       const z: number = (row + 0.5) * NAV.cellSize;
@@ -187,9 +191,10 @@ function sealBlocked(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, c
   return cells;
 }
 
-function paceOf(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, columns: number, rows: number): Float32Array {
+function* paceOfWork(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, columns: number, rows: number): Work<Float32Array> {
   const pace: Float32Array = new Float32Array(columns * rows).fill(1);
   for (let row: number = 0; row < rows; row += 1) {
+    if ((row + 1) % (NAV.sliceRows * 4) === 0) yield;
     for (let column: number = 0; column < columns; column += 1) {
       const surfaceId: string | undefined = zone.floors[tileAtCell(zone, Math.floor(((column + 0.5) * NAV.cellSize) / zone.cellSize), Math.floor(((row + 0.5) * NAV.cellSize) / zone.cellSize))];
       pace[row * columns + column] = surfaceId === undefined ? 1 : (surfaces.get(surfaceId)?.pace ?? 1);
@@ -257,16 +262,21 @@ function* freshNavGridWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, s
   const wall: number = zone.walls?.halfThickness ?? 0;
   const open: Uint8Array = new Uint8Array(columns * rows);
   yield* floorWork(zone, columns, rows, wall, open);
-  carve(open, obstacles, columns, rows, 0);
+  yield* carveWork(open, obstacles, columns, rows, 0);
   const solid: Uint8Array = open.map((value: number): number => 1 - value);
   const floor: Uint8Array = new Uint8Array(columns * rows);
   yield* floorWork(zone, columns, rows, wall + agentRadius, floor);
-  const walkable: Uint8Array = sealBlocked(zone, surfaces, carve(floor.slice(), obstacles, columns, rows, agentRadius), columns, rows, agentRadius);
-  yield;
-  const ground: Uint8Array = sealBlocked(zone, surfaces, floor, columns, rows, agentRadius);
-  const drifts: DriftCells[] = zone.drifts.map((drift: ZoneDrift): DriftCells => driftCells(zone, drift, walkable, ground, columns, rows));
-  yield;
-  return { cellSize: NAV.cellSize, columns, rows, walkable, solid, pace: paceOf(zone, surfaces, columns, rows), drifts, ground, bodies: obstacles, near: nearBodies(obstacles, agentRadius, columns, rows), radius: agentRadius, routed: false };
+  const carved: Uint8Array = yield* carveWork(floor.slice(), obstacles, columns, rows, agentRadius);
+  const walkable: Uint8Array = yield* sealBlockedWork(zone, surfaces, carved, columns, rows, agentRadius);
+  const ground: Uint8Array = yield* sealBlockedWork(zone, surfaces, floor, columns, rows, agentRadius);
+  const drifts: DriftCells[] = [];
+  for (const drift of zone.drifts) {
+    drifts.push(driftCells(zone, drift, walkable, ground, columns, rows));
+    yield;
+  }
+  const pace: Float32Array = yield* paceOfWork(zone, surfaces, columns, rows);
+  const near: Map<number, number[]> = yield* nearBodiesWork(obstacles, agentRadius, columns, rows);
+  return { cellSize: NAV.cellSize, columns, rows, walkable, solid, pace, drifts, ground, bodies: obstacles, near, radius: agentRadius, routed: false };
 }
 
 function freshNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
@@ -280,9 +290,14 @@ export function* navGridWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>,
 }
 
 function nearBodies(bodies: readonly Blocker[], agentRadius: number, columns: number, rows: number): Map<number, number[]> {
+  return drained(nearBodiesWork(bodies, agentRadius, columns, rows));
+}
+
+function* nearBodiesWork(bodies: readonly Blocker[], agentRadius: number, columns: number, rows: number): Work<Map<number, number[]>> {
   const near: Map<number, number[]> = new Map<number, number[]>();
   const reach: number = agentRadius + NAV.cellSize * Math.SQRT1_2;
-  bodies.forEach((body: Blocker, at: number): void => {
+  for (const [at, body] of bodies.entries()) {
+    if ((at + 1) % NAV.sliceBodies === 0) yield;
     const bounds: Bounds = blockerBounds(body, reach, columns, rows);
     for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
       for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
@@ -293,7 +308,7 @@ function nearBodies(bodies: readonly Blocker[], agentRadius: number, columns: nu
         else list.push(at);
       }
     }
-  });
+  }
   return near;
 }
 
