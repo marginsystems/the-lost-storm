@@ -6,7 +6,11 @@ import { stepWorld } from '../world/step.ts';
 import type { Command, PlayerState, World, WorldEvent } from '../world/types.ts';
 import type { ArenaOutcome } from './arena.ts';
 import { ARENA, benchHero, emptyArena, jitterContent, spawnSpot } from './arena.ts';
+import type { Build } from './build.ts';
+import { BUILD } from './build.ts';
+import { readyBuild } from './build-hero.ts';
 import { RL } from './contract.ts';
+import { DUEL_KIT } from './kit.ts';
 import type { PickupRule } from './loot.ts';
 import type { Observation, ObserveContext } from './observe.ts';
 import { observe, seenMonsters } from './observe.ts';
@@ -25,6 +29,7 @@ export const DUEL = {
 export interface DuelOptions {
   readonly seed: number;
   readonly jitter: number;
+  readonly builds?: readonly (Build | null)[];
 }
 
 export interface DuelSeat {
@@ -55,19 +60,25 @@ function seatOf(hero: PlayerState): DuelSeat {
   return { hero, recall: createRecall(), tally: emptyTally(), outcome: 'running', total: 0 };
 }
 
-function benchedRival(content: Content, rng: Rng, seed: number, level: number): PlayerState {
+function readySeat(world: World, rng: Rng, seed: number, level: number, build: Build | null): void {
+  if (build === null) stepWorld(world, [{ type: 'bench', hero: benchHero(world.content, rng, level) }], RL.tick);
+  else readyBuild(world, build, DUEL_KIT, ARENA.benchSeed + seed);
+}
+
+function benchedRival(content: Content, rng: Rng, seed: number, level: number, build: Build | null): PlayerState {
   const scratch: World = emptyArena(content, seed + DUEL.rivalSeed, level);
-  stepWorld(scratch, [{ type: 'bench', hero: benchHero(content, rng, level) }], RL.tick);
+  readySeat(scratch, rng, seed + DUEL.rivalSeed, level, build);
   return scratch.player;
 }
 
 export function createDuel(content: Content, options: DuelOptions): Duel {
   const rng: Rng = createRng(options.seed);
   const played: Content = jitterContent(content, rng, options.jitter);
-  const level: number = rng.int(ARENA.levels.min, ARENA.levels.max);
+  const rolled: number = rng.int(ARENA.levels.min, ARENA.levels.max);
+  const level: number = options.builds === undefined ? rolled : BUILD.level;
   const world: World = emptyArena(played, options.seed, level);
-  stepWorld(world, [{ type: 'bench', hero: benchHero(played, rng, level) }], RL.tick);
-  const benched: PlayerState = benchedRival(played, rng, options.seed, level);
+  readySeat(world, rng, options.seed, level, options.builds?.[0] ?? null);
+  const benched: PlayerState = benchedRival(played, rng, options.seed, level, options.builds?.[1] ?? null);
   const rival: PlayerState = { ...benched, id: world.nextId, party: DUEL.rivalParty, pos: spawnSpot(world, rng) };
   world.nextId += 1;
   world.heroes.push(rival);

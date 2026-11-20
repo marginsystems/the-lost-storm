@@ -1,0 +1,32 @@
+{
+  "name": "Caster",
+  "weapon": "stormcaller_stave",
+  "skills": [
+    "storm_bolt",
+    "squall"
+  ],
+  "route": [
+    "storm_storm_bolt",
+    "stormcallers_focus",
+    "storm_1",
+    "forked_bolt",
+    "echo_squall",
+    "storm_2",
+    "storm_3",
+    "storm_4",
+    "storm_lance",
+    "storm_5",
+    "storm_7",
+    "thunder_in_the_bones",
+    "storm_8",
+    "storm_9",
+    "storm_10",
+    "storm_11",
+    "rolling_thunder",
+    "storm_12",
+    "storm_13",
+    "storm_22",
+    "storm_23",
+    "storm_24"
+  ]
+}

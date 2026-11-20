@@ -1,0 +1,31 @@
+{
+  "name": "Duelist",
+  "weapon": "warden_broadsword",
+  "skills": [
+    "thunderhead"
+  ],
+  "route": [
+    "blade_thunderhead",
+    "heavy_hands",
+    "blade_1",
+    "whetstone",
+    "blade_2",
+    "blade_wind_near",
+    "wind_1",
+    "windborne",
+    "blade_4",
+    "whirling_cleave",
+    "blade_wind_mid",
+    "slip_through",
+    "wind_7",
+    "through_the_mist",
+    "blade_7",
+    "unbroken_rhythm",
+    "blade_8",
+    "blade_9",
+    "headsman",
+    "blade_12",
+    "blade_13",
+    "edge_without_rest"
+  ]
+}

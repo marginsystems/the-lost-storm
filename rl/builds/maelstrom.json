@@ -1,0 +1,32 @@
+{
+  "name": "Maelstrom",
+  "weapon": "warden_broadsword",
+  "skills": [
+    "downdraught",
+    "millrace"
+  ],
+  "route": [
+    "blade_thunderhead",
+    "heavy_hands",
+    "blade_1",
+    "whetstone",
+    "blade_4",
+    "whirling_cleave",
+    "endless_turn",
+    "millstone",
+    "wind_downdraught",
+    "riptide",
+    "blade_millrace",
+    "blade_7",
+    "unbroken_rhythm",
+    "blade_8",
+    "blade_wind_far",
+    "wind_8",
+    "wind_9",
+    "racing_cloud",
+    "blade_12",
+    "blade_13",
+    "blade_9",
+    "wind_12"
+  ]
+}

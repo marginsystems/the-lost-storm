@@ -1,0 +1,11 @@
+{
+  "rarity": "common",
+  "weapons": ["warden_broadsword", "iron_maul", "warden_arbalest", "stormcaller_stave"],
+  "armour": {
+    "head": "norman_helm",
+    "chest": "warden_jerkin",
+    "hands": "warden_gloves",
+    "legs": "warden_breeches",
+    "feet": "warden_boots"
+  }
+}

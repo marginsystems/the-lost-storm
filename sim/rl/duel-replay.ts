@@ -5,6 +5,8 @@ import { stepWorld } from '../world/step.ts';
 import type { Command, WorldEvent } from '../world/types.ts';
 import { commandsFor } from './act.ts';
 import type { ArenaOutcome } from './arena.ts';
+import type { Build } from './build.ts';
+import { readBuild } from './build.ts';
 import type { Action } from './contract.ts';
 import { contractShape, RL } from './contract.ts';
 import type { Duel, DuelOptions, DuelSeat } from './duel.ts';
@@ -104,6 +106,10 @@ function seatRecord(raw: unknown): DuelSeatRecord {
   return { actions: actionLists(source['actions']), outcome: outcomeOf(source['outcome']), total: numberField(source, 'total') };
 }
 
+function seatBuilds(raw: unknown): (Build | null)[] {
+  return items(raw, 'duel replay builds').map((entry: unknown, index: number): Build | null => (entry === null ? null : readBuild(entry, `duel replay build ${index + 1}`)));
+}
+
 export function readDuelReplay(raw: unknown): DuelReplay {
   const source: Fields = fields(raw, 'duel replay');
   if (source['situation'] !== 'duel') throw new Error('replay is not of a duel');
@@ -115,7 +121,7 @@ export function readDuelReplay(raw: unknown): DuelReplay {
     situation: 'duel',
     version: numberField(source, 'version'),
     fingerprint: text(source, 'fingerprint', 'duel replay'),
-    options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter') },
+    options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), ...(options['builds'] === undefined ? {} : { builds: seatBuilds(options['builds']) }) },
     seats,
     label: text(source, 'label', 'duel replay'),
   };

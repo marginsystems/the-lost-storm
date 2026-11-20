@@ -1,0 +1,33 @@
+{
+  "name": "Windrunner",
+  "weapon": "warden_arbalest",
+  "skills": [
+    "ghost_wave",
+    "umbra"
+  ],
+  "route": [
+    "wind_ghost_wave",
+    "windborne",
+    "wind_1",
+    "shadow_veil",
+    "wailing_wave",
+    "wind_2",
+    "wind_3",
+    "wind_14",
+    "long_shadow",
+    "wind_4",
+    "slip_through",
+    "wind_5",
+    "wind_6",
+    "wind_7",
+    "through_the_mist",
+    "wind_8",
+    "wind_10",
+    "wind_umbra",
+    "wind_12",
+    "wind_13",
+    "never_still",
+    "wind_17"
+  ],
+  "hero": "woman"
+}

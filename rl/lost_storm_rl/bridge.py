@@ -122,7 +122,8 @@ class Worker:
         length, kind = HEADER.unpack(self._read(HEADER.size))
         payload = self._read(length)
         if kind == ERROR:
-            raise BridgeError(f"worker {self.index}: {_json_tail(payload, 0)}")
+            said = _json_tail(payload, 0)
+            raise BridgeError(f"worker {self.index}: {said.get('error', said) if isinstance(said, dict) else said}")
         if kind != expected:
             raise BridgeError(f"worker {self.index} answered {chr(kind)!r}, expected {chr(expected)!r}")
         return payload
@@ -139,8 +140,19 @@ class Worker:
                 self.process.kill()
 
 
+def hello(seed: int, envs: int, duels: int, jitter: float, waves: int, keep_every: int, levels: list[float], build: dict[str, Any] | None, rivals: list[dict[str, Any]] | None, seats: list[dict[str, Any] | None] | None) -> dict[str, Any]:
+    said: dict[str, Any] = {"seed": seed, "envs": envs, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every, "levels": levels}
+    if build is not None:
+        said["build"] = build
+    if rivals:
+        said["rivals"] = rivals
+    if seats is not None:
+        said["seats"] = seats
+    return said
+
+
 class ArenaEnvs:
-    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None, duels: int = 0, levels: list[float] | None = None) -> None:
+    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None, duels: int = 0, levels: list[float] | None = None, build: dict[str, Any] | None = None, rivals: list[dict[str, Any]] | None = None, seats: list[dict[str, Any] | None] | None = None) -> None:
         self.workers: list[Worker] = []
         self.envs_per_worker = envs_per_worker
         self.count = workers * envs_per_worker
@@ -148,12 +160,13 @@ class ArenaEnvs:
             for index in range(workers):
                 self.workers.append(Worker(index, replays))
             for index, worker in enumerate(self.workers):
-                worker.send_json(HELLO, {"seed": seed + index * WORKER_SEED_STRIDE, "envs": envs_per_worker, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every, "levels": levels or []})
+                worker.send_json(HELLO, hello(seed + index * WORKER_SEED_STRIDE, envs_per_worker, duels, jitter, waves, keep_every, levels or [], build, rivals, seats))
             hellos = [json.loads(worker.receive(HELLO)[WORD:].decode("utf-8")) for worker in self.workers]
         except BaseException:
             self.close()
             raise
         self.contract: dict[str, Any] = hellos[0]
+        self.build = build
 
     def _gather(self) -> Batch:
         parts = [read_batch(worker.receive(OBSERVATIONS)) for worker in self.workers]
@@ -194,7 +207,7 @@ class ArenaEnvs:
             worker.receive(LEVELS)
 
     def bot(self, seed: int, episodes: int, jitter: float, waves: int, levels: list[float] | None = None, seeds: list[int] | None = None, samples: bool = True) -> Demonstrations:
-        return _gather_demos(self.workers, seed, episodes, jitter, waves, levels or [], seeds, samples)
+        return _gather_demos(self.workers, seed, episodes, jitter, waves, levels or [], seeds, samples, self.build)
 
     def close(self) -> None:
         for worker in self.workers:
@@ -212,13 +225,15 @@ def _shares(count: int, workers: int) -> list[tuple[int, int]]:
     return spans
 
 
-def _gather_demos(workers: list["Worker"], seed: int, episodes: int, jitter: float, waves: int, levels: list[float], seeds: list[int] | None, samples: bool) -> Demonstrations:
+def _gather_demos(workers: list["Worker"], seed: int, episodes: int, jitter: float, waves: int, levels: list[float], seeds: list[int] | None, samples: bool, build: dict[str, Any] | None = None) -> Demonstrations:
     asked = workers[: max(1, min(len(workers), len(seeds) if seeds is not None else episodes))]
     total = len(seeds) if seeds is not None else episodes
     for index, ((at, size), worker) in enumerate(zip(_shares(total, len(asked)), asked)):
         request: dict[str, Any] = {"seed": seed + at + index * WORKER_SEED_STRIDE, "episodes": size, "jitter": jitter, "waves": waves, "levels": levels, "samples": samples}
         if seeds is not None:
             request["seeds"] = seeds[at : at + size]
+        if build is not None:
+            request["build"] = build
         worker.send_json(DEMO, request)
     with ThreadPoolExecutor(max_workers=len(asked)) as readers:
         parts = [part for streamed in readers.map(_stream, asked) for part in streamed]

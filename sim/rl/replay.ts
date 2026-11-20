@@ -4,6 +4,7 @@ import type { Fields } from '../content/read.ts';
 import { commandsFor } from './act.ts';
 import type { Arena, ArenaOptions, ArenaOutcome } from './arena.ts';
 import { arenaObservation, createArena, stepArena } from './arena.ts';
+import { readBuild } from './build.ts';
 import type { Action } from './contract.ts';
 import { rememberDecision } from './recall.ts';
 import { contractShape, RL } from './contract.ts';
@@ -88,7 +89,7 @@ export function readReplay(raw: unknown): Replay {
     situation: 'arena',
     version: numberField(source, 'version'),
     fingerprint: text(source, 'fingerprint', 'replay'),
-    options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), waves: numberField(options, 'waves'), ...(options['level'] === undefined ? {} : { level: numberField(options, 'level') }) },
+    options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), waves: numberField(options, 'waves'), ...(options['level'] === undefined ? {} : { level: numberField(options, 'level') }), ...(options['build'] === undefined ? {} : { build: readBuild(options['build'], 'replay build') }) },
     actions,
     outcome: outcomeOf(source['outcome']),
     total: numberField(source, 'total'),

@@ -1,0 +1,34 @@
+{
+  "name": "Bulwark",
+  "weapon": "iron_maul",
+  "skills": [
+    "thunderclap",
+    "banked_fire",
+    "fire_burst",
+    "held_breath"
+  ],
+  "route": [
+    "stone_thunderclap",
+    "tempered_body",
+    "stone_1",
+    "bedrock",
+    "shoulder_through",
+    "stone_held_breath",
+    "stone_4",
+    "gathered_clap",
+    "stone_7",
+    "mountain_falls",
+    "stone_banked_fire",
+    "stone_5",
+    "stone_6",
+    "heaving_cleave",
+    "stone_fire_burst",
+    "stone_8",
+    "stone_9",
+    "old_oak",
+    "stone_12",
+    "stone_13",
+    "the_unmoved",
+    "stone_2"
+  ]
+}

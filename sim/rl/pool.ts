@@ -5,10 +5,11 @@ import type { Rng } from '../rng.ts';
 import { createRng } from '../rng.ts';
 import type { Arena, ArenaOptions, ArenaOutcome } from './arena.ts';
 import { arenaObservation, createArena, stepArena } from './arena.ts';
+import type { Build } from './build.ts';
 import type { Action } from './contract.ts';
 import { CURRICULUM, pickLevel } from './curriculum.ts';
 import { LAYOUT, RL } from './contract.ts';
-import type { Duel, DuelSeat } from './duel.ts';
+import type { Duel, DuelOptions, DuelSeat } from './duel.ts';
 import { createDuel, duelObservation, stepDuel } from './duel.ts';
 import type { KeptReplay } from './duel-replay.ts';
 import { recordDuelReplay } from './duel-replay.ts';
@@ -25,6 +26,9 @@ export interface PoolOptions {
   readonly waves: number;
   readonly keepEvery: number;
   readonly levels: readonly number[];
+  readonly build?: Build;
+  readonly rivals?: readonly Build[];
+  readonly seats?: readonly (Build | null)[];
 }
 
 export type Match = { readonly kind: 'arena'; readonly arena: Arena } | { readonly kind: 'duel'; readonly duel: Duel };
@@ -84,7 +88,20 @@ function observeSeats(match: Match): Observation[] {
 function arenaOptions(pool: Pool, seed: number): ArenaOptions {
   const level: number | null = pickLevel(pool.levelRng, pool.levels);
   const options: ArenaOptions = { seed, jitter: pool.options.jitter, waves: pool.options.waves };
+  if (pool.options.build !== undefined) return { ...options, build: pool.options.build };
   return level === null ? options : { ...options, level };
+}
+
+export function duelBuilds(options: PoolOptions, seed: number): readonly (Build | null)[] | undefined {
+  if (options.seats !== undefined) return options.seats;
+  if (options.build === undefined) return undefined;
+  const rivals: readonly Build[] = options.rivals ?? [];
+  return [options.build, rivals.length === 0 ? null : (rivals[seed % rivals.length] ?? null)];
+}
+
+function duelOptions(pool: Pool, seed: number): DuelOptions {
+  const builds: readonly (Build | null)[] | undefined = duelBuilds(pool.options, seed);
+  return builds === undefined ? { seed, jitter: pool.options.jitter } : { seed, jitter: pool.options.jitter, builds };
 }
 
 export function setLevels(pool: Pool, weights: readonly number[]): void {
@@ -94,7 +111,7 @@ export function setLevels(pool: Pool, weights: readonly number[]): void {
 function freshMatch(pool: Pool, index: number): void {
   const seed: number = pool.nextSeed;
   pool.nextSeed += 1;
-  const match: Match = index < arenaSeats(pool.options) ? { kind: 'arena', arena: createArena(pool.content, arenaOptions(pool, seed)) } : { kind: 'duel', duel: createDuel(pool.content, { seed, jitter: pool.options.jitter }) };
+  const match: Match = index < arenaSeats(pool.options) ? { kind: 'arena', arena: createArena(pool.content, arenaOptions(pool, seed)) } : { kind: 'duel', duel: createDuel(pool.content, duelOptions(pool, seed)) };
   pool.matches[index] = match;
   const env: number = firstEnv(pool, index);
   observeSeats(match).forEach((seen: Observation, seat: number): void => {

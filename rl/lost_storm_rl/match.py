@@ -8,6 +8,7 @@ import numpy as np
 import torch
 
 from .bridge import ArenaEnvs
+from .builds import seat_builds
 from .model import Policy
 
 MATCH_DUELS_AT_ONCE = 8
@@ -50,9 +51,9 @@ def score(duels: list[DuelResult]) -> dict[str, Any]:
     return {"duels": len(duels), "first_won": first_won, "second_won": second_won, "undecided": len(duels) - first_won - second_won, "first_share": first_won / max(1, first_won + second_won), "by_seat": by_seat}
 
 
-def play_side(first: Policy, second: Policy, first_seat: int, duels: int, seed: int, jitter: float, greedy: bool, replays: Path | None) -> list[DuelResult]:
+def play_side(first: Policy, second: Policy, first_seat: int, duels: int, seed: int, jitter: float, greedy: bool, replays: Path | None, first_build: dict[str, Any] | None = None, second_build: dict[str, Any] | None = None) -> list[DuelResult]:
     at_once = min(duels, MATCH_DUELS_AT_ONCE)
-    envs = ArenaEnvs(1, at_once * 2, seed, jitter, 1, keep_every=1 if replays is not None else 0, replays=replays, duels=at_once)
+    envs = ArenaEnvs(1, at_once * 2, seed, jitter, 1, keep_every=1 if replays is not None else 0, replays=replays, duels=at_once, seats=seat_builds(first_build, second_build, first_seat))
     sits = first_sits(at_once * 2, first_seat)
     played: list[DuelResult] = []
     try:
@@ -74,5 +75,5 @@ def play_side(first: Policy, second: Policy, first_seat: int, duels: int, seed: 
     return sorted((duel for duel in played if seed <= duel.seed < seed + duels), key=lambda duel: duel.seed)
 
 
-def play_match(first: Policy, second: Policy, duels: int, seed: int, jitter: float, greedy: bool, replays: Path | None) -> list[DuelResult]:
-    return [duel for first_seat in (0, 1) for duel in play_side(first, second, first_seat, duels, seed, jitter, greedy, replays)]
+def play_match(first: Policy, second: Policy, duels: int, seed: int, jitter: float, greedy: bool, replays: Path | None, first_build: dict[str, Any] | None = None, second_build: dict[str, Any] | None = None) -> list[DuelResult]:
+    return [duel for first_seat in (0, 1) for duel in play_side(first, second, first_seat, duels, seed, jitter, greedy, replays, first_build, second_build)]
