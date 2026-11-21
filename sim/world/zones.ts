@@ -1,10 +1,11 @@
+import type { Work } from '../work.ts';
 import { EMPTY_BUFFER } from './press-buffer.ts';
 import { endTailwind } from './tailwind.ts';
 import { ContentError } from '../content/read.ts';
 import type { Content, ZoneCheckpoint, ZoneDef, ZoneExit, ZonePoint } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { nearestWalkable, navGridPrepared, prepareNavGrid } from '../nav/grid.ts';
+import { nearestWalkable, navGridPrepared, navGridWork, prepareNavGrid } from '../nav/grid.ts';
 import { zoneGrid } from '../nav/marker-bodies.ts';
 import { closeDialogue, spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
@@ -136,6 +137,14 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, ke
   world.escort = null;
   if (!restoreKept(world)) spawnPacks(world);
   startMoments(world);
+}
+
+export function prepareZoneWork(content: Content, zone: ZoneDef): Work {
+  return navGridWork(zone, content.props, content.surfaces, content.player.radius);
+}
+
+export function* prepareZonesWork(content: Content, zones: Iterable<ZoneDef>): Work {
+  for (const zone of zones) yield* prepareZoneWork(content, zone);
 }
 
 export function prepareZone(content: Content, zone: ZoneDef): void {

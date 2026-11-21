@@ -1,4 +1,6 @@
 import type { PropDef, ZoneDef } from '../content/types.ts';
+import type { Work } from '../work.ts';
+import { drained } from '../work.ts';
 import type { CliffRule, TerrainCliff } from '../content/terrain-types.ts';
 import { zoneColumns, zoneRows } from './layout.ts';
 import { floorAt, heightAt, rampAt, terrainHash, terrainNoise } from './terrain.ts';
@@ -69,11 +71,16 @@ function cliffLook(zone: ZoneDef, rule: CliffRule, x: number, z: number): Look |
 }
 
 export function cliffSpots(zone: ZoneDef, rule: CliffRule, salt: number): CliffSpot[] {
+  return drained(cliffSpotsWork(zone, rule, salt));
+}
+
+function* cliffSpotsWork(zone: ZoneDef, rule: CliffRule, salt: number): Work<CliffSpot[]> {
   if (zone.terrain === null) return [];
   const width: number = zoneColumns(zone) * zone.cellSize;
   const depth: number = zoneRows(zone) * zone.cellSize;
   const spots: CliffSpot[] = [];
   for (let row: number = 0; row * rule.step < depth; row += 1) {
+    yield;
     for (let column: number = 0; column * rule.step < width; column += 1) {
       const x: number = (column + 0.5 + (terrainHash(column, row, salt) - 0.5) * CLIFF_ROCKS.jitter) * rule.step;
       const z: number = (row + 0.5 + (terrainHash(row, column, salt + 1) - 0.5) * CLIFF_ROCKS.jitter) * rule.step;
@@ -91,8 +98,9 @@ export function cliffSpots(zone: ZoneDef, rule: CliffRule, salt: number): CliffS
   return spots;
 }
 
-function rocksOf(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, rule: TerrainCliff, salt: number): CliffRock[] {
-  return cliffSpots(zone, rule, salt).flatMap((spot: CliffSpot): CliffRock[] => {
+function* rocksOfWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, rule: TerrainCliff, salt: number): Work<CliffRock[]> {
+  const spots: CliffSpot[] = yield* cliffSpotsWork(zone, rule, salt);
+  return spots.flatMap((spot: CliffSpot): CliffRock[] => {
     const prop: string | undefined = rule.props[Math.min(rule.props.length - 1, Math.floor(spot.pick * rule.props.length))];
     if (prop === undefined || !props.has(prop)) return [];
     return [{ prop, x: spot.x, z: spot.z, rotationDegrees: spot.rotationDegrees, size: rule.size.least + (rule.size.most - rule.size.least) * spot.grow }];
@@ -102,9 +110,16 @@ function rocksOf(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, rule: Terra
 const placedRocks: ZoneCache<readonly CliffRock[]> = zoneCache<readonly CliffRock[]>('cliff rocks');
 
 export function cliffRocks(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): readonly CliffRock[] {
+  return drained(cliffRocksWork(zone, props));
+}
+
+export function* cliffRocksWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Work<readonly CliffRock[]> {
   const known: readonly CliffRock[] | undefined = placedRocks.get(zone);
   if (known !== undefined) return known;
-  const rocks: CliffRock[] = (zone.terrain?.cliffs ?? []).flatMap((rule: TerrainCliff, index: number): CliffRock[] => rocksOf(zone, props, rule, (index + 1) * CLIFF_ROCKS.saltStep));
+  const rocks: CliffRock[] = [];
+  for (const [index, rule] of (zone.terrain?.cliffs ?? []).entries()) rocks.push(...(yield* rocksOfWork(zone, props, rule, (index + 1) * CLIFF_ROCKS.saltStep)));
+  const placed: readonly CliffRock[] | undefined = placedRocks.get(zone);
+  if (placed !== undefined) return placed;
   placedRocks.set(zone, rocks);
   return rocks;
 }

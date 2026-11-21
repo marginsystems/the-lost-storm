@@ -1,9 +1,11 @@
+import type { Work } from '../work.ts';
+import { drained } from '../work.ts';
 import type { ZoneDef, PropDef, SurfaceDef } from '../content/types.ts';
 import type { ZoneDrift } from '../content/road-types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { outlineGap } from './outline.ts';
 import { barrierPieces, sizedProp } from './barrier.ts';
-import { cliffRocks } from './cliff-rocks.ts';
+import { cliffRocksWork } from './cliff-rocks.ts';
 import { standsAt, surfacesMeet } from './terrain.ts';
 import { CORNER_PILLAR_RADIUS, isFloorCell, tileAtCell, wallCorners } from './layout.ts';
 import { zoneCache, type ZoneCache } from '../zone-cache.ts';
@@ -87,9 +89,11 @@ const NAV = {
   slideLeast: 0.2,
   slideShares: [1, 0.5],
   groundRings: 4,
+  sliceRows: 6,
+  sliceBodies: 12,
 } as const;
 
-function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[] {
+function* blockersWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Work<Blocker[]> {
   const list: Blocker[] = [];
   for (const placed of zone.props) {
     if (placed.when.length > 0) continue;
@@ -101,7 +105,8 @@ function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[]
     const def: PropDef | undefined = props.get(piece.prop);
     if (def !== undefined) list.push(...propBlockers(sizedProp(def, piece.size), piece.x, piece.z, piece.rotationDegrees));
   }
-  for (const rock of cliffRocks(zone, props)) {
+  yield;
+  for (const rock of yield* cliffRocksWork(zone, props)) {
     const def: PropDef | undefined = props.get(rock.prop);
     if (def !== undefined) list.push(...propBlockers(sizedProp(def, rock.size), rock.x, rock.z, rock.rotationDegrees));
   }
@@ -149,13 +154,16 @@ function blockerBounds(blocker: Blocker, pad: number, columns: number, rows: num
   return { fromColumn: clampColumn(Math.min(...xs) - reach), toColumn: clampColumn(Math.max(...xs) + reach), fromRow: clampRow(Math.min(...zs) - reach), toRow: clampRow(Math.max(...zs) + reach) };
 }
 
-function fill(zone: ZoneDef, obstacles: readonly Blocker[], columns: number, rows: number, agentRadius: number): Uint8Array {
-  const cells: Uint8Array = new Uint8Array(columns * rows);
-  const margin: number = (zone.walls?.halfThickness ?? 0) + agentRadius;
+function* floorWork(zone: ZoneDef, columns: number, rows: number, margin: number, cells: Uint8Array): Generator<void, void> {
   for (let row: number = 0; row < rows; row += 1) {
     for (let column: number = 0; column < columns; column += 1) cells[row * columns + column] = insideFloor(zone, (column + 0.5) * NAV.cellSize, (row + 0.5) * NAV.cellSize, margin) ? 1 : 0;
+    if ((row + 1) % NAV.sliceRows === 0) yield;
   }
-  for (const blocker of obstacles) {
+}
+
+function* carveWork(cells: Uint8Array, obstacles: readonly Blocker[], columns: number, rows: number, agentRadius: number): Work<Uint8Array> {
+  for (const [at, blocker] of obstacles.entries()) {
+    if ((at + 1) % NAV.sliceBodies === 0) yield;
     const bounds: Bounds = blockerBounds(blocker, agentRadius, columns, rows);
     for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
       for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
@@ -171,9 +179,10 @@ function blockedTile(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, x
   return surfaceId !== undefined && surfaces.get(surfaceId)?.blocks === true;
 }
 
-function sealBlocked(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, cells: Uint8Array, columns: number, rows: number, agentRadius: number): Uint8Array {
+function* sealBlockedWork(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, cells: Uint8Array, columns: number, rows: number, agentRadius: number): Work<Uint8Array> {
   if (![...surfaces.values()].some((surface: SurfaceDef): boolean => surface.blocks)) return cells;
   for (let row: number = 0; row < rows; row += 1) {
+    if ((row + 1) % NAV.sliceRows === 0) yield;
     for (let column: number = 0; column < columns; column += 1) {
       const x: number = (column + 0.5) * NAV.cellSize;
       const z: number = (row + 0.5) * NAV.cellSize;
@@ -184,9 +193,10 @@ function sealBlocked(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, c
   return cells;
 }
 
-function paceOf(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, columns: number, rows: number): Float32Array {
+function* paceOfWork(zone: ZoneDef, surfaces: ReadonlyMap<string, SurfaceDef>, columns: number, rows: number): Work<Float32Array> {
   const pace: Float32Array = new Float32Array(columns * rows).fill(1);
   for (let row: number = 0; row < rows; row += 1) {
+    if ((row + 1) % (NAV.sliceRows * 4) === 0) yield;
     for (let column: number = 0; column < columns; column += 1) {
       const surfaceId: string | undefined = zone.floors[tileAtCell(zone, Math.floor(((column + 0.5) * NAV.cellSize) / zone.cellSize), Math.floor(((row + 0.5) * NAV.cellSize) / zone.cellSize))];
       pace[row * columns + column] = surfaceId === undefined ? 1 : (surfaces.get(surfaceId)?.pace ?? 1);
@@ -247,22 +257,49 @@ export function navGridPrepared(zone: ZoneDef, props: ReadonlyMap<string, PropDe
   return template !== undefined && template.props === props && template.surfaces === surfaces && template.radius === agentRadius;
 }
 
-function freshNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
+function* freshNavGridWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): Generator<void, NavGrid> {
   const columns: number = Math.ceil(((zone.tiles[0]?.length ?? 0) * zone.cellSize) / NAV.cellSize);
   const rows: number = Math.ceil((zone.tiles.length * zone.cellSize) / NAV.cellSize);
-  const obstacles: Blocker[] = blockers(zone, props);
-  const open: Uint8Array = fill(zone, obstacles, columns, rows, 0);
+  const obstacles: Blocker[] = yield* blockersWork(zone, props);
+  const wall: number = zone.walls?.halfThickness ?? 0;
+  const open: Uint8Array = new Uint8Array(columns * rows);
+  yield* floorWork(zone, columns, rows, wall, open);
+  yield* carveWork(open, obstacles, columns, rows, 0);
   const solid: Uint8Array = open.map((value: number): number => 1 - value);
-  const walkable: Uint8Array = sealBlocked(zone, surfaces, fill(zone, obstacles, columns, rows, agentRadius), columns, rows, agentRadius);
-  const ground: Uint8Array = sealBlocked(zone, surfaces, fill(zone, [], columns, rows, agentRadius), columns, rows, agentRadius);
-  const drifts: DriftCells[] = zone.drifts.map((drift: ZoneDrift): DriftCells => driftCells(zone, drift, walkable, ground, columns, rows));
-  return { cellSize: NAV.cellSize, columns, rows, walkable, solid, pace: paceOf(zone, surfaces, columns, rows), drifts, ground, bodies: obstacles, near: nearBodies(obstacles, agentRadius, columns, rows), radius: agentRadius, routed: false };
+  const floor: Uint8Array = new Uint8Array(columns * rows);
+  yield* floorWork(zone, columns, rows, wall + agentRadius, floor);
+  const carved: Uint8Array = yield* carveWork(floor.slice(), obstacles, columns, rows, agentRadius);
+  const walkable: Uint8Array = yield* sealBlockedWork(zone, surfaces, carved, columns, rows, agentRadius);
+  const ground: Uint8Array = yield* sealBlockedWork(zone, surfaces, floor, columns, rows, agentRadius);
+  const drifts: DriftCells[] = [];
+  for (const drift of zone.drifts) {
+    drifts.push(driftCells(zone, drift, walkable, ground, columns, rows));
+    yield;
+  }
+  const pace: Float32Array = yield* paceOfWork(zone, surfaces, columns, rows);
+  const near: Map<number, number[]> = yield* nearBodiesWork(obstacles, agentRadius, columns, rows);
+  return { cellSize: NAV.cellSize, columns, rows, walkable, solid, pace, drifts, ground, bodies: obstacles, near, radius: agentRadius, routed: false };
+}
+
+function freshNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
+  return drained(freshNavGridWork(zone, props, surfaces, agentRadius));
+}
+
+export function* navGridWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): Generator<void, void> {
+  if (navGridPrepared(zone, props, surfaces, agentRadius)) return;
+  const grid: NavGrid = yield* freshNavGridWork(zone, props, surfaces, agentRadius);
+  if (!navGridPrepared(zone, props, surfaces, agentRadius)) TEMPLATES.set(zone, { props, surfaces, radius: agentRadius, grid });
 }
 
 function nearBodies(bodies: readonly Blocker[], agentRadius: number, columns: number, rows: number): Map<number, number[]> {
+  return drained(nearBodiesWork(bodies, agentRadius, columns, rows));
+}
+
+function* nearBodiesWork(bodies: readonly Blocker[], agentRadius: number, columns: number, rows: number): Work<Map<number, number[]>> {
   const near: Map<number, number[]> = new Map<number, number[]>();
   const reach: number = agentRadius + NAV.cellSize * Math.SQRT1_2;
-  bodies.forEach((body: Blocker, at: number): void => {
+  for (const [at, body] of bodies.entries()) {
+    if ((at + 1) % NAV.sliceBodies === 0) yield;
     const bounds: Bounds = blockerBounds(body, reach, columns, rows);
     for (let row: number = bounds.fromRow; row <= bounds.toRow; row += 1) {
       for (let column: number = bounds.fromColumn; column <= bounds.toColumn; column += 1) {
@@ -273,7 +310,7 @@ function nearBodies(bodies: readonly Blocker[], agentRadius: number, columns: nu
         else list.push(at);
       }
     }
-  });
+  }
   return near;
 }
 
