@@ -5,7 +5,7 @@ import type { ZoneDrift } from '../content/road-types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { outlineGap } from './outline.ts';
 import { barrierPieces, sizedProp } from './barrier.ts';
-import { cliffRocks } from './cliff-rocks.ts';
+import { cliffRocksWork } from './cliff-rocks.ts';
 import { standsAt, surfacesMeet } from './terrain.ts';
 import { CORNER_PILLAR_RADIUS, isFloorCell, tileAtCell, wallCorners } from './layout.ts';
 
@@ -92,7 +92,7 @@ const NAV = {
   sliceBodies: 12,
 } as const;
 
-function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[] {
+function* blockersWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Work<Blocker[]> {
   const list: Blocker[] = [];
   for (const placed of zone.props) {
     if (placed.when.length > 0) continue;
@@ -104,7 +104,8 @@ function blockers(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Blocker[]
     const def: PropDef | undefined = props.get(piece.prop);
     if (def !== undefined) list.push(...propBlockers(sizedProp(def, piece.size), piece.x, piece.z, piece.rotationDegrees));
   }
-  for (const rock of cliffRocks(zone, props)) {
+  yield;
+  for (const rock of yield* cliffRocksWork(zone, props)) {
     const def: PropDef | undefined = props.get(rock.prop);
     if (def !== undefined) list.push(...propBlockers(sizedProp(def, rock.size), rock.x, rock.z, rock.rotationDegrees));
   }
@@ -258,7 +259,7 @@ export function navGridPrepared(zone: ZoneDef, props: ReadonlyMap<string, PropDe
 function* freshNavGridWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): Generator<void, NavGrid> {
   const columns: number = Math.ceil(((zone.tiles[0]?.length ?? 0) * zone.cellSize) / NAV.cellSize);
   const rows: number = Math.ceil((zone.tiles.length * zone.cellSize) / NAV.cellSize);
-  const obstacles: Blocker[] = blockers(zone, props);
+  const obstacles: Blocker[] = yield* blockersWork(zone, props);
   const wall: number = zone.walls?.halfThickness ?? 0;
   const open: Uint8Array = new Uint8Array(columns * rows);
   yield* floorWork(zone, columns, rows, wall, open);
