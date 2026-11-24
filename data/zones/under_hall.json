@@ -1525,7 +1525,7 @@
     {"x":90,"z":133,"members":[{"monster":"echo_shieldbearer","count":1},{"monster":"grave_stitcher","count":1}],"level":10},
     {"x":94,"z":145,"members":[{"monster":"unfinished_brute","count":1},{"monster":"unfinished_taker","count":1}],"level":10},
     {"x":119,"z":116,"members":[{"monster":"unfinished_thrower","count":1},{"monster":"unfinished_taker","count":1}],"level":11},
-    {"x":130,"z":123,"members":[{"monster":"crawler","count":2},{"monster":"spider","count":2}],"level":11},
+    {"x":130,"z":123,"members":[{"monster":"crawler","count":1},{"monster":"fissure_crawler","count":1},{"monster":"spider","count":2}],"level":11},
     {"x":109,"z":128,"members":[{"monster":"unfinished_thrower","count":1},{"monster":"unfinished_taker","count":1}],"level":11,"rank":"magic"},
     {"x":151,"z":144,"members":[{"monster":"spider","count":2},{"monster":"weaver","count":1},{"monster":"rat","count":6}],"level":11},
     {"x":142,"z":151,"members":[{"monster":"unfinished_thrower","count":1},{"monster":"unfinished_taker","count":1}],"level":11},

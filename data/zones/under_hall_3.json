@@ -1497,7 +1497,7 @@
     {"x":71,"z":93,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
     {"x":89,"z":97,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
     {"x":87,"z":109,"members":[{"monster":"unfinished_borrower","count":2},{"monster":"unfinished_taker","count":1}],"level":17,"waits":{"near":8}},
-    {"x":71,"z":115,"members":[{"monster":"crawler","count":2}],"level":17,"rank":"magic"},
+    {"x":71,"z":115,"members":[{"monster":"crawler","count":1},{"monster":"fissure_crawler","count":1}],"level":17,"rank":"magic"},
     {"x":61,"z":103,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
     {"x":63,"z":169,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
     {"x":49,"z":163,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
