@@ -23,6 +23,8 @@ import { actionFrom, recordReplay } from './replay.ts';
 import type { Roam, RoamOptions, RoamRole, RoamSeat } from './roam.ts';
 import { createRoam, ROAM, roamObservation, stepRoam } from './roam.ts';
 import { DUEL_KIT } from './kit.ts';
+import type { CornerRole } from './corner.ts';
+import { cornerDrawn, cornerRole } from './corner.ts';
 import { treeBuildFor, treeLevel } from './tree-build.ts';
 
 export interface PoolOptions {
@@ -41,6 +43,7 @@ export interface PoolOptions {
   readonly range?: LevelRange;
   readonly buildLevel?: number;
   readonly treeBuilds?: boolean;
+  readonly corners?: number;
 }
 
 export type Match = { readonly kind: 'arena'; readonly arena: Arena } | { readonly kind: 'duel'; readonly duel: Duel } | { readonly kind: 'roam'; readonly roam: Roam };
@@ -57,6 +60,7 @@ export interface EpisodeSummary {
   readonly waves: number;
   readonly decisions: number;
   readonly role?: RoamRole;
+  readonly corner?: CornerRole;
 }
 
 export interface Pool {
@@ -200,6 +204,11 @@ export function duelBuilds(options: PoolOptions, seed: number): readonly (Build 
 }
 
 function duelOptions(pool: Pool, seed: number): DuelOptions {
+  const options: DuelOptions = drawnDuelOptions(pool, seed);
+  return cornerDrawn(seed, pool.options.corners ?? 0) ? { ...options, corner: true } : options;
+}
+
+function drawnDuelOptions(pool: Pool, seed: number): DuelOptions {
   if (pool.options.treeBuilds === true) {
     const level: number = treeLevel(seed, pool.levels, poolRange(pool.options));
     return { seed, jitter: pool.options.jitter, level, builds: [treeBuildFor(pool.content, DUEL_KIT, seed, level), treeBuildFor(pool.content, DUEL_KIT, seed + DUEL.rivalSeed, level)] };
@@ -353,7 +362,12 @@ function summaries(match: Match, env: number): EpisodeSummary[] {
     return roam.seats.map((seat: RoamSeat, index: number): EpisodeSummary => ({ env: env + index, seed: roam.options.seed, situation: 'roam', level: roam.level, outcome: seat.outcome, total: seat.total, waves: 0, decisions: roam.decisions, role: seat.role }));
   }
   const duel: Duel = match.duel;
-  return duel.seats.map((seat: DuelSeat, index: number): EpisodeSummary => ({ env: env + index, seed: duel.options.seed, situation: 'duel', level: duel.level, outcome: seat.outcome, total: seat.total, waves: 0, decisions: duel.decisions }));
+  return duel.seats.map((seat: DuelSeat, index: number): EpisodeSummary => duelSummary(duel, seat, index, env));
+}
+
+function duelSummary(duel: Duel, seat: DuelSeat, index: number, env: number): EpisodeSummary {
+  const summary: EpisodeSummary = { env: env + index, seed: duel.options.seed, situation: 'duel', level: duel.level, outcome: seat.outcome, total: seat.total, waves: 0, decisions: duel.decisions };
+  return duel.corner === null ? summary : { ...summary, corner: cornerRole(index) };
 }
 
 export function stepPool(pool: Pool, actions: Int32Array): PoolStep {

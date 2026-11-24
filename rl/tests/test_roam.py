@@ -51,4 +51,5 @@ def test_roams_and_escorts_that_do_not_fit_in_the_envs_are_refused() -> None:
 
 
 def test_the_log_has_a_column_for_each_roam_number() -> None:
-    assert LOG_HEADER[-4:] == ["roam_episodes", "roam_won", "partner_won", "roam_return"]
+    start = LOG_HEADER.index("roam_episodes")
+    assert LOG_HEADER[start : start + 4] == ["roam_episodes", "roam_won", "partner_won", "roam_return"]

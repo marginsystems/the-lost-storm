@@ -8,6 +8,7 @@ import { findActor, versusScale } from '../world/combat.ts';
 import { mayStrike } from '../world/factions.ts';
 import { hostileFrom, isPrimary, partyOf } from '../world/heroes.ts';
 import { blockedFlask } from '../world/flasks.ts';
+import { knockTime } from '../world/movement.ts';
 import { heldTriggers } from '../powers.ts';
 import { blockedReason } from '../world/skills.ts';
 import type { NpcState } from '../world/npc-types.ts';
@@ -183,6 +184,8 @@ function writeSelf(writer: Writer, world: World, context: ObserveContext, view: 
   put(writer, facing.z);
   flag(writer, player.pivot !== null);
   writeBuilt(writer, world, player);
+  put(writer, knockTime(player));
+  put(writer, player.knockGrace);
   blank(writer, RL.spareSelf);
 }
 

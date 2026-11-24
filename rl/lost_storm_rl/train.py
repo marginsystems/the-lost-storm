@@ -45,7 +45,7 @@ def default_workers() -> int:
     return max(1, min(12, (os.cpu_count() or 4) - 4))
 
 
-LOG_HEADER = ["update", "decisions", "seconds", "episodes", "win_rate", "died_rate", "mean_return", "mean_waves", "policy_loss", "value_loss", "entropy", "explained", "kl", "duel_episodes", "duel_decided", "duel_return", "bot_loss", "bot_weight", "win_high", "roam_episodes", "roam_won", "partner_won", "roam_return"]
+LOG_HEADER = ["update", "decisions", "seconds", "episodes", "win_rate", "died_rate", "mean_return", "mean_waves", "policy_loss", "value_loss", "entropy", "explained", "kl", "duel_episodes", "duel_decided", "duel_return", "bot_loss", "bot_weight", "win_high", "roam_episodes", "roam_won", "partner_won", "roam_return", "corner_episodes", "corner_won", "corner_timeout"]
 
 
 def retired_log(path: Path) -> Path:
@@ -177,6 +177,7 @@ class PpoArgs:
     level_lean: float = 0.0
     roams: int = 0
     escorts: int = 0
+    corner_duels: float = 0.0
 
 
 @dataclass
@@ -198,6 +199,14 @@ def roam_stats(finished: list[dict[str, Any]]) -> RoamStats:
     return RoamStats(len(seats), won_share(leads), won_share(partners), float(np.mean([seat["total"] for seat in seats])) if seats else float("nan"))
 
 
+def cornered_seats(finished: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [episode for episode in finished if episode.get("situation") == "duel" and episode.get("corner") == "cornered"]
+
+
+def timeout_share(seats: list[dict[str, Any]]) -> float:
+    return sum(1 for seat in seats if seat["outcome"] == "timeout") / len(seats) if seats else float("nan")
+
+
 def refresh_bot(envs: ArenaEnvs, buffer: BotBuffer, args: PpoArgs, update: int, weights: list[float]) -> None:
     started = time.time()
     part = envs.bot(args.seed + BOT_SEED_OFFSET + update * BOT_SEED_STRIDE, args.bot_episodes, args.jitter, args.waves, weights or None)
@@ -216,7 +225,7 @@ def ppo(args: PpoArgs) -> Path:
     replays = folder / "replays"
     folder.mkdir(parents=True, exist_ok=True)
     learner = load_optional(args.build)
-    envs = ArenaEnvs(args.workers, args.envs, args.seed, args.jitter, args.waves, args.keep_every, replays, args.duels, build=learner, rivals=example_builds() if learner is not None else None, level=args.level, span=args.levels, tree_builds=args.tree_builds, roams=args.roams, escorts=args.escorts)
+    envs = ArenaEnvs(args.workers, args.envs, args.seed, args.jitter, args.waves, args.keep_every, replays, args.duels, build=learner, rivals=example_builds() if learner is not None else None, level=args.level, span=args.levels, tree_builds=args.tree_builds, roams=args.roams, escorts=args.escorts, corners=args.corner_duels)
     contract = envs.contract
     levels = contract["levels"]
     if args.tree_builds:
@@ -351,12 +360,13 @@ def ppo(args: PpoArgs) -> Path:
             decided = sum(1 for episode in duels if episode["outcome"] != "timeout") / max(1, len(duels))
             duel_return = float(np.mean([episode["total"] for episode in duels])) if duels else float("nan")
             roamed = roam_stats(finished)
+            cornered = cornered_seats(finished)
             seconds = time.time() - started
             ev = explained(val_buf.reshape(-1), returns.reshape(-1))
-            row = [update, decisions, round(seconds, 1), episodes, round(win, 3), round(died, 3), round(mean_return, 3), round(mean_waves, 3), round(stats["policy"] / n, 4), round(stats["value"] / n, 4), round(stats["entropy"] / n, 4), round(ev, 3), round(stats["kl"] / n, 5), len(duels), round(decided, 3), round(duel_return, 3), round(bot_loss, 4), round(weight if anchored else 0.0, 4), round(win_high, 3), roamed.seats, round(roamed.lead_won, 3), round(roamed.partner_won, 3), round(roamed.mean_return, 3)]
+            row = [update, decisions, round(seconds, 1), episodes, round(win, 3), round(died, 3), round(mean_return, 3), round(mean_waves, 3), round(stats["policy"] / n, 4), round(stats["value"] / n, 4), round(stats["entropy"] / n, 4), round(ev, 3), round(stats["kl"] / n, 5), len(duels), round(decided, 3), round(duel_return, 3), round(bot_loss, 4), round(weight if anchored else 0.0, 4), round(win_high, 3), roamed.seats, round(roamed.lead_won, 3), round(roamed.partner_won, 3), round(roamed.mean_return, 3), len(cornered), round(won_share(cornered), 3), round(timeout_share(cornered), 3)]
             log.writerow(row)
             log_file.flush()
-            print(f"update {update} | {decisions / max(1.0, seconds):.0f} dec/s | episodes {episodes} won {win:.0%} died {died:.0%} return {mean_return:.2f} waves {mean_waves:.2f}{f' | duels {len(duels)} decided {decided:.0%} return {duel_return:.2f}' if duels else ''}{f' | roams {roamed.seats} arrived {roamed.lead_won:.0%}{'' if math.isnan(roamed.partner_won) else f' partner {roamed.partner_won:.0%}'} return {roamed.mean_return:.2f}' if roamed.seats else ''}{f' | bot {bot_loss:.2f} x{weight:.2f}' if anchored else ''} | L9+ {win_high:.0%} | entropy {stats['entropy'] / n:.2f} ev {ev:.2f}{' (value warmup)' if warming else ''}", flush=True)
+            print(f"update {update} | {decisions / max(1.0, seconds):.0f} dec/s | episodes {episodes} won {win:.0%} died {died:.0%} return {mean_return:.2f} waves {mean_waves:.2f}{f' | duels {len(duels)} decided {decided:.0%} return {duel_return:.2f}' if duels else ''}{f' | roams {roamed.seats} arrived {roamed.lead_won:.0%}{'' if math.isnan(roamed.partner_won) else f' partner {roamed.partner_won:.0%}'} return {roamed.mean_return:.2f}' if roamed.seats else ''}{f' | cornered {len(cornered)} won {won_share(cornered):.0%} timeout {timeout_share(cornered):.0%}' if cornered else ''}{f' | bot {bot_loss:.2f} x{weight:.2f}' if anchored else ''} | L9+ {win_high:.0%} | entropy {stats['entropy'] / n:.2f} ev {ev:.2f}{' (value warmup)' if warming else ''}", flush=True)
             if update % args.save_every == 0 or update == args.updates:
                 save(policy, str(folder / f"policy-u{update:05d}.pt"), {"stage": "ppo", "update": update, "args": asdict(args)})
                 save(policy, str(folder / "latest.pt"), {"stage": "ppo", "update": update, "args": asdict(args)})
@@ -620,6 +630,13 @@ def check_duels(parser: argparse.ArgumentParser, duels: int, envs: int) -> None:
         parser.error(f"--duels takes two envs each, so at most {envs // 2} fit in --envs {envs}")
 
 
+def check_corners(parser: argparse.ArgumentParser, share: float, duels: int) -> None:
+    if not 0 <= share <= 1:
+        parser.error("--corner-duels is the share of duels that start in a corner, from 0 to 1")
+    if share > 0 and duels < 1:
+        parser.error("--corner-duels starts some of the duels in a corner, so it needs --duels 1 or more")
+
+
 def check_roams(parser: argparse.ArgumentParser, duels: int, roams: int, escorts: int, envs: int) -> None:
     if roams < 0 or escorts < 0:
         parser.error("--roams and --escorts must be 0 or more")
@@ -678,6 +695,7 @@ def main() -> None:
     ppo_cmd.add_argument("--duels", type=int, default=0)
     ppo_cmd.add_argument("--roams", type=int, default=0)
     ppo_cmd.add_argument("--escorts", type=int, default=0)
+    ppo_cmd.add_argument("--corner-duels", type=float, default=0.0)
     ppo_cmd.add_argument("--bot-coef", type=float, default=0.5)
     ppo_cmd.add_argument("--bot-floor", type=float, default=0.05)
     ppo_cmd.add_argument("--bot-decay", type=int, default=3000)
@@ -769,6 +787,7 @@ def main() -> None:
         check_minibatches(parser, parsed.minibatches, parsed.steps, parsed.envs * parsed.workers)
         check_duels(parser, parsed.duels, parsed.envs)
         check_roams(parser, parsed.duels, parsed.roams, parsed.escorts, parsed.envs)
+        check_corners(parser, parsed.corner_duels, parsed.duels)
         check_anchor(parser, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.curriculum)
         check_best(parser, parsed.best_every, parsed.best_episodes, parsed.best_seed)
         check_training_seed(parser, parsed.seed, parsed.updates, parsed.bot_episodes, parsed.workers, parsed.steps, parsed.envs, parsed.bot_coef)
@@ -786,7 +805,7 @@ def main() -> None:
     elif parsed.command == "imitate":
         imitate(ImitateArgs(parsed.run, parsed.episodes, parsed.workers, parsed.seed, parsed.jitter, parsed.waves, parsed.epochs, parsed.batch, parsed.lr, parsed.width, parsed.device))
     elif parsed.command == "ppo":
-        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.bot_keep, parsed.curriculum, parsed.best_every, parsed.best_episodes, parsed.best_seed, parsed.build, parsed.level, parsed.levels, parsed.tree_builds, parsed.level_lean, parsed.roams, parsed.escorts))
+        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.bot_keep, parsed.curriculum, parsed.best_every, parsed.best_episodes, parsed.best_seed, parsed.build, parsed.level, parsed.levels, parsed.tree_builds, parsed.level_lean, parsed.roams, parsed.escorts, parsed.corner_duels))
     elif parsed.command == "match":
         match(parsed.first, parsed.second, parsed.run, parsed.duels, parsed.seed, parsed.jitter, not parsed.sample, parsed.first_build, parsed.second_build, parsed.level)
     elif parsed.roams or parsed.escorts:

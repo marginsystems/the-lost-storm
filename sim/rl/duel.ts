@@ -1,6 +1,8 @@
 import type { Content, ZoneDef, ZoneDuel } from '../content/types.ts';
 import type { Rng } from '../rng.ts';
 import { createRng } from '../rng.ts';
+import { refillHero } from '../world/bench-hero.ts';
+import { refreshPlayer } from '../world/character.ts';
 import { findHero } from '../world/heroes.ts';
 import { stepWorld } from '../world/step.ts';
 import type { Command, PlayerState, World, WorldEvent } from '../world/types.ts';
@@ -10,6 +12,8 @@ import type { Build } from './build.ts';
 import { BUILD } from './build.ts';
 import { readyBuild } from './build-hero.ts';
 import { RL } from './contract.ts';
+import type { CornerStart } from './corner.ts';
+import { casterMask, CORNER, cornerEscaped, cornerFled, findCorner } from './corner.ts';
 import { DUEL_KIT } from './kit.ts';
 import type { PickupRule } from './loot.ts';
 import type { Observation, ObserveContext } from './observe.ts';
@@ -33,6 +37,7 @@ export interface DuelOptions {
   readonly jitter: number;
   readonly builds?: readonly (Build | null)[];
   readonly level?: number;
+  readonly corner?: boolean;
 }
 
 export interface DuelSeat {
@@ -50,6 +55,7 @@ export interface Duel {
   readonly pickup: PickupRule;
   readonly level: number;
   readonly start: number;
+  readonly corner: CornerStart | null;
   decisions: number;
 }
 
@@ -92,7 +98,28 @@ export function createDuel(content: Content, options: DuelOptions): Duel {
   const rival: PlayerState = { ...benched, id: world.nextId, party: DUEL.rivalParty, pos: spawnSpot(world, rng) };
   world.nextId += 1;
   world.heroes.push(rival);
-  return { options, world, seats: [seatOf(world.player), seatOf(rival)], pickup: { minRarity: played.rarities.length }, level, start: world.time, decisions: 0 };
+  const corner: CornerStart | null = options.corner === true ? cornered(world, rng, rival) : null;
+  return { options, world, seats: [seatOf(world.player), seatOf(rival)], pickup: { minRarity: played.rarities.length }, level, start: world.time, corner, decisions: 0 };
+}
+
+function cornered(world: World, rng: Rng, rival: PlayerState): CornerStart | null {
+  const start: CornerStart | null = findCorner(world, rng);
+  if (start === null) return null;
+  rival.pos = { x: start.corner.x, z: start.corner.z };
+  world.player.pos = { x: start.caster.x, z: start.caster.z };
+  world.player.bar[CORNER.slot] = CORNER.skill;
+  refreshPlayer(world);
+  refillHero(world);
+  return start;
+}
+
+function keepCasting(hero: PlayerState): void {
+  hero.life = hero.maxLife;
+  hero.mana = hero.stats.maxMana;
+}
+
+function casterOf(duel: Duel): DuelSeat | null {
+  return duel.corner === null ? null : (duel.seats[CORNER.casterSeat] ?? null);
 }
 
 export function duelRunning(duel: Duel): boolean {
@@ -106,7 +133,8 @@ export function duelContext(duel: Duel, seat: DuelSeat): ObserveContext {
 export function duelObservation(duel: Duel, seat: DuelSeat): Observation {
   const seen: Observation = observe(duel.world, duelContext(duel, seat), seat.hero);
   noteSeen(seat.recall, duel.world, seenMonsters(seen.view));
-  return seen;
+  const target: DuelSeat | undefined = duel.seats[CORNER.corneredSeat];
+  return seat === casterOf(duel) && target !== undefined ? { ...seen, mask: casterMask(seen.mask, seen.view, target.hero) } : seen;
 }
 
 function settle(duel: Duel, rewards: number[]): void {
@@ -121,7 +149,14 @@ function settle(duel: Duel, rewards: number[]): void {
     });
     return;
   }
-  if (duel.world.time - duel.start < DUEL.timeLimit) return;
+  if (duel.corner !== null) {
+    settleCorner(duel, rewards);
+    return;
+  }
+  if (duel.world.time - duel.start >= DUEL.timeLimit) stalemate(duel, rewards);
+}
+
+function stalemate(duel: Duel, rewards: number[]): void {
   duel.seats.forEach((seat: DuelSeat, index: number): void => {
     seat.outcome = 'timeout';
     rewards[index] = (rewards[index] ?? 0) - DUEL.stalemate;
@@ -129,8 +164,46 @@ function settle(duel: Duel, rewards: number[]): void {
   });
 }
 
+export function cornerCleared(duel: Duel): boolean {
+  const start: CornerStart | null = duel.corner;
+  const hero: PlayerState | undefined = duel.seats[CORNER.corneredSeat]?.hero;
+  const caster: PlayerState | undefined = duel.seats[CORNER.casterSeat]?.hero;
+  return start !== null && hero !== undefined && caster !== undefined && cornerEscaped(start, hero.pos, caster.pos);
+}
+
+export function cornerRunAway(duel: Duel): boolean {
+  const start: CornerStart | null = duel.corner;
+  const hero: PlayerState | undefined = duel.seats[CORNER.corneredSeat]?.hero;
+  const caster: PlayerState | undefined = duel.seats[CORNER.casterSeat]?.hero;
+  return start !== null && hero !== undefined && caster !== undefined && cornerFled(start, hero.pos, caster.pos);
+}
+
+function settleCorner(duel: Duel, rewards: number[]): void {
+  if (cornerRunAway(duel)) {
+    duel.seats.forEach((seat: DuelSeat, index: number): void => {
+      seat.outcome = index === CORNER.corneredSeat ? 'died' : 'timeout';
+      if (seat.outcome !== 'died') return;
+      rewards[index] = (rewards[index] ?? 0) - REWARD.death;
+      seat.total -= REWARD.death;
+    });
+    return;
+  }
+  if (cornerCleared(duel)) {
+    duel.seats.forEach((seat: DuelSeat, index: number): void => {
+      seat.outcome = index === CORNER.corneredSeat ? 'won' : 'timeout';
+      if (seat.outcome !== 'won') return;
+      rewards[index] = (rewards[index] ?? 0) + REWARD.win;
+      seat.total += REWARD.win;
+    });
+    return;
+  }
+  if (duel.world.time - duel.start >= CORNER.timeLimit) stalemate(duel, rewards);
+}
+
 export function afterDuelTick(duel: Duel, events: readonly WorldEvent[], rewards: number[]): void {
   const world: World = duel.world;
+  const caster: DuelSeat | null = casterOf(duel);
+  if (caster !== null && caster.hero.alive) keepCasting(caster.hero);
   duel.seats.forEach((seat: DuelSeat, index: number): void => {
     recallEvents(seat.recall, world, seat.hero, events);
     const lifeOf = (id: number): number => findHero(world, id)?.maxLife ?? world.monsters.find((monster): boolean => monster.id === id)?.maxLife ?? seat.hero.maxLife;

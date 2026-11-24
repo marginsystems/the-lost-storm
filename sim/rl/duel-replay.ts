@@ -123,7 +123,7 @@ export function readDuelReplay(raw: unknown): DuelReplay {
     situation: 'duel',
     version: numberField(source, 'version'),
     fingerprint: text(source, 'fingerprint', 'duel replay'),
-    options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), ...(options['builds'] === undefined ? {} : { builds: seatBuilds(options['builds']) }), ...(options['level'] === undefined ? {} : { level: numberField(options, 'level') }) },
+    options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), ...(options['builds'] === undefined ? {} : { builds: seatBuilds(options['builds']) }), ...(options['level'] === undefined ? {} : { level: numberField(options, 'level') }), ...(options['corner'] === true ? { corner: true } : {}) },
     seats,
     label: text(source, 'label', 'duel replay'),
   };

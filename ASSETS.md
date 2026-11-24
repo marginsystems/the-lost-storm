@@ -660,7 +660,7 @@ The game's own model, trained in `rl/` against the game's simulation and exporte
 
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `public/models/rl/duel-pilot.bin` | `policy-u11000.pt` of the `trees-v1` training run (update 11000, contract v7, best check 63 of 64), exported by `rl/lost_storm_rl/export.py` | Made for this project | MIT |
+| `public/models/rl/duel-pilot.bin` | `policy-u00600.pt` of the `corners-v3` training run (update 600 on top of `trees-v1` update 11000 widened to contract v8, with corner drills; best check 97% against the bot's 98%), exported by `rl/lost_storm_rl/export.py` | Made for this project | MIT |
 
 ## Assets that must not be committed
 

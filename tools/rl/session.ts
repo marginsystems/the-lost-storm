@@ -85,6 +85,12 @@ function treeChoice(source: Fields): Pick<PoolOptions, 'treeBuilds'> {
   return flagOf(source, 'treeBuilds') ? { treeBuilds: true } : {};
 }
 
+function cornerChoice(source: Fields): Pick<PoolOptions, 'corners'> {
+  const share: number = count(source, 'corners', 0);
+  if (share > 1) throw new Error('corners is the share of duels that start in a corner, at most 1');
+  return share === 0 ? {} : { corners: share };
+}
+
 function roamChoice(source: Fields): Pick<PoolOptions, 'roams' | 'escorts'> {
   const roams: number = Math.floor(count(source, 'roams', 0));
   const escorts: number = Math.floor(count(source, 'escorts', 0));
@@ -100,7 +106,7 @@ function levelChoice(source: Fields): Pick<PoolOptions, 'range' | 'buildLevel'> 
 export function readPoolOptions(raw: unknown): PoolOptions {
   const source: Fields = fields(raw, 'hello');
   const choice: Pick<PoolOptions, 'range' | 'buildLevel'> = levelChoice(source);
-  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), duels: Math.floor(count(source, 'duels', 0)), ...roamChoice(source), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)), levels: readLevelWeights(source['levels'], choice.range), ...builds(source), ...choice, ...treeChoice(source) };
+  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), duels: Math.floor(count(source, 'duels', 0)), ...roamChoice(source), ...cornerChoice(source), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)), levels: readLevelWeights(source['levels'], choice.range), ...builds(source), ...choice, ...treeChoice(source) };
 }
 
 export function legalPool(content: Content, options: PoolOptions): PoolOptions {
@@ -111,7 +117,7 @@ export function legalPool(content: Content, options: PoolOptions): PoolOptions {
   const seats: (Build | null)[] | undefined = options.seats?.map((seat: Build | null, index: number): Build | null => (seat === null ? null : mustBeLegal(content, DUEL_KIT, seat, `seat ${index + 1} build`, level)));
   const rivals: Build[] = (options.rivals ?? []).filter((rival: Build): boolean => buildProblems(content, DUEL_KIT, rival, level).length === 0);
   const rest: PoolOptions = { seed: options.seed, envs: options.envs, duels: options.duels, jitter: options.jitter, waves: options.waves, keepEvery: options.keepEvery, levels: options.levels };
-  return { ...rest, ...(options.roams === undefined ? {} : { roams: options.roams }), ...(options.escorts === undefined ? {} : { escorts: options.escorts }), ...(build === undefined ? {} : { build }), ...(seats === undefined ? {} : { seats }), ...(rivals.length === 0 ? {} : { rivals }), ...(options.range === undefined ? {} : { range: options.range }), ...(options.buildLevel === undefined ? {} : { buildLevel: options.buildLevel }), ...(options.treeBuilds === true ? { treeBuilds: true } : {}) };
+  return { ...rest, ...(options.roams === undefined ? {} : { roams: options.roams }), ...(options.escorts === undefined ? {} : { escorts: options.escorts }), ...(build === undefined ? {} : { build }), ...(seats === undefined ? {} : { seats }), ...(rivals.length === 0 ? {} : { rivals }), ...(options.range === undefined ? {} : { range: options.range }), ...(options.buildLevel === undefined ? {} : { buildLevel: options.buildLevel }), ...(options.treeBuilds === true ? { treeBuilds: true } : {}), ...(options.corners === undefined ? {} : { corners: options.corners }) };
 }
 
 function checkedRange(content: Content, range: LevelRange): void {
