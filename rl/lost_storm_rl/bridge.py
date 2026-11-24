@@ -149,12 +149,14 @@ def level_fields(level: int | None, span: tuple[int, int] | None) -> dict[str, A
     return said
 
 
-def hello(seed: int, envs: int, duels: int, jitter: float, waves: int, keep_every: int, levels: list[float], build: dict[str, Any] | None, rivals: list[dict[str, Any]] | None, seats: list[dict[str, Any] | None] | None, level: int | None = None, span: tuple[int, int] | None = None, tree_builds: bool = False, roams: int = 0, escorts: int = 0, corners: float = 0.0) -> dict[str, Any]:
+def hello(seed: int, envs: int, duels: int, jitter: float, waves: int, keep_every: int, levels: list[float], build: dict[str, Any] | None, rivals: list[dict[str, Any]] | None, seats: list[dict[str, Any] | None] | None, level: int | None = None, span: tuple[int, int] | None = None, tree_builds: bool = False, roams: int = 0, escorts: int = 0, corners: float = 0.0, gathers: int = 0) -> dict[str, Any]:
     said: dict[str, Any] = {"seed": seed, "envs": envs, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every, "levels": levels, **level_fields(level, span)}
     if roams:
         said["roams"] = roams
     if escorts:
         said["escorts"] = escorts
+    if gathers:
+        said["gathers"] = gathers
     if tree_builds:
         said["treeBuilds"] = True
     if corners > 0:
@@ -169,7 +171,7 @@ def hello(seed: int, envs: int, duels: int, jitter: float, waves: int, keep_ever
 
 
 class ArenaEnvs:
-    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None, duels: int = 0, levels: list[float] | None = None, build: dict[str, Any] | None = None, rivals: list[dict[str, Any]] | None = None, seats: list[dict[str, Any] | None] | None = None, level: int | None = None, span: tuple[int, int] | None = None, tree_builds: bool = False, roams: int = 0, escorts: int = 0, corners: float = 0.0) -> None:
+    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None, duels: int = 0, levels: list[float] | None = None, build: dict[str, Any] | None = None, rivals: list[dict[str, Any]] | None = None, seats: list[dict[str, Any] | None] | None = None, level: int | None = None, span: tuple[int, int] | None = None, tree_builds: bool = False, roams: int = 0, escorts: int = 0, corners: float = 0.0, gathers: int = 0) -> None:
         self.workers: list[Worker] = []
         self.envs_per_worker = envs_per_worker
         self.count = workers * envs_per_worker
@@ -177,7 +179,7 @@ class ArenaEnvs:
             for index in range(workers):
                 self.workers.append(Worker(index, replays))
             for index, worker in enumerate(self.workers):
-                worker.send_json(HELLO, hello(seed + index * WORKER_SEED_STRIDE, envs_per_worker, duels, jitter, waves, keep_every, levels or [], build, rivals, seats, level, span, tree_builds, roams, escorts, corners))
+                worker.send_json(HELLO, hello(seed + index * WORKER_SEED_STRIDE, envs_per_worker, duels, jitter, waves, keep_every, levels or [], build, rivals, seats, level, span, tree_builds, roams, escorts, corners, gathers))
             hellos = [json.loads(worker.receive(HELLO)[WORD:].decode("utf-8")) for worker in self.workers]
         except BaseException:
             self.close()

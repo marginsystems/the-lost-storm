@@ -22,6 +22,8 @@ import type { Observation } from './observe.ts';
 import { actionFrom, recordReplay } from './replay.ts';
 import type { Roam, RoamOptions, RoamRole, RoamSeat } from './roam.ts';
 import { createRoam, ROAM, roamObservation, stepRoam } from './roam.ts';
+import type { Gather, GatherGoalKind, GatherOptions, GatherStep } from './gather.ts';
+import { createGather, gatherObservation, stepGather } from './gather.ts';
 import { DUEL_KIT } from './kit.ts';
 import type { CornerRole } from './corner.ts';
 import { cornerDrawn, cornerRole } from './corner.ts';
@@ -33,6 +35,7 @@ export interface PoolOptions {
   readonly duels: number;
   readonly roams?: number;
   readonly escorts?: number;
+  readonly gathers?: number;
   readonly jitter: number;
   readonly waves: number;
   readonly keepEvery: number;
@@ -46,7 +49,7 @@ export interface PoolOptions {
   readonly corners?: number;
 }
 
-export type Match = { readonly kind: 'arena'; readonly arena: Arena } | { readonly kind: 'duel'; readonly duel: Duel } | { readonly kind: 'roam'; readonly roam: Roam };
+export type Match = { readonly kind: 'arena'; readonly arena: Arena } | { readonly kind: 'duel'; readonly duel: Duel } | { readonly kind: 'roam'; readonly roam: Roam } | { readonly kind: 'gather'; readonly gather: Gather };
 
 export type MatchKind = Match['kind'] | 'escort';
 
@@ -61,6 +64,11 @@ export interface EpisodeSummary {
   readonly decisions: number;
   readonly role?: RoamRole;
   readonly corner?: CornerRole;
+  readonly goal?: GatherGoalKind;
+  readonly contacts?: number;
+  readonly intrusions?: number;
+  readonly crossings?: number;
+  readonly jitters?: number;
 }
 
 export interface Pool {
@@ -94,19 +102,25 @@ export function escortCount(options: PoolOptions): number {
   return options.escorts ?? 0;
 }
 
+export function gatherCount(options: PoolOptions): number {
+  return options.gathers ?? 0;
+}
+
 export function arenaSeats(options: PoolOptions): number {
-  return options.envs - options.duels * 2 - roamCount(options) - escortCount(options) * 2;
+  return options.envs - options.duels * 2 - roamCount(options) - escortCount(options) * 2 - gatherCount(options);
 }
 
 export function matchCount(options: PoolOptions): number {
-  return arenaSeats(options) + options.duels + roamCount(options) + escortCount(options);
+  return arenaSeats(options) + options.duels + roamCount(options) + escortCount(options) + gatherCount(options);
 }
 
 export function matchKind(options: PoolOptions, index: number): MatchKind {
   const arenas: number = arenaSeats(options);
   if (index < arenas) return 'arena';
   if (index < arenas + options.duels) return 'duel';
-  return index < arenas + options.duels + roamCount(options) ? 'roam' : 'escort';
+  const roams: number = arenas + options.duels + roamCount(options);
+  if (index < roams) return 'roam';
+  return index < roams + escortCount(options) ? 'escort' : 'gather';
 }
 
 function seatCount(match: Match): number {
@@ -117,6 +131,8 @@ function seatCount(match: Match): number {
       return match.duel.seats.length;
     case 'roam':
       return match.roam.seats.length;
+    case 'gather':
+      return 1;
   }
   return 0;
 }
@@ -129,6 +145,8 @@ export function matchWorld(match: Match): World {
       return match.duel.world;
     case 'roam':
       return match.roam.world;
+    case 'gather':
+      return match.gather.world;
   }
   return match;
 }
@@ -141,6 +159,8 @@ export function matchLevel(match: Match): number {
       return match.duel.level;
     case 'roam':
       return match.roam.level;
+    case 'gather':
+      return match.gather.level;
   }
   return match;
 }
@@ -153,6 +173,8 @@ export function matchHeroes(match: Match): PlayerState[] {
       return match.duel.seats.map((seat: DuelSeat): PlayerState => seat.hero);
     case 'roam':
       return match.roam.seats.map((seat: RoamSeat): PlayerState => seat.hero);
+    case 'gather':
+      return [match.gather.hero];
   }
   return match;
 }
@@ -173,6 +195,8 @@ function observeSeats(match: Match): Observation[] {
       const roam: Roam = match.roam;
       return roam.seats.map((seat: RoamSeat): Observation => roamObservation(roam, seat));
     }
+    case 'gather':
+      return [gatherObservation(match.gather)];
   }
   return [];
 }
@@ -238,6 +262,11 @@ function roamOptions(pool: Pool, seed: number, partner: boolean): RoamOptions {
   return level === null ? options : { ...options, level };
 }
 
+function gatherOptions(pool: Pool, seed: number): GatherOptions {
+  const level: number | null = levelIn(pool.levelRng, pool.levels, poolRange(pool.options));
+  return level === null ? { seed } : { seed, level };
+}
+
 function matchOf(pool: Pool, index: number, seed: number): Match {
   const kind: MatchKind = matchKind(pool.options, index);
   switch (kind) {
@@ -248,6 +277,8 @@ function matchOf(pool: Pool, index: number, seed: number): Match {
     case 'roam':
     case 'escort':
       return { kind: 'roam', roam: createRoam(pool.content, roamOptions(pool, seed, kind === 'escort')) };
+    case 'gather':
+      return { kind, gather: createGather(pool.content, gatherOptions(pool, seed)) };
   }
   return { kind: 'arena', arena: createArena(pool.content, arenaOptions(pool, seed)) };
 }
@@ -269,7 +300,7 @@ function freshMatch(pool: Pool, index: number): void {
 }
 
 export function createPool(content: Content, options: PoolOptions): Pool {
-  if (options.duels < 0 || roamCount(options) < 0 || escortCount(options) < 0 || arenaSeats(options) < 0) throw new Error(`${options.duels} duels, ${roamCount(options)} roams and ${escortCount(options)} escorts need ${options.envs - arenaSeats(options)} envs, but there are ${options.envs}`);
+  if (options.duels < 0 || roamCount(options) < 0 || escortCount(options) < 0 || gatherCount(options) < 0 || arenaSeats(options) < 0) throw new Error(`${options.duels} duels, ${roamCount(options)} roams, ${escortCount(options)} escorts and ${gatherCount(options)} gathers need ${options.envs - arenaSeats(options)} envs, but there are ${options.envs}`);
   const pool: Pool = { content, options, matches: [], seen: [], actions: [], levelRng: createRng(options.seed + CURRICULUM.seedSalt), levels: options.levels, nextSeed: options.seed, episodes: 0, best: -Infinity, tag: '' };
   const count: number = matchCount(options);
   for (let index: number = 0; index < count; index += 1) freshMatch(pool, index);
@@ -303,7 +334,7 @@ function worthKeeping(pool: Pool, arena: Arena): boolean {
 }
 
 function kept(pool: Pool, match: Match, env: number): KeptReplay | null {
-  if (match.kind === 'roam') return null;
+  if (match.kind === 'roam' || match.kind === 'gather') return null;
   if (match.kind === 'arena') return worthKeeping(pool, match.arena) ? recordReplay(match.arena, pool.actions[env] ?? [], pool.tag) : null;
   if (!keptOnSchedule(pool)) return null;
   return recordDuelReplay(match.duel, match.duel.seats.map((_seat: DuelSeat, seat: number): number[][] => pool.actions[env + seat] ?? []), pool.tag);
@@ -317,6 +348,8 @@ function recallOf(match: Match, seat: number): Recall | null {
       return match.duel.seats[seat]?.recall ?? null;
     case 'roam':
       return match.roam.seats[seat]?.recall ?? null;
+    case 'gather':
+      return match.gather.recall;
   }
   return null;
 }
@@ -348,6 +381,10 @@ function play(match: Match, commands: readonly Command[][]): Played {
       return stepDuel(match.duel, commands);
     case 'roam':
       return stepRoam(match.roam, commands);
+    case 'gather': {
+      const step: GatherStep = stepGather(match.gather, commands[0] ?? []);
+      return { rewards: [step.reward], done: step.done };
+    }
   }
   return { rewards: [], done: true };
 }
@@ -361,8 +398,13 @@ function summaries(match: Match, env: number): EpisodeSummary[] {
     const roam: Roam = match.roam;
     return roam.seats.map((seat: RoamSeat, index: number): EpisodeSummary => ({ env: env + index, seed: roam.options.seed, situation: 'roam', level: roam.level, outcome: seat.outcome, total: seat.total, waves: 0, decisions: roam.decisions, role: seat.role }));
   }
+  if (match.kind === 'gather') return [gatherSummary(match.gather, env)];
   const duel: Duel = match.duel;
   return duel.seats.map((seat: DuelSeat, index: number): EpisodeSummary => duelSummary(duel, seat, index, env));
+}
+
+function gatherSummary(played: Gather, env: number): EpisodeSummary {
+  return { env, seed: played.options.seed, situation: 'gather', level: played.level, outcome: played.outcome, total: played.total, waves: 0, decisions: played.decisions, goal: played.course.goal.kind, ...played.tally };
 }
 
 function duelSummary(duel: Duel, seat: DuelSeat, index: number, env: number): EpisodeSummary {

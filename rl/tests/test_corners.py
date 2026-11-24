@@ -26,7 +26,8 @@ def test_cornered_seats_are_the_duel_seats_that_started_in_a_corner() -> None:
 
 
 def test_the_log_names_the_corner_columns() -> None:
-    assert LOG_HEADER[-3:] == ["corner_episodes", "corner_won", "corner_timeout"]
+    start = LOG_HEADER.index("corner_episodes")
+    assert LOG_HEADER[start : start + 3] == ["corner_episodes", "corner_won", "corner_timeout"]
 
 
 def test_a_corner_share_needs_duels_to_start_in_a_corner_and_stays_within_one() -> None:
