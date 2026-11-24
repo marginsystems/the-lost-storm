@@ -1,6 +1,6 @@
 import type { Clock, Timers } from './backend.ts';
-import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_ZONE, liveUrl, moveFrame, mutesFrame, readServerFrame, sayable, sayFrame, whisperFrame } from './live-protocol.ts';
-import type { ChatLine, ChatRefusal, LiveMove, LivePlayer, Place, ServerFrame, WhisperDirection, WhisperRefusal, Worn } from './live-protocol.ts';
+import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_ZONE, liveUrl, moveFrame, mutesFrame, nextAct, readServerFrame, sameAct, sayable, sayFrame, whisperFrame } from './live-protocol.ts';
+import type { ChatLine, ChatRefusal, LiveAct, LiveMove, LivePlayer, Place, ServerFrame, WhisperDirection, WhisperRefusal, Worn } from './live-protocol.ts';
 import type { TradeFrame } from '../player-trade/trade-protocol.ts';
 import type { Play } from './play.ts';
 
@@ -49,6 +49,8 @@ export interface Stand {
   readonly x: number;
   readonly z: number;
   readonly facing: number;
+  readonly act?: string | null;
+  readonly actAt?: number;
 }
 
 export interface Live {
@@ -77,7 +79,7 @@ export function retryDelayMs(failures: number, random: number): number {
 }
 
 function moved(from: Place, to: Place): boolean {
-  return Math.abs(from.x - to.x) >= LIVE.stillWithin || Math.abs(from.z - to.z) >= LIVE.stillWithin || Math.abs(from.facing - to.facing) >= LIVE.stillWithin;
+  return Math.abs(from.x - to.x) >= LIVE.stillWithin || Math.abs(from.z - to.z) >= LIVE.stillWithin || Math.abs(from.facing - to.facing) >= LIVE.stillWithin || !sameAct(from.act, to.act);
 }
 
 function quietly(work: () => void): void {
@@ -312,7 +314,8 @@ export function createLive(options: LiveOptions): Live {
   return {
     update(stand: Stand): void {
       if (elsewhere) return;
-      here = { x: stand.x, z: stand.z, facing: stand.facing };
+      const act: LiveAct | undefined = nextAct(here.act, stand.act, stand.actAt, clock());
+      here = act === undefined ? { x: stand.x, z: stand.z, facing: stand.facing } : { x: stand.x, z: stand.z, facing: stand.facing, act };
       const inside: boolean = stand.zone === LIVE_ZONE;
       if (!inside && standDown && roaming === true) standDown = false;
       if (inside || (stand.zone !== null && roaming !== false)) stay(inside);

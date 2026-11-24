@@ -189,6 +189,46 @@
       ]
     },
     {
+      "name": "Yes",
+      "parts": [
+        {
+          "clip": "Yes"
+        }
+      ]
+    },
+    {
+      "name": "Idle_No_Loop",
+      "parts": [
+        {
+          "clip": "Idle_No_Loop"
+        }
+      ]
+    },
+    {
+      "name": "Idle_FoldArms_Loop",
+      "parts": [
+        {
+          "clip": "Idle_FoldArms_Loop"
+        }
+      ]
+    },
+    {
+      "name": "Idle_Rail_Call",
+      "parts": [
+        {
+          "clip": "Idle_Rail_Call"
+        }
+      ]
+    },
+    {
+      "name": "Consume",
+      "parts": [
+        {
+          "clip": "Consume"
+        }
+      ]
+    },
+    {
       "name": "Claw_Lunge",
       "parts": [
         {

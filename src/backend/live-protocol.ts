@@ -1,5 +1,6 @@
 import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
+import { gestureOf } from '../../sim/content/gestures.ts';
 import type { TradeFrame } from '../player-trade/trade-protocol.ts';
 import { LIVE_TRADE_VERSION, readTradeFrame } from '../player-trade/trade-protocol.ts';
 import type { PlayStamp } from './play.ts';
@@ -36,6 +37,11 @@ export const LIVE_ZONE: string = 'hideout';
 
 export type Worn = Readonly<Record<string, string>>;
 
+export interface LiveAct {
+  readonly id: string;
+  readonly at: number;
+}
+
 export interface LivePlayer {
   readonly id: string;
   readonly name: string;
@@ -46,6 +52,7 @@ export interface LivePlayer {
   readonly z: number;
   readonly facing: number;
   readonly resident?: true;
+  readonly act?: LiveAct;
 }
 
 export interface LiveMove {
@@ -53,6 +60,7 @@ export interface LiveMove {
   readonly x: number;
   readonly z: number;
   readonly facing: number;
+  readonly act?: LiveAct;
 }
 
 export type EnterRefusal = 'no_such_zone' | 'no_character' | 'off_floor';
@@ -112,6 +120,7 @@ export interface Place {
   readonly x: number;
   readonly z: number;
   readonly facing: number;
+  readonly act?: LiveAct;
 }
 
 function shortText(value: unknown, limit: number): string | null {
@@ -120,6 +129,16 @@ function shortText(value: unknown, limit: number): string | null {
 
 function finite(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+export function readAct(id: unknown, at: unknown): LiveAct | null {
+  const gesture: string | undefined = gestureOf(id)?.id;
+  if (gesture === undefined) return null;
+  return { id: gesture, at: typeof at === 'number' && Number.isSafeInteger(at) && at >= 0 ? at : 0 };
+}
+
+function withAct<T extends object>(value: T, act: LiveAct | null): T & { readonly act?: LiveAct } {
+  return act === null ? value : { ...value, act };
 }
 
 function readHero(value: unknown): string | null | undefined {
@@ -151,7 +170,7 @@ export function readPlayer(value: unknown): LivePlayer | null {
   const facing: number | null = finite(value['facing']);
   const username: string | null = shortText(value['username'], LIVE_LIMITS.nameChars);
   if (id === null || name === null || hero === undefined || worn === null || x === null || z === null || facing === null) return null;
-  const player: LivePlayer = { id, name, username, hero, worn, x, z, facing };
+  const player: LivePlayer = withAct({ id, name, username, hero, worn, x, z, facing }, readAct(value['act'], value['actAt']));
   return value['resident'] === true ? { ...player, resident: true } : player;
 }
 
@@ -187,7 +206,7 @@ function readMove(value: unknown): LiveMove | null {
   const x: number | null = finite(entry[1]);
   const z: number | null = finite(entry[2]);
   const facing: number | null = finite(entry[3]);
-  return id === null || x === null || z === null || facing === null ? null : { id, x, z, facing };
+  return id === null || x === null || z === null || facing === null ? null : withAct({ id, x, z, facing }, readAct(entry[4], entry[5]));
 }
 
 function readEach<T>(value: unknown, read: (entry: unknown) => T | null, limit: number = LIVE_LIMITS.players): readonly T[] | null {
@@ -285,12 +304,27 @@ function rounded(value: number): number {
   return Math.round(value * LIVE_LIMITS.centimetres) / LIVE_LIMITS.centimetres;
 }
 
+function actFields(act: LiveAct | undefined): { readonly act?: string; readonly actAt?: number } {
+  return act === undefined ? {} : { act: act.id, actAt: act.at };
+}
+
 export function enterFrame(place: Place): string {
-  return JSON.stringify({ type: 'enter', zone: LIVE_ZONE, x: rounded(place.x), z: rounded(place.z), facing: rounded(place.facing) });
+  return JSON.stringify({ type: 'enter', zone: LIVE_ZONE, x: rounded(place.x), z: rounded(place.z), facing: rounded(place.facing), ...actFields(place.act) });
 }
 
 export function moveFrame(place: Place): string {
-  return JSON.stringify({ type: 'move', x: rounded(place.x), z: rounded(place.z), facing: rounded(place.facing) });
+  return JSON.stringify({ type: 'move', x: rounded(place.x), z: rounded(place.z), facing: rounded(place.facing), ...actFields(place.act) });
+}
+
+export function nextAct(previous: LiveAct | undefined, id: string | null | undefined, at: number | undefined, now: number): LiveAct | undefined {
+  const gesture: string | undefined = gestureOf(id)?.id;
+  if (gesture === undefined) return undefined;
+  if (at !== undefined && Number.isFinite(at) && at >= 0) return { id: gesture, at: Math.min(Number.MAX_SAFE_INTEGER, Math.round(at)) };
+  return previous?.id === gesture ? previous : { id: gesture, at: Math.max(0, Math.round(now)) };
+}
+
+export function sameAct(one: LiveAct | undefined, other: LiveAct | undefined): boolean {
+  return one?.id === other?.id && one?.at === other?.at;
 }
 
 export function sayable(text: string): string | null {

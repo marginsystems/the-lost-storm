@@ -16,6 +16,7 @@ import type { InputHooks } from '../input.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import type { Others } from '../render/others.ts';
 import { createOthers } from '../render/others.ts';
+import { createGestureClips, fetchGestureClip } from '../render/gesture-clips.ts';
 import type { Sight } from '../render/sight.ts';
 import { createBrowserStore } from '../storage.ts';
 import type { HideoutChat } from './hideout-chat.ts';
@@ -86,6 +87,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     load: (needs: CharacterNeeds): Promise<void> => loadNeeds(parts.loader, parts.content, parts.dresser, parts.library, needs, parts.gate),
     clock: (): number => performance.now(),
     sight: parts.sight,
+    gestures: createGestureClips(fetchGestureClip(parts.loader, parts.gate)),
   });
   const trade: PlayerTrade = createTradeFlow({ live: server.live, world: (): World | null => current, sync: parts.sync, clock: (): number => Date.now(), timers: WINDOW_TIMERS });
   parts.screen.attachPlayerTrade(trade);

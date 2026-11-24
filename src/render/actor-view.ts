@@ -130,6 +130,7 @@ export interface ActorView {
   sync(dt: number, actor: ActorPose, options: SyncOptions): void;
   setShadowOpacity(amount: number): void;
   startAction(animation: string, windup: number, recovery: number): boolean;
+  gesture(clip: AnimationClip | null, hold: AnimationClip | null): void;
   interrupt(): void;
   hit(color: Color, strength: number, stagger: boolean): void;
   glance(span: number): void;
@@ -269,6 +270,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let glance: Glance | null = null;
   let flinchLeft: number = 0;
   let resume: Resume | null = null;
+  let stand: AnimationClip | null = null;
   const pace: Spring = { value: 1, velocity: 0, target: 1 };
   const heldLevel: Spring = { value: 0, velocity: 0, target: 0 };
   let heldClock: number = 0;
@@ -374,7 +376,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     recovering = false;
     acting = null;
     if (choice === null || gait === undefined) {
-      play(idleClip(rig), fade, 1, false, false);
+      play(stand ?? idleClip(rig), fade, 1, false, false);
       return;
     }
     gaitIndex = choice.index;
@@ -576,6 +578,13 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       resume = null;
       if (timed) follow = { left: windup, speed: clamped((entry.clip.duration - entry.impactTime) / (recovery + ACTOR.actionTail), ACTOR.minFollowSpeed, ACTOR.maxActionSpeed) };
       return true;
+    },
+    gesture(clip: AnimationClip | null, hold: AnimationClip | null): void {
+      stand = hold;
+      acting = null;
+      recovering = true;
+      oneShot = clip === null || dead ? 0 : Math.max(0, clip.duration - ACTOR.recoverFade);
+      if (clip !== null && !dead) play(clip, ACTOR.recoverFade, 1, true, true);
     },
     interrupt(): void {
       if (!dead) react(0);

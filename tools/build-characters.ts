@@ -22,6 +22,13 @@ const KEPT_CLIPS: ReadonlySet<string> = new Set<string>([
   'Death01',
   'Roll',
   'Jump_Land',
+  'Idle_Talking_Loop',
+  'Crouch_Idle_Loop',
+  'Interact',
+  'Sitting_Enter',
+  'Sitting_Idle_Loop',
+  'Sitting_Talking_Loop',
+  'Sitting_Exit',
 ]);
 
 const LOD_MARKER: string = '_LOD';

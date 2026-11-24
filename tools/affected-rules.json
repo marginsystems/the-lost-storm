@@ -34,6 +34,7 @@
     { "kind": "only", "paths": ["public/*.html", "public/landing/**"], "run": ["tools/site/head.test.ts"] },
     { "kind": "only", "paths": ["index.html", "play/index.html", "public/*.webmanifest", "public/*.png", "public/*.svg", "public/*.ico", "public/landing/**"], "run": ["tools/site/head.manifest.test.ts"] },
     { "kind": "only", "paths": ["guide/**"], "run": ["tools/guide/site.test.ts", "tools/site/head.test.ts"] },
+    { "kind": "only", "paths": ["public/models/animations/universal/**"], "run": ["sim/content/gestures.clips.test.ts"] },
     { "kind": "only", "paths": ["public/models/characters/man.glb", "public/models/characters/woman.glb", "public/models/wear/man/**", "public/models/wear/woman/**"], "run": ["tools/fit-over.test.ts"] },
     { "kind": "only", "paths": ["spec/**"], "run": ["src/hud/overlay-core.test.ts"] },
     { "kind": "only", "paths": ["public/models/rl/**", "sim/rl/policy-net.fixture.json"], "run": ["sim/rl/policy-file.test.ts", "sim/rl/policy-net.test.ts", "sim/rl/rival.model.test.ts", "sim/rl/rival.corner.test.ts", "src/rival/rival-model.test.ts"] },

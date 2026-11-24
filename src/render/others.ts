@@ -1,4 +1,4 @@
-import type { Scene } from 'three';
+import type { AnimationClip, Scene } from 'three';
 import { Color, Vector2 } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import { heroRig } from '../../sim/hero.ts';
@@ -21,6 +21,9 @@ import { watchSize } from './element-size.ts';
 import { keepTagInView } from './label-edge.ts';
 import type { MapCharacter } from '../minimap/marks.ts';
 import { SEES_ALL } from './sight.ts';
+import type { GestureClips } from './gesture-clips.ts';
+import type { ClipTimes, GestureCue, GestureState } from './other-gesture.ts';
+import { createGestureState, gestureNeeds, placeAct, queueAct, shownPose, stepGesture } from './other-gesture.ts';
 
 export const OTHERS = {
   labelLift: 0.45,
@@ -73,6 +76,7 @@ export interface OthersOptions {
   readonly load: LoadNeeds;
   readonly clock: () => number;
   readonly sight?: Sight;
+  readonly gestures?: GestureClips;
 }
 
 export interface Others {
@@ -100,6 +104,9 @@ interface Figure {
   readonly ghost: GhostUniforms;
   readonly key: string;
   readonly presence: Fade;
+  readonly loaded: LoadedRig;
+  cued: number;
+  bare: boolean;
 }
 
 interface Other {
@@ -122,6 +129,7 @@ interface Other {
   here: boolean;
   figure: Figure | null;
   plate: ElementSize | null;
+  readonly gesture: GestureState;
 }
 
 interface Dressed {
@@ -177,7 +185,7 @@ export function createOthers(options: OthersOptions): Others {
     view.setShadowOpacity(0);
     scene.add(view.rig.root);
     const presence: Fade = { value: 0, target: other.here ? 1 : 0 };
-    return { view, ghost, key: dressed.key, presence };
+    return { view, ghost, key: dressed.key, presence, loaded, cued: -1, bare: true };
   };
 
   const request = (dressed: Dressed): void => {
@@ -236,6 +244,7 @@ export function createOthers(options: OthersOptions): Others {
       known.resident = player.resident === true;
       known.label.classList.toggle(OTHERS.residentClass, known.resident);
       rename(known, player.name);
+      placeAct(known.gesture, player.act ?? null);
       known.shown.target = 1;
       if (known.figure !== null) known.figure.presence.target = 1;
       return;
@@ -250,7 +259,9 @@ export function createOthers(options: OthersOptions): Others {
     label.append(inner);
     label.style.opacity = '0';
     options.labels.append(label);
-    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null, plate: null });
+    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null, plate: null, gesture: createGestureState() });
+    const added: Other | undefined = others.get(player.id);
+    if (added !== undefined) placeAct(added.gesture, player.act ?? null);
   };
 
   const depart = (other: Other): void => {
@@ -262,7 +273,30 @@ export function createOthers(options: OthersOptions): Others {
 
   const move = (step: LiveMove, at: number): void => {
     const other: Other | undefined = others.get(step.id);
-    if (other !== undefined && other.here) pushSample(other.track, { at, x: step.x, z: step.z, facing: step.facing });
+    if (other === undefined || !other.here) return;
+    pushSample(other.track, { at, x: step.x, z: step.z, facing: step.facing });
+    queueAct(other.gesture, at, step.act ?? null);
+  };
+
+  const cueFigure = (figure: Figure, cue: GestureCue): void => {
+    const gestures: GestureClips | undefined = options.gestures;
+    if (figure.cued === cue.serial || gestures === undefined) return;
+    const once: AnimationClip | null = cue.once === null || figure.bare ? null : gestures.clip(figure.loaded, cue.once);
+    const hold: AnimationClip | null = cue.hold === null ? null : gestures.clip(figure.loaded, cue.hold);
+    if ((cue.hold !== null && hold === null) || (!figure.bare && cue.once !== null && once === null)) return;
+    figure.view.gesture(once, hold);
+    figure.cued = cue.serial;
+    figure.bare = false;
+  };
+
+  const gesture = (other: Other, at: number, dt: number, pose: TrackPose): TrackPose => {
+    const loaded: LoadedRig | null = other.figure?.loaded ?? null;
+    const gestures: GestureClips | undefined = options.gestures;
+    const times: ClipTimes = (name: string): number | null => (loaded === null || gestures === undefined ? null : (gestures.clip(loaded, name)?.duration ?? null));
+    if (loaded !== null && gestureNeeds(other.gesture)) gestures?.want(loaded);
+    stepGesture(other.gesture, at, dt, pose, pose.speed >= TRACK.walkFrom, times);
+    if (other.figure !== null) cueFigure(other.figure, other.gesture.cue);
+    return shownPose(other.gesture, pose, dt);
   };
 
   const shownTarget = (id: string): Other | null => {
@@ -340,9 +374,10 @@ export function createOthers(options: OthersOptions): Others {
         return presence;
       };
       for (const other of others.values()) {
-        const pose: TrackPose | null = poseAt(other.track, at);
-        if (pose === null) continue;
-        if (other.here) redress(other, pose.facing);
+        const tracked: TrackPose | null = poseAt(other.track, at);
+        if (tracked === null) continue;
+        if (other.here) redress(other, tracked.facing);
+        const pose: TrackPose = gesture(other, at, dt, tracked);
         other.shown.value = fadeToward(other.shown.value, other.shown.target, dt);
         for (let index: number = other.old.length - 1; index >= 0; index -= 1) {
           const figure: Figure | undefined = other.old[index];

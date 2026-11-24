@@ -1,0 +1,18 @@
+{
+  "postures": [
+    { "id": "seated", "enter": "Sitting_Enter", "exit": "Sitting_Exit" }
+  ],
+  "gestures": [
+    { "id": "nod", "plays": "once", "clip": "Yes" },
+    { "id": "shake", "plays": "once", "clip": "Idle_No_Loop" },
+    { "id": "call", "plays": "once", "clip": "Idle_Rail_Call" },
+    { "id": "point", "plays": "once", "clip": "Interact" },
+    { "id": "touch", "plays": "once", "clip": "Interact" },
+    { "id": "drink", "plays": "once", "clip": "Consume" },
+    { "id": "talk", "plays": "hold", "clip": "Idle_Talking_Loop" },
+    { "id": "arms_folded", "plays": "hold", "clip": "Idle_FoldArms_Loop" },
+    { "id": "crouch", "plays": "hold", "clip": "Crouch_Idle_Loop" },
+    { "id": "sit", "plays": "posture", "posture": "seated", "clip": "Sitting_Idle_Loop" },
+    { "id": "sit_talk", "plays": "posture", "posture": "seated", "clip": "Sitting_Talking_Loop" }
+  ]
+}
