@@ -1,6 +1,8 @@
 import type { BossAnchor, BossDef, BossPhase, PieceStrikes, SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
+import { PLAYER_SIDE } from '../content/combat-types.ts';
+import { provoke } from './factions.ts';
 import type { MonsterState, World } from './types.ts';
 
 export const COUNT = {
@@ -20,6 +22,29 @@ export function holdersOf(world: World, monster: MonsterState): MonsterState[] {
   const holds: readonly string[] = phaseOf(monster)?.holds ?? [];
   if (holds.length === 0 || !monster.alive) return [];
   return world.monsters.filter((other: MonsterState): boolean => other.alive && other !== monster && holds.includes(other.def.id));
+}
+
+export function keepsPiece(boss: BossDef, pieceId: string): boolean {
+  return boss.phases.some((phase: BossPhase): boolean => phase.holds.includes(pieceId) || phase.unseal.includes(pieceId) || phase.anchor?.monster === pieceId);
+}
+
+export function rouseKeepers(world: World, piece: MonsterState, sourceId: number, faction: string | null): void {
+  if (faction !== null) return;
+  for (const boss of world.monsters) {
+    const def: BossDef | null = boss.def.boss;
+    if (def === null || !boss.alive || !keepsPiece(def, piece.def.id)) continue;
+    provoke(world, boss, sourceId, PLAYER_SIDE);
+    if (boss.aggro) continue;
+    boss.aggro = true;
+    boss.returning = false;
+    world.events.push({ type: 'aggro', monsterId: boss.id });
+  }
+}
+
+export function piecesHolding(world: World, monster: MonsterState): MonsterState[] {
+  const holds: readonly string[] = phaseOf(monster)?.holds ?? [];
+  if (holds.length === 0) return [];
+  return world.monsters.filter((other: MonsterState): boolean => other !== monster && holds.includes(other.def.id));
 }
 
 export function lifeFloor(world: World, monster: MonsterState): number {

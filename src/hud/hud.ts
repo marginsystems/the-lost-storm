@@ -17,6 +17,7 @@ import type { BarkStrip } from './bark-strip.ts';
 import { createBossBar, plateTitle } from './boss-bar.ts';
 import type { BossBar } from './boss-bar.ts';
 import bossCss from './boss.css?inline';
+import bossPiecesCss from './boss-pieces.css?inline';
 import bannersCss from './banners.css?inline';
 import fpsCss from './fps.css?inline';
 import globesCss from './globes.css?inline';
@@ -138,7 +139,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${menuCss}\n${weaponHudCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${bossPiecesCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${menuCss}\n${weaponHudCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {

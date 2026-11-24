@@ -30,7 +30,7 @@ import { flinchTogether } from './unison.ts';
 import { dealtScale } from './weaken.ts';
 import { leechActor, mendActor } from './mend.ts';
 import { leechScale, stunMonster, stunned } from './stun.ts';
-import { holdLine, openScale, strike } from './count.ts';
+import { holdLine, openScale, rouseKeepers, strike } from './count.ts';
 import type { ActionState, Actor, BrandState, BurnState, GuardOutcome, ItemInstance, MonsterState, Offence, PlayerState, Team, World } from './types.ts';
 import { sameFloor } from './floors.ts';
 import { findHero } from './heroes.ts';
@@ -300,6 +300,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
       world.events.push({ type: 'aggro', monsterId: target.id });
     }
     aggroPack(world, target);
+    rouseKeepers(world, target, offence.sourceId, offence.faction);
   }
   const heroShove: boolean = target.kind === 'player' && !steady && readablePush(push);
   const shoveGraced: boolean = heroShove && knockGraced(striker, target);

@@ -2,6 +2,8 @@ import type { BossDef } from '../../sim/content/types.ts';
 import type { MonsterState, World } from '../../sim/world/types.ts';
 import { pickTarget } from '../../sim/world/target.ts';
 import type { Target } from '../../sim/world/target.ts';
+import { createBossPieces } from './boss-pieces.ts';
+import type { BossPieces } from './boss-pieces.ts';
 import { clamp01, el, setClass, setText } from './dom.ts';
 
 const BOSS_BAR = {
@@ -31,6 +33,7 @@ export function createBossBar(root: HTMLElement): BossBar {
   const chip: HTMLDivElement = el('div', 'boss-chip', track);
   const fill: HTMLDivElement = el('div', 'boss-fill', track);
   const marks: HTMLDivElement = el('div', 'boss-marks', track);
+  const pieces: BossPieces = createBossPieces(element);
   let shownId: number | null = null;
   let shownRatio: number = -1;
   let visible: boolean = false;
@@ -53,6 +56,7 @@ export function createBossBar(root: HTMLElement): BossBar {
       const monster: MonsterState | null = fighting(world);
       const boss: BossDef | null = monster?.def.boss ?? null;
       const show: boolean = monster !== null && boss !== null;
+      pieces.update(world, show ? monster : null);
       if (show !== visible) {
         visible = show;
         element.classList.toggle('visible', show);

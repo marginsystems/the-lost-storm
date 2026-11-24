@@ -1,4 +1,5 @@
 import { Vector2 } from 'three';
+import { piecesHolding } from '../../sim/world/count.ts';
 import type { MonsterState, World } from '../../sim/world/types.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import type { TagSize, TagSizes } from './tag-sizes.ts';
@@ -10,6 +11,8 @@ export const HEALTH_BARS = {
   bossWidth: 60,
   height: 3,
   bossHeight: 4,
+  pieceWidth: 64,
+  pieceHeight: 6,
   lift: 0.45,
   fillRate: 16,
   trailRate: 3.2,
@@ -20,6 +23,10 @@ export const HEALTH_BARS = {
   fill: { rgb: '108, 66, 62', alpha: 0.85 },
   trail: { rgb: '214, 200, 186', alpha: 0.26 },
   glow: 'rgba(150, 96, 88, 0.35)',
+  pieceBack: { rgb: '6, 8, 12', alpha: 0.82 },
+  pieceFill: { rgb: '226, 178, 88', alpha: 1 },
+  pieceTrail: { rgb: '250, 236, 206', alpha: 0.5 },
+  pieceGlow: 'rgba(232, 196, 106, 0.6)',
   glowBlur: 5,
   ends: 0.24,
 } as const;
@@ -51,11 +58,50 @@ interface BarStops {
   readonly fill: readonly FadeStop[];
 }
 
+export type BarKind = 'plain' | 'boss' | 'piece';
+
+interface BarLook {
+  readonly width: number;
+  readonly height: number;
+  readonly stops: BarStops;
+  readonly glow: string;
+}
+
 const STOPS: BarStops = {
   back: endStops(HEALTH_BARS.back, HEALTH_BARS.ends),
   trail: endStops(HEALTH_BARS.trail, HEALTH_BARS.ends),
   fill: endStops(HEALTH_BARS.fill, HEALTH_BARS.ends),
 };
+
+const PIECE_STOPS: BarStops = {
+  back: endStops(HEALTH_BARS.pieceBack, HEALTH_BARS.ends),
+  trail: endStops(HEALTH_BARS.pieceTrail, HEALTH_BARS.ends),
+  fill: endStops(HEALTH_BARS.pieceFill, HEALTH_BARS.ends),
+};
+
+const LOOKS: Readonly<Record<BarKind, BarLook>> = {
+  plain: { width: HEALTH_BARS.width, height: HEALTH_BARS.height, stops: STOPS, glow: HEALTH_BARS.glow },
+  boss: { width: HEALTH_BARS.bossWidth, height: HEALTH_BARS.bossHeight, stops: STOPS, glow: HEALTH_BARS.glow },
+  piece: { width: HEALTH_BARS.pieceWidth, height: HEALTH_BARS.pieceHeight, stops: PIECE_STOPS, glow: HEALTH_BARS.pieceGlow },
+};
+
+export function lookOf(kind: BarKind): BarLook {
+  return LOOKS[kind];
+}
+
+export function holdingPieces(world: World): Set<number> {
+  const held: Set<number> = new Set<number>();
+  for (const monster of world.monsters) {
+    if (monster.def.boss === null || !monster.alive) continue;
+    for (const piece of piecesHolding(world, monster)) if (piece.alive) held.add(piece.id);
+  }
+  return held;
+}
+
+export function barKindOf(monster: Pick<MonsterState, 'id' | 'def'>, pieces: ReadonlySet<number>): BarKind {
+  if (monster.def.boss !== null) return 'boss';
+  return pieces.has(monster.id) ? 'piece' : 'plain';
+}
 
 interface BarState {
   fill: number;
@@ -63,6 +109,8 @@ interface BarState {
   hold: number;
   alpha: number;
   wanted: boolean;
+  width: number;
+  height: number;
 }
 
 export interface HealthBars {
@@ -73,8 +121,8 @@ function approach(current: number, target: number, dt: number, rate: number): nu
   return current + (target - current) * (1 - Math.exp(-rate * dt));
 }
 
-export function barWanted(monster: Pick<MonsterState, 'alive' | 'life' | 'maxLife'>): boolean {
-  return monster.alive && monster.life < monster.maxLife;
+export function barWanted(monster: Pick<MonsterState, 'alive' | 'life' | 'maxLife'>, kind: BarKind = 'plain'): boolean {
+  return monster.alive && (monster.life < monster.maxLife || kind === 'piece');
 }
 
 function layer(target: CanvasRenderingContext2D, stops: readonly FadeStop[], left: number, top: number, full: number, span: number, barHeight: number): void {
@@ -123,12 +171,14 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
       if (drawn) context.clearRect(0, 0, width, height);
       drawn = false;
       seen.clear();
+      const pieces: Set<number> = holdingPieces(world);
       for (const monster of world.monsters) {
-        const wanted: boolean = barWanted(monster);
+        const kind: BarKind = barKindOf(monster, pieces);
+        const wanted: boolean = barWanted(monster, kind);
         let state: BarState | undefined = states.get(monster.id);
         if (state === undefined) {
           if (!wanted) continue;
-          state = { fill: 1, trail: 1, hold: 0, alpha: 0, wanted };
+          state = { fill: 1, trail: 1, hold: 0, alpha: 0, wanted, width: lookOf(kind).width, height: lookOf(kind).height };
           states.set(monster.id, state);
         }
         seen.add(monster.id);
@@ -149,18 +199,20 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
           continue;
         }
         camera.project(monster.pos.x, floorUp(monster.pos.x, heightOf(monster.id) + HEALTH_BARS.lift, monster.pos.z), monster.pos.z, point);
-        const big: boolean = monster.def.boss !== null;
-        const barWidth: number = big ? HEALTH_BARS.bossWidth : HEALTH_BARS.width;
-        const barHeight: number = big ? HEALTH_BARS.bossHeight : HEALTH_BARS.height;
+        const look: BarLook = lookOf(kind);
+        state.width = approach(state.width, look.width, dt, HEALTH_BARS.fillRate);
+        state.height = approach(state.height, look.height, dt, HEALTH_BARS.fillRate);
+        const barWidth: number = state.width;
+        const barHeight: number = state.height;
         const left: number = point.x - barWidth / 2;
         const top: number = point.y - barHeight / 2;
         drawn = true;
         context.globalAlpha = state.alpha;
-        layer(context, STOPS.back, left, top, barWidth, barWidth, barHeight);
-        layer(context, STOPS.trail, left, top, barWidth, barWidth * state.trail, barHeight);
-        context.shadowColor = HEALTH_BARS.glow;
+        layer(context, look.stops.back, left, top, barWidth, barWidth, barHeight);
+        layer(context, look.stops.trail, left, top, barWidth, barWidth * state.trail, barHeight);
+        context.shadowColor = look.glow;
         context.shadowBlur = HEALTH_BARS.glowBlur;
-        layer(context, STOPS.fill, left, top, barWidth, barWidth * state.fill, barHeight);
+        layer(context, look.stops.fill, left, top, barWidth, barWidth * state.fill, barHeight);
         context.shadowBlur = 0;
       }
       for (const id of states.keys()) {

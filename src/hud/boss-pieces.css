@@ -1,0 +1,77 @@
+.boss-pieces {
+  width: 62%;
+  max-height: 0;
+  margin: 0 auto;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height var(--spring-smooth-ms) var(--spring-smooth), margin-top var(--spring-smooth-ms) var(--spring-smooth), opacity var(--spring-smooth-ms) var(--spring-smooth), transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.boss-pieces.visible {
+  max-height: 40px;
+  margin-top: 8px;
+  opacity: 1;
+  transform: none;
+}
+
+.boss-pieces-name {
+  font-family: var(--serif);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  color: #e8cf98;
+  text-shadow: var(--legible-shadow);
+}
+
+.boss-pieces-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.boss-piece {
+  position: relative;
+  flex: 0 1 0;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 1px;
+  background: rgba(6, 8, 12, 0.82);
+  opacity: 0;
+  transition: flex-grow var(--spring-bouncy-ms) var(--spring-bouncy), opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.boss-piece.shown {
+  flex-grow: 1;
+  opacity: 1;
+}
+
+.boss-piece.broken.shown {
+  opacity: 0.38;
+}
+
+.boss-piece-fill,
+.boss-piece-chip {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+}
+
+.boss-piece-fill {
+  background: #d8a84a;
+  transition: transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.boss-piece-chip {
+  background: rgba(250, 236, 206, 0.6);
+  transition: transform var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+body.touch .boss-pieces {
+  width: 100%;
+}
+
+body.touch .boss-pieces-name {
+  font-size: 10px;
+}
