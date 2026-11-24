@@ -236,12 +236,13 @@ function struck(hero: PlayerState, skill: SkillDef, origin: ReadonlyVec2, direct
       return false;
     }
     case 'area': {
+      if (delivery.pulse === 0 && !delivery.opening) return false;
       if (delivery.length > 0) {
         const along: number = dot(offset, direction);
-        return delivery.pulse > 0 && along >= delivery.range - reach && along <= delivery.range + delivery.length + reach && Math.abs(offset.x * direction.z - offset.z * direction.x) <= delivery.radius + reach;
+        return along >= delivery.range - reach && along <= delivery.range + delivery.length + reach && Math.abs(offset.x * direction.z - offset.z * direction.x) <= delivery.radius + reach;
       }
       const centre: ReadonlyVec2 = delivery.anchor === 'caster' ? origin : (target ?? origin);
-      return delivery.pulse > 0 && Math.hypot(pos.x - centre.x, pos.z - centre.z) <= delivery.radius + reach;
+      return Math.hypot(pos.x - centre.x, pos.z - centre.z) <= delivery.radius + reach;
     }
     case 'beam': {
       const along: number = dot(offset, direction);

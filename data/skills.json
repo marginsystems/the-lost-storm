@@ -298,6 +298,27 @@
     "vfx": { "style": "slash", "color": "#d08a5a", "light": 0.5, "impact": { "sparks": 6, "flash": 0.3 } }
   },
   {
+    "id": "breaker_fault",
+    "category": "area",
+    "name": "Fault Slam",
+    "description": "The maul strikes a narrow line of sparks through the ground ahead.",
+    "icon": "cleave",
+    "animation": "slam_charged",
+    "manaCost": 0,
+    "cooldown": 3.3,
+    "windup": 1.15,
+    "recovery": 0.95,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 4.7,
+    "delivery": {"type": "area", "range": 0.4, "radius": 0.75, "length": 5.2, "duration": 0.28, "pulse": 0, "pull": 0, "slow": 1, "anchor": "ground", "opening": true},
+    "damage": {"weaponPercent": 1.2, "flatMin": 0, "flatMax": 0},
+    "knockback": 7,
+    "stagger": 0.25,
+    "shake": 0.44,
+    "hitStop": 0.07,
+    "vfx": {"style": "fire", "color": "#d8b38a", "cue": "none", "light": 0.45, "impact": {"sparks": 8, "flash": 0.5}, "punch": {"dust": 8, "kick": 4}, "burn": {"flares": [{"at": 0.04, "strength": 0.65}, {"at": 0.12, "strength": 0.4}], "embers": 8, "light": 2}}
+  },
+  {
     "id": "taker_snatch",
     "category": "area",
     "name": "Snatch",
