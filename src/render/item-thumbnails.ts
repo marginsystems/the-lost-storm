@@ -16,6 +16,7 @@ import type { FramePacer } from './paced-work.ts';
 import { browserPacer } from './paced-work.ts';
 import { texturesOf, uploadPaced } from './warm-up.ts';
 import { readPixelsLater, straightRows } from './pixel-readback.ts';
+import { encodePng } from './png.ts';
 
 export const THUMBNAIL = {
   size: 128,
@@ -107,23 +108,12 @@ export function oneAtATime<T>(items: readonly T[], timers: Timers, ms: number, w
   );
 }
 
-function encode(canvas: HTMLCanvasElement): Promise<string | null> {
-  return new Promise<string | null>((resolve: (url: string | null) => void): void => {
-    canvas.toBlob((blob: Blob | null): void => {
-      resolve(blob === null ? null : URL.createObjectURL(blob));
-    }, 'image/png');
-  });
-}
-
-function encodePixels(canvas: HTMLCanvasElement, pixels: Uint8Array, width: number, height: number): Promise<string | null> {
-  if (canvas.width !== width || canvas.height !== height) {
-    canvas.width = width;
-    canvas.height = height;
+async function encodePixels(pixels: Uint8Array, width: number, height: number): Promise<string | null> {
+  try {
+    return URL.createObjectURL(await encodePng(straightRows(pixels, width, height), width, height));
+  } catch {
+    return null;
   }
-  const context: CanvasRenderingContext2D | null = canvas.getContext('2d', { willReadFrequently: true });
-  if (context === null) return Promise.resolve(null);
-  context.putImageData(new ImageData(straightRows(pixels, width, height), width, height), 0, 0);
-  return encode(canvas);
 }
 
 function pose(template: Object3D, view: PictureView): Group {
@@ -392,7 +382,6 @@ interface Studio {
   readonly camera: OrthographicCamera;
   readonly environment: Texture;
   readonly uploaded: WeakMap<Texture, number>;
-  readonly crop: HTMLCanvasElement;
   readonly close: () => void;
 }
 
@@ -452,7 +441,6 @@ function openStudio(): Studio {
     camera: studioCamera(),
     environment: reflections.texture,
     uploaded: new WeakMap<Texture, number>(),
-    crop: document.createElement('canvas'),
     close: (): void => {
       reflections.dispose();
       room.dispose();
@@ -549,7 +537,7 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
     const images: Map<string, string> = new Map<string, string>();
     if (closed || pictures.length === 0) return images;
     studio ??= openStudio();
-    const { renderer, scene, camera, uploaded, crop } = studio;
+    const { renderer, scene, camera, uploaded } = studio;
     const made: Made = { materials: [], geometries: [] };
     const keepsakes: Keepsake[] = [];
     const shots: Shot[] = [];
@@ -583,7 +571,7 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
       const read: Promise<Uint8Array | null> = gl instanceof WebGL2RenderingContext ? readPixelsLater(gl, { x: 0, y: 0, width: THUMBNAIL.size, height: THUMBNAIL.size }, pacer) : Promise.resolve(null);
       posed.removeFromParent();
       const pixels: Uint8Array | null = await read;
-      const url: string | null = pixels === null ? null : await encodePixels(crop, pixels, THUMBNAIL.size, THUMBNAIL.size);
+      const url: string | null = pixels === null ? null : await encodePixels(pixels, THUMBNAIL.size, THUMBNAIL.size);
       if (url !== null) images.set(shot.name, url);
     });
     for (const material of made.materials) material.dispose();
