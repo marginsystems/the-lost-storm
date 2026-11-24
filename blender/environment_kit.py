@@ -31,6 +31,13 @@ PALETTE: dict[str, tuple[Color, float, float, bool]] = {
     "gold": ((0.62, 0.33, 0.05), 0.6, 0.32, False),
     "flame": ((1.0, 0.56, 0.16), 0.0, 1.0, True),
     "glow": ((1.0, 0.68, 0.3), 0.0, 1.0, True),
+    "brazier_coals": ((0.05, 0.012, 0.004), 0.0, 1.0, True),
+    "brazier_flame": ((0.17, 0.035, 0.008), 0.0, 1.0, True),
+}
+
+EMISSIONS: dict[str, tuple[Color, float]] = {
+    "brazier_coals": ((1.0, 0.29, 0.05), 0.32),
+    "brazier_flame": ((1.0, 0.5, 0.12), 0.95),
 }
 
 
@@ -46,8 +53,9 @@ def material(name: str) -> Material:
     shader.inputs["Metallic"].default_value = metallic
     shader.inputs["Roughness"].default_value = roughness
     if emissive:
-        shader.inputs["Emission Color"].default_value = (color[0], color[1], color[2], 1.0)
-        shader.inputs["Emission Strength"].default_value = EMISSION_STRENGTH
+        tint, strength = EMISSIONS.get(name, (color, EMISSION_STRENGTH))
+        shader.inputs["Emission Color"].default_value = (*tint, 1.0)
+        shader.inputs["Emission Strength"].default_value = strength
     return made
 
 
@@ -209,9 +217,9 @@ class Kit:
             self.limb(name, at, toward + fork * 0.7, length * 0.6, radius * 0.42, depth - 1)
             self.limb(name, at, toward - fork * 0.6, length * 0.5, radius * 0.38, depth - 1)
 
-    def flame(self, x: float, y: float, z: float, size: float) -> None:
-        self.cylinder("flame", x, y, z, size * 0.5, size * 1.6, segments=6, top=0.0)
-        self.cylinder("flame", x, y, z - size * 0.35, size * 0.2, size * 0.36, segments=6, top=size * 0.5)
+    def flame(self, x: float, y: float, z: float, size: float, name: str = "flame") -> None:
+        self.cylinder(name, x, y, z, size * 0.5, size * 1.6, segments=6, top=0.0)
+        self.cylinder(name, x, y, z - size * 0.35, size * 0.2, size * 0.36, segments=6, top=size * 0.5)
 
 
 def unwrap(made: BMesh) -> None:

@@ -330,8 +330,8 @@ def brazier(kit: Kit) -> None:
         kit.rod("iron", (math.cos(angle) * 0.5, math.sin(angle) * 0.5, 0.0), (math.cos(angle) * 0.2, math.sin(angle) * 0.2, 0.95), 0.03)
     kit.cylinder("iron", 0.0, 0.0, 0.85, 0.26, 0.3, segments=12, top=0.52)
     kit.cylinder("iron", 0.0, 0.0, 1.15, 0.55, 0.05, segments=12)
-    kit.blob("glow", 0.0, 0.0, 1.16, 0.42, 0.42, 0.12, 0.04)
-    kit.flame(0.0, 0.0, 1.32, 0.34)
+    kit.blob("brazier_coals", 0.0, 0.0, 1.16, 0.42, 0.42, 0.12, 0.04)
+    kit.flame(0.0, 0.0, 1.32, 0.34, name="brazier_flame")
 
 
 def banner(kit: Kit, half: float, strips: int, emblem: bool) -> None:
