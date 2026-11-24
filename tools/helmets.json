@@ -19,13 +19,13 @@
         "cut": -0.06,
         "floor": null,
         "stretch": [
-          0.85,
-          1,
-          1
+          1.0,
+          0.7,
+          1.25
         ],
         "shift": [
           0,
-          0,
+          0.018,
           0
         ],
         "finish": null
@@ -119,7 +119,7 @@
         "floor": -0.05,
         "stretch": [
           0.85,
-          1,
+          0.8,
           1
         ],
         "shift": [
@@ -143,12 +143,12 @@
         ],
         "clearance": 0.003,
         "crown": 0.003,
-        "forward": 0,
+        "forward": 0.01,
         "lift": 0,
         "widen": 2.5,
         "anchor": "crown",
         "saturation": 1,
-        "cut": 0.03,
+        "cut": 0.07,
         "floor": -0.05,
         "stretch": [
           1,
