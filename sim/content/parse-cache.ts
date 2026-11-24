@@ -1,4 +1,4 @@
-import type { PropCache, PropLid } from './prop-types.ts';
+import type { PropCache, PropLid, PropSeat } from './prop-types.ts';
 import type { Fields } from './read.ts';
 import { ContentError, fields, nonNegative, nullableText, numeric, positive, share } from './read.ts';
 
@@ -20,4 +20,10 @@ export function propLid(value: unknown, where: string): PropLid | null {
   if (value === null || value === undefined) return null;
   const source: Fields = fields(value, where);
   return { seam: positive(source, 'seam', where), hinge: numeric(source, 'hinge', where), degrees: positive(source, 'degrees', where) };
+}
+
+export function propSeat(value: unknown, where: string): PropSeat | null {
+  if (value === null || value === undefined) return null;
+  const source: Fields = fields(value, where);
+  return { x: numeric(source, 'x', where), z: numeric(source, 'z', where), facingDegrees: numeric(source, 'facingDegrees', where) };
 }

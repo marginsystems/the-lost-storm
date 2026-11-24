@@ -308,7 +308,7 @@ export interface SkillTreeNodeDef {
 
 export type { ChartCommon, ChartDef, CommonPlace, SpecialtyDef, ChartGroup, ChartPath, ChartRespec, PointGrant, SkillTarget, SkillVariant, WeaponGroup } from './chart-types.ts';
 
-export type { FlameLight, GlowLight, GlowLit, PropCache, PropClimb, PropDef, PropLid, PropLight, SurfaceDef, SurfaceGlow, SurfaceHeat } from './prop-types.ts';
+export type { FlameLight, GlowLight, GlowLit, PropCache, PropClimb, PropDef, PropLid, PropLight, PropSeat, SurfaceDef, SurfaceGlow, SurfaceHeat } from './prop-types.ts';
 
 export type { AttachmentDef, PictureView, RigActionClip, RigClips, RigPrivateClip, RigContact, RigDef, RigGait, RigSocket, RigStanceClips, Triple } from './rig-types.ts';
 export { PICTURE_VIEWS } from './rig-types.ts';

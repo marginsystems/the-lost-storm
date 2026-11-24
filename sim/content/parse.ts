@@ -3,7 +3,7 @@ import { markerProblems } from './markers.ts';
 import { packRanks, rankProblems } from './parse-ranks.ts';
 import { runTable, runTableProblems } from './parse-run-table.ts';
 import { tailwind, tailwindProblems } from './parse-tailwind.ts';
-import { propCache, propLid } from './parse-cache.ts';
+import { propCache, propLid, propSeat } from './parse-cache.ts';
 import { propClimb } from './parse-climb.ts';
 import { propLight } from './parse-light.ts';
 import { atlasProblems } from './atlas.ts';
@@ -311,6 +311,7 @@ function prop(value: unknown, where: string): PropDef {
     label: nullableText(source, 'label', where),
     cache: propCache(source['cache'], `${where}.cache`),
     lid: propLid(source['lid'], `${where}.lid`),
+    seat: propSeat(source['seat'], `${where}.seat`),
   };
 }
 

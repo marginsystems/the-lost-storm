@@ -71,6 +71,12 @@ export interface PropLid {
   readonly degrees: number;
 }
 
+export interface PropSeat {
+  readonly x: number;
+  readonly z: number;
+  readonly facingDegrees: number;
+}
+
 export const RISE_SIDES = ['+x', '-x', '+z', '-z'] as const;
 export type RiseSide = (typeof RISE_SIDES)[number];
 
@@ -103,4 +109,5 @@ export interface PropDef {
   readonly label: string | null;
   readonly cache: PropCache | null;
   readonly lid: PropLid | null;
+  readonly seat: PropSeat | null;
 }
