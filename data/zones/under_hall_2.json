@@ -1396,7 +1396,7 @@
     {"x":231,"z":99,"members":[{"monster":"silt_ooze","count":2}],"level":14},
     {"x":219,"z":101,"members":[{"monster":"unfinished_borrower","count":2},{"monster":"unfinished_taker","count":1}],"level":14,"waits":{"near":8},"rank":"magic"},
     {"x":253,"z":163,"members":[{"monster":"unfinished_thrower","count":2},{"monster":"unfinished_taker","count":1}],"level":14,"rank":"magic"},
-    {"x":247,"z":141,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":14},
+    {"x":247,"z":141,"members":[{"monster":"unfinished_taker","count":3},{"monster":"echo_hexer","count":1}],"level":14},
     {"x":257,"z":149,"members":[{"monster":"unfinished_thrower","count":2},{"monster":"unfinished_taker","count":1}],"level":14,"rank":"rare"},
     {"x":231,"z":213,"members":[{"monster":"cave_shade","count":1},{"monster":"rift_shade","count":1},{"monster":"bat","count":3},{"monster":"crackle_bat","count":1},{"monster":"crawler","count":1}],"level":14},
     {"x":229,"z":201,"members":[{"monster":"spined_ooze","count":1},{"monster":"mire_spitter","count":1},{"monster":"rat","count":4}],"level":14},

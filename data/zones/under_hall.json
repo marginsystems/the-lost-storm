@@ -1514,7 +1514,7 @@
     {"x":83,"z":34,"members":[{"monster":"echo_shieldbearer","count":1},{"monster":"unfinished_taker","count":1},{"monster":"unfinished_thrower","count":1}],"level":9},
     {"x":68,"z":41,"members":[{"monster":"unfinished_borrower","count":1},{"monster":"unfinished_taker","count":1}],"level":10,"waits":{"near":8}},
     {"x":50,"z":59,"members":[{"monster":"sporecap","count":2}],"level":10},
-    {"x":58,"z":70,"members":[{"monster":"unfinished_thrower","count":1},{"monster":"unfinished_taker","count":1}],"level":10,"rank":"magic"},
+    {"x":58,"z":70,"members":[{"monster":"echo_hexer","count":1},{"monster":"unfinished_taker","count":1}],"level":10,"rank":"magic"},
     {"x":27,"z":92,"members":[{"monster":"wolf","count":2},{"monster":"rat","count":4}],"level":10},
     {"x":40,"z":99,"members":[{"monster":"wolf","count":2},{"monster":"pin_weaver","count":1}],"level":10},
     {"x":24,"z":101,"members":[{"monster":"unfinished_taker","count":2},{"monster":"grave_stitcher","count":1}],"level":10},

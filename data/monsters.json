@@ -120,6 +120,48 @@
     ]
   },
   {
+    "id": "echo_hexer",
+    "name": "Echo Hexer",
+    "rig": "unfinished_thrower",
+    "bodyMaterial": "flesh",
+    "faction": "unfinished",
+    "scale": 1.0,
+    "radius": 0.5,
+    "life": 30,
+    "damageMin": 5,
+    "damageMax": 8,
+    "moveSpeed": 3.6,
+    "xp": 11,
+    "aggroRadius": 10,
+    "behaviour": {
+      "type": "ranged",
+      "preferredRange": 6.8,
+      "retreatRange": 3.2
+    },
+    "skill": "echo_hex",
+    "poise": {
+      "knockback": 0.3,
+      "stagger": 0.3
+    },
+    "loot": {
+      "goldChance": 0.65,
+      "goldMin": 3,
+      "goldMax": 9,
+      "itemChance": 0.2
+    },
+    "color": "#d08a5a",
+    "tint": "#e6d8c8",
+    "gear": [
+      "scrap_javelin"
+    ],
+    "wear": [
+      "stolen_jerkin",
+      "faded_trousers",
+      "torn_hood",
+      "cast_off_boots"
+    ]
+  },
+  {
     "id": "echo_healer",
     "name": "Echo Healer",
     "rig": "unfinished_thrower",
