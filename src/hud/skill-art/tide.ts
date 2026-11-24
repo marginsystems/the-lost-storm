@@ -65,12 +65,12 @@ function axe(x: number, y: number, angle: number, scale: number, edge: string): 
 </g>`;
 }
 
-function wheelAxe(x: number, y: number, angle: number, scale: number): string {
+function wheelAxe(x: number, y: number, angle: number, scale: number, edge: string): string {
   return `<g transform="translate(${x} ${y}) rotate(${angle}) scale(${scale}) translate(-30 -60)">
 <rect x="27.2" y="10" width="5.6" height="50" rx="2.2" fill="url(#wood)"/>
 <path d="M32 12 C 46 6 56 16 55 34 C 50 28 42 26 32 28Z" fill="url(#steel)"/>
 <path d="M32 12 C 40 10 46 13 50 18 L 40 22 L32 21Z" fill="#ffffff" opacity="0.35"/>
-<path d="M55 34 C 56 18 48 8 38 9" stroke="#dffff8" stroke-width="2" fill="none" filter="url(#glow)"/>
+<path d="M55 34 C 56 18 48 8 38 9" stroke="${edge}" stroke-width="2" fill="none" filter="url(#glow)"/>
 <rect x="26.6" y="11" width="6.8" height="18" rx="1.4" fill="url(#iron)"/>
 <circle cx="30" cy="16" r="1.4" fill="#c9d2dc"/><circle cx="30" cy="24" r="1.4" fill="#c9d2dc"/>
 </g>`;
@@ -127,13 +127,40 @@ const cleaveMillwheel: string = art('tide', `
 ${halo(32, 32, 20, '#2fd0bd', 0.5)}
 ${waterArc(millStream)}
 ${waterArc(millStreamB)}
-${wheelAxe(32, 32, 15, 0.46)}
-${wheelAxe(32, 32, 105, 0.46)}
-${wheelAxe(32, 32, 195, 0.46)}
-${wheelAxe(32, 32, 285, 0.46)}
+${wheelAxe(32, 32, 15, 0.46, '#dffff8')}
+${wheelAxe(32, 32, 105, 0.46, '#dffff8')}
+${wheelAxe(32, 32, 195, 0.46, '#dffff8')}
+${wheelAxe(32, 32, 285, 0.46, '#dffff8')}
 <circle cx="32" cy="32" r="5.4" fill="url(#iron)"/>
 <circle cx="32" cy="32" r="2" fill="#c9d2dc"/>
 ${drops([[11, 52, 1.2], [7, 46, 0.9], [15, 58, 0.8], [52, 9, 1.1], [57, 14, 0.8]], '#dffff8')}
+`);
+
+const fireRing: Sweep = { cx: 32, cy: 32, r0: 27, r1: 26, a0: -175, a1: 20, width: 8, squash: 1, taper: 'lens' };
+const fireRingB: Sweep = { cx: 32, cy: 32, r0: 27, r1: 25, a0: 15, a1: 160, width: 7, squash: 1, taper: 'comet' };
+
+function fireArc(sweep: Sweep): string {
+  return `<path d="${band({ ...sweep, width: sweep.width + 5 })}" fill="#ff4a0a" opacity="0.55" filter="url(#bloom)"/>
+<path d="${band(sweep)}" fill="url(#flameFill)"/>
+<path d="${band({ ...sweep, width: sweep.width * 0.4 })}" fill="#ffe07a" opacity="0.9"/>
+<path d="${line(sweep, 0.2, 0.95)}" stroke="#fffbe6" stroke-width="1" fill="none" filter="url(#glow)"/>`;
+}
+
+const cleaveFirewheel: string = art('fire', `
+${halo(32, 34, 22, '#ff5a12', 0.6)}
+<path d="M0 56 C 18 52 46 52 64 56 L64 64 L0 64Z" fill="#0a0302" opacity="0.55"/>
+${fire(8, 60, 9, 2.6, -2)}
+${fire(16, 62, 7, 2.2, -1.5)}
+${fire(4, 52, 6, 2, -2)}
+${fireArc(fireRing)}
+${fireArc(fireRingB)}
+${wheelAxe(32, 32, 15, 0.46, '#ffd27a')}
+${wheelAxe(32, 32, 105, 0.46, '#ffd27a')}
+${wheelAxe(32, 32, 195, 0.46, '#ffd27a')}
+${wheelAxe(32, 32, 285, 0.46, '#ffd27a')}
+<circle cx="32" cy="32" r="5.4" fill="url(#iron)"/>
+<circle cx="32" cy="32" r="2.2" fill="#ffb43a" filter="url(#glow)"/>
+${drops([[54, 8, 1.1], [59, 15, 0.8], [48, 4, 0.7], [58, 44, 0.9], [24, 58, 0.7]], '#ffd27a')}
 `);
 
 const heaveArc: Sweep = { cx: 32, cy: 30, r0: 22, r1: 28, a0: 150, a1: -40, width: 13, squash: 0.95, taper: 'comet' };
@@ -248,6 +275,7 @@ export const TIDE_ART: ReadonlyMap<string, string> = new Map<string, string>([
   ['cleave_whirl', cleaveWhirl],
   ['cleave_millwheel', cleaveMillwheel],
   ['cleave_heave', cleaveHeave],
+  ['cleave_firewheel', cleaveFirewheel],
   ['millrace', millrace],
   ['dodge_roll', dodgeRoll],
   ['dodge_roll_riptide', dodgeRollRiptide],

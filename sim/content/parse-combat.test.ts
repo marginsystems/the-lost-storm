@@ -8,7 +8,7 @@ import type { Content, MonsterDef, SkillDef, ZoneDef } from './types.ts';
 
 void test('a monster without combat traits is steady, unguarded and plain', (): void => {
   assert.deepEqual(monsterTraits({ faction: 'f' }, 'm'), { poise: { knockback: 1, stagger: 1, resolve: 0 }, guard: null, deathSkill: null, summon: null, mods: [], faction: 'f', dormant: null, alarm: null, support: null, barks: [], regen: 0, rank: null, heatproof: false, crust: null, element: null, trail: null });
-  assert.deepEqual(skillMotion({}, 's'), { leap: null, root: 0, hold: 0, stun: 0, echo: 0, echoTurn: 0, echoShare: 1, lifeOnHit: 0, leech: 0, commit: null, leaves: null });
+  assert.deepEqual(skillMotion({}, 's'), { leap: null, root: 0, hold: 0, stun: 0, echo: 0, echoTurn: 0, echoShare: 1, lifeOnHit: 0, leech: 0, commit: null, leaves: null, trail: null });
   assert.equal(skillMotion({ stun: 0.6, leech: 0.03 }, 's').stun, 0.6);
   assert.equal(skillMotion({ stun: 0.6, leech: 0.03 }, 's').leech, 0.03);
   assert.throws(() => skillMotion({ stun: -1 }, 's'), /zero or more/);

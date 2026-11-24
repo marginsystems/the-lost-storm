@@ -23,7 +23,7 @@ void test('a held skill says how to hold it, in its own words when the data give
 void test('Cleave lists what each weapon family makes of it and marks the one in hand', (): void => {
   const rows = formRows(content, 'cleave', 'crossbow');
   assert.deepEqual(rows.map((row): string => row.text), [
-    'Any weapon: Whirling Cleave or Heaving Cleave, then Millwheel',
+    'Any weapon: Whirling Cleave or Heaving Cleave, then Millwheel or Firewheel',
     'Crossbow: Quarrel, then Fanned Quarrel or Heavy Quarrel',
     'Staff: Spell Strike',
   ]);

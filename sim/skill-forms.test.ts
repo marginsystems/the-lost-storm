@@ -13,7 +13,7 @@ function lines(skill: string): string[] {
 
 void test('Cleave turns into the tree\'s forms with any weapon, into Quarrel with a crossbow and Spell Strike with a staff', (): void => {
   assert.deepEqual(lines('cleave'), [
-    'any: Whirling Cleave or Heaving Cleave, then Millwheel',
+    'any: Whirling Cleave or Heaving Cleave, then Millwheel or Firewheel',
     'crossbow: Quarrel, then Fanned Quarrel or Heavy Quarrel',
     'staff: Spell Strike',
   ]);

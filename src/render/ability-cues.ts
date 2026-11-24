@@ -41,13 +41,19 @@ export const CUES = {
   whirlSparkMax: 0.28,
   galeSparks: 7,
   galeMotes: 2,
+  blazeSparks: 12,
+  blazeEmbers: 6,
+  blazeSparkMin: 0.18,
+  blazeSparkMax: 0.36,
+  blazeLight: 3.2,
+  blazeLightHeight: 1.1,
 } as const;
 
 function round(radius: number): GroundLightForm {
   return { kind: 'round', radius, inner: 0, arc: Math.PI * 2 };
 }
 
-export type NovaLook = 'shockwave' | 'whirl' | 'gust' | 'ring' | 'gale' | 'mend';
+export type NovaLook = 'shockwave' | 'whirl' | 'gust' | 'ring' | 'gale' | 'blaze' | 'mend';
 
 const NOVA_LOOK: Readonly<Record<VfxStyle, NovaLook>> = {
   slash: 'whirl',
@@ -66,6 +72,7 @@ const NOVA_LOOK: Readonly<Record<VfxStyle, NovaLook>> = {
   gap: 'ring',
   mend: 'mend',
   gale: 'gale',
+  blaze: 'blaze',
   wave: 'gust',
   fire: 'shockwave',
 };
@@ -98,10 +105,12 @@ export interface AbilityCues {
   whirl(x: number, z: number, radius: number, color: Color): void;
   gust(x: number, z: number, radius: number, color: Color, light: number): void;
   gale(x: number, z: number, radius: number, color: Color): void;
+  blaze(x: number, z: number, radius: number, color: Color): void;
 }
 
 const SHADE: Color = new Color(0x05070b);
 const MIST: Color = new Color(0xdfe8f0);
+const EMBER: Color = new Color(0xffc266);
 
 export function createAbilityCues(kit: CueKit): AbilityCues {
   const shade = (x: number, z: number, radius: number): void => {
@@ -208,6 +217,20 @@ export function createAbilityCues(kit: CueKit): AbilityCues {
         const angle: number = turn + (index / CUES.galeMotes) * Math.PI * 2;
         kit.spray(x + Math.sin(angle) * radius * 0.5, 0.35, z + Math.cos(angle) * radius * 0.5, MIST, 1, { dirX: Math.sin(angle), dirZ: Math.cos(angle), spread: 0.5, speed: { min: radius, max: radius * 1.8 }, lift: { min: 0.3, max: 1.4 }, life: { min: 0.25, max: 0.45 }, size: { min: 0.25, max: 0.5 }, gravity: -0.4, drag: 2.6 });
       }
+    },
+    blaze(x: number, z: number, radius: number, color: Color): void {
+      const turn: number = Math.random() * Math.PI * 2;
+      for (let index: number = 0; index < CUES.blazeSparks; index += 1) {
+        const angle: number = turn + (index / CUES.blazeSparks) * Math.PI * 2;
+        const reach: number = radius * (0.6 + Math.random() * 0.4);
+        kit.spray(x + Math.sin(angle) * reach, CUES.whirlHeight, z + Math.cos(angle) * reach, color, 1, { dirX: Math.cos(angle), dirZ: -Math.sin(angle), spread: 0.3, speed: { min: radius * 2.2, max: radius * 3.6 }, lift: { min: 0, max: 1.2 }, life: { min: 0.16, max: CUES.whirlTime + 0.12 }, size: { min: CUES.blazeSparkMin, max: CUES.blazeSparkMax }, gravity: -0.6, drag: 3, jitter: 0 });
+      }
+      for (let index: number = 0; index < CUES.blazeEmbers; index += 1) {
+        const angle: number = turn + (index / CUES.blazeEmbers) * Math.PI * 2;
+        const reach: number = radius * (0.35 + Math.random() * 0.5);
+        kit.spray(x + Math.sin(angle) * reach, 0.3, z + Math.cos(angle) * reach, EMBER, 1, { dirX: Math.cos(angle), dirZ: -Math.sin(angle), spread: 0.6, speed: { min: 0.4, max: 1.4 }, lift: { min: 1.4, max: 3.2 }, life: { min: 0.45, max: 0.85 }, size: { min: 0.08, max: 0.16 }, gravity: -0.8, drag: 1.6, jitter: 0.6 });
+      }
+      kit.flashLight(x, CUES.blazeLightHeight, z, color, CUES.blazeLight);
     },
     gust(x: number, z: number, radius: number, color: Color, light: number): void {
       shade(x, z, radius);

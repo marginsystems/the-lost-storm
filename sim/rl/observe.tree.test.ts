@@ -44,7 +44,7 @@ void test('the hero sees the stats its tree raises', (): void => {
 
 void test('tree builds across seeds move every new feature, and none reaches the clip', (): void => {
   const moved: Set<string> = new Set<string>();
-  for (let seed: number = 0; seed < 24; seed += 1) {
+  for (let seed: number = 0; seed < 48; seed += 1) {
     const arena: Arena = arenaWith(seed, TOP);
     const self: number[] = selfOf(arena);
     for (const name of BUILT) {

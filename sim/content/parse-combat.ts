@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
 import { choice, ContentError, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillLeap, SummonDef } from './combat-types.ts';
+import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillLeap, SkillTrail, SummonDef } from './combat-types.ts';
 import type { MonsterRank } from './rank-types.ts';
 import { bodyCrust } from './parse-crust.ts';
 import type { Content, MonsterDef, SkillDef } from './types.ts';
@@ -63,6 +63,7 @@ export interface SkillMotion extends SkillEchoing {
   readonly leech: number;
   readonly commit: SkillCommit | null;
   readonly leaves: string | null;
+  readonly trail: SkillTrail | null;
 }
 
 export function skillMotion(source: Fields, where: string): SkillMotion {
@@ -78,6 +79,7 @@ export function skillMotion(source: Fields, where: string): SkillMotion {
     leech: source['leech'] === undefined ? 0 : share(source, 'leech', where),
     commit: optional(source['commit'], `${where}.commit`, commit),
     leaves: source['leaves'] === undefined ? null : text(source, 'leaves', where),
+    trail: optional(source['trail'], `${where}.trail`, skillTrail),
   };
 }
 
@@ -116,6 +118,12 @@ const ELEMENTS = ['storm', 'frost'] as const;
 
 function element(source: Fields, where: string): MonsterElement {
   return { type: choice(source, 'type', ELEMENTS, where), share: share(source, 'share', where), resist: share(source, 'resist', where) };
+}
+
+function skillTrail(source: Fields, where: string): SkillTrail {
+  const limit: number = positive(source, 'limit', where);
+  if (!Number.isInteger(limit)) throw new ContentError(`${where}.limit`, 'expected a whole number');
+  return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit };
 }
 
 function trail(source: Fields, where: string): MonsterTrail {
@@ -268,6 +276,12 @@ export function combatProblems(content: Content): string[] {
       const left: SkillDef | undefined = content.skills.get(used.leaves);
       need(left !== undefined, `skill ${used.id} leaves unknown skill ${used.leaves}`);
       if (left !== undefined) need(left.delivery.type === 'area' && left.leaves === null, `skill ${used.id} leaves ${used.leaves}, which is not a lasting area that leaves nothing itself`);
+    }
+    if (used.trail !== null) {
+      const left: SkillDef | undefined = content.skills.get(used.trail.skill);
+      need(used.press?.type === 'channel', `skill ${used.id} leaves a trail, but only a held channel lays one`);
+      need(left !== undefined, `skill ${used.id} leaves a trail of unknown skill ${used.trail.skill}`);
+      if (left !== undefined) need(left.delivery.type === 'area' && left.delivery.anchor === 'ground' && left.leaves === null && left.trail === null, `skill ${used.id} leaves a trail of ${used.trail.skill}, which is not a lasting area on the ground that leaves nothing itself`);
     }
   }
   return problems;

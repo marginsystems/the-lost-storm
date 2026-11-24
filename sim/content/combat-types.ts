@@ -82,6 +82,12 @@ export interface MonsterElement {
   readonly resist: number;
 }
 
+export interface SkillTrail {
+  readonly skill: string;
+  readonly every: number;
+  readonly limit: number;
+}
+
 export interface MonsterTrail {
   readonly skill: string;
   readonly every: number;

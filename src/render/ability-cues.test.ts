@@ -7,7 +7,8 @@ void test('a nova is drawn by its style, so a blade whirl and a gust never look 
   assert.equal(novaLook('shockwave'), 'shockwave');
   assert.equal(novaLook('slash'), 'whirl');
   assert.equal(novaLook('wind'), 'gust');
-  for (const style of VFX_STYLES) assert.ok(['shockwave', 'whirl', 'gust', 'ring', 'gale', 'mend'].includes(novaLook(style)));
+  assert.equal(novaLook('blaze'), 'blaze');
+  for (const style of VFX_STYLES) assert.ok(['shockwave', 'whirl', 'gust', 'ring', 'gale', 'blaze', 'mend'].includes(novaLook(style)));
 });
 
 void test('a ground cue closes from wide to tight over the wind-up', (): void => {

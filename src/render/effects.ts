@@ -287,6 +287,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     else if (look === 'whirl') cues.whirl(x, z, radius, color);
     else if (look === 'gust') cues.gust(x, z, radius, color, skill.vfx.light);
     else if (look === 'gale') cues.gale(x, z, radius, color);
+    else if (look === 'blaze') cues.blaze(x, z, radius, color);
     else if (look === 'mend') mends.pulse(x, z, radius, color);
     else ring(x, z, radius, color, EFFECTS.ringTime);
   };
