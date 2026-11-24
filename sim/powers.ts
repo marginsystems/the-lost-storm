@@ -4,9 +4,10 @@ import { familyPieces } from './content/power-rules.ts';
 import { baseOf, rarityOf } from './items.ts';
 import type { ReadonlyVec2 } from './math.ts';
 import { directionOf } from './math.ts';
-import { allocatedNodes, inGroup, resolveSkill } from './stats.ts';
+import { allocatedNodes, inGroup, resolveLeft, resolveSkill } from './stats.ts';
 import type { Actor, BuffState, EmpowerState, Equipment, ItemInstance, PlayerState, PowerState, World } from './world/types.ts';
 import { addFlaskCharges } from './world/flask-charges.ts';
+import { findHero } from './world/heroes.ts';
 
 export interface WornPower {
   readonly key: string;
@@ -84,6 +85,12 @@ function targetMatches(content: Content, trigger: PowerTriggerDef, target: Actor
       return target !== null && target.kind === 'monster' && target.def.faction === content.moments.faction;
   }
   return false;
+}
+
+export function leftBehind(world: World, sourceId: number, parent: SkillDef, left: SkillDef): SkillDef {
+  const hero: PlayerState | null = findHero(world, sourceId);
+  if (hero === null) return left;
+  return resolveLeft(world.content, parent, left, hero.allocated, heldPowers(world.content, hero.equipped, hero.powers), hero.wielding);
 }
 
 function cast(world: World, player: PlayerState, effect: CastEffect, at: ReadonlyVec2): void {

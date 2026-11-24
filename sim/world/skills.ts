@@ -12,7 +12,7 @@ import type { TargetFilter } from './combat.ts';
 import { applyHit, offenceOf, targetsWhere, teamOf } from './combat.ts';
 import { clearSpot, passesThrough, stepDash } from './dash.ts';
 import { refreshHero } from './character.ts';
-import { firePowers } from '../powers.ts';
+import { firePowers, leftBehind } from '../powers.ts';
 import { effectiveAttackSpeed } from '../stats.ts';
 import { widenedSkill } from '../widen.ts';
 import { placeArea, timeScaleAt } from './areas.ts';
@@ -303,7 +303,7 @@ function leave(world: World, impact: Impact): void {
   if (left === undefined) return;
   const parent: Delivery = impact.skill.delivery;
   const at: ReadonlyVec2 = parent.type === 'area' && parent.length > 0 ? areaStart(parent, impact.origin, impact.direction, impact.target) : impact.origin;
-  placeArea(world, impact.offence, left, at, impact.direction);
+  placeArea(world, impact.offence, leftBehind(world, impact.offence.sourceId, impact.skill, left), at, impact.direction);
 }
 
 function resolve(world: World, impact: Impact, team: Team): number {

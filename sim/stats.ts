@@ -95,7 +95,7 @@ function scaledDelivery(delivery: Delivery, scale: DeliveryScale): Delivery {
       scaled = { ...delivery, jumpRange: delivery.jumpRange * area, range: delivery.range * range, jumps: Math.max(0, delivery.jumps + scale.chains), falloff: Math.max(0, delivery.falloff + scale.falloff) };
       break;
     case 'area':
-      scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range, duration: delivery.duration * duration };
+      scaled = { ...delivery, radius: delivery.radius * area, length: delivery.length * area, range: delivery.range * range, duration: delivery.duration * duration };
       break;
     case 'blink':
       scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range };
@@ -207,7 +207,14 @@ function pulled(skill: SkillDef, sum: FieldTotal): number {
 
 export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): SkillDef {
   const placed: readonly SkillTreeNodeDef[] = allocatedNodes(content, allocated, held);
-  const { skill, through }: ChosenSkill = chainFrom(content, base, placed, allocated, powers, worn, chosen);
+  return modded(content, chainFrom(content, base, placed, allocated, powers, worn, chosen), base, placed, powers, held);
+}
+
+export function resolveLeft(content: Content, parent: SkillDef, left: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], held: string | null = ANY_WEAPON): SkillDef {
+  return modded(content, { skill: left, through: [parent.id, left.id] }, left, allocatedNodes(content, allocated, held), powers, held);
+}
+
+function modded(content: Content, { skill, through }: ChosenSkill, base: SkillDef, placed: readonly SkillTreeNodeDef[], powers: readonly PowerDef[], held: string | null): SkillDef {
   const empowered: readonly SkillMod[] = empoweredMods(empoweredBy(skill, base), held).map((mod: EmpoweredMod): SkillMod => ({ target: { type: 'skill', skill: skill.id }, field: mod.field, value: mod.value }));
   const mods: SkillMod[] = [...placed.flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, through));
   mods.push(...empowered);

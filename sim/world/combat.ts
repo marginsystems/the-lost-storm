@@ -346,6 +346,8 @@ export function ignite(world: World, offence: Offence, target: Actor, skill: Ski
     held.perTick = Math.max(held.perTick, perTick);
     held.ticksLeft = ticks;
     held.tickLeft = skill.burn.tick;
+  } else if (held !== null && held.perTick * held.ticksLeft >= perTick * ticks) {
+    return;
   } else {
     target.burn = { source: skill.id, skill, offence, perTick, tickLeft: skill.burn.tick, ticksLeft: ticks };
   }
