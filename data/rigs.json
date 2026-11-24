@@ -360,7 +360,7 @@
         },
         "slam_thunderclap": {
           "clip": "Sword_Slam",
-          "impactFraction": 0.245,
+          "impactFraction": 0.274,
           "private": { "clip": "mixamo_gs_casting", "impactFraction": 0.318 }
         },
         "slam_charged_thunderclap_gathered": {
@@ -814,7 +814,7 @@
         },
         "slam_thunderclap": {
           "clip": "Sword_Slam",
-          "impactFraction": 0.245,
+          "impactFraction": 0.274,
           "private": { "clip": "mixamo_gs_casting", "impactFraction": 0.318 }
         },
         "slam_charged_thunderclap_gathered": {
@@ -1266,7 +1266,7 @@
         },
         "slam_thunderclap": {
           "clip": "Sword_Slam",
-          "impactFraction": 0.245,
+          "impactFraction": 0.274,
           "private": { "clip": "mixamo_gs_casting", "impactFraction": 0.318 }
         },
         "slam_charged_thunderclap_gathered": {
@@ -1721,7 +1721,7 @@
         },
         "slam_thunderclap": {
           "clip": "Sword_Slam",
-          "impactFraction": 0.245,
+          "impactFraction": 0.274,
           "private": { "clip": "mixamo_gs_casting", "impactFraction": 0.318 }
         },
         "slam_charged_thunderclap_gathered": {
