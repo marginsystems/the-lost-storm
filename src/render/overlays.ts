@@ -3,13 +3,12 @@ import { shownTitle } from '../hud/npc-title.ts';
 import { anyUpgradeReady } from '../../sim/world/flask-tiers.ts';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
-import type { ItemInstance } from '../../sim/world/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import { stationAt } from '../../sim/world/trade.ts';
 import { questPins } from '../../sim/world/quest-pins.ts';
 import type { TargetSource } from '../../sim/world/objective.ts';
 import { LIVE_TARGETS } from '../../sim/world/objective.ts';
-import type { GroundItem, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
+import type { GroundItem, ItemInstance, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
 import { createTargetBar } from '../hud/target-bar.ts';
 import type { TargetBar } from '../hud/target-bar.ts';
 import { createHealthBars } from './health-bars.ts';
@@ -33,6 +32,7 @@ import type { PanelCover } from './panel-cover.ts';
 import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
 import { blockersIn, glideAt, glidePlace, place } from './overlay-place.ts';
 import type { TagBound } from './overlay-place.ts';
+import type { WorldTag } from './world-tag.ts';
 import { createFloatingNumbers } from './floating-numbers.ts';
 import { placeKey, zonePlaces } from '../../sim/content/markers.ts';
 import type { FloatingNumbers } from './floating-numbers.ts';
@@ -56,7 +56,6 @@ export const OVERLAYS = {
   arrowGap: 1,
   numberHeight: 0.75,
   exitLift: 2.6,
-  npcLift: 0.5,
   npcLeave: 0.52,
   hudBlockers: ['.hud-bottom', '.hud-volume-wrap', '.hud-globe-group', '.hud-xp', '.tc-btn', '.tc-stick', '.tc-menu', '.minimap-corner', '.hud-quests', '.hud-target.visible', '.hud-boss.visible', '.hud-hint.visible', '.tc-stick.intro:not(.on) .tc-stick-hint', '.hud > .hud-banners'],
   hudReadSeconds: 0.25,
@@ -130,6 +129,7 @@ export interface OverlayHooks {
   readonly findLabel: string;
   nameKeys(): readonly string[];
   heightOf(actorId: number): number;
+  labelRiseOf(actorId: number, dt: number): number;
   onPickup(groundId: number): void;
   onLootEnter(item: ItemInstance, x: number, y: number): void;
   onLootMove(x: number, y: number): void;
@@ -144,7 +144,7 @@ export interface Overlays {
   readonly itemNames: ItemNames;
   handle(events: readonly WorldEvent[], world: World): void;
   readHud(dt: number): void;
-  update(dt: number, world: World, hoveredId: number | null): void;
+  update(dt: number, world: World, hoveredId: number | null, tags?: readonly WorldTag[]): void;
   aimExit(exit: string | null): void;
   aimItem(groundId: number | null): void;
   labelHover(): number | null;
@@ -361,7 +361,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         continue;
       }
       label.element.classList.add('leaving');
-      leaving.push({ element: label.element, x: label.npc.pos.x, y: floorUp(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z), z: label.npc.pos.z, left: OVERLAYS.npcLeave, glide: label.glide });
+      leaving.push({ element: label.element, x: label.npc.pos.x, y: floorUp(label.npc.pos.x, hooks.labelRiseOf(label.npc.id, 0), label.npc.pos.z), z: label.npc.pos.z, left: OVERLAYS.npcLeave, glide: label.glide });
     }
     const staying: NpcLabel[] = people.filter((label: NpcLabel): boolean => world.npcs.includes(label.npc));
     peopleOf = world.npcs;
@@ -538,7 +538,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       hudRects = blockersIn(root, OVERLAYS.hudBlockers);
       sinceHudRead = 0;
     },
-    update(dt: number, world: World, hoveredId: number | null): void {
+    update(dt: number, world: World, hoveredId: number | null, tags: readonly WorldTag[] = []): void {
       if (exitsOf !== world.zone) showExits(world);
       tagRects.length = 0;
       plateRects.length = 0;
@@ -584,9 +584,14 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           label.element.classList.toggle('upgrade', upgrade);
         }
         label.element.classList.toggle('aimed', label.npc.id === hoveredId);
-        camera.project(label.npc.pos.x, floorUp(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z), label.npc.pos.z, point);
+        camera.project(label.npc.pos.x, floorUp(label.npc.pos.x, hooks.labelRiseOf(label.npc.id, dt), label.npc.pos.z), label.npc.pos.z, point);
         anchor.copy(point);
         settleTag(label.element, label.glide, label.stack, dt, true);
+      }
+      for (const tag of tags) {
+        camera.project(tag.x, tag.y, tag.z, point);
+        anchor.copy(point);
+        settleTag(tag.element, tag.glide, tag.stack, dt, tag.shown && (tag.edge || anchorInView(point.x, point.y, view)));
       }
       stackTags(dt);
       for (const label of leaving) {

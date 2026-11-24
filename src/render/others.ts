@@ -19,6 +19,10 @@ import type { Sight } from './sight.ts';
 import type { ElementSize } from './element-size.ts';
 import { watchSize } from './element-size.ts';
 import { keepTagInView } from './label-edge.ts';
+import { HEAD_TOP } from './head-top.ts';
+import type { LabelGlide } from './label-glide.ts';
+import { createGlide } from './label-glide.ts';
+import type { WorldTag } from './world-tag.ts';
 import type { MapCharacter } from '../minimap/marks.ts';
 import { SEES_ALL } from './sight.ts';
 import type { GestureClips } from './gesture-clips.ts';
@@ -26,7 +30,6 @@ import type { ClipTimes, GestureCue, GestureState } from './other-gesture.ts';
 import { createGestureState, gestureNeeds, placeAct, queueAct, shownPose, stepGesture } from './other-gesture.ts';
 
 export const OTHERS = {
-  labelLift: 0.45,
   hiddenBelow: 0.01,
   labelClass: 'player-label',
   residentClass: 'resident',
@@ -92,6 +95,18 @@ export interface Others {
   residents(): readonly MapCharacter[];
   anchorOf(id: string): ScreenAnchor | null;
   groundOf(id: string): { readonly x: number; readonly z: number } | null;
+  tags(): readonly WorldTag[];
+}
+
+interface OtherTag {
+  readonly element: HTMLElement;
+  x: number;
+  y: number;
+  z: number;
+  shown: boolean;
+  edge: boolean;
+  readonly glide: LabelGlide;
+  readonly stack: LabelGlide;
 }
 
 interface Fade {
@@ -130,6 +145,7 @@ interface Other {
   figure: Figure | null;
   plate: ElementSize | null;
   readonly gesture: GestureState;
+  readonly tag: OtherTag;
 }
 
 interface Dressed {
@@ -259,7 +275,7 @@ export function createOthers(options: OthersOptions): Others {
     label.append(inner);
     label.style.opacity = '0';
     options.labels.append(label);
-    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null, plate: null, gesture: createGestureState() });
+    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null, plate: null, gesture: createGestureState(), tag: { element: label, x: 0, y: 0, z: 0, shown: false, edge: false, glide: createGlide(), stack: createGlide() } });
     const added: Other | undefined = others.get(player.id);
     if (added !== undefined) placeAct(added.gesture, player.act ?? null);
   };
@@ -391,15 +407,21 @@ export function createOthers(options: OthersOptions): Others {
         const shown: number = Math.min(other.shown.value, presence);
         other.pickable = false;
         if (figure !== null) {
-          camera.project(pose.x, floor + figure.view.height + OTHERS.labelLift, pose.z, point);
+          const rise: number = figure.view.headRise(dt);
+          const tag: OtherTag = other.tag;
+          tag.x = pose.x;
+          tag.y = floor + rise + HEAD_TOP.gap;
+          tag.z = pose.z;
+          tag.edge = other.resident;
+          tag.shown = shown > OTHERS.hiddenBelow;
+          camera.project(tag.x, tag.y, tag.z, point);
           if (other.resident) {
             const plate: ElementSize = plateOf(other);
             const [x, y] = keepTagInView(point.x, point.y, plate.width, plate.height, screen);
             point.set(x, y);
           }
-          other.label.style.transform = `translate3d(${point.x.toFixed(2)}px, ${point.y.toFixed(2)}px, 0)`;
           other.anchor.copy(point);
-          const head: boolean = camera.project(pose.x, floor + figure.view.height, pose.z, point);
+          const head: boolean = camera.project(pose.x, floor + rise, pose.z, point);
           const feet: boolean = camera.project(pose.x, floor, pose.z, foot);
           if (head && feet && other.here && !other.resident && shown >= OTHERS.pickableFrom) {
             const half: number = Math.max(OTHERS.pickMinWidth, Math.abs(foot.y - point.y) * OTHERS.pickWidth) / 2;
@@ -463,6 +485,11 @@ export function createOthers(options: OthersOptions): Others {
     },
     groundOf(id: string): { readonly x: number; readonly z: number } | null {
       return shownTarget(id)?.ground ?? null;
+    },
+    tags(): readonly WorldTag[] {
+      const found: OtherTag[] = [];
+      for (const other of others.values()) if (other.figure !== null) found.push(other.tag);
+      return found;
     },
   };
 }

@@ -551,7 +551,7 @@ async function start(): Promise<void> {
       ward.update(dt, world);
       stage.follow(aim.x, aim.z, world.zone.floorHeight + standLift(world.zone, world.content.props, aim.x, aim.z), dt);
       setCutawayCompany(cutawayCompany({ x: world.player.pos.x, z: world.player.pos.z, floor: 0 }, world.monsters, (x: number, z: number): number => world.zone.floorHeight + standLift(world.zone, world.content.props, x, z)));
-      overlays.update(dt, world, input.hoveredId);
+      overlays.update(dt, world, input.hoveredId, hideout?.tags());
       weather.update(dt, world.player.pos.x, world.player.pos.z, glitchSettings.get().reduceFlashes);
       rain.update(dt, world.player.pos.x, world.player.pos.z, weather.flash, zoneView);
       zoneView.update(now / 1000, dt, world, { look: input.look, figure: figureGauge.measure(actors.hero(), now / 1000), flash: weather.flash });

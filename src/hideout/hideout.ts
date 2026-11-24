@@ -29,6 +29,7 @@ import { createTradeFlow } from '../player-trade/trade-flow.ts';
 import { tradeBusy } from '../player-trade/trade-model.ts';
 import type { OtherTarget } from '../render/others.ts';
 import type { MapCharacter } from '../minimap/marks.ts';
+import type { WorldTag } from '../render/world-tag.ts';
 import type { Mutes } from './mute.ts';
 import { createMutes } from './mute.ts';
 import type { Ground, ResidentVoice } from './resident-voice.ts';
@@ -58,6 +59,7 @@ export interface Hideout {
   hoverPlayer(id: string | null): void;
   pressPlayer(id: string | null): boolean;
   characters(): readonly MapCharacter[];
+  tags(): readonly WorldTag[];
 }
 
 const WINDOW_TIMERS: Timers = {
@@ -126,6 +128,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     },
     pressPlayer: (id: string | null): boolean => menu.press(id),
     characters: (): readonly MapCharacter[] => (current?.zone.id === LIVE_ZONE ? others.residents() : []),
+    tags: (): readonly WorldTag[] => others.tags(),
   };
 }
 

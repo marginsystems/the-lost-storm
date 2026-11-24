@@ -4,7 +4,7 @@ import { drawnBy, SEES_ALL } from './sight.ts';
 import type { Box3, Object3D, Scene } from 'three';
 import { isTimeHeld, knockTime } from '../../sim/world/movement.ts';
 import { Color } from 'three';
-import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
+import type { Content, EmpowerLook, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import type { CostLimit, FramePacer } from './paced-work.ts';
 import { browserPacer, PACED_WORK, workPaced } from './paced-work.ts';
 import type { Look } from '../../sim/wear.ts';
@@ -46,7 +46,6 @@ import type { PresenceLook } from './presence-look.ts';
 import type { RankRim, RankLookView } from './rank-look.ts';
 import { createRankLook } from './rank-look.ts';
 import type { VfxShadow } from '../../sim/content/vfx-types.ts';
-import type { EmpowerLook } from '../../sim/content/types.ts';
 import type { BodySwap, SwapMix } from './body-swap.ts';
 import { startSwap, stepSwap } from './body-swap.ts';
 import { crustBody } from './body-crust.ts';
@@ -115,6 +114,7 @@ export interface Actors {
   handle(events: readonly WorldEvent[], world: World): void;
   refreshWear(world: World): void;
   heightOf(actorId: number): number;
+  headRiseOf(actorId: number, dt: number): number;
   boundsOf(actorId: number, out: Box3): boolean;
   hero(): Object3D;
   standIns(zone: ZoneDef): Object3D[];
@@ -406,6 +406,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     },
     heightOf(actorId: number): number {
       return viewOf(actorId)?.height ?? ACTORS.defaultHeight;
+    },
+    headRiseOf(actorId: number, dt: number): number {
+      return viewOf(actorId)?.headRise(dt) ?? ACTORS.defaultHeight;
     },
     sync(dt: number, current: World, hoveredId: number | null): void {
       if (sparesDue !== null) {

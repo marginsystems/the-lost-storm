@@ -54,7 +54,10 @@
 }
 
 .player-label span {
-  transition: background-color var(--spring-snappy-ms) var(--spring-snappy), box-shadow var(--spring-snappy-ms) var(--spring-snappy);
+  transition:
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    box-shadow var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .player-label.lit span {

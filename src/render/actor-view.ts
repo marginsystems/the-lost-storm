@@ -1,9 +1,7 @@
-import type { AnimationAction, AnimationClip } from 'three';
-import type { Box3, Mesh, Object3D } from 'three';
+import type { AnimationAction, AnimationClip, Box3, Mesh, Object3D } from 'three';
 import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial, Quaternion, Vector3 } from 'three';
-import type { WakePose } from './wake-pose.ts';
+import type { Contact, WakePose } from './wake-pose.ts';
 import { restOffset, restWeight, WAKE_POSE } from './wake-pose.ts';
-import type { Contact } from './wake-pose.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { Motion } from '../../sim/world/types.ts';
 import { angleBetween, turnToward } from '../../sim/world/movement.ts';
@@ -20,6 +18,7 @@ import type { RestShadows } from './rest-shadows.ts';
 import { createRestShadows } from './rest-shadows.ts';
 import type { Spring } from '../hud/character-spring.ts';
 import { springTo, stepSpring } from '../hud/character-spring.ts';
+import { headReader } from './head-top.ts';
 import type { AnimationBank } from './animation-bank.ts';
 import { animationBank, closeRate } from './animation-bank.ts';
 import type { SpinCentre } from './spin-centre.ts';
@@ -127,6 +126,7 @@ export interface SyncOptions {
 export interface ActorView {
   readonly rig: RigInstance;
   readonly height: number;
+  readonly headRise: (dt: number) => number;
   sync(dt: number, actor: ActorPose, options: SyncOptions): void;
   setShadowOpacity(amount: number): void;
   startAction(animation: string, windup: number, recovery: number): boolean;
@@ -386,6 +386,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   return {
     rig,
     height: (rig.def.height * rig.def.scale + rig.def.lift) * scale,
+    headRise: headReader(rig.root, head ?? null, (rig.def.height * rig.def.scale + rig.def.lift) * scale),
     face(heading: number): void {
       yaw = heading;
       rig.root.rotation.y = yaw;

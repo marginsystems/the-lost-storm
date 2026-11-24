@@ -6,6 +6,7 @@ import type { Actors } from './render/actors.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import type { Overlays } from './render/overlays.ts';
 import { createOverlays } from './render/overlays.ts';
+import { HEAD_TOP } from './render/head-top.ts';
 import type { SettingsStore } from './settings/store.ts';
 
 export interface PlayOverlaysDeps {
@@ -24,6 +25,7 @@ export function createPlayOverlays(deps: PlayOverlaysDeps): Overlays {
     findLabel: findLabel(deps.touch),
     nameKeys: (): readonly string[] => gameSettings.keys().bindingsOf('names'),
     heightOf: (id: number): number => actors.heightOf(id),
+    labelRiseOf: (id: number, dt: number): number => actors.headRiseOf(id, dt) + HEAD_TOP.gap,
     onPickup: (groundId: number): void => {
       hud.hideGroundItem();
       send({ type: 'pickup', groundId });
