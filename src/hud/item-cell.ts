@@ -5,6 +5,7 @@ import type { ItemInstance } from '../../sim/world/types.ts';
 import { setCount } from './cell-count.ts';
 import type { HudContext } from './context.ts';
 import { el, replay } from './dom.ts';
+import { setPlate } from './item-art/plate.ts';
 import { arrivalOrder, setPicture } from './item-picture.ts';
 import { itemTooltip } from './item-tooltip.ts';
 import { attachTooltip } from './tooltip.ts';
@@ -47,7 +48,7 @@ export function showItem(context: HudContext, view: ItemCell, item: ItemInstance
   }
   const base: ItemBaseDef | null = baseOf(context.api.world.content, item);
   setPicture(view.item, image, base, arriving ? arrivalOrder(item.uid) : null);
-  view.item.style.setProperty('--rarity', rarityOf(context.api.world.content, item).color);
+  setPlate(view.item, rarityOf(context.api.world.content, item));
   view.item.classList.add('filled');
   if (!arriving) replay(view.item, 'pop');
   return true;

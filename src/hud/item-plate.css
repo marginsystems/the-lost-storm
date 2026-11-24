@@ -1,0 +1,25 @@
+.cell-item,
+.tip-picture {
+  background-image: var(--plate, none);
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.tip-picture {
+  position: relative;
+  overflow: hidden;
+}
+
+.cell-item::after,
+.tip-picture::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: var(--plate-cover, none);
+  background-position: center;
+  background-size: 100% 100%;
+  pointer-events: none;
+  opacity: 0.85;
+}

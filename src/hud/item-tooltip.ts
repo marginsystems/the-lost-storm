@@ -14,6 +14,7 @@ import type { ItemInstance } from '../../sim/world/types.ts';
 import { heldText } from './cell-count.ts';
 import { el, label } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
+import { setPlate } from './item-art/plate.ts';
 import { setPicture } from './item-picture.ts';
 import { baseFamily, familyLine, familyRow } from './weapon-family.ts';
 
@@ -119,7 +120,7 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   const base: ItemBaseDef | null = baseOf(content, item);
   const head: HTMLDivElement = el('div', 'tip-head', root);
   const picture: HTMLDivElement = el('div', 'tip-picture', head);
-  picture.style.setProperty('--rarity', rarity.color);
+  setPlate(picture, rarity);
   setPicture(picture, api.itemImage(item), base);
   const heading: HTMLDivElement = el('div', 'tip-heading', head);
   const title: HTMLDivElement = label('tip-title', itemName(content, item), heading);

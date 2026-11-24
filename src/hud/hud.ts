@@ -69,6 +69,7 @@ import menuCss from './menu.css?inline';
 import { PICKUP_NOTE, pickupLine } from './pickup-notes.ts';
 import type { MenuButton } from './menu.ts';
 import panelsCss from './panels.css?inline';
+import itemPlateCss from './item-plate.css?inline';
 import { createQuestTracker } from './quest-tracker.ts';
 import type { FrameTargets } from '../../sim/world/objective.ts';
 import { createFrameTargets } from '../../sim/world/objective.ts';
@@ -139,7 +140,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${bossPiecesCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${menuCss}\n${weaponHudCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${itemPlateCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${bossPiecesCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${menuCss}\n${weaponHudCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {

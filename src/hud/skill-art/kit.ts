@@ -23,7 +23,7 @@ export const ART = {
   radius: 7,
 } as const;
 
-function defs(palette: Palette): string {
+export function paintDefs(palette: Palette): string {
   return `<defs>
 <radialGradient id="bg" cx="0.5" cy="0.42" r="0.78"><stop offset="0" stop-color="${palette.core}"/><stop offset="1" stop-color="${palette.deep}"/></radialGradient>
 <radialGradient id="vig" cx="0.5" cy="0.5" r="0.72"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.62"/></radialGradient>
@@ -50,8 +50,16 @@ export function art(element: Element, body: string): string {
   return paint(PALETTES[element], body);
 }
 
+export const BACKDROP: string = '<rect width="64" height="64" fill="url(#bg)"/>';
+
+export const COVER: string = '<rect width="64" height="64" fill="url(#vig)"/><rect width="64" height="64" fill="#fff" filter="url(#grain)"/><rect width="64" height="64" fill="url(#sheen)"/>';
+
+export function plateSvg(palette: Palette, body: string): string {
+  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${paintDefs(palette)}<g clip-path="url(#plate)">${body}</g></svg>`;
+}
+
 export function paint(palette: Palette, body: string): string {
-  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${defs(palette)}<g clip-path="url(#plate)"><rect width="64" height="64" fill="url(#bg)"/>${body}<rect width="64" height="64" fill="url(#vig)"/><rect width="64" height="64" fill="#fff" filter="url(#grain)"/><rect width="64" height="64" fill="url(#sheen)"/></g></svg>`;
+  return plateSvg(palette, `${BACKDROP}${body}${COVER}`);
 }
 
 export function flame(x: number, y: number, height: number, width: number, lean: number): string {
