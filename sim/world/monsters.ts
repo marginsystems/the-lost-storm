@@ -23,6 +23,7 @@ import type { Side } from './factions.ts';
 import { homeReached, LEASH, shellPoint, shutOut } from './leash.ts';
 import { wardedFrom } from './wards.ts';
 import { revivable } from './revive.ts';
+import { hasWoundedAlly } from './heal.ts';
 import { ledAim } from './lead.ts';
 import { roomAhead } from './queue.ts';
 import { insideShell } from './shell.ts';
@@ -393,7 +394,13 @@ function wake(world: World, monster: MonsterState): boolean {
 
 function support(world: World, monster: MonsterState): boolean {
   const skill: SkillDef | undefined = monster.def.support === null ? undefined : world.content.skills.get(monster.def.support);
-  if (skill === undefined || skill.delivery.type !== 'revive' || blockedReason(monster, skill) !== null) return false;
+  if (skill === undefined || blockedReason(monster, skill) !== null) return false;
+  if (skill.delivery.type === 'nova' && skill.delivery.side === 'allies' && skill.mend !== null) {
+    if (!hasWoundedAlly(world, sideOfMonster(monster), { skill, mend: skill.mend, origin: monster.pos, radius: skill.delivery.radius })) return false;
+    startSkill(world, monster, skill, directionOf(monster.facing));
+    return true;
+  }
+  if (skill.delivery.type !== 'revive') return false;
   const fallen: MonsterState | undefined = revivable(world, monster.def.faction, skill.delivery, monster.pos)[0];
   if (fallen === undefined) return false;
   startSkill(world, monster, skill, { x: fallen.pos.x - monster.pos.x, z: fallen.pos.z - monster.pos.z });

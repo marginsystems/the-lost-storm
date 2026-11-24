@@ -2816,6 +2816,10 @@
         "throw": {
           "clip": "Throw",
           "impactFraction": 0.28
+        },
+        "cast": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
         }
       }
     },

@@ -44,6 +44,15 @@ function within(world: World, pulse: MendPulse, target: Actor): boolean {
   return Math.hypot(target.pos.x - pulse.origin.x, target.pos.z - pulse.origin.z) <= pulse.radius + target.radius && sameFloor(world, pulse.origin, target.pos);
 }
 
+export function hasWoundedAlly(world: World, side: Side, pulse: MendPulse): boolean {
+  const needsMend = (target: Actor): boolean => {
+    if (target.id === side.sourceId || target.life >= target.maxLife || !within(world, pulse, target) || !isAlly(world, side, target)) return false;
+    const amount: number = mendAmount(pulse.mend, target);
+    return amount > 0 && target.maxLife - target.life >= amount;
+  };
+  return world.monsters.some(needsMend) || world.heroes.some(needsMend);
+}
+
 export function mendAllies(world: World, side: Side, pulse: MendPulse): number {
   let healed: number = 0;
   for (const target of alliesOf(world, side)) {

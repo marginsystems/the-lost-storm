@@ -315,10 +315,12 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     }
     const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
     if (monster === undefined) return;
-    const type: Delivery['type'] = event.skill.delivery.type;
+    const delivery: Delivery = event.skill.delivery;
+    const type: Delivery['type'] = delivery.type;
     const casts: boolean = type === 'projectile' || type === 'mark' || type === 'field' || type === 'revive';
     const lands: { readonly x: number; readonly z: number } = landsAhead(event.skill) || type === 'field' ? (monster.action?.target ?? monster.pos) : monster.pos;
-    if (!casts || type === 'projectile' || type === 'field') telegraphs.start(monster.id, 'actor', lands, event.direction, event.skill, event.windup, TELEGRAPH, event.skill.leap?.lane === true ? Math.hypot(lands.x - monster.pos.x, lands.z - monster.pos.z) : 0);
+    const warning: Color = delivery.type === 'nova' && delivery.side === 'allies' ? colorOf(event.skill.vfx.color) : TELEGRAPH;
+    if (!casts || type === 'projectile' || type === 'field') telegraphs.start(monster.id, 'actor', lands, event.direction, event.skill, event.windup, warning, event.skill.leap?.lane === true ? Math.hypot(lands.x - monster.pos.x, lands.z - monster.pos.z) : 0);
     if (casts) spray(monster.pos.x + event.direction.x * 0.6, 1.7, monster.pos.z + event.direction.z * 0.6, colorOf(event.skill.vfx.color), 16, { speed: { min: 0.3, max: 1.6 }, lift: { min: 0.3, max: 2.2 }, life: { min: 0.3, max: event.windup + 0.1 }, gravity: -1, size: { min: 0.25, max: 0.55 } });
   };
 

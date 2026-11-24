@@ -226,7 +226,7 @@ export function combatProblems(content: Content): string[] {
     if (def.support !== null) {
       const helper: SkillDef | undefined = content.skills.get(def.support);
       need(helper !== undefined, `monster ${def.id} supports with unknown skill ${def.support}`);
-      if (helper !== undefined) need(helper.delivery.type === 'revive', `monster ${def.id} supports with skill ${def.support}, which raises nobody`);
+      if (helper !== undefined) need(helper.delivery.type === 'revive' || (helper.delivery.type === 'nova' && helper.delivery.side === 'allies' && helper.mend !== null), `monster ${def.id} supports with skill ${def.support}, which neither raises nor mends allies`);
     }
     need(def.dormant === null || def.boss === null, `boss ${def.id} cannot be dormant`);
     need(def.alarm === null || def.boss === null, `boss ${def.id} cannot raise an alarm`);
