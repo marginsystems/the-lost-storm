@@ -1,3 +1,5 @@
+import { skillArt } from './skill-art/index.ts';
+
 const OPEN: string = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
 const CLOSE: string = '</svg>';
 
@@ -65,5 +67,5 @@ export function iconBody(id: string): string {
 }
 
 export function iconSvg(id: string): string {
-  return `${OPEN}${iconBody(id)}${CLOSE}`;
+  return skillArt(id) ?? `${OPEN}${iconBody(id)}${CLOSE}`;
 }

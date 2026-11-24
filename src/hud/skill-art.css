@@ -1,0 +1,38 @@
+.skill-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.slot-icon:has(> .skill-art) {
+  inset: 2px;
+  filter: none;
+}
+
+.skill-choice-icon:has(> .skill-art) {
+  inset: 3px;
+  filter: none;
+}
+
+.skill-choice.locked .skill-choice-icon .skill-art {
+  filter: grayscale(1);
+}
+
+.tc-icon:has(> .skill-art) {
+  width: 62%;
+  height: 62%;
+}
+
+.slot:has(.skill-art) .slot-key {
+  color: #efe6d6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 5px rgba(0, 0, 0, 0.85);
+}
+
+.slot:has(.skill-art) .slot-key.glyph {
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.95));
+}
+
+.hint-icon .skill-art {
+  border-radius: 2px;
+}
