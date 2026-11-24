@@ -498,7 +498,8 @@ async function start(): Promise<void> {
     last = now;
     let events: WorldEvent[] = [];
     const worldDt: number = dt * momentScale(moment, now / 1000);
-    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, hidden: (HOST.pauseWhenHidden && document.hidden) || portal.paused(), presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: stage.gpuQueued() });
+    const queuedAtStart: number = stage.gpuQueued();
+    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, hidden: (HOST.pauseWhenHidden && document.hidden) || portal.paused(), presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: queuedAtStart });
     if (gate.present) {
       overlays.readHud(dt);
       objectiveMarker.readHud(dt);
@@ -584,7 +585,7 @@ async function start(): Promise<void> {
       stage.render();
       perf.afterRender();
       const moved: boolean = renderScale.fit(stage.renderer.getPixelRatio());
-      if ((!transition.blocking && renderScale.observe({ intervalMs: interval, workMs: performance.now() - now })) || moved) stage.setRenderScale(renderScale.scale);
+      if ((!transition.blocking && renderScale.observe({ intervalMs: interval, workMs: performance.now() - now, gpuQueued: queuedAtStart })) || moved) stage.setRenderScale(renderScale.scale);
     }
     sinceSave += dt;
     if (urgent || sinceSave > GAME.saveEvery) persist();

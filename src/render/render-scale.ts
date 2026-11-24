@@ -2,6 +2,7 @@ export const RENDER_SCALE = {
   budgetMs: 1000 / 60,
   missedAfter: 1.5,
   gpuWorkShare: 0.6,
+  gpuBacklog: 2,
   ignoreOverMs: 250,
   window: 30,
   dropShare: 0.12,
@@ -18,6 +19,7 @@ export const RENDER_SCALE = {
 export interface FrameSample {
   readonly intervalMs: number;
   readonly workMs: number;
+  readonly gpuQueued: number;
 }
 
 export interface RenderScale {
@@ -79,7 +81,7 @@ export function createRenderScale(pixelRatio: number, fps: number | null = null)
         return false;
       }
       const missed: boolean = sample.intervalMs > budgetMs * RENDER_SCALE.missedAfter;
-      const onGpu: boolean = missed && sample.workMs < budgetMs * RENDER_SCALE.gpuWorkShare;
+      const onGpu: boolean = missed && (sample.workMs < budgetMs * RENDER_SCALE.gpuWorkShare || sample.gpuQueued >= RENDER_SCALE.gpuBacklog);
       windowFrames += 1;
       if (onGpu) windowMisses += 1;
       calmFrames += 1;

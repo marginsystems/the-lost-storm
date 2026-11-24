@@ -3,8 +3,8 @@ import { test } from 'node:test';
 import type { FrameSample, RenderScale } from './render-scale.ts';
 import { createRenderScale, frameBudgetMs, RENDER_SCALE } from './render-scale.ts';
 
-const PACED: FrameSample = { intervalMs: 33.3, workMs: 5 };
-const PACED_MISSED: FrameSample = { intervalMs: 66.7, workMs: 5 };
+const PACED: FrameSample = { intervalMs: 33.3, workMs: 5, gpuQueued: 1 };
+const PACED_MISSED: FrameSample = { intervalMs: 66.7, workMs: 5, gpuQueued: 1 };
 
 function feed(scale: RenderScale, sample: FrameSample, count: number): number {
   let changes: number = 0;
