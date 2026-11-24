@@ -22,6 +22,7 @@ export interface NameEchoDeps {
 export interface NameEcho {
   update(world: World): void;
   spokenName(): string | null;
+  forget(): void;
 }
 
 type Moment = 'risen' | 'near';
@@ -59,6 +60,7 @@ export function createNameEcho(deps: NameEchoDeps): NameEcho {
   const asked: Set<Moment> = new Set<Moment>();
   let lying: boolean = false;
   let risenAt: number | null = null;
+  let round: number = 0;
 
   const say = (moment: Moment, waited: number): void => {
     if (said.has(moment) || (asking && waited < NAME_ECHO.voiceWait)) return;
@@ -73,20 +75,31 @@ export function createNameEcho(deps: NameEchoDeps): NameEcho {
     if (voice !== null || asking || asked.has(moment)) return;
     asked.add(moment);
     asking = true;
+    const mine: number = round;
     const load = async (): Promise<void> => {
       await deps.refreshName();
-      voice = await deps.fetchVoice();
+      const fetched: SpokenName | null = await deps.fetchVoice();
+      if (mine === round) voice = fetched;
     };
     load()
       .catch((): void => undefined)
       .finally((): void => {
-        asking = false;
+        if (mine === round) asking = false;
       });
   };
 
   return {
     spokenName(): string | null {
       return voice?.name ?? null;
+    },
+    forget(): void {
+      round += 1;
+      said.clear();
+      asked.clear();
+      voice = null;
+      asking = false;
+      lying = false;
+      risenAt = null;
     },
     update(world: World): void {
       if (world.zone.void === null) return;

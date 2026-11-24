@@ -9,6 +9,7 @@ import type { SyncRecord } from './sync-record.ts';
 export interface Minter {
   pump(world: World): boolean;
   unverified(world: World, item: ItemInstance): boolean;
+  forget(): void;
 }
 
 export interface MinterOptions {
@@ -49,6 +50,7 @@ export function createMinter(options: MinterOptions): Minter {
   };
   let asking: boolean = false;
   let askedAt: number = Number.NEGATIVE_INFINITY;
+  let round: number = 0;
 
   const token = (): string | null => {
     const record: SyncRecord | null = parseSyncRecord(options.store.read(SYNC_KEY), options.serverUrl);
@@ -58,8 +60,10 @@ export function createMinter(options: MinterOptions): Minter {
   const ask = (held: string): void => {
     asking = true;
     askedAt = clock();
+    const mine: number = round;
     const receive = async (): Promise<void> => {
       const answer: TicketAnswer = await api.tickets(held, AbortSignal.timeout(MINTER.requestMs));
+      if (mine !== round) return;
       asking = false;
       if (answer.kind !== 'ok') return;
       hand = answer.hand;
@@ -70,15 +74,17 @@ export function createMinter(options: MinterOptions): Minter {
     void receive();
   };
 
-  const send = (held: string, claim: MintClaim, attempt: number): void => {
+  const send = (held: string, claim: MintClaim, attempt: number, mine: number): void => {
     const settle = async (): Promise<void> => {
+      if (mine !== round) return;
       const answer: MintAnswer = await api.mint(held, claim, AbortSignal.timeout(MINTER.requestMs));
+      if (mine !== round) return;
       if (answer.kind === 'minted') {
         confirmed.push({ uid: claim.uid, item: answer.item });
         return;
       }
       if (answer.kind === 'failed' && attempt < MINTER.attempts) {
-        timers.after(MINTER.retryMs * attempt, (): void => send(held, claim, attempt + 1));
+        timers.after(MINTER.retryMs * attempt, (): void => send(held, claim, attempt + 1, mine));
         return;
       }
       pending.delete(claim.uid);
@@ -112,10 +118,21 @@ export function createMinter(options: MinterOptions): Minter {
       const claims: readonly MintClaim[] = takeClaims(world);
       for (const claim of claims) {
         pending.add(claim.uid);
-        send(held, claim, 1);
+        send(held, claim, 1, round);
       }
       if (!asking && now - askedAt >= MINTER.refillGapMs && stale(world, now)) ask(held);
       return changed;
+    },
+    forget(): void {
+      round += 1;
+      pending.clear();
+      confirmed.length = 0;
+      hand = null;
+      handAt = 0;
+      handLifeMs = Number.POSITIVE_INFINITY;
+      seen.clear();
+      asking = false;
+      askedAt = Number.NEGATIVE_INFINITY;
     },
     unverified: (world: World, item: ItemInstance): boolean => item.ledger === null && !pending.has(item.uid) && (token() === null || !world.ledger.waiting.some((late): boolean => late.uid === item.uid)),
   };

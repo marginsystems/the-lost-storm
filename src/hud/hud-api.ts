@@ -35,6 +35,7 @@ export interface Hud {
   update(dt: number, view: FrameView): void;
   readInput(source: () => string): void;
   refreshItems(): void;
+  rereadCharacter(): void;
   warm(): void;
   coversScene(): boolean;
   handleEvents(events: readonly WorldEvent[]): void;

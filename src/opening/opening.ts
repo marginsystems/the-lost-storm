@@ -65,6 +65,7 @@ export interface OpeningDeps {
 export interface Opening {
   update(): void;
   readBook(item: ItemInstance): boolean;
+  rereadCharacter(): void;
 }
 
 function bookIn(world: World, item: ItemInstance): BookDef | null {
@@ -128,6 +129,13 @@ export function createOpening(deps: OpeningDeps): Opening {
 
   return {
     readBook,
+    rereadCharacter(): void {
+      books = carriedBooks(world);
+      shift = { x: world.shift.x, z: world.shift.z };
+      shiftZone = world.zone.id;
+      shownShore = 0;
+      echo.forget();
+    },
     update(): void {
       document.body.dataset['zoneKind'] = world.zone.kind;
       document.body.dataset['voidLight'] = world.zone.void !== null && world.zone.exits.some((exit): boolean => exit.hiddenWhenLocked && allHold(world, exit.requires)) ? 'on' : 'off';

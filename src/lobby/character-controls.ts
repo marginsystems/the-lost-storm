@@ -1,5 +1,6 @@
 import type { Content } from '../../sim/content/types.ts';
 import { createCharactersApi } from '../backend/characters-api.ts';
+import { warnInConsole } from '../backend/console-log.ts';
 import type { CharactersApi } from '../backend/characters-api.ts';
 import type { RemoveOutcome, RosterPlace } from '../backend/roster-store.ts';
 import { readServerUrl } from '../backend/server-url.ts';
@@ -24,6 +25,8 @@ export interface CharacterHooks {
   persist(): void;
   hold(held: boolean): void;
   flush(): void;
+  retire(): void;
+  switched(): Promise<void>;
   level(): number | null;
   hero(): string | null;
 }
@@ -86,12 +89,21 @@ export function createCharacterControls(content: Content, hooks: CharacterHooks)
     hooks.hold(true);
     hooks.flush();
     await Promise.resolve();
-    if (!move()) {
-      hooks.hold(false);
-      return false;
+    hooks.retire();
+    const moved: boolean = move();
+    const swapped: boolean = await hooks.switched().then(
+      (): boolean => true,
+      (error: unknown): boolean => {
+        warnInConsole(`Switching characters in place failed, so the page reloads instead: ${String(error)}`);
+        return false;
+      },
+    );
+    if (!swapped) {
+      reload();
+      return moved;
     }
-    reload();
-    return true;
+    hooks.hold(false);
+    return moved;
   };
   return {
     resuming: takeResume(SESSION_FLAGS),

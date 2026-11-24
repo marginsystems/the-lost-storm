@@ -19,6 +19,7 @@ export interface HeroPickParts {
 
 export interface HeroPick {
   readonly chosen: string | null;
+  reset(chosen: string | null): void;
   choice(): HeroChoice | null;
   look(): LobbyLook;
   choose(id: string): Promise<void>;
@@ -34,6 +35,10 @@ export function createHeroPick(parts: HeroPickParts): HeroPick {
   return {
     get chosen(): string | null {
       return chosen;
+    },
+    reset(next: string | null): void {
+      chosen = next;
+      previewed = null;
     },
     choice,
     look(): LobbyLook {

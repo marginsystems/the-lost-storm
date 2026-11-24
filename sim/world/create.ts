@@ -39,6 +39,7 @@ export interface WorldOptions {
   readonly opening?: boolean;
   readonly hero?: string;
   readonly glitches?: GlitchDef;
+  readonly firstId?: number;
 }
 
 const PLAYER_ID: number = 1;
@@ -189,7 +190,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     channels: [],
     areas: [],
     ground: [],
-    nextId: PLAYER_ID + 1,
+    nextId: Math.max(PLAYER_ID + 1, options.firstId ?? 0),
     nextItemUid: save?.nextItemUid ?? 1,
     ledger: emptyLedger(),
     nextPackId: 1,

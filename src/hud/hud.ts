@@ -309,6 +309,12 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       refreshOpen('inventory');
       refreshOpen('character');
     },
+    rereadCharacter(): void {
+      alive = api.world.player.alive;
+      hints.reread();
+      refreshOpen('inventory');
+      refreshOpen('character');
+    },
     warm(): void {
       warmWanted = true;
     },

@@ -9,6 +9,7 @@ export interface PlayStamp {
 
 export interface Play {
   readonly id: string;
+  renew(next: string): void;
   stamp(): PlayStamp;
   claimed(): void;
   replaced(): boolean;
@@ -22,12 +23,19 @@ export function playId(random: () => number): string {
   return digits.join('');
 }
 
-export function createPlay(id: string): Play {
+export function createPlay(first: string): Play {
+  let id: string = first;
   let claimed: boolean = false;
   let replaced: boolean = false;
   const listeners: (() => void)[] = [];
   return {
-    id,
+    get id(): string {
+      return id;
+    },
+    renew(next: string): void {
+      id = next;
+      claimed = false;
+    },
     stamp: (): PlayStamp => ({ id, claim: !claimed }),
     claimed(): void {
       claimed = true;

@@ -13,6 +13,7 @@ export interface Backend {
   reset(): Promise<void>;
   flush(): void;
   leave(): void;
+  close(): void;
   sync(): Promise<void>;
   onFold(listener: (fold: SaveFold) => void): void;
   state(): BackendState;

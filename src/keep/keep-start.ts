@@ -28,7 +28,7 @@ export interface KeepStartDeps {
   readonly toTitle: () => void;
 }
 
-export function startKeepPrompt(deps: KeepStartDeps): void {
+export function startKeepPrompt(deps: KeepStartDeps): KeepView {
   const signIn: TitleSignIn = startTitleAccount(deps.account, { setBusy: deps.setBusy, beforeSignIn: deps.save });
   const view: KeepView = createKeepView({
     world: deps.world,
@@ -59,4 +59,5 @@ export function startKeepPrompt(deps: KeepStartDeps): void {
     createBrowserScheduler(),
     createBrowserFrameClock(),
   );
+  return view;
 }

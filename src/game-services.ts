@@ -6,6 +6,8 @@ import type { AccountService } from './backend/account.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
 import type { SettingsStore } from './settings/store.ts';
 import type { Backend, BackendState } from './backend/backend.ts';
+import { createSwitchableBackend } from './backend/switchable.ts';
+import type { SwitchableBackend } from './backend/switchable.ts';
 import { createBrowserAccount, createBrowserBackend, createBrowserMinter } from './backend/browser.ts';
 import { createMemoryBackend } from './backend/memory.ts';
 import type { Minter } from './backend/minter.ts';
@@ -26,7 +28,7 @@ export interface GameServicesDeps {
 
 export interface GameServices {
   readonly content: Content;
-  readonly backend: Backend;
+  readonly backend: SwitchableBackend;
   readonly account: AccountService | null;
   readonly showSync: (state: BackendState) => void;
   readonly loadingSave: Promise<SaveData | null>;
@@ -40,7 +42,7 @@ export interface GameServices {
 export function startGameServices(deps: GameServicesDeps): GameServices {
   const { title, serverUrl, watching } = deps;
   const content: Content = loadContent();
-  const backend: Backend = watching ? createMemoryBackend(content) : createBrowserBackend(content, serverUrl);
+  const backend: SwitchableBackend = watching ? createSwitchableBackend((): Backend => createMemoryBackend(content)) : createBrowserBackend(content, serverUrl);
   const account: AccountService | null = createBrowserAccount(content, serverUrl);
   const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
   const loadingSave: Promise<SaveData | null> = backend.load();

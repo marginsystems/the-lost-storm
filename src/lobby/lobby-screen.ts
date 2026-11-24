@@ -65,6 +65,7 @@ export interface LobbyActions {
 
 export interface LobbyScreen {
   readonly root: HTMLElement;
+  readonly sheet: HTMLElement;
   readonly shown: boolean;
   show(view: LobbyView): void;
   hide(): void;
@@ -72,6 +73,7 @@ export interface LobbyScreen {
   setHeroes(choice: HeroChoice | null): void;
   setCards(cards: readonly CardView[]): void;
   setUsername(username: string | null): void;
+  fadeSheet(faded: boolean): void;
   refuse(text: string): void;
 }
 
@@ -272,6 +274,7 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
 
   return {
     root,
+    sheet,
     get shown(): boolean {
       return shown;
     },
@@ -326,6 +329,9 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
       strip.render(cards);
     },
     setUsername,
+    fadeSheet(faded: boolean): void {
+      setData(sheet, 'swap', faded ? 'out' : 'in');
+    },
     refuse(text: string): void {
       setText(ask, text, true);
       no.focus();

@@ -17,6 +17,7 @@ import { keyLabel, touchLabel } from './key-labels.ts';
 export interface Hints {
   update(world: World, events: readonly WorldEvent[]): void;
   teaches(trigger: HintTrigger['type']): boolean;
+  reread(): void;
 }
 
 function showTouch(parent: HTMLElement, label: TouchLabel): void {
@@ -69,6 +70,10 @@ export function createHints(parent: HTMLElement, defs: HintsDef, store: HintStor
   );
 
   return {
+    reread(): void {
+      state = null;
+      swap.hide();
+    },
     teaches(trigger: HintTrigger['type']): boolean {
       return state !== null && stillTeaches(defs, state, trigger, store.isEnabled());
     },

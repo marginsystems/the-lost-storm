@@ -170,6 +170,23 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     await veil.lift();
   };
 
+  const change = async (go: () => Promise<boolean>): Promise<void> => {
+    if (busy) return;
+    busy = true;
+    holdControls(true);
+    screen.fadeSheet(true);
+    try {
+      await Promise.all([go(), settled(screen.sheet)]);
+    } finally {
+      stage.dress(parts.look());
+      if (active) screen.show(view());
+      screen.fadeSheet(false);
+      busy = false;
+      holdControls(false);
+      void refresh();
+    }
+  };
+
   const toTitle = (): Promise<void> =>
     swap(false, (): void => {
       parts.title.classList.remove('gone');
@@ -201,13 +218,13 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       if (choiceCounts({ shown: screen.shown, held })) parts.previewHero(id);
     },
     pick: (key: string): void => {
-      void leave((): Promise<boolean> => characters.pick(key));
+      void change((): Promise<boolean> => characters.pick(key));
     },
     create: async (name: string): Promise<string | null> => {
       if (busy) return null;
       const checked: CreateCheck = await characters.check(name);
       if (checked.kind !== 'ready') return checked.text;
-      void leave((): Promise<boolean> => characters.enterNew(checked.name, checked.id));
+      void change((): Promise<boolean> => characters.enterNew(checked.name, checked.id));
       return null;
     },
     suggest: (): string | null => characters.suggest(),

@@ -39,6 +39,8 @@ export interface Launch {
   note(event: CountedEvent): void;
   open(mode: CardMode): void;
   forgetPlayed(): void;
+  keepPlayed(): void;
+  rereadPlayed(): void;
 }
 
 const LAUNCH = { observeEvery: 1, saveEvery: 30, requestMs: 8000, secondsPerMinute: 60, maxFrame: 0.1, endDelay: 6 } as const;
@@ -161,6 +163,11 @@ export function startLaunch(options: LaunchOptions): Launch {
     },
     note: (event: CountedEvent): void => loop?.note(event),
     open: (mode: CardMode): void => card.open(mode),
+    keepPlayed: savePlayed,
+    rereadPlayed: (): void => {
+      played = readPlayed(store.read(PLAYED_KEY));
+      unsaved = 0;
+    },
     forgetPlayed: (): void => {
       played = 0;
       unsaved = 0;

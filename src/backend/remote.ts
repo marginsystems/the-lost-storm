@@ -75,7 +75,7 @@ export function backoffMs(failures: number): number {
 }
 
 export function createRemoteBackend(options: RemoteOptions): Backend {
-  const { content, serverUrl, local, store, api, clock, timers, log, epochs } = options;
+  const { content, serverUrl, store, api, clock, timers, log, epochs } = options;
   const listeners: ((state: BackendState) => void)[] = [];
   let record: SyncRecord | null = parseSyncRecord(store.read(SYNC_KEY), serverUrl);
   let state: BackendState = 'offline';
@@ -98,7 +98,13 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   let inFlight: Promise<void> | null = null;
   let claimedHere: boolean = false;
   let hurried: boolean = false;
+  let closed: boolean = false;
   const foldListeners: ((fold: SaveFold) => void)[] = [];
+  const local: Backend = {
+    ...options.local,
+    save: (save: SaveData, saveOptions?: SaveOptions): boolean => !closed && options.local.save(save, saveOptions),
+    reset: (): Promise<void> => (closed ? Promise.resolve() : options.local.reset()),
+  };
   const heldFolds: SaveFold[] = [];
 
   const deliver = (fold: SaveFold): void => {
@@ -119,6 +125,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     return stored !== null && stored.token !== record.token;
   };
   const keep = (next: SyncRecord | null): void => {
+    if (closed) return;
     if (displaced()) {
       frozen = true;
       cancelTimer?.();
@@ -488,6 +495,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       return written;
     },
     async reset(): Promise<void> {
+      if (closed) return;
       epoch += 1;
       restarted = true;
       cancelTimer?.();
@@ -522,6 +530,17 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       const play: Play | undefined = options.play;
       if (play === undefined || record === null || play.replaced() || play.stamp().claim) return;
       api.leavePlay(record.token, play.id);
+    },
+    close(): void {
+      closed = true;
+      frozen = true;
+      epoch += 1;
+      latest = null;
+      unsent = null;
+      cancelTimer?.();
+      cancelTimer = null;
+      cancelEnrol?.();
+      cancelEnrol = null;
     },
     flush(): void {
       if (failures > 0) return;

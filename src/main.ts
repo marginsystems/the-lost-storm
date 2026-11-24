@@ -23,6 +23,7 @@ import type { OverlayState } from './hud/overlay-core.ts';
 import type { FrameKeeper } from './frame-keeper.ts';
 import { element } from './dom-element.ts';
 import { startKeepPrompt } from './keep/keep-start.ts';
+import { createCharacterSwitch } from './character-switch.ts';
 import { fadePageOut } from './landing/leave.ts';
 import { markPlaying, wireHudAway, wireTitleKeys } from './title-screen.ts';
 import type { UiAction } from '../sim/content/audio.ts';
@@ -230,10 +231,7 @@ async function start(): Promise<void> {
     send({ type: 'hero', hero: id });
   };
   const loadGate: TurnGate = turnGate(browserPacer());
-  const pick: HeroPick = createHeroPick({ content, chosen: startingHero(content, save === null ? null : world.player.hero, keptHero), standing: (): PlayerState => world.player, entered: (): boolean => entered, keep: keepChosen, restage: (): void => flow.restage(), settled: (): Promise<void> => {
-    wantCarried();
-    return pictures.items.settled();
-  }, load: (id: string): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, id), loadGate) });
+  const pick: HeroPick = createHeroPick({ content, chosen: startingHero(content, save === null ? null : world.player.hero, keptHero), standing: (): PlayerState => world.player, entered: (): boolean => entered, keep: keepChosen, restage: (): void => flow.restage(), settled: (): Promise<void> => { wantCarried(); return pictures.items.settled(); }, load: (id: string): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, id), loadGate) });
   const propDresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressedProp(content, dress, material, propDressing(world.zone));
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name, stage.renderer)]);
   void privateClips.then((clips: PrivateClips): void => usePrivateClips(library, content.player.heroes.map((hero: HeroDef): string => hero.rig), clips));
@@ -271,7 +269,7 @@ async function start(): Promise<void> {
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene);
   const actors: Actors = createActors(stage.scene, library, world, mobile.quality.tier.msaaSamples > 0, cameraSight(stage.camera), particles);
-  const figureGauge: FigureGauge = createFigureGauge(figureJoints(content.rigs.get(heroRig(content, world.player.hero))?.bodyParts ?? {}));
+  let figureGauge: FigureGauge = createFigureGauge(figureJoints(content.rigs.get(heroRig(content, world.player.hero))?.bodyParts ?? {}));
   const pictures = startItemPictures({ content, library, loader, dresser, hero: (): string | null => pick.chosen ?? world.player.hero, refresh: (): void => { hud.refreshItems(); profilePanel?.refreshItems(); }, busy: (): boolean => fightNear(world) });
   const wantCarried = (): void => pictures.items.want([...carriedPictures(content, world.player), ...goodsPictures(content)]);
   const glitchSettings: GlitchSettingsStore = createGlitchSettings(createBrowserStore());
@@ -636,7 +634,7 @@ async function start(): Promise<void> {
     enter.disabled = busy;
     reset.disabled = busy;
   };
-  if (account !== null) startKeepPrompt({ account, world, hud: element('hud', HTMLDivElement), lobby: element('lobby', HTMLDivElement), store: createBrowserStore(), setBusy, save: saveNow, cloud: (): boolean => backend.state() === 'cloud', inPlay: (): boolean => playing && !pauseMenu.isOpen && !transition.blocking, toTitle: (): void => void (playing ? leavePlay() : lobbyFlow)?.toTitle() });
+  const keep = account === null ? null : startKeepPrompt({ account, world, hud: element('hud', HTMLDivElement), lobby: element('lobby', HTMLDivElement), store: createBrowserStore(), setBusy, save: saveNow, cloud: (): boolean => backend.state() === 'cloud', inPlay: (): boolean => playing && !pauseMenu.isOpen && !transition.blocking, toTitle: (): void => void (playing ? leavePlay() : lobbyFlow)?.toTitle() });
   enter.disabled = false;
   window.setTimeout((): void => {
     whenIdle((): void => {
@@ -664,6 +662,7 @@ async function start(): Promise<void> {
   };
   wireTitleKeys(title, enter);
   wireHudAway(document.body, element('hud', HTMLDivElement));
+  const switcher = createCharacterSwitch({ content, world, backend, store: createBrowserStore(), pick, queue, titleBar, rereads: [drawTitleKeys, (): void => launch.rereadPlayed(), (): void => hud.rereadCharacter(), (): void => opening.rereadCharacter(), (): void => minter?.forget(), (): void => keep?.rereadLevel(), wantCarried, (): void => void lobby?.feed.refresh(true)], forget: (known: boolean): void => { entered = known; heroName = null; dirty = false; urgent = false; enter.textContent = known ? 'Continue' : 'Enter'; figureGauge = createFigureGauge(figureJoints(content.rigs.get(heroRig(content, world.player.hero))?.bodyParts ?? {})); }, dress: (hero: string): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, hero), loadGate), rebuild: (): Promise<BuiltZone> => showZone([]) });
   const startOver = async (): Promise<void> => {
     if (watching !== null) return;
     dirty = false;
@@ -681,7 +680,7 @@ async function start(): Promise<void> {
   const flow: LobbyFlow = createLobbyFlow({ warmPacer: gpuPaced(browserPacer(), stage.gpu), tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), showFps: (): boolean => gameSettings.get().graphics.showFps, qualityTier, root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => pick.look(), view: (): SheetView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: pick.choice() }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
     entered = true;
     begin();
-  }, ready: (): Promise<void> => Promise.all([effects.ready, bootWarm]).then((): void => undefined), startOver: (): void => void startOver(), characters: { serverUrl, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });
+  }, ready: (): Promise<void> => Promise.all([effects.ready, bootWarm, switcher.ready()]).then((): void => undefined), startOver: (): void => void startOver(), characters: { serverUrl, persist: (): void => { launch.keepPlayed(); persist(); }, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), retire: (): void => backend.retire(), switched: (): Promise<void> => switcher.switched(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });
   lobbyFlow = flow;
   window.setTimeout((): void => whenIdle((): void => void flow.warm()), GAME.titleArrivalMs);
   const openLobby = (): void => afterBreak(portal, 'start', (): void => void flow.open());

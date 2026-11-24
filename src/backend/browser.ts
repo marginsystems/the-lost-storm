@@ -30,6 +30,8 @@ import type { PerfClient } from './perf-api.ts';
 import { createEventsClient } from './events-api.ts';
 import type { EventsClient } from './events-api.ts';
 import type { Play } from './play.ts';
+import { createSwitchableBackend } from './switchable.ts';
+import type { SwitchableBackend } from './switchable.ts';
 
 const PAGE_PLAY: Play = createPlay(playId(Math.random));
 
@@ -37,15 +39,20 @@ export function pagePlay(): Play {
   return PAGE_PLAY;
 }
 
-export function createBrowserBackend(content: Content, rawUrl: string | undefined): Backend {
-  const backend: Backend = createBackend(content, rawUrl, {
-    fetch: (url: string, init: RequestInit): Promise<Response> => fetch(url, init),
-    store: createBrowserStore(),
-    clock: (): number => Date.now(),
-    timers: createBrowserTimers(),
-    log: createConsoleLogger(),
-    characterKeys: CHARACTER_KEYS,
-    play: PAGE_PLAY,
+export function createBrowserBackend(content: Content, rawUrl: string | undefined): SwitchableBackend {
+  let opened: number = 0;
+  const backend: SwitchableBackend = createSwitchableBackend((): Backend => {
+    if (opened > 0) PAGE_PLAY.renew(playId(Math.random));
+    opened += 1;
+    return createBackend(content, rawUrl, {
+      fetch: (url: string, init: RequestInit): Promise<Response> => fetch(url, init),
+      store: createBrowserStore(),
+      clock: (): number => Date.now(),
+      timers: createBrowserTimers(),
+      log: createConsoleLogger(),
+      characterKeys: CHARACTER_KEYS,
+      play: PAGE_PLAY,
+    });
   });
   window.addEventListener('pagehide', (): void => backend.leave());
   return backend;

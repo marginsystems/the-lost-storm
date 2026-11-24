@@ -28,6 +28,7 @@ export interface KeepViewDeps {
 
 export interface KeepView {
   update(dt: number): void;
+  rereadLevel(): void;
 }
 
 interface Ask {
@@ -96,6 +97,9 @@ export function createKeepView(deps: KeepViewDeps): KeepView {
   card.root.setAttribute('role', 'status');
 
   return {
+    rereadLevel(): void {
+      level = world.player.level;
+    },
     update(dt: number): void {
       if (levelGained(level, world.player.level)) play = armPlay(play);
       level = world.player.level;
