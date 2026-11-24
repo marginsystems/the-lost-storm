@@ -2,6 +2,7 @@ import type { Content, PropDef, ZoneDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import type { Blocker, NavGrid } from '../nav/grid.ts';
 import { blockerGap, bodyGap, cellCenter, cellIndex } from '../nav/grid.ts';
+import { heightAt } from '../nav/terrain.ts';
 import { createWorld } from './create.ts';
 import { raiseShore, shoreBlockers, shorePlacements } from './shore-props.ts';
 import type { World } from './types.ts';
@@ -20,6 +21,9 @@ export const GAPS = {
   margin: 1,
   longest: 2,
   least: 0.25,
+  perchReach: 2.5,
+  perchRise: 0.9,
+  perchTallest: 2.5,
 } as const;
 
 export interface StagedWorld {
@@ -31,7 +35,7 @@ export interface StagedWorld {
   readonly start: Vec2;
 }
 
-export type GapKind = 'pinch' | 'narrow' | 'pocket' | 'unexplained';
+export type GapKind = 'pinch' | 'narrow' | 'pocket' | 'unexplained' | 'perched';
 
 export interface GapFinding {
   readonly kind: GapKind;
@@ -291,6 +295,46 @@ function unexplained(staged: StagedWorld, content: Content, field: Field): GapFi
   });
 }
 
+function extent(def: PropDef): number {
+  return Math.max(0, ...def.footprints.flat().map((point: ReadonlyVec2): number => Math.hypot(point.x, point.z)));
+}
+
+interface FloorNear {
+  readonly any: boolean;
+  readonly level: boolean;
+}
+
+function floorNear(staged: StagedWorld, at: ReadonlyVec2, base: number, reach: number): FloorNear {
+  const grid: NavGrid = staged.world.grid;
+  const zone: ZoneDef = staged.world.zone;
+  const height: number = heightAt(zone, at.x, at.z) + base;
+  const first: number = Math.max(0, Math.floor((at.x - reach) / grid.cellSize));
+  const last: number = Math.min(grid.columns - 1, Math.floor((at.x + reach) / grid.cellSize));
+  const top: number = Math.max(0, Math.floor((at.z - reach) / grid.cellSize));
+  const bottom: number = Math.min(grid.rows - 1, Math.floor((at.z + reach) / grid.cellSize));
+  let any: boolean = false;
+  for (let row: number = top; row <= bottom; row += 1) {
+    for (let column: number = first; column <= last; column += 1) {
+      if (staged.reached[row * grid.columns + column] !== 1) continue;
+      const centre: Vec2 = { x: (column + 0.5) * grid.cellSize, z: (row + 0.5) * grid.cellSize };
+      if (Math.hypot(centre.x - at.x, centre.z - at.z) > reach) continue;
+      any = true;
+      if (Math.abs(heightAt(zone, centre.x, centre.z) - height) <= GAPS.perchRise) return { any, level: true };
+    }
+  }
+  return { any, level: false };
+}
+
+function perched(staged: StagedWorld, content: Content, field: Field): GapFinding[] {
+  return staged.world.zone.props.filter((prop): boolean => prop.when.length === 0).flatMap((at): GapFinding[] => {
+    const def: PropDef | undefined = content.props.get(at.prop);
+    if (def === undefined || def.walkOn || def.height > GAPS.perchTallest || at.y > 0) return [];
+    const near: FloorNear = floorNear(staged, at, at.y, GAPS.perchReach + extent(def));
+    if (!near.any || near.level) return [];
+    return [{ kind: 'perched', x: rounded(at.x - field.frame.x), z: rounded(at.z - field.frame.z), length: rounded(def.height), area: 0, prop: at.prop }];
+  });
+}
+
 export interface GapAnalysis {
   readonly field: Field;
   readonly pinch: Uint8Array;
@@ -323,6 +367,6 @@ export function analyseGaps(content: Content, staged: StagedWorld): GapAnalysis 
   }
   const reached: Uint8Array = reachFrom(stand, field, staged.start);
   const pocket: Uint8Array = stand.map((value: number, index: number): number => (value === 1 && reached[index] !== 1 ? 1 : 0));
-  const findings: GapFinding[] = [...components(pinch, field, 'pinch'), ...components(narrow, field, 'narrow'), ...components(pocket, field, 'pocket'), ...unexplained(staged, content, field)];
+  const findings: GapFinding[] = [...components(pinch, field, 'pinch'), ...components(narrow, field, 'narrow'), ...components(pocket, field, 'pocket'), ...unexplained(staged, content, field), ...perched(staged, content, field)];
   return { field, pinch, narrow, pocket, findings };
 }

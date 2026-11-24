@@ -26,6 +26,7 @@ const KNOWN: readonly KnownGap[] = [
   { zone: 'keepers_gate', kind: 'pinch', x: 16.9, z: 42.5, name: 'sliver at the north barrier' },
   { zone: 'keepers_gate', kind: 'pinch', x: 10.5, z: 42.9, name: 'second sliver at the north barrier' },
   { zone: 'keepers_gate', kind: 'narrow', x: 35.6, z: 30.8, name: 'lane by the east barrier' },
+  { zone: 'under_hall', kind: 'perched', x: 80.9, z: 128.9, name: 'shards that seal the rim sliver above the stair to the under_t9 checkpoint' },
 ];
 
 const WIDE_FOOTPRINTS: readonly string[] = [
@@ -62,7 +63,7 @@ function describe(found: GapFinding): string {
   return `${found.kind}${found.prop === null ? '' : ` ${found.prop}`} at ${String(found.x)}, ${String(found.z)} (${String(found.length)} m long, ${String(found.area)} m²)`;
 }
 
-void test('no zone has a lane narrower than the hero can comfortably pass, a sliver he cannot enter, a sealed pocket or a collider no model accounts for', (): void => {
+void test('no zone has a lane narrower than the hero can comfortably pass, a sliver he cannot enter, a sealed pocket, a collider no model accounts for or a prop perched up on a ledge above the floor around it', (): void => {
   for (const zone of content.zones.values()) {
     const unexpected: string[] = zoneGaps(content, zone.id).filter((found: GapFinding): boolean => !known(zone.id, found)).map(describe);
     assert.deepEqual(unexpected, [], `${zone.id} has gaps that read wrong`);
