@@ -1516,7 +1516,7 @@
     {"x":50,"z":59,"members":[{"monster":"sporecap","count":2}],"level":10},
     {"x":58,"z":70,"members":[{"monster":"unfinished_thrower","count":1},{"monster":"unfinished_taker","count":1}],"level":10,"rank":"magic"},
     {"x":27,"z":92,"members":[{"monster":"wolf","count":2},{"monster":"rat","count":4}],"level":10},
-    {"x":40,"z":99,"members":[{"monster":"wolf","count":2},{"monster":"spider","count":1}],"level":10},
+    {"x":40,"z":99,"members":[{"monster":"wolf","count":2},{"monster":"pin_weaver","count":1}],"level":10},
     {"x":24,"z":101,"members":[{"monster":"unfinished_taker","count":2},{"monster":"grave_stitcher","count":1}],"level":10},
     {"x":38,"z":134,"members":[{"monster":"hall_breaker","count":1},{"monster":"unfinished_taker","count":1}],"level":10},
     {"x":54,"z":139,"members":[{"monster":"unfinished_brute","count":1},{"monster":"unfinished_taker","count":1}],"level":10},

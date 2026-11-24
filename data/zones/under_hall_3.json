@@ -1501,7 +1501,7 @@
     {"x":61,"z":103,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
     {"x":63,"z":169,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
     {"x":49,"z":163,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
-    {"x":61,"z":153,"members":[{"monster":"cave_shade","count":3},{"monster":"bat","count":4}],"level":17},
+    {"x":61,"z":153,"members":[{"monster":"cave_shade","count":2},{"monster":"rift_shade","count":1},{"monster":"bat","count":4}],"level":17},
     {"x":71,"z":221,"members":[{"monster":"unfinished_thrower","count":2},{"monster":"unfinished_taker","count":1}],"level":17,"rank":"magic"},
     {"x":81,"z":213,"members":[{"monster":"unfinished_thrower","count":2},{"monster":"unfinished_taker","count":1}],"level":17},
     {"x":67,"z":281,"members":[{"monster":"spider","count":2},{"monster":"drifter","count":1},{"monster":"bat","count":4}],"level":17},
