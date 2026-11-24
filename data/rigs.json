@@ -430,7 +430,7 @@
         },
         "roll": {
           "clip": "Roll",
-          "impactFraction": 0.6
+          "impactFraction": 0.55
         },
         "hit_reel": {
           "clip": "Shield_Break",
@@ -884,7 +884,7 @@
         },
         "roll": {
           "clip": "Roll",
-          "impactFraction": 0.6
+          "impactFraction": 0.55
         },
         "hit_reel": {
           "clip": "Shield_Break",
@@ -1336,7 +1336,7 @@
         },
         "roll": {
           "clip": "Roll",
-          "impactFraction": 0.6
+          "impactFraction": 0.55
         },
         "hit_reel": {
           "clip": "Shield_Break",
@@ -1791,7 +1791,7 @@
         },
         "roll": {
           "clip": "Roll",
-          "impactFraction": 0.6
+          "impactFraction": 0.55
         },
         "hit_reel": {
           "clip": "Shield_Break",
