@@ -19,9 +19,8 @@
   transition: box-shadow var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-.tree-socket.ability .tree-glyph {
-  width: 18px;
-  height: 18px;
+.tree-socket.ability .tree-socket-glyph {
+  border-radius: 4px;
 }
 
 .tree-socket.ability.allocated .tree-socket-rim {

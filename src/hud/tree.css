@@ -257,19 +257,23 @@
 }
 
 .tree-socket-glyph {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inset: 2px;
+  background-position: center;
+  background-size: cover;
+  filter: grayscale(0.5) brightness(0.7);
+  transition: filter var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-.tree-glyph {
-  width: 16px;
-  height: 16px;
+.tree-socket.route .tree-socket-glyph {
+  filter: grayscale(0.3) brightness(0.82);
 }
 
-.tree-socket.keystone .tree-glyph {
-  width: 18px;
-  height: 18px;
+.tree-socket.available .tree-socket-glyph {
+  filter: grayscale(0.1) brightness(0.95);
+}
+
+.tree-socket.allocated .tree-socket-glyph {
+  filter: grayscale(0) brightness(1.08);
 }
 
 .tree-socket.locked {
@@ -318,11 +322,6 @@
     inset 0 0 0 1px color-mix(in srgb, var(--tint) 55%, transparent),
     inset 0 3px 6px rgba(0, 0, 0, 0.85),
     0 0 11px 0 color-mix(in srgb, var(--tint) 30%, transparent);
-}
-
-.tree-socket.notable .tree-glyph {
-  width: 18px;
-  height: 18px;
 }
 
 .tree-socket.variant .tree-socket-rim {

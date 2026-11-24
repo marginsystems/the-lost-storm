@@ -33,7 +33,7 @@ import type { ChartBounds, ChartPoint, PathLabel } from './chart-model.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
 import { slotAction } from '../settings/bindings.ts';
-import { placeGlyph } from './tree-glyphs.ts';
+import { placeArt } from './tree-art/index.ts';
 import { cardSpot, nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
 import type { CardSize, CardSpot, NodeSpot } from './tree-nodes.ts';
 import { lockedLine, pointsPrompt, statusLine, takenLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
@@ -467,7 +467,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     el('span', 'tree-socket-well', button);
     el('span', 'tree-socket-fill', button);
     const glyph: HTMLSpanElement = el('span', 'tree-socket-glyph', button);
-    glyph.innerHTML = placeGlyph(content, node);
+    glyph.style.backgroundImage = placeArt(content, node) ?? 'none';
     const family: WeaponGroup | null = placeFamily(content, node);
     if (family !== null) familyMark(family, 'tree-socket-family', button);
     const view: NodeView = { def: node, button };

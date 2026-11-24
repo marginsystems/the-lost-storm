@@ -47,7 +47,10 @@ function defs(palette: Palette): string {
 }
 
 export function art(element: Element, body: string): string {
-  const palette: Palette = PALETTES[element];
+  return paint(PALETTES[element], body);
+}
+
+export function paint(palette: Palette, body: string): string {
   return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${defs(palette)}<g clip-path="url(#plate)"><rect width="64" height="64" fill="url(#bg)"/>${body}<rect width="64" height="64" fill="url(#vig)"/><rect width="64" height="64" fill="#fff" filter="url(#grain)"/><rect width="64" height="64" fill="url(#sheen)"/></g></svg>`;
 }
 
