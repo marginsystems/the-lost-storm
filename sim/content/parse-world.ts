@@ -27,6 +27,7 @@ import type {
   ZoneAmbience,
   ZoneCheckpoint,
   ZoneDef,
+  DuelClosing,
   ZoneDuel,
   ExitLook,
   ZoneExit,
@@ -164,12 +165,18 @@ function zoneReturn(value: unknown, where: string): ZoneReturn | null {
   return { zone: text(source, 'zone', where), exit: text(source, 'exit', where) };
 }
 
+function duelClosing(value: unknown, where: string): DuelClosing | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { after: nonNegative(source, 'after', where), over: positive(source, 'over', where), margin: nonNegative(source, 'margin', where), to: positive(source, 'to', where) };
+}
+
 function zoneDuel(value: unknown, where: string): ZoneDuel | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
   const home: ZoneReturn | null = zoneReturn(source['home'], `${where}.home`);
   if (home === null) throw new ContentError(`${where}.home`, 'a duel needs a home to return the hero to');
-  return { rival: point(source['rival'], `${where}.rival`), home, gear: source['gear'] === undefined ? 'own' : choice(source, 'gear', DUEL_GEAR, where), heroDamage: source['heroDamage'] === undefined ? 1 : positive(source, 'heroDamage', where) };
+  return { rival: point(source['rival'], `${where}.rival`), home, gear: source['gear'] === undefined ? 'own' : choice(source, 'gear', DUEL_GEAR, where), heroDamage: source['heroDamage'] === undefined ? 1 : positive(source, 'heroDamage', where), closing: duelClosing(source['closing'], `${where}.closing`) };
 }
 
 function zoneVoice(value: unknown, where: string): ZoneVoice {

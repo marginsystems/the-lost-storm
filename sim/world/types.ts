@@ -26,6 +26,7 @@ import type { NpcState } from './npc-types.ts';
 import type { HazardState, ProjectileState, QueuedShot } from './delivery-types.ts';
 import type { Escort, SceneState } from './scene-state.ts';
 import type { WardState } from './wards.ts';
+import type { ClosingState } from './closing.ts';
 import type { MomentumState } from './momentum-types.ts';
 import type { Tally } from '../tally.ts';
 import type { PortalChannelIntent, PortalIntent, PortalStage, PortalState } from './portal-types.ts';
@@ -549,6 +550,7 @@ export interface World {
   scene: SceneState | null;
   escort: Escort | null;
   wards: WardState[];
+  closing: ClosingState | null;
   portal: PortalState | null;
   run: RunState;
   tailwind: TailwindState;

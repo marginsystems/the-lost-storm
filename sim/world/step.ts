@@ -23,6 +23,7 @@ import type { Vec2 } from '../math.ts';
 import { bindEchoes, heldIn, holdHero } from './bubble.ts';
 import { keepOut } from './leash.ts';
 import { keepOutOfWards, stepWards } from './wards.ts';
+import { keepInsideClosing } from './closing.ts';
 import { stepVoid } from './void.ts';
 import { stepMoments } from './moments.ts';
 import { stepNpcs } from './npc-walk.ts';
@@ -82,6 +83,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   bindEchoes(world, dt, starts);
   keepOut(world);
   keepOutOfWards(world);
+  keepInsideClosing(world);
   holdHero(world, start, bubble);
   settleGaits(starts, dt);
   stepDeath(world, dt);

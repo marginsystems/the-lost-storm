@@ -235,7 +235,13 @@
       "exit": "proving"
     },
     "gear": "standard",
-    "heroDamage": 0.3
+    "heroDamage": 0.3,
+    "closing": {
+      "after": 20,
+      "over": 40,
+      "margin": 6,
+      "to": 3
+    }
   },
   "npcs": [],
   "ambience": {

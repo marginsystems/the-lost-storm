@@ -110,11 +110,19 @@ export interface ZoneReturn {
 export const DUEL_GEAR = ['own', 'standard'] as const;
 export type DuelGear = (typeof DUEL_GEAR)[number];
 
+export interface DuelClosing {
+  readonly after: number;
+  readonly over: number;
+  readonly margin: number;
+  readonly to: number;
+}
+
 export interface ZoneDuel {
   readonly rival: ZonePoint;
   readonly home: ZoneReturn;
   readonly gear: DuelGear;
   readonly heroDamage: number;
+  readonly closing: DuelClosing | null;
 }
 
 export interface ZoneWaypoint {
