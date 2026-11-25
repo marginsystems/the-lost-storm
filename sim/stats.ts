@@ -244,7 +244,7 @@ function modded(content: Content, { skill, through }: ChosenSkill, base: SkillDe
     lifeOnHit: skill.lifeOnHit + sum('lifeOnHit'),
     leech: skill.leech + sum('leech'),
     ...echoOf(skill, sum('echo')),
-    momentum: skill.momentum === null ? null : { ...skill.momentum, cap: Math.max(skill.momentum.perHit, skill.momentum.cap * scaleOf(sum('momentumCapPercent'))), grace: skill.momentum.grace * scaleOf(sum('momentumGracePercent')), lifePerHit: skill.momentum.lifePerHit + sum('lifePerHit') },
+    momentum: skill.momentum === null ? null : { ...skill.momentum, cap: Math.max(skill.momentum.perHit, skill.momentum.cap * scaleOf(sum('momentumCapPercent'))), grace: skill.momentum.grace * scaleOf(sum('momentumGracePercent')), steady: skill.momentum.steady * scaleOf(sum('momentumSteadyPercent')), lifePerHit: skill.momentum.lifePerHit + sum('lifePerHit') },
   };
 }
 

@@ -109,6 +109,7 @@
     "fire_burst": [{ "sound": "fire_blast", "volume": 0.85, "maxVoices": 2 }],
     "fire_slam": [{ "sound": "fire_blast", "volume": 0.8, "maxVoices": 2 }],
     "firewall": [{ "sound": "fire_ignite", "volume": 0.55, "maxVoices": 1, "pitch": [0.95, 1.05] }],
+    "storm_fence": [{ "sound": "electric_crackle", "volume": 0.5, "maxVoices": 1, "pitch": [1.05, 1.15] }],
     "bellows": [{ "sound": "fire_blast", "volume": 0.7, "maxVoices": 2, "pitch": [1.05, 1.15] }],
     "flashover": [{ "sound": "fire_ignite", "volume": 0.8, "maxVoices": 1, "pitch": [0.85, 0.95] }],
     "dodge_roll_flicker": [{ "sound": "fire_ignite", "volume": 0.6, "maxVoices": 2, "pitch": [1.1, 1.25] }, { "sound": "dodge_whoosh", "volume": 0.5, "maxVoices": 2, "pitch": [1.05, 1.15] }]
@@ -168,7 +169,8 @@
     "mender_needle": [{ "sound": "hex_impact", "volume": 0.8, "maxVoices": 2 }],
     "thunderclap": [{ "sound": "bolt_impact", "volume": 0.55, "maxVoices": 3, "cooldown": 0.04 }],
     "thunderclap_gathered": [{ "sound": "flare_crackle", "volume": 0.5, "maxVoices": 3, "cooldown": 0.04, "pitch": [0.95, 1.1] }],
-    "firewall_slam": [{ "sound": "ground_boom", "volume": 0.5, "maxVoices": 2, "cooldown": 0.08 }, { "sound": "flare_crackle", "volume": 0.5, "maxVoices": 2, "cooldown": 0.08 }]
+    "firewall_slam": [{ "sound": "ground_boom", "volume": 0.5, "maxVoices": 2, "cooldown": 0.08 }, { "sound": "flare_crackle", "volume": 0.5, "maxVoices": 2, "cooldown": 0.08 }],
+    "storm_fence_slam": [{ "sound": "bolt_impact", "volume": 0.55, "maxVoices": 2, "cooldown": 0.08 }, { "sound": "spark_snap", "volume": 0.45, "maxVoices": 2, "cooldown": 0.08 }]
   },
   "areaStart": {
     "fire_slam_line": [{ "sound": "fire_ignite", "volume": 0.7, "maxVoices": 1 }],
@@ -179,6 +181,7 @@
     "smouldering_wake": [{ "sound": "fire_ignite", "volume": 0.35, "maxVoices": 2, "cooldown": 0.5, "pitch": [0.9, 1.1] }],
     "firewheel_trail": [{ "sound": "fire_ignite", "volume": 0.35, "maxVoices": 2, "cooldown": 0.5, "pitch": [0.9, 1.1] }],
     "firewall_segment": [{ "sound": "fire_ignite", "volume": 0.3, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.9, 1.12], "volumeJitter": 0.2 }],
+    "storm_fence_segment": [{ "sound": "spark_snap", "volume": 0.28, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.95, 1.15], "volumeJitter": 0.2 }],
     "flicker_embers": [{ "sound": "fire_ignite", "volume": 0.4, "maxVoices": 1, "pitch": [0.95, 1.1] }],
     "bellows": [{ "sound": "ground_boom", "volume": 0.7, "maxVoices": 1 }, { "sound": "fire_blast", "volume": 0.7, "maxVoices": 1 }],
     "standing_storm": [{ "sound": "storm_hum", "volume": 0.45, "maxVoices": 1, "pitch": [0.95, 1.05] }, { "sound": "spark_tick", "volume": 0.25, "maxVoices": 2, "pitch": [0.95, 1.1] }],
@@ -198,6 +201,7 @@
     "smouldering_wake": [{ "sound": "ember_bed", "volume": 0.18, "maxVoices": 1, "cooldown": 1.2, "pitch": [0.92, 1.08], "volumeJitter": 0.25 }],
     "firewheel_trail": [{ "sound": "ember_bed", "volume": 0.18, "maxVoices": 1, "cooldown": 1.2, "pitch": [0.92, 1.08], "volumeJitter": 0.25 }],
     "firewall_segment": [{ "sound": "ember_bed", "volume": 0.22, "maxVoices": 1, "cooldown": 1.2, "pitch": [0.92, 1.08], "volumeJitter": 0.25 }],
+    "storm_fence_segment": [{ "sound": "storm_hum", "volume": 0.16, "maxVoices": 1, "cooldown": 1.2, "pitch": [1.12, 1.22], "volumeJitter": 0.25 }],
     "flicker_embers": [{ "sound": "ember_bed", "volume": 0.2, "maxVoices": 1, "cooldown": 1.2, "pitch": [0.92, 1.08], "volumeJitter": 0.25 }],
     "standing_storm": [{ "sound": "spark_tick", "volume": 0.1, "maxVoices": 1, "cooldown": 1.8, "pitch": [0.9, 1.2], "volumeJitter": 0.4 }],
     "thunderclap_standing": [{ "sound": "spark_tick", "volume": 0.1, "maxVoices": 1, "cooldown": 1.8, "pitch": [0.9, 1.2], "volumeJitter": 0.4 }],
@@ -216,6 +220,7 @@
     "smouldering_wake": [{ "sound": "flare_crackle", "volume": 0.3, "maxVoices": 2, "cooldown": 0.3, "pitch": [0.95, 1.1], "volumeJitter": 0.25 }],
     "firewheel_trail": [{ "sound": "flare_crackle", "volume": 0.3, "maxVoices": 2, "cooldown": 0.3, "pitch": [0.95, 1.1], "volumeJitter": 0.25 }],
     "firewall_segment": [{ "sound": "flare_crackle", "volume": 0.3, "maxVoices": 2, "cooldown": 0.25, "pitch": [0.95, 1.1], "volumeJitter": 0.25 }],
+    "storm_fence_segment": [{ "sound": "spark_snap", "volume": 0.3, "maxVoices": 2, "cooldown": 0.25, "pitch": [0.95, 1.15], "volumeJitter": 0.25 }],
     "flicker_embers": [{ "sound": "flare_crackle", "volume": 0.25, "maxVoices": 2, "cooldown": 0.25, "pitch": [0.95, 1.1], "volumeJitter": 0.25 }],
     "standing_storm": [{ "sound": "spark_snap", "volume": 0.35, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.9, 1.2], "volumeJitter": 0.25 }],
     "thunderclap_standing": [{ "sound": "spark_snap", "volume": 0.35, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.9, 1.2], "volumeJitter": 0.25 }],
@@ -234,6 +239,7 @@
     "smouldering_wake": [{ "sound": "fire_extinguish", "volume": 0.18, "maxVoices": 1, "cooldown": 0.6, "pitch": [0.9, 1.05] }],
     "firewheel_trail": [{ "sound": "fire_extinguish", "volume": 0.18, "maxVoices": 1, "cooldown": 0.6, "pitch": [0.9, 1.05] }],
     "firewall_segment": [{ "sound": "fire_extinguish", "volume": 0.2, "maxVoices": 1, "cooldown": 0.5, "pitch": [0.9, 1.05] }],
+    "storm_fence_segment": [{ "sound": "storm_fade", "volume": 0.16, "maxVoices": 1, "cooldown": 0.5, "pitch": [1.1, 1.2] }],
     "flicker_embers": [{ "sound": "fire_extinguish", "volume": 0.2, "maxVoices": 1, "pitch": [0.9, 1.05] }],
     "standing_storm": [{ "sound": "storm_fade", "volume": 0.3, "maxVoices": 1, "pitch": [0.95, 1.05] }],
     "static_field": [{ "sound": "storm_fade", "volume": 0.3, "maxVoices": 1, "pitch": [0.8, 0.86] }],
@@ -256,7 +262,8 @@
   },
   "silent": {
     "ground_heat": "the burning ground is a surface, not a cast: its burn events play hero_burn",
-    "firewall_slam": "a body thrown into a Firewall is never cast: the slam is heard through its hit"
+    "firewall_slam": "a body thrown into a Firewall is never cast: the slam is heard through its hit",
+    "storm_fence_slam": "a body thrown into a Storm Fence is never cast: the slam is heard through its hit"
   },
   "hit": {
     "bone": [{ "sound": "bone_hit", "volume": 0.85, "maxVoices": 4 }],

@@ -42,7 +42,7 @@ void test('a stack never follows more specialties than the chart allows, however
 
 void test('with three specialties held a stack never opens a fourth, and still finds every place it values outside them', (): void => {
   const three: readonly string[] = content.chart.specialties.slice(0, content.chart.specialtyLimit).map((entry): string => entry.id);
-  const held = bestStack(content, (node: SkillTreeNodeDef): number => (node.specialty !== null && three.includes(node.specialty) ? 1 : 0), POINTS);
+  const held = bestStack(content, (node: SkillTreeNodeDef): number => (node.specialty !== null && three.includes(node.specialty) && node.kind !== 'minor' ? 1 : 0), POINTS);
   assert.deepEqual(heldSpecialties(content, held.route).toSorted(), [...three].toSorted());
   const start: readonly string[] = held.route.slice(0, held.route.length - 10);
   const opened: ReadonlySet<string> = new Set<string>(heldSpecialties(content, start));

@@ -96,6 +96,7 @@
     {"field": "durationPercent", "max": 2},
     {"field": "cooldownPercent", "min": -0.6},
     {"field": "manaCostPercent", "min": -0.6},
+    {"field": "momentumSteadyPercent", "min": -0.75},
     {"field": "projectiles", "max": 4},
     {"field": "pierce", "max": 8},
     {"field": "chains", "max": 8},

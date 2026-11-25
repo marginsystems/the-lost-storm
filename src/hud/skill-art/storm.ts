@@ -135,6 +135,31 @@ ${spark(40, 38, 0.7, STORM.pale)}
 ${spark(26, 16, 0.6, STORM.pale)}
 `);
 
+const FENCE_POSTS: readonly Point[] = [[7, 52], [21, 44], [35, 40], [49, 34], [59, 22]];
+
+function fencePost([x, y]: Point): string {
+  return `<rect x="${fmt(x - 1.6)}" y="${fmt(y - 9)}" width="3.2" height="12" rx="0.8" fill="url(#iron)"/>`
+    + `<rect x="${fmt(x - 1.6)}" y="${fmt(y - 9)}" width="3.2" height="1.4" rx="0.6" fill="#e6ecf2" opacity="0.85"/>`
+    + flash(x, y - 9, 3.4, STORM.bloom);
+}
+
+function fenceSpan(from: Point, to: Point, lift: number, offsets: readonly number[]): string {
+  return bolt(jagged([from[0], from[1] - lift], [to[0], to[1] - lift], offsets, -1.2), 1.5, STORM.bloom, STORM.mid);
+}
+
+const stormFence: string = art('storm', `
+${halo(34, 40, 26, STORM.bloom, 0.32)}
+<path d="M0 64 L0 54 C 14 48 26 44 38 40 C 50 36 56 28 64 22 L64 64Z" fill="#02070c" opacity="0.5"/>
+<path d="${polyline(FENCE_POSTS)}" stroke="${STORM.bloom}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.35" filter="url(#bloom)"/>
+${FENCE_POSTS.slice(1).map((to: Point, i: number): string => fenceSpan(FENCE_POSTS[i] ?? to, to, 9, [2, -2.5, 1.5, -1])).join('')}
+${FENCE_POSTS.slice(1).map((to: Point, i: number): string => thread(jagged([(FENCE_POSTS[i] ?? to)[0], (FENCE_POSTS[i] ?? to)[1] - 3.5], [to[0], to[1] - 3.5], [-1.5, 2, -1], 0.8), STORM.pale, 0.9, 0.7)).join('')}
+${FENCE_POSTS.map(fencePost).join('')}
+${spark(14, 30, 0.9, STORM.pale)}
+${spark(30, 24, 0.8, STORM.white)}
+${spark(44, 18, 0.9, STORM.pale)}
+${spark(56, 8, 0.7, STORM.white)}
+`);
+
 const ECHO_BOLT: string = 'M2 64 L16 48 L12.5 45.5 L27 32 L23.5 29.5 L40 18';
 
 const stormBoltEcho: string = art('storm', `
@@ -422,5 +447,6 @@ export const STORM_ART: ReadonlyMap<string, string> = new Map<string, string>([
   ['living_wire', livingWire],
   ['standing_storm', standingStorm],
   ['static_field', staticField],
+  ['storm_fence', stormFence],
   ['spell_strike', spellStrike],
 ]);

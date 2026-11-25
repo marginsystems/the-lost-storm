@@ -13,7 +13,7 @@ export const STACK = {
   slack: 1e-9,
 } as const;
 
-export const LOWER_IS_STRONGER: ReadonlySet<SkillModField> = new Set<SkillModField>(['cooldownPercent', 'manaCostPercent']);
+export const LOWER_IS_STRONGER: ReadonlySet<SkillModField> = new Set<SkillModField>(['cooldownPercent', 'manaCostPercent', 'momentumSteadyPercent']);
 
 export type PlaceWeight = (node: SkillTreeNodeDef) => number;
 

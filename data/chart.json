@@ -77,7 +77,8 @@
         "squall",
         "static_brand",
         "thunderhead",
-        "standing_storm"
+        "standing_storm",
+        "storm_fence"
       ]
     },
     {
@@ -153,6 +154,18 @@
         "flashover",
         "flashover_burst",
         "banked_fire"
+      ]
+    },
+    {
+      "id": "wall",
+      "name": "wall skills",
+      "skills": [
+        "firewall",
+        "firewall_segment",
+        "firewall_slam",
+        "storm_fence",
+        "storm_fence_segment",
+        "storm_fence_slam"
       ]
     },
     {

@@ -6,7 +6,6 @@ import lines from '../../data/lines.json' with { type: 'json' };
 import monsters from '../../data/monsters.json' with { type: 'json' };
 import player from '../../data/player.json' with { type: 'json' };
 import rigs from '../../data/rigs.json' with { type: 'json' };
-import skillTree from '../../data/skill-tree.json' with { type: 'json' };
 import skills from '../../data/skills.json' with { type: 'json' };
 import wearables from '../../data/wearables.json' with { type: 'json' };
 import { SHALLOWS as shallows, WAYSTATION as waystation } from '../../test/pair-support.ts';
@@ -17,8 +16,8 @@ import { canAllocate } from '../progression.ts';
 import { RAW_CONTENT } from './content.ts';
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
-import { ContentError } from './read.ts';
-import type { BossDef, Content, MonsterDef } from './types.ts';
+import { ContentError, items as listOf } from './read.ts';
+import type { BossDef, Content, MonsterDef, SkillTreeNodeDef } from './types.ts';
 
 import { has, problem, shipped, zones } from '../../test/parse-support.ts';
 
@@ -93,6 +92,8 @@ const extraBase = {
   ],
 };
 
+const skillTree: readonly unknown[] = listOf(RAW_CONTENT.skillTree, 'skillTree');
+
 const extraNode = {
   id: 'ember_heart',
   name: 'Ember Heart',
@@ -164,8 +165,9 @@ void test('contentProblems reports dangling references', (): void => {
 });
 
 void test('a tree node needs a known kind and a place of its own', (): void => {
+  const firstPlace: SkillTreeNodeDef = must(parseContent(shipped).skillTree[0], 'first place');
   assert.throws((): Content => parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, kind: 'huge' }] }), /kind/);
-  const stacked: Content = parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, column: skillTree[0]?.column ?? 0, row: skillTree[0]?.row ?? 0 }] });
+  const stacked: Content = parseContent({ ...shipped, skillTree: [...skillTree, { ...extraNode, column: firstPlace.column, row: firstPlace.row }] });
   assert.ok(contentProblems(stacked).some((line: string): boolean => line.includes('same column and row')));
 });
 
