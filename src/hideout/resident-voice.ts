@@ -19,7 +19,10 @@ export interface ResidentVoiceOptions {
   readonly fetch: FetchFn;
   readonly standsAt: (line: ChatLine) => Ground | null;
   readonly speak: (audio: ArrayBuffer, at: Ground) => Promise<void>;
+  readonly heard?: (line: ChatLine, phase: VoicePhase) => void;
 }
+
+export type VoicePhase = 'started' | 'ended' | 'failed';
 
 export interface ResidentVoice {
   handle(event: LiveEvent): void;
@@ -64,13 +67,26 @@ export function createResidentVoice(options: ResidentVoiceOptions): ResidentVoic
   const play = async (voiced: VoicedLine, clip: Promise<ArrayBuffer | null>): Promise<void> => {
     const audio: ArrayBuffer | null = await clip;
     const at: Ground | null = options.standsAt(voiced.line);
-    if (audio !== null && at !== null) await options.speak(audio, at);
+    if (audio === null || at === null) {
+      options.heard?.(voiced.line, 'failed');
+      return;
+    }
+    options.heard?.(voiced.line, 'started');
+    try {
+      await options.speak(audio, at);
+    } finally {
+      options.heard?.(voiced.line, 'ended');
+    }
   };
 
   return {
     handle(event: LiveEvent): void {
       const voiced: VoicedLine | null = lineToVoice(event, options.standsAt);
-      if (voiced === null || queued >= RESIDENT_VOICE.waiting) return;
+      if (voiced === null) return;
+      if (queued >= RESIDENT_VOICE.waiting) {
+        options.heard?.(voiced.line, 'failed');
+        return;
+      }
       const clip: Promise<ArrayBuffer | null> = fetchClip(options, voiced.voice);
       queued += 1;
       chain = chain

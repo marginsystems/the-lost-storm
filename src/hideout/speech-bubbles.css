@@ -1,0 +1,128 @@
+.speech-bubble {
+  --speech-max: 248px;
+  --speech-tail: 6px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.speech-bubble.held {
+  position: relative;
+  margin-bottom: 4px;
+  will-change: auto;
+}
+
+.speech-bubble.held .speech-plate {
+  transform: none;
+}
+
+.speech-plate {
+  transform: translate(-50%, -100%);
+  transform-origin: 0 0;
+  padding-bottom: var(--speech-tail);
+  transition: scale var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.speech-body {
+  position: relative;
+  padding: 5px 10px 6px;
+  border-radius: 5px;
+  background: rgba(8, 10, 16, 0.68);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(3px);
+  transform-origin: 50% calc(100% + var(--speech-tail));
+  animation: speech-in var(--spring-bouncy-ms) var(--spring-bouncy) backwards;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    scale var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.speech-body::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: calc(var(--speech-tail) * 2);
+  height: var(--speech-tail);
+  translate: -50% 0;
+  background: rgba(8, 10, 16, 0.68);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.speech-bubble.away .speech-body,
+.speech-bubble.leaving .speech-body {
+  opacity: 0;
+  scale: 0.9;
+  translate: 0 -6px;
+}
+
+.speech-lines {
+  position: relative;
+  overflow: hidden;
+  transition:
+    width var(--spring-smooth-ms) var(--spring-smooth),
+    height var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.speech-line {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  translate: -50% 0;
+  width: max-content;
+  max-width: var(--speech-max);
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.35;
+  color: #e6edf5;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  overflow: hidden;
+  animation: speech-line-in var(--spring-snappy-ms) var(--spring-snappy) backwards;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    translate var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.speech-line:first-child {
+  animation: none;
+}
+
+.speech-line.leaving {
+  opacity: 0;
+  translate: -50% -6px;
+}
+
+.speech-bubble.resident .speech-line {
+  color: #f6e7c8;
+}
+
+@keyframes speech-in {
+  from {
+    opacity: 0;
+    scale: 0.82;
+    translate: 0 6px;
+  }
+}
+
+@keyframes speech-line-in {
+  from {
+    opacity: 0;
+    translate: -50% 6px;
+  }
+}
+
+@media (max-width: 720px), (pointer: coarse) {
+  .speech-bubble {
+    --speech-max: 200px;
+  }
+}

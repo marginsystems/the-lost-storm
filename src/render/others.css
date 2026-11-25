@@ -6,17 +6,24 @@
   will-change: transform, opacity;
 }
 
+.player-plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -100%);
+  transform-origin: 0 0;
+  animation: label-in var(--spring-bouncy-ms) var(--spring-bouncy) backwards;
+  transition: scale var(--spring-snappy-ms) var(--spring-snappy);
+}
+
 .player-label span {
   position: relative;
   display: flex;
   align-items: center;
-  transform: translate(-50%, -100%);
-  transform-origin: 0 0;
   padding: 2px 9px 3px;
   border-radius: 4px;
   background: rgba(8, 10, 16, 0.5);
   white-space: nowrap;
-  animation: label-in var(--spring-bouncy-ms) var(--spring-bouncy) backwards;
 }
 
 .player-label b {
@@ -56,8 +63,7 @@
 .player-label span {
   transition:
     background-color var(--spring-snappy-ms) var(--spring-snappy),
-    box-shadow var(--spring-snappy-ms) var(--spring-snappy),
-    scale var(--spring-snappy-ms) var(--spring-snappy);
+    box-shadow var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .player-label.lit span {

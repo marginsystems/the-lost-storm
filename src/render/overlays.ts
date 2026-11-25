@@ -30,7 +30,7 @@ import type { TagSize, TagSizes } from './tag-sizes.ts';
 import { createPanelCover } from './panel-cover.ts';
 import type { PanelCover } from './panel-cover.ts';
 import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
-import { blockersIn, glideAt, glidePlace, place } from './overlay-place.ts';
+import { blockersIn, glideApart, glideAt, glidePlace, place } from './overlay-place.ts';
 import type { TagBound } from './overlay-place.ts';
 import type { WorldTag } from './world-tag.ts';
 import { createFloatingNumbers } from './floating-numbers.ts';
@@ -228,7 +228,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     for (const tag of shown) {
       const element: HTMLElement | undefined = pending[tag.id]?.element;
       if (element === undefined) continue;
-      const [x, y] = keepTagInView(tag.x, tag.y + (apart.get(tag.id) ?? 0), tag.width, tag.height, view);
+      const [x, y] = keepTagInView(tag.x, tag.y + glideApart(element, apart.get(tag.id) ?? 0, dt), tag.width, tag.height, view);
       plateRects.push({ left: x - tag.width / 2, top: y - tag.height, right: x + tag.width / 2, bottom: y });
       point.set(x, y);
       place(element, point);
@@ -555,6 +555,11 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             break;
         }
       }
+      for (const tag of tags) {
+        camera.project(tag.x, tag.y, tag.z, point);
+        anchor.copy(point);
+        settleTag(tag.element, tag.glide, tag.stack, dt, tag.shown && (tag.edge || anchorInView(point.x, point.y, view)));
+      }
       for (const label of exits) {
         const pinned: boolean = pinnedExits.has(label.id);
         if (pinned !== label.pinned) {
@@ -587,11 +592,6 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         camera.project(label.npc.pos.x, floorUp(label.npc.pos.x, hooks.labelRiseOf(label.npc.id, dt), label.npc.pos.z), label.npc.pos.z, point);
         anchor.copy(point);
         settleTag(label.element, label.glide, label.stack, dt, true);
-      }
-      for (const tag of tags) {
-        camera.project(tag.x, tag.y, tag.z, point);
-        anchor.copy(point);
-        settleTag(tag.element, tag.glide, tag.stack, dt, tag.shown && (tag.edge || anchorInView(point.x, point.y, view)));
       }
       stackTags(dt);
       for (const label of leaving) {

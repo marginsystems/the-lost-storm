@@ -1,7 +1,7 @@
 import type { Vector2 } from 'three';
 import { keepTagInView } from './label-edge.ts';
 import type { ViewSize } from './label-edge.ts';
-import { glideToward } from './label-glide.ts';
+import { createGlide, glideToward } from './label-glide.ts';
 import type { LabelGlide } from './label-glide.ts';
 import type { ScreenRect } from './label-stack.ts';
 import type { TagSize } from './tag-sizes.ts';
@@ -29,6 +29,15 @@ export function glideAt(glide: LabelGlide, anchor: Vector2, target: Vector2, dt:
     const [x, y] = keepTagInView(target.x, target.y, bound.size.width, bound.size.height, bound.view);
     target.set(x, y);
   }
+}
+
+const PARTINGS: WeakMap<object, LabelGlide> = new WeakMap<object, LabelGlide>();
+
+export function glideApart(owner: object, apart: number, dt: number): number {
+  const parted: LabelGlide = PARTINGS.get(owner) ?? createGlide();
+  PARTINGS.set(owner, parted);
+  glideToward(parted, 0, apart, dt);
+  return parted.y;
 }
 
 export function glidePlace(element: HTMLElement, glide: LabelGlide, anchor: Vector2, target: Vector2, dt: number): void {

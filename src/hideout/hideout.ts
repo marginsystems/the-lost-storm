@@ -32,8 +32,19 @@ import type { MapCharacter } from '../minimap/marks.ts';
 import type { WorldTag } from '../render/world-tag.ts';
 import type { Mutes } from './mute.ts';
 import { createMutes } from './mute.ts';
-import type { Ground, ResidentVoice } from './resident-voice.ts';
+import type { Ground, ResidentVoice, VoicePhase } from './resident-voice.ts';
 import { createResidentVoice } from './resident-voice.ts';
+import type { OtherHead } from '../render/others.ts';
+import { Vector2 } from 'three';
+import { anchorInView } from '../render/label-edge.ts';
+import type { ElementSize } from '../render/element-size.ts';
+import { watchSize } from '../render/element-size.ts';
+import { HEAD_TOP } from '../render/head-top.ts';
+import { standLift } from '../render/terrain-lift.ts';
+import type { Speaker, SpeechState, SpokenLine } from './speech.ts';
+import { expire, heard, NO_SPEECH, say, shownBubbles, spokenOf, voiceEnded, voiceFailed, voiceStarted } from './speech.ts';
+import type { BubbleHome, SpeechBubbles } from './speech-bubbles.ts';
+import { createSpeechBubbles } from './speech-bubbles.ts';
 
 export interface HideoutParts {
   readonly scene: Scene;
@@ -51,6 +62,7 @@ export interface HideoutParts {
   readonly sync: () => Promise<void>;
   readonly openProfile: ((name: string) => void) | null;
   readonly speak: (audio: ArrayBuffer, at: Ground) => Promise<void>;
+  readonly headRiseOf: (actorId: number, dt: number) => number;
 }
 
 export interface Hideout {
@@ -99,9 +111,61 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     const id: string | null = line.from !== null && others.groundOf(line.from) !== null ? line.from : others.resident(line.name) ? (others.named(line.name)?.id ?? null) : null;
     return id === null ? null : others.groundOf(id);
   };
-  const voice: ResidentVoice = createResidentVoice({ serverUrl: server.url, fetch: server.fetch, standsAt, speak: parts.speak });
+  let speech: SpeechState = NO_SPEECH;
+  let step: number = 0;
+  const bubbles: SpeechBubbles = createSpeechBubbles(parts.labels);
+  const otherId = (speaker: Speaker): string | null => {
+    switch (speaker.kind) {
+      case 'self':
+        return null;
+      case 'other':
+        return speaker.id;
+      case 'resident':
+        return speaker.id !== null && others.headOf(speaker.id) !== null ? speaker.id : others.residentId(speaker.name);
+    }
+    return null;
+  };
+  const otherHead = (speaker: Speaker): OtherHead | null => {
+    const id: string | null = otherId(speaker);
+    return id === null ? null : others.headOf(id);
+  };
+  const screen: ElementSize = watchSize(parts.labels);
+  const spot: Vector2 = new Vector2();
+  const homeOf = (world: World | null, speaker: Speaker): BubbleHome | null => {
+    if (speaker.kind !== 'self') {
+      const id: string | null = otherId(speaker);
+      const holder: HTMLElement | null = id === null ? null : others.holderOf(id);
+      return holder === null ? null : { kind: 'held', holder };
+    }
+    if (world === null) return null;
+    const head: OtherHead = heroHead(world);
+    return { kind: 'world', ...head, seen: parts.camera.project(head.x, head.y, head.z, spot) && anchorInView(spot.x, spot.y, screen) };
+  };
+  const heroHead = (world: World): OtherHead => {
+    const { pos } = world.player;
+    return { x: pos.x, y: world.zone.floorHeight + standLift(world.zone, world.content.props, pos.x, pos.z) + parts.headRiseOf(world.player.id, step) + HEAD_TOP.gap, z: pos.z };
+  };
+  const drawnHere = (speaker: Speaker): boolean => speaker.kind === 'self' || (current?.zone.id === LIVE_ZONE && otherHead(speaker) !== null);
+  const heardVoice = (line: ChatLine, phase: VoicePhase): void => {
+    const now: number = performance.now();
+    switch (phase) {
+      case 'started':
+        speech = voiceStarted(speech, line.id, now);
+        return;
+      case 'ended':
+        speech = voiceEnded(speech, line.id, now);
+        return;
+      case 'failed':
+        speech = voiceFailed(speech, line.id, now);
+        return;
+    }
+  };
+  const voice: ResidentVoice = createResidentVoice({ serverUrl: server.url, fetch: server.fetch, standsAt, speak: parts.speak, heard: heardVoice });
   server.live.subscribe((event: LiveEvent): void => {
     others.handle(event);
+    speech = heard(speech, event);
+    const spoken: SpokenLine | null = spokenOf(speech, event);
+    if (spoken !== null && drawnHere(spoken.speaker)) speech = say(speech, spoken, performance.now());
     voice.handle(event);
     chat.handle(event);
     menu.handle(event);
@@ -110,6 +174,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
   return {
     frame(dt: number, playing: boolean, world: World, presenting: boolean): void {
       current = world;
+      step = dt;
       server.live.update({ zone: playing ? world.zone.id : null, x: world.player.pos.x, z: world.player.pos.z, facing: world.player.facing });
       chat.frame(playing, world.zone.id === LIVE_ZONE);
       const inHideout: boolean = playing && world.zone.id === LIVE_ZONE;
@@ -117,7 +182,11 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
         menu.frame(false, world.player.pos);
         return;
       }
-      if (drawn !== world.zone) others.clear();
+      if (drawn !== world.zone) {
+        others.clear();
+        bubbles.clear();
+        speech = { ...speech, bubbles: [] };
+      }
       drawn = world.zone;
       others.update(dt, world.zone.floorHeight);
       menu.frame(inHideout, world.player.pos);
@@ -128,7 +197,11 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     },
     pressPlayer: (id: string | null): boolean => menu.press(id),
     characters: (): readonly MapCharacter[] => (current?.zone.id === LIVE_ZONE ? others.residents() : []),
-    tags: (): readonly WorldTag[] => others.tags(),
+    tags(): readonly WorldTag[] {
+      const world: World | null = current;
+      speech = expire(speech, performance.now());
+      return [...others.tags(), ...bubbles.update(shownBubbles(speech), (speaker: Speaker): BubbleHome | null => homeOf(world, speaker), performance.now())];
+    },
   };
 }
 

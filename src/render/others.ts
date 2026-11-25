@@ -32,6 +32,7 @@ import { createGestureState, gestureNeeds, placeAct, queueAct, shownPose, stepGe
 export const OTHERS = {
   hiddenBelow: 0.01,
   labelClass: 'player-label',
+  holderClass: 'player-plate',
   residentClass: 'resident',
   leavingClass: 'leaving',
   litClass: 'lit',
@@ -51,6 +52,12 @@ export interface ScreenAnchor {
   readonly x: number;
   readonly top: number;
   readonly bottom: number;
+}
+
+export interface OtherHead {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
 }
 
 export interface OtherTarget {
@@ -95,6 +102,9 @@ export interface Others {
   residents(): readonly MapCharacter[];
   anchorOf(id: string): ScreenAnchor | null;
   groundOf(id: string): { readonly x: number; readonly z: number } | null;
+  headOf(id: string): OtherHead | null;
+  residentId(name: string): string | null;
+  holderOf(id: string): HTMLElement | null;
   tags(): readonly WorldTag[];
 }
 
@@ -128,6 +138,7 @@ interface Other {
   readonly id: string;
   readonly track: Track;
   readonly label: HTMLDivElement;
+  readonly holder: HTMLDivElement;
   name: HTMLElement;
   called: string;
   username: string | null;
@@ -183,7 +194,7 @@ export function createOthers(options: OthersOptions): Others {
   const screen: ElementSize = watchSize(options.labels);
   const plateOf = (other: Other): ElementSize => {
     if (other.plate !== null) return other.plate;
-    const plate: Element | null = other.label.firstElementChild;
+    const plate: Element | null = other.holder.lastElementChild;
     const measured: ElementSize = plate instanceof HTMLElement ? { width: plate.offsetWidth, height: plate.offsetHeight } : { width: 0, height: 0 };
     if (measured.width > 0) other.plate = measured;
     return measured;
@@ -272,10 +283,13 @@ export function createOthers(options: OthersOptions): Others {
     const name: HTMLElement = document.createElement('b');
     name.textContent = player.name;
     inner.append(name);
-    label.append(inner);
+    const holder: HTMLDivElement = document.createElement('div');
+    holder.className = OTHERS.holderClass;
+    holder.append(inner);
+    label.append(holder);
     label.style.opacity = '0';
     options.labels.append(label);
-    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null, plate: null, gesture: createGestureState(), tag: { element: label, x: 0, y: 0, z: 0, shown: false, edge: false, glide: createGlide(), stack: createGlide() } });
+    others.set(player.id, { id: player.id, track: createTrack(sample), label, holder, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null, plate: null, gesture: createGestureState(), tag: { element: label, x: 0, y: 0, z: 0, shown: false, edge: false, glide: createGlide(), stack: createGlide() } });
     const added: Other | undefined = others.get(player.id);
     if (added !== undefined) placeAct(added.gesture, player.act ?? null);
   };
@@ -485,6 +499,18 @@ export function createOthers(options: OthersOptions): Others {
     },
     groundOf(id: string): { readonly x: number; readonly z: number } | null {
       return shownTarget(id)?.ground ?? null;
+    },
+    headOf(id: string): OtherHead | null {
+      const other: Other | null = shownTarget(id);
+      return other === null || other.figure === null || !other.tag.shown ? null : { x: other.tag.x, y: other.tag.y, z: other.tag.z };
+    },
+    holderOf(id: string): HTMLElement | null {
+      return shownTarget(id)?.holder ?? null;
+    },
+    residentId(name: string): string | null {
+      const key: string = name.toLowerCase();
+      for (const other of others.values()) if (other.here && other.resident && other.called.toLowerCase() === key) return other.id;
+      return null;
     },
     tags(): readonly WorldTag[] {
       const found: OtherTag[] = [];
