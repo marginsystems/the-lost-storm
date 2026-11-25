@@ -40,6 +40,6 @@ void test('check names what is wrong with each build', (): void => {
 
 void test('a request with an unknown action, a bad level or a bad seed is refused', (): void => {
   assert.throws((): unknown => readSearchRequest({ action: 'grow', level: 20 }));
-  assert.throws((): unknown => answerSearch(CONTENT, readSearchRequest({ action: 'random', level: 31, seeds: [1] })));
+  assert.throws((): unknown => answerSearch(CONTENT, readSearchRequest({ action: 'random', level: CONTENT.player.xp.maxLevel + 1, seeds: [1] })));
   assert.throws((): unknown => readSearchRequest({ action: 'random', level: 20, seeds: [-1] }));
 });

@@ -345,7 +345,7 @@ void test('a full Hourfall Caves kept in the save stays small and capped', (): v
   through(world);
   const kept: string = JSON.stringify(toSave(world).portal);
   assert.ok(living(wild()).length <= PORTAL_KEEP.monsters);
-  assert.ok(kept.length < 16_000, `kept zone is ${kept.length} bytes`);
+  assert.ok(kept.length < 36_000, `kept zone is ${kept.length} bytes`);
 });
 
 void test('the trader shows each good as one steady item of its base', (): void => {

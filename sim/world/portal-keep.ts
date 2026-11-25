@@ -5,7 +5,7 @@ import { spawnMonster } from './spawn.ts';
 import type { GroundItem, MonsterState, World } from './types.ts';
 
 export const PORTAL_KEEP = {
-  monsters: 240,
+  monsters: 400,
   ground: 64,
   settledAge: 60,
   places: 100,

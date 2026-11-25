@@ -4325,7 +4325,7 @@
     "gaits": [
       {
         "clip": "Snake_Walk",
-        "groundSpeed": 1.6
+        "groundSpeed": 2.0
       }
     ],
     "clips": {
@@ -4477,6 +4477,10 @@
     "rootMotionBone": null,
     "lift": 0.3,
     "gaits": [
+      {
+        "clip": "Flying_Idle",
+        "groundSpeed": 0.8
+      },
       {
         "clip": "Fast_Flying",
         "groundSpeed": 2.5

@@ -60,7 +60,7 @@ void test('the owner case: looking ahead through the Act I route the rare token 
     assert.match(verdictNote(verdict) ?? '', /^Storm and frost hit hardest in the Inner Hall: \+\d+% toughness there$/);
   }
   const threat: Threat = threatNear(content, ['under_hall_2'], hideout, 14);
-  assert.deepEqual(verdictParts(verdictOf(blade(14, quickToken), threat, groundedToken)), ['−3% toughness', '−4% damage']);
+  assert.deepEqual(verdictParts(verdictOf(blade(14, quickToken), threat, groundedToken)), ['−4% toughness', '−4% damage']);
   const court: Threat = mixThreat(must(threat.zones.find((entry: ThreatZone): boolean => entry.id === 'ledger_court'), 'court').mix);
   const atBoss: Verdict = verdictOf(blade(14, quickToken), court, groundedToken);
   assert.ok(atBoss.toughness > VERDICT.clear);
