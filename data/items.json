@@ -64,6 +64,22 @@
     {
       "id": "mist_treader",
       "name": "Mist-Treader"
+    },
+    {
+      "id": "unbroken_wheel",
+      "name": "Unbroken Wheel"
+    },
+    {
+      "id": "hillfall",
+      "name": "Hillfall"
+    },
+    {
+      "id": "tumbler",
+      "name": "Tumbler"
+    },
+    {
+      "id": "fencewright",
+      "name": "Fencewright"
     }
   ],
   "leaning": true,
@@ -2888,6 +2904,581 @@
       }
     },
     {
+      "id": "deepcut_sabre",
+      "name": "Deepcut Sabre",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "blade",
+      "icon": "sword",
+      "dropWeight": 3,
+      "minLevel": 31,
+      "visual": "gullwing_blade",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 28
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 44
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.28
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.08
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.25
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.12
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "hollowpeak_greatsword",
+      "name": "Hollowpeak Greatsword",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "greatsword",
+      "icon": "greatsword",
+      "dropWeight": 3,
+      "minLevel": 33,
+      "visual": "fordbreaker",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 36
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 60
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.05
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.2
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.6
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "brineheart_staff",
+      "name": "Brineheart Staff",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "staff",
+      "icon": "staff",
+      "dropWeight": 3,
+      "minLevel": 33,
+      "visual": "deepwater_staff",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 30
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 48
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 80
+        },
+        {
+          "stat": "manaRegen",
+          "op": "add",
+          "value": 4.5
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.2
+        },
+        {
+          "stat": "stormResist",
+          "op": "add",
+          "value": 0.14
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "variants": [
+        {
+          "skill": "cleave",
+          "becomes": "spell_strike"
+        }
+      ]
+    },
+    {
+      "id": "longreach_arbalest",
+      "name": "Longreach Arbalest",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "crossbow",
+      "icon": "crossbow",
+      "dropWeight": 3,
+      "minLevel": 34,
+      "visual": "longwatch_arbalest",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 31
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 48
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.07
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.3
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.04
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.16
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "variants": [
+        {
+          "skill": "cleave",
+          "becomes": "quarrel"
+        }
+      ]
+    },
+    {
+      "id": "tidewall_maul",
+      "name": "Tidewall Maul",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "blunt",
+      "icon": "mace",
+      "dropWeight": 3,
+      "minLevel": 35,
+      "visual": "cairn_maul",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 42
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 68
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.4
+        },
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 30
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 60
+        },
+        {
+          "stat": "stormResist",
+          "op": "add",
+          "value": 0.1
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "ridgecleaver",
+      "name": "Ridgecleaver",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "axe",
+      "icon": "axe",
+      "dropWeight": 3,
+      "minLevel": 36,
+      "visual": "bearded_axe",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 25
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 48
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.1
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.3
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 30
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "squallglass_longsword",
+      "name": "Squallglass Longsword",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "blade",
+      "icon": "sword",
+      "dropWeight": 3,
+      "minLevel": 40,
+      "visual": "stormglass_longsword",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 33
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 55
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.14
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.05
+        },
+        {
+          "stat": "lifeRegen",
+          "op": "add",
+          "value": 4
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 30
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "thunderhead_stave",
+      "name": "Thunderhead Stave",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "staff",
+      "icon": "staff",
+      "dropWeight": 3,
+      "minLevel": 42,
+      "visual": "thunderwood_staff",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 37
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 60
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.07
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.2
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 70
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.22
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "variants": [
+        {
+          "skill": "cleave",
+          "becomes": "spell_strike"
+        }
+      ]
+    },
+    {
+      "id": "galeburst_repeater",
+      "name": "Galeburst Repeater",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "crossbow",
+      "icon": "crossbow",
+      "dropWeight": 3,
+      "minLevel": 44,
+      "visual": "stormlatch_repeater",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 35
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 55
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.2
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.2
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.06
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.18
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "variants": [
+        {
+          "skill": "cleave",
+          "becomes": "quarrel"
+        }
+      ]
+    },
+    {
+      "id": "summit_maul",
+      "name": "Summit Maul",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "blunt",
+      "icon": "mace",
+      "dropWeight": 2,
+      "minLevel": 47,
+      "visual": "quarry_maul",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 56
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 88
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.45
+        },
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 40
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 80
+        },
+        {
+          "stat": "frostResist",
+          "op": "add",
+          "value": 0.12
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "last_light_greatsword",
+      "name": "Last-Light Greatsword",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "greatsword",
+      "icon": "greatsword",
+      "dropWeight": 2,
+      "minLevel": 48,
+      "visual": "riverbreaker",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 48
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 80
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.05
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.7
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 50
+        },
+        {
+          "stat": "lifeRegen",
+          "op": "add",
+          "value": 4
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
       "id": "stitched_tunic",
       "name": "Stitched Tunic",
       "slot": "chest",
@@ -3519,6 +4110,390 @@
         "pitch": -90,
         "roll": 0,
         "yawJitter": 40
+      }
+    },
+    {
+      "id": "stormrunner_boots",
+      "name": "Stormrunner Boots",
+      "slot": "feet",
+      "material": "leather",
+      "icon": "boots",
+      "dropWeight": 3,
+      "minLevel": 32,
+      "visual": null,
+      "wear": [
+        "leather_boots"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 12
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 14
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.08
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.3,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "stormcrest_helm",
+      "name": "Stormcrest Helm",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 2,
+      "minLevel": 34,
+      "visual": null,
+      "wear": [
+        "ornamented_great_helm"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 56
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 46
+        },
+        {
+          "stat": "stormResist",
+          "op": "add",
+          "value": 0.1
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.12
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "squallweave_robe",
+      "name": "Squallweave Robe",
+      "slot": "chest",
+      "material": "cloth",
+      "icon": "armour",
+      "dropWeight": 3,
+      "minLevel": 35,
+      "visual": null,
+      "wear": [
+        "stitched_tunic"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 10
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 60
+        },
+        {
+          "stat": "manaRegen",
+          "op": "add",
+          "value": 2.5
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "flatten": 0.35,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
+    },
+    {
+      "id": "citadel_plate",
+      "name": "Citadel Plate",
+      "slot": "chest",
+      "material": "plate",
+      "icon": "armour",
+      "dropWeight": 2,
+      "minLevel": 36,
+      "visual": null,
+      "wear": [
+        "blackened_plate"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 84
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 70
+        },
+        {
+          "stat": "stormResist",
+          "op": "add",
+          "value": 0.12
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "flatten": 0.35,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
+    },
+    {
+      "id": "thunderstone_charm",
+      "name": "Thunderstone Charm",
+      "slot": "charm",
+      "material": null,
+      "icon": "charm",
+      "dropWeight": 3,
+      "minLevel": 37,
+      "visual": null,
+      "wear": [
+        "storm_idol"
+      ],
+      "implicit": [
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.12
+        },
+        {
+          "stat": "stormResist",
+          "op": "add",
+          "value": 0.12
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.03
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "rampart_vambraces",
+      "name": "Rampart Vambraces",
+      "slot": "hands",
+      "material": "plate",
+      "icon": "gloves",
+      "dropWeight": 2,
+      "minLevel": 38,
+      "visual": null,
+      "wear": [
+        "iron_vambraces"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 30
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 24
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.04
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "keep": "left",
+        "scale": 1.8,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "seer_circlet",
+      "name": "Seer's Circlet",
+      "slot": "head",
+      "material": "cloth",
+      "icon": "circlet",
+      "dropWeight": 3,
+      "minLevel": 39,
+      "visual": null,
+      "wear": [
+        "circlet"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 4
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 12
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 40
+        },
+        {
+          "stat": "manaRegen",
+          "op": "add",
+          "value": 2
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "bastion_greaves",
+      "name": "Bastion Greaves",
+      "slot": "legs",
+      "material": "plate",
+      "icon": "legs",
+      "dropWeight": 2,
+      "minLevel": 41,
+      "visual": null,
+      "wear": [
+        "iron_greaves"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 36
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 34
+        },
+        {
+          "stat": "frostResist",
+          "op": "add",
+          "value": 0.08
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "flatten": 0.35,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      }
+    },
+    {
+      "id": "hearthstone_charm",
+      "name": "Hearthstone Charm",
+      "slot": "charm",
+      "material": null,
+      "icon": "charm",
+      "dropWeight": 3,
+      "minLevel": 43,
+      "visual": null,
+      "wear": [
+        "tidestone_charm"
+      ],
+      "implicit": [
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 40
+        },
+        {
+          "stat": "lifeRegen",
+          "op": "add",
+          "value": 3
+        },
+        {
+          "stat": "frostResist",
+          "op": "add",
+          "value": 0.1
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "bastion_sabatons",
+      "name": "Bastion Sabatons",
+      "slot": "feet",
+      "material": "plate",
+      "icon": "boots",
+      "dropWeight": 2,
+      "minLevel": 45,
+      "visual": null,
+      "wear": [
+        "iron_sabatons"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 30
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 24
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.03
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.3,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
       }
     },
     {
@@ -4505,6 +5480,562 @@
           }
         ]
       }
+    },
+    {
+      "id": "the_unbroken_wheel",
+      "name": "The Unbroken Wheel",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "blade",
+      "icon": "sword",
+      "dropWeight": 1,
+      "minLevel": 33,
+      "visual": "gullwing_blade",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 34
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 56
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.12
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.2
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "unbroken_wheel",
+        "text": "Cleave becomes the Millwheel. Its momentum holds you steady at a quarter of the build-up, lasts half again as long between hits and climbs a quarter higher.",
+        "variants": [
+          {
+            "skill": "cleave",
+            "becomes": "cleave_millwheel"
+          }
+        ],
+        "skillMods": [
+          {
+            "skill": "cleave_millwheel",
+            "field": "momentumSteadyPercent",
+            "value": -0.75
+          },
+          {
+            "skill": "cleave_millwheel",
+            "field": "momentumGracePercent",
+            "value": 0.5
+          },
+          {
+            "skill": "cleave_millwheel",
+            "field": "momentumCapPercent",
+            "value": 0.25
+          }
+        ]
+      }
+    },
+    {
+      "id": "millrun_boots",
+      "name": "Millrun Boots",
+      "slot": "feet",
+      "material": "leather",
+      "icon": "boots",
+      "dropWeight": 1,
+      "minLevel": 38,
+      "visual": null,
+      "wear": [
+        "warden_boots"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 14
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 16
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": 0.06
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.3,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "unbroken_wheel",
+        "text": "Every enemy a spin strikes gives +3% Movement Speed for 1.5 s (stacks 8), and spinning momentum lasts 25% longer between hits.",
+        "skillMods": [
+          {
+            "group": "spin",
+            "field": "momentumGracePercent",
+            "value": 0.25
+          }
+        ],
+        "triggers": [
+          {
+            "on": "hit",
+            "skill": {
+              "group": "spin"
+            },
+            "effect": {
+              "type": "buff",
+              "stat": "moveSpeed",
+              "op": "percent",
+              "value": 0.03,
+              "duration": 1.5,
+              "stacks": 8
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "hillfall",
+      "name": "Hillfall",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "blunt",
+      "icon": "mace",
+      "dropWeight": 1,
+      "minLevel": 34,
+      "visual": "cairn_maul",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 48
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 78
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.4
+        },
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 24
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 50
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "hillfall",
+        "text": "Main attacks deal 40% more damage and throw enemies 30% further, and a main attack that kills slams a Thunderclap where the enemy fell.",
+        "skillMods": [
+          {
+            "group": "main",
+            "field": "damagePercent",
+            "value": 0.4
+          },
+          {
+            "group": "main",
+            "field": "knockbackPercent",
+            "value": 0.3
+          }
+        ],
+        "triggers": [
+          {
+            "on": "kill",
+            "skill": {
+              "group": "main"
+            },
+            "cooldown": 1,
+            "effect": {
+              "type": "cast",
+              "skill": "thunderclap",
+              "at": "target"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "cairnheart_plate",
+      "name": "Cairnheart Plate",
+      "slot": "chest",
+      "material": "plate",
+      "icon": "armour",
+      "dropWeight": 1,
+      "minLevel": 40,
+      "visual": null,
+      "wear": [
+        "stormwarden_hauberk"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 80
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 66
+        },
+        {
+          "stat": "lifeRegen",
+          "op": "add",
+          "value": 4
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.15,
+        "flatten": 0.35,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 40
+      },
+      "power": {
+        "family": "hillfall",
+        "text": "Every blow you take gives +6 Armour and +0.5 Life Regeneration for 5 s (stacks 15).",
+        "triggers": [
+          {
+            "on": "struck",
+            "effect": {
+              "type": "buff",
+              "stat": "armour",
+              "op": "add",
+              "value": 6,
+              "duration": 5,
+              "stacks": 15
+            }
+          },
+          {
+            "on": "struck",
+            "effect": {
+              "type": "buff",
+              "stat": "lifeRegen",
+              "op": "add",
+              "value": 0.5,
+              "duration": 5,
+              "stacks": 15
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tumblers_arbalest",
+      "name": "Tumbler's Arbalest",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "crossbow",
+      "icon": "crossbow",
+      "dropWeight": 1,
+      "minLevel": 35,
+      "visual": "longwatch_arbalest",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 30
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 46
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.06
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.35
+        },
+        {
+          "stat": "damagePercent",
+          "op": "add",
+          "value": 0.15
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": -90,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "variants": [
+        {
+          "skill": "cleave",
+          "becomes": "quarrel"
+        }
+      ],
+      "power": {
+        "family": "tumbler",
+        "text": "For 2 s after a Dodge Roll your shots deal 50% more damage and pass through one more enemy.",
+        "triggers": [
+          {
+            "on": "use",
+            "skill": {
+              "group": "roll"
+            },
+            "effect": {
+              "type": "empower",
+              "skillMods": [
+                {
+                  "group": "shot",
+                  "field": "damagePercent",
+                  "value": 0.5
+                },
+                {
+                  "group": "shot",
+                  "field": "pierce",
+                  "value": 1
+                }
+              ],
+              "duration": 2,
+              "look": {
+                "color": "#f1e3bd",
+                "shade": 0.22
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "glassweave_gloves",
+      "name": "Glassweave Gloves",
+      "slot": "hands",
+      "material": "leather",
+      "icon": "gloves",
+      "dropWeight": 1,
+      "minLevel": 41,
+      "visual": null,
+      "wear": [
+        "warden_gloves"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 8
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.04
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.05
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "keep": "left",
+        "scale": 1.8,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "tumbler",
+        "text": "Shots deal 25% more damage, and every kill with a shot gives +3% Critical Strike Chance for 4 s (stacks 5).",
+        "skillMods": [
+          {
+            "group": "shot",
+            "field": "damagePercent",
+            "value": 0.25
+          }
+        ],
+        "triggers": [
+          {
+            "on": "kill",
+            "skill": {
+              "group": "shot"
+            },
+            "effect": {
+              "type": "buff",
+              "stat": "critChance",
+              "op": "add",
+              "value": 0.03,
+              "duration": 4,
+              "stacks": 5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "the_fencewright",
+      "name": "The Fencewright",
+      "slot": "weapon",
+      "material": null,
+      "weaponKind": "staff",
+      "icon": "staff",
+      "dropWeight": 1,
+      "minLevel": 36,
+      "visual": "thunderwood_staff",
+      "wear": [],
+      "implicit": [
+        {
+          "stat": "damageMin",
+          "op": "add",
+          "value": 30
+        },
+        {
+          "stat": "damageMax",
+          "op": "add",
+          "value": 48
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 70
+        },
+        {
+          "stat": "manaRegen",
+          "op": "add",
+          "value": 3.5
+        }
+      ],
+      "ground": {
+        "model": "held",
+        "scale": 1.15,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "variants": [
+        {
+          "skill": "cleave",
+          "becomes": "spell_strike"
+        }
+      ],
+      "power": {
+        "family": "fencewright",
+        "text": "Walls last 40% longer and deal 30% more damage, and every enemy a wall kills gives back 6 Mana.",
+        "skillMods": [
+          {
+            "group": "wall",
+            "field": "durationPercent",
+            "value": 0.4
+          },
+          {
+            "group": "wall",
+            "field": "damagePercent",
+            "value": 0.3
+          }
+        ],
+        "triggers": [
+          {
+            "on": "kill",
+            "skill": {
+              "group": "wall"
+            },
+            "cooldown": 0.2,
+            "effect": {
+              "type": "restore",
+              "life": 0,
+              "mana": 6
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "penmakers_circlet",
+      "name": "Penmaker's Circlet",
+      "slot": "head",
+      "material": "cloth",
+      "icon": "circlet",
+      "dropWeight": 1,
+      "minLevel": 42,
+      "visual": null,
+      "wear": [
+        "keeper_loupe"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 5
+        },
+        {
+          "stat": "maxMana",
+          "op": "add",
+          "value": 36
+        },
+        {
+          "stat": "manaRegen",
+          "op": "add",
+          "value": 2
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      },
+      "power": {
+        "family": "fencewright",
+        "text": "Every sixth time a wall strikes, a Forkline leaps from the struck enemy.",
+        "triggers": [
+          {
+            "on": "hit",
+            "skill": {
+              "group": "wall"
+            },
+            "every": 6,
+            "cooldown": 0.5,
+            "effect": {
+              "type": "cast",
+              "skill": "forkline",
+              "at": "target"
+            }
+          }
+        ]
+      }
     }
   ],
   "affixes": [
@@ -4523,6 +6054,21 @@
       "perLevel": 0.03
     },
     {
+      "id": "ruinous",
+      "label": "Ruinous",
+      "slots": [
+        "weapon",
+        "hands",
+        "charm"
+      ],
+      "stat": "damagePercent",
+      "op": "add",
+      "min": 0.08,
+      "max": 0.14,
+      "perLevel": 0.03,
+      "minLevel": 31
+    },
+    {
       "id": "quick",
       "label": "Quick",
       "slots": [
@@ -4535,6 +6081,21 @@
       "min": 0.04,
       "max": 0.08,
       "perLevel": 0.02
+    },
+    {
+      "id": "swift",
+      "label": "Swift",
+      "slots": [
+        "weapon",
+        "hands",
+        "charm"
+      ],
+      "stat": "attackSpeed",
+      "op": "add",
+      "min": 0.06,
+      "max": 0.1,
+      "perLevel": 0.02,
+      "minLevel": 31
     },
     {
       "id": "keen",
@@ -4568,6 +6129,24 @@
       "perLevel": 0.12
     },
     {
+      "id": "stalwart",
+      "label": "Stalwart",
+      "slots": [
+        "head",
+        "chest",
+        "hands",
+        "legs",
+        "feet",
+        "charm"
+      ],
+      "stat": "maxLife",
+      "op": "add",
+      "min": 14,
+      "max": 24,
+      "perLevel": 0.12,
+      "minLevel": 31
+    },
+    {
       "id": "plated",
       "label": "Plated",
       "slots": [
@@ -4582,6 +6161,23 @@
       "min": 8,
       "max": 18,
       "perLevel": 0.12
+    },
+    {
+      "id": "bastioned",
+      "label": "Bastioned",
+      "slots": [
+        "head",
+        "chest",
+        "hands",
+        "legs",
+        "feet"
+      ],
+      "stat": "armour",
+      "op": "add",
+      "min": 14,
+      "max": 26,
+      "perLevel": 0.12,
+      "minLevel": 31
     },
     {
       "id": "grounded",
@@ -4690,6 +6286,21 @@
       "perLevel": 0.04
     },
     {
+      "id": "deadly",
+      "label": "Deadly",
+      "slots": [
+        "weapon",
+        "hands",
+        "charm"
+      ],
+      "stat": "critMultiplier",
+      "op": "add",
+      "min": 0.14,
+      "max": 0.24,
+      "perLevel": 0.04,
+      "minLevel": 31
+    },
+    {
       "id": "sturdy",
       "label": "Sturdy",
       "slots": [
@@ -4717,6 +6328,19 @@
       "perLevel": 0.12
     },
     {
+      "id": "serrated",
+      "label": "Serrated",
+      "slots": [
+        "weapon"
+      ],
+      "stat": "damageMax",
+      "op": "add",
+      "min": 4,
+      "max": 8,
+      "perLevel": 0.12,
+      "minLevel": 31
+    },
+    {
       "id": "vital",
       "label": "Vital",
       "slots": [
@@ -4729,6 +6353,21 @@
       "min": 0.04,
       "max": 0.08,
       "perLevel": 0.02
+    },
+    {
+      "id": "thriving",
+      "label": "Thriving",
+      "slots": [
+        "chest",
+        "legs",
+        "charm"
+      ],
+      "stat": "maxLife",
+      "op": "percent",
+      "min": 0.06,
+      "max": 0.1,
+      "perLevel": 0.02,
+      "minLevel": 31
     }
   ]
 }

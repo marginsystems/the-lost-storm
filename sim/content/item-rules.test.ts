@@ -19,7 +19,7 @@ void test('a base with a stat outside the item stats, a line that rolls backward
   const blade: ItemBaseDef | undefined = content.itemBases.get('rusted_blade');
   assert.ok(blade !== undefined);
   const odd: ItemBaseDef = { ...blade, implicit: [{ stat: 'goldFind', op: 'add', value: 1 }] };
-  const backwards: AffixDef = { id: 'backwards', label: 'Odd', slots: ['charm'], stat: 'maxLife', op: 'add', min: 9, max: 2, perLevel: 0 };
+  const backwards: AffixDef = { id: 'backwards', label: 'Odd', slots: ['charm'], stat: 'maxLife', op: 'add', min: 9, max: 2, perLevel: 0, minLevel: 1 };
   const broken: Content = {
     ...content,
     itemBases: new Map<string, ItemBaseDef>([...content.itemBases, [odd.id, odd]]),

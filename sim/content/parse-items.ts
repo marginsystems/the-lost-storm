@@ -142,5 +142,6 @@ export function affix(value: unknown, where: string): AffixDef {
     min: numeric(source, 'min', where),
     max: numeric(source, 'max', where),
     perLevel: numeric(source, 'perLevel', where),
+    minLevel: source['minLevel'] === undefined ? 1 : positive(source, 'minLevel', where),
   };
 }

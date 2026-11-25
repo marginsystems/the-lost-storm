@@ -161,6 +161,7 @@ export interface AffixDef {
   readonly min: number;
   readonly max: number;
   readonly perLevel: number;
+  readonly minLevel: number;
 }
 
 export interface ItemScaling {
