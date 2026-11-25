@@ -28,6 +28,7 @@ import { afterHold, afterInterrupt, holdScale, recovering, steadiness, unbroken 
 import { settleTurn, steadied } from './momentum.ts';
 import { flinchTogether } from './unison.ts';
 import { dealtScale } from './weaken.ts';
+import { exposedScale } from './aura.ts';
 import { leechActor, mendActor } from './mend.ts';
 import { leechScale, stunMonster, stunned } from './stun.ts';
 import { holdLine, openScale, rouseKeepers, strike } from './count.ts';
@@ -277,7 +278,8 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const weakened: number = striker === null ? 1 : dealtScale(world, striker);
   const exposed: number = target.kind === 'monster' ? openScale(world, target) * collateralScale(offence, target) : 1;
   const versus: number = versusScale(world, striker, target);
-  const rolled: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation * guarded * weakened * exposed * versus));
+  const charged: number = exposedScale(world, striker, target, skill);
+  const rolled: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation * guarded * weakened * exposed * versus * charged));
   const amount: number = target.kind === 'monster' ? holdLine(world, target, strike(world, target, rolled)) : rolled;
   const dealt: number = Math.max(0, Math.min(amount, target.life));
   target.life -= amount;

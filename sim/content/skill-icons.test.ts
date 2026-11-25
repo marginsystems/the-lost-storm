@@ -14,7 +14,7 @@ function withIcon(id: string, icon: string): Content {
 
 void test('the bar skills are the ones the player can learn, unlock, hold through a weapon or change on the tree, never a monster skill', (): void => {
   const ids: ReadonlySet<string> = barSkills(content);
-  for (const id of ['cleave', 'dodge_roll', 'spell_strike', 'quarrel', 'forkline', 'squall', 'standing_storm', 'umbra', 'ghost_wave', 'cleave_whirl', 'cleave_millwheel']) assert.ok(ids.has(id), id);
+  for (const id of ['cleave', 'dodge_roll', 'spell_strike', 'quarrel', 'static_field', 'squall', 'standing_storm', 'umbra', 'ghost_wave', 'cleave_whirl', 'cleave_millwheel']) assert.ok(ids.has(id), id);
   for (const id of ['brute_haymaker', 'rival_bolt', 'volatile_burst', 'static_brand_burst']) assert.ok(!ids.has(id), id);
 });
 
@@ -25,7 +25,7 @@ void test('a change of a change goes back to the skill it started as', (): void 
 });
 
 void test('two bar skills with one icon are named, unless both are changes of the same skill', (): void => {
-  assert.deepEqual(sharedBarIcons(withIcon('spell_strike', 'forkline')), ['skills forkline and spell_strike can both sit on the bar but share the icon forkline']);
+  assert.deepEqual(sharedBarIcons(withIcon('spell_strike', 'static_field')), ['skills spell_strike and static_field can both sit on the bar but share the icon static_field']);
   assert.deepEqual(sharedBarIcons(withIcon('cleave_whirl', 'cleave')), []);
-  assert.deepEqual(sharedBarIcons(withIcon('brute_haymaker', 'forkline')), []);
+  assert.deepEqual(sharedBarIcons(withIcon('brute_haymaker', 'static_field')), []);
 });

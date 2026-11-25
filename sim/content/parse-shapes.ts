@@ -1,8 +1,9 @@
 import { conditions } from './parse-conditions.ts';
 import type { Fields } from './read.ts';
 import { choice, ContentError, each, fields, flag, fraction, nonNegative, positive, share, text } from './read.ts';
-import type { BeamDelivery, BlinkDelivery, BrandDef, BurnDef, ChainDelivery, AreaAnchor, AreaDelivery, AreaStoke, MomentumDef, MomentumSpend, MomentumTier, PressDef, SkillUnlock, SoakDef } from './shape-types.ts';
+import type { BeamDelivery, BlinkDelivery, BrandDef, BurnDef, ChainDelivery, AreaAnchor, AreaAura, AreaDelivery, AreaExposure, AreaStoke, MomentumDef, MomentumSpend, MomentumTier, PressDef, SkillUnlock, SoakDef } from './shape-types.ts';
 import { AREA_ANCHORS } from './shape-types.ts';
+import { skillMod, skillTarget, statMod } from './parse-mods.ts';
 import type { Content, SkillBinding, SkillDef, SkillTreeNodeDef } from './types.ts';
 
 export const SHAPE_LIMITS = {
@@ -25,6 +26,22 @@ function stokeOf(value: unknown, where: string): AreaStoke {
   return { perPulse: positive(source, 'perPulse', where), max: positive(source, 'max', where) };
 }
 
+function exposure(value: unknown, where: string): AreaExposure {
+  const source: Fields = fields(value, where);
+  return { target: skillTarget(source, where), value: positive(source, 'value', where) };
+}
+
+function auraOf(value: unknown, where: string): AreaAura {
+  const source: Fields = fields(value, where);
+  const aura: AreaAura = {
+    statMods: source['statMods'] === undefined ? [] : each(source['statMods'], `${where}.statMods`, statMod),
+    skillMods: source['skillMods'] === undefined ? [] : each(source['skillMods'], `${where}.skillMods`, skillMod),
+    exposes: source['exposes'] === undefined ? [] : each(source['exposes'], `${where}.exposes`, exposure),
+  };
+  if (aura.statMods.length + aura.skillMods.length + aura.exposes.length === 0) throw new ContentError(where, 'expected an aura that changes something');
+  return aura;
+}
+
 function area(source: Fields, where: string): AreaDelivery {
   const duration: number = positive(source, 'duration', where);
   const pulse: number = nonNegative(source, 'pulse', where);
@@ -39,6 +56,8 @@ function area(source: Fields, where: string): AreaDelivery {
   if (length > 0 && pull > 0) throw new ContentError(`${where}.length`, 'expected a lane that does not pull');
   const blocks: boolean = source['blocks'] === undefined ? false : flag(source, 'blocks', where);
   if (blocks && length === 0) throw new ContentError(`${where}.blocks`, 'expected only a lane to block the way');
+  const aura: AreaAura | null = source['aura'] === undefined ? null : auraOf(source['aura'], `${where}.aura`);
+  if (aura !== null && anchor !== 'caster') throw new ContentError(`${where}.aura`, 'expected an aura to stand around its caster');
   return {
     type: 'area',
     range: nonNegative(source, 'range', where),
@@ -53,6 +72,7 @@ function area(source: Fields, where: string): AreaDelivery {
     stoke,
     length,
     blocks,
+    aura,
   };
 }
 

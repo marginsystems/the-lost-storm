@@ -11,6 +11,7 @@ import { affix, dropLean, family, itemBase, rarity } from './parse-items.ts';
 import { itemProblems } from './item-rules.ts';
 import { fitProblems } from './fit-rules.ts';
 import { powerRuleProblems } from './power-rules.ts';
+import { auraProblems } from './aura-rules.ts';
 import { leanProblems } from './lean-rules.ts';
 import { books } from './parse-story.ts';
 import { storyFlagNames, storyProblems } from './story.ts';
@@ -531,6 +532,7 @@ export function contentProblems(content: Content): string[] {
   need(content.rarities.length > 0, 'items need at least one rarity');
   problems.push(...itemProblems(content));
   problems.push(...powerRuleProblems(content));
+  problems.push(...auraProblems(content));
   problems.push(...leanProblems(content));
   problems.push(...chartProblems(content));
   const setFlags: ReadonlySet<string> = storyFlagNames(content);

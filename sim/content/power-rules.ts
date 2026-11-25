@@ -2,7 +2,7 @@ import type { SkillTarget } from './chart-types.ts';
 import type { ItemBaseDef, PowerDef, PowerTriggerDef } from './item-types.ts';
 import type { Content } from './types.ts';
 
-function targetProblem(content: Content, owner: string, target: SkillTarget): string | null {
+export function targetProblem(content: Content, owner: string, target: SkillTarget): string | null {
   if (target.type === 'skill') return content.skills.has(target.skill) ? null : `${owner} names unknown skill ${target.skill}`;
   return content.chart.groups.some((group): boolean => group.id === target.group) ? null : `${owner} names unknown skill group ${target.group}`;
 }

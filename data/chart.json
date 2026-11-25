@@ -190,6 +190,6 @@
   ],
   "retired": {
     "places": {"blade_still_water": "blade_millrace"},
-    "skills": {"still_water": "millrace"}
+    "skills": {"still_water": "millrace", "forkline": "static_field"}
   }
 }

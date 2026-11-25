@@ -342,6 +342,40 @@ ${flash(56, 40, 3.6, STORM.bloom)}
 ${plus(56, 26, 2.6)}
 `);
 
+const AIR_MOTES: readonly (readonly [number, number, number])[] = [
+  [11, 21, 0.9],
+  [19, 12, 0.7],
+  [29, 9, 0.55],
+  [45, 12, 0.8],
+  [54, 23, 1],
+  [8, 36, 0.7],
+  [57, 37, 0.8],
+  [14, 47, 0.6],
+  [51, 47, 0.7],
+];
+
+const staticField: string = art('storm', `
+${halo(32, 36, 30, STORM.bloom, 0.3)}
+${halo(32, 30, 17, STORM.mid, 0.28)}
+<ellipse cx="32" cy="55" rx="25" ry="5.5" fill="${STORM.bloom}" opacity="0.3" filter="url(#bloom)"/>
+${thread(wave(3, 61, 17, 1.1, 15, 0), STORM.pale, 0.7, 0.32)}
+${thread(wave(2, 62, 30, 1.3, 17, 1.4), STORM.pale, 0.8, 0.38)}
+${thread(wave(4, 60, 43, 1.1, 13, 2.6), STORM.pale, 0.7, 0.3)}
+${thread(jagged([11, 21], [19, 12], [0.9, -0.7], 0), STORM.mid, 0.7, 0.75)}
+${thread(jagged([45, 12], [54, 23], [-0.8, 0.9], 0), STORM.mid, 0.7, 0.75)}
+${thread(jagged([8, 36], [14, 47], [0.7, -0.8], 0), STORM.mid, 0.6, 0.6)}
+${thread(jagged([57, 37], [51, 47], [-0.7, 0.8], 0), STORM.mid, 0.6, 0.6)}
+${AIR_MOTES.map(([x, y, r]: readonly [number, number, number]): string => spark(x, y, r, STORM.pale)).join('')}
+<ellipse cx="32" cy="55" rx="12" ry="2.8" fill="#000" opacity="0.55"/>
+<path d="${HERO}" fill="#040914"/>
+<path d="M23 29 L19 41 M24.5 33 C 24 40 22 48 20 55" stroke="${STORM.mid}" stroke-width="0.9" fill="none" opacity="0.8" filter="url(#glow)"/>
+<path d="M41 29 L45 41 M39.5 33 C 40 40 42 48 44 55" stroke="${STORM.mid}" stroke-width="0.9" fill="none" opacity="0.8" filter="url(#glow)"/>
+<circle cx="32" cy="20" r="4.4" fill="#040914"/>
+<path d="M27.8 18.6 A 4.4 4.4 0 0 1 36.2 18.6" stroke="${STORM.pale}" stroke-width="0.9" fill="none" opacity="0.85" filter="url(#glow)"/>
+${halo(32, 34, 3.6, STORM.bloom, 0.7)}
+${spark(32, 34, 1, STORM.white)}
+`);
+
 function streak(tail: Point, bendAt: Point, head: Point, width: number, color: string, opacity: number): string {
   const [hx, hy] = head;
   const [cx, cy] = bendAt;
@@ -387,5 +421,6 @@ export const STORM_ART: ReadonlyMap<string, string> = new Map<string, string>([
   ['static_brand', staticBrand],
   ['living_wire', livingWire],
   ['standing_storm', standingStorm],
+  ['static_field', staticField],
   ['spell_strike', spellStrike],
 ]);

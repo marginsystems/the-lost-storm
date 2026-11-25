@@ -332,7 +332,7 @@ void test('a Stormcaller saved before the Gathering Storm loads with a free star
   assert.equal(save.allocated.length + save.skillPoints, STORMCALLER_BEFORE.length);
   assert.ok(['echo_squall', 'long_squall', 'twice_told_bolt', 'storm_4'].every((id: string): boolean => save.allocated.includes(id)));
   assert.ok(!save.learned.includes('living_wire') && !save.bar.includes('living_wire'));
-  assert.ok(save.learned.includes('squall') && save.learned.includes('forkline'));
+  assert.ok(save.learned.includes('squall') && save.learned.includes('static_field') && save.bar.includes('static_field'));
   const restored: World = createWorld(saveContent, { seed: 9, save });
   assert.ok(before > 0);
   assert.equal(castsOf(restored).filter((id: string): boolean => id === 'forkline').length, before);
@@ -428,7 +428,7 @@ void test('a character saved before the Echo loads with a free start over, keeps
   assert.deepEqual(save.allocated, ECHO_BEFORE.filter((id: string): boolean => !gone.includes(id)));
   assert.equal(save.skillPoints, gone.length);
   assert.ok(!save.learned.includes('static_brand') && !save.bar.includes('static_brand'));
-  assert.ok(['forkline', 'held_breath', 'thunderhead'].every((id: string): boolean => save.bar.includes(id)));
+  assert.ok(['static_field', 'held_breath', 'thunderhead'].every((id: string): boolean => save.bar.includes(id)));
   assert.ok(canAllocate(saveContent, save.allocated, 1, 'forked'));
   const restored: World = createWorld(saveContent, { seed: 9, save });
   assert.ok(before > 0);

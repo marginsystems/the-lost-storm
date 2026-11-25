@@ -74,6 +74,6 @@ void test('a retired place or skill names what took its place, and one still in 
   const lines: string[] = chartProblems(wrong);
   assert.ok(lines.includes('retired place blade_millrace is still on the chart'));
   assert.ok(lines.includes('retired place blade_millrace becomes unknown place nowhere'));
-  assert.ok(lines.includes('retired skill cleave is still a skill'));
+  assert.ok(lines.includes('retired skill cleave can still be learned'));
   assert.ok(lines.includes('retired skill cleave becomes unknown skill no_such'));
 });

@@ -247,6 +247,7 @@ function echoer(data: GuideData): BuildNotes {
   const keystone: number = placeLevel(data, id, 'twice_remembered');
   const brand: number = placeLevel(data, id, 'blade_static_brand');
   const fork: string = skillName(data, 'forkline');
+  const field: string = skillName(data, 'static_field');
   const [first = 0, second = 0] = bossLevels(data);
   return {
     id,
@@ -254,7 +255,7 @@ function echoer(data: GuideData): BuildNotes {
     mainSkill: 'your main attack',
     forWho: 'For players who want every blow to land twice, whatever they hold.',
     plays: [
-      `${pathName(data, 'echo')} asks for no weapon and has no element: it follows whatever you hold. Your first point is ${fork}, lightning that jumps from enemy to enemy, and ${name(data, 'first_echo')} right after makes every area skill last longer and hit harder.`,
+      `${pathName(data, 'echo')} asks for no weapon and has no element: it follows whatever you hold. Your first point is ${field}, charged air around you for half a minute that makes your lightning hit harder and come sooner and gives mana back, and ${name(data, 'first_echo')} right after makes every area skill last longer and hit harder.`,
       `At level ${echoes} ${name(data, 'twice_swung')} makes your main attack happen twice: a moment after it lands, its echo strikes the same way again for half the damage. Your main attack is whatever your weapon makes of it: ${skillName(data, 'cleave')} and its turns with a blade or a heavy weapon, ${skillName(data, 'quarrel')} with a crossbow, ${skillName(data, 'storm_bolt')} with a staff. A held spin does not echo; it hits harder instead.`,
       `At level ${forked} ${name(data, 'forked')} lets each hit of your main attack throw a ${fork} from the enemy it struck. At level ${keystone} ${name(data, 'twice_remembered')} trades a little damage on everything for bigger, longer area skills and a shorter wait on ${skillName(data, 'held_breath')}.`,
       `${skillName(data, 'static_brand')} comes at level ${brand}: it marks the first enemy it touches, and your next hit on that enemy bursts the mark over everything around it. With your main attack striking twice, a mark rarely waits long.`,
@@ -274,7 +275,7 @@ function echoer(data: GuideData): BuildNotes {
     ],
     avoid: [
       'Changing weapons for every fight. Every skill works with any weapon, but each arm\'s skills are stronger with their own, and its weapon damage lines answer only to it.',
-      `Throwing ${fork} at a single enemy. Wait a moment for the pack to come.`,
+      `Letting ${field} lapse in a long fight. Raise it again before its fuse runs out.`,
     ],
     legendaries: [
       { item: 'wirethread_gloves', changes: `An enemy your echo kills throws a ${skillName(data, 'forkline')}, so a pack that starts dying keeps dying.` },
@@ -288,14 +289,14 @@ function echoer(data: GuideData): BuildNotes {
       'Any weapon. If the next good drop is a crossbow instead of a staff, the Echo keeps working.',
     ],
     weakSpots: [
-      `Mana. ${fork} costs it every cast; drink the mana flask before you run dry.`,
+      `Mana. Every skill costs it; ${field} gives some back while it stands, and the mana flask covers the rest.`,
       `Mistakes at the start. Played carelessly it won ${percent(carelessBossShare(data, id, first))} of its fights with the boss at level ${first}.`,
     ],
     thin: [
       'The simulated player that made the numbers on this page wears whichever weapon raises its numbers most, not one kind, so the numbers are for the route, not for one weapon.',
     ],
     marks: {
-      echo_forkline: `Your first point: ${fork}.`,
+      echo_forkline: `Your first point: ${field}.`,
       twice_swung: 'Your main attack happens twice from here.',
       forked: `Every hit of your main attack can throw a ${fork}.`,
       twice_remembered: 'Bigger, longer area skills for a little less damage on everything.',

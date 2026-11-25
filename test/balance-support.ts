@@ -48,8 +48,8 @@ export const BALANCE_CONTENT: Content = loadContent();
 
 export const BUILDS: readonly Build[] = [
   { name: 'striker', order: ['thunderhead', 'ghost_wave', 'downdraught', 'thunderclap', 'cleave'] },
-  { name: 'caster', order: ['static_brand', 'standing_storm', 'forkline', 'storm_bolt', 'cleave'] },
-  { name: 'weather', order: ['held_breath', 'squall', 'downdraught', 'thunderclap', 'forkline', 'cleave'] },
+  { name: 'caster', order: ['static_brand', 'standing_storm', 'static_field', 'storm_bolt', 'cleave'] },
+  { name: 'weather', order: ['held_breath', 'squall', 'downdraught', 'static_field', 'thunderclap', 'cleave'] },
 ];
 
 function ring(count: number, radius: number, turn: number): Vec2[] {

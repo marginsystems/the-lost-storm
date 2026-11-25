@@ -1,5 +1,7 @@
 import type { Condition } from './condition-types.ts';
 import type { SkillCommit, SkillLeap } from './combat-types.ts';
+import type { SkillTarget } from './chart-types.ts';
+import type { SkillMod, StatMod } from './types.ts';
 
 export interface ChainDelivery {
   readonly type: 'chain';
@@ -17,6 +19,17 @@ export interface AreaStoke {
   readonly max: number;
 }
 
+export interface AreaExposure {
+  readonly target: SkillTarget;
+  readonly value: number;
+}
+
+export interface AreaAura {
+  readonly statMods: readonly StatMod[];
+  readonly skillMods: readonly SkillMod[];
+  readonly exposes: readonly AreaExposure[];
+}
+
 export interface AreaDelivery {
   readonly type: 'area';
   readonly range: number;
@@ -31,6 +44,7 @@ export interface AreaDelivery {
   readonly stoke: AreaStoke | null;
   readonly length: number;
   readonly blocks: boolean;
+  readonly aura: AreaAura | null;
 }
 
 export interface BlinkDelivery {

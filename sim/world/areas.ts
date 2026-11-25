@@ -10,6 +10,7 @@ import { isDashing, rollsSteady } from './dash.ts';
 import { steadiness } from './poise.ts';
 import { sameFloor } from './floors.ts';
 import { beamEnd } from './shapes.ts';
+import { dropAura, raiseAura, replacedAuras } from './aura.ts';
 import type { Actor, AreaState, Offence, Team, World } from './types.ts';
 
 export const AREAS = {
@@ -25,14 +26,22 @@ export function areaOf(skill: SkillDef): AreaDelivery | null {
 export function placeArea(world: World, offence: Offence, skill: SkillDef, at: ReadonlyVec2, toward: ReadonlyVec2 = AREAS.facing, span: number | null = null): AreaState | null {
   const delivery: AreaDelivery | null = areaOf(skill);
   if (delivery === null) return null;
+  for (const replaced of replacedAuras(world, offence.sourceId, skill)) endArea(world, replaced);
   const length: number = delivery.length > 0 ? (span ?? delivery.length) : 0;
   const reach: number = length > 0 ? beamEnd(world, at, toward, length) : 0;
   const area: AreaState = { id: world.nextId, ownerId: offence.sourceId, from: launchPoint(world, offence.sourceId, { x: at.x, z: at.z }), skill, offence, pos: { x: at.x, z: at.z }, toward: { x: toward.x, z: toward.z }, reach, timeLeft: delivery.duration, pulseLeft: delivery.pulse, pulses: 0 };
   world.nextId += 1;
   world.areas.push(area);
   world.events.push({ type: 'area', area, stage: 'start', hits: 0 });
+  raiseAura(world, area);
   if (delivery.opening) pulse(world, area, delivery);
   return area;
+}
+
+function endArea(world: World, area: AreaState): void {
+  world.areas = world.areas.filter((other: AreaState): boolean => other !== area);
+  world.events.push({ type: 'area', area, stage: 'end', hits: 0 });
+  dropAura(world, area);
 }
 
 export function areaCovers(area: AreaState, delivery: AreaDelivery, pos: ReadonlyVec2, radius: number): boolean {
@@ -116,6 +125,7 @@ function stepArea(world: World, area: AreaState, dt: number): boolean {
     const owner: Actor | null = findActor(world, area.ownerId);
     if (owner === null || !owner.alive) {
       world.events.push({ type: 'area', area, stage: 'end', hits: 0 });
+      dropAura(world, area);
       return false;
     }
     area.pos.x = owner.pos.x;
@@ -132,6 +142,7 @@ function stepArea(world: World, area: AreaState, dt: number): boolean {
   }
   if (area.timeLeft > AREAS.settle) return true;
   world.events.push({ type: 'area', area, stage: 'end', hits: 0 });
+  dropAura(world, area);
   return false;
 }
 
@@ -140,5 +151,7 @@ export function stepAreas(world: World, dt: number): void {
 }
 
 export function clearAreas(world: World): void {
+  const cleared: readonly AreaState[] = world.areas;
   world.areas = [];
+  for (const area of cleared) dropAura(world, area);
 }

@@ -52,6 +52,9 @@ import type { Globes } from './globes.ts';
 import type { TailwindMeter } from './tailwind-meter.ts';
 import { createTailwindView } from './tailwind-meter.ts';
 import hudCss from './hud.css?inline';
+import auraSignCss from './aura-sign.css?inline';
+import { createAuraSign } from './aura-sign.ts';
+import type { AuraSign } from './aura-sign.ts';
 import type { Hud, HudApi, HudPanel } from './hud-api.ts';
 import { itemTooltip } from './item-tooltip.ts';
 import type { ResolvedKeys } from '../settings/bindings.ts';
@@ -140,7 +143,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${itemPlateCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${bossPiecesCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${menuCss}\n${weaponHudCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${itemPlateCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${bossPiecesCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${auraSignCss}\n${menuCss}\n${weaponHudCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -272,6 +275,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   buttons.inventory = createMenuButton(row, 'inventory', 'Inventory', keyOf('inventory'), (): void => fromRow((): void => toggle('inventory')), track);
   buttons.character = createMenuButton(row, 'character', 'Character', keyOf('character'), (): void => fromRow((): void => toggle('character')), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
+  const auraSign: AuraSign = createAuraSign(bottom);
   buttons.tree = createMenuButton(row, 'tree', 'Skill Tree', keyOf('tree'), (): void => fromRow((): void => toggle('tree')), track);
   buttons.map = createMenuButton(row, 'map', 'Map', keyOf('map'), (): void => fromRow((): void => toggle('map')), track);
   const corner: HTMLDivElement = createVolumeButton(row, api.audio, track, (): void => fromRow((): void => api.openSettings('sound')));
@@ -339,6 +343,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       globes.setWaiting(waitingCue(api.auction?.waitingGold() ?? 0));
       flasks.update(world.player);
       skillBar.update(world.player);
+      auraSign.update(world, world.player, dt);
       xp.update(world.player, world.content);
       surge.update(world);
       death.update(world);

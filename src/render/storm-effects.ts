@@ -12,7 +12,8 @@ import { heldLook } from '../../sim/world/character.ts';
 import type { StunMarks } from './stun-marks.ts';
 import { createStunMarks } from './stun-marks.ts';
 import { glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
-import type { GroundLight, GroundLightForm } from './ground-light.ts';
+import type { GroundLight, GroundLightForm, GroundLightLook } from './ground-light.ts';
+import { AURA_LIGHT, auraForm, auraLook } from './aura-light.ts';
 import type { ShotTint } from './projectile-views.ts';
 import { createGroundLight, GROUND_LIGHT } from './ground-light.ts';
 import { lap, poolOf, splash, surge, swell, whirl, WATER_LOOK } from './water-look.ts';
@@ -327,15 +328,15 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const shadow: VfxShadow | null = poolOf(area.skill.vfx);
     const round: GroundLightForm = { kind: 'round', radius: delivery.radius, inner: 0, arc: Math.PI * 2 };
     const cover: VfxCover | null = area.skill.vfx.cover;
-    const light: GroundLight = createGroundLight(
-      color,
-      round,
-      cover !== null
-        ? { fill: STORM_EFFECTS.coverFill, band: 1, width: delivery.radius * STORM_EFFECTS.coverBandWidth, wobble: delivery.radius * cover.wobble }
-        : { fill: shadow !== null ? STORM_EFFECTS.poolEdgeFill : gap ? STORM_EFFECTS.gapFill : STORM_EFFECTS.areaFill, band: 1, width: delivery.radius * STORM_EFFECTS.areaBandWidth, wobble: delivery.radius * STORM_EFFECTS.areaWobble },
-    );
+    const aura: boolean = delivery.aura !== null;
+    const look: GroundLightLook = cover !== null
+      ? { fill: STORM_EFFECTS.coverFill, band: 1, width: delivery.radius * STORM_EFFECTS.coverBandWidth, wobble: delivery.radius * cover.wobble }
+      : aura
+        ? auraLook(delivery.radius)
+        : { fill: shadow !== null ? STORM_EFFECTS.poolEdgeFill : gap ? STORM_EFFECTS.gapFill : STORM_EFFECTS.areaFill, band: 1, width: delivery.radius * STORM_EFFECTS.areaBandWidth, wobble: delivery.radius * STORM_EFFECTS.areaWobble };
+    const light: GroundLight = createGroundLight(color, aura ? auraForm(delivery.radius) : round, look);
     light.mesh.position.set(area.pos.x, floorUp(area.pos.x, GROUND_LIGHT.height, area.pos.z), area.pos.z);
-    const shine: number = cover !== null ? cover.glow : shadow !== null ? STORM_EFFECTS.poolEdgeGlow : gap ? STORM_EFFECTS.gapGlow : STORM_EFFECTS.areaGlow;
+    const shine: number = cover !== null ? cover.glow : aura ? AURA_LIGHT.glow : shadow !== null ? STORM_EFFECTS.poolEdgeGlow : gap ? STORM_EFFECTS.gapGlow : STORM_EFFECTS.areaGlow;
     light.show(shine);
     kit.addObject(light.mesh);
     const pool: GroundLight | null = shadow === null ? null : createGroundLight(kit.colorOf(shadow.color).clone().multiplyScalar(STORM_EFFECTS.poolTint), round, { fill: STORM_EFFECTS.poolFill, band: 0, width: delivery.radius * STORM_EFFECTS.poolSoft, wobble: delivery.radius * STORM_EFFECTS.poolWobble }, 'shade');

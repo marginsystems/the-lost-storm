@@ -171,7 +171,7 @@ void test('no save brings back a skill without its place: an old kit on the bar 
   const learned: string[] = readLearned(content, ['cleave', 'thunderclap', 'storm_bolt', 'dodge_roll'], []);
   assert.deepEqual(learned, ['cleave', 'dodge_roll']);
   assert.deepEqual(readLearned(content, undefined, []), ['cleave']);
-  assert.deepEqual(readLearned(content, undefined, [must(placeOf(content, 'forkline'), 'fork').id]), ['cleave', 'forkline']);
+  assert.deepEqual(readLearned(content, undefined, [must(placeOf(content, 'static_field'), 'static field').id]), ['cleave', 'static_field']);
   assert.deepEqual(readBar(content, ['cleave', 'thunderclap', 'storm_bolt', null, null, 'dodge_roll'], learned), ['cleave', null, null, null, null, 'dodge_roll']);
   assert.deepEqual(readBar(content, ['held_breath', 'cleave', 'cleave', 42, null, 'nonsense'], learned), [null, 'cleave', null, null, null, null]);
 });

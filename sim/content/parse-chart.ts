@@ -190,7 +190,7 @@ export function chartProblems(content: Content): string[] {
     if (!nodeIds.has(now)) problems.push(`retired place ${old} becomes unknown place ${now}`);
   }
   for (const [old, now] of content.chart.retired.skills) {
-    if (content.skills.has(old)) problems.push(`retired skill ${old} is still a skill`);
+    if (content.player.skillBook.some((entry): boolean => entry.skill === old) || nodes.some((node: SkillTreeNodeDef): boolean => node.unlock === old)) problems.push(`retired skill ${old} can still be learned`);
     if (!content.skills.has(now)) problems.push(`retired skill ${old} becomes unknown skill ${now}`);
   }
   for (const node of nodes) {

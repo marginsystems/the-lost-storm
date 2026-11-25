@@ -72,7 +72,7 @@ function nameMatches(content: Content, target: SkillTarget, name: string): boole
   return target.type === 'skill' ? target.skill === name : inGroup(content, target.group, name);
 }
 
-function skillMatches(content: Content, target: SkillTarget | null, skill: SkillDef): boolean {
+export function skillMatches(content: Content, target: SkillTarget | null, skill: SkillDef): boolean {
   if (target === null) return true;
   return nameMatches(content, target, skill.id) || nameMatches(content, target, skill.form);
 }
