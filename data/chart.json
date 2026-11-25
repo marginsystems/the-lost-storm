@@ -147,8 +147,11 @@
         "fire_burst",
         "fire_slam",
         "firewall",
+        "firewall_segment",
+        "firewall_slam",
         "bellows",
         "flashover",
+        "flashover_burst",
         "banked_fire"
       ]
     },

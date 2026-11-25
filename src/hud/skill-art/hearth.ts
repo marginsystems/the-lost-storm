@@ -228,6 +228,20 @@ ${fire(46, 32, 20, 5.4, 2)}
 ${spark(56, 14, 1, '#ffe9b8')}
 ${spark(36, 18, 0.8, '#ffd27a')}
 `)],
+  ['hearth_aura', art('fire', `
+${halo(32, 38, 26, '#ff5a12', 0.5)}
+<ellipse cx="32" cy="46" rx="24" ry="9" fill="none" stroke="#ff7a1a" stroke-width="5" opacity="0.55" filter="url(#bloom)"/>
+<ellipse cx="32" cy="46" rx="24" ry="9" fill="none" stroke="#ffd27a" stroke-width="1.4" stroke-dasharray="5 3" filter="url(#glow)"/>
+${fire(10, 48, 10, 3.4, 0.5)}
+${fire(54, 48, 10, 3.4, -0.5)}
+${fire(22, 54, 9, 3, 0)}
+${fire(42, 54, 9, 3, 0)}
+${coal(32, 44, 4)}
+${fire(32, 42, 22, 6, 1)}
+<circle cx="32" cy="26" r="3" fill="#fff4d6" filter="url(#glow)"/>
+${spark(14, 22, 0.9, '#ffe9b8')}
+${spark(50, 20, 0.8, '#ffd27a')}
+`)],
   ['banked_fire', art('fire', `
 ${halo(32, 44, 22, '#ff5a12', 0.6)}
 <ellipse cx="32" cy="46" rx="27" ry="11" fill="#0a0302" opacity="0.55"/>
