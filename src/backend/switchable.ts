@@ -1,4 +1,5 @@
 import type { SaveData } from '../../sim/save.ts';
+import type { ItemInstance } from '../../sim/world/types.ts';
 import type { Backend, BackendState, SaveOptions } from './backend.ts';
 import type { SaveFold } from './purse-read.ts';
 
@@ -50,6 +51,7 @@ export function createSwitchableBackend(make: () => Backend): SwitchableBackend 
     },
     freshStart: (): boolean => current.freshStart(),
     setAside: (): boolean => current.setAside(),
+    stash: (): readonly (ItemInstance | null)[] | null => current.stash(),
     retire,
     async reopen(): Promise<SaveData | null> {
       retire();

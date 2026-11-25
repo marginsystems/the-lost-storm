@@ -222,7 +222,7 @@ async function start(): Promise<void> {
   });
   const keptHero: string | null = save === null ? readHero(createBrowserStore(), content) : null;
   const watching: Watching | null = watchAsked === null ? null : await fetchWatching(content, watchAsked);
-  const world: World = watching !== null ? watchedWorld(watching) : createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero });
+  const world: World = watching !== null ? watchedWorld(watching) : createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true, stash: backend.stash() } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero, stash: backend.stash() });
   const tracker: Tracker = startTracking({ serverUrl, build: import.meta.env.VITE_BUILD_ID, world, touch: mobile.touch });
   overlayManager.subscribe((state: OverlayState): void => tracker.overlays(visibleOverlays(state)));
   let entered: boolean = save !== null;

@@ -54,15 +54,15 @@ void test('a guest account is created with a POST and no token', async (): Promi
 
 void test('reading the save sends the token and understands a copy and an empty account', async (): Promise<void> => {
   const full = api((): Response => reply(200, COPY));
-  assert.deepEqual(await full.client.readSave('tok', SIGNAL), { kind: 'ok', state: COPY });
+  assert.deepEqual(await full.client.readSave('tok', SIGNAL), { kind: 'ok', state: COPY, stash: null });
   assert.equal(new Headers(sent(full.seen).init.headers).get('authorization'), 'Bearer tok');
   const empty = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null, epoch: 2 }));
-  assert.deepEqual(await empty.client.readSave('tok', SIGNAL), { kind: 'ok', state: { save: null, revision: 0, updatedAt: null, epoch: 2 } });
+  assert.deepEqual(await empty.client.readSave('tok', SIGNAL), { kind: 'ok', state: { save: null, revision: 0, updatedAt: null, epoch: 2 }, stash: null });
 });
 
 void test('writing sends the save and the base revision and returns the stored copy', async (): Promise<void> => {
   const { client, seen } = api((): Response => reply(200, COPY));
-  assert.deepEqual(await client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'ok', copy: COPY, fold: { folded: [], stripped: [], unverified: [] } });
+  assert.deepEqual(await client.writeSave('tok', SAVE, 1, 2, SIGNAL), { kind: 'ok', copy: COPY, fold: { folded: [], stripped: [], unverified: [] }, stashRevision: null });
   assert.equal(sent(seen).init.method, 'PUT');
   assert.deepEqual(bodyOf(sent(seen).init), { save: SAVE, baseRevision: 1, epoch: 2 });
   assert.equal(sent(seen).init.keepalive, true);
@@ -128,7 +128,7 @@ void test('a 409 server_behind is its own answer, whatever else it carries', asy
 
 void test('a cloud answer without an epoch is from before epochs and counts as epoch 1; a bad epoch is unreadable', async (): Promise<void> => {
   const legacy = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null }));
-  assert.deepEqual(await legacy.client.readSave('tok', SIGNAL), { kind: 'ok', state: { save: null, revision: 0, updatedAt: null, epoch: 1 } });
+  assert.deepEqual(await legacy.client.readSave('tok', SIGNAL), { kind: 'ok', state: { save: null, revision: 0, updatedAt: null, epoch: 1 }, stash: null });
   const bad = api((): Response => reply(200, { save: null, revision: 0, updatedAt: null, epoch: 0 }));
   assert.deepEqual(await bad.client.readSave('tok', SIGNAL), { kind: 'refused', status: 200 });
 });

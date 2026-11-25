@@ -310,6 +310,11 @@ function readStash(content: Content, value: unknown): Stashed {
   return { stash, overflow };
 }
 
+export function readItemList(content: Content, value: unknown): (ItemInstance | null)[] {
+  const list: readonly unknown[] = Array.isArray(value) ? value : [];
+  return list.map((entry: unknown): ItemInstance | null => readItem(content, entry));
+}
+
 function readItems(content: Content, value: unknown): ItemInstance[] {
   const list: readonly unknown[] = Array.isArray(value) ? value : [];
   return list.map((entry: unknown): ItemInstance | null => readItem(content, entry)).filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);

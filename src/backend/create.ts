@@ -8,6 +8,8 @@ import { createEpochs, SAVE_EPOCH } from './epoch.ts';
 import type { Epochs } from './epoch.ts';
 import { createLocalBackend } from './local.ts';
 import { createRemoteBackend } from './remote.ts';
+import { createDeviceStash } from './shared-stash.ts';
+import type { DeviceStash } from './shared-stash.ts';
 import { prepareRoster, reconcileRoster } from './roster-store.ts';
 import type { RosterPlace } from './roster-store.ts';
 import { readServerUrl } from './server-url.ts';
@@ -29,8 +31,9 @@ export interface BackendEnvironment {
 
 export function createBackend(content: Content, rawUrl: string | undefined, environment: BackendEnvironment): Backend {
   const epochs: Epochs = createEpochs(SAVE_EPOCH);
-  const local: Backend = createLocalBackend(content, environment.store, epochs);
   const server: ServerUrl = readServerUrl(rawUrl);
+  const shared: DeviceStash = createDeviceStash(content, environment.store, epochs);
+  const local: Backend = createLocalBackend(content, environment.store, epochs, server.kind === 'ok' ? null : shared);
   const place: RosterPlace = { store: environment.store, serverUrl: server.kind === 'ok' ? server.url : null, extraKeys: environment.characterKeys };
   prepareRoster(place);
   if (server.kind === 'none') return local;
@@ -49,6 +52,7 @@ export function createBackend(content: Content, rawUrl: string | undefined, envi
     timers: environment.timers,
     log: environment.log,
     epochs,
+    shared,
     ...(environment.play === undefined ? {} : { play: environment.play }),
     prepare: async (signal: AbortSignal): Promise<void> => {
       await reconcileRoster(place, characters, signal, 'boot');

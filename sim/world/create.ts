@@ -26,6 +26,7 @@ import { emptyPathLog, markStart, readPathLog } from './path-log.ts';
 import { settleQuests, startQuests } from './quests.ts';
 import type { Equipment, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
 import { emptyStash } from './trade.ts';
+import { shelveStash } from './shared-stash.ts';
 import { copyTally, emptyTally } from '../tally.ts';
 import { beginVoid } from './wake.ts';
 import { placePlayer, respawnExists, startZone } from './zones.ts';
@@ -40,6 +41,7 @@ export interface WorldOptions {
   readonly hero?: string;
   readonly glitches?: GlitchDef;
   readonly firstId?: number;
+  readonly stash?: readonly (ItemInstance | null)[] | null;
 }
 
 const PLAYER_ID: number = 1;
@@ -226,6 +228,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   beginVoid(world, 'first');
   if (save === null) giveStartingItems(world, world.zone.void?.emptyHanded === true);
   for (const item of save?.spilled ?? []) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
+  if (options.stash !== undefined && options.stash !== null) shelveStash(world, options.stash);
   settleQuests(world);
   startQuests(world);
   spawnNpcs(world);

@@ -2,7 +2,7 @@ import type { Content } from '../sim/content/types.ts';
 import type { Bar } from '../sim/skill-book.ts';
 import type { SaveData } from '../sim/save.ts';
 import { adoptWorld } from '../sim/world/adopt.ts';
-import type { Command, World } from '../sim/world/types.ts';
+import type { Command, ItemInstance, World } from '../sim/world/types.ts';
 import { warnInConsole } from './backend/console-log.ts';
 import type { KeyValueStore } from './backend/backend.ts';
 import type { SwitchableBackend } from './backend/switchable.ts';
@@ -37,7 +37,8 @@ export function createCharacterSwitch(deps: CharacterSwitchDeps): CharacterSwitc
       const next: SaveData | null = await deps.backend.reopen();
       const kept: string | null = next === null ? readHero(deps.store, content) : null;
       const seed: number = Date.now() >>> 0;
-      adoptWorld(world, kept === null ? { seed, save: next, opening: true } : { seed, save: next, opening: true, hero: kept });
+      const stash: readonly (ItemInstance | null)[] | null = deps.backend.stash();
+      adoptWorld(world, kept === null ? { seed, save: next, opening: true, stash } : { seed, save: next, opening: true, hero: kept, stash });
       deps.pick.reset(startingHero(content, next === null ? null : world.player.hero, kept));
       queue.length = 0;
       stale = true;

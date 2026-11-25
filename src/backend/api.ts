@@ -3,14 +3,15 @@ import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
 import type { SaveData } from '../../sim/save.ts';
 import type { ItemSlot } from '../../sim/content/types.ts';
-import type { RolledAffix } from '../../sim/world/types.ts';
-import { readSave } from '../../sim/save.ts';
+import type { ItemInstance, RolledAffix } from '../../sim/world/types.ts';
+import { readItemList, readSave } from '../../sim/save.ts';
 import { epochOf, isEpoch } from './epoch.ts';
 import { readFold } from './purse-read.ts';
 import type { SaveFold } from './purse-read.ts';
 import type { PlayStamp } from './play.ts';
 
 export const PLAYED_ELSEWHERE: string = 'played_elsewhere';
+export const STASH_CONFLICT: string = 'stash_conflict';
 
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
 
@@ -34,6 +35,11 @@ export interface NoCloudCopy {
 }
 
 export type CloudState = CloudCopy | NoCloudCopy;
+
+export interface CloudStash {
+  readonly items: readonly (ItemInstance | null)[];
+  readonly revision: number;
+}
 
 export type Failure =
   | { readonly kind: 'unauthorized' }
@@ -80,8 +86,8 @@ export type SessionResult = { readonly kind: 'ok'; readonly session: Session } |
 export type SignOutResult = { readonly kind: 'ok' } | Failure;
 
 export type GuestResult = { readonly kind: 'ok'; readonly account: GuestAccount } | Failure;
-export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | { readonly kind: 'unreadable' } | Failure;
-export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy; readonly fold: SaveFold } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stale'; readonly epoch: number } | { readonly kind: 'behind' } | { readonly kind: 'elsewhere' } | Failure;
+export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState; readonly stash: CloudStash | null } | { readonly kind: 'unreadable' } | Failure;
+export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy; readonly fold: SaveFold; readonly stashRevision: number | null } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stash_conflict'; readonly stash: CloudStash } | { readonly kind: 'stale'; readonly epoch: number } | { readonly kind: 'behind' } | { readonly kind: 'elsewhere' } | Failure;
 
 export const PERF_PROTOCOL = {
   path: '/v1/perf',
@@ -297,7 +303,7 @@ export type NameResult = { readonly kind: 'ok'; readonly name: string } | { read
 export interface Api {
   createGuest(signal: AbortSignal): Promise<GuestResult>;
   readSave(token: string, signal: AbortSignal): Promise<ReadResult>;
-  writeSave(token: string, save: SaveData, baseRevision: number, epoch: number, signal: AbortSignal, play?: PlayStamp | null): Promise<WriteResult>;
+  writeSave(token: string, save: SaveData, baseRevision: number, epoch: number, signal: AbortSignal, play?: PlayStamp | null, stashRevision?: number | null): Promise<WriteResult>;
   leavePlay(token: string, play: string): void;
   providers(signal: AbortSignal): Promise<ProvidersResult>;
   profile(token: string, signal: AbortSignal): Promise<ProfileResult>;
@@ -339,6 +345,18 @@ export function readCloudState(content: Content, value: unknown): CloudState | n
   const save: SaveData | null = readSave(content, value['save']);
   if (save === null || typeof updatedAt !== 'string') return null;
   return { save, revision, updatedAt, epoch };
+}
+
+export function readCloudStash(content: Content, value: unknown): CloudStash | null {
+  const stash: unknown = isFields(value) ? value['stash'] : null;
+  if (!isFields(stash) || !Array.isArray(stash['items'])) return null;
+  const revision: number | null = revisionOf(stash);
+  return revision === null ? null : { items: readItemList(content, stash['items']), revision };
+}
+
+function stashRevisionOf(value: unknown): number | null {
+  const revision: unknown = isFields(value) ? value['stashRevision'] : null;
+  return typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 0 ? revision : null;
 }
 
 export function cloudSaveUnreadable(content: Content, value: unknown): boolean {
@@ -462,11 +480,12 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
       const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/save`, { method: 'GET', headers: headers(token), signal });
       if (!succeeded(answer)) return failureOf(answer);
       const state: CloudState | null = readCloudState(content, answer.body);
-      if (state !== null) return { kind: 'ok', state };
+      if (state !== null) return { kind: 'ok', state, stash: readCloudStash(content, answer.body) };
       return cloudSaveUnreadable(content, answer.body) ? { kind: 'unreadable' } : { kind: 'refused', status: answer.status };
     },
-    async writeSave(token: string, save: SaveData, baseRevision: number, epoch: number, signal: AbortSignal, play: PlayStamp | null = null): Promise<WriteResult> {
-      const body: string = JSON.stringify(play === null ? { save, baseRevision, epoch } : { save, baseRevision, epoch, play: play.id, claim: play.claim });
+    async writeSave(token: string, save: SaveData, baseRevision: number, epoch: number, signal: AbortSignal, play: PlayStamp | null = null, stashRevision: number | null = null): Promise<WriteResult> {
+      const shared: { readonly stashRevision?: number } = stashRevision === null ? {} : { stashRevision };
+      const body: string = JSON.stringify(play === null ? { save, baseRevision, epoch, ...shared } : { save, baseRevision, epoch, play: play.id, claim: play.claim, ...shared });
       const answer: Answer | null = await exchange(fetchFn, `${baseUrl}/v1/save`, { method: 'PUT', headers: headers(token), body, signal, keepalive: body.length < KEEPALIVE_LIMIT_CHARS });
       if (answer !== null && answer.status === 409 && errorCodeOf(answer.body) === 'stale_epoch') {
         const current: unknown = isFields(answer.body) ? answer.body['epoch'] : null;
@@ -474,13 +493,17 @@ export function createApi(baseUrl: string, fetchFn: FetchFn, content: Content): 
       }
       if (answer !== null && answer.status === 409 && errorCodeOf(answer.body) === 'server_behind') return { kind: 'behind' };
       if (answer !== null && answer.status === 409 && errorCodeOf(answer.body) === PLAYED_ELSEWHERE) return { kind: 'elsewhere' };
+      if (answer !== null && answer.status === 409 && errorCodeOf(answer.body) === STASH_CONFLICT) {
+        const stash: CloudStash | null = readCloudStash(content, answer.body);
+        return stash === null ? { kind: 'refused', status: 409 } : { kind: 'stash_conflict', stash };
+      }
       if (answer !== null && answer.status === 409) {
         const current: CloudState | null = isFields(answer.body) ? readCloudState(content, answer.body['current']) : null;
         return current === null ? { kind: 'refused', status: 409 } : { kind: 'conflict', current };
       }
       if (!succeeded(answer)) return failureOf(answer);
       const state: CloudState | null = readCloudState(content, answer.body);
-      return state === null || state.save === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', copy: state, fold: readFold(content, answer.body) };
+      return state === null || state.save === null ? { kind: 'refused', status: answer.status } : { kind: 'ok', copy: state, fold: readFold(content, answer.body), stashRevision: stashRevisionOf(answer.body) };
     },
     leavePlay(token: string, play: string): void {
       void exchange(fetchFn, `${baseUrl}/v1/play/leave`, { method: 'POST', headers: headers(token), body: JSON.stringify({ play }), keepalive: true });

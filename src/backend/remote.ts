@@ -3,7 +3,8 @@ import type { Content } from '../../sim/content/types.ts';
 import type { SaveData } from '../../sim/save.ts';
 import { toSave } from '../../sim/save.ts';
 import { createWorld } from '../../sim/world/create.ts';
-import type { Api, CloudState, GuestResult, ReadResult, WriteResult } from './api.ts';
+import type { ItemInstance } from '../../sim/world/types.ts';
+import type { Api, CloudStash, CloudState, GuestResult, ReadResult, WriteResult } from './api.ts';
 import type { Backend, BackendState, Clock, KeyValueStore, Logger, SaveOptions, Timers } from './backend.ts';
 import type { Epochs } from './epoch.ts';
 import type { Play, PlayStamp } from './play.ts';
@@ -13,6 +14,8 @@ import { emptyFold } from './purse-read.ts';
 import type { SaveFold } from './purse-read.ts';
 import { chooseOnConflict, chooseOnLoad, describe } from './merge.ts';
 import type { Decision, LoadDecision } from './merge.ts';
+import { heldStash, sharedStash } from './shared-stash.ts';
+import type { DeviceStash, HeldStash, StashOwner, StashRecord } from './shared-stash.ts';
 import { parseSyncRecord, serializeSyncRecord, SYNC_KEY } from './sync-record.ts';
 import type { SyncRecord } from './sync-record.ts';
 
@@ -28,6 +31,7 @@ export interface RemoteOptions {
   readonly epochs: Epochs;
   readonly prepare?: (signal: AbortSignal) => Promise<void>;
   readonly play?: Play;
+  readonly shared?: DeviceStash;
 }
 
 export const TIMING: {
@@ -99,6 +103,8 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   let claimedHere: boolean = false;
   let hurried: boolean = false;
   let closed: boolean = false;
+  let sharing: StashOwner | null = null;
+  let stash: readonly (ItemInstance | null)[] | null = null;
   const foldListeners: ((fold: SaveFold) => void)[] = [];
   const local: Backend = {
     ...options.local,
@@ -278,6 +284,16 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     setState('cloud');
   };
 
+  const stashMovedOn = (cloud: CloudStash): void => {
+    const owner: StashOwner | null = sharing;
+    if (owner !== null) options.shared?.adopt({ items: cloud.items, account: owner.account, epoch: owner.epoch, revision: cloud.revision });
+    sharing = null;
+    log.warn('the shared stash was changed by another character or device, so this one stopped saving. Reload to continue from it.');
+    latest = null;
+    frozen = true;
+    setState('cloud');
+  };
+
   const restamp = (save: SaveData | null, current: number): void => {
     epochs.raise(current);
     if (save !== null) local.save(save);
@@ -315,6 +331,9 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       case 'elsewhere':
         playedElsewhere();
         return;
+      case 'stash_conflict':
+        stashMovedOn(result.stash);
+        return;
       case 'refused':
         blocked = true;
         log.warn(`the cloud save refused this save (status ${result.status}); it will try again after the next save`);
@@ -327,7 +346,11 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
   const send = async (sending: SaveData): Promise<{ readonly held: SyncRecord; readonly result: WriteResult } | null> => {
     const held: SyncRecord | null = await account(timeout(TIMING.requestMs));
     if (held === null) return null;
-    return { held, result: await api.writeSave(held.token, sending, held.revision, epochs.current(), timeout(TIMING.requestMs), stamp()) };
+    const owner: StashOwner | null = sharing;
+    const base: number | null = owner === null ? null : (options.shared?.read()?.revision ?? 0);
+    const result: WriteResult = await api.writeSave(held.token, sending, held.revision, epochs.current(), timeout(TIMING.requestMs), stamp(), base);
+    if (owner !== null && result.kind === 'ok' && result.stashRevision !== null) options.shared?.agree(owner, result.stashRevision, sending.stash);
+    return { held, result };
   };
 
   const sendLatest = async (sending: SaveData): Promise<void> => {
@@ -411,11 +434,11 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     fail(result.kind === 'retry' ? result.afterMs : null);
   };
 
-  const reachCloud = async (signal: AbortSignal, retried: boolean): Promise<{ readonly held: SyncRecord; readonly cloud: CloudState } | null> => {
+  const reachCloud = async (signal: AbortSignal, retried: boolean): Promise<{ readonly held: SyncRecord; readonly cloud: CloudState; readonly stash: CloudStash | null } | null> => {
     const held: SyncRecord | null = await account(signal);
     if (held === null) return null;
     const read: ReadResult = await api.readSave(held.token, signal);
-    if (read.kind === 'ok') return { held, cloud: read.state };
+    if (read.kind === 'ok') return { held, cloud: read.state, stash: read.stash };
     if (read.kind === 'refused') blocked = true;
     if (read.kind === 'unreadable') {
       cloudUnreadable = true;
@@ -426,6 +449,26 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     return retried ? null : reachCloud(signal, true);
   };
 
+  const shareOffline = (): void => {
+    const held: HeldStash | null = heldStash(options.shared?.read() ?? null, record?.accountId ?? null);
+    sharing = held?.owner ?? null;
+    stash = held?.items ?? null;
+  };
+
+  const shareWith = (held: SyncRecord, cloud: CloudStash | null, epochNow: number): void => {
+    if (options.shared === undefined || cloud === null) {
+      sharing = null;
+      stash = null;
+      return;
+    }
+    const owner: StashOwner = { account: held.accountId, epoch: epochNow };
+    const device: StashRecord | null = options.shared.read();
+    const chosen: StashRecord = sharedStash(device, cloud, owner);
+    if (chosen !== device) options.shared.adopt(chosen);
+    sharing = owner;
+    stash = chosen.items;
+  };
+
   const load = async (): Promise<SaveData | null> => {
     const signal: AbortSignal = timeout(TIMING.loadMs);
     await prepared(signal);
@@ -434,6 +477,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     restarted = restarted || record?.overwriteCloud === true;
     const reached = await reachCloud(signal, false);
     if (reached === null) {
+      shareOffline();
       setState('offline');
       announceOffline();
       if (record !== null && record.token !== tokenBefore && localSave !== null) keep({ ...record, pending: true, savedAt: now() });
@@ -444,6 +488,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       return localSave;
     }
     const { held } = reached;
+    shareWith(held, reached.stash, reached.cloud.epoch);
     restarted = restarted || held.overwriteCloud;
     if (held.overwriteCloud) restamp(localSave, reached.cloud.epoch);
     else if (epochs.raise(reached.cloud.epoch)) localSave = await local.load();
@@ -482,9 +527,11 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     load,
     freshStart: (): boolean => epochs.dropped(),
     setAside: (): boolean => local.setAside(),
+    stash: (): readonly (ItemInstance | null)[] | null => stash,
     save(save: SaveData, saveOptions?: SaveOptions): boolean {
       if (frozen) return true;
-      const written: boolean = local.save(save);
+      const saved: boolean = local.save(save);
+      const written: boolean = saved && (sharing === null || options.shared?.keep(save.stash) !== false);
       latest = save;
       unsent = null;
       cancelEnrol?.();
@@ -498,6 +545,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       if (closed) return;
       epoch += 1;
       restarted = true;
+      sharing = null;
       cancelTimer?.();
       cancelTimer = null;
       latest = null;

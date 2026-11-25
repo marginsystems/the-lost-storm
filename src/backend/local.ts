@@ -2,9 +2,11 @@ import { isFields } from '../../sim/content/read.ts';
 import type { Content } from '../../sim/content/types.ts';
 import type { SaveData } from '../../sim/save.ts';
 import { readSave } from '../../sim/save.ts';
+import type { ItemInstance } from '../../sim/world/types.ts';
 import type { Backend, BackendState, KeyValueStore } from './backend.ts';
 import { epochOf } from './epoch.ts';
 import type { Epochs } from './epoch.ts';
+import type { DeviceStash } from './shared-stash.ts';
 
 export const SAVE_KEY: string = 'the-lost-storm.save.v1';
 export const UNREADABLE_KEY: string = 'the-lost-storm.save.v1.unreadable';
@@ -48,10 +50,12 @@ function keepUnreadable(content: Content, store: KeyValueStore, text: string | n
   return store.write(UNREADABLE_KEY, text);
 }
 
-export function createLocalBackend(content: Content, store: KeyValueStore, epochs: Epochs): Backend {
+export function createLocalBackend(content: Content, store: KeyValueStore, epochs: Epochs, shared: DeviceStash | null = null): Backend {
   let setAside: boolean = false;
+  let stash: readonly (ItemInstance | null)[] | null = null;
   return {
     load: (): Promise<SaveData | null> => {
+      stash = shared === null ? null : (shared.read()?.items ?? shared.gathered());
       const text: string | null = store.read(SAVE_KEY);
       const stored: LocalCopy | null = readLocalSave(content, text);
       if (stored === null) {
@@ -63,7 +67,11 @@ export function createLocalBackend(content: Content, store: KeyValueStore, epoch
       store.remove(SAVE_KEY);
       return Promise.resolve(null);
     },
-    save: (save: SaveData): boolean => store.write(SAVE_KEY, localSaveText(save, epochs.current())),
+    save: (save: SaveData): boolean => {
+      const written: boolean = store.write(SAVE_KEY, localSaveText(save, epochs.current()));
+      return written && shared?.keep(save.stash) !== false;
+    },
+    stash: (): readonly (ItemInstance | null)[] | null => stash,
     reset: (): Promise<void> => {
       store.remove(SAVE_KEY);
       return Promise.resolve();

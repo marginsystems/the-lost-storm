@@ -1,4 +1,5 @@
 import type { SaveData } from '../../sim/save.ts';
+import type { ItemInstance } from '../../sim/world/types.ts';
 import type { SaveFold } from './purse-read.ts';
 
 export type BackendState = 'offline' | 'cloud';
@@ -20,6 +21,7 @@ export interface Backend {
   subscribe(listener: (state: BackendState) => void): void;
   freshStart(): boolean;
   setAside(): boolean;
+  stash(): readonly (ItemInstance | null)[] | null;
 }
 
 export interface KeyValueStore {
