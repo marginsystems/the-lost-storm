@@ -4021,6 +4021,492 @@
     "bodyParts": {}
   },
   {
+    "id": "skeleton_thrall",
+    "url": "models/characters/skeleton.glb",
+    "clipFolder": "models/animations/clips",
+    "scale": 1.2,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Zombie_Walk_Loop",
+        "groundSpeed": 0.9
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
+    "clips": {
+      "idle": "Idle_Loop",
+      "run": "Jog_Fwd_Loop",
+      "hit": [
+        "Hit_Head",
+        "Hit_Chest"
+      ],
+      "death": [
+        "Death01",
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "rise": "Death_Collapse",
+      "actions": {
+        "attack": {
+          "clip": "Sword_Attack",
+          "impactFraction": 0.3
+        },
+        "chop": {
+          "clip": "Chop",
+          "impactFraction": 0.8
+        },
+        "bash": {
+          "clip": "Shield_Bash",
+          "impactFraction": 0.4
+        },
+        "slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245
+        },
+        "slam_charged": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38
+        },
+        "lunge": {
+          "clip": "Sword_Lunge",
+          "impactFraction": 0.4
+        }
+      }
+    },
+    "sockets": {
+      "hand_r": {
+        "bone": "DEF-hand.R",
+        "position": [
+          -0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "DEF-hand.L",
+        "position": [
+          0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          -90,
+          0
+        ],
+        "scale": 1
+      }
+    },
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "DEF-head"
+      ],
+      "torso": [
+        "DEF-spine.001",
+        "DEF-spine.002",
+        "DEF-spine.003",
+        "DEF-shoulder.L",
+        "DEF-shoulder.R"
+      ],
+      "arms": [
+        "DEF-upper_arm.L",
+        "DEF-forearm.L",
+        "DEF-upper_arm.R",
+        "DEF-forearm.R"
+      ],
+      "hands": [
+        "DEF-hand.L",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-hand.R",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R"
+      ],
+      "legs": [
+        "DEF-hips",
+        "DEF-thigh.L",
+        "DEF-shin.L",
+        "DEF-thigh.R",
+        "DEF-shin.R"
+      ],
+      "feet": [
+        "DEF-foot.L",
+        "DEF-toe.L",
+        "DEF-foot.R",
+        "DEF-toe.R"
+      ]
+    }
+  },
+  {
+    "id": "skeleton_caster",
+    "url": "models/characters/skeleton.glb",
+    "clipFolder": "models/animations/clips",
+    "scale": 1.2,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
+    "clips": {
+      "idle": "Idle_Torch_Loop",
+      "run": "Walk_Loop",
+      "hit": [
+        "Hit_Chest",
+        "Hit_Head"
+      ],
+      "death": [
+        "Death01",
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "rise": "Death_Collapse",
+      "actions": {
+        "cast": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
+        },
+        "throw": {
+          "clip": "Throw",
+          "impactFraction": 0.28
+        }
+      }
+    },
+    "sockets": {
+      "hand_r": {
+        "bone": "DEF-hand.R",
+        "position": [
+          -0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "DEF-hand.L",
+        "position": [
+          0.03,
+          0.085,
+          0
+        ],
+        "rotationDegrees": [
+          90,
+          -90,
+          0
+        ],
+        "scale": 1
+      }
+    },
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "DEF-head"
+      ],
+      "torso": [
+        "DEF-spine.001",
+        "DEF-spine.002",
+        "DEF-spine.003",
+        "DEF-shoulder.L",
+        "DEF-shoulder.R"
+      ],
+      "arms": [
+        "DEF-upper_arm.L",
+        "DEF-forearm.L",
+        "DEF-upper_arm.R",
+        "DEF-forearm.R"
+      ],
+      "hands": [
+        "DEF-hand.L",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-hand.R",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R"
+      ],
+      "legs": [
+        "DEF-hips",
+        "DEF-thigh.L",
+        "DEF-shin.L",
+        "DEF-thigh.R",
+        "DEF-shin.R"
+      ],
+      "feet": [
+        "DEF-foot.L",
+        "DEF-toe.L",
+        "DEF-foot.R",
+        "DEF-toe.R"
+      ]
+    }
+  },
+  {
+    "id": "serpent",
+    "url": "models/creatures/serpent.glb",
+    "clipFolder": "models/animations/serpent",
+    "scale": 0.42,
+    "yawOffsetDegrees": 0,
+    "height": 3.03,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Snake_Walk",
+        "groundSpeed": 1.6
+      }
+    ],
+    "clips": {
+      "idle": "Snake_Idle",
+      "run": "Snake_Walk",
+      "actions": {
+        "strike": {
+          "clip": "Snake_Attack",
+          "impactFraction": 0.5
+        },
+        "spit": {
+          "clip": "Snake_Attack",
+          "impactFraction": 0.5
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [],
+    "bodyParts": {}
+  },
+  {
+    "id": "imp",
+    "url": "models/creatures/imp.glb",
+    "clipFolder": "models/animations/imp",
+    "scale": 0.4,
+    "yawOffsetDegrees": 0,
+    "height": 3.1,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk",
+        "groundSpeed": 1.2
+      },
+      {
+        "clip": "Run",
+        "groundSpeed": 4.2
+      }
+    ],
+    "clips": {
+      "idle": "Idle",
+      "run": "Run",
+      "hit": [
+        "HitReact"
+      ],
+      "death": [
+        "Death"
+      ],
+      "actions": {
+        "claw": {
+          "clip": "Punch",
+          "impactFraction": 0.45
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [
+      "Trident"
+    ],
+    "bodyParts": {}
+  },
+  {
+    "id": "imp_trident",
+    "url": "models/creatures/imp.glb",
+    "clipFolder": "models/animations/imp",
+    "scale": 0.4,
+    "yawOffsetDegrees": 0,
+    "height": 3.1,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk",
+        "groundSpeed": 1.2
+      },
+      {
+        "clip": "Run",
+        "groundSpeed": 4.2
+      }
+    ],
+    "clips": {
+      "idle": "Idle",
+      "run": "Walk",
+      "hit": [
+        "HitReact"
+      ],
+      "death": [
+        "Death"
+      ],
+      "actions": {
+        "thrust": {
+          "clip": "Weapon",
+          "impactFraction": 0.4
+        },
+        "cast": {
+          "clip": "Weapon",
+          "impactFraction": 0.4
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [],
+    "bodyParts": {}
+  },
+  {
+    "id": "golem",
+    "url": "models/creatures/golem.glb",
+    "clipFolder": "models/animations/golem",
+    "scale": 0.42,
+    "yawOffsetDegrees": 0,
+    "height": 3.04,
+    "rootMotionBone": null,
+    "lift": 0.1,
+    "gaits": [
+      {
+        "clip": "Fast_Flying",
+        "groundSpeed": 1.5
+      }
+    ],
+    "clips": {
+      "idle": "Flying_Idle",
+      "run": "Fast_Flying",
+      "hit": [
+        "HitReact"
+      ],
+      "death": [
+        "Death"
+      ],
+      "actions": {
+        "ram": {
+          "clip": "Headbutt",
+          "impactFraction": 0.4
+        },
+        "punch": {
+          "clip": "Punch",
+          "impactFraction": 0.43
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [],
+    "bodyParts": {}
+  },
+  {
+    "id": "beetle",
+    "url": "models/creatures/beetle.glb",
+    "clipFolder": "models/animations/beetle",
+    "scale": 0.3,
+    "yawOffsetDegrees": 0,
+    "height": 3.08,
+    "rootMotionBone": null,
+    "lift": 0.3,
+    "gaits": [
+      {
+        "clip": "Fast_Flying",
+        "groundSpeed": 2.5
+      }
+    ],
+    "clips": {
+      "idle": "Flying_Idle",
+      "run": "Fast_Flying",
+      "hit": [
+        "HitReact"
+      ],
+      "death": [
+        "Death"
+      ],
+      "actions": {
+        "sting": {
+          "clip": "Headbutt",
+          "impactFraction": 0.4
+        },
+        "punch": {
+          "clip": "Punch",
+          "impactFraction": 0.43
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [],
+    "bodyParts": {}
+  },
+  {
     "id": "standing_clock",
     "url": "models/creatures/standing_clock.glb",
     "clipFolder": "models/animations/standing_clock",

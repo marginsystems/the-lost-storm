@@ -1,6 +1,11 @@
 export const RUN_PICKS = ['none', 'monster', 'family'] as const;
 export type RunPick = (typeof RUN_PICKS)[number];
 
+export interface RunRise {
+  readonly monster: string;
+  readonly chance: number;
+}
+
 export interface RunShape {
   readonly rankChance: number;
   readonly grow: number;
@@ -9,6 +14,7 @@ export interface RunShape {
   readonly damage: number;
   readonly fill: boolean;
   readonly lean: number;
+  readonly rise: RunRise | null;
 }
 
 export interface RunReward {

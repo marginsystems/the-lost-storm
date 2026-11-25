@@ -1495,7 +1495,7 @@
   ],
   "tunnels": [],
   "packs": [
-    {"x":103,"z":111,"members":[{"monster":"cinder_hound","count":3}],"level":19},
+    {"x":103,"z":111,"members":[{"monster":"magma_stoneling","count":2},{"monster":"ember_spitter","count":2}],"level":19},
     {"x":81,"z":109,"members":[{"monster":"cinder_hound","count":3}],"level":19},
     {"x":95,"z":121,"members":[{"monster":"slagback","count":2}],"level":19},
     {"x":69,"z":105,"members":[{"monster":"ember_spitter","count":2},{"monster":"cinder_hound","count":2}],"level":19},
@@ -1542,7 +1542,23 @@
     {"x":265,"z":187,"members":[{"monster":"slagback","count":2},{"monster":"ember_spitter","count":2}],"level":21},
     {"x":255,"z":177,"members":[{"monster":"slagback_elder","count":1},{"monster":"cinder_hound","count":3}],"level":21},
     {"x":325,"z":181,"members":[{"monster":"slagback_elder","count":1},{"monster":"cinder_hound","count":3}],"level":21,"rank":"rare"},
-    {"x":337,"z":185,"members":[{"monster":"slagback_elder","count":1},{"monster":"cinder_hound","count":3}],"level":21,"rank":"rare"}
+    {"x":337,"z":185,"members":[{"monster":"slagback_elder","count":1},{"monster":"cinder_hound","count":3}],"level":21,"rank":"rare"},
+    {"x":80,"z":120,"members":[{"monster":"imp_firebrand","count":2},{"monster":"cinder_imp","count":4}],"level":19},
+    {"x":84,"z":130,"members":[{"monster":"charred_thrall","count":3},{"monster":"magma_stoneling","count":1},{"monster":"cinder_hound","count":2}],"level":19},
+    {"x":70,"z":120,"members":[{"monster":"magma_stoneling","count":2},{"monster":"cinder_imp","count":4}],"level":19},
+    {"x":132,"z":344,"members":[{"monster":"magma_stoneling","count":2},{"monster":"cinder_imp","count":4}],"level":20},
+    {"x":134,"z":354,"members":[{"monster":"cinder_imp","count":7}],"level":20},
+    {"x":122,"z":340,"members":[{"monster":"charred_thrall","count":3},{"monster":"magma_stoneling","count":1},{"monster":"cinder_hound","count":2}],"level":20},
+    {"x":278,"z":282,"members":[{"monster":"charred_thrall","count":3},{"monster":"magma_stoneling","count":1},{"monster":"cinder_hound","count":2}],"level":20},
+    {"x":286,"z":290,"members":[{"monster":"cinder_imp","count":7}],"level":20},
+    {"x":280,"z":272,"members":[{"monster":"charred_thrall","count":5},{"monster":"imp_firebrand","count":1}],"level":20},
+    {"x":340,"z":348,"members":[{"monster":"cinder_imp","count":6}],"level":20},
+    {"x":88,"z":58,"members":[{"monster":"cinder_imp","count":6}],"level":19},
+    {"x":90,"z":328,"members":[{"monster":"imp_firebrand","count":2},{"monster":"cinder_imp","count":3}],"level":19},
+    {"x":212,"z":264,"members":[{"monster":"imp_firebrand","count":2},{"monster":"cinder_imp","count":3}],"level":21},
+    {"x":96,"z":198,"members":[{"monster":"charred_thrall","count":4},{"monster":"imp_firebrand","count":1}],"level":19},
+    {"x":332,"z":254,"members":[{"monster":"magma_stoneling","count":2},{"monster":"ember_spitter","count":2}],"level":20},
+    {"x":362,"z":320,"members":[{"monster":"charred_thrall","count":4},{"monster":"imp_firebrand","count":1}],"level":20}
   ],
   "exits": [
     {"id":"up","x":93,"z":15,"radius":2.2,"to":"under_hall_3","toExit":"down","arrival":{"x":91,"z":23},"requires":[],"lockedHint":"","hiddenWhenLocked":false},

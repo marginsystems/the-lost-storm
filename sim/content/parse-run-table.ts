@@ -1,13 +1,18 @@
 import type { MonsterModDef } from './combat-types.ts';
 import type { Fields } from './read.ts';
 import { choice, ContentError, each, fields, nonNegative, positive, share, text, textList } from './read.ts';
-import type { RunCondition, RunFamily, RunPricing, RunReward, RunShape, RunTableDef } from './run-table-types.ts';
+import type { RunCondition, RunFamily, RunPricing, RunReward, RunRise, RunShape, RunTableDef } from './run-table-types.ts';
 import { RUN_PICKS } from './run-table-types.ts';
 import { leanOf } from './lean-rules.ts';
 import type { Content, MonsterDef, ZoneDef } from './types.ts';
 
 function optional(source: Fields, key: string, where: string): number {
   return source[key] === undefined ? 0 : nonNegative(source, key, where);
+}
+
+function rise(value: unknown, where: string): RunRise {
+  const source: Fields = fields(value, where);
+  return { monster: text(source, 'monster', where), chance: share(source, 'chance', where) };
 }
 
 function shape(value: unknown, where: string): RunShape {
@@ -22,6 +27,7 @@ function shape(value: unknown, where: string): RunShape {
     damage: optional(source, 'damage', where),
     fill: fill === true,
     lean: optional(source, 'lean', where),
+    rise: source['rise'] === undefined ? null : rise(source['rise'], `${where}.rise`),
   };
 }
 
@@ -103,6 +109,11 @@ export function runTableProblems(content: Content): string[] {
     need(!seen.has(entry.id), `${owner} is listed twice`);
     seen.add(entry.id);
     for (const mod of entry.shape.mods) modProblems(content, owner, mod, need);
+    if (entry.shape.rise !== null) {
+      const raised: MonsterDef | undefined = content.monsters.get(entry.shape.rise.monster);
+      need(raised !== undefined && raised.boss === null && raised.summon === null, `${owner} raises ${entry.shape.rise.monster}, which is not a plain monster`);
+      need(entry.shape.rise.chance > 0, `${owner} raises the slain with no chance`);
+    }
     need(entry.shape.fill === (entry.pick !== 'none'), `${owner} fills the level exactly when the player picks a monster or a family`);
     if (entry.pick === 'family') need(table.families.length > 0, `${owner} picks a family, but the run table lists none`);
     const total: number = entry.reward.xp + entry.reward.gold + entry.reward.items + entry.reward.rarity;

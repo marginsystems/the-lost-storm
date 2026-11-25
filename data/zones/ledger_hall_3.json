@@ -293,7 +293,19 @@
     {"x":52,"z":156,"members":[{"monster":"timekeeper_rank","count":5},{"monster":"timekeeper_tallier","count":2}],"level":29,"row":{"x":2.2,"z":0}},
     {"x":132,"z":156,"members":[{"monster":"timekeeper_rank","count":5},{"monster":"timekeeper_tallier","count":2}],"level":29,"row":{"x":2.2,"z":0}},
     {"x":72,"z":146,"members":[{"monster":"timekeeper_duelist","count":4},{"monster":"timekeeper_binder","count":2}],"level":29},
-    {"x":112,"z":146,"members":[{"monster":"timekeeper_tallier","count":4},{"monster":"timekeeper_custodian","count":2}],"level":29}
+    {"x":112,"z":146,"members":[{"monster":"timekeeper_tallier","count":4},{"monster":"timekeeper_custodian","count":2}],"level":29},
+    {"x":138,"z":84,"members":[{"monster":"bone_sentinel","count":2},{"monster":"risen_thrall","count":3},{"monster":"bone_hurler","count":2}],"level":28},
+    {"x":148,"z":84,"members":[{"monster":"ossuary_brute","count":1},{"monster":"bone_sentinel","count":2},{"monster":"bone_hurler","count":2}],"level":28},
+    {"x":132,"z":92,"members":[{"monster":"stoneling","count":3},{"monster":"risen_thrall","count":3}],"level":28},
+    {"x":134,"z":74,"members":[{"monster":"grave_hexer","count":1},{"monster":"risen_thrall","count":5}],"level":28},
+    {"x":52,"z":98,"members":[{"monster":"bone_sentinel","count":2},{"monster":"risen_thrall","count":3},{"monster":"bone_hurler","count":2}],"level":28},
+    {"x":58,"z":106,"members":[{"monster":"ossuary_brute","count":1},{"monster":"bone_sentinel","count":2},{"monster":"bone_hurler","count":2}],"level":28},
+    {"x":42,"z":100,"members":[{"monster":"grave_hexer","count":1},{"monster":"risen_thrall","count":5}],"level":28},
+    {"x":56,"z":88,"members":[{"monster":"stoneling","count":3},{"monster":"risen_thrall","count":3}],"level":28},
+    {"x":126,"z":164,"members":[{"monster":"grave_hexer","count":1},{"monster":"risen_thrall","count":3}],"level":29},
+    {"x":58,"z":58,"members":[{"monster":"ossuary_brute","count":1},{"monster":"risen_thrall","count":3}],"level":28},
+    {"x":110,"z":128,"members":[{"monster":"ossuary_brute","count":1},{"monster":"risen_thrall","count":3}],"level":29},
+    {"x":174,"z":136,"members":[{"monster":"bone_sentinel","count":2},{"monster":"bone_hurler","count":2}],"level":29}
   ],
   "exits": [
     {"id":"up","x":92,"z":12.6,"radius":2.2,"to":"ledger_hall_2","toExit":"down","arrival":{"x":92,"z":18},"requires":[]},

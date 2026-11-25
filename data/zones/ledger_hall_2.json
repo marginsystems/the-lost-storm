@@ -316,7 +316,17 @@
     {"x":86,"z":170,"members":[{"monster":"timekeeper_rank","count":4},{"monster":"timekeeper_custodian","count":2}],"level":28,"row":{"x":0,"z":2.2}},
     {"x":152,"z":124,"members":[{"monster":"timekeeper_rank","count":4},{"monster":"timekeeper_tallier","count":2}],"level":27,"row":{"x":2.2,"z":0}},
     {"x":152,"z":140,"members":[{"monster":"timekeeper_duelist","count":4}],"level":27},
-    {"x":36,"z":128,"members":[{"monster":"timekeeper_tallier","count":2},{"monster":"timekeeper_custodian","count":2},{"monster":"timekeeper_binder","count":2}],"level":28}
+    {"x":36,"z":128,"members":[{"monster":"timekeeper_tallier","count":2},{"monster":"timekeeper_custodian","count":2},{"monster":"timekeeper_binder","count":2}],"level":28},
+    {"x":100,"z":168,"members":[{"monster":"bone_sentinel","count":2},{"monster":"risen_thrall","count":3},{"monster":"bone_hurler","count":2}],"level":28},
+    {"x":100,"z":178,"members":[{"monster":"stoneling","count":3},{"monster":"risen_thrall","count":3}],"level":28},
+    {"x":24,"z":98,"members":[{"monster":"bone_sentinel","count":2},{"monster":"risen_thrall","count":3},{"monster":"bone_hurler","count":2}],"level":28},
+    {"x":34,"z":102,"members":[{"monster":"grave_hexer","count":1},{"monster":"risen_thrall","count":5}],"level":28},
+    {"x":16,"z":104,"members":[{"monster":"stoneling","count":3},{"monster":"risen_thrall","count":3}],"level":28},
+    {"x":22,"z":88,"members":[{"monster":"ossuary_brute","count":1},{"monster":"bone_sentinel","count":2},{"monster":"bone_hurler","count":2}],"level":28},
+    {"x":76,"z":76,"members":[{"monster":"stoneling","count":3}],"level":28},
+    {"x":64,"z":116,"members":[{"monster":"grave_hexer","count":1},{"monster":"risen_thrall","count":3}],"level":28},
+    {"x":116,"z":84,"members":[{"monster":"ossuary_brute","count":1},{"monster":"risen_thrall","count":3}],"level":27},
+    {"x":154,"z":158,"members":[{"monster":"bone_sentinel","count":2},{"monster":"bone_hurler","count":2}],"level":27}
   ],
   "exits": [
     {"id":"up","x":175.6,"z":14,"radius":2.2,"to":"ledger_hall","toExit":"down","arrival":{"x":166,"z":14},"requires":[]},

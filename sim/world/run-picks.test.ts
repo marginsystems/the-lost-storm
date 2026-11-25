@@ -13,10 +13,10 @@ function familyIds(zone: string): string[] {
 }
 
 void test('a level offers only the families with at least two members living there', (): void => {
-  assert.deepEqual(familyIds('under_hall'), ['many_legs', 'fur_and_fang', 'rot_and_ooze', 'echoes']);
-  assert.deepEqual(familyIds('under_hall_2'), ['many_legs', 'dark_wings', 'rot_and_ooze', 'echoes']);
-  assert.deepEqual(familyIds('ledger_hall'), ['blades', 'learned']);
-  assert.deepEqual(familyIds('lava_depths'), []);
+  assert.deepEqual(familyIds('under_hall'), ['many_legs', 'fur_and_fang', 'rot_and_ooze', 'echoes', 'risen', 'scales_and_stings']);
+  assert.deepEqual(familyIds('under_hall_2'), ['many_legs', 'dark_wings', 'rot_and_ooze', 'echoes', 'risen', 'scales_and_stings']);
+  assert.deepEqual(familyIds('ledger_hall'), ['blades', 'learned', 'risen']);
+  assert.deepEqual(familyIds('lava_depths'), ['imps_and_embers']);
 });
 
 void test('a family offered on a level lists only the members that live there', (): void => {

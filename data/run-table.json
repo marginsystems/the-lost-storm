@@ -10,7 +10,10 @@
     { "id": "rot_and_ooze", "name": "Rot and ooze", "monsters": ["silt_ooze", "spined_ooze", "sporecap"] },
     { "id": "echoes", "name": "Echoes", "monsters": ["unfinished_brute", "unfinished_taker", "unfinished_thrower", "unfinished_borrower"] },
     { "id": "blades", "name": "Blades", "monsters": ["timekeeper_rank", "timekeeper_duelist", "timekeeper_custodian"] },
-    { "id": "learned", "name": "Learned", "monsters": ["timekeeper_adept", "timekeeper_binder", "timekeeper_tallier"] }
+    { "id": "learned", "name": "Learned", "monsters": ["timekeeper_adept", "timekeeper_binder", "timekeeper_tallier"] },
+    { "id": "risen", "name": "The risen", "monsters": ["risen_thrall", "bone_sentinel", "bone_hurler", "ossuary_brute", "charred_thrall"] },
+    { "id": "scales_and_stings", "name": "Scales and stings", "monsters": ["cave_serpent", "spitting_serpent", "cave_wasp", "stoneling"] },
+    { "id": "imps_and_embers", "name": "Imps and embers", "monsters": ["cinder_imp", "imp_firebrand", "magma_stoneling", "charred_thrall"] }
   ],
   "conditions": [
     {
@@ -30,7 +33,26 @@
       "danger": 0.3,
       "shape": { "grow": 0.4 },
       "reward": { "xp": 0.05, "gold": 0.05, "items": 0.05, "rarity": 0.02 },
+      "excludes": ["hardened", "teeming"]
+    },
+    {
+      "id": "teeming",
+      "name": "Teeming",
+      "text": "Every pack holds 80% more monsters.",
+      "price": 1.4,
+      "danger": 0.45,
+      "shape": { "grow": 0.8 },
+      "reward": { "xp": 0.1, "gold": 0.1, "items": 0.1, "rarity": 0.03 },
       "excludes": ["hardened"]
+    },
+    {
+      "id": "restless",
+      "name": "Restless dead",
+      "text": "One slain monster in four rises again as a Risen Thrall.",
+      "price": 1,
+      "danger": 0.2,
+      "shape": { "rise": { "monster": "risen_thrall", "chance": 0.25 } },
+      "reward": { "xp": 0.1, "gold": 0.1, "items": 0.1, "rarity": 0.03 }
     },
     {
       "id": "favoured",

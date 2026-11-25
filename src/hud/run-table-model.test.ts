@@ -9,8 +9,8 @@ import type { ConditionRow, TablePick, TableView } from './run-table-model.ts';
 
 const content: Content = loadContent();
 
-function table(gold: number, reached: readonly string[] = ['under_hall', 'under_hall_2']): World {
-  const world: World = worldIn(content, content.world.town, 3);
+function table(gold: number, reached: readonly string[] = ['under_hall', 'under_hall_2'], from: Content = content): World {
+  const world: World = worldIn(from, from.world.town, 3);
   world.waypoints.push(...reached);
   world.player.gold = gold;
   world.service = { kind: 'descent', owner: 'descent_table', anchor: { x: 0, z: 0 } };
@@ -90,12 +90,16 @@ void test('one family offers the families the level holds, and none where the le
   const world: World = table(100000, ['under_hall', 'lava_depths']);
   const pick: TablePick = togglePin(world, { zone: 'under_hall', pins: [] }, 'one_family');
   const chips = row(tableView(world, pick), 'one_family').kinds;
-  assert.deepEqual(chips.map((chip): string => chip.name), ['Many legs', 'Fur and fang', 'Rot and ooze', 'Echoes']);
+  assert.deepEqual(chips.map((chip): string => chip.name), ['Many legs', 'Fur and fang', 'Rot and ooze', 'Echoes', 'The risen', 'Scales and stings']);
   assert.equal(chips.find((chip): boolean => chip.chosen)?.id, 'many_legs');
   assert.equal(row(tableView(world, pick), 'one_kind').open, false);
-  const lava: TableView = tableView(world, { zone: 'lava_depths', pins: [] });
-  assert.equal(row(lava, 'one_family').open, false);
-  assert.equal(row(lava, 'one_family').danger, 'Nothing to pick on this level');
+  const lavaPick: TablePick = togglePin(world, { zone: 'lava_depths', pins: [] }, 'one_family');
+  const lavaFamily: ConditionRow = row(tableView(world, lavaPick), 'one_family');
+  assert.equal(lavaFamily.open, true);
+  assert.deepEqual(lavaFamily.kinds.map((chip): string => chip.name), ['Imps and embers']);
+  const bare: TableView = tableView(table(100000, ['lava_depths'], { ...content, runTable: { ...content.runTable, families: [] } }), { zone: 'lava_depths', pins: [] });
+  assert.equal(row(bare, 'one_family').open, false);
+  assert.equal(row(bare, 'one_family').danger, 'Nothing to pick on this level');
   const unpicked: TableView = tableView(world, { zone: 'under_hall', pins: [{ condition: 'one_family', pick: null }] });
   assert.equal(unpicked.setOut.command, null);
   assert.equal(unpicked.setOut.note, 'Pick one for One family');

@@ -1,4 +1,4 @@
-import type { RunCondition, RunReward } from '../content/run-table-types.ts';
+import type { RunCondition, RunReward, RunRise } from '../content/run-table-types.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
 import { pickChoices } from './run-picks.ts';
 import type { PickChoice } from './run-picks.ts';
@@ -19,6 +19,7 @@ export interface RunShaping {
   readonly life: number;
   readonly damage: number;
   readonly fill: readonly string[];
+  readonly rise: RunRise | null;
 }
 
 export const NO_REWARD: RunReward = { xp: 0, gold: 0, items: 0, rarity: 0 };
@@ -63,6 +64,10 @@ export function shapingOf(content: Content, setup: RunSetup): RunShaping {
     life: sum((entry: PinnedCondition): number => entry.condition.shape.life),
     damage: sum((entry: PinnedCondition): number => entry.condition.shape.damage),
     fill: fillOf(content, content.zones.get(setup.zone), fill),
+    rise: list.reduce((best: RunRise | null, entry: PinnedCondition): RunRise | null => {
+      const next: RunRise | null = entry.condition.shape.rise;
+      return next !== null && (best === null || next.chance > best.chance) ? next : best;
+    }, null),
   };
 }
 

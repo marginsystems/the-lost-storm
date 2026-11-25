@@ -1,3 +1,4 @@
+import { riseFrom } from './run-rise.ts';
 import { EMPTY_BUFFER } from './press-buffer.ts';
 import type { TailwindShares } from './tailwind.ts';
 import { endTailwind, feedTailwind, tailwindShares } from './tailwind.ts';
@@ -189,6 +190,7 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2, sourc
   const xp: number = Math.round(killXp(world, target.def.xp, target.level) * (1 + reward.xp) * (1 + shares.xp));
   feedTailwind(world, target, xp, gold);
   grantXp(world, xp, killReduction(world, target.level));
+  riseFrom(world, target);
   settleCleared(world);
 }
 

@@ -350,7 +350,14 @@
     {"x":46,"z":112,"members":[{"monster":"timekeeper_rank","count":4},{"monster":"timekeeper_tallier","count":2}],"level":26},
     {"x":140,"z":160,"members":[{"monster":"timekeeper_duelist","count":4}],"level":27},
     {"x":72,"z":106,"members":[{"monster":"timekeeper_rank","count":5}],"level":26,"row":{"x":2.2,"z":0}},
-    {"x":124,"z":136,"members":[{"monster":"timekeeper_tallier","count":4},{"monster":"timekeeper_custodian","count":2}],"level":27}
+    {"x":124,"z":136,"members":[{"monster":"timekeeper_tallier","count":4},{"monster":"timekeeper_custodian","count":2}],"level":27},
+    {"x":88,"z":62,"members":[{"monster":"ossuary_brute","count":1},{"monster":"bone_sentinel","count":2},{"monster":"bone_hurler","count":2}],"level":25},
+    {"x":98,"z":66,"members":[{"monster":"bone_sentinel","count":2},{"monster":"risen_thrall","count":3},{"monster":"bone_hurler","count":2}],"level":25},
+    {"x":80,"z":70,"members":[{"monster":"stoneling","count":3},{"monster":"risen_thrall","count":3}],"level":25},
+    {"x":96,"z":160,"members":[{"monster":"stoneling","count":3},{"monster":"risen_thrall","count":3}],"level":27},
+    {"x":104,"z":166,"members":[{"monster":"ossuary_brute","count":1},{"monster":"bone_sentinel","count":2},{"monster":"bone_hurler","count":2}],"level":27},
+    {"x":100,"z":120,"members":[{"monster":"risen_thrall","count":4},{"monster":"bone_hurler","count":2}],"level":26},
+    {"x":32,"z":138,"members":[{"monster":"stoneling","count":3}],"level":26}
   ],
   "exits": [
     {"id":"up","x":90,"z":12.6,"radius":2.2,"to":"lava_depths_3","toExit":"down","arrival":{"x":90,"z":18},"requires":[]},

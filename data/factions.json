@@ -201,12 +201,43 @@
         "#a39a8c",
         "#b0a59a",
         "#d4ccb8",
-        "#8a7d6c"
+        "#8a7d6c",
+        "#8f9a6a",
+        "#a3a85c",
+        "#6c7448",
+        "#c7b48a",
+        "#a89466",
+        "#a8a094"
       ],
       "glow": "#c9b48a"
     },
     "wearables": [],
     "weapons": [],
+    "regards": {
+      "player": "hostile"
+    }
+  },
+  {
+    "id": "risen",
+    "name": "The Risen",
+    "palette": {
+      "tints": [
+        "#d9d2c0",
+        "#cfc6b0",
+        "#e0d8c4",
+        "#bdb39c",
+        "#c8c0b0"
+      ],
+      "glow": "#9fd8c0"
+    },
+    "wearables": [],
+    "weapons": [
+      "rusted_blade",
+      "sword_1h",
+      "rank_shield",
+      "hex_staff",
+      "raider_maul"
+    ],
     "regards": {
       "player": "hostile"
     }
@@ -222,12 +253,16 @@
         "#574a44",
         "#8a5040",
         "#74443a",
-        "#9a6248"
+        "#9a6248",
+        "#b0645a",
+        "#a05a50"
       ],
       "glow": "#ff6a1c"
     },
     "wearables": [],
-    "weapons": [],
+    "weapons": [
+      "rusted_blade"
+    ],
     "regards": {
       "player": "hostile"
     }
