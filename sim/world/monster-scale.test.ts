@@ -34,7 +34,7 @@ void test('between the ends of the ramp toughness rises every level and stays be
 });
 
 void test('without a ramp the slopes are flat at every level', (): void => {
-  const flat: MonsterScaling = { lifePerLevel: 0.5, damagePerLevel: 0.25, xpPerLevel: 0.1, ramp: null, lifeTimes: [] };
+  const flat: MonsterScaling = { lifePerLevel: 0.5, damagePerLevel: 0.25, xpPerLevel: 0.1, xpBeyond: null, ramp: null, lifeTimes: [] };
   assert.deepEqual(monsterScale(flat, 21), { life: 11, damage: 6 });
 });
 

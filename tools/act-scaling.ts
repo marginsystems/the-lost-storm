@@ -10,6 +10,7 @@ import { createRng } from '../sim/rng.ts';
 import type { MonsterScale } from '../sim/world/monster-scale.ts';
 import { armourReduction, computeStats } from '../sim/stats.ts';
 import { monsterScale } from '../sim/world/monster-scale.ts';
+import { monsterXpScale } from '../sim/world/monster-xp.ts';
 import { rankChance } from '../sim/world/ranks.ts';
 import type { Equipment, ItemInstance } from '../sim/world/types.ts';
 
@@ -206,7 +207,7 @@ export function clearZone(content: Content, zone: ZoneDef, arrival: number): XpR
     for (const member of pack.members) {
       const def: MonsterDef | undefined = content.monsters.get(member.monster);
       if (def === undefined) continue;
-      const each: number = def.xp * ranked * (1 + content.world.scaling.xpPerLevel * (level - 1));
+      const each: number = def.xp * ranked * monsterXpScale(content.world.scaling, level);
       for (let one: number = 0; one < member.count; one += 1) {
         const gained: number = Math.max(1, Math.round(each * gapScale(content.player.xp.gap, state.level, level)));
         const next: XpResult = applyXp(content.player.xp, state.level, state.xp, gained);

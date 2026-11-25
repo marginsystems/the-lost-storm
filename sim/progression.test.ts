@@ -5,6 +5,7 @@ import type { Content, SkillTreeNodeDef, XpCurve } from './content/types.ts';
 import { adoptLearned, applyXp, gapBand, gapScale, canAllocate, canRefund, findNode, holdingParts, holdingTrunk, joinBlock, placeLinks, reachablePlaces, bankedReset, refundBlock, refundCost, refundState, respecCost, respecState, activeChange, changesHeld, heldChanges, offersChange, startingPlaces, xpToNextLevel } from './progression.ts';
 import type { HeldChange, XpResult } from './progression.ts';
 import { createWorld } from './world/create.ts';
+import { monsterXpScale } from './world/monster-xp.ts';
 import type { World } from './world/types.ts';
 import { wornPowers } from './powers.ts';
 import { earnedPoints, parseSaveText, readSave, toSave } from './save.ts';
@@ -240,13 +241,21 @@ void test('with above off a foe far above the hero still gives full xp', (): voi
   assert.ok(gapScale(gap, 25, 1) < 1);
 });
 
-void test('the shipped curve makes every level take longer than the one before, from start to the cap', (): void => {
+void test('the shipped curve makes every level take longer than the one before, from start to where the monster experience rule starts', (): void => {
   const shipped: XpCurve = content.player.xp;
-  for (let level: number = 2; level < shipped.maxLevel; level += 1) {
-    const perFoe: number = 1 + content.world.scaling.xpPerLevel * (level - 1);
-    const earlier: number = 1 + content.world.scaling.xpPerLevel * (level - 2);
+  const last: number = content.world.scaling.xpBeyond?.from ?? shipped.maxLevel;
+  for (let level: number = 2; level <= last; level += 1) {
+    const perFoe: number = monsterXpScale(content.world.scaling, level);
+    const earlier: number = monsterXpScale(content.world.scaling, level - 1);
     assert.ok(xpToNextLevel(shipped, level) / perFoe > xpToNextLevel(shipped, level - 1) / earlier, `level ${level}`);
   }
+});
+
+void test('past that level no level takes more kills than the one it starts at, so the climb to the cap does not slow down', (): void => {
+  const shipped: XpCurve = content.player.xp;
+  const from: number = content.world.scaling.xpBeyond?.from ?? shipped.maxLevel;
+  const kills = (level: number): number => xpToNextLevel(shipped, level) / monsterXpScale(content.world.scaling, level);
+  for (let level: number = from + 1; level < shipped.maxLevel; level += 1) assert.ok(kills(level) <= kills(from), `level ${level}`);
 });
 
 void test('a free start over is banked when the save last saw an older tree revision or none, and kept until it is spent', (): void => {

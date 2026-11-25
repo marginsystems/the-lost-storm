@@ -24,6 +24,7 @@ import type {
   SurgeRules,
   TalkDef,
   ScalingPoint,
+  XpBeyond,
   ScalingRamp,
   WorldDef,
   ZoneAmbience,
@@ -488,6 +489,16 @@ function scalingRamp(value: unknown, where: string): ScalingRamp | null {
   return { from, to, lifePerLevel: nonNegative(source, 'lifePerLevel', where), damagePerLevel: nonNegative(source, 'damagePerLevel', where) };
 }
 
+function xpBeyond(value: unknown, where: string): XpBeyond | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  const from: number = positive(source, 'from', where);
+  if (!Number.isInteger(from)) throw new ContentError(`${where}.from`, 'expected a whole level');
+  const growth: number = positive(source, 'growth', where);
+  if (growth < 1) throw new ContentError(`${where}.growth`, 'experience above the level cannot shrink from one level to the next');
+  return { from, growth, lift: positive(source, 'lift', where) };
+}
+
 function scalingPoint(value: unknown, where: string): ScalingPoint {
   const source: Fields = fields(value, where);
   const level: number = positive(source, 'level', where);
@@ -541,6 +552,7 @@ export function worldDef(value: unknown, where: string): WorldDef {
       lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),
       damagePerLevel: numeric(scaling, 'damagePerLevel', `${where}.scaling`),
       xpPerLevel: numeric(scaling, 'xpPerLevel', `${where}.scaling`),
+      xpBeyond: xpBeyond(scaling['xpBeyond'], `${where}.scaling.xpBeyond`),
       ramp: scalingRamp(scaling['ramp'], `${where}.scaling.ramp`),
       lifeTimes: lifeTimes(scaling['lifeTimes'], `${where}.scaling.lifeTimes`),
     },

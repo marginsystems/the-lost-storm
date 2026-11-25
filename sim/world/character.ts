@@ -12,6 +12,7 @@ import { heroStanceMods } from '../stances.ts';
 import { countOf, fits, placeIn, stackSize, stacksWith, withCount } from '../stacks.ts';
 import { dropOnGround } from './ground.ts';
 import { forget, learn } from './learn.ts';
+import { monsterXpScale } from './monster-xp.ts';
 import type { EmpowerState, ItemInstance, PlayerState, World } from './types.ts';
 
 export function refreshPlayer(world: World): void {
@@ -42,7 +43,7 @@ export function heldLook(world: World, skillId: string): EmpowerLook | null {
 }
 
 export function killXp(world: World, xp: number, level: number, share: number = gapScale(world.content.player.xp.gap, world.player.level, level)): number {
-  const gained: number = Math.round(xp * (1 + world.content.world.scaling.xpPerLevel * (level - 1)) * share);
+  const gained: number = Math.round(xp * monsterXpScale(world.content.world.scaling, level) * share);
   return xp > 0 ? Math.max(1, gained) : gained;
 }
 

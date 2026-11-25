@@ -27,6 +27,7 @@
     "lifePerLevel": 0.3,
     "damagePerLevel": 0.28,
     "xpPerLevel": 0.15,
+    "xpBeyond": {"from": 30, "growth": 1.17, "lift": 2},
     "ramp": { "from": 5, "to": 10, "lifePerLevel": 1.2, "damagePerLevel": 1.12 },
     "lifeTimes": [{ "level": 13, "times": 1 }, { "level": 15, "times": 1.7 }, { "level": 18, "times": 2.8 }, { "level": 20, "times": 3.2 }]
   },

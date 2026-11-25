@@ -334,10 +334,17 @@ export interface ScalingPoint {
   readonly times: number;
 }
 
+export interface XpBeyond {
+  readonly from: number;
+  readonly growth: number;
+  readonly lift: number;
+}
+
 export interface MonsterScaling {
   readonly lifePerLevel: number;
   readonly damagePerLevel: number;
   readonly xpPerLevel: number;
+  readonly xpBeyond: XpBeyond | null;
   readonly ramp: ScalingRamp | null;
   readonly lifeTimes: readonly ScalingPoint[];
 }

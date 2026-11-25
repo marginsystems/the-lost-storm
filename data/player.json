@@ -61,7 +61,7 @@
     "base": 105,
     "growth": 1.332,
     "after": { "from": 9, "growth": 1.17 },
-    "maxLevel": 30,
+    "maxLevel": 50,
     "gap": { "band": 5, "widenEvery": 10, "soft": 2, "power": 3, "floor": 0.05, "above": true }
   },
   "startingItems": [
