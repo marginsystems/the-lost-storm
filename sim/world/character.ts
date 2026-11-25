@@ -9,7 +9,7 @@ import { computeStats, modTargets, resolveSkillBar, variantChain } from '../stat
 import { heldGroup } from '../weapons.ts';
 import { buffMods, heldPowers, wornVariants, wouldPassLimit } from '../powers.ts';
 import { heroStanceMods } from '../stances.ts';
-import { fits, placeIn } from '../stacks.ts';
+import { countOf, fits, placeIn, stackSize, stacksWith, withCount } from '../stacks.ts';
 import { dropOnGround } from './ground.ts';
 import { forget, learn } from './learn.ts';
 import type { EmpowerState, ItemInstance, PlayerState, World } from './types.ts';
@@ -118,6 +118,22 @@ export function dropFromInventory(world: World, inventoryIndex: number): void {
   if (item === null || isStoryItem(world.content, item)) return;
   player.inventory[inventoryIndex] = null;
   dropOnGround(world, player.pos, { kind: 'item', item });
+  world.events.push({ type: 'character_changed' });
+}
+
+export function arrangeInventory(world: World, from: number, to: number): void {
+  const bag: (ItemInstance | null)[] = world.player.inventory;
+  const item: ItemInstance | null = bag[from] ?? null;
+  if (item === null || from === to || to < 0 || to >= bag.length) return;
+  const there: ItemInstance | null = bag[to] ?? null;
+  const taken: number = there === null || !stacksWith(world.content, there, item) ? 0 : Math.min(countOf(item), stackSize(world.content, there) - countOf(there));
+  if (there !== null && taken > 0) {
+    bag[to] = withCount(there, countOf(there) + taken);
+    bag[from] = taken === countOf(item) ? null : withCount(item, countOf(item) - taken);
+  } else {
+    bag[to] = item;
+    bag[from] = there;
+  }
   world.events.push({ type: 'character_changed' });
 }
 

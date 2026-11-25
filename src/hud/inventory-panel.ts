@@ -106,6 +106,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
   }
 
   const inventoryCells: CellView[] = [];
+  const inventoryPlaces: HTMLElement[] = [];
   let armed: { readonly index: number; readonly uid: number; readonly timer: number } | null = null;
   const disarm = (): void => {
     if (armed === null) return;
@@ -139,6 +140,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
     const view: CellView = buildCell(grid, 'cell');
     label('cell-drop', INVENTORY.dropAsk, view.cell);
     inventoryCells.push(view);
+    inventoryPlaces.push(view.cell);
     attachTooltip(context.tooltip, view.cell, (): HTMLElement | null => {
       const item: ItemInstance | null = view.current;
       if (item === null) return null;
@@ -152,13 +154,18 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       panel: element,
       cell: view.cell,
       item: view.item,
-      canDrag: (): boolean => view.current !== null && !isStoryItem(context.api.world.content, view.current),
+      places: inventoryPlaces,
+      canDrag: (): boolean => view.current !== null,
+      canLeave: (): boolean => view.current !== null && !isStoryItem(context.api.world.content, view.current),
       started: (): void => {
         disarm();
         context.tooltip.hide();
       },
       dropped: (): void => {
         if (view.current !== null) context.api.send({ type: 'drop', inventoryIndex: index });
+      },
+      moved: (to: number): void => {
+        if (view.current !== null) context.api.send({ type: 'arrange', from: index, to });
       },
     });
     let hold: Hold | null = null;

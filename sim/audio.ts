@@ -341,6 +341,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'equip':
     case 'hero':
     case 'unequip':
+    case 'arrange':
     case 'slot':
       action = 'equip';
       break;

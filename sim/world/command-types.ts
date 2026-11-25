@@ -54,6 +54,12 @@ export interface DropCommand {
   readonly inventoryIndex: number;
 }
 
+export interface ArrangeCommand {
+  readonly type: 'arrange';
+  readonly from: number;
+  readonly to: number;
+}
+
 export interface SlotCommand {
   readonly type: 'slot';
   readonly slot: number;
@@ -173,4 +179,4 @@ export interface Routed {
   readonly by?: number;
 }
 
-export type Command = (HeroCommand | StrikeCommand | SpawnCommand | BenchCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | LeaveDuelCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand | SetOutCommand) & Routed;
+export type Command = (HeroCommand | StrikeCommand | SpawnCommand | BenchCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | ArrangeCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | LeaveDuelCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand | SetOutCommand) & Routed;

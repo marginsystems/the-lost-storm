@@ -11,7 +11,7 @@ import { isWalkable, lineWalkable } from '../nav/grid.ts';
 import { directPath, nearFace } from '../nav/path.ts';
 import { blockerInReach, chasePath, chaseStalled, freshChase, walkPath } from './chase.ts';
 import { pastBlocks, roundPast, stillRound } from './stick.ts';
-import { allocateNode, chooseChange, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
+import { allocateNode, arrangeInventory, chooseChange, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
 import { dodgesAtOnce, givesWayToDodge, isDodge } from './dodge.ts';
@@ -285,6 +285,7 @@ function act(world: World, player: PlayerState, command: Command): void {
     case 'hero':
     case 'unequip':
     case 'drop':
+    case 'arrange':
     case 'allocate':
     case 'refund':
     case 'respec':
@@ -318,6 +319,9 @@ export function handleCommand(world: World, player: PlayerState, command: Comman
       return;
     case 'drop':
       dropFromInventory(world, command.inventoryIndex);
+      return;
+    case 'arrange':
+      arrangeInventory(world, command.from, command.to);
       return;
     case 'allocate':
       allocateNode(world, command.node);

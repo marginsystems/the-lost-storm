@@ -1,5 +1,6 @@
 export const BAG_DRAG = {
   slop: 6,
+  reach: 6,
   settleMs: 520,
   dropWord: 'Drop',
 } as const;
@@ -16,9 +17,12 @@ export interface BagDragOptions {
   readonly panel: HTMLElement;
   readonly cell: HTMLElement;
   readonly item: HTMLElement;
+  readonly places: readonly HTMLElement[];
   canDrag(): boolean;
+  canLeave(): boolean;
   started(): void;
   dropped(): void;
+  moved(to: number): void;
 }
 
 export interface BagDragHandle {
@@ -31,6 +35,22 @@ export function pulledFar(fromX: number, fromY: number, x: number, y: number): b
 
 export function outside(box: Box, x: number, y: number): boolean {
   return x < box.left || x > box.right || y < box.top || y > box.bottom;
+}
+
+function gapTo(box: Box, x: number, y: number): number {
+  return Math.hypot(Math.max(box.left - x, 0, x - box.right), Math.max(box.top - y, 0, y - box.bottom));
+}
+
+export function placeUnder(boxes: readonly Box[], x: number, y: number): number {
+  let best: number = -1;
+  let nearest: number = BAG_DRAG.reach;
+  boxes.forEach((box: Box, index: number): void => {
+    const gap: number = gapTo(box, x, y);
+    if (gap > nearest || (best >= 0 && gap === nearest)) return;
+    best = index;
+    nearest = gap;
+  });
+  return best;
 }
 
 interface Pending {
@@ -62,6 +82,19 @@ export function attachBagDrag(options: BagDragOptions): BagDragHandle {
   let pending: Pending | null = null;
   let dragging: Dragging | null = null;
   let swallow: boolean = false;
+  let aimed: HTMLElement | null = null;
+
+  const leaves = (x: number, y: number): boolean => options.canLeave() && outside(panel.getBoundingClientRect(), x, y);
+  const targetAt = (x: number, y: number): number => {
+    const index: number = placeUnder(options.places.map((spot: HTMLElement): DOMRect => spot.getBoundingClientRect()), x, y);
+    return options.places[index] === cell ? -1 : index;
+  };
+  const aim = (spot: HTMLElement | null): void => {
+    if (spot === aimed) return;
+    aimed?.classList.remove('drop-target');
+    aimed = spot;
+    aimed?.classList.add('drop-target');
+  };
 
   const begin = (event: PointerEvent, from: Pending): void => {
     const box: DOMRect = cell.getBoundingClientRect();
@@ -92,16 +125,20 @@ export function attachBagDrag(options: BagDragOptions): BagDragHandle {
     dragging = null;
     swallow = true;
     if (cell.hasPointerCapture(drag.pointer)) cell.releasePointerCapture(drag.pointer);
-    const leaving: boolean = !cancelled && outside(panel.getBoundingClientRect(), event.clientX, event.clientY);
+    aim(null);
+    const leaving: boolean = !cancelled && leaves(event.clientX, event.clientY);
+    const target: number = cancelled || leaving ? -1 : targetAt(event.clientX, event.clientY);
     cell.classList.remove('lifted');
     if (leaving) {
       drag.ghost.classList.add('dropped');
       options.dropped();
     } else {
-      const home: DOMRect = cell.getBoundingClientRect();
-      drag.ghost.classList.add('returning');
+      const landing: HTMLElement = options.places[target] ?? cell;
+      const home: DOMRect = landing.getBoundingClientRect();
+      drag.ghost.classList.add(landing === cell ? 'returning' : 'landing');
       drag.ghost.classList.remove('outside');
       place(drag.ghost, root, home.left, home.top);
+      if (landing !== cell) options.moved(target);
     }
     drag.ghost.classList.remove('on');
     settle(drag.ghost);
@@ -116,7 +153,9 @@ export function attachBagDrag(options: BagDragOptions): BagDragHandle {
   cell.addEventListener('pointermove', (event: PointerEvent): void => {
     if (dragging !== null && dragging.pointer === event.pointerId) {
       place(dragging.ghost, root, event.clientX - dragging.grabX, event.clientY - dragging.grabY);
-      dragging.ghost.classList.toggle('outside', outside(panel.getBoundingClientRect(), event.clientX, event.clientY));
+      const away: boolean = leaves(event.clientX, event.clientY);
+      dragging.ghost.classList.toggle('outside', away);
+      aim(away ? null : (options.places[targetAt(event.clientX, event.clientY)] ?? null));
       return;
     }
     if (pending === null || pending.pointer !== event.pointerId) return;

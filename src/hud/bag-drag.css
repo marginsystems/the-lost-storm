@@ -31,6 +31,13 @@
     scale var(--spring-smooth-ms) var(--spring-smooth);
 }
 
+.bag-drag-ghost.landing {
+  transition:
+    translate var(--spring-snappy-ms) var(--spring-snappy),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    scale var(--spring-snappy-ms) var(--spring-snappy);
+}
+
 .bag-drag-ghost.dropped {
   scale: 0.6;
   transition:
@@ -59,6 +66,10 @@
 .bag-drag-ghost.outside .bag-drag-word {
   opacity: 1;
   translate: -50% 0;
+}
+
+.cell.drop-target {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .cell.lifted .cell-item.filled {
