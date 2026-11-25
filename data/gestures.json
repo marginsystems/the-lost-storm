@@ -1,6 +1,6 @@
 {
   "postures": [
-    { "id": "seated", "enter": "Sitting_Enter", "exit": "Sitting_Exit" }
+    { "id": "seated", "enter": "Sitting_Enter", "exit": "Sitting_Exit", "plants": ["driftwood_staff"] }
   ],
   "gestures": [
     { "id": "nod", "plays": "once", "clip": "Yes" },

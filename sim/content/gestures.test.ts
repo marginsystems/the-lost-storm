@@ -25,7 +25,7 @@ void test('sitting and talking while seated share one posture, so a seated body 
   const talk: GestureDef | null = gestureOf('sit_talk');
   assert.ok(sit?.plays === 'posture' && talk?.plays === 'posture');
   assert.equal(sit.posture, talk.posture);
-  assert.deepEqual(sit.posture, SEATED);
+  assert.deepEqual(sit.posture, { ...SEATED, plants: ['driftwood_staff'] });
   assert.equal(sit.clip, 'Sitting_Idle_Loop');
   assert.equal(talk.clip, 'Sitting_Talking_Loop');
 });

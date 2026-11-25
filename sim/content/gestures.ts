@@ -1,6 +1,6 @@
 import raw from '../../data/gestures.json' with { type: 'json' };
 import type { Fields } from './read.ts';
-import { byId, choice, ContentError, each, fields, text } from './read.ts';
+import { byId, choice, ContentError, each, fields, text, textList } from './read.ts';
 
 export const GESTURE_PLAYS = ['once', 'hold', 'posture'] as const;
 export type GesturePlays = (typeof GESTURE_PLAYS)[number];
@@ -13,6 +13,7 @@ export interface PostureDef {
   readonly id: string;
   readonly enter: string;
   readonly exit: string;
+  readonly plants: readonly string[];
 }
 
 export type GestureDef =
@@ -33,7 +34,7 @@ function gestureId(source: Fields, where: string): string {
 
 function readPosture(value: unknown, where: string): PostureDef {
   const source: Fields = fields(value, where);
-  return { id: gestureId(source, where), enter: text(source, 'enter', where), exit: text(source, 'exit', where) };
+  return { id: gestureId(source, where), enter: text(source, 'enter', where), exit: text(source, 'exit', where), plants: source['plants'] === undefined ? [] : textList(source, 'plants', where) };
 }
 
 function readGesture(value: unknown, where: string, postures: ReadonlyMap<string, PostureDef>): GestureDef {

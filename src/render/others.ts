@@ -27,7 +27,7 @@ import type { MapCharacter } from '../minimap/marks.ts';
 import { SEES_ALL } from './sight.ts';
 import type { GestureClips } from './gesture-clips.ts';
 import type { ClipTimes, GestureCue, GestureState } from './other-gesture.ts';
-import { createGestureState, gestureNeeds, placeAct, queueAct, shownPose, stepGesture } from './other-gesture.ts';
+import { createGestureState, gestureNeeds, placeAct, plantedBy, queueAct, shownPose, stepGesture } from './other-gesture.ts';
 
 export const OTHERS = {
   hiddenBelow: 0.01,
@@ -325,7 +325,10 @@ export function createOthers(options: OthersOptions): Others {
     const times: ClipTimes = (name: string): number | null => (loaded === null || gestures === undefined ? null : (gestures.clip(loaded, name)?.duration ?? null));
     if (loaded !== null && gestureNeeds(other.gesture)) gestures?.want(loaded);
     stepGesture(other.gesture, at, dt, pose, pose.speed >= TRACK.walkFrom, times);
-    if (other.figure !== null) cueFigure(other.figure, other.gesture.cue);
+    if (other.figure !== null) {
+      cueFigure(other.figure, other.gesture.cue);
+      other.figure.view.rig.setPlanted(plantedBy(other.gesture));
+    }
     return shownPose(other.gesture, pose, dt);
   };
 

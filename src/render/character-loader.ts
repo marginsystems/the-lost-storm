@@ -1,4 +1,4 @@
-import type { BufferGeometry, IUniform, Material, Object3D } from 'three';
+import type { BufferGeometry, IUniform, Material, Object3D, Quaternion } from 'three';
 import { AnimationMixer, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { boundSkins, disposeSkeletons, shareSkeletons } from './skeletons.ts';
@@ -12,6 +12,8 @@ import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { createRigGlow, FLASH, flashEdge, flashLift, makeGhost } from './ghost-material.ts';
 import { fadeMaterials } from './body-swap.ts';
 import { anyUnsettled, dropSettled, sameIds, settledPiece, springTo, WEAR_FADE } from './wear-spring.ts';
+import type { Springy } from './wear-spring.ts';
+import { plantHeld } from './held-plant.ts';
 import { bindShade, seeThrough, shadedCopy, shadeHeld, SHADOW_BODY, SHADOW_LIGHT, SHADOW_UNIFORMS, shadowRim } from './shadow-shade.ts';
 import type { MeshLooks, RestLooks } from './rest-looks.ts';
 import { createMeshLooks, glowAtRest, isMesh, REST_GLOW, restLook } from './rest-looks.ts';
@@ -37,6 +39,7 @@ export interface RigInstance {
   readonly mixer: AnimationMixer;
   readonly clips: RigClipSet;
   setGear(attachmentIds: readonly string[]): void;
+  setPlanted(attachmentIds: readonly string[]): void;
   armed(): boolean;
   stance(): StanceClipSet | null;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
@@ -76,6 +79,8 @@ export const CHARACTER_FEATHER: string = `diffuseColor.a = smoothstep( ${CHARACT
 
 interface HeldPiece {
   readonly holder: Group;
+  readonly id: string;
+  readonly rest: Quaternion;
   readonly size: number;
   readonly materials: MeshStandardMaterial[];
   value: number;
@@ -252,8 +257,11 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const mixer: AnimationMixer = new AnimationMixer(model);
   const held: Map<string, HeldPiece> = new Map<string, HeldPiece>();
   const lettingGo: HeldPiece[] = [];
+  const planting: Springy = { value: 0, velocity: 0, target: 0 };
   let heldIds: readonly string[] | null = null;
   let gearDressed: boolean = false;
+  let plantedBefore: boolean = false;
+  let plantedIds: readonly string[] = [];
   const bodies: BodyMesh[] = skinnedMeshes(model).flatMap((mesh: SkinnedMesh): BodyMesh[] => (Array.isArray(mesh.material) ? [] : [{ mesh, skin: mesh.material }]));
   const anchor: SkinnedMesh | undefined = bodies[0]?.mesh;
   const caster: SkinnedMesh | null = shadows === 'together' && anchor !== undefined ? createShadowCaster(anchor) : null;
@@ -363,6 +371,12 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     springTo(piece, step, WEAR_FADE.overshoot);
     piece.holder.scale.setScalar(piece.size * piece.value);
   };
+  const stepPlanting = (dt: number): void => {
+    const moving: boolean = springTo(planting, Math.min(dt, WEAR_FADE.longestStep), 1);
+    if (!moving && planting.value === 0 && !plantedBefore) return;
+    plantedBefore = planting.value > 0;
+    for (const piece of held.values()) if (plantedIds.includes(piece.id)) plantHeld(piece.holder, piece.rest, planting.value);
+  };
   const stepWearing = (dt: number): void => {
     if (!wearMoving && !partsPending) return;
     const step: number = Math.min(dt, WEAR_FADE.longestStep);
@@ -409,7 +423,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const holder: Group = new Group();
         holder.position.set(socket.position[0], socket.position[1], socket.position[2]);
         holder.rotation.set(socket.rotationDegrees[0] * DEGREES, socket.rotationDegrees[1] * DEGREES, socket.rotationDegrees[2] * DEGREES);
-        const piece: HeldPiece = { holder, size: socket.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
+        const piece: HeldPiece = { holder, id, rest: holder.quaternion.clone(), size: socket.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
         holder.scale.setScalar(socket.scale * piece.value);
         const copy: Object3D = attachment.template.clone(true);
         if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, glow, piece.materials, skinTint, null));
@@ -458,8 +472,13 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       finalParts = [...hiddenParts];
       hide(instant ? finalParts : shownParts.filter((part: string): boolean => hiddenParts.includes(part)));
     },
+    setPlanted(attachmentIds: readonly string[]): void {
+      if (attachmentIds.length > 0) plantedIds = attachmentIds;
+      planting.target = attachmentIds.length > 0 ? 1 : 0;
+    },
     stepWear(dt: number): void {
       stepWearing(dt);
+      stepPlanting(dt);
       if (rests !== null) looks.settle(glowAtRest(glow) && faded === 1 && !shadeSees && !wearMoving && !partsPending);
     },
     sharedLook(): boolean {

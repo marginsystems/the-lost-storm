@@ -30,7 +30,7 @@ type Phase =
   | { readonly kind: 'once'; left: number }
   | { readonly kind: 'hold' }
   | { readonly kind: 'seated'; readonly posture: PostureDef }
-  | { readonly kind: 'rising'; left: number; readonly seat: Seat; readonly after: { readonly act: LiveAct | null } | null };
+  | { readonly kind: 'rising'; left: number; readonly posture: PostureDef; readonly seat: Seat; readonly after: { readonly act: LiveAct | null } | null };
 
 interface ActSample {
   readonly at: number;
@@ -73,6 +73,11 @@ function latest(state: GestureState): LiveAct | null {
   return state.phase.kind === 'rising' && state.phase.after !== null ? state.phase.after.act : state.shown;
 }
 
+export function plantedBy(state: GestureState): readonly string[] {
+  const phase: Phase = state.phase;
+  return phase.kind === 'seated' || phase.kind === 'rising' ? phase.posture.plants : [];
+}
+
 export function gestureNeeds(state: GestureState): boolean {
   return latest(state) !== null || state.shown !== null;
 }
@@ -98,7 +103,7 @@ export function queueAct(state: GestureState, at: number, act: LiveAct | null): 
 }
 
 function rise(state: GestureState, posture: PostureDef, seat: Seat, after: { readonly act: LiveAct | null } | null): void {
-  state.phase = { kind: 'rising', left: Number.POSITIVE_INFINITY, seat, after };
+  state.phase = { kind: 'rising', left: Number.POSITIVE_INFINITY, posture, seat, after };
   cue(state, posture.exit, null);
 }
 
