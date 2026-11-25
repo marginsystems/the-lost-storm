@@ -95,7 +95,8 @@
   "portalSpot": {"x": 21, "z": 17.5},
   "npcs": [
     {"npc": "warden_trader", "x": 29.5, "z": 15, "facingDegrees": 220},
-    {"npc": "warden_guide", "x": 18.5, "z": 21, "facingDegrees": 260},
+    {"npc": "warden_guide", "x": 18.5, "z": 21, "facingDegrees": 260, "when": [{"type": "flag", "flag": "warden_fell", "not": true}]},
+    {"npc": "reeve", "x": 21.5, "z": 24.5, "facingDegrees": 151, "when": [{"type": "defeated", "monster": "ledger_keeper"}]},
     {"npc": "warden_lookout", "x": 31, "z": 23, "facingDegrees": 250},
     {"npc": "warden_auctioneer", "x": 19.5, "z": 14.5, "facingDegrees": 120},
     {"npc": "warden_appraiser", "x": 24, "z": 9.8, "facingDegrees": 0}

@@ -113,6 +113,162 @@
     ]
   },
   {
+    "id": "warden_below",
+    "name": "Warden Guide",
+    "title": "Warden",
+    "faction": "wardens",
+    "rig": "warden",
+    "scale": 1.0,
+    "tint": "#f2e2d0",
+    "color": "#f0c070",
+    "gear": [
+      "warden_staff",
+      "warden_lantern"
+    ],
+    "wear": [
+      "warden_jerkin",
+      "warden_breeches",
+      "warden_boots",
+      "warden_hood"
+    ],
+    "talks": [
+      {
+        "id": "warden_below_caves",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_bottom",
+            "objective": "caves",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "warden_below_runs_down",
+          "warden_below_runoff",
+          "warden_below_hungry",
+          "warden_below_burned",
+          "warden_below_meet"
+        ]
+      },
+      {
+        "id": "warden_below_hold",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_bottom",
+            "objective": "hold",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "warden_below_as_far",
+          "warden_below_behind_me"
+        ]
+      },
+      {
+        "id": "warden_below_go",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_bottom",
+            "objective": "go",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "warden_below_hold_way",
+          "warden_below_go_now",
+          "warden_below_never_its_own"
+        ]
+      },
+      {
+        "id": "warden_below_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "warden_below_close"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reeve",
+    "name": "Reeve",
+    "title": "Keeper, once",
+    "faction": null,
+    "rig": "timekeeper",
+    "scale": 1.2,
+    "tint": "#fff4e6",
+    "color": "#d8b46a",
+    "gear": [],
+    "wear": [
+      "ledger_mantle",
+      "keeper_gloves"
+    ],
+    "talks": [
+      {
+        "id": "reeve_first",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_count",
+            "objective": "fire",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "reeve_kept_book",
+          "reeve_believed",
+          "reeve_wrong",
+          "reeve_one_book",
+          "reeve_not_again"
+        ]
+      },
+      {
+        "id": "reeve_lantern",
+        "once": true,
+        "when": [
+          {
+            "type": "flag",
+            "flag": "warden_fell"
+          }
+        ],
+        "lines": [
+          "reeve_into_fire",
+          "reeve_not_lost"
+        ]
+      },
+      {
+        "id": "reeve_column",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_untouched",
+            "objective": "speak",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "reeve_other_column",
+          "reeve_kept_it"
+        ]
+      },
+      {
+        "id": "reeve_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "reeve_ask_again"
+        ]
+      }
+    ]
+  },
+  {
     "id": "warden_trader",
     "name": "Warden Trader",
     "title": "Warden",

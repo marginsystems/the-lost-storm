@@ -67,7 +67,7 @@ void test('a save from before the tally loads with every counter at zero and kee
 void test('the tally survives a save, and bad or unknown entries read as nothing', (): void => {
   const world: World = createWorld(OUTPOST_CONTENT, { seed: 3, save: null });
   const rarity: string = must(OUTPOST_CONTENT.rarities[1], 'second rarity').id;
-  world.player.tally = { bosses: 2, deaths: 3, biggestHit: 410, goldLooted: 900, played: 75.5, moments: 4, found: { [rarity]: 6 } };
+  world.player.tally = { bosses: 2, deaths: 3, biggestHit: 410, goldLooted: 900, played: 75.5, moments: 4, restraint: 2, found: { [rarity]: 6 } };
   const save: SaveData = must(readSave(OUTPOST_CONTENT, JSON.parse(JSON.stringify(toSave(world)))), 'save');
   assert.deepEqual(save.tally, world.player.tally);
   const read = readTally(OUTPOST_CONTENT, { bosses: -1, deaths: 'two', biggestHit: Number.NaN, goldLooted: 2.7, played: 'long', moments: null, found: { nothing: 4, [rarity]: -3 } });

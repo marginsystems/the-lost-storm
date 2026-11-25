@@ -97,7 +97,7 @@ function trigger(value: unknown, where: string): GlitchTrigger {
 }
 
 function conditionQuests(list: readonly Condition[]): string[] {
-  return list.flatMap((entry: Condition): string[] => (entry.type === 'flag' || entry.type === 'shore' || entry.type === 'hero' || entry.type === 'level' || entry.type === 'visited' || entry.type === 'defeated' ? [] : [entry.quest]));
+  return list.flatMap((entry: Condition): string[] => (entry.type === 'flag' || entry.type === 'shore' || entry.type === 'hero' || entry.type === 'level' || entry.type === 'visited' || entry.type === 'defeated' || entry.type === 'restraint' ? [] : [entry.quest]));
 }
 
 function check(def: GlitchDef): void {

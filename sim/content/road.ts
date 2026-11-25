@@ -28,7 +28,7 @@ export function conditionProblems(content: Content, flags: ReadonlySet<string>, 
       if (!flags.has(entry.flag)) problems.push(`${holder} names flag ${entry.flag}, which nothing sets`);
       continue;
     }
-    if (entry.type === 'shore' || entry.type === 'level') continue;
+    if (entry.type === 'shore' || entry.type === 'level' || entry.type === 'restraint') continue;
     if (entry.type === 'defeated') {
       const def: MonsterDef | undefined = content.monsters.get(entry.monster);
       if (def === undefined) problems.push(`${holder} names unknown monster ${entry.monster}`);

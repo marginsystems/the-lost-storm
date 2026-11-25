@@ -58,9 +58,12 @@ import type {
   FirstDropDef,
   HeroDef, PlayerDef,
   PropClimb,
+  ObjectiveDef,
+  ObjectiveGift,
   PropDef,
   RarityDef,
   ResistanceRules,
+  RestraintMark,
   SkillCap,
   StatCap,
   RigClips,
@@ -675,9 +678,14 @@ export function contentProblems(content: Content): string[] {
     }
   }
   for (const book of content.books.values()) for (const page of book.pages) known(`book ${book.id} page ${page.id}`, page.when);
+  content.world.restraint.forEach((mark: RestraintMark, index: number): void => known(`world restraint mark ${index}`, mark.when));
   for (const questDef of content.quests.values()) {
     known(`quest ${questDef.id}`, questDef.when);
     for (const required of questDef.requires) need(content.quests.has(required) && required !== questDef.id, `quest ${questDef.id} requires unknown quest ${required}`);
+    for (const objective of questDef.objectives) {
+      const gifts: readonly ObjectiveGift[] = [objective, ...(objective.type === 'either' ? objective.paths : [])].flatMap((step: ObjectiveDef): ObjectiveGift[] => (step.gift === null ? [] : [step.gift]));
+      for (const gift of gifts) need(content.rarities.some((entry: RarityDef): boolean => entry.id === gift.rarity), `quest ${questDef.id} objective ${objective.id} gives unknown rarity ${gift.rarity}`);
+    }
   }
   problems.push(...tradeProblems(content));
   problems.push(...runTableProblems(content));

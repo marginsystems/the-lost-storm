@@ -37,13 +37,13 @@ const errand: QuestDef = {
   requires: [],
   when: [],
   objectives: [
-    { id: 'ask', type: 'talk', npc: 'keeper', talk: null, text: 'Ask', waiting: '', when: [], sets: {} },
-    { id: 'go', type: 'reach', zone: 'hub', x: 20, z: 18, radius: 1.5, text: 'Go', waiting: '', when: [], sets: {} },
-    { id: 'kill', type: 'defeat', monster: 'mender', text: 'Kill', waiting: '', when: [], sets: {} },
+    { id: 'ask', type: 'talk', npc: 'keeper', talk: null, text: 'Ask', waiting: '', when: [], sets: {}, gift: null },
+    { id: 'go', type: 'reach', zone: 'hub', x: 20, z: 18, radius: 1.5, text: 'Go', waiting: '', when: [], sets: {}, gift: null },
+    { id: 'kill', type: 'defeat', monster: 'mender', text: 'Kill', waiting: '', when: [], sets: {}, gift: null },
   ],
 };
 
-const sequel: QuestDef = { id: 'sequel', name: 'After', requires: ['errand'], when: [], objectives: [{ id: 'tell', type: 'talk', npc: 'courier', talk: null, text: 'Tell', waiting: '', when: [], sets: {} }] };
+const sequel: QuestDef = { id: 'sequel', name: 'After', requires: ['errand'], when: [], objectives: [{ id: 'tell', type: 'talk', npc: 'courier', talk: null, text: 'Tell', waiting: '', when: [], sets: {}, gift: null }] };
 
 function during(objective: string): Condition[] {
   return [{ type: 'objective', quest: 'errand', objective, is: 'current', not: false }];
@@ -259,8 +259,8 @@ function hunted(): Content {
     name: 'A Hunt',
     requires: [], when: [],
     objectives: [
-      { id: 'go', type: 'reach', zone: outpost.id, x: outpost.playerStart.x, z: outpost.playerStart.z, radius: 2, text: 'Go', waiting: '', when: [], sets: {} },
-      { id: 'kill', type: 'defeat', monster: 'mender', text: 'Kill', waiting: '', when: [], sets: {} },
+      { id: 'go', type: 'reach', zone: outpost.id, x: outpost.playerStart.x, z: outpost.playerStart.z, radius: 2, text: 'Go', waiting: '', when: [], sets: {}, gift: null },
+      { id: 'kill', type: 'defeat', monster: 'mender', text: 'Kill', waiting: '', when: [], sets: {}, gift: null },
     ],
   };
   const lair: ZoneDef = { ...outpost, packs: [{ x: den.x, z: den.z, members: [{ monster: 'mender', count: 1, mods: [] }], when: during('kill') }] };
@@ -299,12 +299,13 @@ const crossing: QuestDef = {
       waiting: '',
       when: [],
       sets: { crossed: 'yes' },
+      gift: null,
       paths: [
-        { id: 'fight', type: 'reach', zone: 'road_test', x: 28, z: 8, radius: 2, text: 'Fight through', waiting: '', when: [], sets: { crossing: 'fought' } },
-        { id: 'quiet', type: 'reach', zone: 'road_test', x: 4, z: 14, radius: 2, text: 'Go quietly', waiting: '', when: [{ type: 'flag', flag: 'token', is: 'carried', not: false }], sets: { crossing: 'quiet' } },
+        { id: 'fight', type: 'reach', zone: 'road_test', x: 28, z: 8, radius: 2, text: 'Fight through', waiting: '', when: [], sets: { crossing: 'fought' }, gift: null },
+        { id: 'quiet', type: 'reach', zone: 'road_test', x: 4, z: 14, radius: 2, text: 'Go quietly', waiting: '', when: [{ type: 'flag', flag: 'token', is: 'carried', not: false }], sets: { crossing: 'quiet' }, gift: null },
       ],
     },
-    { id: 'after', type: 'reach', zone: 'road_test', x: 16, z: 8, radius: 2, text: 'After', waiting: '', when: [], sets: {} },
+    { id: 'after', type: 'reach', zone: 'road_test', x: 16, z: 8, radius: 2, text: 'After', waiting: '', when: [], sets: {}, gift: null },
   ],
 };
 

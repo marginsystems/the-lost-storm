@@ -1,11 +1,13 @@
-import type { ObjectiveDef, PathObjective, QuestDef } from '../content/types.ts';
+import type { ObjectiveDef, ObjectiveGift, PathObjective, QuestDef } from '../content/types.ts';
+import { dropOnGround } from './ground.ts';
+import { rollDrop } from './loot.ts';
 import { objectivePaths } from '../content/road.ts';
 import { distance } from '../math.ts';
 import { allHold, defeated, questState } from './conditions.ts';
 import { refreshNpcs } from './dialogue.ts';
 import { spawnPacks } from './monsters.ts';
 import { endedActs, reportEndedActs, writeFlags } from './flags.ts';
-import type { MonsterState, World, WorldEvent } from './types.ts';
+import type { ItemInstance, MonsterState, World, WorldEvent } from './types.ts';
 
 export function currentObjective(world: World, quest: QuestDef): ObjectiveDef | null {
   const index: number | undefined = world.quests[quest.id];
@@ -39,12 +41,22 @@ export function startQuests(world: World): void {
   }
 }
 
+function give(world: World, quest: QuestDef, gift: ObjectiveGift | null): void {
+  if (gift === null) return;
+  for (let given: number = 0; given < gift.items; given += 1) {
+    const item: ItemInstance | null = rollDrop(world, world.player.level, world.content.leaning ? null : gift.rarity, { kind: 'find', find: quest.id, zone: world.zone.id }, gift.rarity);
+    if (item !== null) dropOnGround(world, world.player.pos, { kind: 'item', item });
+  }
+}
+
 function advance(world: World, quest: QuestDef, objective: ObjectiveDef, path: PathObjective): void {
   const next: number = (world.quests[quest.id] ?? 0) + 1;
   world.quests[quest.id] = next;
   world.events.push({ type: 'quest_advanced', quest: quest.id, objective: objective.id });
   if (path !== objective) writeFlags(world, path.sets);
   writeFlags(world, objective.sets);
+  if (path !== objective) give(world, quest, path.gift);
+  give(world, quest, objective.gift);
   if (next >= quest.objectives.length) world.events.push({ type: 'quest_completed', quest: quest.id });
 }
 

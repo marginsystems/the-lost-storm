@@ -46,7 +46,7 @@ void test('a fresh game shows the move hint first and removes it once the player
 });
 
 void test('the next hint is the person to talk to, and talking completes it', (): void => {
-  const errand: QuestDef = { id: 'errand', name: 'An Errand', requires: [], when: [], objectives: [{ id: 'ask', type: 'talk', npc: 'keeper', talk: null, text: 'Ask', waiting: '', when: [], sets: {} }] };
+  const errand: QuestDef = { id: 'errand', name: 'An Errand', requires: [], when: [], objectives: [{ id: 'ask', type: 'talk', npc: 'keeper', talk: null, text: 'Ask', waiting: '', when: [], sets: {}, gift: null }] };
   const world: World = worldIn({ ...TOWN_CONTENT, quests: new Map<string, QuestDef>([[errand.id, errand]]) }, 'hub', 1);
   startQuests(world);
   world.monsters = [];

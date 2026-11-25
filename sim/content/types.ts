@@ -14,6 +14,7 @@ import type { PropDef, SurfaceDef } from './prop-types.ts';
 import type { BookDef, StoryFlags } from './story-types.ts';
 export type { ZoneAmbience } from './ambience-types.ts';
 import type { ActEnd, RetiredZones } from './road-types.ts';
+import type { Condition } from './condition-types.ts';
 import type { MomentLibrary } from './moment-types.ts';
 import type { ChartDef, SkillTarget, SkillVariant } from './chart-types.ts';
 import type { SkillVfx } from './vfx-types.ts';
@@ -29,7 +30,7 @@ export type { SkillVfx, VfxCue, VfxImpact, VfxLightning, VfxStyle } from './vfx-
 export type { ExitLook, PackMember, PackReturn, PackWait, SurgeRules, ZoneCheckpoint, DuelGear, ZoneDef, ZoneDuel, ZoneEdge, ZoneExit, ZoneKind, ZoneNpc, ZoneOutside, ZonePack, ZonePoint, ZoneProp, ZoneReturn, ZoneSize, ZoneVoice, ZoneWalls, ZoneWaypoint } from './zone-types.ts';
 export { DUEL_GEAR, ZONE_KINDS } from './zone-types.ts';
 export type { ZoneFall } from './fall-types.ts';
-export type { DefeatObjective, EitherObjective, LineDef, MomentObjective, NpcDef, ObjectiveBase, ObjectiveDef, PathObjective, QuestDef, ReachObjective, TalkDef, TalkObjective } from './quest-types.ts';
+export type { DefeatObjective, EitherObjective, LineDef, ObjectiveGift, MomentObjective, NpcDef, ObjectiveBase, ObjectiveDef, PathObjective, QuestDef, ReachObjective, TalkDef, TalkObjective } from './quest-types.ts';
 import type { ZoneDef } from './zone-types.ts';
 import type { LineDef, NpcDef, QuestDef } from './quest-types.ts';
 
@@ -319,7 +320,7 @@ export type { AroundScatter, CliffScatter, OpenScatter, ScatterSize, ZoneScatter
 export { SCATTER_TYPES } from './scatter-types.ts';
 
 export { OBJECTIVE_STATES, QUEST_STATES } from './condition-types.ts';
-export type { Condition, FlagCondition, ObjectiveCondition, ObjectiveState, QuestCondition, QuestState } from './condition-types.ts';
+export type { Condition, FlagCondition, ObjectiveCondition, ObjectiveState, QuestCondition, QuestState, RestraintCondition } from './condition-types.ts';
 
 export interface ScalingRamp {
   readonly from: number;
@@ -349,6 +350,10 @@ export interface ActDef {
   readonly end: ActEnd | null;
 }
 
+export interface RestraintMark {
+  readonly when: readonly Condition[];
+}
+
 export interface WorldDef {
   readonly start: string;
   readonly town: string;
@@ -359,6 +364,7 @@ export interface WorldDef {
   readonly acts: readonly ActDef[];
   readonly retired: RetiredZones | null;
   readonly withheld: readonly string[];
+  readonly restraint: readonly RestraintMark[];
 }
 
 export interface SkillBinding {

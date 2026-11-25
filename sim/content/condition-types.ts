@@ -56,4 +56,10 @@ export interface DefeatedCondition {
   readonly not: boolean;
 }
 
-export type Condition = QuestCondition | ObjectiveCondition | FlagCondition | ShoreCondition | HeroCondition | LevelCondition | VisitedCondition | DefeatedCondition;
+export interface RestraintCondition {
+  readonly type: 'restraint';
+  readonly atLeast: number;
+  readonly not: boolean;
+}
+
+export type Condition = QuestCondition | ObjectiveCondition | FlagCondition | ShoreCondition | HeroCondition | LevelCondition | VisitedCondition | DefeatedCondition | RestraintCondition;

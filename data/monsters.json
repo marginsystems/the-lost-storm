@@ -926,9 +926,10 @@
   {"id": "timekeeper_tallier", "name": "Timekeeper Tallier", "rig": "timekeeper", "bodyMaterial": "flesh", "faction": "timekeepers", "scale": 1.0, "radius": 0.5, "life": 58, "damageMin": 6, "damageMax": 9, "moveSpeed": 3.4, "xp": 24, "aggroRadius": 11, "behaviour": {"type": "ranged", "preferredRange": 10, "retreatRange": 5}, "skill": "tally_mark", "poise": {"knockback": 0.8, "stagger": 0.8}, "loot": {"goldChance": 0.7, "goldMin": 6, "goldMax": 14, "itemChance": 0.28}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_rod"], "wear": ["tally_robe", "keeper_gloves", "lens_mask"]},
   {"id": "timekeeper_custodian", "name": "Timekeeper Custodian", "rig": "timekeeper", "bodyMaterial": "flesh", "faction": "timekeepers", "scale": 1.04, "radius": 0.5, "life": 90, "damageMin": 6, "damageMax": 9, "moveSpeed": 3.2, "xp": 30, "aggroRadius": 10, "behaviour": {"type": "ranged", "preferredRange": 7, "retreatRange": 3.5}, "skill": "custodian_push", "support": "custodian_mend", "poise": {"knockback": 0.5, "stagger": 0.5}, "loot": {"goldChance": 0.7, "goldMin": 6, "goldMax": 14, "itemChance": 0.28}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_rod"], "wear": ["custodian_robe", "keeper_gloves", "lens_mask"]},
   {"id": "timekeeper_marshal", "name": "Timekeeper Marshal", "rig": "timekeeper", "bodyMaterial": "armour", "faction": "timekeepers", "scale": 1.24, "radius": 0.7, "life": 400, "damageMin": 10, "damageMax": 15, "moveSpeed": 2.7, "xp": 120, "aggroRadius": 11, "behaviour": {"type": "chaser"}, "skill": "marshal_sweep", "guard": {"arcDegrees": 150, "damageTaken": 0.25, "breakStagger": 0.5, "breakTime": 1.8}, "summon": {"monster": "timekeeper_rank", "count": 2, "cooldown": 14, "limit": 4}, "poise": {"knockback": 0.05, "stagger": 0.15}, "loot": {"goldChance": 1, "goldMin": 30, "goldMax": 50, "itemChance": 0.9}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_blade", "rank_shield"], "wear": ["blackened_plate", "iron_vambraces", "iron_greaves", "iron_sabatons", "lens_mask"]},
+  {"id": "timekeeper_reclaimer", "name": "Timekeeper Reclaimer", "rig": "timekeeper", "bodyMaterial": "flesh", "faction": "timekeepers", "scale": 1.45, "radius": 0.6, "life": 900, "damageMin": 7, "damageMax": 9, "moveSpeed": 3.8, "xp": 220, "aggroRadius": 16, "behaviour": {"type": "chaser"}, "skill": "gate_replay", "summon": {"monster": "timekeeper_rank", "count": 2, "cooldown": 12, "limit": 4}, "loot": {"goldChance": 0, "goldMin": 0, "goldMax": 0, "itemChance": 0}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_blade"], "wear": ["keeper_robe", "lens_mask", "keeper_gloves"], "boss": {"title": "Timekeeper", "phases": [{"below": 1, "skills": [{"skill": "gate_replay", "weight": 3}, {"skill": "keeper_bind", "weight": 2}], "barks": []}, {"below": 0.66, "skills": [{"skill": "gate_replay", "weight": 2}, {"skill": "keeper_bind", "weight": 1}, {"skill": "keeper_field", "weight": 2}, {"skill": "gate_ring", "weight": 3}], "barks": ["timekeeper_reclaimer_looked"]}, {"below": 0.33, "skills": [{"skill": "gate_replay", "weight": 2}, {"skill": "keeper_volley", "weight": 3}, {"skill": "keeper_field", "weight": 1}, {"skill": "gate_ring", "weight": 3}], "barks": []}], "poise": {"knockback": 0.05}, "drop": {"items": 2, "floor": "rare", "goldMin": 90, "goldMax": 130}, "firstKill": {"flag": "reclaimer_defeated", "xpShare": 0.25, "goldMin": 160, "goldMax": 220}, "barks": {"aggro": ["timekeeper_reclaimer_early"], "death": ["timekeeper_reclaimer_yours"]}}},
   {
     "id": "ledger_keeper",
-    "name": "Timekeeper",
+    "name": "Reeve",
     "rig": "timekeeper",
     "bodyMaterial": "flesh",
     "faction": "timekeepers",
@@ -961,7 +962,7 @@
       "keeper_gloves"
     ],
     "boss": {
-      "title": "Timekeeper",
+      "title": "Keeper of the Ledger",
       "phases": [
         {
           "below": 1,
@@ -991,7 +992,7 @@
           "holds": [
             "count_clock_b"
           ],
-          "barks": []
+          "barks": ["ledger_keeper_kindness"]
         },
         {
           "below": 0.4,
@@ -1007,7 +1008,7 @@
           "holds": [
             "ledger_book"
           ],
-          "barks": [],
+          "barks": ["ledger_keeper_the_book"],
           "unseal": [
             "ledger_book"
           ],
@@ -1033,8 +1034,8 @@
         "goldMax": 520
       },
       "barks": {
-        "aggro": [],
-        "death": []
+        "aggro": ["ledger_keeper_one_too_many"],
+        "death": ["ledger_keeper_enough", "ledger_keeper_the_pen"]
       },
       "countBreak": {
         "stagger": 2.5,

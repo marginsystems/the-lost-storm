@@ -133,5 +133,151 @@
         }
       }
     ]
+  },
+  {
+    "id": "the_bottom",
+    "name": "The Bottom of the Hourfall",
+    "requires": [],
+    "when": [
+      {
+        "type": "flag",
+        "flag": "keeper_defeated"
+      }
+    ],
+    "objectives": [
+      {
+        "id": "caves",
+        "type": "either",
+        "text": "Find the Warden in the Hourfall Caves",
+        "paths": [
+          {
+            "id": "caves_talk",
+            "type": "talk",
+            "npc": "warden_below",
+            "talk": "warden_below_caves",
+            "text": "Find the Warden in the Hourfall Caves"
+          },
+          {
+            "id": "caves_skip",
+            "type": "reach",
+            "zone": "under_hall_3",
+            "x": 150,
+            "z": 126,
+            "radius": 12,
+            "text": "Find the Warden in the Hourfall Caves"
+          }
+        ]
+      },
+      {
+        "id": "bottom",
+        "type": "reach",
+        "zone": "under_hall_3",
+        "x": 150,
+        "z": 126,
+        "radius": 12,
+        "text": "Meet the Warden at the bottom of the Hourfall Caves"
+      },
+      {
+        "id": "hold",
+        "type": "talk",
+        "npc": "warden_below",
+        "talk": "warden_below_hold",
+        "text": "Speak with the Warden",
+        "sets": {
+          "warden_stand": "held"
+        }
+      },
+      {
+        "id": "reclaimer",
+        "type": "defeat",
+        "monster": "timekeeper_reclaimer",
+        "text": "Hold the way beside the Warden"
+      },
+      {
+        "id": "go",
+        "type": "talk",
+        "npc": "warden_below",
+        "talk": "warden_below_go",
+        "text": "Speak with the Warden",
+        "sets": {
+          "warden_fell": "fell"
+        }
+      },
+      {
+        "id": "down",
+        "type": "reach",
+        "zone": "lava_depths",
+        "x": 91,
+        "z": 23,
+        "radius": 10,
+        "text": "Go down into the fire",
+        "sets": {
+          "fall_passed": "passed"
+        }
+      }
+    ]
+  },
+  {
+    "id": "the_count",
+    "name": "The Count",
+    "requires": [],
+    "when": [
+      {
+        "type": "flag",
+        "flag": "keeper_defeated"
+      },
+      {
+        "type": "visited",
+        "zone": "ledger_hall"
+      }
+    ],
+    "objectives": [
+      {
+        "id": "break",
+        "type": "defeat",
+        "monster": "ledger_keeper",
+        "text": "Break the count in the Inner Hall"
+      },
+      {
+        "id": "fire",
+        "type": "talk",
+        "npc": "reeve",
+        "talk": "reeve_first",
+        "text": "Find Reeve at the fire in the Hideout",
+        "sets": {
+          "reeve_freed": "freed"
+        }
+      }
+    ]
+  },
+  {
+    "id": "the_untouched",
+    "name": "What You Left",
+    "requires": [
+      "the_count"
+    ],
+    "when": [
+      {
+        "type": "flag",
+        "flag": "reeve_freed"
+      },
+      {
+        "type": "restraint",
+        "atLeast": 5
+      }
+    ],
+    "objectives": [
+      {
+        "id": "speak",
+        "type": "talk",
+        "npc": "reeve",
+        "talk": "reeve_column",
+        "text": "Speak with Reeve",
+        "gift": {
+          "rarity": "stormtouched",
+          "items": 1
+        }
+      }
+    ]
   }
 ]

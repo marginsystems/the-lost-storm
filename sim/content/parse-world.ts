@@ -15,10 +15,12 @@ import type {
   MapPlace,
   NpcDef,
   ObjectiveDef,
+  ObjectiveGift,
   PathObjective,
   PackMember,
   QuestDef,
   PackReturn,
+  RestraintMark,
   SurgeRules,
   TalkDef,
   ScalingPoint,
@@ -433,6 +435,20 @@ function act(value: unknown, where: string): ActDef {
   return { id: text(source, 'id', where), title: text(source, 'title', where), name: text(source, 'name', where), atlas: atlas(source['atlas'], `${where}.atlas`), end: actEnd(source['end'], `${where}.end`) };
 }
 
+function objectiveGift(value: unknown, where: string): ObjectiveGift | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  const items: number = positive(source, 'items', where);
+  if (!Number.isInteger(items)) throw new ContentError(where, 'expected a whole number of items');
+  return { rarity: text(source, 'rarity', where), items };
+}
+
+function restraintMark(value: unknown, where: string): RestraintMark {
+  const when: readonly Condition[] = conditions(fields(value, where), 'when', where);
+  if (when.some((condition: Condition): boolean => condition.type === 'restraint')) throw new ContentError(`${where}.when`, 'a restraint mark cannot depend on restraint');
+  return { when };
+}
+
 function pathObjective(value: unknown, where: string): PathObjective {
   const source: Fields = fields(value, where);
   const type: PathObjective['type'] = choice(source, 'type', ['talk', 'reach', 'defeat', 'moment'] as const, where);
@@ -441,10 +457,11 @@ function pathObjective(value: unknown, where: string): PathObjective {
   const waiting: string = nullableText(source, 'waiting', where) ?? '';
   const when: Condition[] = conditions(source, 'when', where);
   const sets: Record<string, string> = storyFlags(source['sets'], `${where}.sets`);
-  if (type === 'talk') return { type, id, text: shown, waiting, when, sets, npc: text(source, 'npc', where), talk: nullableText(source, 'talk', where) };
-  if (type === 'defeat') return { type, id, text: shown, waiting, when, sets, monster: text(source, 'monster', where) };
-  if (type === 'moment') return { type, id, text: shown, waiting, when, sets };
-  return { type, id, text: shown, waiting, when, sets, zone: text(source, 'zone', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
+  const gift: ObjectiveGift | null = objectiveGift(source['gift'], `${where}.gift`);
+  if (type === 'talk') return { type, id, text: shown, waiting, when, sets, gift, npc: text(source, 'npc', where), talk: nullableText(source, 'talk', where) };
+  if (type === 'defeat') return { type, id, text: shown, waiting, when, sets, gift, monster: text(source, 'monster', where) };
+  if (type === 'moment') return { type, id, text: shown, waiting, when, sets, gift };
+  return { type, id, text: shown, waiting, when, sets, gift, zone: text(source, 'zone', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
 }
 
 function objective(value: unknown, where: string): ObjectiveDef {
@@ -452,7 +469,7 @@ function objective(value: unknown, where: string): ObjectiveDef {
   if (source['type'] !== 'either') return pathObjective(value, where);
   const paths: PathObjective[] = [...byId(each(source['paths'], `${where}.paths`, pathObjective), `${where}.paths`).values()];
   if (paths.length < 2) throw new ContentError(`${where}.paths`, 'an either objective needs at least two paths');
-  return { type: 'either', id: text(source, 'id', where), text: text(source, 'text', where), waiting: nullableText(source, 'waiting', where) ?? '', when: conditions(source, 'when', where), sets: storyFlags(source['sets'], `${where}.sets`), paths };
+  return { type: 'either', id: text(source, 'id', where), text: text(source, 'text', where), waiting: nullableText(source, 'waiting', where) ?? '', when: conditions(source, 'when', where), sets: storyFlags(source['sets'], `${where}.sets`), gift: objectiveGift(source['gift'], `${where}.gift`), paths };
 }
 
 export function quest(value: unknown, where: string): QuestDef {
@@ -518,6 +535,7 @@ export function worldDef(value: unknown, where: string): WorldDef {
     legacyFlags: storyFlags(source['legacyFlags'], `${where}.legacyFlags`),
     retired: retiredZones(source['retired'], `${where}.retired`),
     withheld: source['withheld'] === undefined ? [] : textList(source, 'withheld', where),
+    restraint: source['restraint'] === undefined ? [] : each(source['restraint'], `${where}.restraint`, restraintMark),
     recovery: recoveryDef(source['recovery'], `${where}.recovery`),
     scaling: {
       lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),

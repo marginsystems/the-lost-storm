@@ -5,13 +5,14 @@ import { OBJECTIVE_STATES, QUEST_STATES } from './types.ts';
 
 export function condition(value: unknown, where: string): Condition {
   const source: Fields = fields(value, where);
-  const type: Condition['type'] = choice(source, 'type', ['quest', 'objective', 'flag', 'shore', 'hero', 'level', 'visited', 'defeated'] as const, where);
+  const type: Condition['type'] = choice(source, 'type', ['quest', 'objective', 'flag', 'shore', 'hero', 'level', 'visited', 'defeated', 'restraint'] as const, where);
   const not: boolean = source['not'] === undefined ? false : flag(source, 'not', where);
   if (type === 'flag') return { type, flag: text(source, 'flag', where), is: source['is'] === undefined ? null : text(source, 'is', where), not };
   if (type === 'hero') return { type, is: text(source, 'is', where), not };
   if (type === 'visited') return { type, zone: text(source, 'zone', where), not };
   if (type === 'defeated') return { type, monster: text(source, 'monster', where), not };
   if (type === 'level') return { type, atLeast: positive(source, 'atLeast', where), not };
+  if (type === 'restraint') return { type, atLeast: positive(source, 'atLeast', where), not };
   if (type === 'shore') return { type, depth: fraction(source, 'depth', where), not };
   if (type === 'quest') return { type, quest: text(source, 'quest', where), is: choice(source, 'is', QUEST_STATES, where), not };
   return { type, quest: text(source, 'quest', where), objective: text(source, 'objective', where), is: choice(source, 'is', OBJECTIVE_STATES, where), not };

@@ -1582,7 +1582,9 @@
   "waypoint": {"x":126,"z":32,"radius":1.8},
   "markerSurfaces": {"stone":"cave_stone"},
   "deathReturn": null,
-  "npcs": [],
+  "npcs": [
+    {"npc":"warden_below","x":129,"z":34,"facingDegrees":144,"when":[{"type":"flag","flag":"keeper_defeated"},{"type":"objective","quest":"the_bottom","objective":"bottom","is":"done","not":true}]}
+  ],
   "ambience": {"background":"#050506","abyss":"#020203","fogNear":40,"fogFar":88,"skyColor":"#5a6676","groundColor":"#2e2620","skyIntensity":5.8,"keyColor":"#c4b49e","keyIntensity":3.4},
   "weather": {"lightning":null,"rain":0,"wet":0.25,"mistWall":null},
   "heroLight": {"strength":15,"radius":22,"height":7,"falloff":1,"rim":0.35},

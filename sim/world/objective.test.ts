@@ -19,8 +19,8 @@ const errand: QuestDef = {
   requires: [],
   when: [],
   objectives: [
-    { id: 'ask', type: 'talk', npc: 'keeper', talk: null, text: 'Ask', waiting: '', when: [], sets: {} },
-    { id: 'go', type: 'reach', zone: 'outpost', x: 28, z: 30, radius: 2, text: 'Go', waiting: '', when: [], sets: {} },
+    { id: 'ask', type: 'talk', npc: 'keeper', talk: null, text: 'Ask', waiting: '', when: [], sets: {}, gift: null },
+    { id: 'go', type: 'reach', zone: 'outpost', x: 28, z: 30, radius: 2, text: 'Go', waiting: '', when: [], sets: {}, gift: null },
   ],
 };
 
@@ -99,7 +99,7 @@ void test('an objective still locked shows its waiting line, and once open the l
 
 void test('an objective with no waiting line keeps its written text while locked', (): void => {
   const world: World = fresh(content.world.start);
-  const locked: ObjectiveDef = { id: 'later', type: 'talk', npc: 'keeper', talk: null, text: 'Ask later', waiting: '', when: [{ type: 'level', atLeast: 99, not: false }], sets: {} };
+  const locked: ObjectiveDef = { id: 'later', type: 'talk', npc: 'keeper', talk: null, text: 'Ask later', waiting: '', when: [{ type: 'level', atLeast: 99, not: false }], sets: {}, gift: null };
   assert.equal(writtenLine(world, locked), 'Ask later');
   assert.equal(writtenLine(world, { ...locked, waiting: 'Not yet' }), 'Not yet');
   assert.equal(writtenLine(world, { ...locked, when: [], waiting: 'Not yet' }), 'Ask later');

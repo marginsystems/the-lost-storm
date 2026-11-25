@@ -81,6 +81,7 @@ export function open(world: World, condition: Condition): boolean {
     case 'shore':
     case 'hero':
     case 'visited':
+    case 'restraint':
       break;
   }
   return holds(world, condition);

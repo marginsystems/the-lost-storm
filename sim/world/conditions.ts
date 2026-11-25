@@ -1,4 +1,4 @@
-import type { Condition, ObjectiveDef, ObjectiveState, QuestDef, QuestState } from '../content/types.ts';
+import type { Condition, ObjectiveDef, ObjectiveState, QuestDef, QuestState, RestraintMark } from '../content/types.ts';
 import { shoreDepth } from './shore.ts';
 import type { World } from './types.ts';
 
@@ -20,6 +20,11 @@ export function objectiveState(world: World, questId: string, objectiveId: strin
 export function defeated(world: World, monsterId: string): boolean {
   const flag: string | undefined = world.content.monsters.get(monsterId)?.boss?.firstKill?.flag;
   return flag !== undefined && world.flags[flag] !== undefined;
+}
+
+export function restraintOf(world: World): number {
+  const marks: number = world.content.world.restraint.filter((mark: RestraintMark): boolean => mark.when.every((condition: Condition): boolean => holds(world, condition))).length;
+  return world.player.tally.restraint + marks;
 }
 
 export function holds(world: World, condition: Condition): boolean {
@@ -48,6 +53,9 @@ export function holds(world: World, condition: Condition): boolean {
       break;
     case 'defeated':
       held = defeated(world, condition.monster);
+      break;
+    case 'restraint':
+      held = restraintOf(world) >= condition.atLeast;
       break;
   }
   return held !== condition.not;

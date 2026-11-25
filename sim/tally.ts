@@ -15,6 +15,7 @@ export interface Tally {
   goldLooted: number;
   played: number;
   moments: number;
+  restraint: number;
   found: Record<string, number>;
 }
 
@@ -37,7 +38,7 @@ export interface PlayerStats {
 export type StatsSubject = Pick<SaveData, 'kills' | 'level' | 'zone' | 'visited' | 'quests' | 'tally'>;
 
 export function emptyTally(): Tally {
-  return { bosses: 0, deaths: 0, biggestHit: 0, goldLooted: 0, played: 0, moments: 0, found: {} };
+  return { bosses: 0, deaths: 0, biggestHit: 0, goldLooted: 0, played: 0, moments: 0, restraint: 0, found: {} };
 }
 
 export function tallyToSave(tally: Tally): TallySave {
@@ -77,6 +78,7 @@ export function readTally(content: Content, value: unknown): TallySave {
     goldLooted: whole(value, 'goldLooted'),
     played: amount(value, 'played'),
     moments: whole(value, 'moments'),
+    restraint: whole(value, 'restraint'),
     found: readFound(content, value['found']),
   };
 }
@@ -87,6 +89,7 @@ function countEvent(world: World, tally: Tally, event: WorldEvent): void {
   else if (event.type === 'damage' && event.sourceId === world.player.id && event.targetTeam === 'monster') tally.biggestHit = Math.max(tally.biggestHit, Math.floor(event.amount));
   else if (event.type === 'pickup' && event.ground.content.kind === 'gold') tally.goldLooted += event.ground.content.amount;
   else if (event.type === 'moment_ended' && event.outcome === 'resolved') tally.moments += 1;
+  else if (event.type === 'moment_ended' && event.outcome === 'played' && event.moment.chest === 'closed') tally.restraint += 1;
   else if (event.type === 'item_found') tally.found[event.rarity] = (tally.found[event.rarity] ?? 0) + 1;
 }
 

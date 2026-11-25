@@ -15,7 +15,7 @@ const march: QuestDef = {
   name: 'The March',
   requires: [],
   when: [],
-  objectives: [{ id: 'ask', type: 'talk', npc: 'keeper', talk: null, text: 'Ask', waiting: '', when: [], sets: {} }],
+  objectives: [{ id: 'ask', type: 'talk', npc: 'keeper', talk: null, text: 'Ask', waiting: '', when: [], sets: {}, gift: null }],
 };
 
 function exit(id: string, x: number, hiddenWhenLocked: boolean): ZoneExit {

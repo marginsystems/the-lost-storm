@@ -315,7 +315,7 @@ void test('hearing it again plays the step\'s lines in order as one conversation
 });
 
 void test('a replay never completes a talk objective, and a first hearing of the everyday line still does', (): void => {
-  const errand: QuestDef = { id: 'errand', name: 'An Errand', requires: [], when: [], objectives: [{ id: 'ask', type: 'talk', npc: 'warden_guide', talk: null, text: 'Ask', waiting: '', when: [], sets: { asked: 'yes' } }] };
+  const errand: QuestDef = { id: 'errand', name: 'An Errand', requires: [], when: [], objectives: [{ id: 'ask', type: 'talk', npc: 'warden_guide', talk: null, text: 'Ask', waiting: '', when: [], sets: { asked: 'yes' }, gift: null }] };
   const world: World = atTheGate({ ...SHIPPED, quests: new Map([...SHIPPED.quests, [errand.id, errand]]) });
   world.quests['errand'] = 0;
   talkTo(world, 'warden_guide');

@@ -28,9 +28,9 @@ void test('a flag a trigger sets counts as set, and an either path naming someth
     name: 'Q',
     requires: [],
     when: [{ type: 'flag', flag: 'found', is: null, not: false }],
-    objectives: [{ id: 'o', type: 'either', text: 'O', waiting: '', when: [], sets: {}, paths: [
-      { id: 'a', type: 'talk', npc: 'nobody', talk: null, text: 'A', waiting: '', when: [], sets: {} },
-      { id: 'b', type: 'reach', zone: 'road_test', x: 1, z: 1, radius: 1, text: 'B', waiting: '', when: [{ type: 'flag', flag: 'missing', is: null, not: false }], sets: {} },
+    objectives: [{ id: 'o', type: 'either', text: 'O', waiting: '', when: [], sets: {}, gift: null, paths: [
+      { id: 'a', type: 'talk', npc: 'nobody', talk: null, text: 'A', waiting: '', when: [], sets: {}, gift: null },
+      { id: 'b', type: 'reach', zone: 'road_test', x: 1, z: 1, radius: 1, text: 'B', waiting: '', when: [{ type: 'flag', flag: 'missing', is: null, not: false }], sets: {}, gift: null },
     ] }],
   };
   const problems: string[] = problemsOf(zone, { quests: new Map<string, QuestDef>([...ROAD_CONTENT.quests, [quest.id, quest]]) });
@@ -48,7 +48,7 @@ void test('two drifts may not share a cell', (): void => {
 void test('a talk objective may name the one talk that answers it, and naming a talk its person does not have is a problem', (): void => {
   const npc: string = [...ROAD_CONTENT.npcs.keys()][0] ?? '';
   const talk: string = ROAD_CONTENT.npcs.get(npc)?.talks[0]?.id ?? '';
-  const quest = (named: string): QuestDef => ({ id: 'q', name: 'Q', requires: [], when: [], objectives: [{ id: 'o', type: 'talk', npc, talk: named, text: 'O', waiting: '', when: [], sets: {} }] });
+  const quest = (named: string): QuestDef => ({ id: 'q', name: 'Q', requires: [], when: [], objectives: [{ id: 'o', type: 'talk', npc, talk: named, text: 'O', waiting: '', when: [], sets: {}, gift: null }] });
   const problemsWith = (named: string): string[] => problemsOf(roadZone({}), { quests: new Map<string, QuestDef>([...ROAD_CONTENT.quests, ['q', quest(named)]]) });
   assert.notEqual(talk, '');
   assert.equal(problemsWith(talk).some((problem: string): boolean => problem.includes('names talk')), false);

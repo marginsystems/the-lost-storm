@@ -15,12 +15,18 @@ export interface TalkDef {
   readonly lines: readonly string[];
 }
 
+export interface ObjectiveGift {
+  readonly rarity: string;
+  readonly items: number;
+}
+
 export interface ObjectiveBase {
   readonly id: string;
   readonly text: string;
   readonly waiting: string;
   readonly when: readonly Condition[];
   readonly sets: StoryFlags;
+  readonly gift: ObjectiveGift | null;
 }
 
 export interface TalkObjective extends ObjectiveBase {

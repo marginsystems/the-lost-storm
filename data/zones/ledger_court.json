@@ -202,6 +202,13 @@
           "monster": "ledger_book",
           "count": 1
         }
+      ],
+      "when": [
+        {
+          "type": "defeated",
+          "monster": "ledger_keeper",
+          "not": true
+        }
       ]
     },
     {
@@ -211,6 +218,13 @@
         {
           "monster": "count_clock_a",
           "count": 1
+        }
+      ],
+      "when": [
+        {
+          "type": "defeated",
+          "monster": "ledger_keeper",
+          "not": true
         }
       ]
     },
@@ -222,6 +236,13 @@
           "monster": "count_clock_a",
           "count": 1
         }
+      ],
+      "when": [
+        {
+          "type": "defeated",
+          "monster": "ledger_keeper",
+          "not": true
+        }
       ]
     },
     {
@@ -232,6 +253,13 @@
           "monster": "count_clock_b",
           "count": 1
         }
+      ],
+      "when": [
+        {
+          "type": "defeated",
+          "monster": "ledger_keeper",
+          "not": true
+        }
       ]
     },
     {
@@ -241,6 +269,13 @@
         {
           "monster": "count_clock_b",
           "count": 1
+        }
+      ],
+      "when": [
+        {
+          "type": "defeated",
+          "monster": "ledger_keeper",
+          "not": true
         }
       ]
     }

@@ -1494,6 +1494,8 @@
   ],
   "tunnels": [],
   "packs": [
+    {"x":157,"z":107,"members":[{"monster":"timekeeper_reclaimer","count":1},{"monster":"timekeeper_rank","count":3}],"when":[{"type":"flag","flag":"warden_stand","is":"held"},{"type":"defeated","monster":"timekeeper_reclaimer","not":true}],"level":19},
+    {"x":155,"z":110,"members":[{"monster":"timekeeper_marshal","count":1},{"monster":"timekeeper_rank","count":4}],"when":[{"type":"flag","flag":"warden_fell"},{"type":"flag","flag":"fall_passed","not":true}],"level":19},
     {"x":71,"z":93,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
     {"x":89,"z":97,"members":[{"monster":"unfinished_taker","count":3},{"monster":"unfinished_thrower","count":1}],"level":17},
     {"x":87,"z":109,"members":[{"monster":"unfinished_borrower","count":2},{"monster":"unfinished_taker","count":1}],"level":17,"waits":{"near":8}},
@@ -1548,5 +1550,11 @@
   "waypoint": {"x":109,"z":33,"radius":1.8},
   "markerSurfaces": {"stone":"cave_stone"},
   "deathReturn": null,
-  "npcs": []
+  "npcs": [
+    {"npc":"warden_below","x":150,"z":126,"facingDegrees":337,"when":[{"type":"flag","flag":"keeper_defeated"},{"type":"flag","flag":"warden_fell","not":true}]}
+  ],
+  "voices": [
+    {"id":"warden_rises","x":150,"z":126,"radius":40,"lines":["warden_below_not_for_you"],"when":[{"type":"flag","flag":"warden_stand","is":"held"}]},
+    {"id":"warden_fights","x":157,"z":108,"radius":9,"lines":["warden_below_not_forgotten"],"when":[{"type":"flag","flag":"warden_stand","is":"held"},{"type":"defeated","monster":"timekeeper_reclaimer","not":true}]}
+  ]
 }

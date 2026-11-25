@@ -365,5 +365,9 @@
   "waypoint": {"x":90,"z":27,"radius":1.8},
   "markerSurfaces": {"stone":"hall_marble"},
   "deathReturn": null,
-  "npcs": []
+  "npcs": [],
+  "voices": [
+    {"id":"columned_count","x":90,"z":22,"radius":9,"lines":["timekeeper_tallier_came_short","timekeeper_tallier_kept_here"],"when":[]},
+    {"id":"columned_gold","x":90,"z":30,"radius":10,"lines":["timekeeper_tallier_left_gold"],"when":[{"type":"restraint","atLeast":1}]}
+  ]
 }

@@ -6,6 +6,9 @@
   },
   "town": "hideout",
   "withheld": [],
+  "restraint": [
+    {"when": [{"type": "flag", "flag": "first_choice", "is": "took_journal", "not": true}, {"type": "visited", "zone": "hall_of_time"}]}
+  ],
   "recovery": {
     "window": 1,
     "perHeld": 3,
@@ -32,6 +35,7 @@
       "id": "act_1",
       "title": "Act I",
       "name": "",
+      "end": {"when": [{"type": "flag", "flag": "reeve_freed"}], "line": "That was one count. There will be another."},
       "atlas": {
         "width": 1600,
         "height": 1000,
