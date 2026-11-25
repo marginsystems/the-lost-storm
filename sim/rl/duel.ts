@@ -28,6 +28,8 @@ export const DUEL = {
   timeLimit: 120,
   taken: 1,
   stalemate: 1.5,
+  idle: 0.005,
+  idleGrace: 3,
   rivalParty: 1,
   rivalSeed: 104729,
 } as const;
@@ -46,6 +48,7 @@ export interface DuelSeat {
   readonly tally: RewardTally;
   outcome: ArenaOutcome;
   total: number;
+  lastHit: number;
 }
 
 export interface Duel {
@@ -65,8 +68,8 @@ export interface DuelStep {
   readonly events: readonly WorldEvent[];
 }
 
-function seatOf(hero: PlayerState): DuelSeat {
-  return { hero, recall: createRecall(), tally: emptyTally(), outcome: 'running', total: 0 };
+function seatOf(hero: PlayerState, time: number): DuelSeat {
+  return { hero, recall: createRecall(), tally: emptyTally(), outcome: 'running', total: 0, lastHit: time };
 }
 
 function readySeat(world: World, rng: Rng, seed: number, level: number, build: Build | null): void {
@@ -99,7 +102,7 @@ export function createDuel(content: Content, options: DuelOptions): Duel {
   world.nextId += 1;
   world.heroes.push(rival);
   const corner: CornerStart | null = options.corner === true ? cornered(world, rng, rival) : null;
-  return { options, world, seats: [seatOf(world.player), seatOf(rival)], pickup: { minRarity: played.rarities.length }, level, start: world.time, corner, decisions: 0 };
+  return { options, world, seats: [seatOf(world.player, world.time), seatOf(rival, world.time)], pickup: { minRarity: played.rarities.length }, level, start: world.time, corner, decisions: 0 };
 }
 
 function cornered(world: World, rng: Rng, rival: PlayerState): CornerStart | null {
@@ -200,6 +203,19 @@ function settleCorner(duel: Duel, rewards: number[]): void {
   if (duel.world.time - duel.start >= CORNER.timeLimit) stalemate(duel, rewards);
 }
 
+function hitRival(duel: Duel, seat: DuelSeat, events: readonly WorldEvent[]): boolean {
+  return events.some((event: WorldEvent): boolean => event.type === 'damage' && event.sourceId === seat.hero.id && event.targetId !== seat.hero.id && duel.seats.some((other: DuelSeat): boolean => other.hero.id === event.targetId));
+}
+
+export function chargeIdle(duel: Duel, rewards: number[]): void {
+  if (duel.corner !== null) return;
+  duel.seats.forEach((seat: DuelSeat, index: number): void => {
+    if (duel.world.time - seat.lastHit <= DUEL.idleGrace) return;
+    rewards[index] = (rewards[index] ?? 0) - DUEL.idle;
+    seat.total -= DUEL.idle;
+  });
+}
+
 export function afterDuelTick(duel: Duel, events: readonly WorldEvent[], rewards: number[]): void {
   const world: World = duel.world;
   const caster: DuelSeat | null = casterOf(duel);
@@ -210,6 +226,7 @@ export function afterDuelTick(duel: Duel, events: readonly WorldEvent[], rewards
     const gained: number = rewardFor(events, { playerId: seat.hero.id, playerMaxLife: seat.hero.maxLife, lifeOf, calm: false, worth: (): number => 0, taken: DUEL.taken }, seat.tally);
     rewards[index] = (rewards[index] ?? 0) + gained;
     seat.total += gained;
+    if (hitRival(duel, seat, events)) seat.lastHit = world.time;
   });
   settle(duel, rewards);
 }
@@ -226,5 +243,7 @@ export function stepDuel(duel: Duel, commands: readonly (readonly Command[])[]):
     afterDuelTick(duel, happened, rewards);
   }
   duel.decisions += 1;
-  return { rewards, done: !duelRunning(duel), events };
+  const done: boolean = !duelRunning(duel);
+  if (!done) chargeIdle(duel, rewards);
+  return { rewards, done, events };
 }

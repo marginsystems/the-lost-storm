@@ -10,7 +10,7 @@ import { readBuild } from './build.ts';
 import type { Action } from './contract.ts';
 import { contractShape, RL } from './contract.ts';
 import type { Duel, DuelOptions, DuelSeat } from './duel.ts';
-import { afterDuelTick, createDuel, DUEL, duelObservation, duelRunning, stepDuel } from './duel.ts';
+import { afterDuelTick, chargeIdle, createDuel, DUEL, duelObservation, duelRunning, stepDuel } from './duel.ts';
 import type { Observation } from './observe.ts';
 import { rememberDecision } from './recall.ts';
 import type { Replay } from './replay.ts';
@@ -98,6 +98,7 @@ export function duelReplayTick(replayer: DuelReplayer): WorldEvent[] {
   const events: WorldEvent[] = stepWorld(replayer.duel.world, commands, RL.tick);
   afterDuelTick(replayer.duel, events, replayer.rewards);
   replayer.ticks += 1;
+  if (replayer.ticks % RL.ticksPerDecision === 0 && duelRunning(replayer.duel)) chargeIdle(replayer.duel, replayer.rewards);
   return events;
 }
 
