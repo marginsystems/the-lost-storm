@@ -44,6 +44,7 @@ export interface AreaDelivery {
   readonly stoke: AreaStoke | null;
   readonly length: number;
   readonly blocks: boolean;
+  readonly slam: string | null;
   readonly aura: AreaAura | null;
 }
 

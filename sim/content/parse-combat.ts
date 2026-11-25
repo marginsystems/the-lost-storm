@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
 import { choice, ContentError, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillLeap, SkillTrail, SummonDef, TrailFrom } from './combat-types.ts';
+import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillFlare, SkillLeap, SkillTrail, SummonDef, TrailFrom } from './combat-types.ts';
 import { TRAIL_FROM } from './combat-types.ts';
 import type { MonsterRank } from './rank-types.ts';
 import { bodyCrust } from './parse-crust.ts';
@@ -65,6 +65,7 @@ export interface SkillMotion extends SkillEchoing {
   readonly commit: SkillCommit | null;
   readonly leaves: string | null;
   readonly trail: SkillTrail | null;
+  readonly flare: SkillFlare | null;
 }
 
 export function skillMotion(source: Fields, where: string): SkillMotion {
@@ -81,6 +82,7 @@ export function skillMotion(source: Fields, where: string): SkillMotion {
     commit: optional(source['commit'], `${where}.commit`, commit),
     leaves: source['leaves'] === undefined ? null : text(source, 'leaves', where),
     trail: optional(source['trail'], `${where}.trail`, skillTrail),
+    flare: optional(source['flare'], `${where}.flare`, skillFlare),
   };
 }
 
@@ -126,6 +128,10 @@ function skillTrail(source: Fields, where: string): SkillTrail {
   if (!Number.isInteger(limit)) throw new ContentError(`${where}.limit`, 'expected a whole number');
   const from: TrailFrom = source['from'] === undefined ? 'feet' : choice(source, 'from', TRAIL_FROM, where);
   return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit, from, range: from === 'aim' ? positive(source, 'range', where) : 0 };
+}
+
+function skillFlare(source: Fields, where: string): SkillFlare {
+  return { areas: text(source, 'areas', where), burst: text(source, 'burst', where) };
 }
 
 function trail(source: Fields, where: string): MonsterTrail {
@@ -286,6 +292,13 @@ export function combatProblems(content: Content): string[] {
       if (left !== undefined) need(left.delivery.type === 'area' && left.delivery.anchor === 'ground' && left.leaves === null && left.trail === null, `skill ${used.id} leaves a trail of ${used.trail.skill}, which is not a lasting area on the ground that leaves nothing itself`);
       if (left !== undefined && used.trail.from === 'aim') need(left.delivery.type === 'area' && left.delivery.length > 0, `skill ${used.id} draws a trail of ${used.trail.skill} where it aims, which is not a lane`);
     }
+    if (used.flare !== null) {
+      const areas: SkillDef | undefined = content.skills.get(used.flare.areas);
+      const burst: SkillDef | undefined = content.skills.get(used.flare.burst);
+      need(areas !== undefined && areas.delivery.type === 'area', `skill ${used.id} flares ${used.flare.areas}, which is not a lasting area`);
+      need(burst !== undefined && burst.delivery.type === 'nova', `skill ${used.id} flares with ${used.flare.burst}, which is not a nova`);
+    }
+    if (used.delivery.type === 'area' && used.delivery.slam !== null) need(content.skills.has(used.delivery.slam), `skill ${used.id} slams with unknown skill ${used.delivery.slam}`);
   }
   return problems;
 }

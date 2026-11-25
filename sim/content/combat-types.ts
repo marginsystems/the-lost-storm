@@ -85,6 +85,11 @@ export interface MonsterElement {
 export const TRAIL_FROM = ['feet', 'aim'] as const;
 export type TrailFrom = (typeof TRAIL_FROM)[number];
 
+export interface SkillFlare {
+  readonly areas: string;
+  readonly burst: string;
+}
+
 export interface SkillTrail {
   readonly skill: string;
   readonly every: number;

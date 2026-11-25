@@ -147,6 +147,8 @@
         "fire_burst",
         "fire_slam",
         "firewall",
+        "bellows",
+        "flashover",
         "banked_fire"
       ]
     },

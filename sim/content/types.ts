@@ -5,7 +5,7 @@ import type { AffixDef, DropLean, FamilyDef, ItemBaseDef, ItemScaling, PowerTrig
 export type { WeaponKind } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
 import type { AttachmentDef, RigDef } from './rig-types.ts';
-import type { AlarmDef, AmbushBehaviour, BodyCrust, DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, RecoveryDef, ReviveDelivery, SkillEchoing, SkillTrail, StalkerBehaviour, SummonDef, SwarmBehaviour } from './combat-types.ts';
+import type { AlarmDef, AmbushBehaviour, BodyCrust, DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, RecoveryDef, ReviveDelivery, SkillEchoing, SkillFlare, SkillTrail, StalkerBehaviour, SummonDef, SwarmBehaviour } from './combat-types.ts';
 import type { NovaSide, SkillMend } from './mend-types.ts';
 import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
 import type { TradeDef } from './trade-types.ts';
@@ -177,6 +177,7 @@ export interface SkillDef extends SkillShape, SkillEchoing {
   readonly leech: number;
   readonly leaves: string | null;
   readonly trail: SkillTrail | null;
+  readonly flare: SkillFlare | null;
   readonly mend: SkillMend | null;
 }
 

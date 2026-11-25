@@ -56,6 +56,8 @@ function area(source: Fields, where: string): AreaDelivery {
   if (length > 0 && pull > 0) throw new ContentError(`${where}.length`, 'expected a lane that does not pull');
   const blocks: boolean = source['blocks'] === undefined ? false : flag(source, 'blocks', where);
   if (blocks && length === 0) throw new ContentError(`${where}.blocks`, 'expected only a lane to block the way');
+  const slam: string | null = source['slam'] === undefined ? null : text(source, 'slam', where);
+  if (slam !== null && !blocks) throw new ContentError(`${where}.slam`, 'expected only a lane that blocks the way to be slammed into');
   const aura: AreaAura | null = source['aura'] === undefined ? null : auraOf(source['aura'], `${where}.aura`);
   if (aura !== null && anchor !== 'caster') throw new ContentError(`${where}.aura`, 'expected an aura to stand around its caster');
   return {
@@ -72,6 +74,7 @@ function area(source: Fields, where: string): AreaDelivery {
     stoke,
     length,
     blocks,
+    slam,
     aura,
   };
 }

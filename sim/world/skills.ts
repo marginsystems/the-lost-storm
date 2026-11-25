@@ -25,6 +25,7 @@ import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTur
 import type { MomentumStep } from './momentum.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
 import { aimChannel, beginChannel, endChannels } from './channels.ts';
+import { flareAreas } from './flare.ts';
 import { needsPivot, turnInPlace, turnRateOf } from './pivot.ts';
 import type { PivotState } from './pivot.ts';
 import { turnToward } from './movement.ts';
@@ -345,6 +346,7 @@ export function turnRate(actor: Actor, action: ActionState): number {
 
 function resolveImpact(world: World, actor: Actor, action: ActionState, skill: SkillDef): void {
   const hits: number = resolve(world, { actor, offence: offenceOf(actor), skill: spendMomentum(actor, spunSkill(actor, skill)), origin: actor.pos, direction: action.direction, target: action.target, echo: false }, teamOf(actor));
+  flareAreas(world, offenceOf(actor), skill, actor.pos);
   feedMomentum(world, actor, skill, hits);
 }
 

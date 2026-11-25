@@ -12,10 +12,10 @@ const plain: SkillDef = { ...strike, manaCost: 0, cooldown: 0, windup: 0.1, reco
 
 export const SHAPE_SKILLS: readonly SkillDef[] = [
   { ...plain, id: 'test_fork', delivery: { type: 'chain', range: 10, jumps: 2, jumpRange: 5, falloff: 0.5 } },
-  { ...plain, id: 'test_squall', delivery: { type: 'area', range: 10, radius: 3, duration: 1, pulse: 0.25, pull: 0, slow: 1, weaken: 0, anchor: 'ground', opening: false, stoke: null, length: 0, blocks: false, aura: null } },
-  { ...plain, id: 'test_banked', delivery: { type: 'area', range: 10, radius: 3, duration: 2, pulse: 0.25, pull: 0, slow: 1, weaken: 0, anchor: 'ground', opening: false, stoke: { perPulse: 0.5, max: 1 }, length: 0, blocks: false, aura: null } },
-  { ...plain, id: 'test_draught', delivery: { type: 'area', range: 10, radius: 6, duration: 0.5, pulse: 0.5, pull: 12, slow: 1, weaken: 0, anchor: 'ground', opening: false, stoke: null, length: 0, blocks: false, aura: null } },
-  { ...plain, id: 'test_hush', delivery: { type: 'area', range: 0, radius: 8, duration: 2, pulse: 0, pull: 0, slow: 0.25, weaken: 0, anchor: 'caster', opening: false, stoke: null, length: 0, blocks: false, aura: null } },
+  { ...plain, id: 'test_squall', delivery: { type: 'area', range: 10, radius: 3, duration: 1, pulse: 0.25, pull: 0, slow: 1, weaken: 0, anchor: 'ground', opening: false, stoke: null, length: 0, blocks: false, slam: null, aura: null } },
+  { ...plain, id: 'test_banked', delivery: { type: 'area', range: 10, radius: 3, duration: 2, pulse: 0.25, pull: 0, slow: 1, weaken: 0, anchor: 'ground', opening: false, stoke: { perPulse: 0.5, max: 1 }, length: 0, blocks: false, slam: null, aura: null } },
+  { ...plain, id: 'test_draught', delivery: { type: 'area', range: 10, radius: 6, duration: 0.5, pulse: 0.5, pull: 12, slow: 1, weaken: 0, anchor: 'ground', opening: false, stoke: null, length: 0, blocks: false, slam: null, aura: null } },
+  { ...plain, id: 'test_hush', delivery: { type: 'area', range: 0, radius: 8, duration: 2, pulse: 0, pull: 0, slow: 0.25, weaken: 0, anchor: 'caster', opening: false, stoke: null, length: 0, blocks: false, slam: null, aura: null } },
   { ...plain, id: 'test_step', delivery: { type: 'blink', range: 6, radius: 2 } },
   { ...plain, id: 'test_wire', manaCost: 2, delivery: { type: 'beam', range: 10, width: 1 }, press: { type: 'channel', interval: 0.2, max: 2, move: 0, passThrough: false, hint: null } },
   { ...plain, id: 'test_heave', delivery: { type: 'arc', reach: 3, arcDegrees: 120 }, press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.5, hint: null } },

@@ -1,6 +1,8 @@
 import type { AreaDelivery } from '../content/shape-types.ts';
+import type { SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { areaOf } from './areas.ts';
+import { applyHit } from './combat.ts';
 import type { Actor, ActorState, AreaState, World } from './types.ts';
 
 interface Wall {
@@ -33,6 +35,18 @@ function wallsOf(world: World): Wall[] {
   });
 }
 
+function backFrom(area: AreaState, from: ReadonlyVec2): Vec2 {
+  const side: number = Math.sign(sideOf(area, from));
+  return { x: area.toward.z * side, z: -area.toward.x * side };
+}
+
+function slamInto(world: World, wall: Wall, actor: Actor, from: ReadonlyVec2): void {
+  if (wall.delivery.slam === null) return;
+  const slam: SkillDef | undefined = world.content.skills.get(wall.delivery.slam);
+  if (slam === undefined) return;
+  applyHit(world, wall.area.offence, actor, slam, backFrom(wall.area, from));
+}
+
 export function holdBehindWalls(world: World, starts: ReadonlyMap<ActorState, Vec2>): void {
   const walls: Wall[] = wallsOf(world);
   if (walls.length === 0) return;
@@ -40,11 +54,13 @@ export function holdBehindWalls(world: World, starts: ReadonlyMap<ActorState, Ve
   for (const actor of actors) {
     const from: Vec2 | undefined = starts.get(actor);
     if (from === undefined || !actor.alive) continue;
-    const held: boolean = walls.some((wall: Wall): boolean => wall.area.offence.team !== actor.kind && crossesWall(wall.area, from, actor.pos, actor.radius));
-    if (!held) continue;
+    const held: Wall | undefined = walls.find((wall: Wall): boolean => wall.area.offence.team !== actor.kind && crossesWall(wall.area, from, actor.pos, actor.radius));
+    if (held === undefined) continue;
+    const thrown: boolean = actor.knock.x !== 0 || actor.knock.z !== 0;
     actor.pos.x = from.x;
     actor.pos.z = from.z;
     actor.knock.x = 0;
     actor.knock.z = 0;
+    if (thrown) slamInto(world, held, actor, from);
   }
 }

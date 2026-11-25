@@ -189,6 +189,45 @@ ${spark(12, 30, 0.8, '#ffd27a')}
 ${spark(34, 26, 0.9, '#ffb43a')}
 ${spark(46, 18, 0.7, '#ffd27a')}
 `)],
+  ['bellows', art('fire', `
+${halo(32, 34, 24, '#ff5a12', 0.55)}
+<ellipse cx="32" cy="50" rx="22" ry="7" fill="#ff7a1a" opacity="0.45" filter="url(#bloom)"/>
+${streaks(32, 36, 8, 26, [200, 240, 280, 320, 0, 40], '#ffb43a', 2.6)}
+${spikes(32, 36, 11, 4, 9, 0.8, 0.1, '#ff7a1a')}
+${spikes(32, 36, 6.5, 2.4, 9, 0.8, 0.3, '#ffe4a6')}
+<circle cx="32" cy="36" r="2.4" fill="#ffffff" filter="url(#glow)"/>
+${fire(6, 58, 14, 4, 1)}
+${fire(58, 58, 14, 4, 1)}
+${spark(10, 20, 1, '#ffe9b8')}
+${spark(54, 18, 0.9, '#ffd27a')}
+`)],
+  ['flashover', art('fire', `
+${halo(32, 44, 26, '#ff5a12', 0.7)}
+<path d="M4 56 C 14 50 20 58 32 54 C 44 50 50 58 60 52" stroke="#ff7a1a" stroke-width="5" fill="none" stroke-linecap="round" filter="url(#bloom)"/>
+${fire(8, 55, 24, 5.5, 2)}
+${fire(18, 54, 30, 6, 2.5)}
+${fire(28, 54, 36, 6.4, 3)}
+${fire(38, 53, 34, 6.2, 3)}
+${fire(48, 54, 28, 5.8, 2.5)}
+${fire(57, 52, 22, 5, 2)}
+<circle cx="32" cy="24" r="4" fill="#fff4d6" filter="url(#glow)"/>
+${spark(14, 16, 1.1, '#ffe9b8')}
+${spark(50, 14, 1, '#ffd27a')}
+${spark(32, 8, 0.9, '#ffb43a')}
+`)],
+  ['dodge_roll_flicker', art('fire', `
+${halo(46, 26, 16, '#ff5a12', 0.6)}
+<ellipse cx="18" cy="52" rx="13" ry="4.5" fill="#ff6a1c" opacity="0.7" filter="url(#bloom)"/>
+${coal(12, 54, 3)}
+${coal(22, 52, 2.6)}
+${fire(14, 54, 14, 4, 1)}
+${fire(22, 53, 10, 3.4, 0.5)}
+<path d="M20 44 C 28 36 34 34 44 28" stroke="#ffb43a" stroke-width="2.4" fill="none" stroke-dasharray="3 4" stroke-linecap="round" opacity="0.8" filter="url(#glow)"/>
+${fire(46, 32, 20, 5.4, 2)}
+<circle cx="46" cy="22" r="3" fill="#fff4d6" filter="url(#glow)"/>
+${spark(56, 14, 1, '#ffe9b8')}
+${spark(36, 18, 0.8, '#ffd27a')}
+`)],
   ['banked_fire', art('fire', `
 ${halo(32, 44, 22, '#ff5a12', 0.6)}
 <ellipse cx="32" cy="46" rx="27" ry="11" fill="#0a0302" opacity="0.55"/>
