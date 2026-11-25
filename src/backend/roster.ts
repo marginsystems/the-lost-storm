@@ -3,7 +3,7 @@ import { isFields } from '../../sim/content/read.ts';
 
 export const ROSTER_KEY: string = 'the-lost-storm.characters.v1';
 
-export const ROSTER: { readonly max: number; readonly firstKey: string; readonly keyChars: number; readonly nameChars: number } = { max: 3, firstKey: 'first', keyChars: 24, nameChars: 32 };
+export const ROSTER: { readonly max: number; readonly firstKey: string; readonly keyChars: number; readonly nameChars: number } = { max: 6, firstKey: 'first', keyChars: 24, nameChars: 32 };
 
 export interface Slot {
   readonly key: string;

@@ -65,7 +65,7 @@ function login(harness: Harness): ServerAccount {
   return must(harness.server.accounts[0], 'the login account');
 }
 
-void test('with no server a player keeps up to three characters, each with its own save and its own extra keys, and switching swaps them', (): void => {
+void test('with no server a player keeps up to six characters, each with its own save and its own extra keys, and switching swaps them', (): void => {
   const store = createMemoryStore();
   const here: RosterPlace = place(store, null);
   prepareRoster(here);
@@ -77,7 +77,7 @@ void test('with no server a player keeps up to three characters, each with its o
   assert.equal(store.read(EXTRA), null);
   assert.equal(store.read(parkedKey(SAVE_KEY, ROSTER.firstKey)), JSON.stringify({ level: 4 }));
   store.write(SAVE_KEY, JSON.stringify({ level: 2 }));
-  must(addCharacter(here, 'Ash Walker', null, random), 'a third slot');
+  for (const name of ['Ash Walker', 'Cold Fen', 'Dun Lark', 'Elm Ward']) must(addCharacter(here, name, null, random), `a slot for ${name}`);
   assert.equal(addCharacter(here, 'One Too Many', null, random), null);
   assert.equal(switchCharacter(here, ROSTER.firstKey), true);
   assert.equal(levelIn(store), 4);
@@ -85,7 +85,7 @@ void test('with no server a player keeps up to three characters, each with its o
   assert.equal(store.read(parkedKey(SAVE_KEY, ROSTER.firstKey)), null);
   assert.equal(switchCharacter(here, second), true);
   assert.equal(levelIn(store), 2);
-  assert.equal(loadRoster(store).slots.length, 3);
+  assert.equal(loadRoster(store).slots.length, ROSTER.max);
   assert.equal(switchCharacter(here, second), false);
   assert.equal(switchCharacter(here, 'missing'), false);
 });

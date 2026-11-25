@@ -28,10 +28,10 @@ void test('each character shows its name, level and hero, the one in play is lit
   ]);
 });
 
-void test('three characters leave no empty place, and the name in play comes from the lobby when it is known there', (): void => {
-  const roster: Roster = { active: 'first', account: null, slots: [firstSlot(), slot('b', 'B', 1, null), slot('c', 'C', 2, null)] };
+void test('six characters leave no empty place, and the name in play comes from the lobby when it is known there', (): void => {
+  const roster: Roster = { active: 'first', account: null, slots: [firstSlot(), slot('b', 'B', 1, null), slot('c', 'C', 2, null), slot('d', 'D', 3, null), slot('e', 'E', 4, null), slot('f', 'F', 5, null)] };
   const cards: readonly CardView[] = stripCards(facts(roster, { live: { ...UNWOKEN, name: 'Ash Walker' } }));
-  assert.equal(cards.length, 3);
+  assert.equal(cards.length, 6);
   assert.equal(cards[0]?.name, 'Ash Walker');
   assert.equal(canCreate(facts(roster)), false);
 });

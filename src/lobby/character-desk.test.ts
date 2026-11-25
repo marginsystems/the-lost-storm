@@ -91,10 +91,10 @@ void test('with no server the desk makes characters on the device and never refu
   const desk: CharacterDesk = createCharacterDesk({ content, place, api: null, random: (): number => 0.25 });
   assert.deepEqual(await desk.check('Bright Reed'), { kind: 'ready', name: 'Bright Reed', id: null });
   assert.equal(desk.open('Bright Reed', null), true);
-  assert.equal(desk.open('Ash Walker', null), true);
+  for (const name of ['Ash Walker', 'Cold Fen', 'Dun Lark', 'Elm Ward']) assert.equal(desk.open(name, null), true);
   assert.deepEqual(await desk.check('One More'), { kind: 'refused', text: STRIP_TEXT.full });
   assert.equal(await desk.remove(), 'removed');
-  assert.equal(loadRoster(store).slots.length, 2);
+  assert.equal(loadRoster(store).slots.length, 5);
 });
 
 void test('an account counts as full once every place it holds has a character', (): void => {

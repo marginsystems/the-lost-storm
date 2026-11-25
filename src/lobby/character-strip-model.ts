@@ -17,7 +17,7 @@ export const STRIP_TEXT = {
   cancel: 'Cancel',
   choose: 'Choose for me',
   placeholder: 'Their name',
-  full: 'This account already has three characters.',
+  full: `This account already has ${String(ROSTER.max)} characters.`,
   unreachable: 'The server could not be reached. Try again in a moment.',
   deleteLabel: 'Delete character',
   deleteYes: 'Delete for good',
