@@ -1,11 +1,11 @@
-import type { EmpowerLook, ItemSlot, SkillDef, SkillMod, XpReduction } from '../content/types.ts';
+import type { Content, EmpowerLook, ItemSlot, SkillDef, SkillMod, XpReduction } from '../content/types.ts';
 import { isUnidentified } from '../identify.ts';
 import { isStoryItem, slotOf } from '../items.ts';
 import { applyXp, canAllocate, findNode, gapScale, heldChanges, offersChange, refundCost, refundState, respecCost, respecState, xpReduction } from '../progression.ts';
 import type { ChartChange } from '../progression.ts';
 import type { XpResult } from '../progression.ts';
 import { assignSlot, chartSkills } from '../skill-book.ts';
-import { computeStats, modTargets, resolveSkillBar, variantChain } from '../stats.ts';
+import { computeStats, modTargets, resolveSkill, resolveSkillBar, variantChain } from '../stats.ts';
 import { heldGroup } from '../weapons.ts';
 import { buffMods, heldPowers, wornVariants, wouldPassLimit } from '../powers.ts';
 import { heroStanceMods } from '../stances.ts';
@@ -26,6 +26,10 @@ export function refreshHero(world: World, player: PlayerState): void {
   player.life = Math.min(player.life, player.maxLife);
   player.mana = Math.min(player.mana, player.stats.maxMana);
   world.events.push({ type: 'character_changed' });
+}
+
+export function heldForm(content: Content, player: PlayerState, base: SkillDef): SkillDef {
+  return resolveSkill(content, base, player.allocated, heldPowers(content, player.equipped, player.powers), wornVariants(content, player.equipped), player.wielding, player.changes);
 }
 
 export function heldLook(world: World, skillId: string): EmpowerLook | null {

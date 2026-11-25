@@ -2,6 +2,8 @@ import type { SkillUnlock } from '../../sim/content/shape-types.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { everySkill } from '../../sim/skill-book.ts';
+import { heldForm } from '../../sim/world/character.ts';
+import { empoweredBy } from '../../sim/weapons.ts';
 import { appendForms, pressLine } from './skill-forms-view.ts';
 import { strongerLine } from './weapon-family.ts';
 import type { HudContext } from './context.ts';
@@ -29,8 +31,10 @@ const CLEAR = {
 
 interface Choice {
   readonly root: HTMLElement;
+  readonly icon: HTMLElement;
   readonly entry: SkillUnlock;
   readonly skill: SkillDef;
+  shown: SkillDef;
   state: string;
 }
 
@@ -68,6 +72,7 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
   const grid: HTMLDivElement = el('div', 'skill-picker-grid', element);
   const choices: Choice[] = [];
   let slot: number | null = null;
+  let formsOf: readonly (SkillDef | null)[] | null = null;
   const content = context.api.world.content;
   const clear: HTMLButtonElement = el('button', 'skill-choice skill-clear', grid);
   clear.type = 'button';
@@ -85,11 +90,12 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
     if (skill === undefined) continue;
     const root: HTMLButtonElement = el('button', 'skill-choice', grid);
     root.type = 'button';
-    el('span', 'skill-choice-icon', root).innerHTML = iconSvg(skill.icon);
+    const icon: HTMLSpanElement = el('span', 'skill-choice-icon', root);
+    icon.innerHTML = iconSvg(skill.icon);
     label('skill-choice-level', `${entry.level}`, root);
-    const choice: Choice = { root, entry, skill, state: '' };
+    const choice: Choice = { root, icon, entry, skill, shown: skill, state: '' };
     attachTooltip(context.tooltip, root, (): HTMLElement => {
-      const details: HTMLElement = skillDetails(skill, choice.state === 'locked' ? 'Not yet learned' : promptText(context.api.touch, use('place it in this slot')), choice.state === 'locked' ? entry.level : null, strongerLine(content, skill.empowered));
+      const details: HTMLElement = skillDetails(choice.shown, choice.state === 'locked' ? 'Not yet learned' : promptText(context.api.touch, use('place it in this slot')), choice.state === 'locked' ? entry.level : null, strongerLine(content, empoweredBy(choice.shown, skill)));
       appendForms(details, content, skill, context.api.world.player.wielding);
       return details;
     });
@@ -101,6 +107,12 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
     });
     choices.push(choice);
   }
+
+  const showForm = (choice: Choice, form: SkillDef): void => {
+    const icon: string = choice.shown.icon;
+    choice.shown = form;
+    if (form.icon !== icon) choice.icon.innerHTML = iconSvg(form.icon);
+  };
 
   const picker: SkillPicker = {
     element,
@@ -127,7 +139,10 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
       const current: string | null = player.bar[slot] ?? null;
       setText(clearName, pointerSlotOf(context, slot) ? CLEAR.pointerName : CLEAR.keyName, true);
       setClass(clear, 'current', current === null);
+      const reform: boolean = formsOf !== player.skills;
+      formsOf = player.skills;
       for (const choice of choices) {
+        if (reform) showForm(choice, heldForm(content, player, choice.skill));
         const state: string = choice.entry.level > player.level || !player.learned.includes(choice.entry.skill) ? 'locked' : choice.entry.skill === current ? 'current' : player.bar.includes(choice.entry.skill) ? 'elsewhere' : 'free';
         if (state === choice.state) continue;
         if (choice.state !== '') choice.root.classList.remove(choice.state);
