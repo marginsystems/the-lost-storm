@@ -15,7 +15,7 @@ export const RING = {
 export function ringContent(content: Content): Content {
   const hall: ZoneDef = zoneOf(content, RING.from);
   const start = hall.playerStart;
-  const ring: ZoneDef = { ...hall, id: RING.id, name: 'Test Ring', packs: [], surge: null, moments: null, scenes: [], voices: [], triggers: [], drifts: [], npcs: [], duel: { rival: { x: start.x + RING.gap, z: start.z }, home: RING.home, gear: 'own', heroDamage: 1, closing: null } };
+  const ring: ZoneDef = { ...hall, id: RING.id, name: 'Test Ring', packs: [], surge: null, moments: null, scenes: [], voices: [], triggers: [], drifts: [], npcs: [], duel: { rival: { x: start.x + RING.gap, z: start.z }, home: RING.home, gear: 'own', heroDamage: 1 } };
   return { ...content, zones: new Map<string, ZoneDef>([...content.zones, [RING.id, ring]]) };
 }
 

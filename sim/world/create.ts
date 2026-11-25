@@ -217,7 +217,6 @@ export function createWorld(content: Content, options: WorldOptions): World {
     strikeMisses: 0,
     scene: null,
     wards: [],
-    closing: null,
     escort: null,
     portal: portalFromSave(save?.portal ?? null),
     run: save === null ? emptyRun() : copyRun(save.run),

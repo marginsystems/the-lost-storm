@@ -116,7 +116,6 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, ke
   closeDialogue(world, false);
   world.scene = null;
   world.wards = [];
-  world.closing = null;
   clearMoments(world);
   clearProjectiles(world);
   clearHazards(world);

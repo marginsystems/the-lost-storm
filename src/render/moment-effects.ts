@@ -1,8 +1,6 @@
 import type { Camera, Vector3, WebGLRenderer } from 'three';
 import type { WorldEvent, World } from '../../sim/world/types.ts';
 import { warnInConsole } from '../backend/console-log.ts';
-import type { ClosingView } from './closing-view.ts';
-import { createClosingView } from './closing-view.ts';
 import type { Effects } from './effects.ts';
 import type { MomentView, MomentViewDeps } from './moment-view.ts';
 import { createMomentView } from './moment-view.ts';
@@ -23,7 +21,6 @@ export interface MomentEffects extends Effects {
 export function momentEffects(effects: Effects, deps: MomentViewDeps, renderer: WebGLRenderer, camera: Camera): MomentEffects {
   const moments: MomentView = createMomentView(deps);
   const wards: WardView = createWardView(deps.scene, deps.tier.name === 'mobile');
-  const closing: ClosingView = createClosingView(deps.scene);
   const portals: PortalView = createPortalView(deps.scene, deps.particles);
   const ready: Promise<void> = moments.warm(renderer, camera);
   let warned: number = 0;
@@ -36,7 +33,6 @@ export function momentEffects(effects: Effects, deps: MomentViewDeps, renderer: 
       effects.update(dt, world);
       moments.update(dt, world);
       wards.update(dt, world);
-      closing.update(dt, world);
       portals.update(dt, world);
       if (import.meta.env.DEV && world.strikeMisses >= MOMENT_EFFECTS.missWarning && world.strikeMisses !== warned) {
         warned = world.strikeMisses;
@@ -56,7 +52,6 @@ export function momentEffects(effects: Effects, deps: MomentViewDeps, renderer: 
       effects.clear();
       moments.clear();
       wards.clear();
-      closing.clear();
       portals.clear();
     },
     showKeepers(): () => void {

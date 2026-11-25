@@ -1,9 +1,8 @@
-import type { Content, DuelClosing, ZoneDef, ZoneDuel } from '../content/types.ts';
+import type { Content, ZoneDef, ZoneDuel } from '../content/types.ts';
 import type { Rng } from '../rng.ts';
 import { createRng } from '../rng.ts';
 import { refillHero } from '../world/bench-hero.ts';
 import { refreshPlayer } from '../world/character.ts';
-import { openClosing } from '../world/closing.ts';
 import { findHero } from '../world/heroes.ts';
 import { stepWorld } from '../world/step.ts';
 import type { Command, PlayerState, World, WorldEvent } from '../world/types.ts';
@@ -100,8 +99,6 @@ export function createDuel(content: Content, options: DuelOptions): Duel {
   world.nextId += 1;
   world.heroes.push(rival);
   const corner: CornerStart | null = options.corner === true ? cornered(world, rng, rival) : null;
-  const closing: DuelClosing | null = corner === null ? (zone.duel?.closing ?? null) : null;
-  world.closing = closing === null ? null : openClosing(closing, world.player.pos, rival.pos, world.time);
   return { options, world, seats: [seatOf(world.player), seatOf(rival)], pickup: { minRarity: played.rarities.length }, level, start: world.time, corner, decisions: 0 };
 }
 

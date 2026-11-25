@@ -22,9 +22,9 @@ void test('a duel zone that sends the duellist home through a real exit of anoth
 });
 
 void test('a duel zone whose home is not an exit of another zone is refused', (): void => {
-  const lost: Content = withRing((ring: ZoneDef): ZoneDef => ({ ...ring, duel: { rival: { x: 1, z: 1 }, home: { zone: 'hideout', exit: 'nowhere' }, gear: 'own', heroDamage: 1, closing: null } }));
+  const lost: Content = withRing((ring: ZoneDef): ZoneDef => ({ ...ring, duel: { rival: { x: 1, z: 1 }, home: { zone: 'hideout', exit: 'nowhere' }, gear: 'own', heroDamage: 1 } }));
   assert.equal(ringProblems(lost).length, 1);
-  const itself: Content = withRing((ring: ZoneDef): ZoneDef => ({ ...ring, duel: { rival: { x: 1, z: 1 }, home: { zone: RING.id, exit: 'east' }, gear: 'own', heroDamage: 1, closing: null } }));
+  const itself: Content = withRing((ring: ZoneDef): ZoneDef => ({ ...ring, duel: { rival: { x: 1, z: 1 }, home: { zone: RING.id, exit: 'east' }, gear: 'own', heroDamage: 1 } }));
   assert.equal(ringProblems(itself).length, 1);
 });
 

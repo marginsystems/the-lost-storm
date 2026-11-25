@@ -1,7 +1,6 @@
-import type { DuelClosing, ZoneDuel } from '../content/types.ts';
+import type { ZoneDuel } from '../content/types.ts';
 import { createRng } from '../rng.ts';
 import type { Rng } from '../rng.ts';
-import { openClosing } from '../world/closing.ts';
 import { findHero } from '../world/heroes.ts';
 import type { Command, PlayerState, World, WorldEvent } from '../world/types.ts';
 import { commandsFor } from './act.ts';
@@ -56,16 +55,12 @@ export function startRivalDuel(world: World, seed: number): RivalDuel | null {
   const rival: PlayerState = { ...benched, id: world.nextId, party: DUEL.rivalParty, pos: { x: duel.rival.x, z: duel.rival.z }, facing: Math.atan2(world.player.pos.x - duel.rival.x, world.player.pos.z - duel.rival.z) };
   world.nextId += 1;
   world.heroes.push(rival);
-  world.closing = duel.closing === null ? null : openClosing(duel.closing, world.player.pos, rival.pos, world.time + RIVAL.startIn);
   return { rivalId: rival.id, build, level, start: world.time + RIVAL.startIn, recall: createRecall(), outcome: 'fighting', endedAt: null, clock: RIVAL.decisionTime, left: false };
 }
 
 export function beginRivalDuel(duel: RivalDuel, world: World): void {
   duel.start = world.time + RIVAL.startIn;
   duel.clock = RIVAL.decisionTime;
-  const rival: PlayerState | null = rivalOf(duel, world);
-  const closing: DuelClosing | null = world.zone.duel?.closing ?? null;
-  world.closing = closing === null || rival === null ? null : openClosing(closing, world.player.pos, rival.pos, duel.start);
 }
 
 export function rivalOf(duel: RivalDuel, world: World): PlayerState | null {
@@ -76,7 +71,6 @@ export function resignRivalDuel(duel: RivalDuel, world: World): boolean {
   if (duel.outcome !== 'fighting') return false;
   duel.outcome = 'resigned';
   duel.endedAt = world.time;
-  world.closing = null;
   return true;
 }
 
@@ -118,7 +112,5 @@ export function rivalHeard(duel: RivalDuel, world: World, events: readonly World
   if (rival !== null) recallEvents(duel.recall, world, rival, events);
   if (duel.outcome !== 'fighting') return;
   duel.outcome = settle(duel, world, rival);
-  if (duel.outcome === 'fighting') return;
-  duel.endedAt = world.time;
-  world.closing = null;
+  if (duel.outcome !== 'fighting') duel.endedAt = world.time;
 }

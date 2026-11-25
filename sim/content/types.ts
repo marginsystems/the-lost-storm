@@ -26,7 +26,7 @@ export type { BossAnchor, BossBarks, BossDef, BossDrop, BossFirstKill, BossPhase
 export type { XpAfter, XpCurve, XpGap, XpReduction } from './xp-types.ts';
 export { VFX_CUES, VFX_MAX_FORKS, VFX_STYLES } from './vfx-types.ts';
 export type { SkillVfx, VfxCue, VfxImpact, VfxLightning, VfxStyle } from './vfx-types.ts';
-export type { ExitLook, PackMember, PackReturn, PackWait, SurgeRules, ZoneCheckpoint, DuelClosing, DuelGear, ZoneDef, ZoneDuel, ZoneEdge, ZoneExit, ZoneKind, ZoneNpc, ZoneOutside, ZonePack, ZonePoint, ZoneProp, ZoneReturn, ZoneSize, ZoneVoice, ZoneWalls, ZoneWaypoint } from './zone-types.ts';
+export type { ExitLook, PackMember, PackReturn, PackWait, SurgeRules, ZoneCheckpoint, DuelGear, ZoneDef, ZoneDuel, ZoneEdge, ZoneExit, ZoneKind, ZoneNpc, ZoneOutside, ZonePack, ZonePoint, ZoneProp, ZoneReturn, ZoneSize, ZoneVoice, ZoneWalls, ZoneWaypoint } from './zone-types.ts';
 export { DUEL_GEAR, ZONE_KINDS } from './zone-types.ts';
 export type { ZoneFall } from './fall-types.ts';
 export type { DefeatObjective, EitherObjective, LineDef, MomentObjective, NpcDef, ObjectiveBase, ObjectiveDef, PathObjective, QuestDef, ReachObjective, TalkDef, TalkObjective } from './quest-types.ts';
