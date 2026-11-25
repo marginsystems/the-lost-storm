@@ -1,7 +1,7 @@
 import type { Vector2 } from 'three';
 import { keepTagInView } from './label-edge.ts';
 import type { ViewSize } from './label-edge.ts';
-import { createGlide, glideToward } from './label-glide.ts';
+import { createGlide, glideToward, LABEL_GLIDE } from './label-glide.ts';
 import type { LabelGlide } from './label-glide.ts';
 import type { ScreenRect } from './label-stack.ts';
 import type { TagSize } from './tag-sizes.ts';
@@ -36,7 +36,7 @@ const PARTINGS: WeakMap<object, LabelGlide> = new WeakMap<object, LabelGlide>();
 export function glideApart(owner: object, apart: number, dt: number): number {
   const parted: LabelGlide = PARTINGS.get(owner) ?? createGlide();
   PARTINGS.set(owner, parted);
-  glideToward(parted, 0, apart, dt);
+  glideToward(parted, 0, apart, dt, LABEL_GLIDE.apartFrequency);
   return parted.y;
 }
 

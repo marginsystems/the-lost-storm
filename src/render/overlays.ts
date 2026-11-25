@@ -110,6 +110,7 @@ interface PendingTag {
   readonly stack: LabelGlide;
   readonly x: number;
   readonly y: number;
+  readonly home: number;
   readonly width: number;
   readonly height: number;
   readonly reach: number;
@@ -211,10 +212,10 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     }
     const reach: number = heldReach(reaches.get(element), Math.hypot(point.x - anchor.x, point.y - anchor.y));
     reaches.set(element, reach);
-    pending.push({ element, stack, x: point.x, y: point.y, width: bound.size.width, height: bound.size.height, reach, offscreen: !anchorInView(anchor.x, anchor.y, view) });
+    pending.push({ element, stack, x: point.x, y: point.y, home: anchor.y, width: bound.size.width, height: bound.size.height, reach, offscreen: !anchorInView(anchor.x, anchor.y, view) });
   };
   const stackTags = (dt: number): void => {
-    const stacked: EdgeStack = stackAtEdges(pending.map((tag: PendingTag, id: number): EdgeTag => ({ id, x: tag.x, y: tag.y, width: tag.width, height: tag.height, reach: tag.reach, offscreen: tag.offscreen })), view);
+    const stacked: EdgeStack = stackAtEdges(pending.map((tag: PendingTag, id: number): EdgeTag => ({ id, x: tag.x, y: tag.y, home: tag.home, width: tag.width, height: tag.height, reach: tag.reach, offscreen: tag.offscreen })), view);
     const shown: EdgeTag[] = pending.map((tag: PendingTag, id: number): EdgeTag => {
       glideToward(tag.stack, 0, stacked.lift.get(id) ?? 0, dt);
       const quiet: boolean = stacked.quiet.has(id);
@@ -222,7 +223,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       const plate: Element | null = tag.element.firstElementChild;
       if (plate instanceof HTMLElement) plate.style.scale = quiet ? String(LABEL_EDGE.quietScale) : '';
       const scale: number = quiet ? LABEL_EDGE.quietScale : 1;
-      return { id, x: tag.x, y: tag.y + tag.stack.y, width: tag.width * scale, height: tag.height * scale, reach: tag.reach, offscreen: tag.offscreen };
+      return { id, x: tag.x, y: tag.y + tag.stack.y, home: tag.home, width: tag.width * scale, height: tag.height * scale, reach: tag.reach, offscreen: tag.offscreen };
     });
     const apart: ReadonlyMap<number, number> = keepApart(shown, hudRects, view);
     for (const tag of shown) {
@@ -693,7 +694,6 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         }
       }
       panelCover.cover();
-
     },
   };
 }
