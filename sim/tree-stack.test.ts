@@ -4,8 +4,8 @@ import { loadContent } from './content/content.ts';
 import type { Content, SkillTreeNodeDef } from './content/types.ts';
 import { canAllocate, findNode } from './progression.ts';
 import { heldSpecialties, specialtyPlaces } from './specialty.ts';
-import type { StatStack } from './tree-stack.ts';
-import { bestStack, describeMiss, heroPoints, overBudget, readBudgets, skillModValue, statStack, unbudgeted } from './tree-stack.ts';
+import type { StatStack, TreeBudgets } from './tree-stack.ts';
+import { bestStack, describeMiss, heroPoints, overBudget, readBudgetLevels, readBudgets, skillModValue, statStack, unbudgeted } from './tree-stack.ts';
 
 const content: Content = loadContent();
 const POINTS: number = heroPoints(content, 30);
@@ -99,4 +99,14 @@ void test('budgets are read from data and a stack over one is described by its s
   assert.equal(misses.length, 1);
   assert.equal(describeMiss(misses[0] ?? { stack, budget: 0 }), 'maxLife add stacks to 12, over its budget of 10, holding blade at low life, through a, b');
   assert.deepEqual(unbudgeted([stack, { ...stack, key: 'armour add' }], budgets), ['armour add']);
+});
+
+function budgetLevel(at: number): unknown {
+  return { level: at, stats: { 'maxLife add': at }, skills: {} };
+}
+
+void test('budget levels are read in rising order, and an empty or falling list is refused', (): void => {
+  assert.deepEqual(readBudgetLevels({ levels: [budgetLevel(30), budgetLevel(50)] }, 'budgets').map((budgets: TreeBudgets): number => budgets.level), [30, 50]);
+  assert.throws((): unknown => readBudgetLevels({ levels: [] }, 'budgets'), /at least one/);
+  assert.throws((): unknown => readBudgetLevels({ levels: [budgetLevel(50), budgetLevel(30)] }, 'budgets'), /rising/);
 });

@@ -1,5 +1,5 @@
 import type { Fields } from './content/read.ts';
-import { ContentError, fields, numeric } from './content/read.ts';
+import { ContentError, each, fields, numeric } from './content/read.ts';
 import type { Content, PointGrant, SkillMod, SkillModField, SkillTreeNodeDef, Stance, StatMod, WeaponGroup } from './content/types.ts';
 import { SKILL_MOD_FIELDS, STAT_IDS } from './content/types.ts';
 import { isStartingPlace, placeLinks } from './progression.ts';
@@ -359,6 +359,16 @@ export function readBudgets(raw: unknown, where: string): TreeBudgets {
   const source: Fields = fields(raw, where);
   const level: number = numeric(source, 'level', where);
   return { level, limits: new Map<string, number>([...limitsOf(source['stats'], `${where}.stats`, statBudgetKey), ...limitsOf(source['skills'], `${where}.skills`, skillBudgetKey)]) };
+}
+
+export function readBudgetLevels(raw: unknown, where: string): TreeBudgets[] {
+  const levels: TreeBudgets[] = each(fields(raw, where)['levels'], `${where}.levels`, readBudgets);
+  if (levels.length === 0) throw new ContentError(`${where}.levels`, 'expected at least one level');
+  levels.forEach((budgets: TreeBudgets, at: number): void => {
+    const before: TreeBudgets | undefined = levels[at - 1];
+    if (before !== undefined && budgets.level <= before.level) throw new ContentError(`${where}.levels[${at}]`, 'expected levels in rising order');
+  });
+  return levels;
 }
 
 export interface BudgetMiss {
