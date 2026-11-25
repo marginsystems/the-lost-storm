@@ -1,6 +1,7 @@
 .speech-bubble {
   --speech-max: 248px;
   --speech-tail: 6px;
+  --speech-wait: 90ms;
   position: absolute;
   left: 0;
   top: 0;
@@ -33,7 +34,7 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(3px);
   transform-origin: 50% calc(100% + var(--speech-tail));
-  animation: speech-in var(--spring-bouncy-ms) var(--spring-bouncy) backwards;
+  animation: speech-in var(--spring-bouncy-ms) var(--spring-bouncy) var(--speech-wait) backwards;
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
     scale var(--spring-smooth-ms) var(--spring-smooth),

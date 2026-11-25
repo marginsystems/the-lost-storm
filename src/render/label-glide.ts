@@ -1,5 +1,6 @@
 export const LABEL_GLIDE = {
   frequency: 16,
+  apartFrequency: 34,
   rest: 0.05,
 } as const;
 
@@ -15,15 +16,14 @@ export function createGlide(): LabelGlide {
   return { x: 0, y: 0, vx: 0, vy: 0, started: false };
 }
 
-function settle(position: number, velocity: number, target: number, dt: number): readonly [number, number] {
-  const omega: number = LABEL_GLIDE.frequency;
+function settle(position: number, velocity: number, target: number, dt: number, omega: number): readonly [number, number] {
   const offset: number = position - target;
   const decay: number = Math.exp(-omega * dt);
   const slope: number = velocity + omega * offset;
   return [target + (offset + slope * dt) * decay, (velocity - omega * slope * dt) * decay];
 }
 
-export function glideToward(glide: LabelGlide, targetX: number, targetY: number, dt: number): void {
+export function glideToward(glide: LabelGlide, targetX: number, targetY: number, dt: number, frequency: number = LABEL_GLIDE.frequency): void {
   if (!glide.started) {
     glide.x = targetX;
     glide.y = targetY;
@@ -31,8 +31,8 @@ export function glideToward(glide: LabelGlide, targetX: number, targetY: number,
     return;
   }
   if (dt <= 0) return;
-  const [x, vx] = settle(glide.x, glide.vx, targetX, dt);
-  const [y, vy] = settle(glide.y, glide.vy, targetY, dt);
+  const [x, vx] = settle(glide.x, glide.vx, targetX, dt, frequency);
+  const [y, vy] = settle(glide.y, glide.vy, targetY, dt, frequency);
   glide.x = x;
   glide.y = y;
   glide.vx = vx;

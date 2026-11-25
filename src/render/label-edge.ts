@@ -121,6 +121,7 @@ export interface EdgeTag {
   readonly height: number;
   readonly reach: number;
   readonly offscreen: boolean;
+  readonly home?: number;
 }
 
 export interface EdgeStack {
@@ -128,8 +129,12 @@ export interface EdgeStack {
   readonly quiet: ReadonlySet<number>;
 }
 
+function levelOf(tag: EdgeTag): number {
+  return tag.home ?? tag.y - tag.height / 2;
+}
+
 function liftsUp(tag: EdgeTag, view: ViewSize): boolean {
-  return tag.y - tag.height / 2 >= view.height / 2;
+  return levelOf(tag) >= view.height / 2;
 }
 
 function stackInOrder(ordered: readonly EdgeTag[], fixed: readonly ScreenRect[], view: ViewSize): ReadonlyMap<number, number> {
@@ -153,8 +158,8 @@ function stackInOrder(ordered: readonly EdgeTag[], fixed: readonly ScreenRect[],
 
 function outward(view: ViewSize): (a: EdgeTag, b: EdgeTag) => number {
   return (a: EdgeTag, b: EdgeTag): number => {
-    const rankA: number = liftsUp(a, view) ? -a.y : a.y - view.height;
-    const rankB: number = liftsUp(b, view) ? -b.y : b.y - view.height;
+    const rankA: number = liftsUp(a, view) ? -levelOf(a) : levelOf(a) - view.height;
+    const rankB: number = liftsUp(b, view) ? -levelOf(b) : levelOf(b) - view.height;
     return rankA === rankB ? a.id - b.id : rankA - rankB;
   };
 }

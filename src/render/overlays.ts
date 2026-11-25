@@ -222,7 +222,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       const plate: Element | null = tag.element.firstElementChild;
       if (plate instanceof HTMLElement) plate.style.scale = quiet ? String(LABEL_EDGE.quietScale) : '';
       const scale: number = quiet ? LABEL_EDGE.quietScale : 1;
-      return { id, x: tag.x, y: tag.y + tag.stack.y, width: tag.width * scale, height: tag.height * scale, reach: tag.reach, offscreen: tag.offscreen };
+      return { id, x: tag.x, y: tag.y + tag.stack.y, home: tag.y, width: tag.width * scale, height: tag.height * scale, reach: tag.reach, offscreen: tag.offscreen };
     });
     const apart: ReadonlyMap<number, number> = keepApart(shown, hudRects, view);
     for (const tag of shown) {
