@@ -22,10 +22,11 @@ export function areaOf(skill: SkillDef): AreaDelivery | null {
   return skill.delivery.type === 'area' ? skill.delivery : null;
 }
 
-export function placeArea(world: World, offence: Offence, skill: SkillDef, at: ReadonlyVec2, toward: ReadonlyVec2 = AREAS.facing): AreaState | null {
+export function placeArea(world: World, offence: Offence, skill: SkillDef, at: ReadonlyVec2, toward: ReadonlyVec2 = AREAS.facing, span: number | null = null): AreaState | null {
   const delivery: AreaDelivery | null = areaOf(skill);
   if (delivery === null) return null;
-  const reach: number = delivery.length > 0 ? beamEnd(world, at, toward, delivery.length) : 0;
+  const length: number = delivery.length > 0 ? (span ?? delivery.length) : 0;
+  const reach: number = length > 0 ? beamEnd(world, at, toward, length) : 0;
   const area: AreaState = { id: world.nextId, ownerId: offence.sourceId, from: launchPoint(world, offence.sourceId, { x: at.x, z: at.z }), skill, offence, pos: { x: at.x, z: at.z }, toward: { x: toward.x, z: toward.z }, reach, timeLeft: delivery.duration, pulseLeft: delivery.pulse, pulses: 0 };
   world.nextId += 1;
   world.areas.push(area);

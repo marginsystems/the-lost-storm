@@ -53,8 +53,8 @@ function endsFor(events: readonly WorldEvent[], actorId: number, skill: string):
   return events.some((event: WorldEvent): boolean => event.type === 'channel_end' && event.actorId === actorId && event.skill.id === skill);
 }
 
-void test('the held skills are the channels: the Millwheel, the Firewheel and Living Wire', (): void => {
-  assert.deepEqual(HELD.toSorted(), ['cleave_firewheel', 'cleave_millwheel', 'living_wire']);
+void test('the held skills are the channels: the Millwheel, the Firewheel, Firewall and Living Wire', (): void => {
+  assert.deepEqual(HELD.toSorted(), ['cleave_firewheel', 'cleave_millwheel', 'firewall', 'living_wire']);
 });
 
 for (const held of HELD) {

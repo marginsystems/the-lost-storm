@@ -24,7 +24,7 @@ import { rankSize } from './ranks.ts';
 import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTurn, spendMomentum } from './momentum.ts';
 import type { MomentumStep } from './momentum.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
-import { beginChannel, endChannels } from './channels.ts';
+import { aimChannel, beginChannel, endChannels } from './channels.ts';
 import { needsPivot, turnInPlace, turnRateOf } from './pivot.ts';
 import type { PivotState } from './pivot.ts';
 import { turnToward } from './movement.ts';
@@ -187,7 +187,7 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   actor.combo = requested.combo === null ? null : { skill: requested.id, hits: hits + 1, timeLeft: windup + recovery + requested.combo.window };
   endChannels(world);
   world.events.push({ type: 'skill_start', actorId: actor.id, skill, direction: aim, windup, recovery });
-  beginChannel(world, actor, action);
+  beginChannel(world, actor, action, { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z });
 }
 
 const VOLLEY_SCATTER: number = (Math.sqrt(5) - 1) / 2;
@@ -486,6 +486,7 @@ export function steerAction(world: World, actor: Actor, aim: ReadonlyVec2): void
   action.direction = toward;
   actor.facing = turned;
   if (action.goal !== null) action.goal = { x: aim.x, z: aim.z };
+  aimChannel(world, actor, aim);
   if (action.target === null || action.skill.leap !== null) return;
   const planned: number = reachOf(action.skill, null, Math.hypot(offset.x, offset.z));
   const reach: number = walksTo(action.skill) ? clearReach(world, actor, toward, planned) : planned;

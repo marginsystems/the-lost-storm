@@ -1,6 +1,7 @@
 import type { Fields } from './read.ts';
 import { choice, ContentError, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillLeap, SkillTrail, SummonDef } from './combat-types.ts';
+import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillLeap, SkillTrail, SummonDef, TrailFrom } from './combat-types.ts';
+import { TRAIL_FROM } from './combat-types.ts';
 import type { MonsterRank } from './rank-types.ts';
 import { bodyCrust } from './parse-crust.ts';
 import type { Content, MonsterDef, SkillDef } from './types.ts';
@@ -123,7 +124,8 @@ function element(source: Fields, where: string): MonsterElement {
 function skillTrail(source: Fields, where: string): SkillTrail {
   const limit: number = positive(source, 'limit', where);
   if (!Number.isInteger(limit)) throw new ContentError(`${where}.limit`, 'expected a whole number');
-  return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit };
+  const from: TrailFrom = source['from'] === undefined ? 'feet' : choice(source, 'from', TRAIL_FROM, where);
+  return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit, from, range: from === 'aim' ? positive(source, 'range', where) : 0 };
 }
 
 function trail(source: Fields, where: string): MonsterTrail {
@@ -282,6 +284,7 @@ export function combatProblems(content: Content): string[] {
       need(used.press?.type === 'channel', `skill ${used.id} leaves a trail, but only a held channel lays one`);
       need(left !== undefined, `skill ${used.id} leaves a trail of unknown skill ${used.trail.skill}`);
       if (left !== undefined) need(left.delivery.type === 'area' && left.delivery.anchor === 'ground' && left.leaves === null && left.trail === null, `skill ${used.id} leaves a trail of ${used.trail.skill}, which is not a lasting area on the ground that leaves nothing itself`);
+      if (left !== undefined && used.trail.from === 'aim') need(left.delivery.type === 'area' && left.delivery.length > 0, `skill ${used.id} draws a trail of ${used.trail.skill} where it aims, which is not a lane`);
     }
   }
   return problems;

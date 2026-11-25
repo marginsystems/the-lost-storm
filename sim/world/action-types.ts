@@ -23,4 +23,6 @@ export interface ActionState {
 export interface ChannelState {
   readonly actorId: number;
   readonly action: ActionState;
+  aim: Vec2;
+  last: Vec2 | null;
 }

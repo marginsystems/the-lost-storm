@@ -9,7 +9,7 @@ void test('each new delivery reads from data with its own fields', (): void => {
   assert.deepEqual(shapeDelivery('chain', { range: 9, jumps: 3, jumpRange: 5, falloff: 0.8 }, 'x'), { type: 'chain', range: 9, jumps: 3, jumpRange: 5, falloff: 0.8 });
   assert.deepEqual(shapeDelivery('blink', { range: 7, radius: 0 }, 'x'), { type: 'blink', range: 7, radius: 0 });
   assert.deepEqual(shapeDelivery('beam', { range: 11, width: 0.8 }, 'x'), { type: 'beam', range: 11, width: 0.8 });
-  assert.deepEqual(shapeDelivery('area', { range: 9, radius: 3, duration: 4, pulse: 0.5, pull: 0, slow: 1, anchor: 'ground' }, 'x'), { type: 'area', range: 9, radius: 3, duration: 4, pulse: 0.5, pull: 0, slow: 1, weaken: 0, anchor: 'ground', opening: false, stoke: null, length: 0 });
+  assert.deepEqual(shapeDelivery('area', { range: 9, radius: 3, duration: 4, pulse: 0.5, pull: 0, slow: 1, anchor: 'ground' }, 'x'), { type: 'area', range: 9, radius: 3, duration: 4, pulse: 0.5, pull: 0, slow: 1, weaken: 0, anchor: 'ground', opening: false, stoke: null, length: 0, blocks: false });
   const opening = shapeDelivery('area', { range: 4, radius: 2, duration: 1, pulse: 0, pull: 0, slow: 1, anchor: 'ground', opening: true }, 'x');
   assert.ok(opening.type === 'area' && opening.opening);
 });

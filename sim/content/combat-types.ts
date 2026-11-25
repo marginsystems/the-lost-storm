@@ -82,10 +82,15 @@ export interface MonsterElement {
   readonly resist: number;
 }
 
+export const TRAIL_FROM = ['feet', 'aim'] as const;
+export type TrailFrom = (typeof TRAIL_FROM)[number];
+
 export interface SkillTrail {
   readonly skill: string;
   readonly every: number;
   readonly limit: number;
+  readonly from: TrailFrom;
+  readonly range: number;
 }
 
 export interface MonsterTrail {

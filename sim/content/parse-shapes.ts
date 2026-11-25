@@ -37,6 +37,8 @@ function area(source: Fields, where: string): AreaDelivery {
   const pull: number = nonNegative(source, 'pull', where);
   if (length > 0 && anchor !== 'ground') throw new ContentError(`${where}.length`, 'expected a lane to lie on the ground');
   if (length > 0 && pull > 0) throw new ContentError(`${where}.length`, 'expected a lane that does not pull');
+  const blocks: boolean = source['blocks'] === undefined ? false : flag(source, 'blocks', where);
+  if (blocks && length === 0) throw new ContentError(`${where}.blocks`, 'expected only a lane to block the way');
   return {
     type: 'area',
     range: nonNegative(source, 'range', where),
@@ -50,6 +52,7 @@ function area(source: Fields, where: string): AreaDelivery {
     opening: source['opening'] === undefined ? false : flag(source, 'opening', where),
     stoke,
     length,
+    blocks,
   };
 }
 

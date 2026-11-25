@@ -170,6 +170,25 @@ ${spark(57, 22, 0.9, '#ffe9b8')}
 ${spark(16, 10, 0.8, '#ffd27a')}
 ${spark(50, 8, 0.8, '#ffe9b8')}
 `)],
+  ['firewall', art('fire', `
+${halo(30, 40, 22, '#ff5a12', 0.6)}
+<path d="M0 64 L0 34 C 14 30 22 46 34 42 C 46 38 50 24 64 22 L64 64Z" fill="#0a0302" opacity="0.5"/>
+<path d="M6 54 C 16 46 22 56 32 50 C 42 44 44 34 56 30" stroke="#ff7a1a" stroke-width="4.5" fill="none" stroke-linecap="round" filter="url(#bloom)"/>
+<path d="M6 54 C 16 46 22 56 32 50 C 42 44 44 34 56 30" stroke="#ffd27a" stroke-width="1.5" fill="none" stroke-linecap="round" filter="url(#glow)"/>
+${fire(8, 53, 12, 3.6, 1)}
+${fire(15, 50, 16, 4.2, 1.5)}
+${fire(22, 52, 18, 4.6, 2)}
+${fire(29, 51, 20, 5, 2)}
+${fire(36, 47, 20, 5, 1.5)}
+${fire(43, 41, 17, 4.6, 1)}
+${fire(50, 34, 13, 4, 0.5)}
+<circle cx="56" cy="30" r="3.2" fill="#fff4d6" filter="url(#glow)"/>
+<path d="M56 30 L60 12" stroke="#ffe4a6" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.7"/>
+${spark(60, 12, 1.2, '#ffe9b8')}
+${spark(12, 30, 0.8, '#ffd27a')}
+${spark(34, 26, 0.9, '#ffb43a')}
+${spark(46, 18, 0.7, '#ffd27a')}
+`)],
   ['banked_fire', art('fire', `
 ${halo(32, 44, 22, '#ff5a12', 0.6)}
 <ellipse cx="32" cy="46" rx="27" ry="11" fill="#0a0302" opacity="0.55"/>
