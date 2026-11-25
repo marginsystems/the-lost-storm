@@ -229,20 +229,6 @@
         ]
       },
       {
-        "id": "reeve_lantern",
-        "once": true,
-        "when": [
-          {
-            "type": "flag",
-            "flag": "warden_fell"
-          }
-        ],
-        "lines": [
-          "reeve_into_fire",
-          "reeve_not_lost"
-        ]
-      },
-      {
         "id": "reeve_column",
         "once": true,
         "when": [
@@ -256,6 +242,20 @@
         "lines": [
           "reeve_other_column",
           "reeve_kept_it"
+        ]
+      },
+      {
+        "id": "reeve_lantern",
+        "once": true,
+        "when": [
+          {
+            "type": "flag",
+            "flag": "warden_fell"
+          }
+        ],
+        "lines": [
+          "reeve_into_fire",
+          "reeve_not_lost"
         ]
       },
       {

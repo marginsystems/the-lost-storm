@@ -149,6 +149,9 @@
         "id": "caves",
         "type": "either",
         "text": "Find the Warden in the Hourfall Caves",
+        "sets": {
+          "warden_ahead": "ahead"
+        },
         "paths": [
           {
             "id": "caves_talk",

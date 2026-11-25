@@ -41,7 +41,7 @@
   {"id": "timekeeper_gatekeeper_count", "speaker": "timekeeper_gatekeeper", "text": "Hold still. Let me count you."},
   {"id": "timekeeper_gatekeeper_yours", "speaker": "timekeeper_gatekeeper", "text": "Then the hour is yours."},
   {"id": "timekeeper_reclaimer_early", "speaker": "timekeeper_reclaimer", "text": "You are early. Everyone is early."},
-  {"id": "timekeeper_reclaimer_looked", "speaker": "timekeeper_reclaimer", "text": "There you are. We have looked for you a long time."},
+  {"id": "timekeeper_reclaimer_looked", "speaker": "timekeeper_reclaimer", "text": "There you are, Warden. We have looked for you a long time."},
   {"id": "timekeeper_reclaimer_yours", "speaker": "timekeeper_reclaimer", "text": "Then the hour is yours."},
   {"id": "timekeeper_tallier_came_short", "speaker": "timekeeper_tallier", "text": "You were counted at the Gate, and came up short."},
   {"id": "timekeeper_tallier_kept_here", "speaker": "timekeeper_tallier", "text": "This is where the count is kept. We have all seen you coming."},
