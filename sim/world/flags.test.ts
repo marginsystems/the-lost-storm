@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { ActDef, Content } from '../content/types.ts';
 import { ROAD_CONTENT, roadWorld, roadZone } from '../../test/road-support.ts';
+import { must } from '../../test/support.ts';
 import { writeFlags } from './flags.ts';
 import type { World, WorldEvent } from './types.ts';
 
 function endingWorld(): World {
-  const acts: ActDef[] = ROAD_CONTENT.world.acts.map((act: ActDef): ActDef => ({ ...act, end: { when: [{ type: 'flag', flag: 'doors', is: 'open', not: false }], line: 'The doors open.' } }));
-  const extra: Partial<Content> = { world: { ...ROAD_CONTENT.world, acts } };
+  const act: ActDef = { ...must(ROAD_CONTENT.world.acts[0], 'road act'), end: { when: [{ type: 'flag', flag: 'doors', is: 'open', not: false }], line: 'The doors open.' } };
+  const extra: Partial<Content> = { world: { ...ROAD_CONTENT.world, acts: [act] } };
   return roadWorld(roadZone({}), extra);
 }
 

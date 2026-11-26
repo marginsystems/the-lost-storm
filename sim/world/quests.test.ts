@@ -334,8 +334,8 @@ void test('a path with a condition cannot be met until the condition holds', ():
 });
 
 void test('an act that ends on a quest being done reports its end when the last objective is met', (): void => {
-  const acts: ActDef[] = ROAD_CONTENT.world.acts.map((act: ActDef): ActDef => ({ ...act, end: { when: [{ type: 'quest', quest: 'crossing', is: 'done', not: false }], line: 'Done.' } }));
-  const world: World = roadWorld(roadZone({}), { quests: new Map<string, QuestDef>([[crossing.id, crossing]]), world: { ...ROAD_CONTENT.world, acts } });
+  const act: ActDef = { ...must(ROAD_CONTENT.world.acts[0], 'road act'), end: { when: [{ type: 'quest', quest: 'crossing', is: 'done', not: false }], line: 'Done.' } };
+  const world: World = roadWorld(roadZone({}), { quests: new Map<string, QuestDef>([[crossing.id, crossing]]), world: { ...ROAD_CONTENT.world, acts: [act] } });
   world.player.pos = { x: 28, z: 8 };
   stepWorld(world, [], DT);
   world.player.pos = { x: 16, z: 8 };
