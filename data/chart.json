@@ -1,7 +1,7 @@
 {
   "title": "The Skill Tree",
   "pointsPerLevel": 2,
-  "revision": 9,
+  "revision": 10,
   "specialtyLimit": 3,
   "lowLife": 0.35,
   "twist": 0.08,
@@ -208,6 +208,6 @@
   ],
   "retired": {
     "places": {"blade_still_water": "blade_millrace"},
-    "skills": {"still_water": "millrace", "forkline": "static_field"}
+    "skills": {"still_water": "millrace", "forkline": "static_field", "fire_slam": "firewall"}
   }
 }
