@@ -22,7 +22,7 @@ export interface HintState {
   pickedUp: boolean;
   drank: Set<FlaskResource>;
   upgraded: boolean;
-  skillsUsed: Set<string>;
+  readonly skillsUsed: Set<string>;
   allocatedBase: number;
   equippedUids: ReadonlySet<number>;
   started: boolean;
@@ -198,7 +198,6 @@ function begin(state: HintState, world: World, hint: HintDef): void {
   state.pickedUp = false;
   state.drank = new Set<FlaskResource>();
   state.upgraded = false;
-  state.skillsUsed = new Set<string>();
   state.allocatedBase = world.player.allocated.length;
   state.equippedUids = new Set<number>(wornUids(world));
   state.visibleFor = 0;
@@ -234,6 +233,10 @@ export function stepHints(defs: HintsDef, world: World, state: HintState, input:
   const objective: ObjectiveTarget | null = objectiveTarget(world);
   const next: HintDef | undefined = defs.hints.find((hint: HintDef): boolean => !state.seen.has(hint.id) && hint.after.every((id: string): boolean => state.seen.has(id)) && triggered(hint.trigger, world, objective));
   if (next === undefined) return changes;
+  if (next.done.type === 'skills_used' && finished(next.done, world, state, input.open)) {
+    state.seen.add(next.id);
+    return [{ type: 'hide', hint: next, done: true }];
+  }
   begin(state, world, next);
   changes.push({ type: 'show', hint: next });
   return changes;
