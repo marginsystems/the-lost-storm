@@ -1,4 +1,4 @@
-import { LABEL_EDGE } from './label-edge.ts';
+import { anchorInView, LABEL_EDGE } from './label-edge.ts';
 import type { ViewSize } from './label-edge.ts';
 import type { ScreenRect } from './label-stack.ts';
 import type { TagSize, TagSizes } from './tag-sizes.ts';
@@ -6,6 +6,7 @@ import type { TagSize, TagSizes } from './tag-sizes.ts';
 export const HEAD_TAG = {
   enterInset: 8,
   offClass: 'offscreen',
+  edgeClass: 'edge',
 } as const;
 
 export interface HeadSpot {
@@ -36,4 +37,10 @@ export function showHeadTag(element: HTMLElement, spot: HeadSpot, shown: boolean
   element.classList.toggle(HEAD_TAG.offClass, !seen);
   const size: TagSize | null = seen ? plateSize(element, sizes) : null;
   if (size !== null) rects.push(headTagRect(spot.x, spot.y, size.width, size.height));
+}
+
+export function markEdge(element: HTMLElement, x: number, y: number, view: ViewSize): boolean {
+  const edge: boolean = !anchorInView(x, y, view);
+  element.classList.toggle(HEAD_TAG.edgeClass, edge);
+  return edge;
 }

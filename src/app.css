@@ -567,11 +567,13 @@ body.zone-banner .exit-label span {
   transform-origin: 0 0;
 }
 
-.npc-label.leaving {
+.npc-label.leaving,
+.npc-label.edge {
   pointer-events: none;
 }
 
-.npc-label.leaving span {
+.npc-label.leaving span,
+.npc-label.edge span {
   opacity: 0;
 }
 

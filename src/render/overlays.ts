@@ -19,7 +19,7 @@ import { createLootTip } from './loot-tip.ts';
 import type { LootTip, TipCheck } from './loot-tip.ts';
 import { anchorInView, heldReach, keepApart, keepTagInView, LABEL_EDGE, placeTag, squaredDistance, stackAtEdges } from './label-edge.ts';
 import type { EdgeStack, EdgeTag, ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
-import { headTagRect, plateSize, showHeadTag } from './head-tag.ts';
+import { headTagRect, markEdge, plateSize, showHeadTag } from './head-tag.ts';
 import { foldPiles, settleLabels } from './label-stack.ts';
 import { lootShown, pilesFold } from './loot-shown.ts';
 import type { ItemNames } from './item-names.ts';
@@ -571,8 +571,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         label.element.classList.toggle('secret', !open && label.secret);
         camera.project(label.x, floorUp(label.x, label.lift, label.z), label.z, point);
         anchor.copy(point);
-        const edge: boolean = !anchorInView(point.x, point.y, view);
-        label.element.classList.toggle('edge', edge);
+        const edge: boolean = markEdge(label.element, point.x, point.y, view);
         settleTag(label.element, label.glide, label.stack, dt, !edge && (open || !label.secret));
       }
       if (peopleOf !== world.npcs) showPeople(world);
@@ -591,7 +590,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         label.element.classList.toggle('aimed', label.npc.id === hoveredId);
         camera.project(label.npc.pos.x, floorUp(label.npc.pos.x, hooks.labelRiseOf(label.npc.id, dt), label.npc.pos.z), label.npc.pos.z, point);
         anchor.copy(point);
-        settleTag(label.element, label.glide, label.stack, dt, true);
+        const edge: boolean = markEdge(label.element, point.x, point.y, view);
+        settleTag(label.element, label.glide, label.stack, dt, !edge);
       }
       stackTags(dt);
       for (const label of leaving) {
