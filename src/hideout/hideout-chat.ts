@@ -5,8 +5,9 @@ import type { ChatLine } from '../backend/live-protocol.ts';
 import { sayable } from '../backend/live-protocol.ts';
 import { nameProblem, NAME_MESSAGES, tidyName } from '../lobby/lobby-model.ts';
 import { createBrowserStore } from '../storage.ts';
-import type { ChatState, ChatStep } from './chat.ts';
-import { addNote, CHAT_WORDS, command, EMPTY_CHAT, friendText, GENERAL, receive, renameText, target } from './chat.ts';
+import type { PartyFlow } from '../party/party-flow.ts';
+import type { ChatAction, ChatState, ChatStep } from './chat.ts';
+import { addNote, CHAT_WORDS, command, EMPTY_CHAT, friendText, GENERAL, PARTY, receive, renameText, target } from './chat.ts';
 import { parseChat } from './chat-command.ts';
 import type { ChatView, Submitted } from './chat-view.ts';
 import { createChatView } from './chat-view.ts';
@@ -16,7 +17,7 @@ import type { FriendsView } from './friends-view.ts';
 import { createFriendsView } from './friends-view.ts';
 import type { Mutes } from './mute.ts';
 
-export const HIDEOUT_CHAT = { requestMs: 6000, hintKey: 'the-lost-storm.chat-hint.v1', unsentText: 'Not connected. Try again in a moment.', longText: 'That is too long to send.' } as const;
+export const HIDEOUT_CHAT = { requestMs: 6000, hintKey: 'the-lost-storm.chat-hint.v1', unsentText: 'Not connected. Try again in a moment.', longText: 'That is too long to send.', noParties: 'Parties are not available here.' } as const;
 
 export interface HideoutChat {
   handle(event: LiveEvent): void;
@@ -28,6 +29,7 @@ export interface HideoutChat {
   accept(name: string): Promise<FriendResult>;
   refreshFriends(): void;
   mutesChanged(): void;
+  notice(text: string): void;
 }
 
 function signal(): AbortSignal {
@@ -36,7 +38,26 @@ function signal(): AbortSignal {
 
 export type PickName = (name: string, line: ChatLine | null, anchor: HTMLElement) => void;
 
-export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFocus: () => boolean, mutes: Mutes, pick: PickName): HideoutChat {
+export type ChatParty = Pick<PartyFlow, 'available' | 'say' | 'invite' | 'kick' | 'lead' | 'leave' | 'onNote'>;
+
+type Sendable = Exclude<ChatAction, { readonly kind: 'none' }>;
+
+function textOf(action: Sendable): string | null {
+  switch (action.kind) {
+    case 'say':
+    case 'whisper':
+    case 'party_say':
+      return action.text;
+    case 'party_invite':
+    case 'party_kick':
+    case 'party_lead':
+    case 'party_leave':
+      return null;
+  }
+  return null;
+}
+
+export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFocus: () => boolean, mutes: Mutes, pick: PickName, party: ChatParty): HideoutChat {
   let state: ChatState = EMPTY_CHAT;
   let present: boolean = false;
   let shown: boolean = false;
@@ -59,16 +80,39 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
     show(target(state, { kind: 'whisper', name }));
     view.focus();
   };
+  const dispatch = (action: Sendable): boolean => {
+    switch (action.kind) {
+      case 'say':
+        return server.live.say(action.text);
+      case 'whisper':
+        return server.live.whisper(action.to, action.text);
+      case 'party_say':
+        return party.say(action.text);
+      case 'party_invite':
+        return party.invite(action.name);
+      case 'party_kick':
+        return party.kick(action.name);
+      case 'party_lead':
+        return party.lead(action.name);
+      case 'party_leave':
+        return party.leave();
+    }
+    return false;
+  };
   const submit = (raw: string): Submitted => {
     const step: ChatStep = command(state, parseChat(raw, state.names));
     show(step.state);
     if (step.action.kind === 'none') return { clear: true, keepOpen: step.keepOpen };
-    if (sayable(step.action.text) === null) {
+    const words: string | null = textOf(step.action);
+    if (words !== null && sayable(words) === null) {
       note(HIDEOUT_CHAT.longText);
       return { clear: false, keepOpen: true };
     }
-    const sent: boolean = step.action.kind === 'say' ? server.live.say(step.action.text) : server.live.whisper(step.action.to, step.action.text);
-    if (sent) return { clear: true, keepOpen: false };
+    if (dispatch(step.action)) return { clear: true, keepOpen: false };
+    if (step.action.kind.startsWith('party_') && !party.available()) {
+      note(HIDEOUT_CHAT.noParties);
+      return { clear: true, keepOpen: false };
+    }
     note(HIDEOUT_CHAT.unsentText);
     return { clear: false, keepOpen: true };
   };
@@ -131,6 +175,10 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
       show(target(state, GENERAL));
       view.focus();
     },
+    party: (): void => {
+      show(target(state, PARTY));
+      view.focus();
+    },
     canFocus,
     rename: (name: string): void => void rename(name),
   });
@@ -142,6 +190,7 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
     },
     remove: (name: string): void => void remove(name),
   });
+  party.onNote(note);
   return {
     handle(event: LiveEvent): void {
       if (event.type === 'present') present = event.chat !== null;
@@ -171,5 +220,6 @@ export function startHideoutChat(server: HideoutServer, root: HTMLElement, canFo
       server.live.mute(mutes.list());
       view.render(state);
     },
+    notice: note,
   };
 }

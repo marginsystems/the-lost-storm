@@ -1,0 +1,325 @@
+.party-frame {
+  --party: #9fd9a8;
+  position: absolute;
+  top: calc(36px + env(safe-area-inset-top, 0px));
+  left: 14px;
+  box-sizing: border-box;
+  width: 212px;
+  padding: 8px 10px 6px;
+  border-radius: 6px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-edge);
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-bouncy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+.party-frame.shown {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-bouncy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear 0s;
+}
+
+.party-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.party-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--party);
+}
+
+.party-act {
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition:
+    background var(--spring-smooth-ms) var(--spring-smooth),
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.party-act:hover {
+  background: rgba(255, 255, 255, 0.11);
+  color: var(--text);
+}
+
+.party-act:active {
+  transform: scale(0.96);
+}
+
+.party-member {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-bouncy);
+}
+
+.party-member.shown {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.party-member-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.party-member-top,
+.party-member-bottom {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.party-member-top {
+  padding-top: 5px;
+}
+
+.party-member-bottom {
+  padding-bottom: 3px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.party-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text);
+  transition: color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.party-mark {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--party);
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.party-mark.shown {
+  opacity: 0.8;
+  transform: scale(1);
+}
+
+.party-away {
+  display: none;
+  overflow: hidden;
+  max-width: 0;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  opacity: 0;
+  transition:
+    max-width var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.party-place {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.party-member.offline .party-name {
+  color: var(--text-dim);
+}
+
+.party-invite {
+  --party: #9fd9a8;
+  position: absolute;
+  top: 132px;
+  left: 50%;
+  box-sizing: border-box;
+  width: 296px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-edge);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(-50%, -10px);
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-bouncy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+.party-invite.shown {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-bouncy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear 0s;
+}
+
+.party-invite-text {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.party-invite-time {
+  height: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(159, 217, 168, 0.12);
+}
+
+.party-invite-fill {
+  height: 100%;
+  background: var(--party);
+  transform-origin: left center;
+}
+
+.party-invite-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.party-accept {
+  background: rgba(159, 217, 168, 0.14);
+  color: var(--party);
+}
+
+.party-accept:hover {
+  background: rgba(159, 217, 168, 0.22);
+  color: #d3f0d8;
+}
+
+.hud.fit-sheets .party-invite {
+  top: 8px;
+  width: calc(100% - 16px);
+}
+
+.hud.fit-sheets .party-frame {
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: 8px;
+  width: 182px;
+}
+
+body.touch .party-frame {
+  top: var(--ph-party-y, 199px);
+  left: var(--ph-party-x, 8px);
+  width: var(--ph-party-w, 160px);
+}
+
+body.touch .party-member-bottom {
+  display: none;
+}
+
+body.touch .party-away {
+  display: block;
+}
+
+body.touch .party-member.offline .party-away {
+  max-width: 64px;
+  opacity: 1;
+}
+
+body.touch:has(.ask-line[data-shown='on'], .tc-rotate.on) .hud.ph-invite-on-toast > .party-invite.shown,
+body.touch .hud.ph-invite-on-toast.ph-bark-on-toast:has(> .hud-bark.visible) > .party-invite.shown {
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-bouncy),
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+body.touch .hud.ph-no-party > .party-frame {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.touch .party-invite {
+  top: var(--ph-invite-y, 50%);
+  left: var(--ph-invite-x, 16px);
+  width: var(--ph-invite-w, 300px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 8px 12px;
+  transform: translateY(10px);
+}
+
+body.touch .party-invite.shown {
+  transform: none;
+}
+
+body.touch .party-invite-text {
+  display: -webkit-box;
+  overflow: hidden;
+  grid-row: 1;
+  grid-column: 1;
+  font-size: 12px;
+  line-height: 16px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+body.touch .party-invite-actions {
+  grid-row: 1;
+  grid-column: 2;
+  margin-top: 0;
+}
+
+body.touch .party-invite-time {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  margin-top: 6px;
+}
+
+body.touch .party-invite .party-act {
+  padding: 8px 12px;
+}

@@ -1,6 +1,7 @@
 import type { Clock, Timers } from './backend.ts';
 import { chatRefusal, enterFrame, helloFrame, leaveFrame, LIVE_ZONE, liveUrl, moveFrame, mutesFrame, nextAct, readServerFrame, sameAct, sayable, sayFrame, whisperFrame } from './live-protocol.ts';
 import type { ChatLine, ChatRefusal, LiveAct, LiveMove, LivePlayer, Place, ServerFrame, WhisperDirection, WhisperRefusal, Worn } from './live-protocol.ts';
+import type { PartyFrame } from '../party/party-protocol.ts';
 import type { TradeFrame } from '../player-trade/trade-protocol.ts';
 import type { Play } from './play.ts';
 
@@ -20,7 +21,7 @@ export interface SocketHandlers {
 }
 
 export interface LiveSocket {
-  send(text: string): void;
+  send(text: string): boolean;
   close(): void;
 }
 
@@ -39,6 +40,7 @@ export type LiveEvent =
   | { readonly type: 'moves'; readonly moves: readonly LiveMove[]; readonly at: number }
   | { readonly type: 'friends' }
   | { readonly type: 'trade'; readonly frame: TradeFrame }
+  | { readonly type: 'party'; readonly frame: PartyFrame }
   | { readonly type: 'away' }
   | { readonly type: 'gone' };
 
@@ -60,6 +62,8 @@ export interface Live {
   mute(names: readonly string[]): void;
   canTrade(): boolean;
   trade(frame: string): boolean;
+  canParty(): boolean;
+  party(frame: string): boolean;
   subscribe(listener: LiveListener): () => void;
 }
 
@@ -109,6 +113,7 @@ export function createLive(options: LiveOptions): Live {
   let roaming: boolean | null = null;
   let muted: readonly string[] = [];
   let trading: boolean = false;
+  let partying: boolean = false;
   let elsewhere: boolean = false;
 
   const emit = (event: LiveEvent): void => {
@@ -125,9 +130,14 @@ export function createLive(options: LiveOptions): Live {
     }
   };
 
-  const send = (text: string): void => {
+  const send = (text: string): boolean => {
     const open: LiveSocket | null = socket;
-    if (open !== null) quietly((): void => open.send(text));
+    if (open === null) return false;
+    try {
+      return open.send(text);
+    } catch {
+      return false;
+    }
   };
 
   const drop = (): void => {
@@ -135,6 +145,7 @@ export function createLive(options: LiveOptions): Live {
     socket = null;
     welcomed = false;
     trading = false;
+    partying = false;
     entered = false;
     present = false;
     sent = null;
@@ -159,6 +170,7 @@ export function createLive(options: LiveOptions): Live {
       case 'welcome':
         welcomed = true;
         trading = frame.trade;
+        partying = frame.party;
         if (frame.claimed) options.play?.claimed();
         failures = 0;
         roaming = frame.roaming !== null;
@@ -185,6 +197,9 @@ export function createLive(options: LiveOptions): Live {
         return;
       case 'trade':
         emit({ type: 'trade', frame: frame.frame });
+        return;
+      case 'party':
+        emit({ type: 'party', frame: frame.frame });
         return;
       case 'joined':
         emit({ type: 'joined', player: frame.player });
@@ -342,6 +357,11 @@ export function createLive(options: LiveOptions): Live {
       if (!trading || !present) return false;
       send(frame);
       return true;
+    },
+    canParty: (): boolean => welcomed && partying,
+    party(frame: string): boolean {
+      if (!welcomed || !partying) return false;
+      return send(frame);
     },
     subscribe(listener: LiveListener): () => void {
       listeners.add(listener);

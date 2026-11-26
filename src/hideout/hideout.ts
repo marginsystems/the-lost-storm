@@ -20,13 +20,17 @@ import { createGestureClips, fetchGestureClip } from '../render/gesture-clips.ts
 import type { Sight } from '../render/sight.ts';
 import { createBrowserStore } from '../storage.ts';
 import type { HideoutChat } from './hideout-chat.ts';
-import { startHideoutChat } from './hideout-chat.ts';
+import { HIDEOUT_CHAT, startHideoutChat } from './hideout-chat.ts';
 import type { HideoutMenu } from './hideout-menu.ts';
 import { startHideoutMenu } from './hideout-menu.ts';
 import type { Hud } from '../hud/hud-api.ts';
 import type { PlayerTrade } from '../player-trade/trade-flow.ts';
 import { createTradeFlow } from '../player-trade/trade-flow.ts';
 import { tradeBusy } from '../player-trade/trade-model.ts';
+import type { PartyFlow } from '../party/party-flow.ts';
+import { createPartyFlow } from '../party/party-flow.ts';
+import type { PartyStanding } from '../party/party-model.ts';
+import { partyStanding } from '../party/party-model.ts';
 import type { OtherTarget } from '../render/others.ts';
 import type { MapCharacter } from '../minimap/marks.ts';
 import type { WorldTag } from '../render/world-tag.ts';
@@ -54,7 +58,7 @@ export interface HideoutParts {
   readonly dresser: Dresser;
   readonly gate: TurnGate;
   readonly sight: Sight;
-  readonly screen: Pick<Hud, 'attachPlayerTrade'>;
+  readonly screen: Pick<Hud, 'attachPlayerTrade' | 'attachParty'>;
   readonly sync: () => Promise<void>;
   readonly openProfile: ((name: string) => void) | null;
   readonly speak: (audio: ArrayBuffer, at: Ground) => Promise<void>;
@@ -84,9 +88,18 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
   if (server === null) return null;
   let current: World | null = null;
   const mutes: Mutes = createMutes(createBrowserStore());
-  const chat: HideoutChat = startHideoutChat(server, parts.hud, (): boolean => current !== null && current.dialogue === null && current.player.alive, mutes, (name: string, line: ChatLine | null, anchor: HTMLElement): void => {
-    menu.openName(name, line, anchor);
-  });
+  const party: PartyFlow = createPartyFlow({ live: server.live });
+  parts.screen.attachParty(party);
+  const chat: HideoutChat = startHideoutChat(
+    server,
+    parts.hud,
+    (): boolean => current !== null && current.dialogue === null && current.player.alive,
+    mutes,
+    (name: string, line: ChatLine | null, anchor: HTMLElement): void => {
+      menu.openName(name, line, anchor);
+    },
+    party,
+  );
   const others: Others = createOthers({
     scene: parts.scene,
     library: parts.library,
@@ -101,7 +114,9 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
   });
   const trade: PlayerTrade = createTradeFlow({ live: server.live, world: (): World | null => current, sync: parts.sync, clock: (): number => Date.now(), timers: WINDOW_TIMERS });
   parts.screen.attachPlayerTrade(trade);
-  const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: (name: string): void => chat.openDirect(name), openProfile: parts.openProfile, trade: { ready: (): boolean => trade.ready(), busy: (): boolean => tradeBusy(trade.state()), start: (target: OtherTarget): void => trade.ask(target.id, target.name) } });
+  const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: (name: string): void => chat.openDirect(name), openProfile: parts.openProfile, trade: { ready: (): boolean => trade.ready(), busy: (): boolean => tradeBusy(trade.state()), start: (target: OtherTarget): void => trade.ask(target.id, target.name) }, party: { standing: (name: string): PartyStanding => partyStanding(party.state(), party.available(), name), invite: (name: string): void => {
+        if (!party.invite(name)) chat.notice(HIDEOUT_CHAT.unsentText);
+      } } });
   const standsAt = (line: ChatLine): Ground | null => {
     if (current?.zone.id !== LIVE_ZONE) return null;
     const id: string | null = line.from !== null && others.groundOf(line.from) !== null ? line.from : others.resident(line.name) ? (others.named(line.name)?.id ?? null) : null;
@@ -170,6 +185,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
       current = world;
       step = dt;
       server.live.update({ zone: playing ? world.zone.id : null, x: world.player.pos.x, z: world.player.pos.z, facing: world.player.facing });
+      if (playing) party.where(world.zone.id, world.player.level);
       chat.frame(playing, world.zone.id === LIVE_ZONE);
       const inHideout: boolean = playing && world.zone.id === LIVE_ZONE;
       if (!presenting) {

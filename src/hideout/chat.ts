@@ -2,8 +2,9 @@ import type { FriendResult, NameResult, ReportResult } from '../backend/api.ts';
 import { NAME_MESSAGES } from '../lobby/lobby-model.ts';
 import type { LiveEvent } from '../backend/live.ts';
 import type { ChatLine, ChatRefusal, WhisperDirection, WhisperRefusal } from '../backend/live-protocol.ts';
+import type { PartyFrame } from '../party/party-protocol.ts';
 import type { ChatCommand } from './chat-command.ts';
-import { nameKey } from './chat-command.ts';
+import { CHAT_COMMAND, nameKey } from './chat-command.ts';
 
 export const CHAT = { keep: 120, names: 200 } as const;
 
@@ -15,23 +16,28 @@ export const CHAT_DAYS = {
 
 export const CHAT_WORDS = {
   general: 'General',
+  party: 'Party',
   hint: 'Whisper with /dm name, reply with /r, back to General with /g.',
-  help: '/dm name message whispers to one player. /r message answers the last whisper. /g goes back to General. Put a name with spaces in quotes.',
+  help: '/dm name message whispers to one player. /r message answers the last whisper. /g goes back to General. /invite name asks a player into your party, /p message speaks to it, /leave leaves it. The leader can /kick name and /lead name. Put a name with spaces in quotes.',
   noWhispers: 'Whispers are not available yet.',
   noReply: 'No one has whispered to you yet.',
+  noParty: 'You are not in a party. Ask someone in with /invite name.',
 } as const;
 
 export type NoteKind = 'plain' | 'name' | 'hint';
 
 export type ChatScope = 'everyone' | 'hideout';
 
-export type ChatTarget = { readonly kind: 'general' } | { readonly kind: 'whisper'; readonly name: string };
+export type ChatTarget = { readonly kind: 'general' } | { readonly kind: 'party' } | { readonly kind: 'whisper'; readonly name: string };
 
 export const GENERAL: ChatTarget = { kind: 'general' };
+
+export const PARTY: ChatTarget = { kind: 'party' };
 
 export type ChatEntry =
   | { readonly kind: 'line'; readonly key: string; readonly line: ChatLine; readonly own: boolean }
   | { readonly kind: 'whisper'; readonly key: string; readonly line: ChatLine; readonly dir: WhisperDirection; readonly with: string }
+  | { readonly kind: 'party'; readonly key: string; readonly line: ChatLine; readonly own: boolean }
   | { readonly kind: 'note'; readonly key: string; readonly text: string; readonly note: NoteKind };
 
 export interface ChatState {
@@ -43,14 +49,20 @@ export interface ChatState {
   readonly target: ChatTarget;
   readonly replyTo: string | null;
   readonly names: readonly string[];
+  readonly party: boolean;
 }
 
-export const EMPTY_CHAT: ChatState = { entries: [], you: null, me: null, notes: 0, scope: null, target: GENERAL, replyTo: null, names: [] };
+export const EMPTY_CHAT: ChatState = { entries: [], you: null, me: null, notes: 0, scope: null, target: GENERAL, replyTo: null, names: [], party: false };
 
 export type ChatAction =
   | { readonly kind: 'none' }
   | { readonly kind: 'say'; readonly text: string }
-  | { readonly kind: 'whisper'; readonly to: string; readonly text: string };
+  | { readonly kind: 'whisper'; readonly to: string; readonly text: string }
+  | { readonly kind: 'party_say'; readonly text: string }
+  | { readonly kind: 'party_invite'; readonly name: string }
+  | { readonly kind: 'party_kick'; readonly name: string }
+  | { readonly kind: 'party_lead'; readonly name: string }
+  | { readonly kind: 'party_leave' };
 
 export interface ChatStep {
   readonly state: ChatState;
@@ -186,11 +198,20 @@ export function dayDivider(previous: string | null, at: string | null, now: numb
 
 export function readers(state: ChatState): string {
   if (state.target.kind === 'whisper') return `Only you and ${state.target.name} read this.`;
+  if (state.target.kind === 'party') return 'Only your party reads this.';
   return state.scope === 'hideout' ? 'Everyone in the Hideout reads this.' : 'Everyone online reads this.';
 }
 
 export function destination(aim: ChatTarget): string {
-  return aim.kind === 'whisper' ? `To ${aim.name}` : `To ${CHAT_WORDS.general}`;
+  switch (aim.kind) {
+    case 'whisper':
+      return `To ${aim.name}`;
+    case 'party':
+      return `To ${CHAT_WORDS.party}`;
+    case 'general':
+      return `To ${CHAT_WORDS.general}`;
+  }
+  return `To ${CHAT_WORDS.general}`;
 }
 
 export function isResidentName(name: string, line: ChatLine | null, known: ReadonlySet<string>): boolean {
@@ -255,20 +276,63 @@ export function receive(state: ChatState, event: LiveEvent): ChatState {
       return withName(state, event.player.name);
     case 'look':
       return event.name === null ? state : withName(state, event.name);
+    case 'party':
+      return partyReceive(state, event.frame);
+    case 'gone':
+      return state.party || state.target.kind === 'party' ? { ...state, party: false, target: state.target.kind === 'party' ? GENERAL : state.target } : state;
     case 'left':
     case 'moves':
     case 'friends':
     case 'trade':
     case 'away':
-    case 'gone':
+      return state;
+  }
+  return state;
+}
+
+function partyReceive(state: ChatState, frame: PartyFrame): ChatState {
+  switch (frame.type) {
+    case 'party_said':
+      return withEntries(state, [{ kind: 'party', key: `party-${String(frame.line.id)}`, line: frame.line, own: frame.line.own === true }]);
+    case 'party_state': {
+      const party: boolean = frame.members.length > 0;
+      if (party === state.party) return state;
+      return { ...state, party, target: !party && state.target.kind === 'party' ? GENERAL : state.target };
+    }
+    case 'party_invited':
+    case 'party_note':
+    case 'party_refused':
       return state;
   }
   return state;
 }
 
 export function target(state: ChatState, next: ChatTarget): ChatState {
-  if (next.kind === 'general') return state.target.kind === 'general' ? state : { ...state, target: GENERAL };
-  return withName({ ...state, target: next }, next.name);
+  switch (next.kind) {
+    case 'general':
+      return state.target.kind === 'general' ? state : { ...state, target: GENERAL };
+    case 'party':
+      return state.target.kind === 'party' ? state : { ...state, target: PARTY };
+    case 'whisper':
+      return withName({ ...state, target: next }, next.name);
+  }
+  return state;
+}
+
+function none(state: ChatState, keepOpen: boolean = false): ChatStep {
+  return { state, action: { kind: 'none' }, keepOpen };
+}
+
+function toParty(state: ChatState, text: string | null): ChatStep {
+  if (!state.party) return none(addNote(state, CHAT_WORDS.noParty));
+  const aimed: ChatState = target(state, PARTY);
+  return text === null ? none(aimed, true) : { state: aimed, action: { kind: 'party_say', text }, keepOpen: false };
+}
+
+function noNameText(typed: string): string {
+  const word: string = typed.slice(CHAT_COMMAND.prefix.length);
+  const whispers: boolean = CHAT_COMMAND.whisper.some((known: string): boolean => known === word);
+  return whispers ? `Name a player: ${typed} name message` : `Name a player: ${typed} name`;
 }
 
 function whisperTo(state: ChatState, name: string, text: string | null): ChatStep {
@@ -282,7 +346,19 @@ export function command(state: ChatState, parsed: ChatCommand): ChatStep {
     case 'empty':
       return { state, action: { kind: 'none' }, keepOpen: false };
     case 'say':
-      return state.target.kind === 'whisper' ? whisperTo(state, state.target.name, parsed.text) : { state, action: { kind: 'say', text: parsed.text }, keepOpen: false };
+      if (state.target.kind === 'whisper') return whisperTo(state, state.target.name, parsed.text);
+      if (state.target.kind === 'party') return toParty(state, parsed.text);
+      return { state, action: { kind: 'say', text: parsed.text }, keepOpen: false };
+    case 'party':
+      return toParty(state, parsed.text);
+    case 'invite':
+      return { state, action: { kind: 'party_invite', name: parsed.name }, keepOpen: false };
+    case 'kick':
+      return { state, action: { kind: 'party_kick', name: parsed.name }, keepOpen: false };
+    case 'lead':
+      return { state, action: { kind: 'party_lead', name: parsed.name }, keepOpen: false };
+    case 'leave':
+      return state.party ? { state, action: { kind: 'party_leave' }, keepOpen: false } : none(addNote(state, CHAT_WORDS.noParty));
     case 'general': {
       const back: ChatState = target(state, GENERAL);
       return parsed.text === null ? { state: back, action: { kind: 'none' }, keepOpen: true } : { state: back, action: { kind: 'say', text: parsed.text }, keepOpen: false };
@@ -294,9 +370,9 @@ export function command(state: ChatState, parsed: ChatCommand): ChatStep {
     case 'help':
       return { state: addNote(state, CHAT_WORDS.help, 'hint'), action: { kind: 'none' }, keepOpen: false };
     case 'no_name':
-      return { state: addNote(state, `Name a player: ${parsed.command} name message`), action: { kind: 'none' }, keepOpen: false };
+      return { state: addNote(state, noNameText(parsed.command)), action: { kind: 'none' }, keepOpen: false };
     case 'unknown':
-      return { state: addNote(state, `${parsed.command} is not a command. Try /dm name, /r or /g.`), action: { kind: 'none' }, keepOpen: false };
+      return { state: addNote(state, `${parsed.command} is not a command. Try /dm name, /r, /g, /invite name or /p.`), action: { kind: 'none' }, keepOpen: false };
   }
   return { state, action: { kind: 'none' }, keepOpen: false };
 }
@@ -307,6 +383,8 @@ export function speaker(entry: ChatEntry): string | null {
       return entry.own ? null : entry.line.name;
     case 'whisper':
       return entry.with;
+    case 'party':
+      return entry.own ? null : entry.line.name;
     case 'note':
       return null;
   }

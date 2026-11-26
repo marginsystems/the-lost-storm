@@ -49,8 +49,9 @@ function harness(play: Play | null = null): Harness {
         const socket: FakeSocket = { url, sent: [], handlers, closed: false };
         sockets.push(socket);
         return {
-          send: (text: string): void => {
+          send: (text: string): boolean => {
             socket.sent.push(JSON.parse(text));
+            return true;
           },
           close: (): void => {
             socket.closed = true;
@@ -117,7 +118,7 @@ void test('the token goes only in the first frame and enter follows the welcome'
   h.live.update(HIDEOUT);
   assert.deepEqual(socket.sent, []);
   socket.handlers.open();
-  assert.deepEqual(socket.sent, [{ type: 'hello', token: 'secret-token', chat: 1, trade: 1 }]);
+  assert.deepEqual(socket.sent, [{ type: 'hello', token: 'secret-token', chat: 1, trade: 1, party: 1 }]);
   h.live.update(HIDEOUT);
   assert.equal(socket.sent.length, 1);
   say(socket, { type: 'welcome' });
@@ -214,7 +215,7 @@ void test('with no token yet it waits instead of connecting', async (): Promise<
   await h.timers.advance(LIVE.tokenWaitMs);
   h.live.update(HIDEOUT);
   last(h).handlers.open();
-  assert.deepEqual(last(h).sent, [{ type: 'hello', token: 'later', chat: 1, trade: 1 }]);
+  assert.deepEqual(last(h).sent, [{ type: 'hello', token: 'later', chat: 1, trade: 1, party: 1 }]);
 });
 
 void test('a full Hideout or a second tab stands down until the player comes back', (): void => {
@@ -444,7 +445,7 @@ void test('a fresh page claims in its hello, so it is never judged before it has
   const play: Play = createPlay('page-a');
   const h: Harness = harness(play);
   const first: FakeSocket = joined(h, { type: 'welcome', you: 'c1', chat: [], claimed: true });
-  assert.deepEqual(first.sent[0], { type: 'hello', token: 'secret-token', chat: 1, trade: 1, play: 'page-a', claim: true });
+  assert.deepEqual(first.sent[0], { type: 'hello', token: 'secret-token', chat: 1, trade: 1, party: 1, play: 'page-a', claim: true });
   assert.deepEqual(play.stamp(), { id: 'page-a', claim: false });
   first.handlers.closed(1006);
   await h.timers.advance(LIVE.longestRetryMs);
@@ -452,7 +453,7 @@ void test('a fresh page claims in its hello, so it is never judged before it has
   const again: FakeSocket = last(h);
   assert.notEqual(again, first);
   again.handlers.open();
-  assert.deepEqual(again.sent[0], { type: 'hello', token: 'secret-token', chat: 1, trade: 1, play: 'page-a' });
+  assert.deepEqual(again.sent[0], { type: 'hello', token: 'secret-token', chat: 1, trade: 1, party: 1, play: 'page-a' });
 });
 
 void test('a welcome from an older server that does not say it claimed leaves the claim to the first save', (): void => {

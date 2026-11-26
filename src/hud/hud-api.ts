@@ -1,3 +1,4 @@
+import type { PartyFlow } from '../party/party-flow.ts';
 import type { PlayerTrade } from '../player-trade/trade-flow.ts';
 import type { FrameTargets } from '../../sim/world/objective.ts';
 import type { UiAction } from '../../sim/content/audio.ts';
@@ -48,4 +49,5 @@ export interface Hud {
   moveGroundItem(x: number, y: number): void;
   hideGroundItem(): void;
   attachPlayerTrade(flow: PlayerTrade): void;
+  attachParty(flow: PartyFlow): void;
 }

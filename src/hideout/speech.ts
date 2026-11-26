@@ -91,6 +91,7 @@ export function heard(state: SpeechState, event: LiveEvent): SpeechState {
     case 'moves':
     case 'friends':
     case 'trade':
+    case 'party':
       return state;
   }
   return state;
@@ -112,6 +113,7 @@ export function spokenOf(state: SpeechState, event: LiveEvent): SpokenLine | nul
     case 'moves':
     case 'friends':
     case 'trade':
+    case 'party':
     case 'away':
     case 'gone':
       return null;

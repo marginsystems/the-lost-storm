@@ -6,6 +6,11 @@ export const CHAT_COMMAND = {
   general: ['g', 'general'],
   whisper: ['dm', 'w', 'whisper'],
   reply: ['r', 'reply'],
+  party: ['p', 'party'],
+  invite: ['invite', 'inv'],
+  kick: ['kick'],
+  lead: ['lead', 'promote'],
+  leave: ['leave'],
   help: ['help', '?'],
 } as const;
 
@@ -15,6 +20,11 @@ export type ChatCommand =
   | { readonly kind: 'general'; readonly text: string | null }
   | { readonly kind: 'whisper'; readonly name: string; readonly text: string | null }
   | { readonly kind: 'reply'; readonly text: string | null }
+  | { readonly kind: 'party'; readonly text: string | null }
+  | { readonly kind: 'invite'; readonly name: string }
+  | { readonly kind: 'kick'; readonly name: string }
+  | { readonly kind: 'lead'; readonly name: string }
+  | { readonly kind: 'leave' }
   | { readonly kind: 'help' }
   | { readonly kind: 'no_name'; readonly command: string }
   | { readonly kind: 'unknown'; readonly command: string };
@@ -80,6 +90,13 @@ export function parseChat(raw: string, names: readonly string[]): ChatCommand {
   if (among(word, CHAT_COMMAND.general)) return { kind: 'general', text: textOf(rest) };
   if (among(word, CHAT_COMMAND.reply)) return { kind: 'reply', text: textOf(rest) };
   if (among(word, CHAT_COMMAND.help)) return { kind: 'help' };
+  if (among(word, CHAT_COMMAND.party)) return { kind: 'party', text: textOf(rest) };
+  if (among(word, CHAT_COMMAND.leave)) return { kind: 'leave' };
+  const partyCommand: 'invite' | 'kick' | 'lead' | null = among(word, CHAT_COMMAND.invite) ? 'invite' : among(word, CHAT_COMMAND.kick) ? 'kick' : among(word, CHAT_COMMAND.lead) ? 'lead' : null;
+  if (partyCommand !== null) {
+    const target: Named | null = named(rest, names);
+    return target === null ? { kind: 'no_name', command: `${CHAT_COMMAND.prefix}${word}` } : { kind: partyCommand, name: target.name };
+  }
   if (among(word, CHAT_COMMAND.whisper)) {
     const target: Named | null = named(rest, names);
     return target === null ? { kind: 'no_name', command: `${CHAT_COMMAND.prefix}${word}` } : { kind: 'whisper', name: target.name, text: textOf(target.rest) };

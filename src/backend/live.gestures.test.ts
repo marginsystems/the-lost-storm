@@ -23,8 +23,9 @@ function entered(first: Stand = HIDEOUT): Sent {
     open: (_url: string, given: SocketHandlers) => {
       opened.push(given);
       return {
-        send: (text: string): void => {
+        send: (text: string): boolean => {
           sent.push(JSON.parse(text));
+          return true;
         },
         close: (): void => undefined,
       };

@@ -14,6 +14,7 @@ const FACTS: MenuFacts = {
   canMessage: false,
   canProfile: false,
   trade: 'unsupported',
+  party: 'unsupported',
   reported: false,
   busy: new Set<EntryId>(),
 };
@@ -30,10 +31,10 @@ function act(facts: MenuFacts, id: EntryId): MenuAction | null {
   return actionOf(entry(facts, id), facts);
 }
 
-void test('the menu always has the same seven entries in the same order, so it never changes shape', (): void => {
+void test('the menu always has the same eight entries in the same order, so it never changes shape', (): void => {
   const variants: readonly MenuFacts[] = [FACTS, { ...FACTS, blocked: true, muted: true, friend: 'friends', canMessage: true, canProfile: true, trade: 'ready' }, { ...FACTS, blocksAvailable: false, reportAvailable: false }];
   const shapes: readonly (readonly EntryId[])[] = variants.map((facts: MenuFacts): readonly EntryId[] => menuEntries(facts).map((made: MenuEntry): EntryId => made.id));
-  for (const shape of shapes) assert.deepEqual(shape, ['profile', 'message', 'trade', 'friend', 'mute', 'block', 'report']);
+  for (const shape of shapes) assert.deepEqual(shape, ['profile', 'message', 'trade', 'party', 'friend', 'mute', 'block', 'report']);
 });
 
 void test('Profile, Message and Trade that the server does not offer are shown disabled with Soon', (): void => {

@@ -1,4 +1,5 @@
 import type { FriendsList } from '../backend/api.ts';
+import type { PartyStanding } from '../party/party-model.ts';
 
 export const PLAYER_MENU = {
   reach: 14,
@@ -8,7 +9,7 @@ export const PLAYER_MENU = {
 
 export type FriendStanding = 'none' | 'requested' | 'incoming' | 'friends' | 'unknown';
 
-export type EntryId = 'profile' | 'message' | 'trade' | 'friend' | 'mute' | 'block' | 'report';
+export type EntryId = 'profile' | 'message' | 'trade' | 'party' | 'friend' | 'mute' | 'block' | 'report';
 
 export type MenuStep = 'entries' | 'confirm_block' | 'report';
 
@@ -32,6 +33,7 @@ export interface MenuFacts {
   readonly canMessage: boolean;
   readonly canProfile: boolean;
   readonly trade: TradeStanding;
+  readonly party: PartyStanding;
   readonly reported: boolean;
   readonly busy: ReadonlySet<EntryId>;
 }
@@ -48,6 +50,7 @@ export type MenuAction =
   | { readonly type: 'profile' }
   | { readonly type: 'message' }
   | { readonly type: 'trade' }
+  | { readonly type: 'invite' }
   | { readonly type: 'befriend' }
   | { readonly type: 'accept' }
   | { readonly type: 'mute' }
@@ -131,12 +134,30 @@ function tradeEntry(facts: MenuFacts): MenuEntry {
   return { id: 'trade', label: 'Trade', detail: tradeDetail(facts), enabled: facts.trade === 'ready' && !facts.blocked && !facts.busy.has('trade'), soon: facts.trade === 'unsupported' };
 }
 
+function partyEntry(facts: MenuFacts): MenuEntry {
+  const label: string = 'Invite to party';
+  switch (facts.party) {
+    case 'ready':
+      return { id: 'party', label, detail: facts.blocked ? 'Unblock them first' : 'Play together', enabled: !facts.blocked && !facts.busy.has('party'), soon: false };
+    case 'unsupported':
+      return { id: 'party', label, detail: PLAYER_MENU.soon, enabled: false, soon: true };
+    case 'member':
+      return { id: 'party', label: 'In your party', detail: 'You play together', enabled: false, soon: false };
+    case 'not_leader':
+      return { id: 'party', label, detail: 'Only the leader invites', enabled: false, soon: false };
+    case 'full':
+      return { id: 'party', label, detail: 'Your party is full', enabled: false, soon: false };
+  }
+  return { id: 'party', label, detail: PLAYER_MENU.soon, enabled: false, soon: true };
+}
+
 export function menuEntries(facts: MenuFacts): readonly MenuEntry[] {
   const busy = (id: EntryId): boolean => facts.busy.has(id);
   return [
     { id: 'profile', label: 'Profile', detail: facts.canProfile ? 'What they wear and how far they came' : PLAYER_MENU.soon, enabled: facts.canProfile, soon: !facts.canProfile },
     { id: 'message', label: 'Message', detail: facts.canMessage ? 'Write to them alone' : PLAYER_MENU.soon, enabled: facts.canMessage && !facts.blocked, soon: !facts.canMessage },
     tradeEntry(facts),
+    partyEntry(facts),
     friendEntry(facts),
     { id: 'mute', label: facts.muted ? 'Unmute' : 'Mute', detail: facts.muted ? 'Show their chat again' : 'Hide their chat', enabled: true, soon: false },
     { id: 'block', label: facts.blocked ? 'Unblock' : 'Block', detail: facts.blocked ? 'Take their requests again' : 'Hide them and refuse their requests', enabled: facts.blocksAvailable && !busy('block'), soon: false },
@@ -153,6 +174,8 @@ export function actionOf(entry: MenuEntry, facts: MenuFacts): MenuAction | null 
       return { type: 'message' };
     case 'trade':
       return { type: 'trade' };
+    case 'party':
+      return { type: 'invite' };
     case 'friend':
       return facts.friend === 'incoming' ? { type: 'accept' } : facts.friend === 'none' ? { type: 'befriend' } : null;
     case 'mute':

@@ -50,6 +50,10 @@ export const PHONE = {
   meterHeight: 28,
   meterMaxWidth: 200,
   meterMinWidth: 140,
+  partyHeight: 104,
+  partyMinWidth: 120,
+  partyMaxWidth: 190,
+  inviteHeight: 64,
 } as const;
 
 export interface Rect {
@@ -101,6 +105,8 @@ export interface PhoneLayout {
   readonly banner: Rect;
   readonly target: Rect;
   readonly meter: Rect;
+  readonly party: Rect | null;
+  readonly invite: Rect;
   readonly xp: Rect;
   readonly stick: Rect;
   readonly attack: Rect;
@@ -298,8 +304,14 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const aboveToast: Rect = { x: toast.x, y: toast.y - PHONE.gap - PHONE.barkHeight, w: toast.w, h: PHONE.barkHeight };
   const standing: readonly Rect[] = [...open, target, meter];
   const bark: Rect = aboveToast.y >= top && !standing.some((rect: Rect): boolean => overlaps(rect, aboveToast)) ? aboveToast : toast;
+  const partyRow: Rect = freeRow([bottom(meter) + PHONE.gap, bottom(target) + PHONE.gap, underCluster], PHONE.partyHeight, PHONE.partyMinWidth, PHONE.partyMaxWidth, left, rightEdge, [...standing, bark, toast]);
+  const party: Rect | null = partyRow.w >= PHONE.partyMinWidth ? partyRow : null;
+  const above = (rect: Rect): Rect => ({ x: toast.x, y: rect.y - PHONE.gap - PHONE.inviteHeight, w: toast.w, h: PHONE.inviteHeight });
+  const inviteBlockers: readonly Rect[] = [...standing.filter((rect: Rect): boolean => rect !== quests), toast, bark, ...(party === null ? [] : [party])];
+  const inviteClear = (rect: Rect): boolean => rect.y >= top && !inviteBlockers.some((other: Rect): boolean => overlaps(other, rect));
+  const invite: Rect = [above(bark), above(toast)].find(inviteClear) ?? toast;
 
-  return { life, mana, menu, zone, minimap, caption, quests, hint, toast, bark, dialogue, card, banner, target, meter, xp, stick, attack, skills, flasks };
+  return { life, mana, menu, zone, minimap, caption, quests, hint, toast, bark, dialogue, card, banner, target, meter, party, invite, xp, stick, attack, skills, flasks };
 }
 
 export function layoutRects(layout: PhoneLayout): NamedRect[] {

@@ -9,6 +9,7 @@ import { blockSettled, blocksFetched, blockText, isBlocked, NO_BLOCKS } from './
 import { friendText, reportText } from './chat.ts';
 import type { HideoutChat } from './hideout-chat.ts';
 import type { Mutes } from './mute.ts';
+import type { PartyStanding } from '../party/party-model.ts';
 import type { CloseReason, EntryId, MenuFacts, TradeStanding } from './player-menu.ts';
 import { closeReason, friendStanding, tradeStanding } from './player-menu.ts';
 import type { MenuChoice, PlayerMenuView } from './player-menu-view.ts';
@@ -32,6 +33,12 @@ export interface HideoutMenuOptions {
   readonly openDirect: ((name: string) => void) | null;
   readonly openProfile: ((name: string) => void) | null;
   readonly trade: TradeStarter | null;
+  readonly party: PartyInviter | null;
+}
+
+export interface PartyInviter {
+  standing(name: string): PartyStanding;
+  invite(name: string): void;
 }
 
 export interface TradeStarter {
@@ -151,6 +158,7 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
     canMessage: options.openDirect !== null,
     canProfile: options.openProfile !== null,
     trade: tradeOf(from, options.trade, others, where),
+    party: options.party?.standing(name) ?? 'unsupported',
     reported: reported.has(reportKey(from)),
     busy,
     };
@@ -238,6 +246,10 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
         view.close('outside');
         return;
       }
+      case 'invite':
+        options.party?.invite(name);
+        view.close('outside');
+        return;
       case 'befriend':
         befriend(name, false);
         return;

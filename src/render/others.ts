@@ -386,6 +386,7 @@ export function createOthers(options: OthersOptions): Others {
         case 'refused':
         case 'friends':
         case 'trade':
+        case 'party':
           return;
       }
     },

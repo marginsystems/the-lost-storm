@@ -141,6 +141,18 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   set('--ph-target-x', layout.target.x);
   set('--ph-target-y', layout.target.y);
   set('--ph-target-w', layout.target.w);
+  set('--ph-invite-x', layout.invite.x);
+  set('--ph-invite-y', layout.invite.y);
+  set('--ph-invite-w', layout.invite.w);
+  hudRoot.classList.toggle('ph-invite-on-toast', layout.invite.y === layout.toast.y);
+  hudRoot.classList.toggle('ph-bark-on-toast', layout.bark.y === layout.toast.y);
+  const party: Rect | null = layout.party;
+  hudRoot.classList.toggle('ph-no-party', party === null);
+  if (party !== null) {
+    set('--ph-party-x', party.x);
+    set('--ph-party-y', party.y);
+    set('--ph-party-w', party.w);
+  }
   set('--ph-zone-w', layout.zone.w);
   set('--ph-dialogue-x', layout.dialogue.x);
   set('--ph-dialogue-bottom', height - layout.dialogue.y - layout.dialogue.h);

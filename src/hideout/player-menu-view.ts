@@ -119,7 +119,7 @@ export function createPlayerMenuView(options: PlayerMenuViewOptions): PlayerMenu
   let canvasPress: boolean = false;
   let current: MenuStep = 'entries';
 
-  for (const id of ['profile', 'message', 'trade', 'friend', 'mute', 'block', 'report'] as const) {
+  for (const id of ['profile', 'message', 'trade', 'party', 'friend', 'mute', 'block', 'report'] as const) {
     const made: HTMLButtonElement = button('player-menu-item', list);
     made.setAttribute('role', 'menuitem');
     const label: HTMLSpanElement = make('span', 'pm-label', made);

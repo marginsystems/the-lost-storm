@@ -1,0 +1,40 @@
+.hideout-chat {
+  --party: #9fd9a8;
+  --party-dim: rgba(159, 217, 168, 0.62);
+}
+
+.chat-party-tab {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+  color: var(--party-dim);
+  transition: color var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chat-party-tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.chat-party-tab.active {
+  color: var(--party);
+  cursor: default;
+}
+
+.chat-party .chat-dir {
+  color: var(--party-dim);
+  padding-right: 4px;
+}
+
+.chat-party .chat-name {
+  color: var(--party);
+}
+
+.chat-party .chat-name:hover {
+  color: #d3f0d8;
+}
+
+.chat-party .chat-text {
+  color: #dcefe0;
+}

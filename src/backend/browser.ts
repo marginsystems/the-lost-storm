@@ -87,8 +87,10 @@ function openBrowserSocket(url: string, handlers: SocketHandlers): LiveSocket {
   socket.addEventListener('message', (event: MessageEvent<unknown>): void => handlers.message(event.data));
   socket.addEventListener('close', (event: CloseEvent): void => handlers.closed(event.code));
   return {
-    send(text: string): void {
-      if (socket.readyState === WebSocket.OPEN) socket.send(text);
+    send(text: string): boolean {
+      if (socket.readyState !== WebSocket.OPEN) return false;
+      socket.send(text);
+      return true;
     },
     close(): void {
       socket.close();

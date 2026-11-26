@@ -1,6 +1,8 @@
 import type { Fields } from '../../sim/content/read.ts';
 import { isFields } from '../../sim/content/read.ts';
 import { gestureOf } from '../../sim/content/gestures.ts';
+import type { PartyFrame } from '../party/party-protocol.ts';
+import { PARTY_VERSION, readPartyFrame } from '../party/party-protocol.ts';
 import type { TradeFrame } from '../player-trade/trade-protocol.ts';
 import { LIVE_TRADE_VERSION, readTradeFrame } from '../player-trade/trade-protocol.ts';
 import type { PlayStamp } from './play.ts';
@@ -100,7 +102,7 @@ export interface Welcome {
 }
 
 export type ServerFrame =
-  | { readonly type: 'welcome'; readonly roaming: Welcome | null; readonly trade: boolean; readonly claimed: boolean }
+  | { readonly type: 'welcome'; readonly roaming: Welcome | null; readonly trade: boolean; readonly party: boolean; readonly claimed: boolean }
   | { readonly type: 'present'; readonly zone: string; readonly you: string; readonly players: readonly LivePlayer[]; readonly chat: readonly ChatLine[] | null }
   | { readonly type: 'said'; readonly line: ChatLine }
   | { readonly type: 'whisper'; readonly dir: WhisperDirection; readonly with: string; readonly line: ChatLine }
@@ -114,7 +116,8 @@ export type ServerFrame =
   | { readonly type: 'elsewhere' }
   | { readonly type: 'friends' }
   | { readonly type: 'refused'; readonly reason: Refusal }
-  | { readonly type: 'trade'; readonly frame: TradeFrame };
+  | { readonly type: 'trade'; readonly frame: TradeFrame }
+  | { readonly type: 'party'; readonly frame: PartyFrame };
 
 export interface Place {
   readonly x: number;
@@ -221,7 +224,7 @@ function readEach<T>(value: unknown, read: (entry: unknown) => T | null, limit: 
 function readFields(source: Fields): ServerFrame | null {
   switch (source['type']) {
     case 'welcome':
-      return { type: 'welcome', roaming: readWelcome(source), trade: source['trade'] === LIVE_TRADE_VERSION, claimed: source['claimed'] === true };
+      return { type: 'welcome', roaming: readWelcome(source), trade: source['trade'] === LIVE_TRADE_VERSION, party: source['party'] === PARTY_VERSION, claimed: source['claimed'] === true };
     case 'full':
       return { type: 'full' };
     case 'replaced':
@@ -277,6 +280,8 @@ function readFields(source: Fields): ServerFrame | null {
       return reason === undefined ? null : { type: 'refused', reason };
     }
     default: {
+      const party: PartyFrame | null = readPartyFrame(source, readLine);
+      if (party !== null) return { type: 'party', frame: party };
       const frame: TradeFrame | null = readTradeFrame(source);
       return frame === null ? null : { type: 'trade', frame };
     }
@@ -295,9 +300,9 @@ export function readServerFrame(data: unknown): ServerFrame | null {
 }
 
 export function helloFrame(token: string, play: PlayStamp | null = null): string {
-  if (play === null) return JSON.stringify({ type: 'hello', token, chat: LIVE_CHAT_VERSION, trade: LIVE_TRADE_VERSION });
-  if (play.claim) return JSON.stringify({ type: 'hello', token, chat: LIVE_CHAT_VERSION, trade: LIVE_TRADE_VERSION, play: play.id, claim: true });
-  return JSON.stringify({ type: 'hello', token, chat: LIVE_CHAT_VERSION, trade: LIVE_TRADE_VERSION, play: play.id });
+  if (play === null) return JSON.stringify({ type: 'hello', token, chat: LIVE_CHAT_VERSION, trade: LIVE_TRADE_VERSION, party: PARTY_VERSION });
+  if (play.claim) return JSON.stringify({ type: 'hello', token, chat: LIVE_CHAT_VERSION, trade: LIVE_TRADE_VERSION, party: PARTY_VERSION, play: play.id, claim: true });
+  return JSON.stringify({ type: 'hello', token, chat: LIVE_CHAT_VERSION, trade: LIVE_TRADE_VERSION, party: PARTY_VERSION, play: play.id });
 }
 
 function rounded(value: number): number {

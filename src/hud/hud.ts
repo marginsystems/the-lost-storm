@@ -107,8 +107,12 @@ import tradeCss from './trade.css?inline';
 import runTableCss from './run-table.css?inline';
 import auctionCss from './auction.css?inline';
 import playerTradeCss from './player-trade.css?inline';
+import partyCss from './party.css?inline';
 import type { PlayerTradeMount } from './player-trade-panel.ts';
 import { mountPlayerTrade } from './player-trade-panel.ts';
+import type { PartyMount } from './party-panel.ts';
+import { mountParty } from './party-panel.ts';
+import type { PartyFlow } from '../party/party-flow.ts';
 import type { PlayerTrade } from '../player-trade/trade-flow.ts';
 import dropdownCss from './dropdown.css?inline';
 import weaponHudCss from './weapon-hud.css?inline';
@@ -144,7 +148,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${itemPlateCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${bossPiecesCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${chartOverviewCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${auraSignCss}\n${menuCss}\n${weaponHudCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${itemPlateCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${bossPiecesCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${chartOverviewCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${partyCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${auraSignCss}\n${menuCss}\n${weaponHudCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -266,6 +270,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   for (const panel of HUD_PANELS) track(panels[panel].element);
   const trade: TradeHud = createTradeHud(root, context, track, overlays, panels.inventory.element);
   let playerTrade: PlayerTradeMount | null = null;
+  let party: PartyMount | null = null;
   for (const view of trade.panels) {
     createCloseButton(view.element, 'Trade', (): void => {
       overlays.send({ type: 'close', id: 'trade' });
@@ -337,6 +342,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
         if (chartPanel.warm()) warmWanted = false;
       }
       playerTrade?.update(Date.now());
+      party?.update(Date.now());
       fps.frame(performance.now(), view);
       globes.update(world.player, dt);
       tailwind.update(world.tailwind, world.content.tailwind, dt);
@@ -554,6 +560,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     },
     attachPlayerTrade(flow: PlayerTrade): void {
       playerTrade ??= mountPlayerTrade(root, context, flow, track);
+    },
+    attachParty(flow: PartyFlow): void {
+      party ??= mountParty(root, context, flow, track);
     },
     isPointerOverUi(): boolean {
       return hovered.size > 0;

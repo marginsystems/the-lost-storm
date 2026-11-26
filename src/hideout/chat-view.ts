@@ -28,6 +28,7 @@ export interface ChatViewOptions {
   rename(name: string): void;
   pick(name: string, line: ChatLine | null, anchor: HTMLElement): void;
   general(): void;
+  party(): void;
 }
 
 export interface ChatView {
@@ -76,6 +77,11 @@ export function createChatView(options: ChatViewOptions): ChatView {
   general.type = 'button';
   general.textContent = CHAT_WORDS.general;
   general.setAttribute('aria-label', 'Back to General');
+  const partyTab: HTMLDivElement = make('div', 'chat-channel-slot', channels);
+  const partyButton: HTMLButtonElement = make('button', 'chat-channel chat-party-tab', partyTab);
+  partyButton.type = 'button';
+  partyButton.textContent = CHAT_WORDS.party;
+  partyButton.setAttribute('aria-label', 'Speak to your party');
   const whisperTab: HTMLDivElement = make('div', 'chat-channel-slot', channels);
   const whisperName: HTMLSpanElement = make('span', 'chat-channel chat-whisper-tab', whisperTab);
   const friendsSlot: HTMLDivElement = make('div', 'chat-slot', head);
@@ -102,11 +108,14 @@ export function createChatView(options: ChatViewOptions): ChatView {
   };
 
   const applyMutes = (): void => {
-    for (const row of rows.values()) row.element.classList.toggle('muted', row.entry.kind === 'line' && !row.entry.own && options.mutes.has(row.entry.line.name));
+    for (const row of rows.values()) row.element.classList.toggle('muted', (row.entry.kind === 'line' || row.entry.kind === 'party') && !row.entry.own && options.mutes.has(row.entry.line.name));
   };
 
   general.addEventListener('click', (): void => {
     options.general();
+  });
+  partyButton.addEventListener('click', (): void => {
+    options.party();
   });
 
   const nameField = (parent: HTMLElement): void => {
@@ -166,6 +175,15 @@ export function createChatView(options: ChatViewOptions): ChatView {
         const inner: HTMLDivElement = make('div', 'chat-row-inner', element);
         make('span', 'chat-dir', inner).textContent = entry.dir === 'from' ? 'From' : 'To';
         nameButton(inner, entry.with, entry.dir === 'from' ? entry.line : null);
+        make('span', 'chat-text', inner).textContent = entry.line.text;
+        return element;
+      }
+      case 'party': {
+        const element: HTMLLIElement = make('li', 'chat-row chat-party');
+        const inner: HTMLDivElement = make('div', 'chat-row-inner', element);
+        make('span', 'chat-dir', inner).textContent = CHAT_WORDS.party;
+        if (entry.own) make('span', 'chat-name own', inner).textContent = entry.line.name;
+        else nameButton(inner, entry.line.name, entry.line);
         make('span', 'chat-text', inner).textContent = entry.line.text;
         return element;
       }
@@ -258,7 +276,11 @@ export function createChatView(options: ChatViewOptions): ChatView {
       }
       applyMutes();
       const whispering: boolean = state.target.kind === 'whisper';
-      general.classList.toggle('active', !whispering);
+      const partying: boolean = state.target.kind === 'party';
+      general.classList.toggle('active', state.target.kind === 'general');
+      partyTab.classList.toggle('shown', state.party);
+      partyButton.classList.toggle('active', partying);
+      panel.classList.toggle('partying', partying);
       whisperTab.classList.toggle('shown', whispering);
       if (state.target.kind === 'whisper') swapText(whisperName, state.target.name);
       panel.classList.toggle('whispering', whispering);

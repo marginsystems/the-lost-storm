@@ -19,7 +19,7 @@ void test('the live URL swaps http for ws and https for wss and adds the live pa
 });
 
 void test('client frames carry the token only in the hello and round places to centimetres', (): void => {
-  assert.deepEqual(JSON.parse(helloFrame('secret')), { type: 'hello', token: 'secret', chat: 1, trade: 1 });
+  assert.deepEqual(JSON.parse(helloFrame('secret')), { type: 'hello', token: 'secret', chat: 1, trade: 1, party: 1 });
   assert.deepEqual(JSON.parse(whisperFrame('Bo Reed', 'hi')), { type: 'whisper', to: 'Bo Reed', text: 'hi' });
   assert.deepEqual(JSON.parse(enterFrame({ x: 20.123_4, z: 18.005_1, facing: 0.333_33 })), { type: 'enter', zone: 'hideout', x: 20.12, z: 18.01, facing: 0.33 });
   assert.deepEqual(JSON.parse(moveFrame({ x: 1, z: 2, facing: -2.505_9 })), { type: 'move', x: 1, z: 2, facing: -2.51 });
@@ -27,12 +27,12 @@ void test('client frames carry the token only in the hello and round places to c
 });
 
 void test('every server message the protocol names is read', (): void => {
-  assert.deepEqual(read({ type: 'welcome' }), { type: 'welcome', roaming: null, trade: false, claimed: false });
-  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [LINE] }), { type: 'welcome', roaming: { you: 'c1', chat: [LINE] }, trade: false, claimed: false });
-  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], trade: 1 }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: true, claimed: false });
-  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], trade: 2 }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: false, claimed: false });
-  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], claimed: true }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: false, claimed: true });
-  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], claimed: 1 }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: false, claimed: false });
+  assert.deepEqual(read({ type: 'welcome' }), { type: 'welcome', roaming: null, trade: false, party: false, claimed: false });
+  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [LINE] }), { type: 'welcome', roaming: { you: 'c1', chat: [LINE] }, trade: false, party: false, claimed: false });
+  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], trade: 1 }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: true, party: false, claimed: false });
+  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], trade: 2 }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: false, party: false, claimed: false });
+  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], claimed: true }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: false, party: false, claimed: true });
+  assert.deepEqual(read({ type: 'welcome', you: 'c1', chat: [], claimed: 1 }), { type: 'welcome', roaming: { you: 'c1', chat: [] }, trade: false, party: false, claimed: false });
   assert.deepEqual(read({ type: 'trade_closed', reason: 'expired' }), { type: 'trade', frame: { type: 'trade_closed', reason: 'expired' } });
   assert.deepEqual(read({ type: 'whisper', dir: 'from', with: 'Bo Reed', line: LINE }), { type: 'whisper', dir: 'from', with: 'Bo Reed', line: LINE });
   assert.deepEqual(read({ type: 'whisper', dir: 'to', with: 'Bo Reed', line: LINE }), { type: 'whisper', dir: 'to', with: 'Bo Reed', line: LINE });
@@ -147,8 +147,8 @@ void test('the mute list keeps the newest names that fit in one frame', (): void
 
 void test('played elsewhere is read as its own frame, and the hello carries the page id only when there is one and the claim only while it is unclaimed', (): void => {
   assert.deepEqual(readServerFrame(JSON.stringify({ type: 'elsewhere' })), { type: 'elsewhere' });
-  assert.deepEqual(JSON.parse(helloFrame('t', { id: 'page-a', claim: true })), { type: 'hello', token: 't', chat: 1, trade: 1, play: 'page-a', claim: true });
-  assert.deepEqual(JSON.parse(helloFrame('t', { id: 'page-a', claim: false })), { type: 'hello', token: 't', chat: 1, trade: 1, play: 'page-a' });
+  assert.deepEqual(JSON.parse(helloFrame('t', { id: 'page-a', claim: true })), { type: 'hello', token: 't', chat: 1, trade: 1, party: 1, play: 'page-a', claim: true });
+  assert.deepEqual(JSON.parse(helloFrame('t', { id: 'page-a', claim: false })), { type: 'hello', token: 't', chat: 1, trade: 1, party: 1, play: 'page-a' });
   const plain: unknown = JSON.parse(helloFrame('t'));
   assert.ok(isFields(plain) && !('play' in plain) && !('claim' in plain));
 });

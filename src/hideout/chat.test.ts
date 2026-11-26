@@ -16,6 +16,8 @@ function texts(state: ChatState): string[] {
         return `${entry.line.name}: ${entry.line.text}`;
       case 'whisper':
         return `${entry.dir === 'from' ? 'From' : 'To'} ${entry.with}: ${entry.line.text}`;
+      case 'party':
+        return `Party ${entry.line.name}: ${entry.line.text}`;
       case 'note':
         return `(${entry.text})`;
     }
@@ -203,7 +205,7 @@ void test('/r answers the last whisper, or says no one has whispered', (): void 
 void test('an unknown command, a whisper with no name and /help add a line and send nothing', (): void => {
   const unknown: ChatStep = typed(EVERYONE, '/dance');
   assert.deepEqual(unknown.action, { kind: 'none' });
-  assert.deepEqual(texts(unknown.state), ['(/dance is not a command. Try /dm name, /r or /g.)']);
+  assert.deepEqual(texts(unknown.state), ['(/dance is not a command. Try /dm name, /r, /g, /invite name or /p.)']);
   const nameless: ChatStep = typed(EVERYONE, '/dm');
   assert.deepEqual(texts(nameless.state), ['(Name a player: /dm name message)']);
   const help: ChatStep = typed(EVERYONE, '/help');
