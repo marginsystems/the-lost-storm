@@ -75,7 +75,8 @@
   ],
   "surge": null,
   "exits": [
-    {"id":"up","x":25,"z":47,"radius":2.2,"to":"still_reach_3","toExit":"down","arrival":{"x":25,"z":43},"requires":[]}
+    {"id":"up","x":25,"z":47,"radius":2.2,"to":"still_reach_3","toExit":"down","arrival":{"x":25,"z":43},"requires":[]},
+    {"id":"down","x":27,"z":4.8,"radius":2.2,"to":"mended_ways","toExit":"up","arrival":{"x":27,"z":9},"requires":[{"type":"flag","flag":"first_to_stop_defeated","is":"defeated"}],"lockedHint":"","hiddenWhenLocked":true}
   ],
   "deathReturn": {"zone":"still_reach_3","exit":"down"},
   "checkpoints": [],

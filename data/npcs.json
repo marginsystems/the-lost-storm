@@ -303,6 +303,92 @@
     ]
   },
   {
+    "id": "thread",
+    "name": "Thread",
+    "title": "Apprentice, once",
+    "faction": null,
+    "rig": "human_woman",
+    "scale": 1.0,
+    "tint": "#f2e4d6",
+    "color": "#d9cfb0",
+    "gear": [],
+    "wear": [
+      "mender_coat",
+      "stitched_trousers",
+      "mender_gloves",
+      "cast_off_boots"
+    ],
+    "talks": [
+      {
+        "id": "thread_stopped",
+        "once": false,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_mended",
+            "objective": "free",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "thread_they_stopped",
+          "thread_fire_near"
+        ]
+      },
+      {
+        "id": "thread_bound",
+        "once": false,
+        "when": [
+          {
+            "type": "flag",
+            "flag": "thread_cut",
+            "not": true
+          }
+        ],
+        "lines": [
+          "thread_hands"
+        ]
+      },
+      {
+        "id": "thread_first",
+        "once": true,
+        "when": [
+          {
+            "type": "flag",
+            "flag": "thread_freed"
+          }
+        ],
+        "lines": [
+          "thread_apprenticed",
+          "thread_sewed",
+          "thread_held"
+        ]
+      },
+      {
+        "id": "thread_quiet",
+        "once": true,
+        "when": [
+          {
+            "type": "flag",
+            "flag": "loom_defeated"
+          }
+        ],
+        "lines": [
+          "thread_frame_quiet",
+          "thread_stay_torn"
+        ]
+      },
+      {
+        "id": "thread_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "thread_sleeves"
+        ]
+      }
+    ]
+  },
+  {
     "id": "timekeeper_seeker",
     "name": "Timekeeper",
     "title": "the Seeker",

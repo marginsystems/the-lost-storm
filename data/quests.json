@@ -288,6 +288,53 @@
     ]
   },
   {
+    "id": "the_mended",
+    "name": "The Mended",
+    "requires": [],
+    "when": [
+      {
+        "type": "flag",
+        "flag": "first_to_stop_defeated"
+      }
+    ],
+    "objectives": [
+      {
+        "id": "ways",
+        "type": "reach",
+        "zone": "mended_ways",
+        "x": 261,
+        "z": 29,
+        "radius": 12,
+        "text": "Go into the Mended Ways"
+      },
+      {
+        "id": "cut",
+        "type": "defeat",
+        "monster": "master_patchwright",
+        "text": "Cut the apprentice free in the Mended Ways",
+        "sets": {
+          "thread_cut": "cut"
+        }
+      },
+      {
+        "id": "free",
+        "type": "talk",
+        "npc": "thread",
+        "talk": "thread_stopped",
+        "text": "Speak with the apprentice",
+        "sets": {
+          "thread_freed": "freed"
+        }
+      },
+      {
+        "id": "loom",
+        "type": "defeat",
+        "monster": "the_loom",
+        "text": "Stop the Loom"
+      }
+    ]
+  },
+  {
     "id": "the_untouched",
     "name": "What You Left",
     "requires": [

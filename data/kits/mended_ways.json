@@ -1,0 +1,1360 @@
+{
+  "id": "mended_ways",
+  "letters": {
+    "themes": [
+      "c",
+      "f",
+      "b",
+      "m",
+      "s",
+      "i",
+      "x",
+      "l"
+    ],
+    "passage": "g",
+    "pond": "v",
+    "shore": "p"
+  },
+  "shape": {
+    "radiusLeast": 5.5,
+    "radiusMost": 8.5,
+    "alcoves": 2,
+    "pondChance": 0.35
+  },
+  "walls": {
+    "band": 6,
+    "back": 1,
+    "side": 2,
+    "front": 4
+  },
+  "stairs": {
+    "prop": "wide_stair",
+    "y": -0.9
+  },
+  "density": {
+    "props": 0.13,
+    "caches": 0.021
+  },
+  "caches": [
+    "cache_basket",
+    "cache_coin_pile",
+    "cache_gold_bag",
+    "cache_jug",
+    "cache_satchel",
+    "cache_urn",
+    "cache_urn_square"
+  ],
+  "families": [
+    {
+      "members": [
+        {
+          "monster": "mended",
+          "count": 3
+        },
+        {
+          "monster": "mender",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "stitched_brute",
+          "count": 1
+        },
+        {
+          "monster": "mended",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "needle_thrower",
+          "count": 2
+        },
+        {
+          "monster": "mended",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "patchwright",
+          "count": 1
+        },
+        {
+          "monster": "mended",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "loose_seam",
+          "count": 1
+        },
+        {
+          "monster": "needle_thrower",
+          "count": 1
+        },
+        {
+          "monster": "mended",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "mender",
+          "count": 2
+        },
+        {
+          "monster": "stitched_brute",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "mended",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "patchwright",
+          "count": 1
+        },
+        {
+          "monster": "needle_thrower",
+          "count": 1
+        },
+        {
+          "monster": "mended",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "loose_seam",
+          "count": 2
+        },
+        {
+          "monster": "mended",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "stitched_brute",
+          "count": 1
+        },
+        {
+          "monster": "patchwright",
+          "count": 1
+        }
+      ],
+      "waits": 8
+    },
+    {
+      "members": [
+        {
+          "monster": "needle_thrower",
+          "count": 2
+        },
+        {
+          "monster": "mender",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "risen_thrall",
+          "count": 3
+        },
+        {
+          "monster": "patchwright",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "mended",
+          "count": 2
+        },
+        {
+          "monster": "loose_seam",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "stitched_brute",
+          "count": 2
+        },
+        {
+          "monster": "mender",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "spider",
+          "count": 2
+        },
+        {
+          "monster": "patchwright",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "mended",
+          "count": 3
+        },
+        {
+          "monster": "needle_thrower",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "clusters": [
+    [
+      {
+        "prop": "cave_scree",
+        "dx": 3.93,
+        "dz": 2.34,
+        "turn": 28
+      },
+      {
+        "prop": "cave_rock_chunk_b",
+        "dx": 1.82,
+        "dz": 0.03,
+        "turn": 167
+      },
+      {
+        "prop": "cave_ribcage",
+        "dx": 0.26,
+        "dz": 3.74,
+        "turn": 154
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": 1.69,
+        "dz": 5.3,
+        "turn": 250
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": 5.8,
+        "dz": 4.36,
+        "turn": 55
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": 7.63,
+        "dz": 3.33,
+        "turn": 354
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": 4.21,
+        "dz": 4.87,
+        "turn": 112
+      },
+      {
+        "prop": "cave_bone_b",
+        "dx": 0.17,
+        "dz": -1.43,
+        "turn": 292
+      },
+      {
+        "prop": "cave_stalagmites",
+        "dx": -0.76,
+        "dz": 0.79,
+        "turn": 263
+      },
+      {
+        "prop": "cave_skull_bones",
+        "dx": -3.9,
+        "dz": -5.94,
+        "turn": 221
+      },
+      {
+        "prop": "cave_skull_bones",
+        "dx": -4.82,
+        "dz": -0.66,
+        "turn": 56
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": -6.83,
+        "dz": -4.19,
+        "turn": 80
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": -1.49,
+        "dz": -6.21,
+        "turn": 220
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": -5.66,
+        "dz": -3.06,
+        "turn": 325
+      },
+      {
+        "prop": "cave_ribcage",
+        "dx": -2.02,
+        "dz": -3.33,
+        "turn": 235
+      }
+    ],
+    [
+      {
+        "prop": "cave_scree",
+        "dx": -0.82,
+        "dz": -0.85,
+        "turn": 82
+      },
+      {
+        "prop": "cave_rock_chunk_b",
+        "dx": -0.33,
+        "dz": -6.1,
+        "turn": 218
+      },
+      {
+        "prop": "cave_rock_chunk_b",
+        "dx": -2.69,
+        "dz": 4.71,
+        "turn": 12
+      },
+      {
+        "prop": "cave_ribcage",
+        "dx": 2.36,
+        "dz": -6.1,
+        "turn": 178
+      },
+      {
+        "prop": "cave_ribcage",
+        "dx": 4.32,
+        "dz": -3.4,
+        "turn": 264
+      },
+      {
+        "prop": "cave_skull_a",
+        "dx": -0.18,
+        "dz": 3.38,
+        "turn": 26
+      },
+      {
+        "prop": "cave_skull_a",
+        "dx": -0.3,
+        "dz": 5.73,
+        "turn": 185
+      },
+      {
+        "prop": "cave_skull_a",
+        "dx": 2.02,
+        "dz": -3.69,
+        "turn": 136
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": -1.84,
+        "dz": -3.07,
+        "turn": 242
+      },
+      {
+        "prop": "cave_bone_b",
+        "dx": 0.11,
+        "dz": 1.57,
+        "turn": 296
+      },
+      {
+        "prop": "cave_bone_b",
+        "dx": 1.91,
+        "dz": -1.76,
+        "turn": 248
+      },
+      {
+        "prop": "cave_bone_b",
+        "dx": -1.76,
+        "dz": 2.16,
+        "turn": 66
+      },
+      {
+        "prop": "cave_shroom_glow",
+        "dx": -2.74,
+        "dz": 7.41,
+        "turn": 18
+      }
+    ],
+    [
+      {
+        "prop": "cave_rock_chunk_b",
+        "dx": -6.67,
+        "dz": -0.86,
+        "turn": 267
+      },
+      {
+        "prop": "cave_pickaxe",
+        "dx": -0.86,
+        "dz": -0.2,
+        "turn": 27
+      },
+      {
+        "prop": "cave_lantern",
+        "dx": 6.88,
+        "dz": -1.07,
+        "turn": 31
+      },
+      {
+        "prop": "cave_lantern",
+        "dx": 1.62,
+        "dz": 1.13,
+        "turn": 291
+      },
+      {
+        "prop": "cave_debris",
+        "dx": -4.26,
+        "dz": 0.21,
+        "turn": 314
+      },
+      {
+        "prop": "cave_debris",
+        "dx": 9.18,
+        "dz": -3.27,
+        "turn": 79
+      },
+      {
+        "prop": "cave_sacks",
+        "dx": 4.94,
+        "dz": 1.23,
+        "turn": 235
+      },
+      {
+        "prop": "cave_sacks",
+        "dx": -8.68,
+        "dz": 1.17,
+        "turn": 291
+      },
+      {
+        "prop": "cave_shards",
+        "dx": -2.15,
+        "dz": 1.66,
+        "turn": 290
+      }
+    ],
+    [
+      {
+        "prop": "cave_scree",
+        "dx": -0.78,
+        "dz": 0.98,
+        "turn": 343
+      },
+      {
+        "prop": "cave_mineral",
+        "dx": 1.66,
+        "dz": -1.37,
+        "turn": 266
+      },
+      {
+        "prop": "cave_mineral",
+        "dx": 1.75,
+        "dz": 2.81,
+        "turn": 50
+      },
+      {
+        "prop": "cave_stalagmites",
+        "dx": 0.13,
+        "dz": 5.79,
+        "turn": 353
+      },
+      {
+        "prop": "cave_shards",
+        "dx": -0.08,
+        "dz": -3.13,
+        "turn": 146
+      },
+      {
+        "prop": "cave_shroom_glow",
+        "dx": -2.68,
+        "dz": -5.1,
+        "turn": 149
+      }
+    ],
+    [
+      {
+        "prop": "cave_rock_chunk_a",
+        "dx": 2.15,
+        "dz": -3.11,
+        "turn": 256
+      },
+      {
+        "prop": "cave_crystal",
+        "dx": -4.29,
+        "dz": 0.95,
+        "turn": 326
+      },
+      {
+        "prop": "cave_crystal",
+        "dx": 0.93,
+        "dz": 2.0,
+        "turn": 38
+      },
+      {
+        "prop": "cave_shards",
+        "dx": 2.78,
+        "dz": 0.02,
+        "turn": 234
+      },
+      {
+        "prop": "cave_shards",
+        "dx": -1.59,
+        "dz": 0.13,
+        "turn": 16
+      }
+    ],
+    [
+      {
+        "prop": "cave_sacks",
+        "dx": 1.02,
+        "dz": 0.49,
+        "turn": 246
+      },
+      {
+        "prop": "cave_sack_open",
+        "dx": -0.88,
+        "dz": 2.56,
+        "turn": 309
+      },
+      {
+        "prop": "cave_lantern",
+        "dx": 0.98,
+        "dz": -2.41,
+        "turn": 65
+      },
+      {
+        "prop": "cave_lantern",
+        "dx": -1.13,
+        "dz": -0.64,
+        "turn": 88
+      }
+    ],
+    [
+      {
+        "prop": "cave_rock_chunk_a",
+        "dx": 1.74,
+        "dz": 0.82,
+        "turn": 23
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": -0.7,
+        "dz": -1.29,
+        "turn": 340
+      },
+      {
+        "prop": "cave_bone_a",
+        "dx": -1.05,
+        "dz": 0.47,
+        "turn": 152
+      }
+    ],
+    [
+      {
+        "prop": "cave_rock_chunk_b",
+        "dx": -0.82,
+        "dz": -1.59,
+        "turn": 221
+      },
+      {
+        "prop": "cave_shroom_red",
+        "dx": 1.14,
+        "dz": -0.05,
+        "turn": 253
+      },
+      {
+        "prop": "cave_skull_a",
+        "dx": -0.32,
+        "dz": 1.65,
+        "turn": 41
+      }
+    ],
+    [
+      {
+        "prop": "lava_scree",
+        "dx": 3.93,
+        "dz": 2.34,
+        "turn": 28
+      },
+      {
+        "prop": "lava_chunk_b",
+        "dx": 1.82,
+        "dz": 0.03,
+        "turn": 167
+      },
+      {
+        "prop": "ash_ribcage",
+        "dx": 0.26,
+        "dz": 3.74,
+        "turn": 154
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": 1.69,
+        "dz": 5.3,
+        "turn": 250
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": 5.8,
+        "dz": 4.36,
+        "turn": 55
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": 7.63,
+        "dz": 3.33,
+        "turn": 354
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": 4.21,
+        "dz": 4.87,
+        "turn": 112
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": 0.17,
+        "dz": -1.43,
+        "turn": 292
+      },
+      {
+        "prop": "basalt_spires",
+        "dx": -0.76,
+        "dz": 0.79,
+        "turn": 263
+      },
+      {
+        "prop": "ash_skull",
+        "dx": -3.9,
+        "dz": -5.94,
+        "turn": 221
+      },
+      {
+        "prop": "ash_skull",
+        "dx": -4.82,
+        "dz": -0.66,
+        "turn": 56
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": -6.83,
+        "dz": -4.19,
+        "turn": 80
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": -1.49,
+        "dz": -6.21,
+        "turn": 220
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": -5.66,
+        "dz": -3.06,
+        "turn": 325
+      },
+      {
+        "prop": "ash_ribcage",
+        "dx": -2.02,
+        "dz": -3.33,
+        "turn": 235
+      }
+    ],
+    [
+      {
+        "prop": "lava_scree",
+        "dx": -0.82,
+        "dz": -0.85,
+        "turn": 82
+      },
+      {
+        "prop": "lava_chunk_b",
+        "dx": -0.33,
+        "dz": -6.1,
+        "turn": 218
+      },
+      {
+        "prop": "lava_chunk_b",
+        "dx": -2.69,
+        "dz": 4.71,
+        "turn": 12
+      },
+      {
+        "prop": "ash_ribcage",
+        "dx": 2.36,
+        "dz": -6.1,
+        "turn": 178
+      },
+      {
+        "prop": "ash_ribcage",
+        "dx": 4.32,
+        "dz": -3.4,
+        "turn": 264
+      },
+      {
+        "prop": "ash_skull",
+        "dx": -0.18,
+        "dz": 3.38,
+        "turn": 26
+      },
+      {
+        "prop": "ash_skull",
+        "dx": -0.3,
+        "dz": 5.73,
+        "turn": 185
+      },
+      {
+        "prop": "ash_skull",
+        "dx": 2.02,
+        "dz": -3.69,
+        "turn": 136
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": -1.84,
+        "dz": -3.07,
+        "turn": 242
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": 0.11,
+        "dz": 1.57,
+        "turn": 296
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": 1.91,
+        "dz": -1.76,
+        "turn": 248
+      },
+      {
+        "prop": "ash_ribs",
+        "dx": -1.76,
+        "dz": 2.16,
+        "turn": 66
+      }
+    ],
+    [
+      {
+        "prop": "lava_chunk_b",
+        "dx": -6.67,
+        "dz": -0.86,
+        "turn": 267
+      },
+      {
+        "prop": "lava_scree",
+        "dx": -4.26,
+        "dz": 0.21,
+        "turn": 314
+      },
+      {
+        "prop": "lava_scree",
+        "dx": 9.18,
+        "dz": -3.27,
+        "turn": 79
+      },
+      {
+        "prop": "lava_shards",
+        "dx": -2.15,
+        "dz": 1.66,
+        "turn": 290
+      }
+    ],
+    [
+      {
+        "prop": "lava_scree",
+        "dx": -0.78,
+        "dz": 0.98,
+        "turn": 343
+      },
+      {
+        "prop": "lava_rubble_shard",
+        "dx": 1.66,
+        "dz": -1.37,
+        "turn": 266
+      },
+      {
+        "prop": "lava_rubble_shard",
+        "dx": 1.75,
+        "dz": 2.81,
+        "turn": 50
+      },
+      {
+        "prop": "basalt_spires",
+        "dx": 0.13,
+        "dz": 5.79,
+        "turn": 353
+      },
+      {
+        "prop": "lava_shards",
+        "dx": -0.08,
+        "dz": -3.13,
+        "turn": 146
+      }
+    ],
+    [
+      {
+        "prop": "lava_chunk_a",
+        "dx": 2.15,
+        "dz": -3.11,
+        "turn": 256
+      },
+      {
+        "prop": "basalt_stub",
+        "dx": -4.29,
+        "dz": 0.95,
+        "turn": 326
+      },
+      {
+        "prop": "basalt_stub",
+        "dx": 0.93,
+        "dz": 2.0,
+        "turn": 38
+      },
+      {
+        "prop": "lava_shards",
+        "dx": 2.78,
+        "dz": 0.02,
+        "turn": 234
+      },
+      {
+        "prop": "lava_shards",
+        "dx": -1.59,
+        "dz": 0.13,
+        "turn": 16
+      }
+    ],
+    [
+      {
+        "prop": "hall_column",
+        "dx": -8,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_column",
+        "dx": 0,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_column",
+        "dx": 8,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_brazier",
+        "dx": -4,
+        "dz": 1.5,
+        "turn": 0
+      },
+      {
+        "prop": "hall_brazier",
+        "dx": 4,
+        "dz": 1.5,
+        "turn": 0
+      }
+    ],
+    [
+      {
+        "prop": "hall_column_dark",
+        "dx": -6,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_column_broken",
+        "dx": 2,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_column_fallen",
+        "dx": 5,
+        "dz": 2.5,
+        "turn": 80
+      },
+      {
+        "prop": "hall_rubble_large",
+        "dx": -1,
+        "dz": 2.2,
+        "turn": 30
+      },
+      {
+        "prop": "hall_loose_blocks",
+        "dx": 7,
+        "dz": -1,
+        "turn": 120
+      }
+    ],
+    [
+      {
+        "prop": "tally_stone",
+        "dx": -2.4,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "tally_stone",
+        "dx": 0,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "tally_stone",
+        "dx": 2.4,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_shelf",
+        "dx": -6,
+        "dz": -0.6,
+        "turn": 0
+      },
+      {
+        "prop": "hall_shelf",
+        "dx": 6,
+        "dz": -0.6,
+        "turn": 0
+      }
+    ],
+    [
+      {
+        "prop": "hall_statue_base",
+        "dx": 0,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_brazier",
+        "dx": -3.5,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_brazier",
+        "dx": 3.5,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "tally_stone",
+        "dx": 0,
+        "dz": 3.2,
+        "turn": 180
+      }
+    ],
+    [
+      {
+        "prop": "hall_column",
+        "dx": -4,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_column",
+        "dx": 4,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_clock_tilted",
+        "dx": 0,
+        "dz": 1.5,
+        "turn": 200
+      },
+      {
+        "prop": "hall_rubble_large",
+        "dx": 2,
+        "dz": 3,
+        "turn": 60
+      }
+    ],
+    [
+      {
+        "prop": "hall_column_broken",
+        "dx": -3,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_loose_blocks",
+        "dx": 0,
+        "dz": 1.5,
+        "turn": 40
+      },
+      {
+        "prop": "hall_column_fallen",
+        "dx": 3,
+        "dz": 2,
+        "turn": 160
+      },
+      {
+        "prop": "tally_stone",
+        "dx": -5,
+        "dz": 2.5,
+        "turn": 90
+      }
+    ],
+    [
+      {
+        "prop": "hall_shelf",
+        "dx": -2,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_shelf",
+        "dx": 2,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "hall_column_dark",
+        "dx": -5.5,
+        "dz": 0.8,
+        "turn": 0
+      },
+      {
+        "prop": "hall_column_dark",
+        "dx": 5.5,
+        "dz": 0.8,
+        "turn": 0
+      }
+    ]
+  ],
+  "openFloor": true,
+  "zone": {
+    "markerSurfaces": {
+      "stone": "hall_marble"
+    },
+    "kind": "wild",
+    "ranks": true,
+    "floors": {
+      "c": "cave_floor",
+      "s": "cave_stone",
+      "l": "lichen_stone",
+      "f": "hall_floor",
+      "i": "hall_inlay",
+      "m": "hall_marble",
+      "b": "basalt",
+      "x": "scorched_stone",
+      "g": "cave_gravel",
+      "v": "vent_bed",
+      "p": "hall_border"
+    },
+    "outside": {
+      "surface": "cave_bed",
+      "reach": 3,
+      "barrier": null
+    },
+    "walls": null,
+    "scatter": [
+      {
+        "type": "cliff",
+        "props": [
+          "rubble_chip",
+          "rubble_shard"
+        ],
+        "side": "foot",
+        "step": 1.3,
+        "drop": 2.5,
+        "cover": 0.6,
+        "tuck": 0.2,
+        "size": {
+          "least": 0.8,
+          "most": 1.1
+        }
+      },
+      {
+        "type": "around",
+        "props": [
+          "rubble_chip",
+          "rubble_shard"
+        ],
+        "anchors": [
+          "cave_stalagmite",
+          "cave_rock_chunk_a",
+          "cave_rock_chunk_b",
+          "cave_scree",
+          "cave_fire"
+        ],
+        "each": 10,
+        "spread": 0.8,
+        "size": {
+          "least": 0.95,
+          "most": 1.2
+        }
+      },
+      {
+        "type": "around",
+        "props": [
+          "lava_rubble_chip",
+          "lava_rubble_grit"
+        ],
+        "anchors": [
+          "basalt_spire",
+          "lava_chunk_a",
+          "lava_chunk_b",
+          "lava_scree",
+          "lava_glow"
+        ],
+        "each": 10,
+        "spread": 0.8,
+        "size": {
+          "least": 0.95,
+          "most": 1.2
+        }
+      },
+      {
+        "type": "around",
+        "props": [
+          "rubble_chip",
+          "rubble_shard"
+        ],
+        "anchors": [
+          "hall_column_broken",
+          "hall_column_fallen",
+          "hall_rubble_large",
+          "hall_loose_blocks"
+        ],
+        "each": 10,
+        "spread": 0.8,
+        "size": {
+          "least": 0.9,
+          "most": 1.2
+        }
+      },
+      {
+        "type": "open",
+        "props": [
+          "cave_puddle_a",
+          "cave_puddle_b",
+          "cave_moss_a",
+          "cave_moss_b",
+          "cave_pebble_bed"
+        ],
+        "count": 30,
+        "clump": 4,
+        "spread": 2.6,
+        "size": {
+          "least": 0.8,
+          "most": 1.25
+        },
+        "clear": 1.4
+      },
+      {
+        "type": "open",
+        "props": [
+          "lava_ash_drift_a",
+          "lava_ash_drift_b",
+          "lava_crust_patch"
+        ],
+        "count": 34,
+        "clump": 3,
+        "spread": 2.4,
+        "size": {
+          "least": 0.8,
+          "most": 1.3
+        },
+        "clear": 1.4
+      }
+    ],
+    "packReturn": {
+      "after": 90,
+      "away": 30
+    },
+    "surge": null,
+    "ambience": {
+      "background": "#060505",
+      "abyss": "#020202",
+      "fogNear": 38,
+      "fogFar": 90,
+      "skyColor": "#8a8478",
+      "groundColor": "#3a2a22",
+      "skyIntensity": 5.0,
+      "keyColor": "#d9cfb0",
+      "keyIntensity": 2.8
+    },
+    "weather": {
+      "lightning": null,
+      "rain": 0,
+      "wet": 0.12,
+      "mistWall": null,
+      "embers": 0.2
+    },
+    "heroLight": {
+      "strength": 15,
+      "radius": 22,
+      "height": 7,
+      "falloff": 1,
+      "rim": 0.4
+    },
+    "terrain": {
+      "rise": 1.84,
+      "groundStep": 0.6,
+      "cliff": "cave_rock",
+      "rough": {
+        "reach": 1.2,
+        "scale": 3,
+        "calm": [
+          "f",
+          "i",
+          "m",
+          "p",
+          "v"
+        ]
+      },
+      "blends": [
+        {
+          "surface": "lichen_stone",
+          "scale": 8,
+          "cover": 0.14
+        },
+        {
+          "surface": "hall_dust",
+          "scale": 7,
+          "cover": 0.14
+        },
+        {
+          "surface": "ash",
+          "scale": 6,
+          "cover": 0.14
+        },
+        {
+          "surface": "cave_cracked",
+          "scale": 5,
+          "cover": 0.12
+        },
+        {
+          "surface": "cooled_crust",
+          "scale": 1.5,
+          "cover": 0.8,
+          "near": "v",
+          "reach": 2.6
+        },
+        {
+          "surface": "lava",
+          "scale": 1,
+          "cover": 0.72,
+          "near": "v",
+          "reach": 1.7
+        },
+        {
+          "surface": "vent_ground",
+          "scale": 0.8,
+          "cover": 0.6,
+          "near": "v",
+          "reach": 0.9
+        },
+        {
+          "surface": "hall_inlay",
+          "scale": 3,
+          "cover": 0.6,
+          "near": "/",
+          "reach": 5
+        }
+      ],
+      "cliffs": [
+        {
+          "props": [
+            "cave_rock_face_b",
+            "cave_boulder_large",
+            "cave_rock_chunk_a",
+            "cave_boulder_moss_b",
+            "cave_rock_face_a",
+            "cave_rock_chunk_a"
+          ],
+          "side": "foot",
+          "step": 2.5,
+          "drop": 2.5,
+          "cover": 0.8,
+          "tuck": 0.6,
+          "size": {
+            "least": 0.7,
+            "most": 1.2
+          }
+        },
+        {
+          "props": [
+            "lava_chunk_a",
+            "lava_chunk_b",
+            "lava_shards",
+            "lava_shards",
+            "lava_chunk_b"
+          ],
+          "side": "rim",
+          "step": 2.6,
+          "drop": 2.5,
+          "cover": 0.7,
+          "tuck": 0.4,
+          "size": {
+            "least": 0.6,
+            "most": 1.1
+          }
+        },
+        {
+          "props": [
+            "cave_plank_pile",
+            "cave_slab_pile",
+            "cave_rubble_heap",
+            "cave_shield_broken",
+            "cave_slab_pile",
+            "cave_plank_pile"
+          ],
+          "side": "foot",
+          "step": 5,
+          "drop": 2.5,
+          "cover": 0.6,
+          "tuck": 0.8,
+          "size": {
+            "least": 0.8,
+            "most": 1.1
+          }
+        }
+      ]
+    }
+  }
+}

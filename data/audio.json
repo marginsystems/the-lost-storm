@@ -689,6 +689,62 @@
       ],
       "stingers": []
     },
+    "mended_ways": {
+      "loops": [
+        { "sound": "ambience_hall_air", "volume": 0.3 },
+        { "sound": "ambience_cave_air", "volume": 0.3 },
+        { "sound": "ambience_cave_room", "volume": 0.3 },
+        { "sound": "ambience_drone_dark", "volume": 0.15 }
+      ],
+      "stingers": [
+        { "sound": "rock_settle", "volume": 0.3, "minDelay": 25, "maxDelay": 60, "pitch": [0.85, 1.1] },
+        { "sound": "cave_drip", "volume": 0.3, "minDelay": 6, "maxDelay": 14, "pitch": [0.85, 1.15] },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed", "molten"], "reach": 14 } },
+        { "sound": "vent_hiss", "volume": 0.4, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed", "molten"], "reach": 18 } }
+      ]
+    },
+    "mended_ways_2": {
+      "loops": [
+        { "sound": "ambience_hall_air", "volume": 0.3 },
+        { "sound": "ambience_cave_air", "volume": 0.3 },
+        { "sound": "ambience_cave_room", "volume": 0.3 },
+        { "sound": "ambience_drone_dark", "volume": 0.2 }
+      ],
+      "stingers": [
+        { "sound": "rock_settle", "volume": 0.3, "minDelay": 25, "maxDelay": 60, "pitch": [0.85, 1.1] },
+        { "sound": "cave_drip", "volume": 0.3, "minDelay": 6, "maxDelay": 14, "pitch": [0.85, 1.15] },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed", "molten"], "reach": 14 } },
+        { "sound": "vent_hiss", "volume": 0.4, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed", "molten"], "reach": 18 } }
+      ]
+    },
+    "mended_ways_3": {
+      "loops": [
+        { "sound": "ambience_hall_air", "volume": 0.3 },
+        { "sound": "ambience_cave_air", "volume": 0.3 },
+        { "sound": "ambience_cave_room", "volume": 0.3 },
+        { "sound": "ambience_drone_dark", "volume": 0.25 }
+      ],
+      "stingers": [
+        { "sound": "rock_settle", "volume": 0.3, "minDelay": 25, "maxDelay": 60, "pitch": [0.85, 1.1] },
+        { "sound": "cave_drip", "volume": 0.3, "minDelay": 6, "maxDelay": 14, "pitch": [0.85, 1.15] },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed", "molten"], "reach": 14 } },
+        { "sound": "vent_hiss", "volume": 0.4, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed", "molten"], "reach": 18 } }
+      ]
+    },
+    "mender_loom": {
+      "loops": [
+        { "sound": "ambience_hall_air", "volume": 0.3 },
+        { "sound": "ambience_cave_air", "volume": 0.3 },
+        { "sound": "ambience_cave_room", "volume": 0.3 },
+        { "sound": "ambience_drone_dark", "volume": 0.3 }
+      ],
+      "stingers": [
+        { "sound": "rock_settle", "volume": 0.3, "minDelay": 25, "maxDelay": 60, "pitch": [0.85, 1.1] },
+        { "sound": "cave_drip", "volume": 0.3, "minDelay": 6, "maxDelay": 14, "pitch": [0.85, 1.15] },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed", "molten"], "reach": 14 } },
+        { "sound": "vent_hiss", "volume": 0.4, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed", "molten"], "reach": 18 } }
+      ]
+    },
     "keepers_gate": {
       "loops": [
         { "sound": "ambience_hall_air", "volume": 0.4 },
