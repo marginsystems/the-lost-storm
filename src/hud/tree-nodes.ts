@@ -52,12 +52,12 @@ export function nodeDiameter(node: SkillTreeNodeDef): number {
   return Math.max(face, diamond, ring);
 }
 
-export function nodeAt(spots: readonly NodeSpot[], x: number, y: number): string | null {
+export function nodeAt(spots: readonly NodeSpot[], x: number, y: number, floor: number = 0): string | null {
   let best: NodeSpot | null = null;
   let bestDistance: number = Number.POSITIVE_INFINITY;
   for (const spot of spots) {
     const distance: number = Math.hypot(spot.x - x, spot.y - y);
-    if (distance > spot.radius || distance > bestDistance) continue;
+    if (distance > Math.max(spot.radius, floor) || distance > bestDistance) continue;
     best = spot;
     bestDistance = distance;
   }

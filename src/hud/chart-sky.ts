@@ -240,7 +240,7 @@ export function linkPhase(probe: LinkProbe): LinkPhase {
   return probe.linked() ? 'ready' : 'broken';
 }
 
-type SkyLink = { readonly kind: 'linking' } | { readonly kind: 'ready'; readonly at: (name: string) => WebGLUniformLocation | null } | { readonly kind: 'broken' };
+type SkyLink = { readonly kind: 'linking' } | { readonly kind: 'lost' } | { readonly kind: 'ready'; readonly at: (name: string) => WebGLUniformLocation | null } | { readonly kind: 'broken' };
 
 export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | null {
   const canvas: HTMLCanvasElement = document.createElement('canvas');
@@ -249,8 +249,9 @@ export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | n
   if (gl === null) return null;
   GPU.hold(loseContextOf(gl));
   const parallel: KHR_parallel_shader_compile | null = gl.getExtension('KHR_parallel_shader_compile');
-  const program: WebGLProgram | null = startLink(gl);
-  if (program === null) return null;
+  const first: WebGLProgram | null = startLink(gl);
+  if (first === null) return null;
+  let program: WebGLProgram = first;
   const probe: LinkProbe = {
     complete: (): boolean => parallel === null || gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR) === true,
     linked: (): boolean => gl.getProgramParameter(program, gl.LINK_STATUS) === true,
@@ -290,9 +291,22 @@ export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | n
     }
     return linked;
   };
+  let drawn: string = '';
+  canvas.addEventListener('webglcontextlost', (event: Event): void => {
+    event.preventDefault();
+    linked = { kind: 'lost' };
+  });
+  canvas.addEventListener('webglcontextrestored', (): void => {
+    const again: WebGLProgram | null = startLink(gl);
+    if (again === null) return;
+    program = again;
+    linked = { kind: 'linking' };
+    drawn = '';
+    canvas.width = 0;
+    canvas.height = 0;
+  });
   let drift: number | null = null;
   const still: MediaQueryList = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let drawn: string = '';
   let box: { readonly width: number; readonly height: number } = { width: 0, height: 0 };
   let boxStale: boolean = true;
   const watcher: ResizeObserver = new ResizeObserver((): void => {
@@ -310,7 +324,7 @@ export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | n
       poll();
       return;
     }
-    if (state.kind === 'broken') return;
+    if (state.kind === 'broken' || state.kind === 'lost') return;
     const at = state.at;
     if (boxStale) {
       const measured: DOMRect = host.getBoundingClientRect();

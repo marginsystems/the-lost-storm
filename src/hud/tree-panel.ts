@@ -7,9 +7,9 @@ import type { AtlasFrame, AtlasMotion, AtlasView, ScreenPoint } from './atlas-vi
 import { abilityCard } from './chart-ability.ts';
 import { createChartSky } from './chart-sky.ts';
 import type { ChartSky, SkyArm } from './chart-sky.ts';
-import { armShape, boltPoints, hexColour } from './chart-storm.ts';
+import { armShape, hexColour } from './chart-storm.ts';
 import type { AbilityCard } from './chart-ability.ts';
-import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint, placeTint } from './chart-model.ts';
+import { chartBounds, chartHere, chartRoute, pathLabels, placeTint } from './chart-model.ts';
 import { FRESH_RASTER, stepRaster } from './chart-raster.ts';
 import type { RasterState, RasterStep } from './chart-raster.ts';
 import { writeView } from './chart-frame.ts';
@@ -17,11 +17,11 @@ import type { FrameTargets } from './chart-frame.ts';
 import { createFrameTargets, createNameView } from './chart-label.ts';
 import { createSpecialtyNames, markSpecialtyNames, placeHome, specialtyLine } from './tree-specialty.ts';
 import type { SpecialtyName } from './tree-specialty.ts';
-import { kindWord, line, reachable } from './chart-parts.ts';
+import { kindWord, reachable } from './chart-parts.ts';
 import { createChangeSegment } from './change-segment.ts';
 import type { ChangeSegment } from './change-segment.ts';
 import { placeOff } from './place-off.ts';
-import { familyMark, familyRow, needLine, pathFamily, placeFamily, placeWeaponLine } from './weapon-family.ts';
+import { familyRow, needLine, pathFamily, placeFamily, placeWeaponLine } from './weapon-family.ts';
 import type { PlaceOff } from './place-off.ts';
 import { changesShape, placeChanges } from './skill-changes.ts';
 import type { SkillChanges } from './skill-changes.ts';
@@ -33,8 +33,16 @@ import type { ChartBounds, ChartPoint, PathLabel } from './chart-model.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
 import { slotAction } from '../settings/bindings.ts';
-import { placeArt } from './tree-art/index.ts';
-import { cardSpot, nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
+import { cardSpot, nodeAt, nodeDiameter, nodeFace, TREE_NODES } from './tree-nodes.ts';
+import type { OverviewPlace } from './chart-overview.ts';
+import { buildTreeLinks } from './tree-links.ts';
+import type { LinkView, TreeLinks } from './tree-links.ts';
+import { wireTreeSearch } from './tree-search.ts';
+import type { SearchPlace } from './tree-search.ts';
+import { createTreeFar } from './tree-far.ts';
+import type { FarChange, TreeFar } from './tree-far.ts';
+import { createSocket, createTreeIcons } from './tree-sockets.ts';
+import type { TreeIcons } from './tree-sockets.ts';
 import type { CardSize, CardSpot, NodeSpot } from './tree-nodes.ts';
 import { lockedLine, pointsPrompt, statusLine, takenLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
@@ -51,6 +59,7 @@ const CHART = {
   wheelLine: 32,
   zoomStep: 360,
   findZoom: 1.2,
+  hitFloor: 6,
   confirmMs: 3200,
   cardGap: 12,
   cardEdge: 10,
@@ -69,13 +78,6 @@ export interface ChartPanel extends PanelView {
 interface NodeView {
   readonly def: SkillTreeNodeDef;
   readonly button: HTMLButtonElement;
-}
-
-interface LinkView {
-  readonly path: SVGPolylineElement;
-  readonly track: SVGPolylineElement;
-  readonly from: string;
-  readonly to: string;
 }
 
 export function createTreePanel(parent: HTMLElement, context: HudContext, close: () => void): ChartPanel {
@@ -108,24 +110,15 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     arms: content.chart.paths.map((arm: ChartPath): SkyArm => ({ shape: armShape(content, arm.id), tint: hexColour(arm.tint) })),
   });
 
-  const shades: SVGGElement = document.createElementNS(CHART.svgNamespace, 'g');
-  shades.setAttribute('class', 'tree-shades');
-  svg.appendChild(shades);
   const byId: ReadonlyMap<string, SkillTreeNodeDef> = new Map<string, SkillTreeNodeDef>(nodes.map((node: SkillTreeNodeDef): [string, SkillTreeNodeDef] => [node.id, node]));
-  const links: LinkView[] = [];
-  for (const node of nodes) {
-    for (const requiredId of node.requires) {
-      const from: SkillTreeNodeDef | undefined = byId.get(requiredId);
-      if (from === undefined) continue;
-      const shared: boolean = from.common !== null || node.common !== null;
-      const tint: string = shared ? content.chart.common.tint : pathTint(content, node.path === from.path ? node.path : from.path);
-      const bolt: ChartPoint[] = boltPoints(centreOf(from), centreOf(node), eye, `${requiredId}>${node.id}`, CHART.unit);
-      const ring: string = from.path === node.path && !shared ? '' : ' ring';
-      line(shades, bolt, `tree-shade${ring}`, tint);
-      const track: SVGPolylineElement = line(svg, bolt, `tree-track${ring}`, tint);
-      links.push({ track, path: line(svg, bolt, `tree-flow${ring}`, tint), from: requiredId, to: node.id });
-    }
-  }
+  const builtLinks: TreeLinks = buildTreeLinks(svg, content, centreOf, eye, CHART.unit);
+  const links: readonly LinkView[] = builtLinks.views;
+  const treeFar: TreeFar = createTreeFar(
+    viewport,
+    board,
+    nodes.map((node: SkillTreeNodeDef): OverviewPlace => ({ id: node.id, ...centreOf(node), radius: nodeFace(node) / 2, tint: placeTint(content, node) })),
+    builtLinks.far,
+  );
 
   const specialtyNames: readonly SpecialtyName[] = createSpecialtyNames(content, viewport, place);
   const names: NameView[] = [...pathLabels(content).map((entry: PathLabel): NameView => createNameView(viewport, entry.path.name, entry.path.tint, place(entry.at), pathFamily(content, entry.path.id))), ...specialtyNames.map((entry: SpecialtyName): NameView => entry.view)];
@@ -165,6 +158,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const taken: readonly string[] = player().allocated;
     viewport.classList.toggle('routing', route.size > 0);
     for (const view of views) view.button.classList.toggle('route', route.has(view.def.id));
+    treeFar.route(route);
     for (const link of links) {
       const onRoute: boolean = (route.has(link.from) || taken.includes(link.from)) && (route.has(link.to) || taken.includes(link.to)) && (route.has(link.from) || route.has(link.to));
       link.track.classList.toggle('route', onRoute);
@@ -349,6 +343,12 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     shownLabels = writeView(frameTargets, motion.view, frame, foot);
     placeCard();
     drawSky();
+    const corner: ScreenPoint = toScreen(motion.view, frame, { x: 0, y: 0 });
+    const change: FarChange = treeFar.move({ cornerX: corner.x, cornerY: corner.y, scale: motion.view.scale });
+    if (change !== 'left') return;
+    raster = FRESH_RASTER;
+    holding = false;
+    board.classList.add('releasing');
   };
   const local = (event: MouseEvent): ScreenPoint => {
     const box: DOMRect = viewport.getBoundingClientRect();
@@ -450,98 +450,86 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     markMoved();
   });
 
+  const press = (view: NodeView): void => {
+    const node: SkillTreeNodeDef = view.def;
+    sendCard({ type: 'pin', node: node.id });
+    const status: TreeNodeStatus = statusOf(node);
+    switch (status.kind) {
+      case 'available':
+        context.api.send({ type: 'allocate', node: node.id });
+        break;
+      case 'no_points':
+      case 'locked':
+      case 'closed':
+        retrigger(view.button, 'deny');
+        retrigger(card, 'deny');
+        break;
+      case 'allocated':
+        break;
+    }
+    fillCard();
+  };
+  const takeBack = (view: NodeView): void => {
+    if (!context.api.touch && statusOf(view.def).kind === 'allocated') giveBack(view.def.id, view.button);
+  };
+
+  const icons: TreeIcons = createTreeIcons();
   const views: NodeView[] = [];
   for (const node of nodes) {
-    const centre: ChartPoint = centreOf(node);
-    const button: HTMLButtonElement = el('button', `tree-socket ${node.kind} locked`, board);
-    button.type = 'button';
-    button.setAttribute('aria-label', node.name);
-    button.style.left = `${centre.x}px`;
-    button.style.top = `${centre.y}px`;
-    button.style.setProperty('--tint', placeTint(content, node));
-    if (node.common !== null) button.classList.add('common');
-    if (node.specialty !== null) button.classList.add('specialty');
-    if (node.variants.length > 0) button.classList.add('variant');
-    if (node.unlock !== null) button.classList.add('ability');
-    el('span', 'tree-socket-rim', button);
-    el('span', 'tree-socket-well', button);
-    el('span', 'tree-socket-fill', button);
-    const glyph: HTMLSpanElement = el('span', 'tree-socket-glyph', button);
-    glyph.style.backgroundImage = placeArt(content, node) ?? 'none';
-    const family: WeaponGroup | null = placeFamily(content, node);
-    if (family !== null) familyMark(family, 'tree-socket-family', button);
+    const button: HTMLButtonElement = createSocket(board, content, node, centreOf(node), icons);
     const view: NodeView = { def: node, button };
-    button.addEventListener('click', (): void => {
-      sendCard({ type: 'pin', node: node.id });
-      const status: TreeNodeStatus = statusOf(node);
-      switch (status.kind) {
-        case 'available':
-          context.api.send({ type: 'allocate', node: node.id });
-          break;
-        case 'no_points':
-        case 'locked':
-        case 'closed':
-          retrigger(button, 'deny');
-          retrigger(card, 'deny');
-          break;
-        case 'allocated':
-          break;
-      }
-      fillCard();
-    });
+    button.addEventListener('click', (): void => press(view));
     button.addEventListener('contextmenu', (event: MouseEvent): void => {
       event.preventDefault();
-      if (!context.api.touch && statusOf(node).kind === 'allocated') giveBack(node.id, button);
+      takeBack(view);
     });
     views.push(view);
   }
   const spots: readonly NodeSpot[] = views.map((view: NodeView): NodeSpot => ({ id: view.def.id, ...centreOf(view.def), radius: nodeDiameter(view.def) / 2 }));
   const viewOf: ReadonlyMap<string, NodeView> = new Map<string, NodeView>(views.map((view: NodeView): [string, NodeView] => [view.def.id, view]));
+  const hitAt = (at: ScreenPoint): string | null => nodeAt(spots, at.x, at.y, CHART.hitFloor / motion.view.scale);
   const rehit = (): void => {
     if (pointerAt === null || viewport.classList.contains('dragging')) return;
     const at: ScreenPoint = toMap(motion.view, frame, pointerAt);
-    sendCard({ type: 'settle', node: nodeAt(spots, at.x, at.y) });
+    sendCard({ type: 'settle', node: hitAt(at) });
   };
   viewport.addEventListener('pointermove', (event: PointerEvent): void => {
     pointerAt = event.pointerType === 'touch' ? null : local(event);
     if (pointerAt === null || viewport.classList.contains('dragging')) return;
     const at: ScreenPoint = toMap(motion.view, frame, pointerAt);
-    sendCard({ type: 'point', node: nodeAt(spots, at.x, at.y) });
+    sendCard({ type: 'point', node: hitAt(at) });
   });
+  const farView = (event: MouseEvent): NodeView | null => {
+    if (!treeFar.isFar()) return null;
+    const id: string | null = hitAt(toMap(motion.view, frame, local(event)));
+    return id === null ? null : (viewOf.get(id) ?? null);
+  };
   viewport.addEventListener('click', (event: MouseEvent): void => {
     const clicked: EventTarget | null = event.target;
     if (clicked instanceof Element && (clicked.closest('button, input') !== null || card.contains(clicked))) return;
-    if (cardState.pinned !== null) sendCard({ type: 'clear' });
+    const hit: NodeView | null = farView(event);
+    if (hit !== null) press(hit);
+    else if (cardState.pinned !== null) sendCard({ type: 'clear' });
+  });
+  viewport.addEventListener('contextmenu', (event: MouseEvent): void => {
+    const hit: NodeView | null = farView(event);
+    if (hit === null) return;
+    event.preventDefault();
+    takeBack(hit);
   });
   viewport.addEventListener('pointerleave', (event: PointerEvent): void => {
     pointerAt = null;
     if (event.pointerType !== 'touch') sendCard({ type: 'point', node: null });
   });
 
-  const showMatches = (): void => {
-    const found: ReadonlySet<string> | null = chartMatches(content, search.value);
-    viewport.classList.toggle('searching', found !== null);
-    for (const view of views) view.button.classList.toggle('match', found !== null && found.has(view.def.id));
-  };
-  let findIndex: number = 0;
-  search.addEventListener('input', (): void => {
-    findIndex = 0;
-    showMatches();
-  });
-  search.addEventListener('keydown', (event: KeyboardEvent): void => {
-    if (event.code === 'Escape') return;
-    event.stopPropagation();
-    if (event.code !== 'Enter') return;
-    const found: readonly NodeView[] = views.filter((view: NodeView): boolean => view.button.classList.contains('match'));
-    const next: NodeView | undefined = found[findIndex % Math.max(1, found.length)];
-    if (next === undefined) return;
-    findIndex += 1;
-    const at: ChartPoint = centreOf(next.def);
+  wireTreeSearch(search, viewport, content, views.map((view: NodeView): SearchPlace => ({ id: view.def.id, button: view.button })), (id: string): void => {
+    const node: SkillTreeNodeDef | undefined = byId.get(id);
+    if (node === undefined) return;
+    const at: ChartPoint = centreOf(node);
     target = clampChart({ x: at.x, y: at.y, scale: Math.max(target.scale, CHART.findZoom) }, frame);
     markMoved();
-    sendCard({ type: 'pin', node: next.def.id });
+    sendCard({ type: 'pin', node: id });
   });
-  search.addEventListener('keyup', (event: KeyboardEvent): void => event.stopPropagation());
 
   let wasOpen: boolean = false;
   new MutationObserver((): void => {
@@ -566,6 +554,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
 
   const opened = (): void => {
     wasOpen = true;
+    icons.bake();
     frame = measured();
     frameDirty = false;
     remeasure = true;
@@ -598,6 +587,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const closed: Set<string> = new Set<string>();
     for (const view of views) {
       const status: TreeNodeStatus = statusOf(view.def);
+      treeFar.status(view.def.id, status.kind);
       if (status.kind === 'closed') closed.add(view.def.id);
       for (const name of STATUS_CLASSES) view.button.classList.toggle(name, name === status.kind);
       view.button.classList.toggle('unheld', placeOff(content, view.def, you.equipped) !== null);
@@ -612,6 +602,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       link.path.classList.toggle('closed', shut);
       link.track.classList.toggle('closed', shut);
     }
+    treeFar.remark();
     measureFoot();
     fillCard();
   };
@@ -625,6 +616,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       if (warmed || element.classList.contains('open')) return true;
       if (viewport.offsetWidth === 0) return false;
       warmed = true;
+      icons.bake();
       frame = measured();
       frameDirty = false;
       target = reopenChart(frame, { last: lastView, points: openingView() });
@@ -681,11 +673,13 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       if (wasMoving && !moving) rehit();
       wasMoving = moving;
       tickCard();
-      const step: RasterStep = stepRaster(raster, motion.view.scale, resting);
-      raster = step.state;
-      if (step.hold !== holding) {
-        holding = step.hold;
-        board.classList.toggle('releasing', !holding);
+      if (!treeFar.isFar()) {
+        const step: RasterStep = stepRaster(raster, motion.view.scale, resting);
+        raster = step.state;
+        if (step.hold !== holding) {
+          holding = step.hold;
+          board.classList.toggle('releasing', !holding);
+        }
       }
       if (resting) {
         if (shifting) apply();

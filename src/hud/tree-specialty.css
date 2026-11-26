@@ -26,8 +26,8 @@
   opacity: 0;
 }
 
-.tree-socket.common {
-  color: color-mix(in srgb, var(--tint) 70%, #8a929e);
+.tree-socket.common.allocated {
+  color: color-mix(in srgb, var(--tint) 70%, #ffffff);
 }
 
 .chart-path-name.specialty {

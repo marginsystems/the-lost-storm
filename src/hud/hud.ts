@@ -88,6 +88,7 @@ import type { Tooltip } from './tooltip.ts';
 import treeCss from './tree.css?inline';
 import chartPlacesCss from './chart-places.css?inline';
 import chartStormCss from './chart-storm.css?inline';
+import chartOverviewCss from './chart-overview.css?inline';
 import treeSpecialtyCss from './tree-specialty.css?inline';
 import treeCardCss from './tree-card.css?inline';
 import pickerCss from './skill-picker.css?inline';
@@ -143,7 +144,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${itemPlateCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${bossPiecesCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${auraSignCss}\n${menuCss}\n${weaponHudCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${itemPlateCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${bossPiecesCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${chartOverviewCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${skillArtCss}\n${auraSignCss}\n${menuCss}\n${weaponHudCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {

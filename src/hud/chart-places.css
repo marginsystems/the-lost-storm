@@ -15,7 +15,7 @@
   border-radius: 8px;
   background: none;
   transform: none;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 22%, transparent);
+  box-shadow: 0 0 0 1px var(--tree-rim);
   transition: box-shadow var(--spring-smooth-ms) var(--spring-smooth);
 }
 
@@ -24,7 +24,12 @@
 }
 
 .tree-socket.ability.allocated .tree-socket-rim {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 45%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 85%, #ffffff);
+}
+
+.tree-socket.ability.available .tree-socket-rim,
+.tree-socket.ability.route .tree-socket-rim {
+  box-shadow: 0 0 0 1px var(--tree-open);
 }
 
 .tree-socket.available::after {
@@ -33,7 +38,7 @@
   inset: -3px;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(circle, rgba(232, 184, 102, 0.22), rgba(232, 184, 102, 0) 70%);
+  background: radial-gradient(circle, rgba(220, 230, 245, 0.2), rgba(220, 230, 245, 0) 70%);
   animation: chart-halo var(--drift-ms) var(--drift-ease) infinite;
 }
 

@@ -1,6 +1,9 @@
 .hud-panel.tree-panel {
   --tree-lit: #8fd8ff;
   --tree-well: #090c12;
+  --tree-idle: rgba(140, 150, 165, 0.3);
+  --tree-open: rgba(235, 240, 248, 0.75);
+  --tree-rim: rgba(170, 178, 190, 0.26);
 }
 
 .hud-panel.tree-panel {
@@ -112,6 +115,7 @@
 
 .tree-viewport {
   position: relative;
+  contain: layout paint;
   flex: 1 1 auto;
   min-height: 160px;
   overflow: hidden;
@@ -146,7 +150,7 @@
 }
 
 .tree-track {
-  stroke: color-mix(in srgb, var(--tint) 30%, transparent);
+  stroke: var(--tree-idle);
   stroke-width: 3;
   transition:
     stroke var(--spring-smooth-ms) var(--spring-smooth),
@@ -154,7 +158,7 @@
 }
 
 .tree-track.route {
-  stroke: color-mix(in srgb, var(--ember) 70%, transparent);
+  stroke: var(--tree-open);
   stroke-width: 4;
 }
 
@@ -171,15 +175,15 @@
 }
 
 .tree-flow.open {
-  stroke: var(--tint);
-  stroke-dashoffset: 0.45;
-  opacity: 0.5;
+  stroke: var(--tree-open);
+  stroke-dashoffset: 0;
+  opacity: 0.45;
 }
 
 .tree-flow.lit {
-  stroke: color-mix(in srgb, var(--tint) 60%, #ffffff);
+  stroke: color-mix(in srgb, var(--tint) 85%, #ffffff);
   stroke-dashoffset: 0;
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .tree-socket {
@@ -193,7 +197,7 @@
   background: none;
   outline: none;
   cursor: default;
-  color: color-mix(in srgb, var(--tint) 60%, #9aa4b2);
+  color: #9aa4b2;
   transition:
     transform var(--spring-bouncy-ms) var(--spring-bouncy),
     filter var(--spring-smooth-ms) var(--spring-smooth),
@@ -216,6 +220,7 @@
 .tree-socket-rim,
 .tree-socket-well,
 .tree-socket-fill,
+.tree-socket-grey,
 .tree-socket-glyph {
   position: absolute;
   inset: 0;
@@ -240,9 +245,9 @@
 .tree-socket-well {
   background: radial-gradient(circle at 50% 30%, #161b25, var(--tree-well) 70%);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px var(--tree-rim),
     inset 0 3px 6px rgba(0, 0, 0, 0.85),
-    0 0 0 0 rgba(143, 216, 255, 0);
+    0 0 0 0 rgba(0, 0, 0, 0);
   transition: box-shadow var(--spring-smooth-ms) var(--spring-smooth);
 }
 
@@ -256,61 +261,55 @@
     transform var(--spring-bouncy-ms) var(--spring-bouncy);
 }
 
+.tree-socket-grey,
 .tree-socket-glyph {
   inset: 2px;
   background-position: center;
   background-size: cover;
-  filter: grayscale(0.5) brightness(0.7);
-  transition: filter var(--spring-smooth-ms) var(--spring-smooth);
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-.tree-socket.route .tree-socket-glyph {
-  filter: grayscale(0.3) brightness(0.82);
+.tree-socket-grey {
+  opacity: 0.45;
 }
 
-.tree-socket.available .tree-socket-glyph {
-  filter: grayscale(0.1) brightness(0.95);
+.tree-socket-grey.raw {
+  filter: grayscale(1);
+}
+
+.tree-socket-glyph {
+  opacity: 0;
+}
+
+.tree-socket.available .tree-socket-grey,
+.tree-socket.route .tree-socket-grey {
+  opacity: 0.85;
+}
+
+.tree-socket.allocated .tree-socket-grey {
+  opacity: 0;
 }
 
 .tree-socket.allocated .tree-socket-glyph {
-  filter: grayscale(0) brightness(1.08);
-}
-
-.tree-socket.locked {
-  opacity: 0.8;
-}
-
-.tree-socket.route {
   opacity: 1;
-  color: color-mix(in srgb, var(--ember) 80%, transparent);
-}
-
-.tree-socket.no_points {
-  color: rgba(232, 184, 102, 0.42);
-}
-
-.tree-socket.no_points .tree-socket-well {
-  box-shadow:
-    inset 0 0 0 1px rgba(232, 184, 102, 0.2),
-    inset 0 3px 6px rgba(0, 0, 0, 0.85),
-    0 0 0 0 rgba(143, 216, 255, 0);
 }
 
 .tree-socket.available {
   cursor: pointer;
-  color: var(--ember);
+  color: #e6ebf2;
 }
 
-.tree-socket.available .tree-socket-well {
-  animation: chart-breathe var(--drift-ms) var(--drift-ease) infinite;
+.tree-socket.available .tree-socket-well,
+.tree-socket.route .tree-socket-well {
   box-shadow:
-    inset 0 0 0 1px rgba(232, 184, 102, 0.5),
+    inset 0 0 0 1px var(--tree-open),
     inset 0 3px 6px rgba(0, 0, 0, 0.85),
-    0 0 9px 0 rgba(232, 184, 102, 0.2);
+    0 0 8px 0 rgba(220, 230, 245, 0.18);
 }
 
-.tree-socket.keystone.available .tree-socket-rim {
-  box-shadow: inset 0 0 0 1px rgba(232, 184, 102, 0.32);
+.tree-socket.keystone.available .tree-socket-rim,
+.tree-socket.keystone.route .tree-socket-rim {
+  box-shadow: inset 0 0 0 1px var(--tree-open);
 }
 
 .tree-socket.allocated {
@@ -319,9 +318,9 @@
 
 .tree-socket.allocated .tree-socket-well {
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--tint) 55%, transparent),
+    inset 0 0 0 1.5px color-mix(in srgb, var(--tint) 85%, #ffffff),
     inset 0 3px 6px rgba(0, 0, 0, 0.85),
-    0 0 11px 0 color-mix(in srgb, var(--tint) 30%, transparent);
+    0 0 12px 1px color-mix(in srgb, var(--tint) 55%, transparent);
 }
 
 .tree-socket.variant .tree-socket-rim {
@@ -329,8 +328,12 @@
   inset: calc(var(--variant-rim) * -1);
   border-radius: 50%;
   background: none;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 28%, transparent);
+  box-shadow: 0 0 0 1px var(--tree-rim);
   transform: none;
+}
+
+.tree-socket.variant.allocated .tree-socket-rim {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint) 70%, transparent);
 }
 
 .tree-socket.selected {
@@ -343,16 +346,6 @@
 
 .tree-viewport.searching .tree-socket.match {
   filter: brightness(1.3);
-}
-
-@keyframes chart-breathe {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.35);
-  }
 }
 
 .chart-path-name {
@@ -576,7 +569,7 @@ body:has(.hud.chart-open) #overlays {
 }
 
 .tree-socket.keystone.allocated .tree-socket-rim {
-  box-shadow: inset 0 0 0 1px rgba(143, 216, 255, 0.45);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tint) 85%, #ffffff);
 }
 
 .tree-socket:hover,

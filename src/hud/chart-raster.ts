@@ -1,6 +1,6 @@
 export const CHART_RASTER = {
   growth: 1.2,
-  shrink: 2.4,
+  shrink: 1.6,
   restGrowth: 1.03,
   releaseFrames: 2,
 } as const;
@@ -17,7 +17,7 @@ export const FRESH_RASTER: RasterState = { phase: 'released', frames: 0 };
 export function stepRaster(state: RasterState, scale: number, resting: boolean): RasterStep {
   if (state.phase === 'held') {
     const soft: boolean = scale > state.scale * (resting ? CHART_RASTER.restGrowth : CHART_RASTER.growth);
-    const wasteful: boolean = resting && scale * CHART_RASTER.shrink < state.scale;
+    const wasteful: boolean = scale * CHART_RASTER.shrink < state.scale;
     return soft || wasteful ? { state: { phase: 'released', frames: 0 }, hold: false } : { state, hold: true };
   }
   const frames: number = state.frames + 1;

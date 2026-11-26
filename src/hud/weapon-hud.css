@@ -208,11 +208,15 @@
   height: 13px;
 }
 
-.tree-socket.unheld {
-  filter: saturate(0.2) brightness(0.7);
+.tree-socket:not(.allocated) .tree-socket-family {
+  color: #8d96a3;
 }
 
-.tree-socket.unheld .tree-socket-family {
+.tree-socket.allocated.unheld .tree-socket-glyph {
+  opacity: 0.45;
+}
+
+.tree-socket.allocated.unheld .tree-socket-family {
   color: #d98572;
 }
 
