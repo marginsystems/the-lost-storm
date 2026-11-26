@@ -48,6 +48,6 @@ export const PAIR_WORLD = {
       places: [{ zone: 'shallows', x: 260, y: 560, when: [] }, { zone: 'waystation', x: 520, y: 520, when: [] }, ...ATLAS.places],
       roads: [{ from: 'shallows', to: 'waystation', via: [{ x: 390, y: 548 }] }, ...ATLAS.roads],
     },
-  }],
+  }, ...world.acts.slice(1)],
   retired: { ...world.retired, zones: world.retired.zones.filter((zone: string): boolean => zone !== 'shallows' && zone !== 'waystation') },
 };

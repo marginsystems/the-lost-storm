@@ -87,6 +87,7 @@
   "surge": null,
   "exits": [
     {"id": "west", "x": 1.6, "z": 20, "radius": 2.2, "to": "hall_of_time", "toExit": "east", "arrival": {"x": 11, "z": 20}, "requires": []},
+    {"id": "outward", "x": 29.5, "z": 4.8, "radius": 2.2, "to": "still_reach", "toExit": "hideout", "arrival": {"x": 29.5, "z": 8.5}, "requires": [{"type": "flag", "flag": "reeve_freed"}, {"type": "level", "atLeast": 30}], "lockedHint": "Grey mist past the edge. Not yet.", "hiddenWhenLocked": true},
     {"id": "proving", "x": 46.4, "z": 20, "radius": 2.2, "to": "proving_ground", "toExit": "hideout", "arrival": {"x": 41.5, "z": 17.5}, "requires": [], "marker": "way_duel"}
   ],
   "checkpoints": [],

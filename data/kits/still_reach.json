@@ -1,0 +1,753 @@
+{
+  "id": "still_reach",
+  "openFloor": true,
+  "letters": {
+    "themes": [
+      "g",
+      "l",
+      "k",
+      "g",
+      "a",
+      "p"
+    ],
+    "passage": "w",
+    "pond": "p",
+    "shore": "g"
+  },
+  "shape": {
+    "radiusLeast": 5.5,
+    "radiusMost": 8,
+    "alcoves": 2,
+    "pondChance": 0
+  },
+  "walls": {
+    "band": 6,
+    "back": 1,
+    "side": 2,
+    "front": 4
+  },
+  "stairs": {
+    "prop": "wide_stair",
+    "y": -0.9
+  },
+  "density": {
+    "props": 0.12,
+    "caches": 0.0221
+  },
+  "caches": [
+    "cache_basket",
+    "cache_coin_pile",
+    "cache_gold_bag",
+    "cache_jug",
+    "cache_satchel",
+    "cache_urn",
+    "cache_urn_square"
+  ],
+  "families": [
+    {
+      "members": [
+        {
+          "monster": "still_waking",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "still_waking",
+          "count": 2
+        },
+        {
+          "monster": "still_hushed",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "mist_taken",
+          "count": 2
+        },
+        {
+          "monster": "still_waking",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "still_standing",
+          "count": 4
+        },
+        {
+          "monster": "still_waking",
+          "count": 1
+        }
+      ],
+      "waits": 8
+    },
+    {
+      "members": [
+        {
+          "monster": "still_hushed",
+          "count": 2
+        },
+        {
+          "monster": "still_waking",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "mist_taken",
+          "count": 2
+        },
+        {
+          "monster": "still_hushed",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "bell_ringer",
+          "count": 0.6
+        },
+        {
+          "monster": "still_waking",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "members": [
+        {
+          "monster": "bell_ringer",
+          "count": 0.6
+        },
+        {
+          "monster": "still_standing",
+          "count": 3
+        },
+        {
+          "monster": "still_hushed",
+          "count": 1
+        }
+      ],
+      "waits": 8
+    },
+    {
+      "members": [
+        {
+          "monster": "bell_ringer",
+          "count": 0.6
+        },
+        {
+          "monster": "mist_taken",
+          "count": 2
+        }
+      ]
+    }
+  ],
+  "clusters": [
+    [
+      {
+        "prop": "still_figure",
+        "dx": 0,
+        "dz": 0,
+        "turn": 20
+      },
+      {
+        "prop": "still_figure",
+        "dx": 2.6,
+        "dz": 0.6,
+        "turn": 35
+      },
+      {
+        "prop": "still_figure_bowed",
+        "dx": -1.4,
+        "dz": 2.4,
+        "turn": 10
+      },
+      {
+        "prop": "still_shards",
+        "dx": 1.2,
+        "dz": -1.2,
+        "turn": 80
+      }
+    ],
+    [
+      {
+        "prop": "still_figure",
+        "dx": -1.6,
+        "dz": 0,
+        "turn": 90
+      },
+      {
+        "prop": "still_figure",
+        "dx": 1.6,
+        "dz": 0.2,
+        "turn": 270
+      },
+      {
+        "prop": "still_rock_chunk_a",
+        "dx": 0,
+        "dz": 1.4,
+        "turn": 40
+      },
+      {
+        "prop": "still_scree",
+        "dx": 0.2,
+        "dz": -1.6,
+        "turn": 10
+      }
+    ],
+    [
+      {
+        "prop": "still_lamp_post",
+        "dx": 0,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "still_figure",
+        "dx": 2.4,
+        "dz": 1,
+        "turn": 300
+      },
+      {
+        "prop": "still_figure_bowed",
+        "dx": -2.2,
+        "dz": -1.2,
+        "turn": 140
+      },
+      {
+        "prop": "still_scree",
+        "dx": 0.8,
+        "dz": 2.2,
+        "turn": 60
+      }
+    ],
+    [
+      {
+        "prop": "still_figure",
+        "dx": 0,
+        "dz": 0,
+        "turn": 180
+      },
+      {
+        "prop": "still_figure",
+        "dx": 2.5,
+        "dz": -0.8,
+        "turn": 170
+      },
+      {
+        "prop": "still_figure",
+        "dx": -2.5,
+        "dz": -0.9,
+        "turn": 190
+      },
+      {
+        "prop": "still_figure_bowed",
+        "dx": 0.2,
+        "dz": -2.8,
+        "turn": 160
+      }
+    ],
+    [
+      {
+        "prop": "still_tree",
+        "dx": 0,
+        "dz": 0,
+        "turn": 30
+      },
+      {
+        "prop": "still_figure_bowed",
+        "dx": 2.6,
+        "dz": 0.8,
+        "turn": 250
+      },
+      {
+        "prop": "still_rock_chunk_b",
+        "dx": -1.8,
+        "dz": 1.4,
+        "turn": 100
+      },
+      {
+        "prop": "still_ash_bed",
+        "dx": 1.2,
+        "dz": -1.6,
+        "turn": 0
+      }
+    ],
+    [
+      {
+        "prop": "still_gravestone",
+        "dx": 0,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "still_gravestone",
+        "dx": 2.8,
+        "dz": 0.3,
+        "turn": 10
+      },
+      {
+        "prop": "still_gravestone",
+        "dx": -2.8,
+        "dz": 0.2,
+        "turn": 350
+      },
+      {
+        "prop": "still_figure_bowed",
+        "dx": 0,
+        "dz": 3,
+        "turn": 180
+      }
+    ],
+    [
+      {
+        "prop": "still_clock",
+        "dx": 0,
+        "dz": 0,
+        "turn": 25
+      },
+      {
+        "prop": "still_figure",
+        "dx": 2.6,
+        "dz": 1.4,
+        "turn": 205
+      },
+      {
+        "prop": "still_figure",
+        "dx": -2.6,
+        "dz": 1.2,
+        "turn": 160
+      },
+      {
+        "prop": "still_shards",
+        "dx": 0.3,
+        "dz": -1.8,
+        "turn": 0
+      }
+    ],
+    [
+      {
+        "prop": "still_spire",
+        "dx": 0,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "still_rock_chunk_a",
+        "dx": 1.6,
+        "dz": 0.6,
+        "turn": 140
+      },
+      {
+        "prop": "still_scree",
+        "dx": -1.4,
+        "dz": 1.6,
+        "turn": 220
+      },
+      {
+        "prop": "still_pebble_bed",
+        "dx": 0.4,
+        "dz": 2.8,
+        "turn": 0
+      }
+    ],
+    [
+      {
+        "prop": "still_boulder",
+        "dx": 0,
+        "dz": 0,
+        "turn": 70
+      },
+      {
+        "prop": "still_rock_chunk_b",
+        "dx": 2.2,
+        "dz": 0.4,
+        "turn": 20
+      },
+      {
+        "prop": "still_shards",
+        "dx": -1.8,
+        "dz": 1.8,
+        "turn": 300
+      },
+      {
+        "prop": "still_figure",
+        "dx": 1,
+        "dz": 3.6,
+        "turn": 120
+      }
+    ],
+    [
+      {
+        "prop": "still_tree_tall",
+        "dx": 0,
+        "dz": 0,
+        "turn": 160
+      },
+      {
+        "prop": "still_tree",
+        "dx": 3.6,
+        "dz": 1.2,
+        "turn": 40
+      },
+      {
+        "prop": "still_ash_bed",
+        "dx": 1.4,
+        "dz": -1.6,
+        "turn": 0
+      },
+      {
+        "prop": "still_figure_bowed",
+        "dx": -2.2,
+        "dz": 2.4,
+        "turn": 90
+      }
+    ],
+    [
+      {
+        "prop": "still_lamp_post",
+        "dx": -2.6,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "still_lamp_post",
+        "dx": 2.6,
+        "dz": 0,
+        "turn": 0
+      },
+      {
+        "prop": "still_figure",
+        "dx": 0,
+        "dz": 0,
+        "turn": 90
+      },
+      {
+        "prop": "still_rubble_heap",
+        "dx": 0,
+        "dz": -2.2,
+        "turn": 30
+      }
+    ],
+    [
+      {
+        "prop": "still_figure",
+        "dx": 0,
+        "dz": 0,
+        "turn": 45
+      },
+      {
+        "prop": "still_figure",
+        "dx": 2.6,
+        "dz": 0.4,
+        "turn": 60
+      },
+      {
+        "prop": "still_figure",
+        "dx": 5.2,
+        "dz": 1.1,
+        "turn": 30
+      },
+      {
+        "prop": "still_figure_bowed",
+        "dx": 1.4,
+        "dz": 2.8,
+        "turn": 75
+      },
+      {
+        "prop": "still_scree",
+        "dx": -1.8,
+        "dz": -0.8,
+        "turn": 10
+      }
+    ],
+    [
+      {
+        "prop": "still_cart",
+        "dx": 0,
+        "dz": 0,
+        "turn": 200
+      },
+      {
+        "prop": "still_slab_pile",
+        "dx": 2.4,
+        "dz": 1.2,
+        "turn": 70
+      },
+      {
+        "prop": "still_rock_chunk_a",
+        "dx": -2.2,
+        "dz": -1,
+        "turn": 210
+      },
+      {
+        "prop": "still_figure",
+        "dx": 0.6,
+        "dz": -3.4,
+        "turn": 10
+      }
+    ],
+    [
+      {
+        "prop": "still_rock_face_b",
+        "dx": 0,
+        "dz": 0,
+        "turn": 30
+      },
+      {
+        "prop": "still_scree",
+        "dx": 2,
+        "dz": 1,
+        "turn": 80
+      },
+      {
+        "prop": "still_scree",
+        "dx": -1.8,
+        "dz": 1.4,
+        "turn": 110
+      },
+      {
+        "prop": "still_pebble_bed",
+        "dx": 0.6,
+        "dz": 2.6,
+        "turn": 0
+      }
+    ]
+  ],
+  "zone": {
+    "markerSurfaces": {
+      "stone": "lichen_stone"
+    },
+    "kind": "wild",
+    "ranks": true,
+    "floors": {
+      "g": "crag_ground",
+      "l": "lichen_stone",
+      "k": "black_ledge",
+      "p": "cave_pebbles",
+      "a": "ash",
+      "w": "worn_path"
+    },
+    "outside": {
+      "surface": "crag_ground",
+      "reach": 3,
+      "barrier": null
+    },
+    "walls": null,
+    "scatter": [
+      {
+        "type": "cliff",
+        "props": [
+          "rubble_chip",
+          "rubble_shard"
+        ],
+        "side": "foot",
+        "step": 1.3,
+        "drop": 2.5,
+        "cover": 0.6,
+        "tuck": 0.2,
+        "size": {
+          "least": 0.8,
+          "most": 1.1
+        }
+      },
+      {
+        "type": "around",
+        "props": [
+          "rubble_chip",
+          "rubble_shard"
+        ],
+        "anchors": [
+          "still_spire",
+          "still_rock_chunk_a",
+          "still_rock_chunk_b",
+          "still_scree",
+          "still_boulder"
+        ],
+        "each": 10,
+        "spread": 0.8,
+        "size": {
+          "least": 0.95,
+          "most": 1.2
+        }
+      },
+      {
+        "type": "open",
+        "props": [
+          "still_ash_bed",
+          "still_pebble_bed"
+        ],
+        "count": 30,
+        "clump": 4,
+        "spread": 2.6,
+        "size": {
+          "least": 0.8,
+          "most": 1.25
+        },
+        "clear": 1.4
+      },
+      {
+        "type": "around",
+        "props": [
+          "still_ash_bed",
+          "still_pebble_bed"
+        ],
+        "anchors": [
+          "still_spire",
+          "still_rock_chunk_a",
+          "still_rock_chunk_b",
+          "still_boulder"
+        ],
+        "each": 1,
+        "spread": 1.4,
+        "size": {
+          "least": 0.8,
+          "most": 1.2
+        }
+      }
+    ],
+    "packReturn": {
+      "after": 90,
+      "away": 30
+    },
+    "surge": null,
+    "ambience": {
+      "background": "#3c4248",
+      "abyss": "#24282c",
+      "fogNear": 18,
+      "fogFar": 64,
+      "skyColor": "#a4aeb8",
+      "groundColor": "#5c636a",
+      "skyIntensity": 5.6,
+      "keyColor": "#d8dfe6",
+      "keyIntensity": 3.2
+    },
+    "weather": {
+      "lightning": null,
+      "rain": 0,
+      "wet": 0.12,
+      "mistWall": null
+    },
+    "heroLight": {
+      "strength": 13,
+      "radius": 20,
+      "height": 7,
+      "falloff": 1,
+      "rim": 0.4
+    },
+    "terrain": {
+      "rise": 1.84,
+      "groundStep": 0.6,
+      "cliff": "black_ledge",
+      "rough": {
+        "reach": 1.2,
+        "scale": 3,
+        "calm": []
+      },
+      "blends": [
+        {
+          "surface": "lichen_stone",
+          "scale": 8,
+          "cover": 0.26
+        },
+        {
+          "surface": "ash",
+          "scale": 6,
+          "cover": 0.3
+        },
+        {
+          "surface": "cave_pebbles",
+          "scale": 4,
+          "cover": 0.2
+        },
+        {
+          "surface": "black_rock",
+          "scale": 11,
+          "cover": 0.18
+        },
+        {
+          "surface": "cave_cracked",
+          "scale": 5,
+          "cover": 0.14
+        },
+        {
+          "surface": "worn_path",
+          "scale": 3,
+          "cover": 0.75,
+          "near": "/",
+          "reach": 6
+        }
+      ],
+      "cliffs": [
+        {
+          "props": [
+            "still_rock_face_b",
+            "still_boulder",
+            "still_rock_chunk_a",
+            "still_boulder_low",
+            "still_rock_face_a",
+            "still_rock_chunk_a"
+          ],
+          "side": "foot",
+          "step": 2.5,
+          "drop": 2.5,
+          "cover": 0.8,
+          "tuck": 0.6,
+          "size": {
+            "least": 0.7,
+            "most": 1.2
+          }
+        },
+        {
+          "props": [
+            "still_rock_chunk_a",
+            "still_rock_chunk_b",
+            "still_shards",
+            "still_shards",
+            "still_boulder_low"
+          ],
+          "side": "rim",
+          "step": 2.6,
+          "drop": 2.5,
+          "cover": 0.7,
+          "tuck": 0.4,
+          "size": {
+            "least": 0.6,
+            "most": 1.1
+          }
+        },
+        {
+          "props": [
+            "still_rubble_heap",
+            "still_scree",
+            "still_slab_pile",
+            "still_rubble_heap",
+            "still_scree"
+          ],
+          "side": "foot",
+          "step": 3.2,
+          "drop": 2.5,
+          "cover": 0.8,
+          "tuck": 0.9,
+          "size": {
+            "least": 0.85,
+            "most": 1.3
+          }
+        }
+      ]
+    }
+  }
+}

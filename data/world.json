@@ -497,8 +497,17 @@
           {"id": "the_mended", "tint": "#d2ad84"},
           {"id": "the_storm", "tint": "#8fb3e6"}
         ],
-        "places": [],
-        "roads": [],
+        "places": [
+          {"zone": "still_reach", "x": 420, "y": 600, "chain": "the_still", "when": [{"type": "flag", "flag": "reeve_freed", "is": "freed", "not": false}]},
+          {"zone": "still_reach_2", "x": 545, "y": 540, "label": "Level 2", "chain": "the_still", "when": [{"type": "visited", "zone": "still_reach", "not": false}]},
+          {"zone": "still_reach_3", "x": 670, "y": 490, "label": "Level 3", "chain": "the_still", "when": [{"type": "visited", "zone": "still_reach_2", "not": false}]},
+          {"zone": "still_heart", "x": 800, "y": 440, "chain": "the_still", "when": [{"type": "visited", "zone": "still_heart", "not": false}]}
+        ],
+        "roads": [
+          {"from": "still_reach", "to": "still_reach_2", "via": [{"x": 482, "y": 578}]},
+          {"from": "still_reach_2", "to": "still_reach_3", "via": [{"x": 607, "y": 506}]},
+          {"from": "still_reach_3", "to": "still_heart", "via": [{"x": 735, "y": 470}]}
+        ],
         "features": [],
         "labels": []
       }
