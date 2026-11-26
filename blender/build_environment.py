@@ -5,6 +5,7 @@ from typing import Callable
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from bmesh.types import BMVert
 from mathutils import Vector
 
 from environment_kit import Kit, export
@@ -324,14 +325,42 @@ def shrine(kit: Kit) -> None:
         kit.flame(x, y, 0.53 + height, 0.05)
 
 
+def brazier_flame(kit: Kit, x: float, y: float, radius: float, height: float, yaw: float) -> None:
+    mesh = kit.mesh("brazier_flame")
+    previous: list[BMVert] = []
+    sides: int = 7
+    z: float = 1.19
+    for rise, width, lean in ((0.0, 0.62, 0.0), (0.21, 1.0, -0.12), (0.50, 0.68, 0.12), (0.76, 0.33, 0.55)):
+        ring: list[BMVert] = []
+        center_x: float = x + radius * lean * math.cos(yaw)
+        center_y: float = y + radius * lean * math.sin(yaw)
+        for side in range(sides):
+            angle: float = yaw + math.tau * side / sides
+            ring.append(mesh.verts.new((center_x + radius * width * math.cos(angle), center_y + radius * width * math.sin(angle), z + height * rise)))
+        if previous:
+            for side in range(sides):
+                mesh.faces.new((previous[side - 1], previous[side], ring[side], ring[side - 1])).smooth = True
+        else:
+            mesh.faces.new(tuple(reversed(ring)))
+        previous = ring
+    tip: BMVert = mesh.verts.new((x + radius * 1.25 * math.cos(yaw), y + radius * 1.25 * math.sin(yaw), z + height))
+    for side in range(sides):
+        mesh.faces.new((previous[side - 1], previous[side], tip)).smooth = True
+
+
 def brazier(kit: Kit) -> None:
     for index in range(3):
         angle: float = index * math.pi * 2.0 / 3.0
         kit.rod("iron", (math.cos(angle) * 0.5, math.sin(angle) * 0.5, 0.0), (math.cos(angle) * 0.2, math.sin(angle) * 0.2, 0.95), 0.03)
     kit.cylinder("iron", 0.0, 0.0, 0.85, 0.26, 0.3, segments=12, top=0.52)
     kit.cylinder("iron", 0.0, 0.0, 1.15, 0.55, 0.05, segments=12)
-    kit.blob("brazier_coals", 0.0, 0.0, 1.16, 0.42, 0.42, 0.12, 0.04)
-    kit.flame(0.0, 0.0, 1.32, 0.34, name="brazier_flame")
+    for index in range(8):
+        angle: float = index * math.tau / 8.0
+        radius: float = 0.30 + kit.spread(0.025)
+        kit.blob("brazier_coals", radius * math.cos(angle), radius * math.sin(angle), 1.20, 0.12, 0.095, 0.075, 0.015, detail=1, yaw=angle)
+    brazier_flame(kit, -0.08, 0.04, 0.17, 0.68, 2.1)
+    brazier_flame(kit, 0.15, 0.02, 0.11, 0.45, -0.2)
+    brazier_flame(kit, -0.01, -0.16, 0.10, 0.33, -1.3)
 
 
 def banner(kit: Kit, half: float, strips: int, emblem: bool) -> None:
