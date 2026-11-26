@@ -6,7 +6,7 @@ import type { ZoneEncounter } from '../content/story-types.ts';
 import type { Content, ZoneDef, ZoneExit } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { questState } from './conditions.ts';
+import { allHold, questState } from './conditions.ts';
 import { createWorld } from './create.ts';
 import { fromShore, shoreDepth } from './shore.ts';
 import { hudHidden } from './hud.ts';
@@ -437,9 +437,17 @@ void test('a hero who already took the journal hears neither moment', (): void =
   assert.deepEqual(listen(world, (): Vec2 => ({ x: 1, z: 0 }), HEARD.seconds), []);
 });
 
-void test('only the first find of the opening draws near', (): void => {
-  const nearing: readonly string[] = rules.encounters.filter((met: ZoneEncounter): boolean => met.nearing !== null).map((met: ZoneEncounter): string => met.id);
-  assert.deepEqual(nearing, [journalFind.id]);
+void test('only the journal for the current visit to the mist draws near, until the hero takes it', (): void => {
+  const world: World = fresh(41);
+  const nearing = (): string[] => rules.encounters.filter((met: ZoneEncounter): boolean => met.nearing !== null && allHold(world, met.when)).map((met: ZoneEncounter): string => met.id);
+  assert.deepEqual(nearing(), [journalFind.id]);
+  world.flags['next_count'] = 'flashed';
+  assert.deepEqual(nearing(), ['journal_again']);
+  world.flags['second_choice'] = 'took_journal';
+  assert.deepEqual(nearing(), []);
+  delete world.flags['second_choice'];
+  world.flags['first_choice'] = 'took_journal';
+  assert.deepEqual(nearing(), []);
 });
 
 void test('a hero back from the Hall finds the light just behind him, and it stays there instead of going to the end of the road', (): void => {

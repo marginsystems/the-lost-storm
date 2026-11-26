@@ -4,7 +4,7 @@ import type { SurfaceDef, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { wakeStage } from '../../sim/world/wake.ts';
-import type { GroundItem, ShoreState, World } from '../../sim/world/types.ts';
+import type { EncounterState, GroundItem, ShoreState, World } from '../../sim/world/types.ts';
 import type { VoidShore } from '../../sim/content/story-types.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { Eddy, MistDrive, MistField } from './mist-field.ts';
@@ -30,7 +30,7 @@ import type { MistWallView } from './mist-wall.ts';
 import { buildMistWall } from './mist-wall.ts';
 import type { WakeWisps } from './wake-wisps.ts';
 import type { VoidGlimpses } from './void-glimpse.ts';
-import { glimpseOrder, glimpseTurn } from './void-glimpse.ts';
+import { glimpseOrder, glimpseTurn, VOID_GLIMPSE } from './void-glimpse.ts';
 import { createWakeWisps } from './wake-wisps.ts';
 import { createVoidNoise, VOID_NOISE } from './void-noise.ts';
 
@@ -84,6 +84,7 @@ export const VOID_VIEW = {
   glimpseOpacity: 0.9,
   glimpseRate: 2.4,
   glimpseShare: 0.86,
+  openingGlimpse: { wait: 5.5, reach: 10.5, side: 2.5, nearHaze: 0.08, crest: 5.5, riseRate: 5.5 },
   stillBelow: 0.4,
   seedStep: 17.3,
   moteRise: 0.5,
@@ -339,7 +340,7 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
 
   const moteOpacity: IUniform<number> = { value: VOID_VIEW.moteOpacity };
   const moteMaterial: ShaderMaterial = new ShaderMaterial({
-    uniforms: { uHero: hero, uShift: shift, uBox: { value: new Vector3(VOID_VIEW.moteBox.x, VOID_VIEW.moteBox.y, VOID_VIEW.moteBox.z) }, uTime: time, uSize: { value: VOID_VIEW.moteSize }, uPixelRatio: { value: Math.min(window.devicePixelRatio, VOID_VIEW.maxPixelRatio) }, uColor: color(VOID_VIEW.moteColor), uOpacity: moteOpacity },
+    uniforms: { uHero: hero, uShift: shift, uBox: { value: new Vector3(VOID_VIEW.moteBox.x, VOID_VIEW.moteBox.y, VOID_VIEW.moteBox.z) }, uTime: time, uSize: { value: VOID_VIEW.moteSize }, uPixelRatio: { value: Math.min(Number.isFinite(globalThis.devicePixelRatio) ? globalThis.devicePixelRatio : 1, VOID_VIEW.maxPixelRatio) }, uColor: color(VOID_VIEW.moteColor), uOpacity: moteOpacity },
     vertexShader: MOTE_VERTEX,
     fragmentShader: MOTE_FRAGMENT,
     transparent: true,
@@ -356,8 +357,12 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
   let lastShift: Vec2 | null = null;
   let speed: number = 0;
   let glimpseAlpha: number = 0;
+  let glimpseRise: number = VOID_VIEW.glimpseRate;
   let glimpseFor: MistDrive['gust'] = null;
   let glimpseWhich: number = -1;
+  const firstEncounter = zone.void?.encounters[0];
+  let wokeHere: boolean = false;
+  const beforeFirstFind = (world: World): boolean => firstEncounter !== undefined && allHold(world, firstEncounter.when) && !world.encounters.some((met: EncounterState): boolean => met.id === firstEncounter.id && met.pos !== null);
   let onLand: number = 0;
 
   const strike = (world: World): void => {
@@ -385,14 +390,19 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
     const gust: MistDrive['gust'] = drive.gust;
     if (gust !== null && gust !== glimpseFor && !gust.aimed) {
       glimpseFor = gust;
-      const reach: number = MIST.gustReach * VOID_VIEW.glimpseShare;
-      shown.group.position.set(world.player.pos.x + gust.dir.x * reach, zone.floorHeight, world.player.pos.z + gust.dir.z * reach);
-      shown.group.rotation.y = glimpseTurn(CAMERA.yawDegrees, Math.random());
-      glimpseWhich = glimpseOrder(shown.count, glimpseWhich, Math.random());
+      const opening: boolean = wokeHere && glimpseWhich < 0 && beforeFirstFind(world);
+      const reach: number = opening ? VOID_VIEW.openingGlimpse.reach : MIST.gustReach * VOID_VIEW.glimpseShare;
+      const side: number = opening ? VOID_VIEW.openingGlimpse.side : 0;
+      shown.group.position.set(world.player.pos.x + gust.dir.x * reach + gust.dir.z * side, zone.floorHeight, world.player.pos.z + gust.dir.z * reach - gust.dir.x * side);
+      shown.group.rotation.y = glimpseTurn(CAMERA.yawDegrees, opening ? 0.5 : Math.random());
+      glimpseWhich = opening ? 0 : glimpseOrder(shown.count, glimpseWhich, Math.random());
+      shown.uniforms.uVeilHaze.value.x = opening ? VOID_VIEW.openingGlimpse.nearHaze : VOID_GLIMPSE.haze.near;
+      shown.uniforms.uVeilTop.value.x = opening ? VOID_VIEW.openingGlimpse.crest : VOID_GLIMPSE.top.from;
+      glimpseRise = opening ? VOID_VIEW.openingGlimpse.riseRate : VOID_VIEW.glimpseRate;
       shown.show(glimpseWhich);
     }
     const wanted: number = gust !== null && !gust.aimed ? gust.strength * VOID_VIEW.glimpseOpacity : 0;
-    glimpseAlpha += (wanted - glimpseAlpha) * Math.min(1, dt * VOID_VIEW.glimpseRate);
+    glimpseAlpha += (wanted - glimpseAlpha) * Math.min(1, dt * (wanted > glimpseAlpha ? glimpseRise : VOID_VIEW.glimpseRate));
     shown.uniforms.uVeilShow.value = glimpseAlpha;
     shown.uniforms.uVeilTime.value = time.value;
     shown.uniforms.uVeilHero.value.set(world.player.pos.x, world.player.pos.z);
@@ -420,6 +430,10 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
     const lookDir: Vec2 | null = look === null || lookAway < VOID_VIEW.stillBelow ? null : { x: (look.x - pos.x) / lookAway, z: (look.z - pos.z) / lookAway };
     const anchored: Vec2 = { x: pos.x - world.shift.x, z: pos.z - world.shift.z };
     const lying: boolean = world.wake !== null;
+    if (lying && beforeFirstFind(world)) {
+      wokeHere = true;
+      drive.gustWait = VOID_VIEW.openingGlimpse.wait;
+    }
     const stage: WakeStage | null = world.wake === null ? null : wakeStage(world.wake.plan, world.wake.elapsed);
     const front: number | null = stage === null ? null : stage.front;
     const wave: WakeRim | null = stage === null ? null : wakeRim(stage.stir, stage.front);
