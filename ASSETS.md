@@ -675,7 +675,7 @@ The game's own model, trained in `rl/` against the game's simulation and exporte
 
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `public/models/rl/duel-pilot.bin` | `policy-u00600.pt` of the `corners-v3` training run (update 600 on top of `trees-v1` update 11000 widened to contract v8, with corner drills; best check 97% against the bot's 98%), exported by `rl/lost_storm_rl/export.py` | Made for this project | MIT |
+| `public/models/rl/duel-pilot.bin` | `policy-u00600.pt` of the `night-duel-1126` training run (update 600 on top of `press-v1` update 2850, contract v8; won 49 of 72 decided level-20 build duels against the `corners-v3` rival), exported by `rl/lost_storm_rl/export.py` | Made for this project | MIT |
 | `public/models/rl/resident-pilot.bin` | `policy-u03130.pt` of the `gather-v1` training run (gathering drills in the Hideout: reach a spot, meet a player, face them, keep clear of the people standing around; 81% of drills won over the last hundred updates), exported by `rl/lost_storm_rl/export.py` | Made for this project | MIT |
 
 ## Assets that must not be committed
