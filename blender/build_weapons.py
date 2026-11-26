@@ -170,6 +170,19 @@ def loft(name: str, rings: Sequence[Ring], made: Material) -> Object:
     return finish(obj, made)
 
 
+def bell_stay(name: str, angle: float, bone: Material) -> Object:
+    rings: list[Ring] = []
+    x, y = math.cos(angle), math.sin(angle)
+    for height, reach, width in ((0.92, 0.025, 0.036), (1.08, 0.25, 0.050), (1.39, 0.29, 0.042), (1.62, 0.15, 0.030), (1.68, 0.0, 0.025)):
+        rings.append((
+            (reach * x - width * y, reach * y + width * x, height),
+            ((reach + width) * x, (reach + width) * y, height),
+            (reach * x + width * y, reach * y - width * x, height),
+            ((reach - width) * x, (reach - width) * y, height),
+        ))
+    return loft(name, rings, bone)
+
+
 def limb(name: str, side: float, made: Material) -> list[Object]:
     y: float = CROSSBOW["side"]
     root: Point = (CROSSBOW["prod_x"], y, CROSSBOW["prod_z"])
@@ -318,6 +331,19 @@ def build(directory: str) -> None:
             rod("shaft", 0.014, 0.012, 1.5, 0.35, wood, 6),
             rod("point", 0.03, 0.002, 0.3, 1.25, bone, 6),
             box("binding", (0.04, 0.04, 0.06), 1.09, leather),
+        ],
+        directory,
+    )
+    export(
+        "echo_bell_staff",
+        [
+            rod("haft", 0.026, 0.034, 1.62, 0.17, wood, 8),
+            rod("binding", 0.049, 0.047, 0.14, 0.94, wood, 8),
+            *[bell_stay(f"stay_{index}", index * math.tau / 3, bone) for index in range(3)],
+            rod("hanger", 0.018, 0.018, 0.18, 1.57, bronze, 8),
+            rod("bell", 0.135, 0.049, 0.21, 1.40, bronze, 12),
+            rod("lip", 0.157, 0.129, 0.047, 1.29, bronze, 12),
+            ball("clapper", 0.041, 1.25, bronze),
         ],
         directory,
     )

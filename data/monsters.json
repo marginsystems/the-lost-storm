@@ -195,10 +195,10 @@
     "color": "#d08a5a",
     "tint": "#f2e4d6",
     "gear": [
-      "scrap_javelin"
+      "echo_bell_staff"
     ],
     "wear": [
-      "stolen_jerkin",
+      "linen_shirt",
       "faded_trousers",
       "cast_off_boots"
     ]

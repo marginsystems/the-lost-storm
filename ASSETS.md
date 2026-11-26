@@ -277,6 +277,7 @@ The worn pieces were thinned once with `tools/simplify-models.ts <ratio> <error>
 |---|---|---|---|
 | `public/models/weapons/bone_javelin.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/broadsword.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
+| `public/models/weapons/echo_bell_staff.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/flanged_mace.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/greatsword.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/hand_axe.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |

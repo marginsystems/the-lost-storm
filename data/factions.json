@@ -12,6 +12,7 @@
     "wearables": [
       "salvaged_mail",
       "patched_tunic",
+      "linen_shirt",
       "stolen_jerkin",
       "odd_breeches",
       "faded_trousers",
@@ -23,7 +24,8 @@
       "raider_maul",
       "raider_cleaver",
       "scrap_board",
-      "scrap_javelin"
+      "scrap_javelin",
+      "echo_bell_staff"
     ],
     "regards": {
       "player": "hostile",
