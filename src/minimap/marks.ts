@@ -7,8 +7,8 @@ import { encounterMarks, questMarks } from '../../sim/world/map-marks.ts';
 import { questPins } from '../../sim/world/quest-pins.ts';
 import type { QuestPin } from '../../sim/world/quest-pins.ts';
 import type { GroundItem, MomentState, World } from '../../sim/world/types.ts';
-import type { MapMatrix, MapPoint } from './projection.ts';
-import { edgeMark, headingOnMap, toMap } from './projection.ts';
+import type { MapMatrix, MapPoint, MapRadii } from './projection.ts';
+import { edgeMark, headingOnMap, mapRadii, toMap } from './projection.ts';
 
 export const MARKS = {
   hero: 7,
@@ -143,12 +143,11 @@ function momentShown(world: World, moment: MomentState): number {
 
 function drawMoment(context: CanvasRenderingContext2D, matrix: MapMatrix, world: World, moment: MomentState): void {
   const at: MapPoint = toMap(matrix, moment.pos.x, moment.pos.z);
-  const rim: MapPoint = toMap(matrix, moment.pos.x + moment.def.radius, moment.pos.z);
   const shown: number = momentShown(world, moment);
-  const radius: number = Math.hypot(rim.x - at.x, rim.y - at.y) * (moment.phase === 'fading' ? 1 : shown);
+  const radii: MapRadii = mapRadii(matrix, moment.def.radius * (moment.phase === 'fading' ? 1 : shown));
   context.save();
   context.beginPath();
-  context.arc(at.x, at.y, radius, 0, Math.PI * 2);
+  context.ellipse(at.x, at.y, radii.horizontal, radii.vertical, 0, 0, Math.PI * 2);
   context.globalAlpha = MARKS.momentFill * shown;
   context.fillStyle = moment.def.tint;
   context.fill();

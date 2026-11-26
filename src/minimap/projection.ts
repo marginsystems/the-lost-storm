@@ -42,6 +42,15 @@ export function toMap(matrix: MapMatrix, x: number, z: number): MapPoint {
   return { x: matrix.a * x + matrix.c * z + matrix.e, y: matrix.b * x + matrix.d * z + matrix.f };
 }
 
+export interface MapRadii {
+  readonly horizontal: number;
+  readonly vertical: number;
+}
+
+export function mapRadii(matrix: MapMatrix, radius: number): MapRadii {
+  return { horizontal: radius * Math.hypot(matrix.a, matrix.c), vertical: radius * Math.hypot(matrix.b, matrix.d) };
+}
+
 export function toWorld(matrix: MapMatrix, x: number, y: number): { readonly x: number; readonly z: number } {
   const det: number = matrix.a * matrix.d - matrix.b * matrix.c;
   const px: number = x - matrix.e;
