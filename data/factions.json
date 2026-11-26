@@ -49,7 +49,9 @@
       "still_trousers",
       "still_hood"
     ],
-    "weapons": [],
+    "weapons": [
+      "iron_maul"
+    ],
     "regards": {
       "player": "hostile"
     }
