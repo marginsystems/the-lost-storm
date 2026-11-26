@@ -269,7 +269,7 @@ node tools/compress-models.ts public/models/props/new_prop.glb
 
 The worn pieces were thinned once with `tools/simplify-models.ts <ratio> <error> <files>` (meshoptimizer's simplifier with the normals, texture coordinates and skin weights as weights, borders locked so the parts still meet and the UV seams stay), then compressed again with `compress-models.ts`. Triangle counts before and after, with the ratio asked for each file: `wear/{man,woman}/ranger.glb` 27,000 to 14,900 (0.55), `peasant.glb` 12,900 and 13,600 to 7,300 and 7,500 (0.55), `hair.glb` 10,200 to 6,300 (0.6), `headgear.glb` 14,700 to 7,600 (0.5), `charms.glb` 35,300 to 10,500 and 10,800 (0.4, most of it was the cord of each charm). Running it again thins the file again, so start from the originals in git history when changing a ratio.
 
-`characters/skeleton.glb` was thinned the same way (15,679 to 8,373 triangles, ratio 0.5). Textures that are large for how small a model is on screen are halved with `node tools/shrink-textures.ts 512 <files>`, which resizes every embedded image whose longer edge is over 512 and writes it back as WebP: `characters/skeleton.glb` (one 1024 texture) and `cave/{earth_roots_b,boulder_large,rock_face_a,rock_face_b,scree_shards,basket_lidded,rock_chunk_a,rock_chunk_b}.glb`. `cave/earth_roots_a.glb`, `shore/standing_stone_slender.glb` and `shore/standing_stone_broad.glb` keep their 1024 textures.
+`characters/skeleton.glb` was thinned the same way (15,679 to 8,373 triangles, ratio 0.5). Textures that are large for how small a model is on screen are halved with `node tools/shrink-textures.ts 512 <files>`, which resizes every embedded image whose longer edge is over 512 and writes it back as WebP: `characters/skeleton.glb` (one 1024 texture) and `cave/{earth_roots_b,boulder_large,rock_face_a,rock_face_b,scree_shards,basket_lidded,rock_chunk_a,rock_chunk_b}.glb`. `cave/earth_roots_a.glb` keeps its 1024 textures.
 
 ## Weapons
 
@@ -425,7 +425,7 @@ Add `only=<id>,<id>` to rebuild some of them.
 
 ## Props from Poly Haven
 
-Scanned models from polyhaven.com, all CC0. `blender/import_polyhaven.py` keeps the objects named in `blender/polyhaven.json`, reduces each to the triangle count given there, moves its origin to the middle of its base, shrinks its textures to 256 or 512 pixels and writes one `.glb` with WebP textures. Scale is unchanged; `data/props.json` sets the size in the game.
+Scanned models from polyhaven.com, all CC0. `blender/import_polyhaven.py` keeps the objects named in `blender/polyhaven.json`, reduces each to the triangle count given there, moves its origin to the middle of its base, shrinks its textures to 256 or 512 pixels and writes one `.glb` with WebP textures. Scale is unchanged; `data/props.json` sets the size in the game. The shipped chair, dead log and fifth rock in Rock Moss Set 01 omit their source images. Each use in `data/props.json` assigns a shared surface to the named material.
 
 | File | Poly Haven asset | Authors | Licence |
 |---|---|---|---|
@@ -634,6 +634,8 @@ The open lava in the lava levels. The 1K JPEG download's colour and normal (Open
 ## Shore dressing
 
 Standing stones, arches, spires and steps for the opening area, in `public/models/shore/`. Every file is one `.glb` standing on its origin: the middle of its footprint at x and z and its lowest point at y = 0, scaled to the size it should have in the world, without animations, skins, cameras or lights. Each went through the same steps as the cave dressing: the model was taken from the source below, the wanted object was kept and its parents' transforms were baked in, it was turned upright where noted, scaled to its size (the paving slabs flattened to 0.14 m), reduced to the triangle count in the manifest, and its textures reduced to at most 1024 pixels (512 for the models from Poly Pizza) and written as WebP; `tools/compress-models.ts` compressed it. The scans from Poly Haven went through `blender/import_polyhaven.py`'s steps (weld, decimate to 2400 triangles, ARM maps rewired). On the Poly Pizza models `rock_spire_tall` has its snow material coloured as the rock, and `rock_pillar_faceted` has its palette texture replaced by a flat dark grey colour; materials were made non-metallic where they are not metal.
+
+Both standing stones keep the source material names. The game dresses them in the shared `hall_stone` surface, so their shipped models omit the source images.
 
 ### Scans from Poly Haven
 
