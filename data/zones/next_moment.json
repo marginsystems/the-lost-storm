@@ -1,0 +1,77 @@
+{
+  "id": "next_moment",
+  "name": "A Lit Street",
+  "kind": "wild",
+  "level": 30,
+  "cellSize": 4,
+  "floorHeight": 0,
+  "tiles": [
+    "       ",
+    "  ccc  ",
+    "  ccc  ",
+    "  ccc  ",
+    "  ccc  ",
+    "  ccc  ",
+    "  ccc  ",
+    "  ccc  ",
+    "  ccc  ",
+    "  ccc  ",
+    "       "
+  ],
+  "floors": {
+    "c": "cobble"
+  },
+  "outside": {"surface": "cobble", "reach": 6},
+  "walls": null,
+  "playerStart": {"x": 14, "z": 37},
+  "props": [
+    {"prop": "house_a", "x": 14, "z": 0.5, "y": 0, "rotationDegrees": 0},
+    {"prop": "door_candles", "x": 14, "z": 4.6, "y": 0, "rotationDegrees": 0},
+    {"prop": "house_b", "x": 3, "z": 9, "y": 0, "rotationDegrees": 90},
+    {"prop": "house_a", "x": 3, "z": 21, "y": 0, "rotationDegrees": 90},
+    {"prop": "house_b", "x": 3, "z": 33, "y": 0, "rotationDegrees": 90},
+    {"prop": "house_a", "x": 25, "z": 11, "y": 0, "rotationDegrees": 270},
+    {"prop": "house_b", "x": 25, "z": 23, "y": 0, "rotationDegrees": 270},
+    {"prop": "house_a", "x": 25, "z": 35, "y": 0, "rotationDegrees": 270},
+    {"prop": "post_lantern_lit", "x": 9, "z": 14, "y": 0, "rotationDegrees": 90},
+    {"prop": "post_lantern_lit", "x": 19, "z": 26, "y": 0, "rotationDegrees": 270},
+    {"prop": "post_lantern_lit", "x": 9, "z": 36, "y": 0, "rotationDegrees": 90},
+    {"prop": "barrel", "x": 9.2, "z": 20, "y": 0, "rotationDegrees": 20},
+    {"prop": "crate", "x": 18.8, "z": 17, "y": 0, "rotationDegrees": 35},
+    {"prop": "bench", "x": 18.9, "z": 31, "y": 0, "rotationDegrees": 270}
+  ],
+  "packs": [],
+  "surge": null,
+  "exits": [],
+  "checkpoints": [],
+  "waypoint": null,
+  "npcs": [
+    {"npc": "moment_voice", "x": 12.6, "z": 4.6, "facingDegrees": 0}
+  ],
+  "voices": [
+    {"id": "next_moment_call", "x": 14, "z": 6, "radius": 16, "lines": ["moment_voice_come_in"], "when": []},
+    {"id": "next_moment_near", "x": 14, "z": 6, "radius": 7, "lines": ["moment_voice_kept_it"], "when": []}
+  ],
+  "flash": {
+    "from": "hideout",
+    "when": [{"type": "flag", "flag": "reeve_freed"}, {"type": "level", "atLeast": 30}, {"type": "flag", "flag": "next_count", "not": true}],
+    "calm": 3,
+    "seconds": 20,
+    "seam": 2.6,
+    "threshold": {"x": 14, "z": 5.4, "radius": 1.8},
+    "into": "between",
+    "sets": {"next_count": "flashed"}
+  },
+  "ambience": {
+    "background": "#2b2236",
+    "abyss": "#120d18",
+    "fogNear": 20,
+    "fogFar": 64,
+    "skyColor": "#8a74a8",
+    "groundColor": "#3d2f2a",
+    "skyIntensity": 3.2,
+    "keyColor": "#ffb27a",
+    "keyIntensity": 2.6
+  },
+  "weather": {"lightning": null, "rain": 0, "wet": 0.15, "mistWall": null}
+}

@@ -1,4 +1,5 @@
 import { EMPTY_BUFFER } from './press-buffer.ts';
+import { calmFlash } from './flash-types.ts';
 import { calmTailwind } from './tailwind.ts';
 import type { GlitchDef } from '../content/glitches.ts';
 import { loadGlitches } from '../content/glitches.ts';
@@ -199,6 +200,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     surge: save?.surge ?? 1,
     surgeTimer: null,
     wake: null,
+    flash: calmFlash(),
     shift: { x: 0, z: 0 },
     trail: { x: 0, z: 0 },
     heading: { x: 0, z: 1 },

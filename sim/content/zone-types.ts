@@ -3,7 +3,7 @@ import type { ZoneBarrier } from './barrier-types.ts';
 import type { ZoneScatter } from './scatter-types.ts';
 import type { Condition } from './condition-types.ts';
 import type { ZoneAmbience } from './ambience-types.ts';
-import type { ZoneVoid } from './story-types.ts';
+import type { ZoneFlash, ZoneVoid } from './story-types.ts';
 import type { ZoneDrift, ZoneHeroLight, ZoneTrigger, ZoneWeather } from './road-types.ts';
 import type { ZoneTunnel } from './tunnel-types.ts';
 import type { ZoneFall } from './fall-types.ts';
@@ -181,6 +181,7 @@ export interface ZoneDef {
   readonly scenes: readonly SceneDef[];
   readonly ambience: ZoneAmbience;
   readonly void: ZoneVoid | null;
+  readonly flash: ZoneFlash | null;
   readonly drifts: readonly ZoneDrift[];
   readonly triggers: readonly ZoneTrigger[];
   readonly moments: MomentField | null;

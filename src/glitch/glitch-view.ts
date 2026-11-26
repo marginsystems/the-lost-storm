@@ -1,10 +1,11 @@
 import type { Object3D, Scene } from 'three';
 import { Group } from 'three';
 import type { Vec2 } from '../../sim/math.ts';
+import type { ZoneFlash } from '../../sim/content/story-types.ts';
 import type { Command, World, WorldEvent } from '../../sim/world/types.ts';
 import type { TearPass } from '../render/tear-pass.ts';
 import type { TearLook } from './tear-look.ts';
-import { CALM_LOOK, hudTear, portalTear } from './tear-look.ts';
+import { CALM_LOOK, hudTear, portalTear, seamTear } from './tear-look.ts';
 import type { HudTearView } from './hud-tear.ts';
 import { createHudTear } from './hud-tear.ts';
 import type { Ghost } from './ghost.ts';
@@ -20,6 +21,7 @@ export const GLITCH_VIEW = {
   ghostOpacity: 0.4,
   historySeconds: 1.2,
   portalFade: 0.9,
+  seamFade: 1.4,
   whiteVar: '--tear-white',
   whiteHostId: 'vignette',
 } as const;
@@ -71,6 +73,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   let stutter: Stutter | null = null;
   let clock: number = 0;
   let fade: TearFade | null = null;
+  let rising: boolean = false;
   const tear: HudTearView = createHudTear(app);
 
   let asked: SettingRequest | null = null;
@@ -95,6 +98,30 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
       deps.tearPass.show(CALM_LOOK, now);
       tear.calm();
     }
+  };
+
+  const gentle = (): boolean => tearIsGentle(settings.get(), deps.reducedMotion());
+
+  const showLook = (look: TearLook, now: number): void => {
+    deps.tearPass.show(look, now);
+    tear.show(hudTear(look), now);
+    whiteHost?.style.setProperty(GLITCH_VIEW.whiteVar, look.white.toFixed(3));
+  };
+
+  const seamShare = (): number => {
+    const rules: ZoneFlash | null = world.zone.flash;
+    const left: number | null = world.flash.seamLeft;
+    return rules === null || left === null ? 1 : 1 - left / rules.seam;
+  };
+
+  const showRise = (now: number): void => {
+    if (rising) showLook(seamTear(gentle(), seamShare()), now);
+  };
+
+  const tearThrough = (): void => {
+    if (!rising) return;
+    rising = false;
+    fade = { look: seamTear(gentle(), 1), span: GLITCH_VIEW.seamFade, left: GLITCH_VIEW.seamFade };
   };
 
   const startStutter = (duration: number): void => {
@@ -144,7 +171,11 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
     handle(events: readonly WorldEvent[]): void {
       for (const event of events) {
         if (event.type === 'glitch_start' && event.kind === 'stutter') startStutter(event.duration);
-        else if (event.type === 'portal' && event.stage === 'entered' && world.glitch.active === null) fade = { look: portalTear(tearIsGentle(settings.get(), deps.reducedMotion())), span: GLITCH_VIEW.portalFade, left: GLITCH_VIEW.portalFade };
+        else if (event.type === 'portal' && event.stage === 'entered' && world.glitch.active === null) fade = { look: portalTear(gentle()), span: GLITCH_VIEW.portalFade, left: GLITCH_VIEW.portalFade };
+        else if (event.type === 'flash_seam') {
+          fade = null;
+          rising = true;
+        } else if (event.type === 'zone_changed') tearThrough();
       }
     },
     refresh(): void {
@@ -154,6 +185,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
       apply(settings.get());
       record(simDt);
       stepStutter(simDt);
+      showRise(now);
       showFade(dt, now);
     },
   };

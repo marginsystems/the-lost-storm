@@ -120,6 +120,23 @@ export interface ZoneVoid {
   readonly glimpses: readonly VoidGlimpse[];
 }
 
+export interface FlashThreshold {
+  readonly x: number;
+  readonly z: number;
+  readonly radius: number;
+}
+
+export interface ZoneFlash {
+  readonly from: string;
+  readonly when: readonly Condition[];
+  readonly calm: number;
+  readonly seconds: number;
+  readonly seam: number;
+  readonly threshold: FlashThreshold | null;
+  readonly into: string;
+  readonly sets: StoryFlags;
+}
+
 export interface PageDef {
   readonly id: string;
   readonly lines: readonly string[];

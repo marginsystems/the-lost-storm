@@ -528,6 +528,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'player_respawn':
           case 'hero_step':
           case 'wake':
+          case 'flash_seam':
           case 'encounter_nearing':
           case 'encounter_shown':
           case 'explored':

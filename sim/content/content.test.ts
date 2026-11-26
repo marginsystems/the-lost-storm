@@ -147,7 +147,7 @@ void test('in every zone the start, packs, exits, arrival points, checkpoints an
   }
 });
 
-void test('every exit out of a place leads to an exit that leads back, and every zone can be reached from the start zone or a void', (): void => {
+void test('every exit out of a place leads to an exit that leads back, and every zone can be reached from the start zone, a void or the zone a flash opens from', (): void => {
   const roots: string[] = [content.world.start, ...[...content.zones.values()].filter((zone: ZoneDef): boolean => zone.kind === 'void').map((zone: ZoneDef): string => zone.id)];
   const reached: Set<string> = new Set<string>(roots);
   const queue: string[] = [...reached];
@@ -165,13 +165,18 @@ void test('every exit out of a place leads to an exit that leads back, and every
         queue.push(far.id);
       }
     }
+    for (const flash of content.zones.values()) {
+      if (flash.flash?.from !== zone.id || reached.has(flash.id)) continue;
+      reached.add(flash.id);
+      queue.push(flash.id);
+    }
   }
   assert.deepEqual([...reached].toSorted(), [...content.zones.keys()].toSorted());
 });
 
-void test('towns, voids and duel grounds are safe and wild zones have something to fight', (): void => {
+void test('towns, voids, duel grounds and flashes are safe and wild zones have something to fight', (): void => {
   for (const zone of content.zones.values()) {
-    if (zone.kind === 'town' || zone.kind === 'void' || zone.duel !== null) {
+    if (zone.kind === 'town' || zone.kind === 'void' || zone.duel !== null || zone.flash !== null) {
       assert.equal(zone.packs.length, 0, `${zone.id} packs`);
       assert.equal(zone.surge, null, `${zone.id} surge`);
     } else {
@@ -283,9 +288,9 @@ void test('every talk objective has someone to talk to and a conversation of its
   }
 });
 
-void test('every zone but a duel ground, the void included, has one place in one act of the world map and no two share one', (): void => {
+void test('every zone but a duel ground or a flash, the void included, has one place in one act of the world map and no two share one', (): void => {
   const placed: string[] = content.world.acts.flatMap((act): string[] => act.atlas.places.map((place): string => place.zone));
-  const mapped: string[] = [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.duel === null).map((zone: ZoneDef): string => zone.id);
+  const mapped: string[] = [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.duel === null && zone.flash === null).map((zone: ZoneDef): string => zone.id);
   assert.deepEqual(placed.toSorted(), mapped.toSorted());
   for (const act of content.world.acts) {
     const spots: string[] = act.atlas.places.map((place): string => `${place.x},${place.y}`);

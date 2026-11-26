@@ -212,9 +212,11 @@ export function stepHints(defs: HintsDef, world: World, state: HintState, input:
   const changes: HintChange[] = [];
   observe(state, world, input.events);
   const current: HintDef | undefined = defs.hints.find((hint: HintDef): boolean => hint.id === state.active);
+  const flashing: boolean = world.zone.flash !== null;
   if (current !== undefined) {
-    if (world.dialogue === null) state.visibleFor += world.time - state.lastTime;
+    if (world.dialogue === null && !flashing) state.visibleFor += world.time - state.lastTime;
     state.lastTime = world.time;
+    if (flashing) return changes;
     if (finished(current.done, world, state, input.open)) {
       state.seen.add(current.id);
       state.active = null;
@@ -229,7 +231,7 @@ export function stepHints(defs: HintsDef, world: World, state: HintState, input:
     }
     return changes;
   }
-  if (!input.enabled) return changes;
+  if (!input.enabled || flashing) return changes;
   const objective: ObjectiveTarget | null = objectiveTarget(world);
   const next: HintDef | undefined = defs.hints.find((hint: HintDef): boolean => !state.seen.has(hint.id) && hint.after.every((id: string): boolean => state.seen.has(id)) && triggered(hint.trigger, world, objective));
   if (next === undefined) return changes;

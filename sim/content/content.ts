@@ -26,6 +26,7 @@ import baseLayers from '../../data/base-layers.json' with { type: 'json' };
 import world from '../../data/world.json' with { type: 'json' };
 import markers from '../../data/markers.json' with { type: 'json' };
 import between from '../../data/zones/between.json' with { type: 'json' };
+import nextMoment from '../../data/zones/next_moment.json' with { type: 'json' };
 import hallOfTime from '../../data/zones/hall_of_time.json' with { type: 'json' };
 import hideout from '../../data/zones/hideout.json' with { type: 'json' };
 import provingGround from '../../data/zones/proving_ground.json' with { type: 'json' };
@@ -48,7 +49,7 @@ import { modelFootprints, withFootprints } from './footprints.ts';
 import type { ModelFootprint } from './footprints.ts';
 import { withMarkerFootprints } from './markers.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, hallOfTime, hideout, provingGround, keepersGate, underHall, ledgerHall, underHall2, underHall3, ledgerHall2, ledgerHall3, lavaDepths, lavaDepths2, lavaDepths3, ledgerCourt], world, npcs, lines, quests, player, flasks, trade, books, moments, packRanks, runTable, tailwind, markers };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, nextMoment, hallOfTime, hideout, provingGround, keepersGate, underHall, ledgerHall, underHall2, underHall3, ledgerHall2, ledgerHall3, lavaDepths, lavaDepths2, lavaDepths3, ledgerCourt], world, npcs, lines, quests, player, flasks, trade, books, moments, packRanks, runTable, tailwind, markers };
 
 export function loadContent(): Content {
   const parsed: Content = parseContent(RAW_CONTENT);

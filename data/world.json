@@ -173,6 +173,20 @@
             ]
           },
           {
+            "from": "between",
+            "to": "hideout",
+            "via": [
+              {
+                "x": 600,
+                "y": 650
+              },
+              {
+                "x": 1000,
+                "y": 660
+              }
+            ]
+          },
+          {
             "from": "hall_of_time",
             "to": "keepers_gate",
             "via": [

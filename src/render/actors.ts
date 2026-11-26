@@ -142,7 +142,6 @@ function npcPose(npc: NpcState): ActorPose {
   return { pos: npc.pos, facing: npc.facing, motion: npc.motion, gait: npc.gait, knockTime: 0, busy: false, held: false, beat: null, deadTime: 0 };
 }
 
-
 function dress(content: Content, rigId: string, rig: RigInstance, clothes: readonly string[], equipped: Equipment | null): void {
   const look: Look = lookOf(content, rigId, clothes, equipped);
   rig.setWear(look.wearables, look.hidden);
@@ -671,6 +670,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'portal':
           case 'hero_step':
           case 'wake':
+          case 'flash_seam':
           case 'encounter_nearing':
           case 'encounter_shown':
           case 'revive':

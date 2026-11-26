@@ -28,6 +28,7 @@ import { chartDef, chartProblems, treeNode } from './parse-chart.ts';
 import { skillEmpowerment, statMod } from './parse-mods.ts';
 import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
+import { flashProblems } from './parse-flash.ts';
 import { PICTURE_VIEWS } from './rig-types.ts';
 import { surface } from './parse-surface.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
@@ -609,8 +610,11 @@ export function contentProblems(content: Content): string[] {
     const places: number = content.world.acts.filter((act: ActDef): boolean => act.atlas.places.some((place: MapPlace): boolean => place.zone === zoneDef.id)).length;
     if (zoneDef.kind === 'void') need(places <= 1, `${at} is a void: it has at most one place on the world map`);
     else if (zoneDef.duel !== null) need(places === 0, `${at} holds a duel: it has no place on the world map`);
+    else if (zoneDef.flash !== null) need(places === 0, `${at} is a flash: it has no place on the world map`);
     else need(places === 1, `${at} needs one place on the world map`);
     for (const met of zoneDef.void?.encounters ?? []) known(`${at} encounter ${met.id}`, met.when);
+    known(`${at} flash`, zoneDef.flash?.when ?? []);
+    for (const problem of flashProblems(at, zoneDef, content.zones)) need(false, problem);
     for (const placed of zoneDef.npcs) {
       need(content.npcs.has(placed.npc), `${at} places unknown npc ${placed.npc}`);
       known(`${at} npc ${placed.npc}`, placed.when);

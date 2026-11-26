@@ -279,6 +279,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'path_marked':
     case 'character_changed':
     case 'explored':
+    case 'flash_seam':
     case 'zone_changed':
     case 'checkpoint':
     case 'armed':

@@ -5,6 +5,7 @@ import type { Hud } from './hud/hud-api.ts';
 import type { Actors } from './render/actors.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import type { Overlays } from './render/overlays.ts';
+import type { WorldTag } from './render/world-tag.ts';
 import { createOverlays } from './render/overlays.ts';
 import { HEAD_TOP } from './render/head-top.ts';
 import type { SettingsStore } from './settings/store.ts';
@@ -21,7 +22,8 @@ export interface PlayOverlaysDeps {
 
 export function createPlayOverlays(deps: PlayOverlaysDeps): Overlays {
   const { world, camera, gameSettings, actors, hud, send } = deps;
-  return createOverlays(element('overlays', HTMLDivElement), camera, {
+  const root: HTMLDivElement = element('overlays', HTMLDivElement);
+  const overlays: Overlays = createOverlays(root, camera, {
     findLabel: findLabel(deps.touch),
     nameKeys: (): readonly string[] => gameSettings.keys().bindingsOf('names'),
     heightOf: (id: number): number => actors.heightOf(id),
@@ -43,4 +45,11 @@ export function createPlayOverlays(deps: PlayOverlaysDeps): Overlays {
     },
     onUse: (prop: number): void => send({ type: 'use', prop }),
   }, hud.targets);
+  return {
+    ...overlays,
+    update(dt: number, current: World, hoveredId: number | null, tags?: readonly WorldTag[]): void {
+      root.classList.toggle('hushed', current.zone.flash !== null);
+      overlays.update(dt, current, hoveredId, tags);
+    },
+  };
 }

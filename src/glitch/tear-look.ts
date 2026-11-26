@@ -8,6 +8,9 @@ export const TEAR_LOOK = {
   hudTearPixels: 46,
   portalWhite: 0.45,
   portalGentleWhite: 0.35,
+  seamGrow: 2,
+  seamTearUntil: 0.7,
+  seamWhiteFrom: 0.55,
 } as const;
 
 export interface TearLook {
@@ -33,4 +36,16 @@ export function portalTear(gentle: boolean): TearLook {
 
 export function hudTear(look: TearLook): HudTear {
   return { split: (look.split / TEAR_LOOK.tearSplit) * TEAR_LOOK.hudSplitPixels, tear: Math.min(1, look.tear + look.slip / TEAR_LOOK.tearSlip * 0.3) * TEAR_LOOK.hudTearPixels };
+}
+
+function smooth(from: number, to: number, share: number): number {
+  const t: number = Math.min(1, Math.max(0, (share - from) / (to - from)));
+  return t * t * (3 - 2 * t);
+}
+
+export function seamTear(gentle: boolean, share: number): TearLook {
+  const white: number = smooth(TEAR_LOOK.seamWhiteFrom, 1, share);
+  if (gentle) return { ...CALM_LOOK, white, banded: false };
+  const torn: number = smooth(0, TEAR_LOOK.seamTearUntil, share) * TEAR_LOOK.seamGrow;
+  return { split: TEAR_LOOK.tearSplit * torn, slip: TEAR_LOOK.tearSlip * torn, density: TEAR_LOOK.tearDensity, tear: TEAR_LOOK.tearStrength * Math.min(1, torn), blocks: TEAR_LOOK.tearBlocks * Math.min(1, torn), white, banded: true };
 }

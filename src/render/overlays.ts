@@ -498,6 +498,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'checkpoint':
           case 'hero_step':
           case 'wake':
+          case 'flash_seam':
           case 'encounter_nearing':
           case 'encounter_shown':
           case 'explored':

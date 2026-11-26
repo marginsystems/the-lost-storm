@@ -72,6 +72,14 @@ body.still .pause-card {
   pointer-events: none;
 }
 
+#overlays.hushed {
+  opacity: 0;
+}
+
+#overlays.hushed * {
+  pointer-events: none !important;
+}
+
 #title {
   position: absolute;
   inset: 0;

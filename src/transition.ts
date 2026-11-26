@@ -63,6 +63,7 @@ export function veilColour(zones: ReadonlyMap<string, ZoneDef>, events: readonly
     const leaving: string | null = zones.get(event.from)?.ambience.background ?? null;
     const entering: string | null = zones.get(event.to)?.ambience.background ?? null;
     if (entering === null || leaving === null) return null;
+    if ((zones.get(event.from)?.flash ?? null) !== null) return entering;
     if (isLight(entering) && !isLight(leaving)) return leaving;
     return entering;
   }

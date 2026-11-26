@@ -9,6 +9,7 @@ export const WAYSTATION = {
   id: 'waystation',
   name: 'The Waystation',
   level: 2,
+  voices: [],
   exits: [{ id: 'west_gate', x: 1.6, z: 26, radius: 1.6, to: 'shallows', toExit: 'east', arrival: { x: 7, z: 26 } }],
 };
 

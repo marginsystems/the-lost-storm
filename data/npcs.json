@@ -245,6 +245,26 @@
         ]
       },
       {
+        "id": "reeve_next",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_next_count",
+            "objective": "fire",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "reeve_next_open",
+          "reeve_next_in_it",
+          "reeve_next_face",
+          "reeve_next_out",
+          "reeve_next_touch",
+          "reeve_next_wait"
+        ]
+      },
+      {
         "id": "reeve_lantern",
         "once": true,
         "when": [
@@ -259,11 +279,69 @@
         ]
       },
       {
+        "id": "reeve_out_not_down",
+        "once": false,
+        "when": [
+          {
+            "type": "flag",
+            "flag": "next_count",
+            "is": "told"
+          }
+        ],
+        "lines": [
+          "reeve_next_reminder"
+        ]
+      },
+      {
         "id": "reeve_talk",
         "once": false,
         "when": [],
         "lines": [
           "reeve_ask_again"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "timekeeper_seeker",
+    "name": "Timekeeper",
+    "title": "the Seeker",
+    "faction": null,
+    "rig": "timekeeper",
+    "scale": 1.25,
+    "tint": "#e8ecf2",
+    "color": "#9fb4d8",
+    "gear": [],
+    "wear": [],
+    "talks": [
+      {
+        "id": "timekeeper_seeker_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "timekeeper_seeker_edges"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moment_voice",
+    "name": "A woman",
+    "title": "In the doorway",
+    "faction": null,
+    "rig": "human_woman",
+    "scale": 1.0,
+    "tint": "#fff1e0",
+    "color": "#ffc890",
+    "gear": [],
+    "wear": [],
+    "talks": [
+      {
+        "id": "moment_voice_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "moment_voice_wait"
         ]
       }
     ]

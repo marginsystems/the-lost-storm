@@ -2,6 +2,7 @@ import { hintSegments, hintWording } from '../../sim/content/hints.ts';
 import type { HintDef, HintPanel, HintsDef, HintSegment, HintTrigger } from '../../sim/content/hints.ts';
 import { createHintState, rememberedSeen, seedVeteran, stepHints, stillTeaches } from '../../sim/hints.ts';
 import type { HintChange, HintState } from '../../sim/hints.ts';
+import { hudHidden } from '../../sim/world/hud.ts';
 import type { World, WorldEvent } from '../../sim/world/types.ts';
 import type { HintStore } from '../hints-store.ts';
 import type { ResolvedKeys } from '../settings/bindings.ts';
@@ -92,7 +93,7 @@ export function createHints(parent: HTMLElement, defs: HintsDef, store: HintStor
           swap.hide();
         }
       }
-      if (state.active !== null && !swap.busy()) setShown(world.dialogue === null);
+      if (state.active !== null && !swap.busy()) setShown(world.dialogue === null && !hudHidden(world));
     },
   };
 }

@@ -15,6 +15,7 @@ import { recordPath } from './path-log.ts';
 import { separateActors, settleGaits, strideOf } from './movement.ts';
 import { handleCommand, stepPlayer } from './player.ts';
 import { stepQuests } from './quests.ts';
+import { flashHolds, stepFlash } from './flash.ts';
 import { stepVoices } from './voices.ts';
 import { stepEchoes, stepProjectiles } from './skills.ts';
 import { stepTrade } from './trade.ts';
@@ -50,6 +51,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   for (const command of commands) {
     const hero: PlayerState | null = heroFor(world, command);
     if (hero === null) continue;
+    if (flashHolds(world, command)) continue;
     if (acceptsCommand(world, command)) handleCommand(world, hero, command);
     else if (isPrimary(world, hero)) hurryWake(world, command);
   }
@@ -103,6 +105,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepVoices(world);
   stepTriggers(world);
   stepQuests(world);
+  stepFlash(world, dt);
   learnSkills(world);
   grantPoints(world);
   stepTrade(world);

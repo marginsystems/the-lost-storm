@@ -46,7 +46,7 @@ import type {
   ZoneWaypoint,
 } from './types.ts';
 import { remarks, service } from './parse-trade.ts';
-import type { GlimpsePiece, ShorePath, ShorePool, ShoreProp, ShoreRoom, VoidGlimpse, VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
+import type { GlimpsePiece, ShorePath, ShorePool, ShoreProp, ShoreRoom, VoidGlimpse, VoidShore, ZoneFlash, ZoneVoid, ZoneWake } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, DUEL_GEAR, ZONE_KINDS } from './types.ts';
 import { zoneScatter } from './parse-scatter.ts';
 import { zoneBarrier } from './parse-barrier.ts';
@@ -59,6 +59,7 @@ import { zoneHeroLight, zoneWeather } from './parse-weather.ts';
 import { zoneTerrain } from './parse-terrain.ts';
 import { zoneTunnels } from './parse-tunnel.ts';
 import { zoneFalls } from './parse-fall.ts';
+import { zoneFlash } from './parse-flash.ts';
 
 function point(value: unknown, where: string): ZonePoint {
   const source: Fields = fields(value, where);
@@ -295,6 +296,8 @@ export function zone(value: unknown, where: string): ZoneDef {
   if (kind === 'void' && [source['npcs'], source['checkpoints'], source['props'], source['scatter']].some((list: unknown): boolean => Array.isArray(list) && list.length > 0)) throw new ContentError(where, 'a void recentres around the hero: it cannot hold npcs, checkpoints or props');
   if (kind === 'void' && source['waypoint'] !== null && source['waypoint'] !== undefined) throw new ContentError(`${where}.waypoint`, 'a void recentres around the hero: it cannot hold a waypoint');
   if ((kind === 'void') !== (source['void'] !== undefined && source['void'] !== null)) throw new ContentError(`${where}.void`, kind === 'void' ? 'a void zone needs its void rules' : 'only a void zone has void rules');
+  const flash: ZoneFlash | null = zoneFlash(source['flash'], `${where}.flash`);
+  if (flash !== null && (kind !== 'wild' || packs.length > 0 || surge !== null || source['moments'] !== undefined)) throw new ContentError(`${where}.flash`, 'a flash is a quiet wild zone: no packs, surge or moments');
   const level: number = positive(source, 'level', where);
   const levelUpTo: number = source['levelUpTo'] === undefined ? level : positive(source, 'levelUpTo', where);
   if (levelUpTo < level) throw new ContentError(`${where}.levelUpTo`, 'a zone cannot follow the hero below its own level');
@@ -333,6 +336,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     scenes: zoneScenes(source['scenes'], `${where}.scenes`),
     ambience: zoneAmbience(source['ambience'], `${where}.ambience`),
     void: kind === 'void' ? zoneVoid(source['void'], `${where}.void`) : null,
+    flash,
     drifts: drifts(source['drifts'], `${where}.drifts`),
     triggers: triggers(source['triggers'], `${where}.triggers`),
     moments: momentField(source['moments'], `${where}.moments`),

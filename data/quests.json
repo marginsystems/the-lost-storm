@@ -254,6 +254,40 @@
     ]
   },
   {
+    "id": "the_next_count",
+    "name": "The Next Count",
+    "requires": [
+      "the_count"
+    ],
+    "when": [
+      {
+        "type": "flag",
+        "flag": "next_count"
+      }
+    ],
+    "objectives": [
+      {
+        "id": "fire",
+        "type": "talk",
+        "npc": "reeve",
+        "talk": "reeve_next",
+        "text": "Find Reeve at the fire in the Hideout",
+        "sets": {
+          "next_count": "told"
+        }
+      },
+      {
+        "id": "out",
+        "type": "reach",
+        "zone": "hideout",
+        "x": 29.5,
+        "z": 5.5,
+        "radius": 3,
+        "text": "Go out toward the Stilled Reach"
+      }
+    ]
+  },
+  {
     "id": "the_untouched",
     "name": "What You Left",
     "requires": [

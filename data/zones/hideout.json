@@ -99,7 +99,11 @@
     {"npc": "reeve", "x": 21.5, "z": 24.5, "facingDegrees": 151, "when": [{"type": "defeated", "monster": "ledger_keeper"}]},
     {"npc": "warden_lookout", "x": 31, "z": 23, "facingDegrees": 250},
     {"npc": "warden_auctioneer", "x": 19.5, "z": 14.5, "facingDegrees": 120},
-    {"npc": "warden_appraiser", "x": 24, "z": 9.8, "facingDegrees": 0}
+    {"npc": "warden_appraiser", "x": 24, "z": 9.8, "facingDegrees": 0},
+    {"npc": "timekeeper_seeker", "x": 37, "z": 6, "facingDegrees": 317, "when": [{"type": "objective", "quest": "the_next_count", "objective": "out", "is": "current"}], "leave": 2.5}
+  ],
+  "voices": [
+    {"id": "hideout_first_page", "x": 24, "z": 7, "radius": 6, "lines": ["timekeeper_seeker_first_page"], "when": [{"type": "objective", "quest": "the_next_count", "objective": "out", "is": "current"}]}
   ],
   "ambience": {"background": "#0a0e16", "abyss": "#05070b", "fogNear": 26, "fogFar": 92, "skyColor": "#5a6f94", "groundColor": "#344057", "skyIntensity": 6.8, "keyColor": "#b9cbe8", "keyIntensity": 4.8},
   "weather": {"lightning": {"first": 3, "min": 7, "max": 14}, "rain": 0, "wet": 0.35, "mistWall": null}

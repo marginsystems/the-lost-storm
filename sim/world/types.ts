@@ -1,4 +1,5 @@
 import type { PivotState } from './pivot.ts';
+import type { FlashState } from './flash-types.ts';
 import type { TailwindEnd, TailwindState } from './tailwind-types.ts';
 import type { RankRun } from '../content/rank-types.ts';
 import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
@@ -420,6 +421,7 @@ export type WorldEvent =
   | { readonly type: 'surge_cleared'; readonly surge: number; readonly delay: number }
   | { readonly type: 'player_respawn' }
   | { readonly type: 'zone_changed'; readonly from: string; readonly to: string }
+  | { readonly type: 'flash_seam'; readonly zone: string; readonly seconds: number }
   | { readonly type: 'checkpoint'; readonly checkpoint: string; readonly pos: Vec2 }
   | { readonly type: 'hero_step'; readonly pos: Vec2 }
   | { readonly type: 'wake'; readonly beat: WakeBeat }
@@ -528,6 +530,7 @@ export interface World {
   surge: number;
   surgeTimer: number | null;
   wake: WakeState | null;
+  flash: FlashState;
   shift: Vec2;
   trail: Vec2;
   heading: Vec2;

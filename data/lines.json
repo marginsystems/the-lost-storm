@@ -69,5 +69,17 @@
   {"id": "reeve_other_column", "speaker": "reeve", "text": "The book had another column. The moments you walked into and left as you found them."},
   {"id": "reeve_kept_it", "speaker": "reeve", "text": "No one asked me to keep it. I kept it anyway. Take this."},
   {"id": "reeve_ask_again", "speaker": "reeve", "text": "Order or freedom. Ask me again next count."},
+  {"id": "reeve_next_open", "speaker": "reeve", "text": "A new book is open. I felt it from here, like a door shut in another room."},
+  {"id": "reeve_next_in_it", "speaker": "reeve", "text": "You are in it again. One too many, the same as before."},
+  {"id": "reeve_next_face", "speaker": "reeve", "text": "This time they know your face. They will not wait at a gate for you to come to them."},
+  {"id": "reeve_next_out", "speaker": "reeve", "text": "So do not go back toward the count. Go out, away from it, to where the gaps of others lie."},
+  {"id": "reeve_next_touch", "speaker": "reeve", "text": "The gaps touch. This fire is where they meet. Walk far enough from it and you stand in someone else's."},
+  {"id": "reeve_next_wait", "speaker": "reeve", "text": "The one with the lantern brought you this far. From now on, I am the one who waits at the fire."},
+  {"id": "reeve_next_reminder", "speaker": "reeve", "text": "Out, not down. The ones who stand still out there are not resting."},
+  {"id": "timekeeper_seeker_first_page", "speaker": "timekeeper_seeker", "text": "You broke the last book and did not take the pen. In this one, we wrote you down first."},
+  {"id": "timekeeper_seeker_edges", "speaker": "timekeeper_seeker", "text": "Every gap has an edge. We walk them all."},
+  {"id": "moment_voice_come_in", "speaker": "moment_voice", "text": "There you are. Come in, it's nearly dark."},
+  {"id": "moment_voice_kept_it", "speaker": "moment_voice", "text": "Don't stand out there in the cold. Supper's on."},
+  {"id": "moment_voice_wait", "speaker": "moment_voice", "text": "Is that you? Come in out of the cold."},
   {"id": "journal_do_not", "speaker": "journal", "text": "Do not."}
 ]
