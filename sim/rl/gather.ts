@@ -157,7 +157,7 @@ export function facingError(hero: PlayerState, point: Vec2): number {
 }
 
 export function gatherZones(content: Content): ZoneDef[] {
-  return [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.duel === null && zone.void === null);
+  return [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.duel === null && zone.void === null && zone.flash === null);
 }
 
 function groundOf(content: Content, zone: ZoneDef): Ground {
@@ -183,7 +183,7 @@ export function gatherWorld(content: Content, zone: ZoneDef, seed: number): Worl
   world.moments = [];
   world.encounters = [];
   world.packReturns = [];
-  world.spawnedPacks = [];
+  world.spawnedPacks = [...zone.packs];
   world.roused = [];
   world.wards = [];
   world.ground = [];

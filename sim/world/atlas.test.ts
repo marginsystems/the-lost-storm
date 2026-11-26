@@ -72,7 +72,7 @@ void test('a zone is marked by its kind, and a zone with a boss pack is a boss z
 });
 
 void test('a zone belongs to the act that places it', (): void => {
-  for (const zone of [...content.zones.values()].filter((def): boolean => def.kind !== 'void' && def.duel === null).map((def): string => def.id)) assert.ok(must(actOf(content, zone), 'act').atlas.places.some((place: MapPlace): boolean => place.zone === zone), zone);
+  for (const zone of [...content.zones.values()].filter((def): boolean => def.kind !== 'void' && def.duel === null && def.flash === null).map((def): string => def.id)) assert.ok(must(actOf(content, zone), 'act').atlas.places.some((place: MapPlace): boolean => place.zone === zone), zone);
   const first: ActDef = { ...act, atlas };
   const without = (zone: string): ActDef => ({ ...first, atlas: { ...atlas, places: atlas.places.filter((place: MapPlace): boolean => place.zone !== zone) } });
   const second: ActDef = { ...first, id: 'act_2', atlas: { ...atlas, places: atlas.places.filter((place: MapPlace): boolean => place.zone === 'vale') } };
@@ -100,7 +100,7 @@ void test('the act shows the In-Between, the Hall of Time and the Hideout west t
   assert.deepEqual(xs, xs.toSorted((a: number, b: number): number => a - b));
   assert.deepEqual(
     act.atlas.roads.map((joined: AtlasRoad): string => `${joined.from} ${joined.to}`),
-    ['between hall_of_time', 'hall_of_time hideout', 'hall_of_time keepers_gate', 'keepers_gate under_hall', 'under_hall under_hall_2', 'under_hall_2 under_hall_3', 'under_hall_3 lava_depths', 'lava_depths lava_depths_2', 'lava_depths_2 lava_depths_3', 'lava_depths_3 ledger_hall', 'ledger_hall ledger_hall_2', 'ledger_hall_2 ledger_hall_3', 'ledger_hall_3 ledger_court'],
+    ['between hall_of_time', 'hall_of_time hideout', 'between hideout', 'hall_of_time keepers_gate', 'keepers_gate under_hall', 'under_hall under_hall_2', 'under_hall_2 under_hall_3', 'under_hall_3 lava_depths', 'lava_depths lava_depths_2', 'lava_depths_2 lava_depths_3', 'lava_depths_3 ledger_hall', 'ledger_hall ledger_hall_2', 'ledger_hall_2 ledger_hall_3', 'ledger_hall_3 ledger_court'],
   );
   const hall: MapPlace = must(act.atlas.places.find((place: MapPlace): boolean => place.zone === 'hall_of_time'), 'hall');
   const lair: MapPlace = must(act.atlas.places.find((place: MapPlace): boolean => place.zone === 'keepers_gate'), 'lair');

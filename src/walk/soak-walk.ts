@@ -43,7 +43,7 @@ export function soakRoute(content: Content, start: string = SOAK_WALK.start): So
     }
   };
   visit(first);
-  const unreached: string[] = [...content.zones.keys()].filter((id: string): boolean => !seen.has(id));
+  const unreached: string[] = [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.flash === null && !seen.has(zone.id)).map((zone: ZoneDef): string => zone.id);
   return { steps, zones: [...seen], problems: unreached.map((id: string): string => `the soak never reaches ${id}: no way there and back from ${start}`) };
 }
 

@@ -46,6 +46,7 @@ function quietWorld(zoneId: string): World {
   const world: World = worldIn(content, zoneId, 1);
   setFlags(world, content.moments.cleared);
   clearMoments(world);
+  if (world.zone.flash !== null) world.zone = { ...world.zone, flash: null };
   world.monsters = [];
   world.spawnedPacks.push(...world.zone.packs);
   world.packReturns = [];

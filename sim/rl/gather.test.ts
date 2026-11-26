@@ -4,6 +4,7 @@ import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { facingOf } from '../math.ts';
+import { spawnPacks } from '../world/monsters.ts';
 import type { Command, PlayerState } from '../world/types.ts';
 import { must } from '../../test/support.ts';
 import { commandsFor } from './act.ts';
@@ -58,13 +59,19 @@ function feature(seen: Observation, name: string): number {
   return seen.obs[SELF_FEATURES.indexOf(name)] ?? Number.NaN;
 }
 
-void test('gathers are played on open zones without duels or void, the Hideout among them', (): void => {
+void test('gathers are played on open zones without duels, void or timed scenes, the Hideout among them', (): void => {
   const zones: ZoneDef[] = gatherZones(CONTENT);
   assert.ok(zones.some((zone: ZoneDef): boolean => zone.id === GATHER.hideout));
-  assert.ok(zones.every((zone: ZoneDef): boolean => zone.duel === null && zone.void === null));
+  assert.ok(zones.every((zone: ZoneDef): boolean => zone.duel === null && zone.void === null && zone.flash === null));
   const played: Gather[] = SEEDS.map((seed: number): Gather => createGather(CONTENT, { seed }));
   assert.ok(played.some((gather: Gather): boolean => gather.zone === GATHER.hideout));
   assert.ok(played.every((gather: Gather): boolean => gather.world.monsters.length === 0));
+  const hall: Gather = createGather(CONTENT, { seed: 9, zone: 'hall_of_time' });
+  const pack = must(hall.world.zone.packs[0], 'Hall pack');
+  hall.hero.pos = { x: pack.x, z: pack.z };
+  stepGather(hall, []);
+  spawnPacks(hall.world);
+  assert.equal(hall.world.monsters.length, 0);
 });
 
 void test('the same seed lays out the same gather', (): void => {

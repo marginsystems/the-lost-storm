@@ -17,10 +17,11 @@ function freshWorld(): World {
   return createWorld(content, { seed: 7, save: null, opening: true });
 }
 
-void test('one soak lap reaches every zone and comes back to where it started, each exit leading on to the next step', (): void => {
+void test('one soak lap reaches every permanent zone and comes back to where it started, each exit leading on to the next step', (): void => {
   const route = soakRoute(content);
   assert.deepEqual(route.problems, []);
-  assert.deepEqual([...route.zones].toSorted(), [...content.zones.keys()].toSorted());
+  const permanent: string[] = [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.flash === null).map((zone: ZoneDef): string => zone.id);
+  assert.deepEqual([...route.zones].toSorted(), permanent.toSorted());
   assert.equal(route.steps[0]?.from, SOAK_WALK.start);
   assert.equal(route.steps.at(-1)?.exit.to, SOAK_WALK.start);
   route.steps.forEach((step: WalkStep, index: number): void => {
@@ -28,13 +29,16 @@ void test('one soak lap reaches every zone and comes back to where it started, e
     if (next !== undefined) assert.equal(step.exit.to, next.from);
     assert.equal(content.zones.get(step.from)?.exits.includes(step.exit), true);
   });
-  assert.equal(route.steps.length, 2 * (content.zones.size - 1));
+  assert.equal(route.steps.length, 2 * (permanent.length - 1));
 });
 
 void test('a soak from a missing zone says so, and one from the deepest zone still reaches them all', (): void => {
   assert.deepEqual(soakRoute(content, 'no_such_zone').problems, ['there is no zone no_such_zone to start the soak from']);
   const route = soakRoute(content, 'ledger_court');
   assert.deepEqual(route.problems, []);
+  const stranded: ZoneDef = { ...must(content.zones.get('hideout'), 'hideout'), id: 'island', exits: [] };
+  const zones = new Map(content.zones).set(stranded.id, stranded);
+  assert.deepEqual(soakRoute({ ...content, zones }).problems, ['the soak never reaches island: no way there and back from hall_of_time']);
 });
 
 void test('the way to the start is the shortest chain of exits, and none leads to a zone that is not there', (): void => {

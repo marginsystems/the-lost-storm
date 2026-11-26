@@ -38,7 +38,7 @@
     {"prop": "post_lantern_lit", "x": 9, "z": 36, "y": 0, "rotationDegrees": 90},
     {"prop": "barrel", "x": 9.2, "z": 20, "y": 0, "rotationDegrees": 20},
     {"prop": "crate", "x": 18.8, "z": 17, "y": 0, "rotationDegrees": 35},
-    {"prop": "bench", "x": 18.9, "z": 31, "y": 0, "rotationDegrees": 270}
+    {"prop": "bench", "x": 17.8, "z": 31, "y": 0, "rotationDegrees": 270}
   ],
   "packs": [],
   "surge": null,

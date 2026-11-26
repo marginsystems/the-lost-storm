@@ -2,7 +2,7 @@ import type { Content, PropDef, ZoneDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import type { Blocker, NavGrid } from '../nav/grid.ts';
 import { blockerGap, bodyGap, cellCenter, cellIndex } from '../nav/grid.ts';
-import { heightAt } from '../nav/terrain.ts';
+import { floorAt, heightAt } from '../nav/terrain.ts';
 import { createWorld } from './create.ts';
 import { raiseShore, shoreBlockers, shorePlacements } from './shore-props.ts';
 import type { World } from './types.ts';
@@ -361,9 +361,12 @@ export function analyseGaps(content: Content, staged: StagedWorld): GapAnalysis 
   const stand: Uint8Array = new Uint8Array(count);
   for (let index: number = 0; index < count; index += 1) {
     if (solid[index] === 1) continue;
-    if (body[index] !== 1) pinch[index] = 1;
-    else if (roomy[index] !== 1) narrow[index] = 1;
     if ((clearance[index] ?? 0) * GAPS.sample >= radius) stand[index] = 1;
+    if (body[index] === 1 && roomy[index] === 1) continue;
+    const at: Vec2 = sampleAt(field, index % field.columns, Math.floor(index / field.columns));
+    if (!floorAt(staged.world.zone, at.x, at.z)) continue;
+    const lane: Uint8Array = body[index] === 1 ? narrow : pinch;
+    lane[index] = 1;
   }
   const reached: Uint8Array = reachFrom(stand, field, staged.start);
   const pocket: Uint8Array = stand.map((value: number, index: number): number => (value === 1 && reached[index] !== 1 ? 1 : 0));
