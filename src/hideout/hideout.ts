@@ -35,10 +35,6 @@ import { createMutes } from './mute.ts';
 import type { Ground, ResidentVoice, VoicePhase } from './resident-voice.ts';
 import { createResidentVoice } from './resident-voice.ts';
 import type { OtherHead } from '../render/others.ts';
-import { Vector2 } from 'three';
-import { anchorInView } from '../render/label-edge.ts';
-import type { ElementSize } from '../render/element-size.ts';
-import { watchSize } from '../render/element-size.ts';
 import { HEAD_TOP } from '../render/head-top.ts';
 import { standLift } from '../render/terrain-lift.ts';
 import type { Speaker, SpeechState, SpokenLine } from './speech.ts';
@@ -129,8 +125,6 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     const id: string | null = otherId(speaker);
     return id === null ? null : others.headOf(id);
   };
-  const screen: ElementSize = watchSize(parts.labels);
-  const spot: Vector2 = new Vector2();
   const homeOf = (world: World | null, speaker: Speaker): BubbleHome | null => {
     if (speaker.kind !== 'self') {
       const id: string | null = otherId(speaker);
@@ -139,7 +133,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     }
     if (world === null) return null;
     const head: OtherHead = heroHead(world);
-    return { kind: 'world', ...head, seen: parts.camera.project(head.x, head.y, head.z, spot) && anchorInView(spot.x, spot.y, screen) };
+    return { kind: 'world', ...head };
   };
   const heroHead = (world: World): OtherHead => {
     const { pos } = world.player;

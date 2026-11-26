@@ -20,8 +20,6 @@ import type { ElementSize } from './element-size.ts';
 import { watchSize } from './element-size.ts';
 import { keepTagInView } from './label-edge.ts';
 import { HEAD_TOP } from './head-top.ts';
-import type { LabelGlide } from './label-glide.ts';
-import { createGlide } from './label-glide.ts';
 import type { WorldTag } from './world-tag.ts';
 import type { MapCharacter } from '../minimap/marks.ts';
 import { SEES_ALL } from './sight.ts';
@@ -114,9 +112,6 @@ interface OtherTag {
   y: number;
   z: number;
   shown: boolean;
-  edge: boolean;
-  readonly glide: LabelGlide;
-  readonly stack: LabelGlide;
 }
 
 interface Fade {
@@ -289,7 +284,7 @@ export function createOthers(options: OthersOptions): Others {
     label.append(holder);
     label.style.opacity = '0';
     options.labels.append(label);
-    others.set(player.id, { id: player.id, track: createTrack(sample), label, holder, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null, plate: null, gesture: createGestureState(), tag: { element: label, x: 0, y: 0, z: 0, shown: false, edge: false, glide: createGlide(), stack: createGlide() } });
+    others.set(player.id, { id: player.id, track: createTrack(sample), label, holder, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null, plate: null, gesture: createGestureState(), tag: { element: label, x: 0, y: 0, z: 0, shown: false } });
     const added: Other | undefined = others.get(player.id);
     if (added !== undefined) placeAct(added.gesture, player.act ?? null);
   };
@@ -429,7 +424,6 @@ export function createOthers(options: OthersOptions): Others {
           tag.x = pose.x;
           tag.y = floor + rise + HEAD_TOP.gap;
           tag.z = pose.z;
-          tag.edge = other.resident;
           tag.shown = shown > OTHERS.hiddenBelow;
           camera.project(tag.x, tag.y, tag.z, point);
           if (other.resident) {

@@ -1,5 +1,3 @@
-import type { LabelGlide } from '../render/label-glide.ts';
-import { createGlide } from '../render/label-glide.ts';
 import type { WorldTag } from '../render/world-tag.ts';
 import type { Bubble, Speaker } from './speech.ts';
 
@@ -12,12 +10,11 @@ export const SPEECH_BUBBLES = {
   residentClass: 'resident',
   heldClass: 'held',
   leavingClass: 'leaving',
-  awayClass: 'away',
   lineLeaveMs: 520,
   leaveMs: 520,
 } as const;
 
-export type BubbleHome = { readonly kind: 'world'; readonly x: number; readonly y: number; readonly z: number; readonly seen: boolean } | { readonly kind: 'held'; readonly holder: HTMLElement };
+export type BubbleHome = { readonly kind: 'world'; readonly x: number; readonly y: number; readonly z: number } | { readonly kind: 'held'; readonly holder: HTMLElement };
 
 export type HomeOf = (speaker: Speaker) => BubbleHome | null;
 
@@ -32,9 +29,6 @@ interface BubbleTag {
   y: number;
   z: number;
   shown: boolean;
-  readonly edge: boolean;
-  readonly glide: LabelGlide;
-  readonly stack: LabelGlide;
 }
 
 interface OldLine {
@@ -80,17 +74,13 @@ function settle(shown: Drawn, home: BubbleHome, layer: HTMLElement): void {
       shown.tag.x = home.x;
       shown.tag.y = home.y;
       shown.tag.z = home.z;
-      if (shown.tag.shown !== home.seen) {
-        shown.tag.shown = home.seen;
-        shown.element.classList.toggle(SPEECH_BUBBLES.awayClass, !home.seen);
-      }
+      shown.tag.shown = true;
       return;
     case 'held':
       if (!shown.held || shown.element.parentElement !== home.holder) {
         shown.held = true;
         shown.tag.shown = false;
         shown.element.classList.add(SPEECH_BUBBLES.heldClass);
-        shown.element.classList.remove(SPEECH_BUBBLES.awayClass);
         home.holder.prepend(shown.element);
       }
       return;
@@ -104,7 +94,6 @@ export function createSpeechBubbles(layer: HTMLElement): SpeechBubbles {
     const element: HTMLDivElement = document.createElement('div');
     element.className = SPEECH_BUBBLES.bubbleClass;
     element.classList.toggle(SPEECH_BUBBLES.residentClass, residentSpeaker(bubble.speaker));
-    element.classList.add(SPEECH_BUBBLES.awayClass);
     const plate: HTMLDivElement = document.createElement('div');
     plate.className = SPEECH_BUBBLES.plateClass;
     const body: HTMLDivElement = document.createElement('div');
@@ -116,7 +105,7 @@ export function createSpeechBubbles(layer: HTMLElement): SpeechBubbles {
     body.append(lines);
     plate.append(body);
     element.append(plate);
-    const made: Drawn = { element, lines, current, line: bubble.line, leaving: null, held: false, old: [], tag: { element, x: 0, y: 0, z: 0, shown: false, edge: true, glide: createGlide(), stack: createGlide() } };
+    const made: Drawn = { element, lines, current, line: bubble.line, leaving: null, held: false, old: [], tag: { element, x: 0, y: 0, z: 0, shown: false } };
     settle(made, home, layer);
     fitLines(made);
     return made;
