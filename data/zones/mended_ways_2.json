@@ -430,7 +430,7 @@
   ],
   "playerStart": {"x":255,"z":33},
   "props": [
-    {"prop":"hall_column_broken","x":55,"z":370.5,"y":0,"rotationDegrees":0},
+    {"prop":"hall_column_broken","x":55.75,"z":370.5,"y":0,"rotationDegrees":0},
     {"prop":"hall_column_broken","x":65,"z":370.5,"y":0,"rotationDegrees":0},
     {"prop":"hall_column_fallen","x":60,"z":371.8,"y":0,"rotationDegrees":0},
     {"prop":"wide_stair","x":282,"z":58,"y":-0.9,"rotationDegrees":90},
