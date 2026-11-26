@@ -32,7 +32,7 @@ export function shrinkTexture(texture: ImageHolder, maxSize: number): boolean {
   if (context === null) return false;
   context.imageSmoothingQuality = 'high';
   context.drawImage(image, 0, 0, size.width, size.height);
-  if (image instanceof ImageBitmap) image.close();
+  if (typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap) image.close();
   texture.image = canvas;
   texture.needsUpdate = true;
   return true;
