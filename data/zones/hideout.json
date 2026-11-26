@@ -76,6 +76,7 @@
     {"prop": "campfire_wide", "x": 24.0, "z": 20.0, "y": 0, "rotationDegrees": 0},
     {"prop": "brazier", "x": 17.5, "z": 11.5, "y": 0, "rotationDegrees": 0},
     {"prop": "post_lantern_lit_wide", "x": 13.0, "z": 18.3, "y": 0, "rotationDegrees": 0},
+    {"prop": "wick_lantern_lit", "x": 36, "z": 9.5, "y": 0, "rotationDegrees": 0, "when": [{"type": "flag", "flag": "wick_freed"}]},
     {"prop": "post_lantern_lit_wide", "x": 16.0, "z": 22.2, "y": 0, "rotationDegrees": 180},
     {"prop": "bench", "x": 20.0, "z": 23.5, "y": 0, "rotationDegrees": 90},
     {"prop": "stool", "x": 27.5, "z": 24.0, "y": 0, "rotationDegrees": 0},
@@ -101,7 +102,8 @@
     {"npc": "warden_lookout", "x": 31, "z": 23, "facingDegrees": 250},
     {"npc": "warden_auctioneer", "x": 19.5, "z": 14.5, "facingDegrees": 120},
     {"npc": "warden_appraiser", "x": 24, "z": 9.8, "facingDegrees": 0},
-    {"npc": "timekeeper_seeker", "x": 37, "z": 6, "facingDegrees": 317, "when": [{"type": "objective", "quest": "the_next_count", "objective": "out", "is": "current"}], "leave": 2.5}
+    {"npc": "timekeeper_seeker", "x": 37, "z": 6, "facingDegrees": 317, "when": [{"type": "objective", "quest": "the_next_count", "objective": "out", "is": "current"}], "leave": 2.5},
+    {"npc": "wick", "x": 34.5, "z": 11, "facingDegrees": 311, "when": [{"type": "flag", "flag": "wick_freed"}]}
   ],
   "voices": [
     {"id": "hideout_first_page", "x": 24, "z": 7, "radius": 6, "lines": ["timekeeper_seeker_first_page"], "when": [{"type": "objective", "quest": "the_next_count", "objective": "out", "is": "current"}]}

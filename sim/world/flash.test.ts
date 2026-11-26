@@ -223,8 +223,10 @@ void test('the light in the white leads back to the fire, Reeve tells of the nex
   assert.deepEqual(said(talk(world, 'reeve')), ['reeve_next_reminder']);
   assert.deepEqual(said(talk(world, 'reeve')), ['reeve_next_reminder']);
   assert.ok(barked(stand(world, 24, 8)).includes('timekeeper_seeker_first_page'));
-  stand(world, 29.5, 5.5);
-  stand(world, 29.5, 5.5);
+  stand(world, 29.5, 7);
+  assert.equal(questState(world, 'the_next_count'), 'active');
+  const out: WorldEvent[] = [...stepWorld(world, [{ type: 'travel', exit: exitOf(world, 'outward').id }], DT), ...wait(world, 10, (): boolean => world.zone.id === 'still_reach')];
+  assert.deepEqual(zonesEntered(out), ['still_reach']);
+  wait(world, 1);
   assert.equal(questState(world, 'the_next_count'), 'done');
-  assert.deepEqual(zonesEntered(wait(world, 10)), []);
 });

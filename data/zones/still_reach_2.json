@@ -494,7 +494,6 @@
     {"prop":"still_ash_bed","x":226.98,"z":105.28,"y":0,"rotationDegrees":299},
     {"prop":"still_slab_pile","x":56.25,"z":261.58,"y":0,"rotationDegrees":350},
     {"prop":"still_rock_chunk_a","x":57.59,"z":256.66,"y":0,"rotationDegrees":130},
-    {"prop":"still_shards","x":195.85,"z":324.61,"y":0,"rotationDegrees":217},
     {"prop":"still_ash_bed","x":157.11,"z":170.78,"y":0,"rotationDegrees":317},
     {"prop":"still_rock_chunk_b","x":267.87,"z":347.11,"y":0,"rotationDegrees":174},
     {"prop":"still_ash_bed","x":265.78,"z":343.41,"y":0,"rotationDegrees":74},
@@ -1269,7 +1268,10 @@
     {"prop":"still_figure","x":291,"z":294,"y":0,"rotationDegrees":103},
     {"prop":"still_figure_bowed","x":195,"z":243,"y":0,"rotationDegrees":81},
     {"prop":"still_figure","x":129,"z":291,"y":0,"rotationDegrees":169},
-    {"prop":"still_figure","x":303,"z":279,"y":0,"rotationDegrees":27}
+    {"prop":"still_figure","x":303,"z":279,"y":0,"rotationDegrees":27},
+    {"prop":"still_lamp_post","x":193.5,"z":323.5,"y":0,"rotationDegrees":45},
+    {"prop":"still_lamp_post","x":196.7,"z":320.3,"y":0,"rotationDegrees":332},
+    {"prop":"still_lamp_post","x":190.3,"z":326.7,"y":0,"rotationDegrees":118}
   ],
   "tunnels": [],
   "falls": [],
@@ -1291,7 +1293,7 @@
     {"x":257,"z":347,"members":[{"monster":"mist_taken","count":2},{"monster":"still_waking","count":1}],"level":33},
     {"x":275,"z":347,"members":[{"monster":"mist_taken","count":2},{"monster":"still_waking","count":1}],"level":33},
     {"x":185,"z":333,"members":[{"monster":"mist_taken","count":2},{"monster":"still_hushed","count":1}],"level":33,"rank":"magic"},
-    {"x":199,"z":329,"members":[{"monster":"still_waking","count":2},{"monster":"still_hushed","count":1}],"level":33,"rank":"magic"},
+    {"x":199,"z":329,"members":[{"monster":"lamp_row_ringer","count":1},{"monster":"still_waking","count":2}],"level":33,"when":[{"type":"flag","flag":"wick_waking","not":true}]},
     {"x":207,"z":339,"members":[{"monster":"still_waking","count":2},{"monster":"still_hushed","count":1}],"level":33,"rank":"magic"},
     {"x":203,"z":351,"members":[{"monster":"mist_taken","count":2},{"monster":"still_hushed","count":1}],"level":33,"rank":"magic"},
     {"x":151,"z":295,"members":[{"monster":"still_standing","count":4},{"monster":"still_waking","count":1}],"level":33,"waits":{"near":8},"rank":"magic"},
@@ -1362,5 +1364,8 @@
   "waypoint": {"x":259,"z":33,"radius":1.8},
   "deathReturn": null,
   "duel": null,
-  "npcs": []
+  "npcs": [
+    {"npc":"wick_stilled","x":195,"z":325,"facingDegrees":225,"when":[{"type":"flag","flag":"wick_waking","not":true}],"leave":2.5},
+    {"npc":"wick","x":195,"z":325,"facingDegrees":45,"when":[{"type":"flag","flag":"wick_waking"},{"type":"flag","flag":"wick_freed","not":true}],"leave":2.5}
+  ]
 }

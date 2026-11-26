@@ -1291,5 +1291,13 @@
   "waypoint": {"x":119,"z":37,"radius":1.8},
   "deathReturn": null,
   "duel": null,
-  "npcs": []
+  "npcs": [
+    {"npc":"timekeeper_seeker","x":294,"z":194,"facingDegrees":0,"when":[{"type":"flag","flag":"seeker_reach_seen","not":true}],"leave":2.5}
+  ],
+  "voices": [
+    {"id":"still_reach_seeker","x":294,"z":194,"radius":16,"lines":["timekeeper_seeker_face"],"when":[{"type":"flag","flag":"seeker_reach_seen","not":true}]}
+  ],
+  "triggers": [
+    {"id":"still_reach_seeker_seen","x":294,"z":194,"radius":9,"when":[],"sets":{"seeker_reach_seen":"seen"}}
+  ]
 }

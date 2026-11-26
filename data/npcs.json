@@ -347,6 +347,111 @@
     ]
   },
   {
+    "id": "wick_stilled",
+    "name": "Lamplighter",
+    "title": "Still",
+    "faction": null,
+    "rig": "lamplighter_still",
+    "scale": 1,
+    "tint": "#c4c8ca",
+    "color": "#c8d4dc",
+    "gear": [
+      "driftwood_staff",
+      "warden_lantern"
+    ],
+    "wear": [
+      "still_tunic",
+      "still_trousers",
+      "still_hood"
+    ],
+    "talks": [
+      {
+        "id": "wick_stilled_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "wick_stilled_lit_yet"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "wick",
+    "name": "Wick",
+    "title": "The Lamplighter",
+    "faction": null,
+    "rig": "lamplighter",
+    "scale": 1,
+    "tint": "#f2e4d6",
+    "color": "#ffc070",
+    "gear": [
+      "driftwood_staff",
+      "warden_lantern"
+    ],
+    "wear": [
+      "drover_smock",
+      "wool_trousers",
+      "worn_boots",
+      "hair_short"
+    ],
+    "talks": [
+      {
+        "id": "wick_woken",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_stilled",
+            "objective": "wake",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "wick_reaching",
+          "wick_nothing_next",
+          "wick_you_moved"
+        ]
+      },
+      {
+        "id": "wick_lamps",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_stilled",
+            "objective": "lamps",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "wick_never_lit",
+          "wick_harbour_road"
+        ]
+      },
+      {
+        "id": "wick_after_first",
+        "once": true,
+        "when": [
+          {
+            "type": "flag",
+            "flag": "first_to_stop_defeated"
+          }
+        ],
+        "lines": [
+          "wick_oldest_fell"
+        ]
+      },
+      {
+        "id": "wick_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "wick_keep_lit"
+        ]
+      }
+    ]
+  },
+  {
     "id": "warden_trader",
     "name": "Warden Trader",
     "title": "Warden",

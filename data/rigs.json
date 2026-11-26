@@ -3055,6 +3055,306 @@
     "idleRate": 0
   },
   {
+    "id": "lamplighter",
+    "url": "models/characters/man.glb",
+    "clipFolder": "models/animations/universal",
+    "frame": "man",
+    "scale": 1.2,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
+    "clips": {
+      "idle": "Idle_Torch_Loop",
+      "run": "Walk_Loop",
+      "hit": [
+        "Hit_Head",
+        "Hit_Chest"
+      ],
+      "death": [
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "actions": {
+        "attack": {
+          "clip": "Sword_Attack",
+          "impactFraction": 0.3
+        }
+      }
+    },
+    "sockets": {
+      "hand_r": {
+        "bone": "hand_r",
+        "position": [
+          -0.031,
+          0.104,
+          -0.004
+        ],
+        "rotationDegrees": [
+          80.5,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "hand_l",
+        "position": [
+          0.031,
+          0.104,
+          -0.004
+        ],
+        "rotationDegrees": [
+          80.5,
+          -90,
+          0
+        ],
+        "scale": 1
+      },
+      "lantern": {
+        "bone": "hand_l",
+        "position": [
+          0,
+          0.04,
+          -0.42
+        ],
+        "rotationDegrees": [
+          90,
+          0,
+          0
+        ],
+        "scale": 0.75
+      }
+    },
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "Head",
+        "neck_01"
+      ],
+      "torso": [
+        "spine_01",
+        "spine_02",
+        "spine_03",
+        "clavicle_l",
+        "clavicle_r"
+      ],
+      "arms": [
+        "upperarm_l",
+        "lowerarm_l",
+        "upperarm_r",
+        "lowerarm_r"
+      ],
+      "hands": [
+        "hand_l",
+        "index_01_l",
+        "index_02_l",
+        "index_03_l",
+        "middle_01_l",
+        "middle_02_l",
+        "middle_03_l",
+        "ring_01_l",
+        "ring_02_l",
+        "ring_03_l",
+        "pinky_01_l",
+        "pinky_02_l",
+        "pinky_03_l",
+        "thumb_01_l",
+        "thumb_02_l",
+        "thumb_03_l",
+        "hand_r",
+        "index_01_r",
+        "index_02_r",
+        "index_03_r",
+        "middle_01_r",
+        "middle_02_r",
+        "middle_03_r",
+        "ring_01_r",
+        "ring_02_r",
+        "ring_03_r",
+        "pinky_01_r",
+        "pinky_02_r",
+        "pinky_03_r",
+        "thumb_01_r",
+        "thumb_02_r",
+        "thumb_03_r"
+      ],
+      "legs": [
+        "pelvis",
+        "thigh_l",
+        "calf_l",
+        "thigh_r",
+        "calf_r"
+      ],
+      "feet": [
+        "foot_l",
+        "ball_l",
+        "foot_r",
+        "ball_r"
+      ]
+    },
+    "idleRate": 0.8
+  },
+  {
+    "id": "lamplighter_still",
+    "url": "models/characters/man.glb",
+    "clipFolder": "models/animations/universal",
+    "frame": "man",
+    "scale": 1.2,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08
+      }
+    ],
+    "clips": {
+      "idle": "Idle_Torch_Loop",
+      "run": "Walk_Loop",
+      "hit": [
+        "Hit_Head",
+        "Hit_Chest"
+      ],
+      "death": [
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "actions": {
+        "attack": {
+          "clip": "Sword_Attack",
+          "impactFraction": 0.3
+        }
+      }
+    },
+    "sockets": {
+      "hand_r": {
+        "bone": "hand_r",
+        "position": [
+          -0.031,
+          0.104,
+          -0.004
+        ],
+        "rotationDegrees": [
+          80.5,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "hand_l",
+        "position": [
+          0.031,
+          0.104,
+          -0.004
+        ],
+        "rotationDegrees": [
+          80.5,
+          -90,
+          0
+        ],
+        "scale": 1
+      },
+      "lantern": {
+        "bone": "hand_l",
+        "position": [
+          0,
+          0.04,
+          -0.42
+        ],
+        "rotationDegrees": [
+          90,
+          0,
+          0
+        ],
+        "scale": 0.75
+      }
+    },
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "Head",
+        "neck_01"
+      ],
+      "torso": [
+        "spine_01",
+        "spine_02",
+        "spine_03",
+        "clavicle_l",
+        "clavicle_r"
+      ],
+      "arms": [
+        "upperarm_l",
+        "lowerarm_l",
+        "upperarm_r",
+        "lowerarm_r"
+      ],
+      "hands": [
+        "hand_l",
+        "index_01_l",
+        "index_02_l",
+        "index_03_l",
+        "middle_01_l",
+        "middle_02_l",
+        "middle_03_l",
+        "ring_01_l",
+        "ring_02_l",
+        "ring_03_l",
+        "pinky_01_l",
+        "pinky_02_l",
+        "pinky_03_l",
+        "thumb_01_l",
+        "thumb_02_l",
+        "thumb_03_l",
+        "hand_r",
+        "index_01_r",
+        "index_02_r",
+        "index_03_r",
+        "middle_01_r",
+        "middle_02_r",
+        "middle_03_r",
+        "ring_01_r",
+        "ring_02_r",
+        "ring_03_r",
+        "pinky_01_r",
+        "pinky_02_r",
+        "pinky_03_r",
+        "thumb_01_r",
+        "thumb_02_r",
+        "thumb_03_r"
+      ],
+      "legs": [
+        "pelvis",
+        "thigh_l",
+        "calf_l",
+        "thigh_r",
+        "calf_r"
+      ],
+      "feet": [
+        "foot_l",
+        "ball_l",
+        "foot_r",
+        "ball_r"
+      ]
+    },
+    "idleRate": 0
+  },
+  {
     "id": "still_mist",
     "url": "models/characters/woman.glb",
     "clipFolder": "models/animations/universal",

@@ -279,10 +279,10 @@
       {
         "id": "out",
         "type": "reach",
-        "zone": "hideout",
-        "x": 29.5,
-        "z": 5.5,
-        "radius": 3,
+        "zone": "still_reach",
+        "x": 84,
+        "z": 29,
+        "radius": 10,
         "text": "Go out toward the Stilled Reach"
       }
     ]
@@ -314,6 +314,64 @@
           "rarity": "stormtouched",
           "items": 1
         }
+      }
+    ]
+  },
+  {
+    "id": "the_stilled",
+    "name": "The Stilled",
+    "requires": [],
+    "when": [
+      {
+        "type": "flag",
+        "flag": "reeve_freed"
+      },
+      {
+        "type": "level",
+        "atLeast": 30
+      }
+    ],
+    "objectives": [
+      {
+        "id": "reach",
+        "type": "reach",
+        "zone": "still_reach",
+        "x": 84,
+        "z": 29,
+        "radius": 10,
+        "text": "Go out into the Stilled Reach"
+      },
+      {
+        "id": "clear",
+        "type": "defeat",
+        "monster": "lamp_row_ringer",
+        "text": "Clear the Still around the lamplighter",
+        "sets": {
+          "wick_waking": "woken"
+        }
+      },
+      {
+        "id": "wake",
+        "type": "talk",
+        "npc": "wick",
+        "talk": "wick_woken",
+        "text": "Speak with the lamplighter",
+        "sets": {
+          "wick_freed": "freed"
+        }
+      },
+      {
+        "id": "first",
+        "type": "defeat",
+        "monster": "first_to_stop",
+        "text": "Defeat the First to Stop at the heart of the Reach"
+      },
+      {
+        "id": "lamps",
+        "type": "talk",
+        "npc": "wick",
+        "talk": "wick_lamps",
+        "text": "Find Wick at the Hideout"
       }
     ]
   }
