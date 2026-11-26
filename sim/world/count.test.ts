@@ -25,7 +25,7 @@ const SKILLS: readonly SkillDef[] = [
 ];
 
 function phase(below: number, extra: Partial<BossPhase>): BossPhase {
-  return { below, skills: [], barks: [], measure: ['k_cut'], beat: 1, holds: [], unseal: [], anchor: null, ...extra };
+  return { below, skills: [], barks: [], measure: ['k_cut'], beat: 1, holds: [], unseal: [], anchor: null, support: null, ...extra };
 }
 
 const KEEPER: BossDef = {

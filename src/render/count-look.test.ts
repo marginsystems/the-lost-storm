@@ -17,8 +17,8 @@ const KEEPER: BossDef = {
   barks: { aggro: [], death: [] },
   firstKill: null,
   phases: [
-    { below: 1, skills: [{ skill: 'test_slam', weight: 1 }], barks: [], measure: [], beat: 0, holds: ['l_clock'], unseal: [], anchor: null },
-    { below: 0.5, skills: [{ skill: 'test_slam', weight: 1 }], barks: [], measure: [], beat: 0, holds: [], unseal: [], anchor: null },
+    { below: 1, skills: [{ skill: 'test_slam', weight: 1 }], barks: [], measure: [], beat: 0, holds: ['l_clock'], unseal: [], anchor: null, support: null },
+    { below: 0.5, skills: [{ skill: 'test_slam', weight: 1 }], barks: [], measure: [], beat: 0, holds: [], unseal: [], anchor: null, support: null },
   ],
   countBreak: null,
   yields: true,

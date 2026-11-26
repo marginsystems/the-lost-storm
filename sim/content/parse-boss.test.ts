@@ -13,7 +13,7 @@ const BASE = {
 
 void test('a boss written the old way reads with no measure, no holders, no break and no yield', (): void => {
   const read: BossDef = must(boss({ ...BASE, phases: [{ below: 1, skills: [{ skill: 'a', weight: 1 }], barks: [] }] }, 'b'), 'boss');
-  assert.deepEqual(read.phases[0], { below: 1, skills: [{ skill: 'a', weight: 1 }], barks: [], measure: [], beat: 0, holds: [], unseal: [], anchor: null });
+  assert.deepEqual(read.phases[0], { below: 1, skills: [{ skill: 'a', weight: 1 }], barks: [], measure: [], beat: 0, holds: [], unseal: [], anchor: null, support: null });
   assert.equal(read.countBreak, null);
   assert.equal(read.yields, false);
 });

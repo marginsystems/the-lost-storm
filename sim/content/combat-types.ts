@@ -126,11 +126,16 @@ export interface MonsterModDef {
   readonly line: string;
 }
 
+export const REVIVE_KINDS = ['kin', 'any'] as const;
+export type ReviveKind = (typeof REVIVE_KINDS)[number];
+
 export interface ReviveDelivery {
   readonly type: 'revive';
   readonly range: number;
   readonly count: number;
   readonly lifeShare: number;
+  readonly raises: ReviveKind;
+  readonly cost: number;
 }
 
 export interface FieldDelivery {

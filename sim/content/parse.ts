@@ -504,7 +504,7 @@ export function contentProblems(content: Content): string[] {
     need(content.skills.has(def.skill), `monster ${def.id} uses unknown skill ${def.skill}`);
     need(content.rigs.has(def.rig), `monster ${def.id} uses unknown rig ${def.rig}`);
     animates(`monster ${def.id}`, def.rig, def.skill);
-    for (const phase of def.boss?.phases ?? []) for (const id of [...phase.skills.map((entry: BossSkill): string => entry.skill), ...phase.measure]) animates(`boss ${def.id}`, def.rig, id);
+    for (const phase of def.boss?.phases ?? []) for (const id of [...phase.skills.map((entry: BossSkill): string => entry.skill), ...phase.measure, ...(phase.support === null ? [] : [phase.support])]) animates(`boss ${def.id}`, def.rig, id);
     for (const held of def.gear) fits(`monster ${def.id}`, def.rig, held);
     wears(`monster ${def.id}`, def.rig, def.wear);
   }

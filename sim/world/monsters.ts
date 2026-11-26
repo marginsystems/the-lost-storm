@@ -1,6 +1,6 @@
 import { attacksHeld } from './glitch-hold.ts';
 import type { AmbushBehaviour, StalkerBehaviour, SummonDef, SwarmBehaviour } from '../content/combat-types.ts';
-import type { MonsterDef, RangedBehaviour, SkillDef, SurgeRules, ZonePack } from '../content/types.ts';
+import type { BossDef, MonsterDef, RangedBehaviour, SkillDef, SurgeRules, ZonePack } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { clamp, directionOf, distance, facingOf, fartherThan, normalize, rotate, within } from '../math.ts';
 import { isWalkable, lineOfSight, lineWalkable, nearestWalkable, routedGrid } from '../nav/grid.ts';
@@ -22,7 +22,7 @@ import { mayStrike } from './factions.ts';
 import type { Side } from './factions.ts';
 import { homeReached, LEASH, shellPoint, shutOut } from './leash.ts';
 import { wardedFrom } from './wards.ts';
-import { revivable } from './revive.ts';
+import { canPay, revivable } from './revive.ts';
 import { hasWoundedAlly } from './heal.ts';
 import { ledAim } from './lead.ts';
 import { roomAhead } from './queue.ts';
@@ -392,15 +392,22 @@ function wake(world: World, monster: MonsterState): boolean {
   return roused;
 }
 
+function supportSkill(monster: MonsterState): string | null {
+  const boss: BossDef | null = monster.def.boss;
+  if (boss === null) return monster.def.support;
+  return boss.phases[lifePhase(monster, boss)]?.support ?? monster.def.support;
+}
+
 function support(world: World, monster: MonsterState): boolean {
-  const skill: SkillDef | undefined = monster.def.support === null ? undefined : world.content.skills.get(monster.def.support);
+  const chosen: string | null = supportSkill(monster);
+  const skill: SkillDef | undefined = chosen === null ? undefined : world.content.skills.get(chosen);
   if (skill === undefined || blockedReason(monster, skill) !== null) return false;
   if (skill.delivery.type === 'nova' && skill.delivery.side === 'allies' && skill.mend !== null) {
     if (!hasWoundedAlly(world, sideOfMonster(monster), { skill, mend: skill.mend, origin: monster.pos, radius: skill.delivery.radius })) return false;
     startSkill(world, monster, skill, directionOf(monster.facing));
     return true;
   }
-  if (skill.delivery.type !== 'revive') return false;
+  if (skill.delivery.type !== 'revive' || !canPay(monster, skill.delivery)) return false;
   const fallen: MonsterState | undefined = revivable(world, monster.def.faction, skill.delivery, monster.pos)[0];
   if (fallen === undefined) return false;
   startSkill(world, monster, skill, { x: fallen.pos.x - monster.pos.x, z: fallen.pos.z - monster.pos.z });

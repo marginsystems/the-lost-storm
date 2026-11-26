@@ -62,7 +62,9 @@
     "palette": {
       "tints": [
         "#fff4e6",
-        "#d8ccc0"
+        "#d8ccc0",
+        "#e6dccb",
+        "#cbbfae"
       ],
       "glow": "#d9cfb0"
     },
@@ -72,11 +74,19 @@
       "mender_gloves",
       "mender_hood",
       "stitched_tunic",
-      "stitched_trousers"
+      "stitched_trousers",
+      "salvaged_mail",
+      "patched_tunic",
+      "torn_hood",
+      "still_hood",
+      "iron_vambraces",
+      "iron_sabatons",
+      "cast_off_boots"
     ],
     "weapons": [
       "mender_knife",
-      "mended_cleaver"
+      "mended_cleaver",
+      "raider_maul"
     ],
     "regards": {
       "player": "hostile",

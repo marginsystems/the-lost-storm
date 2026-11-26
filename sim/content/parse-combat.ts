@@ -1,10 +1,10 @@
 import type { Fields } from './read.ts';
 import { choice, ContentError, fields, flag, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, SkillCommit, SkillEchoing, SkillFlare, SkillLeap, SkillTrail, SummonDef, TrailFrom } from './combat-types.ts';
-import { TRAIL_FROM } from './combat-types.ts';
+import type { AlarmDef, BodyCrust, DormantDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, ReviveDelivery, ReviveKind, SkillCommit, SkillEchoing, SkillFlare, SkillLeap, SkillTrail, SummonDef, TrailFrom } from './combat-types.ts';
+import { REVIVE_KINDS, TRAIL_FROM } from './combat-types.ts';
 import type { MonsterRank } from './rank-types.ts';
 import { bodyCrust } from './parse-crust.ts';
-import type { Content, MonsterDef, SkillDef } from './types.ts';
+import type { BossPhase, Content, MonsterDef, SkillDef } from './types.ts';
 
 const STEADY: MonsterPoise = { knockback: 1, stagger: 1, resolve: 0 };
 
@@ -44,7 +44,10 @@ export function reviveDelivery(source: Fields, where: string): ReviveDelivery {
   if (!Number.isInteger(count)) throw new ContentError(`${where}.count`, 'expected a whole number');
   const lifeShare: number = share(source, 'lifeShare', where);
   if (lifeShare === 0) throw new ContentError(`${where}.lifeShare`, 'a raised body needs some life');
-  return { type: 'revive', range: positive(source, 'range', where), count, lifeShare };
+  const raises: ReviveKind = source['raises'] === undefined ? 'kin' : choice(source, 'raises', REVIVE_KINDS, where);
+  const cost: number = source['cost'] === undefined ? 0 : share(source, 'cost', where);
+  if (cost * count >= 1) throw new ContentError(`${where}.cost`, 'raising the whole count must leave the caster some life');
+  return { type: 'revive', range: positive(source, 'range', where), count, lifeShare, raises, cost };
 }
 
 export function fieldDelivery(source: Fields, where: string): FieldDelivery {
@@ -239,10 +242,11 @@ export function combatProblems(content: Content): string[] {
     blasts(content, `monster ${def.id}`, def.deathSkill, need);
     summons(content, `monster ${def.id}`, def.summon, need);
     trails(content, `monster ${def.id}`, def.trail, need);
-    if (def.support !== null) {
-      const helper: SkillDef | undefined = content.skills.get(def.support);
-      need(helper !== undefined, `monster ${def.id} supports with unknown skill ${def.support}`);
-      if (helper !== undefined) need(helper.delivery.type === 'revive' || (helper.delivery.type === 'nova' && helper.delivery.side === 'allies' && helper.mend !== null), `monster ${def.id} supports with skill ${def.support}, which neither raises nor mends allies`);
+    for (const support of [def.support, ...(def.boss?.phases ?? []).map((phase: BossPhase): string | null => phase.support)]) {
+      if (support === null) continue;
+      const helper: SkillDef | undefined = content.skills.get(support);
+      need(helper !== undefined, `monster ${def.id} supports with unknown skill ${support}`);
+      if (helper !== undefined) need(helper.delivery.type === 'revive' || (helper.delivery.type === 'nova' && helper.delivery.side === 'allies' && helper.mend !== null), `monster ${def.id} supports with skill ${support}, which neither raises nor mends allies`);
     }
     need(def.dormant === null || def.boss === null, `boss ${def.id} cannot be dormant`);
     need(def.alarm === null || def.boss === null, `boss ${def.id} cannot raise an alarm`);

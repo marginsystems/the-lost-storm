@@ -33,6 +33,7 @@ function bossPhase(value: unknown, where: string): BossPhase {
     holds: list(source, 'holds', where),
     unseal: list(source, 'unseal', where),
     anchor: anchor(source['anchor'], `${where}.anchor`),
+    support: source['support'] === undefined || source['support'] === null ? null : text(source, 'support', where),
   };
 }
 

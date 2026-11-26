@@ -17,6 +17,7 @@ export interface BossPhase {
   readonly holds: readonly string[];
   readonly unseal: readonly string[];
   readonly anchor: BossAnchor | null;
+  readonly support: string | null;
 }
 
 export interface PieceStrikes {

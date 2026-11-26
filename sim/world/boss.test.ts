@@ -262,8 +262,8 @@ void test('a boss that crosses a threshold picks from the new phase at once, eve
   const split: BossDef = {
     ...block,
     phases: [
-      { below: 1, skills: [{ skill: 'colossus_hammer', weight: 1 }], barks: [], measure: [], beat: 0, holds: [], unseal: [], anchor: null },
-      { below: 0.5, skills: [{ skill: 'colossus_slam', weight: 1 }], barks: [], measure: [], beat: 0, holds: [], unseal: [], anchor: null },
+      { below: 1, skills: [{ skill: 'colossus_hammer', weight: 1 }], barks: [], measure: [], beat: 0, holds: [], unseal: [], anchor: null, support: null },
+      { below: 0.5, skills: [{ skill: 'colossus_slam', weight: 1 }], barks: [], measure: [], beat: 0, holds: [], unseal: [], anchor: null, support: null },
     ],
   };
   const content: Content = { ...base, monsters: new Map<string, MonsterDef>([...base.monsters, [mason.id, { ...mason, boss: split }]]) };
