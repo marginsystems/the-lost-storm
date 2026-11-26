@@ -143,7 +143,7 @@ function zoneCheckpoint(value: unknown, where: string): ZoneCheckpoint {
 
 function zoneNpc(value: unknown, where: string): ZoneNpc {
   const source: Fields = fields(value, where);
-  return { npc: text(source, 'npc', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), facingDegrees: numeric(source, 'facingDegrees', where), when: conditions(source, 'when', where) };
+  return { npc: text(source, 'npc', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), facingDegrees: numeric(source, 'facingDegrees', where), when: conditions(source, 'when', where), leave: source['leave'] === undefined ? 0 : nonNegative(source, 'leave', where) };
 }
 
 function zoneWaypoint(value: unknown, where: string): ZoneWaypoint | null {

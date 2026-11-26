@@ -15,6 +15,7 @@ import { choicesOpen } from './world/death.ts';
 import { stepWorld } from './world/step.ts';
 import { fightZones, nearestFight } from './world/moments.ts';
 import { heldIn } from './world/bubble.ts';
+import { isLeaving } from './world/dialogue.ts';
 import { glidesWith } from './world/momentum.ts';
 import { harmful, hazardDue, SPIN_DODGE, spinStep, wheelReach } from './bot-spin.ts';
 import { heldAtLine, holdersOf, strikeWaiting } from './world/count.ts';
@@ -518,7 +519,7 @@ function through(bot: Bot, exit: ZoneExit): boolean {
 export function botShop(bot: Bot): boolean {
   const world: World = bot.world;
   if (world.zone.kind !== 'town' || !anyUpgradeReady(world.content, world.player)) return false;
-  const npc: NpcState | undefined = world.npcs.find((candidate: NpcState): boolean => candidate.def.service === 'vendor');
+  const npc: NpcState | undefined = world.npcs.find((candidate: NpcState): boolean => candidate.def.service === 'vendor' && !isLeaving(world, candidate));
   if (npc === undefined) return false;
   const steps: number = Math.round(BOT.talkLimit / BOT.step);
   let sinceOrder: number = BOT.idleRepeat;
@@ -554,7 +555,7 @@ function talking(world: World): boolean {
 
 export function botTalk(bot: Bot, npcId: string): boolean {
   const world: World = bot.world;
-  const npc: NpcState | undefined = world.npcs.find((candidate: NpcState): boolean => candidate.def.id === npcId);
+  const npc: NpcState | undefined = world.npcs.find((candidate: NpcState): boolean => candidate.def.id === npcId && !isLeaving(world, candidate));
   if (npc === undefined) return false;
   const steps: number = Math.round(BOT.talkLimit / BOT.step);
   let sinceOrder: number = BOT.idleRepeat;
@@ -578,7 +579,7 @@ function botHearOut(bot: Bot, npcId: string, done: () => boolean): boolean {
 }
 
 function zoneOfNpc(world: World, npcId: string): string | null {
-  if (world.npcs.some((npc: NpcState): boolean => npc.def.id === npcId)) return world.zone.id;
+  if (world.npcs.some((npc: NpcState): boolean => npc.def.id === npcId && !isLeaving(world, npc))) return world.zone.id;
   for (const zone of world.content.zones.values()) {
     if (zone.npcs.some((placed): boolean => placed.npc === npcId && allHold(world, placed.when))) return zone.id;
   }

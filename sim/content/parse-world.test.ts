@@ -164,7 +164,7 @@ void test('an npc, its conversations, its lines and its placement are data only'
   assert.equal(pedlar.title, 'The Seller');
   assert.deepEqual(pedlar.talks, extraNpc.talks.map((entry) => ({ ...entry, when: [] })));
   assert.deepEqual(content.lines.get('pedlar_hello_2'), { id: 'pedlar_hello_2', speaker: 'pedlar', text: 'Or do not.' });
-  assert.deepEqual(must(content.zones.get('waystation'), 'town').npcs.at(-1), { npc: 'pedlar', x: 22, z: 16, facingDegrees: 90, when: [] });
+  assert.deepEqual(must(content.zones.get('waystation'), 'town').npcs.at(-1), { npc: 'pedlar', x: 22, z: 16, facingDegrees: 90, when: [], leave: 0 });
   const town = worldIn(content, 'waystation', 3);
   assert.ok(town.npcs.some((npc): boolean => npc.def.id === 'pedlar' && npc.pos.x === 22 && npc.pos.z === 16));
 });

@@ -19,7 +19,7 @@ import type { Buffered, PressRank, Taken } from './press-buffer.ts';
 import { bufferPress, takePress } from './press-buffer.ts';
 import { respawnPlayer } from './death.ts';
 import { leaveDuel } from './duel-zone.ts';
-import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, replayDialogue } from './dialogue.ts';
+import { advanceDialogue, closeDialogue, DIALOGUE, replayDialogue, talkable } from './dialogue.ts';
 import { pickUp } from './finds.ts';
 import { useFlask } from './flasks.ts';
 import type { Steering, SteerStep } from './movement.ts';
@@ -234,7 +234,7 @@ function act(world: World, player: PlayerState, command: Command): void {
       return;
     }
     case 'talk': {
-      const npc: NpcState | null = findNpc(world, command.npcId);
+      const npc: NpcState | null = talkable(world, command.npcId);
       if (npc === null) return;
       player.intent = { type: 'talk', npcId: npc.id };
       setDestination(world, player, npc.pos);
@@ -508,7 +508,7 @@ function stepIntent(world: World, player: PlayerState, dt: number): void {
       return;
     }
     case 'talk': {
-      const npc: NpcState | null = findNpc(world, intent.npcId);
+      const npc: NpcState | null = talkable(world, intent.npcId);
       if (npc === null) {
         player.intent = { type: 'idle' };
         player.path = [];

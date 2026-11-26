@@ -138,6 +138,7 @@ export interface ZoneNpc {
   readonly z: number;
   readonly facingDegrees: number;
   readonly when: readonly Condition[];
+  readonly leave: number;
 }
 
 export interface ZoneSize {

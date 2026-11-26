@@ -19,8 +19,8 @@ export const TOWN_LINES: readonly LineDef[] = [KEEPER, COURIER].flatMap((npc: Np
 export const TOWN_ZONE: ZoneDef = {
   ...HUB_ZONE,
   npcs: [
-    { npc: 'keeper', x: 16, z: 8, facingDegrees: 90, when: [] },
-    { npc: 'courier', x: 16, z: 16, facingDegrees: 270, when: [] },
+    { npc: 'keeper', x: 16, z: 8, facingDegrees: 90, when: [], leave: 0 },
+    { npc: 'courier', x: 16, z: 16, facingDegrees: 270, when: [], leave: 0 },
   ],
 };
 

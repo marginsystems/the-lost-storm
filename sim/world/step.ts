@@ -28,6 +28,7 @@ import { stepVoid } from './void.ts';
 import { stepMoments } from './moments.ts';
 import { stepNpcs } from './npc-walk.ts';
 import { stepScene } from './scene.ts';
+import { easeLeaving } from './dialogue.ts';
 import { stepDrifts, stepTriggers } from './terrain.ts';
 import { acceptsCommand, hurryWake } from './wake.ts';
 import { stepPowerState } from '../powers.ts';
@@ -94,6 +95,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepPackReturns(world, dt);
   stepWaitingPacks(world);
   stepScene(world, dt);
+  easeLeaving(world, dt);
   stepWards(world, dt);
   stepMoments(world, dt);
   stepNpcs(world, dt);

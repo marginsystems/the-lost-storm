@@ -114,7 +114,7 @@ function arrive(world: World, scene: SceneState, moment: MomentState | null): vo
   const aim: Vec2 = arrivalPoint(world, scene, moment);
   const pos: Vec2 = nearestWalkable(world.grid, aim, SCENE.reach) ?? aim;
   const facing: number = facingOf({ x: (moment?.pos.x ?? world.player.pos.x) - pos.x, z: (moment?.pos.z ?? world.player.pos.z) - pos.z });
-  const placement: ZoneNpc = { npc: scene.def.npc, x: pos.x, z: pos.z, facingDegrees: facing / DEGREES_TO_RADIANS, when: [] };
+  const placement: ZoneNpc = { npc: scene.def.npc, x: pos.x, z: pos.z, facingDegrees: facing / DEGREES_TO_RADIANS, when: [], leave: 0 };
   const npc: NpcState | null = npcAt(world, placement);
   if (npc === null) {
     world.scene = null;

@@ -1,6 +1,6 @@
 import type { ZoneExit } from '../content/types.ts';
 import type { SceneState } from './scene-state.ts';
-import { hasNews } from './dialogue.ts';
+import { hasNews, isLeaving } from './dialogue.ts';
 import type { ObjectiveTarget } from './objective.ts';
 import { objectiveTarget } from './objective.ts';
 import type { NpcState, World } from './types.ts';
@@ -27,7 +27,7 @@ export function questPins(world: World, target: ObjectiveTarget | null = objecti
   const guide: number | null = leading(scene);
   const asked: string | null = talkedTo(target);
   const pins: QuestPin[] = world.npcs
-    .filter((npc: NpcState): boolean => world.dialogue?.npcId !== npc.id && (npc.id === guide || npc.def.id === asked || hasNews(world, npc.def)))
+    .filter((npc: NpcState): boolean => world.dialogue?.npcId !== npc.id && !isLeaving(world, npc) && (npc.id === guide || npc.def.id === asked || hasNews(world, npc.def)))
     .map((npc: NpcState): QuestPin => ({ kind: 'npc', npcId: npc.id }));
   const staged: boolean = scene !== null && scene.phase !== 'through';
   const exit: ZoneExit | null = staged ? null : pointedExit(world, target);

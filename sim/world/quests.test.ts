@@ -60,7 +60,7 @@ function staged(): Content {
   const gated: ZoneDef = {
     ...town,
     exits: town.exits.map((exit: ZoneExit): ZoneExit => ({ id: exit.id, x: exit.x, z: exit.z, radius: exit.radius, to: exit.to, toExit: exit.toExit, arrival: exit.arrival, requires: locked, lockedHint: 'Not yet', hiddenWhenLocked: false, look: 'ring', marker: null })),
-    npcs: [...town.npcs.map((placed: ZoneNpc): ZoneNpc => ({ npc: placed.npc, x: placed.x, z: placed.z, facingDegrees: placed.facingDegrees, when: [] })), { npc: 'courier', x: 18, z: 20, facingDegrees: 0, when: during('kill') }],
+    npcs: [...town.npcs.map((placed: ZoneNpc): ZoneNpc => ({ npc: placed.npc, x: placed.x, z: placed.z, facingDegrees: placed.facingDegrees, when: [], leave: 0 })), { npc: 'courier', x: 18, z: 20, facingDegrees: 0, when: during('kill'), leave: 0 }],
   };
   const keeper: NpcDef = must(shipped.npcs.get('keeper'), 'keeper');
   const courier: NpcDef = must(shipped.npcs.get('courier'), 'courier');

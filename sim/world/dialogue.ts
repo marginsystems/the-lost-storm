@@ -33,6 +33,11 @@ export function findNpc(world: World, npcId: number): NpcState | null {
   return world.npcs.find((npc: NpcState): boolean => npc.id === npcId) ?? null;
 }
 
+export function talkable(world: World, npcId: number): NpcState | null {
+  const npc: NpcState | null = findNpc(world, npcId);
+  return npc === null || isLeaving(world, npc) ? null : npc;
+}
+
 export function nextTalk(world: World, def: NpcDef): TalkDef | null {
   return def.talks.find((talk: TalkDef): boolean => allHold(world, talk.when) && (!talk.once || !world.heard.includes(talk.id))) ?? null;
 }
@@ -108,7 +113,8 @@ export function refreshNpcs(world: World): void {
   const staging: ZoneNpc | null = world.scene?.placement ?? null;
   const staged: NpcState[] = world.npcs.filter((npc: NpcState): boolean => npc.placement === staging);
   const staying: NpcState[] = world.npcs.filter((npc: NpcState): boolean => wanted.includes(npc.placement));
-  if (staying.length + staged.length === world.npcs.length && staying.length === wanted.length) return;
+  const leaving: NpcState[] = world.npcs.filter((npc: NpcState): boolean => npc.placement !== staging && !wanted.includes(npc.placement) && npc.placement.leave > 0 && npc.fade > 0);
+  if (staying.length + staged.length + leaving.length === world.npcs.length && staying.length === wanted.length) return;
   if (world.dialogue !== null && ![...staying, ...staged].some((npc: NpcState): boolean => npc.id === world.dialogue?.npcId)) closeDialogue(world, false);
   const arriving: NpcState[] = wanted
     .filter((placed: ZoneNpc): boolean => !staying.some((npc: NpcState): boolean => npc.placement === placed))
@@ -116,5 +122,22 @@ export function refreshNpcs(world: World): void {
       const npc: NpcState | null = npcAt(world, placed);
       return npc === null ? [] : [npc];
     });
-  world.npcs = [...staying, ...arriving, ...staged];
+  world.npcs = [...staying, ...arriving, ...staged, ...leaving];
+}
+
+export function isLeaving(world: World, npc: NpcState): boolean {
+  return npc.placement.leave > 0 && npc.placement !== world.scene?.placement && !allHold(world, npc.placement.when);
+}
+
+export function easeLeaving(world: World, dt: number): void {
+  let gone: boolean = false;
+  for (const npc of world.npcs) {
+    if (!isLeaving(world, npc)) {
+      if (npc.placement.leave > 0 && npc.placement !== world.scene?.placement) npc.fade = 1;
+      continue;
+    }
+    npc.fade = Math.max(0, npc.fade - dt / npc.placement.leave);
+    if (npc.fade === 0) gone = true;
+  }
+  if (gone) world.npcs = world.npcs.filter((npc: NpcState): boolean => !isLeaving(world, npc) || npc.fade > 0);
 }

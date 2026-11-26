@@ -4,6 +4,7 @@ import { objectivePaths } from '../content/road.ts';
 import type { Vec2 } from '../math.ts';
 import { inSentence } from '../name-text.ts';
 import { allHold } from './conditions.ts';
+import { isLeaving } from './dialogue.ts';
 import { fightZones, nearestFight, strikeGround } from './moments.ts';
 import { activeQuests, currentObjective } from './quests.ts';
 import type { MomentState, MonsterState, NpcState, World, WorldEvent } from './types.ts';
@@ -95,7 +96,7 @@ function pathTarget(world: World, objective: PathObjective): LocalTarget | null 
       if (world.zone.id === objective.zone) target = { kind: 'spot', pos: { x: objective.x, z: objective.z }, radius: objective.radius, name: world.zone.name, objective };
       break;
     case 'talk': {
-      const person: NpcState | undefined = world.npcs.find((npc: NpcState): boolean => npc.def.id === objective.npc);
+      const person: NpcState | undefined = world.npcs.find((npc: NpcState): boolean => npc.def.id === objective.npc && !isLeaving(world, npc));
       if (person !== undefined) target = { kind: 'person', pos: person.pos, radius: MARK.personRadius, name: person.def.name, objective };
       break;
     }

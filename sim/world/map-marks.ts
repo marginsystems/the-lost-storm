@@ -3,6 +3,7 @@ import { objectivePaths } from '../content/road.ts';
 import type { ZoneEncounter } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
 import { allHold } from './conditions.ts';
+import { isLeaving } from './dialogue.ts';
 import { exitShown } from './exits.ts';
 import { fightZones, nearestFight, strikeGround } from './moments.ts';
 import { activeQuests, currentObjective } from './quests.ts';
@@ -38,7 +39,7 @@ function pathZones(world: World, objective: PathObjective): string[] {
 }
 
 function talkTarget(world: World, npcId: string): Vec2 | null {
-  const npc: NpcState | undefined = world.npcs.find((candidate: NpcState): boolean => candidate.def.id === npcId);
+  const npc: NpcState | undefined = world.npcs.find((candidate: NpcState): boolean => candidate.def.id === npcId && !isLeaving(world, candidate));
   return npc === undefined ? null : { x: npc.pos.x, z: npc.pos.z };
 }
 
