@@ -107,10 +107,13 @@ export function usePrivateClips(library: CharacterLibrary, rigIds: Iterable<stri
   for (const rig of library.rigs.values()) withPrivateClips(rig);
 }
 
-export function loadModel(loader: GLTFLoader, path: string, gate: TurnGate = OPEN_GATE): Promise<GLTF> {
+export function loadModel(loader: GLTFLoader, path: string, gate: TurnGate = OPEN_GATE, receiving?: () => void): Promise<GLTF> {
   const cached: Promise<GLTF> | undefined = pending.get(path);
   if (cached !== undefined) return cached;
-  const started: Promise<GLTF> = withStallLimit((progress: () => void): Promise<GLTF> => loader.loadAsync(assetUrl(path), progress), createBrowserTimers(), STALL.limitMs, path).then(async (gltf: GLTF): Promise<GLTF> => {
+  const started: Promise<GLTF> = withStallLimit((progress: () => void): Promise<GLTF> => loader.loadAsync(assetUrl(path), (event: ProgressEvent): void => {
+    progress();
+    if (event.loaded > 0) receiving?.();
+  }), createBrowserTimers(), STALL.limitMs, path).then(async (gltf: GLTF): Promise<GLTF> => {
     await gate.turn();
     return shrinkModel(gltf);
   });
@@ -129,9 +132,9 @@ function shrinkModel(gltf: GLTF): GLTF {
 
 const kept: Set<string> = new Set<string>();
 
-export function loadKeptModel(loader: GLTFLoader, path: string, gate: TurnGate = OPEN_GATE): Promise<GLTF> {
+export function loadKeptModel(loader: GLTFLoader, path: string, gate: TurnGate = OPEN_GATE, receiving?: () => void): Promise<GLTF> {
   kept.add(path);
-  return loadModel(loader, path, gate);
+  return loadModel(loader, path, gate, receiving);
 }
 
 export function forgetModel(path: string): void {
@@ -191,9 +194,22 @@ interface ClipSource {
   readonly scene: Object3D;
 }
 
-async function loadRig(loader: GLTFLoader, def: RigDef, gate: TurnGate = OPEN_GATE): Promise<LoadedRig> {
-  const main: GLTF = await loadKeptModel(loader, def.url, gate);
-  const extras: GLTF[] = await Promise.all(rigClipNames(def).map((clip: string): Promise<GLTF> => loadKeptModel(loader, clipUrl(def, clip), gate)));
+export function loadRigFiles<T>(loadBody: (receiving: () => void) => Promise<T>, loadClips: () => Promise<T[]>): Promise<[T, T[]]> {
+  let receiving: () => void = ignoreFailure;
+  const firstBytes: Promise<void> = new Promise<void>((resolve: () => void): void => {
+    receiving = resolve;
+  });
+  const body: Promise<T> = loadBody(receiving);
+  const clips: Promise<T[]> = Promise.race([firstBytes, body]).then(loadClips);
+  return Promise.all([body, clips]);
+}
+
+async function loadRig(loader: GLTFLoader, def: RigDef, backgroundGate?: TurnGate): Promise<LoadedRig> {
+  const gate: TurnGate = backgroundGate ?? OPEN_GATE;
+  const [main, extras] = await loadRigFiles(
+    (receiving: () => void): Promise<GLTF> => loadKeptModel(loader, def.url, gate, backgroundGate === undefined ? receiving : undefined),
+    (): Promise<GLTF[]> => Promise.all(rigClipNames(def).map((clip: string): Promise<GLTF> => loadKeptModel(loader, clipUrl(def, clip), gate))),
+  );
   const sources: ClipSource[] = extras.flatMap((extra: GLTF): ClipSource[] => extra.animations.map((clip: AnimationClip): ClipSource => ({ clip, scene: extra.scene })));
   const fitted: AnimationClip[] = await eachInTurn(sources, gate, (source: ClipSource): AnimationClip => fitClip(source.clip, source.scene, main.scene));
   const available: AnimationClip[] = [...main.animations, ...fitted];
