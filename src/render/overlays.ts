@@ -19,7 +19,7 @@ import { createLootTip } from './loot-tip.ts';
 import type { LootTip, TipCheck } from './loot-tip.ts';
 import { anchorInView, heldReach, keepApart, keepTagInView, LABEL_EDGE, placeTag, squaredDistance, stackAtEdges } from './label-edge.ts';
 import type { EdgeStack, EdgeTag, ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
-import { HEAD_TAG, headTagRect, headTagSeen } from './head-tag.ts';
+import { headTagRect, plateSize, showHeadTag } from './head-tag.ts';
 import { foldPiles, settleLabels } from './label-stack.ts';
 import { lootShown, pilesFold } from './loot-shown.ts';
 import type { ItemNames } from './item-names.ts';
@@ -182,20 +182,12 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const tagRects: ScreenRect[] = [];
   const plateRects: ScreenRect[] = [];
   const keepClear = (element: HTMLElement): TagBound | null => {
-    const tag: Element | null = element.firstElementChild;
-    if (!(tag instanceof HTMLElement)) return null;
-    const size: TagSize = tagSizes.size(tag);
-    if (size.width === 0) return null;
+    const size: TagSize | null = plateSize(element, tagSizes);
+    if (size === null) return null;
     const spot: TagPlace = placeTag(point.x, point.y, size.width, size.height, view, tagRects);
     point.set(spot.x, spot.y);
-    tagRects.push({ left: spot.x - size.width / 2, top: spot.y - size.height, right: spot.x + size.width / 2, bottom: spot.y });
+    tagRects.push(headTagRect(spot.x, spot.y, size.width, size.height));
     return { size, view };
-  };
-  const claimSpace = (element: HTMLElement): void => {
-    const plate: Element | null = element.firstElementChild;
-    if (!(plate instanceof HTMLElement)) return;
-    const size: TagSize = tagSizes.size(plate);
-    if (size.width > 0) tagRects.push(headTagRect(point.x, point.y, size.width, size.height));
   };
   const pending: PendingTag[] = [];
   const pinnedExits: Set<string> = new Set<string>();
@@ -565,10 +557,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       }
       for (const tag of tags) {
         const front: boolean = camera.project(tag.x, tag.y, tag.z, point);
-        const seen: boolean = tag.shown && headTagSeen({ x: point.x, y: point.y, front }, view, !tag.element.classList.contains(HEAD_TAG.offClass));
-        tag.element.classList.toggle(HEAD_TAG.offClass, !seen);
         place(tag.element, point);
-        if (seen) claimSpace(tag.element);
+        showHeadTag(tag.element, { x: point.x, y: point.y, front }, tag.shown, view, tagSizes, tagRects);
       }
       for (const label of exits) {
         const pinned: boolean = pinnedExits.has(label.id);
