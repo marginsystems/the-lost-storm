@@ -468,6 +468,26 @@
           }
         ]
       }
+    },
+    {
+      "id": "act_2",
+      "title": "Act II",
+      "name": "",
+      "end": null,
+      "atlas": {
+        "width": 1600,
+        "height": 1000,
+        "compass": {"x": 1440, "y": 870},
+        "chains": [
+          {"id": "the_still", "tint": "#b9bfc8"},
+          {"id": "the_mended", "tint": "#d2ad84"},
+          {"id": "the_storm", "tint": "#8fb3e6"}
+        ],
+        "places": [],
+        "roads": [],
+        "features": [],
+        "labels": []
+      }
     }
   ],
   "retired": {
