@@ -10,8 +10,7 @@ export const CHART_OVERVIEW = {
   trackWidth: 1.1,
   litWidth: 2,
   routeWidth: 1.8,
-  idleTrack: 'rgba(140, 150, 165, 0.3)',
-  shutTrack: 'rgba(140, 150, 165, 0.08)',
+  shutTrackOpacity: 0.25,
   routeTrack: 'rgba(235, 240, 248, 0.75)',
   idleFill: '#0b0f16',
   idleRim: 'rgba(170, 178, 190, 0.32)',
@@ -38,6 +37,7 @@ export interface OverviewLink {
   readonly to: string;
   readonly points: readonly ChartPoint[];
   readonly tint: string;
+  readonly trackTint: string;
 }
 
 export interface OverviewView {
@@ -118,6 +118,11 @@ export function createChartOverview(host: HTMLElement, before: Element | null, p
     pen.stroke();
   };
 
+  const strokeTintedLinks = (view: OverviewView, chosen: readonly OverviewLink[], lit: boolean): void => {
+    const tints: Map<string, OverviewLink[]> = grouped(chosen, (link: OverviewLink): string => lit ? link.tint : link.trackTint);
+    for (const [tint, group] of tints) strokeLinks(view, group, tint, lit ? CHART_OVERVIEW.litWidth : CHART_OVERVIEW.trackWidth);
+  };
+
   const dots = (view: OverviewView, chosen: readonly OverviewPlace[], fill: string, rim: string): void => {
     if (chosen.length === 0) return;
     pen.beginPath();
@@ -157,14 +162,13 @@ export function createChartOverview(host: HTMLElement, before: Element | null, p
       pen.clearRect(0, 0, box.width, box.height);
       pen.lineCap = 'round';
       pen.lineJoin = 'round';
-      const byLink: Map<string, OverviewLink[]> = grouped(links, (link: OverviewLink): string => {
-        const mark: LinkMark = linkMark(markOf(marks, link.from), markOf(marks, link.to));
-        return mark === 'lit' ? `lit ${link.tint}` : mark;
-      });
-      strokeLinks(view, byLink.get('shut') ?? [], CHART_OVERVIEW.shutTrack, CHART_OVERVIEW.trackWidth);
-      strokeLinks(view, byLink.get('idle') ?? [], CHART_OVERVIEW.idleTrack, CHART_OVERVIEW.trackWidth);
+      const byLink: Map<string, OverviewLink[]> = grouped(links, (link: OverviewLink): LinkMark => linkMark(markOf(marks, link.from), markOf(marks, link.to)));
+      pen.globalAlpha = CHART_OVERVIEW.shutTrackOpacity;
+      strokeTintedLinks(view, byLink.get('shut') ?? [], false);
+      pen.globalAlpha = 1;
+      strokeTintedLinks(view, byLink.get('idle') ?? [], false);
       strokeLinks(view, byLink.get('route') ?? [], CHART_OVERVIEW.routeTrack, CHART_OVERVIEW.routeWidth);
-      for (const [name, chosen] of byLink) if (name.startsWith('lit ')) strokeLinks(view, chosen, name.slice('lit '.length), CHART_OVERVIEW.litWidth);
+      strokeTintedLinks(view, byLink.get('lit') ?? [], true);
       const byPlace: Map<string, OverviewPlace[]> = grouped(places, (place: OverviewPlace): string => {
         const mark: PlaceMark = markOf(marks, place.id);
         return mark === 'taken' ? `taken ${place.tint}` : mark;

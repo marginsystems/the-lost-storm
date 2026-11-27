@@ -1,7 +1,6 @@
 .hud-panel.tree-panel {
   --tree-lit: #8fd8ff;
   --tree-well: #090c12;
-  --tree-idle: rgba(140, 150, 165, 0.3);
   --tree-open: rgba(235, 240, 248, 0.75);
   --tree-rim: rgba(170, 178, 190, 0.26);
 }
@@ -150,7 +149,7 @@
 }
 
 .tree-track {
-  stroke: var(--tree-idle);
+  stroke: var(--tint);
   stroke-width: 3;
   transition:
     stroke var(--spring-smooth-ms) var(--spring-smooth),

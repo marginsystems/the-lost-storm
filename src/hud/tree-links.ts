@@ -7,6 +7,8 @@ import { boltPoints } from './chart-storm.ts';
 
 export const TREE_LINKS = {
   svgNamespace: 'http://www.w3.org/2000/svg',
+  trackTintShare: '55%',
+  trackGrey: '#3c4148',
 } as const;
 
 export interface LinkView {
@@ -35,12 +37,13 @@ export function buildTreeLinks(svg: SVGSVGElement, content: Content, centreOf: (
       if (from === undefined) continue;
       const shared: boolean = from.common !== null || node.common !== null;
       const tint: string = shared ? content.chart.common.tint : pathTint(content, node.path === from.path ? node.path : from.path);
+      const trackTint: string = `color-mix(in srgb, ${tint} ${TREE_LINKS.trackTintShare}, ${TREE_LINKS.trackGrey})`;
       const bolt: ChartPoint[] = boltPoints(centreOf(from), centreOf(node), eye, `${requiredId}>${node.id}`, unit);
       const ring: string = from.path === node.path && !shared ? '' : ' ring';
       line(shades, bolt, `tree-shade${ring}`, tint);
-      const track: SVGPolylineElement = line(svg, bolt, `tree-track${ring}`, tint);
+      const track: SVGPolylineElement = line(svg, bolt, `tree-track${ring}`, trackTint);
       views.push({ track, path: line(svg, bolt, `tree-flow${ring}`, tint), from: requiredId, to: node.id });
-      far.push({ from: requiredId, to: node.id, points: bolt, tint });
+      far.push({ from: requiredId, to: node.id, points: bolt, tint, trackTint });
     }
   }
   return { views, far };
