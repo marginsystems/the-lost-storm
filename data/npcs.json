@@ -538,6 +538,20 @@
     ]
   },
   {
+    "id": "warden_porter",
+    "name": "Warden Porter",
+    "title": "Loot follower",
+    "faction": "wardens",
+    "rig": "warden",
+    "scale": 1.0,
+    "tint": "#f2e2d0",
+    "color": "#f0c070",
+    "gear": ["warden_lantern"],
+    "wear": ["warden_jerkin", "warden_breeches", "warden_boots"],
+    "talks": [{"id": "warden_porter_packs", "once": false, "when": [], "lines": ["warden_porter_packs"]}],
+    "service": "porter"
+  },
+  {
     "id": "warden_trader",
     "name": "Warden Trader",
     "title": "Warden",

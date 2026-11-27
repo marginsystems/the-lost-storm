@@ -23,6 +23,7 @@ import type { GridStamp, NavGrid } from '../nav/grid.ts';
 import type { MomentFigure } from './moment-figure.ts';
 import type { TransitState } from './moment-transit.ts';
 import type { Rng } from '../rng.ts';
+import type { LootFilter } from '../loot-filter.ts';
 import type { NpcState } from './npc-types.ts';
 import type { HazardState, ProjectileState, QueuedShot } from './delivery-types.ts';
 import type { Escort, SceneState } from './scene-state.ts';
@@ -323,6 +324,7 @@ export interface GroundItem {
   content: GoldDrop | ItemDrop;
   readonly find: string | null;
   age: number;
+  discarded?: boolean;
   kept: boolean;
 }
 
@@ -541,6 +543,12 @@ export interface World {
   events: WorldEvent[];
   service: OpenService | null;
   vendors: Record<string, VendorStock>;
+  now: number;
+  lootFilter: LootFilter;
+  porterUntil: number;
+  satchel: (ItemInstance | null)[];
+  porter: NpcState | null;
+  porterNextRoute: number;
   stash: (ItemInstance | null)[];
   purse: number;
   tradeZone: string;

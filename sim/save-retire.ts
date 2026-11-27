@@ -42,9 +42,10 @@ export function retireUnworn(content: Content, save: SaveData): SaveData {
   const equipped: Equipment = { ...save.equipped };
   for (const slot of ITEM_SLOTS) equipped[slot] = refund.keep(equipped[slot]);
   const inventory: (ItemInstance | null)[] = save.inventory.map((item: ItemInstance | null): ItemInstance | null => refund.keep(item));
+  const satchel = save.satchel.map((item: ItemInstance | null): ItemInstance | null => refund.keep(item));
   const stash: (ItemInstance | null)[] = save.stash.map((item: ItemInstance | null): ItemInstance | null => refund.keep(item));
   const spilled: ItemInstance[] = save.spilled.map((item: ItemInstance): ItemInstance | null => refund.keep(item)).filter(present);
   const vendors: Record<string, VendorStock> = {};
   for (const [id, stock] of Object.entries(save.vendors)) vendors[id] = vendor(content, stock);
-  return { ...save, gold: save.gold + refund.total, equipped, inventory, stash, spilled, vendors };
+  return { ...save, gold: save.gold + refund.total, equipped, inventory, stash, satchel, spilled, vendors };
 }

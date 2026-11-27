@@ -31,12 +31,11 @@ export const IDENTIFY_WORDS = {
 export const SALE_WORDS = {
   offer: (price: number): string => `offer for ${price} gold`,
   button: (price: number): string => `Sell · ${price} gold`,
-  offerFromBag: 'offer an item from your bag',
-  touchEmpty: 'Hold an item in your bag to offer it',
+  touchEmpty: 'Hold each bag item to select it for sale',
 } as const;
 
 export function saleEmptyText(touch: boolean): string {
-  return touch ? SALE_WORDS.touchEmpty : promptText(false, alternate(SALE_WORDS.offerFromBag));
+  return touch ? SALE_WORDS.touchEmpty : 'Shift-click or right-click bag items to select them';
 }
 
 const AUCTION_PICK: string = 'pick to sell';
@@ -80,10 +79,9 @@ export function offeredItem(world: World, uid: number | null): ItemInstance | nu
   return item === null || !sellable(world, item) ? null : item;
 }
 
-export function saleCommand(world: World, uid: number | null): Command | null {
-  const item: ItemInstance | null = offeredItem(world, uid);
-  if (item === null) return null;
-  return { type: 'trade', action: { type: 'sell', inventoryIndex: world.player.inventory.indexOf(item) } };
+export function saleCommand(world: World, selected: readonly number[]): Command | null {
+  const uids = selected.filter((uid: number): boolean => offeredItem(world, uid) !== null);
+  return uids.length === 0 ? null : { type: 'trade', action: { type: 'sell_many', uids } };
 }
 
 function wearPrompts(world: World, item: ItemInstance): readonly Prompt[] {
@@ -105,6 +103,7 @@ const SERVICE_HINTS: Readonly<Record<ServiceKind, (world: World, item: ItemInsta
   stash: (): readonly Prompt[] => INVENTORY_HINTS.stash,
   auction: (world: World, item: ItemInstance): readonly Prompt[] => (item.ledger === null || isStoryItem(world.content, item) || isUnidentified(item) ? [] : [use(AUCTION_PICK)]),
   identify: identifyPrompts,
+  porter: wearPrompts,
   descent: (world: World, item: ItemInstance): readonly Prompt[] => (usable(world, item) ? INVENTORY_HINTS.use : isUnidentified(item) ? [] : INVENTORY_HINTS.equip),
 };
 

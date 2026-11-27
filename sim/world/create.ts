@@ -42,6 +42,7 @@ export interface WorldOptions {
   readonly hero?: string;
   readonly glitches?: GlitchDef;
   readonly firstId?: number;
+  readonly now?: number;
   readonly stash?: readonly (ItemInstance | null)[] | null;
 }
 
@@ -211,6 +212,12 @@ export function createWorld(content: Content, options: WorldOptions): World {
     events: [],
     service: null,
     vendors: save === null ? {} : copyVendors(save.vendors),
+    now: Math.max(options.now ?? 0, save?.porterClock ?? 0),
+    porterUntil: save?.porterUntil ?? 0,
+    porter: null,
+    porterNextRoute: 0,
+    lootFilter: {},
+    satchel: Array.from({ length: content.trade.porter.capacity }, (_: unknown, index: number): ItemInstance | null => save?.satchel[index] ?? null),
     stash: save === null ? emptyStash(content) : [...save.stash],
     purse: save === null ? 0 : save.purse,
     tradeZone: zone.id,

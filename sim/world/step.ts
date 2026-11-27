@@ -27,6 +27,8 @@ import { keepOutOfWards, stepWards } from './wards.ts';
 import { holdBehindWalls } from './walls.ts';
 import { stepVoid } from './void.ts';
 import { stepMoments } from './moments.ts';
+import type { LootFilter } from '../loot-filter.ts';
+import { stepPorter } from './porter.ts';
 import { stepNpcs } from './npc-walk.ts';
 import { stepScene } from './scene.ts';
 import { easeLeaving } from './dialogue.ts';
@@ -43,7 +45,14 @@ import { endChannels, stepChannelTrails } from './channels.ts';
 
 export const MAX_STEP: number = 1 / 30;
 
-export function stepWorld(world: World, commands: readonly Command[], dt: number): WorldEvent[] {
+interface StepContext {
+  readonly now: number;
+  readonly loot: LootFilter;
+}
+
+export function stepWorld(world: World, commands: readonly Command[], dt: number, context?: StepContext): WorldEvent[] {
+  world.now = Math.max(context?.now ?? 0, world.now + dt * 1000);
+  if (context !== undefined) world.lootFilter = context.loot;
   world.events = [];
   announceArming(world);
   world.time += dt;
@@ -100,6 +109,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   easeLeaving(world, dt);
   stepWards(world, dt);
   stepMoments(world, dt);
+  stepPorter(world);
   stepNpcs(world, dt);
   stepBosses(world);
   stepVoices(world);

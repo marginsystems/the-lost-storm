@@ -52,26 +52,26 @@ void test('at the trader a right click offers the item and shows its price befor
   const price: number = sellPrice(content, item);
   assert.equal(inventoryHint(world, item, false, false), `Click to equip · Right click to offer for ${price} gold`);
   assert.equal(SALE_WORDS.button(price), `Sell · ${price} gold`);
-  assert.equal(saleEmptyText(false), 'Right click to offer an item from your bag');
-  assert.equal(saleEmptyText(true), 'Hold an item in your bag to offer it');
+  assert.equal(saleEmptyText(false), 'Shift-click or right-click bag items to select them');
+  assert.equal(saleEmptyText(true), 'Hold each bag item to select it for sale');
 });
 
 void test('the sell button sells the offered item wherever it sits, and nothing once it has left the bag', (): void => {
   const item: ItemInstance = sword(4003);
   const world: World = atVendor(holding({ 5: item }));
-  assert.deepEqual(saleCommand(world, 4003), { type: 'trade', action: { type: 'sell', inventoryIndex: 5 } });
+  assert.deepEqual(saleCommand(world, [4003]), { type: 'trade', action: { type: 'sell_many', uids: [4003] } });
   assert.equal(offeredItem(world, 4003), item);
-  assert.equal(saleCommand(world, null), null);
+  assert.equal(saleCommand(world, []), null);
   world.player.inventory[5] = null;
   world.player.inventory[2] = item;
-  assert.deepEqual(saleCommand(world, 4003), { type: 'trade', action: { type: 'sell', inventoryIndex: 2 } });
+  assert.deepEqual(saleCommand(world, [4003]), { type: 'trade', action: { type: 'sell_many', uids: [4003] } });
   world.player.inventory[2] = null;
   world.player.equipped.weapon = item;
   assert.equal(offeredItem(world, 4003), null);
-  assert.equal(saleCommand(world, 4003), null);
+  assert.equal(saleCommand(world, [4003]), null);
   world.player.inventory[2] = item;
   world.service = null;
-  assert.equal(saleCommand(world, 4003), null);
+  assert.equal(saleCommand(world, [4003]), null);
 });
 
 void test('a story item is never dropped, offered or sold from the bag, though it can be stashed', (): void => {
@@ -80,7 +80,7 @@ void test('a story item is never dropped, offered or sold from the bag, though i
   assert.deepEqual(bagAction(world, 0, 'right'), { kind: 'deny' });
   atVendor(world);
   assert.deepEqual(bagAction(world, 0, 'right'), { kind: 'deny' });
-  assert.equal(saleCommand(world, 5100), null);
+  assert.equal(saleCommand(world, [5100]), null);
   world.service = { kind: 'stash', owner: 'any', anchor: { x: 0, z: 0 } };
   assert.deepEqual(bagAction(world, 0, 'right'), { kind: 'send', command: { type: 'trade', action: { type: 'stash', inventoryIndex: 0 } } });
 });

@@ -104,7 +104,7 @@ export function heldGear(content: Content, equipped: WornBases | null): string[]
   return held === null ? [...content.player.gear] : [...content.player.gear, held];
 }
 
-export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: WornBases | null, hero: string | null = null): CharacterNeeds {
+export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: WornBases | null, hero: string | null = null, follower: string | null = null): CharacterNeeds {
   const rig: string = heroRig(content, hero);
   const rigs: Set<string> = new Set<string>([rig]);
   const look: Look = lookOf(content, rig, heroBase(content, rig), equipped);
@@ -116,8 +116,10 @@ export function zoneCharacterNeeds(content: Content, zone: ZoneDef, equipped: Wo
     for (const id of wornWearables(content, other, wear, null)) wearables.add(wearKey(frameOf(content, other), id));
     for (const id of gear) attachments.add(id);
   };
-  for (const placed of zone.npcs) {
-    const npc: NpcDef | undefined = content.npcs.get(placed.npc);
+  const people: string[] = zone.npcs.map((placed): string => placed.npc);
+  if (follower !== null) people.push(follower);
+  for (const id of people) {
+    const npc: NpcDef | undefined = content.npcs.get(id);
     if (npc !== undefined) add(npc.rig, npc.wear, npc.gear);
   }
   for (const pack of zone.packs) {

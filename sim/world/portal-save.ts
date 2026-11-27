@@ -63,7 +63,7 @@ function keptGround(value: unknown, readers: PortalReaders): KeptGround | null {
   if (content['kind'] === 'gold') return Number.isSafeInteger(amount) && typeof amount === 'number' && amount > 0 ? { x, z, content: { kind: 'gold', amount } } : null;
   const item: ItemInstance | null = content['kind'] === 'item' ? readers.item(content['item']) : null;
   const drop: GroundItem['content'] | null = item === null ? null : { kind: 'item', item };
-  return drop === null ? null : { x, z, content: drop };
+  return drop === null ? null : { x, z, content: drop, ...(value['discarded'] === true ? { discarded: true } : {}) };
 }
 
 function present<T>(entry: T | null): entry is T {

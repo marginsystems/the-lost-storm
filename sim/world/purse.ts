@@ -65,7 +65,7 @@ function wornSets(world: World): Equipment[] {
 
 function holds(world: World, ledger: string): boolean {
   const owns = (item: ItemInstance | null): boolean => item !== null && item.ledger === ledger;
-  if (world.player.inventory.some(owns) || world.stash.some(owns)) return true;
+  if (world.player.inventory.some(owns) || world.stash.some(owns) || world.satchel.some(owns)) return true;
   if (wornSets(world).some((worn: Equipment): boolean => ITEM_SLOTS.some((slot): boolean => owns(worn[slot])))) return true;
   return world.ground.some((ground: GroundItem): boolean => groundHolds(ground, ledger));
 }
@@ -82,6 +82,7 @@ function clearList(list: (ItemInstance | null)[], ledger: string): boolean {
 
 function removeLedger(world: World, ledger: string): boolean {
   let removed: boolean = clearList(world.player.inventory, ledger);
+  removed = clearList(world.satchel, ledger) || removed;
   removed = clearList(world.stash, ledger) || removed;
   for (const worn of wornSets(world)) {
     for (const slot of ITEM_SLOTS) {
@@ -139,6 +140,7 @@ export function unverifyLedger(world: World, ids: readonly string[]): boolean {
   if (ids.length === 0) return false;
   const ledgers: ReadonlySet<string> = new Set<string>(ids);
   let changed: boolean = unverifyList(world.player.inventory, ledgers);
+  changed = unverifyList(world.satchel, ledgers) || changed;
   changed = unverifyList(world.stash, ledgers) || changed;
   for (const set of wornSets(world)) {
     for (const slot of ITEM_SLOTS) {

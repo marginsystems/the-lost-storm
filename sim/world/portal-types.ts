@@ -25,6 +25,7 @@ export interface KeptMonster {
 }
 
 export interface KeptGround {
+  readonly discarded?: boolean;
   readonly x: number;
   readonly z: number;
   readonly content: GroundItem['content'];

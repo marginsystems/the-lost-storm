@@ -23,6 +23,7 @@ export function npcAt(world: World, placed: ZoneNpc): NpcState | null {
 }
 
 export function spawnNpcs(world: World): void {
+  world.porter = null;
   world.npcs = present(world).flatMap((placed: ZoneNpc): NpcState[] => {
     const npc: NpcState | null = npcAt(world, placed);
     return npc === null ? [] : [npc];
@@ -111,7 +112,7 @@ export function advanceDialogue(world: World): void {
 export function refreshNpcs(world: World): void {
   const wanted: ZoneNpc[] = present(world);
   const staging: ZoneNpc | null = world.scene?.placement ?? null;
-  const staged: NpcState[] = world.npcs.filter((npc: NpcState): boolean => npc.placement === staging);
+  const staged: NpcState[] = world.npcs.filter((npc: NpcState): boolean => npc.placement === staging || npc === world.porter);
   const staying: NpcState[] = world.npcs.filter((npc: NpcState): boolean => wanted.includes(npc.placement));
   const leaving: NpcState[] = world.npcs.filter((npc: NpcState): boolean => npc.placement !== staging && !wanted.includes(npc.placement) && npc.placement.leave > 0 && npc.fade > 0);
   if (staying.length + staged.length + leaving.length === world.npcs.length && staying.length === wanted.length) return;

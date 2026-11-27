@@ -36,9 +36,9 @@ export function createCharacterSwitch(deps: CharacterSwitchDeps): CharacterSwitc
     async switched(): Promise<void> {
       const next: SaveData | null = await deps.backend.reopen();
       const kept: string | null = next === null ? readHero(deps.store, content) : null;
-      const seed: number = Date.now() >>> 0;
+      const now: number = Date.now();
       const stash: readonly (ItemInstance | null)[] | null = deps.backend.stash();
-      adoptWorld(world, kept === null ? { seed, save: next, opening: true, stash } : { seed, save: next, opening: true, hero: kept, stash });
+      adoptWorld(world, { now, seed: now >>> 0, save: next, opening: true, stash, ...(kept === null ? {} : { hero: kept }) });
       deps.pick.reset(startingHero(content, next === null ? null : world.player.hero, kept));
       queue.length = 0;
       stale = true;

@@ -1,3 +1,4 @@
+import type { LootFilter } from '../../sim/loot-filter.ts';
 import type { KeyValueStore } from '../backend/backend.ts';
 import type { ActionDef, ActionId, Movement, Overrides, RebindResult, ResolvedKeys, SlotDefault, Shipped } from './bindings.ts';
 import { actionTable, freeMoveKeys, rebind, resolveKeys, sanitizeOverrides } from './bindings.ts';
@@ -8,6 +9,7 @@ export interface SettingsStore {
   get(): Settings;
   keys(): ResolvedKeys;
   preset(): GraphicsPreset;
+  setLoot(filter: LootFilter): void;
   setQuality(quality: Quality): void;
   setShowFps(show: boolean): void;
   setLensWater(on: boolean): void;
@@ -49,6 +51,9 @@ export function createSettingsStore(storage: KeyValueStore, slots: readonly Slot
     },
     preset(): GraphicsPreset {
       return PRESETS[settings.graphics.quality];
+    },
+    setLoot(loot: LootFilter): void {
+      commit(mergeSettings(settings, { loot }));
     },
     setQuality(quality: Quality): void {
       setGraphics({ ...settings.graphics, quality });

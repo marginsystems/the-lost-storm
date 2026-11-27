@@ -1,0 +1,4 @@
+.loot-group { border: 0; margin: 0; padding: 8px 0; min-width: 0; }
+.loot-options { display: flex; flex-wrap: wrap; gap: 5px; padding-block: 5px; }
+.loot-choice { font: inherit; font-size: 13px; color: #b4ad9e; background: #191d21; border: 1px solid #383a39; border-radius: 3px; padding: 4px 8px; cursor: pointer; transition: color var(--spring-snappy-ms) var(--spring-snappy), background-color var(--spring-snappy-ms) var(--spring-snappy); }
+.loot-choice:hover, .loot-choice[aria-pressed="true"] { color: #f3d89d; background: #383328; }

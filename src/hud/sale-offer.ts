@@ -1,22 +1,28 @@
 export interface SaleOffer {
-  uid(): number | null;
-  set(uid: number | null): void;
-  watch(listener: (uid: number | null) => void): void;
+  uids(): readonly number[];
+  toggle(uid: number): void;
+  clear(): void;
+  watch(listener: () => void): void;
 }
 
 export function createSaleOffer(): SaleOffer {
-  let current: number | null = null;
-  const listeners: ((uid: number | null) => void)[] = [];
+  const listeners: (() => void)[] = [];
+  let selected: number[] = [];
   return {
-    uid(): number | null {
-      return current;
+    uids(): readonly number[] {
+      return selected;
     },
-    set(uid: number | null): void {
-      if (uid === current) return;
-      current = uid;
-      for (const listener of listeners) listener(uid);
+    toggle(uid: number): void {
+      if (selected.includes(uid)) selected = selected.filter((id: number): boolean => id !== uid);
+      else selected.push(uid);
+      for (const listener of listeners) listener();
     },
-    watch(listener: (uid: number | null) => void): void {
+    clear(): void {
+      if (selected.length === 0) return;
+      selected = [];
+      for (const listener of listeners) listener();
+    },
+    watch(listener: () => void): void {
       listeners.push(listener);
     },
   };

@@ -73,7 +73,19 @@ function good(value: unknown, where: string): TradeGood {
 
 export function trade(value: unknown, where: string): TradeDef {
   const source: Fields = fields(value, where);
+  const porterWhere: string = `${where}.porter`;
+  const porter = fields(source['porter'], porterWhere);
   return {
+    porter: {
+      npc: text(porter, 'npc', porterWhere),
+      price: count(porter, 'price', porterWhere),
+      durationMs: count(porter, 'durationMs', porterWhere),
+      capacity: count(porter, 'capacity', porterWhere),
+      pace: positive(porter, 'pace', porterWhere),
+      searchRadius: positive(porter, 'searchRadius', porterWhere),
+      pickupReach: positive(porter, 'pickupReach', porterWhere),
+      followGap: positive(porter, 'followGap', porterWhere),
+    },
     stashSize: count(source, 'stashSize', where),
     stockSize: count(source, 'stockSize', where),
     buybackSize: count(source, 'buybackSize', where),
@@ -87,6 +99,8 @@ export function trade(value: unknown, where: string): TradeDef {
 
 export function tradeProblems(content: Content): string[] {
   const problems: string[] = [];
+  const porter: string = content.trade.porter.npc;
+  if (content.npcs.get(porter)?.service !== 'porter') problems.push('trade porter must name a porter NPC: ' + porter);
   const rarities: Set<string> = new Set<string>(content.rarities.map((rarity): string => rarity.id));
   for (const rarity of rarities) if (content.trade.price.rarity[rarity] === undefined) problems.push(`trade has no price for rarity ${rarity}`);
   for (const key of Object.keys(content.trade.price.rarity)) if (!rarities.has(key)) problems.push(`trade prices unknown rarity ${key}`);

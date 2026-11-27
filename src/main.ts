@@ -3,15 +3,14 @@ import { Raycaster } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { cuesForLife, uiActionForCommand } from '../sim/audio.ts';
-import { zoneCharacterNeeds } from '../sim/wear.ts';
+import { type CharacterNeeds, type WornBases, zoneCharacterNeeds } from '../sim/wear.ts';
 import { keepZones } from '../sim/zone-cache.ts';
 import { carriedPictures, goodsPictures } from '../sim/pictures.ts';
 import { heroRig } from '../sim/hero.ts';
 import { noteInConsole, warnInConsole } from './backend/console-log.ts';
 import { keepFrames } from './frame-keeper.ts';
 import { HOST } from './host.ts';
-import { startPortalSdk } from './portal-sdk.ts';
-import type { PortalSdk } from './portal-sdk.ts';
+import { type PortalSdk, startPortalSdk } from './portal-sdk.ts';
 import { afterBreak, sendAfterBreaks } from './ad-break.ts';
 import type { WatchEffect } from './frame-watch.ts';
 import { startPerfReports } from './perf/perf-start.ts';
@@ -70,12 +69,11 @@ import type { Hud, HudApi } from './hud/hud-api.ts';
 import { startProfile } from './profile/profile-start.ts';
 import type { Input } from './input.ts';
 import { createInput } from './input.ts';
-import { createPauseMenu } from './hud/pause-menu.ts';
+import { type PauseMenu, createPauseMenu } from './hud/pause-menu.ts';
 import { frameGate, stoppedAtBreak } from './frame-gate.ts';
 import { createFramePace } from './frame-pace.ts';
 import type { FramePace } from './frame-pace.ts';
 import type { FrameGate } from './frame-gate.ts';
-import type { PauseMenu } from './hud/pause-menu.ts';
 import type { GraphicsPreset, GraphicsSettings, SettingsSection } from './settings/settings.ts';
 import { createHintStore } from './hints-store.ts';
 import type { ObjectiveMarker } from './objective/objective-marker.ts';
@@ -222,7 +220,8 @@ async function start(): Promise<void> {
   });
   const keptHero: string | null = save === null ? readHero(createBrowserStore(), content) : null;
   const watching: Watching | null = watchAsked === null ? null : await fetchWatching(content, watchAsked);
-  const world: World = watching !== null ? watchedWorld(watching) : createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true, stash: backend.stash() } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero, stash: backend.stash() });
+  const world: World = watching !== null ? watchedWorld(watching) : createWorld(content, { now: Date.now(), seed: Date.now() >>> 0, save, opening: true, stash: backend.stash(), ...(keptHero === null ? {} : { hero: keptHero }) });
+  const needsFor = (gear: WornBases, hero: string | null): CharacterNeeds => zoneCharacterNeeds(content, world.zone, gear, hero, world.porterUntil > world.now ? content.trade.porter.npc : null);
   const tracker: Tracker = startTracking({ serverUrl, build: import.meta.env.VITE_BUILD_ID, world, touch: mobile.touch });
   overlayManager.subscribe((state: OverlayState): void => tracker.overlays(visibleOverlays(state)));
   let entered: boolean = save !== null;
@@ -231,11 +230,11 @@ async function start(): Promise<void> {
     send({ type: 'hero', hero: id });
   };
   const loadGate: TurnGate = turnGate(browserPacer());
-  const pick: HeroPick = createHeroPick({ content, chosen: startingHero(content, save === null ? null : world.player.hero, keptHero), standing: (): PlayerState => world.player, entered: (): boolean => entered, keep: keepChosen, restage: (): void => flow.restage(), settled: (): Promise<void> => { wantCarried(); return pictures.items.settled(); }, load: (id: string): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, id), loadGate) });
+  const pick: HeroPick = createHeroPick({ content, chosen: startingHero(content, save === null ? null : world.player.hero, keptHero), standing: (): PlayerState => world.player, entered: (): boolean => entered, keep: keepChosen, restage: (): void => flow.restage(), settled: (): Promise<void> => { wantCarried(); return pictures.items.settled(); }, load: (id: string): Promise<void> => loadNeeds(loader, content, dresser, library, needsFor(world.player.equipped, id), loadGate) });
   const propDresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressedProp(content, dress, material, propDressing(world.zone));
-  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name, stage.renderer)]);
+  const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, needsFor(world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name, stage.renderer)]);
   void privateClips.then((clips: PrivateClips): void => usePrivateClips(library, content.player.heroes.map((hero: HeroDef): string => hero.rig), clips));
-  await Promise.all(world.heroes.filter((other: PlayerState): boolean => other.id !== world.player.id).map((other: PlayerState): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, other.equipped, other.hero), loadGate).catch((error: unknown): void => {
+  await Promise.all(world.heroes.filter((other: PlayerState): boolean => other.id !== world.player.id).map((other: PlayerState): Promise<void> => loadNeeds(loader, content, dresser, library, needsFor(other.equipped, other.hero), loadGate).catch((error: unknown): void => {
     warnInConsole(`Loading the body of hero ${other.id} failed: ${String(error)}`);
   })));
   const loot: LootView = await createLootView(loader, stage.scene, library);
@@ -276,6 +275,7 @@ async function start(): Promise<void> {
   const pauseMenu: PauseMenu = createPauseMenu(element('hud', HTMLDivElement), {
     overlays: overlayManager,
     settings: gameSettings,
+    rarities: content.rarities,
     glitches: glitchSettings,
     audio: controls,
     soundHealth: audio.health,
@@ -389,7 +389,7 @@ async function start(): Promise<void> {
     return lobbyFlow;
   };
   const wearWhatIsHeld = (): void => {
-    loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero), loadGate)
+    loadNeeds(loader, content, dresser, library, needsFor(world.player.equipped, world.player.hero), loadGate)
       .then((): void => actors.refreshWear(world))
       .catch((error: unknown): void => {
         warnInConsole(`Loading what the hero wears failed: ${String(error)}`);
@@ -432,7 +432,7 @@ async function start(): Promise<void> {
     markers.dispose();
     zoneView.dispose();
     rivalPlay?.enter();
-    const bodies: Promise<void> = Promise.all(world.heroes.map((hero: PlayerState): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, hero.equipped, hero.hero), loadGate))).then((): void => undefined).catch((error: unknown): void => {
+    const bodies: Promise<void> = Promise.all(world.heroes.map((hero: PlayerState): Promise<void> => loadNeeds(loader, content, dresser, library, needsFor(hero.equipped, hero.hero), loadGate))).then((): void => undefined).catch((error: unknown): void => {
       warnInConsole(`Loading the characters of ${world.zone.id} failed: ${String(error)}`);
     });
     const bodiesIn: Promise<void> = waitWithin(bodies.then((): Promise<void> => actors.raise(world)), createBrowserTimers(), WARM_UP.bodiesWaitMs);
@@ -518,7 +518,7 @@ async function start(): Promise<void> {
         let remaining: number = worldDt;
         while (remaining > 1e-5 && !events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
           const step: number = Math.min(MAX_STEP, remaining);
-          const stepped: WorldEvent[] = stepWorld(world, [...queue.splice(0, queue.length), ...(rivalPlay?.commands(step) ?? [])], step);
+          const stepped: WorldEvent[] = stepWorld(world, [...queue.splice(0, queue.length), ...(rivalPlay?.commands(step) ?? [])], step, { now: Date.now(), loot: gameSettings.get().loot });
           rivalPlay?.heard(stepped);
           events = events.concat(stepped);
           remaining -= step;
@@ -663,7 +663,7 @@ async function start(): Promise<void> {
   };
   wireTitleKeys(title, enter);
   wireHudAway(document.body, element('hud', HTMLDivElement));
-  const switcher = createCharacterSwitch({ content, world, backend, store: createBrowserStore(), pick, queue, titleBar, rereads: [drawTitleKeys, (): void => launch.rereadPlayed(), (): void => hud.rereadCharacter(), (): void => opening.rereadCharacter(), (): void => minter?.forget(), (): void => keep?.rereadLevel(), wantCarried, (): void => void lobby?.feed.refresh(true)], forget: (known: boolean): void => { entered = known; heroName = null; dirty = false; urgent = false; enter.textContent = known ? 'Continue' : 'Enter'; figureGauge = createFigureGauge(figureJoints(content.rigs.get(heroRig(content, world.player.hero))?.bodyParts ?? {})); }, dress: (hero: string): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, hero), loadGate), rebuild: (): Promise<BuiltZone> => showZone([]) });
+  const switcher = createCharacterSwitch({ content, world, backend, store: createBrowserStore(), pick, queue, titleBar, rereads: [drawTitleKeys, (): void => launch.rereadPlayed(), (): void => hud.rereadCharacter(), (): void => opening.rereadCharacter(), (): void => minter?.forget(), (): void => keep?.rereadLevel(), wantCarried, (): void => void lobby?.feed.refresh(true)], forget: (known: boolean): void => { entered = known; heroName = null; dirty = false; urgent = false; enter.textContent = known ? 'Continue' : 'Enter'; figureGauge = createFigureGauge(figureJoints(content.rigs.get(heroRig(content, world.player.hero))?.bodyParts ?? {})); }, dress: (hero: string): Promise<void> => loadNeeds(loader, content, dresser, library, needsFor(world.player.equipped, hero), loadGate), rebuild: (): Promise<BuiltZone> => showZone([]) });
   const startOver = async (): Promise<void> => {
     if (watching !== null) return;
     dirty = false;

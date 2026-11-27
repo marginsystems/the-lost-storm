@@ -9,6 +9,9 @@ import type { OutboundLink } from '../launch/links.ts';
 import { el, label } from './dom.ts';
 import { mountControls } from './settings-controls.ts';
 import type { ControlsPage } from './settings-controls.ts';
+import type { RarityDef } from '../../sim/content/types.ts';
+import { mountLoot } from './settings-loot.ts';
+import lootCss from './settings-loot.css?inline';
 import { mountGraphics } from './settings-graphics.ts';
 import pauseCss from './pause.css?inline';
 import { mountVolumeSliders } from './volume-panel.ts';
@@ -19,10 +22,11 @@ import type { OverlayManager } from './overlays.ts';
 
 const PAUSE_ROWS: { readonly base: number } = { base: 3 };
 
-const SECTION_LABELS: Readonly<Record<SettingsSection, string>> = { graphics: 'Graphics', sound: 'Sound', controls: 'Controls' };
+const SECTION_LABELS: Readonly<Record<SettingsSection, string>> = { graphics: 'Graphics', sound: 'Sound', controls: 'Controls', loot: 'Loot' };
 
 export interface PauseHooks {
   readonly settings: SettingsStore;
+  readonly rarities: readonly RarityDef[];
   readonly glitches: GlitchSettingsStore;
   readonly audio: AudioControls;
   readonly soundHealth: LoadHealth;
@@ -52,7 +56,7 @@ function button(parent: HTMLElement, className: string, text: string, onClick: (
 
 export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu {
   const style: HTMLStyleElement = el('style', '', root);
-  style.textContent = pauseCss;
+  style.textContent = pauseCss + lootCss;
   const overlay: HTMLDivElement = el('div', 'pause', root);
   const card: HTMLDivElement = el('div', 'pause-card', overlay);
   const hurtLine: HTMLDivElement = label('pause-hurt', MENU_HURT.line, overlay);
@@ -92,6 +96,8 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
   const soundPage: HTMLDivElement | undefined = pages.get('sound');
   const controlsPage: HTMLDivElement | undefined = pages.get('controls');
   if (graphicsPage === undefined || soundPage === undefined || controlsPage === undefined) throw new Error('Settings pages are missing');
+  const lootPage = pages.get('loot');
+  if (lootPage !== undefined) mountLoot(lootPage, hooks.settings, hooks.rarities);
   mountGraphics(graphicsPage, hooks.settings, hooks.glitches);
   mountVolumeSliders(soundPage, hooks.audio, hooks.soundHealth);
   const controls: ControlsPage = mountControls(controlsPage, hooks.settings);

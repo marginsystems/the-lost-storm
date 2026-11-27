@@ -122,7 +122,7 @@ export function dropFromInventory(world: World, inventoryIndex: number): void {
   const item: ItemInstance | null = player.inventory[inventoryIndex] ?? null;
   if (item === null || isStoryItem(world.content, item)) return;
   player.inventory[inventoryIndex] = null;
-  dropOnGround(world, player.pos, { kind: 'item', item });
+  dropOnGround(world, player.pos, { kind: 'item', item }).discarded = true;
   world.events.push({ type: 'character_changed' });
 }
 

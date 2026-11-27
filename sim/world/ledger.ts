@@ -217,5 +217,5 @@ function settleVendors(world: World, uid: number, minted: LedgerItem): boolean |
 
 export function confirmItem(world: World, uid: number, minted: LedgerItem): boolean {
   if (!LEDGER_ID.test(minted.id)) return false;
-  return settleGround(world, uid, minted) ?? settleList(world.player.inventory, uid, minted) ?? settleWorn(world, uid, minted) ?? settleList(world.stash, uid, minted) ?? settleVendors(world, uid, minted) ?? false;
+  return settleGround(world, uid, minted) ?? settleList(world.player.inventory, uid, minted) ?? settleWorn(world, uid, minted) ?? settleList(world.satchel, uid, minted) ?? settleList(world.stash, uid, minted) ?? settleVendors(world, uid, minted) ?? false;
 }

@@ -314,6 +314,27 @@ export function handleTrade(world: World, action: TradeAction): void {
     case 'sell':
       if (vendor !== null) sell(world, vendor, action.inventoryIndex);
       return;
+    case 'sell_many':
+      if (vendor !== null) {
+        for (const uid of new Set(action.uids)) {
+          const index: number = world.player.inventory.findIndex((item: ItemInstance | null): boolean => item?.uid === uid);
+          if (index >= 0) sell(world, vendor, index);
+        }
+      }
+      return;
+    case 'hire_porter':
+      if (service.kind === 'porter' && world.zone.npcs.some((placed): boolean => placed.npc === world.content.trade.porter.npc) && world.porterUntil <= world.now && chargeGold(world, world.content.trade.porter.price)) {
+        world.porterUntil = world.now + world.content.trade.porter.durationMs;
+      }
+      return;
+    case 'take_satchel': {
+      if (service.kind !== 'porter') return;
+      const index: number = world.satchel.findIndex((item: ItemInstance | null): boolean => item?.uid === action.uid);
+      if (index < 0) return;
+      if (moveStack(world.content, world.satchel, index, world.player.inventory)) changed(world);
+      else notice(world, 'inventory_full');
+      return;
+    }
     case 'buy_back':
       if (vendor !== null) buyBack(world, vendor, action.index);
       return;

@@ -125,7 +125,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
         context.api.send(action.command);
         return;
       case 'offer':
-        context.sale.set(context.sale.uid() === action.uid ? null : action.uid);
+        context.sale.toggle(action.uid);
         return;
       case 'pick':
         if (context.api.auction === null) retrigger(view.cell, 'deny');
@@ -203,6 +203,10 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       }
       if (view.current === null) return;
       context.tooltip.hide();
+      if (event.shiftKey && context.api.world.service?.kind === 'vendor') {
+        act(index, view, bagAction(context.api.world, index, 'right'));
+        return;
+      }
       if (bookOf(context.api.world.content, baseOf(context.api.world.content, view.current)) !== null) {
         context.api.readBook(view.current);
         return;
@@ -223,11 +227,10 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
     });
   }
 
-  const markOffered = (uid: number | null): void => {
-    for (const view of inventoryCells) view.cell.classList.toggle('offered', uid !== null && view.current !== null && view.current.uid === uid);
+  const markOffered = (): void => {
+    for (const view of inventoryCells) view.cell.classList.toggle('offered', view.current !== null && context.sale.uids().includes(view.current.uid));
   };
   context.sale.watch(markOffered);
-
   return {
     element,
     refresh(): void {
@@ -240,7 +243,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       inventoryCells.forEach((view: CellView, index: number): void => {
         if (setItem(view, player.inventory[index] ?? null)) changed = true;
       });
-      markOffered(context.sale.uid());
+      markOffered();
       if (armed !== null && (player.inventory[armed.index]?.uid !== armed.uid || !element.classList.contains('open'))) disarm();
       if (changed) context.tooltip.hide();
     },

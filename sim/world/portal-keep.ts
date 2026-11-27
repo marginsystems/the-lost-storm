@@ -42,6 +42,11 @@ function packIndices(zone: ZoneDef, packs: readonly ZonePack[]): number[] {
   return packs.map((pack: ZonePack): number => zone.packs.indexOf(pack)).filter((index: number): boolean => index >= 0);
 }
 
+function saveGround(ground: GroundItem): KeptGround {
+  const saved: KeptGround = { x: placed(ground.pos.x), z: placed(ground.pos.z), content: ground.content };
+  return ground.discarded === true ? { ...saved, discarded: true } : saved;
+}
+
 export function keptToSave(zone: ZoneDef, live: KeptLive): KeptSaved {
   return {
     type: 'saved',
@@ -49,7 +54,7 @@ export function keptToSave(zone: ZoneDef, live: KeptLive): KeptSaved {
     roused: packIndices(zone, live.roused),
     monsters: live.monsters.slice(0, PORTAL_KEEP.monsters).map((monster: MonsterState): KeptMonster => ({ monster: monster.def.id, group: monster.packId, level: monster.level, x: placed(monster.pos.x), z: placed(monster.pos.z), life: Math.max(1, Math.round(monster.life)) })),
     caches: [...live.cachesOpened],
-    ground: live.ground.slice(0, PORTAL_KEEP.ground).map((ground: GroundItem): KeptGround => ({ x: placed(ground.pos.x), z: placed(ground.pos.z), content: ground.content })),
+    ground: live.ground.slice(0, PORTAL_KEEP.ground).map(saveGround),
   };
 }
 
@@ -86,7 +91,7 @@ function restoreSaved(world: World, kept: KeptSaved): void {
     monster.life = Math.min(monster.maxLife, saved.life);
   }
   for (const ground of kept.ground) {
-    world.ground.push({ id: world.nextId, pos: { x: ground.x, z: ground.z }, from: { x: ground.x, z: ground.z }, content: ground.content, find: null, age: PORTAL_KEEP.settledAge, kept: false });
+    world.ground.push({ id: world.nextId, pos: { x: ground.x, z: ground.z }, from: { x: ground.x, z: ground.z }, content: ground.content, find: null, age: PORTAL_KEEP.settledAge, kept: false, discarded: ground.discarded === true });
     world.nextId += 1;
   }
 }

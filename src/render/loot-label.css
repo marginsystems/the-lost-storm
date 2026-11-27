@@ -49,6 +49,15 @@
   scale: 1.06;
 }
 
+.loot-label.wanted span::before {
+  content: '◆';
+  margin-right: 5px;
+}
+.loot-label.wanted span {
+  font-weight: 650;
+  background: rgba(21, 19, 14, 0.92);
+}
+
 .loot-label.find span {
   padding: 3px 11px 4px;
   border-radius: 4px;

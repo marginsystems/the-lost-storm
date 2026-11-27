@@ -19,6 +19,7 @@ export interface TradeHud {
 
 export function createTradeHud(root: HTMLElement, context: HudContext, track: (element: HTMLElement) => void, overlays: OverlayManager, inventory: HTMLElement): TradeHud {
   const panels: Record<ServiceKind, PanelView> = {
+    porter: createStashPanel(root, context, 'porter'),
     vendor: createVendorPanel(root, context),
     stash: createStashPanel(root, context),
     auction: createAuctionPanel(root, context),
@@ -32,6 +33,7 @@ export function createTradeHud(root: HTMLElement, context: HudContext, track: (e
 
   const place = (next: ServiceKind): void => {
     if (next !== kind) {
+      context.sale.clear();
       panels[kind].element.classList.remove('open');
     }
     kind = next;
@@ -51,7 +53,7 @@ export function createTradeHud(root: HTMLElement, context: HudContext, track: (e
     hide(): void {
       panels[kind].element.classList.remove('open');
       context.tooltip.hide();
-      context.sale.set(null);
+      context.sale.clear();
       if (kind === 'auction') context.api.auction?.close();
       if (context.api.world.service !== null) {
         closing = true;

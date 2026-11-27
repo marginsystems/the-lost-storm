@@ -5,7 +5,7 @@ import { shownTitle } from './npc-title.ts';
 import { buyPrice, goodItem, sellPrice } from '../../sim/world/trade.ts';
 import type { FlaskDef } from '../../sim/content/flasks.ts';
 import { baseFlask, offerFor } from '../../sim/world/flask-tiers.ts';
-import type { Command, FlaskState, ItemInstance, VendorStock, World } from '../../sim/world/types.ts';
+import type { FlaskState, ItemInstance, VendorStock, World } from '../../sim/world/types.ts';
 import type { FlaskOfferState, FlaskOfferView } from './flask-offer.ts';
 import { flaskOfferView } from './flask-offer.ts';
 import type { HudContext, PanelView } from './context.ts';
@@ -122,16 +122,16 @@ export function createVendorPanel(parent: HTMLElement, context: HudContext): Pan
   saleCell.cell.addEventListener('click', (): void => {
     if (saleCell.current === null) return;
     context.tooltip.hide();
-    context.sale.set(null);
+    context.sale.toggle(saleCell.current.uid);
   });
   sellButton.addEventListener('click', (event: MouseEvent): void => {
     event.stopPropagation();
-    const command: Command | null = saleCommand(context.api.world, context.sale.uid());
+    const command = saleCommand(context.api.world, context.sale.uids());
     if (command === null) {
       retrigger(sellButton, 'deny');
       return;
     }
-    context.sale.set(null);
+    context.sale.clear();
     context.api.send(command);
   });
 
@@ -174,8 +174,13 @@ export function createVendorPanel(parent: HTMLElement, context: HudContext): Pan
         const item: ItemInstance | null = stock?.buyback[index] ?? null;
         if (showPriced(context, cell, item, item === null ? 0 : sellPrice(world.content, item), coins)) changed = true;
       }
-      const offered: ItemInstance | null = offeredItem(world, context.sale.uid());
-      if (offered === null) context.sale.set(null);
+      const selected: ItemInstance[] = [];
+      for (const uid of context.sale.uids()) {
+        const item = offeredItem(world, uid);
+        if (item === null) context.sale.toggle(uid);
+        else selected.push(item);
+      }
+      const offered: ItemInstance | null = selected.at(-1) ?? null;
       if (showItem(context, saleCell, offered)) changed = true;
       const wasShown: boolean = sellButton.classList.contains('shown');
       sale.classList.toggle('offering', offered !== null);
@@ -184,9 +189,9 @@ export function createVendorPanel(parent: HTMLElement, context: HudContext): Pan
         setText(saleText, saleEmptyText(context.api.touch), true);
         saleText.style.removeProperty('--rarity');
       } else {
-        setText(saleText, itemName(world.content, offered), true);
+        setText(saleText, selected.length === 1 ? itemName(world.content, offered) : selected.length + ' items selected', true);
         saleText.style.setProperty('--rarity', rarityOf(world.content, offered).color);
-        setText(sellButton, SALE_WORDS.button(sellPrice(world.content, offered)), wasShown);
+        setText(sellButton, SALE_WORDS.button(selected.reduce((sum: number, item: ItemInstance): number => sum + sellPrice(world.content, item), 0)), wasShown);
       }
       if (changed) context.tooltip.hide();
     },

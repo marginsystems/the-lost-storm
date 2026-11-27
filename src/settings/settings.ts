@@ -1,10 +1,12 @@
+import { readLootFilter } from '../../sim/loot-filter.ts';
+import type { LootFilter } from '../../sim/loot-filter.ts';
 import type { ActionDef, Movement, Overrides } from './bindings.ts';
 import { DEFAULT_MOVEMENT, MOVEMENTS, sanitizeOverrides } from './bindings.ts';
 
 export const QUALITIES = ['low', 'medium', 'high'] as const;
 export type Quality = (typeof QUALITIES)[number];
 
-export const SETTINGS_SECTIONS = ['graphics', 'sound', 'controls'] as const;
+export const SETTINGS_SECTIONS = ['graphics', 'sound', 'controls', 'loot'] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export interface GraphicsPreset {
@@ -34,6 +36,7 @@ export const HELD_SKILLS = ['hold', 'toggle'] as const;
 export type HeldSkills = (typeof HELD_SKILLS)[number];
 
 export interface Settings {
+  readonly loot: LootFilter;
   readonly graphics: GraphicsSettings;
   readonly controls: Overrides;
   readonly movement: Movement;
@@ -44,7 +47,7 @@ export const SETTINGS_KEY: string = 'the-lost-storm.settings.v1';
 
 export const DEFAULT_GRAPHICS: GraphicsSettings = { quality: 'high', showFps: false, lensWater: true, streakEffects: true };
 export const DEFAULT_HELD_SKILLS: HeldSkills = 'hold';
-export const DEFAULT_SETTINGS: Settings = { graphics: DEFAULT_GRAPHICS, controls: {}, movement: DEFAULT_MOVEMENT, heldSkills: DEFAULT_HELD_SKILLS };
+export const DEFAULT_SETTINGS: Settings = { loot: {}, graphics: DEFAULT_GRAPHICS, controls: {}, movement: DEFAULT_MOVEMENT, heldSkills: DEFAULT_HELD_SKILLS };
 
 function fieldOf(source: unknown, key: string): unknown {
   if (typeof source !== 'object' || source === null || Array.isArray(source)) return undefined;
@@ -102,6 +105,7 @@ export function readSettings(text: string | null, table: readonly ActionDef[]): 
       lensWater: typeof lensWater === 'boolean' ? lensWater : DEFAULT_GRAPHICS.lensWater,
       streakEffects: typeof streakEffects === 'boolean' ? streakEffects : DEFAULT_GRAPHICS.streakEffects,
     },
+    loot: readLootFilter(fieldOf(parsed, 'loot')),
     controls: sanitizeOverrides(table, overridesOf(fieldOf(parsed, 'controls'))),
     movement: movementOf(fieldOf(parsed, 'movement')),
     heldSkills: heldSkillsOf(fieldOf(parsed, 'heldSkills')),
@@ -109,7 +113,7 @@ export function readSettings(text: string | null, table: readonly ActionDef[]): 
 }
 
 export function mergeSettings(current: Settings, change: Partial<Settings>): Settings {
-  return { graphics: change.graphics ?? current.graphics, controls: change.controls ?? current.controls, movement: change.movement ?? current.movement, heldSkills: change.heldSkills ?? current.heldSkills };
+  return { loot: change.loot ?? current.loot, graphics: change.graphics ?? current.graphics, controls: change.controls ?? current.controls, movement: change.movement ?? current.movement, heldSkills: change.heldSkills ?? current.heldSkills };
 }
 
 export function describePreset(preset: GraphicsPreset): string {

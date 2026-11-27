@@ -35,9 +35,10 @@ import type { RunState } from './world/run-types.ts';
 import { copyRun } from './world/run-state.ts';
 import { readRun } from './world/run-save.ts';
 
-export const SAVE_VERSION: number = 6;
+export const SAVE_VERSION: number = 7;
+const PATH_VERSION: number = 6;
 const FLAGGED_VERSION: number = 5;
-const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, 3, 4, 5, SAVE_VERSION]);
+const READABLE_VERSIONS: ReadonlySet<unknown> = new Set<unknown>([1, 2, 3, 4, 5, PATH_VERSION, SAVE_VERSION]);
 
 export interface SaveData {
   readonly version: number;
@@ -68,6 +69,9 @@ export interface SaveData {
   readonly explored: Readonly<Record<string, string>>;
   readonly flasks: Readonly<Record<string, number>>;
   readonly flaskTiers: Readonly<Record<string, number>>;
+  readonly porterClock: number;
+  readonly porterUntil: number;
+  readonly satchel: readonly (ItemInstance | null)[];
   readonly stash: readonly (ItemInstance | null)[];
   readonly vendors: Readonly<Record<string, VendorStock>>;
   readonly flags: StoryFlags;
@@ -124,6 +128,9 @@ export function toSave(world: World): SaveData {
     explored: Object.fromEntries(Object.entries(world.explored).map(([zone, cells]: [string, Uint8Array]): [string, string] => [zone, savedExplored(cells)])),
     flasks: flaskCharges(player.flasks),
     flaskTiers: flaskTiers(player.flasks),
+    porterClock: world.porterUntil > world.now ? world.now : 0,
+    porterUntil: world.porterUntil > world.now ? world.porterUntil : 0,
+    satchel: [...world.satchel],
     stash: [...world.stash],
     vendors: copyVendors(world.vendors),
     flags: { ...world.flags },
@@ -299,12 +306,12 @@ interface Stashed {
   readonly overflow: ItemInstance[];
 }
 
-function readStash(content: Content, value: unknown): Stashed {
+function readStash(content: Content, value: unknown, size: number = content.trade.stashSize): Stashed {
   const list: readonly unknown[] = Array.isArray(value) ? value : [];
-  const stash: (ItemInstance | null)[] = Array.from({ length: content.trade.stashSize }, (_: unknown, index: number): ItemInstance | null => readItem(content, list[index]));
+  const stash: (ItemInstance | null)[] = Array.from({ length: size }, (_: unknown, index: number): ItemInstance | null => readItem(content, list[index]));
   restack(content, stash);
   const overflow: ItemInstance[] = list
-    .slice(content.trade.stashSize)
+    .slice(size)
     .map((entry: unknown): ItemInstance | null => readItem(content, entry))
     .filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
   return { stash, overflow };
@@ -384,6 +391,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   restack(content, slots);
   const spilled: unknown = value['spilled'];
   const spilledList: readonly unknown[] = Array.isArray(spilled) ? spilled : [];
+  const satchel = readStash(content, value['satchel'], content.trade.porter.capacity);
   const stashed: Stashed = readStash(content, value['stash']);
   const kept: ItemInstance[] = spilledList.map((entry: unknown): ItemInstance | null => readItem(content, entry)).filter((entry: ItemInstance | null): entry is ItemInstance => entry !== null);
   const reached: number = Math.min(Math.floor(level), content.player.xp.maxLevel);
@@ -400,7 +408,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const removed: number = Math.min(saved.size - listed.length, room);
   const learned: string[] = readLearned(content, savedLearned, taken);
   const dressed: Dressed = dressOnce(content, worn.equipped, { ...readFlags(content, value['flags'], legacy), ...retired?.flags }, Math.floor(nextItemUid));
-  const armed: Armed = armOnce(content, { level: reached, allocated: taken, owned: [...Object.values(worn.equipped), ...slots, ...stashed.stash, ...kept], flags: dressed.flags, nextItemUid: dressed.nextItemUid, room: slots.filter((slot: ItemInstance | null): boolean => slot === null).length });
+  const armed: Armed = armOnce(content, { level: reached, allocated: taken, owned: [...Object.values(worn.equipped), ...slots, ...stashed.stash, ...satchel.stash, ...kept], flags: dressed.flags, nextItemUid: dressed.nextItemUid, room: slots.filter((slot: ItemInstance | null): boolean => slot === null).length });
   const unplaced: ItemInstance[] = [];
   for (const item of armed.laid) {
     const free: number = slots.indexOf(null);
@@ -426,7 +434,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     bar: readBar(content, savedBar, learned),
     inventory: slots,
     equipped: worn.equipped,
-    spilled: [...kept, ...worn.spilled, ...stashed.overflow, ...unplaced],
+    spilled: [...kept, ...worn.spilled, ...stashed.overflow, ...satchel.overflow, ...unplaced],
     surge: Math.floor(surge),
     nextItemUid: armed.nextItemUid,
     zone,
@@ -438,11 +446,14 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     explored: readExplored(content, value['explored']),
     flasks: readFlasks(content, value['flasks'], tiers),
     flaskTiers: tiers,
+    porterClock: count(value, 'porterClock', 0) ?? 0,
+    porterUntil: count(value, 'porterUntil', 0) ?? 0,
+    satchel: satchel.stash,
     stash: stashed.stash,
     vendors: readVendors(content, value['vendors']),
     flags: armed.flags,
     glitch: readGlitchSave(value['glitch']),
-    path: value['version'] === SAVE_VERSION ? pathToSave(readPathLog(value['path'], new Set<string>(content.zones.keys()))) : pathToSave(emptyPathLog()),
+    path: typeof value['version'] === 'number' && value['version'] >= PATH_VERSION ? pathToSave(readPathLog(value['path'], new Set<string>(content.zones.keys()))) : pathToSave(emptyPathLog()),
     purse: readPurse(value['purse']),
     tally: readTally(content, value['tally']),
     portal: readPortal(content, value['portal'], { item: (entry: unknown): ItemInstance | null => readItem(content, entry), respawn: readRespawn }),

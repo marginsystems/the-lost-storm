@@ -1,4 +1,5 @@
 {
+  "porter": {"npc": "warden_porter", "price": 100, "durationMs": 3600000, "capacity": 24, "pace": 7, "searchRadius": 9, "pickupReach": 1.4, "followGap": 2.5},
   "stashSize": 96,
   "stockSize": 12,
   "buybackSize": 6,

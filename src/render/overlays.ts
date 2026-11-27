@@ -15,24 +15,20 @@ import { createHealthBars } from './health-bars.ts';
 import type { HealthBars } from './health-bars.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import { floorUp } from './terrain-lift.ts';
-import { createLootTip } from './loot-tip.ts';
-import type { LootTip, TipCheck } from './loot-tip.ts';
+import { type LootTip, type TipCheck, createLootTip } from './loot-tip.ts';
 import { anchorInView, heldReach, keepApart, keepTagInView, LABEL_EDGE, placeTag, squaredDistance, stackAtEdges } from './label-edge.ts';
 import type { EdgeStack, EdgeTag, ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
 import { headTagRect, markEdge, plateSize, showHeadTag } from './head-tag.ts';
-import { foldPiles, settleLabels } from './label-stack.ts';
+import { type Folding, type LabelSpot, type RankedBox, type ScreenRect, foldPiles, settleLabels } from './label-stack.ts';
+import { matchLoot } from '../../sim/loot-filter.ts';
 import { lootShown, pilesFold } from './loot-shown.ts';
-import type { ItemNames } from './item-names.ts';
-import { createItemNames, ITEM_NAMES, sessionFlag, watchItemNames } from './item-names.ts';
-import type { LabelGlide } from './label-glide.ts';
-import { createGlide, glideToward } from './label-glide.ts';
-import type { Folding, LabelSpot, RankedBox, ScreenRect } from './label-stack.ts';
+import { type ItemNames, createItemNames, ITEM_NAMES, sessionFlag, watchItemNames } from './item-names.ts';
+import { type LabelGlide, createGlide, glideToward } from './label-glide.ts';
 import type { TagSize, TagSizes } from './tag-sizes.ts';
 import { createPanelCover } from './panel-cover.ts';
 import type { PanelCover } from './panel-cover.ts';
 import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
-import { blockersIn, glideApart, glideAt, glidePlace, place } from './overlay-place.ts';
-import type { TagBound } from './overlay-place.ts';
+import { type TagBound, blockersIn, glideApart, glideAt, glidePlace, place } from './overlay-place.ts';
 import type { WorldTag } from './world-tag.ts';
 import { createFloatingNumbers } from './floating-numbers.ts';
 import { placeKey, zonePlaces } from '../../sim/content/markers.ts';
@@ -648,7 +644,10 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         }
         const near: boolean = squaredDistance(label.ground.pos.x - world.player.pos.x, label.ground.pos.z - world.player.pos.z) <= OVERLAYS.labelNear * OVERLAYS.labelNear;
         camera.project(label.ground.pos.x, floorUp(label.ground.pos.x, label.ground.find === null ? OVERLAYS.labelLift : OVERLAYS.findLift, label.ground.pos.z), label.ground.pos.z, point);
-        const shown: boolean = lootShown({ all, near, find: label.ground.find !== null, rank: label.rank, shownRank: OVERLAYS.labelShownRank, inView: anchorInView(point.x, point.y, view) });
+        const match = label.ground.find === null && label.ground.content.kind === 'item' ? matchLoot(world.content, world.lootFilter, label.ground.content.item) : 'essential';
+        const wanted: boolean = match === 'wanted';
+        label.element.classList.toggle('wanted', wanted);
+        const shown: boolean = wanted || (match !== 'hidden' && lootShown({ all, near, find: label.ground.find !== null, rank: label.rank, shownRank: OVERLAYS.labelShownRank, inView: anchorInView(point.x, point.y, view) }));
         if (shown !== label.shown) {
           label.shown = shown;
           label.element.classList.toggle('dim', !shown);
@@ -665,7 +664,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           if (first.away) moved.add(id);
           const box: RankedBox = { id, x: first.x, y: first.y, width: label.width, height: label.height, rank: label.rank };
           boxes.push(box);
-          if (label.leaving < 0) settled.push(box);
+          if (label.leaving < 0 && !wanted) settled.push(box);
         }
         else {
           anchor.copy(point);
