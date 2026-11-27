@@ -246,3 +246,21 @@ void test('a spinning hero lets go to throw Millrace once the momentum is high a
   const empty: Command[] = planAttack(world, PLAN, target, crowd);
   assert.equal(empty.some((command: Command): boolean => command.type === 'skill' && command.slot === 1), false);
 });
+
+void test('a bot closes a gap in flight, follows the moving foe and lands at its preferred range', (): void => {
+  const world = createWorld(content, { seed: 9, save: null });
+  const hero = world.player;
+  const swift = content.skills.get('ember_swift');
+  assert.ok(swift !== undefined);
+  hero.skills = [null, swift];
+  const target = spawnPackNear(world, 'unfinished_taker', 1, hero.pos)[0];
+  assert.ok(target !== undefined);
+  target.pos = { x: hero.pos.x + 12, z: hero.pos.z };
+  const start = planAttack(world, PLAN, target, [target]);
+  assert.deepEqual(start[0], { type: 'hold', slot: 1, down: true });
+  stepWorld(world, start, 1 / 60);
+  target.pos = { x: hero.pos.x, z: hero.pos.z + 9 };
+  assert.deepEqual(releaseCommands(world, target.id, 3), [{ type: 'steer', aim: target.pos }]);
+  target.pos.z = hero.pos.z + 3;
+  assert.deepEqual(releaseCommands(world, target.id, 3), [{ type: 'hold', slot: 1, down: false }]);
+});

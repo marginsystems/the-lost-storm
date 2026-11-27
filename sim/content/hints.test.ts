@@ -32,8 +32,10 @@ function filled(slot: number): HintsDef {
 }
 
 void test('a filled-slot hint must name a slot on the bar', (): void => {
-  assert.deepEqual(hintProblems(filled(1), loadContent()), []);
-  for (const slot of [-1, 1.5, 6]) assert.deepEqual(hintProblems(filled(slot), loadContent()), [`a: skill slot ${slot} does not exist`]);
+  const content = loadContent();
+  const total = content.player.skillBar.length;
+  assert.deepEqual(hintProblems(filled(total - 1), content), []);
+  for (const slot of [-1, 1.5, total]) assert.deepEqual(hintProblems(filled(slot), content), [`a: skill slot ${slot} does not exist`]);
 });
 
 void test('a hint may only come after an earlier one', (): void => {

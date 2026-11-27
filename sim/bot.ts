@@ -105,7 +105,7 @@ function planned(bot: Bot, commands: readonly Command[]): Command[] {
     return first === null ? [...commands] : [...commands, { type: 'allocate', node: first.id }];
   }
   const steered: boolean = commands.some((command: Command): boolean => command.type === 'steer');
-  const extra: Command[] = [...flaskCommands(world, plan), ...shopCommands(world), ...(steered ? [] : releaseCommands(world))];
+  const extra: Command[] = [...flaskCommands(world, plan), ...shopCommands(world), ...(steered ? [] : releaseCommands(world, bot.focus, plan.keepGap))];
   const place: string | null = nextPlace(world.content, plan, world.player.allocated, world.player.skillPoints);
   if (place !== null) extra.push({ type: 'allocate', node: place });
   if (plan.loot && bot.bagChanged && world.player.action === null) {

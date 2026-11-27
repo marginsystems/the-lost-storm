@@ -38,7 +38,7 @@ export function readyBenchHero(world: World, hero: BenchHero): readonly string[]
   const unknown: string[] = hero.bar.filter((skill: string | null): skill is string => skill !== null && !world.content.skills.has(skill));
   for (const skill of hero.bar) if (skill !== null && !unknown.includes(skill)) learn(world, skill);
   player.bar = player.bar.map((current: string | null, slot: number): string | null => {
-    if (slot >= hero.bar.length) return current;
+    if (slot >= hero.bar.length) return current !== null && hero.bar.includes(current) ? null : current;
     const wanted: string | null = hero.bar[slot] ?? null;
     return wanted !== null && unknown.includes(wanted) ? null : wanted;
   });
