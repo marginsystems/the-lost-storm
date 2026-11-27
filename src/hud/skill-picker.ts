@@ -43,6 +43,7 @@ export function skillDetails(skill: SkillDef, sub: string, unlock: number | null
   label('tip-title', skill.name, root);
   label('tip-sub', sub, root);
   label('tip-line', skill.description, root);
+  if (skill.delivery.type === 'area' && skill.delivery.fork !== undefined && skill.delivery.fork.length > 0) label('tip-line', `Splits on the first enemy hit into two ${skill.delivery.fork.length} m burning seams.`, root);
   el('div', 'tip-sep', root);
   const press: string | null = pressLine(skill.press);
   if (press !== null) label('tip-line tip-press', press, root);

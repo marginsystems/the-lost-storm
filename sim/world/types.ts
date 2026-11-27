@@ -291,15 +291,24 @@ export interface EchoState {
   timeLeft: number;
 }
 
-export interface AreaState {
+export interface GroundLane {
+  readonly pos: Vec2;
+  readonly toward: Vec2;
+  readonly reach: number;
+}
+
+export interface ForkedLane {
+  readonly trunkLength: number;
+  readonly arms: readonly GroundLane[];
+}
+
+export interface AreaState extends GroundLane {
   readonly id: number;
   readonly ownerId: number;
   readonly from: Vec2;
   readonly skill: SkillDef;
   readonly offence: Offence;
-  readonly pos: Vec2;
-  readonly toward: Vec2;
-  readonly reach: number;
+  readonly fork?: ForkedLane;
   timeLeft: number;
   pulseLeft: number;
   pulses: number;

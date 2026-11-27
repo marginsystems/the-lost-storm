@@ -227,6 +227,27 @@ export function createFireBursts(kit: FireKit): FireBursts {
     if (patch.light !== null) patch.light.intensity = 0;
   };
 
+  const layGround = (area: AreaState, delivery: AreaDelivery, look: VfxBurn, color: Color, bed: FireBed, delay: number): void => {
+    const { x, z } = bed;
+    const glow: GroundLightLook = { fill: FIRE.groundFill, band: FIRE.groundBand, width: delivery.radius * FIRE.groundWidth, wobble: delivery.radius * FIRE.groundWobble, grain: FIRE.groundGrain };
+    const ground: GroundLight = bed.reach > 0 ? createGroundLight(color, { kind: 'lane', halfWidth: delivery.radius, start: 0, length: bed.reach }, glow) : createGroundLight(color, { kind: 'round', radius: delivery.radius, inner: 0, arc: Math.PI * 2 }, glow);
+    ground.mesh.position.set(x, floorUp(x, GROUND_LIGHT.height, z), z);
+    if (bed.reach > 0) {
+      ground.mesh.rotation.z = Math.atan2(-bed.toward.x, -bed.toward.z);
+      ground.front(0);
+    }
+    ground.setNow(0);
+    ground.mesh.visible = delay === 0;
+    kit.parent.add(ground.mesh);
+    const light: PointLight | null = delay === 0 ? takeLight() : null;
+    if (light !== null) {
+      const middle: ReadonlyVec2 = bedPoint(bed, 0, 0.5, 0.5, 0);
+      light.color.copy(color);
+      light.position.set(middle.x, floorUp(middle.x, FIRE.lightHeight, middle.z), middle.z);
+    }
+    patches.push({ areaId: area.id, ground, light, look, color, bed, forward: delivery.pushForward, duration: delivery.duration, age: -delay, owed: 0 });
+  };
+
   const bursts: FireBursts = {
     blast(area: AreaState): void {
       const look: VfxBurn | null = area.skill.vfx.burn;
@@ -251,21 +272,11 @@ export function createFireBursts(kit: FireKit): FireBursts {
           kit.spray(from.x, 0.2, from.z, SOOT, 1, { dirX: heading.x, dirZ: heading.z, spread: 0.4, speed: { min: punch.kick * 0.6, max: punch.kick }, lift: { min: 0.2, max: 1.2 }, life: { min: FIRE.shoveLife * 0.6, max: FIRE.shoveLife }, size: { min: FIRE.shoveSize * 0.6, max: FIRE.shoveSize }, gravity: 0.4, drag: 3, jitter: 0.3 });
         }
       }
-      const glow: GroundLightLook = { fill: FIRE.groundFill, band: FIRE.groundBand, width: delivery.radius * FIRE.groundWidth, wobble: delivery.radius * FIRE.groundWobble, grain: FIRE.groundGrain };
-      const ground: GroundLight = bed.reach > 0 ? createGroundLight(color, { kind: 'lane', halfWidth: delivery.radius, start: 0, length: bed.reach }, glow) : createGroundLight(color, { kind: 'round', radius: delivery.radius, inner: 0, arc: Math.PI * 2 }, glow);
-      ground.mesh.position.set(x, floorUp(x, GROUND_LIGHT.height, z), z);
-      if (bed.reach > 0) {
-        ground.mesh.rotation.z = Math.atan2(-bed.toward.x, -bed.toward.z);
-        ground.front(0);
+      if (area.fork === undefined || bed.reach > 0) layGround(area, delivery, look, color, bed, 0);
+      for (const arm of area.fork?.arms ?? []) {
+        const branch: FireBed = { x: arm.pos.x, z: arm.pos.z, toward: arm.toward, reach: arm.reach, radius: delivery.radius };
+        layGround(area, delivery, look, color, branch, bed.reach > 0 ? FIRE.laneRun : 0);
       }
-      ground.setNow(0);
-      kit.parent.add(ground.mesh);
-      const light: PointLight | null = takeLight();
-      if (light !== null) {
-        light.color.copy(color);
-        light.position.set(middle.x, floorUp(middle.x, FIRE.lightHeight, middle.z), middle.z);
-      }
-      patches.push({ areaId: area.id, ground, light, look, color, bed, forward: delivery.pushForward, duration: delivery.duration, age: 0, owed: 0 });
     },
     ignite(targetId: number, skill: SkillDef, duration: number): void {
       const look: VfxBurn | null = skill.vfx.burn;
@@ -285,11 +296,12 @@ export function createFireBursts(kit: FireKit): FireBursts {
       if (event.type === 'damage' && event.burn) bursts.tick(event.pos.x, event.pos.z);
       else if (event.type === 'area' && event.stage === 'start') bursts.blast(event.area);
       else if (event.type === 'area' && event.stage === 'end' && event.area.skill.vfx.burn !== null) {
-        const index: number = patches.findIndex((patch: Patch): boolean => patch.areaId === event.area.id);
-        const ended: Patch | undefined = patches[index];
-        if (ended !== undefined) {
-          dropPatch(ended);
-          patches.splice(index, 1);
+        for (let index: number = patches.length - 1; index >= 0; index -= 1) {
+          const ended: Patch | undefined = patches[index];
+          if (ended?.areaId === event.area.id) {
+            dropPatch(ended);
+            patches.splice(index, 1);
+          }
         }
       } else if (event.type === 'burn') bursts.ignite(event.targetId, event.skill, event.duration);
     },
@@ -299,6 +311,8 @@ export function createFireBursts(kit: FireKit): FireBursts {
         if (patch === undefined) continue;
         const before: number = patch.age;
         patch.age += dt;
+        if (patch.age < 0) continue;
+        patch.ground.mesh.visible = true;
         const fade: number = burnFade(patch.age, patch.duration);
         const flare: number = flareLevel(patch.look.flares, patch.age);
         const level: number = blastLevel(patch.age) * FIRE.blastGlow + fade * (FIRE.burnGlow + flare * FIRE.flareGlow);

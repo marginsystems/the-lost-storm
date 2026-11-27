@@ -30,7 +30,7 @@ import { flareAreas } from './flare.ts';
 import { needsPivot, turnInPlace, turnRateOf } from './pivot.ts';
 import type { PivotState } from './pivot.ts';
 import { turnToward } from './movement.ts';
-import type { ActionState, Actor, EchoState, NoticeReason, PlayerState, ProjectileState, QueuedShot, Team, World } from './types.ts';
+import type { ActionState, Actor, ForkedLane, EchoState, NoticeReason, PlayerState, ProjectileState, QueuedShot, Team, World } from './types.ts';
 
 export const SKILLS = {
   projectileOrigin: 0.9,
@@ -299,8 +299,9 @@ function strike(world: World, impact: Impact): number {
     case 'revive':
       return offence.faction === null ? 0 : raiseFallen(world, offence.sourceId, offence.faction, delivery, origin);
     case 'area': {
-      const opened: number = openArea(world, offence, skill, areaStart(delivery, origin, direction, impact.target), direction)?.hits ?? 0;
-      return delivery.pushForward ? opened : 0;
+      const opened = openArea(world, offence, skill, areaStart(delivery, origin, direction, impact.target), direction);
+      leave(world, impact, opened?.area.fork);
+      return delivery.pushForward ? (opened?.hits ?? 0) : 0;
     }
     case 'chain':
       return resolveChain(world, origin, skill, delivery, impact.target ?? origin, offence);
@@ -312,18 +313,18 @@ function strike(world: World, impact: Impact): number {
   return hits;
 }
 
-function leave(world: World, impact: Impact): void {
+function leave(world: World, impact: Impact, fork?: ForkedLane): void {
   if (impact.echo || impact.skill.leaves === null) return;
   const left: SkillDef | undefined = world.content.skills.get(impact.skill.leaves);
   if (left === undefined) return;
   const parent: Delivery = impact.skill.delivery;
   const at: ReadonlyVec2 = parent.type === 'area' && parent.length > 0 ? areaStart(parent, impact.origin, impact.direction, impact.target) : impact.origin;
-  placeArea(world, impact.offence, leftBehind(world, impact.offence.sourceId, impact.skill, left), at, impact.direction);
+  placeArea(world, impact.offence, leftBehind(world, impact.offence.sourceId, impact.skill, left), at, impact.direction, null, fork);
 }
 
 function resolve(world: World, impact: Impact, team: Team): number {
   const hits: number = strike(world, impact);
-  leave(world, impact);
+  if (impact.skill.delivery.type !== 'area') leave(world, impact);
   const { offence, skill, origin, direction, target } = impact;
   world.events.push({ type: 'skill_impact', actorId: offence.sourceId, team, skill, origin: { x: origin.x, z: origin.z }, direction: { x: direction.x, z: direction.z }, hits, echo: impact.echo });
   if (impact.echo || skill.echo <= 0) return hits;

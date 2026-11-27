@@ -3,6 +3,7 @@ import type { Palette } from '../skill-art/kit.ts';
 import { bolt, chevron, star } from './parts.ts';
 import type { Motif } from './vitals.ts';
 
+const SPLIT_SEAM: string = 'M32 55L30 43L33 32L25 26L23 22L12 11M33 32L41 24L43 19L53 9';
 const BOOT: string = 'M22 15H34V34C36 37.6 42 39.6 47 41C50.6 42 52 44.6 52 47.6V50H21V44C21 40 22 36 22 31Z';
 const WING: string = 'M23 22C15 17 8 17 3 19.6C8 21.4 11 23.4 13 25.6C9 25.6 6 26.6 4 28.6C10 30 16 29 22 27C17 28.8 13 31 11 33.4C16 33.6 20 32.4 23 30Z';
 const PRINT: string = 'M0 -9C3.4 -9 5 -5.6 4.6 -1.6C4.4 1.4 3 3.4 0 3.4C-3 3.4 -4.4 1.4 -4.6 -1.6C-5 -5.6 -3.4 -9 0 -9ZM0 5.4C2.6 5.4 3.6 7 3.4 8.6C3.2 10.4 1.8 11.2 0 11.2C-1.8 11.2 -3.2 10.4 -3.4 8.6C-3.6 7 -2.6 5.4 0 5.4Z';
@@ -131,6 +132,16 @@ ${halo(40, 24, 4, p.hot, 0.9)}
 ${bolt(8, 56, 54, 10)}
 ${spark(22, 42, 1.4, p.light)}
 ${spark(40, 24, 1.4, p.light)}`],
+  ['split_seam', (p: Palette): string => `
+${halo(32, 32, 23, p.hot, 0.32)}
+<g fill="none" stroke-linejoin="round" stroke-linecap="round">
+<path d="${SPLIT_SEAM}" stroke="${p.hot}" stroke-width="8" opacity="0.68" filter="url(#bloom)"/>
+<path d="${SPLIT_SEAM}" stroke="url(#energy)" stroke-width="4"/>
+<path d="${SPLIT_SEAM}" stroke="${p.light}" stroke-width="1.4"/>
+</g>
+${spark(33, 32, 2.6, '#fff')}
+${spark(19, 17, 1.5, p.light)}
+${spark(47, 15, 1.2, p.light)}`],
   ['chain', (p: Palette): string => `
 ${halo(32, 32, 22, p.hot, 0.28)}
 <path d="M13 46L19 38L16 33L24 27L23 22L32 17M32 17L38 24L37 29L45 33L44 38L51 44" fill="none" stroke="${p.hot}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.6" filter="url(#bloom)"/>

@@ -54,6 +54,11 @@ function area(source: Fields, where: string): AreaDelivery {
   const pull: number = nonNegative(source, 'pull', where);
   if (length > 0 && anchor !== 'ground') throw new ContentError(`${where}.length`, 'expected a lane to lie on the ground');
   if (length > 0 && pull > 0) throw new ContentError(`${where}.length`, 'expected a lane that does not pull');
+  const fork = source['fork'] === undefined ? null : fields(source['fork'], `${where}.fork`);
+  const opening: boolean = source['opening'] === undefined ? false : flag(source, 'opening', where);
+  if (fork !== null && (length === 0 || !opening)) throw new ContentError(`${where}.fork`, 'expected a lane that hits on opening');
+  const degrees: number = fork === null ? 0 : positive(fork, 'degrees', `${where}.fork`);
+  if (degrees >= 90) throw new ContentError(`${where}.fork.degrees`, 'expected two forward-facing branches');
   const pushForward: boolean = source['pushForward'] === undefined ? false : flag(source, 'pushForward', where);
   if (pushForward && length === 0) throw new ContentError(`${where}.pushForward`, 'expected a lane with a direction to push along');
   const blocks: boolean = source['blocks'] === undefined ? false : flag(source, 'blocks', where);
@@ -72,7 +77,8 @@ function area(source: Fields, where: string): AreaDelivery {
     slow: fraction(source, 'slow', where),
     weaken: source['weaken'] === undefined ? 0 : share(source, 'weaken', where),
     anchor,
-    opening: source['opening'] === undefined ? false : flag(source, 'opening', where),
+    opening,
+    ...(fork === null ? {} : { fork: { degrees, length: nonNegative(fork, 'length', `${where}.fork`) } }),
     stoke,
     length,
     pushForward,

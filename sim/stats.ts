@@ -64,6 +64,7 @@ interface DeliveryScale {
   readonly chains: number;
   readonly falloff: number;
   readonly spread: number;
+  readonly forkLength: number;
 }
 
 function scaledDelivery(delivery: Delivery, scale: DeliveryScale): Delivery {
@@ -95,7 +96,14 @@ function scaledDelivery(delivery: Delivery, scale: DeliveryScale): Delivery {
       scaled = { ...delivery, jumpRange: delivery.jumpRange * area, range: delivery.range * range, jumps: Math.max(0, delivery.jumps + scale.chains), falloff: Math.max(0, delivery.falloff + scale.falloff) };
       break;
     case 'area':
-      scaled = { ...delivery, radius: delivery.radius * area, length: delivery.length * area, range: delivery.range * range, duration: delivery.duration * duration };
+      scaled = {
+        ...delivery,
+        radius: delivery.radius * area,
+        length: delivery.length * area,
+        range: delivery.range * range,
+        duration: delivery.duration * duration,
+        ...(delivery.fork === undefined ? {} : { fork: { ...delivery.fork, length: Math.max(0, delivery.fork.length + scale.forkLength) } }),
+      };
       break;
     case 'blink':
       scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range };
@@ -230,6 +238,7 @@ function modded(content: Content, { skill, through }: ChosenSkill, base: SkillDe
     chains: sum('chains'),
     falloff: sum('chainFalloff'),
     spread: sum('spread'),
+    forkLength: sum('forkLength'),
   });
   const damageScale: number = scaleOf(sum('damagePercent')) * heldEchoScale(skill, sum('echo'));
   return {

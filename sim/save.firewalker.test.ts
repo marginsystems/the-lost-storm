@@ -4,6 +4,7 @@ import { made, played, roundTrip, saveContent } from '../test/save-support.ts';
 import { must } from '../test/support.ts';
 import type { WeaponGroup } from './content/chart-types.ts';
 import type { SkillDef } from './content/types.ts';
+import { allocateNode, refundNode } from './world/character.ts';
 import { createWorld } from './world/create.ts';
 import type { World } from './world/types.ts';
 
@@ -27,4 +28,36 @@ void test('a saved Firewalker with an empty click slot and a chosen Gathered Cla
   const base: SkillDef = must(saveContent.skills.get('dodge_roll'), 'base dodge');
   assert.ok(roll.delivery.type === 'dash' && base.delivery.type === 'dash');
   assert.ok(Math.abs(roll.delivery.distance - base.delivery.distance * 1.3) < 1e-9);
+});
+
+function forkLength(world: World): number | undefined {
+  const skill: SkillDef = must(world.player.skills[1], 'Q');
+  assert.equal(skill.form, 'thunderclap_gathered');
+  return skill.delivery.type === 'area' ? skill.delivery.fork?.length : undefined;
+}
+
+void test('Split Seam costs one point after Fire Slam, survives loading, and refunds independently', (): void => {
+  const old: World = played();
+  old.player.level = 12;
+  old.player.bar[1] = 'thunderclap';
+  old.player.skillPoints = 1;
+  old.player.gold = 10000;
+  old.player.allocated = ['stone_thunderclap', 'tempered_body', 'stone_1', 'bedrock', 'stone_4'];
+  allocateNode(old, 'split_seam');
+  assert.equal(old.player.skillPoints, 1);
+  old.player.allocated.push('gathered_clap');
+  old.player.changes = { thunderclap: 'thunderclap_gathered' };
+  const world: World = createWorld(saveContent, { seed: 4, save: roundTrip(old) });
+  assert.equal(forkLength(world), 0);
+  const before: number = world.player.skillPoints;
+  allocateNode(world, 'split_seam');
+  allocateNode(world, 'split_seam');
+  assert.equal(world.player.skillPoints, before - 1);
+  assert.equal(forkLength(world), 5);
+  const loaded: World = createWorld(saveContent, { seed: 5, save: roundTrip(world) });
+  assert.equal(forkLength(loaded), 5);
+  const spent: number = loaded.player.skillPoints;
+  refundNode(loaded, 'split_seam');
+  assert.equal(loaded.player.skillPoints, spent + 1);
+  assert.equal(forkLength(loaded), 0);
 });

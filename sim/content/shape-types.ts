@@ -30,6 +30,11 @@ export interface AreaAura {
   readonly exposes: readonly AreaExposure[];
 }
 
+export interface LaneFork {
+  readonly degrees: number;
+  readonly length: number;
+}
+
 export interface AreaDelivery {
   readonly type: 'area';
   readonly range: number;
@@ -42,6 +47,7 @@ export interface AreaDelivery {
   readonly anchor: AreaAnchor;
   readonly opening: boolean;
   readonly pushForward: boolean;
+  readonly fork?: LaneFork;
   readonly stoke: AreaStoke | null;
   readonly length: number;
   readonly blocks: boolean;

@@ -268,8 +268,12 @@ export function knockGraced(striker: Actor | null, target: Actor): boolean {
   return striker?.kind === 'player' && target.kind === 'player' && target.knockGrace > 0;
 }
 
+export function canReceiveHit(world: World, target: Actor): boolean {
+  return target.alive && (target.kind !== 'player' || (target.invulnerable <= 0 && !attacksHeld(world)));
+}
+
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): boolean {
-  if (!target.alive || (target.kind === 'player' && (target.invulnerable > 0 || attacksHeld(world)))) return false;
+  if (!canReceiveHit(world, target)) return false;
   const guard: GuardOutcome = guardOutcome(target, skill, direction);
   const guarded: number = guard === 'blocked' && target.kind === 'monster' ? (target.def.guard?.damageTaken ?? 1) : 1;
   const weapon: number = world.rng.range(offence.damageMin, offence.damageMax) * (1 + offence.damagePercent) * skill.damage.weaponPercent;

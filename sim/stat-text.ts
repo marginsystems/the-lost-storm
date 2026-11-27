@@ -80,6 +80,7 @@ const FIELD_WORDS: Readonly<Record<SkillModField, FieldWords>> = {
   echo: { word: 'echo', count: false },
   pull: { word: 'pull', count: true },
   spread: { word: 'degrees of spread', count: true },
+  forkLength: { word: 'metres of forked seam', count: true },
 };
 
 export function describeEmpoweredMod(mod: EmpoweredMod): string {
