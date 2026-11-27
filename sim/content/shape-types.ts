@@ -41,6 +41,7 @@ export interface AreaDelivery {
   readonly weaken: number;
   readonly anchor: AreaAnchor;
   readonly opening: boolean;
+  readonly pushForward: boolean;
   readonly stoke: AreaStoke | null;
   readonly length: number;
   readonly blocks: boolean;

@@ -24,6 +24,10 @@ export function areaOf(skill: SkillDef): AreaDelivery | null {
 }
 
 export function placeArea(world: World, offence: Offence, skill: SkillDef, at: ReadonlyVec2, toward: ReadonlyVec2 = AREAS.facing, span: number | null = null): AreaState | null {
+  return openArea(world, offence, skill, at, toward, span)?.area ?? null;
+}
+
+export function openArea(world: World, offence: Offence, skill: SkillDef, at: ReadonlyVec2, toward: ReadonlyVec2, span: number | null = null): { area: AreaState; hits: number } | null {
   const delivery: AreaDelivery | null = areaOf(skill);
   if (delivery === null) return null;
   for (const replaced of replacedAuras(world, offence.sourceId, skill)) endArea(world, replaced);
@@ -34,8 +38,7 @@ export function placeArea(world: World, offence: Offence, skill: SkillDef, at: R
   world.areas.push(area);
   world.events.push({ type: 'area', area, stage: 'start', hits: 0 });
   raiseAura(world, area);
-  if (delivery.opening) pulse(world, area, delivery);
-  return area;
+  return { area, hits: delivery.opening ? pulse(world, area, delivery) : 0 };
 }
 
 function endArea(world: World, area: AreaState): void {
@@ -107,15 +110,16 @@ function awayFrom(area: AreaState, delivery: AreaDelivery, pos: ReadonlyVec2): V
   return gap > 0 ? { x: offset.x / gap, z: offset.z / gap } : { x: area.toward.x, z: area.toward.z };
 }
 
-function pulse(world: World, area: AreaState, delivery: AreaDelivery): void {
+function pulse(world: World, area: AreaState, delivery: AreaDelivery): number {
   const offence: Offence = stokedOffence(area, delivery);
   let hits: number = 0;
   for (const target of targetsWhere(world, { sourceId: area.offence.sourceId, faction: area.offence.faction, from: area.from }, (actor: Actor): boolean => covers(world, area, delivery, actor.pos, actor.radius))) {
     if (!covers(world, area, delivery, target.pos, target.radius)) continue;
-    if (applyHit(world, offence, target, area.skill, awayFrom(area, delivery, target.pos))) hits += 1;
+    if (applyHit(world, offence, target, area.skill, delivery.pushForward ? area.toward : awayFrom(area, delivery, target.pos))) hits += 1;
   }
   area.pulses += 1;
   world.events.push({ type: 'area', area, stage: 'pulse', hits });
+  return hits;
 }
 
 function stepArea(world: World, area: AreaState, dt: number): boolean {

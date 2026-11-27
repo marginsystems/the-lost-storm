@@ -16,7 +16,7 @@ import { refreshHero } from './character.ts';
 import { firePowers, leftBehind } from '../powers.ts';
 import { effectiveAttackSpeed } from '../stats.ts';
 import { widenedSkill } from '../widen.ts';
-import { placeArea, timeScaleAt } from './areas.ts';
+import { openArea, placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard, placeMarks } from './hazards.ts';
 import { raiseFallen } from './revive.ts';
 import { mendAllies } from './heal.ts';
@@ -294,9 +294,10 @@ function strike(world: World, impact: Impact): number {
       return 0;
     case 'revive':
       return offence.faction === null ? 0 : raiseFallen(world, offence.sourceId, offence.faction, delivery, origin);
-    case 'area':
-      placeArea(world, offence, skill, areaStart(delivery, origin, direction, impact.target), direction);
-      return 0;
+    case 'area': {
+      const opened: number = openArea(world, offence, skill, areaStart(delivery, origin, direction, impact.target), direction)?.hits ?? 0;
+      return delivery.pushForward ? opened : 0;
+    }
     case 'chain':
       return resolveChain(world, origin, skill, delivery, impact.target ?? origin, offence);
     case 'beam':

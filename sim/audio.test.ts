@@ -494,6 +494,8 @@ void test('a lasting area sounds from its own form, a crackle sounds on its puls
   const owner: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
   const cuesOf = (id: string, stage: 'start' | 'pulse' | 'end', hits: number, pulses: number = 0): readonly SoundCue[] => cuesForEvent(audio, world, { type: 'area', area: { id: 1, ownerId: world.player.id, from: owner, skill: skill(id), offence: offenceOf(world.player), pos: owner, toward: { x: 0, z: 1 }, reach: 0, timeLeft: 1, pulseLeft: 1, pulses }, stage, hits });
   const area = (id: string, stage: 'start' | 'pulse' | 'end', hits: number): string[] => sounds(cuesOf(id, stage, hits));
+  assert.deepEqual(area('thunderclap_gathered', 'pulse', 0), []);
+  assert.deepEqual(area('thunderclap_gathered', 'pulse', 2), ['slam_heavy']);
   assert.deepEqual(area('banked_fire', 'start', 0), ['fire_ignite']);
   assert.deepEqual(area('banked_fire', 'pulse', 0), ['ember_bed']);
   assert.deepEqual(area('banked_fire', 'pulse', 2), ['ember_bed', 'flare_crackle']);

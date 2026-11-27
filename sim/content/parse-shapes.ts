@@ -54,6 +54,8 @@ function area(source: Fields, where: string): AreaDelivery {
   const pull: number = nonNegative(source, 'pull', where);
   if (length > 0 && anchor !== 'ground') throw new ContentError(`${where}.length`, 'expected a lane to lie on the ground');
   if (length > 0 && pull > 0) throw new ContentError(`${where}.length`, 'expected a lane that does not pull');
+  const pushForward: boolean = source['pushForward'] === undefined ? false : flag(source, 'pushForward', where);
+  if (pushForward && length === 0) throw new ContentError(`${where}.pushForward`, 'expected a lane with a direction to push along');
   const blocks: boolean = source['blocks'] === undefined ? false : flag(source, 'blocks', where);
   if (blocks && length === 0) throw new ContentError(`${where}.blocks`, 'expected only a lane to block the way');
   const slam: string | null = source['slam'] === undefined ? null : text(source, 'slam', where);
@@ -73,6 +75,7 @@ function area(source: Fields, where: string): AreaDelivery {
     opening: source['opening'] === undefined ? false : flag(source, 'opening', where),
     stoke,
     length,
+    pushForward,
     blocks,
     slam,
     aura,

@@ -382,7 +382,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       return;
     }
     const impact = event.skill.vfx.impact;
-    if (impact !== null && event.skill.delivery.type === 'arc') kit.impact(event.pos.x, event.pos.z, skillColor, impact, event.skill.vfx.light, 0);
+    const delivery = event.skill.delivery;
+    if (impact !== null && (delivery.type === 'arc' || (delivery.type === 'area' && delivery.pushForward))) kit.impact(event.pos.x, event.pos.z, skillColor, impact, event.skill.vfx.light, 0);
     const count: number = event.crit ? 22 : 11;
     spray(event.pos.x, 1.25, event.pos.z, BONE, count, { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.1, speed: { min: 4, max: event.crit ? 15 : 10 }, lift: { min: 0.5, max: 6 } });
     spray(event.pos.x, 1.25, event.pos.z, skillColor, Math.ceil(count / 2), { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.8, speed: { min: 2, max: 8 }, size: { min: 0.3, max: 0.8 }, life: { min: 0.15, max: 0.4 } });

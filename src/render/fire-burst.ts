@@ -154,6 +154,7 @@ interface Patch {
   readonly look: VfxBurn;
   readonly color: Color;
   readonly bed: FireBed;
+  readonly forward: boolean;
   readonly duration: number;
   age: number;
   owed: number;
@@ -237,13 +238,16 @@ export function createFireBursts(kit: FireKit): FireBursts {
       const middle: ReadonlyVec2 = bedPoint(bed, 0, 0.5, 0.5, 0);
       const impact: VfxImpact | null = area.skill.vfx.impact;
       if (impact !== null) kit.kit.impact(x, z, color, impact, area.skill.vfx.light, 0);
-      kit.flashLight(middle.x, FIRE.lightHeight, middle.z, FLASH, FIRE.blastLight * area.skill.vfx.light);
-      kit.trauma(area.skill.shake);
-      flames(bed, bed.reach > 0 ? FIRE.laneSpread : FIRE.blastSpread, color, FIRE.blastFlames, FIRE.blastLift);
+      if (impact !== null) {
+        const contact: ReadonlyVec2 = delivery.pushForward ? area.pos : middle;
+        kit.flashLight(contact.x, FIRE.lightHeight, contact.z, FLASH, FIRE.blastLight * area.skill.vfx.light);
+        flames(delivery.pushForward ? spot(x, z, delivery.radius) : bed, bed.reach > 0 ? FIRE.laneSpread : FIRE.blastSpread, color, FIRE.blastFlames, FIRE.blastLift);
+      }
+      if (!delivery.pushForward) kit.trauma(area.skill.shake);
       const punch = area.skill.vfx.punch;
       if (punch !== null) {
         for (const heading of dustHeadings(punch.dust, Math.random() * Math.PI * 2)) {
-          const from: ReadonlyVec2 = bedPoint(bed, 0, Math.random(), 0.5, 0);
+          const from: ReadonlyVec2 = delivery.pushForward ? area.pos : bedPoint(bed, 0, Math.random(), 0.5, 0);
           kit.spray(from.x, 0.2, from.z, SOOT, 1, { dirX: heading.x, dirZ: heading.z, spread: 0.4, speed: { min: punch.kick * 0.6, max: punch.kick }, lift: { min: 0.2, max: 1.2 }, life: { min: FIRE.shoveLife * 0.6, max: FIRE.shoveLife }, size: { min: FIRE.shoveSize * 0.6, max: FIRE.shoveSize }, gravity: 0.4, drag: 3, jitter: 0.3 });
         }
       }
@@ -261,7 +265,7 @@ export function createFireBursts(kit: FireKit): FireBursts {
         light.color.copy(color);
         light.position.set(middle.x, floorUp(middle.x, FIRE.lightHeight, middle.z), middle.z);
       }
-      patches.push({ areaId: area.id, ground, light, look, color, bed, duration: delivery.duration, age: 0, owed: 0 });
+      patches.push({ areaId: area.id, ground, light, look, color, bed, forward: delivery.pushForward, duration: delivery.duration, age: 0, owed: 0 });
     },
     ignite(targetId: number, skill: SkillDef, duration: number): void {
       const look: VfxBurn | null = skill.vfx.burn;
@@ -306,8 +310,10 @@ export function createFireBursts(kit: FireKit): FireBursts {
         patch.owed -= due;
         if (due > 0) flames(patch.bed, 1, patch.color, due, FIRE.burnLift);
         for (const crossed of flaresCrossed(patch.look.flares, before, patch.age)) {
-          flames(patch.bed, FIRE.flareSpread, patch.color, Math.round(FIRE.flareFlames * crossed.strength), FIRE.flareLift);
-          const ember: ReadonlyVec2 = bedPoint(patch.bed, FIRE.flareSpread, Math.random(), Math.random(), Math.random() * Math.PI * 2);
+          const front: ReadonlyVec2 = bedPoint(patch.bed, 0, laneFront(crossed.at), 0.5, 0);
+          const flaring: FireBed = patch.forward ? spot(front.x, front.z, patch.bed.radius) : patch.bed;
+          flames(flaring, FIRE.flareSpread, patch.color, Math.round(FIRE.flareFlames * crossed.strength), FIRE.flareLift);
+          const ember: ReadonlyVec2 = bedPoint(flaring, FIRE.flareSpread, Math.random(), Math.random(), Math.random() * Math.PI * 2);
           embers(ember.x, FIRE.flareEmberHeight, ember.z, Math.round(patch.look.embers * crossed.strength * FIRE.flareEmbers));
         }
         if (patch.age >= patch.duration) {
