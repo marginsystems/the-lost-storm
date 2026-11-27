@@ -31,7 +31,8 @@ function lone(goal: GatherGoalKind, seed: number, crowd: number = 0): Gather {
 function walkerCommands(gather: Gather): Command[] {
   const seen: Observation = gatherObservation(gather);
   const aim: Vec2 | null = courseObjective(gather.world, gather.hero, gather.course);
-  const stopAt: number = gather.course.goal.kind === 'meet' ? PLAY.meetStop : PLAY.near;
+  const person: Vec2 | null = gather.course.goal.kind === 'meet' ? goalPoint(gather.world, gather.course.goal) : null;
+  const stopAt: number = person !== null && aim?.x === person.x && aim.z === person.z ? PLAY.meetStop : PLAY.near;
   const go: boolean = aim !== null && gap(gather.hero.pos, aim) > stopAt;
   const move: number = aim !== null && go ? moveBucket({ x: aim.x - gather.hero.pos.x, z: aim.z - gather.hero.pos.z }) : 0;
   return commandsFor(gather.world, { move, skill: 0, target: 0, use: 0 }, seen.view);

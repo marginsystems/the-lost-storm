@@ -40,13 +40,14 @@ function shapeOf(id: string): string {
   return `${skill.delivery.type}:${area}:${skill.press?.type ?? ''}:${skill.brand === null ? '' : 'brand'}`;
 }
 
-void test('the chart unlocks at least eight active skills beyond the basic attack and the roll, one place each, and each path at most four, each a different shape', (): void => {
+void test('the chart unlocks at least eight active skills beyond the basic attack and the roll, one place each, and at most four per path on the shared bar, each a different shape', (): void => {
   const offered: readonly string[] = chartSkills(content, content.skillTree.map((node): string => node.id));
   assert.ok(offered.length >= SKILL_BOOK.fewestSkills);
   assert.equal(new Set<string>(offered).size, offered.length);
   for (const path of content.chart.paths) {
     const unlocks: readonly string[] = content.skillTree.filter((node): boolean => node.path === path.id && node.unlock !== null && offered.includes(node.unlock)).map((node): string => node.unlock ?? '');
-    assert.ok(unlocks.length <= SKILL_BOOK.mostPerPath, path.id);
+    const shared: readonly string[] = unlocks.filter((id: string): boolean => !content.player.skillBar.some((slot): boolean => slot.whenLearned === true && slot.skill === id));
+    assert.ok(shared.length <= SKILL_BOOK.mostPerPath, path.id);
     assert.equal(new Set<string>(unlocks.map(shapeOf)).size, unlocks.length, path.id);
   }
 });
@@ -177,7 +178,7 @@ void test('no save brings back a skill without its place: an old kit on the bar 
 });
 
 void test('a newly learned skill never fills an emptied mouse slot unless that slot is its home', (): void => {
-  assert.deepEqual(content.player.skillBar.map((_binding, slot: number): boolean => pointerSlot(content, slot)), [true, false, false, false, false, false]);
+  assert.deepEqual(content.player.skillBar.map((_binding, slot: number): boolean => pointerSlot(content, slot)), [true, false, false, false, false, false, false]);
   assert.deepEqual(placeLearned(content, [null, null, null, null, null, null], 'thunderclap'), [null, 'thunderclap', null, null, null, null]);
   assert.deepEqual(placeLearned(content, [null, 'a', 'b', 'c', 'd', 'e'], 'thunderclap'), [null, 'a', 'b', 'c', 'd', 'e']);
   assert.deepEqual(placeLearned(content, [null, null, null, null, null, null], 'cleave'), ['cleave', null, null, null, null, null]);

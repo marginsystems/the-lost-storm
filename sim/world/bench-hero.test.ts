@@ -52,6 +52,12 @@ void test('an unknown skill is reported and leaves its slot empty', (): void => 
   assert.equal(world.player.bar[1], 'thunderclap');
 });
 
+void test('assigning a travel skill to a bench slot leaves its extra home slot empty', (): void => {
+  const world: World = worldIn(content, 'hall_of_time', 3);
+  readyBenchHero(world, { seed: 1, level: 1, weapon: null, bar: [null, 'ember_swift'] });
+  assert.deepEqual(world.player.bar, [null, 'ember_swift', null, null, null, null, null]);
+});
+
 void test('refilling tops a hurt hero back up and leaves a dead one dead', (): void => {
   const world: World = worldIn(content, 'hall_of_time', 3);
   world.player.life = 1;

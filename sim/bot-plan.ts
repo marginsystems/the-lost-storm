@@ -12,7 +12,7 @@ import { canDash } from './world/dash.ts';
 import { playerMayStrike } from './world/factions.ts';
 import { blockedFlask } from './world/flasks.ts';
 import { upgradeReady } from './world/flask-tiers.ts';
-import { glidesWith, momentumShare } from './world/momentum.ts';
+import { glidesWith, MOMENTUM, momentumShare } from './world/momentum.ts';
 import { chargeOf, spunSkill } from './world/skills.ts';
 import type { Command, Equipment, FlaskState, ItemInstance, MonsterState, PlayerState, World } from './world/types.ts';
 
@@ -298,13 +298,19 @@ export function letGoCommands(world: World): Command[] {
   return [{ type: 'hold', slot: action.slot, down: false }];
 }
 
-export function releaseCommands(world: World): Command[] {
+export function releaseCommands(world: World, focus: number | null = null, keepGap: number = 0): Command[] {
   const player: PlayerState = world.player;
   const action = player.action;
   const press = action?.skill.press ?? null;
   if (action === null || action.slot === null || press === null || !player.held.includes(action.slot)) return [];
   const up: Command = { type: 'hold', slot: action.slot, down: false };
   switch (press.type) {
+    case 'travel': {
+      const foe = world.monsters.find((monster: MonsterState): boolean => monster.id === focus && playerMayStrike(world, monster));
+      const aim: ReadonlyVec2 | null = foe?.pos ?? action.goal;
+      const reach: number = foe === undefined ? MOMENTUM.arrive : foe.radius + Math.max(keepGap, player.radius + MOMENTUM.arrive);
+      return aim === null || distance(player.pos, aim) <= reach ? [up] : [{ type: 'steer', aim }];
+    }
     case 'charge':
       return chargeOf(action) >= BOT_PLAN.chargeRelease ? [up] : [];
     case 'channel': {
@@ -344,6 +350,7 @@ function formsUnderfoot(skill: SkillDef): boolean {
 function worthCasting(plan: BotPlan, player: PlayerState, skill: SkillDef, target: MonsterState, foes: readonly MonsterState[]): boolean {
   if (spends(skill) && momentumShare(player) < BOT_PLAN.spendShare) return false;
   const gap: number = distance(target.pos, player.pos) - target.radius;
+  if (skill.press?.type === 'travel') return gap > Math.max(plan.keepGap, player.stats.moveSpeed);
   const delivery = skill.delivery;
   switch (delivery.type) {
     case 'nova':
@@ -377,7 +384,7 @@ export function planAttack(world: World, plan: BotPlan, target: MonsterState, fo
     .toSorted((a: number, b: number): number => preference(plan, player.skills[a]?.id ?? '') - preference(plan, player.skills[b]?.id ?? ''));
   for (const slot of order) {
     const skill: SkillDef | null = player.skills[slot] ?? null;
-    if (skill === null || plan.avoid.includes(skill.id) || !deals(skill) || !ready(player, skill) || (!spare && skill.manaCost > 0 && foes.length < BOT_PLAN.crowd)) continue;
+    if (skill === null || plan.avoid.includes(skill.id) || (!deals(skill) && skill.press?.type !== 'travel') || !ready(player, skill) || (!spare && skill.manaCost > 0 && foes.length < BOT_PLAN.crowd)) continue;
     if (!worthCasting(plan, player, skill, target, foes)) continue;
     const press: Command[] = skill.press === null ? [] : [{ type: 'hold', slot, down: true }];
     return [...press, { type: 'skill', slot, aim: target.pos, targetId: target.id }];

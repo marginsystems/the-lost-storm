@@ -378,7 +378,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   const refreshButtons = (): void => {
     if (!buttonInputsChanged(buttonInputs, world.player, world.content.player.manaShows)) return;
     const view: HudView = hudView(world);
-    const bar: SkillBarEntry[] = world.content.player.skillBar.map((entry: { readonly bindings: readonly string[] }, slot: number): SkillBarEntry => ({ bindings: entry.bindings, filled: view.slots.includes(slot) }));
+    const bar: SkillBarEntry[] = world.content.player.skillBar.slice(0, world.player.bar.length).map((entry: { readonly bindings: readonly string[] }, slot: number): SkillBarEntry => ({ bindings: entry.bindings, filled: view.slots.includes(slot) }));
     const specs: TouchButton[] = touchButtons(bar, INPUT.leftBinding, world.player.flasks.map((flask: FlaskState): FlaskEntry | null => (view.parts.includes(flask.def.resource) ? flask.def : null)));
     const next: string = `${signature(specs)}#${world.player.bar.join(',')}`;
     if (next === shownSignature) return;
@@ -538,6 +538,8 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       }
 
       const player = world.player;
+      const flight = player.action;
+      if (flight?.skill.press?.type === 'travel' && flight.slot !== null && lifted.delete(flight.slot)) commands.push({ type: 'hold', slot: flight.slot, down: false });
       const stickNow = stickTrack();
       const direction: Vec2 | null = stickNow === null ? null : stickDirection(stickNow.reading, setup.yaw);
       if (stopPending) {

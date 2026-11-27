@@ -169,7 +169,7 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
     if (actor === world.player) world.events.push({ type: 'notice', reason: 'wall_full' });
     return;
   }
-  const turnOnStart: boolean = actor.kind === 'player' && (recoveringFromDodge(actor.action) || (requested.press?.type === 'channel' && requested.press.strafe === true));
+  const turnOnStart: boolean = actor.kind === 'player' && (recoveringFromDodge(actor.action) || requested.press?.type === 'travel' || (requested.press?.type === 'channel' && requested.press.strafe === true));
   if (!turnOnStart && needsPivot(actor, requested, direction)) {
     actor.pivot = { skill: requested, at: { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z }, slot };
     return;
@@ -193,6 +193,10 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   const goal: Vec2 | null = glidesWith(skill.press) ? { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z } : null;
   if (actor.kind === 'monster') braceThrough(actor, windup);
   const action: ActionState = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach, slot, elapsed: 0, goal, turned: 0, steeredAt: 0 };
+  if (skill.press?.type === 'travel') {
+    action.phase = 'channel';
+    action.timeLeft = skill.press.max;
+  }
   actor.action = action;
   actor.combo = requested.combo === null ? null : { skill: requested.id, hits: hits + 1, timeLeft: windup + recovery + requested.combo.window };
   endChannels(world);
@@ -459,6 +463,12 @@ export function stepPivot(world: World, actor: Actor, dt: number): void {
 export function stepAction(world: World, actor: Actor, dt: number): void {
   const action = actor.action;
   if (action === null) return;
+  if (action.skill.press?.type === 'travel') {
+    action.elapsed += dt;
+    action.timeLeft -= dt;
+    if (action.timeLeft <= 0 || !isHeld(actor, action)) actor.action = null;
+    return;
+  }
   const passing: boolean = passesThrough(actor);
   stepDash(gridFor(world, actor), actor, action, dt);
   action.timeLeft -= dt;

@@ -34,6 +34,7 @@ export interface RigLook {
 }
 
 export interface RigInstance {
+  readonly model: Object3D;
   readonly def: RigDef;
   readonly root: Group;
   readonly mixer: AnimationMixer;
@@ -396,6 +397,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   return {
     def,
     root,
+    model,
     mixer,
     clips: rig.clips,
     setGear(attachmentIds: readonly string[]): void {

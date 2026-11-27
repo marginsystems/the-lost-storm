@@ -86,16 +86,21 @@ void test('holding still draws nothing, and nothing is drawn beyond the reach', 
   assert.equal(wall(world).length, 0);
   const far: World = drawer();
   drag(far, [at(far, 4, 0), at(far, 40, 0)], 0.8);
-  for (const area of wall(far)) assert.ok(distance(area.pos, far.player.pos) <= TRAIL.range + 1e-6);
+  const laid: AreaState[] = wall(far);
+  assert.ok(laid.some((area: AreaState): boolean => distance(area.pos, far.player.pos) > 10));
+  for (const area of laid) {
+    const end: Vec2 = { x: area.pos.x + area.toward.x * area.reach, z: area.pos.z + area.toward.z * area.reach };
+    assert.ok(distance(end, far.player.pos) <= TRAIL.range + 1e-6);
+  }
 });
 
-void test('a rapid zigzag stops the stroke at 14 metres and a fresh press cannot replace or extend the live wall', (): void => {
+void test('a rapid zigzag stops the stroke at 17.5 metres and a fresh press cannot replace or extend the live wall', (): void => {
   const world: World = drawer();
   const zigzag: Vec2[] = [at(world, 2, -4), at(world, 4, 4), at(world, 6, -4), at(world, 8, 4), at(world, 9, -4)];
   drag(world, zigzag, 1.5);
   const laid: AreaState[] = wall(world);
   assert.equal(laid.length, TRAIL.limit);
-  assert.equal(laid.reduce((sum: number, piece: AreaState): number => sum + piece.reach, 0), 14);
+  assert.equal(laid.reduce((sum: number, piece: AreaState): number => sum + piece.reach, 0), 17.5);
   assert.deepEqual(laid[0]?.pos, zigzag[0]);
   assert.equal(world.player.action, null);
   stepWorld(world, [{ type: 'hold', slot: 0, down: false }], DT);
@@ -121,12 +126,12 @@ void test('separate partial strokes can spend only the space left by the first w
   for (let step: number = 0; step < 20; step += 1) stepWorld(world, [], DT);
   drag(world, [at(world, 5, -5), at(world, 5, 5), at(world, 6, -5)], 0.9);
   const both: AreaState[] = wall(world);
-  assert.equal(both.reduce((sum: number, piece: AreaState): number => sum + piece.reach, 0), 14);
+  assert.equal(both.reduce((sum: number, piece: AreaState): number => sum + piece.reach, 0), 17.5);
   assert.deepEqual(both.slice(0, first.length), first);
   assert.equal(world.player.action, null);
 });
 
-void test('one slow stroke ends after 14 metres even when its first pieces have already expired', (): void => {
+void test('one slow stroke ends after 17.5 metres even when its first pieces have already expired', (): void => {
   const world: World = drawer();
   const aim: Vec2 = at(world, 4, -4);
   const seen: Set<number> = new Set<number>();
@@ -137,6 +142,6 @@ void test('one slow stroke ends after 14 metres even when its first pieces have 
     stepWorld(world, [{ type: 'steer', aim: at(world, 4, -4 + Math.min(forward, 480 - forward) / 30) }], DT);
     for (const area of wall(world)) seen.add(area.id);
   }
-  assert.equal(seen.size * TRAIL.every, 14);
+  assert.equal(seen.size * TRAIL.every, 17.5);
   assert.equal(world.player.action, null);
 });

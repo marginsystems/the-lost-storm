@@ -145,7 +145,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   const down = (action: ActionId): boolean => settings.keys().bindingsOf(action).some((binding: string): boolean => held.has(binding));
   const canvasRect: SurfaceRect = surfaceRect(canvas);
 
-  const slotFor = (binding: string): number => world.content.player.skillBar.findIndex((_entry, slot: number): boolean => settings.keys().bindingsOf(slotAction(slot)).includes(binding));
+  const slotFor = (binding: string): number => world.player.bar.findIndex((_entry, slot: number): boolean => settings.keys().bindingsOf(slotAction(slot)).includes(binding));
 
   const press = (binding: string): void => {
     if (held.has(binding)) return;
@@ -454,11 +454,12 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         }
       }
       const spent: Set<string> = new Set<string>();
-      world.content.player.skillBar.forEach((_entry, slot: number): void => {
+      world.player.bar.forEach((_entry, slot: number): void => {
         const bound: readonly string[] = settings.keys().bindingsOf(slotAction(slot));
         const keyed: readonly string[] = bound.filter((binding: string): boolean => binding !== INPUT.leftBinding && fresh.has(binding));
         if (keyed.length > 0 && toggled !== null && toggled.slot !== slot && (world.player.skills[slot] ?? null) !== null) endToggle();
-        if (keyed.length > 0 && toggling && (world.player.skills[slot]?.press ?? null) !== null) {
+        const behavior = world.player.skills[slot]?.press;
+        if (keyed.length > 0 && toggling && behavior !== undefined && behavior !== null && behavior.type !== 'travel') {
           if (toggled?.slot === slot) {
             endToggle();
             for (const binding of keyed) spent.add(binding);
@@ -566,7 +567,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         }
       }
 
-      world.content.player.skillBar.forEach((_entry, slot: number): void => {
+      world.player.bar.forEach((_entry, slot: number): void => {
         for (const binding of settings.keys().bindingsOf(slotAction(slot))) {
           if (binding === INPUT.leftBinding || spent.has(binding)) continue;
           const isFresh: boolean = fresh.has(binding);

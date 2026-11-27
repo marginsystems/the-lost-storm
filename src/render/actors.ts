@@ -2,7 +2,6 @@ import { standHeight } from '../../sim/nav/climb.ts';
 import type { Sight } from './sight.ts';
 import { drawnBy, SEES_ALL } from './sight.ts';
 import type { Box3, Object3D, Scene } from 'three';
-import { isTimeHeld, knockTime } from '../../sim/world/movement.ts';
 import { Color } from 'three';
 import type { Content, EmpowerLook, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import type { CostLimit, FramePacer } from './paced-work.ts';
@@ -14,7 +13,7 @@ import { wakeStage } from '../../sim/world/wake.ts';
 import { wakePose } from './wake-pose.ts';
 import type { ActorState, Equipment, MomentState, MonsterState, NpcState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { ActorPose, ActorView, SyncOptions } from './actor-view.ts';
-import { ACTOR, createActorView } from './actor-view.ts';
+import { ACTOR, createActorView, poseOf } from './actor-view.ts';
 import type { HeroViews } from './hero-views.ts';
 import { createHeroViews } from './hero-views.ts';
 import type { CharacterLibrary, LoadedRig, RigInstance } from './character-loader.ts';
@@ -132,10 +131,6 @@ function standDown(view: ActorView): void {
 
 function stillPose(actor: ActorState): ActorPose {
   return { pos: actor.pos, facing: actor.facing, motion: 'still', gait: 0, knockTime: 0, busy: false, held: false, beat: null, deadTime: 0 };
-}
-
-function poseOf(actor: ActorState, beat: number | null): ActorPose {
-  return { pos: actor.pos, facing: actor.facing, motion: actor.motion, gait: actor.gait, knockTime: knockTime(actor), busy: actor.action !== null, held: isTimeHeld(actor), beat, deadTime: actor.deadTime };
 }
 
 function npcPose(npc: NpcState): ActorPose {
@@ -554,7 +549,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       for (const event of events) {
         switch (event.type) {
           case 'skill_start':
-            viewOf(event.actorId)?.startAction(event.skill.animation, event.windup, event.recovery);
+            if (event.skill.press?.type === 'travel') viewOf(event.actorId)?.standDown();
+            else viewOf(event.actorId)?.startAction(event.skill.animation, event.windup, event.recovery);
             break;
           case 'skill_interrupt':
             viewOf(event.actorId)?.interrupt();
