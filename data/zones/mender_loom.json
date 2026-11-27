@@ -59,7 +59,10 @@
     {"x": 24, "z": 28, "members": [{"monster": "stitched_brute", "count": 1}], "when": [{"type": "defeated", "monster": "the_loom", "not": true}]}
   ],
   "surge": null,
-  "exits": [{"id": "up", "x": 24, "z": 44.6, "radius": 2.2, "to": "mended_ways_3", "toExit": "down", "arrival": {"x": 24, "z": 42}, "requires": []}],
+  "exits": [
+    {"id": "up", "x": 24, "z": 44.6, "radius": 2.2, "to": "mended_ways_3", "toExit": "down", "arrival": {"x": 24, "z": 42}, "requires": []},
+    {"id": "down", "x": 9, "z": 3.4, "radius": 2.2, "to": "storm_rim", "toExit": "up", "arrival": {"x": 9, "z": 7}, "requires": [{"type": "flag", "flag": "loom_defeated", "is": "defeated"}], "lockedHint": "", "hiddenWhenLocked": true}
+  ],
   "deathReturn": {"zone": "mended_ways_3", "exit": "down"},
   "checkpoints": [],
   "waypoint": null,

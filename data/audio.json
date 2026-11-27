@@ -1,6 +1,11 @@
 {
   "defaults": { "volume": 1, "maxVoices": 4, "cooldown": 0, "reach": 30 },
   "skillStart": {
+    "storm_call": [{"sound": "storm_hum", "volume": 0.55, "maxVoices": 2, "cooldown": 0.4, "pitch": [1.0, 1.15]}, {"sound": "spark_tick", "volume": 0.4, "maxVoices": 2, "cooldown": 0.3}],
+    "fray_blink": [{"sound": "wisp_whoosh", "volume": 0.55, "maxVoices": 2, "cooldown": 0.5, "pitch": [1.05, 1.2]}, {"sound": "storm_snap", "volume": 0.4, "maxVoices": 2, "cooldown": 0.4}],
+    "storm_bound_slam": [{"sound": "storm_rumble", "volume": 0.6, "maxVoices": 2, "cooldown": 0.8, "pitch": [0.8, 0.9]}, {"sound": "heavy_whoosh", "volume": 0.8, "maxVoices": 2}],
+    "storm_bound_burst": [{"sound": "storm_crackle", "volume": 0.7, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.85, 1.0]}],
+    "gale_shove": [{"sound": "squall_gust", "volume": 0.6, "maxVoices": 2, "cooldown": 0.5, "pitch": [0.95, 1.1]}],
     "shade_dive": [{ "sound": "wisp_whoosh", "volume": 0.4, "maxVoices": 2, "cooldown": 0.3, "pitch": [0.7, 0.85] }],
     "rift_rush": [{ "sound": "wisp_whoosh", "volume": 0.58, "maxVoices": 2, "cooldown": 0.5, "pitch": [0.8, 0.95] }],
     "drifter_grasp": [{ "sound": "shade_breath", "volume": 0.45, "maxVoices": 2, "cooldown": 0.5, "pitch": [0.85, 1.0] }],
@@ -134,6 +139,10 @@
     "dodge_roll_flicker": [{ "sound": "fire_ignite", "volume": 0.6, "maxVoices": 2, "pitch": [1.1, 1.25] }, { "sound": "dodge_whoosh", "volume": 0.5, "maxVoices": 2, "pitch": [1.05, 1.15] }]
   },
   "skillImpact": {
+    "storm_call": [{"sound": "thunder_crack", "volume": 0.55, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.95, 1.1]}, {"sound": "bolt_impact", "volume": 0.45, "maxVoices": 2, "cooldown": 0.2}],
+    "storm_bound_slam": [{"sound": "ground_boom", "volume": 0.85, "maxVoices": 2}, {"sound": "thunder_crack", "volume": 0.5, "maxVoices": 1, "cooldown": 0.3, "pitch": [0.8, 0.9]}],
+    "storm_bound_burst": [{"sound": "thunder_close_sharp", "volume": 0.5, "maxVoices": 1, "cooldown": 0.3}, {"sound": "bolt_impact", "volume": 0.5, "maxVoices": 2, "cooldown": 0.2}],
+    "gale_shove": [{"sound": "tailwind_gust", "volume": 0.5, "maxVoices": 2, "cooldown": 0.3, "pitch": [0.85, 0.95]}],
     "silt_smother": [{ "sound": "water_douse", "volume": 0.5, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.8, 0.95] }],
     "crackle_burst": [{ "sound": "electric_crackle", "volume": 0.55, "maxVoices": 2, "cooldown": 0.2 }],
     "stone_rupture": [{ "sound": "rock_slam", "volume": 0.48, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.9, 1.05] }],
@@ -338,6 +347,10 @@
     "broken": [{ "sound": "hit_shield", "volume": 1, "maxVoices": 2 }]
   },
   "death": {
+    "stormcaller": [{"sound": "body_fall", "volume": 0.6, "maxVoices": 3}, {"sound": "storm_fade", "volume": 0.4, "maxVoices": 2, "cooldown": 0.1}],
+    "frayed": [{"sound": "body_fall", "volume": 0.5, "maxVoices": 3}, {"sound": "storm_snap", "volume": 0.35, "maxVoices": 2, "cooldown": 0.1, "pitch": [1.1, 1.2]}],
+    "storm_bound": [{"sound": "storm_crackle", "volume": 0.6, "maxVoices": 2, "pitch": [0.7, 0.8]}, {"sound": "body_fall", "volume": 0.8, "maxVoices": 2}],
+    "gust": [{"sound": "ambience_mist_gust", "volume": 0.4, "maxVoices": 3, "cooldown": 0.05, "pitch": [1.0, 1.15]}],
     "cave_shade": [{ "sound": "shade_death", "volume": 0.45, "maxVoices": 3, "cooldown": 0.05 }],
     "rift_shade": [{ "sound": "shade_death", "volume": 0.45, "maxVoices": 3, "cooldown": 0.05 }],
     "drifter": [{ "sound": "shade_death", "volume": 0.4, "maxVoices": 3, "cooldown": 0.05, "pitch": [0.75, 0.85] }, { "sound": "body_fall", "volume": 0.25, "maxVoices": 3, "cooldown": 0.05, "pitch": [0.8, 0.9] }],
@@ -741,6 +754,54 @@
         { "sound": "cave_drip", "volume": 0.3, "minDelay": 6, "maxDelay": 14, "pitch": [0.85, 1.15] },
         { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed", "molten"], "reach": 14 } },
         { "sound": "vent_hiss", "volume": 0.4, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed", "molten"], "reach": 18 } }
+      ]
+    },
+    "storm_rim": {
+      "loops": [
+        { "sound": "ambience_wind_storm", "volume": 0.5 },
+        { "sound": "ambience_wind_low", "volume": 0.3 }
+      ],
+      "stingers": [
+        { "sound": "thunder_far", "volume": 0.5, "minDelay": 12, "maxDelay": 30 },
+        { "sound": "thunder_close", "volume": 0.45, "minDelay": 20, "maxDelay": 50 },
+        { "sound": "thunder_close_sharp", "volume": 0.3, "minDelay": 45, "maxDelay": 110 },
+        { "sound": "ambience_mist_gust", "volume": 0.35, "minDelay": 8, "maxDelay": 20, "pitch": [0.85, 1.15] }
+      ]
+    },
+    "storm_rim_2": {
+      "loops": [
+        { "sound": "ambience_wind_storm", "volume": 0.6 },
+        { "sound": "ambience_wind_low", "volume": 0.3 }
+      ],
+      "stingers": [
+        { "sound": "thunder_far", "volume": 0.5, "minDelay": 12, "maxDelay": 30 },
+        { "sound": "thunder_close", "volume": 0.45, "minDelay": 20, "maxDelay": 50 },
+        { "sound": "thunder_close_sharp", "volume": 0.35, "minDelay": 45, "maxDelay": 110 },
+        { "sound": "ambience_mist_gust", "volume": 0.35, "minDelay": 8, "maxDelay": 20, "pitch": [0.85, 1.15] }
+      ]
+    },
+    "storm_eye": {
+      "loops": [
+        { "sound": "ambience_wind_storm", "volume": 0.75 },
+        { "sound": "ambience_wind_low", "volume": 0.25 }
+      ],
+      "stingers": [
+        { "sound": "thunder_far", "volume": 0.5, "minDelay": 12, "maxDelay": 30 },
+        { "sound": "thunder_close", "volume": 0.45, "minDelay": 20, "maxDelay": 50 },
+        { "sound": "thunder_close_sharp", "volume": 0.4, "minDelay": 45, "maxDelay": 110 },
+        { "sound": "ambience_mist_gust", "volume": 0.35, "minDelay": 8, "maxDelay": 20, "pitch": [0.85, 1.15] }
+      ]
+    },
+    "the_search": {
+      "loops": [
+        { "sound": "ambience_wind_storm", "volume": 0.35 },
+        { "sound": "ambience_wind_low", "volume": 0.2 }
+      ],
+      "stingers": [
+        { "sound": "thunder_far", "volume": 0.5, "minDelay": 12, "maxDelay": 30 },
+        { "sound": "thunder_close", "volume": 0.45, "minDelay": 20, "maxDelay": 50 },
+        { "sound": "thunder_close_sharp", "volume": 0.45, "minDelay": 45, "maxDelay": 110 },
+        { "sound": "ambience_mist_gust", "volume": 0.35, "minDelay": 8, "maxDelay": 20, "pitch": [0.85, 1.15] }
       ]
     },
     "keepers_gate": {

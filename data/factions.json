@@ -173,17 +173,33 @@
     "name": "The Stormcallers",
     "palette": {
       "tints": [
-        "#f4eedd"
+        "#f4eedd",
+        "#dce8f4",
+        "#c8d6e6"
       ],
       "glow": "#8fdcff"
     },
     "wearables": [
       "dirty_shirt",
       "dirty_trousers",
-      "leather_boots"
+      "leather_boots",
+      "traveller_coat",
+      "traveller_trousers",
+      "traveller_boots",
+      "traveller_hood",
+      "leather_vest",
+      "rag_trousers",
+      "worn_boots",
+      "torn_hood",
+      "salvaged_mail",
+      "leather_leggings",
+      "iron_vambraces",
+      "iron_sabatons"
     ],
     "weapons": [
-      "sword_1h"
+      "sword_1h",
+      "stormcaller_stave",
+      "raider_maul"
     ],
     "regards": {
       "player": "hostile",

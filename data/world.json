@@ -505,7 +505,11 @@
           {"zone": "mended_ways", "x": 930, "y": 500, "chain": "the_mended", "when": [{"type": "visited", "zone": "mended_ways", "not": false}]},
           {"zone": "mended_ways_2", "x": 1040, "y": 560, "label": "Level 2", "chain": "the_mended", "when": [{"type": "visited", "zone": "mended_ways", "not": false}]},
           {"zone": "mended_ways_3", "x": 1160, "y": 520, "label": "Level 3", "chain": "the_mended", "when": [{"type": "visited", "zone": "mended_ways_2", "not": false}]},
-          {"zone": "mender_loom", "x": 1270, "y": 460, "chain": "the_mended", "when": [{"type": "visited", "zone": "mender_loom", "not": false}]}
+          {"zone": "mender_loom", "x": 1270, "y": 460, "chain": "the_mended", "when": [{"type": "visited", "zone": "mender_loom", "not": false}]},
+          {"zone": "storm_rim", "x": 1345, "y": 380, "chain": "the_storm", "when": [{"type": "visited", "zone": "storm_rim", "not": false}]},
+          {"zone": "storm_rim_2", "x": 1430, "y": 300, "label": "Level 2", "chain": "the_storm", "when": [{"type": "visited", "zone": "storm_rim", "not": false}]},
+          {"zone": "storm_eye", "x": 1495, "y": 215, "chain": "the_storm", "when": [{"type": "visited", "zone": "storm_rim_2", "not": false}]},
+          {"zone": "the_search", "x": 1545, "y": 95, "chain": "the_storm", "when": [{"type": "visited", "zone": "the_search", "not": false}]}
         ],
         "roads": [
           {"from": "still_reach", "to": "still_reach_2", "via": [{"x": 482, "y": 578}]},
@@ -514,7 +518,11 @@
           {"from": "still_heart", "to": "mended_ways", "via": [{"x": 862, "y": 462}]},
           {"from": "mended_ways", "to": "mended_ways_2", "via": [{"x": 985, "y": 540}]},
           {"from": "mended_ways_2", "to": "mended_ways_3", "via": [{"x": 1100, "y": 550}]},
-          {"from": "mended_ways_3", "to": "mender_loom", "via": [{"x": 1215, "y": 480}]}
+          {"from": "mended_ways_3", "to": "mender_loom", "via": [{"x": 1215, "y": 480}]},
+          {"from": "mender_loom", "to": "storm_rim", "via": [{"x": 1312, "y": 412}]},
+          {"from": "storm_rim", "to": "storm_rim_2", "via": [{"x": 1392, "y": 332}]},
+          {"from": "storm_rim_2", "to": "storm_eye", "via": [{"x": 1468, "y": 262}]},
+          {"from": "storm_eye", "to": "the_search", "via": [{"x": 1525, "y": 152}]}
         ],
         "features": [],
         "labels": [
@@ -524,6 +532,13 @@
             "y": 630,
             "size": 20,
             "tilt": 3
+          },
+          {
+            "text": "The Storm Rim",
+            "x": 1300,
+            "y": 250,
+            "size": 20,
+            "tilt": -6
           }
         ]
       }

@@ -49,6 +49,10 @@ import mendedWays from '../../data/zones/mended_ways.json' with { type: 'json' }
 import mendedWays2 from '../../data/zones/mended_ways_2.json' with { type: 'json' };
 import mendedWays3 from '../../data/zones/mended_ways_3.json' with { type: 'json' };
 import menderLoom from '../../data/zones/mender_loom.json' with { type: 'json' };
+import stormRim from '../../data/zones/storm_rim.json' with { type: 'json' };
+import stormRim2 from '../../data/zones/storm_rim_2.json' with { type: 'json' };
+import stormEye from '../../data/zones/storm_eye.json' with { type: 'json' };
+import theSearch from '../../data/zones/the_search.json' with { type: 'json' };
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
@@ -57,7 +61,7 @@ import { modelFootprints, withFootprints } from './footprints.ts';
 import type { ModelFootprint } from './footprints.ts';
 import { withMarkerFootprints } from './markers.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, nextMoment, hallOfTime, hideout, provingGround, keepersGate, underHall, ledgerHall, underHall2, underHall3, ledgerHall2, ledgerHall3, lavaDepths, lavaDepths2, lavaDepths3, ledgerCourt, stillReach, stillReach2, stillReach3, stillHeart, mendedWays, mendedWays2, mendedWays3, menderLoom], world, npcs, lines, quests, player, flasks, trade, books, moments, packRanks, runTable, tailwind, markers };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, nextMoment, hallOfTime, hideout, provingGround, keepersGate, underHall, ledgerHall, underHall2, underHall3, ledgerHall2, ledgerHall3, lavaDepths, lavaDepths2, lavaDepths3, ledgerCourt, stillReach, stillReach2, stillReach3, stillHeart, mendedWays, mendedWays2, mendedWays3, menderLoom, stormRim, stormRim2, stormEye, theSearch], world, npcs, lines, quests, player, flasks, trade, books, moments, packRanks, runTable, tailwind, markers };
 
 export function loadContent(): Content {
   const parsed: Content = parseContent(RAW_CONTENT);

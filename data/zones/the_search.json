@@ -1,0 +1,330 @@
+{
+  "id": "the_search",
+  "name": "The Calm",
+  "kind": "wild",
+  "level": 50,
+  "levelUpTo": 50,
+  "ranks": false,
+  "cellSize": 2,
+  "floorHeight": 0,
+  "tiles": [
+    "                         ",
+    "                         ",
+    "  kkkkkkkkkkkkkkkkkkkkk  ",
+    "  kaagrrrrrrrrgggggrrgk  ",
+    "  kagrrrrrrrrrggggrrrrk  ",
+    "  kgrrrrrrrrrrrggrrrrrk  ",
+    "  krrrrrrrrrrrgggrrrrrk  ",
+    "  krrrrrrrrrxrgggrrrrrk  ",
+    "  krrrrrrrxxxxxaggrrrrk  ",
+    "  krrrrrrxxcccxxagrrrrk  ",
+    "  kgrrrrxxcccccxxgrrrrk  ",
+    "  kgggrrxcccccccxgrrrrk  ",
+    "  kgggggxcccccccxgrrrrk  ",
+    "  kgggggxxcccccxxgrrrrk  ",
+    "  kgaggggxxcccxxgrrrrrk  ",
+    "  kgggggggxxxxxggrrrrrk  ",
+    "  kggggrrrrrxggrrrrrrrk  ",
+    "  kggggrrrrrrrrrrrrrrrk  ",
+    "  kgggrrrrrrrrrrrrrrrrk  ",
+    "  kgggrrrrrrrrrrrrrrrrk  ",
+    "  kgggrrrrrrrrrrrrrrrrk  ",
+    "  kkkkkkkkkwwwkkkkkkkkk  ",
+    "          wwwww          ",
+    "                         ",
+    "                         "
+  ],
+  "floors": {
+    "g": "crag_ground",
+    "k": "black_ledge",
+    "r": "black_rock",
+    "c": "cracked_basalt",
+    "x": "scorched_stone",
+    "a": "ash",
+    "w": "worn_path"
+  },
+  "outside": {
+    "surface": "black_rock",
+    "reach": 3,
+    "barrier": null
+  },
+  "walls": null,
+  "scatter": [],
+  "playerStart": {
+    "x": 25,
+    "z": 42
+  },
+  "props": [
+    {
+      "prop": "hall_column_broken",
+      "x": 40.19,
+      "z": 26.08,
+      "y": 0,
+      "rotationDegrees": 101
+    },
+    {
+      "prop": "hall_column_broken",
+      "x": 9.81,
+      "z": 19.92,
+      "y": 0,
+      "rotationDegrees": 281
+    },
+    {
+      "prop": "hall_column_broken",
+      "x": 28.08,
+      "z": 7.81,
+      "y": 0,
+      "rotationDegrees": 11
+    },
+    {
+      "prop": "hall_clock_tilted",
+      "x": 11,
+      "z": 10,
+      "y": 0,
+      "rotationDegrees": 40
+    },
+    {
+      "prop": "hall_column_fallen",
+      "x": 33.0,
+      "z": 29.0,
+      "y": 0,
+      "rotationDegrees": 20
+    },
+    {
+      "prop": "lava_chunk_a",
+      "x": 9,
+      "z": 31,
+      "y": 0,
+      "rotationDegrees": 80
+    },
+    {
+      "prop": "lava_chunk_b",
+      "x": 41,
+      "z": 33,
+      "y": 0,
+      "rotationDegrees": 200
+    },
+    {
+      "prop": "still_lamp_post",
+      "x": 16,
+      "z": 38,
+      "y": 0,
+      "rotationDegrees": 15
+    },
+    {
+      "prop": "hall_loose_blocks",
+      "x": 35,
+      "z": 38,
+      "y": 0,
+      "rotationDegrees": 30
+    }
+  ],
+  "packs": [
+    {
+      "x": 16,
+      "z": 18,
+      "members": [
+        {
+          "monster": "timekeeper_rank",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "x": 34,
+      "z": 18,
+      "members": [
+        {
+          "monster": "timekeeper_rank",
+          "count": 2
+        }
+      ]
+    }
+  ],
+  "surge": null,
+  "exits": [
+    {
+      "id": "up",
+      "x": 25,
+      "z": 44.6,
+      "radius": 2.2,
+      "to": "storm_eye",
+      "toExit": "down",
+      "arrival": {
+        "x": 25,
+        "z": 42
+      },
+      "requires": []
+    }
+  ],
+  "deathReturn": {
+    "zone": "storm_eye",
+    "exit": "down"
+  },
+  "checkpoints": [],
+  "waypoint": {
+    "x": 25,
+    "z": 37,
+    "radius": 1.8
+  },
+  "markerSurfaces": {
+    "stone": "black_rock"
+  },
+  "npcs": [],
+  "ambience": {
+    "background": "#141a24",
+    "abyss": "#080b10",
+    "fogNear": 16,
+    "fogFar": 58,
+    "skyColor": "#8ca0c0",
+    "groundColor": "#262e38",
+    "skyIntensity": 5.2,
+    "keyColor": "#c4d8f4",
+    "keyIntensity": 3.2
+  },
+  "weather": {
+    "lightning": {
+      "first": 1.5,
+      "min": 3,
+      "max": 7
+    },
+    "rain": 0,
+    "wet": 0.2,
+    "mistWall": null
+  },
+  "heroLight": {
+    "strength": 14,
+    "radius": 21,
+    "height": 7,
+    "falloff": 1,
+    "rim": 0.45
+  },
+  "terrain": {
+    "rise": 1.84,
+    "groundStep": 0.6,
+    "cliff": "black_ledge",
+    "rough": {
+      "reach": 1.2,
+      "scale": 3,
+      "calm": []
+    },
+    "blends": [
+      {
+        "surface": "black_rock",
+        "scale": 9,
+        "cover": 0.26
+      },
+      {
+        "surface": "cracked_basalt",
+        "scale": 6,
+        "cover": 0.24
+      },
+      {
+        "surface": "ash",
+        "scale": 6,
+        "cover": 0.2
+      },
+      {
+        "surface": "scorched_stone",
+        "scale": 5,
+        "cover": 0.16
+      },
+      {
+        "surface": "cave_cracked",
+        "scale": 5,
+        "cover": 0.14
+      },
+      {
+        "surface": "worn_path",
+        "scale": 3,
+        "cover": 0.6,
+        "near": "/",
+        "reach": 5
+      }
+    ],
+    "cliffs": [
+      {
+        "props": [
+          "still_rock_face_b",
+          "still_boulder",
+          "still_rock_chunk_a",
+          "still_boulder_low",
+          "still_rock_face_a",
+          "still_rock_chunk_a"
+        ],
+        "side": "foot",
+        "step": 2.5,
+        "drop": 2.5,
+        "cover": 0.8,
+        "tuck": 0.6,
+        "size": {
+          "least": 0.7,
+          "most": 1.2
+        }
+      },
+      {
+        "props": [
+          "lava_chunk_a",
+          "lava_chunk_b",
+          "lava_shards",
+          "lava_shards",
+          "lava_chunk_b"
+        ],
+        "side": "rim",
+        "step": 2.6,
+        "drop": 2.5,
+        "cover": 0.7,
+        "tuck": 0.4,
+        "size": {
+          "least": 0.6,
+          "most": 1.1
+        }
+      },
+      {
+        "props": [
+          "still_rubble_heap",
+          "still_scree",
+          "still_slab_pile",
+          "still_rubble_heap",
+          "still_scree"
+        ],
+        "side": "foot",
+        "step": 3.2,
+        "drop": 2.5,
+        "cover": 0.8,
+        "tuck": 0.9,
+        "size": {
+          "least": 0.85,
+          "most": 1.3
+        }
+      }
+    ],
+    "levels": [
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000",
+      "0000000000000000000000000"
+    ]
+  }
+}
