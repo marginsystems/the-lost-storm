@@ -94,6 +94,7 @@
       "id": "motion",
       "name": "movement skills",
       "skills": [
+        "ember_swift",
         "dodge_roll",
         "mist_step",
         "downdraught"

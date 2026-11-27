@@ -44,15 +44,24 @@ export function pointerSlot(content: Content, slot: number): boolean {
   return content.player.skillBar[slot]?.bindings.includes(BAR_RULES.pointerBinding) ?? false;
 }
 
+function availableSlots(content: Content, learned: readonly string[]): readonly SkillBinding[] {
+  const slots = content.player.skillBar;
+  const last: number = slots.findLastIndex((binding: SkillBinding): boolean => binding.whenLearned !== true || (binding.skill !== null && learned.includes(binding.skill)));
+  return slots.slice(0, last + 1);
+}
+
 export function defaultBar(content: Content): (string | null)[] {
   const known: readonly string[] = startingSkills(content);
-  return content.player.skillBar.map((binding: SkillBinding): string | null => (binding.skill !== null && known.includes(binding.skill) ? binding.skill : null));
+  return availableSlots(content, known).map((binding: SkillBinding): string | null => (binding.skill !== null && known.includes(binding.skill) ? binding.skill : null));
 }
 
 export function placeLearned(content: Content, bar: Bar, skill: string): (string | null)[] {
   const next: (string | null)[] = [...bar];
   if (next.includes(skill)) return next;
   const home: number = homeSlot(content, skill);
+  if (home >= next.length && content.player.skillBar[home]?.whenLearned === true) {
+    while (next.length <= home) next.push(null);
+  }
   const slot: number = home >= 0 && next[home] === null ? home : next.findIndex((entry: string | null, index: number): boolean => entry === null && !pointerSlot(content, index));
   if (slot >= 0) next[slot] = skill;
   return next;
@@ -71,8 +80,8 @@ export function readBar(content: Content, value: unknown, learned: readonly stri
   if (!Array.isArray(value)) return learned.reduce((bar: (string | null)[], skill: string): (string | null)[] => placeLearned(content, bar, skill), defaultBar(content));
   const list: readonly unknown[] = value;
   const seen: Set<string> = new Set<string>();
-  return content.player.skillBar.map((_binding: SkillBinding, slot: number): string | null => {
-    const entry: unknown = list[slot];
+  return availableSlots(content, learned).map((binding: SkillBinding, slot: number): string | null => {
+    const entry: unknown = slot >= list.length && binding.whenLearned === true ? binding.skill : list[slot];
     if (typeof entry !== 'string' || seen.has(entry) || !learned.includes(entry)) return null;
     seen.add(entry);
     return entry;

@@ -549,7 +549,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       for (const event of events) {
         switch (event.type) {
           case 'skill_start':
-            viewOf(event.actorId)?.startAction(event.skill.animation, event.windup, event.recovery);
+            if (event.skill.press?.type === 'travel') viewOf(event.actorId)?.standDown();
+            else viewOf(event.actorId)?.startAction(event.skill.animation, event.windup, event.recovery);
             break;
           case 'skill_interrupt':
             viewOf(event.actorId)?.interrupt();

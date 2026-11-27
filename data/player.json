@@ -55,7 +55,8 @@
     { "skill": null, "bindings": ["KeyW", "mouse_right"], "label": "W" },
     { "skill": null, "bindings": ["KeyE"], "label": "E" },
     { "skill": null, "bindings": ["KeyR"], "label": "R" },
-    { "skill": "dodge_roll", "bindings": ["Space"], "label": "Space" }
+    { "skill": "dodge_roll", "bindings": ["Space"], "label": "Space" },
+    { "skill": "ember_swift", "bindings": ["KeyG"], "label": "G", "whenLearned": true }
   ],
   "xp": {
     "base": 105,

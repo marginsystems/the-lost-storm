@@ -79,7 +79,14 @@ export interface ChannelPress {
   readonly hint: string | null;
 }
 
-export type PressDef = ChargePress | ChannelPress;
+export interface TravelPress {
+  readonly type: 'travel';
+  readonly max: number;
+  readonly move: number;
+  readonly hint: string | null;
+}
+
+export type PressDef = ChargePress | ChannelPress | TravelPress;
 
 export interface BrandDef {
   readonly duration: number;

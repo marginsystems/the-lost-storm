@@ -16,9 +16,13 @@ void test('a saved Firewalker with an empty click slot and a chosen Gathered Cla
   old.player.bar = [null, 'thunderclap', 'held_breath', 'banked_fire', 'firewall', 'dodge_roll'];
   old.player.equipped.weapon = made(must(saveContent.chart.weaponGroups.find((group: WeaponGroup): boolean => group.id === 'heavy'), 'heavy weapons').starter, 'common', 18);
   const world: World = createWorld(saveContent, { seed: 4, save: roundTrip(old) });
-  assert.deepEqual(world.player.bar, old.player.bar);
+  assert.deepEqual(world.player.bar, [...old.player.bar, 'ember_swift']);
   assert.deepEqual(world.player.changes, old.player.changes);
-  assert.deepEqual(world.player.skills.map((skill: SkillDef | null): string | null => skill?.name ?? null), [null, 'Fire Slam', 'Held Breath', 'Flashover', 'Firewall', 'Dodge Roll']);
+  assert.deepEqual(world.player.skills.map((skill: SkillDef | null): string | null => skill?.name ?? null), [null, 'Fire Slam', 'Held Breath', 'Flashover', 'Firewall', 'Dodge Roll', 'Ember Swift']);
+  const manual = [...world.player.bar];
+  manual[6] = null;
+  world.player.bar = manual;
+  assert.deepEqual(createWorld(saveContent, { seed: 4, save: roundTrip(world) }).player.bar, manual);
   const roll: SkillDef = must(world.player.skills[5], 'dodge');
   const base: SkillDef = must(saveContent.skills.get('dodge_roll'), 'base dodge');
   assert.ok(roll.delivery.type === 'dash' && base.delivery.type === 'dash');

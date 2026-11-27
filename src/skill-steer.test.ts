@@ -127,7 +127,7 @@ void test('every shipped skill that moves the hero has a rule, and the Millwheel
   assert.equal(motions.get('dodge_roll'), 'rolled');
   assert.equal(motions.get('mist_step'), 'aimed');
   for (const skill of inputContent.skills.values()) {
-    const moves: boolean = (skill.press?.type === 'channel' && skill.press.move > 0) || skill.leap !== null || skill.delivery.type === 'dash' || skill.delivery.type === 'blink';
+    const moves: boolean = skill.press?.type === 'travel' || (skill.press?.type === 'channel' && skill.press.move > 0) || skill.leap !== null || skill.delivery.type === 'dash' || skill.delivery.type === 'blink';
     assert.equal(heroMotion(skill) !== 'still', moves, skill.id);
   }
 });

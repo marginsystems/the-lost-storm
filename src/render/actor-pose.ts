@@ -4,6 +4,7 @@ import type { Actor, Motion } from '../../sim/world/types.ts';
 import { isTimeHeld, knockTime } from '../../sim/world/movement.ts';
 
 export interface ActorPose {
+  readonly flightTime?: number;
   readonly pos: ReadonlyVec2;
   readonly facing: number;
   readonly motion: Motion;
@@ -19,6 +20,7 @@ export function poseOf(actor: Actor, beat: number | null): ActorPose {
   const press = actor.action?.skill.press;
   const stride: ReadonlyVec2 | null = actor.kind === 'player' && actor.motion === 'stride' && press?.type === 'channel' && press.strafe === true ? actor.walked : null;
   return {
+    ...(press?.type === 'travel' && actor.alive && actor.action?.skill.vfx.style === 'firebird' ? { flightTime: actor.action.elapsed } : {}),
     pos: actor.pos,
     facing: stride === null || (stride.x === 0 && stride.z === 0) ? actor.facing : facingOf(stride),
     motion: actor.motion,

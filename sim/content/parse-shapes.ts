@@ -103,7 +103,8 @@ function pressHint(source: Fields, where: string): string | null {
 function press(value: unknown, where: string): PressDef | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
-  const type: PressDef['type'] = choice(source, 'type', ['charge', 'channel'] as const, where);
+  const type: PressDef['type'] = choice(source, 'type', ['charge', 'channel', 'travel'] as const, where);
+  if (type === 'travel') return { type, max: positive(source, 'max', where), move: positive(source, 'move', where), hint: pressHint(source, where) };
   if (type === 'channel') {
     const interval: number = positive(source, 'interval', where);
     if (interval < SHAPE_LIMITS.shortestInterval) throw new ContentError(`${where}.interval`, `expected at least ${SHAPE_LIMITS.shortestInterval} seconds`);
@@ -220,9 +221,12 @@ export function bookProblems(content: Content): string[] {
   need(book.size === content.player.skillBook.length, 'skill book lists a skill twice');
   const slotted: string[] = content.player.skillBar.flatMap((binding: SkillBinding): string[] => (binding.skill === null ? [] : [binding.skill]));
   need(new Set<string>(slotted).size === slotted.length, 'skill bar starts with a skill in two slots');
-  for (const skill of slotted) need(book.has(skill), `skill bar keeps a home slot for ${skill}, which is not in the skill book`);
   need(content.player.skillBook.some((entry: SkillUnlock): boolean => entry.level === 1 && entry.when.length === 0), 'skill book teaches nothing at the start');
   const unlocks: string[] = content.skillTree.flatMap((node: SkillTreeNodeDef): string[] => (node.unlock === null ? [] : [node.unlock]));
+  for (const binding of content.player.skillBar) {
+    if (binding.whenLearned === true) need(binding.skill !== null, 'a slot that opens on learning needs a home skill');
+    if (binding.skill !== null) need(book.has(binding.skill) || unlocks.includes(binding.skill), `skill bar keeps a home slot for unknown unlock ${binding.skill}`);
+  }
   need(new Set<string>(unlocks).size === unlocks.length, 'two chart places unlock the same skill');
   for (const skill of unlocks) {
     need(content.skills.has(skill), `a chart place unlocks unknown skill ${skill}`);

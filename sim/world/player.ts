@@ -163,6 +163,7 @@ function useSkill(world: World, player: PlayerState, command: SkillCommand): voi
     if (clicked !== null && clicked.alive) startMove(world, player, clicked.pos, false, false);
     return;
   }
+  if (skill.press?.type === 'travel' && !player.held.includes(command.slot)) return;
   if (skill.delivery.type === 'dash') {
     if (canDash(player)) fire(world, player, skill, dashAim(player, command.aim, player.path), command.slot);
     return;
@@ -387,6 +388,7 @@ export function handleCommand(world: World, player: PlayerState, command: Comman
       slotSkill(world, command.slot, command.skill);
       return;
     case 'hold':
+      if (!command.down && player.action?.slot === command.slot && player.action.skill.press?.type === 'travel') player.action = null;
       player.held = command.down ? [...player.held.filter((slot: number): boolean => slot !== command.slot), command.slot] : player.held.filter((slot: number): boolean => slot !== command.slot);
       return;
     case 'steer':
@@ -409,6 +411,7 @@ export function handleCommand(world: World, player: PlayerState, command: Comman
         player.buffered = { ...player.buffered, move: null };
         return;
       }
+      if (command.type === 'skill' && player.action?.skill.press?.type === 'travel') return;
       if (cutByDodge(player, command)) player.action = null;
       if (player.action !== null) {
         player.buffered = bufferPress(player.buffered, pressOf(world, player, command));
@@ -674,7 +677,7 @@ export function stepPlayer(world: World, player: PlayerState, dt: number): void 
     }
   } else if (glide(world.grid, player, player.action === previous ? dt : afterLanding, world.content.player.turnRate, tailwindPace(world))) player.moving = true;
   player.walked = player.moving ? { x: player.pos.x - startX, z: player.pos.z - startZ } : { x: 0, z: 0 };
-  if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
+  if (player.moving && player.action?.skill.press?.type !== 'travel') emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.stridePhase = PLAYER.firstStepFraction;
   if (!isPrimary(world, player)) return;
   collectGold(world, player);

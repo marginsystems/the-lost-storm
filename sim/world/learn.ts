@@ -1,4 +1,4 @@
-import { placeLearned } from '../skill-book.ts';
+import { placeLearned, readBar } from '../skill-book.ts';
 import type { PlayerState, World } from './types.ts';
 
 export function learn(world: World, skill: string): void {
@@ -13,5 +13,9 @@ export function learn(world: World, skill: string): void {
 export function forget(world: World, skill: string): void {
   const player: PlayerState = world.player;
   player.learned = player.learned.filter((known: string): boolean => known !== skill);
-  player.bar = player.bar.map((slotted: string | null): string | null => (slotted === skill ? null : slotted));
+  const before = player.bar;
+  player.bar = readBar(world.content, before, player.learned);
+  for (const previous of before.slice(player.bar.length)) {
+    if (previous !== null && player.learned.includes(previous)) player.bar = placeLearned(world.content, player.bar, previous);
+  }
 }

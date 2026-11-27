@@ -375,6 +375,7 @@ export interface WorldDef {
 }
 
 export interface SkillBinding {
+  readonly whenLearned?: boolean;
   readonly skill: string | null;
   readonly bindings: readonly string[];
   readonly label: string;
