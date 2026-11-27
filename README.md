@@ -6,6 +6,8 @@ Free, in your browser, on a computer or a phone. Nothing to install and no accou
 
 [![Listed on Open Web Arcade](https://openwebarcade.com/badge.svg)](https://openwebarcade.com/games/the-lost-storm)
 
+Also on [CrazyGames](https://www.crazygames.com/game/the-lost-storm), [GamePix](https://www.gamepix.com/play/the-lost-storm), [itch.io](https://marginsystems.itch.io/the-lost-storm), [Game Jolt](https://gamejolt.com/games/the-lost-storm/1118858) and [Open Web Arcade](https://openwebarcade.com/games/the-lost-storm). Those carry the offline build: the whole game for one player, without sound and without the shared Hideout, chat, trading, the auction house or the ladder. For those, play on [theloststorm.com](https://theloststorm.com).
+
 The Lost Storm is an isometric action RPG. You wake in a white mist with a worn journal lying nearby, and walk out into a hall under a night storm, where lightning leaves pockets of somewhere else on the black rock and what is inside them turns on you. Fight, find loot, level up, and shape your character on a skill tree of 125 places. You fight alone; the Hideout, the chat, trading and the auction house are shared with everyone else who is playing. The game is in alpha and changes daily.
 
 It is built with Three.js, TypeScript and Vite, with no game engine on top, and all of it is in this repository.
@@ -95,7 +97,7 @@ npm run test:affected
 
 `npm run typecheck` is strict TypeScript, `npm run lint` is oxlint with type information (rules in `.oxlintrc.json`), and `npm run test:affected` runs only the tests a branch can affect with Node's test runner. `npm test` runs the whole suite split over a few processes, `npm run test:isolated` runs it with one process per file, and `npm run check` runs typecheck, lint and the whole suite. `npm run build` makes the production bundle in `dist/`. CI runs typecheck, lint and the affected tests on every pull request, and the whole suite in the merge queue and on `main`. [CONTRIBUTING.md](CONTRIBUTING.md) has the rest.
 
-### Portal build (itch.io, Game Jolt)
+### Portal build (itch.io, Game Jolt, Open Web Arcade)
 
 ```bash
 npm run build:portal
