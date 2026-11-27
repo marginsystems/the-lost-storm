@@ -3,7 +3,9 @@ import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial, Quaternion, Vector3 } f
 import type { Contact, WakePose } from './wake-pose.ts';
 import { restOffset, restWeight, WAKE_POSE } from './wake-pose.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
-import type { Motion } from '../../sim/world/types.ts';
+import type { ActorPose, SyncOptions } from './actor-pose.ts';
+export type { ActorPose, SyncOptions } from './actor-pose.ts';
+export { poseOf } from './actor-pose.ts';
 import { angleBetween, turnToward } from '../../sim/world/movement.ts';
 import type { RigContact } from '../../sim/content/types.ts';
 import type { BodyRoles } from '../lobby/lobby-life.ts';
@@ -102,25 +104,6 @@ interface Resume {
   readonly speed: number;
   readonly oneShot: number;
   readonly follow: FollowThrough | null;
-}
-
-export interface ActorPose {
-  readonly pos: ReadonlyVec2;
-  readonly facing: number;
-  readonly motion: Motion;
-  readonly gait: number;
-  readonly knockTime: number;
-  readonly busy: boolean;
-  readonly held: boolean;
-  readonly beat: number | null;
-  readonly deadTime: number;
-}
-
-export interface SyncOptions {
-  readonly rise: number;
-  readonly floor: number;
-  readonly turnRate: number;
-  readonly seen: boolean;
 }
 
 export interface ActorView {

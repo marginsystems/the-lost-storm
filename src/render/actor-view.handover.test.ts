@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { AnimationClip, Group } from 'three';
+import { shapeArena } from '../../test/shape-support.ts';
+import { facingOf } from '../../sim/math.ts';
+import type { Vec2 } from '../../sim/math.ts';
+import { stepWorld } from '../../sim/world/step.ts';
+import type { Command, World, WorldEvent } from '../../sim/world/types.ts';
 import { must } from '../../test/support.ts';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content, RigDef } from '../../sim/content/types.ts';
 import { HERO } from '../../sim/hero.ts';
 import type { ActorPose, ActorView, SyncOptions } from './actor-view.ts';
-import { createActorView } from './actor-view.ts';
+import { createActorView, poseOf } from './actor-view.ts';
 import type { ActionClip, CharacterLibrary, GaitClip, LoadedRig, RigClipSet } from './character-loader.ts';
 import { instantiateRig } from './character-loader.ts';
 import type { SpinPose } from './spin-view.ts';
@@ -27,7 +32,7 @@ interface Rigged {
   readonly others: readonly AnimationClip[];
 }
 
-const ACTION_NAMES: readonly string[] = ['sweep', 'slam', 'spin_mocap_in', 'spin_mocap_loop', 'spin_mocap_out'];
+const ACTION_NAMES: readonly string[] = ['cast', 'sweep', 'slam', 'spin_mocap_in', 'spin_mocap_loop', 'spin_mocap_out'];
 
 function rigged(def: RigDef): Rigged {
   const gaits: GaitClip[] = def.gaits.map((gait): GaitClip => ({ clip: new AnimationClip(gait.clip, 1, []), groundSpeed: gait.groundSpeed }));
@@ -101,4 +106,49 @@ for (const hero of content.player.heroes) {
       }
     });
   }
+}
+
+for (const walking of [false, true]) {
+  void test(`a roll into Firewall ${walking ? 'takes a visible stride as soon as walking resumes' : 'plants the hero while the wall is aimed ahead'}`, (): void => {
+    const world: World = shapeArena(['firewall', 'dodge_roll']);
+    const player = world.player;
+    const def: RigDef = must(content.rigs.get(content.player.hero.rig), 'hero rig');
+    const { view } = rigged(def);
+    const aim: Vec2 = { x: player.pos.x + 10, z: player.pos.z };
+    const start: Vec2 = { ...player.pos };
+    const dash = player.skills[1]?.delivery;
+    assert.ok(dash?.type === 'dash');
+    let steps: number = 0;
+    for (let frame: number = 0; frame < 45; frame += 1) {
+      const commands: Command[] = [];
+      if (frame === 0) commands.push({ type: 'skill', slot: 1, aim, targetId: null });
+      if (frame === 1) commands.push({ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim, targetId: null });
+      if (player.action?.skill.id === 'firewall') {
+        commands.push({ type: 'steer', aim });
+        if (walking) commands.push({ type: 'walk', held: true, dest: { x: player.pos.x, z: start.z + 8 } });
+      }
+      const events: WorldEvent[] = stepWorld(world, commands, DT);
+      for (const event of events) {
+        if (event.type !== 'skill_start') continue;
+        assert.ok(view.startAction(event.skill.animation, event.windup, event.recovery));
+      }
+      const pose: ActorPose = poseOf(player, null);
+      view.sync(DT, pose, OPTIONS);
+      if (player.action?.skill.id !== 'firewall') continue;
+      assert.ok(Math.abs(player.pos.x - start.x - dash.distance) < 1e-6, 'aiming must never carry the roll farther');
+      if (!walking) {
+        assert.equal(player.pos.z, start.z);
+        continue;
+      }
+      if (player.pos.z === start.z) continue;
+      steps += 1;
+      assert.equal(pose.motion, 'stride');
+      assert.equal(pose.facing, facingOf(player.walked));
+      const gaitWeight: number = Math.max(...view.rig.clips.gaits.map((gait: GaitClip): number => weightOf(view, gait.clip)));
+      assert.ok(gaitWeight > 0, 'a stride clip must be running from the first moving frame');
+    }
+    assert.equal(player.action?.phase, 'channel');
+    if (walking) assert.ok(steps > 10);
+    view.dispose();
+  });
 }
