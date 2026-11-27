@@ -1,11 +1,12 @@
 import type { Live, LiveEvent } from '../backend/live.ts';
 import { sayable } from '../backend/live-protocol.ts';
 import type { PartyInvite, PartyState, PartyStep } from './party-model.ts';
-import { answered, expireInvites, NO_PARTY, partyStep } from './party-model.ts';
+import { answered, expireInvites, inParty, NO_PARTY, partyStep } from './party-model.ts';
 import { partyAnswerFrame, partyInviteFrame, partyKickFrame, partyLeadFrame, partyLeaveFrame, partySayFrame, partyWhereFrame } from './party-protocol.ts';
 
 export const PARTY_FLOW = {
   unsent: 'Not connected. Try again in a moment.',
+  left: 'You left the party.',
 } as const;
 
 export interface PartyFlowOptions {
@@ -112,7 +113,12 @@ export function createPartyFlow(options: PartyFlowOptions): PartyFlow {
       set(answered(state, id));
       return true;
     },
-    leave: (): boolean => send(partyLeaveFrame()),
+    leave(): boolean {
+      const leaving: boolean = inParty(state);
+      if (!send(partyLeaveFrame())) return false;
+      if (leaving) tell(noteListeners, PARTY_FLOW.left);
+      return true;
+    },
     kick: (name: string): boolean => send(partyKickFrame(name)),
     lead: (name: string): boolean => send(partyLeadFrame(name)),
     say(text: string): boolean {
