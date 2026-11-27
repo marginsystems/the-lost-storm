@@ -206,7 +206,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   canvas.addEventListener('pointerup', follow);
   canvas.addEventListener('pointercancel', liftMouse);
   canvas.addEventListener('lostpointercapture', liftMouse);
-  canvas.addEventListener('contextmenu', (event: MouseEvent): void => event.preventDefault());
+  windowEvents.addEventListener('contextmenu', blockNativeMenu);
   canvas.addEventListener(
     'wheel',
     (event: WheelEvent): void => {
@@ -582,6 +582,18 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
 
 export function isTextField(target: EventTarget | null): boolean {
   return target !== null && 'selectionStart' in target;
+}
+
+const TEXT_ENTRY_TYPES: ReadonlySet<string> = new Set<string>(['text', 'search', 'email', 'url', 'tel', 'password', 'textarea']);
+
+export function takesText(target: EventTarget | null): boolean {
+  if (!isTextField(target) || target === null) return false;
+  const type: unknown = Reflect.get(target, 'type');
+  return typeof type !== 'string' || TEXT_ENTRY_TYPES.has(type);
+}
+
+export function blockNativeMenu(event: Event): void {
+  if (!takesText(event.target)) event.preventDefault();
 }
 
 export function buttonDown(buttons: number, mouseButton: MouseButton): boolean {
