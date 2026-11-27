@@ -97,10 +97,12 @@ function across(moved: Vec2, way: Vec2): number {
   return Math.abs(moved.x * way.z - moved.z * way.x);
 }
 
-function expectedWay(motion: HeroMotion, keys: boolean, way: Way): Vec2 | null {
+function expectedTravelDirection(motion: HeroMotion, keys: boolean, way: Way): Vec2 {
   const cursor: Vec2 = unit(STEER.cursor);
-  const held: Vec2 | null = keys ? keysDirection(way.keys, YAW) : null;
-  return motionAim(motion, { movement: keys ? 'keys' : 'click', keys: held, cursor, from: { x: 0, z: 0 } });
+  const walk: Vec2 | null = keys ? keysDirection(way.keys, YAW) : null;
+  if (motion === 'strafe' || (motion === 'carried' && keys)) return walk ?? { x: 0, z: 0 };
+  if (motion === 'rolled') return walk ?? cursor;
+  return cursor;
 }
 
 void test('the rule: a carried skill follows the active mode, a roll follows held keys else the cursor, and an aimed skill keeps the cursor', (): void => {
@@ -113,6 +115,8 @@ void test('the rule: a carried skill follows the active mode, a roll follows hel
   assert.deepEqual(motionAim('carried', { movement: 'keys', keys: null, cursor, from }), from);
   assert.deepEqual(motionAim('rolled', { movement: 'keys', keys: right, cursor, from }), reach);
   assert.deepEqual(motionAim('rolled', { movement: 'keys', keys: null, cursor, from }), cursor);
+  assert.deepEqual(motionAim('strafe', { movement: 'keys', keys: right, cursor, from }), cursor);
+  assert.deepEqual(motionAim('strafe', { movement: 'keys', keys: null, cursor, from }), cursor);
   assert.deepEqual(motionAim('aimed', { movement: 'keys', keys: right, cursor, from }), cursor);
   assert.deepEqual(motionAim('still', { movement: 'keys', keys: right, cursor, from }), cursor);
 });
@@ -135,8 +139,7 @@ for (const skill of moving) {
       for (const way of keys ? WAYS : WAYS.slice(0, 1)) {
         const moved: Vec2 = travelled(skill, keys, way);
         const label: string = `${skill.id} ${keys ? 'keys' : 'click'} ${way.name}: moved ${moved.x.toFixed(2)},${moved.z.toFixed(2)}`;
-        const expected: Vec2 | null = expectedWay(motion, keys, way);
-        const goal: Vec2 = expected ?? unit(STEER.cursor);
+        const goal: Vec2 = expectedTravelDirection(motion, keys, way);
         if (Math.hypot(goal.x, goal.z) < 1e-6) {
           assert.ok(Math.hypot(moved.x, moved.z) < STEER.still, `${label}, expected to stay`);
           continue;

@@ -107,7 +107,7 @@ export function steadied(actor: Actor): boolean {
 }
 
 export function glidesWith(press: PressDef | null): boolean {
-  return press?.type === 'channel' && press.move > 0;
+  return press?.type === 'channel' && press.move > 0 && press.strafe !== true;
 }
 
 function glideSpeed(action: ActionState): number {
@@ -135,7 +135,8 @@ export function glide(grid: NavGrid, player: PlayerState, dt: number, turnRate: 
   const toward: Vec2 = { x: (goal.x - from.x) / gap, z: (goal.z - from.z) / gap };
   moveWithCollision(grid, player.pos, toward.x * step, toward.z * step);
   if (distance(from, player.pos) <= MOMENTUM.moved) return false;
-  player.facing = turnToward(player.facing, facingOf(toward), turnRate * dt);
+  if (glidesWith(action.skill.press)) player.facing = turnToward(player.facing, facingOf(toward), turnRate * dt);
+  else player.motion = 'stride';
   return true;
 }
 

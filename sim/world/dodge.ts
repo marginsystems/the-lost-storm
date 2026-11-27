@@ -20,6 +20,10 @@ export function isDodge(skill: SkillDef): boolean {
   return false;
 }
 
+export function recoveringFromDodge(action: ActionState | null): boolean {
+  return action?.phase === 'recovery' && isDodge(action.skill);
+}
+
 export function dodgesAtOnce(skill: SkillDef, targeted: boolean): boolean {
   return isDodge(skill) && (skill.delivery.type === 'dash' || !targeted);
 }

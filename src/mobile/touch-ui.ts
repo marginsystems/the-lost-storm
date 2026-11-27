@@ -6,7 +6,7 @@ import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { readyToRepeat } from '../../sim/world/skills.ts';
 import { glidesWith } from '../../sim/world/momentum.ts';
-import type { Command, FlaskState, World } from '../../sim/world/types.ts';
+import type { Command, FlaskState, SkillCommand, World } from '../../sim/world/types.ts';
 import { cannotStep, isTimeHeld } from '../../sim/world/movement.ts';
 import type { KeyValueStore } from '../backend/backend.ts';
 import { el } from '../hud/dom.ts';
@@ -549,7 +549,13 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
         if (move !== null) commands.push(move);
         moving = true;
       }
-      const ahead: Vec2 = direction ?? facingVector(player.facing);
+      const cast = (slot: number, skill: SkillDef | null | undefined = player.skills[slot]): SkillCommand => {
+        const press = skill?.press ?? null;
+        if (glidesWith(press)) return { type: 'skill', slot, aim: glideAim(player.pos, direction), targetId: null };
+        const facing: Vec2 = facingVector(player.facing);
+        const ahead: Vec2 = press?.type === 'channel' && press.strafe === true ? facing : direction ?? facing;
+        return aimedSkill(slot, player.pos, ahead, autoAimTarget(world.monsters, player.pos, ahead));
+      };
 
       views.forEach((view: ButtonView, index: number): void => {
         const isFresh: boolean = pressedNow.has(index);
@@ -558,13 +564,13 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
         switch (view.spec.kind) {
           case 'attack':
             if (isFresh) commands.push({ type: 'hold', slot: view.spec.slot, down: true });
-            if (isFresh || (isHeld && tick && player.skills[view.spec.slot]?.press === null)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(world.monsters, player.pos, ahead)));
+            if (isFresh || (isHeld && tick && player.skills[view.spec.slot]?.press === null)) commands.push(cast(view.spec.slot));
             return;
           case 'skill': {
             const skill: SkillDef | undefined = player.skills[view.spec.slot] ?? undefined;
             if (isFresh) commands.push({ type: 'hold', slot: view.spec.slot, down: true });
             const ready: boolean = readyToRepeat(player, skill);
-            if (isFresh || (isHeld && tick && ready)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(world.monsters, player.pos, ahead)));
+            if (isFresh || (isHeld && tick && ready)) commands.push(cast(view.spec.slot));
             return;
           }
           case 'flask': {
@@ -579,9 +585,8 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       for (const slot of lifted) commands.push({ type: 'hold', slot, down: false });
       lifted.clear();
       const holding = player.action;
-      if (holding !== null && holding.skill.press !== null && views.some((view: ButtonView, index: number): boolean => heldButtons.has(index) && view.spec.kind !== 'flask' && view.spec.slot === holding.slot)) {
-        const aim: Vec2 = glidesWith(holding.skill.press) ? glideAim(player.pos, direction) : aimedSkill(holding.slot ?? 0, player.pos, ahead, autoAimTarget(world.monsters, player.pos, ahead)).aim;
-        commands.push({ type: 'steer', aim });
+      if (holding !== null && holding.slot !== null && holding.skill.press !== null && views.some((view: ButtonView, index: number): boolean => heldButtons.has(index) && view.spec.kind !== 'flask' && view.spec.slot === holding.slot)) {
+        commands.push({ type: 'steer', aim: cast(holding.slot, holding.skill).aim });
       }
       return commands;
     },

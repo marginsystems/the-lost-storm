@@ -104,7 +104,10 @@ function press(value: unknown, where: string): PressDef | null {
   if (type === 'channel') {
     const interval: number = positive(source, 'interval', where);
     if (interval < SHAPE_LIMITS.shortestInterval) throw new ContentError(`${where}.interval`, `expected at least ${SHAPE_LIMITS.shortestInterval} seconds`);
-    return { type, interval, max: positive(source, 'max', where), move: source['move'] === undefined ? 0 : fraction(source, 'move', where), passThrough: source['passThrough'] === undefined ? false : flag(source, 'passThrough', where), hint: pressHint(source, where) };
+    const move: number = source['move'] === undefined ? 0 : fraction(source, 'move', where);
+    const strafe: boolean = source['strafe'] !== undefined && flag(source, 'strafe', where);
+    if (strafe && move === 0) throw new ContentError(where, 'a strafing channel needs a movement speed');
+    return { type, interval, max: positive(source, 'max', where), move, ...(strafe ? { strafe } : {}), passThrough: source['passThrough'] === undefined ? false : flag(source, 'passThrough', where), hint: pressHint(source, where) };
   }
   return { type, max: positive(source, 'max', where), damageScale: positive(source, 'damageScale', where), areaScale: positive(source, 'areaScale', where), hint: pressHint(source, where) };
 }

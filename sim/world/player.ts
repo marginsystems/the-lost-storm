@@ -14,7 +14,7 @@ import { pastBlocks, roundPast, stillRound } from './stick.ts';
 import { allocateNode, arrangeInventory, chooseChange, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
-import { dodgesAtOnce, givesWayToDodge, isDodge } from './dodge.ts';
+import { dodgesAtOnce, givesWayToDodge, isDodge, recoveringFromDodge } from './dodge.ts';
 import type { Buffered, PressRank, Taken } from './press-buffer.ts';
 import { bufferPress, takePress } from './press-buffer.ts';
 import { respawnPlayer } from './death.ts';
@@ -144,9 +144,11 @@ function fire(world: World, player: PlayerState, skill: SkillDef, aim: Vec2, slo
     return false;
   }
   if (isPrimary(world, player)) closeDialogue(world, false);
+  const walk: Vec2 | null = skill.press?.type === 'channel' && skill.press.strafe === true && player.intent.type === 'move' ? player.intent.dest : null;
   player.intent = { type: 'idle' };
   player.path = [];
   startSkill(world, player, skill, { x: aim.x - player.pos.x, z: aim.z - player.pos.z }, slot);
+  if (walk !== null) aimGlide(player, walk);
   return true;
 }
 
@@ -180,6 +182,7 @@ function useSkill(world: World, player: PlayerState, command: SkillCommand): voi
     return;
   }
   if (isPrimary(world, player)) closeDialogue(world, false);
+  if (recoveringFromDodge(player.action)) player.action = null;
   if (player.intent.type !== 'attack') player.chase = freshChase(player.pos);
   player.intent = { type: 'attack', slot: command.slot, targetId: target.id };
   chaseTarget(world, player, target);
@@ -402,7 +405,10 @@ export function handleCommand(world: World, player: PlayerState, command: Comman
     case 'enter_portal':
       if (!player.alive) return;
       if (command.type !== 'skill' && isPrimary(world, player)) closeDialogue(world, false);
-      if ((command.type === 'move' || command.type === 'walk') && aimGlide(player, command.dest)) return;
+      if (steerMovement(player, command)) {
+        player.buffered = { ...player.buffered, move: null };
+        return;
+      }
       if (cutByDodge(player, command)) player.action = null;
       if (player.action !== null) {
         player.buffered = bufferPress(player.buffered, pressOf(world, player, command));
@@ -411,6 +417,11 @@ export function handleCommand(world: World, player: PlayerState, command: Comman
       act(world, player, command);
       return;
   }
+}
+
+function steerMovement(player: PlayerState, command: Command): boolean {
+  if (command.type === 'stop') return aimGlide(player, player.pos);
+  return (command.type === 'walk' || command.type === 'move') && aimGlide(player, command.dest);
 }
 
 function rankOf(player: PlayerState, command: Command): PressRank {
@@ -616,6 +627,17 @@ function emitSteps(world: World, player: PlayerState, travelled: number): void {
   }
 }
 
+function takeBufferedPress(world: World, player: PlayerState): void {
+  const landing: boolean = recoveringFromDodge(player.action);
+  if (player.action !== null && (!landing || (player.buffered.skill === null && player.buffered.dodge === null))) return;
+  const taken: Taken = takePress(player.buffered, world.time, (command: Command): boolean => canTake(player, command));
+  if (landing && (taken.press?.command.type !== 'skill' || !canTake(player, taken.press.command))) return;
+  player.buffered = taken.rest;
+  if (taken.press !== null) act(world, player, taken.press.command);
+  const move: Buffered | null = player.buffered.move;
+  if (move !== null && steerMovement(player, move.command)) player.buffered = { ...player.buffered, move: null };
+}
+
 export function stepPlayer(world: World, player: PlayerState, dt: number): void {
   player.motion = 'still';
   if (!player.alive) {
@@ -629,17 +651,16 @@ export function stepPlayer(world: World, player: PlayerState, dt: number): void 
   stepTimers(player, dt);
   stepMomentum(player, dt);
   stepKnock(world.grid, player, dt);
+  if (recoveringFromDodge(player.action)) takeBufferedPress(world, player);
+  const previous: ActionState | null = player.action;
+  const afterLanding: number = previous?.phase === 'windup' && isDodge(previous.skill) && player.tempo > 0 ? Math.max(0, dt - previous.timeLeft / player.tempo) : dt;
   stepAction(world, player, dt * player.tempo);
   stepPivot(world, player, dt * player.tempo);
   player.moving = false;
   const startX: number = player.pos.x;
   const startZ: number = player.pos.z;
   if (cutByDodge(player, player.buffered.dodge?.command ?? null)) player.action = null;
-  if (player.action === null) {
-    const taken: Taken = takePress(player.buffered, world.time, (command: Command): boolean => canTake(player, command));
-    player.buffered = taken.rest;
-    if (taken.press !== null) act(world, player, taken.press.command);
-  }
+  takeBufferedPress(world, player);
   if (player.action === null) {
     stepIntent(world, player, dt);
     if (!isBusy(player) && !beingKnocked(player) && player.root <= 0 && player.tempo > 0 && player.path.length > 0) {
@@ -651,7 +672,7 @@ export function stepPlayer(world: World, player: PlayerState, dt: number): void 
         player.repathTimer = PLAYER.repathInterval;
       } else if (player.path.length === 0) player.repathTimer = 0;
     }
-  } else if (glide(world.grid, player, dt, world.content.player.turnRate, tailwindPace(world))) player.moving = true;
+  } else if (glide(world.grid, player, player.action === previous ? dt : afterLanding, world.content.player.turnRate, tailwindPace(world))) player.moving = true;
   player.walked = player.moving ? { x: player.pos.x - startX, z: player.pos.z - startZ } : { x: 0, z: 0 };
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.stridePhase = PLAYER.firstStepFraction;

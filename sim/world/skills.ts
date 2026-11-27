@@ -1,3 +1,4 @@
+import { isDodge, recoveringFromDodge } from './dodge.ts';
 import { isEmpty } from './press-buffer.ts';
 import type { SkillLeap } from '../content/combat-types.ts';
 import type { AreaDelivery, PressDef } from '../content/shape-types.ts';
@@ -45,7 +46,9 @@ export function blockedReason(actor: Actor, skill: SkillDef): NoticeReason | nul
 
 export function readyToRepeat(player: PlayerState, skill: SkillDef | null | undefined): boolean {
   if (skill === undefined || skill === null || skill.press !== null) return false;
-  return player.action === null && isEmpty(player.buffered) && blockedReason(player, skill) === null;
+  if (blockedReason(player, skill) !== null) return false;
+  if (player.action === null) return isEmpty(player.buffered);
+  return isDodge(player.action.skill) && !isDodge(skill) && player.buffered.skill === null && player.buffered.dodge === null;
 }
 
 export function comboHits(actor: Actor, skill: SkillDef): number {
@@ -166,7 +169,8 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
     if (actor === world.player) world.events.push({ type: 'notice', reason: 'wall_full' });
     return;
   }
-  if (needsPivot(actor, requested, direction)) {
+  const turnOnStart: boolean = actor.kind === 'player' && (recoveringFromDodge(actor.action) || (requested.press?.type === 'channel' && requested.press.strafe === true));
+  if (!turnOnStart && needsPivot(actor, requested, direction)) {
     actor.pivot = { skill: requested, at: { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z }, slot };
     return;
   }
@@ -492,7 +496,7 @@ export function steerAction(world: World, actor: Actor, aim: ReadonlyVec2): void
   const toward: Vec2 = directionOf(turned);
   action.direction = toward;
   actor.facing = turned;
-  if (action.goal !== null) action.goal = { x: aim.x, z: aim.z };
+  if (glidesWith(action.skill.press)) action.goal = { x: aim.x, z: aim.z };
   aimChannel(world, actor, aim);
   if (action.target === null || action.skill.leap !== null) return;
   const planned: number = reachOf(action.skill, null, Math.hypot(offset.x, offset.z));
