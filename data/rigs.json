@@ -4898,9 +4898,9 @@
     "id": "serpent",
     "url": "models/creatures/serpent.glb",
     "clipFolder": "models/animations/serpent",
-    "scale": 0.42,
+    "scale": 1,
     "yawOffsetDegrees": 0,
-    "height": 3.03,
+    "height": 0.43,
     "rootMotionBone": null,
     "gaits": [
       {
@@ -4916,8 +4916,48 @@
           "clip": "Snake_Attack",
           "impactFraction": 0.5
         },
+        "crush": {
+          "clip": "Snake_Attack",
+          "impactFraction": 0.5
+        },
         "spit": {
           "clip": "Snake_Attack",
+          "impactFraction": 0.5
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [],
+    "bodyParts": {}
+  },
+  {
+    "id": "sundercoil",
+    "url": "models/creatures/sundercoil.glb",
+    "clipFolder": "models/animations/sundercoil",
+    "scale": 1,
+    "yawOffsetDegrees": 0,
+    "height": 0.67,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Snake_Walk",
+        "groundSpeed": 2.0
+      }
+    ],
+    "clips": {
+      "idle": "Snake_Idle",
+      "run": "Snake_Walk",
+      "actions": {
+        "strike": {
+          "clip": "Snake_Attack",
+          "impactFraction": 0.5
+        },
+        "crush": {
+          "clip": "Snake_Crush",
+          "impactFraction": 0.5
+        },
+        "spit": {
+          "clip": "Snake_Spit",
           "impactFraction": 0.5
         }
       }

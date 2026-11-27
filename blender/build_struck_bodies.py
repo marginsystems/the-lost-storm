@@ -544,4 +544,5 @@ def build(directory: str) -> None:
     bpy.ops.wm.save_as_mainfile(filepath=f"{directory}/ledger_plinth.blend")
 
 
-build(sys.argv[sys.argv.index("--") + 1])
+if __name__ == "__main__":
+    build(sys.argv[sys.argv.index("--") + 1])

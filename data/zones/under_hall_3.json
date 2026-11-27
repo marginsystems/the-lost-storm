@@ -1543,7 +1543,7 @@
     {"x":300,"z":228,"members":[{"monster":"ossuary_brute","count":1},{"monster":"risen_thrall","count":4},{"monster":"bone_hurler","count":1}],"level":18},
     {"x":282,"z":226,"members":[{"monster":"grave_hexer","count":1},{"monster":"bone_sentinel","count":2},{"monster":"risen_thrall","count":3}],"level":18},
     {"x":240,"z":284,"members":[{"monster":"ossuary_brute","count":1},{"monster":"risen_thrall","count":4},{"monster":"bone_hurler","count":1}],"level":18},
-    {"x":250,"z":284,"members":[{"monster":"old_coil","count":1},{"monster":"spitting_serpent","count":3}],"level":18},
+    {"x":250,"z":284,"members":[{"monster":"sundercoil","count":1}],"level":18},
     {"x":234,"z":292,"members":[{"monster":"wasp_queen","count":1},{"monster":"cave_wasp","count":5}],"level":18},
     {"x":226,"z":190,"members":[{"monster":"spitting_serpent","count":2},{"monster":"cave_serpent","count":3}],"level":18},
     {"x":300,"z":294,"members":[{"monster":"ossuary_brute","count":1},{"monster":"risen_thrall","count":3}],"level":18},
