@@ -91,4 +91,5 @@ export interface SkillVfx {
   readonly shadow: VfxShadow | null;
   readonly water: VfxWater | null;
   readonly cover: VfxCover | null;
+  readonly rim: boolean;
 }

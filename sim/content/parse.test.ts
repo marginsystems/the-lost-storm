@@ -403,7 +403,7 @@ void test('a rig may leave out its hit and death clips, names its action clips, 
 
 void test('a skill effect with no cue or light gets no cue and full light, and a negative light is rejected', (): void => {
   const plain: Content = parseContent({ ...shipped, skills: [...skills, extraSkill] });
-  assert.deepEqual(must(plain.skills.get('ember_lash'), 'skill').vfx, { style: 'slash', color: '#ff8844', cue: 'none', light: 1, lightning: null, impact: null, trail: 0, linger: 0, gather: null, wave: null, punch: null, burn: null, shadow: null, water: null, cover: null });
+  assert.deepEqual(must(plain.skills.get('ember_lash'), 'skill').vfx, { style: 'slash', color: '#ff8844', cue: 'none', light: 1, lightning: null, impact: null, trail: 0, linger: 0, gather: null, wave: null, punch: null, burn: null, shadow: null, water: null, cover: null, rim: false });
   const blinding: RawContent = { ...shipped, skills: [{ ...extraSkill, vfx: { style: 'slash', color: '#ff8844', light: -1 } }] };
   assert.throws((): Content => parseContent(blinding), (error: unknown): boolean => problem(error, 'skills[0].vfx'));
 });

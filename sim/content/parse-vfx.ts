@@ -1,5 +1,5 @@
 import type { Fields } from './read.ts';
-import { choice, colour, ContentError, each, fields, nonNegative, positive, share, text } from './read.ts';
+import { choice, colour, ContentError, each, fields, flag, nonNegative, positive, share, text } from './read.ts';
 import type { SkillVfx, VfxBurn, VfxCover, VfxFlare, VfxGather, VfxImpact, VfxLightning, VfxPunch, VfxRipple, VfxShadow, VfxWater, VfxWave } from './vfx-types.ts';
 import { VFX_CUES, VFX_MAX_FORKS, VFX_STYLES } from './vfx-types.ts';
 
@@ -142,5 +142,6 @@ export function skillVfx(value: unknown, where: string): SkillVfx {
     shadow: vfxShadow(source['shadow'], `${where}.shadow`),
     water: vfxWater(source['water'], `${where}.water`),
     cover: vfxCover(source['cover'], `${where}.cover`),
+    rim: source['rim'] === undefined ? false : flag(source, 'rim', where),
   };
 }

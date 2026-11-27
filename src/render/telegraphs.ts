@@ -1,4 +1,5 @@
-import type { Color, Object3D } from 'three';
+import { Color } from 'three';
+import type { Object3D } from 'three';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { facingOf } from '../../sim/math.ts';
@@ -33,6 +34,7 @@ export const TELEGRAPHS = {
   fieldBreatheRate: 1.4,
   fieldSettle: 0.5,
   order: 11,
+  seamThread: { fill: 0, band: 2.7, width: 0.14, wobble: 0.08 },
 } as const;
 
 export type TelegraphSource = 'actor' | 'hazard' | 'echo';
@@ -130,6 +132,14 @@ function actionProgress(monster: MonsterState, skillId: string): number | null {
   return action.windup > 0 ? 1 - action.timeLeft / action.windup : 1;
 }
 
+function castShape(skill: SkillDef, color: Color, path: number): Telegraph {
+  const shape: Telegraph = telegraphFor(skill.delivery, color, path);
+  if (!skill.vfx.rim || skill.delivery.type !== 'area') return shape;
+  const thread: GroundLight = createGroundLight(new Color(skill.vfx.color), { kind: 'round', radius: skill.delivery.radius, inner: 0, arc: Math.PI * 2 }, TELEGRAPHS.seamThread);
+  shape.object.add(thread.mesh);
+  return { object: shape.object, lights: [...shape.lights, thread] };
+}
+
 function place(shape: Telegraph, at: Vec2, direction: Vec2, parent: Object3D): void {
   for (const light of shape.lights) overOwnEffects(light);
   shape.object.position.set(at.x, floorUp(at.x, TELEGRAPHS.height, at.z), at.z);
@@ -173,7 +183,7 @@ export function createTelegraphs(parent: Object3D, echoColor: Color | null = nul
     },
     start(owner: number, source: TelegraphSource, at: Vec2, direction: Vec2, skill: SkillDef, windup: number, color: Color, path: number): void {
       for (const entry of shown) if (entry.owner === owner && entry.source !== 'echo') settle(entry);
-      const shape: Telegraph = telegraphFor(skill.delivery, color, path);
+      const shape: Telegraph = castShape(skill, color, path);
       place(shape, at, direction, parent);
       shown.push({ owner, source, skillId: skill.id, echo: null, shape, windup, age: 0, progress: 0, rate: windup > 0 ? 1 / windup : 1, settling: -1 });
     },
@@ -190,7 +200,7 @@ export function createTelegraphs(parent: Object3D, echoColor: Color | null = nul
     update(dt: number, world: World): void {
       if (echoColor !== null) {
         for (const echo of echoesToShow(world, seenEchoes)) {
-          const shape: Telegraph = telegraphFor(echo.skill.delivery, echoColor, 0);
+          const shape: Telegraph = castShape(echo.skill, echoColor, 0);
           place(shape, echo.origin, echo.direction, parent);
           shown.push({ owner: echo.ownerId, source: 'echo', skillId: echo.skill.id, echo, shape, windup: echo.timeLeft, age: 0, progress: echoProgress(echo), rate: echo.timeLeft > 0 ? 1 / echo.timeLeft : 1, settling: -1 });
         }
