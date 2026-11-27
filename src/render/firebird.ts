@@ -18,7 +18,7 @@ const PLUMAGE = {
   wingbeat: 21,
 } as const;
 
-export function firebirdMesh(): Mesh {
+export function firebirdMesh(): Mesh<BufferGeometry, MeshBasicMaterial> {
   const positions: number[] = [];
   const folded: number[] = [];
   const colors: number[] = [];

@@ -201,6 +201,11 @@ ${fire(58, 58, 14, 4, 1)}
 ${spark(10, 20, 1, '#ffe9b8')}
 ${spark(54, 18, 0.9, '#ffd27a')}
 `)],
+  ['ember_swift', art('fire', `
+${halo(34, 28, 25, '#ef692a', 0.75)}
+<path d="M8 50 L25 38 M18 55 L31 43 M8 39 L19 32" fill="none" stroke="#ffab48" stroke-width="2.5" stroke-linecap="round"/>
+<g transform="translate(36 29) rotate(39)"><path d="M0 -18 L4 -11 L5 -6 Q13 -10 24 -17 Q20 -2 7 4 L3 6 L6 20 L0 14 L-7 20 L-3 6 Q-18 0 -24 -17 Q-12 -11 -5 -6 L-3 -12 Z" fill="#ffbc63"/><path d="M0 -18 L4 -10 L3 -4 L15 -9 L5 1 L0 10 L-2 2 L-15 -9 L-3 -5 Z" fill="#fff1bd"/></g>
+`)],
   ['flashover', art('fire', `
 ${halo(32, 44, 26, '#ff5a12', 0.7)}
 <path d="M4 56 C 14 50 20 58 32 54 C 44 50 50 58 60 52" stroke="#ff7a1a" stroke-width="5" fill="none" stroke-linecap="round" filter="url(#bloom)"/>

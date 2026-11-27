@@ -16,6 +16,8 @@ export function pressLine(press: PressDef | null): string | null {
   if (press === null) return null;
   if (press.hint !== null) return press.hint;
   switch (press.type) {
+    case 'travel':
+      return `Hold to travel for up to ${press.max.toFixed(1)}s. Release to land.`;
     case 'charge':
       return `Hold to charge, up to ${press.max.toFixed(1)}s, then let go`;
     case 'channel':

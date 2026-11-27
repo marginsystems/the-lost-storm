@@ -12,7 +12,7 @@ import { canDash } from './world/dash.ts';
 import { playerMayStrike } from './world/factions.ts';
 import { blockedFlask } from './world/flasks.ts';
 import { upgradeReady } from './world/flask-tiers.ts';
-import { glidesWith, momentumShare } from './world/momentum.ts';
+import { glidesWith, MOMENTUM, momentumShare } from './world/momentum.ts';
 import { chargeOf, spunSkill } from './world/skills.ts';
 import type { Command, Equipment, FlaskState, ItemInstance, MonsterState, PlayerState, World } from './world/types.ts';
 
@@ -305,6 +305,8 @@ export function releaseCommands(world: World): Command[] {
   if (action === null || action.slot === null || press === null || !player.held.includes(action.slot)) return [];
   const up: Command = { type: 'hold', slot: action.slot, down: false };
   switch (press.type) {
+    case 'travel':
+      return action.goal === null || distance(player.pos, action.goal) <= MOMENTUM.arrive ? [up] : [];
     case 'charge':
       return chargeOf(action) >= BOT_PLAN.chargeRelease ? [up] : [];
     case 'channel': {

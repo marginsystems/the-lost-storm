@@ -69,7 +69,7 @@ function skillImage(skills: readonly string[]): string | null {
 }
 
 export function placeSkills(content: Content, node: SkillTreeNodeDef): readonly string[] {
-  const given: readonly string[] = node.unlock === null ? node.variants.map((variant): string => variant.becomes) : [node.unlock];
+  const given: readonly string[] = [...node.variants.map((variant): string => variant.becomes), ...(node.unlock === null ? [] : [node.unlock])];
   return given.flatMap((skill: string): string[] => {
     const icon: string | undefined = content.skills.get(skill)?.icon;
     return icon === undefined ? [] : [icon];

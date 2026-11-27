@@ -1,5 +1,6 @@
 import type { AnimationAction, AnimationClip, Box3, Mesh, Object3D } from 'three';
 import { Color, LoopOnce, LoopRepeat, MeshBasicMaterial, Quaternion, Vector3 } from 'three';
+import { beatWings, firebirdMesh } from './firebird.ts';
 import type { Contact, WakePose } from './wake-pose.ts';
 import { restOffset, restWeight, WAKE_POSE } from './wake-pose.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
@@ -28,6 +29,8 @@ import { centreShift, createSpinCentre, holdSpinCentre, measurePivot } from './s
 import type { SpinPose } from './spin-view.ts';
 import type { ClipSpin } from './spin-clips.ts';
 import { loopDue, SPIN_CLIPS, startClipSpin } from './spin-clips.ts';
+
+const FLIGHT = { height: 0.8, lift: 0.45, takeoff: 0.16 } as const;
 
 export const ACTOR = {
   turnRate: 22,
@@ -184,6 +187,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let woke: WakePose | null = null;
   let settled: boolean = false;
   const bank: AnimationBank = animationBank();
+  let bird: ReturnType<typeof firebirdMesh> | null = null;
   let risen: boolean = false;
   const spare = { q: new Quaternion(), turn: new Quaternion(), v: new Vector3() };
   const side: Vector3 = new Vector3();
@@ -375,6 +379,16 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       rig.root.rotation.y = yaw;
     },
     sync(dt: number, actor: ActorPose, options: SyncOptions): void {
+      if (actor.flightTime !== undefined && !dead) {
+        bird ??= firebirdMesh();
+        if (bird.parent === null) rig.root.add(bird);
+        rig.model.visible = false;
+        bird.position.y = FLIGHT.height + Math.min(1, actor.flightTime / FLIGHT.takeoff) * FLIGHT.lift;
+        beatWings(bird, actor.flightTime, 0);
+      } else if (bird?.parent === rig.root) {
+        bird.removeFromParent();
+        rig.model.visible = true;
+      }
       rig.root.position.set(actor.pos.x, options.floor, actor.pos.z);
       rig.root.rotation.x = 0;
       rig.root.rotation.z = 0;
@@ -672,6 +686,9 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       rig.root.removeFromParent();
     },
     dispose(): void {
+      bird?.removeFromParent();
+      bird?.geometry.dispose();
+      bird?.material.dispose();
       ownShadow?.dispose();
       grounded.detach();
       shadow.removeFromParent();

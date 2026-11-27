@@ -344,7 +344,7 @@ function statBlock(value: unknown, where: string): StatBlock {
 
 function skillBinding(value: unknown, where: string): SkillBinding {
   const source: Fields = fields(value, where);
-  return { skill: nullableText(source, 'skill', where), bindings: textList(source, 'bindings', where), label: text(source, 'label', where) };
+  return { ...(source['whenLearned'] === undefined ? {} : { whenLearned: flag(source, 'whenLearned', where) }), skill: nullableText(source, 'skill', where), bindings: textList(source, 'bindings', where), label: text(source, 'label', where) };
 }
 
 function resistanceRules(value: unknown, where: string): ResistanceRules {

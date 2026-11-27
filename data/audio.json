@@ -136,6 +136,7 @@
     "firewall": [{ "sound": "fire_ignite", "volume": 0.55, "maxVoices": 1, "pitch": [0.95, 1.05] }],
     "storm_fence": [{ "sound": "electric_crackle", "volume": 0.5, "maxVoices": 1, "pitch": [1.05, 1.15] }],
     "bellows": [{ "sound": "fire_blast", "volume": 0.7, "maxVoices": 2, "pitch": [1.05, 1.15] }],
+    "ember_swift": [{ "sound": "fire_ignite", "volume": 0.55, "maxVoices": 1, "pitch": [1.15, 1.25] }],
     "flashover": [{ "sound": "fire_ignite", "volume": 0.8, "maxVoices": 1, "pitch": [0.85, 0.95] }],
     "dodge_roll_flicker": [{ "sound": "fire_ignite", "volume": 0.6, "maxVoices": 2, "pitch": [1.1, 1.25] }, { "sound": "dodge_whoosh", "volume": 0.5, "maxVoices": 2, "pitch": [1.05, 1.15] }]
   },

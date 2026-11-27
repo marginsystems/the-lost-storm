@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { AnimationClip, Group } from 'three';
+import { AnimationClip, Group, Mesh } from 'three';
 import { shapeArena } from '../../test/shape-support.ts';
 import { facingOf } from '../../sim/math.ts';
 import type { Vec2 } from '../../sim/math.ts';
@@ -152,3 +152,23 @@ for (const walking of [false, true]) {
     view.dispose();
   });
 }
+
+void test('Ember Swift replaces the dressed rig with a beating firebird, then restores it on landing', (): void => {
+  const { view } = rigged(must(content.rigs.get(content.player.hero.rig), 'hero rig'));
+  const world: World = shapeArena(['ember_swift']);
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: world.player.pos, targetId: null }], DT);
+  view.sync(DT, poseOf(world.player, null), OPTIONS);
+  assert.equal(view.rig.model.visible, false);
+  const bird = view.rig.root.children.find((child): boolean => child !== view.rig.model);
+  assert.ok(bird instanceof Mesh);
+  assert.ok(bird.position.y > 0);
+  const wing = bird.morphTargetInfluences?.[0];
+  stepWorld(world, [], DT);
+  view.sync(DT, poseOf(world.player, null), OPTIONS);
+  assert.notEqual(bird.morphTargetInfluences?.[0], wing);
+  stepWorld(world, [{ type: 'hold', slot: 0, down: false }], DT);
+  view.sync(DT, poseOf(world.player, null), OPTIONS);
+  assert.equal(view.rig.model.visible, true);
+  assert.equal(bird.parent, null);
+  view.dispose();
+});

@@ -21,7 +21,7 @@ void test('an ability or variant place shows the painted art of every skill it g
       assert.ok(hasTreeArt(node.icon), `${node.id} names unknown art ${node.icon}`);
       continue;
     }
-    assert.equal(skills.length, node.unlock === null ? node.variants.length : 1, node.id);
+    assert.equal(skills.length, node.variants.length + (node.unlock === null ? 0 : 1), node.id);
     for (const skill of skills) assert.ok(SKILL_ART.has(skill), `${node.id} gives ${skill} with no art`);
     const [first, second] = skills.map((skill: string): string => SKILL_ART.get(skill) ?? '');
     const svg: string = first === undefined ? '' : second === undefined ? first : splitArt(first, second);

@@ -107,12 +107,12 @@ export function steadied(actor: Actor): boolean {
 }
 
 export function glidesWith(press: PressDef | null): boolean {
-  return press?.type === 'channel' && press.move > 0 && press.strafe !== true;
+  return press?.type === 'travel' || (press?.type === 'channel' && press.move > 0 && press.strafe !== true);
 }
 
 function glideSpeed(action: ActionState): number {
   const press: PressDef | null = action.skill.press;
-  if (press?.type !== 'channel' || action.phase === 'recovery') return 0;
+  if ((press?.type !== 'channel' && press?.type !== 'travel') || action.phase === 'recovery') return 0;
   return press.move;
 }
 
