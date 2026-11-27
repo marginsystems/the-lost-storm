@@ -58,7 +58,8 @@ void test('notes are worded from the player own seat, using the state that came 
   assert.equal(noteText(FOLLOWING, 'lead', 'Wren'), 'You lead the party now.');
   assert.equal(noteText(LED, 'kicked', 'Ash'), 'Ash was removed from the party.');
   assert.equal(noteText(NO_PARTY, 'kicked', 'Wren'), 'You were removed from the party.');
-  assert.equal(noteText(NO_PARTY, 'disbanded', 'Ash'), 'The party disbanded.');
+  assert.equal(noteText(NO_PARTY, 'disbanded', 'Ash'), 'Ash is gone, so the party disbanded.');
+  assert.equal(noteText(NO_PARTY, 'disbanded', ''), 'The party disbanded.');
   assert.equal(partyStep(LED, { type: 'party_note', kind: 'declined', name: 'Bo' }).note, 'Bo declined your party invite.');
 });
 

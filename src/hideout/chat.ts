@@ -18,7 +18,7 @@ export const CHAT_WORDS = {
   general: 'General',
   party: 'Party',
   hint: 'Whisper with /dm name, reply with /r, back to General with /g.',
-  help: '/dm name message whispers to one player. /r message answers the last whisper. /g goes back to General. /invite name asks a player into your party, /p message speaks to it, /leave leaves it. The leader can /kick name and /lead name. Put a name with spaces in quotes.',
+  help: '/dm name message whispers to one player. /r message answers the last whisper. /g goes back to General. /invite name asks a player into your party, /p message speaks to it, /leave leaves it. The leader can /kick name and /lead name. In a whisper, put a name with spaces in quotes.',
   noWhispers: 'Whispers are not available yet.',
   noReply: 'No one has whispered to you yet.',
   noParty: 'You are not in a party. Ask someone in with /invite name.',

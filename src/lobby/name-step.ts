@@ -9,7 +9,7 @@ import type { NameProblem } from './lobby-model.ts';
 import { MOOD_LINES } from './name-pool.ts';
 import type { NameBody, PickedName } from './name-pool.ts';
 import type { NameSuggester } from './name-suggester.ts';
-import { pressAction } from './name-press.ts';
+import { pressAction, unreachedStep } from './name-press.ts';
 import type { PressAction, StepState } from './name-press.ts';
 import { reloadPage } from '../gpu-release.ts';
 import stepCss from './name-step.css?inline';
@@ -46,6 +46,7 @@ export interface NameStepParts {
   readonly body: () => NameBody | null;
   readonly suggester: NameSuggester;
   readonly begin: () => void;
+  readonly account: () => Promise<boolean>;
 }
 
 async function sendKept(lobby: Lobby, kept: string): Promise<boolean> {
@@ -83,6 +84,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
   const { suggester } = parts;
   let state: StepState = 'closed';
   let limited: boolean = false;
+  let warned: boolean = false;
   let offer: string | null = null;
 
   const setState = (next: StepState): void => {
@@ -129,6 +131,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
   };
 
   const swapField = (value: string): void => {
+    warned = false;
     field.value = value;
     retrigger(field, NAME_STEP.tickClass);
   };
@@ -154,6 +157,12 @@ export function createNameStep(parts: NameStepParts): NameStep {
     return true;
   };
 
+  const unreached = (): boolean => {
+    if (unreachedStep(warned) === 'keep') return finish();
+    warned = true;
+    return refuse('unreached');
+  };
+
   const taken = async (wanted: string, retries: number): Promise<boolean> => {
     if (suggester.suggested(wanted) && retries < NAME_STEP.retries) {
       const next: PickedName | null = await suggester.next(parts.body());
@@ -173,9 +182,11 @@ export function createNameStep(parts: NameStepParts): NameStep {
     const local: NameProblem | null = nameProblem(wanted);
     if (local !== null) return refuse(local);
     keepHeroName(parts.store, wanted);
-    if (lobby === null || !lobby.service.hasAccount()) return finish();
+    if (lobby === null) return finish();
     setState('busy');
+    if (!lobby.service.hasAccount() && !(await parts.account().catch((): boolean => false))) return unreached();
     const outcome: RenameOutcome = await lobby.service.rename(wanted);
+    if (outcome.kind === 'unavailable') return unreached();
     if (outcome.kind === 'invalid') {
       suggester.refuse(wanted);
       return outcome.reason === 'name_taken' ? taken(wanted, retries) : refuse(outcome.reason);
@@ -184,7 +195,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
       limited = true;
       return refuse('limited');
     }
-    if (outcome.kind === 'named') await lobby.feed.refresh(true);
+    await lobby.feed.refresh(true);
     return finish();
   };
 
@@ -223,6 +234,7 @@ export function createNameStep(parts: NameStepParts): NameStep {
     field.classList.remove(NAME_STEP.nudgeClass);
   });
   field.addEventListener('input', (): void => {
+    warned = false;
     if (offer !== null) showOffer(null);
     if (note.textContent !== NAME_STEP.ask) tell(NAME_STEP.ask, false);
   });

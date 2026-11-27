@@ -16,6 +16,7 @@ export interface Backend {
   leave(): void;
   close(): void;
   sync(): Promise<void>;
+  account(): Promise<boolean>;
   onFold(listener: (fold: SaveFold) => void): void;
   state(): BackendState;
   subscribe(listener: (state: BackendState) => void): void;

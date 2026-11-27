@@ -58,7 +58,7 @@ export function tabOf(by: Ranking): RankingTab {
   return RANKING_TABS.find((tab: RankingTab): boolean => tab.by === by) ?? { by, label: by, caption: '' };
 }
 
-export type NameProblem = NameRefusal | 'limited' | 'unavailable';
+export type NameProblem = NameRefusal | 'limited' | 'unavailable' | 'unreached';
 
 export const NAME_RULES: { readonly min: number; readonly max: number } = { min: 3, max: 16 };
 
@@ -69,6 +69,7 @@ export const NAME_MESSAGES: Readonly<Record<NameProblem, string>> = {
   name_taken: 'Someone already has that name.',
   limited: 'Too many name changes for now. Try again in an hour.',
   unavailable: 'The ladder is out of reach. Try again in a moment.',
+  unreached: 'The server is out of reach. Press Enter again to keep this name on this device.',
 };
 
 const ALLOWED: RegExp = /^[A-Za-z0-9 ]+$/;

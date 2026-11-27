@@ -190,21 +190,22 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     return creating;
   };
 
-  const enrol = async (): Promise<void> => {
+  const enrol = async (): Promise<boolean> => {
     const held: SyncRecord | null = await account(timeout(TIMING.requestMs));
     if (held === null) {
       enrolLater();
-      return;
+      return false;
     }
-    if (latest !== null) return;
+    if (latest !== null) return true;
     if (unsent === null) {
       setState('cloud');
-      return;
+      return true;
     }
     latest = unsent;
     unsent = null;
     keep({ ...held, pending: true, savedAt: now() });
     schedule(0);
+    return true;
   };
 
   function enrolLater(): void {
@@ -597,6 +598,11 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       void push();
     },
     sync: (): Promise<void> => syncFrom(0),
+    async account(): Promise<boolean> {
+      if (record !== null) return true;
+      if (closed || frozen) return false;
+      return enrol();
+    },
     onFold(listener: (fold: SaveFold) => void): void {
       foldListeners.push(listener);
       for (const fold of heldFolds.splice(0, heldFolds.length)) listener(fold);

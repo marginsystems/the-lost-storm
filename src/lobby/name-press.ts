@@ -11,6 +11,12 @@ export interface PressContext {
   readonly limited: boolean;
 }
 
+export type UnreachedStep = 'warn' | 'keep';
+
+export function unreachedStep(warned: boolean): UnreachedStep {
+  return warned ? 'keep' : 'warn';
+}
+
 export function pressAction(context: PressContext): PressAction {
   if (context.state === 'busy') return 'wait';
   if (context.state === 'done') return 'begin';

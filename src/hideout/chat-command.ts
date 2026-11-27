@@ -75,6 +75,13 @@ function named(rest: string, names: readonly string[]): Named | null {
   return found === null || found.name === '' ? null : found;
 }
 
+function wholeName(rest: string, names: readonly string[]): string | null {
+  const given: Named | null = quoted(rest);
+  const name: string = given === null ? tidy(rest) : given.name;
+  if (name === '') return null;
+  return names.find((each: string): boolean => nameKey(each) === nameKey(name)) ?? name;
+}
+
 function among(word: string, list: readonly string[]): boolean {
   return list.includes(word);
 }
@@ -94,8 +101,8 @@ export function parseChat(raw: string, names: readonly string[]): ChatCommand {
   if (among(word, CHAT_COMMAND.leave)) return { kind: 'leave' };
   const partyCommand: 'invite' | 'kick' | 'lead' | null = among(word, CHAT_COMMAND.invite) ? 'invite' : among(word, CHAT_COMMAND.kick) ? 'kick' : among(word, CHAT_COMMAND.lead) ? 'lead' : null;
   if (partyCommand !== null) {
-    const target: Named | null = named(rest, names);
-    return target === null ? { kind: 'no_name', command: `${CHAT_COMMAND.prefix}${word}` } : { kind: partyCommand, name: target.name };
+    const target: string | null = wholeName(rest, names);
+    return target === null ? { kind: 'no_name', command: `${CHAT_COMMAND.prefix}${word}` } : { kind: partyCommand, name: target };
   }
   if (among(word, CHAT_COMMAND.whisper)) {
     const target: Named | null = named(rest, names);

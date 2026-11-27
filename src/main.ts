@@ -690,7 +690,7 @@ async function start(): Promise<void> {
     entered = true;
     begin();
   }
-  wireEnter({ enter, begin: openLobby, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), body: (): ReturnType<HeroPick['body']> => pick.body(), suggester: createBrowserSuggester(serverUrl), begin: openLobby }) });
+  wireEnter({ enter, begin: openLobby, failed: (): boolean => failed, step: createNameStep({ card: enter.parentElement ?? title, enter, lobby, fresh: save === null, store: createBrowserStore(), body: (): ReturnType<HeroPick['body']> => pick.body(), suggester: createBrowserSuggester(serverUrl), begin: openLobby, account: (): Promise<boolean> => backend.account() }) });
 }
 
 document.documentElement.dataset['boot'] = RETRY.started;

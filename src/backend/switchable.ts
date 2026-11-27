@@ -41,6 +41,7 @@ export function createSwitchableBackend(make: () => Backend): SwitchableBackend 
     leave: (): void => current.leave(),
     close: (): void => current.close(),
     sync: (): Promise<void> => current.sync(),
+    account: (): Promise<boolean> => current.account(),
     onFold(listener: (fold: SaveFold) => void): void {
       foldListeners.push(listener);
       for (const fold of heldFolds.splice(0, heldFolds.length)) listener(fold);

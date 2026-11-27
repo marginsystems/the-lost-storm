@@ -82,7 +82,7 @@ export function noteText(state: PartyState, kind: PartyNoteKind, name: string): 
     case 'expired':
       return `Your party invite to ${name} ran out.`;
     case 'disbanded':
-      return 'The party disbanded.';
+      return name === '' ? 'The party disbanded.' : `${name} is gone, so the party disbanded.`;
   }
   return `${name} changed the party.`;
 }
@@ -93,7 +93,7 @@ export function refusalText(reason: PartyRefusal, name: string | null): string {
     case 'unsupported':
       return name === null ? 'Parties are not available here.' : `${name} cannot join parties yet.`;
     case 'no_such_player':
-      return `No one is called ${who}. Put a name with spaces in quotes: /invite "Ash Walker"`;
+      return `No one is called ${who}.`;
     case 'offline':
       return `${who} is not online.`;
     case 'self':

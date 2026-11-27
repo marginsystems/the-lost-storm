@@ -80,6 +80,7 @@ export function createLocalBackend(content: Content, store: KeyValueStore, epoch
     leave: (): void => undefined,
     close: (): void => undefined,
     sync: (): Promise<void> => Promise.resolve(),
+    account: (): Promise<boolean> => Promise.resolve(false),
     onFold: (): void => undefined,
     state: (): BackendState => 'offline',
     subscribe: (): void => undefined,
