@@ -24,7 +24,7 @@ import { rankSize } from './ranks.ts';
 import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTurn, spendMomentum } from './momentum.ts';
 import type { MomentumStep } from './momentum.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
-import { aimChannel, beginChannel, endChannels } from './channels.ts';
+import { aimChannel, beginChannel, drawCapacity, endChannels } from './channels.ts';
 import { flareAreas } from './flare.ts';
 import { needsPivot, turnInPlace, turnRateOf } from './pivot.ts';
 import type { PivotState } from './pivot.ts';
@@ -161,6 +161,11 @@ function clearReach(world: World, actor: Actor, aim: ReadonlyVec2, wanted: numbe
 }
 
 export function startSkill(world: World, actor: Actor, requested: SkillDef, direction: ReadonlyVec2, slot: number | null = null): void {
+  if (drawCapacity(world, actor, requested.trail) <= 0) {
+    actor.pivot = null;
+    if (actor === world.player) world.events.push({ type: 'notice', reason: 'wall_full' });
+    return;
+  }
   if (needsPivot(actor, requested, direction)) {
     actor.pivot = { skill: requested, at: { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z }, slot };
     return;

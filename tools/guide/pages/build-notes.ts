@@ -49,14 +49,14 @@ function tank(data: GuideData): BuildNotes {
     forWho: 'For players who want a big weapon, heavy blows, and to walk out of every fight.',
     plays: [
       `You stand in the pack and let it burn. The Emberwarden walks ${pathName(data, 'stone')}, the path of fire, life and armour, with ${groupNeeds(data, 'heavy')} in your hands: every place on the path answers only while you hold one. It spends little on damage until it is hard to kill, and later crosses into ${pathName(data, 'echo')} for skills that hit a whole crowd.`,
-      `${skillName(data, 'thunderclap')} is your first point: when the pack closes around you, slam the ground and they are thrown back, staggered and set alight. ${skillName(data, 'held_breath')} comes at level ${placeLevel(data, id, 'stone_held_breath')}. Use it when you are surrounded or a big enemy is winding up: everything near you slows to a crawl and you do not.`,
+      `${skillName(data, 'thunderclap')} is your first point: when the pack closes around you, slam the ground and they are thrown back, staggered and set alight. ${skillName(data, 'held_breath')} comes at level ${placeLevel(data, id, 'stone_held_breath')}. Keep the aura up as you move. Nearby enemies slow down and you gain movement speed.`,
       `At level ${placeLevel(data, id, 'shoulder_through')} ${name(data, 'shoulder_through')} turns your roll into a charge that ends in a burst of fire, so the way out of a pack is also a blow. ${skillName(data, 'banked_fire')} comes at level ${placeLevel(data, id, 'stone_banked_fire')}: a fire around you that burns hotter every second they stay in it.`,
       `At level ${heave} ${name(data, 'heaving_cleave')} lets you hold ${skillName(data, 'cleave')}: let go and one heavy sweep throws everything in front of you far back. ${skillName(data, 'firewall')} follows at level ${placeLevel(data, id, 'stone_fire_burst')}: hold and drag across the ground to draw a wall of fire the pack cannot cross, and whatever touches it burns.`,
       `At level ${keystone} you take ${name(data, 'the_unmoved')}: ${armour} more armour, more life and more damage, and you move ${slow} slower. You stop being quick. You also stop being in danger.`,
     ],
     lean: [
       `Lean on ${skillName(data, 'cleave')}, held. A held sweep from ${name(data, 'heaving_cleave')} hits far harder than a quick swing and throws the pack off you.`,
-      `${skillName(data, 'thunderclap')} is not your damage; it is how you stop being hit while the sweep is gathering. Light ${skillName(data, 'banked_fire')} and stay in it: it is weak when lit and twice as hot by the end. ${skillName(data, 'held_breath')} has a long wait, so keep it for the moment a fight turns.`,
+      `Once you take ${name(data, 'gathered_clap')}, aim down the pack and split the ground ahead of it. Draw ${skillName(data, 'firewall')} across its escape route and use your longer dodge to line up another strike. Refresh ${skillName(data, 'held_breath')} before its timer runs out.`,
     ],
     lookFor: [
       `A heavy weapon: ${weaponNames(groupWeapons(data, 'heavy'))}. They hit much harder, which suits a held sweep.`,

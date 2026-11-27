@@ -375,7 +375,7 @@ function emberwarden(wielding: string): World {
   return world;
 }
 
-void test('with a heavy weapon in hand Shoulder Through flares where the charge stops, and Gathered Clap burns and leaves burning ground', (): void => {
+void test('with a heavy weapon in hand Shoulder Through flares where the charge stops, and Fire Slam leaves a burning line', (): void => {
   const world: World = emberwarden('heavy');
   const roll: SkillDef = resolvedIn(world, 'dodge_roll');
   assert.deepEqual([roll.id, roll.form], ['dodge_roll', 'dodge_roll_shoulder']);
@@ -384,7 +384,7 @@ void test('with a heavy weapon in hand Shoulder Through flares where the charge 
   const flare: EchoState = must(world.echoes.find((echo: EchoState): boolean => echo.skill.id === 'shoulder_flare'), 'flare');
   assert.deepEqual(flare.origin, stop);
   const clap: SkillDef = resolvedIn(world, 'thunderclap');
-  assert.deepEqual([clap.form, clap.leaves], ['thunderclap_gathered', 'gathered_embers']);
+  assert.deepEqual([clap.form, clap.leaves], ['thunderclap_gathered', 'fire_slam_line']);
   assert.ok(clap.burn !== null);
 });
 

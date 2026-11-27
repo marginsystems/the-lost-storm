@@ -38,12 +38,17 @@ void test('Flashover strikes what stands by a wall and nothing far from one', ()
   assert.equal(damageTo(events, far.id).length, 0);
 });
 
-void test('Flashover with no wall drawn strikes only what stands around the hero', (): void => {
+void test('Flashover without a wall sends a piercing flock ahead and spares enemies behind', (): void => {
   const world: World = shapeArena(['flashover']);
-  const close: MonsterState = dummy(world, offset(2, 0));
-  const far: MonsterState = dummy(world, offset(8, 0));
-  const events: WorldEvent[] = run(world, 0.8, [{ type: 'skill', slot: 0, aim: offset(2, 0), targetId: null }]);
+  const close: MonsterState = dummy(world, offset(3, 0));
+  const far: MonsterState = dummy(world, offset(9, 0));
+  const behind: MonsterState = dummy(world, offset(-2, 0));
+  const events: WorldEvent[] = run(world, 1.6, [{ type: 'skill', slot: 0, aim: offset(10, 0), targetId: null }]);
+  const flock = events.flatMap((event: WorldEvent): Vec2[] => event.type === 'projectile_spawn' ? [event.projectile.direction] : []);
+  assert.equal(flock.length, 3);
+  assert.equal(new Set(flock.map((heading: Vec2): number => heading.z)).size, 3);
   assert.ok(damageTo(events, close.id).length > 0);
+  assert.ok(damageTo(events, far.id).length > 0);
+  assert.equal(damageTo(events, behind.id).length, 0);
   assert.equal(bursts(events, close.id), 0);
-  assert.equal(damageTo(events, far.id).length, 0);
 });

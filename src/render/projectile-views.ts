@@ -6,6 +6,7 @@ import type { ProjectileState, World, WorldEvent } from '../../sim/world/types.t
 import { disposeObject, glow, orbHalo, projectileMesh } from './effect-shapes.ts';
 import type { EffectKit } from './effect-kit.ts';
 import { KIT } from './effect-kit.ts';
+import { beatWings, firebirdMesh } from './firebird.ts';
 import type { GhostWaves } from './ghost-wave.ts';
 import type { BurstOptions } from './particles.ts';
 import { floorUp, glideFloor, liftHere } from './terrain-lift.ts';
@@ -91,9 +92,9 @@ export function createProjectileViews(deps: ProjectileViewDeps): ProjectileViews
     const tint: ShotTint | null = tintOf(projectile.id);
     const color: Color = tint?.glow ?? colorOf(vfx.color);
     const shape: BoltShape = boltShape(vfx.style, vfx.light);
-    const mesh: Mesh = projectileMesh(vfx.style === 'orb' ? 'orb' : 'bolt', tint === null ? glow(color, shape.glow) : tintCore(tint.core, shape.glow));
+    const mesh: Mesh = vfx.style === 'firebird' ? firebirdMesh() : projectileMesh(vfx.style === 'orb' ? 'orb' : 'bolt', tint === null ? glow(color, shape.glow) : tintCore(tint.core, shape.glow));
     mesh.scale.set(mesh.scale.x * shape.girth, mesh.scale.y * shape.girth, mesh.scale.z * shape.length);
-    if (tint !== null && vfx.style !== 'orb') mesh.add(orbHalo(tint.glow));
+    if (tint !== null && vfx.style !== 'orb' && vfx.style !== 'firebird') mesh.add(orbHalo(tint.glow));
     mesh.rotation.y = facingOf(projectile.direction);
     scene.add(mesh);
     const view: ProjectileView = { mesh, color };
@@ -150,7 +151,8 @@ export function createProjectileViews(deps: ProjectileViewDeps): ProjectileViews
         const view: ProjectileView | null = viewOf(projectile);
         if (view === null) continue;
         view.mesh.position.set(projectile.pos.x, floorUp(projectile.pos.x, flying, projectile.pos.z), projectile.pos.z);
-        view.mesh.rotation.z += dt * PROJECTILE_VIEWS.spin;
+        if (vfx.style === 'firebird') beatWings(view.mesh, world.time, projectile.id);
+        else view.mesh.rotation.z += dt * PROJECTILE_VIEWS.spin;
         if (vfx.trail > 0) kit.carry(projectile.id, projectile.pos.x, flying, projectile.pos.z, projectile.direction.x, projectile.direction.z, view.color, null, vfx.trail, vfx.linger, dt);
         else spray(projectile.pos.x, flying, projectile.pos.z, view.color, PROJECTILE_VIEWS.flightMotes, FLIGHT_SPRAY);
       }

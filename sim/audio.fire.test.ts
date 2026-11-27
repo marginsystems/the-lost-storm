@@ -16,15 +16,15 @@ const audio: AudioDef = loadAudio(content);
 const AWAY: Vec2 = { x: 3, z: 4 };
 const LIGHTNING: ReadonlySet<string> = new Set<string>(['electric_crackle', 'thunder_crack', 'bolt_impact']);
 
-function gatheredClap(): SkillDef {
+function fireSlam(): SkillDef {
   const base: SkillDef = must(content.skills.get('thunderclap'), 'thunderclap');
   const node: SkillTreeNodeDef = must(content.skillTree.find((candidate: SkillTreeNodeDef): boolean => candidate.variants.some((entry: SkillVariant): boolean => entry.becomes === 'thunderclap_gathered')), 'gathered clap node');
   return resolveSkill(content, base, [node.id], [], [], 'heavy');
 }
 
-void test('Gathered Clap sounds like fire when it starts and lands, never like Thunderclap lightning', (): void => {
+void test('Fire Slam sounds like fire when it starts and lands, never like Thunderclap lightning', (): void => {
   const world: World = worldIn(content, 'hall_of_time', 3);
-  const clap: SkillDef = gatheredClap();
+  const clap: SkillDef = fireSlam();
   assert.equal(clap.form, 'thunderclap_gathered');
   const heard: readonly SoundCue[] = [
     ...cuesForEvent(audio, world, { type: 'skill_start', actorId: world.player.id, skill: clap, direction: AWAY, windup: 0.1, recovery: 0.1 }),

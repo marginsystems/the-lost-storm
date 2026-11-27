@@ -148,6 +148,7 @@ export interface FireBursts {
 }
 
 interface Patch {
+  readonly areaId: number;
   readonly ground: GroundLight;
   light: PointLight | null;
   readonly look: VfxBurn;
@@ -260,7 +261,7 @@ export function createFireBursts(kit: FireKit): FireBursts {
         light.color.copy(color);
         light.position.set(middle.x, floorUp(middle.x, FIRE.lightHeight, middle.z), middle.z);
       }
-      patches.push({ ground, light, look, color, bed, duration: delivery.duration, age: 0, owed: 0 });
+      patches.push({ areaId: area.id, ground, light, look, color, bed, duration: delivery.duration, age: 0, owed: 0 });
     },
     ignite(targetId: number, skill: SkillDef, duration: number): void {
       const look: VfxBurn | null = skill.vfx.burn;
@@ -279,7 +280,14 @@ export function createFireBursts(kit: FireKit): FireBursts {
     take(event: WorldEvent): void {
       if (event.type === 'damage' && event.burn) bursts.tick(event.pos.x, event.pos.z);
       else if (event.type === 'area' && event.stage === 'start') bursts.blast(event.area);
-      else if (event.type === 'burn') bursts.ignite(event.targetId, event.skill, event.duration);
+      else if (event.type === 'area' && event.stage === 'end' && event.area.skill.vfx.burn !== null) {
+        const index: number = patches.findIndex((patch: Patch): boolean => patch.areaId === event.area.id);
+        const ended: Patch | undefined = patches[index];
+        if (ended !== undefined) {
+          dropPatch(ended);
+          patches.splice(index, 1);
+        }
+      } else if (event.type === 'burn') bursts.ignite(event.targetId, event.skill, event.duration);
     },
     update(dt: number, world: World): void {
       for (let index: number = patches.length - 1; index >= 0; index -= 1) {

@@ -14,6 +14,7 @@ const STATUS = {
 
 const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
   wrong_weapon: 'Needs another weapon',
+  wall_full: 'Wall at maximum length',
   no_mana: 'Not enough mana',
   on_cooldown: 'Not ready yet',
   inventory_full: 'Inventory is full',

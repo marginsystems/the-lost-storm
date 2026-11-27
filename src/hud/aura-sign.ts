@@ -12,7 +12,7 @@ export const AURA_SIGN = {
 } as const;
 
 export interface AuraChipState {
-  readonly id: number;
+  readonly form: string;
   readonly fuse: Spring;
   readonly name: string;
   readonly icon: string;
@@ -22,7 +22,7 @@ export interface AuraChipState {
 }
 
 export interface AuraChipReading {
-  readonly id: number;
+  readonly form: string;
   readonly name: string;
   readonly icon: string;
   readonly seconds: string;
@@ -49,14 +49,15 @@ function fuseOf(reading: AuraReading): number {
 export function readAuraSign(state: AuraSignState, auras: readonly AuraReading[], dt: number): readonly AuraChipReading[] {
   const step: number = Math.min(AURA_SIGN.longestFrame, dt);
   for (const aura of auras) {
-    if (state.chips.some((chip: AuraChipState): boolean => chip.id === aura.id)) continue;
+    if (state.chips.some((chip: AuraChipState): boolean => chip.form === aura.skill.form)) continue;
     const fuse: number = fuseOf(aura);
-    state.chips.push({ id: aura.id, fuse: { value: fuse, velocity: 0, target: fuse }, name: aura.skill.name, icon: aura.skill.icon, seconds: secondsLeft(aura.timeLeft), up: true, gone: 0 });
+    state.chips.push({ form: aura.skill.form, fuse: { value: fuse, velocity: 0, target: fuse }, name: aura.skill.name, icon: aura.skill.icon, seconds: secondsLeft(aura.timeLeft), up: true, gone: 0 });
   }
   for (const chip of state.chips) {
-    const aura: AuraReading | undefined = auras.find((entry: AuraReading): boolean => entry.id === chip.id);
+    const aura: AuraReading | undefined = auras.find((entry: AuraReading): boolean => entry.skill.form === chip.form);
     chip.up = aura !== undefined;
     if (aura !== undefined) {
+      chip.gone = 0;
       springTo(chip.fuse, fuseOf(aura));
       chip.seconds = secondsLeft(aura.timeLeft);
     } else {
@@ -66,7 +67,7 @@ export function readAuraSign(state: AuraSignState, auras: readonly AuraReading[]
     stepSpring(chip.fuse, step);
   }
   state.chips = state.chips.filter((chip: AuraChipState): boolean => chip.up || chip.gone < AURA_SIGN.leave);
-  return state.chips.map((chip: AuraChipState): AuraChipReading => ({ id: chip.id, name: chip.name, icon: chip.icon, seconds: chip.seconds, fuse: clamp01(chip.fuse.value), up: chip.up }));
+  return state.chips.map((chip: AuraChipState): AuraChipReading => ({ form: chip.form, name: chip.name, icon: chip.icon, seconds: chip.seconds, fuse: clamp01(chip.fuse.value), up: chip.up }));
 }
 
 interface ChipView {
@@ -82,7 +83,7 @@ export interface AuraSign {
 export function createAuraSign(parent: HTMLElement): AuraSign {
   const root: HTMLDivElement = el('div', 'hud-auras', parent);
   const state: AuraSignState = createAuraSignState();
-  const views: Map<number, ChipView> = new Map<number, ChipView>();
+  const views: Map<string, ChipView> = new Map<string, ChipView>();
   const build = (reading: AuraChipReading): ChipView => {
     const chip: HTMLDivElement = el('div', 'hud-aura', root);
     const icon: HTMLDivElement = el('div', 'hud-aura-icon', chip);
@@ -98,15 +99,15 @@ export function createAuraSign(parent: HTMLElement): AuraSign {
     update(world: World, player: PlayerState, dt: number): void {
       const readings: readonly AuraChipReading[] = readAuraSign(state, heroAuras(world, player), dt);
       for (const reading of readings) {
-        const view: ChipView = views.get(reading.id) ?? build(reading);
-        views.set(reading.id, view);
+        const view: ChipView = views.get(reading.form) ?? build(reading);
+        views.set(reading.form, view);
         setText(view.seconds, reading.seconds, true);
         setVar(view.root, '--aura-fuse', reading.fuse.toFixed(4));
         if (view.placed) setClass(view.root, 'up', reading.up);
         view.placed = true;
       }
       for (const [id, view] of views) {
-        if (readings.some((reading: AuraChipReading): boolean => reading.id === id)) continue;
+        if (readings.some((reading: AuraChipReading): boolean => reading.form === id)) continue;
         view.root.remove();
         views.delete(id);
       }

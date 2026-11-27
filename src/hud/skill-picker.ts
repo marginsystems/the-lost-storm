@@ -47,6 +47,7 @@ export function skillDetails(skill: SkillDef, sub: string, unlock: number | null
   const press: string | null = pressLine(skill.press);
   if (press !== null) label('tip-line tip-press', press, root);
   if (skill.manaCost > 0) label('tip-line cost', skill.press?.type === 'channel' ? `Mana cost: ${skill.manaCost} per pulse` : `Mana cost: ${skill.manaCost}`, root);
+  if (skill.delivery.type === 'area' && skill.delivery.aura !== null) label('tip-line', `Aura duration: ${skill.delivery.duration.toFixed(1)}s`, root);
   if (skill.cooldown > 0) label('tip-line', `Cooldown: ${skill.cooldown.toFixed(1)}s`, root);
   if (unlock !== null) label('tip-line locked', `Learned at level ${unlock}`, root);
   if (stronger !== null) label('tip-line stronger', stronger, root);

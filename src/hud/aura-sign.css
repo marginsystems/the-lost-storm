@@ -8,6 +8,23 @@
   pointer-events: none;
 }
 
+.hud > .hud-auras {
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: calc(14px + env(safe-area-inset-left, 0px));
+  bottom: auto;
+  translate: none;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.hud-fps.shown ~ .hud-auras {
+  top: calc(48px + env(safe-area-inset-top, 0px));
+}
+
+.hud:has(> .party-frame.shown) > .hud-auras {
+  left: calc(236px + env(safe-area-inset-left, 0px));
+}
+
 .hud-aura {
   position: relative;
   display: flex;

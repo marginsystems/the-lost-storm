@@ -210,7 +210,7 @@ ${fire(28, 54, 36, 6.4, 3)}
 ${fire(38, 53, 34, 6.2, 3)}
 ${fire(48, 54, 28, 5.8, 2.5)}
 ${fire(57, 52, 22, 5, 2)}
-<circle cx="32" cy="24" r="4" fill="#fff4d6" filter="url(#glow)"/>
+<g transform="translate(31 23) rotate(16)"><path d="M0 -7 L2 -3 L3 -1 Q10 -6 15 -10 Q11 0 4 3 L2 3 L4 10 L0 7 L-4 10 L-2 3 Q-10 0 -15 -10 Q-9 -5 -3 -1 L-2 -3 Z" fill="#fff2bd"/></g>
 ${spark(14, 16, 1.1, '#ffe9b8')}
 ${spark(50, 14, 1, '#ffd27a')}
 ${spark(32, 8, 0.9, '#ffb43a')}
@@ -298,27 +298,6 @@ ${halo(58, 50, 5, '#fff0d2', 0.9)}
 ${bolt(arcPoints(32, 36, 25, 8, Math.PI * 0.02, Math.PI * 0.98, 12, 0.14), '#e8a048', '#fff0d2', 1.6)}
 ${spark(20, 26, 0.9, '#fff0d2')}
 ${spark(46, 24, 0.9, '#ffd896')}
-`)],
-  ['thunderclap_gathered', art('stone', `
-${halo(32, 24, 18, '#ffb43a', 0.7)}
-<ellipse cx="32" cy="52" rx="32" ry="11" fill="#0a0602" opacity="0.6"/>
-${ring(32, 52, 29, 9.5, '#ff7a1a', '#ffd896', 2.6)}
-${ring(32, 52, 19, 6, '#e8a048', '#ffd896', 1.2)}
-${ring(32, 52, 10, 3, '#e8a048', '#fff0d2', 0.9)}
-${fire(4, 53, 11, 3, 1.5)}
-${fire(60, 53, 11, 3, -1.5)}
-${fire(13, 61, 9, 2.8, 1.2)}
-${fire(51, 61, 9, 2.8, -1.2)}
-${fire(32, 63, 7, 2.6, 0)}
-<path d="M2 40 Q4 14 32 24 M62 40 Q60 14 32 24 M6 4 Q26 2 32 24 M58 4 Q38 2 32 24" stroke="#ffb43a" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.5" filter="url(#bloom)"/>
-<path d="M2 40 Q4 14 32 24 M62 40 Q60 14 32 24 M6 4 Q26 2 32 24 M58 4 Q38 2 32 24" stroke="#fff0d2" stroke-width="1.1" fill="none" stroke-linecap="round" opacity="0.85" filter="url(#glow)"/>
-${halo(32, 25, 13, '#fff0d2', 0.6)}
-<g transform="translate(32 25) rotate(180)">${maul('#fff0d2')}</g>
-<circle cx="32" cy="25" r="10" fill="url(#core)" opacity="0.55" filter="url(#glow)"/>
-${spark(10, 24, 1, '#fff0d2')}
-${spark(54, 22, 1, '#fff0d2')}
-${spark(20, 8, 0.8, '#ffd896')}
-${spark(46, 10, 0.8, '#ffd896')}
 `)],
   ['dodge_roll_shoulder', art('fire', `
 ${halo(54, 36, 18, '#ff5a12', 0.9)}

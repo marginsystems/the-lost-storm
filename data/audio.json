@@ -127,7 +127,6 @@
     "ghost_wave": [{ "sound": "ghost_horn", "volume": 0.85, "maxVoices": 2 }],
     "spell_strike": [{ "sound": "spell_flick", "volume": 0.8, "maxVoices": 3 }],
     "fire_burst": [{ "sound": "fire_blast", "volume": 0.85, "maxVoices": 2 }],
-    "fire_slam": [{ "sound": "fire_blast", "volume": 0.8, "maxVoices": 2 }],
     "firewall": [{ "sound": "fire_ignite", "volume": 0.55, "maxVoices": 1, "pitch": [0.95, 1.05] }],
     "storm_fence": [{ "sound": "electric_crackle", "volume": 0.5, "maxVoices": 1, "pitch": [1.05, 1.15] }],
     "bellows": [{ "sound": "fire_blast", "volume": 0.7, "maxVoices": 2, "pitch": [1.05, 1.15] }],
@@ -135,7 +134,6 @@
     "dodge_roll_flicker": [{ "sound": "fire_ignite", "volume": 0.6, "maxVoices": 2, "pitch": [1.1, 1.25] }, { "sound": "dodge_whoosh", "volume": 0.5, "maxVoices": 2, "pitch": [1.05, 1.15] }]
   },
   "skillImpact": {
-    "fire_slam": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 2 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
     "silt_smother": [{ "sound": "water_douse", "volume": 0.5, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.8, 0.95] }],
     "crackle_burst": [{ "sound": "electric_crackle", "volume": 0.55, "maxVoices": 2, "cooldown": 0.2 }],
     "stone_rupture": [{ "sound": "rock_slam", "volume": 0.48, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.9, 1.05] }],
@@ -165,7 +163,7 @@
     "breaker_fault": [{ "sound": "ground_boom", "volume": 0.7, "maxVoices": 2 }, { "sound": "slam_heavy", "volume": 0.7, "maxVoices": 1 }],
     "first_haymaker": [{ "sound": "ground_boom", "volume": 0.7, "maxVoices": 2 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
     "thunderclap": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 2 }, { "sound": "thunder_crack", "volume": 0.75, "maxVoices": 2 }],
-    "thunderclap_gathered": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 2 }, { "sound": "fire_blast", "volume": 0.8, "maxVoices": 2 }],
+    "thunderclap_gathered": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 2 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
     "rival_clap": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 1 }, { "sound": "thunder_crack", "volume": 0.6, "maxVoices": 1 }],
     "colossus_slam": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 1 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
     "gate_ring": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 1 }],

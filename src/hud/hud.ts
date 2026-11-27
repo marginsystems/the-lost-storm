@@ -181,6 +181,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const bossBar: BossBar = createBossBar(root);
 
   const bottom: HTMLDivElement = el('div', 'hud-bottom', root);
+  const auraSign: AuraSign = createAuraSign(api.touch ? bottom : root);
   const notices: Notices = createNotices(bottom);
   const bagFull: BagFull = createBagFull(root);
   let bagTimer: number | null = null;
@@ -281,7 +282,6 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   buttons.inventory = createMenuButton(row, 'inventory', 'Inventory', keyOf('inventory'), (): void => fromRow((): void => toggle('inventory')), track);
   buttons.character = createMenuButton(row, 'character', 'Character', keyOf('character'), (): void => fromRow((): void => toggle('character')), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
-  const auraSign: AuraSign = createAuraSign(bottom);
   buttons.tree = createMenuButton(row, 'tree', 'Skill Tree', keyOf('tree'), (): void => fromRow((): void => toggle('tree')), track);
   buttons.map = createMenuButton(row, 'map', 'Map', keyOf('map'), (): void => fromRow((): void => toggle('map')), track);
   const corner: HTMLDivElement = createVolumeButton(row, api.audio, track, (): void => fromRow((): void => api.openSettings('sound')));

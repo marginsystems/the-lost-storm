@@ -1,7 +1,7 @@
 import { art, fire, halo, spark } from './kit.ts';
 
 export const CORE_ART: ReadonlyMap<string, string> = new Map<string, string>([
-  ['fire_slam', art('fire', `
+  ['thunderclap_gathered', art('fire', `
 ${halo(22, 48, 16, '#ff5a12', 0.8)}
 ${halo(44, 36, 14, '#ff5a12', 0.45)}
 <path d="M0 60 L64 26 L64 64 L0 64Z" fill="#0a0302" opacity="0.55"/>

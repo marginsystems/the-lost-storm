@@ -130,7 +130,9 @@ function skillTrail(source: Fields, where: string): SkillTrail {
   const limit: number = positive(source, 'limit', where);
   if (!Number.isInteger(limit)) throw new ContentError(`${where}.limit`, 'expected a whole number');
   const from: TrailFrom = source['from'] === undefined ? 'feet' : choice(source, 'from', TRAIL_FROM, where);
-  return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit, from, range: from === 'aim' ? positive(source, 'range', where) : 0 };
+  const stopAtLimit: boolean = source['stopAtLimit'] === undefined ? false : flag(source, 'stopAtLimit', where);
+  if (stopAtLimit && from !== 'aim') throw new ContentError(`${where}.stopAtLimit`, 'expected a drawn trail');
+  return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit, stopAtLimit, from, range: from === 'aim' ? positive(source, 'range', where) : 0 };
 }
 
 function skillFlare(source: Fields, where: string): SkillFlare {

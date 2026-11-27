@@ -16,7 +16,7 @@ export type WorldSoundEvent = (typeof WORLD_SOUND_EVENTS)[number];
 export const LIFE_SOUND_EVENTS = ['bats_disturbed', 'bat_flyby', 'lid_opened', 'lid_closed'] as const;
 export type LifeSoundEvent = (typeof LIFE_SOUND_EVENTS)[number];
 
-const NOTICE_KEYS: Readonly<Record<NoticeReason, true>> = { wrong_weapon: true, no_mana: true, on_cooldown: true, inventory_full: true, flask_empty: true, life_full: true, mana_full: true, no_gold: true, stash_full: true, legendary_limit: true, portal_town: true, portal_boss: true, run_refused: true, unidentified: true, duel_gear: true };
+const NOTICE_KEYS: Readonly<Record<NoticeReason, true>> = { wrong_weapon: true, wall_full: true, no_mana: true, on_cooldown: true, inventory_full: true, flask_empty: true, life_full: true, mana_full: true, no_gold: true, stash_full: true, legendary_limit: true, portal_town: true, portal_boss: true, run_refused: true, unidentified: true, duel_gear: true };
 const NOTICE_REASONS: readonly string[] = Object.keys(NOTICE_KEYS);
 
 export const PLAYER_KEY: string = 'player';

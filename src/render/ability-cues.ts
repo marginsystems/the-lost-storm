@@ -75,6 +75,7 @@ const NOVA_LOOK: Readonly<Record<VfxStyle, NovaLook>> = {
   blaze: 'blaze',
   wave: 'gust',
   fire: 'shockwave',
+  firebird: 'gust',
 };
 
 export function novaLook(style: VfxStyle): NovaLook {

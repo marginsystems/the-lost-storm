@@ -10,7 +10,7 @@ import { beamEnd } from './shapes.ts';
 import type { ActionState, Actor, AreaState, ChannelState, World } from './types.ts';
 
 export function beginChannel(world: World, actor: Actor, action: ActionState, aim: ReadonlyVec2): void {
-  if (action.skill.press?.type === 'channel') world.channels.push({ actorId: actor.id, action, aim: { x: aim.x, z: aim.z }, last: null });
+  if (action.skill.press?.type === 'channel') world.channels.push({ actorId: actor.id, action, aim: { x: aim.x, z: aim.z }, last: null, piecesDrawn: 0 });
 }
 
 export function aimChannel(world: World, actor: Actor, aim: ReadonlyVec2): void {
@@ -36,6 +36,10 @@ export function endChannels(world: World): void {
 
 function ownTrail(world: World, actor: Actor, skill: string): AreaState[] {
   return world.areas.filter((area: AreaState): boolean => area.ownerId === actor.id && area.skill.id === skill && area.timeLeft > 0);
+}
+
+export function drawCapacity(world: World, actor: Actor, trail: SkillTrail | null): number {
+  return trail?.stopAtLimit === true ? trail.limit - ownTrail(world, actor, trail.skill).length : Infinity;
 }
 
 function layTrail(world: World, actor: Actor, parent: SkillDef, trail: SkillTrail): void {
@@ -71,14 +75,19 @@ function drawTrail(world: World, actor: Actor, channel: ChannelState, trail: Ski
     return;
   }
   let gap: number = distance(last, point);
-  while (gap >= trail.every) {
+  if (gap < trail.every) return;
+  let remaining: number = trail.stopAtLimit ? Math.min(trail.limit - channel.piecesDrawn, drawCapacity(world, actor, trail)) : Infinity;
+  while (gap >= trail.every && remaining > 0) {
     const toward: Vec2 = { x: (point.x - last.x) / gap, z: (point.z - last.z) / gap };
-    burnOutOldest(world, actor, trail);
+    if (!trail.stopAtLimit) burnOutOldest(world, actor, trail);
     placeArea(world, offenceOf(actor), leftBehind(world, actor.id, channel.action.skill, left), last, toward, trail.every);
     last = { x: last.x + toward.x * trail.every, z: last.z + toward.z * trail.every };
+    channel.piecesDrawn += 1;
+    remaining -= 1;
     gap -= trail.every;
   }
   channel.last = last;
+  if (remaining === 0) dropChannel(actor);
 }
 
 export function stepChannelTrails(world: World): void {

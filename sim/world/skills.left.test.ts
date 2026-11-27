@@ -6,7 +6,7 @@ import { must } from '../../test/support.ts';
 import type { AreaState, World } from './types.ts';
 
 function lineLasts(allocated: readonly string[]): number {
-  const world: World = shapeArena(['fire_slam']);
+  const world: World = shapeArena(['thunderclap_gathered']);
   world.player.allocated = [...allocated];
   faceAt(world.player, offset(9, 0));
   run(world, 0.1, [{ type: 'skill', slot: 0, aim: offset(9, 0), targetId: null }]);

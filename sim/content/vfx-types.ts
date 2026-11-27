@@ -1,4 +1,4 @@
-export const VFX_STYLES = ['slash', 'claw', 'shockwave', 'bolt', 'orb', 'roll', 'fork', 'mist', 'wind', 'storm', 'heave', 'brand', 'beam', 'gap', 'mend', 'gale', 'blaze', 'wave', 'fire'] as const;
+export const VFX_STYLES = ['slash', 'claw', 'shockwave', 'bolt', 'orb', 'roll', 'fork', 'mist', 'wind', 'storm', 'heave', 'brand', 'beam', 'gap', 'mend', 'gale', 'blaze', 'wave', 'fire', 'firebird'] as const;
 export type VfxStyle = (typeof VFX_STYLES)[number];
 
 export const VFX_CUES = ['none', 'hand', 'ground', 'blade'] as const;

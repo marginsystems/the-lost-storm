@@ -94,6 +94,7 @@ export interface SkillTrail {
   readonly skill: string;
   readonly every: number;
   readonly limit: number;
+  readonly stopAtLimit: boolean;
   readonly from: TrailFrom;
   readonly range: number;
 }

@@ -16,7 +16,7 @@ const content: Content = loadContent();
 const DT: number = 1 / 60;
 const DODGES: readonly string[] = ['dodge_roll', 'dodge_roll_riptide', 'dodge_roll_shoulder', 'dodge_roll_slip'];
 const DODGE_SLOT: number = 5;
-const HELD_SKILLS: readonly string[] = ['cleave_millwheel', 'living_wire', 'cleave_heave', 'thunderhead', 'thunderclap_gathered'];
+const HELD_SKILLS: readonly string[] = ['cleave_millwheel', 'living_wire', 'cleave_heave', 'thunderhead'];
 
 function skill(id: string): SkillDef {
   return must(content.skills.get(id), id);

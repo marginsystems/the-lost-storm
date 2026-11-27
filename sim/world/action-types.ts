@@ -25,4 +25,5 @@ export interface ChannelState {
   readonly action: ActionState;
   aim: Vec2;
   last: Vec2 | null;
+  piecesDrawn: number;
 }

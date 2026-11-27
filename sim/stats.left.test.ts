@@ -19,7 +19,7 @@ const KILN: readonly string[] = ['kiln_2', 'kiln_draught_hole', 'kiln_3'];
 
 void test('the line Fire Slam leaves takes the fire bonuses of the tree as Fire Slam does', (): void => {
   const line: SkillDef = skill('fire_slam_line');
-  const kept: SkillDef = resolveLeft(ARENA_CONTENT, skill('fire_slam'), line, KILN);
+  const kept: SkillDef = resolveLeft(ARENA_CONTENT, skill('thunderclap_gathered'), line, KILN);
   const base: AreaDelivery = areaOf(line);
   const left: AreaDelivery = areaOf(kept);
   assert.ok(Math.abs(kept.damage.weaponPercent - line.damage.weaponPercent * 1.06) < 1e-9);
@@ -34,8 +34,8 @@ void test('ground left by a skill outside the fire group takes no fire bonus', (
 });
 
 void test('a bonus to area lengthens a lane as well as widening it', (): void => {
-  const slam: AreaDelivery = areaOf(resolveSkill(ARENA_CONTENT, skill('fire_slam'), ['kiln_draught_hole']));
-  const base: AreaDelivery = areaOf(skill('fire_slam'));
+  const slam: AreaDelivery = areaOf(resolveSkill(ARENA_CONTENT, skill('thunderclap_gathered'), ['kiln_draught_hole']));
+  const base: AreaDelivery = areaOf(skill('thunderclap_gathered'));
   assert.ok(Math.abs(slam.length - base.length * 1.2) < 1e-9);
   assert.ok(Math.abs(slam.radius - base.radius * 1.2) < 1e-9);
 });
