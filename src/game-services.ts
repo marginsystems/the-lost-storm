@@ -1,6 +1,9 @@
 import { element } from './dom-element.ts';
 import { loadContent } from '../sim/content/content.ts';
 import type { Content } from '../sim/content/types.ts';
+import type { PorterSteering } from '../sim/world/porter.ts';
+import { warnInConsole } from './backend/console-log.ts';
+import { browserPorterSteering } from './porter-model.ts';
 import type { SaveData } from '../sim/save.ts';
 import type { AccountService } from './backend/account.ts';
 import { createSettingsStore as createGameSettings } from './settings/store.ts';
@@ -35,6 +38,7 @@ export interface GameServices {
   readonly minter: Minter | null;
   readonly lobby: Lobby | null;
   readonly gameSettings: SettingsStore;
+  readonly steerPorter: PorterSteering;
   readonly titleBar: { current: Bar };
   readonly drawTitleKeys: () => void;
 }
@@ -56,5 +60,5 @@ export function startGameServices(deps: GameServicesDeps): GameServices {
   };
   drawTitleKeys();
   gameSettings.subscribe(drawTitleKeys);
-  return { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, titleBar, drawTitleKeys };
+  return { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, steerPorter: browserPorterSteering(warnInConsole), titleBar, drawTitleKeys };
 }

@@ -48,7 +48,7 @@ export interface WorldOptions {
 
 const PLAYER_ID: number = 1;
 
-function freshPlayer(content: Content, save: SaveData | null, chosen: string | null): PlayerState {
+export function freshPlayer(content: Content, save: SaveData | null, chosen: string | null): PlayerState {
   const equipped: Equipment = save === null ? emptyEquipment() : { ...save.equipped };
   const allocated: string[] = save === null ? [] : [...save.allocated];
   const changes: Record<string, string> = save === null ? {} : { ...save.changes };
@@ -216,6 +216,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     porterUntil: save?.porterUntil ?? 0,
     porter: null,
     porterNextRoute: 0,
+    porterTarget: null,
     lootFilter: {},
     satchel: Array.from({ length: content.trade.porter.capacity }, (_: unknown, index: number): ItemInstance | null => save?.satchel[index] ?? null),
     stash: save === null ? emptyStash(content) : [...save.stash],

@@ -41,7 +41,7 @@ export function stepNpcs(world: World, dt: number): void {
   const staged: number | null = world.scene?.npcId ?? null;
   for (const npc of world.npcs) {
     const talking: boolean = world.dialogue?.npcId === npc.id;
-    const homing: boolean = npc.id !== staged && npc.route.length > 0;
+    const homing: boolean = npc !== world.porter && npc.id !== staged && npc.route.length > 0;
     walkNpc(npc, talking ? 0 : dt);
     if (homing && npc.route.length === 0) {
       npc.facing = npc.homeFacing;

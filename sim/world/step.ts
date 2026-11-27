@@ -29,6 +29,7 @@ import { stepVoid } from './void.ts';
 import { stepMoments } from './moments.ts';
 import type { LootFilter } from '../loot-filter.ts';
 import { stepPorter } from './porter.ts';
+import type { PorterSteering } from './porter.ts';
 import { stepNpcs } from './npc-walk.ts';
 import { stepScene } from './scene.ts';
 import { easeLeaving } from './dialogue.ts';
@@ -48,6 +49,7 @@ export const MAX_STEP: number = 1 / 30;
 interface StepContext {
   readonly now: number;
   readonly loot: LootFilter;
+  readonly steerPorter?: PorterSteering;
 }
 
 export function stepWorld(world: World, commands: readonly Command[], dt: number, context?: StepContext): WorldEvent[] {
@@ -109,7 +111,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   easeLeaving(world, dt);
   stepWards(world, dt);
   stepMoments(world, dt);
-  stepPorter(world);
+  stepPorter(world, context?.steerPorter);
   stepNpcs(world, dt);
   stepBosses(world);
   stepVoices(world);

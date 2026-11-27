@@ -549,6 +549,7 @@ export interface World {
   satchel: (ItemInstance | null)[];
   porter: NpcState | null;
   porterNextRoute: number;
+  porterTarget: number | null;
   stash: (ItemInstance | null)[];
   purse: number;
   tradeZone: string;

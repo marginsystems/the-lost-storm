@@ -11,13 +11,11 @@ import { RL } from './contract.ts';
 import type { Course, GatherGoal } from './gather.ts';
 import { GATHER, gatherObserve, gatherWorld, goalPoint, readyGatherHero, settledAt, startCourse } from './gather.ts';
 import type { Observation } from './observe.ts';
-import type { PolicyFile } from './policy-file.ts';
-import { policyFits, readPolicyFile } from './policy-file.ts';
-import { createPolicyNet } from './policy-net.ts';
 import type { Recall } from './recall.ts';
 import { createRecall, recallEvents, rememberDecision } from './recall.ts';
 import type { RivalPilot } from './rival.ts';
-import { netPilot } from './rival.ts';
+
+export { residentPilotFrom } from './resident-model.ts';
 
 export const RESIDENT = {
   level: 10,
@@ -233,10 +231,4 @@ export function createResidentPilot(options: ResidentOptions): ResidentPilot {
     want: (intent: PilotIntent): void => want(resident, intent),
     step: (dt: number): PilotPose => step(resident, dt),
   };
-}
-
-export function residentPilotFrom(bytes: Uint8Array): RivalPilot {
-  const file: PolicyFile = readPolicyFile(bytes);
-  if (!policyFits(file)) throw new Error(`the resident's model was trained for contract ${file.contract.fingerprint}, not the one the game speaks`);
-  return netPilot(createPolicyNet(file));
 }

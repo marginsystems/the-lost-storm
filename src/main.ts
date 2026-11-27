@@ -199,7 +199,7 @@ async function start(): Promise<void> {
   const portalSdk: Promise<PortalSdk> = startPortalSdk();
   const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
   if (unsupported !== null) throw new UnsupportedBrowser(unsupported);
-  const { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, titleBar, drawTitleKeys }: GameServices = startGameServices({ title, serverUrl, watching: watchAsked !== null });
+  const { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, steerPorter, titleBar, drawTitleKeys }: GameServices = startGameServices({ title, serverUrl, watching: watchAsked !== null });
   const stage: Stage = createdOrUnsupported((): Stage => createStage(canvas, mobile.quality.tier));
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -518,7 +518,7 @@ async function start(): Promise<void> {
         let remaining: number = worldDt;
         while (remaining > 1e-5 && !events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
           const step: number = Math.min(MAX_STEP, remaining);
-          const stepped: WorldEvent[] = stepWorld(world, [...queue.splice(0, queue.length), ...(rivalPlay?.commands(step) ?? [])], step, { now: Date.now(), loot: gameSettings.get().loot });
+          const stepped: WorldEvent[] = stepWorld(world, [...queue.splice(0, queue.length), ...(rivalPlay?.commands(step) ?? [])], step, { now: Date.now(), loot: gameSettings.get().loot, steerPorter });
           rivalPlay?.heard(stepped);
           events = events.concat(stepped);
           remaining -= step;
