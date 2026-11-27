@@ -335,6 +335,98 @@
     ]
   },
   {
+    "id": "the_storm",
+    "name": "The Storm",
+    "requires": [],
+    "when": [
+      {
+        "type": "flag",
+        "flag": "loom_defeated"
+      }
+    ],
+    "objectives": [
+      {
+        "id": "rim",
+        "type": "reach",
+        "zone": "storm_rim",
+        "x": 233,
+        "z": 35,
+        "radius": 12,
+        "text": "Go out to the Storm Rim"
+      },
+      {
+        "id": "warden",
+        "type": "talk",
+        "npc": "warden_returned",
+        "talk": "warden_returned_found",
+        "text": "Find what waits at the far side of the Eye",
+        "sets": {
+          "warden_returned": "returned"
+        }
+      },
+      {
+        "id": "calm",
+        "type": "reach",
+        "zone": "the_search",
+        "x": 25,
+        "z": 38,
+        "radius": 10,
+        "text": "Go with the Warden into the Calm"
+      },
+      {
+        "id": "stand",
+        "type": "talk",
+        "npc": "warden_returned",
+        "talk": "warden_returned_stand",
+        "text": "Speak with the Warden",
+        "sets": {
+          "seeker_stand": "stood"
+        }
+      },
+      {
+        "id": "seeker",
+        "type": "defeat",
+        "monster": "the_seeker",
+        "text": "Stand beside the Warden against the Seeker"
+      },
+      {
+        "id": "fire",
+        "type": "talk",
+        "npc": "warden_returned",
+        "talk": "warden_returned_home",
+        "text": "Find the Warden at the Hideout fire"
+      }
+    ]
+  },
+  {
+    "id": "the_untouched_again",
+    "name": "Left as You Found It",
+    "requires": [],
+    "when": [
+      {
+        "type": "flag",
+        "flag": "seeker_defeated"
+      },
+      {
+        "type": "restraint",
+        "atLeast": 10
+      }
+    ],
+    "objectives": [
+      {
+        "id": "speak",
+        "type": "talk",
+        "npc": "reeve",
+        "talk": "reeve_column_again",
+        "text": "Speak with Reeve",
+        "gift": {
+          "rarity": "stormtouched",
+          "items": 1
+        }
+      }
+    ]
+  },
+  {
     "id": "the_untouched",
     "name": "What You Left",
     "requires": [

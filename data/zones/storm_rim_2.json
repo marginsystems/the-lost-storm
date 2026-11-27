@@ -1165,5 +1165,7 @@
   "waypoint": {"x":247,"z":37,"radius":1.8},
   "deathReturn": null,
   "duel": null,
-  "npcs": []
+  "npcs": [{"npc": "timekeeper_seeker", "x": 259, "z": 80, "facingDegrees": 205, "when": [{"type": "flag", "flag": "loom_defeated"}, {"type": "flag", "flag": "seeker_storm_seen", "not": true}], "leave": 2.5}],
+  "voices": [{"id": "seeker_closer", "x": 259, "z": 80, "radius": 15, "lines": ["timekeeper_seeker_closer"], "when": [{"type": "flag", "flag": "loom_defeated"}, {"type": "flag", "flag": "seeker_storm_seen", "not": true}]}],
+  "triggers": [{"id": "seeker_storm_passes", "x": 259, "z": 80, "radius": 9, "when": [{"type": "flag", "flag": "loom_defeated"}, {"type": "flag", "flag": "seeker_storm_seen", "not": true}], "sets": {"seeker_storm_seen": "seen"}}]
 }

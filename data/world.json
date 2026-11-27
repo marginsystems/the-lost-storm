@@ -487,7 +487,7 @@
       "id": "act_2",
       "title": "Act II",
       "name": "",
-      "end": null,
+      "end": {"when": [{"type": "flag", "flag": "seeker_defeated"}], "line": "Something looked for you across every gap. It has stopped looking, for now."},
       "atlas": {
         "width": 1600,
         "height": 1000,

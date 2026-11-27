@@ -121,12 +121,44 @@
   ],
   "packs": [
     {
+      "x": 25,
+      "z": 16,
+      "members": [
+        {
+          "monster": "the_seeker",
+          "count": 1
+        }
+      ],
+      "when": [
+        {
+          "type": "flag",
+          "flag": "seeker_stand"
+        },
+        {
+          "type": "defeated",
+          "monster": "the_seeker",
+          "not": true
+        }
+      ]
+    },
+    {
       "x": 16,
       "z": 18,
       "members": [
         {
           "monster": "timekeeper_rank",
           "count": 2
+        }
+      ],
+      "when": [
+        {
+          "type": "flag",
+          "flag": "seeker_stand"
+        },
+        {
+          "type": "defeated",
+          "monster": "the_seeker",
+          "not": true
         }
       ]
     },
@@ -137,6 +169,17 @@
         {
           "monster": "timekeeper_rank",
           "count": 2
+        }
+      ],
+      "when": [
+        {
+          "type": "flag",
+          "flag": "seeker_stand"
+        },
+        {
+          "type": "defeated",
+          "monster": "the_seeker",
+          "not": true
         }
       ]
     }
@@ -170,7 +213,26 @@
   "markerSurfaces": {
     "stone": "black_rock"
   },
-  "npcs": [],
+  "npcs": [
+    {
+      "npc": "warden_returned",
+      "x": 19,
+      "z": 30,
+      "facingDegrees": 149,
+      "when": [
+        {
+          "type": "flag",
+          "flag": "warden_returned"
+        },
+        {
+          "type": "flag",
+          "flag": "seeker_defeated",
+          "not": true
+        }
+      ],
+      "leave": 2.5
+    }
+  ],
   "ambience": {
     "background": "#141a24",
     "abyss": "#080b10",
@@ -326,5 +388,47 @@
       "0000000000000000000000000",
       "0000000000000000000000000"
     ]
-  }
+  },
+  "voices": [
+    {
+      "id": "seeker_doors",
+      "x": 25,
+      "z": 34,
+      "radius": 12,
+      "lines": [
+        "timekeeper_seeker_doors"
+      ],
+      "when": [
+        {
+          "type": "flag",
+          "flag": "warden_returned"
+        },
+        {
+          "type": "flag",
+          "flag": "seeker_stand",
+          "not": true
+        }
+      ]
+    },
+    {
+      "id": "warden_two",
+      "x": 25,
+      "z": 20,
+      "radius": 14,
+      "lines": [
+        "warden_returned_two"
+      ],
+      "when": [
+        {
+          "type": "flag",
+          "flag": "seeker_stand"
+        },
+        {
+          "type": "defeated",
+          "monster": "the_seeker",
+          "not": true
+        }
+      ]
+    }
+  ]
 }

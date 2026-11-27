@@ -195,6 +195,86 @@
     ]
   },
   {
+    "id": "warden_returned",
+    "name": "Warden Guide",
+    "title": "Uncounted",
+    "faction": null,
+    "rig": "warden",
+    "scale": 1.0,
+    "tint": "#e6ecf2",
+    "color": "#9fc8f0",
+    "gear": [
+      "warden_staff"
+    ],
+    "wear": [
+      "warden_jerkin",
+      "warden_breeches",
+      "warden_boots",
+      "warden_hood"
+    ],
+    "talks": [
+      {
+        "id": "warden_returned_found",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_storm",
+            "objective": "warden",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "warden_returned_storm",
+          "warden_returned_fire",
+          "warden_returned_changed",
+          "warden_returned_together"
+        ]
+      },
+      {
+        "id": "warden_returned_stand",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_storm",
+            "objective": "stand",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "warden_returned_quiet",
+          "warden_returned_fair"
+        ]
+      },
+      {
+        "id": "warden_returned_home",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_storm",
+            "objective": "fire",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "warden_returned_back",
+          "warden_returned_agree",
+          "warden_returned_no_one"
+        ]
+      },
+      {
+        "id": "warden_returned_talk",
+        "once": false,
+        "when": [],
+        "lines": [
+          "warden_returned_close"
+        ]
+      }
+    ]
+  },
+  {
     "id": "reeve",
     "name": "Reeve",
     "title": "Keeper, once",
@@ -242,6 +322,22 @@
         "lines": [
           "reeve_other_column",
           "reeve_kept_it"
+        ]
+      },
+      {
+        "id": "reeve_column_again",
+        "once": true,
+        "when": [
+          {
+            "type": "objective",
+            "quest": "the_untouched_again",
+            "objective": "speak",
+            "is": "current"
+          }
+        ],
+        "lines": [
+          "reeve_column_longer",
+          "reeve_column_out_there"
         ]
       },
       {

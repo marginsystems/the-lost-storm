@@ -1180,5 +1180,6 @@
   "waypoint": {"x":185,"z":33,"radius":1.8},
   "deathReturn": null,
   "duel": null,
-  "npcs": []
+  "npcs": [{"npc": "warden_returned", "x": 50, "z": 92, "facingDegrees": 54, "when": [{"type": "flag", "flag": "loom_defeated"}, {"type": "flag", "flag": "warden_returned", "not": true}], "leave": 2.5}],
+  "voices": [{"id": "storm_gold", "x": 185, "z": 42, "radius": 10, "lines": ["timekeeper_seeker_gold_again"], "when": [{"type": "restraint", "atLeast": 1}, {"type": "flag", "flag": "warden_returned", "not": true}]}]
 }
