@@ -13,7 +13,7 @@ void test('a weaker burn from another fire skill leaves a stronger burn alight',
   ignite(world, offenceOf(world.player), target, shapeSkill('fire_slam_line'), 10);
   const burn: BurnState = must(target.burn, 'burn');
   assert.equal(burn.source, 'thunderclap_gathered');
-  assert.equal(burn.perTick, 15);
+  assert.equal(burn.perTick, 100 * must(shapeSkill('thunderclap_gathered').burn, 'hammer burn').share);
 });
 
 void test('a stronger burn from another fire skill takes over a weaker one', (): void => {
@@ -23,7 +23,7 @@ void test('a stronger burn from another fire skill takes over a weaker one', ():
   ignite(world, offenceOf(world.player), target, shapeSkill('thunderclap_gathered'), 100);
   const burn: BurnState = must(target.burn, 'burn');
   assert.equal(burn.source, 'thunderclap_gathered');
-  assert.equal(burn.perTick, 15);
+  assert.equal(burn.perTick, 100 * must(shapeSkill('thunderclap_gathered').burn, 'hammer burn').share);
 });
 
 void test('a burn nearly spent gives way to a weaker one that has longer to run', (): void => {
