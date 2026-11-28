@@ -1,5 +1,6 @@
 import type { Content, ZoneDef, ZoneDuel } from '../content/types.ts';
 import type { Rng } from '../rng.ts';
+import { equipDuelFamily } from '../world/duel-family.ts';
 import { createRng } from '../rng.ts';
 import { refillHero } from '../world/bench-hero.ts';
 import { refreshPlayer } from '../world/character.ts';
@@ -40,6 +41,7 @@ export interface DuelOptions {
   readonly builds?: readonly (Build | null)[];
   readonly level?: number;
   readonly corner?: boolean;
+  readonly legendaryGear?: boolean;
 }
 
 export interface DuelSeat {
@@ -77,9 +79,10 @@ function readySeat(world: World, rng: Rng, seed: number, level: number, build: B
   else readyBuild(world, build, DUEL_KIT, ARENA.benchSeed + seed, level);
 }
 
-export function benchedRival(content: Content, rng: Rng, seed: number, level: number, build: Build | null): PlayerState {
+export function benchedRival(content: Content, rng: Rng, seed: number, level: number, build: Build | null, legendaryGear: boolean = true): PlayerState {
   const scratch: World = emptyArena(content, seed + DUEL.rivalSeed, level);
   readySeat(scratch, rng, seed + DUEL.rivalSeed, level, build);
+  if (legendaryGear) equipDuelFamily(scratch, createRng(seed));
   return scratch.player;
 }
 
@@ -96,13 +99,15 @@ export function createDuel(content: Content, options: DuelOptions): Duel {
   const world: World = emptyArena(played, options.seed, level);
   const zone: ZoneDef = { ...world.zone, duel: duelRules(played) };
   world.zone = zone;
+  const legendaryGear: boolean = options.legendaryGear !== false;
   readySeat(world, rng, options.seed, level, options.builds?.[0] ?? null);
-  const benched: PlayerState = benchedRival(played, rng, options.seed, level, options.builds?.[1] ?? null);
+  if (legendaryGear) equipDuelFamily(world, createRng(options.seed));
+  const benched: PlayerState = benchedRival(played, rng, options.seed, level, options.builds?.[1] ?? null, legendaryGear);
   const rival: PlayerState = { ...benched, id: world.nextId, party: DUEL.rivalParty, pos: spawnSpot(world, rng) };
   world.nextId += 1;
   world.heroes.push(rival);
   const corner: CornerStart | null = options.corner === true ? cornered(world, rng, rival) : null;
-  return { options, world, seats: [seatOf(world.player, world.time), seatOf(rival, world.time)], pickup: { minRarity: played.rarities.length }, level, start: world.time, corner, decisions: 0 };
+  return { options: { ...options, legendaryGear }, world, seats: [seatOf(world.player, world.time), seatOf(rival, world.time)], pickup: { minRarity: played.rarities.length }, level, start: world.time, corner, decisions: 0 };
 }
 
 function cornered(world: World, rng: Rng, rival: PlayerState): CornerStart | null {

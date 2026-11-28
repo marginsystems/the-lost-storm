@@ -10,7 +10,6 @@ import type { Command, ItemInstance, PlayerState, World, WorldEvent } from '../w
 import type { Action } from './contract.ts';
 import { NO_ACTION } from './contract.ts';
 import { DUEL } from './duel.ts';
-import { DUEL_KIT } from './kit.ts';
 import { observe } from './observe.ts';
 import type { RivalDuel, RivalPilot } from './rival.ts';
 import { RIVAL, rivalCommands, rivalContext, rivalHeard, rivalOf, startRivalDuel } from './rival.ts';
@@ -58,8 +57,9 @@ void test('the rival is a hostile hero of the player level in the standard kit, 
     assert.equal(hero.party, DUEL.rivalParty);
     assert.notEqual(hero.party, world.player.party);
     assert.equal(world.heroes.length, 2);
-    assert.ok(DUEL_KIT.weapons.includes(must(hero.equipped.weapon, 'weapon').base));
-    for (const piece of DUEL_KIT.armour) assert.equal(must<ItemInstance>(hero.equipped[piece.slot], piece.slot).base, piece.base);
+    const items: ItemInstance[] = Object.values(hero.equipped).map((item: ItemInstance | null): ItemInstance => must(item, 'duel equipment'));
+    assert.equal(items.filter((item: ItemInstance): boolean => item.rarity === 'stormtouched').length, 3);
+    assert.equal(items.filter((item: ItemInstance): boolean => item.rarity === 'rare').length, 4);
     assert.deepEqual(hero.pos, must(world.zone.duel, 'duel').rival);
     assert.deepEqual(observe(world, rivalContext(duel, world), hero).view.targets, [world.player]);
   }

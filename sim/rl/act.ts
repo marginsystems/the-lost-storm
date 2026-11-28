@@ -1,6 +1,7 @@
 import type { SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { directionOf } from '../math.ts';
+import { lineOfSight } from '../nav/grid.ts';
 import { findActor } from '../world/combat.ts';
 import { isPrimary } from '../world/heroes.ts';
 import type { Actor, Command, GroundItem, Intent, PlayerState, World } from '../world/types.ts';
@@ -33,11 +34,16 @@ function routed(world: World, player: PlayerState, commands: readonly Command[])
   return isPrimary(world, player) ? [...commands] : commands.map((command: Command): Command => ({ ...command, by: player.id }));
 }
 
-export function commandsFor(world: World, action: Action, view: View): Command[] {
-  return routed(world, view.hero, heroCommands(action, view));
+export function commandsFor(world: World, action: Action, view: View, seekSight: boolean = false): Command[] {
+  return routed(world, view.hero, heroCommands(world, action, view, seekSight));
 }
 
-function heroCommands(action: Action, view: View): Command[] {
+function needsSight(skill: SkillDef | null): boolean {
+  const type = skill?.delivery.type;
+  return type === 'projectile' || type === 'chain' || type === 'beam';
+}
+
+function heroCommands(world: World, action: Action, view: View, seekSight: boolean): Command[] {
   const player: PlayerState = view.hero;
   if (!player.alive) return [];
   const slot: number = action.skill - 1;
@@ -45,9 +51,11 @@ function heroCommands(action: Action, view: View): Command[] {
   const direction: Vec2 | null = moveDirection(action.move);
   const target: Actor | null = view.targets[action.target] ?? view.targets[0] ?? null;
   const ground: GroundItem | null = action.use === PICKUP_CHOICE ? view.pickup : null;
-  const kept: number | null = ground === null ? slot : null;
+  const approach: Vec2 | null = seekSight && target !== null && needsSight(skill) && !lineOfSight(world.grid, player.pos, target.pos) ? { ...target.pos } : null;
+  const kept: number | null = ground === null && approach === null ? slot : null;
   const out: Command[] = player.held.filter((held: number): boolean => held !== kept).map((held: number): Command => ({ type: 'hold', slot: held, down: false }));
   if (ground !== null) out.push({ type: 'pickup', groundId: ground.id });
+  else if (approach !== null) out.push({ type: 'move', held: false, dest: approach });
   else if (skill !== null) out.push(...skillCommands(player, slot, skill, direction, target));
   else if (direction !== null) out.push({ type: 'move', held: false, dest: ahead(player.pos, direction, RL.moveReach) });
   else if (action.use === 0 && player.intent.type !== 'idle') out.push({ type: 'stop' });

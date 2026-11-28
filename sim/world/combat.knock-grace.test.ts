@@ -10,7 +10,7 @@ import type { RivalDuel } from '../rl/rival.ts';
 import { applyHit, offenceOf } from './combat.ts';
 import { monsterLevel, spawnMonster } from './spawn.ts';
 import { stepWorld } from './step.ts';
-import type { MonsterState, PlayerState, World, WorldEvent } from './types.ts';
+import type { MonsterState, Offence, PlayerState, World, WorldEvent } from './types.ts';
 
 const CONTENT: Content = ringContent(loadContent());
 const BOLT: SkillDef = must(CONTENT.skills.get('storm_bolt'), 'storm bolt');
@@ -67,13 +67,15 @@ void test('a hero shoved once cannot be shoved again until the knock grace runs 
 
 void test('a hero bolted at the bolt cooldown is free to walk most of the time instead of being held in place', (): void => {
   const { world, hero, rival }: Pair = pair(32);
+  const offence: Offence = { ...offenceOf(rival), damageMin: 0, damageMax: 0, critChance: 0 };
   const start: Vec2 = { x: hero.pos.x, z: hero.pos.z };
   const dest: Vec2 = { x: hero.pos.x - 30, z: hero.pos.z };
   let held: number = 0;
   let next: number = 0;
   for (let time: number = 0; time < SPAM.seconds; time += DT) {
     if (time >= next) {
-      applyHit(world, offenceOf(rival), hero, BOLT, AWAY);
+      assert.ok(applyHit(world, offence, hero, BOLT, AWAY));
+      assert.ok(hero.alive);
       hero.life = hero.maxLife;
       next += BOLT.cooldown;
     }

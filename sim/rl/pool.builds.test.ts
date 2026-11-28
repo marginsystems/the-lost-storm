@@ -39,5 +39,5 @@ void test('a pool with a learner build plays it in every arena and in the first 
     assert.equal(hero.level, BUILD.level);
   }
   const duel: Match | undefined = pool.matches.find((match: Match): boolean => match.kind === 'duel');
-  assert.equal(duel?.kind === 'duel' ? duel.duel.seats[1]?.hero.equipped.weapon?.base : null, 'iron_maul');
+  assert.equal(duel?.kind === 'duel' ? duel.duel.seats[1]?.hero.equipped.weapon?.base : null, 'groundbreaker');
 });

@@ -1,6 +1,8 @@
 {
   "rarity": "common",
+  "rareRarity": "rare",
   "weapons": ["warden_broadsword", "iron_maul", "warden_arbalest", "stormcaller_stave"],
+  "families": { "blade": "millwheel", "heavy": "groundbreaker", "crossbow": "quietshot", "staff": "forkweather" },
   "armour": {
     "head": "norman_helm",
     "chest": "warden_jerkin",

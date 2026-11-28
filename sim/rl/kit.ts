@@ -12,11 +12,13 @@ export interface KitPiece {
 
 export interface DuelKit {
   readonly rarity: string;
+  readonly rareRarity: string;
   readonly weapons: readonly string[];
   readonly armour: readonly KitPiece[];
+  readonly families: Readonly<Record<string, string>>;
 }
 
-const KIT_KEYS: ReadonlySet<string> = new Set<string>(['rarity', 'weapons', 'armour']);
+const KIT_KEYS: ReadonlySet<string> = new Set<string>(['rarity', 'rareRarity', 'weapons', 'armour', 'families']);
 
 function readArmour(raw: unknown, where: string): KitPiece[] {
   const source: Fields = fields(raw, where);
@@ -25,11 +27,16 @@ function readArmour(raw: unknown, where: string): KitPiece[] {
   return ITEM_SLOTS.flatMap((slot: ItemSlot): KitPiece[] => (source[slot] === undefined ? [] : [{ slot, base: text(source, slot, where) }]));
 }
 
+function readFamilies(raw: unknown, where: string): Readonly<Record<string, string>> {
+  const source: Fields = fields(raw, where);
+  return Object.fromEntries(Object.keys(source).map((group: string): [string, string] => [group, text(source, group, where)]));
+}
+
 export function readKit(raw: unknown, where: string): DuelKit {
   const source: Fields = fields(raw, where);
   const unknown: string[] = Object.keys(source).filter((key: string): boolean => !KIT_KEYS.has(key));
   if (unknown.length > 0) throw new ContentError(where, `unknown field ${unknown.join(', ')}`);
-  return { rarity: text(source, 'rarity', where), weapons: textList(source, 'weapons', where), armour: readArmour(source['armour'], `${where}.armour`) };
+  return { rarity: text(source, 'rarity', where), weapons: textList(source, 'weapons', where), armour: readArmour(source['armour'], `${where}.armour`), rareRarity: text(source, 'rareRarity', where), families: readFamilies(source['families'], `${where}.families`) };
 }
 
 export const DUEL_KIT: DuelKit = readKit(kitData, 'duel kit');
@@ -67,8 +74,23 @@ function armourProblems(content: Content, kit: DuelKit, level: number): string[]
   });
 }
 
+function familyProblems(content: Content, kit: DuelKit): string[] {
+  const bases: ItemBaseDef[] = [...content.itemBases.values()];
+  const errors: string[] = [];
+  for (const group of content.chart.weaponGroups) {
+    const family: string | undefined = kit.families[group.id];
+    const pieces: ItemBaseDef[] = bases.filter((base: ItemBaseDef): boolean => base.power !== null && base.power.family === family);
+    const slots: Set<ItemSlot | null> = new Set(pieces.map((piece: ItemBaseDef): ItemSlot | null => piece.slot));
+    if (pieces.length !== 3 || slots.size !== 3 || slots.has(null)) errors.push(`the duel family for ${group.name} needs three distinct equipment slots`);
+    if (pieces.some((piece: ItemBaseDef): boolean => piece.slot === 'weapon' && weaponGroupOf(content, piece)?.id !== group.id)) errors.push(`the duel family weapon does not belong to ${group.name}`);
+  }
+  return errors;
+}
+
 export function kitProblems(content: Content, kit: DuelKit, level: number): string[] {
   const rarity: RarityDef | undefined = content.rarities.find((entry: RarityDef): boolean => entry.id === kit.rarity);
   const plain: string[] = rarity === undefined ? [`rarity ${kit.rarity} does not exist`] : rarity.affixMax > 0 ? [`rarity ${kit.rarity} rolls affixes, so it is not plain`] : [];
-  return [...plain, ...weaponProblems(content, kit, level), ...armourProblems(content, kit, level)];
+  const filler: RarityDef | undefined = content.rarities.find((entry: RarityDef): boolean => entry.id === kit.rareRarity);
+  const rare: string[] = filler === undefined ? [`rare rarity ${kit.rareRarity} does not exist`] : filler.affixMin < 1 || filler.powers ? [`rare rarity ${kit.rareRarity} must roll affixes and carry no powers`] : [];
+  return [...plain, ...rare, ...weaponProblems(content, kit, level), ...armourProblems(content, kit, level), ...familyProblems(content, kit)];
 }

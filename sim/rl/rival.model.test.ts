@@ -47,7 +47,7 @@ void test('the shipped model drives the rival: it closes on the player or strike
   };
   const before: number = gap();
   const sent: Command[] = [];
-  for (let time: number = 0; time < RIVAL.startIn + 4; time += FRAME) {
+  for (let time: number = 0; time < RIVAL.startIn + 4 && duel.outcome === 'fighting'; time += FRAME) {
     const commands: Command[] = rivalCommands(duel, world, pilot, FRAME);
     sent.push(...commands);
     const events: WorldEvent[] = stepWorld(world, commands, FRAME);

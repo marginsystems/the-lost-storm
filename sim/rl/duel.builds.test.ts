@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
-import type { Content } from '../content/types.ts';
+import type { Content, ItemBaseDef } from '../content/types.ts';
 import { must } from '../../test/support.ts';
-import type { PlayerState } from '../world/types.ts';
+import type { ItemInstance, PlayerState } from '../world/types.ts';
 import type { Build } from './build.ts';
 import { BUILD } from './build.ts';
+import { DUEL_KIT, weaponGroupOf } from './kit.ts';
 import type { Duel, DuelSeat } from './duel.ts';
 import { createDuel } from './duel.ts';
 import type { DuelReplay } from './duel-replay.ts';
@@ -25,8 +26,8 @@ void test('each duel seat plays its own build at the duel level', (): void => {
   assert.equal(duel.level, BUILD.level);
   assert.deepEqual(hero(duel, 0).allocated, SPIN.route);
   assert.deepEqual(hero(duel, 1).allocated, WALL.route);
-  assert.equal(hero(duel, 0).equipped.weapon?.base, 'warden_broadsword');
-  assert.equal(hero(duel, 1).equipped.weapon?.base, 'iron_maul');
+  assert.equal(hero(duel, 0).equipped.weapon?.base, 'the_millwheel');
+  assert.equal(hero(duel, 1).equipped.weapon?.base, 'groundbreaker');
   assert.equal(hero(duel, 1).bar[1], 'thunderclap');
   assert.equal(hero(duel, 1).level, BUILD.level);
 });
@@ -60,4 +61,36 @@ void test('a duel replay must list one build for each seat', (): void => {
   const duel: Duel = createDuel(CONTENT, { seed: 15, jitter: 0, builds: [SPIN, WALL] });
   const record: unknown = JSON.parse(JSON.stringify({ ...recordDuelReplay(duel, [[], []], 'test'), options: { seed: 15, jitter: 0, builds: [SPIN] } }));
   assert.throws((): unknown => readDuelReplay(record), /a build for each of the 2 seats/);
+});
+
+void test('all four duel families wear three legendary pieces and seeded rares in every other slot', (): void => {
+  for (const weapon of DUEL_KIT.weapons) {
+    const group = must(weaponGroupOf(CONTENT, must(CONTENT.itemBases.get(weapon), 'base')), 'group');
+    const family: string = must(DUEL_KIT.families[group.id], 'family');
+    const build: Build = { name: group.name, weapon, route: [], skills: [], hero: null };
+    for (const level of [1, 20]) {
+      const duel: Duel = createDuel(CONTENT, { seed: 81, jitter: 0, level, builds: [build, build] });
+      const reroll: Duel = createDuel(CONTENT, { ...duel.options, seed: 82 });
+      for (const seat of duel.seats) {
+        const items: ItemInstance[] = Object.values(seat.hero.equipped).map((item: ItemInstance | null): ItemInstance => must(item, 'equipped'));
+        const expected: string[] = [...CONTENT.itemBases.values()].filter((base: ItemBaseDef): boolean => base.power?.family === family).map((base: ItemBaseDef): string => base.id);
+        assert.equal(expected.length, 3);
+        assert.deepEqual(items.filter((item: ItemInstance): boolean => item.rarity === 'stormtouched').map((item: ItemInstance): string => item.base).toSorted(), expected.toSorted());
+        assert.equal(items.filter((item: ItemInstance): boolean => item.rarity === 'rare' && item.affixes.length > 0).length, 4);
+        assert.ok(items.every((item: ItemInstance): boolean => item.level === level));
+        const held = must(CONTENT.itemBases.get(must(seat.hero.equipped.weapon, 'weapon').base), 'weapon base');
+        assert.equal(weaponGroupOf(CONTENT, held)?.id, group.id);
+      }
+      assert.notDeepEqual(hero(duel, 0).equipped, hero(reroll, 0).equipped);
+    }
+  }
+});
+
+void test('old duel records still replay with the original equipment', (): void => {
+  const duel: Duel = createDuel(CONTENT, { seed: 17, jitter: 0, builds: [SPIN, WALL], legendaryGear: false });
+  const record: DuelReplay = recordDuelReplay(duel, [[], []], 'old kit');
+  const old = { ...record, options: { seed: 17, jitter: 0, builds: [SPIN, WALL] } };
+  const restored: Duel = replayDuel(CONTENT, readDuelReplay(old));
+  assert.deepEqual(hero(restored, 0).equipped, hero(duel, 0).equipped);
+  assert.equal(hero(restored, 0).equipped.weapon?.base, SPIN.weapon);
 });

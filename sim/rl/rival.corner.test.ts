@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
 import type { Content, SkillDef, ZoneDef, ZoneDuel } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { isWalkable, lineWalkable } from '../nav/grid.ts';
+import { isWalkable, lineOfSight, lineWalkable } from '../nav/grid.ts';
 import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { RING, ringContent, ringWorld } from '../../test/rival-support.ts';
 import { wearDuelKit } from '../world/duel-gear.ts';
@@ -19,6 +19,7 @@ import { netPilot, RIVAL, rivalCommands, rivalHeard, rivalOf, startRivalDuel } f
 const SHIPPED: string = 'public/models/rl/duel-pilot.bin';
 const FRAME: number = 1 / 30;
 const ESCAPE = { zone: 'proving_ground', level: 20, seconds: 12, away: 3, bar: ['cleave', null, 'storm_bolt', null, null, 'dodge_roll'] } as const;
+const SHOOT: RivalPilot = () => ({ move: 0, skill: 1, target: 0, use: 0 });
 const BOLT_SLOT: number = ESCAPE.bar.indexOf('storm_bolt');
 const LOW = { level: 5, firstSeed: 9001, seeds: 6, seconds: 15, atLeast: 3 } as const;
 
@@ -124,4 +125,18 @@ void test('learning to leave corners did not teach the shipped model to run from
   const seeds: number[] = Array.from({ length: LOW.seeds }, (_unused: unknown, index: number): number => LOW.firstSeed + index);
   const hurt: number = seeds.filter((seed: number): boolean => hurtsAtLowLevel(content, pilot, seed)).length;
   assert.ok(hurt >= LOW.atLeast, `the level ${LOW.level} rival hurt a standing hero in only ${hurt} of ${LOW.seeds} duels`);
+});
+
+void test('the crossbow rival finds a clear shot around the ring wall', (): void => {
+  const world: World = ringWorld(provingRing(ringContent(loadContent())), 9003, LOW.level);
+  wearDuelKit(world);
+  const duel: RivalDuel = must(startRivalDuel(world, 9003), 'duel');
+  const rival: PlayerState = must(rivalOf(duel, world), 'rival');
+  assert.equal(rival.skills[0]?.delivery.type, 'projectile');
+  assert.equal(lineOfSight(world.grid, rival.pos, world.player.pos), false);
+  for (let time: number = 0; time < RIVAL.startIn + LOW.seconds; time += FRAME) {
+    const events: WorldEvent[] = stepWorld(world, rivalCommands(duel, world, SHOOT, FRAME), FRAME);
+    if (events.some((event: WorldEvent): boolean => event.type === 'damage' && event.sourceId === rival.id && event.targetId === world.player.id && event.amount > 0)) return;
+  }
+  assert.fail('the crossbow rival never hit the standing hero');
 });

@@ -363,7 +363,7 @@ function decide(pool: Pool, match: Match, env: number, seat: number, actions: In
   log.push(list);
   const action: Action = actionFrom(list);
   rememberDecision(recall, action);
-  return commandsFor(matchWorld(match), action, seen.view);
+  return commandsFor(matchWorld(match), action, seen.view, match.kind === 'duel' && match.duel.options.legendaryGear === true);
 }
 
 interface Played {

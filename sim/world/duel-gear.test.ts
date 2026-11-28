@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
-import type { Content, ItemSlot, ZoneDef, ZoneDuel, ZoneExit } from '../content/types.ts';
+import type { Content, ZoneDef, ZoneDuel, ZoneExit } from '../content/types.ts';
 import { ITEM_SLOTS } from '../content/types.ts';
 import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { RING, ringContent } from '../../test/rival-support.ts';
 import type { Action } from '../rl/contract.ts';
 import { NO_ACTION, RL } from '../rl/contract.ts';
-import { DUEL_KIT } from '../rl/kit.ts';
 import type { RivalDuel, RivalOutcome, RivalPilot } from '../rl/rival.ts';
 import { beginRivalDuel, resignRivalDuel, rivalCommands, rivalHeard, rivalOf, startRivalDuel } from '../rl/rival.ts';
 import { toSave } from '../save.ts';
@@ -73,31 +72,31 @@ function fell(hero: PlayerState): void {
   hero.alive = false;
 }
 
-void test('a standard duel sets the hero gear aside and dresses them in the plain kit at their level, at full life', (): void => {
+void test('a standard duel sets the hero gear aside and lends them their legendary family and rares at their level, at full life', (): void => {
   const world: World = geared(3);
   const before: Equipment = snapshot(world.player.equipped);
   enterRing(world);
   assert.deepEqual(world.setAside, before);
   const player: PlayerState = world.player;
-  assert.equal(player.equipped.weapon?.base, RING.weapon);
-  for (const piece of DUEL_KIT.armour) assert.equal(player.equipped[piece.slot]?.base, piece.base);
+  assert.equal(player.equipped.weapon?.base, 'the_millwheel');
   for (const slot of ITEM_SLOTS) {
     const item: ItemInstance | null = player.equipped[slot];
-    if (item === null) continue;
-    assert.equal(item.rarity, DUEL_KIT.rarity);
+    assert.ok(item);
     assert.equal(item.level, LEVEL);
-    assert.deepEqual(item.affixes, []);
+    assert.ok(item.affixes.length > 0);
     assert.ok(!Object.values(before).includes(item));
   }
   assert.equal(player.life, player.maxLife);
 });
 
-void test('the rival and the player wear the same armour in a standard duel', (): void => {
+void test('the standard ring gives the challenger and the rival the same legendary and rare allowances', (): void => {
   const world: World = geared(4);
   const duel: RivalDuel = enterRing(world);
-  const rival: PlayerState = must(rivalOf(duel, world), 'rival');
-  const slots: ItemSlot[] = ITEM_SLOTS.filter((slot: ItemSlot): boolean => slot !== 'weapon');
-  for (const slot of slots) assert.equal(world.player.equipped[slot]?.base, rival.equipped[slot]?.base, slot);
+  for (const hero of [world.player, must(rivalOf(duel, world), 'rival')]) {
+    const items: (ItemInstance | null)[] = Object.values(hero.equipped);
+    assert.equal(items.filter((item: ItemInstance | null): boolean => item?.rarity === 'stormtouched').length, 3);
+    assert.equal(items.filter((item: ItemInstance | null): boolean => item?.rarity === 'rare').length, 4);
+  }
 });
 
 void test('the hero gets their own gear back exactly after a win, a loss and a resignation', (): void => {

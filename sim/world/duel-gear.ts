@@ -2,6 +2,8 @@ import type { ItemBaseDef, WeaponGroup } from '../content/types.ts';
 import { ITEM_SLOTS } from '../content/types.ts';
 import type { DuelKit, KitPiece } from '../rl/kit.ts';
 import { DUEL_KIT, weaponGroupOf } from '../rl/kit.ts';
+import { createRng } from '../rng.ts';
+import { equipDuelFamily } from './duel-family.ts';
 import { refreshPlayer } from './character.ts';
 import type { Equipment, ItemInstance, PlayerState, World } from './types.ts';
 
@@ -27,8 +29,9 @@ export function standardPieces(world: World, kit: DuelKit, worn: Equipment): rea
 export function wearDuelKit(world: World, kit: DuelKit = DUEL_KIT): void {
   if (world.setAside !== null) return;
   const player: PlayerState = world.player;
-  const pieces: readonly KitPiece[] = standardPieces(world, kit, player.equipped);
   world.setAside = { ...player.equipped };
+  if (equipDuelFamily(world, createRng(world.rng.state()), kit)) return;
+  const pieces: readonly KitPiece[] = standardPieces(world, kit, player.equipped);
   for (const slot of ITEM_SLOTS) player.equipped[slot] = null;
   for (const piece of pieces) {
     player.equipped[piece.slot] = { uid: world.nextItemUid, base: piece.base, rarity: kit.rarity, level: player.level, affixes: [], ledger: null };

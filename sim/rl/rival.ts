@@ -83,7 +83,7 @@ function decide(duel: RivalDuel, world: World, rival: PlayerState, pilot: RivalP
   noteSeen(duel.recall, world, seenMonsters(seen.view));
   const action: Action = pilot(seen.obs, seen.mask);
   rememberDecision(duel.recall, action);
-  return commandsFor(world, action, seen.view);
+  return commandsFor(world, action, seen.view, true);
 }
 
 export function rivalCommands(duel: RivalDuel, world: World, pilot: RivalPilot, dt: number): Command[] {

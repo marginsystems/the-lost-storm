@@ -52,7 +52,7 @@ function seatCommands(duel: Duel, seat: DuelSeat, list: readonly number[]): Comm
   const seen: Observation = duelObservation(duel, seat);
   const action: Action = actionFrom(list);
   rememberDecision(seat.recall, action);
-  return commandsFor(duel.world, action, seen.view);
+  return commandsFor(duel.world, action, seen.view, duel.options.legendaryGear === true);
 }
 
 function decisionCommands(duel: Duel, replay: DuelReplay, decision: number): Command[][] {
@@ -67,15 +67,20 @@ function decisionsIn(replay: DuelReplay): number {
   return Math.min(...replay.seats.map((seat: DuelSeatRecord): number => seat.actions.length));
 }
 
+function duelFromRecord(content: Content, replay: DuelReplay): Duel {
+  const options: DuelOptions = playableReplay(replay).options;
+  return createDuel(content, { ...options, legendaryGear: options.legendaryGear === true });
+}
+
 export function replayDuel(content: Content, replay: DuelReplay): Duel {
-  const duel: Duel = createDuel(content, playableReplay(replay).options);
+  const duel: Duel = duelFromRecord(content, replay);
   const decisions: number = decisionsIn(replay);
   for (let decision: number = 0; decision < decisions && duelRunning(duel); decision += 1) stepDuel(duel, decisionCommands(duel, replay, decision));
   return duel;
 }
 
 export function createDuelReplayer(content: Content, replay: DuelReplay): DuelReplayer {
-  return { duel: createDuel(content, playableReplay(replay).options), replay, rewards: [], ticks: 0, decision: 0 };
+  return { duel: duelFromRecord(content, replay), replay, rewards: [], ticks: 0, decision: 0 };
 }
 
 export function duelReplayerDone(replayer: DuelReplayer): boolean {
@@ -124,7 +129,7 @@ export function readDuelReplay(raw: unknown): DuelReplay {
     situation: 'duel',
     version: numberField(source, 'version'),
     fingerprint: text(source, 'fingerprint', 'duel replay'),
-    options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), ...(options['builds'] === undefined ? {} : { builds: seatBuilds(options['builds']) }), ...(options['level'] === undefined ? {} : { level: numberField(options, 'level') }), ...(options['corner'] === true ? { corner: true } : {}) },
+    options: { legendaryGear: options['legendaryGear'] === true, seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), ...(options['builds'] === undefined ? {} : { builds: seatBuilds(options['builds']) }), ...(options['level'] === undefined ? {} : { level: numberField(options, 'level') }), ...(options['corner'] === true ? { corner: true } : {}) },
     seats,
     label: text(source, 'label', 'duel replay'),
   };
