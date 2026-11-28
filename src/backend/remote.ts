@@ -285,8 +285,14 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     setState('cloud');
   };
 
-  const stashMovedOn = (cloud: CloudStash): void => {
+  const stashMovedOn = (sending: SaveData, cloud: CloudStash): void => {
     const owner: StashOwner | null = sharing;
+    if (owner !== null && quickRetries < TIMING.maxQuickRetries && options.shared?.rebase(owner, cloud, sending.stash) === true) {
+      quickRetries += 1;
+      log.info('the shared stash on the server is one this device sent, so saving goes on from its revision.');
+      schedule(0);
+      return;
+    }
     if (owner !== null) options.shared?.adopt({ items: cloud.items, account: owner.account, epoch: owner.epoch, revision: cloud.revision });
     sharing = null;
     log.warn('the shared stash was changed by another character or device, so this one stopped saving. Reload to continue from it.');
@@ -333,7 +339,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
         playedElsewhere();
         return;
       case 'stash_conflict':
-        stashMovedOn(result.stash);
+        stashMovedOn(sending, result.stash);
         return;
       case 'refused':
         blocked = true;
@@ -349,8 +355,10 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
     if (held === null) return null;
     const owner: StashOwner | null = sharing;
     const base: number | null = owner === null ? null : (options.shared?.read()?.revision ?? 0);
+    if (owner !== null) options.shared?.sending(owner, sending.stash);
     const result: WriteResult = await api.writeSave(held.token, sending, held.revision, epochs.current(), timeout(TIMING.requestMs), stamp(), base);
     if (owner !== null && result.kind === 'ok' && result.stashRevision !== null) options.shared?.agree(owner, result.stashRevision, sending.stash);
+    if (owner !== null && result.kind === 'ok') options.shared?.answered();
     return { held, result };
   };
 
@@ -463,6 +471,7 @@ export function createRemoteBackend(options: RemoteOptions): Backend {
       return;
     }
     const owner: StashOwner = { account: held.accountId, epoch: epochNow };
+    options.shared.rebase(owner, cloud, null);
     const device: StashRecord | null = options.shared.read();
     const chosen: StashRecord = sharedStash(device, cloud, owner);
     if (chosen !== device) options.shared.adopt(chosen);

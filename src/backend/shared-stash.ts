@@ -12,6 +12,8 @@ import { loadRoster, parkedKey } from './roster-store.ts';
 import type { Roster, Slot } from './roster.ts';
 
 export const STASH_KEY: string = 'the-lost-storm.stash.v1';
+export const UNANSWERED_KEY: string = 'the-lost-storm.stash-unanswered.v1';
+export const UNANSWERED: { readonly kept: number } = { kept: 4 };
 
 export interface StashRecord {
   readonly items: readonly (ItemInstance | null)[];
@@ -33,6 +35,27 @@ export interface DeviceStash {
   keep(items: readonly (ItemInstance | null)[]): boolean;
   adopt(record: StashRecord): void;
   agree(owner: StashOwner, revision: number, sent: readonly (ItemInstance | null)[]): void;
+  sending(owner: StashOwner, items: readonly (ItemInstance | null)[]): void;
+  answered(): void;
+  rebase(owner: StashOwner, cloud: CloudStash, sending: readonly (ItemInstance | null)[] | null): boolean;
+}
+
+interface Unanswered {
+  readonly account: string;
+  readonly stashes: readonly string[];
+}
+
+function readUnanswered(text: string | null): Unanswered | null {
+  if (text === null) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (!isFields(parsed) || typeof parsed['account'] !== 'string' || !Array.isArray(parsed['stashes'])) return null;
+  const stashes: readonly unknown[] = parsed['stashes'];
+  return { account: parsed['account'], stashes: stashes.filter((each: unknown): each is string => typeof each === 'string') };
 }
 
 function wholeOrNull(value: unknown): number | null | undefined {
@@ -117,6 +140,27 @@ export function createDeviceStash(content: Content, store: KeyValueStore, epochs
       if (JSON.stringify(held.items) !== JSON.stringify(readItemList(content, sent))) return;
       const raised: boolean = held.epoch !== owner.epoch || held.revision === null || revision > held.revision;
       if (raised) write({ ...held, epoch: owner.epoch, revision });
+    },
+    sending(owner: StashOwner, items: readonly (ItemInstance | null)[]): void {
+      const held: Unanswered | null = readUnanswered(store.read(UNANSWERED_KEY));
+      const earlier: readonly string[] = held === null || held.account !== owner.account ? [] : held.stashes;
+      const next: string = JSON.stringify(readItemList(content, items));
+      const stashes: readonly string[] = [...earlier.filter((each: string): boolean => each !== next), next].slice(-UNANSWERED.kept);
+      store.write(UNANSWERED_KEY, JSON.stringify({ account: owner.account, stashes }));
+    },
+    answered(): void {
+      store.remove(UNANSWERED_KEY);
+    },
+    rebase(owner: StashOwner, cloud: CloudStash, sending: readonly (ItemInstance | null)[] | null): boolean {
+      const held: StashRecord | null = read();
+      if (held === null || held.account !== owner.account) return false;
+      const unanswered: Unanswered | null = readUnanswered(store.read(UNANSWERED_KEY));
+      const landed: string = JSON.stringify(cloud.items);
+      const own: boolean = (sending !== null && JSON.stringify(readItemList(content, sending)) === landed) || (unanswered !== null && unanswered.account === owner.account && unanswered.stashes.includes(landed));
+      if (!own) return false;
+      const written: boolean = write({ ...held, epoch: owner.epoch, revision: cloud.revision });
+      if (written) store.remove(UNANSWERED_KEY);
+      return written;
     },
   };
 }
