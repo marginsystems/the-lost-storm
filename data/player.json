@@ -45,6 +45,11 @@
       "value": 1
     }
   ],
+  "levelCooldown": {
+    "recoveryPerLevel": 0.025,
+    "requiresAny": ["stone_thunderclap", "stone_banked_fire", "stone_fire_burst"],
+    "skills": ["thunderclap", "thunderclap_gathered", "thunderclap_standing", "bellows", "held_breath", "banked_fire", "flashover", "fire_burst", "firewall", "ember_swift"]
+  },
   "skillBook": [
     {"skill": "cleave", "level": 1},
     {"skill": "dodge_roll", "level": 1, "when": [{"type": "flag", "flag": "roll_taught", "is": "yes"}]}

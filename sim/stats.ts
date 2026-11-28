@@ -213,20 +213,34 @@ function pulled(skill: SkillDef, sum: FieldTotal): number {
   return pull > 0 ? -pull : skill.knockback * (1 + sum('knockbackPercent'));
 }
 
-export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): SkillDef {
+export interface SkillProgress {
+  readonly level: number;
+  readonly allocated: readonly string[];
+}
+
+export function cooldownAtLevel(content: Content, skill: SkillDef, hero: SkillProgress, modifier: number = 0): number {
+  const rule = content.player.levelCooldown;
+  const grows: boolean = hero.level > 1 && rule.skills.includes(skill.form) && rule.requiresAny.some((id: string): boolean => hero.allocated.includes(id));
+  const recovery: number = grows ? 1 + rule.recoveryPerLevel * (hero.level - 1) : 1;
+  const reduction: number = cappedSkillMod(content.player.skillCaps, 'cooldownPercent', (1 + modifier) / recovery - 1);
+  return skill.cooldown * scaleOf(reduction);
+}
+
+export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}, level: number = 1): SkillDef {
   const placed: readonly SkillTreeNodeDef[] = allocatedNodes(content, allocated, held);
-  return modded(content, chainFrom(content, base, placed, allocated, powers, worn, chosen), base, placed, powers, held);
+  return modded(content, chainFrom(content, base, placed, allocated, powers, worn, chosen), base, placed, powers, held, { allocated, level });
 }
 
-export function resolveLeft(content: Content, parent: SkillDef, left: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], held: string | null = ANY_WEAPON): SkillDef {
-  return modded(content, { skill: left, through: [parent.id, left.id] }, left, allocatedNodes(content, allocated, held), powers, held);
+export function resolveLeft(content: Content, parent: SkillDef, left: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], held: string | null = ANY_WEAPON, level: number = 1): SkillDef {
+  return modded(content, { skill: left, through: [parent.id, left.id] }, left, allocatedNodes(content, allocated, held), powers, held, { allocated, level });
 }
 
-function modded(content: Content, { skill, through }: ChosenSkill, base: SkillDef, placed: readonly SkillTreeNodeDef[], powers: readonly PowerDef[], held: string | null): SkillDef {
+function modded(content: Content, { skill, through }: ChosenSkill, base: SkillDef, placed: readonly SkillTreeNodeDef[], powers: readonly PowerDef[], held: string | null, hero: SkillProgress): SkillDef {
   const empowered: readonly SkillMod[] = empoweredMods(empoweredBy(skill, base), held).map((mod: EmpoweredMod): SkillMod => ({ target: { type: 'skill', skill: skill.id }, field: mod.field, value: mod.value }));
   const mods: SkillMod[] = [...placed.flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, through));
   mods.push(...empowered);
-  if (mods.length === 0) return skill;
+  const cooldown: number = cooldownAtLevel(content, skill, hero, sumSkillMod(mods, 'cooldownPercent'));
+  if (mods.length === 0) return cooldown === skill.cooldown ? skill : { ...skill, cooldown };
   const sum: FieldTotal = (field: SkillModField): number => cappedSkillMod(content.player.skillCaps, field, sumSkillMod(mods, field));
   const area: number = scaleOf(sum('areaPercent'));
   const delivery: Delivery = scaledDelivery(skill.delivery, {
@@ -246,7 +260,7 @@ function modded(content: Content, { skill, through }: ChosenSkill, base: SkillDe
     delivery,
     vfx: widerWave(skill.vfx, area),
     damage: { type: skill.damage.type, weaponPercent: skill.damage.weaponPercent * damageScale, flatMin: skill.damage.flatMin * damageScale, flatMax: skill.damage.flatMax * damageScale },
-    cooldown: skill.cooldown * scaleOf(sum('cooldownPercent')),
+    cooldown,
     manaCost: Math.round(skill.manaCost * scaleOf(sum('manaCostPercent'))),
     knockback: pulled(skill, sum),
     stagger: skill.stagger * scaleOf(sum('staggerPercent')),
@@ -257,10 +271,10 @@ function modded(content: Content, { skill, through }: ChosenSkill, base: SkillDe
   };
 }
 
-export function resolveSkillBar(content: Content, bar: readonly (string | null)[], allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): (SkillDef | null)[] {
+export function resolveSkillBar(content: Content, bar: readonly (string | null)[], allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}, level: number = 1): (SkillDef | null)[] {
   return bar.map((id: string | null): SkillDef | null => {
     const skill: SkillDef | undefined = id === null ? undefined : content.skills.get(id);
-    return skill === undefined ? null : resolveSkill(content, skill, allocated, powers, worn, held, chosen);
+    return skill === undefined ? null : resolveSkill(content, skill, allocated, powers, worn, held, chosen, level);
   });
 }
 

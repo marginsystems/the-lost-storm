@@ -1,10 +1,10 @@
 import { conditions } from './parse-conditions.ts';
 import type { Fields } from './read.ts';
-import { choice, ContentError, each, fields, flag, fraction, nonNegative, positive, share, text } from './read.ts';
+import { choice, ContentError, each, fields, flag, fraction, nonNegative, positive, share, text, textList } from './read.ts';
 import type { BeamDelivery, BlinkDelivery, BrandDef, BurnDef, ChainDelivery, AreaAnchor, AreaAura, AreaDelivery, AreaExposure, AreaStoke, MomentumDef, MomentumSpend, MomentumTier, PressDef, SkillUnlock, SoakDef } from './shape-types.ts';
 import { AREA_ANCHORS } from './shape-types.ts';
 import { skillMod, skillTarget, statMod } from './parse-mods.ts';
-import type { Content, SkillBinding, SkillDef, SkillTreeNodeDef } from './types.ts';
+import type { Content, LevelCooldown, SkillBinding, SkillDef, SkillTreeNodeDef } from './types.ts';
 
 export const SHAPE_LIMITS = {
   shortestPulse: 0.1,
@@ -211,6 +211,15 @@ export function shapeProblems(content: Content): string[] {
   return problems;
 }
 
+export function levelCooldown(value: unknown, where: string): LevelCooldown {
+  const source: Fields = fields(value, where);
+  return {
+    recoveryPerLevel: nonNegative(source, 'recoveryPerLevel', where),
+    requiresAny: textList(source, 'requiresAny', where),
+    skills: textList(source, 'skills', where),
+  };
+}
+
 export function skillUnlock(value: unknown, where: string): SkillUnlock {
   const source: Fields = fields(value, where);
   const level: number = positive(source, 'level', where);
@@ -223,6 +232,11 @@ export function bookProblems(content: Content): string[] {
   const need = (ok: boolean, problem: string): void => {
     if (!ok) problems.push(problem);
   };
+  for (const entry of content.player.skillBook) {
+    need(content.skills.has(entry.skill), `skill book uses unknown skill ${entry.skill}`);
+  }
+  for (const id of content.player.levelCooldown.requiresAny) need(content.skillTree.some((node): boolean => node.id === id), `level cooldown names unknown place ${id}`);
+  for (const id of content.player.levelCooldown.skills) need(content.skills.has(id), `level cooldown names unknown skill ${id}`);
   const book: ReadonlyMap<string, number> = new Map<string, number>(content.player.skillBook.map((entry: SkillUnlock): [string, number] => [entry.skill, entry.level]));
   need(book.size === content.player.skillBook.length, 'skill book lists a skill twice');
   const slotted: string[] = content.player.skillBar.flatMap((binding: SkillBinding): string[] => (binding.skill === null ? [] : [binding.skill]));

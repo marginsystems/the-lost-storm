@@ -29,3 +29,22 @@ void test('places that would cut a cooldown to nothing stop at the player\'s coo
   const open: Content = { ...content, player: { ...content.player, skillCaps: [] } };
   assert.equal(resolveSkill(open, roll(), ROLL_COOLDOWN).cooldown, 0);
 });
+
+void test('Flashover gains recovery through level 50 and combines with fire cooldown places up to the shared floor', (): void => {
+  const base = content.skills.get('banked_fire');
+  assert.ok(base !== undefined);
+  const cooldown = (level: number, places: readonly string[]): number =>
+    resolveSkill(content, base, ['stone_banked_fire', 'stone_flashover', ...places], [], [], 'heavy', {}, level).cooldown;
+  assert.ok(cooldown(50, []) < cooldown(49, []));
+  assert.ok(Math.abs(cooldown(21, ['kiln_draught_hole']) - 1.08) < 1e-9);
+  assert.ok(Math.abs(cooldown(50, ['kiln_draught_hole', 'kiln_flue']) - 0.72) < 1e-9);
+});
+
+void test('Held Breath follows Firewalker recovery when the hero has learned a fire spell', (): void => {
+  const aura = content.skills.get('held_breath');
+  assert.ok(aura !== undefined);
+  const standalone = resolveSkill(content, aura, ['stone_held_breath'], [], [], 'crossbow', {}, 21);
+  const firewalker = resolveSkill(content, aura, ['stone_held_breath', 'stone_thunderclap'], [], [], 'crossbow', {}, 21);
+  assert.equal(standalone.cooldown, aura.cooldown);
+  assert.ok(Math.abs(firewalker.cooldown - aura.cooldown / 1.5) < 1e-9);
+});

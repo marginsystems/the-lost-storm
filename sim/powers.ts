@@ -90,13 +90,13 @@ function targetMatches(content: Content, trigger: PowerTriggerDef, target: Actor
 export function leftBehind(world: World, sourceId: number, parent: SkillDef, left: SkillDef): SkillDef {
   const hero: PlayerState | null = findHero(world, sourceId);
   if (hero === null) return left;
-  return resolveLeft(world.content, parent, left, hero.allocated, heldPowers(world.content, hero.equipped, hero.powers), hero.wielding);
+  return resolveLeft(world.content, parent, left, hero.allocated, heldPowers(world.content, hero.equipped, hero.powers), hero.wielding, hero.level);
 }
 
 function cast(world: World, player: PlayerState, effect: CastEffect, at: ReadonlyVec2): void {
   const def: SkillDef | undefined = world.content.skills.get(effect.skill);
   if (def === undefined) return;
-  const skill: SkillDef = resolveSkill(world.content, def, player.allocated, heldPowers(world.content, player.equipped, player.powers), wornVariants(world.content, player.equipped), player.wielding, player.changes);
+  const skill: SkillDef = resolveSkill(world.content, def, player.allocated, heldPowers(world.content, player.equipped, player.powers), wornVariants(world.content, player.equipped), player.wielding, player.changes, player.level);
   const origin: ReadonlyVec2 = effect.at === 'caster' ? player.pos : at;
   const facing: ReadonlyVec2 = directionOf(player.facing);
   world.echoes.push({

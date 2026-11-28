@@ -22,7 +22,7 @@ export function refreshPlayer(world: World): void {
 export function refreshHero(world: World, player: PlayerState): void {
   player.wielding = heldGroup(world.content, player.equipped);
   player.stats = computeStats(world.content, player.level, player.equipped, player.allocated, [...buffMods(player.powers), ...heroStanceMods(world.content, player)], player.wielding);
-  player.skills = resolveSkillBar(world.content, player.bar, player.allocated, heldPowers(world.content, player.equipped, player.powers), wornVariants(world.content, player.equipped), player.wielding, player.changes);
+  player.skills = resolveSkillBar(world.content, player.bar, player.allocated, heldPowers(world.content, player.equipped, player.powers), wornVariants(world.content, player.equipped), player.wielding, player.changes, player.level);
   player.maxLife = player.stats.maxLife;
   player.life = Math.min(player.life, player.maxLife);
   player.mana = Math.min(player.mana, player.stats.maxMana);
@@ -30,7 +30,7 @@ export function refreshHero(world: World, player: PlayerState): void {
 }
 
 export function heldForm(content: Content, player: PlayerState, base: SkillDef): SkillDef {
-  return resolveSkill(content, base, player.allocated, heldPowers(content, player.equipped, player.powers), wornVariants(content, player.equipped), player.wielding, player.changes);
+  return resolveSkill(content, base, player.allocated, heldPowers(content, player.equipped, player.powers), wornVariants(content, player.equipped), player.wielding, player.changes, player.level);
 }
 
 export function heldLook(world: World, skillId: string): EmpowerLook | null {

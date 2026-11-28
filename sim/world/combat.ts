@@ -378,7 +378,7 @@ function powersOnHit(world: World, hero: PlayerState, target: Actor, skill: Skil
 
 function heroBurst(world: World, offence: Offence, burst: SkillDef): SkillDef {
   const hero: PlayerState = findHero(world, offence.sourceId) ?? world.player;
-  return resolveSkill(world.content, burst, hero.allocated, [], [], hero.wielding, hero.changes);
+  return resolveSkill(world.content, burst, hero.allocated, [], [], hero.wielding, hero.changes, hero.level);
 }
 
 function burstBrand(world: World, target: Actor, brand: BrandState): void {

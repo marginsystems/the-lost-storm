@@ -182,10 +182,10 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const status: TreeNodeStatus = statusOf(node);
     const refund: ChartChange = refundState(content, player(), node.id);
     const refundable: boolean = status.kind === 'allocated' && refund !== 'not_allowed';
-    const ability: AbilityCard | null = abilityCard(content, node, player().bar);
+    const ability: AbilityCard | null = abilityCard(content, node, player().bar, player());
     const off: PlaceOff | null = placeOff(content, node, player().equipped);
     const changes: readonly SkillChanges[] = placeChanges(content, player(), node);
-    const key: string = `${node.id}:${status.kind}:${refundable ? goldFor(1) : -1}:${player().skillPoints}:${ability?.slot ?? -1}:${off?.holding ?? ''}:${changesShape(changes)}`;
+    const key: string = `${node.id}:${status.kind}:${refundable ? goldFor(1) : -1}:${player().skillPoints}:${ability?.slot ?? -1}:${ability?.cost ?? ''}:${off?.holding ?? ''}:${changesShape(changes)}`;
     showRoute(node.id);
     card.style.setProperty('--tint', placeTint(content, node));
     action.classList.toggle('shown', refundable);

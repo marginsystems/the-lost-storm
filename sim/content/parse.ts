@@ -26,7 +26,7 @@ import { momentProblems } from './moments.ts';
 import { sceneProblems } from './parse-scene.ts';
 import { chartDef, chartProblems, treeNode } from './parse-chart.ts';
 import { skillEmpowerment, statMod } from './parse-mods.ts';
-import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
+import { bookProblems, levelCooldown, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
 import { flashProblems } from './parse-flash.ts';
 import { PICTURE_VIEWS } from './rig-types.ts';
@@ -377,6 +377,7 @@ function player(value: unknown, where: string): PlayerDef {
     baseStats: statBlock(source['baseStats'], `${where}.baseStats`),
     perLevel: each(source['perLevel'], `${where}.perLevel`, statMod),
     skillBar: each(source['skillBar'], `${where}.skillBar`, skillBinding),
+    levelCooldown: levelCooldown(source['levelCooldown'], `${where}.levelCooldown`),
     skillBook: each(source['skillBook'], `${where}.skillBook`, skillUnlock),
     xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), after: xpAfter(xp['after'], `${where}.xp.after`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`), gap: xpGap(xp['gap'], `${where}.xp.gap`) },
     startingItems: textList(source, 'startingItems', where),
@@ -528,9 +529,6 @@ export function contentProblems(content: Content): string[] {
     const rigDef: RigDef | undefined = [...content.rigs.values()].find((candidate: RigDef): boolean => candidate.url === body);
     need(rigDef !== undefined, `base layer names body ${body}, which no rig uses`);
     if (rigDef !== undefined) wears(`base layer of ${body}`, rigDef.id, layer);
-  }
-  for (const entry of content.player.skillBook) {
-    need(content.skills.has(entry.skill), `skill book uses unknown skill ${entry.skill}`);
   }
   for (const base of content.player.startingItems) need(content.itemBases.has(base), `starting item ${base} is unknown`);
   need(content.rarities.length > 0, 'items need at least one rarity');

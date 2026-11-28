@@ -397,12 +397,19 @@ export interface HeroDef {
   readonly names: NameStyle;
 }
 
+export interface LevelCooldown {
+  readonly recoveryPerLevel: number;
+  readonly requiresAny: readonly string[];
+  readonly skills: readonly string[];
+}
+
 export interface PlayerDef {
   readonly hero: HeroDef;
   readonly heroes: readonly HeroDef[];
   readonly radius: number;
   readonly baseStats: StatBlock;
   readonly perLevel: readonly StatMod[];
+  readonly levelCooldown: LevelCooldown;
   readonly skillBar: readonly SkillBinding[];
   readonly skillBook: readonly SkillUnlock[];
   readonly xp: XpCurve;

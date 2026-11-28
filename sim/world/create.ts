@@ -89,7 +89,7 @@ export function freshPlayer(content: Content, save: SaveData | null, chosen: str
     mana: stats.maxMana,
     stats,
     bar,
-    skills: resolveSkillBar(content, bar, allocated, wornPowers(content, equipped), wornVariants(content, equipped), heldGroup(content, equipped), changes),
+    skills: resolveSkillBar(content, bar, allocated, wornPowers(content, equipped), wornVariants(content, equipped), heldGroup(content, equipped), changes, level),
     level,
     xp: save?.xp ?? 0,
     gold: save?.gold ?? 0,
@@ -132,7 +132,7 @@ function giveStartingItems(world: World, emptyHanded: boolean): void {
     else addToInventory(world, item);
   }
   world.player.wielding = heldGroup(world.content, world.player.equipped);
-  world.player.skills = resolveSkillBar(world.content, world.player.bar, world.player.allocated, wornPowers(world.content, world.player.equipped), wornVariants(world.content, world.player.equipped), world.player.wielding, world.player.changes);
+  world.player.skills = resolveSkillBar(world.content, world.player.bar, world.player.allocated, wornPowers(world.content, world.player.equipped), wornVariants(world.content, world.player.equipped), world.player.wielding, world.player.changes, world.player.level);
   world.player.stats = computeStats(world.content, world.player.level, world.player.equipped, world.player.allocated);
   world.player.maxLife = world.player.stats.maxLife;
   world.player.life = world.player.stats.maxLife;

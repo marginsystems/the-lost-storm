@@ -4,7 +4,8 @@ import { made, played, roundTrip, saveContent } from '../test/save-support.ts';
 import { must } from '../test/support.ts';
 import type { WeaponGroup } from './content/chart-types.ts';
 import type { SkillDef } from './content/types.ts';
-import { allocateNode, refundNode } from './world/character.ts';
+import { xpToNextLevel } from './progression.ts';
+import { allocateNode, grantXp, refundNode } from './world/character.ts';
 import { createWorld } from './world/create.ts';
 import type { World } from './world/types.ts';
 
@@ -20,6 +21,15 @@ void test('a saved Firewalker with an empty click slot and a chosen Gathered Cla
   assert.deepEqual(world.player.bar, [...old.player.bar, 'ember_swift']);
   assert.deepEqual(world.player.changes, old.player.changes);
   assert.deepEqual(world.player.skills.map((skill: SkillDef | null): string | null => skill?.name ?? null), [null, 'Fire Slam', 'Held Breath', 'Flashover', 'Firewall', 'Dodge Roll', 'Ember Swift']);
+  const before = must(world.player.skills[3], 'level 20 flock').cooldown;
+  grantXp(world, xpToNextLevel(world.content.player.xp, world.player.level) - world.player.xp);
+  const after = must(world.player.skills[3], 'level 21 flock').cooldown;
+  assert.ok(after < before && Math.abs(after - 1.2) < 1e-9);
+  const loaded: World = createWorld(saveContent, { seed: 5, save: roundTrip(world) });
+  assert.deepEqual(loaded.player.skills.map((skill): number | undefined => skill?.cooldown), world.player.skills.map((skill): number | undefined => skill?.cooldown));
+  assert.equal(must(loaded.player.skills[6], 'Ember Swift').cooldown, 4);
+  assert.equal(must(loaded.player.skills[4], 'Firewall').cooldown, 0);
+  assert.equal(must(loaded.player.skills[5], 'Dodge Roll').cooldown, must(saveContent.skills.get('dodge_roll'), 'base roll').cooldown);
   const manual = [...world.player.bar];
   manual[6] = null;
   world.player.bar = manual;

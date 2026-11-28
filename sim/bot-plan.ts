@@ -197,7 +197,7 @@ function toughnessOf(content: Content, stats: StatBlock): number {
 export function powerOf(content: Content, level: number, equipped: Equipment, allocated: readonly string[], focus: string | null = null, changes: ChangeChoice = {}): Power {
   const stats: StatBlock = computeStats(content, level, equipped, allocated);
   const base: SkillDef | undefined = content.skills.get(focus ?? content.player.skillBar[0]?.skill ?? '');
-  const skill: SkillDef | undefined = base === undefined ? undefined : resolveSkill(content, base, allocated, wornPowers(content, equipped), wornVariants(content, equipped), heldGroup(content, equipped), changes);
+  const skill: SkillDef | undefined = base === undefined ? undefined : resolveSkill(content, base, allocated, wornPowers(content, equipped), wornVariants(content, equipped), heldGroup(content, equipped), changes, level);
   const items: number = Object.values(equipped).reduce((sum: number, item: ItemInstance | null): number => sum + (item?.level ?? 0), 0);
   return { dps: skill === undefined ? 0 : damagePerSecond(stats, skill), toughness: toughnessOf(content, stats), itemLevels: items, mobility: stats.moveSpeed };
 }

@@ -95,7 +95,7 @@ export function buildOf(content: Content, subject: VerdictSubject, equipped: Equ
   const held: string | null = heldGroup(content, equipped);
   return {
     stats: computeStats(content, subject.level, equipped, subject.allocated, [], held),
-    skills: resolveSkillBar(content, subject.bar, subject.allocated, wornPowers(content, equipped), wornVariants(content, equipped), held, subject.changes),
+    skills: resolveSkillBar(content, subject.bar, subject.allocated, wornPowers(content, equipped), wornVariants(content, equipped), held, subject.changes, subject.level),
   };
 }
 
