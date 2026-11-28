@@ -22,6 +22,7 @@ export function writeFlags(world: World, sets: StoryFlags): boolean {
     const value: string | undefined = sets[key];
     if (value !== undefined) world.flags[key] = value;
   }
+  world.events.push({ type: 'flags_changed', flags: keys });
   reportEndedActs(world, before);
   return true;
 }

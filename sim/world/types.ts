@@ -445,6 +445,7 @@ export type WorldEvent =
   | { readonly type: 'quest_advanced'; readonly quest: string; readonly objective: string }
   | { readonly type: 'quest_completed'; readonly quest: string }
   | { readonly type: 'act_ended'; readonly act: string }
+  | { readonly type: 'flags_changed'; readonly flags: readonly string[] }
   | { readonly type: 'triggered'; readonly trigger: string; readonly pos: Vec2 }
   | { readonly type: 'waypoint_unlocked'; readonly zone: string }
   | { readonly type: 'exit_locked'; readonly exit: string; readonly hint: string }

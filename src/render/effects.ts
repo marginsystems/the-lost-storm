@@ -607,6 +607,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'quest_started':
           case 'quest_advanced':
           case 'act_ended':
+          case 'flags_changed':
           case 'triggered':
           case 'quest_completed':
           case 'waypoint_unlocked':

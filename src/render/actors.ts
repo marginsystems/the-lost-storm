@@ -54,6 +54,7 @@ import { monsterKey, zoneBodies } from './zone-bodies.ts';
 import type { StrikeHolds } from './strike-holds.ts';
 import { strikeHolds } from './strike-holds.ts';
 import { raiseBodies } from './body-raise.ts';
+import { easedFade } from './eased-fade.ts';
 
 export const ACTORS = {
   monsterFlash: 1,
@@ -101,11 +102,6 @@ interface NpcEntry {
   pose: ActorPose;
   shown: number;
   fade: number;
-}
-
-function easedFade(amount: number): number {
-  const clamped: number = Math.min(1, Math.max(0, amount));
-  return clamped * clamped * (3 - 2 * clamped);
 }
 
 export interface Actors {
@@ -626,6 +622,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'quest_started':
           case 'quest_advanced':
           case 'act_ended':
+          case 'flags_changed':
           case 'triggered':
           case 'quest_completed':
           case 'waypoint_unlocked':

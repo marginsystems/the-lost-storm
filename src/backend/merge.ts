@@ -24,11 +24,13 @@ export interface ConflictInput {
 }
 
 export function describe(save: SaveData): string {
-  return `level ${save.level}, ${Math.floor(save.xp)} xp`;
+  return `level ${save.level}, ${Math.floor(save.xp)} xp, ${Math.floor(save.tally.played)} s played`;
 }
 
 export function compareProgress(left: SaveData, right: SaveData): number {
-  return left.level !== right.level ? left.level - right.level : left.xp - right.xp;
+  if (left.level !== right.level) return left.level - right.level;
+  if (left.xp !== right.xp) return left.xp - right.xp;
+  return left.tally.played - right.tally.played;
 }
 
 function timeOf(text: string | null): number {

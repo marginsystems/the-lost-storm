@@ -431,6 +431,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             if (act !== undefined) banners.show(`${act.title} complete`, act.end?.line ?? null, 'act');
             break;
           }
+          case 'flags_changed':
           case 'triggered':
             break;
           case 'waypoint_unlocked':

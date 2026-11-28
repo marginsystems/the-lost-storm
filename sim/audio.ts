@@ -286,6 +286,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'dialogue_line':
     case 'dialogue_closed':
     case 'act_ended':
+    case 'flags_changed':
     case 'triggered':
     case 'exit_locked':
     case 'boss_phase':

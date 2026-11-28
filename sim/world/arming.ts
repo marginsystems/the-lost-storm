@@ -1,4 +1,5 @@
 import { armedFlag, armedWhere, toldFlag, toldValue } from '../save-arm.ts';
+import { writeFlags } from './flags.ts';
 import type { World } from './types.ts';
 
 export function announceArming(world: World): void {
@@ -6,7 +7,7 @@ export function announceArming(world: World): void {
     const armed: string | undefined = world.flags[armedFlag(group.id)];
     const told: string = toldFlag(group.id);
     if (armed === undefined || world.flags[told] !== undefined) continue;
-    world.flags[told] = toldValue();
+    writeFlags(world, { [told]: toldValue() });
     world.events.push({ type: 'armed', group: group.id, base: group.starter, where: armedWhere(armed) });
   }
 }

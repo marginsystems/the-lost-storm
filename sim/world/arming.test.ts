@@ -40,7 +40,7 @@ void test('a starter that fell to the ground is announced there, and a group nev
   world.flags[toldFlag('crossbow')] = 'yes';
   world.events = [];
   announceArming(world);
-  assert.deepEqual(world.events, [{ type: 'armed', group: 'heavy', base: 'tempest_greatsword', where: 'ground' }]);
+  assert.deepEqual(armedEvents(world.events), [{ type: 'armed', group: 'heavy', base: 'tempest_greatsword', where: 'ground' }]);
 });
 
 void test('a character armed before the announcement existed is told once on the next load, and never after', (): void => {

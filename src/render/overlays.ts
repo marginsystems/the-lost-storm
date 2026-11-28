@@ -503,6 +503,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'quest_started':
           case 'quest_advanced':
           case 'act_ended':
+          case 'flags_changed':
           case 'triggered':
           case 'quest_completed':
           case 'waypoint_unlocked':

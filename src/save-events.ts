@@ -13,6 +13,7 @@ export const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['
   'quest_started',
   'quest_advanced',
   'quest_completed',
+  'flags_changed',
   'waypoint_unlocked',
   'bark',
   'scene_lead',

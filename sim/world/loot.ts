@@ -1,6 +1,7 @@
 import type { Content, ItemBaseDef, RarityDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import { pickWeighted } from '../rng.ts';
+import { writeFlags } from './flags.ts';
 import { makeItem } from './ledger.ts';
 import type { ItemSource } from './ledger.ts';
 import type { ItemInstance, PlayerState, World } from './types.ts';
@@ -41,6 +42,6 @@ export function rollDrop(world: World, level: number, rarity: string | null, sou
   }
   const item: ItemInstance | null = first ?? makeItem(world, level, null, rarity, source, world.rng, floor);
   if (item === null) return null;
-  world.flags[flag] = 'yes';
+  writeFlags(world, { [flag]: 'yes' });
   return item;
 }
