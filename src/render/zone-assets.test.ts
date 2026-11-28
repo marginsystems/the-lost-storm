@@ -34,10 +34,10 @@ void test('a zone keeps its floors, its outside, its props and every attachment 
   }
 });
 
-void test('the zones next to a zone are the ones its exits lead to, without itself', (): void => {
+void test('the zones next to a zone are the ones its exits and its flash lead to, without itself', (): void => {
   for (const zone of content.zones.values()) {
-    const near: readonly ZoneDef[] = neighbourZones(content, zone);
-    const targets: Set<string> = new Set<string>(zone.exits.map((exit: ZoneExit): string => exit.to).filter((id: string): boolean => id !== zone.id));
+    const near: readonly ZoneDef[] = neighbourZones(content, zone, null);
+    const targets: Set<string> = new Set<string>([...zone.exits.map((exit: ZoneExit): string => exit.to), ...(zone.flash === null ? [] : [zone.flash.into])].filter((id: string): boolean => id !== zone.id));
     assert.deepEqual(new Set<string>(near.map((found: ZoneDef): string => found.id)), targets);
   }
 });

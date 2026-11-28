@@ -156,7 +156,7 @@ import type { PlaceRef } from '../sim/content/markers.ts';
 import { dressed, dressedProp, propDressing } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-view.ts';
-import { cachedZones, neighbourZones } from './render/zone-assets.ts';
+import { keptZonesOf, nearZonesOf } from './render/zone-assets.ts';
 import { createBrowserTimers } from './browser-timers.ts';
 import { readServerUrl } from './backend/server-url.ts';
 import { followSync } from './title-sync.ts';
@@ -239,7 +239,7 @@ async function start(): Promise<void> {
   })));
   const loot: LootView = await createLootView(loader, stage.scene, library);
   let zoneView: ZoneView = firstView;
-  keepZones(world.zone, cachedZones(content, world.zone, mobile.quality.tier.releaseOtherZones));
+  keepZones(world.zone, keptZonesOf(world, mobile.quality.tier.releaseOtherZones));
   let markers: PlaceMarkers = createPlaceMarkers(stage.scene, loader, content, world.zone, world);
   const placeRay: Raycaster = new Raycaster();
   stage.setAmbience(world.zone.ambience);
@@ -417,13 +417,13 @@ async function start(): Promise<void> {
 
   const preloadNearZones = (): void => {
     if (!mobile.quality.tier.preloadNearZones) return;
-    preloadZones(loader, content, neighbourZones(content, world.zone)).catch((error: unknown): void => {
+    preloadZones(loader, content, nearZonesOf(world)).catch((error: unknown): void => {
       warnInConsole(`Preloading the next zones failed: ${String(error)}`);
     });
   };
 
   const nearZonesPaced: LatestPaced = latestPaced(browserPacer(), GAME.nearPrepMs);
-  const prepareNearZones = (): void => void nearZonesPaced(prepareZonesWork(content, neighbourZones(content, world.zone)));
+  const prepareNearZones = (): void => void nearZonesPaced(prepareZonesWork(content, nearZonesOf(world)));
 
   const showZone = async (events: readonly WorldEvent[]): Promise<BuiltZone> => {
     presentScene(events);
@@ -438,7 +438,7 @@ async function start(): Promise<void> {
     const bodiesIn: Promise<void> = waitWithin(Promise.all([actors.raise(world), characters]), createBrowserTimers(), WARM_UP.bodiesWaitMs);
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name, stage.renderer);
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
-    keepZones(world.zone, cachedZones(content, world.zone, mobile.quality.tier.releaseOtherZones));
+    keepZones(world.zone, keptZonesOf(world, mobile.quality.tier.releaseOtherZones));
     preloadNearZones();
     markers = createPlaceMarkers(stage.scene, loader, content, world.zone, world);
     const markersReady: Promise<void> = settledMarkers(markers, warnInConsole);

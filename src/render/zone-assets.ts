@@ -1,5 +1,7 @@
 import type { Content, PropDef, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 import { zoneMarkerModels, zoneMarkerSurfaces } from '../../sim/content/markers.ts';
+import { waitingFlash } from '../../sim/world/flash.ts';
+import type { World } from '../../sim/world/types.ts';
 
 export function zoneProps(zone: ZoneDef): string[] {
   const walls: string[] = zone.walls === null ? [] : [...zone.walls.tall, zone.walls.low, zone.walls.corner];
@@ -59,12 +61,22 @@ export function momentSurfaces(content: Content): Set<string> {
   return ids;
 }
 
-export function neighbourZones(content: Content, zone: ZoneDef): ZoneDef[] {
+export function neighbourZones(content: Content, zone: ZoneDef, flash: ZoneDef | null): ZoneDef[] {
   const ids: Set<string> = new Set<string>(zone.exits.map((exit: ZoneExit): string => exit.to));
+  if (zone.flash !== null) ids.add(zone.flash.into);
+  if (flash !== null) ids.add(flash.id);
   ids.delete(zone.id);
   return [...ids].map((id: string): ZoneDef | undefined => content.zones.get(id)).filter((found: ZoneDef | undefined): found is ZoneDef => found !== undefined);
 }
 
-export function cachedZones(content: Content, zone: ZoneDef, releaseOthers: boolean): Set<ZoneDef> {
-  return new Set<ZoneDef>(releaseOthers ? [] : [zone, ...neighbourZones(content, zone)]);
+export function cachedZones(content: Content, zone: ZoneDef, releaseOthers: boolean, flash: ZoneDef | null): Set<ZoneDef> {
+  return new Set<ZoneDef>(releaseOthers ? [] : [zone, ...neighbourZones(content, zone, flash)]);
+}
+
+export function nearZonesOf(world: World): ZoneDef[] {
+  return neighbourZones(world.content, world.zone, waitingFlash(world));
+}
+
+export function keptZonesOf(world: World, releaseOthers: boolean): Set<ZoneDef> {
+  return cachedZones(world.content, world.zone, releaseOthers, waitingFlash(world));
 }

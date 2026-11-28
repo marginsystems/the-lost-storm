@@ -19,8 +19,8 @@ function enter(zone: ZoneDef, releaseOthers: boolean): readonly ZoneDef[] {
   prepareZone(content, zone);
   terrainMap(zone);
   createTerrainSight(zone);
-  keepZones(zone, cachedZones(content, zone, releaseOthers));
-  const near: readonly ZoneDef[] = neighbourZones(content, zone);
+  keepZones(zone, cachedZones(content, zone, releaseOthers, null));
+  const near: readonly ZoneDef[] = neighbourZones(content, zone, null);
   for (const next of near) prepareZone(content, next);
   return near;
 }
