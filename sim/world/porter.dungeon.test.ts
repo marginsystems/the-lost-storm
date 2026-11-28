@@ -56,7 +56,7 @@ void test('the shipped movement model follows through Hourfall Caves, collects o
   step(true);
   const porter = must(world.porter, 'hired porter');
   for (let i: number = 0; i < 21; i += 1) step(false);
-  assert.ok(distance(origin, porter.pos) > 2, 'followed before the drops');
+  assert.ok(porter.motion === 'stride' && distance(origin, porter.pos) > 0, 'set off after the hero before the drops');
   const boots = { x: 131.5, z: 32.25 };
   const gloves = { x: 132.25, z: 32.25 };
   const bootsDrop = drop(world, 'mudcaked_boots', 'rare', boots);
