@@ -1,4 +1,5 @@
 import { tidyName } from './lobby-model.ts';
+import type { PickedName } from './name-pool.ts';
 
 export type StepState = 'closed' | 'open' | 'busy' | 'done';
 
@@ -9,6 +10,14 @@ export interface PressContext {
   readonly value: string;
   readonly needed: boolean;
   readonly limited: boolean;
+}
+
+export type OpenFill = { readonly kind: 'kept'; readonly name: string } | { readonly kind: 'suggested'; readonly picked: PickedName } | { readonly kind: 'empty' };
+
+export function openFill(kept: string | null, pick: () => PickedName | null): OpenFill {
+  if (kept !== null) return { kind: 'kept', name: kept };
+  const picked: PickedName | null = pick();
+  return picked === null ? { kind: 'empty' } : { kind: 'suggested', picked };
 }
 
 export type UnreachedStep = 'warn' | 'keep';

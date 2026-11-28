@@ -9,8 +9,8 @@ import type { NameProblem } from './lobby-model.ts';
 import { MOOD_LINES } from './name-pool.ts';
 import type { NameBody, PickedName } from './name-pool.ts';
 import type { NameSuggester } from './name-suggester.ts';
-import { pressAction, unreachedStep } from './name-press.ts';
-import type { PressAction, StepState } from './name-press.ts';
+import { openFill, pressAction, unreachedStep } from './name-press.ts';
+import type { OpenFill, PressAction, StepState } from './name-press.ts';
 import { reloadPage } from '../gpu-release.ts';
 import stepCss from './name-step.css?inline';
 
@@ -248,8 +248,23 @@ export function createNameStep(parts: NameStepParts): NameStep {
       if (action === 'submit') return name(field.value, 0);
       setState('open');
       void suggester.warm(parts.body());
-      field.value = readHeroName(parts.store) ?? '';
-      field.focus({ preventScroll: true });
+      const fill: OpenFill = openFill(readHeroName(parts.store), (): PickedName | null => suggester.pick(parts.body()));
+      switch (fill.kind) {
+        case 'kept':
+          field.value = fill.name;
+          field.focus({ preventScroll: true });
+          break;
+        case 'suggested':
+          swapField(fill.picked.name);
+          tell(pickedLine(fill.picked), false);
+          field.focus({ preventScroll: true });
+          field.select();
+          break;
+        case 'empty':
+          field.value = '';
+          field.focus({ preventScroll: true });
+          break;
+      }
       return false;
     },
   };

@@ -29,7 +29,7 @@ const lightFind: ZoneEncounter = must(
 
 const WALK = {
   lead: 6,
-  findWithin: { min: 20, max: 40 },
+  findWithin: { min: 4, max: 10 },
   limit: 90,
 } as const;
 
@@ -93,7 +93,7 @@ void test('a new game opens in the void, with the town quest held back and the H
   assert.equal(questState(plain, 'out_of_the_mist'), 'active');
 });
 
-void test('walking any way finds the journal ahead after twenty to forty seconds', (): void => {
+void test('walking any way finds the journal ahead within four to ten seconds', (): void => {
   for (const dir of [{ x: 1, z: 0 }, { x: -0.6, z: 0.8 }, { x: 0, z: -1 }]) {
     const world: World = fresh(2);
     const seconds: number = walkUntil(world, dir, (): boolean => {
